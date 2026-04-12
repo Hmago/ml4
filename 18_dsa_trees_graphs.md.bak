@@ -1,0 +1,1250 @@
+# DSA — Trees & Graphs for Google Interviews (Java)
+
+> "Google LOVES graph problems. If you master trees, graphs, BFS, and DFS,
+> you've covered ~40% of Google's coding interview questions."
+
+**What this document covers:**
+Trees, graphs, BFS, DFS — every concept, every algorithm, every pattern you need for Google interviews. All code in Java. Explained like you're 10 years old. Every section has a visual, a formula, and runnable code.
+
+---
+
+## Table of Contents
+
+| Part | Topic |
+|------|-------|
+| 1 | Trees — Fundamentals |
+| 2 | Binary Search Trees (BST) |
+| 3 | Tree Traversals (Inorder, Preorder, Postorder, Level-order) |
+| 4 | Tree Problems — Google Favorites |
+| 5 | Graphs — Fundamentals |
+| 6 | Graph Representations |
+| 7 | BFS (Breadth-First Search) |
+| 8 | DFS (Depth-First Search) |
+| 9 | Topological Sort |
+| 10 | Shortest Path (Dijkstra, BFS unweighted) |
+| 11 | Union-Find (Disjoint Set) |
+| 12 | Graph Problems — Google Favorites |
+| 13 | Complexity Cheat Sheet |
+| 14 | Practice Problems List |
+
+---
+
+# PART 1: TREES — FUNDAMENTALS
+
+---
+
+## 1.1 What Is a Tree?
+
+A tree is like a family tree — one person at the top (the **root**), and branches going down. Each person can have children, but every child has exactly ONE parent.
+
+```
+          1          ← ROOT (the top node)
+         / \
+        2   3        ← CHILDREN of 1
+       / \   \
+      4   5   6      ← LEAVES (no children)
+
+  TERMINOLOGY:
+  ─────────────────────────────────
+  Root:     The topmost node (1)
+  Parent:   Node above another (1 is parent of 2 and 3)
+  Child:    Node below another (2 and 3 are children of 1)
+  Leaf:     Node with no children (4, 5, 6)
+  Edge:     Connection between parent and child
+  Depth:    Distance from root (root = depth 0, node 2 = depth 1, node 4 = depth 2)
+  Height:   Longest path from node to any leaf (root height = 2)
+  Subtree:  A node and ALL its descendants (node 2's subtree = {2, 4, 5})
+```
+
+### Key Formulas
+
+- A tree with **N** nodes has exactly **N - 1** edges
+- A **binary tree** of height **h** has at most $2^{h+1} - 1$ nodes
+- A **complete binary tree** with **N** nodes has height $\lfloor \log_2 N \rfloor$
+
+---
+
+## 1.2 Binary Tree — Java Implementation
+
+A **binary tree** = each node has at most 2 children (left and right).
+
+```java
+public class TreeNode {
+    int val;
+    TreeNode left;
+    TreeNode right;
+
+    TreeNode(int val) {
+        this.val = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+// Build the tree from the visual above:
+//       1
+//      / \
+//     2   3
+//    / \   \
+//   4   5   6
+
+TreeNode root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4);
+root.left.right = new TreeNode(5);
+root.right.right = new TreeNode(6);
+```
+
+---
+
+## 1.3 Types of Binary Trees
+
+```
+  FULL BINARY TREE:                COMPLETE BINARY TREE:
+  Every node has 0 or 2 children.  All levels full except possibly last.
+                                    Last level filled left to right.
+       1                                1
+      / \                              / \
+     2   3                            2   3
+    / \ / \                          / \ /
+   4  5 6  7                        4  5 6
+
+  PERFECT BINARY TREE:             BALANCED BINARY TREE:
+  All levels completely full.       Height of left and right subtrees
+  2^(h+1) - 1 nodes total.        differ by at most 1.
+       1
+      / \                               3
+     2   3                             / \
+    / \ / \                           2   5
+   4  5 6  7                         /   / \
+  (15 nodes if h=3)                 1   4   6
+
+  DEGENERATE (SKEWED) TREE:        This is basically a linked list!
+  1                                 Every operation becomes O(n)
+   \                                instead of O(log n).
+    2                               This is WHY balanced trees matter.
+     \
+      3
+       \
+        4
+```
+
+---
+
+# PART 2: BINARY SEARCH TREES (BST)
+
+---
+
+## 2.1 What Is a BST?
+
+A BST is a binary tree with ONE rule: **for every node, all values in the left subtree are SMALLER, and all values in the right subtree are LARGER.**
+
+```
+         8            ← root
+        / \
+       3   10         ← 3 < 8, 10 > 8  ✓
+      / \    \
+     1   6    14      ← 1 < 3, 6 > 3  ✓  |  14 > 10  ✓
+        / \   /
+       4   7 13       ← 4 < 6, 7 > 6  ✓  |  13 < 14  ✓
+
+  To FIND a value (e.g., find 7):
+  Start at 8 → 7 < 8, go LEFT
+  At 3      → 7 > 3, go RIGHT
+  At 6      → 7 > 6, go RIGHT
+  At 7      → FOUND! ✓
+
+  Only visited 4 nodes out of 9. That's O(log n) — like binary search!
+```
+
+### BST Operations — Time Complexity
+
+| Operation | Average | Worst (skewed) |
+|-----------|---------|----------------|
+| Search | O(log n) | O(n) |
+| Insert | O(log n) | O(n) |
+| Delete | O(log n) | O(n) |
+| Find Min/Max | O(log n) | O(n) |
+
+---
+
+## 2.2 BST Operations in Java
+
+```java
+// SEARCH in BST
+public TreeNode search(TreeNode root, int target) {
+    if (root == null || root.val == target) return root;
+    if (target < root.val) return search(root.left, target);   // go left
+    else                   return search(root.right, target);  // go right
+}
+
+// INSERT into BST
+public TreeNode insert(TreeNode root, int val) {
+    if (root == null) return new TreeNode(val);
+    if (val < root.val)      root.left = insert(root.left, val);
+    else if (val > root.val) root.right = insert(root.right, val);
+    return root;  // duplicates ignored
+}
+
+// FIND MINIMUM (leftmost node)
+public int findMin(TreeNode root) {
+    while (root.left != null) root = root.left;
+    return root.val;
+}
+
+// VALIDATE BST — is this a valid BST?
+// Google LOVES this question!
+public boolean isValidBST(TreeNode root) {
+    return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+
+private boolean validate(TreeNode node, long min, long max) {
+    if (node == null) return true;
+    if (node.val <= min || node.val >= max) return false;
+    return validate(node.left, min, node.val) &&
+           validate(node.right, node.val, max);
+}
+```
+
+---
+
+# PART 3: TREE TRAVERSALS
+
+The 4 ways to visit every node in a tree. **You MUST know all 4 by heart.**
+
+---
+
+## 3.1 Visual Overview
+
+```
+         1
+        / \
+       2   3
+      / \
+     4   5
+
+  INORDER   (Left, Root, Right):   4, 2, 5, 1, 3
+  PREORDER  (Root, Left, Right):   1, 2, 4, 5, 3
+  POSTORDER (Left, Right, Root):   4, 5, 2, 3, 1
+  LEVEL-ORDER (BFS, level by level): 1, 2, 3, 4, 5
+
+  MEMORY TRICK:
+  The name tells you where the ROOT goes:
+  - IN-order:   Root is IN the middle     (Left, ROOT, Right)
+  - PRE-order:  Root comes FIRST (PRE)    (ROOT, Left, Right)
+  - POST-order: Root comes LAST (POST)    (Left, Right, ROOT)
+
+  KEY FACT: Inorder traversal of a BST gives sorted order!
+  BST:    5          Inorder: 2, 3, 5, 7, 8  ← SORTED!
+         / \
+        3   7
+       /     \
+      2       8
+```
+
+---
+
+## 3.2 All 4 Traversals in Java
+
+```java
+// ─── INORDER (Left, Root, Right) ───
+// Recursive
+public void inorder(TreeNode root, List<Integer> result) {
+    if (root == null) return;
+    inorder(root.left, result);     // Left
+    result.add(root.val);           // Root
+    inorder(root.right, result);    // Right
+}
+
+// Iterative (using stack) — Google often asks for iterative versions!
+public List<Integer> inorderIterative(TreeNode root) {
+    List<Integer> result = new ArrayList<>();
+    Deque<TreeNode> stack = new ArrayDeque<>();
+    TreeNode curr = root;
+
+    while (curr != null || !stack.isEmpty()) {
+        while (curr != null) {       // Go as far left as possible
+            stack.push(curr);
+            curr = curr.left;
+        }
+        curr = stack.pop();          // Process node
+        result.add(curr.val);
+        curr = curr.right;           // Move to right subtree
+    }
+    return result;
+}
+
+// ─── PREORDER (Root, Left, Right) ───
+public void preorder(TreeNode root, List<Integer> result) {
+    if (root == null) return;
+    result.add(root.val);           // Root
+    preorder(root.left, result);    // Left
+    preorder(root.right, result);   // Right
+}
+
+// ─── POSTORDER (Left, Right, Root) ───
+public void postorder(TreeNode root, List<Integer> result) {
+    if (root == null) return;
+    postorder(root.left, result);   // Left
+    postorder(root.right, result);  // Right
+    result.add(root.val);           // Root
+}
+
+// ─── LEVEL-ORDER (BFS) ───
+public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> result = new ArrayList<>();
+    if (root == null) return result;
+
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.offer(root);
+
+    while (!queue.isEmpty()) {
+        int levelSize = queue.size();          // How many nodes at this level
+        List<Integer> level = new ArrayList<>();
+
+        for (int i = 0; i < levelSize; i++) {
+            TreeNode node = queue.poll();
+            level.add(node.val);
+            if (node.left != null)  queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+        result.add(level);
+    }
+    return result;
+    // Returns: [[1], [2, 3], [4, 5]]
+}
+```
+
+---
+
+# PART 4: TREE PROBLEMS — GOOGLE FAVORITES
+
+---
+
+## 4.1 Maximum Depth of Binary Tree
+
+```
+  How tall is the tree? Count edges from root to the deepest leaf.
+
+         3          depth of left subtree = 2
+        / \         depth of right subtree = 1
+       9  20        max depth = max(2, 1) + 1 = 3
+         /  \
+        15   7
+```
+
+```java
+public int maxDepth(TreeNode root) {
+    if (root == null) return 0;
+    int leftDepth = maxDepth(root.left);
+    int rightDepth = maxDepth(root.right);
+    return Math.max(leftDepth, rightDepth) + 1;
+}
+// Time: O(n)  Space: O(h) where h = height
+```
+
+---
+
+## 4.2 Lowest Common Ancestor (LCA)
+
+```
+  Find the lowest node that is an ancestor of BOTH p and q.
+
+         3
+        / \
+       5   1          LCA(5, 1) = 3
+      / \ / \         LCA(5, 4) = 5
+     6  2 0  8        LCA(6, 4) = 5
+       / \
+      7   4
+```
+
+```java
+// LCA in a Binary Tree (not BST)
+public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+    if (root == null || root == p || root == q) return root;
+
+    TreeNode left = lowestCommonAncestor(root.left, p, q);
+    TreeNode right = lowestCommonAncestor(root.right, p, q);
+
+    if (left != null && right != null) return root;  // p and q on different sides
+    return left != null ? left : right;               // both on same side
+}
+
+// LCA in a BST (faster — use BST property!)
+public TreeNode lcaBST(TreeNode root, TreeNode p, TreeNode q) {
+    if (p.val < root.val && q.val < root.val) return lcaBST(root.left, p, q);
+    if (p.val > root.val && q.val > root.val) return lcaBST(root.right, p, q);
+    return root;  // split point — this IS the LCA
+}
+```
+
+---
+
+## 4.3 Check if Tree is Balanced
+
+```
+  A balanced tree: for EVERY node, the height difference between
+  left and right subtrees is at most 1.
+
+  BALANCED:          NOT BALANCED:
+      1                  1
+     / \                /
+    2   3              2
+   / \                /
+  4   5              3        ← left subtree height = 3, right = 0, diff = 3 > 1
+```
+
+```java
+public boolean isBalanced(TreeNode root) {
+    return height(root) != -1;
+}
+
+private int height(TreeNode node) {
+    if (node == null) return 0;
+    int left = height(node.left);
+    if (left == -1) return -1;                      // left subtree unbalanced
+    int right = height(node.right);
+    if (right == -1) return -1;                     // right subtree unbalanced
+    if (Math.abs(left - right) > 1) return -1;      // THIS node unbalanced
+    return Math.max(left, right) + 1;
+}
+```
+
+---
+
+## 4.4 Serialize and Deserialize Binary Tree
+
+Google classic. Convert a tree to a string and back.
+
+```java
+public class Codec {
+    // Serialize: tree → string (preorder with "null" markers)
+    public String serialize(TreeNode root) {
+        StringBuilder sb = new StringBuilder();
+        serializeHelper(root, sb);
+        return sb.toString();
+    }
+
+    private void serializeHelper(TreeNode node, StringBuilder sb) {
+        if (node == null) { sb.append("null,"); return; }
+        sb.append(node.val).append(",");
+        serializeHelper(node.left, sb);
+        serializeHelper(node.right, sb);
+    }
+
+    // Deserialize: string → tree
+    public TreeNode deserialize(String data) {
+        Queue<String> queue = new LinkedList<>(Arrays.asList(data.split(",")));
+        return deserializeHelper(queue);
+    }
+
+    private TreeNode deserializeHelper(Queue<String> queue) {
+        String val = queue.poll();
+        if (val.equals("null")) return null;
+        TreeNode node = new TreeNode(Integer.parseInt(val));
+        node.left = deserializeHelper(queue);
+        node.right = deserializeHelper(queue);
+        return node;
+    }
+}
+```
+
+---
+
+# PART 5: GRAPHS — FUNDAMENTALS
+
+---
+
+## 5.1 What Is a Graph?
+
+A graph is a collection of **nodes** (vertices) connected by **edges**. Unlike trees, graphs can have cycles, multiple paths, and no root.
+
+```
+  TREE (special graph):         GRAPH (general):
+  - One root                    - No root
+  - No cycles                   - Can have cycles
+  - One path between any 2      - Multiple paths possible
+    nodes                       - Can be disconnected
+
+  UNDIRECTED GRAPH:             DIRECTED GRAPH:
+  (edges go both ways)          (edges have direction — arrows)
+
+    A --- B                      A → B
+    |   / |                      ↑   ↓
+    |  /  |                      D ← C
+    C --- D
+
+  WEIGHTED GRAPH:               UNWEIGHTED GRAPH:
+  (edges have costs)            (all edges equal)
+
+    A -5- B                      A --- B
+    |     |                      |     |
+    3     2                      |     |
+    |     |                      C --- D
+    C -1- D
+```
+
+### Graph Terminology
+
+```
+  VERTEX (NODE):     A point in the graph (A, B, C, D)
+  EDGE:              A connection between two vertices
+  DEGREE:            Number of edges connected to a vertex
+  PATH:              A sequence of vertices connected by edges (A→B→D)
+  CYCLE:             A path that starts and ends at the same vertex (A→B→D→A)
+  CONNECTED:         There's a path between every pair of vertices
+  COMPONENT:         A maximal connected subgraph
+
+  DEGREE FORMULA:
+  Undirected graph: sum of all degrees = 2 × number of edges
+  (each edge contributes 1 degree to each endpoint)
+```
+
+---
+
+## 5.2 Graph Properties
+
+```
+  ┌──────────────────────────┬──────────────────────────────────────────┐
+  │ Property                 │ What it means                             │
+  ├──────────────────────────┼──────────────────────────────────────────┤
+  │ Directed vs Undirected   │ Do edges have direction? (one-way roads  │
+  │                          │ vs two-way streets)                      │
+  ├──────────────────────────┼──────────────────────────────────────────┤
+  │ Weighted vs Unweighted   │ Do edges have costs? (distance, time)    │
+  ├──────────────────────────┼──────────────────────────────────────────┤
+  │ Cyclic vs Acyclic        │ Are there cycles? (DAG = Directed Acyclic│
+  │                          │ Graph — very important for topological sort)│
+  ├──────────────────────────┼──────────────────────────────────────────┤
+  │ Connected vs Disconnected│ Can you reach every node from every node?│
+  ├──────────────────────────┼──────────────────────────────────────────┤
+  │ Dense vs Sparse          │ Dense: many edges (~V²).                 │
+  │                          │ Sparse: few edges (~V).                  │
+  │                          │ Affects which representation to use.     │
+  └──────────────────────────┴──────────────────────────────────────────┘
+
+  IMPORTANT FORMULAS:
+  ───────────────────
+  Undirected graph: max edges = V × (V-1) / 2
+  Directed graph:   max edges = V × (V-1)
+  Tree:             exactly V-1 edges, no cycles, connected
+```
+
+---
+
+# PART 6: GRAPH REPRESENTATIONS
+
+---
+
+## 6.1 Adjacency List vs Adjacency Matrix
+
+```
+  GRAPH:
+    0 --- 1
+    |   / |
+    |  /  |
+    2 --- 3
+
+  ADJACENCY LIST (best for sparse graphs — MOST COMMON):
+  ──────────────────────────────────────────
+  0: [1, 2]         "Node 0 connects to 1 and 2"
+  1: [0, 2, 3]      "Node 1 connects to 0, 2, and 3"
+  2: [0, 1, 3]
+  3: [1, 2]
+
+  Space: O(V + E)
+  Check if edge exists: O(degree)
+  Find all neighbors: O(degree)
+  Best for: BFS, DFS, most graph problems
+
+
+  ADJACENCY MATRIX (best for dense graphs):
+  ──────────────────────────────────────────
+       0  1  2  3
+    0 [0, 1, 1, 0]     1 means connected
+    1 [1, 0, 1, 1]     0 means not connected
+    2 [1, 1, 0, 1]
+    3 [0, 1, 1, 0]
+
+  Space: O(V²)
+  Check if edge exists: O(1)  ← advantage!
+  Find all neighbors: O(V)
+  Best for: dense graphs, Floyd-Warshall
+```
+
+## 6.2 Java Graph Implementation
+
+```java
+// ─── Adjacency List (most common for interviews) ───
+// Unweighted graph
+Map<Integer, List<Integer>> graph = new HashMap<>();
+
+// Add edge (undirected)
+public void addEdge(int u, int v) {
+    graph.computeIfAbsent(u, k -> new ArrayList<>()).add(v);
+    graph.computeIfAbsent(v, k -> new ArrayList<>()).add(u);
+}
+
+// Build graph from edge list
+int[][] edges = {{0,1}, {0,2}, {1,2}, {1,3}, {2,3}};
+for (int[] edge : edges) {
+    addEdge(edge[0], edge[1]);
+}
+
+// ─── Using array of lists (when nodes are 0 to n-1) ───
+int n = 4;  // number of nodes
+List<List<Integer>> adj = new ArrayList<>();
+for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
+
+// Add edge (directed)
+adj.get(0).add(1);
+adj.get(0).add(2);
+adj.get(1).add(3);
+
+// ─── Weighted graph ───
+Map<Integer, List<int[]>> weightedGraph = new HashMap<>();
+// addEdge(u, v, weight):
+weightedGraph.computeIfAbsent(0, k -> new ArrayList<>()).add(new int[]{1, 5});  // 0→1, weight 5
+weightedGraph.computeIfAbsent(0, k -> new ArrayList<>()).add(new int[]{2, 3});  // 0→2, weight 3
+```
+
+---
+
+# PART 7: BFS (BREADTH-FIRST SEARCH)
+
+---
+
+## 7.1 How BFS Works
+
+BFS explores the graph **level by level**, like ripples spreading from a stone dropped in water.
+
+```
+  Start at node 0. Visit all neighbors first, then their neighbors.
+
+  Graph:                   BFS Order:
+    0 --- 1                Level 0: [0]
+    |   / |                Level 1: [1, 2]      (neighbors of 0)
+    |  /  |                Level 2: [3]          (neighbors of 1, 2 not yet visited)
+    2 --- 3
+
+  Uses a QUEUE (FIFO — First In, First Out):
+
+  Step 1: Queue = [0],        Visited = {0}
+  Step 2: Pop 0, add neighbors 1,2
+          Queue = [1, 2],     Visited = {0, 1, 2}
+  Step 3: Pop 1, add neighbor 3 (0,2 already visited)
+          Queue = [2, 3],     Visited = {0, 1, 2, 3}
+  Step 4: Pop 2, no new neighbors
+          Queue = [3]
+  Step 5: Pop 3, no new neighbors
+          Queue = []           DONE!
+
+  BFS GUARANTEES SHORTEST PATH in unweighted graphs!
+```
+
+## 7.2 BFS — Java Implementation
+
+```java
+// ─── Basic BFS ───
+public List<Integer> bfs(Map<Integer, List<Integer>> graph, int start) {
+    List<Integer> order = new ArrayList<>();
+    Set<Integer> visited = new HashSet<>();
+    Queue<Integer> queue = new LinkedList<>();
+
+    visited.add(start);
+    queue.offer(start);
+
+    while (!queue.isEmpty()) {
+        int node = queue.poll();
+        order.add(node);
+
+        for (int neighbor : graph.getOrDefault(node, List.of())) {
+            if (!visited.contains(neighbor)) {
+                visited.add(neighbor);
+                queue.offer(neighbor);
+            }
+        }
+    }
+    return order;
+}
+
+// ─── BFS with Level Tracking (very common pattern!) ───
+public int bfsShortestPath(Map<Integer, List<Integer>> graph, int start, int target) {
+    Set<Integer> visited = new HashSet<>();
+    Queue<Integer> queue = new LinkedList<>();
+    visited.add(start);
+    queue.offer(start);
+    int level = 0;
+
+    while (!queue.isEmpty()) {
+        int size = queue.size();                  // All nodes at current level
+        for (int i = 0; i < size; i++) {
+            int node = queue.poll();
+            if (node == target) return level;     // Found! Return distance
+
+            for (int neighbor : graph.getOrDefault(node, List.of())) {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.offer(neighbor);
+                }
+            }
+        }
+        level++;                                  // Move to next level
+    }
+    return -1;  // Target not reachable
+}
+```
+
+### BFS on a Grid (2D Matrix)
+
+This is a VERY common Google pattern — treat a grid as a graph.
+
+```java
+// ─── BFS on a grid (e.g., shortest path in a maze) ───
+public int shortestPathGrid(int[][] grid) {
+    int rows = grid.length, cols = grid[0].length;
+    if (grid[0][0] == 1) return -1;  // Start blocked
+
+    int[][] directions = {{0,1}, {0,-1}, {1,0}, {-1,0}};  // right, left, down, up
+    boolean[][] visited = new boolean[rows][cols];
+    Queue<int[]> queue = new LinkedList<>();
+
+    queue.offer(new int[]{0, 0, 1});  // {row, col, distance}
+    visited[0][0] = true;
+
+    while (!queue.isEmpty()) {
+        int[] curr = queue.poll();
+        int row = curr[0], col = curr[1], dist = curr[2];
+
+        if (row == rows - 1 && col == cols - 1) return dist;  // Reached end!
+
+        for (int[] dir : directions) {
+            int newRow = row + dir[0], newCol = col + dir[1];
+            if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols
+                && !visited[newRow][newCol] && grid[newRow][newCol] == 0) {
+                visited[newRow][newCol] = true;
+                queue.offer(new int[]{newRow, newCol, dist + 1});
+            }
+        }
+    }
+    return -1;  // No path exists
+}
+```
+
+---
+
+# PART 8: DFS (DEPTH-FIRST SEARCH)
+
+---
+
+## 8.1 How DFS Works
+
+DFS explores as **deep as possible** before backtracking. Like exploring a maze — go as far as you can down one path, then come back and try another.
+
+```
+  Graph:                   DFS Order (starting at 0):
+    0 --- 1                0 → 1 → 2 → 3
+    |   / |
+    |  /  |                Uses a STACK (LIFO — Last In, First Out)
+    2 --- 3                Or: recursion (which uses the call stack!)
+
+  Step 1: Visit 0, push neighbors [1, 2]
+  Step 2: Pop 2, visit 2, push neighbor [3] (0,1 visited)
+  Step 3: Pop 3, visit 3, no unvisited neighbors
+  Step 4: Pop 1, visit 1, no unvisited neighbors
+  DONE!
+
+  BFS vs DFS:
+  ┌──────────────┬────────────────────────┬────────────────────────┐
+  │              │ BFS                    │ DFS                    │
+  ├──────────────┼────────────────────────┼────────────────────────┤
+  │ Data struct  │ Queue (FIFO)           │ Stack/Recursion (LIFO) │
+  │ Explores     │ Level by level (wide)  │ Path by path (deep)    │
+  │ Shortest path│ YES (unweighted)       │ NO                     │
+  │ Memory       │ O(width of graph)      │ O(depth of graph)      │
+  │ Good for     │ Shortest path, levels  │ Paths, cycles, topo    │
+  │ Time         │ O(V + E)              │ O(V + E)               │
+  └──────────────┴────────────────────────┴────────────────────────┘
+```
+
+## 8.2 DFS — Java Implementation
+
+```java
+// ─── Recursive DFS ───
+public void dfs(Map<Integer, List<Integer>> graph, int node, Set<Integer> visited) {
+    visited.add(node);
+    System.out.print(node + " ");
+
+    for (int neighbor : graph.getOrDefault(node, List.of())) {
+        if (!visited.contains(neighbor)) {
+            dfs(graph, neighbor, visited);
+        }
+    }
+}
+// Usage: dfs(graph, 0, new HashSet<>());
+
+// ─── Iterative DFS (using explicit stack) ───
+public List<Integer> dfsIterative(Map<Integer, List<Integer>> graph, int start) {
+    List<Integer> order = new ArrayList<>();
+    Set<Integer> visited = new HashSet<>();
+    Deque<Integer> stack = new ArrayDeque<>();
+
+    stack.push(start);
+
+    while (!stack.isEmpty()) {
+        int node = stack.pop();
+        if (visited.contains(node)) continue;
+        visited.add(node);
+        order.add(node);
+
+        for (int neighbor : graph.getOrDefault(node, List.of())) {
+            if (!visited.contains(neighbor)) {
+                stack.push(neighbor);
+            }
+        }
+    }
+    return order;
+}
+```
+
+### DFS on a Grid — Number of Islands (Classic Google Problem!)
+
+```
+  Grid:
+  1 1 0 0 0
+  1 1 0 0 0
+  0 0 1 0 0
+  0 0 0 1 1
+
+  Answer: 3 islands
+  Island 1: top-left (4 cells)
+  Island 2: middle (1 cell)
+  Island 3: bottom-right (2 cells)
+```
+
+```java
+public int numIslands(char[][] grid) {
+    int count = 0;
+    for (int i = 0; i < grid.length; i++) {
+        for (int j = 0; j < grid[0].length; j++) {
+            if (grid[i][j] == '1') {
+                count++;
+                dfsFlood(grid, i, j);  // Sink the entire island
+            }
+        }
+    }
+    return count;
+}
+
+private void dfsFlood(char[][] grid, int i, int j) {
+    if (i < 0 || i >= grid.length || j < 0 || j >= grid[0].length) return;
+    if (grid[i][j] != '1') return;
+
+    grid[i][j] = '0';  // Mark as visited (sink it)
+    dfsFlood(grid, i + 1, j);  // down
+    dfsFlood(grid, i - 1, j);  // up
+    dfsFlood(grid, i, j + 1);  // right
+    dfsFlood(grid, i, j - 1);  // left
+}
+```
+
+---
+
+## 8.3 Cycle Detection
+
+```java
+// ─── Detect cycle in UNDIRECTED graph ───
+public boolean hasCycleUndirected(Map<Integer, List<Integer>> graph, int nodes) {
+    Set<Integer> visited = new HashSet<>();
+    for (int i = 0; i < nodes; i++) {
+        if (!visited.contains(i)) {
+            if (dfsCycleUndirected(graph, i, -1, visited)) return true;
+        }
+    }
+    return false;
+}
+
+private boolean dfsCycleUndirected(Map<Integer, List<Integer>> graph, int node,
+                                    int parent, Set<Integer> visited) {
+    visited.add(node);
+    for (int neighbor : graph.getOrDefault(node, List.of())) {
+        if (!visited.contains(neighbor)) {
+            if (dfsCycleUndirected(graph, neighbor, node, visited)) return true;
+        } else if (neighbor != parent) {
+            return true;  // Visited node that isn't our parent → CYCLE!
+        }
+    }
+    return false;
+}
+
+// ─── Detect cycle in DIRECTED graph (using 3 colors) ───
+// WHITE = unvisited, GRAY = in current path, BLACK = fully processed
+public boolean hasCycleDirected(Map<Integer, List<Integer>> graph, int nodes) {
+    int[] color = new int[nodes];  // 0=white, 1=gray, 2=black
+
+    for (int i = 0; i < nodes; i++) {
+        if (color[i] == 0) {
+            if (dfsCycleDirected(graph, i, color)) return true;
+        }
+    }
+    return false;
+}
+
+private boolean dfsCycleDirected(Map<Integer, List<Integer>> graph,
+                                  int node, int[] color) {
+    color[node] = 1;  // Mark gray (in progress)
+    for (int neighbor : graph.getOrDefault(node, List.of())) {
+        if (color[neighbor] == 1) return true;   // Gray → CYCLE!
+        if (color[neighbor] == 0) {
+            if (dfsCycleDirected(graph, neighbor, color)) return true;
+        }
+    }
+    color[node] = 2;  // Mark black (done)
+    return false;
+}
+```
+
+---
+
+# PART 9: TOPOLOGICAL SORT
+
+---
+
+## 9.1 What Is Topological Sort?
+
+Order the nodes so that for every directed edge A → B, A comes before B. Only works on **DAGs** (Directed Acyclic Graphs).
+
+```
+  EXAMPLE: Course prerequisites
+  You must take courses in order: some courses require others first.
+
+  Courses: 0, 1, 2, 3
+  Prerequisites: 0→1, 0→2, 1→3, 2→3
+
+       0
+      / \
+     1   2       Topological order: 0, 1, 2, 3  (or 0, 2, 1, 3)
+      \ /        Both valid! Multiple answers possible.
+       3
+
+  Real uses: build systems (Makefile), task scheduling, package dependencies
+```
+
+## 9.2 Topological Sort — BFS (Kahn's Algorithm)
+
+```java
+// Kahn's Algorithm — BFS-based topological sort
+public int[] topologicalSort(int numCourses, int[][] prerequisites) {
+    // Build graph and in-degree array
+    List<List<Integer>> graph = new ArrayList<>();
+    int[] inDegree = new int[numCourses];
+    for (int i = 0; i < numCourses; i++) graph.add(new ArrayList<>());
+
+    for (int[] pre : prerequisites) {
+        graph.get(pre[1]).add(pre[0]);  // pre[1] → pre[0]
+        inDegree[pre[0]]++;
+    }
+
+    // Start with nodes that have no prerequisites (in-degree = 0)
+    Queue<Integer> queue = new LinkedList<>();
+    for (int i = 0; i < numCourses; i++) {
+        if (inDegree[i] == 0) queue.offer(i);
+    }
+
+    int[] order = new int[numCourses];
+    int index = 0;
+
+    while (!queue.isEmpty()) {
+        int course = queue.poll();
+        order[index++] = course;
+
+        for (int next : graph.get(course)) {
+            inDegree[next]--;
+            if (inDegree[next] == 0) queue.offer(next);  // All prereqs done!
+        }
+    }
+
+    // If we didn't process all courses, there's a cycle
+    return index == numCourses ? order : new int[0];
+}
+```
+
+---
+
+# PART 10: SHORTEST PATH
+
+---
+
+## 10.1 Dijkstra's Algorithm
+
+Finds shortest path from a source to ALL other nodes in a **weighted graph with non-negative weights**.
+
+```
+  GRAPH:
+    A --4-- B
+    |       |
+    2       1
+    |       |
+    C --3-- D
+
+  Shortest paths from A:
+  A → A = 0
+  A → C = 2              (A→C direct)
+  A → B = 4              (A→B direct)
+  A → D = 5              (A→C→D = 2+3)
+```
+
+```java
+public int[] dijkstra(Map<Integer, List<int[]>> graph, int start, int n) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[start] = 0;
+
+    // Min-heap: {distance, node}
+    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] - b[0]);
+    pq.offer(new int[]{0, start});
+
+    while (!pq.isEmpty()) {
+        int[] curr = pq.poll();
+        int d = curr[0], node = curr[1];
+
+        if (d > dist[node]) continue;  // Skip stale entries
+
+        for (int[] edge : graph.getOrDefault(node, List.of())) {
+            int neighbor = edge[0], weight = edge[1];
+            int newDist = dist[node] + weight;
+
+            if (newDist < dist[neighbor]) {
+                dist[neighbor] = newDist;
+                pq.offer(new int[]{newDist, neighbor});
+            }
+        }
+    }
+    return dist;  // dist[i] = shortest distance from start to i
+}
+// Time: O((V + E) log V)  Space: O(V)
+```
+
+---
+
+# PART 11: UNION-FIND (DISJOINT SET)
+
+---
+
+## 11.1 What Is Union-Find?
+
+Union-Find efficiently tracks which elements belong to the same group (connected component). Two operations: **union** (merge two groups) and **find** (which group does this element belong to?).
+
+```
+  Start: {0} {1} {2} {3} {4}    (each element is its own group)
+  Union(0, 1): {0,1} {2} {3} {4}
+  Union(2, 3): {0,1} {2,3} {4}
+  Union(1, 3): {0,1,2,3} {4}
+  Find(0) == Find(3)?  YES — same group!
+  Find(0) == Find(4)?  NO — different groups.
+```
+
+```java
+class UnionFind {
+    int[] parent;
+    int[] rank;
+    int components;
+
+    UnionFind(int n) {
+        parent = new int[n];
+        rank = new int[n];
+        components = n;
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+
+    // Find with PATH COMPRESSION — makes future finds O(1)
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+
+    // Union by RANK — keeps tree balanced
+    boolean union(int x, int y) {
+        int rootX = find(x), rootY = find(y);
+        if (rootX == rootY) return false;  // Already connected
+
+        if (rank[rootX] < rank[rootY]) parent[rootX] = rootY;
+        else if (rank[rootX] > rank[rootY]) parent[rootY] = rootX;
+        else { parent[rootY] = rootX; rank[rootX]++; }
+
+        components--;
+        return true;
+    }
+
+    boolean connected(int x, int y) { return find(x) == find(y); }
+}
+
+// Time: Nearly O(1) per operation (amortized) with path compression + union by rank
+```
+
+---
+
+# PART 12: GRAPH PROBLEMS — GOOGLE FAVORITES
+
+---
+
+## 12.1 Clone Graph (LeetCode 133)
+
+```java
+public Node cloneGraph(Node node) {
+    if (node == null) return null;
+    Map<Node, Node> map = new HashMap<>();
+    return dfsClone(node, map);
+}
+
+private Node dfsClone(Node node, Map<Node, Node> map) {
+    if (map.containsKey(node)) return map.get(node);
+    Node clone = new Node(node.val);
+    map.put(node, clone);
+    for (Node neighbor : node.neighbors) {
+        clone.neighbors.add(dfsClone(neighbor, map));
+    }
+    return clone;
+}
+```
+
+## 12.2 Word Ladder (BFS shortest transformation)
+
+```
+  "hit" → "hot" → "dot" → "dog" → "cog"   (4 transformations)
+  Change one letter at a time, each intermediate word must be valid.
+```
+
+```java
+public int ladderLength(String beginWord, String endWord, List<String> wordList) {
+    Set<String> wordSet = new HashSet<>(wordList);
+    if (!wordSet.contains(endWord)) return 0;
+
+    Queue<String> queue = new LinkedList<>();
+    queue.offer(beginWord);
+    int level = 1;
+
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        for (int i = 0; i < size; i++) {
+            char[] word = queue.poll().toCharArray();
+
+            for (int j = 0; j < word.length; j++) {
+                char original = word[j];
+                for (char c = 'a'; c <= 'z'; c++) {
+                    word[j] = c;
+                    String newWord = new String(word);
+                    if (newWord.equals(endWord)) return level + 1;
+                    if (wordSet.contains(newWord)) {
+                        queue.offer(newWord);
+                        wordSet.remove(newWord);
+                    }
+                }
+                word[j] = original;
+            }
+        }
+        level++;
+    }
+    return 0;
+}
+```
+
+## 12.3 Course Schedule (Cycle Detection in Directed Graph)
+
+```java
+// Can you finish all courses? (No cycles in prerequisite graph)
+public boolean canFinish(int numCourses, int[][] prerequisites) {
+    // Use topological sort — if we can sort all courses, no cycle exists
+    int[] result = topologicalSort(numCourses, prerequisites);
+    return result.length == numCourses;
+}
+```
+
+---
+
+# PART 13: COMPLEXITY CHEAT SHEET
+
+---
+
+```
+  ┌───────────────────────────┬──────────────────┬─────────────────┐
+  │ Algorithm                 │ Time             │ Space           │
+  ├───────────────────────────┼──────────────────┼─────────────────┤
+  │ BFS                       │ O(V + E)         │ O(V)            │
+  │ DFS                       │ O(V + E)         │ O(V)            │
+  │ Topological Sort          │ O(V + E)         │ O(V)            │
+  │ Dijkstra (min-heap)       │ O((V+E) log V)   │ O(V)            │
+  │ Union-Find (optimized)    │ O(α(n)) ≈ O(1)  │ O(V)            │
+  │ BST search/insert (avg)   │ O(log n)         │ O(log n)        │
+  │ BST search/insert (worst) │ O(n)             │ O(n)            │
+  │ Tree traversal            │ O(n)             │ O(h)            │
+  │ Level-order traversal     │ O(n)             │ O(w) max width  │
+  └───────────────────────────┴──────────────────┴─────────────────┘
+
+  V = vertices, E = edges, n = nodes, h = height, w = max width
+  α(n) = inverse Ackermann function ≈ practically constant
+```
+
+---
+
+# PART 14: PRACTICE PROBLEMS LIST
+
+---
+
+## Trees (do these in order)
+
+| # | Problem | Difficulty | Key Concept |
+|---|---------|-----------|-------------|
+| 1 | Maximum Depth of Binary Tree (LC 104) | Easy | Recursion basics |
+| 2 | Invert Binary Tree (LC 226) | Easy | Recursion |
+| 3 | Same Tree (LC 100) | Easy | Comparing trees |
+| 4 | Symmetric Tree (LC 101) | Easy | Mirror check |
+| 5 | Binary Tree Level Order (LC 102) | Medium | BFS on tree |
+| 6 | Validate BST (LC 98) | Medium | BST property + inorder |
+| 7 | Lowest Common Ancestor (LC 236) | Medium | DFS + return values |
+| 8 | Binary Tree Right Side View (LC 199) | Medium | BFS level tracking |
+| 9 | Construct Tree from Preorder + Inorder (LC 105) | Medium | Divide and conquer |
+| 10 | Serialize/Deserialize Binary Tree (LC 297) | Hard | Preorder + null markers |
+| 11 | Binary Tree Maximum Path Sum (LC 124) | Hard | DFS + global max |
+| 12 | Kth Smallest Element in BST (LC 230) | Medium | Inorder traversal |
+
+## Graphs (do these in order)
+
+| # | Problem | Difficulty | Key Concept |
+|---|---------|-----------|-------------|
+| 1 | Number of Islands (LC 200) | Medium | DFS/BFS on grid |
+| 2 | Clone Graph (LC 133) | Medium | DFS + HashMap |
+| 3 | Course Schedule (LC 207) | Medium | Topological sort / cycle |
+| 4 | Course Schedule II (LC 210) | Medium | Topological order |
+| 5 | Pacific Atlantic Water Flow (LC 417) | Medium | Multi-source DFS |
+| 6 | Number of Connected Components (LC 323) | Medium | Union-Find or DFS |
+| 7 | Graph Valid Tree (LC 261) | Medium | Union-Find + edge count |
+| 8 | Word Ladder (LC 127) | Hard | BFS shortest path |
+| 9 | Alien Dictionary (LC 269) | Hard | Topological sort from rules |
+| 10 | Network Delay Time (LC 743) | Medium | Dijkstra |
+| 11 | Cheapest Flights Within K Stops (LC 787) | Medium | Modified Dijkstra/BFS |
+| 12 | Surrounded Regions (LC 130) | Medium | Border DFS |
+| 13 | Rotting Oranges (LC 994) | Medium | Multi-source BFS |
+| 14 | Walls and Gates (LC 286) | Medium | Multi-source BFS |
+
+```
+  GOOGLE TIP: Do 2 problems per day.
+  Week 1: Trees (problems 1-6)
+  Week 2: Trees (7-12) + Graphs (1-3)
+  Week 3: Graphs (4-14)
+
+  For each problem:
+  1. Try solving it yourself for 20 minutes
+  2. If stuck, read the approach (not the code)
+  3. Implement it yourself
+  4. After solving, read the optimal solution
+  5. Re-solve it from scratch the next day (spaced repetition!)
+```
+
+---
+
+**Previous:** [Chapter 17 — ML System Design](17_ml_system_design.md)
+
+**Next:** [Interview Questions](15_interview_questions.md)
