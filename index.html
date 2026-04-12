@@ -608,9 +608,94 @@ body.sidebar-collapsed .sidebar {
     transform: translateX(-100%);
   }
   .sidebar.open { transform: translateX(0); }
-  .content { padding: 24px 20px 80px; }
-  .content h1 { font-size: 24px; }
-  .content h2 { font-size: 20px; }
+
+  /* ── Content ── */
+  .content { padding: 16px 14px 90px; }
+  .content h1 { font-size: 22px; margin: 24px 0 12px; }
+  .content h2 { font-size: 18px; }
+  .content h3 { font-size: 16px; }
+  .content pre, .content code { font-size: 12px; }
+  .content pre { padding: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .content table { font-size: 12px; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+  .content blockquote { margin-left: 0; padding-left: 12px; }
+  .content img { max-width: 100%; height: auto; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 8px 12px; gap: 6px; }
+  .breadcrumb { font-size: 13px; max-width: 45vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-right { gap: 4px; }
+  .topbar-right button { padding: 5px 8px; font-size: 12px; }
+  .hide-mobile { display: none !important; }
+  .study-timer #timerDisplay { max-width: 56px; overflow: hidden; }
+  .study-timer { padding: 5px 8px; font-size: 12px; gap: 4px; }
+
+  /* ── Dashboard ── */
+  .dash-hero { gap: 20px; padding: 20px 16px; margin: 16px 0 24px; flex-direction: column; text-align: center; }
+  .dash-hero > div { text-align: center !important; }
+  .dash-xp-track { margin: 8px auto 0; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .dash-card { padding: 14px 10px; }
+  .dash-card .dash-num { font-size: 22px; }
+  .dash-table { font-size: 11px; }
+  .dash-table thead th { padding: 8px 6px; font-size: 11px; }
+  .dash-table tbody td { padding: 8px 6px; }
+  .ach-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ach-item { padding: 10px 8px; }
+  .ach-item .ach-icon { font-size: 22px; }
+  .ach-item .ach-name { font-size: 11px; }
+  .ach-item .ach-desc { font-size: 10px; }
+  .dash-section h3 { font-size: 16px; }
+
+  /* ── DSA Practice ── */
+  .dsa-header { flex-direction: column; align-items: stretch; gap: 8px; }
+  .dsa-header > div:last-child { display: flex; gap: 8px; }
+  .dsa-stats-bar { gap: 8px; }
+  .dsa-stat { min-width: 0; padding: 10px 8px; flex: 1; }
+  .dsa-stat .num { font-size: 20px; }
+  .dsa-stat .label { font-size: 10px; }
+  .dsa-filters { gap: 6px; }
+  .dsa-filter-btn { padding: 4px 10px; font-size: 12px; }
+  .dsa-problem-row { padding: 10px 12px; gap: 8px; }
+  .dsa-problem-row .title { font-size: 13px; }
+  .dsa-problem-row .category { display: none; }
+  .dsa-editor { min-height: 250px; font-size: 13px; }
+  .dsa-add-form .row { flex-direction: column; gap: 0; }
+
+  /* ── Comments ── */
+  .comment-form { flex-direction: column; }
+  .comment-submit { align-self: flex-end; }
+  .comment-fab { display: none !important; }
+  .comment-actions { flex-wrap: wrap; }
+  .comment-filter-bar { gap: 6px; }
+  .comment-filter-btn { padding: 3px 10px; font-size: 11px; }
+
+  /* ── Quiz modal ── */
+  .quiz-overlay { padding: 8px; }
+  .quiz-modal { padding: 20px 16px; border-radius: 16px; max-height: 90vh; }
+  .quiz-question { font-size: 15px; }
+  .quiz-option { padding: 12px 14px; font-size: 13px; }
+
+  /* ── Motivation ── */
+  .moti-card { padding: 32px 20px; }
+  .moti-quote { font-size: 18px; }
+
+  /* ── Selection popup ── */
+  #selPopup { font-size: 12px; }
+  #selPopup button { padding: 4px 8px; font-size: 11px; }
+
+  /* ── Toast ── */
+  .toast-container { top: 8px; right: 8px; left: 8px; }
+  .toast { max-width: 100%; font-size: 13px; padding: 10px 14px; }
+  .toast-achievement { max-width: 100%; padding: 12px 16px; }
+}
+
+/* Extra small phones */
+@media (max-width: 380px) {
+  .content { padding: 12px 10px 90px; }
+  .topbar-right button span { display: none; }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  .ach-grid { grid-template-columns: repeat(2, 1fr); }
+  .dsa-stat .num { font-size: 18px; }
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -1783,12 +1868,12 @@ mark.user-hl:hover::after { display: flex; }
       <span class="breadcrumb" id="breadcrumb">Select a chapter</span>
     </div>
     <div class="topbar-right">
-      <div class="study-timer" id="studyTimer" onclick="toggleStudyTimer()" title="Click to start/stop study timer">
+      <div class="study-timer hide-mobile" id="studyTimer" onclick="toggleStudyTimer()" title="Click to start/stop study timer">
         <span class="timer-dot"></span>
         <span id="timerDisplay">▶ Start</span>
       </div>
-      <button onclick="changeFontSize(-1)" title="Smaller text">A-</button>
-      <button onclick="changeFontSize(1)" title="Larger text">A+</button>
+      <button class="hide-mobile" onclick="changeFontSize(-1)" title="Smaller text">A-</button>
+      <button class="hide-mobile" onclick="changeFontSize(1)" title="Larger text">A+</button>
       <button onclick="toggleReadStatus()" id="readBtn" title="Mark as read">&#10003; Read</button>
       <button onclick="toggleTheme()" id="themeBtn" title="Toggle dark mode">&#9790;</button>
     </div>
