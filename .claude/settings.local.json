@@ -62,7 +62,12 @@
       "Bash(awk '{print $NF, $5}')",
       "WebFetch(domain:stanford.edu)",
       "WebFetch(domain:github.com)",
-      "Bash(ipconfig)"
+      "Bash(ipconfig)",
+      "Bash(python -m http.server 8080)",
+      "Bash(python3 -c ':*)",
+      "Bash(python -c ':*)",
+      "Bash(awk:*)",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(c['name']\\) for c in data if 'java' in c['name'].lower\\(\\) or 'jdk' in c['name'].lower\\(\\)]\")"
     ]
   }
 }

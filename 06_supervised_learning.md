@@ -130,10 +130,11 @@ Supervised learning is like learning with a teacher. The teacher shows you many 
   │                                                 ↑             │
   │  Prediction: Virginica  (80% confidence)                      │
   └───────────────────────────────────────────────────────────────┘
-
-  Softmax formula: P(class_i) = e^(logit_i) / Σ e^(logit_j)
-  Guarantees: all probabilities positive, sum to 1.0
 ```
+
+$$P(\text{class}_i) = \frac{e^{\text{logit}_i}}{\sum_j e^{\text{logit}_j}}$$
+
+Guarantees: all probabilities positive, sum to 1.0
 
 ### Multi-label Classification — Multiple Classes at Once ★
 
@@ -183,17 +184,16 @@ Supervised learning is like learning with a teacher. The teacher shows you many 
 
 ## 4.4 Classification Algorithms
 
-### 1. Logistic Regression
+### 1. Logistic Regression ★★★
 
 **Simple explanation:** Takes a weighted sum of features, squashes it through a sigmoid
 function to produce a probability between 0 and 1.
 
-```
-  FORMULA:
-  ─────────────────────────────────────────────────────────────
-  z  = w₀ + w₁x₁ + w₂x₂ + ... + wₙxₙ      ← linear combination
-  ŷ  = σ(z) = 1 / (1 + e^(-z))              ← sigmoid squash
+$$z = w_0 + w_1 x_1 + w_2 x_2 + \dots + w_n x_n$$
 
+$$\hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+```
   Example — spam detection:
     z = -3.0 + (0.8 × has_word_FREE)
              + (1.2 × has_word_MONEY)
@@ -225,6 +225,31 @@ function to produce a probability between 0 and 1.
   z << 0  →  confident class 0  (probability near 0)
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10],
+    "datasets": [{
+      "label": "σ(z) = 1 / (1 + e⁻ᶻ)",
+      "data": [0.00005,0.0001,0.0003,0.0009,0.0025,0.0067,0.018,0.047,0.119,0.269,0.500,0.731,0.881,0.953,0.982,0.993,0.998,0.999,0.9997,0.9999,0.99995],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.4,
+      "pointRadius": 0
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "The Sigmoid Function — Squashes Any Input to (0, 1)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Probability" }, "min": 0, "max": 1 },
+      "x": { "title": { "display": true, "text": "z (weighted sum of inputs)" } }
+    }
+  }
+}
+```
+
 **Official Definition:**
 > **Logistic Regression** is a linear classifier that models the probability of class membership
 > using the logistic (sigmoid) function. It finds a linear decision boundary in feature space
@@ -240,7 +265,7 @@ function to produce a probability between 0 and 1.
 
 ---
 
-### 2. K-Nearest Neighbors (KNN)
+### 2. K-Nearest Neighbors (KNN) ★
 
 **Simple explanation:** "You are judged by the company you keep!"
 Classify a new point by majority vote of its K nearest neighbors.
@@ -281,7 +306,7 @@ Classify a new point by majority vote of its K nearest neighbors.
 
 ---
 
-### 3. Decision Trees
+### 3. Decision Trees ★★★
 
 **Simple explanation:** A game of 20 questions! Each internal node asks a yes/no
 question about one feature. Follow the path until you reach a leaf (prediction).
@@ -318,9 +343,11 @@ creates the "purest" child nodes.
 
 ### Gini Impurity
 
-```
-  Gini = 1 - Σ pᵢ²    (where pᵢ = fraction of class i in the node)
+$$\text{Gini} = 1 - \sum_i p_i^2$$
 
+where $p_i$ = fraction of class $i$ in the node.
+
+```
   Pure node (all one class):     Gini = 1 - (1² + 0²)    = 0.0
   Mixed 50/50:                   Gini = 1 - (0.5² + 0.5²) = 0.5
   Mixed 70/30:                   Gini = 1 - (0.7² + 0.3²) = 0.42
@@ -330,15 +357,52 @@ creates the "purest" child nodes.
 
 ### Information Gain (Entropy-based)
 
-```
-  Entropy = -Σ pᵢ × log₂(pᵢ)
+$$\text{Entropy} = -\sum_i p_i \times \log_2(p_i)$$
 
+$$\text{Information Gain} = \text{Parent Entropy} - \text{Weighted Avg Child Entropy}$$
+
+```
   Pure node:     Entropy = -(1×log₂1 + 0×log₂0)     = 0.0  bits
   50/50 split:   Entropy = -(0.5×log₂0.5 + 0.5×log₂0.5) = 1.0  bits
   70/30 split:   Entropy = -(0.7×log₂0.7 + 0.3×log₂0.3) = 0.88 bits
 
-  Information Gain = Parent entropy − weighted avg child entropy
   HIGHER info gain = BETTER split
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["0%","10%","20%","30%","40%","50%","60%","70%","80%","90%","100%"],
+    "datasets": [
+      {
+        "label": "Gini Impurity",
+        "data": [0.0, 0.18, 0.32, 0.42, 0.48, 0.50, 0.48, 0.42, 0.32, 0.18, 0.0],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 2
+      },
+      {
+        "label": "Entropy (scaled to 0–1)",
+        "data": [0.0, 0.47, 0.72, 0.88, 0.97, 1.0, 0.97, 0.88, 0.72, 0.47, 0.0],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Gini vs Entropy — Both Peak at 50/50 Mix, Zero When Pure" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Impurity Score" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "% of Class 1 in Node" } }
+    }
+  }
+}
 ```
 
 ### Worked Example: Which Feature to Split On?
@@ -373,6 +437,29 @@ creates the "purest" child nodes.
   → Choose OUTLOOK as the first split! ✓
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Outlook", "Wind"],
+    "datasets": [{
+      "label": "Information Gain",
+      "data": [0.278, 0.048],
+      "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(239,68,68,0.5)"],
+      "borderColor": ["rgba(34,197,94,1)", "rgba(239,68,68,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Which Feature to Split First? Outlook Wins (5.8× More Info Gain)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Information Gain (bits)" }, "beginAtZero": true, "max": 0.35 },
+      "x": { "title": { "display": true, "text": "Candidate Feature" } }
+    }
+  }
+}
+```
+
 **Strengths / Weaknesses:**
 ```
   ✓ Completely interpretable (can visualize the tree)
@@ -386,7 +473,7 @@ creates the "purest" child nodes.
 
 ---
 
-## 4.6 Ensemble Methods ★
+## 4.6 Ensemble Methods ★★★
 
 ### Simple Explanation
 One tree is unreliable. Hundreds of trees, each trained differently, voting together
@@ -487,7 +574,7 @@ are much more robust. **Ensemble methods combine multiple weak models into one s
 └────────────────────┴──────────────────────┴──────────────────────┘
 ```
 
-### Gradient Boosting — The Modern Standard
+### Gradient Boosting — The Modern Standard ★★★
 
 ```
   Extends boosting: each new tree predicts the GRADIENT of the loss,
@@ -509,6 +596,38 @@ are much more robust. **Ensemble methods combine multiple weak models into one s
   │ LightGBM   │ Leaf-wise growth, fastest on large data        │
   │ CatBoost   │ Best native handling of categorical features   │
   └────────────┴────────────────────────────────────────────────┘
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Iter 1", "Iter 2", "Iter 3", "Iter 4", "Iter 5", "Iter 6"],
+    "datasets": [
+      {
+        "label": "Prediction (cumulative)",
+        "data": [50, 80, 95, 99, 99.8, 99.95],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Remaining Residual",
+        "data": [50, 20, 5, 1, 0.2, 0.05],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Each Tree Shrinks the Residual (Target = 100)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Value" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Boosting Iteration" } }
+    }
+  }
+}
 ```
 
 ### Stacking — Ensembling Different Model Types
@@ -570,6 +689,29 @@ use the most?" This tells you what's actually driving predictions.
   Use PERMUTATION IMPORTANCE or SHAP for more reliable estimates.
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Square Feet", "Location", "# Bedrooms", "Age", "# Bathrooms"],
+    "datasets": [{
+      "label": "Feature Importance",
+      "data": [0.42, 0.28, 0.16, 0.09, 0.05],
+      "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.65)","rgba(99,102,241,0.5)","rgba(99,102,241,0.35)","rgba(99,102,241,0.2)"],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "Random Forest Feature Importance — House Price Prediction" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Importance (sums to 1.0)" }, "beginAtZero": true, "max": 0.5 }
+    }
+  }
+}
+```
+
 ### Permutation Importance (More Reliable)
 
 ```
@@ -585,6 +727,29 @@ use the most?" This tells you what's actually driving predictions.
 
   Why more reliable: tests actual predictive contribution,
   not just how often the tree happened to use the feature.
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Original", "Shuffle Sq Feet", "Shuffle Location", "Shuffle Bedrooms", "Shuffle Age", "Shuffle Bathrooms"],
+    "datasets": [{
+      "label": "Accuracy After Shuffling (%)",
+      "data": [88, 61, 74, 82, 86, 87],
+      "backgroundColor": ["rgba(34,197,94,0.7)","rgba(239,68,68,0.8)","rgba(234,88,12,0.7)","rgba(99,102,241,0.6)","rgba(99,102,241,0.4)","rgba(99,102,241,0.3)"],
+      "borderColor": ["rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Permutation Importance — Bigger Drop = More Important Feature" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 95 },
+      "x": {}
+    }
+  }
+}
 ```
 
 ### SHAP Values — Per-Prediction Explanations
@@ -608,6 +773,29 @@ use the most?" This tells you what's actually driving predictions.
   Works with any model (not just trees).
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Base Value", "+ Sq Feet", "+ Location", "- Age", "+ Bedrooms", "+ Bathrooms"],
+    "datasets": [{
+      "label": "SHAP Contribution ($K)",
+      "data": [250, 40, 35, -15, 8, 2],
+      "backgroundColor": ["rgba(99,102,241,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(239,68,68,0.7)","rgba(34,197,94,0.6)","rgba(34,197,94,0.5)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(34,197,94,1)","rgba(34,197,94,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "SHAP — Why Did the Model Predict $320K for This House?" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Contribution ($K)" } },
+      "x": {}
+    }
+  }
+}
+```
+
 ---
 
 ## 4.8 Regression in Depth ★
@@ -624,6 +812,14 @@ use the most?" This tells you what's actually driving predictions.
 ```
 
 ### Types of Regression Problems
+
+Simple: $y = w_1 x_1 + w_0$
+
+Multiple: $y = \sum w_i x_i + w_0$
+
+Polynomial: $y = w_0 + w_1 x + w_2 x^2 + w_3 x^3$
+
+Multivariate: $Y = XW + B$
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -644,6 +840,9 @@ use the most?" This tells you what's actually driving predictions.
 ### Regression Algorithms Compared
 
 **Linear Regression (baseline)**
+
+$$\hat{y} = w_0 + w_1 x_1 + \dots + w_n x_n$$
+
 ```
   Price
     │                         ★ ← new house (prediction)
@@ -653,24 +852,58 @@ use the most?" This tells you what's actually driving predictions.
     │ * ╱
     └──────────────── SqFt
 
-  Formula:  ŷ = w₀ + w₁x₁ + ... + wₙxₙ
   Assumes:  LINEAR relationship between X and y
   Use when: data roughly follows a straight-line pattern
 ```
 
-**Regularized Linear Regression**
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [500, 800, 1000, 1200, 1500, 1800, 2000, 2200, 2500, 3000],
+    "datasets": [
+      {
+        "label": "Linear Fit (y = 150x + 30K)",
+        "data": [105, 150, 180, 210, 255, 300, 330, 360, 405, 480],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false, "tension": 0, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Actual Prices (scattered)",
+        "data": [95, 140, 190, 195, 270, 310, 320, 380, 420, 510],
+        "borderColor": "transparent",
+        "backgroundColor": "rgba(234, 88, 12, 0.8)",
+        "showLine": false, "pointRadius": 5
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Linear Regression — House Price ($K) vs Square Footage" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Price ($K)" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Square Feet" } }
+    }
+  }
+}
 ```
-  Ridge (L2):  minimize MSE + λΣwᵢ²
-               → Shrinks all weights, keeps all features
+
+**Regularized Linear Regression**
+
+$$\text{Ridge (L2):} \quad \text{MSE} + \lambda \sum w_i^2$$
+
+$$\text{Lasso (L1):} \quad \text{MSE} + \lambda \sum |w_i|$$
+
+$$\text{Elastic Net:} \quad \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2$$
+
+```
+  Ridge (L2):  → Shrinks all weights, keeps all features
                → Best when many features all contribute a little
 
-  Lasso (L1):  minimize MSE + λΣ|wᵢ|
-               → Drives some weights to exactly ZERO
+  Lasso (L1):  → Drives some weights to exactly ZERO
                → Built-in feature selection!
                → Best when only a few features truly matter
 
-  Elastic Net: minimize MSE + λ₁Σ|wᵢ| + λ₂Σwᵢ²
-               → Hybrid of Ridge + Lasso
+  Elastic Net: → Hybrid of Ridge + Lasso
                → Best when features are correlated
 
   As λ increases:  model gets simpler → less overfitting
@@ -745,6 +978,42 @@ use the most?" This tells you what's actually driving predictions.
 └─────────────────────┴──────────┴──────────┴────────────┴──────────────────────┘
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Linear Regr.", "Ridge/Lasso", "Polynomial", "Decision Tree", "Random Forest", "Grad. Boosting", "SVR", "Neural Net"],
+    "datasets": [
+      {
+        "label": "Speed (5=fastest)",
+        "data": [5, 5, 4, 4, 3, 3, 2, 1],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Accuracy (5=best)",
+        "data": [2, 3, 3, 2, 4, 5, 4, 4],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Interpretability (5=most)",
+        "data": [5, 5, 3, 5, 2, 2, 2, 1],
+        "backgroundColor": "rgba(234, 88, 12, 0.7)",
+        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Regression Algorithms — Speed vs Accuracy vs Interpretability" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Rating (1-5)" }, "beginAtZero": true, "max": 5 },
+      "x": {}
+    }
+  }
+}
+```
+
 ---
 
 ## 4.9 Class Imbalance ★
@@ -778,6 +1047,38 @@ use the most?" This tells you what's actually driving predictions.
   Moderate (80/20):        use class weights
   Severe (95/5):           use resampling techniques
   Extreme (99/1):          need specialized approaches
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Balanced (50/50)", "Mild (60/40)", "Moderate (80/20)", "Severe (95/5)", "Extreme (99/1)"],
+    "datasets": [
+      {
+        "label": "Majority Class %",
+        "data": [50, 60, 80, 95, 99],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Minority Class %",
+        "data": [50, 40, 20, 5, 1],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Class Imbalance Levels — How Skewed Is Your Data?" } },
+    "scales": {
+      "x": { "stacked": true },
+      "y": { "stacked": true, "title": { "display": true, "text": "% of Dataset" }, "max": 100 }
+    }
+  }
+}
 ```
 
 ### Solutions
@@ -850,6 +1151,38 @@ use the most?" This tells you what's actually driving predictions.
   2. Try Logistic / Linear Regression (fast, interpretable)
   3. Try Gradient Boosting (XGBoost/LightGBM) — beats most things
   4. Only then consider neural networks if tabular GBM underperforms
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Logistic Regr.", "KNN", "Decision Tree", "Random Forest", "Gradient Boost", "SVM (linear)", "SVM (RBF)", "Neural Network"],
+    "datasets": [
+      {
+        "label": "Training Speed (5=fastest)",
+        "data": [5, 5, 5, 4, 3, 4, 2, 1],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Typical Accuracy (5=best)",
+        "data": [3, 3, 3, 4, 5, 4, 4, 5],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Speed vs Accuracy Trade-off" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Rating (1-5 stars)" }, "beginAtZero": true, "max": 5 },
+      "x": {}
+    }
+  }
+}
 ```
 
 ---

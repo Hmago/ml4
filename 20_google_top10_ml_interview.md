@@ -77,60 +77,52 @@ The tradeoff: making the model more complex reduces bias but increases variance.
 
 ---
 
-## Deep Dive — The Mathematical Decomposition
+## Deep Dive — The Mathematical Decomposition ★★★
 
-For a target variable `y = f(x) + ε` where `ε ~ N(0, σ²)` is irreducible noise, and `f̂(x)` is our model's prediction:
+For a target variable $y = f(x) + \varepsilon$ where $\varepsilon \sim \mathcal{N}(0, \sigma^2)$ is irreducible noise, and $\hat{f}(x)$ is our model's prediction:
 
-```
-Expected Prediction Error = Bias²(f̂(x)) + Variance(f̂(x)) + σ²
-                            ───────────    ────────────────   ───
-                            Systematic     Sensitivity to     Noise we
-                            error from     training data      can never
-                            wrong          (instability)      remove
-                            assumptions
-```
+$$\text{Expected Prediction Error} = \underbrace{\text{Bias}^2(\hat{f}(x))}_{\substack{\text{Systematic error from} \\ \text{wrong assumptions}}} + \underbrace{\text{Variance}(\hat{f}(x))}_{\substack{\text{Sensitivity to} \\ \text{training data}}} + \underbrace{\sigma^2}_{\substack{\text{Noise we} \\ \text{can never remove}}}$$
 
 **Formally:**
 
-```
-E[(y - f̂(x))²] = [E[f̂(x)] - f(x)]² + E[(f̂(x) - E[f̂(x)])²] + σ²
-                   ─────────────────    ──────────────────────    ───
-                       Bias²                  Variance           Noise
-```
+$$E\!\left[(y - \hat{f}(x))^2\right] = \underbrace{\left[E[\hat{f}(x)] - f(x)\right]^2}_{\text{Bias}^2} + \underbrace{E\!\left[(\hat{f}(x) - E[\hat{f}(x)])^2\right]}_{\text{Variance}} + \underbrace{\sigma^2}_{\text{Noise}}$$
 
-### Step-by-Step Derivation
+### Step-by-Step Derivation ★★★
 
-```
-Step 1: Start with the expected squared error
-   E[(y - f̂(x))²]
+**Step 1:** Start with the expected squared error
 
-Step 2: Since y = f(x) + ε, substitute:
-   = E[(f(x) + ε - f̂(x))²]
+$$E\!\left[(y - \hat{f}(x))^2\right]$$
 
-Step 3: Add and subtract E[f̂(x)]:
-   = E[(f(x) - E[f̂(x)] + E[f̂(x)] - f̂(x) + ε)²]
+**Step 2:** Since $y = f(x) + \varepsilon$, substitute:
 
-Step 4: Let A = f(x) - E[f̂(x)] (bias term, a constant)
-         Let B = E[f̂(x)] - f̂(x) (variance term, random)
-         Let C = ε (noise, random and independent)
+$$= E\!\left[(f(x) + \varepsilon - \hat{f}(x))^2\right]$$
 
-Step 5: Expand (A + B + C)² = A² + B² + C² + 2AB + 2AC + 2BC
+**Step 3:** Add and subtract $E[\hat{f}(x)]$:
 
-Step 6: Take expectations:
-   E[A²] = A² = [f(x) - E[f̂(x)]]² = Bias²
-   E[B²] = E[(f̂(x) - E[f̂(x)])²]  = Variance
-   E[C²] = E[ε²] = σ²              = Irreducible noise
-   E[2AB] = 2A·E[B] = 0            (since E[B] = 0 by definition)
-   E[2AC] = 2A·E[C] = 0            (since E[ε] = 0)
-   E[2BC] = 2·E[B]·E[C] = 0       (independence + E[B]=0)
+$$= E\!\left[\bigl(f(x) - E[\hat{f}(x)] + E[\hat{f}(x)] - \hat{f}(x) + \varepsilon\bigr)^2\right]$$
 
-Step 7: Therefore:
-   E[(y - f̂(x))²] = Bias² + Variance + σ²
-```
+**Step 4:** Let $A = f(x) - E[\hat{f}(x)]$ (bias term, a constant), $B = E[\hat{f}(x)] - \hat{f}(x)$ (variance term, random), $C = \varepsilon$ (noise, random and independent)
+
+**Step 5:** Expand $(A + B + C)^2 = A^2 + B^2 + C^2 + 2AB + 2AC + 2BC$
+
+**Step 6:** Take expectations:
+
+$$\begin{aligned}
+E[A^2] &= A^2 = \left[f(x) - E[\hat{f}(x)]\right]^2 &&= \text{Bias}^2 \\
+E[B^2] &= E\!\left[(\hat{f}(x) - E[\hat{f}(x)])^2\right] &&= \text{Variance} \\
+E[C^2] &= E[\varepsilon^2] = \sigma^2 &&= \text{Irreducible noise} \\
+E[2AB] &= 2A \cdot E[B] = 0 &&\text{(since } E[B] = 0 \text{ by definition)} \\
+E[2AC] &= 2A \cdot E[C] = 0 &&\text{(since } E[\varepsilon] = 0\text{)} \\
+E[2BC] &= 2 \cdot E[B] \cdot E[C] = 0 &&\text{(independence + } E[B]=0\text{)}
+\end{aligned}$$
+
+**Step 7:** Therefore:
+
+$$E\!\left[(y - \hat{f}(x))^2\right] = \text{Bias}^2 + \text{Variance} + \sigma^2$$
 
 ---
 
-## Visual — The Tradeoff Curve
+## Visual — The Tradeoff Curve ★★★
 
 ```mermaid
 graph LR
@@ -161,7 +153,7 @@ graph TD
 
 ---
 
-## How to Diagnose: Learning Curves
+## How to Diagnose: Learning Curves ★★★
 
 ```mermaid
 graph TD
@@ -184,7 +176,7 @@ graph TD
 
 ---
 
-## How to Fix
+## How to Fix ★★★
 
 ```mermaid
 graph TD
@@ -216,7 +208,7 @@ graph TD
 
 ---
 
-## Worked Example
+## Worked Example ★★★
 
 ```
 Scenario: You're building a spam classifier at Google for Gmail.
@@ -312,21 +304,19 @@ Imagine you're blindfolded on a hilly landscape and you want to find the lowest 
 
 ---
 
-## Deep Dive — The Algorithm
+## Deep Dive — The Algorithm ★★★
 
-### Core Update Rule
+### Core Update Rule ★★★
 
-```
-θ_new = θ_old - α · ∇J(θ)
+$$\theta_{\text{new}} = \theta_{\text{old}} - \alpha \cdot \nabla J(\theta)$$
 
 Where:
-  θ     = model parameters (weights)
-  α     = learning rate (step size)
-  ∇J(θ) = gradient of the loss function with respect to parameters
-  J(θ)  = loss function (how wrong the model is)
-```
+- $\theta$ = model parameters (weights)
+- $\alpha$ = learning rate (step size)
+- $\nabla J(\theta)$ = gradient of the loss function with respect to parameters
+- $J(\theta)$ = loss function (how wrong the model is)
 
-### Step-by-Step Process
+### Step-by-Step Process ★★★
 
 ```mermaid
 graph TD
@@ -347,7 +337,7 @@ graph TD
 
 ---
 
-## Three Variants of Gradient Descent
+## Three Variants of Gradient Descent ★★★
 
 ```mermaid
 graph TD
@@ -371,52 +361,49 @@ graph TD
     style MBGD fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Mathematical Comparison
+### Mathematical Comparison ★★★
 
-```
-Batch GD:       θ = θ - α · (1/N) Σᵢ₌₁ᴺ ∇Lᵢ(θ)     ← all N samples
-Stochastic GD:  θ = θ - α · ∇Lᵢ(θ)                   ← 1 random sample
-Mini-Batch GD:  θ = θ - α · (1/B) Σᵢ₌₁ᴮ ∇Lᵢ(θ)     ← B samples (B=32..512)
-```
+$$\begin{aligned}
+\textbf{Batch GD:} \quad & \theta = \theta - \alpha \cdot \frac{1}{N} \sum_{i=1}^{N} \nabla L_i(\theta) && \leftarrow \text{all } N \text{ samples} \\[6pt]
+\textbf{Stochastic GD:} \quad & \theta = \theta - \alpha \cdot \nabla L_i(\theta) && \leftarrow \text{1 random sample} \\[6pt]
+\textbf{Mini-Batch GD:} \quad & \theta = \theta - \alpha \cdot \frac{1}{B} \sum_{i=1}^{B} \nabla L_i(\theta) && \leftarrow B \text{ samples } (B = 32..512)
+\end{aligned}$$
 
 ---
 
-## Advanced Optimizers
+## Advanced Optimizers ★★★
 
-### Momentum — "Ball rolling downhill with inertia"
+### Momentum — "Ball rolling downhill with inertia" ★★★
 
-```
-vₜ = β · vₜ₋₁ + ∇J(θ)      ← accumulate velocity (β ≈ 0.9)
-θ  = θ - α · vₜ              ← update with velocity
+$$\begin{aligned}
+v_t &= \beta \cdot v_{t-1} + \nabla J(\theta) && \leftarrow \text{accumulate velocity } (\beta \approx 0.9) \\
+\theta &= \theta - \alpha \cdot v_t && \leftarrow \text{update with velocity}
+\end{aligned}$$
 
 Key insight: Momentum helps in two ways:
 1. Accelerates in consistent gradient directions
 2. Dampens oscillations in inconsistent directions
-```
 
-### RMSProp — "Adaptive learning rate per parameter"
+### RMSProp — "Adaptive learning rate per parameter" ★★★
 
-```
-sₜ = β · sₜ₋₁ + (1-β) · (∇J(θ))²   ← running average of squared gradients
-θ  = θ - α · ∇J(θ) / (√sₜ + ε)       ← larger gradients → smaller steps
+$$\begin{aligned}
+s_t &= \beta \cdot s_{t-1} + (1-\beta) \cdot (\nabla J(\theta))^2 && \leftarrow \text{running average of squared gradients} \\
+\theta &= \theta - \alpha \cdot \frac{\nabla J(\theta)}{\sqrt{s_t} + \varepsilon} && \leftarrow \text{larger gradients} \to \text{smaller steps}
+\end{aligned}$$
 
-Key insight: Parameters with large gradients get smaller updates,
-             parameters with small gradients get larger updates.
-```
+Key insight: Parameters with large gradients get smaller updates, parameters with small gradients get larger updates.
 
-### Adam — "Momentum + RMSProp + Bias Correction"
+### Adam — "Momentum + RMSProp + Bias Correction" ★★★
 
-```
-mₜ = β₁ · mₜ₋₁ + (1-β₁) · ∇J(θ)         ← 1st moment (mean of gradients)
-vₜ = β₂ · vₜ₋₁ + (1-β₂) · (∇J(θ))²      ← 2nd moment (mean of squared grads)
+$$\begin{aligned}
+m_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot \nabla J(\theta) && \leftarrow \text{1st moment (mean of gradients)} \\
+v_t &= \beta_2 \cdot v_{t-1} + (1-\beta_2) \cdot (\nabla J(\theta))^2 && \leftarrow \text{2nd moment (mean of squared grads)} \\[8pt]
+\hat{m}_t &= \frac{m_t}{1 - \beta_1^t} && \leftarrow \text{bias-corrected 1st moment} \\
+\hat{v}_t &= \frac{v_t}{1 - \beta_2^t} && \leftarrow \text{bias-corrected 2nd moment} \\[8pt]
+\theta &= \theta - \alpha \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon} && \leftarrow \text{final update}
+\end{aligned}$$
 
-m̂ₜ = mₜ / (1 - β₁ᵗ)                       ← bias-corrected 1st moment
-v̂ₜ = vₜ / (1 - β₂ᵗ)                       ← bias-corrected 2nd moment
-
-θ  = θ - α · m̂ₜ / (√v̂ₜ + ε)              ← final update
-
-Default hyperparameters: β₁=0.9, β₂=0.999, ε=1e-8
-```
+Default hyperparameters: $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\varepsilon = 10^{-8}$
 
 ```mermaid
 graph TD
@@ -434,23 +421,19 @@ graph TD
 
 ---
 
-## Why Bias Correction Matters in Adam
+## Why Bias Correction Matters in Adam ★★★
 
-```
-Problem: m₀ = 0, v₀ = 0 (initialized to zero)
+Problem: $m_0 = 0$, $v_0 = 0$ (initialized to zero)
 
-At t=1: m₁ = 0.9 × 0 + 0.1 × g₁ = 0.1 × g₁   ← biased toward 0!
-        The true average should be closer to g₁, not 0.1 × g₁
+At $t=1$: $m_1 = 0.9 \times 0 + 0.1 \times g_1 = 0.1 \times g_1$ — biased toward 0! The true average should be closer to $g_1$, not $0.1 \times g_1$.
 
-Correction: m̂₁ = m₁ / (1 - 0.9¹) = m₁ / 0.1 = g₁  ← correct!
+Correction: $\hat{m}_1 = m_1 \,/\, (1 - 0.9^1) = m_1 \,/\, 0.1 = g_1$ — correct!
 
-At t=100: (1 - 0.9¹⁰⁰) ≈ 1, so correction vanishes.
-          Bias correction only matters in early steps.
-```
+At $t=100$: $(1 - 0.9^{100}) \approx 1$, so correction vanishes. Bias correction only matters in early steps.
 
 ---
 
-## Learning Rate — The Most Important Hyperparameter
+## Learning Rate — The Most Important Hyperparameter ★★★
 
 ```mermaid
 graph LR
@@ -464,7 +447,7 @@ graph LR
     style TOO_LARGE fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### Learning Rate Schedules
+### Learning Rate Schedules ★★★
 
 ```mermaid
 graph TD
@@ -485,49 +468,38 @@ graph TD
 
 ---
 
-## Worked Example — Linear Regression with Gradient Descent
+## Worked Example — Linear Regression with Gradient Descent ★★★
 
-```
-Given: 3 data points → (1, 2), (2, 4), (3, 5)
-Model: ŷ = w·x + b
-Loss:  J = (1/3) Σ(yᵢ - ŷᵢ)²
-Learning rate: α = 0.1
+Given: 3 data points $\to (1, 2),\ (2, 4),\ (3, 5)$
 
-── Initialize: w = 0, b = 0 ──
+$$\text{Model: } \hat{y} = w \cdot x + b \qquad \text{Loss: } J = \frac{1}{3} \sum (y_i - \hat{y}_i)^2 \qquad \alpha = 0.1$$
 
-ITERATION 1:
-  Forward pass:
-    ŷ₁ = 0×1 + 0 = 0,  ŷ₂ = 0×2 + 0 = 0,  ŷ₃ = 0×3 + 0 = 0
-  
-  Loss:
-    J = (1/3)[(2-0)² + (4-0)² + (5-0)²] = (1/3)[4 + 16 + 25] = 15.0
+**Initialize:** $w = 0,\ b = 0$
 
-  Gradients:
-    ∂J/∂w = (1/3) × 2 × [(-2)(1) + (-4)(2) + (-5)(3)]
-           = (1/3) × 2 × [-2 - 8 - 15] = (2/3)(-25) = -16.67
-    ∂J/∂b = (1/3) × 2 × [(-2) + (-4) + (-5)]
-           = (2/3)(-11) = -7.33
+**ITERATION 1:**
 
-  Update:
-    w = 0 - 0.1 × (-16.67) = 1.667
-    b = 0 - 0.1 × (-7.33)  = 0.733
+Forward pass: $\hat{y}_1 = 0,\quad \hat{y}_2 = 0,\quad \hat{y}_3 = 0$
 
-ITERATION 2:
-  Forward pass:
-    ŷ₁ = 1.667×1 + 0.733 = 2.4
-    ŷ₂ = 1.667×2 + 0.733 = 4.067
-    ŷ₃ = 1.667×3 + 0.733 = 5.734
-  
-  Loss:
-    J = (1/3)[(2-2.4)² + (4-4.067)² + (5-5.734)²]
-      = (1/3)[0.16 + 0.0045 + 0.539] = 0.234  ← much lower!
+$$J = \tfrac{1}{3}\!\left[(2-0)^2 + (4-0)^2 + (5-0)^2\right] = \tfrac{1}{3}[4 + 16 + 25] = 15.0$$
 
-  ... continue until convergence ...
-```
+$$\begin{aligned}
+\frac{\partial J}{\partial w} &= \tfrac{1}{3} \times 2 \times [(-2)(1) + (-4)(2) + (-5)(3)] = \tfrac{2}{3}(-25) = -16.67 \\[4pt]
+\frac{\partial J}{\partial b} &= \tfrac{1}{3} \times 2 \times [(-2) + (-4) + (-5)] = \tfrac{2}{3}(-11) = -7.33
+\end{aligned}$$
+
+$$w = 0 - 0.1 \times (-16.67) = 1.667 \qquad b = 0 - 0.1 \times (-7.33) = 0.733$$
+
+**ITERATION 2:**
+
+Forward pass: $\hat{y}_1 = 2.4,\quad \hat{y}_2 = 4.067,\quad \hat{y}_3 = 5.734$
+
+$$J = \tfrac{1}{3}\!\left[(2-2.4)^2 + (4-4.067)^2 + (5-5.734)^2\right] = \tfrac{1}{3}[0.16 + 0.0045 + 0.539] = 0.234 \quad \leftarrow \text{much lower!}$$
+
+... continue until convergence ...
 
 ---
 
-## Local Minima vs Saddle Points
+## Local Minima vs Saddle Points ★★★
 
 ```mermaid
 graph TD
@@ -548,7 +520,7 @@ graph TD
 
 ---
 
-## When to Use Which Optimizer
+## When to Use Which Optimizer ★★★
 
 | Optimizer | Best For | Avoid When |
 |-----------|----------|-----------|
@@ -626,27 +598,18 @@ In ML, regularization **penalizes model complexity** so the model focuses on tru
 
 ---
 
-## Deep Dive — L1 vs L2 Regularization
+## Deep Dive — L1 vs L2 Regularization ★★★
 
-### The Modified Loss Function
+### The Modified Loss Function ★★★
 
-```
-Without regularization:  J(θ) = Loss(data, θ)
+$$\begin{aligned}
+\textbf{Without regularization:} \quad & J(\theta) = \text{Loss}(\text{data}, \theta) \\[8pt]
+\textbf{With L2 (Ridge):} \quad & J(\theta) = \text{Loss}(\text{data}, \theta) + \underbrace{\lambda \sum w_i^2}_{\text{Penalizes large weights}} \\[8pt]
+\textbf{With L1 (Lasso):} \quad & J(\theta) = \text{Loss}(\text{data}, \theta) + \underbrace{\lambda \sum |w_i|}_{\text{Penalizes non-zero weights}} \\[8pt]
+\textbf{With Elastic Net:} \quad & J(\theta) = \text{Loss}(\text{data}, \theta) + \underbrace{\lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2}_{\text{Best of both worlds}}
+\end{aligned}$$
 
-With L2 (Ridge):         J(θ) = Loss(data, θ) + λ Σ wᵢ²
-                                                  ─────────
-                                                  Penalizes large weights
-
-With L1 (Lasso):         J(θ) = Loss(data, θ) + λ Σ |wᵢ|
-                                                  ─────────
-                                                  Penalizes non-zero weights
-
-With Elastic Net:        J(θ) = Loss(data, θ) + λ₁ Σ |wᵢ| + λ₂ Σ wᵢ²
-                                                  ────────────────────────
-                                                  Best of both worlds
-```
-
-### Why L1 Produces Sparsity — The Geometric Intuition
+### Why L1 Produces Sparsity — The Geometric Intuition ★★★
 
 This is a **very common Google follow-up**. Here's why:
 
@@ -664,22 +627,19 @@ graph TD
     style L2 fill:#fff3e0,stroke:#e65100,color:#000
 ```
 
-### Mathematical Explanation of Sparsity
+### Mathematical Explanation of Sparsity ★★★
 
-```
-The gradient update with L1:
-  w = w - α · (∂Loss/∂w + λ · sign(w))
+**The gradient update with L1:**
 
-  If w > 0: subgradient pushes w toward 0 by -λ
-  If w < 0: subgradient pushes w toward 0 by +λ
-  → Constant push toward exactly zero regardless of magnitude
+$$w = w - \alpha \cdot \left(\frac{\partial \text{Loss}}{\partial w} + \lambda \cdot \text{sign}(w)\right)$$
 
-The gradient update with L2:
-  w = w - α · (∂Loss/∂w + 2λw)
+If $w > 0$: subgradient pushes $w$ toward 0 by $-\lambda$. If $w < 0$: subgradient pushes $w$ toward 0 by $+\lambda$. Constant push toward exactly zero regardless of magnitude.
 
-  Push is proportional to w: as w gets small, the push gets small
-  → Weights shrink exponentially toward zero but never reach it
-```
+**The gradient update with L2:**
+
+$$w = w - \alpha \cdot \left(\frac{\partial \text{Loss}}{\partial w} + 2\lambda w\right)$$
+
+Push is proportional to $w$: as $w$ gets small, the push gets small. Weights shrink exponentially toward zero but never reach it.
 
 ```mermaid
 graph LR
@@ -698,9 +658,9 @@ graph LR
 
 ---
 
-## Dropout — Regularization for Neural Networks
+## Dropout — Regularization for Neural Networks ★★★
 
-### How It Works
+### How It Works ★★★
 
 ```mermaid
 graph TD
@@ -724,7 +684,7 @@ graph TD
     style O fill:#e3f2fd,stroke:#1565c0,color:#000
 ```
 
-### Step-by-Step Mechanism
+### Step-by-Step Mechanism ★★★
 
 ```
 During TRAINING (for each mini-batch):
@@ -743,7 +703,7 @@ Example with p=0.5:
   Inference: neuron outputs [3, 4, 7, 2, 5] → no change → [3, 4, 7, 2, 5]
 ```
 
-### Why Dropout Works — Three Perspectives
+### Why Dropout Works — Three Perspectives ★★★
 
 ```mermaid
 graph TD
@@ -766,9 +726,9 @@ graph TD
 
 ---
 
-## Batch Normalization
+## Batch Normalization ★★★
 
-### The Problem It Solves
+### The Problem It Solves ★★★
 
 ```
 During training, each layer receives inputs from the previous layer.
@@ -779,28 +739,27 @@ readapt to changing input distributions.
 BatchNorm stabilizes these distributions → faster, more stable training.
 ```
 
-### Step-by-Step Computation
+### Step-by-Step Computation ★★★
 
-```
-For a mini-batch B = {x₁, x₂, ..., xₘ}:
+For a mini-batch $B = \{x_1, x_2, \ldots, x_m\}$:
 
-Step 1: Compute batch mean
-   μ_B = (1/m) Σ xᵢ
+**Step 1:** Compute batch mean
 
-Step 2: Compute batch variance
-   σ²_B = (1/m) Σ (xᵢ - μ_B)²
+$$\mu_B = \frac{1}{m} \sum x_i$$
 
-Step 3: Normalize
-   x̂ᵢ = (xᵢ - μ_B) / √(σ²_B + ε)    ← ε for numerical stability
+**Step 2:** Compute batch variance
 
-Step 4: Scale and shift (learnable parameters!)
-   yᵢ = γ · x̂ᵢ + β
+$$\sigma_B^2 = \frac{1}{m} \sum (x_i - \mu_B)^2$$
 
-   γ (scale) and β (shift) are LEARNED during training.
-   They allow the network to undo the normalization if needed.
-   Without them, we'd be forcing a N(0,1) distribution, which
-   might not be optimal.
-```
+**Step 3:** Normalize
+
+$$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}} \qquad \leftarrow \varepsilon \text{ for numerical stability}$$
+
+**Step 4:** Scale and shift (learnable parameters!)
+
+$$y_i = \gamma \cdot \hat{x}_i + \beta$$
+
+$\gamma$ (scale) and $\beta$ (shift) are LEARNED during training. They allow the network to undo the normalization if needed. Without them, we'd be forcing a $\mathcal{N}(0,1)$ distribution, which might not be optimal.
 
 ```mermaid
 graph LR
@@ -816,22 +775,22 @@ graph LR
     style E fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### BatchNorm During Inference
+### BatchNorm During Inference ★★★
 
-```
-Problem: At inference, we may have a single sample — no "batch" to compute μ, σ².
+Problem: At inference, we may have a single sample — no "batch" to compute $\mu, \sigma^2$.
 
-Solution: During training, keep a running average of μ and σ²:
-   μ_running = momentum × μ_running + (1-momentum) × μ_batch
-   σ²_running = momentum × σ²_running + (1-momentum) × σ²_batch
+Solution: During training, keep a running average of $\mu$ and $\sigma^2$:
 
-At inference: use μ_running and σ²_running instead of batch statistics.
-Default momentum = 0.1 in PyTorch.
-```
+$$\begin{aligned}
+\mu_{\text{running}} &= \text{momentum} \times \mu_{\text{running}} + (1 - \text{momentum}) \times \mu_{\text{batch}} \\
+\sigma^2_{\text{running}} &= \text{momentum} \times \sigma^2_{\text{running}} + (1 - \text{momentum}) \times \sigma^2_{\text{batch}}
+\end{aligned}$$
+
+At inference: use $\mu_{\text{running}}$ and $\sigma^2_{\text{running}}$ instead of batch statistics. Default momentum = 0.1 in PyTorch.
 
 ---
 
-## Early Stopping
+## Early Stopping ★★★
 
 ```mermaid
 graph TD
@@ -848,7 +807,7 @@ graph TD
     style C fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### Why It's Regularization
+### Why It's Regularization ★★★
 
 ```
 Early stopping limits training time → limits how many gradient steps
@@ -864,7 +823,7 @@ The number of training steps is an implicit regularization parameter.
 
 ---
 
-## All Regularization Techniques — Decision Guide
+## All Regularization Techniques — Decision Guide ★★★
 
 ```mermaid
 graph TD
@@ -945,9 +904,9 @@ A **Random Forest** is like asking 100 different people to play 20 Questions, ea
 
 ---
 
-## Decision Tree — Splitting Criteria
+## Decision Tree — Splitting Criteria ★★★
 
-### How a Tree Decides Where to Split
+### How a Tree Decides Where to Split ★★★
 
 ```mermaid
 graph TD
@@ -964,85 +923,65 @@ graph TD
     style NO2 fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### Gini Impurity
+### Gini Impurity ★★★
 
-```
-Gini(node) = 1 - Σ pᵢ²
+$$\text{Gini}(\text{node}) = 1 - \sum p_i^2$$
 
-Where pᵢ = fraction of class i in the node.
+Where $p_i$ = fraction of class $i$ in the node.
 
-Example:
-  Node with 60 spam, 40 not-spam (100 total):
-  p_spam = 0.6, p_not = 0.4
-  Gini = 1 - (0.6² + 0.4²) = 1 - (0.36 + 0.16) = 0.48
+**Example:** Node with 60 spam, 40 not-spam (100 total): $p_{\text{spam}} = 0.6$, $p_{\text{not}} = 0.4$
 
-  Pure node (all spam):
-  Gini = 1 - (1.0²) = 0  ← perfect!
+$$\text{Gini} = 1 - (0.6^2 + 0.4^2) = 1 - (0.36 + 0.16) = 0.48$$
 
-  Perfectly mixed:
-  Gini = 1 - (0.5² + 0.5²) = 0.5  ← worst!
+Pure node (all spam): $\text{Gini} = 1 - (1.0^2) = 0$ — perfect!
+
+Perfectly mixed: $\text{Gini} = 1 - (0.5^2 + 0.5^2) = 0.5$ — worst!
 
 Range: 0 (pure) to 0.5 (for binary, maximally mixed)
-```
 
-### Entropy & Information Gain
+### Entropy & Information Gain ★★★
 
-```
-Entropy(node) = -Σ pᵢ · log₂(pᵢ)
+$$\text{Entropy}(\text{node}) = -\sum p_i \cdot \log_2(p_i)$$
 
-Example:
-  Node with 60 spam, 40 not-spam:
-  H = -(0.6 × log₂(0.6) + 0.4 × log₂(0.4))
-    = -(0.6 × (-0.737) + 0.4 × (-1.322))
-    = -(-0.442 - 0.529) = 0.971 bits
+**Example:** Node with 60 spam, 40 not-spam:
 
-  Pure node: H = 0 bits
-  Perfectly mixed: H = 1.0 bit
+$$H = -(0.6 \times \log_2(0.6) + 0.4 \times \log_2(0.4)) = -(0.6 \times (-0.737) + 0.4 \times (-1.322)) = 0.971 \text{ bits}$$
 
-Information Gain = H(parent) - Σ (nⱼ/N) × H(childⱼ)
-                 = entropy before split - weighted entropy after split
+Pure node: $H = 0$ bits. Perfectly mixed: $H = 1.0$ bit.
 
-The tree picks the split with HIGHEST information gain
-(= biggest reduction in entropy/uncertainty).
-```
+$$\text{Information Gain} = H(\text{parent}) - \sum \frac{n_j}{N} \times H(\text{child}_j) = \text{entropy before split} - \text{weighted entropy after split}$$
 
-### Worked Example — Choosing the Best Split
+The tree picks the split with HIGHEST information gain (= biggest reduction in entropy/uncertainty).
 
-```
-Dataset: 100 emails (60 spam, 40 not-spam)
-Two candidate features to split on:
+### Worked Example — Choosing the Best Split ★★★
 
-OPTION A: Split on "Contains FREE"
-  Left child (yes):  50 emails → 48 spam, 2 not-spam
-  Right child (no):  50 emails → 12 spam, 38 not-spam
+Dataset: 100 emails (60 spam, 40 not-spam). Two candidate features to split on:
 
-  H(left)  = -(48/50 × log₂(48/50) + 2/50 × log₂(2/50))
-           = -(0.96 × (-0.059) + 0.04 × (-4.644))
-           = 0.242 bits
+**OPTION A:** Split on "Contains FREE"
+- Left child (yes): 50 emails → 48 spam, 2 not-spam
+- Right child (no): 50 emails → 12 spam, 38 not-spam
 
-  H(right) = -(12/50 × log₂(12/50) + 38/50 × log₂(38/50))
-           = -(0.24 × (-2.059) + 0.76 × (-0.396))
-           = 0.795 bits
+$$H(\text{left}) = -\!\left(\tfrac{48}{50} \log_2 \tfrac{48}{50} + \tfrac{2}{50} \log_2 \tfrac{2}{50}\right) = -(0.96 \times (-0.059) + 0.04 \times (-4.644)) = 0.242 \text{ bits}$$
 
-  IG(A) = 0.971 - (50/100 × 0.242 + 50/100 × 0.795)
-        = 0.971 - 0.519 = 0.452 bits
+$$H(\text{right}) = -\!\left(\tfrac{12}{50} \log_2 \tfrac{12}{50} + \tfrac{38}{50} \log_2 \tfrac{38}{50}\right) = -(0.24 \times (-2.059) + 0.76 \times (-0.396)) = 0.795 \text{ bits}$$
 
-OPTION B: Split on "Email length > 100 words"
-  Left child (yes):  40 emails → 25 spam, 15 not-spam
-  Right child (no):  60 emails → 35 spam, 25 not-spam
+$$\text{IG}(A) = 0.971 - \left(\tfrac{50}{100} \times 0.242 + \tfrac{50}{100} \times 0.795\right) = 0.971 - 0.519 = 0.452 \text{ bits}$$
 
-  H(left)  = -(25/40 × log₂(25/40) + 15/40 × log₂(15/40)) = 0.954 bits
-  H(right) = -(35/60 × log₂(35/60) + 25/60 × log₂(25/60)) = 0.975 bits
+**OPTION B:** Split on "Email length > 100 words"
+- Left child (yes): 40 emails → 25 spam, 15 not-spam
+- Right child (no): 60 emails → 35 spam, 25 not-spam
 
-  IG(B) = 0.971 - (40/100 × 0.954 + 60/100 × 0.975)
-        = 0.971 - 0.967 = 0.004 bits
+$$H(\text{left}) = -\!\left(\tfrac{25}{40} \log_2 \tfrac{25}{40} + \tfrac{15}{40} \log_2 \tfrac{15}{40}\right) = 0.954 \text{ bits}$$
 
-WINNER: Split A (Contains "FREE") with IG = 0.452 >> 0.004
-```
+$$H(\text{right}) = -\!\left(\tfrac{35}{60} \log_2 \tfrac{35}{60} + \tfrac{25}{60} \log_2 \tfrac{25}{60}\right) = 0.975 \text{ bits}$$
+
+$$\text{IG}(B) = 0.971 - \left(\tfrac{40}{100} \times 0.954 + \tfrac{60}{100} \times 0.975\right) = 0.971 - 0.967 = 0.004 \text{ bits}$$
+
+**WINNER:** Split A (Contains "FREE") with $\text{IG} = 0.452 \gg 0.004$
 
 ---
 
-## Random Forest
+## Random Forest ★★★
 
 ```mermaid
 graph TD
@@ -1068,7 +1007,7 @@ graph TD
     style FINAL fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Why Random Forest Works — Two Levels of Randomness
+### Why Random Forest Works — Two Levels of Randomness ★★★
 
 ```mermaid
 graph TD
@@ -1092,7 +1031,7 @@ graph TD
     style RES fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Out-of-Bag (OOB) Error
+### Out-of-Bag (OOB) Error ★★★
 
 ```
 Since each tree only sees ~63.2% of the data (bootstrap), the remaining
@@ -1107,7 +1046,7 @@ This is why Random Forests don't need a separate validation set.
 
 ---
 
-## Gradient Boosting — Step by Step
+## Gradient Boosting — Step by Step ★★★
 
 ```mermaid
 graph TD
@@ -1139,7 +1078,7 @@ graph TD
     style FM fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Worked Numerical Example
+### Worked Numerical Example ★★★
 
 ```
 Data: Predict house price
@@ -1168,7 +1107,7 @@ STEP 2: Compute new residuals:
 
 ---
 
-## Bagging vs Boosting — Comprehensive Comparison
+## Bagging vs Boosting — Comprehensive Comparison ★★★
 
 ```mermaid
 graph TD
@@ -1208,7 +1147,7 @@ graph TD
 
 ---
 
-## What Makes XGBoost Special
+## What Makes XGBoost Special ★★★
 
 ```mermaid
 graph TD
@@ -1231,22 +1170,18 @@ graph TD
     style SHRINK fill:#fce4ec,stroke:#c62828,color:#000
 ```
 
-### XGBoost Objective Function
+### XGBoost Objective Function ★★★
 
-```
-Obj = Σ L(yᵢ, ŷᵢ) + Σ Ω(fₖ)
-      ──────────────   ────────
-      Training loss    Regularization on trees
+$$\text{Obj} = \underbrace{\sum L(y_i, \hat{y}_i)}_{\text{Training loss}} + \underbrace{\sum \Omega(f_k)}_{\text{Regularization on trees}}$$
 
-Where Ω(f) = γT + ½λΣwⱼ²
-  T = number of terminal nodes (leaves)
-  wⱼ = score of leaf j
-  γ = minimum loss reduction to make a split (complexity cost per leaf)
-  λ = L2 regularization on leaf weights
+$$\text{where } \Omega(f) = \gamma T + \tfrac{1}{2}\lambda \sum w_j^2$$
 
-This is why XGBoost is called "regularized boosting."
-Standard Gradient Boosting has no Ω term.
-```
+- $T$ = number of terminal nodes (leaves)
+- $w_j$ = score of leaf $j$
+- $\gamma$ = minimum loss reduction to make a split (complexity cost per leaf)
+- $\lambda$ = L2 regularization on leaf weights
+
+This is why XGBoost is called "regularized boosting." Standard Gradient Boosting has no $\Omega$ term.
 
 ---
 
@@ -1294,9 +1229,9 @@ A neural network is like a factory assembly line:
 
 ---
 
-## Deep Dive — Forward Pass
+## Deep Dive — Forward Pass ★★★
 
-### Architecture of a Neural Network
+### Architecture of a Neural Network ★★★
 
 ```mermaid
 graph LR
@@ -1327,41 +1262,35 @@ graph LR
     style O fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Forward Pass — Step by Step
+### Forward Pass — Step by Step ★★★
 
-```
-Given:
-  Input:   x = [1, 2]
-  Weights (hidden layer):  W = [[0.5, 0.3],    b = [0.1, 0.2]
-                                [0.2, 0.7]]
-  Weights (output layer):  v = [0.4, 0.6]       c = 0.1
-  Activation: sigmoid σ(z) = 1/(1+e⁻ᶻ)
+Given: Input $\vec{x} = [1, 2]$, Weights (hidden): $W = \begin{pmatrix} 0.5 & 0.3 \\ 0.2 & 0.7 \end{pmatrix}$, $\vec{b} = [0.1, 0.2]$, Weights (output): $\vec{v} = [0.4, 0.6]$, $c = 0.1$, Activation: $\sigma(z) = 1/(1+e^{-z})$
 
-Step 1: Hidden layer pre-activation
-  z₁ = 0.5×1 + 0.3×2 + 0.1 = 1.2
-  z₂ = 0.2×1 + 0.7×2 + 0.2 = 1.8
+**Step 1:** Hidden layer pre-activation
 
-Step 2: Hidden layer activation
-  h₁ = σ(1.2) = 1/(1+e⁻¹·²) = 0.769
-  h₂ = σ(1.8) = 1/(1+e⁻¹·⁸) = 0.858
+$$z_1 = 0.5 \times 1 + 0.3 \times 2 + 0.1 = 1.2 \qquad z_2 = 0.2 \times 1 + 0.7 \times 2 + 0.2 = 1.8$$
 
-Step 3: Output pre-activation
-  z_out = 0.4×0.769 + 0.6×0.858 + 0.1 = 0.923
+**Step 2:** Hidden layer activation
 
-Step 4: Output activation (for binary classification)
-  ŷ = σ(0.923) = 0.716
+$$h_1 = \sigma(1.2) = \frac{1}{1+e^{-1.2}} = 0.769 \qquad h_2 = \sigma(1.8) = \frac{1}{1+e^{-1.8}} = 0.858$$
 
-Step 5: Compute loss (binary cross-entropy, if true label y=1)
-  L = -[y·log(ŷ) + (1-y)·log(1-ŷ)]
-    = -[1×log(0.716) + 0×log(0.284)]
-    = -(-0.334) = 0.334
-```
+**Step 3:** Output pre-activation
+
+$$z_{\text{out}} = 0.4 \times 0.769 + 0.6 \times 0.858 + 0.1 = 0.923$$
+
+**Step 4:** Output activation (for binary classification)
+
+$$\hat{y} = \sigma(0.923) = 0.716$$
+
+**Step 5:** Compute loss (binary cross-entropy, if true label $y=1$)
+
+$$L = -[y \cdot \log(\hat{y}) + (1-y) \cdot \log(1-\hat{y})] = -[1 \times \log(0.716) + 0 \times \log(0.284)] = 0.334$$
 
 ---
 
-## Deep Dive — Backpropagation
+## Deep Dive — Backpropagation ★★★
 
-### The Chain Rule — Core Idea
+### The Chain Rule — Core Idea ★★★
 
 ```mermaid
 graph LR
@@ -1376,20 +1305,17 @@ graph LR
     style L fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-```
-Chain Rule:
-  ∂L/∂x = (∂L/∂z) × (∂z/∂x)
+**Chain Rule:**
 
-In words: "How much does x affect L?"
-  = "How much does z affect L?" × "How much does x affect z?"
+$$\frac{\partial L}{\partial x} = \frac{\partial L}{\partial z} \times \frac{\partial z}{\partial x}$$
+
+In words: "How much does $x$ affect $L$?" = "How much does $z$ affect $L$?" $\times$ "How much does $x$ affect $z$?"
 
 For a deep network with many layers:
-  ∂L/∂w₁ = (∂L/∂ŷ) × (∂ŷ/∂h₃) × (∂h₃/∂h₂) × (∂h₂/∂h₁) × (∂h₁/∂w₁)
-             ──────   ────────   ────────   ────────   ────────
-             output   layer 4    layer 3    layer 2    layer 1
-```
 
-### Backpropagation — Worked Example
+$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \hat{y}}}_{\text{output}} \times \underbrace{\frac{\partial \hat{y}}{\partial h_3}}_{\text{layer 4}} \times \underbrace{\frac{\partial h_3}{\partial h_2}}_{\text{layer 3}} \times \underbrace{\frac{\partial h_2}{\partial h_1}}_{\text{layer 2}} \times \underbrace{\frac{\partial h_1}{\partial w_1}}_{\text{layer 1}}$$
+
+### Backpropagation — Worked Example ★★★
 
 ```mermaid
 graph LR
@@ -1410,41 +1336,37 @@ graph LR
     style DW fill:#d4edda,stroke:#155724,color:#000
 ```
 
-```
-Detailed Step-by-Step:
+**FORWARD:**
 
-FORWARD:
-  z₁ = w × x = 0.5 × 2 = 1.0
-  z₂ = σ(z₁) = 1/(1+e⁻¹) = 0.731
-  L  = (y - z₂)² = (1 - 0.731)² = 0.072
+$$z_1 = w \times x = 0.5 \times 2 = 1.0 \qquad z_2 = \sigma(z_1) = \frac{1}{1+e^{-1}} = 0.731 \qquad L = (y - z_2)^2 = (1 - 0.731)^2 = 0.072$$
 
-BACKWARD (applying chain rule right-to-left):
+**BACKWARD** (applying chain rule right-to-left):
 
-  Step 1: ∂L/∂z₂ (how does the output affect the loss?)
-    L = (y - z₂)²
-    ∂L/∂z₂ = 2(z₂ - y) = 2(0.731 - 1) = -0.538
+**Step 1:** $\partial L / \partial z_2$ (how does the output affect the loss?)
 
-  Step 2: ∂L/∂z₁ (how does the pre-activation affect the loss?)
-    z₂ = σ(z₁), so ∂z₂/∂z₁ = σ(z₁)(1-σ(z₁)) = 0.731 × 0.269 = 0.197
-    ∂L/∂z₁ = ∂L/∂z₂ × ∂z₂/∂z₁ = -0.538 × 0.197 = -0.106
+$$L = (y - z_2)^2 \quad \Rightarrow \quad \frac{\partial L}{\partial z_2} = 2(z_2 - y) = 2(0.731 - 1) = -0.538$$
 
-  Step 3: ∂L/∂w (how does the weight affect the loss?)
-    z₁ = w × x, so ∂z₁/∂w = x = 2
-    ∂L/∂w = ∂L/∂z₁ × ∂z₁/∂w = -0.106 × 2 = -0.212
+**Step 2:** $\partial L / \partial z_1$ (how does the pre-activation affect the loss?)
 
-  WEIGHT UPDATE (learning rate α = 0.1):
-    w_new = w - α × ∂L/∂w = 0.5 - 0.1 × (-0.212) = 0.5212
+$$z_2 = \sigma(z_1),\text{ so } \frac{\partial z_2}{\partial z_1} = \sigma(z_1)(1-\sigma(z_1)) = 0.731 \times 0.269 = 0.197$$
 
-  The weight increased! This makes sense because the prediction (0.731)
-  was less than the target (1.0), so the weight should increase to
-  make the output larger.
-```
+$$\frac{\partial L}{\partial z_1} = \frac{\partial L}{\partial z_2} \times \frac{\partial z_2}{\partial z_1} = -0.538 \times 0.197 = -0.106$$
+
+**Step 3:** $\partial L / \partial w$ (how does the weight affect the loss?)
+
+$$z_1 = w \times x,\text{ so } \frac{\partial z_1}{\partial w} = x = 2 \qquad \frac{\partial L}{\partial w} = \frac{\partial L}{\partial z_1} \times \frac{\partial z_1}{\partial w} = -0.106 \times 2 = -0.212$$
+
+**WEIGHT UPDATE** (learning rate $\alpha = 0.1$):
+
+$$w_{\text{new}} = w - \alpha \times \frac{\partial L}{\partial w} = 0.5 - 0.1 \times (-0.212) = 0.5212$$
+
+The weight increased! This makes sense because the prediction (0.731) was less than the target (1.0), so the weight should increase to make the output larger.
 
 ---
 
-## Vanishing & Exploding Gradients
+## Vanishing & Exploding Gradients ★★★
 
-### The Problem
+### The Problem ★★★
 
 ```mermaid
 graph TD
@@ -1468,7 +1390,7 @@ graph TD
     style EX fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### Solutions
+### Solutions ★★★
 
 ```mermaid
 graph TD
@@ -1490,7 +1412,7 @@ graph TD
 
 ---
 
-## Activation Functions — Deep Comparison
+## Activation Functions — Deep Comparison ★★★
 
 ```mermaid
 graph TD
@@ -1516,21 +1438,21 @@ graph TD
     style GELU_F fill:#f3e5f5,stroke:#6a1b9a,color:#000
 ```
 
-### Why ReLU Dominates
+### Why ReLU Dominates ★★★
 
-```
-Sigmoid gradient: σ'(z) = σ(z)(1-σ(z))
-  At z=0:  σ'(0) = 0.25   ← maximum!
-  At z=5:  σ'(5) = 0.0067 ← nearly zero (vanishing!)
-  At z=-5: σ'(-5) = 0.0067
+**Sigmoid gradient:** $\sigma'(z) = \sigma(z)(1-\sigma(z))$
 
-ReLU gradient:
-  For z > 0: f'(z) = 1  ← constant, no vanishing!
-  For z < 0: f'(z) = 0  ← dead, but no vanishing for active neurons
+| $z$ | $\sigma'(z)$ | Note |
+|-----|-------------|------|
+| $0$ | $0.25$ | maximum! |
+| $5$ | $0.0067$ | nearly zero (vanishing!) |
+| $-5$ | $0.0067$ | nearly zero (vanishing!) |
 
-After 10 layers with sigmoid: 0.25¹⁰ ≈ 0.000001 (gradient vanishes)
-After 10 layers with ReLU:   1¹⁰ = 1 (gradient flows perfectly)
-```
+**ReLU gradient:** For $z > 0$: $f'(z) = 1$ (constant, no vanishing!). For $z < 0$: $f'(z) = 0$ (dead, but no vanishing for active neurons).
+
+$$\text{After 10 layers with sigmoid: } 0.25^{10} \approx 0.000001 \text{ (gradient vanishes)}$$
+
+$$\text{After 10 layers with ReLU: } 1^{10} = 1 \text{ (gradient flows perfectly)}$$
 
 ---
 
@@ -1584,9 +1506,9 @@ Before Transformers, we processed sequences word-by-word (RNNs). Transformers pr
 
 ---
 
-## Deep Dive — Self-Attention Step by Step
+## Deep Dive — Self-Attention Step by Step ★★★
 
-### The Three Vectors: Query, Key, Value
+### The Three Vectors: Query, Key, Value ★★★
 
 ```mermaid
 graph TD
@@ -1610,24 +1532,17 @@ graph TD
     style VA fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### The Attention Formula
+### The Attention Formula ★★★
 
-```
-Attention(Q, K, V) = softmax(Q · K^T / √d_k) · V
+$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right) \cdot V$$
 
 Step by step:
-  1. Q · K^T       → Dot product of every query with every key
-                      → Produces a score matrix (how relevant each pair is)
-  2. / √d_k        → Scale down to prevent softmax saturation
-                      (without this, large d_k → large dot products → 
-                       softmax outputs near 0 or 1 → vanishing gradients)
-  3. softmax(...)   → Convert scores to probabilities (sum to 1 per row)
-                      → Each row = attention weights for one token
-  4. × V           → Weighted sum of values
-                      → Output = mix of all values, weighted by relevance
-```
+1. $Q \cdot K^T$ — Dot product of every query with every key → produces a score matrix (how relevant each pair is)
+2. $/ \sqrt{d_k}$ — Scale down to prevent softmax saturation (without this, large $d_k$ → large dot products → softmax outputs near 0 or 1 → vanishing gradients)
+3. $\text{softmax}(\ldots)$ — Convert scores to probabilities (sum to 1 per row) → each row = attention weights for one token
+4. $\times V$ — Weighted sum of values → output = mix of all values, weighted by relevance
 
-### Worked Example — Step by Step with Numbers
+### Worked Example — Step by Step with Numbers ★★★
 
 ```
 Input: 3 tokens ["I", "love", "ML"], each with embedding dimension d=4
@@ -1715,9 +1630,9 @@ heavily influenced by "I", capturing the relationship between them.
 
 ---
 
-## Multi-Head Attention
+## Multi-Head Attention ★★★
 
-### Why Multiple Heads?
+### Why Multiple Heads? ★★★
 
 ```mermaid
 graph TD
@@ -1744,7 +1659,7 @@ graph TD
     style OUT fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Mathematical Formulation
+### Mathematical Formulation ★★★
 
 ```
 MultiHead(Q, K, V) = Concat(head₁, head₂, ..., headₕ) · W_O
@@ -1765,9 +1680,9 @@ on d/h dimensions each. Multi-head attention is FREE in compute!
 
 ---
 
-## Positional Encoding
+## Positional Encoding ★★★
 
-### Why It's Needed
+### Why It's Needed ★★★
 
 ```mermaid
 graph TD
@@ -1785,7 +1700,7 @@ graph TD
     style P2 fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Sinusoidal Positional Encoding (Original Transformer)
+### Sinusoidal Positional Encoding (Original Transformer) ★★★
 
 ```
 PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))
@@ -1810,7 +1725,7 @@ Example (d_model=4):
 
 ---
 
-## Full Transformer Architecture
+## Full Transformer Architecture ★★★
 
 ```mermaid
 graph TD
@@ -1840,7 +1755,7 @@ graph TD
     style LINEAR fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Three Types of Attention in a Transformer
+### Three Types of Attention in a Transformer ★★★
 
 ```mermaid
 graph TD
@@ -1863,7 +1778,7 @@ graph TD
 
 ---
 
-## Encoder-Only vs Decoder-Only vs Encoder-Decoder
+## Encoder-Only vs Decoder-Only vs Encoder-Decoder ★★★
 
 ```mermaid
 graph TD
@@ -1886,7 +1801,7 @@ graph TD
 
 ---
 
-## Computational Complexity
+## Computational Complexity ★★★
 
 ```
 Self-attention complexity: O(n² · d)
@@ -1980,7 +1895,7 @@ This is why accuracy is dangerous for imbalanced data.
 
 ---
 
-## Deep Dive — Confusion Matrix
+## Deep Dive — Confusion Matrix ★★★
 
 ```mermaid
 graph TD
@@ -2005,7 +1920,7 @@ graph TD
 
 ---
 
-## When to Prioritize Which Metric
+## When to Prioritize Which Metric ★★★
 
 ```mermaid
 graph TD
@@ -2023,7 +1938,7 @@ graph TD
     style HF fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Worked Example
+### Worked Example ★★★
 
 ```
 Google Search Spam Detection:
@@ -2049,9 +1964,9 @@ What to optimize?
 
 ---
 
-## AUC-ROC Curve
+## AUC-ROC Curve ★★★
 
-### What It Is
+### What It Is ★★★
 
 ```mermaid
 graph TD
@@ -2071,7 +1986,7 @@ graph TD
     style BAD fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### How to Build the ROC Curve
+### How to Build the ROC Curve ★★★
 
 ```
 ROC Curve:
@@ -2095,7 +2010,7 @@ Example at different thresholds:
   Threshold 0.9: TP=30, FP=5,   FN=70, TN=895  → TPR=0.30, FPR=0.006
 ```
 
-### AUC-ROC Intuition
+### AUC-ROC Intuition ★★★
 
 ```
 AUC = Probability that a randomly chosen positive sample gets a
@@ -2108,7 +2023,7 @@ spam email a higher "spam probability" score.
 
 ---
 
-## Precision-Recall Curve (Better for Imbalanced Data)
+## Precision-Recall Curve (Better for Imbalanced Data) ★★★
 
 ```
 When classes are very imbalanced (e.g., 1% positive), ROC can be
@@ -2129,9 +2044,9 @@ Rule of thumb:
 
 ---
 
-## A/B Testing — Google's Decision Framework
+## A/B Testing — Google's Decision Framework ★★★
 
-### How to Design an A/B Test
+### How to Design an A/B Test ★★★
 
 ```mermaid
 graph TD
@@ -2151,7 +2066,7 @@ graph TD
     style SHIP fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Common A/B Testing Pitfalls
+### Common A/B Testing Pitfalls ★★★
 
 ```mermaid
 graph TD
@@ -2221,7 +2136,7 @@ Imagine you have a spreadsheet with 10,000 columns describing each customer. Mos
 
 ---
 
-## The Curse of Dimensionality
+## The Curse of Dimensionality ★★★
 
 ```mermaid
 graph TD
@@ -2241,7 +2156,7 @@ graph TD
     style D4 fill:#fff3cd,stroke:#856404,color:#000
 ```
 
-### The Volume of a Hypersphere
+### The Volume of a Hypersphere ★★★
 
 ```
 As dimensions increase, data concentrates in a thin shell near the surface:
@@ -2260,9 +2175,9 @@ Distance metrics break down because everything is "far" from everything.
 
 ---
 
-## PCA — Step by Step
+## PCA — Step by Step ★★★
 
-### Algorithm
+### Algorithm ★★★
 
 ```mermaid
 graph TD
@@ -2278,66 +2193,53 @@ graph TD
     style E fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Worked Example — PCA on 2D Data
+### Worked Example — PCA on 2D Data ★★★
 
-```
-Data points: (2,4), (4,6), (6,8), (8,10), (10,12)
+Data points: $(2,4),\ (4,6),\ (6,8),\ (8,10),\ (10,12)$
 
-STEP 1: Center the data
-  mean_x = 6, mean_y = 8
-  Centered: (-4,-4), (-2,-2), (0,0), (2,2), (4,4)
+**STEP 1:** Center the data. $\bar{x} = 6$, $\bar{y} = 8$. Centered: $(-4,-4),\ (-2,-2),\ (0,0),\ (2,2),\ (4,4)$
 
-STEP 2: Covariance matrix
-  C = (1/5) × [[-4,-2,0,2,4],    × [[-4,-4],
-                [-4,-2,0,2,4]]^T    [-2,-2],
-                                     [0,0],
-                                     [2,2],
-                                     [4,4]]
+**STEP 2:** Covariance matrix
 
-  C = [[8, 8],
-       [8, 8]]
+$$C = \begin{pmatrix} 8 & 8 \\ 8 & 8 \end{pmatrix}$$
 
-STEP 3: Eigendecomposition
-  |C - λI| = 0
-  |(8-λ)(8-λ) - 64| = 0
-  λ² - 16λ = 0
-  λ(λ-16) = 0
+**STEP 3:** Eigendecomposition
 
-  Eigenvalue 1: λ₁ = 16  → eigenvector v₁ = [1/√2, 1/√2]  = [0.707, 0.707]
-  Eigenvalue 2: λ₂ = 0   → eigenvector v₂ = [1/√2, -1/√2] = [0.707, -0.707]
+$$|C - \lambda I| = 0 \quad \Rightarrow \quad (8-\lambda)^2 - 64 = 0 \quad \Rightarrow \quad \lambda^2 - 16\lambda = 0 \quad \Rightarrow \quad \lambda(\lambda - 16) = 0$$
 
-  Variance explained by PC1: 16/(16+0) = 100%!
-  (Data is perfectly correlated — lies on a straight line)
+$$\lambda_1 = 16 \to \vec{v}_1 = \left[\tfrac{1}{\sqrt{2}},\ \tfrac{1}{\sqrt{2}}\right] = [0.707,\ 0.707]$$
 
-STEP 4: Select k=1 component (v₁)
+$$\lambda_2 = 0 \to \vec{v}_2 = \left[\tfrac{1}{\sqrt{2}},\ -\tfrac{1}{\sqrt{2}}\right] = [0.707,\ -0.707]$$
 
-STEP 5: Project
-  PC1 = X_centered × v₁ = [(-4)(0.707)+(-4)(0.707), ...] = [-5.66, -2.83, 0, 2.83, 5.66]
+Variance explained by PC1: $16/(16+0) = 100\%$! (Data is perfectly correlated — lies on a straight line)
 
-  We reduced 2D → 1D while capturing ALL the variance!
-```
+**STEP 4:** Select $k=1$ component ($\vec{v}_1$)
 
-### Choosing k — The Explained Variance Ratio
+**STEP 5:** Project: $\text{PC1} = X_{\text{centered}} \times \vec{v}_1 = [-5.66,\ -2.83,\ 0,\ 2.83,\ 5.66]$
 
-```
-Explained variance ratio for component i = λᵢ / Σ λⱼ
+We reduced 2D → 1D while capturing ALL the variance!
+
+### Choosing k — The Explained Variance Ratio ★★★
+
+$$\text{Explained variance ratio for component } i = \frac{\lambda_i}{\sum \lambda_j}$$
 
 Cumulative explained variance:
-  Component 1:  45% ← biggest direction of variation
-  Component 2:  65% ← adds 20% more
-  Component 3:  80% ← adds 15% more
-  Component 4:  90% ← adds 10% more
-  Component 5:  95% ← 95% of all info in just 5 dimensions!
-  ...
-  Component 1000: 100%
 
-Rule of thumb: Choose k such that cumulative variance ≥ 95%
-This can reduce 10,000 features → 50-200 components.
-```
+| Component | Cumulative | Note |
+|-----------|-----------|------|
+| 1 | 45% | biggest direction of variation |
+| 2 | 65% | adds 20% more |
+| 3 | 80% | adds 15% more |
+| 4 | 90% | adds 10% more |
+| 5 | 95% | 95% of all info in just 5 dimensions! |
+| ... | ... | |
+| 1000 | 100% | |
+
+Rule of thumb: Choose $k$ such that cumulative variance $\geq 95\%$. This can reduce 10,000 features → 50-200 components.
 
 ---
 
-## PCA vs t-SNE vs UMAP
+## PCA vs t-SNE vs UMAP ★★★
 
 ```mermaid
 graph TD
@@ -2405,7 +2307,7 @@ Real-world data is messy. At Google, raw data comes from billions of users, logs
 
 ---
 
-## Handling Missing Data
+## Handling Missing Data ★★★
 
 ```mermaid
 graph TD
@@ -2433,7 +2335,7 @@ graph TD
     style MNAR fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
-### The Correct Order of Operations
+### The Correct Order of Operations ★★★
 
 ```
 CRITICAL: Fit imputers ONLY on training data, then transform both
@@ -2452,7 +2354,7 @@ Wrong:
 
 ---
 
-## Handling Imbalanced Datasets
+## Handling Imbalanced Datasets ★★★
 
 ```mermaid
 graph TD
@@ -2476,7 +2378,7 @@ graph TD
     style ALGO_LEVEL fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### SMOTE — How It Works
+### SMOTE — How It Works ★★★
 
 ```
 SMOTE (Synthetic Minority Over-sampling Technique):
@@ -2499,7 +2401,7 @@ Example:
 
 ---
 
-## Data Leakage — The Silent Killer
+## Data Leakage — The Silent Killer ★★★
 
 ```mermaid
 graph TD
@@ -2524,7 +2426,7 @@ graph TD
     style L4 fill:#fff3cd,stroke:#856404,color:#000
 ```
 
-### How to Prevent Data Leakage
+### How to Prevent Data Leakage ★★★
 
 ```mermaid
 graph TD
@@ -2540,7 +2442,7 @@ graph TD
 
 ---
 
-## Feature Encoding
+## Feature Encoding ★★★
 
 ```mermaid
 graph TD
@@ -2562,7 +2464,7 @@ graph TD
 
 ---
 
-## Feature Selection Methods
+## Feature Selection Methods ★★★
 
 ```mermaid
 graph TD
@@ -2592,7 +2494,7 @@ graph TD
 
 ---
 
-## Feature Scaling
+## Feature Scaling ★★★
 
 ```
 WHY: Many algorithms (linear regression, SVM, KNN, neural nets) are
@@ -2665,7 +2567,7 @@ Building an ML system is like running a restaurant:
 
 ---
 
-## End-to-End ML System Architecture
+## End-to-End ML System Architecture ★★★
 
 ```mermaid
 graph TD
@@ -2706,7 +2608,7 @@ graph TD
 
 ---
 
-## Feature Store — Why It Matters
+## Feature Store — Why It Matters ★★★
 
 ```mermaid
 graph TD
@@ -2729,7 +2631,7 @@ graph TD
 
 ---
 
-## Online vs Batch Inference
+## Online vs Batch Inference ★★★
 
 ```mermaid
 graph TD
@@ -2752,7 +2654,7 @@ graph TD
 
 ---
 
-## Model Monitoring — What Can Go Wrong
+## Model Monitoring — What Can Go Wrong ★★★
 
 ```mermaid
 graph TD
@@ -2775,7 +2677,7 @@ graph TD
     style FP fill:#fff3cd,stroke:#856404,color:#000
 ```
 
-### Monitoring Dashboard — What to Track
+### Monitoring Dashboard — What to Track ★★★
 
 ```
 REAL-TIME METRICS (alert within minutes):
@@ -2803,7 +2705,7 @@ TRIGGERS FOR RETRAINING:
 
 ---
 
-## Model Serving at Scale
+## Model Serving at Scale ★★★
 
 ```mermaid
 graph TD
@@ -2837,7 +2739,7 @@ graph TD
 
 ---
 
-## ML System Design Template — For Interviews
+## ML System Design Template — For Interviews ★★★
 
 ```mermaid
 graph TD
@@ -2868,7 +2770,7 @@ graph TD
     style S7 fill:#d4edda,stroke:#155724,color:#000
 ```
 
-### Example: Design a Spam Filter for Gmail
+### Example: Design a Spam Filter for Gmail ★★★
 
 ```
 1. REQUIREMENTS:
@@ -2962,13 +2864,13 @@ Google invented the Transformer ("Attention Is All You Need," 2017). Every inter
 
 ---
 
-## 11.1 Tokenization — Byte Pair Encoding (BPE)
+## 11.1 Tokenization — Byte Pair Encoding (BPE) ★★★
 
 ### Simple Explanation
 
 Before an LLM can read text, it must convert words into numbers. But we can't just assign one number per word — there are millions of words, misspellings, new slang, code, etc. BPE is a clever compression trick: start with individual characters, then repeatedly merge the most common pair into a new token. After enough merges, you end up with a vocabulary of ~32K-100K tokens that can represent ANY text.
 
-### The BPE Algorithm — Step by Step
+### The BPE Algorithm — Step by Step ★★★
 
 ```
 BPE Training Algorithm:
@@ -2987,7 +2889,7 @@ Output: Vocabulary of subword tokens + merge rules
 6. Repeat steps 2-5 until desired vocabulary size reached
 ```
 
-### Worked Example — BPE on a Tiny Corpus
+### Worked Example — BPE on a Tiny Corpus ★★★
 
 ```
 Corpus: "low low low low low  lower lower  newest newest newest  widest widest"
@@ -3038,7 +2940,7 @@ graph LR
     style G fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Why BPE Matters for Interviews
+### Why BPE Matters for Interviews ★★★
 
 | Property | Detail |
 |----------|--------|
@@ -3048,7 +2950,7 @@ graph LR
 | **Language bias** | English words are ~1 token; other languages often 2-4× more tokens |
 | **Cost implication** | API pricing is per-token, so tokenization efficiency = cost efficiency |
 
-### Common Interview Follow-Up: "What are alternatives to BPE?"
+### Common Interview Follow-Up: "What are alternatives to BPE?" ★★★
 
 | Method | How It Works | Used By |
 |--------|-------------|---------|
@@ -3058,13 +2960,13 @@ graph LR
 
 ---
 
-## 11.2 Positional Encoding — From Sinusoidal to RoPE
+## 11.2 Positional Encoding — From Sinusoidal to RoPE ★★★
 
-### Why Position Matters
+### Why Position Matters ★★★
 
 Attention is **permutation-invariant** — it treats input tokens as a set, not a sequence. Without positional information, "dog bites man" and "man bites dog" would produce identical representations.
 
-### Sinusoidal Positional Encoding (Original Transformer, 2017)
+### Sinusoidal Positional Encoding (Original Transformer, 2017) ★★★
 
 Add a unique position signal to each token embedding:
 
@@ -3093,13 +2995,13 @@ graph LR
     style E fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### RoPE — Rotary Position Embedding (Modern Standard)
+### RoPE — Rotary Position Embedding (Modern Standard) ★★★
 
 **Why RoPE replaced sinusoidal:** Sinusoidal encoding is **absolute** — it encodes "I am at position 5." RoPE encodes **relative** relationships — "I am 3 positions after you" — which is what attention actually needs.
 
 **Core Idea:** Instead of adding position to the embedding, RoPE **rotates** the query and key vectors by an angle proportional to their position.
 
-### RoPE — Mathematical Derivation
+### RoPE — Mathematical Derivation ★★★
 
 **Step 1: Group dimensions into pairs**
 
@@ -3155,7 +3057,7 @@ graph TD
     style DOT fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Worked Example — RoPE for d=4, positions 0 and 2
+### Worked Example — RoPE for d=4, positions 0 and 2 ★★★
 
 ```
 Given: d = 4 (so 2 pairs), base = 10000
@@ -3175,7 +3077,7 @@ global/coarse position. High-frequency pairs change fast → encode
 fine-grained position. Like a clock: hour hand = coarse, second hand = fine.
 ```
 
-### Why RoPE Won — Interview Comparison
+### Why RoPE Won — Interview Comparison ★★★
 
 | Property | Sinusoidal | Learned | RoPE |
 |----------|-----------|---------|------|
@@ -3187,73 +3089,62 @@ fine-grained position. Like a clock: hour hand = coarse, second hand = fine.
 
 ---
 
-## 11.3 Transformer Attention — Full Derivation from Scratch
+## 11.3 Transformer Attention — Full Derivation from Scratch ★★★
 
 > This section derives attention from first principles. If you've read Topic 6, this goes deeper with the full mathematical proof and multi-head efficiency analysis.
 
-### Step 1: The Problem Attention Solves
+### Step 1: The Problem Attention Solves ★★★
 
 Given a sequence of n token embeddings X ∈ ℝⁿˣᵈ, we want each token to gather information from every other token, weighted by relevance.
 
-### Step 2: Project into Q, K, V Spaces
+### Step 2: Project into Q, K, V Spaces ★★★
 
-```
-Q = X · W_Q    ∈ ℝⁿˣᵈₖ     (what am I looking for?)
-K = X · W_K    ∈ ℝⁿˣᵈₖ     (what do I contain?)
-V = X · W_V    ∈ ℝⁿˣᵈᵥ     (what information do I provide?)
+$$Q = X \cdot W_Q \in \mathbb{R}^{n \times d_k} \quad \text{(what am I looking for?)}$$
 
-W_Q ∈ ℝᵈˣᵈₖ,  W_K ∈ ℝᵈˣᵈₖ,  W_V ∈ ℝᵈˣᵈᵥ  (learned parameters)
-```
+$$K = X \cdot W_K \in \mathbb{R}^{n \times d_k} \quad \text{(what do I contain?)}$$
 
-### Step 3: Compute Attention Scores
+$$V = X \cdot W_V \in \mathbb{R}^{n \times d_v} \quad \text{(what information do I provide?)}$$
 
-```
-Scores = Q · Kᵀ  ∈ ℝⁿˣⁿ
+$W_Q \in \mathbb{R}^{d \times d_k}$, $W_K \in \mathbb{R}^{d \times d_k}$, $W_V \in \mathbb{R}^{d \times d_v}$ (learned parameters)
 
-Element [i,j] = qᵢᵀ · kⱼ = how much should token i attend to token j
-```
+### Step 3: Compute Attention Scores ★★★
 
-### Step 4: Scale
+$$\text{Scores} = Q \cdot K^T \in \mathbb{R}^{n \times n}$$
 
-```
-Scaled_Scores = (Q · Kᵀ) / √dₖ
+Element $[i,j] = q_i^T \cdot k_j$ = how much should token $i$ attend to token $j$
 
-WHY SCALE?  Without scaling, when dₖ is large:
-  - q and k are random vectors of dimension dₖ
-  - E[qᵀk] = 0, Var[qᵀk] = dₖ
-  - Large variance → some scores are very large
-  - softmax of very large values → near-one-hot → vanishing gradients
-  - Dividing by √dₖ normalizes variance to 1
+### Step 4: Scale ★★★
 
-Proof:  If qᵢ, kⱼ ~ N(0,1) independently:
-  qᵀk = Σᵢ qᵢkᵢ,  each term has E[qᵢkᵢ]=0, Var[qᵢkᵢ]=1
-  By independence: Var[qᵀk] = dₖ · 1 = dₖ
-  After dividing by √dₖ: Var[qᵀk / √dₖ] = dₖ/dₖ = 1  ✓
-```
+$$\text{Scaled\_Scores} = \frac{Q \cdot K^T}{\sqrt{d_k}}$$
 
-### Step 5: Softmax → Attention Weights
+**WHY SCALE?** Without scaling, when $d_k$ is large:
+- $q$ and $k$ are random vectors of dimension $d_k$
+- $E[q^T k] = 0$, $\text{Var}[q^T k] = d_k$
+- Large variance → some scores are very large
+- softmax of very large values → near-one-hot → vanishing gradients
+- Dividing by $\sqrt{d_k}$ normalizes variance to 1
 
-```
-Attention_Weights = softmax(Scaled_Scores)  ∈ ℝⁿˣⁿ
+**Proof:** If $q_i, k_j \sim \mathcal{N}(0,1)$ independently:
 
-Row i sums to 1: Σⱼ Attention_Weights[i,j] = 1
-Each row is a probability distribution over which tokens to attend to.
-```
+$$q^T k = \sum_i q_i k_i, \quad E[q_i k_i] = 0, \quad \text{Var}[q_i k_i] = 1$$
 
-### Step 6: Weighted Sum of Values
+$$\text{By independence: } \text{Var}[q^T k] = d_k \cdot 1 = d_k \qquad \text{After dividing: } \text{Var}\!\left[\frac{q^T k}{\sqrt{d_k}}\right] = \frac{d_k}{d_k} = 1 \;\checkmark$$
 
-```
-Output = Attention_Weights · V  ∈ ℝⁿˣᵈᵥ
+### Step 5: Softmax → Attention Weights ★★★
 
-Row i of output = weighted average of all value vectors,
-                  weighted by how much token i attends to each position.
-```
+$$\text{Attention\_Weights} = \text{softmax}(\text{Scaled\_Scores}) \in \mathbb{R}^{n \times n}$$
 
-### Complete Formula
+Row $i$ sums to 1: $\sum_j \text{Attention\_Weights}[i,j] = 1$. Each row is a probability distribution over which tokens to attend to.
 
-```
-Attention(Q, K, V) = softmax(Q · Kᵀ / √dₖ) · V
-```
+### Step 6: Weighted Sum of Values ★★★
+
+$$\text{Output} = \text{Attention\_Weights} \cdot V \in \mathbb{R}^{n \times d_v}$$
+
+Row $i$ of output = weighted average of all value vectors, weighted by how much token $i$ attends to each position.
+
+### Complete Formula ★★★
+
+$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right) \cdot V$$
 
 ```mermaid
 graph LR
@@ -3279,40 +3170,35 @@ graph LR
     style OUT fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Multi-Head Attention — Why and How
+### Multi-Head Attention — Why and How ★★★
 
 **Motivation:** A single attention head can only capture one type of relationship. We want to capture multiple relationships simultaneously (syntactic, semantic, positional, etc.).
 
-```
-MultiHead(Q, K, V) = Concat(head₁, head₂, ..., headₕ) · W_O
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \text{head}_2, \ldots, \text{head}_h) \cdot W_O$$
 
-where headᵢ = Attention(X·Wᵢ_Q, X·Wᵢ_K, X·Wᵢ_V)
+$$\text{where } \text{head}_i = \text{Attention}(X \cdot W^i_Q,\ X \cdot W^i_K,\ X \cdot W^i_V)$$
 
-Parameters per head:
-  Wᵢ_Q ∈ ℝᵈˣ⁽ᵈ/ʰ⁾,  Wᵢ_K ∈ ℝᵈˣ⁽ᵈ/ʰ⁾,  Wᵢ_V ∈ ℝᵈˣ⁽ᵈ/ʰ⁾
+Parameters per head: $W^i_Q \in \mathbb{R}^{d \times (d/h)}$, $W^i_K \in \mathbb{R}^{d \times (d/h)}$, $W^i_V \in \mathbb{R}^{d \times (d/h)}$
 
-Total parameters (h heads):
-  h × 3 × d × (d/h) = 3d²     (same as single head with full d!)
+Total parameters ($h$ heads): $h \times 3 \times d \times (d/h) = 3d^2$ (same as single head with full $d$!)
 
-Output projection: W_O ∈ ℝᵈˣᵈ  → another d² parameters
+Output projection: $W_O \in \mathbb{R}^{d \times d}$ → another $d^2$ parameters
 
-Total attention parameters: 4d²  (regardless of number of heads!)
-```
+Total attention parameters: $4d^2$ (regardless of number of heads!)
 
 **Key insight for interviews:** Multi-head attention costs the same as single-head attention with the same total dimension. The heads just partition the representation space.
 
-### Grouped Query Attention (GQA) and Multi-Query Attention (MQA)
+### Grouped Query Attention (GQA) and Multi-Query Attention (MQA) ★★★
 
-```
-Standard MHA:   h query heads,  h key heads,  h value heads
-MQA:            h query heads,  1 key head,   1 value head
-GQA:            h query heads,  g key heads,  g value heads  (g < h)
+| Variant | Query heads | Key heads | Value heads |
+|---------|:-----------:|:---------:|:-----------:|
+| Standard MHA | $h$ | $h$ | $h$ |
+| MQA | $h$ | $1$ | $1$ |
+| GQA | $h$ | $g$ | $g$ ($g < h$) |
 
 Memory savings for KV cache:
-  MHA KV cache:  2 × n × h × dₖ × layers
-  GQA KV cache:  2 × n × g × dₖ × layers
-  MQA KV cache:  2 × n × 1 × dₖ × layers
-```
+
+$$\text{MHA: } 2 \times n \times h \times d_k \times \text{layers} \qquad \text{GQA: } 2 \times n \times g \times d_k \times \text{layers} \qquad \text{MQA: } 2 \times n \times 1 \times d_k \times \text{layers}$$
 
 ```mermaid
 graph TB
@@ -3353,9 +3239,9 @@ graph TB
 
 ---
 
-## 11.4 KV Cache — How It Works and Memory Calculation
+## 11.4 KV Cache — How It Works and Memory Calculation ★★★
 
-### Why KV Cache Exists
+### Why KV Cache Exists ★★★
 
 During autoregressive generation, each new token attends to ALL previous tokens. Without caching, we'd recompute K and V for every previous token at every generation step — O(n²) total work for generating n tokens.
 
@@ -3398,7 +3284,7 @@ graph TD
     style C3 fill:#fff3e0,stroke:#e65100,color:#000
 ```
 
-### Memory Calculation — Interview Must-Know
+### Memory Calculation — Interview Must-Know ★★★
 
 **Formula for KV cache memory:**
 
@@ -3415,7 +3301,7 @@ Where:
   bytes_per_element = 2 for FP16/BF16, 1 for INT8
 ```
 
-### Worked Example — LLaMA 2 70B
+### Worked Example — LLaMA 2 70B ★★★
 
 ```
 LLaMA 2 70B specifications:
@@ -3443,7 +3329,7 @@ Without GQA (standard MHA, 64 KV heads instead of 8):
   GQA saves 8× on KV cache memory.
 ```
 
-### KV Cache Optimization Techniques
+### KV Cache Optimization Techniques ★★★
 
 | Technique | How It Works | Memory Saving |
 |-----------|-------------|---------------|
@@ -3455,9 +3341,9 @@ Without GQA (standard MHA, 64 KV heads instead of 8):
 
 ---
 
-## 11.5 Flash Attention — Why O(n) Memory
+## 11.5 Flash Attention — Why O(n) Memory ★★★
 
-### The Problem with Standard Attention
+### The Problem with Standard Attention ★★★
 
 Standard attention materializes the full n×n attention matrix in GPU HBM (High Bandwidth Memory):
 
@@ -3469,7 +3355,7 @@ For n = 128K tokens (GPT-4 Turbo context):
   This is impossible.
 ```
 
-### Flash Attention — The Key Insight
+### Flash Attention — The Key Insight ★★★
 
 **Core idea:** Never materialize the full n×n matrix. Instead, compute attention in **tiles** (blocks) that fit in SRAM (fast on-chip memory), accumulating the result incrementally.
 
@@ -3497,33 +3383,31 @@ graph TB
     style F4 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### The Online Softmax Trick
+### The Online Softmax Trick ★★★
 
 The challenge: softmax requires knowing ALL scores before normalizing. Flash Attention uses the **online softmax** algorithm to compute softmax incrementally:
 
-```
-Online Softmax — Process scores in blocks:
+**Online Softmax** — Process scores in blocks:
 
-Block 1: scores s₁ = [3.0, 1.0, 2.0]
-  m₁ = max(s₁) = 3.0
-  ℓ₁ = Σ exp(sᵢ - m₁) = exp(0) + exp(-2) + exp(-1) = 1 + 0.135 + 0.368 = 1.503
-  softmax₁ = [exp(sᵢ - m₁) / ℓ₁]
+**Block 1:** scores $s_1 = [3.0, 1.0, 2.0]$
 
-Block 2: scores s₂ = [5.0, 0.5]
-  m₂ = max(s₂) = 5.0
-  ℓ₂ = Σ exp(sᵢ - m₂) = exp(0) + exp(-4.5) = 1 + 0.011 = 1.011
+$$m_1 = \max(s_1) = 3.0 \qquad \ell_1 = \sum \exp(s_i - m_1) = e^0 + e^{-2} + e^{-1} = 1 + 0.135 + 0.368 = 1.503$$
 
-Combine blocks:
-  m_new = max(m₁, m₂) = max(3.0, 5.0) = 5.0
-  ℓ_new = ℓ₁ · exp(m₁ - m_new) + ℓ₂ · exp(m₂ - m_new)
-        = 1.503 · exp(3-5) + 1.011 · exp(5-5)
-        = 1.503 · 0.135 + 1.011 · 1.0
-        = 0.203 + 1.011 = 1.214
+**Block 2:** scores $s_2 = [5.0, 0.5]$
 
-Correct global softmax, never storing the full n×n matrix!
-```
+$$m_2 = \max(s_2) = 5.0 \qquad \ell_2 = \sum \exp(s_i - m_2) = e^0 + e^{-4.5} = 1 + 0.011 = 1.011$$
 
-### Memory and Speed Comparison
+**Combine blocks:**
+
+$$\begin{aligned}
+m_{\text{new}} &= \max(m_1, m_2) = \max(3.0, 5.0) = 5.0 \\
+\ell_{\text{new}} &= \ell_1 \cdot e^{m_1 - m_{\text{new}}} + \ell_2 \cdot e^{m_2 - m_{\text{new}}} \\
+&= 1.503 \cdot e^{3-5} + 1.011 \cdot e^{5-5} = 1.503 \cdot 0.135 + 1.011 \cdot 1.0 = 1.214
+\end{aligned}$$
+
+Correct global softmax, never storing the full $n \times n$ matrix!
+
+### Memory and Speed Comparison ★★★
 
 ```
                         Standard Attention    Flash Attention
@@ -3535,7 +3419,7 @@ Exact computation:       Yes                   Yes (mathematically identical!)
 
 **Critical interview point:** Flash Attention is NOT an approximation. It computes the **exact same result** as standard attention, just more efficiently by being IO-aware (minimizing slow HBM access).
 
-### Flash Attention 2 and 3
+### Flash Attention 2 and 3 ★★★
 
 | Version | Key Improvement |
 |---------|----------------|
@@ -3545,7 +3429,7 @@ Exact computation:       Yes                   Yes (mathematically identical!)
 
 ---
 
-## 11.6 Mixture of Experts (MoE)
+## 11.6 Mixture of Experts (MoE) ★★★
 
 ### Simple Explanation
 
@@ -3553,7 +3437,7 @@ Imagine a hospital with 8 specialist doctors. For each patient, a triage nurse (
 
 MoE works the same way: a model has many "expert" sub-networks, but each token only activates a few of them. You get the capacity of a huge model at the cost of a smaller one.
 
-### How MoE Works
+### How MoE Works ★★★
 
 In a standard Transformer, each layer has one FFN (Feed-Forward Network). In MoE, the single FFN is replaced with N expert FFNs plus a router:
 
@@ -3586,19 +3470,19 @@ graph TD
     style E5 fill:#eeeeee,stroke:#9e9e9e,color:#999
 ```
 
-### The Router / Gating Function
+### The Router / Gating Function ★★★
 
-```
-Given input token x ∈ ℝᵈ and N experts:
+Given input token $x \in \mathbb{R}^d$ and $N$ experts:
 
-Router scores:    h(x) = x · W_gate    ∈ ℝᴺ       (W_gate ∈ ℝᵈˣᴺ)
-Top-K selection:  S = TopK(h(x), k)                 (select k experts, typically k=2)
-Gating weights:   g(x) = softmax(h(x)[S])           (normalize over selected experts)
+$$\begin{aligned}
+\text{Router scores:} \quad & h(x) = x \cdot W_{\text{gate}} \in \mathbb{R}^N && (W_{\text{gate}} \in \mathbb{R}^{d \times N}) \\
+\text{Top-K selection:} \quad & S = \text{TopK}(h(x), k) && \text{(select } k \text{ experts, typically } k=2\text{)} \\
+\text{Gating weights:} \quad & g(x) = \text{softmax}(h(x)[S]) && \text{(normalize over selected experts)}
+\end{aligned}$$
 
-Output:  y = Σᵢ∈S gᵢ(x) · Expertᵢ(x)              (weighted sum of expert outputs)
-```
+$$\text{Output: } y = \sum_{i \in S} g_i(x) \cdot \text{Expert}_i(x) \qquad \text{(weighted sum of expert outputs)}$$
 
-### MoE — Key Numbers and Models
+### MoE — Key Numbers and Models ★★★
 
 | Model | Total Params | Active Params | Experts | Top-K | Year |
 |-------|-------------|---------------|---------|-------|------|
@@ -3609,23 +3493,21 @@ Output:  y = Σᵢ∈S gᵢ(x) · Expertᵢ(x)              (weighted sum of exp
 | DeepSeek-V3 | 671B | 37B | 256 | 8 | 2025 |
 | LLaMA 4 Scout | 109B | 17B | 16 | 1 | 2025 |
 
-### The Expert Collapse Problem
+### The Expert Collapse Problem ★★★
 
 Without careful training, all tokens get routed to the same few experts → other experts never learn → waste of parameters. Solutions:
 
-```
-Load Balancing Loss:
-  L_balance = α · N · Σᵢ fᵢ · pᵢ
+**Load Balancing Loss:**
 
-  fᵢ = fraction of tokens routed to expert i
-  pᵢ = average router probability for expert i
-  α  = balancing coefficient (typically 0.01)
+$$L_{\text{balance}} = \alpha \cdot N \cdot \sum_i f_i \cdot p_i$$
 
-  This loss penalizes uneven routing.
-  Minimized when fᵢ = pᵢ = 1/N (uniform distribution).
-```
+- $f_i$ = fraction of tokens routed to expert $i$
+- $p_i$ = average router probability for expert $i$
+- $\alpha$ = balancing coefficient (typically 0.01)
 
-### Interview-Ready Answer: "Explain MoE Architecture"
+This loss penalizes uneven routing. Minimized when $f_i = p_i = 1/N$ (uniform distribution).
+
+### Interview-Ready Answer: "Explain MoE Architecture" ★★★
 
 > "MoE replaces the FFN in each Transformer layer with N parallel expert networks and a learned router. For each token, the router selects the top-K experts (typically K=2) and combines their outputs with learned gating weights. This gives the model the parameter count and capacity of a much larger dense model, while keeping per-token compute roughly constant — for example, Mixtral 8x7B has 46.7B total parameters but only activates 12.9B per token, achieving quality comparable to LLaMA 2 70B at 3× inference speed. The main challenges are expert load balancing (solved via auxiliary losses), efficient distributed serving (experts must be sharded across GPUs), and training stability."
 
@@ -3680,7 +3562,7 @@ Google trains Gemini. Understanding the training pipeline is not academic — it
 
 ---
 
-## 12.1 The Three-Stage Pipeline — Overview
+## 12.1 The Three-Stage Pipeline — Overview ★★★
 
 ```mermaid
 graph LR
@@ -3708,20 +3590,17 @@ graph LR
 
 ---
 
-## 12.2 Stage 1: Pre-training
+## 12.2 Stage 1: Pre-training ★★★
 
-### Objective
+### Objective ★★★
 
-```
 Minimize next-token prediction loss (cross-entropy):
 
-L = -Σₜ log P(xₜ | x₁, x₂, ..., xₜ₋₁; θ)
+$$L = -\sum_t \log P(x_t \mid x_1, x_2, \ldots, x_{t-1};\, \theta)$$
 
-This is called the "language modeling" or "causal LM" objective.
-The model learns to predict the next token given all previous tokens.
-```
+This is called the "language modeling" or "causal LM" objective. The model learns to predict the next token given all previous tokens.
 
-### What the Model Learns
+### What the Model Learns ★★★
 
 | Capability | How It Emerges |
 |-----------|---------------|
@@ -3731,7 +3610,7 @@ The model learns to predict the next token given all previous tokens.
 | Code generation | Trained on GitHub code, learns to complete programs |
 | Multilingual | Predicting next token in French text learns French |
 
-### Scale of Pre-training
+### Scale of Pre-training ★★★
 
 ```
 Typical pre-training setup:
@@ -3748,7 +3627,7 @@ Typical pre-training setup:
     Duration: ~54 days
 ```
 
-### Pre-training Data Mixture (Typical)
+### Pre-training Data Mixture (Typical) ★★★
 
 ```mermaid
 pie title "Pre-training Data Composition (approximate)"
@@ -3763,13 +3642,13 @@ pie title "Pre-training Data Composition (approximate)"
 
 ---
 
-## 12.3 Stage 2: Supervised Fine-Tuning (SFT)
+## 12.3 Stage 2: Supervised Fine-Tuning (SFT) ★★★
 
-### Why SFT Is Needed
+### Why SFT Is Needed ★★★
 
 The pre-trained model is a text completion engine. Ask it "What is 2+2?" and it might continue with "What is 3+3? What is 4+4?" because it's been trained on web text that looks like that. SFT teaches the model to **follow instructions** — to produce assistant-style responses.
 
-### How SFT Works
+### How SFT Works ★★★
 
 ```
 Training data format:
@@ -3777,13 +3656,12 @@ Training data format:
   [User: Explain photosynthesis in simple terms]
   [Assistant: Plants use sunlight, water, and CO₂ to make glucose...]
 
-Loss:  Same cross-entropy, but ONLY on the assistant tokens.
-       User/system tokens are in the input but not penalized.
+Loss: Same cross-entropy, but ONLY on the assistant tokens. User/system tokens are in the input but not penalized.
 
-L_SFT = -Σₜ∈assistant_tokens log P(xₜ | context; θ)
+$$L_{\text{SFT}} = -\sum_{t \in \text{assistant\_tokens}} \log P(x_t \mid \text{context};\, \theta)$$
 ```
 
-### SFT Data — Quality Over Quantity
+### SFT Data — Quality Over Quantity ★★★
 
 ```
 Pre-training:   ~10 trillion tokens  (quantity matters)
@@ -3815,13 +3693,13 @@ graph LR
 
 ---
 
-## 12.4 Stage 3a: RLHF — Reinforcement Learning from Human Feedback
+## 12.4 Stage 3a: RLHF — Reinforcement Learning from Human Feedback ★★★
 
-### Why RLHF Is Needed After SFT
+### Why RLHF Is Needed After SFT ★★★
 
 SFT teaches the model to produce plausible-looking responses. But it can't learn **which response is BETTER** — it treats all demonstrations equally. RLHF teaches the model to prefer responses that humans actually prefer.
 
-### The RLHF Pipeline — Three Steps
+### The RLHF Pipeline — Three Steps ★★★
 
 ```mermaid
 graph TD
@@ -3844,43 +3722,35 @@ graph TD
     style ALIGNED fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Step 1: Reward Model Training
+### Step 1: Reward Model Training ★★★
 
-```
-Given a prompt x and two responses y₁, y₂ where human prefers y₁:
+Given a prompt $x$ and two responses $y_1, y_2$ where human prefers $y_1$:
 
-Reward model loss (Bradley-Terry):
-  L_RM = -log σ(r(x, y₁) - r(x, y₂))
+**Reward model loss (Bradley-Terry):**
 
-Where:
-  r(x, y) = scalar reward score from reward model
-  σ = sigmoid function
+$$L_{\text{RM}} = -\log \sigma\!\left(r(x, y_1) - r(x, y_2)\right)$$
 
-This loss pushes: r(x, y_preferred) > r(x, y_rejected)
-```
+Where $r(x, y)$ = scalar reward score from reward model, $\sigma$ = sigmoid function.
 
-### Step 2: PPO Optimization
+This loss pushes: $r(x, y_{\text{preferred}}) > r(x, y_{\text{rejected}})$
 
-```
-PPO Objective:
+### Step 2: PPO Optimization ★★★
 
-  maximize  E_{x~D, y~π_θ} [r(x, y)] - β · KL[π_θ(y|x) || π_ref(y|x)]
+**PPO Objective:**
+
+$$\text{maximize } \mathbb{E}_{x \sim D,\, y \sim \pi_\theta}\!\left[r(x, y)\right] - \beta \cdot \text{KL}\!\left[\pi_\theta(y|x) \,\|\, \pi_{\text{ref}}(y|x)\right]$$
 
 Where:
-  π_θ    = current policy (LLM being trained)
-  π_ref  = reference policy (SFT model, frozen)
-  r(x,y) = reward model score
-  β      = KL penalty coefficient
+- $\pi_\theta$ = current policy (LLM being trained)
+- $\pi_{\text{ref}}$ = reference policy (SFT model, frozen)
+- $r(x,y)$ = reward model score
+- $\beta$ = KL penalty coefficient
 
-  Term 1: Maximize reward (be helpful)
-  Term 2: Don't drift too far from SFT model (stay coherent)
+Term 1: Maximize reward (be helpful). Term 2: Don't drift too far from SFT model (stay coherent).
 
-Without KL penalty: model finds "reward hacking" exploits
-  (e.g., generates text that scores high on reward model
-   but is incoherent or repetitive)
-```
+Without KL penalty: model finds "reward hacking" exploits (e.g., generates text that scores high on reward model but is incoherent or repetitive)
 
-### RLHF Challenges
+### RLHF Challenges ★★★
 
 | Challenge | Description | Mitigation |
 |-----------|------------|------------|
@@ -3891,26 +3761,24 @@ Without KL penalty: model finds "reward hacking" exploits
 
 ---
 
-## 12.5 Stage 3b: DPO — Direct Preference Optimization
+## 12.5 Stage 3b: DPO — Direct Preference Optimization ★★★
 
-### The Key Insight
+### The Key Insight ★★★
 
 DPO eliminates the reward model entirely. Instead of training a reward model and then doing RL, DPO optimizes the LLM directly on preference pairs using a simple classification-like loss.
 
 **Mathematical insight:** The optimal policy under the RLHF objective has a closed-form relationship to the reward:
 
-```
-r(x, y) = β · log [π_θ(y|x) / π_ref(y|x)] + β · log Z(x)
+$$r(x, y) = \beta \cdot \log \frac{\pi_\theta(y|x)}{\pi_{\text{ref}}(y|x)} + \beta \cdot \log Z(x)$$
 
 This means we can substitute the reward into the preference loss:
 
-L_DPO = -E[(x, y_w, y_l)] log σ(β · log[π_θ(y_w|x)/π_ref(y_w|x)] - β · log[π_θ(y_l|x)/π_ref(y_l|x)])
+$$L_{\text{DPO}} = -\mathbb{E}_{(x, y_w, y_l)}\!\left[\log \sigma\!\left(\beta \cdot \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} - \beta \cdot \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)}\right)\right]$$
 
 Where:
-  y_w = preferred (winning) response
-  y_l = rejected (losing) response
-  π_ref = frozen reference model (SFT checkpoint)
-```
+- $y_w$ = preferred (winning) response
+- $y_l$ = rejected (losing) response
+- $\pi_{\text{ref}}$ = frozen reference model (SFT checkpoint)
 
 ```mermaid
 graph LR
@@ -3930,7 +3798,7 @@ graph LR
     style DPO fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### DPO vs RLHF — Interview Comparison
+### DPO vs RLHF — Interview Comparison ★★★
 
 | Aspect | RLHF | DPO |
 |--------|------|-----|
@@ -3943,37 +3811,33 @@ graph LR
 
 ---
 
-## 12.6 GRPO and RLVR — DeepSeek-R1's Approach
+## 12.6 GRPO and RLVR — DeepSeek-R1's Approach ★★★
 
-### Why This Matters
+### Why This Matters ★★★
 
 DeepSeek-R1 demonstrated that reasoning capabilities can emerge through RL alone, without supervised demonstrations of chain-of-thought reasoning. This is a significant paradigm shift.
 
-### GRPO — Group Relative Policy Optimization
+### GRPO — Group Relative Policy Optimization ★★★
 
 GRPO simplifies PPO by eliminating the value network (critic). Instead of learning a baseline for variance reduction, it estimates the baseline from the GROUP of sampled responses:
 
-```
-Standard PPO:
-  Advantage = r(y) - V(x)     (V is a learned value network — expensive!)
+**Standard PPO:** $\text{Advantage} = r(y) - V(x)$ ($V$ is a learned value network — expensive!)
 
-GRPO:
-  For prompt x, sample G responses {y₁, y₂, ..., y_G}
-  Compute rewards {r₁, r₂, ..., r_G}
-  
-  Advantage for yᵢ:
-    Âᵢ = (rᵢ - mean(r₁...r_G)) / std(r₁...r_G)
+**GRPO:** For prompt $x$, sample $G$ responses $\{y_1, y_2, \ldots, y_G\}$. Compute rewards $\{r_1, r_2, \ldots, r_G\}$.
 
-  No value network needed!
-  Group statistics provide the baseline.
+Advantage for $y_i$:
 
-GRPO Loss:
-  L = -Σᵢ min(ρᵢ · Âᵢ, clip(ρᵢ, 1-ε, 1+ε) · Âᵢ) + β · KL
+$$\hat{A}_i = \frac{r_i - \text{mean}(r_1 \ldots r_G)}{\text{std}(r_1 \ldots r_G)}$$
 
-  ρᵢ = π_θ(yᵢ|x) / π_old(yᵢ|x)  (importance ratio)
-```
+No value network needed! Group statistics provide the baseline.
 
-### RLVR — RL with Verifiable Rewards
+**GRPO Loss:**
+
+$$L = -\sum_i \min\!\left(\rho_i \cdot \hat{A}_i,\ \text{clip}(\rho_i, 1-\varepsilon, 1+\varepsilon) \cdot \hat{A}_i\right) + \beta \cdot \text{KL}$$
+
+$$\rho_i = \frac{\pi_\theta(y_i|x)}{\pi_{\text{old}}(y_i|x)} \qquad \text{(importance ratio)}$$
+
+### RLVR — RL with Verifiable Rewards ★★★
 
 ```
 Key insight: For math/code problems, we don't need a learned reward model.
@@ -4001,7 +3865,7 @@ graph TD
     style RL2 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### What Emerged from RLVR (without being taught)
+### What Emerged from RLVR (without being taught) ★★★
 
 - Extended chain-of-thought reasoning
 - Self-correction ("Wait, let me reconsider...")
@@ -4010,9 +3874,9 @@ graph TD
 
 ---
 
-## 12.7 Constitutional AI (CAI)
+## 12.7 Constitutional AI (CAI) ★★★
 
-### How It Differs from RLHF
+### How It Differs from RLHF ★★★
 
 ```
 RLHF:  Humans label thousands of preference pairs → expensive, slow, inconsistent.
@@ -4021,7 +3885,7 @@ CAI:   Write a "constitution" (set of principles) → AI critiques its own outpu
        using those principles → Self-improvement without human labelers!
 ```
 
-### The CAI Process
+### The CAI Process ★★★
 
 ```mermaid
 graph TD
@@ -4040,7 +3904,7 @@ graph TD
     style REVISE fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Example Constitution Principles
+### Example Constitution Principles ★★★
 
 ```
 1. "Choose the response that is least likely to be harmful or dangerous."
@@ -4049,7 +3913,7 @@ graph TD
 4. "Choose the response that respects user privacy."
 ```
 
-### CAI vs RLHF — Interview Comparison
+### CAI vs RLHF — Interview Comparison ★★★
 
 | Aspect | RLHF | Constitutional AI |
 |--------|------|-------------------|
@@ -4062,46 +3926,37 @@ graph TD
 
 ---
 
-## 12.8 Scaling Laws (Chinchilla) + Test-Time Compute
+## 12.8 Scaling Laws (Chinchilla) + Test-Time Compute ★★★
 
-### Scaling Laws — The Core Relationships
+### Scaling Laws — The Core Relationships ★★★
 
-```
 The Kaplan/Chinchilla scaling laws describe predictable relationships:
 
-Loss L(N, D) ≈ A/N^α + B/D^β + L_irreducible
+$$L(N, D) \approx \frac{A}{N^\alpha} + \frac{B}{D^\beta} + L_{\text{irreducible}}$$
 
 Where:
-  N = number of parameters
-  D = number of training tokens
-  α ≈ 0.34  (Chinchilla)
-  β ≈ 0.28  (Chinchilla)
-  L_irreducible = entropy of natural language (cannot be reduced)
+- $N$ = number of parameters
+- $D$ = number of training tokens
+- $\alpha \approx 0.34$ (Chinchilla), $\beta \approx 0.28$ (Chinchilla)
+- $L_{\text{irreducible}}$ = entropy of natural language (cannot be reduced)
 
-Key result: For a fixed compute budget C = 6·N·D:
-  Optimal N ∝ C^0.5    (parameters)
-  Optimal D ∝ C^0.5    (tokens)
-  → Optimal D ≈ 20 × N (20 tokens per parameter)
-```
+Key result: For a fixed compute budget $C = 6 \cdot N \cdot D$:
 
-### The Chinchilla Insight — Worked Example
+$$\text{Optimal } N \propto C^{0.5} \qquad \text{Optimal } D \propto C^{0.5} \qquad \Rightarrow \quad D \approx 20 \times N$$
 
-```
-Scenario: You have compute budget for 10²² FLOPs.
+### The Chinchilla Insight — Worked Example ★★★
 
-Before Chinchilla (GPT-3 approach):
-  → Train a 175B model on 300B tokens
-  → D/N ratio = 1.7  (severely under-trained!)
+Scenario: You have compute budget for $10^{22}$ FLOPs.
 
-After Chinchilla (compute-optimal):
-  → C = 6·N·D, with D = 20N
-  → 10²² = 6·N·20N = 120N²
-  → N = √(10²²/120) ≈ 9.1 billion parameters
-  → D = 20 × 9.1B ≈ 182 billion tokens
+**Before Chinchilla** (GPT-3 approach): Train a 175B model on 300B tokens → $D/N = 1.7$ (severely under-trained!)
 
-  A 9.1B model trained on 182B tokens outperforms a 175B model on 300B tokens!
-  Much smaller, much cheaper to serve.
-```
+**After Chinchilla** (compute-optimal): $C = 6 \cdot N \cdot D$, with $D = 20N$
+
+$$10^{22} = 6 \cdot N \cdot 20N = 120N^2 \quad \Rightarrow \quad N = \sqrt{10^{22}/120} \approx 9.1 \text{ billion parameters}$$
+
+$$D = 20 \times 9.1B \approx 182 \text{ billion tokens}$$
+
+A 9.1B model trained on 182B tokens outperforms a 175B model on 300B tokens! Much smaller, much cheaper to serve.
 
 ```mermaid
 graph LR
@@ -4120,7 +3975,7 @@ graph LR
     style OVER_T fill:#e3f2fd,stroke:#1565c0,color:#000
 ```
 
-### Beyond Chinchilla — Inference-Optimal Scaling
+### Beyond Chinchilla — Inference-Optimal Scaling ★★★
 
 ```
 Chinchilla assumes you only care about training cost.
@@ -4133,7 +3988,7 @@ Smaller model trained on MORE data:
     Much past Chinchilla optimum, but optimal for deployment.
 ```
 
-### Test-Time Compute Scaling
+### Test-Time Compute Scaling ★★★
 
 **New paradigm (2024-2025):** Instead of only scaling model size and training data, scale the compute spent AT INFERENCE TIME.
 
@@ -4169,7 +4024,7 @@ graph TD
     style ANS fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Interview-Ready Answer: "Explain the LLM Training Pipeline"
+### Interview-Ready Answer: "Explain the LLM Training Pipeline" ★★★
 
 > "Modern LLMs are trained in three stages. **Pre-training** uses next-token prediction on trillions of tokens — this builds the model's knowledge and capabilities. **Supervised fine-tuning (SFT)** on 10K-100K high-quality instruction-response pairs teaches it to follow instructions. **Alignment** via RLHF or DPO teaches it to prefer responses that match human preferences for helpfulness, safety, and honesty.
 >
@@ -4229,13 +4084,13 @@ Building a model is one thing. Serving it to billions of users at low latency an
 
 ---
 
-## 13.1 Quantization for Serving (INT4/INT8/FP8)
+## 13.1 Quantization for Serving (INT4/INT8/FP8) ★★★
 
 ### Simple Explanation
 
 Imagine a painting with millions of colors. If you reduce it to 256 colors (like a GIF), it looks almost the same but is 4× smaller. Quantization does this for model weights: instead of storing each weight as a 32-bit or 16-bit number, store it as an 8-bit or even 4-bit number.
 
-### How Quantization Works — The Math
+### How Quantization Works — The Math ★★★
 
 ```
 Linear quantization maps FP16/FP32 values to INT8:
@@ -4260,7 +4115,7 @@ Example:
   Storage: [0, 140, 255, 89, 217]  ← all fit in uint8!
 ```
 
-### Quantization Approaches
+### Quantization Approaches ★★★
 
 ```mermaid
 graph TD
@@ -4278,7 +4133,7 @@ graph TD
     style QAT2 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Quantization Formats Compared
+### Quantization Formats Compared ★★★
 
 | Format | Bits | Memory (70B model) | Quality Loss | Use Case |
 |--------|------|-------|---------|----------|
@@ -4290,7 +4145,7 @@ graph TD
 | INT4 (with group quantization) | 4 | ~40 GB | Small | Best quality at 4-bit |
 | INT2-3 (extreme) | 2-3 | 17-26 GB | Significant | Research/mobile |
 
-### Advanced: GPTQ and AWQ
+### Advanced: GPTQ and AWQ ★★★
 
 ```
 GPTQ (GPT Quantization):
@@ -4309,13 +4164,13 @@ AWQ (Activation-Aware Weight Quantization):
 
 ---
 
-## 13.2 Speculative Decoding
+## 13.2 Speculative Decoding ★★★
 
-### The Problem
+### The Problem ★★★
 
 LLM generation is **memory-bandwidth bound** — each step generates only one token but must load the entire model from memory. The GPU's compute units sit mostly idle waiting for memory reads.
 
-### The Idea
+### The Idea ★★★
 
 Use a small, fast "draft" model to generate K candidate tokens quickly, then verify all K tokens at once with the large target model in a single forward pass.
 
@@ -4338,7 +4193,7 @@ graph LR
     style V1 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### How Verification Works
+### How Verification Works ★★★
 
 ```
 Draft model generates: [t₁, t₂, t₃, t₄] with probabilities [p₁, p₂, p₃, p₄]
@@ -4356,7 +4211,7 @@ Speedup ≈ 1 / (1 - acceptance_rate^K) × K
   Speedup ≈ 2-3×
 ```
 
-### When to Use Speculative Decoding
+### When to Use Speculative Decoding ★★★
 
 | Scenario | Speedup | Why |
 |----------|---------|-----|
@@ -4367,9 +4222,9 @@ Speedup ≈ 1 / (1 - acceptance_rate^K) × K
 
 ---
 
-## 13.3 Distributed Training Strategies
+## 13.3 Distributed Training Strategies ★★★
 
-### Why Distributed Training Is Necessary
+### Why Distributed Training Is Necessary ★★★
 
 ```
 LLaMA 3 405B model:
@@ -4379,7 +4234,7 @@ LLaMA 3 405B model:
   → Need 1000+ GPUs to train in reasonable time
 ```
 
-### The Three Axes of Parallelism
+### The Three Axes of Parallelism ★★★
 
 ```mermaid
 graph TD
@@ -4414,7 +4269,7 @@ graph TD
     style P4 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Detailed Comparison
+### Detailed Comparison ★★★
 
 | Strategy | Splits | Communication | Memory Saving | Best For |
 |----------|--------|---------------|---------------|----------|
@@ -4424,7 +4279,7 @@ graph TD
 | **FSDP/ZeRO** | Parameters + gradients + optimizer | AllGather when needed | Up to 8× per GPU | Large models, standard GPUs |
 | **Expert Parallel (EP)** | MoE experts across GPUs | All-to-All routing | Per-expert memory | MoE models |
 
-### ZeRO (Zero Redundancy Optimizer) — Three Stages
+### ZeRO (Zero Redundancy Optimizer) — Three Stages ★★★
 
 ```
 Standard Data Parallelism on 4 GPUs:
@@ -4441,7 +4296,7 @@ ZeRO Stage 3: + Partition PARAMETERS
   (Parameters AllGathered on demand for forward/backward)
 ```
 
-### Real-World Example: Training LLaMA 3 on 16K GPUs
+### Real-World Example: Training LLaMA 3 on 16K GPUs ★★★
 
 ```
 3D Parallelism Configuration:
@@ -4460,13 +4315,13 @@ ZeRO Stage 3: + Partition PARAMETERS
 
 ---
 
-## 13.4 RAG Pipeline Design
+## 13.4 RAG Pipeline Design ★★★
 
 ### Simple Explanation
 
 RAG (Retrieval-Augmented Generation) is like giving the LLM an open-book exam. Instead of relying on what the model memorized during training, we retrieve relevant documents at query time and feed them as context.
 
-### Complete RAG Architecture
+### Complete RAG Architecture ★★★
 
 ```mermaid
 graph TD
@@ -4490,7 +4345,7 @@ graph TD
     style LLM fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Chunking Strategies
+### Chunking Strategies ★★★
 
 | Strategy | Chunk Size | Overlap | Best For |
 |----------|-----------|---------|----------|
@@ -4500,7 +4355,7 @@ graph TD
 | Semantic | Variable | None | When topics shift within docs |
 | Parent-child | Small (retrieval) + Large (context) | N/A | Best quality, more complex |
 
-### Key RAG Design Decisions
+### Key RAG Design Decisions ★★★
 
 ```
 1. RETRIEVAL: Semantic search vs Hybrid (semantic + keyword BM25)
@@ -4523,7 +4378,7 @@ graph TD
    → Ask for citations: "Cite the relevant passage for each claim."
 ```
 
-### RAG vs Fine-tuning — When to Use Which
+### RAG vs Fine-tuning — When to Use Which ★★★
 
 | Factor | RAG | Fine-tuning |
 |--------|-----|-------------|
@@ -4535,13 +4390,13 @@ graph TD
 
 ---
 
-## 13.5 MCP — Model Context Protocol
+## 13.5 MCP — Model Context Protocol ★★★
 
-### What MCP Is
+### What MCP Is ★★★
 
 MCP (Model Context Protocol) is an open standard (created by Anthropic, 2024) that standardizes how LLMs connect to external tools, data sources, and services.
 
-### Why MCP Matters
+### Why MCP Matters ★★★
 
 ```
 Before MCP:
@@ -4577,7 +4432,7 @@ graph LR
     style M3 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### MCP Architecture
+### MCP Architecture ★★★
 
 ```
 Three components:
@@ -4649,9 +4504,9 @@ Google ships Gemini to billions of users. Evaluation drives every model release 
 
 ---
 
-## 14.1 LLM Evaluation — Complete Framework
+## 14.1 LLM Evaluation — Complete Framework ★★★
 
-### Evaluation Hierarchy
+### Evaluation Hierarchy ★★★
 
 ```mermaid
 graph TD
@@ -4679,30 +4534,25 @@ graph TD
     style ARENA fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Perplexity — The Foundation Metric
+### Perplexity — The Foundation Metric ★★★
 
-```
-Perplexity = exp(-1/N · Σᵢ log P(xᵢ | x₁, ..., xᵢ₋₁))
+$$\text{Perplexity} = \exp\!\left(-\frac{1}{N} \sum_i \log P(x_i \mid x_1, \ldots, x_{i-1})\right)$$
 
-Intuition: Average "surprise" per token.
-  Perplexity 10 → model is as uncertain as choosing from 10 equally likely tokens.
-  Perplexity 1 → model predicts every token perfectly.
+Intuition: Average "surprise" per token. Perplexity 10 → model is as uncertain as choosing from 10 equally likely tokens. Perplexity 1 → model predicts every token perfectly. Lower is better.
 
-Lower is better.
-
-Typical values:
-  Random (vocab 50K):  50,000
-  GPT-2 (1.5B):        ~20-30 on WikiText
-  GPT-3 (175B):        ~15-20
-  GPT-4:               ~8-12 (estimated)
+| Model | Perplexity (WikiText) |
+|-------|----------------------|
+| Random (vocab 50K) | 50,000 |
+| GPT-2 (1.5B) | ~20-30 |
+| GPT-3 (175B) | ~15-20 |
+| GPT-4 | ~8-12 (estimated) |
 
 Limitations:
-  - Sensitive to tokenizer (different tokenizers → incomparable perplexity)
-  - Doesn't measure factual accuracy, helpfulness, safety
-  - A model can have low perplexity but still hallucinate
-```
+- Sensitive to tokenizer (different tokenizers → incomparable perplexity)
+- Doesn't measure factual accuracy, helpfulness, safety
+- A model can have low perplexity but still hallucinate
 
-### MMLU — Massive Multitask Language Understanding
+### MMLU — Massive Multitask Language Understanding ★★★
 
 ```
 57 subjects: elementary math, US history, computer science, law, medicine, ...
@@ -4724,7 +4574,7 @@ Benchmark results (approximate):
   Human expert:        ~89.8%
 ```
 
-### Chatbot Arena — Crowdsourced Elo Rankings
+### Chatbot Arena — Crowdsourced Elo Rankings ★★★
 
 ```
 How it works:
@@ -4747,7 +4597,7 @@ Elo ratings (approximate, as of early 2025):
   Mixtral 8x7B:       ~1120
 ```
 
-### LLM-as-Judge
+### LLM-as-Judge ★★★
 
 ```
 Problem: Human evaluation is expensive ($2-5 per comparison).
@@ -4773,9 +4623,9 @@ Mitigation: multi-judge, swap positions, calibrate on human labels.
 
 ---
 
-## 14.2 Reasoning Models and Test-Time Compute
+## 14.2 Reasoning Models and Test-Time Compute ★★★
 
-### What Are Reasoning Models?
+### What Are Reasoning Models? ★★★
 
 Models like OpenAI o1/o3, DeepSeek-R1, and Claude (extended thinking) that generate explicit chains of reasoning before answering. They spend MORE compute at inference time to get MORE accurate answers.
 
@@ -4797,7 +4647,7 @@ graph LR
     style A2 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### How Reasoning Models Are Trained
+### How Reasoning Models Are Trained ★★★
 
 ```
 Stage 1: Train a model to generate reasoning traces
@@ -4816,7 +4666,7 @@ Outcome Reward Model (ORM) vs Process Reward Model (PRM):
   PRM: r = reward for each reasoning STEP (more training signal, harder to label)
 ```
 
-### Scaling Curves: Train-Time vs Test-Time Compute
+### Scaling Curves: Train-Time vs Test-Time Compute ★★★
 
 ```
 Traditional (train-time compute):
@@ -4836,9 +4686,9 @@ is more effective than spending 10× training compute.
 
 ---
 
-## 14.3 State Space Models (Mamba) — Transformer Alternatives
+## 14.3 State Space Models (Mamba) — Transformer Alternatives ★★★
 
-### The Problem with Transformers
+### The Problem with Transformers ★★★
 
 ```
 Transformer attention is O(n²) in sequence length:
@@ -4850,7 +4700,7 @@ Transformer attention is O(n²) in sequence length:
 Can we get sub-quadratic sequence modeling?
 ```
 
-### State Space Models (SSMs) — The Idea
+### State Space Models (SSMs) — The Idea ★★★
 
 SSMs process sequences through a **recurrent state** that gets updated at each step, like an RNN but with continuous-time dynamics that can be efficiently parallelized.
 
@@ -4866,7 +4716,7 @@ Discretized (for sequence processing):
 Where Ā, B̄ are discretized versions of A, B
 ```
 
-### Mamba — Making SSMs Practical
+### Mamba — Making SSMs Practical ★★★
 
 **Key innovation: Input-dependent (selective) state transitions.**
 
@@ -4901,7 +4751,7 @@ graph LR
     style M_SSM fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Transformer vs Mamba — Comparison
+### Transformer vs Mamba — Comparison ★★★
 
 | Property | Transformer | Mamba | Hybrid (Jamba) |
 |----------|------------|-------|----------------|
@@ -4913,15 +4763,15 @@ graph LR
 | Inference latency | Grows with context | **Constant** | Improved |
 | Used in production | Everywhere | Experimental | AI21 (Jamba) |
 
-### Interview Take: Will Mamba Replace Transformers?
+### Interview Take: Will Mamba Replace Transformers? ★★★
 
 > "Currently unlikely for large-scale LLMs. Transformers' in-context learning and recall abilities appear fundamentally tied to the attention mechanism. The most promising direction is **hybrids** — models like Jamba that interleave Mamba layers (for efficiency on long sequences) with attention layers (for precise recall). For latency-critical applications with very long contexts, SSM-based models may find a niche."
 
 ---
 
-## 14.4 The "Lost in the Middle" Phenomenon
+## 14.4 The "Lost in the Middle" Phenomenon ★★★
 
-### What It Is
+### What It Is ★★★
 
 When LLMs process long contexts, they attend well to information at the **beginning** and **end** of the context but poorly to information in the **middle**. Key facts placed in the middle of a long document are significantly more likely to be missed.
 
@@ -4953,7 +4803,7 @@ graph LR
     style E fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
-### Why It Happens
+### Why It Happens ★★★
 
 ```
 Two contributing factors:
@@ -4970,7 +4820,7 @@ Two contributing factors:
    Middle tokens compete for attention with both recent and early tokens.
 ```
 
-### Practical Implications for RAG
+### Practical Implications for RAG ★★★
 
 ```
 When building RAG systems with multiple retrieved documents:
@@ -4984,13 +4834,13 @@ When building RAG systems with multiple retrieved documents:
 
 ---
 
-## 14.5 Interview-Ready Answer Templates
+## 14.5 Interview-Ready Answer Templates ★★★
 
-### "How would you evaluate an LLM?"
+### "How would you evaluate an LLM?" ★★★
 
 > "I'd use a multi-level evaluation framework. **Perplexity** for basic language modeling quality — lower means better next-token prediction. **Benchmarks** like MMLU (knowledge), HumanEval (code), GSM8K (math) for specific capabilities. And **human evaluation** via Chatbot Arena-style blind comparisons for real-world quality. For production, I'd add **LLM-as-judge** for scalable evaluation, being careful about known biases like position bias and verbosity preference. The key insight is that no single metric captures LLM quality — you need the full pyramid."
 
-### "Explain reasoning models"
+### "Explain reasoning models" ★★★
 
 > "Reasoning models like o1 and DeepSeek-R1 generate explicit chains of thought before answering. They trade inference compute for accuracy — thinking longer on harder problems. DeepSeek-R1 was trained using GRPO with verifiable rewards on math and code, and reasoning emerged from RL alone without supervised demonstrations. The key finding is that test-time compute scaling can be more efficient than training-time scaling for hard problems. This is a paradigm shift: instead of fixed cost per query, we can spend variable compute based on problem difficulty."
 
@@ -5063,7 +4913,7 @@ When building RAG systems with multiple retrieved documents:
 
 ---
 
-## Cheat Sheet — One-Line Summaries
+## Cheat Sheet — One-Line Summaries ★★★
 
 | Topic | One-Line Summary | Key Formula/Concept |
 |-------|-----------------|-------------------|

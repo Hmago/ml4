@@ -82,7 +82,7 @@ all by predicting "what word should come next?"
 
 ---
 
-### Q2. What is a Transformer? Why did it replace RNNs and LSTMs?
+### Q2. What is a Transformer? Why did it replace RNNs and LSTMs? ★★★
 *[ARCH] | ★★*
 
 **Simple Answer:**
@@ -126,7 +126,7 @@ instantly jump back to any part of the book.
 
 ---
 
-### Q3. Explain the self-attention mechanism.
+### Q3. Explain the self-attention mechanism. ★★★
 *[ARCH] | ★★*
 
 **Simple Answer:**
@@ -157,20 +157,20 @@ me understand what I mean?"
 > **Self-attention** computes a weighted sum of all token representations in a sequence,
 > where the weights (attention scores) are determined by the compatibility between tokens.
 > Each token produces a Query (Q), Key (K), and Value (V) vector. Attention scores are
-> computed as: Attention(Q, K, V) = softmax(QK^T / √d_k) · V, where d_k is the
+> computed as: $\text{Attention}(Q, K, V) = \text{softmax}(QK^T / \sqrt{d_k}) \cdot V$, where $d_k$ is the
 > key dimension (the scaling prevents large dot products from saturating softmax).
 
 **Interview Answer:**
 - Each token creates three vectors: Query ("what am I looking for?"), Key ("what do I contain?"), Value ("what information do I carry?")
-- Attention score = dot product of Query with all Keys, scaled by √d_k
+- Attention score = dot product of Query with all Keys, scaled by $\sqrt{d_k}$
 - Softmax converts scores to weights that sum to 1
 - Output = weighted sum of all Value vectors
 - **Multi-head attention** runs this process multiple times in parallel — each "head" can capture different relationship types (grammar, coreference, semantics)
-- Complexity is O(n²) in sequence length — this is why long context windows are expensive
+- Complexity is $O(n^2)$ in sequence length — this is why long context windows are expensive
 
 ---
 
-### Q4. What is tokenization? Why don't LLMs work with words directly?
+### Q4. What is tokenization? Why don't LLMs work with words directly? ★★
 *[ARCH] | ★*
 
 **Simple Answer:**
@@ -345,7 +345,7 @@ the entire textbook every night.
 
 ---
 
-### Q8. What is multi-head attention and why use multiple heads?
+### Q8. What is multi-head attention and why use multiple heads? ★★★
 *[ARCH] | ★★*
 
 **Simple Answer:**
@@ -567,7 +567,7 @@ but fast (only a small fraction runs per word).
 
 ---
 
-### Q13. Explain the three stages of LLM training: pre-training, SFT, and RLHF.
+### Q13. Explain the three stages of LLM training: pre-training, SFT, and RLHF. ★★★
 *[TRAIN] | ★★*
 
 **Simple Answer:**
@@ -628,7 +628,7 @@ polished, helpful, and safe.
 
 ---
 
-### Q14. What is RLHF and how does it work?
+### Q14. What is RLHF and how does it work? ★★★
 *[TRAIN] | ★★★*
 
 **Simple Answer:**
@@ -686,7 +686,7 @@ of answers that humans prefer.
 
 ---
 
-### Q15. What is DPO and how is it different from RLHF?
+### Q15. What is DPO and how is it different from RLHF? ★★★
 *[TRAIN] | ★★*
 
 **Simple Answer:**
@@ -731,7 +731,7 @@ just does it in fewer steps with less complexity.
 
 ---
 
-### Q16. What is fine-tuning? When would you fine-tune vs. use prompting?
+### Q16. What is fine-tuning? When would you fine-tune vs. use prompting? ★★★
 *[TRAIN] | ★★*
 
 **Simple Answer:**
@@ -779,7 +779,7 @@ afterwards they just "know" how to be a medical expert without reminders.
 
 ---
 
-### Q17. What is LoRA and why is it the go-to fine-tuning method?
+### Q17. What is LoRA and why is it the go-to fine-tuning method? ★★★
 *[TRAIN] | ★★*
 
 **Simple Answer:**
@@ -1067,7 +1067,7 @@ precise numbers (32-bit) where it really matters."
 
 ---
 
-### Q23. What is prompt engineering? Why does it matter?
+### Q23. What is prompt engineering? Why does it matter? ★★
 *[PROMPT] | ★*
 
 **Simple Answer:**
@@ -1111,7 +1111,7 @@ with a moral about bravery" → exactly what you wanted.
 
 ---
 
-### Q24. What is few-shot prompting vs. zero-shot prompting?
+### Q24. What is few-shot prompting vs. zero-shot prompting? ★★
 *[PROMPT] | ★*
 
 **Simple Answer:**
@@ -1168,7 +1168,7 @@ with a moral about bravery" → exactly what you wanted.
 
 ---
 
-### Q25. What is Chain-of-Thought (CoT) prompting?
+### Q25. What is Chain-of-Thought (CoT) prompting? ★★
 *[PROMPT] | ★★*
 
 **Simple Answer:**
@@ -1310,7 +1310,7 @@ asks about pricing, redirect them to sales."
 
 ---
 
-### Q28. What is ReAct prompting?
+### Q28. What is ReAct prompting? ★★
 *[PROMPT] | ★★*
 
 **Simple Answer:**
@@ -1351,7 +1351,7 @@ to find the current weather") and acting (actually calling a weather API).
 
 ---
 
-### Q29. What is prompt injection and how do you defend against it?
+### Q29. What is prompt injection and how do you defend against it? ★★
 *[PROMPT] | ★★*
 
 **Simple Answer:**
@@ -1464,7 +1464,7 @@ the answer that most of them agree on.
 
 ---
 
-### Q31. What is RAG (Retrieval-Augmented Generation)?
+### Q31. What is RAG (Retrieval-Augmented Generation)? ★★★
 *[RAG] | ★★*
 
 **Simple Answer:**
@@ -1615,7 +1615,7 @@ their meanings are similar, even though the words are different.
 
 ---
 
-### Q34. How do you chunk documents for RAG? What are the trade-offs?
+### Q34. How do you chunk documents for RAG? What are the trade-offs? ★★★
 *[RAG] | ★★*
 
 **Simple Answer:**
@@ -1675,7 +1675,7 @@ enough to be useful, but big enough to make sense on its own.
 
 ---
 
-### Q35. What is a reranker and why is it used in RAG pipelines?
+### Q35. What is a reranker and why is it used in RAG pipelines? ★★★
 *[RAG] | ★★*
 
 **Simple Answer:**
@@ -1724,7 +1724,7 @@ and picks the best 5.
 
 ---
 
-### Q36. How do you evaluate a RAG system?
+### Q36. How do you evaluate a RAG system? ★★★
 *[RAG] | ★★*
 
 **Simple Answer:**
@@ -1776,7 +1776,7 @@ the right documents. You need to check both.
 
 ---
 
-### Q37. RAG vs. fine-tuning — when to use which?
+### Q37. RAG vs. fine-tuning — when to use which? ★★★
 *[RAG] | ★★*
 
 **Simple Answer:**
@@ -1875,7 +1875,7 @@ in the same direction?" not "how bright are they?"
 
 ---
 
-### Q39. What is quantization and why is it critical for LLM deployment?
+### Q39. What is quantization and why is it critical for LLM deployment? ★★
 *[DEPLOY] | ★★*
 
 **Simple Answer:**
@@ -1927,7 +1927,7 @@ you round them down to use fewer bits (8 or even 4).
 
 ---
 
-### Q40. What is Flash Attention?
+### Q40. What is Flash Attention? ★★
 *[DEPLOY] | ★★★*
 
 **Simple Answer:**
@@ -1977,7 +1977,7 @@ at a time.
 
 ---
 
-### Q41. What is speculative decoding?
+### Q41. What is speculative decoding? ★★
 *[DEPLOY] | ★★★*
 
 **Simple Answer:**
@@ -2024,7 +2024,7 @@ each sentence from scratch (slow).
 
 ---
 
-### Q42. What is continuous batching and why does it matter for LLM serving?
+### Q42. What is continuous batching and why does it matter for LLM serving? ★★
 *[DEPLOY] | ★★*
 
 **Simple Answer:**
@@ -2074,7 +2074,7 @@ and seat a new group." The kitchen (GPU) is always busy.
 
 ---
 
-### Q43. What is vLLM and PagedAttention?
+### Q43. What is vLLM and PagedAttention? ★★
 *[DEPLOY] | ★★★*
 
 **Simple Answer:**
@@ -2120,7 +2120,7 @@ that can be stored anywhere. Just like how your computer manages RAM.
 
 ---
 
-### Q44. How do you reduce the latency of LLM responses?
+### Q44. How do you reduce the latency of LLM responses? ★★
 *[DEPLOY] | ★★*
 
 **Simple Answer:**
@@ -2169,7 +2169,7 @@ make LLMs faster:
 
 ---
 
-### Q45. What is model parallelism and when do you need it?
+### Q45. What is model parallelism and when do you need it? ★★
 *[DEPLOY] | ★★*
 
 **Simple Answer:**
@@ -2426,7 +2426,7 @@ very confused — high perplexity.
 ```
 
 **Official Definition:**
-> **Perplexity** = 2^(average cross-entropy loss) = 2^(-1/N × Σ log₂ P(token_i | context)).
+> **Perplexity** $= 2^{\text{average cross-entropy loss}} = 2^{-\frac{1}{N} \sum \log_2 P(\text{token}_i \mid \text{context})}$.
 > It represents the effective number of equally likely tokens the model is choosing
 > between at each step. Lower perplexity indicates better next-token prediction. However,
 > it measures language modeling quality, not downstream task performance, helpfulness,
@@ -2749,7 +2749,7 @@ let them self-evaluate.
 
 ---
 
-### Q56. What is hallucination in LLMs? How do you reduce it?
+### Q56. What is hallucination in LLMs? How do you reduce it? ★★
 *[SAFE] | ★★*
 
 **Simple Answer:**
@@ -2863,7 +2863,7 @@ data — but it can cause harm when the model is used to make real decisions.
 
 ---
 
-### Q58. What is prompt injection and why is it the #1 LLM security risk?
+### Q58. What is prompt injection and why is it the #1 LLM security risk? ★★
 *[SAFE] | ★★*
 
 **Simple Answer:**
@@ -3148,7 +3148,7 @@ to solve the problem.
 
 ---
 
-### Q63. What are AI agents and how do they work?
+### Q63. What are AI agents and how do they work? ★★
 *[APP] | ★★*
 
 **Simple Answer:**
@@ -3206,7 +3206,7 @@ someone who gives you directions vs. someone who drives you there.
 
 ---
 
-### Q64. What is MCP (Model Context Protocol)?
+### Q64. What is MCP (Model Context Protocol)? ★★
 *[APP] | ★★*
 
 **Simple Answer:**

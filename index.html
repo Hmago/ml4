@@ -418,8 +418,8 @@ body.sidebar-collapsed .sidebar {
   overflow-x: auto;
 }
 
-.content .katex { font-size: 1.1em; }
-.content .katex-display .katex { font-size: 1.25em; }
+.content .katex { font-size: 0.975em; }
+.content .katex-display .katex { font-size: 1.045em; }
 
 .content details {
   margin: 16px 0;
@@ -658,7 +658,7 @@ body.sidebar-collapsed .sidebar {
   .dsa-problem-row { padding: 10px 12px; gap: 8px; }
   .dsa-problem-row .title { font-size: 13px; }
   .dsa-problem-row .category { display: none; }
-  .dsa-editor { min-height: 250px; font-size: 13px; }
+  .dsa-editor { min-height: 250px; font-size: 13px; padding: 14px 12px; }
   .dsa-add-form .row { flex-direction: column; gap: 0; }
 
   /* ── Comments ── */
@@ -942,6 +942,19 @@ body.sidebar-collapsed .sidebar {
 .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
 .copy-btn.copied { color: var(--success); border-color: var(--success); }
 
+/* Chart.js containers */
+.chart-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  max-width: 600px;
+}
+.chart-container canvas {
+  max-height: 350px;
+}
+
 /* Reading time badge */
 .reading-time {
   display: inline-block;
@@ -1221,42 +1234,152 @@ body.sidebar-collapsed .sidebar {
 
 /* ─── Code editor page ─── */
 .dsa-problem-page { max-width:960px; margin:0 auto; }
-.dsa-back-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); cursor:pointer; font-size:13px; margin-bottom:16px; transition:all 0.15s; }
-.dsa-back-btn:hover { border-color:var(--accent); color:var(--accent); }
+.dsa-back-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); cursor:pointer; font-size:13px; margin-bottom:16px; transition:all 0.2s; }
+.dsa-back-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); transform:translateX(-2px); }
 
 .dsa-problem-meta { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 16px; }
-.dsa-tag { font-size:11px; padding:2px 8px; border-radius:10px; background:var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border); }
-.dsa-link { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--accent); text-decoration:none; }
-.dsa-link:hover { text-decoration:underline; }
+.dsa-tag { font-size:11px; padding:3px 10px; border-radius:10px; background:var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border); }
+.dsa-link { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--accent); text-decoration:none; padding:3px 10px; border-radius:8px; transition:all 0.15s; }
+.dsa-link:hover { background:var(--accent-light); text-decoration:none; }
 
-.dsa-description { background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:16px; font-size:14px; line-height:1.7; }
-.dsa-description code { background:var(--code-bg); padding:1px 5px; border-radius:4px; font-size:13px; border:1px solid var(--border); }
+.dsa-description { background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:18px; font-size:14px; line-height:1.7; }
+.dsa-description code { background:var(--code-bg); padding:2px 6px; border-radius:5px; font-size:13px; border:1px solid var(--border); }
 
-.dsa-editor-wrap { border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:12px; }
-.dsa-editor-toolbar { display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:var(--bg-secondary); border-bottom:1px solid var(--border); }
-.dsa-editor-toolbar .lang { font-size:13px; font-weight:600; color:var(--text-secondary); }
-.dsa-editor-toolbar .actions { display:flex; gap:8px; }
-.dsa-editor-toolbar button { padding:5px 14px; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text); font-size:13px; cursor:pointer; transition:all 0.15s; }
-.dsa-editor-toolbar button:hover { border-color:var(--accent); color:var(--accent); }
-.dsa-editor-toolbar .run-btn { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
-.dsa-editor-toolbar .run-btn:hover { opacity:0.85; }
-.dsa-editor-toolbar .run-btn:disabled { opacity:0.5; cursor:wait; }
-
-.dsa-editor {
-  width:100%; min-height:400px; padding:14px 16px; border:none; outline:none; resize:vertical;
-  font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
-  font-size:14px; line-height:1.55; tab-size:4;
-  background:var(--code-bg); color:var(--text);
+/* ─── Editor — IDE-inspired theme ─── */
+.dsa-editor-wrap {
+  border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  transition: box-shadow 0.3s;
+}
+.dsa-editor-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 4px 24px rgba(9,105,218,0.12), 0 0 0 3px rgba(9,105,218,0.08);
+}
+[data-theme="dark"] .dsa-editor-wrap:focus-within {
+  box-shadow: 0 4px 24px rgba(88,166,255,0.1), 0 0 0 3px rgba(88,166,255,0.1);
 }
 
-.dsa-output-wrap { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-.dsa-output-header { padding:8px 14px; background:var(--bg-secondary); border-bottom:1px solid var(--border); font-size:13px; font-weight:600; color:var(--text-secondary); display:flex; align-items:center; gap:8px; }
-.dsa-output { padding:14px 16px; font-family:monospace; font-size:13px; white-space:pre-wrap; min-height:60px; max-height:300px; overflow-y:auto; color:var(--text); background:var(--code-bg); }
-.dsa-output.error { color:#ef4444; }
-.dsa-output.running { color:var(--text-secondary); font-style:italic; }
+.dsa-editor-toolbar {
+  display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+:root:not([data-theme="dark"]) .dsa-editor-toolbar {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+.dsa-editor-toolbar .lang {
+  font-size:13px; font-weight:700; color:#94a3b8;
+  display:flex; align-items:center; gap:6px;
+}
+.dsa-editor-toolbar .lang::before {
+  content:''; display:inline-block; width:10px; height:10px; border-radius:50%;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 0 6px rgba(249,115,22,0.4);
+}
+.dsa-editor-toolbar .actions { display:flex; gap:8px; }
+.dsa-editor-toolbar button {
+  padding:6px 16px; border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+  background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:13px; cursor:pointer;
+  transition:all 0.2s; backdrop-filter:blur(4px);
+}
+.dsa-editor-toolbar button:hover { background:rgba(255,255,255,0.12); color:#f1f5f9; border-color:rgba(255,255,255,0.2); }
+.dsa-editor-toolbar .run-btn {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color:#fff; border:1px solid rgba(34,197,94,0.3); font-weight:700;
+  position:static; opacity:1;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+  letter-spacing: 0.3px;
+}
+.dsa-editor-toolbar .run-btn:hover { opacity:0.9; box-shadow: 0 4px 16px rgba(34,197,94,0.4); transform:translateY(-1px); }
+.dsa-editor-toolbar .run-btn:disabled { opacity:0.4; cursor:wait; transform:none; box-shadow:none; }
 
-.dsa-save-indicator { font-size:12px; color:var(--success); margin-left:8px; opacity:0; transition:opacity 0.3s; }
+.dsa-editor {
+  width:100%; min-height:420px; padding:18px 20px; border:none; outline:none; resize:vertical;
+  font-family:'JetBrains Mono','Fira Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  font-size:14px; line-height:1.65; tab-size:4; letter-spacing:0.2px;
+  background: #0f172a;
+  color: #e2e8f0;
+  caret-color: #38bdf8;
+}
+:root:not([data-theme="dark"]) .dsa-editor {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.dsa-editor::placeholder { color: #475569; }
+.dsa-editor::selection { background: rgba(56,189,248,0.25); }
+
+/* ─── Output panel ─── */
+.dsa-output-wrap {
+  border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.dsa-output-header {
+  padding:10px 16px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  font-size:13px; font-weight:700; color:#94a3b8;
+  display:flex; align-items:center; gap:8px;
+}
+:root:not([data-theme="dark"]) .dsa-output-header {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+.dsa-output-header::before {
+  content:''; display:inline-block; width:8px; height:8px; border-radius:50%;
+  background:#475569;
+}
+.dsa-output-header:has(+ .dsa-output:not(:empty):not(.running):not(.error))::before { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,0.5); }
+.dsa-output-header:has(+ .dsa-output.error)::before { background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.5); }
+.dsa-output-header:has(+ .dsa-output.running)::before { background:#f59e0b; box-shadow:0 0 6px rgba(245,158,11,0.5); animation:pulse-dot 1s ease infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+.dsa-output {
+  padding:16px 20px; font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px;
+  white-space:pre-wrap; min-height:70px; max-height:300px; overflow-y:auto;
+  color:#e2e8f0; background:#0f172a;
+}
+:root:not([data-theme="dark"]) .dsa-output { background:#0f172a; color:#e2e8f0; }
+.dsa-output.error { color:#f87171; }
+.dsa-output.running { color:#94a3b8; font-style:italic; }
+
+.dsa-save-indicator { font-size:12px; color:#22c55e; margin-left:8px; opacity:0; transition:opacity 0.3s; }
 .dsa-save-indicator.show { opacity:1; }
+
+/* ─── Keyboard shortcut hint ─── */
+.dsa-hint { display:flex; align-items:center; justify-content:center; gap:16px; padding:8px 0; font-size:12px; color:var(--text-secondary); margin-top:6px; }
+.dsa-hint kbd {
+  display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--border);
+  border-radius:5px; background:var(--bg-secondary); font-family:inherit; font-size:11px;
+  box-shadow:0 1px 0 var(--border);
+}
+
+/* ─── Fullscreen IDE mode ─── */
+.dsa-fullscreen .dsa-problem-page {
+  max-width:100%; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); overflow-y:auto;
+  padding:12px 20px; margin:0;
+  display:flex; flex-direction:column;
+}
+.dsa-fullscreen .dsa-back-btn { display:none; }
+.dsa-fullscreen .dsa-description { display:none; }
+.dsa-fullscreen h1 { font-size:18px !important; margin:0 0 4px !important; }
+.dsa-fullscreen .dsa-problem-meta { margin:4px 0 10px; }
+.dsa-fullscreen .dsa-editor-wrap { flex:1; display:flex; flex-direction:column; margin-bottom:10px; }
+.dsa-fullscreen .dsa-editor { flex:1; min-height:0; resize:none; }
+.dsa-fullscreen .dsa-output-wrap { max-height:200px; }
+.dsa-fullscreen .dsa-output { max-height:150px; }
+.dsa-fullscreen .dsa-hint { display:none; }
+.dsa-fs-btn {
+  padding:6px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+  background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:13px; cursor:pointer;
+  transition:all 0.2s;
+}
+.dsa-fs-btn:hover { background:rgba(255,255,255,0.12); color:#f1f5f9; }
+.dsa-fullscreen .dsa-fs-exit {
+  position:fixed; top:12px; right:16px; z-index:10000;
+  padding:8px 16px; border-radius:8px; font-weight:600;
+  background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);
+}
+.dsa-fullscreen .dsa-fs-exit:hover { background:rgba(239,68,68,0.25); }
 
 .dsa-add-btn { padding:8px 18px; border:1px solid var(--accent); border-radius:10px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
 .dsa-add-btn:hover { opacity:0.85; transform:translateY(-1px); }
@@ -1906,6 +2029,7 @@ mark.user-hl:hover::after { display: flex; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="quizzes.js"></script>
 <script src="dsa_problems.js"></script>
 <script>
@@ -1979,6 +2103,7 @@ let fontSize = parseInt(localStorage.getItem('ml4-fontsize') || '0');
 // ─── Marked Config ───
 marked.setOptions({
   highlight: function(code, lang) {
+    if (lang === 'chart' || lang === 'mermaid') return code;
     if (lang && hljs.getLanguage(lang)) {
       return hljs.highlight(code, { language: lang }).value;
     }
@@ -1987,6 +2112,27 @@ marked.setOptions({
   breaks: false,
   gfm: true,
 });
+
+// ─── Math Protection: extract LaTeX before marked.js can corrupt it ───
+function protectMath(md) {
+  var store = [];
+  // Protect display math $$...$$ first (may span multiple lines)
+  md = md.replace(/\$\$([\s\S]*?)\$\$/g, function(m) {
+    store.push(m);
+    return '\n\nXMATHBLOCKX' + (store.length - 1) + 'XENDMATHX\n\n';
+  });
+  // Protect inline math $...$ (single line only)
+  md = md.replace(/\$([^\$\n]+?)\$/g, function(m) {
+    store.push(m);
+    return 'XMATHINLINEX' + (store.length - 1) + 'XENDMATHX';
+  });
+  return { md: md, store: store };
+}
+function restoreMath(html, store) {
+  return html.replace(/XMATH(?:BLOCK|INLINE)X(\d+)XENDMATHX/g, function(_, id) {
+    return store[parseInt(id)];
+  });
+}
 
 // ─── Theme ───
 function initTheme() {
@@ -2070,7 +2216,8 @@ async function loadChapter(index) {
       cachedContent[ch.file] = md;
     }
 
-    contentEl.innerHTML = marked.parse(md);
+    var mathProtected = protectMath(md);
+    contentEl.innerHTML = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
     contentEl.innerHTML += renderNavButtons();
 
     // Render LaTeX math formulas with KaTeX
@@ -2617,6 +2764,9 @@ function enhanceContent() {
     mermaid.init(undefined, '.mermaid');
   }
 
+  // 5b. Chart.js charts
+  renderCharts(contentEl);
+
   // 6. Python Run buttons on code blocks
   addRunButtons(contentEl);
 
@@ -2911,6 +3061,7 @@ function renderQuizQuestion() {
       `).join('')}
       <div id="quizFeedback"></div>
     </div>`;
+  if (window.renderMathInElement) renderMathInElement(overlay, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
 }
 
 function closeQuiz() {
@@ -2956,13 +3107,15 @@ function answerQuiz(selected) {
   });
 
   // Show explanation
-  document.getElementById('quizFeedback').innerHTML = `
+  const fb = document.getElementById('quizFeedback');
+  fb.innerHTML = `
     <div class="quiz-explanation">
       ${isCorrect ? '✅ Correct!' : '❌ Incorrect.'} ${q.explanation}
     </div>
     <button class="quiz-next-btn" onclick="quizState.current++; renderQuizQuestion()">
       ${quizState.current + 1 < quizState.questions.length ? 'Next Question →' : 'See Results'}
     </button>`;
+  if (window.renderMathInElement) renderMathInElement(fb, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
 }
 
 // ─── Override toggleReadStatus to trigger quiz + confetti + XP ───
@@ -3003,8 +3156,11 @@ loadChapter = async function(index) {
   await _origLoadChapter(index);
   if (index >= 0 && index < chapters.length && !chapters[index].section) {
     enhanceContent();
-    // Always add Python run buttons (even in classic mode)
-    if (!interactiveMode) addRunButtons(document.getElementById('content'));
+    // Always render charts and run buttons (even in classic mode)
+    if (!interactiveMode) {
+      renderCharts(document.getElementById('content'));
+      addRunButtons(document.getElementById('content'));
+    }
     // Restore saved highlights
     loadHighlights(chapters[index].file);
     // Always inject comments at bottom of chapter
@@ -3017,11 +3173,61 @@ if (window.mermaid) {
   mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
 }
 
+// ─── Render Chart.js charts ───
+function renderCharts(root) {
+  console.log('[renderCharts] called, Chart available:', !!window.Chart);
+  if (!window.Chart) return;
+  const blocks = root.querySelectorAll('code.language-chart');
+  console.log('[renderCharts] found blocks:', blocks.length);
+  if (blocks.length === 0) {
+    // Try alternate selectors
+    const allCode = root.querySelectorAll('code[class]');
+    console.log('[renderCharts] all code elements with class:', Array.from(allCode).map(c => c.className));
+  }
+  blocks.forEach(block => {
+    const pre = block.parentElement;
+    const wrapper = pre.parentElement?.classList.contains('code-wrapper') ? pre.parentElement : pre;
+    try {
+      const config = JSON.parse(block.textContent);
+      const container = document.createElement('div');
+      container.className = 'chart-container';
+      const canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+      wrapper.replaceWith(container);
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+      const textColor = isDark ? '#e6edf3' : '#1f2328';
+      if (!config.options) config.options = {};
+      if (!config.options.plugins) config.options.plugins = {};
+      if (!config.options.plugins.legend) config.options.plugins.legend = {};
+      if (!config.options.plugins.legend.labels) config.options.plugins.legend.labels = {};
+      config.options.plugins.legend.labels.color = textColor;
+      if (!config.options.plugins.title) config.options.plugins.title = {};
+      config.options.plugins.title.color = textColor;
+      if (!config.options.scales) config.options.scales = {};
+      for (const axis of ['x', 'y']) {
+        if (!config.options.scales[axis]) config.options.scales[axis] = {};
+        if (!config.options.scales[axis].ticks) config.options.scales[axis].ticks = {};
+        config.options.scales[axis].ticks.color = textColor;
+        if (!config.options.scales[axis].grid) config.options.scales[axis].grid = {};
+        config.options.scales[axis].grid.color = gridColor;
+        if (config.options.scales[axis].title) config.options.scales[axis].title.color = textColor;
+      }
+      config.options.responsive = true;
+      config.options.maintainAspectRatio = true;
+      new Chart(canvas, config);
+    } catch (e) {
+      console.warn('Chart.js parse error:', e);
+    }
+  });
+}
+
 // ─── Dashboard Page ───
 function showDashboard() {
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'dashboard';
+  history.replaceState(null, '', '#dashboard');
   renderSidebar();
   closeSidebar();
   document.getElementById('tocPanel').classList.remove('visible');
@@ -3523,7 +3729,8 @@ function renderNotebook(nb, contentEl) {
     if (!source.trim()) return;
 
     if (cell.cell_type === 'markdown') {
-      html += `<div class="nb-cell nb-cell-md">${marked.parse(source)}</div>`;
+      var nbMath = protectMath(source);
+      html += `<div class="nb-cell nb-cell-md">${restoreMath(marked.parse(nbMath.md), nbMath.store)}</div>`;
     } else if (cell.cell_type === 'code') {
       nbCellCounter++;
       const escaped = source.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -4315,6 +4522,7 @@ function showDSAPractice() {
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('commentFab').classList.remove('visible');
+  history.replaceState(null, '', '#dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -4498,6 +4706,7 @@ function showDSAProblem(id) {
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
   document.getElementById('readBtn').style.display = 'none';
+  history.replaceState(null, '', '#dsa-problem-' + id);
 
   const progress = getDSAProgress();
   const saved = progress[id] || {};
@@ -4533,6 +4742,7 @@ function showDSAProblem(id) {
           <div class="actions">
             <button onclick="dsaResetCode('${id}')" title="Reset to starter code">&#8635; Reset</button>
             <button onclick="dsaToggleSolved('${id}')" id="dsaSolveBtn">${saved.solved ? '&#10003; Solved' : '&#9744; Mark Solved'}</button>
+            <button class="dsa-fs-btn" onclick="dsaToggleFullscreen()" id="dsaFsBtn" title="Toggle fullscreen IDE">&#x26F6; Fullscreen</button>
             <button class="run-btn" onclick="dsaRunCode()" id="dsaRunBtn">&#9654; Run</button>
           </div>
         </div>
@@ -4542,10 +4752,17 @@ function showDSAProblem(id) {
       <div class="dsa-output-wrap">
         <div class="dsa-output-header">
           <span>Output</span>
-          <button style="margin-left:auto;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text-secondary);font-size:11px;cursor:pointer;" onclick="document.getElementById('dsaOutput').textContent='';">Clear</button>
+          <button style="margin-left:auto;padding:3px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:6px;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'" onclick="document.getElementById('dsaOutput').textContent='';">Clear</button>
         </div>
         <div class="dsa-output" id="dsaOutput">${saved.lastOutput || 'Click "Run" to execute your code.'}</div>
       </div>
+
+      <div class="dsa-hint">
+        <span><kbd>Tab</kbd> Insert spaces</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run code</span>
+        <span><kbd>Esc</kbd> Exit fullscreen</span>
+      </div>
+      <button class="dsa-fs-exit" onclick="dsaToggleFullscreen()" style="display:none;" id="dsaFsExit">&#10005; Exit Fullscreen</button>
     </div>`;
   document.getElementById('contentWrapper').scrollTop = 0;
 
@@ -4569,6 +4786,32 @@ function showDSAProblem(id) {
   });
   // Auto-save on typing
   editor.addEventListener('input', function() { dsaAutoSave(id); });
+
+  // Esc exits fullscreen
+  editor.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('content').classList.contains('dsa-fullscreen')) {
+      dsaToggleFullscreen();
+    }
+  });
+}
+
+function dsaToggleFullscreen() {
+  const contentEl = document.getElementById('content');
+  const isFS = contentEl.classList.toggle('dsa-fullscreen');
+  const exitBtn = document.getElementById('dsaFsExit');
+  const fsBtn = document.getElementById('dsaFsBtn');
+  if (isFS) {
+    document.body.style.overflow = 'hidden';
+    if (exitBtn) exitBtn.style.display = '';
+    if (fsBtn) fsBtn.innerHTML = '&#10005; Exit';
+  } else {
+    document.body.style.overflow = '';
+    if (exitBtn) exitBtn.style.display = 'none';
+    if (fsBtn) fsBtn.innerHTML = '&#x26F6; Fullscreen';
+  }
+  // Re-focus editor
+  var ed = document.getElementById('dsaCodeEditor');
+  if (ed) ed.focus();
 }
 
 function escapeCode(text) {
@@ -4621,41 +4864,37 @@ async function dsaRunCode() {
   const runBtn = document.getElementById('dsaRunBtn');
   if (!editor || !output) return;
 
-  const code = editor.value;
+  // Remove 'public' from class declaration — Wandbox saves as prog.java,
+  // but Java requires filename to match the public class name.
+  // Making the class non-public avoids the mismatch.
+  const code = editor.value.replace(/public\s+(class\s+)/g, '$1');
   output.className = 'dsa-output running';
   output.textContent = 'Compiling and running...';
   runBtn.disabled = true;
   runBtn.innerHTML = '&#9203; Running...';
 
   try {
-    const resp = await fetch('https://emkc.org/api/v2/piston/execute', {
+    const resp = await fetch('https://wandbox.org/api/compile.json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: 'java',
-        version: '15.0.2',
-        files: [{ name: 'Main.java', content: code }]
-      })
+      body: JSON.stringify({ code, compiler: 'openjdk-jdk-22+36', save: false })
     });
 
     if (!resp.ok) throw new Error('API returned ' + resp.status);
     const data = await resp.json();
 
-    const runResult = data.run || {};
-    const compileResult = data.compile || {};
-
-    if (compileResult.stderr) {
+    if (data.compiler_error) {
       output.className = 'dsa-output error';
-      output.textContent = 'Compilation Error:\n' + compileResult.stderr;
-    } else if (runResult.stderr) {
+      output.textContent = 'Compilation Error:\n' + data.compiler_error;
+    } else if (data.program_error) {
       output.className = 'dsa-output error';
-      output.textContent = 'Runtime Error:\n' + runResult.stderr + (runResult.stdout ? '\n\nOutput:\n' + runResult.stdout : '');
-    } else if (runResult.signal === 'SIGKILL') {
+      output.textContent = 'Runtime Error:\n' + data.program_error + (data.program_output ? '\n\nOutput:\n' + data.program_output : '');
+    } else if (data.signal) {
       output.className = 'dsa-output error';
-      output.textContent = 'Time Limit Exceeded (killed after timeout)';
+      output.textContent = 'Process killed (signal: ' + data.signal + ')';
     } else {
       output.className = 'dsa-output';
-      output.textContent = runResult.stdout || '(No output)';
+      output.textContent = data.program_output || '(No output)';
     }
 
     // Save output
@@ -4699,7 +4938,14 @@ if (fontSize !== 0) {
 
 // Load from URL hash
 const hash = window.location.hash.slice(1);
-if (hash) {
+if (hash === 'dashboard') {
+  showDashboard();
+} else if (hash === 'dsa-practice') {
+  showDSAPractice();
+} else if (hash.startsWith('dsa-problem-')) {
+  const problemId = hash.replace('dsa-problem-', '');
+  showDSAProblem(problemId);
+} else if (hash) {
   const idx = chapters.findIndex(ch => ch.file && ch.file.replace('.md', '') === hash);
   if (idx >= 0) loadChapter(idx);
 }

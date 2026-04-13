@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><title>Marked Output Test</title></head>
+<body>
+<h2>What does marked produce for ```chart blocks?</h2>
+<pre id="output" style="background:#eee;padding:16px;white-space:pre-wrap;"></pre>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang === 'chart' || lang === 'mermaid') return code;
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  },
+  breaks: false,
+  gfm: true,
+});
+
+const md = '```chart\n{"type":"bar","data":{"labels":["A","B"],"datasets":[{"label":"Test","data":[1,2]}]}}\n```';
+const html = marked.parse(md);
+document.getElementById('output').textContent = html;
+</script>
+</body>
+</html>

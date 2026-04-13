@@ -122,6 +122,31 @@ Agent's learned policy (arrows = best action to take):
   └───┴───┴───┴───┘
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,50,100,200,300,400,500,600,700,800,900,1000],
+    "datasets": [{
+      "label": "Average Reward per Episode",
+      "data": [-8,-5,-2,0,2,4,5.5,6.5,7.5,8.2,8.8,9.2],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.4,
+      "pointRadius": 2
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "RL Agent Learning — Reward Increases Over Episodes (Grid World)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Average Reward" }, "min": -10, "max": 10 },
+      "x": { "title": { "display": true, "text": "Episode" } }
+    }
+  }
+}
+```
+
 ---
 
 ## Key RL Concept: Exploration vs. Exploitation
@@ -156,9 +181,45 @@ known action                      even if you found the best
   (early training)        (late training)
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,100,200,300,400,500,600,700,800,900,1000],
+    "datasets": [
+      {
+        "label": "Epsilon (exploration rate)",
+        "data": [1.0,0.90,0.80,0.65,0.50,0.35,0.22,0.14,0.09,0.06,0.05],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Exploitation rate (1 - epsilon)",
+        "data": [0.0,0.10,0.20,0.35,0.50,0.65,0.78,0.86,0.91,0.94,0.95],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Epsilon Decay — Start Exploring, Gradually Shift to Exploiting" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Rate" }, "min": 0, "max": 1.0 },
+      "x": { "title": { "display": true, "text": "Episode" } }
+    }
+  }
+}
+```
+
 ---
 
-## Q-Learning
+## Q-Learning ★
 
 ### Simple Explanation
 Q-Learning is like building a cheat sheet (a Q-table) that tells you:
@@ -181,14 +242,9 @@ the action with the highest Q-value!
 
 **The Bellman Equation (the heart of Q-Learning):**
 
-```
-  Q_new(s, a) = Q_old(s, a) + α × [r + γ × max Q(s', a') - Q_old(s, a)]
-                ───────────               ─  ─────────────  ────────────
-                current estimate    reward   best future     current
-                (before update)              Q-value from    estimate
-                                             next state      (TD error =
-                                                             target - old)
+$$Q_{\text{new}}(s, a) = Q_{\text{old}}(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q_{\text{old}}(s, a) \right]$$
 
+```
   Where:
     s   = current state
     a   = action taken
@@ -207,6 +263,48 @@ the action with the highest Q-value!
     Target  = r + γ × max Q(s') = 0 + 0.9 × 1.5 = 1.35
     TD Error = Target - Q_old   = 1.35 - 0.5     = 0.85
     Q_new   = 0.5 + 0.1 × 0.85 = 0.585  ← Q-value increased!
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,10,20,30,40,50,60,70,80,90,100],
+    "datasets": [
+      {
+        "label": "Q(state, Go Right) — learns it's good",
+        "data": [0.0,0.1,0.25,0.42,0.55,0.65,0.73,0.80,0.85,0.88,0.90],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Q(state, Go Left) — learns it's bad",
+        "data": [0.0,-0.05,-0.15,-0.30,-0.45,-0.55,-0.62,-0.68,-0.72,-0.75,-0.78],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Q(state, Go Down) — neutral",
+        "data": [0.0,0.02,0.05,0.08,0.10,0.12,0.13,0.14,0.14,0.15,0.15],
+        "borderColor": "rgba(200, 200, 200, 0.8)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Q-Values Converge Over Training — Agent Learns Right is Best" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Q-Value" }, "min": -1, "max": 1 },
+      "x": { "title": { "display": true, "text": "Training Episode" } }
+    }
+  }
+}
 ```
 
 ---
@@ -269,6 +367,29 @@ YEAR    │ ACHIEVEMENT
 2023+   │ RL used in robotics, drug discovery, chip design
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Atari (DQN 2013)", "Go (AlphaGo 2016)", "Chess (AlphaZero 2017)", "Dota 2 (OpenAI Five 2019)", "ChatGPT (RLHF 2022)"],
+    "datasets": [{
+      "label": "Performance vs Best Human (%)",
+      "data": [120, 105, 115, 102, 90],
+      "backgroundColor": ["rgba(99,102,241,0.7)","rgba(34,197,94,0.7)","rgba(234,88,12,0.7)","rgba(239,68,68,0.7)","rgba(168,85,247,0.7)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(234,88,12,1)","rgba(239,68,68,1)","rgba(168,85,247,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "RL Milestones — Superhuman Performance (100% = Best Human)" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "% of Best Human Performance" }, "min": 0, "max": 130 }
+    }
+  }
+}
+```
+
 ---
 
 ## Types of RL Algorithms
@@ -294,6 +415,50 @@ YEAR    │ ACHIEVEMENT
     │
  Q-values guide
  action selection
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["Step 0 (+1)", "Step 1 (+1)", "Step 2 (+1)", "Step 3 (+1)", "Step 4 (+1)", "Step 5 (+10)"],
+    "datasets": [
+      {
+        "label": "γ = 0.99 (far-sighted — values future)",
+        "data": [1.0, 1.0, 1.0, 1.0, 1.0, 10.0],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)",
+        "fill": true,
+        "tension": 0,
+        "pointRadius": 4
+      },
+      {
+        "label": "γ = 0.5 (short-sighted — discounts future)",
+        "data": [1.0, 0.5, 0.25, 0.125, 0.063, 0.31],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.1)",
+        "fill": true,
+        "tension": 0,
+        "pointRadius": 4
+      },
+      {
+        "label": "γ = 0 (greedy — only cares about NOW)",
+        "data": [1.0, 0, 0, 0, 0, 0],
+        "borderColor": "rgba(200, 200, 200, 0.8)",
+        "fill": false,
+        "tension": 0,
+        "pointRadius": 4
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Discount Factor (γ) — How Much Does the Agent Value Future Rewards?" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Effective Reward Value" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Future Step (reward at each step)" } }
+    }
+  }
+}
 ```
 
 ---
@@ -358,9 +523,40 @@ Just: which action (machine) gives the best reward?
   └─────────────────┴───────────────────────────────────────────┘
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Machine A (20%)", "Machine B (45%)", "Machine C (10%)", "Machine D (60%)", "Machine E (30%)"],
+    "datasets": [
+      {
+        "label": "True Payout Rate (unknown to agent)",
+        "data": [20, 45, 10, 60, 30],
+        "backgroundColor": ["rgba(200,200,200,0.6)","rgba(200,200,200,0.6)","rgba(200,200,200,0.6)","rgba(34,197,94,0.7)","rgba(200,200,200,0.6)"],
+        "borderColor": ["rgba(160,160,160,1)","rgba(160,160,160,1)","rgba(160,160,160,1)","rgba(34,197,94,1)","rgba(160,160,160,1)"],
+        "borderWidth": 1
+      },
+      {
+        "label": "Agent's Estimate After 50 Plays",
+        "data": [18, 40, 12, 55, 28],
+        "backgroundColor": "rgba(99, 102, 241, 0.6)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Multi-Armed Bandit — Agent Learns to Identify the Best Machine (D)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Payout Rate (%)" }, "beginAtZero": true, "max": 70 }
+    }
+  }
+}
+```
+
 ---
 
-## Policy Gradient Methods
+## Policy Gradient Methods ★
 
 ### Simple Explanation
 Q-Learning learns "how good is each action?" and picks the best one.
@@ -395,8 +591,11 @@ Policy Gradient methods skip the middleman — they directly learn
   Intuition: "Do more of what worked, less of what didn't."
 
   Formula:
-    theta <- theta + alpha x G x grad(log pi(a|s,theta))
+```
 
+$$\theta \leftarrow \theta + \alpha \cdot G \cdot \nabla \log \pi(a \mid s, \theta)$$
+
+```
     theta = policy parameters (neural network weights)
     G     = total reward from that point onward
     pi(a|s,theta) = probability of taking action a in state s
@@ -463,9 +662,45 @@ Actor-Critic fixes this by using TWO networks working together:
   It's the algorithm behind RLHF in ChatGPT and Claude.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,50,100,150,200,250,300,350,400,450,500],
+    "datasets": [
+      {
+        "label": "REINFORCE (noisy, slow)",
+        "data": [-8,-6,-5,-3,-4,-2,-3,-1,0,-1,1],
+        "borderColor": "rgba(239, 68, 68, 0.7)",
+        "borderWidth": 1.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "Actor-Critic / PPO (stable, fast)",
+        "data": [-8,-5,-2,0,2,3.5,5,6,7,7.5,8],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 2.5,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "REINFORCE vs Actor-Critic (PPO) — PPO Learns Faster & Smoother" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Average Reward" }, "min": -10, "max": 10 },
+      "x": { "title": { "display": true, "text": "Episode" } }
+    }
+  }
+}
+```
+
 ---
 
-## RLHF — How ChatGPT and Claude Learn from Humans
+## RLHF — How ChatGPT and Claude Learn from Humans ★★★
 
 ### Simple Explanation
 After pre-training on text, language models can write fluently but might say
@@ -524,6 +759,37 @@ Human Feedback) teaches the model to give answers humans actually prefer.
 
   This is the key difference between a base model
   (like raw GPT-3) and a chat model (like ChatGPT).
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Helpfulness", "Harmlessness", "Accuracy", "Following Instructions", "Refusing Dangerous Requests"],
+    "datasets": [
+      {
+        "label": "Base Model (before RLHF)",
+        "data": [45, 40, 55, 35, 20],
+        "backgroundColor": "rgba(200, 200, 200, 0.6)",
+        "borderColor": "rgba(160, 160, 160, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "After RLHF",
+        "data": [88, 90, 78, 92, 95],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "RLHF Impact — Before vs After on Key Quality Dimensions (%)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Score (%)" }, "beginAtZero": true, "max": 100 }
+    }
+  }
+}
 ```
 
 ---

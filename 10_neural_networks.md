@@ -16,7 +16,7 @@ After reading this chapter, you will be able to:
 
 ---
 
-## What is a Neural Network?
+## What is a Neural Network? ★★
 
 ### Simple Explanation
 Your brain has ~86 billion neurons (nerve cells) connected to each other.
@@ -41,6 +41,8 @@ BIOLOGICAL NEURON:              ARTIFICIAL NEURON:
           ▼                          output (e.g. 0.85)
      next neurons
 ```
+
+$$z = w_1 x_1 + w_2 x_2 + w_3 x_3 + b$$
 
 **Official Definition:**
 > An **Artificial Neural Network (ANN)** is a computational model inspired by biological
@@ -91,59 +93,94 @@ A 784→512→256→10 network has 784×512 + 512×256 + 256×10 = 534,272 weigh
 
 ---
 
-## 8.2 Activation Functions
+## 8.2 Activation Functions ★★★
 
 ### Why They Matter
 
+Without activation functions:
+
+$$\text{Layer 1 output} = W_1 \cdot x + b_1$$
+
+$$\text{Layer 2 output} = W_2 \cdot (W_1 \cdot x + b_1) + b_2 = (W_2 W_1) \cdot x + (W_2 b_1 + b_2) = W \cdot x + b$$
+
 ```
-WITHOUT activation functions:
-  Layer 1: output = W₁·x + b₁
-  Layer 2: output = W₂·(W₁·x + b₁) + b₂
-                  = (W₂W₁)·x + (W₂b₁+b₂)
-                  = W·x + b   ← still just a linear function!
+  Still just a linear function!
 
   No matter how many layers you stack, it collapses to one linear function.
   A single neuron could replace the entire network!
-
-WITH activation functions:
-  f(W·x + b) is non-linear → deep networks can learn ANY function.
 ```
+
+With activation functions, $f(W \cdot x + b)$ is non-linear, so deep networks can learn ANY function.
 
 ### The Main Activation Functions
 
+**Sigmoid:**
+
+$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
+Output: $(0, 1)$
+
 ```
-  SIGMOID                              ReLU (Rectified Linear Unit)
-  ───────                              ─────────────────────────────
-  σ(z) = 1 / (1 + e^(-z))             f(z) = max(0, z)
-  Output: (0, 1)                       Output: [0, ∞)
+  1.0│             ────────
+  0.8│          ──/
+  0.5│─────────/   ← S-curve
+  0.2│        /
+  0.0│────────
+     └──────────── z
+      -6   -3   0   3   6
 
-  1.0│             ────────            5│              /
-  0.8│          ──/                    4│             /
-  0.5│─────────/   ← S-curve          3│            /
-  0.2│        /                        2│           /
-  0.0│────────                         1│          /
-     └──────────── z                   0│──────────────── z
-      -6   -3   0   3   6              -3 -2 -1   0  1  2  3
+  Use for: output layer (binary classification), gates in LSTM
+  Problem: saturates at extremes
+```
 
-  Use for: output layer (binary   Use for: hidden layers — default!
-  classification), gates in LSTM  Simple, fast, doesn't saturate
-  Problem: saturates at extremes  Problem: "Dying ReLU" (see below)
+**ReLU (Rectified Linear Unit):**
 
-  ─────────────────────────────────────────────────────────────────
+$$f(z) = \max(0, z)$$
 
-  TANH                                 SOFTMAX
-  ────                                 ───────
-  f(z) = (eᶻ − e⁻ᶻ) / (eᶻ + e⁻ᶻ)    Converts raw scores to
-  Output: (−1, 1)                      probabilities (sum = 1)
+Output: $[0, \infty)$
 
-   1│            ─────                 [2.0, 1.0, 0.1]  ← raw logits
-    │          /                            ↓ softmax
-   0│─────────/                       [0.65, 0.24, 0.11]
-    │        /                          Cat   Dog  Bird ← PICK CAT
-  -1│────────                            65%   24%  11%
+```
+  5│              /
+  4│             /
+  3│            /
+  2│           /
+  1│          /
+  0│──────────────── z
+   -3 -2 -1   0  1  2  3
+
+  Use for: hidden layers — default!
+  Simple, fast, doesn't saturate
+  Problem: "Dying ReLU" (see below)
+```
+
+**Tanh:**
+
+$$f(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}$$
+
+Output: $(-1, 1)$
+
+```
+   1│            ─────
+    │          /
+   0│─────────/
+    │        /
+  -1│────────
     └──────── z
-                                     Use for: multi-class output layer
-  Use for: RNN/LSTM hidden states    Each class gets a probability!
+
+  Use for: RNN/LSTM hidden states
+```
+
+**Softmax** — Converts raw scores to probabilities (sum = 1):
+
+```
+  [2.0, 1.0, 0.1]  ← raw logits
+       ↓ softmax
+  [0.65, 0.24, 0.11]
+   Cat   Dog  Bird ← PICK CAT
+    65%   24%  11%
+
+  Use for: multi-class output layer
+  Each class gets a probability!
 ```
 
 ### Dying ReLU Problem & Leaky ReLU
@@ -157,12 +194,15 @@ WITH activation functions:
 
   Dead neurons are useless — they contribute nothing.
   This can happen to 10–40% of neurons in deep networks.
+```
 
-  SOLUTION: Leaky ReLU
-  ──────────────────────────────────────────────────────────
-  f(z) = z        if z > 0
-       = α × z    if z ≤ 0   (α is small, e.g. 0.01)
+**SOLUTION: Leaky ReLU**
 
+$$f(z) = \begin{cases} z & \text{if } z > 0 \\ \alpha z & \text{if } z \le 0 \end{cases}$$
+
+where $\alpha$ is small (e.g. 0.01).
+
+```
   5│              /
   2│             /
   0│────────────/──────── z
@@ -172,12 +212,57 @@ WITH activation functions:
   Keeps ALL neurons trainable. Used when you see dead neurons.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],
+    "datasets": [
+      {
+        "label": "Sigmoid",
+        "data": [0.002,0.007,0.018,0.047,0.119,0.269,0.500,0.731,0.881,0.953,0.982,0.993,0.998],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "tension": 0.4, "pointRadius": 0, "borderWidth": 2, "fill": false
+      },
+      {
+        "label": "Tanh",
+        "data": [-1.00,-1.00,-0.999,-0.995,-0.964,-0.762,0.000,0.762,0.964,0.995,0.999,1.00,1.00],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "tension": 0.4, "pointRadius": 0, "borderWidth": 2, "fill": false
+      },
+      {
+        "label": "ReLU",
+        "data": [0,0,0,0,0,0,0,1,2,3,4,5,6],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "tension": 0, "pointRadius": 0, "borderWidth": 2, "fill": false
+      },
+      {
+        "label": "Leaky ReLU (α=0.1)",
+        "data": [-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,1,2,3,4,5,6],
+        "borderColor": "rgba(168, 85, 247, 1)",
+        "tension": 0, "pointRadius": 0, "borderWidth": 2, "borderDash": [5,3], "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Activation Functions — Sigmoid, Tanh, ReLU, Leaky ReLU" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Output" }, "min": -1.5, "max": 6 },
+      "x": { "title": { "display": true, "text": "Input (z)" } }
+    }
+  }
+}
+```
+
 ### GELU (Modern Transformers)
 
-```
-  GELU (Gaussian Error Linear Unit):
-  f(z) = z × Φ(z)    where Φ is the Gaussian CDF
+**GELU (Gaussian Error Linear Unit):**
 
+$$f(z) = z \cdot \Phi(z)$$
+
+where $\Phi$ is the Gaussian CDF.
+
+```
   Shape: similar to ReLU but smooth, no hard zero.
   Used in: BERT, GPT-2, GPT-3, ViT, and most modern Transformers.
   Why: smoother gradient → stabler training in very deep networks.
@@ -209,9 +294,39 @@ WITH activation functions:
 └──────────────────┴─────────────────────────────────────────────────┘
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Cat", "Dog", "Bird"],
+    "datasets": [
+      {
+        "label": "Raw Logits (before softmax)",
+        "data": [2.0, 1.0, 0.1],
+        "backgroundColor": "rgba(200, 200, 200, 0.7)",
+        "borderColor": "rgba(160, 160, 160, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Probabilities (after softmax)",
+        "data": [0.65, 0.24, 0.11],
+        "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(99,102,241,0.6)", "rgba(99,102,241,0.4)"],
+        "borderColor": ["rgba(34,197,94,1)", "rgba(99,102,241,1)", "rgba(99,102,241,1)"], "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Softmax — Converts Raw Scores to Probabilities (Sum = 1)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Value" }, "beginAtZero": true },
+      "x": {}
+    }
+  }
+}
+```
+
 ---
 
-## 8.3 How Networks Learn: Backpropagation
+## 8.3 How Networks Learn: Backpropagation ★★★
 
 ### The 4-Step Training Loop
 
@@ -219,49 +334,57 @@ WITH activation functions:
 STEP 1: FORWARD PASS — make a prediction
 ─────────────────────────────────────────────────────────────
   Input x ──► Layer 1 ──► Layer 2 ──► Output ŷ
+```
 
-STEP 2: COMPUTE LOSS — measure how wrong we are
-─────────────────────────────────────────────────────────────
-  Loss = f(ŷ, y)   (e.g., cross-entropy or MSE)
+**STEP 2: COMPUTE LOSS** — measure how wrong we are
 
-STEP 3: BACKWARD PASS — compute how each weight contributed
-─────────────────────────────────────────────────────────────
-  Propagate error BACKWARDS using the chain rule:
+$$\text{Loss} = f(\hat{y}, y)$$
 
-  dLoss/dw₁ = dLoss/dŷ × dŷ/dLayer2 × dLayer2/dLayer1 × dLayer1/dw₁
-                ────────────────────────────────────────────────────
-                    multiply partial derivatives through layers
+(e.g., cross-entropy or MSE)
 
-STEP 4: UPDATE WEIGHTS — nudge weights to reduce loss
-─────────────────────────────────────────────────────────────
-  w ← w − α × dLoss/dw    (gradient descent)
+**STEP 3: BACKWARD PASS** — compute how each weight contributed. Propagate error BACKWARDS using the chain rule:
 
+$$\frac{\partial L}{\partial w_1} = \frac{\partial L}{\partial \hat{y}} \times \frac{\partial \hat{y}}{\partial \text{Layer2}} \times \frac{\partial \text{Layer2}}{\partial \text{Layer1}} \times \frac{\partial \text{Layer1}}{\partial w_1}$$
+
+(multiply partial derivatives through layers)
+
+**STEP 4: UPDATE WEIGHTS** — nudge weights to reduce loss (gradient descent):
+
+$$w \leftarrow w - \alpha \times \frac{\partial L}{\partial w}$$
+
+```
 Repeat for thousands of batches × epochs until loss is small.
 ```
 
 ### Worked Example (One Neuron)
 
-```
-  Neuron: z = 2×x + 1   (w=2, b=1)
-  Activation: sigmoid σ(z)
-  Input: x = 1.0 → z = 3.0 → ŷ = σ(3.0) = 0.95
-  True label: y = 0.0
-  Loss (BCE): L = −[0×log(0.95) + 1×log(0.05)] = 3.0
+Neuron: $z = 2x + 1$ (where $w = 2$, $b = 1$). Activation: $\sigma(z)$.
 
-  Backward pass (chain rule):
-  dL/dŷ  = −y/ŷ + (1−y)/(1−ŷ) = 0 + 1/0.05 = 20.0
-  dŷ/dz  = σ(z)(1−σ(z)) = 0.95×0.05 = 0.047
-  dz/dw  = x = 1.0
+$$x = 1.0 \;\rightarrow\; z = 3.0 \;\rightarrow\; \hat{y} = \sigma(3.0) = 0.95$$
 
-  dL/dw  = 20.0 × 0.047 × 1.0 = 0.95
+True label: $y = 0.0$
 
-  Update (α = 0.1):
-  w_new = 2.0 − 0.1 × 0.95 = 1.905  ← weight moved slightly!
-```
+$$L = -[y \log(\hat{y}) + (1 - y) \log(1 - \hat{y})] = -[0 \cdot \log(0.95) + 1 \cdot \log(0.05)] = 3.0$$
+
+Backward pass (chain rule):
+
+$$\frac{\partial L}{\partial \hat{y}} = \frac{-y}{\hat{y}} + \frac{1 - y}{1 - \hat{y}} = 0 + \frac{1}{0.05} = 20.0$$
+
+$$\frac{\partial \hat{y}}{\partial z} = \sigma(z)(1 - \sigma(z)) = 0.95 \times 0.05 = 0.047$$
+
+$$\frac{\partial z}{\partial w} = x = 1.0$$
+
+$$\frac{\partial L}{\partial w} = 20.0 \times 0.047 \times 1.0 = 0.95$$
+
+Update ($\alpha = 0.1$):
+
+$$w_{\text{new}} = 2.0 - 0.1 \times 0.95 = 1.905$$
+
+(weight moved slightly!)
 
 ---
 
-## 8.4 Vanishing & Exploding Gradients
+## 8.4 Vanishing & Exploding Gradients ★★★
 
 ### Simple Explanation
 Imagine a game of telephone with 50 people in a chain. You whisper a message at one end.
@@ -275,28 +398,62 @@ Both break the network.
 
 ### Why It Happens
 
+During backprop through $L$ layers, gradient multiplies $L$ times:
+
+$$\frac{\partial L}{\partial w_1} \approx \delta_L \times \delta_{L-1} \times \delta_{L-2} \times \cdots \times \delta_1$$
+
+**VANISHING** (common with sigmoid/tanh):
+
+$$\sigma'(z) = \sigma(z)(1 - \sigma(z)) \le 0.25$$
+
+(max gradient of sigmoid)
+
+$$\text{Through 10 layers: } 0.25^{10} \approx 0.000001$$
+
 ```
-  During backprop through L layers, gradient multiplies L times:
-
-  dL/dw₁ ≈ δₗ × δₗ₋₁ × δₗ₋₂ × ... × δ₁
-             └──────────────────────────┘
-                   L multiplications
-
-  VANISHING (common with sigmoid/tanh):
-  ──────────────────────────────────────────────────────────────
-  σ'(z) = σ(z)(1−σ(z)) ≤ 0.25      (max gradient of sigmoid)
-  Through 10 layers: 0.25^10 ≈ 0.000001
-
   Layer 1 gets gradient ≈ 0 → learns nothing → stuck!
   RNNs suffer this over many time steps.
+```
 
-  EXPLODING (can happen with large weights or deep networks):
-  ──────────────────────────────────────────────────────────────
-  If gradient > 1, e.g., 2.0 per layer:
-  Through 10 layers: 2^10 = 1024
+**EXPLODING** (can happen with large weights or deep networks):
 
+$$\text{If gradient} > 1 \text{, e.g., 2.0 per layer: } 2^{10} = 1024$$
+
+```
   Weights explode → NaN → training crashes.
   Common in RNNs trained on long sequences.
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,2,3,4,5,6,7,8,9,10],
+    "datasets": [
+      {
+        "label": "Vanishing (Sigmoid: 0.25ⁿ)",
+        "data": [0.25,0.0625,0.0156,0.0039,0.00098,0.00024,0.00006,0.000015,0.0000038,0.00000095],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.1)",
+        "fill": true, "tension": 0.3, "pointRadius": 3, "borderWidth": 2
+      },
+      {
+        "label": "Stable (ReLU: gradient = 1)",
+        "data": [1,1,1,1,1,1,1,1,1,1],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderDash": [5,3],
+        "fill": false, "tension": 0, "pointRadius": 0, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Vanishing Gradients — Sigmoid Gradient Dies After a Few Layers" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Gradient Magnitude" }, "beginAtZero": true, "max": 1.1 },
+      "x": { "title": { "display": true, "text": "Number of Layers Deep" } }
+    }
+  }
+}
 ```
 
 ### Solutions
@@ -327,7 +484,7 @@ Both break the network.
 
 ---
 
-## 8.5 Weight Initialization
+## 8.5 Weight Initialization ★★
 
 ### Simple Explanation
 You can't start with all weights = 0! Every neuron would compute the same output,
@@ -336,15 +493,20 @@ It's like a class where every student copies the exact same answer — no divers
 
 ### The Zero-Init Problem (Symmetry Breaking)
 
+All weights = 0:
+
+$$z_1 = 0 \cdot x_1 + 0 \cdot x_2 = 0$$
+
+$$z_2 = 0 \cdot x_1 + 0 \cdot x_2 = 0$$
+
 ```
-  All weights = 0:
-  ─────────────────────────────────────────────────────────────
-  z₁ = 0×x₁ + 0×x₂ = 0      All neurons in layer get z = 0
-  z₂ = 0×x₁ + 0×x₂ = 0      All activations are equal
-                              All gradients are equal
-  ↓                           All weights update identically
-  Every hidden neuron         → they're all still the same!
-  stays identical forever     Network has effectively 1 neuron.
+  All neurons in layer get z = 0
+  All activations are equal
+  All gradients are equal
+  All weights update identically
+  → they're all still the same!
+  Every hidden neuron stays identical forever.
+  Network has effectively 1 neuron.
 ```
 
 ### Xavier / Glorot Initialization (for sigmoid, tanh)
@@ -353,13 +515,17 @@ It's like a class where every student copies the exact same answer — no divers
   Goal: keep the variance of activations roughly the same across layers.
   If weights are too large → activations explode.
   If weights are too small → activations shrink to 0.
+```
 
-  Xavier: initialize weights from:
-    Uniform: w ~ U[−√(6/(nᵢₙ+nₒᵤₜ)), +√(6/(nᵢₙ+nₒᵤₜ))]
-    Normal:  w ~ N(0, √(2/(nᵢₙ+nₒᵤₜ)))
+Xavier: initialize weights from:
 
-    where nᵢₙ = neurons in previous layer, nₒᵤₜ = neurons in current
+$$w \sim U\left[-\sqrt{\frac{6}{n_{in} + n_{out}}},\; +\sqrt{\frac{6}{n_{in} + n_{out}}}\right]$$
 
+$$w \sim \mathcal{N}\left(0,\; \sqrt{\frac{2}{n_{in} + n_{out}}}\right)$$
+
+where $n_{in}$ = neurons in previous layer, $n_{out}$ = neurons in current layer.
+
+```
   Works well for: sigmoid, tanh (activations symmetric around 0)
 ```
 
@@ -369,9 +535,13 @@ It's like a class where every student copies the exact same answer — no divers
   ReLU kills ~50% of neurons (outputs 0 for negative z).
   This effectively halves the variance at each layer.
   Xavier doesn't account for this.
+```
 
-  He: w ~ N(0, √(2/nᵢₙ))   ← doubles the variance to compensate
+He initialization doubles the variance to compensate:
 
+$$w \sim \mathcal{N}\left(0,\; \sqrt{\frac{2}{n_{in}}}\right)$$
+
+```
   Works well for: ReLU, Leaky ReLU, GELU
 
   Rule: use He for ReLU networks, Xavier for sigmoid/tanh.
@@ -380,7 +550,7 @@ It's like a class where every student copies the exact same answer — no divers
 
 ---
 
-## 8.6 Dropout
+## 8.6 Dropout ★★★
 
 ### Simple Explanation
 During training, randomly turn off (drop) some neurons. The network can't rely
@@ -428,6 +598,36 @@ Too high dropout → underfitting (not enough neurons to learn)
 Too low dropout → overfitting (neurons still co-adapt)
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["FC Hidden Layer", "Conv Layer", "Transformer (attn/FFN)", "Output Layer"],
+    "datasets": [
+      {
+        "label": "Min Rate",
+        "data": [0.3, 0.1, 0.1, 0],
+        "backgroundColor": "rgba(99, 102, 241, 0.5)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Max Rate",
+        "data": [0.5, 0.2, 0.1, 0],
+        "backgroundColor": "rgba(99, 102, 241, 0.8)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Typical Dropout Rates by Layer Type (Output = NEVER drop!)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Dropout Rate" }, "beginAtZero": true, "max": 0.6 },
+      "x": {}
+    }
+  }
+}
+```
+
 **Official Definition:**
 > **Dropout** is a regularization technique where each neuron is independently set to
 > zero during training with probability p. This prevents neurons from co-adapting and
@@ -436,7 +636,7 @@ Too low dropout → overfitting (neurons still co-adapt)
 
 ---
 
-## 8.7 Batch Normalization
+## 8.7 Batch Normalization ★★
 
 ### Simple Explanation
 Each layer's inputs should be stable — not wildly different in scale each batch.
@@ -450,17 +650,20 @@ Layer 1 output: [0.1, 900, 3]  Layer 1 output: [−0.5, 1.2, 0.1]
                                                 (normalized!)
 Layer 2 gets huge range →      Layer 2 gets stable inputs →
 slow/unstable training         faster, more stable training
-
-FORMULA (for a mini-batch B):
-──────────────────────────────────────────────────────────────
-  μ_B  = (1/m) Σ xᵢ              ← batch mean
-  σ²_B = (1/m) Σ (xᵢ − μ_B)²    ← batch variance
-  x̂ᵢ  = (xᵢ − μ_B) / √(σ²_B + ε)  ← normalize (ε prevents ÷0)
-  yᵢ  = γ × x̂ᵢ + β              ← scale + shift (learned!)
-
-γ and β are learned — the network can choose to undo normalization
-if that turns out to be optimal (flexible, not forced).
 ```
+
+**Batch Normalization formula** (for a mini-batch $B$ of size $m$):
+
+$$\mu_B = \frac{1}{m} \sum_{i=1}^{m} x_i$$
+
+$$\sigma_B^2 = \frac{1}{m} \sum_{i=1}^{m} (x_i - \mu_B)^2$$
+
+$$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}$$
+
+$$y_i = \gamma \hat{x}_i + \beta$$
+
+$\gamma$ and $\beta$ are learned -- the network can choose to undo normalization
+if that turns out to be optimal (flexible, not forced). $\epsilon$ prevents division by zero.
 
 **Why Batch Norm helps:**
 - Allows higher learning rates → faster training
@@ -470,7 +673,7 @@ if that turns out to be optimal (flexible, not forced).
 
 ---
 
-## 8.8 Learning Rate Schedules
+## 8.8 Learning Rate Schedules ★★★
 
 ### Why a Constant Learning Rate is Not Ideal
 
@@ -508,7 +711,6 @@ if that turns out to be optimal (flexible, not forced).
   0.001│                   ╲_____________
        └─────────────────────────────── epoch
 
-  LR = LR_min + 0.5 × (LR_max − LR_min) × (1 + cos(πt/T))
   Smooth decay. Popular in CV and NLP.
 
   WARMUP + COSINE DECAY (Transformer standard):
@@ -524,6 +726,46 @@ if that turns out to be optimal (flexible, not forced).
   Start with very small LR, ramp up, then decay.
   Why warmup? Large initial LR + random weights = exploding updates.
   Warmup lets weights settle first.
+```
+
+**Cosine Annealing formula:**
+
+$$\text{LR} = \text{LR}_{min} + \frac{1}{2}(\text{LR}_{max} - \text{LR}_{min})\left(1 + \cos\left(\frac{\pi t}{T}\right)\right)$$
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,5,10,15,20,25,30,35,40,45,50],
+    "datasets": [
+      {
+        "label": "Step Decay",
+        "data": [0.1,0.1,0.1,0.01,0.01,0.01,0.01,0.001,0.001,0.001,0.001],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false, "tension": 0, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Cosine Annealing",
+        "data": [0.1,0.095,0.08,0.06,0.04,0.025,0.015,0.008,0.004,0.002,0.001],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "fill": false, "tension": 0.4, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Warmup + Cosine",
+        "data": [0.001,0.05,0.1,0.09,0.07,0.05,0.035,0.02,0.01,0.004,0.001],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Learning Rate Schedules — Step Decay vs Cosine vs Warmup+Cosine" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Learning Rate" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Epoch" } }
+    }
+  }
+}
 ```
 
 ---
@@ -626,7 +868,12 @@ where nearby values are related (pixels near each other often share features).
   What does this do?
   ─────────────────────────────────────────────────────────
   The layer only needs to learn the RESIDUAL (the change):
-    y = F(x) + x   → F(x) = y − x   (just the adjustment)
+```
+
+$$y = F(x) + x \quad \Rightarrow \quad F(x) = y - x$$
+
+```
+  (just the adjustment)
 
   If F(x) ≈ 0: layer passes input unchanged (identity shortcut)
   Gradient can flow directly through the skip connection →
@@ -634,6 +881,36 @@ where nearby values are related (pixels near each other often share features).
 
   ResNet-50 (2015) → won ImageNet. Skip connections are now
   standard in all deep networks (CNNs, Transformers, etc.)
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [8, 14, 18, 20, 34, 50, 56, 110, 152],
+    "datasets": [
+      {
+        "label": "Without Skip Connections",
+        "data": [91.5, 93.0, 93.5, 93.2, 92.0, 90.5, 89.8, 87.0, 84.0],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false, "tension": 0.3, "pointRadius": 3, "borderWidth": 2
+      },
+      {
+        "label": "With Skip Connections (ResNet)",
+        "data": [91.5, 93.2, 93.8, 94.2, 95.0, 95.8, 96.0, 96.3, 96.5],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "fill": false, "tension": 0.3, "pointRadius": 3, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "The Degradation Problem — Deeper Networks Get WORSE Without Skip Connections" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 82, "max": 98 },
+      "x": { "title": { "display": true, "text": "Network Depth (# Layers)" } }
+    }
+  }
+}
 ```
 
 ---
@@ -654,65 +931,69 @@ remember that "Paris" appeared 10 words ago and matters now.
                                 ┌───────────────┐  ← hidden state
                      "I"  ────► │   RNN Cell    │    (memory)
                                 │               │
-                   "love" ────► │    hₜ = f(    │
-                                │     Wₓxₜ +    │
-                    "___" ────► │     Wₕhₜ₋₁)  │ ──► "pizza"
+                   "love" ────► │               │
+                                │               │
+                    "___" ────► │               │ ──► "pizza"
                                 └───────────────┘
 
   The cell has MEMORY — hₜ (hidden state) carries info forward.
 ```
 
+$$h_t = f(W_x x_t + W_h h_{t-1})$$
+
 ### Vanishing Gradient in RNNs
 
-```
-  For a sequence of length T, backprop multiplies gradient T times:
+For a sequence of length $T$, backprop multiplies gradient $T$ times:
 
+```
   "Mary, who grew up in Paris and studied at the Sorbonne, loves ___"
    ▲                                                              │
    └─────────── gradient must flow back 15+ steps ───────────────┘
-                multiplied by Wₕ^T at each step
-
-  If max eigenvalue of Wₕ < 1: gradient → 0 (RNN forgets Mary)
-  If max eigenvalue of Wₕ > 1: gradient → ∞ (explodes)
-
-  Solution: LSTM (below) and GRU (Section 8.11).
 ```
+
+The gradient is multiplied by $W_h^T$ at each step.
+
+If max eigenvalue of $W_h < 1$: gradient $\to 0$ (RNN forgets Mary).
+If max eigenvalue of $W_h > 1$: gradient $\to \infty$ (explodes).
+
+Solution: LSTM (below) and GRU (Section 8.11).
 
 ### LSTM (Long Short-Term Memory)
 
-```
-  Key notation:
-    σ    = sigmoid: outputs (0, 1) — used as "gates" (0=close, 1=open)
-    tanh = hyperbolic tangent: outputs (−1, 1) — used for values
+Key notation: $\sigma$ = sigmoid (outputs $(0, 1)$, used as "gates": 0=close, 1=open). $\tanh$ = hyperbolic tangent (outputs $(-1, 1)$, used for values).
 
-  LSTM has a CELL STATE (long-term memory) + THREE GATES:
-  ──────────────────────────────────────────────────────────────────
+LSTM has a **cell state** (long-term memory) + **three gates**:
+
+```
   ┌────────────────────────────────────────────────────────────────┐
   │                         LSTM CELL                              │
   │   Cell State: Cₜ ─────────────────────────────────────────►  │
   │               (long-term memory, information "highway")        │
   │                    ↑modify              ↑modify                │
-  │                                                                │
-  │  FORGET GATE  "What old memory should I erase?"               │
-  │  fₜ = σ(Wf·[hₜ₋₁, xₜ] + bf)   → (0, 1)                     │
-  │  0 = erase completely, 1 = keep fully                          │
-  │  Example: just saw end of paragraph → forget old topic         │
-  │                                                                │
-  │  INPUT GATE   "What new info should I write to memory?"        │
-  │  iₜ = σ(Wi·[hₜ₋₁, xₜ] + bi)   → (0, 1) decide relevance    │
-  │  C̃ₜ = tanh(Wc·[hₜ₋₁, xₜ] + bc) → (−1,1) candidate value   │
-  │  Add: iₜ × C̃ₜ to cell state                                  │
-  │  Example: new subject introduced → store it                    │
-  │                                                                │
-  │  CELL UPDATE:  Cₜ = fₜ × Cₜ₋₁ + iₜ × C̃ₜ                   │
-  │  (forget some old, add some new)                               │
-  │                                                                │
-  │  OUTPUT GATE  "What to output this step?"                      │
-  │  oₜ = σ(Wo·[hₜ₋₁, xₜ] + bo)   → (0, 1) gate                │
-  │  hₜ = oₜ × tanh(Cₜ)            → filtered cell state         │
-  │  Example: predicting next word → output relevant memory        │
   └────────────────────────────────────────────────────────────────┘
 ```
+
+**Forget Gate** — "What old memory should I erase?"
+
+$$f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f)$$
+
+Output in $(0, 1)$: 0 = erase completely, 1 = keep fully.
+
+**Input Gate** — "What new info should I write to memory?"
+
+$$i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i)$$
+
+$$\tilde{C}_t = \tanh(W_c \cdot [h_{t-1}, x_t] + b_c)$$
+
+**Cell Update** — forget some old, add some new:
+
+$$C_t = f_t \times C_{t-1} + i_t \times \tilde{C}_t$$
+
+**Output Gate** — "What to output this step?"
+
+$$o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)$$
+
+$$h_t = o_t \times \tanh(C_t)$$
 
 **Official Definition:**
 > **LSTM** is an RNN variant with a gated cell state (long-term memory) and three
@@ -729,18 +1010,27 @@ LSTM with THREE gates is powerful but complex. GRU simplifies it to TWO gates
 by merging the forget and input gates into one "update gate." Fewer parameters,
 faster training, similar performance on many tasks.
 
+**GRU Cell** (two gates):
+
+**Update Gate** — "How much to update?"
+
+$$z_t = \sigma(W_z \cdot [h_{t-1}, x_t])$$
+
+**Reset Gate** — "How much past to forget?"
+
+$$r_t = \sigma(W_r \cdot [h_{t-1}, x_t])$$
+
+**Candidate hidden state:**
+
+$$\tilde{h}_t = \tanh(W \cdot [r_t \times h_{t-1}, x_t])$$
+
+**Output:**
+
+$$h_t = (1 - z_t) \times h_{t-1} + z_t \times \tilde{h}_t$$
+
+(keep old hidden weighted by $1 - z_t$, add new candidate weighted by $z_t$)
+
 ```
-  GRU CELL (two gates):
-  ─────────────────────────────────────────────────────────────────
-  UPDATE GATE:  zₜ = σ(Wz·[hₜ₋₁, xₜ])    "How much to update?"
-  RESET GATE:   rₜ = σ(Wr·[hₜ₋₁, xₜ])    "How much past to forget?"
-
-  Candidate: h̃ₜ = tanh(W·[rₜ × hₜ₋₁, xₜ])
-  Output:    hₜ = (1 − zₜ) × hₜ₋₁ + zₜ × h̃ₜ
-                  ──────────────────   ─────────
-                  keep old hidden       add new candidate
-                  (weighted by 1−zₜ)   (weighted by zₜ)
-
   GRU vs LSTM:
   ┌────────────┬──────────────────────────────────────────────────┐
   │            │ GRU                       │ LSTM                 │
@@ -802,8 +1092,11 @@ faster training, similar performance on many tasks.
 
   FORMULA:
   ─────────────────────────────────────────────────────────────
-  Attention(Q, K, V) = softmax(QKᵀ / √d_k) × V
+```
 
+$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
+
+```
     QKᵀ         = dot product of queries and keys (similarity scores)
     / √d_k      = scale down (prevents dot products from being too large)
     softmax(·)  = convert scores to probabilities (sum = 1)
@@ -816,6 +1109,29 @@ faster training, similar performance on many tasks.
   0.02  0.85    0.01   0.01  0.02   0.05    0.02   0.00  0.01  0.01
                ▲
           High attention! "it" refers to "animal"
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["The", "animal", "didn't", "cross", "the", "street", "because", "it", "was", "tired"],
+    "datasets": [{
+      "label": "Attention weight from token \"it\"",
+      "data": [0.02, 0.85, 0.01, 0.01, 0.02, 0.05, 0.02, 0.00, 0.01, 0.01],
+      "backgroundColor": ["rgba(99,102,241,0.3)","rgba(239,68,68,0.85)","rgba(99,102,241,0.3)","rgba(99,102,241,0.3)","rgba(99,102,241,0.3)","rgba(99,102,241,0.4)","rgba(99,102,241,0.3)","rgba(99,102,241,0.2)","rgba(99,102,241,0.3)","rgba(99,102,241,0.3)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(239,68,68,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Self-Attention — Where Does \"it\" Look? (Answer: \"animal\"!)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Attention Weight" }, "beginAtZero": true, "max": 1.0 },
+      "x": { "title": { "display": true, "text": "Token" } }
+    }
+  }
+}
 ```
 
 ### Multi-Head Attention
@@ -850,9 +1166,7 @@ faster training, similar performance on many tasks.
   │   Why Positional Encoding?                                  │
   │   Self-attention is ORDER-BLIND ("cat sat" = "sat cat"!)    │
   │   Positional encoding adds a unique signal per position.    │
-  │   Using sin/cos waves of different frequencies:             │
-  │   PE(pos, 2i)   = sin(pos / 10000^(2i/d))                  │
-  │   PE(pos, 2i+1) = cos(pos / 10000^(2i/d))                  │
+  │   Using sin/cos waves of different frequencies (see below). │
   │              ↓                                              │
   │   ┌────────────────────────┐                               │
   │   │   Multi-Head Attention │ ← attend to all positions     │
@@ -871,6 +1185,12 @@ faster training, similar performance on many tasks.
               ↓
         Output representations
 ```
+
+**Positional Encoding formulas:**
+
+$$PE(\text{pos}, 2i) = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
+
+$$PE(\text{pos}, 2i+1) = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
 
 ### BERT vs GPT: Two Ways to Use Transformers
 
@@ -921,13 +1241,15 @@ similar words get similar vectors, so the math captures meaning!
 
 ### The Famous Analogy Test
 
+word2vec vectors encode RELATIONSHIPS as directions:
+
+$$\vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}} \approx \vec{\text{queen}}$$
+
+$$\vec{\text{Paris}} - \vec{\text{France}} + \vec{\text{Italy}} \approx \vec{\text{Rome}}$$
+
+$$\vec{\text{walked}} - \vec{\text{walk}} + \vec{\text{swim}} \approx \vec{\text{swam}}$$
+
 ```
-  word2vec vectors encode RELATIONSHIPS as directions:
-
-  king − man + woman ≈ queen
-  Paris − France + Italy ≈ Rome
-  walked − walk + swim ≈ swam
-
   How this works:
   ─────────────────────────────────────────────────────────────
          gender direction
@@ -1033,10 +1355,13 @@ so the counterfeiter has to get better too. They both improve together!
 
   TRAINING OBJECTIVE (minimax game):
   ─────────────────────────────────────────────────────────────
-  G wants: D(G(z)) → 1   (fool D into thinking fake is real)
-  D wants: D(x) → 1      (correctly classify real as real)
-           D(G(z)) → 0   (correctly classify fake as fake)
+```
 
+$G$ wants: $D(G(z)) \to 1$ (fool $D$ into thinking fake is real)
+
+$D$ wants: $D(x) \to 1$ (correctly classify real as real) and $D(G(z)) \to 0$ (correctly classify fake as fake)
+
+```
   After training: G produces realistic samples.
   Generator G is thrown away. Discriminator D is thrown away.
   The GENERATED samples are what you actually use.
@@ -1092,6 +1417,42 @@ WHEN TO USE WHAT:
   Time Series:  Try tree models first, then LSTM/Transformer
   Audio:        CNN on spectrogram or Transformer (Whisper)
   Video:        CNN + Transformer (3D CNN or ViT variants)
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["CNN", "RNN/LSTM", "Transformer"],
+    "datasets": [
+      {
+        "label": "Parallelizable (5=fully)",
+        "data": [5, 1, 5],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Long-Range Dependencies (5=best)",
+        "data": [2, 3, 5],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Data Efficiency (5=least data needed)",
+        "data": [4, 4, 2],
+        "backgroundColor": "rgba(234, 88, 12, 0.7)",
+        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Architecture Comparison — CNN vs RNN vs Transformer" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Rating (1-5)" }, "beginAtZero": true, "max": 5 },
+      "x": {}
+    }
+  }
+}
 ```
 
 ---

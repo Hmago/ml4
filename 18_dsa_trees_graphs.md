@@ -27,7 +27,7 @@ All 10 DSA topics Google tests, ordered by frequency. Every topic has: visual ex
 
 ---
 
-# PART 1: ARRAYS & HASHMAPS (Warm-up — 20 problems)
+# PART 1: ARRAYS & HASHMAPS (Warm-up — 20 problems) ★★★
 
 ---
 
@@ -208,7 +208,7 @@ public int[] productExceptSelf(int[] nums) {
 
 ---
 
-# PART 2: GRAPHS — BFS, DFS, DIJKSTRA (★ Google Favorite — 25 problems)
+# PART 2: GRAPHS — BFS, DFS, DIJKSTRA (★ Google Favorite — 25 problems) ★★★
 
 ---
 
@@ -353,7 +353,7 @@ for (int[] d : dirs) {
 
 ---
 
-## 2.2 BFS (Breadth-First Search) — Complete Algorithm
+## 2.2 BFS (Breadth-First Search) — Complete Algorithm ★★★
 
 ### What Is BFS?
 
@@ -598,7 +598,7 @@ public int orangesRotting(int[][] grid) {
 
 ---
 
-## 2.3 DFS (Depth-First Search) — Complete Algorithm
+## 2.3 DFS (Depth-First Search) — Complete Algorithm ★★★
 
 ### What Is DFS?
 
@@ -813,7 +813,7 @@ boolean dfsDetectCycle(List<List<Integer>> adj, int u, int[] color) {
 
 ---
 
-## 2.4 Topological Sort — Complete Algorithm
+## 2.4 Topological Sort — Complete Algorithm ★★
 
 ### What Is Topological Sort?
 
@@ -1032,7 +1032,7 @@ public int[] dijkstra(Map<Integer, List<int[]>> graph, int start, int n) {
 
 ---
 
-## 2.6 Union-Find
+## 2.6 Union-Find ★★
 
 ```java
 class UnionFind {
@@ -1094,7 +1094,7 @@ class UnionFind {
 
 ---
 
-# PART 3: DYNAMIC PROGRAMMING (★ Google Favorite — 25 problems)
+# PART 3: DYNAMIC PROGRAMMING (★ Google Favorite — 25 problems) ★★★
 
 ---
 
@@ -1703,11 +1703,11 @@ public int rob(int[] nums) {
 
 ---
 
-# PART 4: TREES & BST (20 problems)
+# PART 4: TREES & BST (20 problems) ★★★
 
 ---
 
-## 4.1 Tree Node + Traversals
+## 4.1 Tree Node + Traversals ★★★
 
 ```java
 public class TreeNode {
@@ -1801,7 +1801,7 @@ public TreeNode lca(TreeNode root, TreeNode p, TreeNode q) {
 
 ---
 
-# PART 5: SLIDING WINDOW / TWO POINTERS (15 problems)
+# PART 5: SLIDING WINDOW / TWO POINTERS (15 problems) ★★
 
 ---
 
@@ -1888,7 +1888,7 @@ public String minWindow(String s, String t) {
 
 ---
 
-# PART 6: BINARY SEARCH (15 problems)
+# PART 6: BINARY SEARCH (15 problems) ★★
 
 ---
 
@@ -1970,7 +1970,7 @@ public int minEatingSpeed(int[] piles, int h) {
 
 ---
 
-# PART 7: HEAPS / PRIORITY QUEUES (10 problems)
+# PART 7: HEAPS / PRIORITY QUEUES (10 problems) ★★
 
 ---
 
@@ -2024,7 +2024,7 @@ public ListNode mergeKLists(ListNode[] lists) {
 
 ---
 
-# PART 8: TRIES (10 problems)
+# PART 8: TRIES (10 problems) ★★
 
 ---
 

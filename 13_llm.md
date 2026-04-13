@@ -83,6 +83,29 @@ The "large" in Large Language Model refers to the number of **parameters** (the 
   DeepSeek R1 (2025):   671B total parameters (MoE, 37B active per token)
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["GPT-2\n(2019)", "GPT-3\n(2020)", "LLaMA 3\n(2024)", "DeepSeek R1\n(2025)", "GPT-4\n(2023)"],
+    "datasets": [{
+      "label": "Parameters (Billions)",
+      "data": [1.5, 175, 405, 671, 1800],
+      "backgroundColor": ["rgba(99,102,241,0.5)","rgba(99,102,241,0.6)","rgba(34,197,94,0.7)","rgba(234,88,12,0.7)","rgba(239,68,68,0.7)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(234,88,12,1)","rgba(239,68,68,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "LLM Parameter Growth — From 1.5B (2019) to 1.8T (2023)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Parameters (Billions)" }, "beginAtZero": true },
+      "x": {}
+    }
+  }
+}
+```
+
 **One parameter** is like one tiny dial that the model tunes during training. A model with 175 billion dials has 175 billion ways to adjust how it processes text. More dials = more capacity to learn complex patterns.
 
 ---
@@ -204,6 +227,29 @@ A **probability distribution** is just a list of ALL possible outcomes and how l
   different answers each time.
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["mat", "floor", "bed", "couch", "roof", "...others"],
+    "datasets": [{
+      "label": "P(next word) after \"The cat sat on the\"",
+      "data": [0.40, 0.25, 0.15, 0.10, 0.05, 0.05],
+      "backgroundColor": ["rgba(34,197,94,0.8)","rgba(99,102,241,0.7)","rgba(99,102,241,0.6)","rgba(99,102,241,0.5)","rgba(99,102,241,0.3)","rgba(200,200,200,0.4)"],
+      "borderColor": ["rgba(34,197,94,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(200,200,200,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "LLM Next-Word Prediction — Probability Distribution (Sum = 1.0)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Probability" }, "beginAtZero": true, "max": 0.5 },
+      "x": { "title": { "display": true, "text": "Candidate Token" } }
+    }
+  }
+}
+```
+
 ### Multiplying Probabilities — When Events Happen in Sequence
 
 When two things happen one after another (and the second doesn't depend on the first), you **multiply** their probabilities.
@@ -220,18 +266,15 @@ When two things happen one after another (and the second doesn't depend on the f
   P(first roll = 6) = 1/6
   P(second roll = 6) = 1/6
   P(both sixes) = 1/6 × 1/6 = 1/36 ≈ 0.028 (2.8%)
-
-  KEY INSIGHT: Multiplying probabilities makes them SMALLER.
-  This matters for LLMs — the probability of a full sentence
-  is the product of each word's probability:
-
-  P("The cat sat") = P("The") × P("cat"|"The") × P("sat"|"The cat")
-                   = 0.05 × 0.08 × 0.12
-                   = 0.00048 (very small!)
-
-  Longer sentences → tinier probabilities → numbers become unmanageable.
-  This is why we need LOGARITHMS (Section 1.8).
 ```
+
+**KEY INSIGHT:** Multiplying probabilities makes them SMALLER. This matters for LLMs -- the probability of a full sentence is the product of each word's probability:
+
+$$P(\text{The cat sat}) = P(\text{The}) \times P(\text{cat}|\text{The}) \times P(\text{sat}|\text{The cat})$$
+
+$$= 0.05 \times 0.08 \times 0.12 = 0.00048 \text{ (very small!)}$$
+
+Longer sentences lead to tinier probabilities and numbers become unmanageable. This is why we need LOGARITHMS (Section 1.8).
 
 ---
 
@@ -274,9 +317,9 @@ This is the MOST important math concept for LLMs. **Conditional probability** as
 
 **Every word an LLM generates is a conditional probability.** It asks: "What word is most likely, GIVEN all the words that came before?"
 
-```
-  P(next word | all previous words)
+Every word an LLM generates uses: $P(\text{next word} | \text{all previous words})$
 
+```
   Step by step:
 
   Input so far: "I"
@@ -312,15 +355,13 @@ $$P(w_1, w_2, \ldots, w_n) = P(w_1) \cdot P(w_2|w_1) \cdot P(w_3|w_1,w_2) \cdots
 
 The probability of a full sentence is the product of each word's conditional probability:
 
+$$P(\text{The cat sat on the mat})$$
+
+$$= P(\text{The}) \times P(\text{cat}|\text{The}) \times P(\text{sat}|\text{The cat}) \times P(\text{on}|\text{The cat sat}) \times P(\text{the}|\text{The cat sat on}) \times P(\text{mat}|\text{The cat sat on the})$$
+
+$$= 0.05 \times 0.08 \times 0.15 \times 0.30 \times 0.40 \times 0.35 = 0.0000252$$
+
 ```
-  P("The cat sat on the mat")
-  = P("The") × P("cat" | "The") × P("sat" | "The cat")
-    × P("on" | "The cat sat") × P("the" | "The cat sat on")
-    × P("mat" | "The cat sat on the")
-
-  = 0.05 × 0.08 × 0.15 × 0.30 × 0.40 × 0.35
-  = 0.0000252
-
   This is called THE CHAIN RULE of probability.
   It's the mathematical foundation of all autoregressive LLMs.
   
@@ -413,46 +454,45 @@ When we multiply many probabilities together (like the chain rule above), the nu
   log₂(1) = 0        because 2⁰ = 1
   log₂(0.5) = -1     because 2⁻¹ = 0.5
   log₂(0.25) = -2    because 2⁻² = 0.25
-
-  KEY PROPERTIES:
-  log(A × B) = log(A) + log(B)     ← multiplication becomes ADDITION!
-  log(1) = 0                        ← probability of 1 → log of 0
-  log(0.5) = -1                     ← probabilities < 1 → negative logs
-  log(0.001) = -10                  ← tiny probabilities → large negative logs
 ```
+
+**KEY PROPERTIES:**
+
+$$\log(A \times B) = \log(A) + \log(B) \quad \leftarrow \text{multiplication becomes ADDITION!}$$
+
+$$\log(1) = 0 \quad \leftarrow \text{probability of 1 maps to log of 0}$$
+
+$$\log(0.5) = -1 \quad \leftarrow \text{probabilities less than 1 give negative logs}$$
+
+$$\log(0.001) = -10 \quad \leftarrow \text{tiny probabilities give large negative logs}$$
 
 ### How This Helps LLMs
 
-```
-  WITHOUT LOGS (chain rule — multiplying probabilities):
-  P(sentence) = 0.05 × 0.08 × 0.12 × 0.15 × 0.30
-              = 0.00000216   (tiny, hard to work with)
+**WITHOUT LOGS** (chain rule -- multiplying probabilities):
 
-  WITH LOGS (chain rule — adding log-probabilities):
-  log P(sentence) = log(0.05) + log(0.08) + log(0.12) + log(0.15) + log(0.30)
-                  = (-4.32) + (-3.64) + (-3.06) + (-2.74) + (-1.74)
-                  = -15.50    (a nice, manageable number!)
+$$P(\text{sentence}) = 0.05 \times 0.08 \times 0.12 \times 0.15 \times 0.30 = 0.00000216 \text{ (tiny, hard to work with)}$$
 
-  Instead of tracking 0.00000216, we track -15.50.
-  Much easier for computers to store and compare.
-```
+**WITH LOGS** (chain rule -- adding log-probabilities):
+
+$$\log P(\text{sentence}) = \log(0.05) + \log(0.08) + \log(0.12) + \log(0.15) + \log(0.30)$$
+
+$$= (-4.32) + (-3.64) + (-3.06) + (-2.74) + (-1.74) = -15.50 \text{ (a nice, manageable number!)}$$
+
+Instead of tracking 0.00000216, we track -15.50. Much easier for computers to store and compare.
 
 ### Log-Probability → Cross-Entropy Loss → How LLMs Learn
 
+During training, the LLM sees: "The capital of France is Paris"
+
+It predicts: $P(\text{Paris} | \text{The capital of France is}) = 0.3$ (not great)
+
+The LOSS for this prediction: $\text{loss} = -\log_2(0.3) = 1.74$
+
+If the model had predicted $P(\text{Paris}) = 0.9$ (very confident, correct): $\text{loss} = -\log_2(0.9) = 0.15$ -- small loss (good!)
+
+If the model had predicted $P(\text{Paris}) = 0.01$ (very wrong): $\text{loss} = -\log_2(0.01) = 6.64$ -- large loss (bad!)
+
 ```
-  During training, the LLM sees: "The capital of France is Paris"
-  
-  It predicts: P("Paris" | "The capital of France is") = 0.3 (not great)
-
-  The LOSS for this prediction:
-  loss = -log₂(0.3) = 1.74
-
-  If the model had predicted P("Paris") = 0.9 (very confident, correct):
-  loss = -log₂(0.9) = 0.15    ← small loss (good!)
-
-  If the model had predicted P("Paris") = 0.01 (very wrong):
-  loss = -log₂(0.01) = 6.64   ← large loss (bad!)
-
   ┌───────────────────────────────────────────────────────┐
   │  Model's P(correct word)  │  Loss = -log(P)  │ Good? │
   │───────────────────────────│──────────────────│───────│
@@ -463,14 +503,11 @@ When we multiply many probabilities together (like the chain rule above), the nu
   │  0.01                     │  6.64            │ Awful │
   │  0.001                    │  9.97            │ Terrible│
   └───────────────────────────────────────────────────────┘
-
-  Training = minimize this loss across billions of examples.
-  Lower loss = model assigns higher probability to correct words
-  = model makes better predictions = model "understands" language better.
-
-  This is called CROSS-ENTROPY LOSS — the training signal for all LLMs.
-  (Also mentioned in Section 11.2)
 ```
+
+Training = minimize this loss across billions of examples. Lower loss = model assigns higher probability to correct words = model makes better predictions = model "understands" language better.
+
+This is called **CROSS-ENTROPY LOSS** -- the training signal for all LLMs. (Also mentioned in Section 11.2)
 
 **Cross-Entropy Loss:** $\mathcal{L} = -\log P(\text{correct token})$
 
@@ -502,9 +539,11 @@ LLMs represent words as **vectors** — lists of numbers. Understanding vectors 
 
 ### The Dot Product — Measuring How Similar Two Vectors Are
 
-```
-  The DOT PRODUCT multiplies matching elements and adds them up.
+The **dot product** multiplies matching elements and adds them up.
 
+$$A \cdot B = \sum_{i} A_i \times B_i$$
+
+```
   A = [3, 4]
   B = [1, 2]
 
@@ -528,17 +567,15 @@ LLMs represent words as **vectors** — lists of numbers. Understanding vectors 
 
 ### Cosine Similarity — Dot Product, Normalized
 
+Raw dot product is affected by vector LENGTH, not just direction. A long vector dotted with another long vector gives a big number even if they're not that similar.
+
+**COSINE SIMILARITY** fixes this by dividing by the lengths:
+
+$$\text{cosine similarity}(A, B) = \frac{A \cdot B}{\|A\| \times \|B\|}$$
+
+Where $\|A\| = \sqrt{A_1^2 + A_2^2 + \cdots + A_n^2}$ (the length of $A$).
+
 ```
-  Raw dot product is affected by vector LENGTH, not just direction.
-  A long vector dotted with another long vector gives a big number
-  even if they're not that similar.
-
-  COSINE SIMILARITY fixes this by dividing by the lengths:
-
-  cosine_similarity(A, B) = (A · B) / (|A| × |B|)
-
-  Where |A| = √(A₁² + A₂² + ... + Aₙ²)   (the length of A)
-
   Example:
   A = [3, 4]     |A| = √(9 + 16) = √25 = 5
   B = [6, 8]     |B| = √(36 + 64) = √100 = 10
@@ -604,10 +641,11 @@ Here's how all the math connects inside a working LLM:
 
   DURING TRAINING:
   If the correct next word was "beautiful" but the model gave it only P=0.02:
-  Loss = -log(0.02) = 5.64 (high loss — model was wrong!)
   Backpropagate this loss → update the model's weights (vectors)
   → next time, the model will give "beautiful" a higher probability
 ```
+
+$$\text{Loss} = -\log(0.02) = 5.64 \text{ (high loss -- model was wrong!)}$$
 
 ```
   SUMMARY — THE MATH CHEAT SHEET:
@@ -633,25 +671,23 @@ Here's how all the math connects inside a working LLM:
 
 Two events are **independent** if one happening doesn't change the probability of the other. They're **dependent** if it does.
 
+**INDEPENDENT EVENTS** (one doesn't affect the other):
+
+Flipping a coin and rolling a dice. The coin doesn't care what the dice shows.
+
+For independent events: $P(A \text{ and } B) = P(A) \times P(B)$
+
 ```
-  INDEPENDENT EVENTS (one doesn't affect the other):
-
-  Flipping a coin and rolling a dice.
-  The coin doesn't care what the dice shows.
-
   P(Heads) = 0.5
   P(roll 6) = 1/6
   P(Heads AND roll 6) = 0.5 × 1/6 = 1/12 ≈ 0.083
+```
 
-  For independent events: P(A and B) = P(A) × P(B)
-  Just multiply!
+**DEPENDENT EVENTS** (one affects the other):
 
+Drawing marbles from a bag WITHOUT putting them back. Bag has 5 red and 3 blue marbles (8 total).
 
-  DEPENDENT EVENTS (one affects the other):
-
-  Drawing marbles from a bag WITHOUT putting them back.
-  Bag has 5 red and 3 blue marbles (8 total).
-
+```
   P(first marble is red) = 5/8 = 0.625
 
   Now — if the first WAS red, only 4 red + 3 blue left (7 total):
@@ -698,25 +734,25 @@ What's the chance that BOTH things happen?
 
   Note: P(ace) × P(heart) = 1/13 × 1/4 = 1/52 ✓
   Works because suit and value are independent!
-
-
-  DEPENDENT EXAMPLE: Weather and mood
-  
-  P(raining AND happy) ≠ P(raining) × P(happy)
-  Because rain affects mood! They're dependent.
-  Instead: P(raining AND happy) = P(happy | raining) × P(raining)
-                                = 0.3 × 0.2 = 0.06
 ```
+
+**DEPENDENT EXAMPLE:** Weather and mood
+
+$$P(\text{raining and happy}) \neq P(\text{raining}) \times P(\text{happy})$$
+
+Because rain affects mood! They're dependent. Instead:
+
+$$P(\text{raining and happy}) = P(\text{happy}|\text{raining}) \times P(\text{raining}) = 0.3 \times 0.2 = 0.06$$
 
 ### The Addition Rule — P(A OR B)
 
 What's the chance that AT LEAST ONE happens?
 
+$$P(A \text{ or } B) = P(A) + P(B) - P(A \text{ and } B)$$
+
+Why subtract $P(A \text{ and } B)$? Because we counted it TWICE!
+
 ```
-  P(A or B) = P(A) + P(B) − P(A and B)
-
-  Why subtract P(A and B)? Because we counted it TWICE!
-
   EXAMPLE: Drawing one card from a deck.
   P(heart OR ace) = P(heart) + P(ace) − P(heart AND ace)
                   = 13/52 + 4/52 − 1/52
@@ -802,13 +838,11 @@ Bayes' Theorem is one of the most important formulas in all of AI. It tells you 
 
 ### The Formula
 
+**Bayes' Theorem:**
+
+$$P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}$$
+
 ```
-  Bayes' Theorem:
-
-                         P(B | A) × P(A)
-  P(A | B) = ─────────────────────────────────
-                           P(B)
-
   In English:
   
   P(A | B) = How likely A is, GIVEN we observed B
@@ -822,54 +856,34 @@ Bayes' Theorem is one of the most important formulas in all of AI. It tells you 
 
   P(B)     = How likely B is overall
              (the "evidence")
-
-
-  Let's plug in our medical test:
-
-  A = "you are sick"
-  B = "test is positive"
-
-  P(sick | positive) = P(positive | sick) × P(sick)
-                       ───────────────────────────────
-                              P(positive)
-
-                     = 0.99 × 0.001
-                       ───────────────
-                         0.01098
-
-                     = 0.000990 / 0.01098
-
-                     = 0.090 = 9% ✓ (matches our counting!)
-
-  Where P(positive) = P(positive | sick)×P(sick) + P(positive | healthy)×P(healthy)
-                    = 0.99 × 0.001 + 0.01 × 0.999
-                    = 0.000990 + 0.00999
-                    = 0.01098
 ```
+
+Let's plug in our medical test ($A$ = "you are sick", $B$ = "test is positive"):
+
+$$P(\text{sick}|\text{positive}) = \frac{P(\text{positive}|\text{sick}) \times P(\text{sick})}{P(\text{positive})} = \frac{0.99 \times 0.001}{0.01098} = \frac{0.000990}{0.01098} = 0.090 = 9\%$$
+
+Where:
+
+$$P(\text{positive}) = P(\text{positive}|\text{sick}) \cdot P(\text{sick}) + P(\text{positive}|\text{healthy}) \cdot P(\text{healthy})$$
+
+$$= 0.99 \times 0.001 + 0.01 \times 0.999 = 0.000990 + 0.00999 = 0.01098$$
 
 ### Another Example — Spam Filtering
 
-```
-  Your email filter knows:
-  - 30% of all emails are spam:           P(spam) = 0.30
-  - "FREE MONEY" appears in 80% of spam:  P("FREE MONEY" | spam) = 0.80
-  - "FREE MONEY" appears in 1% of legit:  P("FREE MONEY" | legit) = 0.01
+Your email filter knows:
+- 30% of all emails are spam: $P(\text{spam}) = 0.30$
+- "FREE MONEY" appears in 80% of spam: $P(\text{FREE MONEY}|\text{spam}) = 0.80$
+- "FREE MONEY" appears in 1% of legit: $P(\text{FREE MONEY}|\text{legit}) = 0.01$
 
-  You get an email with "FREE MONEY". Is it spam?
+You get an email with "FREE MONEY". Is it spam?
 
-  P(spam | "FREE MONEY") = P("FREE MONEY" | spam) × P(spam)
-                           ────────────────────────────────────
-                                  P("FREE MONEY")
+$$P(\text{spam}|\text{FREE MONEY}) = \frac{P(\text{FREE MONEY}|\text{spam}) \times P(\text{spam})}{P(\text{FREE MONEY})}$$
 
-  P("FREE MONEY") = 0.80 × 0.30 + 0.01 × 0.70
-                   = 0.240 + 0.007
-                   = 0.247
+$$P(\text{FREE MONEY}) = 0.80 \times 0.30 + 0.01 \times 0.70 = 0.240 + 0.007 = 0.247$$
 
-  P(spam | "FREE MONEY") = 0.240 / 0.247 = 0.972 = 97.2%
+$$P(\text{spam}|\text{FREE MONEY}) = \frac{0.240}{0.247} = 0.972 = 97.2\%$$
 
-  97.2% chance it's spam! The prior (30% spam) got updated
-  dramatically by the evidence ("FREE MONEY").
-```
+97.2% chance it's spam! The prior (30% spam) got updated dramatically by the evidence ("FREE MONEY").
 
 ### Why Bayes Matters for LLMs
 
@@ -914,11 +928,9 @@ $$E[X] = \sum_{i} x_i \cdot P(x_i)$$
 
   You can never roll 3.5! But if you rolled 1000 times,
   your average would be very close to 3.5.
-
-  FORMULA:
-  E[X] = Σ (value × probability of that value)
-       = x₁×P(x₁) + x₂×P(x₂) + ... + xₙ×P(xₙ)
 ```
+
+$$E[X] = \sum_{i} x_i \cdot P(x_i) = x_1 P(x_1) + x_2 P(x_2) + \cdots + x_n P(x_n)$$
 
 ### A Loaded Dice Example
 
@@ -964,19 +976,13 @@ $$E[X] = \sum_{i} x_i \cdot P(x_i)$$
 
 ### Why Expected Value Matters for LLMs
 
-```
-  TRAINING LOSS is an expected value!
+**TRAINING LOSS** is an expected value!
 
-  The loss function computes:
-  E[loss] = average of -log(P(correct token)) across ALL training examples
+$$E[\text{loss}] = \text{average of } -\log P(\text{correct token}) \text{ across ALL training examples}$$
 
-  The model tries to MINIMIZE this expected loss.
-  Lower expected loss = model is better at predicting correct words on average.
+The model tries to MINIMIZE this expected loss. Lower expected loss = model is better at predicting correct words on average.
 
-  REWARD IN RLHF is also about expected value:
-  The model learns to generate responses that have the highest
-  expected reward (human preference score) on average.
-```
+**REWARD IN RLHF** is also about expected value: The model learns to generate responses that have the highest expected reward (human preference score) on average.
 
 ---
 
@@ -1000,6 +1006,8 @@ Expected value tells you the center. **Variance tells you how spread out things 
 ```
 
 ### Computing Variance Step by Step
+
+$$\sigma^2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2 \qquad \sigma = \sqrt{\sigma^2}$$
 
 ```
   Scores: [2, 4, 6, 8, 10]
@@ -1025,11 +1033,11 @@ Expected value tells you the center. **Variance tells you how spread out things 
   Variance = (16 + 4 + 0 + 4 + 16) / 5 = 40 / 5 = 8
 
   STEP 5: Standard deviation = √Variance = √8 ≈ 2.83
-
-  FORMULA:
-  Variance σ² = (1/N) × Σ (xᵢ - mean)²
-  Standard Deviation σ = √(Variance)
 ```
+
+$$\sigma^2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2$$
+
+$$\sigma = \sqrt{\sigma^2}$$
 
 ### Comparing Low vs. High Variance
 
@@ -1202,45 +1210,29 @@ $$H(X) = -\sum_{x} P(x) \log_2 P(x)$$
 
 ### Computing Entropy
 
-```
-  FORMULA:
-  H = -Σ P(x) × log₂(P(x))    for all possible outcomes x
+$$H = -\sum_{x} P(x) \log_2 P(x)$$
 
-  (It's the expected value of -log₂(P), which is "surprise" per outcome!)
+(It's the expected value of $-\log_2 P$, which is "surprise" per outcome!)
 
+**CITY A:** $P(\text{sunny}) = 0.99$, $P(\text{rainy}) = 0.01$
 
-  CITY A: P(sunny) = 0.99, P(rainy) = 0.01
+$$H = -(0.99 \times \log_2(0.99)) - (0.01 \times \log_2(0.01))$$
 
-  H = -(0.99 × log₂(0.99)) - (0.01 × log₂(0.01))
-    = -(0.99 × (-0.0145)) - (0.01 × (-6.644))
-    = -(-0.01435) - (-0.06644)
-    = 0.01435 + 0.06644
-    = 0.081 bits
+$$= 0.01435 + 0.06644 = 0.081 \text{ bits}$$
 
-  Very low entropy! Almost no surprise.
+Very low entropy! Almost no surprise.
 
+**CITY B:** $P(\text{sunny}) = P(\text{rainy}) = P(\text{cloudy}) = P(\text{stormy}) = 0.25$
 
-  CITY B: P(sunny) = P(rainy) = P(cloudy) = P(stormy) = 0.25
+$$H = -(4 \times 0.25 \times \log_2(0.25)) = -(4 \times 0.25 \times (-2)) = 2.0 \text{ bits}$$
 
-  H = -(4 × 0.25 × log₂(0.25))
-    = -(4 × 0.25 × (-2))
-    = -(4 × (-0.5))
-    = -(-2)
-    = 2.0 bits
+High entropy! Maximum uncertainty for 4 outcomes.
 
-  High entropy! Maximum uncertainty for 4 outcomes.
+**FAIR COIN:** $P(\text{heads}) = P(\text{tails}) = 0.5$
 
+$$H = -(2 \times 0.5 \times \log_2(0.5)) = -(2 \times 0.5 \times (-1)) = 1.0 \text{ bit}$$
 
-  FAIR COIN: P(heads) = P(tails) = 0.5
-
-  H = -(2 × 0.5 × log₂(0.5))
-    = -(2 × 0.5 × (-1))
-    = -(-1)
-    = 1.0 bit
-
-  Exactly 1 bit of entropy — the purest unit of uncertainty.
-  One coin flip gives exactly 1 bit of information.
-```
+Exactly 1 bit of entropy -- the purest unit of uncertainty. One coin flip gives exactly 1 bit of information.
 
 ### The Key Pattern
 
@@ -1252,34 +1244,32 @@ $$H(X) = -\sum_{x} P(x) \log_2 P(x)$$
   [0.8, 0.2]                     │  0.72   │ Somewhat predictable
   [0.5, 0.5] (coin flip)         │  1.0    │ Maximum uncertainty (2 outcomes)
   [0.25, 0.25, 0.25, 0.25]      │  2.0    │ Maximum uncertainty (4 outcomes)
-  
-  RULE: Uniform distributions have MAXIMUM entropy.
-  RULE: Concentrated distributions have MINIMUM entropy (0).
-  RULE: Max entropy for N outcomes = log₂(N) bits.
 ```
+
+- **RULE:** Uniform distributions have MAXIMUM entropy.
+- **RULE:** Concentrated distributions have MINIMUM entropy (0).
+- **RULE:** Max entropy for $N$ outcomes $= \log_2(N)$ bits.
 
 ### Why Entropy Matters for LLMs
 
-```
-  1. CROSS-ENTROPY LOSS (the training objective!):
-     Cross-entropy loss = H(true_distribution, model_distribution)
-     It measures: "How surprised is the model by the actual next word?"
-     Training minimizes this → model becomes less surprised → better predictions.
+**1. CROSS-ENTROPY LOSS** (the training objective!):
 
-  2. PERPLEXITY = 2^(entropy):
-     Perplexity of 8 means: on average, the model is choosing between
-     8 equally likely words. Lower = better. (See Section 11.2)
+$H(\text{true}, \text{model}) =$ "How surprised is the model by the actual next word?" Training minimizes this -- model becomes less surprised -- better predictions.
 
-  3. TEMPERATURE CONTROLS ENTROPY:
-     Temperature = 0 → entropy ≈ 0 (always pick the top word)
-     Temperature = 1 → natural entropy (sample from learned distribution)
-     Temperature = 2 → high entropy (flatter, more random)
+**2. PERPLEXITY:**
 
-  4. INFORMATION CONTENT:
-     A word with probability 0.01 carries -log₂(0.01) = 6.64 bits
-     A word with probability 0.99 carries -log₂(0.99) = 0.01 bits
-     Rare words carry MORE information — they're more "surprising."
-```
+$$\text{Perplexity} = 2^{H}$$
+
+Perplexity of 8 means: on average, the model is choosing between 8 equally likely words. Lower = better. (See Section 11.2)
+
+**3. TEMPERATURE CONTROLS ENTROPY:**
+- Temperature = 0: entropy near 0 (always pick the top word)
+- Temperature = 1: natural entropy (sample from learned distribution)
+- Temperature = 2: high entropy (flatter, more random)
+
+**4. INFORMATION CONTENT:**
+
+A word with probability 0.01 carries $-\log_2(0.01) = 6.64$ bits. A word with probability 0.99 carries $-\log_2(0.99) = 0.01$ bits. Rare words carry MORE information -- they're more "surprising."
 
 ---
 
@@ -1306,70 +1296,45 @@ $$D_{KL}(P \| Q) = \sum_{x} P(x) \log \frac{P(x)}{Q(x)}$$
 
 ### Computing KL Divergence
 
-```
-  FORMULA:
-  KL(P || Q) = Σ P(x) × log(P(x) / Q(x))
+$$D_{KL}(P \| Q) = \sum_{x} P(x) \log \frac{P(x)}{Q(x)}$$
 
-  P = true distribution (what we want)
-  Q = model's distribution (what we have)
+$P$ = true distribution (what we want), $Q$ = model's distribution (what we have).
 
-  EXAMPLE:
-  P = [0.70, 0.20, 0.10]  (actual weather)
-  Q = [0.40, 0.40, 0.20]  (model's prediction)
+**EXAMPLE:** $P = [0.70, 0.20, 0.10]$ (actual weather), $Q = [0.40, 0.40, 0.20]$ (model's prediction)
 
-  KL = 0.70 × log(0.70/0.40) + 0.20 × log(0.20/0.40) + 0.10 × log(0.10/0.20)
+$$D_{KL} = 0.70 \times \ln\frac{0.70}{0.40} + 0.20 \times \ln\frac{0.20}{0.40} + 0.10 \times \ln\frac{0.10}{0.20}$$
 
-  Using natural log (ln):
-  = 0.70 × ln(1.75) + 0.20 × ln(0.50) + 0.10 × ln(0.50)
-  = 0.70 × 0.559 + 0.20 × (-0.693) + 0.10 × (-0.693)
-  = 0.392 + (-0.139) + (-0.069)
-  = 0.184 nats
+$$= 0.70 \times 0.559 + 0.20 \times (-0.693) + 0.10 \times (-0.693) = 0.392 - 0.139 - 0.069 = 0.184 \text{ nats}$$
 
-  If the model PERFECTLY matched reality:
-  Q = P = [0.70, 0.20, 0.10]
-  KL = 0.70 × log(0.70/0.70) + 0.20 × log(0.20/0.20) + 0.10 × log(0.10/0.10)
-     = 0.70 × log(1) + 0.20 × log(1) + 0.10 × log(1)
-     = 0 + 0 + 0
-     = 0    ← zero divergence means perfect match!
-```
+If the model PERFECTLY matched reality ($Q = P$):
+
+$$D_{KL} = 0.70 \times \log(1) + 0.20 \times \log(1) + 0.10 \times \log(1) = 0 \quad \leftarrow \text{zero divergence means perfect match!}$$
 
 ### Key Properties
 
-```
-  1. KL(P || Q) ≥ 0        always (never negative)
-  2. KL(P || Q) = 0         only when P = Q (identical distributions)
-  3. KL(P || Q) ≠ KL(Q || P)   NOT symmetric! Direction matters!
+1. $D_{KL}(P \| Q) \geq 0$ -- always (never negative)
+2. $D_{KL}(P \| Q) = 0$ -- only when $P = Q$ (identical distributions)
+3. $D_{KL}(P \| Q) \neq D_{KL}(Q \| P)$ -- NOT symmetric! Direction matters!
 
-  KL(P || Q): "How surprised is Q by data from P?"
-  KL(Q || P): "How surprised is P by data from Q?"
-  These give DIFFERENT numbers.
-```
+$D_{KL}(P \| Q)$: "How surprised is $Q$ by data from $P$?" vs $D_{KL}(Q \| P)$: "How surprised is $P$ by data from $Q$?" -- these give DIFFERENT numbers.
 
 ### Why KL Divergence Matters for LLMs
 
-```
-  1. RLHF TRAINING (Section 3.4):
-     During RLHF, the model is updated to maximize human preference scores.
-     But we add a KL PENALTY to stop it from drifting too far from the
-     original pre-trained model:
-     
-     Reward = human_preference_score − β × KL(new_model || original_model)
-     
-     Without this, the model might find weird "hacks" that score high
-     on preferences but produce nonsensical text.
+**1. RLHF TRAINING (Section 3.4):**
+During RLHF, the model is updated to maximize human preference scores. But we add a KL PENALTY to stop it from drifting too far from the original pre-trained model:
 
-  2. DPO (Section 3.5):
-     DPO loss includes a KL penalty term for the same reason —
-     stay close to the original model while learning preferences.
+$$\text{Reward} = \text{human preference score} - \beta \times D_{KL}(\text{new model} \| \text{original model})$$
 
-  3. CROSS-ENTROPY AND KL:
-     Cross-entropy loss = Entropy of true distribution + KL divergence
-     H(P, Q) = H(P) + KL(P || Q)
-     
-     Since H(P) is fixed (determined by the data), minimizing
-     cross-entropy loss IS the same as minimizing KL divergence!
-     Training = making the model's distribution match reality.
-```
+Without this, the model might find weird "hacks" that score high on preferences but produce nonsensical text.
+
+**2. DPO (Section 3.5):**
+DPO loss includes a KL penalty term for the same reason -- stay close to the original model while learning preferences.
+
+**3. CROSS-ENTROPY AND KL:**
+
+$$H(P, Q) = H(P) + D_{KL}(P \| Q)$$
+
+Since $H(P)$ is fixed (determined by the data), minimizing cross-entropy loss IS the same as minimizing KL divergence! Training = making the model's distribution match reality.
 
 ---
 
@@ -1420,26 +1385,23 @@ This is THE mathematical principle behind LLM pre-training.
 
 ### How MLE Works for LLMs
 
+LLM pre-training IS maximum likelihood estimation.
+
+- **DATA:** Billions of sentences from the internet
+- **PARAMETERS:** The 175 billion weights in the model
+- **GOAL:** Find the parameter values that make the training data most likely
+
+For each training sentence "The cat sat on the mat":
+
+$$P(\text{sentence}|\theta) = P(\text{The}) \times P(\text{cat}|\text{The}) \times P(\text{sat}|\text{The cat}) \times \cdots$$
+
+MLE says: find parameters that MAXIMIZE this probability. In practice, we MINIMIZE the negative log probability (cross-entropy loss):
+
+$$\text{Loss} = -\log P(\text{sentence}|\theta) = -\log P(\text{The}) - \log P(\text{cat}|\text{The}) - \log P(\text{sat}|\text{The cat}) - \cdots$$
+
+Minimizing negative log-probability = maximizing probability (because $\log$ is monotonically increasing, and the negative flips the direction).
+
 ```
-  LLM pre-training IS maximum likelihood estimation.
-
-  DATA: Billions of sentences from the internet
-  PARAMETERS: The 175 billion weights in the model
-  GOAL: Find the parameter values that make the training data most likely
-
-  For each training sentence "The cat sat on the mat":
-
-  P(sentence | parameters) = P("The") × P("cat"|"The") × P("sat"|"The cat") × ...
-
-  MLE says: find parameters that MAXIMIZE this probability.
-
-  In practice, we MINIMIZE the negative log probability (cross-entropy loss):
-  Loss = -log P(sentence | parameters)
-       = -log P("The") - log P("cat"|"The") - log P("sat"|"The cat") - ...
-
-  Minimizing negative log-probability = maximizing probability
-  (because log is monotonically increasing, and the negative flips the direction)
-
   This is done with GRADIENT DESCENT:
   1. Compute loss on a batch of training data
   2. Compute gradient (which direction to adjust each weight)
@@ -1452,49 +1414,40 @@ This is THE mathematical principle behind LLM pre-training.
 
 ### MLE vs. MAP (A Quick Note)
 
-```
-  MLE: Find parameters that maximize P(data | parameters)
-       "What parameters best explain the data?"
+**MLE:** Find parameters that maximize $P(\text{data}|\theta)$ -- "What parameters best explain the data?"
 
-  MAP (Maximum A Posteriori): Also consider prior beliefs about parameters
-       Maximize P(parameters | data) ∝ P(data | parameters) × P(parameters)
-       "What parameters best explain the data, given what I believed before?"
+**MAP (Maximum A Posteriori):** Also consider prior beliefs about parameters:
 
-  MAP = MLE + a prior (extra information).
-  
-  In practice:
-  - Weight decay (L2 regularization) in LLM training is equivalent to
-    MAP with a Gaussian prior on the weights — it says "I believe weights
-    should be small" and penalizes large weights.
-  - This prevents overfitting (memorizing training data instead of learning patterns).
-```
+$$P(\theta|\text{data}) \propto P(\text{data}|\theta) \times P(\theta)$$
+
+"What parameters best explain the data, given what I believed before?"
+
+MAP = MLE + a prior (extra information). In practice:
+- Weight decay (L2 regularization) in LLM training is equivalent to MAP with a Gaussian prior on the weights -- it says "I believe weights should be small" and penalizes large weights.
+- This prevents overfitting (memorizing training data instead of learning patterns).
 
 ---
 
 ## 1.20 Math Fundamentals — Complete Reference Table
 
-```
-  ┌────────────────────────┬──────────────────────────┬─────────────────────────────────┐
-  │ Concept                │ Formula                  │ Where Used in LLMs              │
-  ├────────────────────────┼──────────────────────────┼─────────────────────────────────┤
-  │ Probability            │ P(A) ∈ [0, 1]           │ Every model output              │
-  │ Conditional Prob       │ P(A|B) = P(A∩B)/P(B)    │ Next-token prediction           │
-  │ Chain Rule             │ P(A,B,C)=P(A)P(B|A)P(C|AB)│ Full sentence probability     │
-  │ Bayes' Theorem         │ P(A|B)=P(B|A)P(A)/P(B)  │ Belief updating, classification │
-  │ Expected Value         │ E[X] = Σ xᵢP(xᵢ)       │ Loss functions, reward          │
-  │ Variance               │ σ² = E[(X-μ)²]          │ LayerNorm, training stability   │
-  │ Standard Deviation     │ σ = √(Variance)          │ Weight initialization           │
-  │ Normal Distribution    │ N(μ, σ²)                 │ Weight init, noise, embeddings  │
-  │ Logarithm              │ log(a×b) = log(a)+log(b) │ Loss computation                │
-  │ Cross-Entropy Loss     │ H(P,Q) = -Σ P log Q     │ THE training objective          │
-  │ Entropy                │ H = -Σ P(x) log P(x)    │ Perplexity, temperature         │
-  │ KL Divergence          │ KL(P||Q) = Σ P log(P/Q) │ RLHF penalty, DPO              │
-  │ Softmax                │ eˣⁱ / Σ eˣʲ             │ Attention, output layer          │
-  │ Dot Product            │ A·B = Σ AᵢBᵢ            │ Attention scores                │
-  │ Cosine Similarity      │ A·B / (|A||B|)           │ Embedding search, RAG           │
-  │ MLE                    │ argmax P(data|θ)         │ Pre-training objective          │
-  └────────────────────────┴──────────────────────────┴─────────────────────────────────┘
-```
+| Concept | Formula | Where Used in LLMs |
+|---|---|---|
+| Probability | $P(A) \in [0, 1]$ | Every model output |
+| Conditional Prob | $P(A|B) = \frac{P(A \cap B)}{P(B)}$ | Next-token prediction |
+| Chain Rule | $P(A,B,C) = P(A) P(B|A) P(C|A,B)$ | Full sentence probability |
+| Bayes' Theorem | $P(A|B) = \frac{P(B|A) P(A)}{P(B)}$ | Belief updating, classification |
+| Expected Value | $E[X] = \sum_i x_i P(x_i)$ | Loss functions, reward |
+| Variance | $\sigma^2 = E[(X - \mu)^2]$ | LayerNorm, training stability |
+| Standard Deviation | $\sigma = \sqrt{\text{Var}(X)}$ | Weight initialization |
+| Normal Distribution | $\mathcal{N}(\mu, \sigma^2)$ | Weight init, noise, embeddings |
+| Logarithm | $\log(a \times b) = \log(a) + \log(b)$ | Loss computation |
+| Cross-Entropy Loss | $H(P,Q) = -\sum P \log Q$ | THE training objective |
+| Entropy | $H = -\sum P(x) \log P(x)$ | Perplexity, temperature |
+| KL Divergence | $D_{KL}(P \| Q) = \sum P \log \frac{P}{Q}$ | RLHF penalty, DPO |
+| Softmax | $\frac{e^{x_i}}{\sum_j e^{x_j}}$ | Attention, output layer |
+| Dot Product | $A \cdot B = \sum_i A_i B_i$ | Attention scores |
+| Cosine Similarity | $\frac{A \cdot B}{\|A\| \|B\|}$ | Embedding search, RAG |
+| MLE | $\arg\max_\theta P(\text{data}|\theta)$ | Pre-training objective |
 
 ---
 
@@ -1528,7 +1481,7 @@ When you type a prompt into an LLM, here's what happens inside:
 
 ---
 
-## 2.2 Tokenization — How Text Becomes Numbers
+## 2.2 Tokenization — How Text Becomes Numbers ★★
 
 Computers can't read words — only numbers. Tokenization converts words into tokens (pieces) and then into numbers.
 
@@ -1665,13 +1618,13 @@ This means the model "understands" that king and queen are related (both royalty
 
 ---
 
-## 2.4 The Transformer — The Brain of an LLM
+## 2.4 The Transformer — The Brain of an LLM ★★★
 
 The Transformer is the architecture that makes LLMs work. It was invented in 2017 and transformed (pun intended) AI.
 
 The key innovation: **self-attention** — each token looks at all other tokens and decides how much to "pay attention" to each one.
 
-### Self-Attention in Plain English
+### Self-Attention in Plain English ★★★
 
 Imagine you're reading: "The bank by the river was steep."
 
@@ -1697,7 +1650,7 @@ Self-attention does this mechanically:
 
 After self-attention, each word's representation contains information from the whole sentence. Context is captured.
 
-### Multiple Attention Heads
+### Multiple Attention Heads ★★★
 
 Real Transformers run self-attention multiple times in parallel (called **multi-head attention**). Each "head" looks for different types of relationships:
 
@@ -1775,21 +1728,17 @@ Let's break down each component mentioned in the diagram above.
 
 Softmax appears everywhere in LLMs — in attention scores and in the final output layer. It takes a list of raw numbers (called **logits**) and converts them into probabilities that sum to 1.
 
-```
-  Input scores (logits):  [2.0, 1.0, 0.1]
+**Worked example** with input logits $[2.0, 1.0, 0.1]$:
 
-  Step 1: Exponentiate each: [e^2.0, e^1.0, e^0.1] = [7.39, 2.72, 1.11]
-  Step 2: Sum them:           7.39 + 2.72 + 1.11 = 11.22
-  Step 3: Divide each by sum: [7.39/11.22, 2.72/11.22, 1.11/11.22]
+$$\text{Step 1: Exponentiate each: } [e^{2.0}, e^{1.0}, e^{0.1}] = [7.39, 2.72, 1.11]$$
 
-  Output probabilities: [0.659, 0.242, 0.099]   → sums to 1.0
+$$\text{Step 2: Sum them: } 7.39 + 2.72 + 1.11 = 11.22$$
 
-  Key property: larger inputs get DISPROPORTIONATELY more probability.
-  The difference between 2.0 and 1.0 in the input becomes 0.659 vs 0.242
-  in the output. Softmax sharpens differences — it makes the model "decisive."
+$$\text{Step 3: Divide each by sum: } \left[\frac{7.39}{11.22}, \frac{2.72}{11.22}, \frac{1.11}{11.22}\right]$$
 
-  Formula: softmax(x_i) = e^(x_i) / Σ e^(x_j)
-```
+$$\text{Output probabilities: } [0.659, 0.242, 0.099] \quad \rightarrow \text{sums to 1.0}$$
+
+Key property: larger inputs get DISPROPORTIONATELY more probability. The difference between 2.0 and 1.0 in the input becomes 0.659 vs 0.242 in the output. Softmax sharpens differences -- it makes the model "decisive."
 
 **Formula:** $\text{softmax}(x_i) = \dfrac{e^{x_i}}{\sum_j e^{x_j}}$
 
@@ -1797,9 +1746,11 @@ Softmax appears everywhere in LLMs — in attention scores and in the final outp
 
 Each sub-layer (attention, feed-forward) has a "skip connection" that adds the original input directly to the output:
 
-```
-  output = SubLayer(input) + input    ← the "+ input" is the skip connection
+$$\text{output} = \text{SubLayer}(\text{input}) + \text{input}$$
 
+The "$+ \text{input}$" is the skip connection.
+
+```
   Without skip connection:
   Layer 1 → Layer 2 → ... → Layer 96
   Information must survive 96 transformations. It often doesn't — 
@@ -1818,21 +1769,13 @@ Each sub-layer (attention, feed-forward) has a "skip connection" that adds the o
 
 After each sub-layer, the values are normalized so they don't grow too large or too small:
 
+LayerNorm adjusts each vector to have mean approximately 0 and standard deviation approximately 1, then applies a learned scale $\gamma$ and shift $\beta$:
+
+$$\text{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta$$
+
+Why this matters: Without normalization, after passing through 96 layers, values might explode ($10^{15}$) or vanish ($10^{-15}$). Training becomes completely unstable. With normalization, values stay in a manageable range at every layer.
+
 ```
-  LayerNorm adjusts each vector to have:
-  - Mean ≈ 0
-  - Standard deviation ≈ 1
-  (then applies a learned scale γ and shift β)
-
-  Formula: LayerNorm(x) = γ × (x - mean) / √(variance + ε) + β
-
-  LaTeX: LayerNorm(x) = γ · (x - μ) / √(σ² + ε) + β
-
-  Why this matters:
-  Without normalization, after passing through 96 layers, values might
-  explode (10^15) or vanish (10^-15). Training becomes completely unstable.
-  With normalization, values stay in a manageable range at every layer.
-
   Variants:
   - Post-LN: normalize AFTER attention/FFN (original Transformer)
   - Pre-LN: normalize BEFORE attention/FFN (used by GPT-2+, LLaMA)
@@ -1843,9 +1786,9 @@ After each sub-layer, the values are normalized so they don't grow too large or 
 
 The FFN is a simple two-layer neural network applied to each token independently:
 
-```
-  FFN(x) = W₂ · activation(W₁ · x + b₁) + b₂
+$$\text{FFN}(x) = W_2 \cdot \text{activation}(W_1 \cdot x + b_1) + b_2$$
 
+```
   Step 1: Expand — project to a larger dimension (e.g., 4096 → 16384)
   Step 2: Activate — apply nonlinearity (GeLU or SiLU in modern LLMs)
   Step 3: Compress — project back to original dimension (16384 → 4096)
@@ -1860,7 +1803,7 @@ The FFN is a simple two-layer neural network applied to each token independently
   This is where most of the model's "memory" lives.
 ```
 
-### Query, Key, Value — The Core of Attention
+### Query, Key, Value — The Core of Attention ★★★
 
 Self-attention is built on three concepts borrowed from information retrieval: **Query**, **Key**, and **Value**.
 
@@ -1883,31 +1826,21 @@ Self-attention is built on three concepts borrowed from information retrieval: *
 
 **How it works mathematically (simplified):**
 
-```
-  For each token, the model creates three vectors:
-    Q = token × W_Q   (a learned "question" projection)
-    K = token × W_K   (a learned "label" projection)
-    V = token × W_V   (a learned "content" projection)
+For each token, the model creates three vectors:
 
-  Attention score between token i and token j:
-    score(i,j) = Q_i · K_j / √(dimension)
+$$Q = \text{token} \times W_Q \quad K = \text{token} \times W_K \quad V = \text{token} \times W_V$$
 
-  The √(dimension) prevents scores from getting too large
-  (called "scaled dot-product attention").
+Attention score between token $i$ and token $j$:
 
-  Apply softmax to get weights that sum to 1:
-    weights = softmax(scores)
+$$\text{score}(i,j) = \frac{Q_i \cdot K_j}{\sqrt{d_k}}$$
 
-  Final output for token i:
-    output_i = Σ (weight_ij × V_j)  for all j
+The $\sqrt{d_k}$ prevents scores from getting too large (called "scaled dot-product attention").
 
-  In short: each token gets a weighted average of all other tokens' values,
-  where the weights are determined by how well queries match keys.
+Apply softmax to get weights that sum to 1: $\text{weights} = \text{softmax}(\text{scores})$
 
-  THE CANONICAL FORMULA (you'll see this everywhere):
+Final output for token $i$: $\text{output}_i = \sum_j \text{weight}_{ij} \times V_j$
 
-  Attention(Q, K, V) = softmax(Q · K^T / √d_k) · V
-```
+In short: each token gets a weighted average of all other tokens' values, where the weights are determined by how well queries match keys.
 
 **The Attention Formula:**
 
@@ -1940,7 +1873,7 @@ Where $Q$ = queries, $K$ = keys, $V$ = values, $d_k$ = dimension of keys (for sc
   Its new representation encodes: "sitting done by cat on mat"
 ```
 
-### Positional Encoding — How the Model Knows Word Order
+### Positional Encoding — How the Model Knows Word Order ★★
 
 Self-attention treats all tokens equally — it has no built-in notion of "first word", "second word", etc. Without help, "The cat sat on the mat" and "The mat sat on the cat" would look identical.
 
@@ -2152,7 +2085,7 @@ LLMs generate text **one token at a time**, feeding each generated token back as
 
 ---
 
-## 3.1 Stage 1 — Pre-Training
+## 3.1 Stage 1 — Pre-Training ★★
 
 **What happens:** Feed the model an enormous amount of text and train it to predict the next token.
 
@@ -2207,7 +2140,7 @@ All of this is encoded in the 175 billion weights — not as explicit rules, but
 
 ---
 
-## 3.3 Stage 2 — Supervised Fine-Tuning (SFT)
+## 3.3 Stage 2 — Supervised Fine-Tuning (SFT) ★★★
 
 After pre-training, the model can complete text — but it doesn't know how to be an assistant. It might just continue a question instead of answering it.
 
@@ -2224,7 +2157,7 @@ SFT teaches the model to respond helpfully:
 
 ---
 
-## 3.4 Stage 3 — RLHF (Making It Actually Helpful)
+## 3.4 Stage 3 — RLHF (Making It Actually Helpful) ★★★
 
 SFT makes the model helpful sometimes. RLHF (Reinforcement Learning from Human Feedback) refines this to make it helpful, honest, and safe — consistently.
 
@@ -2239,7 +2172,7 @@ SFT makes the model helpful sometimes. RLHF (Reinforcement Learning from Human F
 
 ---
 
-## 3.5 Stage 3 (Alternative) — DPO (Direct Preference Optimization)
+## 3.5 Stage 3 (Alternative) — DPO (Direct Preference Optimization) ★★★
 
 RLHF is effective but complex — it requires training a separate reward model and using reinforcement learning. **DPO** is a simpler alternative that achieves similar results.
 
@@ -2356,11 +2289,13 @@ One of the most important discoveries in LLM research: model performance improve
 
 **The original scaling laws (Kaplan et al., 2020):**
 
-```
-  Loss ∝ 1/N^α   where N = number of parameters
-  Loss ∝ 1/D^β   where D = number of training tokens
-  Loss ∝ 1/C^γ   where C = total compute used
+$$\text{Loss} \propto \frac{1}{N^\alpha} \quad \text{where } N = \text{number of parameters}$$
 
+$$\text{Loss} \propto \frac{1}{D^\beta} \quad \text{where } D = \text{number of training tokens}$$
+
+$$\text{Loss} \propto \frac{1}{C^\gamma} \quad \text{where } C = \text{total compute used}$$
+
+```
   Translation: double the parameters → loss drops by a fixed, predictable amount.
   This relationship holds across many orders of magnitude.
 
@@ -2403,9 +2338,33 @@ The original scaling laws suggested: "make models as big as possible." Chinchill
   New capabilities can appear suddenly at scale.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["0.1B","0.3B","1B","3B","7B","13B","30B","65B","175B","540B","1T"],
+    "datasets": [{
+      "label": "Training Loss (lower = better)",
+      "data": [3.8, 3.4, 2.9, 2.6, 2.3, 2.1, 1.9, 1.75, 1.6, 1.5, 1.4],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.4, "pointRadius": 3, "borderWidth": 2
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Scaling Laws — More Parameters = Predictably Lower Loss" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "min": 1.0, "max": 4.0 },
+      "x": { "title": { "display": true, "text": "Model Size (Parameters)" } }
+    }
+  }
+}
+```
+
 ---
 
-## 3.8 Transfer Learning — Why Pre-Training Works
+## 3.8 Transfer Learning — Why Pre-Training Works ★★
 
 The entire LLM pipeline relies on **transfer learning** — knowledge learned from one task (predicting text) transfers to help with completely different tasks (answering questions, writing code, etc.).
 
@@ -2697,13 +2656,43 @@ The Transformer paper introduced an encoder-decoder architecture, but modern LLM
   − Harder to fine-tune (which experts to update?)
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Mixtral 8x7B", "Mixtral 8x22B", "GPT-4 (rumored)", "DeepSeek R1", "LLaMA 4 Behemoth"],
+    "datasets": [
+      {
+        "label": "Total Parameters (B)",
+        "data": [47, 141, 1800, 671, 2000],
+        "backgroundColor": "rgba(99, 102, 241, 0.5)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Active Parameters per Token (B)",
+        "data": [13, 39, 225, 37, 288],
+        "backgroundColor": "rgba(34, 197, 94, 0.8)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "MoE Models — Total vs Active Params (Active = What You Actually Pay For)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Parameters (Billions)" }, "beginAtZero": true },
+      "x": {}
+    }
+  }
+}
+```
+
 ---
 
 # SECTION 5: PROMPT ENGINEERING
 
 ---
 
-## 5.1 What is Prompt Engineering?
+## 5.1 What is Prompt Engineering? ★★
 
 **Prompt engineering is the skill of writing better instructions to get better outputs from an LLM.**
 
@@ -3056,7 +3045,7 @@ Every LLM has a training cutoff — a date after which it knows nothing. This is
 
 ---
 
-## 7.1 What is a Hallucination?
+## 7.1 What is a Hallucination? ★★
 
 **A hallucination is when an LLM states something confidently that is false.**
 
@@ -3109,7 +3098,7 @@ Several causes:
 
 ---
 
-## 7.4 How to Reduce Hallucinations
+## 7.4 How to Reduce Hallucinations ★★
 
 **As a user:**
 
@@ -3156,6 +3145,42 @@ Several causes:
 ```
 
 **The analogy:** Temperature is like a volume knob on the "surprise" in the output. Turn it down for precise tasks, up for creative ones.
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Paris", "Lyon", "London", "Berlin", "Rome"],
+    "datasets": [
+      {
+        "label": "Temp = 0.2 (focused)",
+        "data": [0.92, 0.05, 0.02, 0.005, 0.005],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Temp = 1.0 (balanced)",
+        "data": [0.50, 0.20, 0.15, 0.10, 0.05],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Temp = 2.0 (wild)",
+        "data": [0.28, 0.22, 0.20, 0.18, 0.12],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Temperature Effect — \"The capital of France is ___\"" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Probability" }, "beginAtZero": true, "max": 1.0 },
+      "x": { "title": { "display": true, "text": "Candidate Token" } }
+    }
+  }
+}
+```
 
 ---
 
@@ -3289,7 +3314,7 @@ For applications that need machine-readable output (JSON, XML, SQL), you can't j
 
 ---
 
-## 9.1 RAG — Retrieval-Augmented Generation
+## 9.1 RAG — Retrieval-Augmented Generation ★★★
 
 LLMs don't know your private data. RAG lets them answer questions about it by looking up relevant information at query time.
 
@@ -3325,7 +3350,7 @@ LLMs don't know your private data. RAG lets them answer questions about it by lo
 
 ---
 
-## 9.2 AI Agents — LLMs That Take Action
+## 9.2 AI Agents — LLMs That Take Action ★★
 
 An AI agent is an LLM that doesn't just generate text — it **takes actions in the real world** to accomplish goals. It can use tools, browse the web, run code, read files, send emails, and chain multiple steps together autonomously.
 
@@ -4018,7 +4043,7 @@ The LLM decides WHEN to use a tool and WHICH one to use, based on the conversati
 
 ---
 
-## 9.4 Fine-Tuning for Custom Behavior
+## 9.4 Fine-Tuning for Custom Behavior ★★★
 
 When prompting isn't enough, fine-tune the model on your own data.
 
@@ -4039,7 +4064,7 @@ When prompting isn't enough, fine-tune the model on your own data.
   ✓ Prompting alone doesn't reach the quality you need
 ```
 
-### Full Fine-Tuning vs. Parameter-Efficient Fine-Tuning (PEFT)
+### Full Fine-Tuning vs. Parameter-Efficient Fine-Tuning (PEFT) ★★★
 
 ```
   FULL FINE-TUNING:
@@ -4057,9 +4082,13 @@ When prompting isn't enough, fine-tune the model on your own data.
   - Less forgetting — most of the model stays frozen
 ```
 
-### LoRA (Low-Rank Adaptation) — The Practical Standard
+### LoRA (Low-Rank Adaptation) — The Practical Standard ★★★
 
 LoRA is the most popular PEFT method. Instead of updating the full weight matrices, it adds small trainable "adapters" alongside the frozen weights.
+
+$$\text{output} = W \cdot x + (A \cdot B) \cdot x$$
+
+where $W$ is the original frozen weight matrix and $A$, $B$ are the small trainable LoRA matrices.
 
 ```
   How LoRA works:
@@ -4069,10 +4098,6 @@ LoRA is the most popular PEFT method. Instead of updating the full weight matric
   LoRA adds two small matrices:
   A: size [4096 × 16]  = 65K parameters  (TRAINABLE)
   B: size [16 × 4096]  = 65K parameters  (TRAINABLE)
-
-  New output = W·x + (A·B)·x
-                ↑       ↑
-              frozen   learned adapter (rank 16)
 
   Total trainable parameters: 130K vs 16.7M = 0.8% of the original!
 
@@ -4084,7 +4109,7 @@ LoRA is the most popular PEFT method. Instead of updating the full weight matric
 
 **Why LoRA works:** Most weight updates during fine-tuning are "low-rank" — they don't need the full dimensionality of the weight matrix. LoRA captures this update efficiently with much fewer parameters.
 
-### QLoRA — Fine-Tuning on Consumer Hardware
+### QLoRA — Fine-Tuning on Consumer Hardware ★★★
 
 QLoRA combines LoRA with quantization, making it possible to fine-tune large models on a single consumer GPU:
 
@@ -4106,7 +4131,7 @@ QLoRA combines LoRA with quantization, making it possible to fine-tune large mod
   - Cost: nearly free (just electricity)
 ```
 
-### Other PEFT Methods
+### Other PEFT Methods ★★★
 
 | Method | How It Works | When to Use |
 |--------|-------------|-------------|
@@ -4198,26 +4223,24 @@ Once content is embedded as vectors, you can find similar items by measuring the
 
 **Common similarity metrics:**
 
+**COSINE SIMILARITY** (most common for text) -- measures the angle between two vectors (ignores magnitude). Range: -1 (opposite) to 1 (identical).
+
+$$\text{similarity} = \frac{A \cdot B}{\|A\| \times \|B\|}$$
+
 ```
-  COSINE SIMILARITY (most common for text)
-  Measures the angle between two vectors (ignores magnitude)
-  Range: -1 (opposite) to 1 (identical)
-
-  similarity = (A · B) / (||A|| × ||B||)
-
   Example:
   embed("king")  · embed("queen")    = 0.92   ← very similar
   embed("king")  · embed("computer") = 0.15   ← not similar
   embed("happy") · embed("sad")      = 0.31   ← somewhat related (both emotions)
-
-
-  DOT PRODUCT (faster, used when vectors are normalized)
-  similarity = A · B = Σ(A_i × B_i)
-
-  EUCLIDEAN DISTANCE (measures straight-line distance)
-  distance = √(Σ(A_i - B_i)²)
-  Smaller = more similar
 ```
+
+**DOT PRODUCT** (faster, used when vectors are normalized):
+
+$$\text{similarity} = A \cdot B = \sum_i A_i \times B_i$$
+
+**EUCLIDEAN DISTANCE** (measures straight-line distance, smaller = more similar):
+
+$$\text{distance} = \sqrt{\sum_i (A_i - B_i)^2}$$
 
 ---
 
@@ -4338,18 +4361,19 @@ How do you know if one model is better than another? You can't just ask it a few
 
 ---
 
-## 11.2 Intrinsic Metrics — Measuring the Model Itself
+## 11.2 Intrinsic Metrics — Measuring the Model Itself ★★
 
 ### Perplexity
 
 **Perplexity measures how "surprised" the model is by text.** Lower perplexity = the model predicted the text better = better language model.
 
-```
-  Perplexity = 2^(average negative log probability of each token)
+$$\text{Perplexity} = 2^{\text{(average negative log probability of each token)}}$$
 
+```
   Intuition:
   - Perplexity of 1: The model predicted every token perfectly
-  - Perplexity of 10: On average, the model was choosing between 10 equally likely tokens
+  - Perplexity of 10: On average, the model was choosing between
+                      10 equally likely tokens
   - Perplexity of 100: The model was very uncertain
 
   Example:
@@ -4367,11 +4391,11 @@ How do you know if one model is better than another? You can't just ask it a few
 
 Closely related to perplexity. It's the average negative log probability of the correct next token. This is what's directly optimized during training.
 
+$$\text{Cross-entropy loss} = -\frac{1}{N} \sum_{i=1}^{N} \log P(\text{correct token}_i)$$
+
+$$\text{Perplexity} = 2^{\text{cross-entropy loss}}$$
+
 ```
-  Cross-entropy loss = -1/N × Σ log P(correct_token_i)
-
-  Perplexity = 2^(cross-entropy loss)
-
   Loss of 3.0 → Perplexity of 8
   Loss of 4.5 → Perplexity of ~23
   Loss of 1.0 → Perplexity of 2 (very good)
@@ -4385,6 +4409,10 @@ Closely related to perplexity. It's the average negative log probability of the 
 
 Measures overlap between generated text and reference text. Originally designed for machine translation.
 
+$$\text{BLEU} = \text{BP} \times \exp\!\left(\sum_{n=1}^{N} \frac{1}{N} \log p_n\right)$$
+
+where $p_n$ = precision of $n$-grams, BP = brevity penalty.
+
 ```
   Reference: "The cat is on the mat"
   Generated: "The cat is sitting on the mat"
@@ -4394,7 +4422,7 @@ Measures overlap between generated text and reference text. Originally designed 
   2-grams: "The cat", "cat is", "on the", "the mat" → 4/6 match
   3-grams: "The cat is", "on the mat" → 2/5 match
 
-  BLEU score = geometric mean of n-gram precisions × brevity penalty
+  BLEU = geometric mean of n-gram precisions × brevity penalty
   Range: 0 to 1 (higher is better)
 
   Limitation: "The mat is on the cat" would score HIGH even though
@@ -4500,7 +4528,7 @@ Academic benchmarks don't always reflect real-world usefulness. **Chatbot Arena*
 
 ---
 
-## 12.1 The Inference Problem
+## 12.1 The Inference Problem ★★
 
 Training happens once. Inference (running the model to generate output) happens millions of times. Optimizing inference is critical for production.
 
@@ -4519,9 +4547,11 @@ Training happens once. Inference (running the model to generate output) happens 
 
 ---
 
-## 12.2 Quantization — Shrinking the Model
+## 12.2 Quantization — Shrinking the Model ★★
 
 **Quantization reduces the precision of model weights from 32-bit or 16-bit floating point to lower bit widths.**
+
+$$\text{Memory (GB)} = \frac{\text{Parameters} \times \text{bits per param}}{8 \times 10^9}$$
 
 ```
   FP32 (Full precision):   32 bits per parameter
@@ -4560,7 +4590,7 @@ Training happens once. Inference (running the model to generate output) happens 
 
 ---
 
-## 12.3 KV Cache — Avoiding Redundant Computation
+## 12.3 KV Cache — Avoiding Redundant Computation ★★
 
 Remember the autoregressive loop from Section 2.6? The model generates one token at a time, and each new token requires attending to all previous tokens.
 
@@ -4588,8 +4618,10 @@ Remember the autoregressive loop from Section 2.6? The model generates one token
 
 **The trade-off:** KV cache uses a LOT of memory, especially for long sequences:
 
+$$\text{KV cache} = 2 \times n_{\text{layers}} \times n_{\text{heads}} \times d_{\text{head}} \times L_{\text{seq}} \times B \times \text{bytes}$$
+
 ```
-  KV cache size = 2 × num_layers × num_heads × head_dim × sequence_length × batch_size × bytes
+  For example, KV cache size for LLaMA-2-70B with 4K context:
 
   For LLaMA-2-70B with 4K context:
   KV cache ≈ 2 × 80 × 64 × 128 × 4096 × 2 bytes ≈ 10.7 GB per request!
@@ -4604,6 +4636,8 @@ Remember the autoregressive loop from Section 2.6? The model generates one token
 Standard attention requires storing the full N×N attention matrix in GPU memory. For long sequences, this is enormous.
 
 **Flash Attention** computes attention in blocks, never materializing the full matrix:
+
+Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
 
 ```
   Standard Attention:

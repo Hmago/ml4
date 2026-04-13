@@ -67,90 +67,89 @@ Here's a tiny network. Two inputs, one hidden layer with two neurons, one output
 
 **Step 1 — Calculate hidden layer values:**
 
-```
-  z¹₁ = 0.4×0.5 + 0.2×0.3 = 0.26  →  h₁ = ReLU(0.26) = 0.26
-  z¹₂ = 0.3×0.5 + 0.5×0.3 = 0.30  →  h₂ = ReLU(0.30) = 0.30
-```
+$$z^{(1)}_1 = 0.4 \times 0.5 + 0.2 \times 0.3 = 0.26$$
+
+$$h_1 = \text{ReLU}(0.26) = 0.26$$
+
+$$z^{(1)}_2 = 0.3 \times 0.5 + 0.5 \times 0.3 = 0.30$$
+
+$$h_2 = \text{ReLU}(0.30) = 0.30$$
 
 **Step 2 — Calculate output:**
 
-```
-  z² = 0.6×0.26 + 0.8×0.30 = 0.396
-  ŷ = sigmoid(0.396) = 0.598
-```
+$$z^{(2)} = 0.6 \times 0.26 + 0.8 \times 0.30 = 0.396$$
+
+$$\hat{y} = \sigma(0.396) = 0.598$$
 
 **Step 3 — Calculate loss (how wrong we are):**
 
-```
-  Loss = −log(0.598) = 0.514   (true label was 1, we predicted 0.598 — off by ~0.4)
-```
+$$L = -\log(0.598) = 0.514$$
+
+(true label was 1, we predicted 0.598 — off by ~0.4)
 
 ### Worked Example — Backward Pass
 
 Now we go backwards. Each step answers: *"If I increase this number slightly, does the loss go up or down?"*
 
-**Step A — How does loss react to our prediction ŷ?**
+**Step A — How does loss react to our prediction $\hat{y}$?**
 
-```
-  dL/dŷ = −1/0.598 = −1.672
-```
+$$\frac{\partial L}{\partial \hat{y}} = \frac{-1}{0.598} = -1.672$$
 
-Negative means: increasing ŷ REDUCES the loss. Makes sense — the true answer is 1, so we should predict higher.
+Negative means: increasing $\hat{y}$ REDUCES the loss. Makes sense — the true answer is 1, so we should predict higher.
 
-**Step B — How does ŷ react to z² (the pre-sigmoid value)?**
+**Step B — How does $\hat{y}$ react to $z^{(2)}$ (the pre-sigmoid value)?**
 
-```
-  dŷ/dz² = 0.598 × (1−0.598) = 0.240
-  Combined: dL/dz² = −1.672 × 0.240 = −0.401
-```
+$$\frac{\partial \hat{y}}{\partial z^{(2)}} = 0.598 \times (1 - 0.598) = 0.240$$
+
+$$\text{Combined: } \frac{\partial L}{\partial z^{(2)}} = -1.672 \times 0.240 = -0.401$$
 
 **Step C — Gradients for Layer 2 weights:**
 
-```
-  dL/dv₁ = −0.401 × h₁ = −0.401 × 0.26 = −0.104   (increase v₁ to reduce loss)
-  dL/dv₂ = −0.401 × h₂ = −0.401 × 0.30 = −0.120
-```
+$$\frac{\partial L}{\partial v_1} = -0.401 \times h_1 = -0.401 \times 0.26 = -0.104$$
+
+(increase $v_1$ to reduce loss)
+
+$$\frac{\partial L}{\partial v_2} = -0.401 \times h_2 = -0.401 \times 0.30 = -0.120$$
 
 **Step D — How much blame does each hidden neuron get?**
 
-```
-  dL/dh₁ = −0.401 × v₁ = −0.401 × 0.6 = −0.241
-  dL/dh₂ = −0.401 × v₂ = −0.401 × 0.8 = −0.321
-```
+$$\frac{\partial L}{\partial h_1} = -0.401 \times v_1 = -0.401 \times 0.6 = -0.241$$
+
+$$\frac{\partial L}{\partial h_2} = -0.401 \times v_2 = -0.401 \times 0.8 = -0.321$$
 
 h₂ gets more blame because it had a stronger connection (v₂=0.8) to the output.
 
 **Step E — Through ReLU** (if input was positive, gradient passes straight through):
 
-```
-  z¹₁ = 0.26 > 0, so dL/dz¹₁ = −0.241  (unchanged)
-  z¹₂ = 0.30 > 0, so dL/dz¹₂ = −0.321  (unchanged)
-```
+$z^{(1)}_1 = 0.26 > 0$, so $\frac{\partial L}{\partial z^{(1)}_1} = -0.241$ (unchanged)
+
+$z^{(1)}_2 = 0.30 > 0$, so $\frac{\partial L}{\partial z^{(1)}_2} = -0.321$ (unchanged)
 
 If z had been negative (ReLU would have output 0), the gradient would be zero — that neuron gets NO update. This is the "dead ReLU" problem.
 
 **Step F — Gradients for Layer 1 weights:**
 
-```
-  dL/dW₁₁ = −0.241 × x₁ = −0.241 × 0.5 = −0.121
-  dL/dW₁₂ = −0.241 × x₂ = −0.241 × 0.3 = −0.072
-  dL/dW₂₁ = −0.321 × x₁ = −0.321 × 0.5 = −0.161
-  dL/dW₂₂ = −0.321 × x₂ = −0.321 × 0.3 = −0.096
-```
+$$\frac{\partial L}{\partial W_{11}} = -0.241 \times x_1 = -0.241 \times 0.5 = -0.121$$
+
+$$\frac{\partial L}{\partial W_{12}} = -0.241 \times x_2 = -0.241 \times 0.3 = -0.072$$
+
+$$\frac{\partial L}{\partial W_{21}} = -0.321 \times x_1 = -0.321 \times 0.5 = -0.161$$
+
+$$\frac{\partial L}{\partial W_{22}} = -0.321 \times x_2 = -0.321 \times 0.3 = -0.096$$
 
 **Step G — Update all weights** (learning rate = 0.1):
 
-```
-  v₁_new = 0.6 − 0.1 × (−0.104) = 0.610   ← increased, as intended
-  v₂_new = 0.8 − 0.1 × (−0.120) = 0.812   ← increased
-  W₁₁_new = 0.4 − 0.1 × (−0.121) = 0.412  ← increased
-```
+$$v_{1}^{\text{new}} = 0.6 - 0.1 \times (-0.104) = 0.610$$
+
+$$v_{2}^{\text{new}} = 0.8 - 0.1 \times (-0.120) = 0.812$$
+
+$$W_{11}^{\text{new}} = 0.4 - 0.1 \times (-0.121) = 0.412$$
 
 Every weight moved in the direction that reduces the loss. That's ONE training step. Repeat thousands of times.
 
 ---
 
-## 1.2 Optimizers
+## 1.2 Optimizers ★★★
 
 **In one sentence:** Optimizers are different strategies for deciding how much to move each weight after each training step.
 
@@ -169,10 +168,9 @@ The optimizers below each solve one or both of these problems.
 
 The simplest version. Just multiply the gradient by the learning rate and subtract.
 
-```
-  Formula:  w ← w − α × gradient
-  α = learning rate (e.g., 0.01)
-```
+$$w \leftarrow w - \alpha \times \nabla w$$
+
+where $\alpha$ = learning rate (e.g., 0.01)
 
 **Problem:** Same step size for everything. Zigzags a lot. Slow.
 
@@ -182,10 +180,11 @@ The simplest version. Just multiply the gradient by the learning rate and subtra
 
 **The idea:** Keep moving in the direction you've been going. Like a ball rolling downhill — it builds speed on long slopes and doesn't zigzag.
 
-```
-  velocity ← 0.9 × velocity + 0.1 × gradient   (90% old direction, 10% new)
-  w ← w − α × velocity
-```
+$$v \leftarrow 0.9 \times v + 0.1 \times \nabla w$$
+
+$$w \leftarrow w - \alpha \times v$$
+
+(90% old direction, 10% new)
 
 **What β=0.9 means:** The current direction is 90% "where I've been going" and 10% "where the gradient says to go now." Over ~10 steps, the direction gets smoothed out.
 
@@ -199,10 +198,11 @@ The simplest version. Just multiply the gradient by the learning rate and subtra
 
 **Example:** The word "the" appears in every sentence — its embedding gets updated constantly. The word "photosynthesis" appears rarely — it needs a bigger nudge when it does appear.
 
-```
-  G ← G + gradient²          (keep running sum of squared gradients — grows forever)
-  w ← w − (α / √G) × gradient
-```
+$$G \leftarrow G + (\nabla w)^2$$
+
+$$w \leftarrow w - \frac{\alpha}{\sqrt{G}} \times \nabla w$$
+
+(G = running sum of squared gradients — grows forever)
 
 **The problem:** G only ever grows. Eventually the learning rate reaches zero and the weight stops learning entirely. Fine for short training, breaks for long training.
 
@@ -214,10 +214,9 @@ The simplest version. Just multiply the gradient by the learning rate and subtra
 
 Think of it like short-term memory. You remember what happened last week more than what happened last year.
 
-```
-  E[g²] ← 0.99 × E[g²] + 0.01 × gradient²   (fading average)
-  w ← w − (α / √(E[g²] + ε)) × gradient
-```
+$$E[g^2] \leftarrow 0.99 \times E[g^2] + 0.01 \times (\nabla w)^2$$
+
+$$w \leftarrow w - \frac{\alpha}{\sqrt{E[g^2] + \epsilon}} \times \nabla w$$
 
 The `0.99 × E[g²]` slowly "forgets" old gradients. The `0.01 × gradient²` adds the fresh information. This keeps the learning rate from hitting zero.
 
@@ -225,7 +224,7 @@ The `0.99 × E[g²]` slowly "forgets" old gradients. The `0.01 × gradient²` ad
 
 ---
 
-### Adam — The Default Choice
+### Adam — The Default Choice ★★★
 
 **The idea:** Combine Momentum + RMSProp. Track both the direction AND the size of recent gradients.
 
@@ -233,39 +232,37 @@ Adam keeps two running averages for each weight:
 - **m** = average gradient (direction — like Momentum)
 - **v** = average gradient² (size — like RMSProp)
 
-```
-  m ← 0.9 × m + 0.1 × gradient         (smooth direction)
-  v ← 0.999 × v + 0.001 × gradient²    (smooth size)
-```
+$$m \leftarrow 0.9 \times m + 0.1 \times \nabla w$$
+
+$$v \leftarrow 0.999 \times v + 0.001 \times (\nabla w)^2$$
 
 **Bias correction** — why it's needed: m and v both start at zero. In the first few steps, they're dragged down toward zero, making updates too small. The correction inflates them to their proper size:
 
-```
-  m̂ = m / (1 − 0.9ᵗ)     ← at step 1: divides by 0.1, makes it 10x bigger
-  v̂ = v / (1 − 0.999ᵗ)   ← correction fades as t grows (irrelevant after ~1000 steps)
-```
+$$\hat{m} = \frac{m}{1 - 0.9^t}$$
+
+At step 1: divides by 0.1, makes it 10x bigger
+
+$$\hat{v} = \frac{v}{1 - 0.999^t}$$
+
+Correction fades as $t$ grows (irrelevant after ~1000 steps)
 
 Final update:
 
-```
-  w ← w − 0.001 × m̂ / (√v̂ + 1e-8)
-```
+$$w \leftarrow w - 0.001 \times \frac{\hat{m}}{\sqrt{\hat{v}} + 10^{-8}}$$
 
 **Why everyone uses it:** Works well on the first try with default settings. Handles sparse gradients, adapts per-weight.
 
 ---
 
-### AdamW — Adam with Proper Weight Decay
+### AdamW — Adam with Proper Weight Decay ★★★
 
 **The problem with Adam + L2 regularization:** When you add weight decay to the gradient before Adam processes it, Adam's adaptive scaling weakens it — heavily-updated weights barely get regularized.
 
 **AdamW** separates weight decay from the gradient update:
 
-```
-  w ← w − α × m̂/(√v̂+ε)  −  α × λ × w
-        └─── gradient ───┘   └── decay ──┘
-              (adapted)         (fixed %)
-```
+$$w \leftarrow w - \alpha \times \frac{\hat{m}}{\sqrt{\hat{v}} + \epsilon} - \alpha \times \lambda \times w$$
+
+The first term is the adapted gradient update; the second term is weight decay (fixed %).
 
 The decay term now shrinks every weight by a fixed percentage each step, regardless of gradient size. This is the correct way to regularize Adam.
 
@@ -283,6 +280,36 @@ The decay term now shrinks every weight by a fixed percentage each step, regardl
 | RMSProp | Yes | No | RNNs |
 | Adam | Yes | Yes | General deep learning |
 | AdamW | Yes | Yes | Transformers, LLMs |
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["SGD", "SGD+Momentum", "AdaGrad", "RMSProp", "Adam", "AdamW"],
+    "datasets": [
+      {
+        "label": "Adapts Per Weight",
+        "data": [0, 0, 1, 1, 1, 1],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Uses Momentum",
+        "data": [0, 1, 0, 0, 1, 1],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Optimizers — Adam/AdamW Combine Both Adaptive Rates AND Momentum" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Has Feature (1=Yes)" }, "beginAtZero": true, "max": 1.2 },
+      "x": {}
+    }
+  }
+}
+```
 
 ---
 
@@ -306,13 +333,15 @@ Predicting a house price (any number) is fundamentally different from classifyin
 
 **For classification (predicting categories):**
 
-```
-  Binary Cross-Entropy (yes/no tasks):
-  L = −[y × log(ŷ) + (1−y) × log(1−ŷ)]
+Binary Cross-Entropy (yes/no tasks):
 
-  Categorical Cross-Entropy (multiple classes):
-  L = −Σ yᵢ × log(ŷᵢ)   (sum over all classes, yᵢ=1 for correct class)
-```
+$$L = -\left[ y \log(\hat{y}) + (1 - y) \log(1 - \hat{y}) \right]$$
+
+Categorical Cross-Entropy (multiple classes):
+
+$$L = -\sum_{i} y_i \log(\hat{y}_i)$$
+
+(sum over all classes, $y_i = 1$ for the correct class)
 
 Cross-entropy punishes confident wrong answers very heavily. If the correct answer is "cat" and you say "definitely cat" (0.99 confidence) → tiny loss. If you say "barely cat" (0.01 confidence) → huge loss. The message: be confident when you're right.
 
@@ -326,13 +355,9 @@ Standard cross-entropy weights all examples equally, so the model gets lazy on e
 
 **Focal Loss** down-weights easy examples (high-confidence correct predictions) and up-weights hard examples (low-confidence or wrong predictions):
 
-```
-  FL = −(1 − pₜ)^γ × log(pₜ)
-            └───┘
-         focusing weight
-         (γ=0 → same as normal cross-entropy)
-         (γ=2 → confident correct answers barely count)
-```
+$$FL = -(1 - p_t)^\gamma \times \log(p_t)$$
+
+where $(1 - p_t)^\gamma$ is the focusing weight: $\gamma = 0$ gives normal cross-entropy; $\gamma = 2$ means confident correct answers barely count.
 
 **Example with γ=2:**
 - Easy example (model 95% confident and correct): weight = (1−0.95)² = 0.0025 → nearly ignored
@@ -351,11 +376,9 @@ Standard cross-entropy weights all examples equally, so the model gets lazy on e
 - **Positive**: a different photo of the same person X
 - **Negative**: a photo of someone else
 
-```
-  Loss = max(0,  d(Anchor, Positive) − d(Anchor, Negative) + margin)
-                 └────────────────┘   └─────────────────┘
-                 (should be small)     (should be large)
-```
+$$L = \max\left(0,\; d(A, P) - d(A, N) + \text{margin}\right)$$
+
+where $d(A, P)$ should be small (same person) and $d(A, N)$ should be large (different person).
 
 The `max(0, ...)` means: if the positive is already closer than the negative by at least `margin`, loss is 0 — we don't need to update. We only update when things are wrong.
 
@@ -369,9 +392,7 @@ The `max(0, ...)` means: if the positive is already closer than the negative by 
 
 Take one image, create two slightly different crops/colorings of it. They should have similar embeddings. All other images in the batch should have different embeddings.
 
-```
-  L = −log[ similarity(view₁, view₂) / sum of similarities to all other images ]
-```
+$$L = -\log \frac{\text{sim}(v_1, v_2)}{\sum_{k} \text{sim}(v_1, v_k)}$$
 
 **τ (temperature):** A sharpness dial. Low τ = model must be very confident about which pair matches. High τ = more lenient.
 
@@ -379,7 +400,7 @@ Take one image, create two slightly different crops/colorings of it. They should
 
 ---
 
-## 1.4 Normalization
+## 1.4 Normalization ★★
 
 **In one sentence:** Normalization keeps the numbers flowing through the network in a healthy range so training doesn't collapse.
 
@@ -394,7 +415,7 @@ Normalization is the pressure regulator.
 
 ---
 
-### Batch Normalization
+### Batch Normalization ★★
 
 **What it does:** For each feature, look at all the values in the current batch. Shift them so the average is 0. Scale them so the spread is 1.
 
@@ -415,7 +436,7 @@ Each feature gets normalized ACROSS the batch. Two learnable parameters (γ, β)
 
 ---
 
-### Layer Normalization
+### Layer Normalization ★★
 
 **What it does:** For each individual sample, normalize across all its features. Each sample is handled independently — doesn't care about other samples at all.
 
@@ -459,13 +480,15 @@ Think of it like a speed limit. Gradients can point any direction, but their spe
 
 **Norm clipping** (the standard way):
 
-```
-  1. Compute the total size of all gradients: ‖g‖ = √(sum of all gradient²)
-  2. If ‖g‖ > max_norm (e.g., 1.0):
-       scale every gradient down: g ← g × (1.0 / ‖g‖)
-  3. If ‖g‖ ≤ max_norm:
-       do nothing
-```
+1. Compute the total size of all gradients:
+
+$$\|g\| = \sqrt{\sum g_i^2}$$
+
+2. If $\|g\| > \text{max norm}$ (e.g., 1.0):
+
+$$g \leftarrow g \times \frac{1.0}{\|g\|}$$
+
+3. If $\|g\| \leq \text{max norm}$: do nothing
 
 Importantly, this **preserves direction** — the gradient still points the right way, it just moves slower. Like slowing your car, not turning it.
 
@@ -516,7 +539,7 @@ The tricky part: 16-bit numbers have a limited range (up to ~65,504). Very small
 
 ---
 
-## 2.1 CNN Architecture Evolution
+## 2.1 CNN Architecture Evolution ★★★
 
 **In one sentence:** CNNs for images have evolved from 5-layer networks (1998) to 150+ layer networks (2015+) through a series of key breakthroughs.
 
@@ -587,7 +610,7 @@ Think of CNN evolution like car engineering. Each generation solved a specific p
 
 ---
 
-### ResNet (2015) — The Breakthrough Architecture
+### ResNet (2015) — The Breakthrough Architecture ★★
 
 **What it solved:** Why does making networks deeper make them WORSE?
 
@@ -626,13 +649,13 @@ ResNet-152 (152 layers!) trained successfully. This was previously impossible.
 
 Previous work scaled networks by making them deeper, or wider, or feeding them bigger images — but each separately. EfficientNet found the right ratio between all three:
 
-```
-  depth    ∝ 1.2^φ      (more layers)
-  width    ∝ 1.1^φ      (more channels)
-  resolution ∝ 1.15^φ  (bigger input images)
+$$\text{depth} \propto 1.2^\phi$$
 
-  φ = a compound scaling coefficient you choose
-```
+$$\text{width} \propto 1.1^\phi$$
+
+$$\text{resolution} \propto 1.15^\phi$$
+
+where $\phi$ is a compound scaling coefficient you choose.
 
 **Result:** EfficientNet-B7 achieved state-of-the-art ImageNet accuracy with 8× fewer parameters than the next-best model.
 
@@ -672,10 +695,9 @@ YOLO's insight: do everything in one shot.
 
 **IOU (Intersection over Union):** The standard measure of "are these boxes detecting the same thing?"
 
-```
-  IOU = (area where boxes overlap) / (total area covered by both boxes)
-  IOU > 0.5 → same object → keep only the higher-confidence box
-```
+$$\text{IOU} = \frac{\text{Area of Overlap}}{\text{Area of Union}}$$
+
+IOU > 0.5 means same object -- keep only the higher-confidence box.
 
 **YOLOv8 runs in real-time on a phone.** Used in self-driving cars, security cameras, robotics.
 
@@ -776,7 +798,7 @@ The model should recognize a cat whether it's flipped, slightly darker, or cropp
 
 ---
 
-## 3.1 Seq2Seq + Bahdanau Attention
+## 3.1 Seq2Seq + Bahdanau Attention ★★★
 
 **In one sentence:** The attention mechanism that preceded Transformers — it lets the decoder focus on different parts of the input at each step.
 
@@ -804,7 +826,7 @@ This was the direct predecessor of self-attention — the key insight that you c
 
 ---
 
-## 3.2 Self-Attention
+## 3.2 Self-Attention ★★★
 
 **In one sentence:** Every word in a sentence simultaneously asks "which other words should I pay attention to?" and gathers context from them.
 
@@ -864,15 +886,13 @@ Each word's embedding is multiplied by three learned weight matrices (Wq, Wk, Wv
 
 **The matrix formula (all tokens at once):**
 
-```
-  Output = softmax(Q × Kᵀ / √d_k) × V
-```
+$$\text{Output} = \text{softmax}\!\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
 
 This computes attention for ALL tokens simultaneously using matrix multiplication. Very GPU-friendly.
 
 ---
 
-## 3.3 BERT
+## 3.3 BERT ★★★
 
 **In one sentence:** A pre-trained language model that reads text in both directions simultaneously, pre-trained on "fill in the blank" and "do these sentences connect?" tasks.
 
@@ -930,7 +950,7 @@ Only the new layer learns from scratch. BERT's weights adjust slightly through f
 
 ---
 
-## 3.4 GPT
+## 3.4 GPT ★★★
 
 **In one sentence:** A model trained to predict the next word — trained billions of times, it learned a surprisingly broad understanding of language.
 
@@ -985,7 +1005,7 @@ At this scale, GPT-3 could do few-shot learning, arithmetic, code generation, an
 
 ---
 
-## 4.1 Tokenization
+## 4.1 Tokenization ★★
 
 **In one sentence:** The process of splitting text into pieces (tokens) that the model can process — each piece gets a unique number.
 
@@ -1033,7 +1053,7 @@ Every LLM can only process a limited number of tokens at once. Beyond that limit
 
 ---
 
-## 4.2 Fine-Tuning Strategies
+## 4.2 Fine-Tuning Strategies ★★
 
 **In one sentence:** Take a pre-trained model and continue training it on your specific task so it performs better there.
 
@@ -1067,7 +1087,7 @@ Surprisingly effective at 7B+ parameter scale.
 
 ---
 
-## 4.3 LoRA — Low-Rank Adaptation
+## 4.3 LoRA — Low-Rank Adaptation ★★★
 
 **In one sentence:** Fine-tune a tiny fraction of parameters (0.1%) by learning small updates to existing weight matrices instead of changing the whole matrix.
 
@@ -1081,25 +1101,15 @@ Think of a shadow on a wall. The shadow is a complex 2D shape, but it's fully de
 
 Instead of modifying the weight matrix W₀ directly, learn two small matrices A and B whose product approximates the needed change:
 
-```
-  W_effective = W₀ + B × A
-                └────────┘
-                LoRA addition
+$$W_{\text{eff}} = W_0 + B \times A$$
 
-  W₀ is frozen (never changes)
-  B has shape: (d × r)   e.g. (4096 × 8)
-  A has shape: (r × d)   e.g. (8 × 4096)
-
-  r = rank, usually 4, 8, or 16
-```
+$W_0$ is frozen (never changes). $B$ has shape $(d \times r)$ e.g. $(4096 \times 8)$. $A$ has shape $(r \times d)$ e.g. $(8 \times 4096)$. $r$ = rank, usually 4, 8, or 16.
 
 **Parameter count:**
 
-```
-  Full matrix W₀: 4096 × 4096 = 16,777,216 parameters
-  LoRA (r=8):     4096×8 + 8×4096 = 65,536 parameters
-  → 256× fewer parameters to train
-```
+Full matrix $W_0$: $4096 \times 4096 = 16{,}777{,}216$ parameters
+
+LoRA ($r = 8$): $4096 \times 8 + 8 \times 4096 = 65{,}536$ parameters -- 256x fewer parameters to train.
 
 **At inference time:** Just add B×A to W₀ and use the result. Zero extra compute.
 
@@ -1112,9 +1122,34 @@ Fine-tuning LLaMA-7B:
 
 LoRA is applied to the Q and V attention matrices by default, sometimes also K and the feed-forward layers.
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Full Fine-Tuning", "LoRA (r=8)"],
+    "datasets": [
+      {
+        "label": "Trainable Parameters (millions)",
+        "data": [7000, 4],
+        "backgroundColor": ["rgba(239, 68, 68, 0.7)", "rgba(34, 197, 94, 0.7)"],
+        "borderColor": ["rgba(239, 68, 68, 1)", "rgba(34, 197, 94, 1)"],
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "LoRA vs Full Fine-Tuning — 7B Model (99.94% Fewer Trainable Parameters!)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Parameters (millions)" }, "beginAtZero": true },
+      "x": {}
+    }
+  }
+}
+```
+
 ---
 
-## 4.4 RLHF — Reinforcement Learning from Human Feedback
+## 4.4 RLHF — Reinforcement Learning from Human Feedback ★★★
 
 **In one sentence:** A three-stage pipeline that teaches an LLM to produce outputs humans prefer — not just grammatically correct outputs.
 
@@ -1136,11 +1171,11 @@ Train a separate "reward model" on these rankings:
 
 ```
   Input:  (prompt, response) → Output: one number (quality score)
-
-  Training objective:
-  Push score(winning response) above score(losing response)
-  L = −log(σ(score_win − score_lose))
 ```
+
+Training objective — push score(winning response) above score(losing response):
+
+$$L = -\log\!\left(\sigma(s_{\text{win}} - s_{\text{lose}})\right)$$
 
 After training, the reward model can score any new response without needing human input.
 
@@ -1150,9 +1185,7 @@ Use the reward model as an automatic judge. The LLM generates responses, the rew
 
 **The critical KL constraint:**
 
-```
-  Total reward = reward_model_score − β × KL_divergence_from_SFT_model
-```
+$$R_{\text{total}} = R_{\text{reward model}} - \beta \times D_{KL}(\pi \| \pi_{\text{SFT}})$$
 
 The KL term penalizes the model for straying too far from its Stage 1 behavior. Without it, the model finds clever ways to fool the reward model (giving high-scoring gibberish). The KL term keeps it grounded.
 
@@ -1160,7 +1193,7 @@ The KL term penalizes the model for straying too far from its Stage 1 behavior. 
 
 ---
 
-## 4.5 RAG — Retrieval-Augmented Generation
+## 4.5 RAG — Retrieval-Augmented Generation ★★★
 
 **In one sentence:** Instead of memorizing everything, the model looks up relevant information at query time and uses it to answer.
 
@@ -1211,7 +1244,7 @@ An LLM knows only what it was trained on. It doesn't know your company's interna
 
 ---
 
-## 5.1 Variational Autoencoders (VAE)
+## 5.1 Variational Autoencoders (VAE) ★
 
 **In one sentence:** Learn a compact, organized representation of data that you can sample from to generate new examples.
 
@@ -1232,7 +1265,7 @@ Instead of outputting a single point, the encoder outputs a **range** (a probabi
   VAE:         input → encoder → μ, σ (center and spread) → sample z → decoder → output
 ```
 
-μ = center of the region, σ = how wide it is.
+$\mu$ = center of the region, $\sigma$ = how wide it is.
 
 **During generation:** Sample z from a standard normal distribution → decode → new image.
 
@@ -1243,9 +1276,7 @@ The loss has two parts:
 1. **Reconstruction loss:** Can the decoder recreate the input from z? (Make the autoencoder accurate)
 2. **KL divergence:** How different is the learned distribution from a standard normal?
 
-```
-  Loss = Reconstruction Error + KL Divergence
-```
+$$L = L_{\text{reconstruction}} + D_{KL}\!\left(q(z|x) \| p(z)\right)$$
 
 **KL Divergence in plain English:** "How many extra words do you need to describe your distribution, compared to just saying 'standard normal (0,1)'?" Lower KL = your distribution is closer to standard normal = better organized latent space.
 
@@ -1255,21 +1286,19 @@ The KL term forces all the neighborhoods (distributions for different inputs) to
 
 **Problem:** You can't backpropagate through a random sample. Gradients can't flow through "and then randomness happened."
 
-**Solution:** Instead of sampling z from N(μ, σ), rewrite it as:
+**Solution:** Instead of sampling $z$ from $\mathcal{N}(\mu, \sigma)$, rewrite it as:
 
-```
-  z = μ + σ × ε    where ε is sampled from N(0,1) separately
+$$z = \mu + \sigma \times \epsilon \quad \text{where } \epsilon \sim \mathcal{N}(0, 1)$$
 
-  Now z depends deterministically on μ and σ (which the network controls)
-  The randomness (ε) is "on the side" — not part of the computation graph
-  Gradients flow through μ and σ normally
-```
+Now $z$ depends deterministically on $\mu$ and $\sigma$ (which the network controls).
+The randomness ($\epsilon$) is "on the side" -- not part of the computation graph.
+Gradients flow through $\mu$ and $\sigma$ normally.
 
 Think of it this way: instead of "roll the dice and do something random," say "here is a fixed random number ε; your action = center + spread × ε." The network can now learn what the best center and spread are.
 
 ---
 
-## 5.2 Diffusion Models
+## 5.2 Diffusion Models ★
 
 **In one sentence:** Learn to reverse a noise-adding process — train a network to slowly remove noise step by step, so you can turn pure static into a crisp image.
 
@@ -1293,11 +1322,9 @@ The noise added at each step follows a mathematical schedule (small amount early
 
 **Key trick:** You can jump directly to any noise level without doing all intermediate steps:
 
-```
-  xₜ = √ᾱₜ × x₀ + √(1−ᾱₜ) × random_noise
-```
+$$x_t = \sqrt{\bar{\alpha}_t} \times x_0 + \sqrt{1 - \bar{\alpha}_t} \times \epsilon$$
 
-ᾱₜ is the "how much original image remains" factor. At t=0, it's 1 (all original). At t=1000, it's ~0 (pure noise).
+$\bar{\alpha}_t$ is the "how much original image remains" factor. At $t = 0$, it's 1 (all original). At $t = 1000$, it's ~0 (pure noise).
 
 ### Reverse Process (Removing Noise — Learned)
 
@@ -1306,10 +1333,11 @@ A UNet is trained to look at a noisy image and predict: "what noise was added to
 ```
   UNet Input:  noisy image xₜ + time step t
   UNet Output: predicted noise ε̂
-
-  Training loss: how different is predicted noise from actual noise?
-  L = average ||actual_noise − predicted_noise||²
 ```
+
+Training loss -- how different is predicted noise from actual noise?
+
+$$L = \|\epsilon - \hat{\epsilon}\|^2$$
 
 ### Generating New Images
 
@@ -1334,7 +1362,7 @@ To condition on text, add a cross-attention mechanism in the UNet. The text desc
 
 ---
 
-## 5.3 Contrastive Learning
+## 5.3 Contrastive Learning ★
 
 **In one sentence:** Learn useful image representations without labels by teaching the model that two views of the same image should look similar.
 
@@ -1532,11 +1560,11 @@ Build a 1-layer version first. Get it working. Then add complexity. Never debug 
 
 With random weights, your initial loss should equal the loss of random guessing:
 
-```
-  2-class problem: −log(0.5) = 0.693
-  10-class problem: −log(0.1) = 2.303
-  100-class problem: −log(0.01) = 4.605
-```
+$$\text{2-class: } -\log(0.5) = 0.693$$
+
+$$\text{10-class: } -\log(0.1) = 2.303$$
+
+$$\text{100-class: } -\log(0.01) = 4.605$$
 
 If your initial loss is very different, you have a bug in your loss function or model output.
 
@@ -1599,6 +1627,50 @@ If your model gives different results on the same data each run, you have unset 
   SCENARIO 5: Learning rate too low
   train loss: ──────   ← barely moving
   Action: multiply learning rate by 10
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29],
+    "datasets": [
+      {
+        "label": "Good Fit — Train",
+        "data": [2.5,1.8,1.3,1.0,0.8,0.65,0.55,0.48,0.42,0.38,0.35,0.33,0.31,0.30,0.29],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Good Fit — Val",
+        "data": [2.6,1.9,1.4,1.1,0.9,0.75,0.65,0.58,0.52,0.48,0.45,0.43,0.41,0.40,0.39],
+        "borderColor": "rgba(34, 197, 94, 0.5)",
+        "borderDash": [5,3],
+        "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Overfitting — Train",
+        "data": [2.5,1.6,1.0,0.6,0.35,0.2,0.12,0.08,0.05,0.03,0.02,0.015,0.01,0.008,0.005],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
+      },
+      {
+        "label": "Overfitting — Val",
+        "data": [2.6,1.7,1.2,0.9,0.75,0.7,0.72,0.78,0.85,0.92,1.0,1.05,1.1,1.15,1.2],
+        "borderColor": "rgba(239, 68, 68, 0.5)",
+        "borderDash": [5,3],
+        "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Training Curves — Good Fit (Green) vs Overfitting (Red: Val Goes Back Up!)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Epoch" } }
+    }
+  }
+}
 ```
 
 ---

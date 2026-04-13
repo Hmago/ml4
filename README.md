@@ -18,77 +18,79 @@
 
 ## Table of Contents
 
+> **Google Interview Priority:** ★★★ = Critical (tested every interview) · ★★ = High Priority (frequently tested) · ★ = Good to Know
+
 ### Quick Reference
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 21 | Quick Reference Cheat Sheet (all topics) | [21_quick_reference_cheat_sheet.md](21_quick_reference_cheat_sheet.md) | ~45 min | All Levels |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 21 | Quick Reference Cheat Sheet (all topics) | ★★ | [21_quick_reference_cheat_sheet.md](21_quick_reference_cheat_sheet.md) | ~45 min | All Levels |
 
 ### Core ML Curriculum (read in this order)
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 3 | Introduction to Machine Learning | [03_introduction.md](03_introduction.md) | ~25 min | Beginner |
-| 2 | Math Fundamentals for ML & AI | [02_math_fundamentals.md](02_math_fundamentals.md) | ~2.5 hrs | Beginner |
-| 4 | Core Concepts & Terminology | [04_core_concepts.md](04_core_concepts.md) | ~2 hrs | Beginner |
-| 5 | Data Preprocessing | [05_data_preprocessing.md](05_data_preprocessing.md) | ~40 min | Beginner-Intermediate |
-| 6 | Supervised Learning | [06_supervised_learning.md](06_supervised_learning.md) | ~1.5 hrs | Intermediate |
-| 7 | Unsupervised Learning | [07_unsupervised_learning.md](07_unsupervised_learning.md) | ~1.5 hrs | Intermediate |
-| 8 | Reinforcement Learning | [08_reinforcement_learning.md](08_reinforcement_learning.md) | ~1 hr | Intermediate |
-| 9 | Key ML Algorithms Deep Dive | [09_key_algorithms.md](09_key_algorithms.md) | ~1.5 hrs | Intermediate |
-| 10 | Neural Networks & Deep Learning | [10_neural_networks.md](10_neural_networks.md) | ~2 hrs | Intermediate-Advanced |
-| 11 | Model Evaluation & Tuning | [11_model_evaluation.md](11_model_evaluation.md) | ~40 min | Intermediate |
-| 12 | Deep Learning — Complete Reference | [12_deep_learning.md](12_deep_learning.md) | ~3 hrs | Advanced |
-| 13 | Large Language Models (LLMs) | [13_llm.md](13_llm.md) | ~9 hrs | Intermediate-Advanced |
-| | **Core Total** | | **~26 hrs** | |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 3 | Introduction to Machine Learning | ★ | [03_introduction.md](03_introduction.md) | ~25 min | Beginner |
+| 2 | Math Fundamentals for ML & AI | ★★ | [02_math_fundamentals.md](02_math_fundamentals.md) | ~2.5 hrs | Beginner |
+| 4 | Core Concepts & Terminology | ★★★ | [04_core_concepts.md](04_core_concepts.md) | ~2 hrs | Beginner |
+| 5 | Data Preprocessing | ★★ | [05_data_preprocessing.md](05_data_preprocessing.md) | ~40 min | Beginner-Intermediate |
+| 6 | Supervised Learning | ★★★ | [06_supervised_learning.md](06_supervised_learning.md) | ~1.5 hrs | Intermediate |
+| 7 | Unsupervised Learning | ★★ | [07_unsupervised_learning.md](07_unsupervised_learning.md) | ~1.5 hrs | Intermediate |
+| 8 | Reinforcement Learning | ★ | [08_reinforcement_learning.md](08_reinforcement_learning.md) | ~1 hr | Intermediate |
+| 9 | Key ML Algorithms Deep Dive | ★★★ | [09_key_algorithms.md](09_key_algorithms.md) | ~1.5 hrs | Intermediate |
+| 10 | Neural Networks & Deep Learning | ★★★ | [10_neural_networks.md](10_neural_networks.md) | ~2 hrs | Intermediate-Advanced |
+| 11 | Model Evaluation & Tuning | ★★★ | [11_model_evaluation.md](11_model_evaluation.md) | ~40 min | Intermediate |
+| 12 | Deep Learning — Complete Reference | ★★★ | [12_deep_learning.md](12_deep_learning.md) | ~3 hrs | Advanced |
+| 13 | Large Language Models (LLMs) | ★★★ | [13_llm.md](13_llm.md) | ~9 hrs | Intermediate-Advanced |
+| | **Core Total** | | | **~26 hrs** | |
 
 ### Interview Preparation
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 0 | Google AI Engineer — Strategy Guide | [00_google_ai_engineer_strategy.md](00_google_ai_engineer_strategy.md) | ~2.5 hrs | All Levels |
-| 15 | ML Interview Questions (Google/Amazon/OpenAI) | [15_interview_questions.md](15_interview_questions.md) | ~3.5 hrs | Intermediate-Advanced |
-| 16 | LLM Interview Questions | [16_llm_interview_questions.md](16_llm_interview_questions.md) | ~7 hrs | Intermediate-Advanced |
-| 20 | Google's Top 10 ML Interview Topics | [20_google_top10_ml_interview.md](20_google_top10_ml_interview.md) | ~8 hrs | Intermediate-Advanced |
-| 17 | ML System Design | [17_ml_system_design.md](17_ml_system_design.md) | ~3.5 hrs | Intermediate-Advanced |
-| -- | Behavioral Interview (Googleyness & Leadership) | [behavioral_interview.md](behavioral_interview.md) | ~2.5 hrs | All Levels |
-| | **Interview Prep Total** | | **~27 hrs** | |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 0 | Google AI Engineer — Strategy Guide | ★★ | [00_google_ai_engineer_strategy.md](00_google_ai_engineer_strategy.md) | ~2.5 hrs | All Levels |
+| 15 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [15_interview_questions.md](15_interview_questions.md) | ~3.5 hrs | Intermediate-Advanced |
+| 16 | LLM Interview Questions | ★★★ | [16_llm_interview_questions.md](16_llm_interview_questions.md) | ~7 hrs | Intermediate-Advanced |
+| 20 | Google's Top 10 ML Interview Topics | ★★★ | [20_google_top10_ml_interview.md](20_google_top10_ml_interview.md) | ~8 hrs | Intermediate-Advanced |
+| 17 | ML System Design | ★★★ | [17_ml_system_design.md](17_ml_system_design.md) | ~3.5 hrs | Intermediate-Advanced |
+| -- | Behavioral Interview (Googleyness & Leadership) | ★★★ | [behavioral_interview.md](behavioral_interview.md) | ~2.5 hrs | All Levels |
+| | **Interview Prep Total** | | | **~27 hrs** | |
 
 ### System Design
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 14 | Design Fundamentals (Senior SWE) | [14_design_fundamentals.md](14_design_fundamentals.md) | ~5 hrs | Intermediate-Advanced |
-| -- | Modern System Design (Grokking) | [19_Modern System Design.md](19_Modern%20System%20Design.md) | ~2.5 hrs | Intermediate-Advanced |
-| | **System Design Total** | | **~7.5 hrs** | |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 14 | Design Fundamentals (Senior SWE) | ★★ | [14_design_fundamentals.md](14_design_fundamentals.md) | ~5 hrs | Intermediate-Advanced |
+| -- | Modern System Design (Grokking) | ★★ | [19_Modern System Design.md](19_Modern%20System%20Design.md) | ~2.5 hrs | Intermediate-Advanced |
+| | **System Design Total** | | | **~7.5 hrs** | |
 
 ### DSA & Coding
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 18 | DSA — Trees, Graphs & ML Coding (Java) | [18_dsa_trees_graphs.md](18_dsa_trees_graphs.md) | ~5.5 hrs | Intermediate-Advanced |
-| -- | DSA Practice (30 problems, in-browser Java) | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **DSA Total** | | **~5.5 hrs + practice** | |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 18 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [18_dsa_trees_graphs.md](18_dsa_trees_graphs.md) | ~5.5 hrs | Intermediate-Advanced |
+| -- | DSA Practice (30 problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
+| | **DSA Total** | | | **~5.5 hrs + practice** | |
 
 ### Google ML Ecosystem
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| 19 | Google ML Ecosystem (TPUs, JAX, Vertex AI & Key Papers) | [19_google_ml_ecosystem.md](19_google_ml_ecosystem.md) | ~2.5 hrs | Intermediate |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 19 | Google ML Ecosystem (TPUs, JAX, Vertex AI & Key Papers) | ★★ | [19_google_ml_ecosystem.md](19_google_ml_ecosystem.md) | ~2.5 hrs | Intermediate |
 
 ### Hands-On Practice
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| -- | Practical ML — From Zero to Production | [practical_ml.md](practical_ml.md) | ~3 hrs | Beginner-Advanced |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| -- | Practical ML — From Zero to Production | ★★ | [practical_ml.md](practical_ml.md) | ~3 hrs | Beginner-Advanced |
 
 ### Career & Mindset
 
-| Ch | Topic | File | Time | Difficulty |
-|----|-------|------|------|------------|
-| -- | Staying Relevant in the AI Era | [staying_relevant_ai_era.md](staying_relevant_ai_era.md) | ~1 hr | All Levels |
-| -- | Brain Training — Memory, Focus & IQ | [01_brain_training.md](01_brain_training.md) | ~1.5 hrs | All Levels |
-| | **Grand Total (all content)** | | **~74 hrs + DSA practice** | |
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| -- | Staying Relevant in the AI Era | ★ | [staying_relevant_ai_era.md](staying_relevant_ai_era.md) | ~1 hr | All Levels |
+| -- | Brain Training — Memory, Focus & IQ | | [01_brain_training.md](01_brain_training.md) | ~1.5 hrs | All Levels |
+| | **Grand Total (all content)** | | | **~74 hrs + DSA practice** | |
 
 ---
 
