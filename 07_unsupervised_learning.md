@@ -128,6 +128,29 @@ ML algorithm's job exponentially harder.
   10000 features → need 50,000 examples
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["10 features", "100 features", "1,000 features", "10,000 features"],
+    "datasets": [{
+      "label": "Minimum Examples Needed (~5× dimensions)",
+      "data": [50, 500, 5000, 50000],
+      "backgroundColor": ["rgba(34,197,94,0.7)","rgba(99,102,241,0.7)","rgba(234,88,12,0.7)","rgba(239,68,68,0.7)"],
+      "borderColor": ["rgba(34,197,94,1)","rgba(99,102,241,1)","rgba(234,88,12,1)","rgba(239,68,68,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Curse of Dimensionality — More Features = Exponentially More Data Needed" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Examples Needed" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Number of Features" } }
+    }
+  }
+}
+```
+
 ### Solutions
 
 ```
@@ -184,7 +207,7 @@ ML algorithm's job exponentially harder.
 
 ---
 
-## 5.4 K-Means Clustering
+## 5.4 K-Means Clustering ★★
 
 ### Simple Explanation
 Place K flags on a field. Everyone runs to their nearest flag. Move flags to the center
@@ -231,8 +254,9 @@ of their group. Repeat until nobody moves.
 
 ### Choosing K — Elbow Method
 
+$$\text{Inertia} = \sum (\text{distance from each point to its centroid})^2$$
+
 ```
-  Inertia = Σ (distance from each point to its centroid)²
   Lower inertia = tighter, better-defined clusters
 
   Inertia
@@ -248,6 +272,32 @@ of their group. Repeat until nobody moves.
          1  2  3  4  5  6  7  8
 
               ↑ "elbow" at K=4 → choose K=4
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1, 2, 3, 4, 5, 6, 7, 8],
+    "datasets": [{
+      "label": "Inertia (within-cluster distance)",
+      "data": [20000, 17000, 14000, 10000, 8000, 6500, 5800, 5500],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.3,
+      "pointRadius": 5,
+      "pointBackgroundColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(239,68,68,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"]
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Elbow Method — Inertia Drops Steeply Then Flattens (Elbow at K=4)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Inertia" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Number of Clusters (K)" } }
+    }
+  }
+}
 ```
 
 ### K-Means++ — Better Initialization
@@ -367,7 +417,7 @@ You can cut the tree at any height to get any number of groups.
 
 ---
 
-## 5.6 DBSCAN — Density-Based Clustering
+## 5.6 DBSCAN — Density-Based Clustering ★
 
 ### Simple Explanation
 DBSCAN finds groups based on **density** — regions where points are packed close together.
@@ -427,6 +477,36 @@ Cluster shapes DBSCAN handles that K-Means cannot:
   ●·····●         ·●●●·  ○○○  ●●●  ○○○
   ●·····●         ·●●●·   ○○○  ●●●  ○○○
    ·●●●●·        ·●●●·
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Specify K?", "Cluster Shape", "Handles Outliers", "Speed", "Deterministic"],
+    "datasets": [
+      {
+        "label": "K-Means",
+        "data": [1, 2, 1, 5, 5],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "DBSCAN",
+        "data": [5, 5, 5, 3, 4],
+        "backgroundColor": "rgba(234, 88, 12, 0.7)",
+        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "K-Means vs DBSCAN — DBSCAN Wins on Flexibility, K-Means on Speed" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Rating (5=best)" }, "beginAtZero": true, "max": 5 },
+      "x": {}
+    }
+  }
+}
 ```
 
 ### Choosing ε and minPts
@@ -517,6 +597,42 @@ Use GMM when:
   - You want a proper probabilistic model of your data
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Point A (clear)", "Point B (overlap)", "Point C (edge)"],
+    "datasets": [
+      {
+        "label": "Cluster 1",
+        "data": [0.95, 0.35, 0.05],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Cluster 2",
+        "data": [0.03, 0.40, 0.70],
+        "backgroundColor": "rgba(234, 88, 12, 0.7)",
+        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Cluster 3",
+        "data": [0.02, 0.25, 0.25],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "GMM Soft Assignment — Each Point Gets Probabilities (Sum = 1)" } },
+    "scales": {
+      "x": { "stacked": true },
+      "y": { "stacked": true, "title": { "display": true, "text": "Probability" }, "max": 1 }
+    }
+  }
+}
+```
+
 ---
 
 ## 5.8 Evaluating Clusters ★
@@ -533,17 +649,14 @@ Use GMM when:
 
 ### Silhouette Score — The Best Single Metric
 
+For each point $i$, compute:
+
+- $a(i)$ = average distance to other points IN its own cluster (how well it fits its cluster)
+- $b(i)$ = average distance to all points in the NEAREST other cluster (how different it is from the best alternative cluster)
+
+$$\text{Silhouette}(i) = \frac{b(i) - a(i)}{\max(a(i),\; b(i))}$$
+
 ```
-  For each point i, compute:
-  ──────────────────────────────────────────────────────────────────
-  a(i) = average distance to other points IN its own cluster
-         (how well it fits its cluster)
-
-  b(i) = average distance to all points in the NEAREST other cluster
-         (how different it is from the best alternative cluster)
-
-  Silhouette(i) = [b(i) - a(i)] / max(a(i), b(i))
-
   Interpretation:
     s(i) = +1.0  → Point is perfectly placed, far from other clusters
     s(i) =  0.0  → Point is on the boundary between clusters
@@ -556,6 +669,29 @@ Use GMM when:
   │ Score > 0.25  → Weak cluster structure, use carefully  ~    │
   │ Score < 0.25  → No substantial structure found         ✗    │
   └──────────────────────────────────────────────────────────────┘
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Strong (>0.7)", "Reasonable (>0.5)", "Weak (>0.25)", "No Structure (<0.25)"],
+    "datasets": [{
+      "label": "Silhouette Score Range",
+      "data": [0.85, 0.6, 0.35, 0.1],
+      "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(99,102,241,0.7)", "rgba(234,88,12,0.7)", "rgba(239,68,68,0.7)"],
+      "borderColor": ["rgba(34,197,94,1)", "rgba(99,102,241,1)", "rgba(234,88,12,1)", "rgba(239,68,68,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "Silhouette Score Interpretation — How Good Are Your Clusters?" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Silhouette Score" }, "min": 0, "max": 1 }
+    }
+  }
+}
 ```
 
 ### Silhouette Plot — Diagnosing Cluster Quality
@@ -599,9 +735,34 @@ Use GMM when:
   Choose K=4 (elbow AND highest silhouette agree)  ✓
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["K=2", "K=3", "K=4", "K=5", "K=6"],
+    "datasets": [
+      {
+        "label": "Silhouette Score",
+        "data": [0.71, 0.68, 0.74, 0.61, 0.55],
+        "backgroundColor": ["rgba(99,102,241,0.6)","rgba(99,102,241,0.6)","rgba(34,197,94,0.8)","rgba(99,102,241,0.6)","rgba(99,102,241,0.6)"],
+        "borderColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"],
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Silhouette Score by K — Higher = Better Defined Clusters (K=4 Wins)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Silhouette Score" }, "beginAtZero": true, "max": 1.0 },
+      "x": { "title": { "display": true, "text": "Number of Clusters" } }
+    }
+  }
+}
+```
+
 ---
 
-## 5.9 Dimensionality Reduction Overview
+## 5.9 Dimensionality Reduction Overview ★★
 
 ```
   WHY REDUCE DIMENSIONS?
@@ -631,7 +792,7 @@ Use GMM when:
 
 ---
 
-## 5.10 PCA — Principal Component Analysis
+## 5.10 PCA — Principal Component Analysis ★★
 
 ### Simple Explanation
 PCA finds the directions in which the data varies the **most** and projects everything
@@ -665,11 +826,20 @@ looks most informative in 2D.
   1. Center the data:  X = X - mean(X)
      (shift so data is centered at origin)
 
-  2. Compute covariance matrix:  C = (1/n) XᵀX
+  2. Compute covariance matrix:
+```
+
+$$C = \frac{1}{n} X^\top X$$
+
+```
      (captures how features vary together)
 
   3. Compute eigenvectors and eigenvalues of C:
-     C v = λ v
+```
+
+$$C \mathbf{v} = \lambda \mathbf{v}$$
+
+```
      Eigenvectors = principal component directions
      Eigenvalues  = amount of variance explained
 
@@ -701,9 +871,46 @@ looks most informative in 2D.
   → Look for "elbow" in scree plot (here: PC3 → PC4 is big drop)
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["PC1", "PC2", "PC3", "PC4", "PC5"],
+    "datasets": [
+      {
+        "label": "Variance Explained (%)",
+        "data": [40, 28, 18, 8, 4],
+        "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.4)","rgba(99,102,241,0.4)"],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1,
+        "order": 2
+      },
+      {
+        "label": "Cumulative %",
+        "data": [40, 68, 86, 94, 98],
+        "type": "line",
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "transparent",
+        "tension": 0.3,
+        "pointRadius": 4,
+        "borderWidth": 2,
+        "order": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "PCA Scree Plot — Keep PC1-PC3 to Explain 86% of Variance" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Variance Explained (%)" }, "beginAtZero": true, "max": 100 },
+      "x": { "title": { "display": true, "text": "Principal Component" } }
+    }
+  }
+}
+```
+
 ---
 
-## 5.11 t-SNE — For Visualization
+## 5.11 t-SNE — For Visualization ★
 
 ### Simple Explanation
 t-SNE is a **visualization tool** for high-dimensional data. It crushes your
@@ -862,7 +1069,7 @@ store everything in the bottleneck. The bottleneck IS the learned representation
 
 ---
 
-## 5.14 Anomaly Detection ★
+## 5.14 Anomaly Detection ★★
 
 ### Simple Explanation
 Anomaly detection finds data points that are **unusually different** from the rest.
@@ -964,26 +1171,52 @@ the foundation of recommendation systems and market basket analysis.
 
 ### Key Metrics
 
+**SUPPORT:** How often does this combination appear?
+
+$$\text{Support}(\{A, B\}) = \frac{\text{transactions containing A and B}}{\text{total transactions}}$$
+
+$\text{Support}(\{\text{Diaper, Beer}\}) = 3/5 = 0.60$ (60% of transactions).
+Low support = rare combination, unreliable pattern.
+
+**CONFIDENCE:** Given A, how often is B also present?
+
+$$\text{Confidence}(A \to B) = \frac{\text{Support}(A \cup B)}{\text{Support}(A)}$$
+
+$\text{Confidence}(\{\text{Diaper}\} \to \{\text{Beer}\}) = 0.60 / 0.80 = 0.75$ (75% of diaper buyers also buy beer).
+
+**LIFT:** Is this rule better than random chance?
+
+$$\text{Lift} = \frac{\text{Confidence}(A \to B)}{\text{Support}(B)}$$
+
+$\text{Lift} = 0.75 / 0.60 = 1.25$
+
 ```
-  SUPPORT: How often does this combination appear?
-  ─────────────────────────────────────────────────────────────
-  Support({Diaper, Beer}) = 3/5 = 0.60  (60% of transactions)
-  Low support = rare combination → unreliable pattern
-
-  CONFIDENCE: Given A, how often is B also present?
-  ─────────────────────────────────────────────────────────────
-  Confidence({Diaper} → {Beer}) = P(Beer | Diaper)
-    = Support({Diaper, Beer}) / Support({Diaper})
-    = 0.60 / 0.80 = 0.75  (75% of diaper buyers also buy beer)
-
-  LIFT: Is this rule better than random chance?
-  ─────────────────────────────────────────────────────────────
-  Lift = Confidence / Support(consequent)
-       = 0.75 / 0.60 = 1.25
-
   Lift > 1:  positive association (buying A makes B more likely)
   Lift = 1:  independent (A and B have no relationship)
   Lift < 1:  negative association (buying A makes B less likely)
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Support\n(how common?)", "Confidence\n(how reliable?)", "Lift\n(better than random?)"],
+    "datasets": [{
+      "label": "{Diaper} → {Beer}",
+      "data": [0.60, 0.75, 1.25],
+      "backgroundColor": ["rgba(99,102,241,0.7)", "rgba(34,197,94,0.7)", "rgba(234,88,12,0.7)"],
+      "borderColor": ["rgba(99,102,241,1)", "rgba(34,197,94,1)", "rgba(234,88,12,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Association Rule Metrics — {Diaper} → {Beer} (Lift > 1 = Real Pattern!)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Score" }, "beginAtZero": true, "max": 1.5 },
+      "x": {}
+    }
+  }
+}
 ```
 
 ### Apriori Algorithm — Finding Rules Efficiently
@@ -1005,6 +1238,29 @@ the foundation of recommendation systems and market basket analysis.
           Continue until no frequent itemsets remain
 
   Step 4: Generate rules from frequent itemsets, filter by confidence
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Bread", "Milk", "Diaper", "Beer", "Butter"],
+    "datasets": [{
+      "label": "Support (frequency in transactions)",
+      "data": [0.80, 0.80, 0.80, 0.60, 0.60],
+      "backgroundColor": ["rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(234,88,12,0.7)","rgba(234,88,12,0.7)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(234,88,12,1)","rgba(234,88,12,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Apriori Step 1 — Frequent 1-Itemsets (min support = 0.5)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Support" }, "beginAtZero": true, "max": 1.0 },
+      "x": { "title": { "display": true, "text": "Item" } }
+    }
+  }
+}
 ```
 
 ---

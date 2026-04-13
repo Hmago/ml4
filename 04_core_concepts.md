@@ -85,7 +85,7 @@ Each row = one example / data point / observation    This is what
 
 ---
 
-## 2.2 Features and Labels
+## 2.2 Features and Labels ★★
 
 ### Features (X) — The Inputs
 
@@ -144,7 +144,7 @@ Text/Image   │ Unstructured data — needs conversion first
 
 ---
 
-## 2.3 Training, Validation & Test Sets
+## 2.3 Training, Validation & Test Sets ★★
 
 ### Simple Explanation
 Imagine studying for an exam:
@@ -191,6 +191,26 @@ Imagine studying for an exam:
   │  → 98 / 1 / 1 split is fine                               │
   │  (1% of 1M = 10,000 rows — plenty for validation)         │
   └────────────────────────────────────────────────────────────┘
+```
+
+```chart
+{
+  "type": "doughnut",
+  "data": {
+    "labels": ["Training Set (70%)", "Validation Set (15%)", "Test Set (15%)"],
+    "datasets": [{
+      "data": [70, 15, 15],
+      "backgroundColor": ["rgba(99, 102, 241, 0.7)", "rgba(234, 88, 12, 0.7)", "rgba(34, 197, 94, 0.7)"],
+      "borderColor": ["rgba(99, 102, 241, 1)", "rgba(234, 88, 12, 1)", "rgba(34, 197, 94, 1)"],
+      "borderWidth": 2
+    }]
+  },
+  "options": {
+    "plugins": {
+      "title": { "display": true, "text": "Typical Data Split — Train / Validate / Test" }
+    }
+  }
+}
 ```
 
 ---
@@ -243,7 +263,7 @@ Features ──►  │    f(X) = prediction             │ ──► Predictio
 
 ---
 
-## 2.5 Parameters vs Hyperparameters
+## 2.5 Parameters vs Hyperparameters ★★
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -330,25 +350,37 @@ Training a model is like practicing free throws in basketball:
 
 ### Concrete Walk-Through (Tiny Example)
 
+**Model:**
+
+$$y = \sigma(w \times \text{temp} + b)$$
+
+(logistic regression, one weight). Initial: $w = 0.0$, $b = 0.0$.
+
 ```
   Task: predict if temperature > 20°C means "ice cream day" (1) or not (0)
-
-  Model: y = sigmoid(w × temp + b)   (logistic regression, one weight)
-  Initial: w = 0.0,  b = 0.0
 
   ─────── Training example: temp=25, label=1 ──────────────────────────
 
   STEP 1 — Forward pass:
     raw = 0.0 × 25 + 0.0 = 0.0
     ŷ = sigmoid(0.0) = 0.5       ← model is 50/50 unsure
+```
 
-  STEP 2 — Compute loss (binary cross-entropy):
-    loss = -[1 × log(0.5) + 0 × log(0.5)] = 0.693  ← quite wrong!
+**STEP 2 — Compute loss (binary cross-entropy):**
 
+$$\text{loss} = -[y \times \log(\hat{y}) + (1 - y) \times \log(1 - \hat{y})]$$
+
+$$= -[1 \times \log(0.5) + 0 \times \log(0.5)] = 0.693$$
+
+```
   STEP 3 — Backward pass:
-    ∂loss/∂w = (ŷ - y) × temp = (0.5 - 1) × 25 = -12.5
-    ∂loss/∂b = (ŷ - y)        = (0.5 - 1)       = -0.5
+```
 
+$$\frac{\partial \text{loss}}{\partial w} = (\hat{y} - y) \times \text{temp} = (0.5 - 1) \times 25 = -12.5$$
+
+$$\frac{\partial \text{loss}}{\partial b} = (\hat{y} - y) = (0.5 - 1) = -0.5$$
+
+```
   STEP 4 — Update (learning_rate = 0.01):
     w = 0.0 - 0.01 × (-12.5) = 0.125   ← w increased!
     b = 0.0 - 0.01 × (-0.5)  = 0.005
@@ -356,6 +388,43 @@ Training a model is like practicing free throws in basketball:
   ─────── Next forward pass with updated weights: ─────────────────────
     raw = 0.125 × 25 + 0.005 = 3.13
     ŷ = sigmoid(3.13) = 0.958  ← now 96% confident! Loss decreased.
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,40,50],
+    "datasets": [
+      {
+        "label": "Loss (decreasing)",
+        "data": [0.693,0.45,0.31,0.22,0.16,0.12,0.09,0.07,0.055,0.044,0.03,0.022,0.016,0.012,0.009,0.005,0.003,0.001,0.0005],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Accuracy (increasing)",
+        "data": [0.50,0.62,0.71,0.78,0.83,0.87,0.90,0.92,0.94,0.95,0.96,0.97,0.975,0.98,0.985,0.99,0.993,0.997,0.999],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "yAxisID": "y1"
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Training Loop in Action — Loss Falls, Accuracy Rises Over Epochs" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true, "position": "left" },
+      "y1": { "title": { "display": true, "text": "Accuracy" }, "min": 0.4, "max": 1.0, "position": "right", "grid": { "drawOnChartArea": false } },
+      "x": { "title": { "display": true, "text": "Epoch" } }
+    }
+  }
+}
 ```
 
 ---
@@ -429,9 +498,40 @@ YOUR TRAINING DATA: 1,000 examples, batch size = 100
   PyTorch/TensorFlow default: mini-batch with Adam optimizer
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Batch Size 1 (SGD)", "Batch Size 32", "Batch Size 128", "Batch Size 512", "Full Batch"],
+    "datasets": [
+      {
+        "label": "Speed (updates/sec)",
+        "data": [95, 80, 60, 40, 10],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Stability (smoothness)",
+        "data": [15, 50, 70, 85, 98],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Batch Size Trade-off — Smaller = Faster but Noisier, Larger = Stable but Slower" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Score" }, "beginAtZero": true, "max": 100 }
+    }
+  }
+}
+```
+
 ---
 
-## 2.8 Loss Functions — Measuring "How Wrong"
+## 2.8 Loss Functions — Measuring "How Wrong" ★★★
 
 ### Simple Explanation
 The loss function measures **how wrong** your model is on a given prediction.
@@ -458,22 +558,30 @@ Training the model = finding the parameters that minimize this number.
 
 ### Regression Loss Functions
 
+**MAE -- Mean Absolute Error:**
+
+$$\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |\hat{y}_i - y_i|$$
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  MAE — Mean Absolute Error                                           │
 │  ─────────────────────────                                           │
-│  MAE = (1/n) × Σ |ŷᵢ − yᵢ|                                        │
-│                                                                      │
 │  Intuition: Average of absolute errors. Easy to interpret.           │
 │  All errors weighted equally. Robust to outliers.                    │
 │                                                                      │
 │  Error 5:  |·····|         → contributes 5 to MAE                  │
 │  Error 50: |··················|→ contributes 50 to MAE             │
-├──────────────────────────────────────────────────────────────────────┤
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**MSE -- Mean Squared Error:**
+
+$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (\hat{y}_i - y_i)^2$$
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
 │  MSE — Mean Squared Error                                            │
 │  ──────────────────────────                                          │
-│  MSE = (1/n) × Σ (ŷᵢ − yᵢ)²                                       │
-│                                                                      │
 │  Intuition: Squaring PUNISHES big errors much more than small ones. │
 │                                                                      │
 │  Error 5:  5²  = 25        → contributes 25 to MSE                 │
@@ -486,16 +594,17 @@ Training the model = finding the parameters that minimize this number.
 
 ### Classification Loss Functions
 
+**Binary Cross-Entropy (Log Loss):**
+
+$$\text{Loss} = -[y \times \log(\hat{y}) + (1 - y) \times \log(1 - \hat{y})]$$
+
+Where: $y$ = true label (0 or 1), $\hat{y}$ = predicted probability of class 1.
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  BINARY CROSS-ENTROPY (Log Loss)                                     │
 │  ──────────────────────────────                                      │
 │  Used when: predicting one of two classes (spam/not spam)            │
-│                                                                      │
-│  Loss = −[y × log(ŷ) + (1−y) × log(1−ŷ)]                          │
-│                                                                      │
-│  Where:  y  = true label (0 or 1)                                   │
-│          ŷ  = predicted probability of class 1                       │
 │                                                                      │
 │  Example — model predicts spam probability = 0.9, actual = spam(1): │
 │    Loss = −[1 × log(0.9) + 0 × log(0.1)]                           │
@@ -507,12 +616,20 @@ Training the model = finding the parameters that minimize this number.
 │                                                                      │
 │  KEY INSIGHT: Cross-entropy severely punishes confident wrong        │
 │  predictions (predicting 0.01 when answer is 1 → loss = 4.6!)       │
-├──────────────────────────────────────────────────────────────────────┤
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Categorical Cross-Entropy:**
+
+$$\text{Loss} = -\sum_{i} y_i \times \log(\hat{y}_i)$$
+
+(sum over all classes)
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
 │  CATEGORICAL CROSS-ENTROPY                                           │
 │  ─────────────────────────                                           │
 │  Used when: predicting one of many classes (cat/dog/bird)            │
-│                                                                      │
-│  Loss = −Σ yᵢ × log(ŷᵢ)    (sum over all classes)                 │
 │                                                                      │
 │  Example: true class = Cat, model output after softmax:             │
 │    Cat: 0.70,  Dog: 0.20,  Bird: 0.10                               │
@@ -537,6 +654,74 @@ Training the model = finding the parameters that minimize this number.
 │ Categorical C-E   │ N-class clf  │ Softmax output, one-hot target    │
 │ KL Divergence     │ Distributions│ VAEs, distillation, generative    │
 └───────────────────┴──────────────┴───────────────────────────────────┘
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3],
+    "datasets": [
+      {
+        "label": "MAE — |error|",
+        "data": [3,2.5,2,1.5,1,0.5,0,0.5,1,1.5,2,2.5,3],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0,
+        "pointRadius": 0
+      },
+      {
+        "label": "MSE — error²",
+        "data": [9,6.25,4,2.25,1,0.25,0,0.25,1,2.25,4,6.25,9],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false,
+        "tension": 0.3,
+        "pointRadius": 0
+      },
+      {
+        "label": "Huber Loss",
+        "data": [2.5,2.0,1.5,1.125,0.5,0.125,0,0.125,0.5,1.125,1.5,2.0,2.5],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderDash": [5,5],
+        "fill": false,
+        "tension": 0.3,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Loss Functions — MAE (linear), MSE (quadratic), Huber (hybrid)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Prediction Error (ŷ - y)" } }
+    }
+  }
+}
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0.01,0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99],
+    "datasets": [{
+      "label": "Binary Cross-Entropy Loss = -log(ŷ) when true label = 1",
+      "data": [4.605,2.996,2.303,1.609,1.204,0.916,0.693,0.511,0.357,0.223,0.105,0.051,0.010],
+      "borderColor": "rgba(239, 68, 68, 1)",
+      "backgroundColor": "rgba(239, 68, 68, 0.1)",
+      "fill": true,
+      "tension": 0.4,
+      "pointRadius": 3
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Cross-Entropy Loss — Confident & Wrong = HUGE Loss, Confident & Right = Tiny Loss" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Model's Predicted Probability for the Correct Class" } }
+    }
+  }
+}
 ```
 
 ---
@@ -589,8 +774,11 @@ Loss (y-axis)                                   ← we want to minimize this
   │ 30   │ 4.96 │ (4.96−5)² ≈ 0.002  │  nearly converged!            │
   └──────┴──────┴─────────────────────┴───────────────────────────────┘
 
-  Formula: w_new = w_old − α × ∂L/∂w   (α = learning rate = 0.1)
 ```
+
+$$w_{\text{new}} = w_{\text{old}} - \alpha \times \frac{\partial L}{\partial w}$$
+
+where $\alpha = 0.1$ (learning rate).
 
 ### Learning Rate — The Step Size
 
@@ -604,6 +792,51 @@ Loss (y-axis)                                   ← we want to minimize this
        └─────────────                 └──────────                 └──────────────
   Tiny steps → very slow           Overshoots → never           Smooth, fast
   (may take 100× longer)            converges                    convergence ✓
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+    "datasets": [
+      {
+        "label": "lr = 0.0001 (too small)",
+        "data": [25,24.5,24,23.5,23,22.5,22,21.5,21,20.5,20,19.5,19,18.5,18,17.5,17,16.5,16,15.5,15],
+        "borderColor": "rgba(200, 200, 200, 0.8)",
+        "borderWidth": 1.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "lr = 0.1 (just right)",
+        "data": [25,16,10.2,6.6,4.2,2.7,1.7,1.1,0.7,0.45,0.29,0.19,0.12,0.08,0.05,0.03,0.02,0.01,0.01,0.005,0.003],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 2.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "lr = 10 (too large — diverges!)",
+        "data": [25,30,22,35,18,40,15,45,12,50,10,55,8,60,6,65,5,70,4,75,3],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Learning Rate Effect — Too Small (slow), Just Right, Too Large (bounces)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "min": 0, "max": 80 },
+      "x": { "title": { "display": true, "text": "Training Step" } }
+    }
+  }
+}
 ```
 
 ---
@@ -628,9 +861,9 @@ bumpy terrain. Optimizers are improved algorithms that adapt the step size.
 
 ### SGD — Stochastic Gradient Descent (the baseline)
 
-```
-  w ← w − α × ∂L/∂w
+$$w \leftarrow w - \alpha \times \frac{\partial L}{\partial w}$$
 
+```
   Pros: Simple, memory efficient
   Cons: Same learning rate for all weights, sensitive to scale,
         noisy, slow to converge on ill-conditioned problems
@@ -638,13 +871,16 @@ bumpy terrain. Optimizers are improved algorithms that adapt the step size.
 
 ### SGD with Momentum
 
+Think of a ball rolling downhill -- it builds up speed (momentum)
+and rolls right through small bumps!
+
+$$v \leftarrow \beta \times v + \frac{\partial L}{\partial w}$$
+
+$$w \leftarrow w - \alpha \times v$$
+
+where $\beta \approx 0.9$ (accumulates gradient).
+
 ```
-  Think of a ball rolling downhill — it builds up speed (momentum)
-  and rolls right through small bumps!
-
-  velocity ← β × velocity + ∂L/∂w    (β ≈ 0.9, accumulates gradient)
-  w        ← w − α × velocity
-
   Pros: Smoother, faster, escapes shallow local minima
   Cons: One extra hyperparameter (β)
 
@@ -666,16 +902,23 @@ bumpy terrain. Optimizers are improved algorithms that adapt the step size.
   - Parameters that rarely get updated → give them bigger steps
   - Parameters that get frequent large updates → shrink their steps
   - Like a GPS that adjusts speed for each road type
+```
 
-  The math (conceptually):
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  m ← β₁ × m + (1−β₁) × grad          [1st moment: mean grad]  │
-  │  v ← β₂ × v + (1−β₂) × grad²         [2nd moment: mean grad²] │
-  │  m̂ = m/(1−β₁ᵗ)                       [bias correction]        │
-  │  v̂ = v/(1−β₂ᵗ)                       [bias correction]        │
-  │  w ← w − α × m̂ / (√v̂ + ε)          [adaptive step]          │
-  └─────────────────────────────────────────────────────────────────┘
+**The math (conceptually):**
 
+$$m \leftarrow \beta_1 \times m + (1 - \beta_1) \times g$$
+
+$$v \leftarrow \beta_2 \times v + (1 - \beta_2) \times g^2$$
+
+$$\hat{m} = \frac{m}{1 - \beta_1^t}$$
+
+$$\hat{v} = \frac{v}{1 - \beta_2^t}$$
+
+$$w \leftarrow w - \alpha \times \frac{\hat{m}}{\sqrt{\hat{v}} + \epsilon}$$
+
+where $g = \nabla L$ (gradient), $\hat{m}$ and $\hat{v}$ are bias-corrected estimates.
+
+```
   Default hyperparameters (work well in almost all cases):
     α  = 0.001   (learning rate)
     β₁ = 0.9     (momentum decay)
@@ -700,9 +943,54 @@ bumpy terrain. Optimizers are improved algorithms that adapt the step size.
   Switch to SGD+Momentum if you need the last 1% of performance.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+    "datasets": [
+      {
+        "label": "SGD",
+        "data": [10.0,9.0,8.5,8.2,7.6,7.8,7.1,6.9,7.2,6.5,6.3,6.6,6.0,5.8,5.9,5.5,5.3,5.4,5.0,4.9,4.7],
+        "borderColor": "rgba(200, 200, 200, 0.8)",
+        "borderWidth": 1,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "SGD + Momentum",
+        "data": [10.0,8.5,7.2,6.1,5.2,4.4,3.7,3.2,2.8,2.4,2.1,1.9,1.7,1.5,1.4,1.3,1.2,1.1,1.0,0.95,0.9],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "borderWidth": 1.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "Adam (default choice)",
+        "data": [10.0,7.5,5.5,4.0,3.0,2.3,1.7,1.3,1.0,0.8,0.65,0.52,0.42,0.35,0.29,0.24,0.20,0.17,0.15,0.13,0.11],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 2.5,
+        "tension": 0.3,
+        "pointRadius": 0,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Optimizer Comparison — Adam Converges Fastest" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Training Step" } }
+    }
+  }
+}
+```
+
 ---
 
-## 2.11 Overfitting and Underfitting
+## 2.11 Overfitting and Underfitting ★★★
 
 ### The Goldilocks Problem
 
@@ -723,6 +1011,79 @@ Model too simple          Model fits               Model too complex
 
   Train acc: 60%            Train acc: 90%            Train acc: 99%
   Test  acc: 58%            Test  acc: 88%  ← GOAL    Test  acc: 62%
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0,1,2,3,4,5,6,7,8,9,10],
+    "datasets": [
+      {
+        "label": "Underfitting (straight line)",
+        "data": [1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 2, "tension": 0, "pointRadius": 0, "fill": false
+      },
+      {
+        "label": "Just Right (smooth curve)",
+        "data": [0.5,1.2,2.8,4.2,5.0,5.3,5.0,4.2,3.2,2.5,2.0],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 3, "tension": 0.4, "pointRadius": 0, "fill": false
+      },
+      {
+        "label": "Overfitting (wiggly mess)",
+        "data": [0.4,1.8,1.5,4.8,3.5,6.2,4.0,5.8,2.0,4.5,2.1],
+        "borderColor": "rgba(168, 85, 247, 1)",
+        "borderWidth": 2, "tension": 0.4, "pointRadius": 0, "fill": false
+      },
+      {
+        "label": "True Data Points",
+        "data": [0.5,1.3,2.9,4.0,5.1,5.2,4.9,4.3,3.1,2.6,2.1],
+        "borderColor": "transparent",
+        "backgroundColor": "rgba(100, 100, 100, 0.8)",
+        "showLine": false, "pointRadius": 5
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Underfitting vs Just Right vs Overfitting" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "y" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "x" } }
+    }
+  }
+}
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Underfitting", "Just Right", "Overfitting"],
+    "datasets": [
+      {
+        "label": "Train Accuracy (%)",
+        "data": [60, 90, 99],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
+      },
+      {
+        "label": "Test Accuracy (%)",
+        "data": [58, 88, 62],
+        "backgroundColor": "rgba(234, 88, 12, 0.7)",
+        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Train vs Test Accuracy — Overfitting Has a HUGE Gap" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "beginAtZero": true, "max": 100 },
+      "x": {}
+    }
+  }
+}
 ```
 
 **Official Definitions:**
@@ -747,9 +1108,46 @@ Model too simple          Model fits               Model too complex
   Both accuracies low              →  probably underfitting
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,50],
+    "datasets": [
+      {
+        "label": "Training Accuracy",
+        "data": [55,65,72,78,83,87,90,92,94,95,96,97,97.5,98,98.5,99,99.5,99.7,99.8,99.9],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 2,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "Validation Accuracy",
+        "data": [54,64,71,76,80,83,85,86,86.5,86,85,84,83,82,81,78,75,72,70,65],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "borderWidth": 2,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Overfitting — Training Keeps Rising but Validation Falls After Epoch ~10" }, "annotation": {} },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
+      "x": { "title": { "display": true, "text": "Epoch" } }
+    }
+  }
+}
+```
+
 ---
 
-## 2.12 The Bias–Variance Tradeoff
+## 2.12 The Bias–Variance Tradeoff ★★★
 
 ### Simple Explanation
 Every model's error can be broken down into two sources:
@@ -815,20 +1213,62 @@ Every model's error can be broken down into two sources:
 > parameter estimates across samples can be reduced by increasing the bias in the estimated
 > parameters. Total expected error = Bias² + Variance + Irreducible Noise.
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["1 (Stump)","2","3","4","5","6","7","8","9","10 (Deep Net)"],
+    "datasets": [
+      {
+        "label": "Bias²",
+        "data": [9.0,6.5,4.5,3.0,2.0,1.3,0.8,0.5,0.3,0.2],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.15)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Variance",
+        "data": [0.2,0.3,0.5,0.8,1.3,2.0,3.0,4.5,6.5,9.0],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.15)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Total Error (Bias² + Variance)",
+        "data": [9.2,6.8,5.0,3.8,3.3,3.3,3.8,5.0,6.8,9.2],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 2.5,
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Bias-Variance Tradeoff — Sweet Spot at Medium Complexity" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Error" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Model Complexity" } }
+    }
+  }
+}
+```
+
 ---
 
-## 2.13 Regularization — Controlling Complexity
+## 2.13 Regularization — Controlling Complexity ★★★
 
 ### Simple Explanation
 Regularization adds a **complexity penalty** to the loss function.
 The model gets punished for being unnecessarily complicated.
 
-```
-  Total Loss = Data Loss + λ × Complexity Penalty
-               ─────────   ───────────────────────
-               "How wrong  "How complicated are you?"
-               are you?"
+$$\text{Total Loss} = \text{Data Loss} + \lambda \times \text{Complexity Penalty}$$
 
+```
   λ (lambda) controls the tradeoff:
     λ = 0     → no regularization (overfitting risk)
     λ = large → heavy penalty (underfitting risk)
@@ -837,10 +1277,17 @@ The model gets punished for being unnecessarily complicated.
 
 ### The Four Main Regularization Techniques
 
+**L1 Regularization (Lasso):**
+
+$$L1\ \text{Loss} = \text{data loss} + \lambda \sum |w|$$
+
+**L2 Regularization (Ridge):**
+
+$$L2\ \text{Loss} = \text{data loss} + \lambda \sum w^2$$
+
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │  L1 REGULARIZATION (Lasso)                                         │
-│  Loss = data_loss + λ × Σ|w|                                       │
 │                                                                    │
 │  Effect: Forces many weights to exactly ZERO.                      │
 │  Result: Automatic feature selection!                              │
@@ -851,7 +1298,6 @@ The model gets punished for being unnecessarily complicated.
 │                             ↑ sparse — many exact zeros!           │
 ├────────────────────────────────────────────────────────────────────┤
 │  L2 REGULARIZATION (Ridge)                                         │
-│  Loss = data_loss + λ × Σw²                                        │
 │                                                                    │
 │  Effect: Shrinks all weights toward zero, but rarely to zero.      │
 │  Result: Smooth, small weights — less sensitive model.             │
@@ -893,6 +1339,43 @@ The model gets punished for being unnecessarily complicated.
 └────────────────────────────────────────────────────────────────────┘
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29],
+    "datasets": [
+      {
+        "label": "Training Loss",
+        "data": [2.5,1.8,1.3,0.95,0.7,0.52,0.39,0.29,0.22,0.17,0.13,0.10,0.08,0.06,0.05],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 2,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "Validation Loss (STOP here at epoch 15!)",
+        "data": [2.6,1.9,1.4,1.05,0.82,0.68,0.60,0.56,0.58,0.62,0.68,0.76,0.85,0.96,1.10],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "borderWidth": 2,
+        "tension": 0.4,
+        "pointRadius": 0,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Early Stopping — Stop at Epoch ~15 Where Validation Loss is Lowest" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Epoch" } }
+    }
+  }
+}
+```
+
 ---
 
 ## 2.14 Generalization — The Actual Goal of ML ★
@@ -910,6 +1393,37 @@ This ability is called generalization.
 
   Model A MEMORIZED the training data.   Model B GENERALIZED. ✓
   It is useless in the real world.       It will work on new data.
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Model A (Memorizer)", "Model B (Generalizer)"],
+    "datasets": [
+      {
+        "label": "Training Accuracy (%)",
+        "data": [99.9, 92],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Test Accuracy (%)",
+        "data": [65, 91],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Generalization — Model B Wins Where It Matters (Test Data)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 }
+    }
+  }
+}
 ```
 
 **Official Definition:**
@@ -996,29 +1510,90 @@ the answer is X." Understanding probability helps you read model outputs correct
 
 ### Bayes' Theorem — Reasoning with Probability
 
+"Given what I've observed, how should I update my belief?"
+
+$$P(A | B) = \frac{P(B | A) \times P(A)}{P(B)}$$
+
+| Term | Meaning |
+|------|---------|
+| $P(A \mid B)$ | Posterior |
+| $P(B \mid A)$ | Likelihood |
+| $P(A)$ | Prior |
+| $P(B)$ | Evidence |
+
 ```
-  "Given what I've observed, how should I update my belief?"
-
-  P(A | B) = P(B | A) × P(A) / P(B)
-  ────────   ─────────   ────   ────
-  Posterior  Likelihood  Prior  Evidence
-
   EXAMPLE: Medical test for a rare disease (1% of population has it)
   Test is 95% accurate (both sensitivity and specificity).
+```
 
-  P(Disease | Test+) = P(Test+ | Disease) × P(Disease)
-                       ─────────────────────────────────
-                                 P(Test+)
+$$P(\text{Disease} \mid \text{Test+}) = \frac{P(\text{Test+} \mid \text{Disease}) \times P(\text{Disease})}{P(\text{Test+})}$$
 
-    = 0.95 × 0.01 / [(0.95 × 0.01) + (0.05 × 0.99)]
-    = 0.0095 / (0.0095 + 0.0495)
-    = 0.0095 / 0.059
-    = 0.161 = 16%
+$$= \frac{0.95 \times 0.01}{(0.95 \times 0.01) + (0.05 \times 0.99)} = \frac{0.0095}{0.059} = 0.161 = 16\%$$
 
+```
   Even with a positive test, only 16% chance of disease!
   (Because the disease is rare — the prior probability is very low)
 
   This is why Naive Bayes works, and why ML in medicine is hard.
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Cat (0.87)", "Dog (0.12)", "Bird (0.01)"],
+    "datasets": [{
+      "label": "Softmax Probabilities",
+      "data": [0.87, 0.12, 0.01],
+      "backgroundColor": ["rgba(99, 102, 241, 0.8)", "rgba(234, 88, 12, 0.5)", "rgba(200, 200, 200, 0.5)"],
+      "borderColor": ["rgba(99, 102, 241, 1)", "rgba(234, 88, 12, 1)", "rgba(160, 160, 160, 1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Model Probability Output — Prediction: Cat (87% confident)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Probability" }, "beginAtZero": true, "max": 1.0 }
+    }
+  }
+}
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["10%","20%","30%","40%","50%","60%","70%","80%","90%"],
+    "datasets": [
+      {
+        "label": "Well-Calibrated (ideal)",
+        "data": [10,20,30,40,50,60,70,80,90],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 2,
+        "tension": 0,
+        "pointRadius": 0,
+        "fill": false
+      },
+      {
+        "label": "Overconfident Model",
+        "data": [10,18,24,30,35,40,48,60,72],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "borderWidth": 2,
+        "tension": 0.3,
+        "pointRadius": 3,
+        "fill": false
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Calibration Plot — Overconfident Model Says 90% but Is Right Only 72%" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Actual Accuracy (%)" }, "min": 0, "max": 100 },
+      "x": { "title": { "display": true, "text": "Predicted Confidence (%)" } }
+    }
+  }
+}
 ```
 
 ---

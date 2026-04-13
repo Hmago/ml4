@@ -71,7 +71,7 @@
 
 ---
 
-### Q1. What is overfitting and underfitting? How do you fix them?
+### Q1. What is overfitting and underfitting? How do you fix them? ★★★
 *[All] | ★*
 
 **Simple Answer:**
@@ -103,7 +103,7 @@ If you barely studied at all, you'll fail both practice and real tests — that'
 
 ---
 
-### Q2. Explain the bias-variance tradeoff.
+### Q2. Explain the bias-variance tradeoff. ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -131,7 +131,7 @@ But in ML, making a model less biased often makes it more variable, and vice ver
 **Official Definition:**
 > **Bias** is the error from incorrect assumptions in the learning algorithm (model too simple).
 > **Variance** is the error from sensitivity to small fluctuations in training data (model too complex).
-> **Bias-Variance Tradeoff**: Total Error = Bias² + Variance + Irreducible Noise.
+> **Bias-Variance Tradeoff**: $\text{Total Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible Noise}$.
 > Reducing one typically increases the other.
 
 **Interview Answer:**
@@ -142,7 +142,7 @@ But in ML, making a model less biased often makes it more variable, and vice ver
 
 ---
 
-### Q3. Explain gradient descent and its variants.
+### Q3. Explain gradient descent and its variants. ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -170,7 +170,7 @@ look at before deciding which direction is "downhill"?
 **Official Definition:**
 > **Gradient Descent** is a first-order iterative optimization algorithm that minimizes
 > a function by repeatedly moving in the direction of the steepest descent (negative gradient).
-> Update rule: θ = θ − α × ∇L(θ), where α is the learning rate and ∇L is the loss gradient.
+> Update rule: $\theta = \theta - \alpha \times \nabla L(\theta)$, where $\alpha$ is the learning rate and $\nabla L$ is the loss gradient.
 
 **Interview Answer — 3 Variants:**
 ```
@@ -190,7 +190,7 @@ look at before deciding which direction is "downhill"?
 
 ---
 
-### Q4. What is regularization? Compare L1 vs L2.
+### Q4. What is regularization? Compare L1 vs L2. ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -199,16 +199,11 @@ but every extra bit of complexity costs you penalty points." This stops the mode
 from getting TOO complicated (overfitting). L1 and L2 are two ways to measure "how
 complicated" you are.
 
-```
-  LOSS FUNCTION WITH REGULARIZATION:
-  ────────────────────────────────────────────────────────────────
-  Total Loss = How Wrong You Are + λ × How Complicated You Are
-               ─────────────────   ───────────────────────────────
-                 Data Loss             Regularization Penalty
+$$\text{Total Loss} = \underbrace{\text{How Wrong You Are}}_{\text{Data Loss}} + \underbrace{\lambda \times \text{How Complicated You Are}}_{\text{Regularization Penalty}}$$
 
-  L1 (Lasso):  penalty = Σ |wᵢ|     → drives some weights to ZERO
-  L2 (Ridge):  penalty = Σ wᵢ²      → shrinks all weights, rarely to zero
-```
+$$\text{L1 (Lasso): penalty} = \sum |w_i| \quad \to \text{drives some weights to ZERO}$$
+
+$$\text{L2 (Ridge): penalty} = \sum w_i^2 \quad \to \text{shrinks all weights, rarely to zero}$$
 
 **Official Definition:**
 > **Regularization** modifies the learning objective to discourage model complexity,
@@ -271,7 +266,7 @@ or hard? Cross-validation is the same idea for measuring how good your model rea
 
 ---
 
-### Q6. Explain the difference between bagging and boosting.
+### Q6. Explain the difference between bagging and boosting. ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -306,7 +301,7 @@ a team of learners smarter in a different way.
 
 ---
 
-### Q7. How does Random Forest work, and why is it better than a single Decision Tree?
+### Q7. How does Random Forest work, and why is it better than a single Decision Tree? ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -343,7 +338,7 @@ information, and you take the majority vote. No single friend can ruin the resul
 
 ---
 
-### Q8. Explain how XGBoost/Gradient Boosting works. Why is it so powerful?
+### Q8. Explain how XGBoost/Gradient Boosting works. Why is it so powerful? ★★★
 *[G][A] | ★★★*
 
 **Simple Answer:**
@@ -486,7 +481,7 @@ knowledge with a new, related task.
 
 ---
 
-### Q12. What is the difference between precision, recall, and F1-score?
+### Q12. What is the difference between precision, recall, and F1-score? ★★★
 *[All] | ★*
 
 **Simple Answer:**
@@ -522,7 +517,7 @@ Imagine you're a net fisherman. You want to catch tuna but not dolphins.
 
 ---
 
-### Q13. What is ROC-AUC and when do you use it?
+### Q13. What is ROC-AUC and when do you use it? ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -563,7 +558,7 @@ points. AUC is the area under that curve — bigger is better!
 
 ---
 
-### Q14. What is feature engineering? Give examples.
+### Q14. What is feature engineering? Give examples. ★★
 *[All] | ★*
 
 **Simple Answer:**
@@ -698,7 +693,7 @@ click rates. That's A/B testing!
     Guardrail metrics: page load time, conversion rate (check for harm!)
 
   STEP 3: Calculate sample size
-    Use power analysis: n = 2σ² × (z_α + z_β)² / δ²
+    Use power analysis: $n = \frac{2\sigma^2 (z_\alpha + z_\beta)^2}{\delta^2}$
     Where: σ = baseline variance, δ = minimum detectable effect,
            z_α = 1.96 (α=0.05), z_β = 0.84 (power=80%)
     Example: CTR=10%, want to detect +1% improvement, need ~3,600/group
@@ -731,36 +726,29 @@ disease is very rare! Bayes' theorem tells you how to properly update your belie
 you get new evidence.
 
 **Official Definition:**
-> **Bayes' Theorem** states: P(A|B) = P(B|A) × P(A) / P(B)
+> **Bayes' Theorem** states: $P(A|B) = P(B|A) \times P(A) \,/\, P(B)$
 > Where P(A) is the **prior** (belief before evidence), P(B|A) is the **likelihood**
 > (probability of evidence given A), and P(A|B) is the **posterior** (updated belief
 > after seeing evidence B).
 
-```
-  DISEASE EXAMPLE:
-  ─────────────────────────────────────────────────────────────────
-  P(Disease) = 0.001       (rare disease: 0.1% of population)
-  P(Test+ | Disease) = 0.99  (test is 99% sensitive)
-  P(Test+ | No Disease) = 0.01 (1% false positive rate)
+**Disease Example:**
+- $P(\text{Disease}) = 0.001$ (rare disease: 0.1% of population)
+- $P(\text{Test+} \mid \text{Disease}) = 0.99$ (test is 99% sensitive)
+- $P(\text{Test+} \mid \text{No Disease}) = 0.01$ (1% false positive rate)
 
-  P(Disease | Test+) = P(Test+ | Disease) × P(Disease)
-                       ────────────────────────────────
-                                P(Test+)
+$$P(\text{Disease} \mid \text{Test+}) = \frac{P(\text{Test+} \mid \text{Disease}) \times P(\text{Disease})}{P(\text{Test+})}$$
 
-  P(Test+) = 0.99×0.001 + 0.01×0.999 = 0.00099 + 0.00999 = 0.01098
+$$P(\text{Test+}) = 0.99 \times 0.001 + 0.01 \times 0.999 = 0.00099 + 0.00999 = 0.01098$$
 
-  P(Disease | Test+) = (0.99 × 0.001) / 0.01098 = 0.090 ≈ 9%!
+$$P(\text{Disease} \mid \text{Test+}) = \frac{0.99 \times 0.001}{0.01098} = 0.090 \approx 9\%!$$
 
-  Only 9% chance of disease despite a positive test!
-  Why? The disease is so rare that false positives outnumber true positives.
+Only 9% chance of disease despite a positive test! Why? The disease is so rare that false positives outnumber true positives.
 
-  ML APPLICATIONS:
-  ─────────────────────────────────────────────────────────────────
-  - Naive Bayes classifier (spam detection)
-  - Bayesian hyperparameter optimization
-  - Bayesian neural networks (uncertainty estimation)
-  - Probabilistic graphical models
-```
+**ML Applications:**
+- Naive Bayes classifier (spam detection)
+- Bayesian hyperparameter optimization
+- Bayesian neural networks (uncertainty estimation)
+- Probabilistic graphical models
 
 ---
 
@@ -776,7 +764,7 @@ averages of large enough samples are always approximately normal.
 **Official Definition:**
 > The **Central Limit Theorem (CLT)** states that the sampling distribution of the mean
 > of n independent, identically distributed random variables with finite mean μ and variance σ²
-> converges to a Normal distribution N(μ, σ²/n) as n → ∞, regardless of the original distribution.
+> converges to a Normal distribution $\mathcal{N}(\mu, \sigma^2/n)$ as $n \to \infty$, regardless of the original distribution.
 
 ```
   ORIGINAL DISTRIBUTION                SAMPLING DISTRIBUTION OF MEANS
@@ -855,28 +843,25 @@ data most probable.
 > the probability of observing the data given the parameters. Equivalently, it maximizes
 > the log-likelihood to simplify computation.
 
-```
-  EXAMPLE: Estimating a Gaussian distribution from data
-  ─────────────────────────────────────────────────────────────────
-  Data: [2.1, 1.8, 2.3, 2.0, 1.9]  ← observed heights of 5 plants
+**Example:** Estimating a Gaussian distribution from data
 
-  Model: each observation ~ Normal(μ, σ²)
-  Find μ and σ that maximize P(data | μ, σ)
+Data: $[2.1, 1.8, 2.3, 2.0, 1.9]$ — observed heights of 5 plants
 
-  MLE solution:
-    μ_MLE = sample mean = (2.1+1.8+2.3+2.0+1.9)/5 = 2.02
-    σ_MLE = sample std = 0.19
+Model: each observation $\sim \mathcal{N}(\mu, \sigma^2)$. Find $\mu$ and $\sigma$ that maximize $P(\text{data} \mid \mu, \sigma)$.
 
-  CONNECTION TO ML LOSS FUNCTIONS:
-  ─────────────────────────────────────────────────────────────────
-  Minimizing MSE         ↔  MLE for Gaussian noise
-  Minimizing Cross-Entropy ↔  MLE for Bernoulli/categorical distributions
-  Adding L2 regularization ↔  Maximum A Posteriori (MAP) with Gaussian prior
+**MLE solution:**
 
-  So training a neural network with cross-entropy loss
-  IS doing MLE — you're finding weights that make the data
-  most probable under the model!
-```
+$$\mu_{\text{MLE}} = \text{sample mean} = \frac{2.1+1.8+2.3+2.0+1.9}{5} = 2.02 \qquad \sigma_{\text{MLE}} = 0.19$$
+
+**Connection to ML loss functions:**
+
+| Minimizing... | Is equivalent to... |
+|---------------|---------------------|
+| MSE | MLE for Gaussian noise |
+| Cross-Entropy | MLE for Bernoulli/categorical distributions |
+| Adding L2 regularization | Maximum A Posteriori (MAP) with Gaussian prior |
+
+So training a neural network with cross-entropy loss IS doing MLE — you're finding weights that make the data most probable under the model!
 
 ---
 
@@ -895,23 +880,18 @@ about 95 of those intervals would contain the true average height.
 > (not random); the interval is random. A **credible interval** (Bayesian) gives the range
 > in which the parameter lies with (1−α) probability given the observed data.
 
-```
-  95% CONFIDENCE INTERVAL:
-  ─────────────────────────────────────────────────────────────────
-  Sample mean = 170cm, SEM = 2cm
-  CI = mean ± 1.96 × SEM = 170 ± 3.92 = [166.1, 173.9]
+**95% Confidence Interval:**
 
-  If we collected 100 different samples and built 100 intervals,
-  about 95 of them would contain the true population mean.
+Sample mean = 170cm, SEM = 2cm
 
-  ✗ WRONG: "There's a 95% chance the true mean is in [166, 174]"
-  ✓ RIGHT: "This procedure produces intervals that capture the
-             true mean 95% of the time across repeated samples"
+$$\text{CI} = \text{mean} \pm 1.96 \times \text{SEM} = 170 \pm 3.92 = [166.1,\ 173.9]$$
 
-  The distinction matters in interviews! Bayesian credible intervals
-  DO have the intuitive interpretation: "95% probability the
-  parameter is in this range, given the data."
-```
+If we collected 100 different samples and built 100 intervals, about 95 of them would contain the true population mean.
+
+- WRONG: "There's a 95% chance the true mean is in [166, 174]"
+- RIGHT: "This procedure produces intervals that capture the true mean 95% of the time across repeated samples"
+
+The distinction matters in interviews! Bayesian credible intervals DO have the intuitive interpretation: "95% probability the parameter is in this range, given the data."
 
 ---
 
@@ -919,7 +899,7 @@ about 95 of those intervals would contain the true average height.
 
 ---
 
-### Q23. How does backpropagation work?
+### Q23. How does backpropagation work? ★★★
 *[All] | ★★★*
 
 **Simple Answer:**
@@ -957,7 +937,7 @@ to the mistake.
 
 ---
 
-### Q24. What are vanishing and exploding gradients? How do you fix them?
+### Q24. What are vanishing and exploding gradients? How do you fix them? ★★★
 *[All] | ★★★*
 
 **Simple Answer:**
@@ -1000,7 +980,7 @@ the opposite: each person shouts louder (×2), and by person 100 it's deafening 
 
 ---
 
-### Q25. What is the attention mechanism and how do Transformers work?
+### Q25. What is the attention mechanism and how do Transformers work? ★★★
 *[G][O] | ★★★*
 
 **Simple Answer:**
@@ -1130,7 +1110,7 @@ gets parts in a consistent, normal size — so every layer can focus on learning
 
 ---
 
-### Q28. Explain dropout. Why does it work as regularization?
+### Q28. Explain dropout. Why does it work as regularization? ★★★
 *[All] | ★★*
 
 **Simple Answer:**
@@ -1172,7 +1152,7 @@ distributed representations instead of relying on a few key neurons.
 
 ---
 
-### Q29. What is the difference between CNN, RNN, and Transformer? When to use each?
+### Q29. What is the difference between CNN, RNN, and Transformer? When to use each? ★★★
 *[All] | ★★★*
 
 **Simple Answer:**
@@ -1209,7 +1189,7 @@ Transformer = reads everything at once and figures out what relates to what.
 
 ---
 
-### Q30. What is RLHF? Why is it important for language models?
+### Q30. What is RLHF? Why is it important for language models? ★★★
 *[O][G] | ★★★*
 
 **Simple Answer:**
@@ -1342,7 +1322,7 @@ skip those people entirely (deletion), guess their answers (imputation), or trea
 
 ---
 
-### Q33. What metrics do you use for imbalanced datasets?
+### Q33. What metrics do you use for imbalanced datasets? ★★★
 *[All] | ★★*
 
 **Simple Answer:**

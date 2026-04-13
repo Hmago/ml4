@@ -49,9 +49,10 @@ After reading this chapter, you will be able to:
 ## 7.1 Linear Regression — In Depth
 
 ### The Equation
-```
-  ŷ = w₀ + w₁x₁ + w₂x₂ + ... + wₙxₙ
 
+$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2 + \cdots + w_n x_n$$
+
+```
   ŷ  = predicted value
   w₀ = intercept (bias)
   w₁...wₙ = weights (coefficients)
@@ -81,10 +82,11 @@ After reading this chapter, you will be able to:
 
 ### How Weights Are Learned
 
-```
-  Goal: Find w that minimizes MSE:
-  MSE = (1/n) × Σ (ŷᵢ − yᵢ)²
+Goal: Find $w$ that minimizes MSE:
 
+$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (\hat{y}_i - y_i)^2$$
+
+```
   RESIDUALS:
   y (price)
      │     *               Residual = distance between
@@ -96,7 +98,11 @@ After reading this chapter, you will be able to:
   TWO WAYS TO MINIMIZE:
   ──────────────────────────────────────────────────────────
   OLS (Ordinary Least Squares) — closed-form, one step:
-    w = (XᵀX)⁻¹ Xᵀy
+```
+
+$$\mathbf{w} = (X^\top X)^{-1} X^\top \mathbf{y}$$
+
+```
     Fast for small/medium data. Fails if XᵀX not invertible.
 
   Gradient Descent — iterative (see Chapter 2, Section 2.9):
@@ -105,23 +111,60 @@ After reading this chapter, you will be able to:
 
 ### Regularized Variants
 
-```
-  RIDGE REGRESSION (L2):
-    Loss = MSE + λ × Σ wᵢ²
-    Shrinks all weights toward zero. Keeps all features.
-    Use when: all features likely matter, just need smaller weights.
+**RIDGE REGRESSION (L2):**
 
-  LASSO REGRESSION (L1):
-    Loss = MSE + λ × Σ |wᵢ|
-    Drives some weights to exactly 0 (automatic feature selection!).
-    Use when: you suspect only a few features actually matter.
+$$\text{Loss} = \text{MSE} + \lambda \sum w_i^2$$
 
-  ELASTIC NET:
-    Loss = MSE + λ₁ × Σ |wᵢ| + λ₂ × Σ wᵢ²
-    Combines Ridge + Lasso. Best when features are correlated.
+Shrinks all weights toward zero. Keeps all features.
+Use when: all features likely matter, just need smaller weights.
 
-  λ (lambda): regularization strength. Higher = simpler model.
-              Too high = underfitting. Tune via cross-validation.
+**LASSO REGRESSION (L1):**
+
+$$\text{Loss} = \text{MSE} + \lambda \sum |w_i|$$
+
+Drives some weights to exactly 0 (automatic feature selection!).
+Use when: you suspect only a few features actually matter.
+
+**ELASTIC NET:**
+
+$$\text{Loss} = \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2$$
+
+Combines Ridge + Lasso. Best when features are correlated.
+
+$\lambda$ (lambda): regularization strength. Higher = simpler model. Too high = underfitting. Tune via cross-validation.
+
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Training Data",
+        "data": [{"x":900,"y":150},{"x":1200,"y":200},{"x":1500,"y":250},{"x":1800,"y":303},{"x":2000,"y":330},{"x":2200,"y":370},{"x":2500,"y":410},{"x":2800,"y":440}],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "pointRadius": 6
+      },
+      {
+        "label": "Best Fit Line (Linear Regression)",
+        "data": [{"x":800,"y":140},{"x":1000,"y":165},{"x":1500,"y":230},{"x":2000,"y":305},{"x":2500,"y":385},{"x":3000,"y":460}],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "transparent",
+        "showLine": true,
+        "borderWidth": 2,
+        "pointRadius": 0,
+        "tension": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Linear Regression — Best Fit Line Through House Price Data" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Price ($K)" }, "min": 100, "max": 500 },
+      "x": { "title": { "display": true, "text": "Square Footage" }, "min": 700, "max": 3100 }
+    }
+  }
+}
 ```
 
 ---
@@ -134,16 +177,17 @@ probability between 0 and 1 — then decides: above 0.5 = YES, below 0.5 = NO.
 
 ### The Sigmoid Function
 
+**STEP 1:** Compute a linear score (like Linear Regression):
+
+$$z = w_0 + w_1 x_1 + w_2 x_2 + \cdots + w_n x_n$$
+
+**STEP 2:** Squash $z$ into $[0, 1]$ with the sigmoid function.
+Think of it like a gate that slowly opens: very negative $z$ leads to nearly 0,
+very positive $z$ leads to nearly 1, and $z = 0$ gives exactly 0.5.
+
+$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+
 ```
-  STEP 1: Compute a linear score (like Linear Regression):
-    z = w₀ + w₁x₁ + w₂x₂ + ... + wₙxₙ
-
-  STEP 2: Squash z into [0, 1] with sigmoid:
-    Think of it like a gate that slowly opens: very negative z → nearly 0,
-    very positive z → nearly 1, z=0 → exactly 0.5.
-
-    σ(z) = 1 / (1 + e^(-z))
-
   SIGMOID SHAPE:
   P(y=1)
     1.0 │                    ─────────────
@@ -161,6 +205,31 @@ probability between 0 and 1 — then decides: above 0.5 = YES, below 0.5 = NO.
 > **Logistic Regression** models the probability of a binary outcome using the logistic
 > (sigmoid) function applied to a linear combination of features. It is trained by
 > maximizing the log-likelihood (equivalent to minimizing binary cross-entropy loss).
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],
+    "datasets": [{
+      "label": "Sigmoid: P(y=1) = 1/(1+e⁻ᶻ)",
+      "data": [0.002,0.007,0.018,0.047,0.119,0.269,0.500,0.731,0.881,0.953,0.982,0.993,0.998],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.4,
+      "pointRadius": 2
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Sigmoid Function — Squashes Any Score into a Probability (0 to 1)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "P(y=1)" }, "min": 0, "max": 1 },
+      "x": { "title": { "display": true, "text": "z (linear score)" } }
+    }
+  }
+}
+```
 
 ### Decision Boundary
 
@@ -212,9 +281,43 @@ probability between 0 and 1 — then decides: above 0.5 = YES, below 0.5 = NO.
   See Chapter 9 for ROC curve and optimal threshold selection.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+    "datasets": [
+      {
+        "label": "Precision",
+        "data": [0.30,0.45,0.55,0.65,0.72,0.80,0.87,0.92,0.96,0.99,1.00],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 2
+      },
+      {
+        "label": "Recall",
+        "data": [1.00,0.98,0.95,0.90,0.82,0.72,0.58,0.42,0.25,0.10,0.00],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Threshold Tuning — Precision vs Recall Trade-off" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Score" }, "min": 0, "max": 1 },
+      "x": { "title": { "display": true, "text": "Classification Threshold" } }
+    }
+  }
+}
+```
+
 ---
 
-## 7.3 Decision Trees — Deep Dive
+## 7.3 Decision Trees — Deep Dive ★★★
 
 ### Simple Explanation
 A decision tree is like 20 Questions — it asks yes/no questions about your data
@@ -227,10 +330,13 @@ until it reaches an answer. The key challenge is: which question to ask first?
   Pick the split that creates the most "pure" child nodes.
 
   Two measures of purity (covered in detail in Chapter 4):
-  ─────────────────────────────────────────────────────────
-  Gini Impurity:   G = 1 − Σ pᵢ²
-  Entropy:         H = −Σ pᵢ × log₂(pᵢ)
+```
 
+$$G = 1 - \sum p_i^2 \quad \text{(Gini Impurity)}$$
+
+$$H = -\sum p_i \log_2(p_i) \quad \text{(Entropy)}$$
+
+```
   Both answer: "how mixed are the classes in this node?"
   Lower = purer = better split.
 
@@ -288,9 +394,44 @@ Stop the tree from growing too deep during training:
 > impurity criterion (e.g., Gini or Information Gain). Predictions are the majority class
 > (classification) or mean value (regression) in each leaf node.
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,2,3,4,5,6,8,10,15,20,30],
+    "datasets": [
+      {
+        "label": "Training Accuracy",
+        "data": [65,78,88,93,96,98,99.5,99.9,100,100,100],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      },
+      {
+        "label": "Validation Accuracy",
+        "data": [64,76,84,88,89,88,85,80,72,65,58],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Decision Tree Depth — Deeper = Better Training, But Validation Peaks Then Falls" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
+      "x": { "title": { "display": true, "text": "max_depth" } }
+    }
+  }
+}
+```
+
 ---
 
-## 7.4 Random Forest — Deep Dive
+## 7.4 Random Forest — Deep Dive ★★★
 
 ### Simple Explanation
 Instead of trusting one decision tree, train 100 trees — each on a slightly different
@@ -360,6 +501,42 @@ outvoted. Smart trees agree. The result is surprisingly robust!
   Rule of thumb: start with 100, increase if time allows.
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,5,10,20,50,100,200,300,500,1000],
+    "datasets": [
+      {
+        "label": "Random Forest Accuracy",
+        "data": [72,80,84,87,89.5,90.8,91.2,91.4,91.5,91.5],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)",
+        "fill": true,
+        "tension": 0.4,
+        "pointRadius": 3
+      },
+      {
+        "label": "Single Decision Tree",
+        "data": [72,72,72,72,72,72,72,72,72,72],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "fill": false,
+        "tension": 0,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Random Forest — More Trees = Better Accuracy (up to a point)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 65, "max": 95 },
+      "x": { "title": { "display": true, "text": "Number of Trees (n_estimators)" } }
+    }
+  }
+}
+```
+
 **Official Definition:**
 > **Random Forest** is an ensemble method that builds multiple decision trees using
 > bootstrap sampling and random feature subsets (bagging + feature randomization).
@@ -368,7 +545,7 @@ outvoted. Smart trees agree. The result is surprisingly robust!
 
 ---
 
-## 7.5 Gradient Boosting — The Competition Champion
+## 7.5 Gradient Boosting — The Competition Champion ★★★
 
 ### Simple Explanation
 Gradient Boosting is like correcting a student's homework. The first model makes
@@ -414,7 +591,7 @@ learns from the mistakes of the combined first+second. Keep going. Final answer 
   Best practice: use small η + many trees + early stopping.
 ```
 
-### XGBoost vs LightGBM vs CatBoost
+### XGBoost vs LightGBM vs CatBoost ★★★
 
 ```
 ┌────────────────┬────────────────────────────────────────────────┐
@@ -452,9 +629,31 @@ learns from the mistakes of the combined first+second. Keep going. Final answer 
   Safer on small data.            Can overfit small datasets (tune max_depth).
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Residual after Tree 1", "Residual after Tree 1+2", "Residual after Tree 1+2+3", "Residual after 10 Trees", "Residual after 50 Trees"],
+    "datasets": [{
+      "label": "Remaining Error",
+      "data": [30, 10, 2, 0.3, 0.01],
+      "backgroundColor": ["rgba(239,68,68,0.7)","rgba(234,88,12,0.7)","rgba(200,180,50,0.7)","rgba(99,102,241,0.7)","rgba(34,197,94,0.7)"],
+      "borderColor": ["rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(200,180,50,1)","rgba(99,102,241,1)","rgba(34,197,94,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Each Tree Fixes Previous Mistakes (Error Shrinks)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Error" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
 ---
 
-## 7.6 Support Vector Machines — Deep Dive
+## 7.6 Support Vector Machines — Deep Dive ★★
 
 ### The Core Idea: Maximum Margin
 
@@ -530,20 +729,13 @@ learns from the mistakes of the combined first+second. Keep going. Final answer 
 
 ### Kernel Selection Guide
 
+| Kernel | Formula | When to Use |
+|--------|---------|-------------|
+| Linear | $K(\mathbf{x}, \mathbf{y}) = \mathbf{x}^\top \mathbf{y}$ | Linearly separable, high-dimensional (text) |
+| Polynomial | $K(\mathbf{x}, \mathbf{y}) = (\mathbf{x}^\top \mathbf{y} + c)^d$ | Polynomial relationships, image recognition |
+| RBF (Gaussian) | $K(\mathbf{x}, \mathbf{y}) = e^{-\gamma \lVert \mathbf{x} - \mathbf{y} \rVert^2}$ | Most popular default. Works well for non-linear data. Start here! |
+
 ```
-┌──────────────────┬────────────────────┬────────────────────────────┐
-│ Kernel           │ Formula            │ When to Use                │
-├──────────────────┼────────────────────┼────────────────────────────┤
-│ Linear           │ K(x,y) = xᵀy       │ Linearly separable,        │
-│                  │                    │ high-dimensional (text)    │
-├──────────────────┼────────────────────┼────────────────────────────┤
-│ Polynomial       │ K(x,y)=(xᵀy+c)ᵈ   │ Polynomial relationships,  │
-│                  │                    │ image recognition          │
-├──────────────────┼────────────────────┼────────────────────────────┤
-│ RBF (Gaussian)   │ K(x,y)=            │ Most popular default.      │
-│                  │  e^(-γ·‖x−y‖²)    │ Works well for non-linear  │
-│                  │                    │ data. Start here!          │
-└──────────────────┴────────────────────┴────────────────────────────┘
 
   RBF γ parameter:
     High γ: small "reach" — each point only influences close neighbors
@@ -559,9 +751,44 @@ learns from the mistakes of the combined first+second. Keep going. Final answer 
 > implicitly maps inputs to high-dimensional feature spaces where linear separation
 > is possible, enabling non-linear classification without explicit transformation.
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+    "datasets": [
+      {
+        "label": "Training Accuracy",
+        "data": [55, 68, 82, 91, 96, 99, 99.5],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      },
+      {
+        "label": "Validation Accuracy",
+        "data": [54, 67, 81, 90, 88, 78, 65],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderDash": [5,5],
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "SVM C Parameter — Low C = Underfit, High C = Overfit, Sweet Spot in Middle" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
+      "x": { "type": "logarithmic", "title": { "display": true, "text": "C (log scale)" } }
+    }
+  }
+}
+```
+
 ---
 
-## 7.7 K-Nearest Neighbors — Deep Dive
+## 7.7 K-Nearest Neighbors — Deep Dive ★
 
 ### Simple Explanation
 KNN asks: "Who are your K closest neighbors? What class are most of them?"
@@ -569,19 +796,23 @@ That's your prediction. No training — all the work happens at prediction time!
 
 ### Distance Metrics
 
+TWO POINTS: $A = (1, 2)$ and $B = (4, 6)$
+
+**Euclidean Distance** (straight-line):
+
+$$d = \sqrt{\sum (x_i - y_i)^2} = \sqrt{(4-1)^2 + (6-2)^2} = \sqrt{9 + 16} = \sqrt{25} = 5$$
+
+**Manhattan Distance** (city blocks):
+
+$$d = \sum |x_i - y_i| = |4-1| + |6-2| = 3 + 4 = 7$$
+
+**Minkowski Distance** (generalizes both):
+
+$$d = \left( \sum |x_i - y_i|^p \right)^{1/p}$$
+
+$p = 1$ gives Manhattan, $p = 2$ gives Euclidean.
+
 ```
-  TWO POINTS: A = (1, 2)  and  B = (4, 6)
-
-  Euclidean Distance (straight-line):
-    d = √[(4−1)² + (6−2)²] = √[9 + 16] = √25 = 5
-
-  Manhattan Distance (city blocks):
-    d = |4−1| + |6−2| = 3 + 4 = 7
-
-  Minkowski Distance (generalizes both):
-    d = (Σ|xᵢ−yᵢ|^p)^(1/p)
-    p=1 → Manhattan,  p=2 → Euclidean
-
   IMPORTANT: KNN requires feature scaling!
   If age is 0-80 and income is 0-100,000,
   income dominates distance → age becomes irrelevant.
@@ -612,13 +843,40 @@ That's your prediction. No training — all the work happens at prediction time!
   Use odd K for binary classification (avoids ties).
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,3,5,7,9,11,13,15,17,19,21],
+    "datasets": [{
+      "label": "Validation Error",
+      "data": [0.28,0.19,0.12,0.10,0.09,0.09,0.10,0.11,0.13,0.15,0.17],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.4,
+      "pointRadius": 3
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "KNN — Choosing K: Too Small = Overfit, Too Large = Underfit" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Validation Error" }, "beginAtZero": true, "max": 0.35 },
+      "x": { "title": { "display": true, "text": "K (number of neighbors)" } }
+    }
+  }
+}
+```
+
 ### Weighted KNN
 
-```
-  Standard KNN: each of the K neighbors gets equal vote.
+Standard KNN: each of the K neighbors gets equal vote.
 
-  Weighted KNN: closer neighbors get MORE influence.
-    weight = 1 / distance²
+Weighted KNN: closer neighbors get MORE influence.
+
+$$\text{weight} = \frac{1}{\text{distance}^2}$$
+
+```
 
   Example (K=3):
   ───────────────────────────────────────────────
@@ -640,7 +898,7 @@ That's your prediction. No training — all the work happens at prediction time!
 
 ---
 
-## 7.8 Naive Bayes — Deep Dive
+## 7.8 Naive Bayes — Deep Dive ★★
 
 ### Simple Explanation
 Given evidence (words in an email), what's the most probable cause (spam or not)?
@@ -671,9 +929,11 @@ Naive Bayes multiplies the probabilities of each piece of evidence together.
 
   For continuous features (age, temperature, salary):
   Assume each feature follows a Normal (Gaussian) distribution!
+```
 
-  P(x | class) = (1 / √(2πσ²)) × exp(−(x − μ)²/ 2σ²)
+$$P(x \mid \text{class}) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)$$
 
+```
   TRAINING: For each class, compute mean (μ) and std (σ) per feature.
   ─────────────────────────────────────────────────────────────
   Feature: Temperature
@@ -708,6 +968,37 @@ Naive Bayes multiplies the probabilities of each piece of evidence together.
 > "naive" conditional independence assumption between features. Despite this
 > simplification, it achieves competitive accuracy and excels in text classification,
 > spam filtering, and high-dimensional discrete data due to fast training and prediction.
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["free", "money", "click", "meeting", "project", "report"],
+    "datasets": [
+      {
+        "label": "P(word | Spam)",
+        "data": [0.90, 0.85, 0.88, 0.05, 0.03, 0.02],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "P(word | Not Spam)",
+        "data": [0.05, 0.02, 0.01, 0.60, 0.55, 0.50],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Naive Bayes Spam Filter — Word Probabilities by Class" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "P(word | class)" }, "beginAtZero": true, "max": 1.0 }
+    }
+  }
+}
+```
 
 ---
 
@@ -745,6 +1036,38 @@ Naive Bayes multiplies the probabilities of each piece of evidence together.
 └─────────────────────┴──────────────────┴──────────────┴────────────────┘
 
 SV = number of support vectors (can be large in high dimensions)
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Naive Bayes", "Logistic Reg", "Decision Tree", "Random Forest", "XGBoost", "SVM (RBF)", "KNN"],
+    "datasets": [
+      {
+        "label": "Training Speed (higher = faster)",
+        "data": [98, 90, 85, 70, 55, 20, 99],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Prediction Speed (higher = faster)",
+        "data": [98, 98, 95, 75, 80, 85, 10],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "Algorithm Speed Comparison — Training vs Prediction (higher = faster)" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Speed Score" }, "beginAtZero": true, "max": 100 }
+    }
+  }
+}
 ```
 
 ---
@@ -820,6 +1143,55 @@ General Tuning Order:
 │ Naive Bayes     │ ★★★★★ │ ★★★      │ ★★★★★     │ Text, spam, fast   │ Assumes independence │
 │                 │ Fast  │ OK       │ Tiny      │ high-dim data      │ bad with correl. feat│
 └─────────────────┴───────┴──────────┴───────────┴────────────────────┴──────────────────────┘
+```
+
+```chart
+{
+  "type": "radar",
+  "data": {
+    "labels": ["Accuracy", "Speed (Training)", "Speed (Prediction)", "Interpretability", "Handles Non-linear"],
+    "datasets": [
+      {
+        "label": "Logistic Regression",
+        "data": [60, 95, 98, 90, 20],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)",
+        "borderWidth": 2,
+        "pointRadius": 3
+      },
+      {
+        "label": "Random Forest",
+        "data": [82, 70, 75, 60, 85],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "backgroundColor": "rgba(34, 197, 94, 0.1)",
+        "borderWidth": 2,
+        "pointRadius": 3
+      },
+      {
+        "label": "XGBoost",
+        "data": [92, 60, 80, 40, 90],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.1)",
+        "borderWidth": 2,
+        "pointRadius": 3
+      },
+      {
+        "label": "KNN",
+        "data": [70, 99, 20, 50, 80],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.1)",
+        "borderWidth": 2,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Each Has Different Strengths" } },
+    "scales": {
+      "r": { "beginAtZero": true, "max": 100 }
+    }
+  }
+}
 ```
 
 ---

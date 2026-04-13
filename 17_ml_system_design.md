@@ -341,7 +341,7 @@ The first and most important skill: **translate a vague business goal into a con
 
 ---
 
-## 3.3 Data Pipelines — Moving Data at Scale
+## 3.3 Data Pipelines — Moving Data at Scale ★★
 
 ```
   RAW DATA → PROCESSING → CLEAN DATA → FEATURE STORE → MODEL
@@ -427,7 +427,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## 4.2 Feature Stores
+## 4.2 Feature Stores ★★
 
 ```
   A FEATURE STORE is a centralized system for managing, storing, and
@@ -678,7 +678,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## 6.3 A/B Testing
+## 6.3 A/B Testing ★★★
 
 ```
   A/B TESTING: The gold standard for measuring real-world impact.
@@ -726,7 +726,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## 7.1 Batch vs Real-Time Serving
+## 7.1 Batch vs Real-Time Serving ★★
 
 ```
   BATCH SERVING (pre-compute predictions):
@@ -772,7 +772,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## 7.2 Serving Architecture
+## 7.2 Serving Architecture ★★★
 
 ```
   ┌──────────────────────────────────────────────────────────────────────┐
@@ -820,7 +820,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## 8.1 Why Models Decay
+## 8.1 Why Models Decay ★★
 
 ```
   ML models are NOT "deploy and forget." They decay over time.
@@ -912,7 +912,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## Design a Video Recommendation System (YouTube-style)
+## Design a Video Recommendation System (YouTube-style) ★★★
 
 ```
   ┌──────────────────────────────────────────────────────────────────┐
@@ -995,7 +995,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## Design a Search Ranking System (Google-style)
+## Design a Search Ranking System (Google-style) ★★★
 
 ```
   STEP 1: CLARIFY
@@ -1039,7 +1039,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## Design a Payment Fraud Detection System
+## Design a Payment Fraud Detection System ★★
 
 ```
   STEP 1: CLARIFY
@@ -1102,7 +1102,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## Design a Content Moderation System
+## Design a Content Moderation System ★★
 
 ```
   STEP 1: CLARIFY
@@ -1157,7 +1157,7 @@ In every ML system design, organize features into these categories:
 
 ---
 
-## Design an Ads Click Prediction System
+## Design an Ads Click Prediction System ★★★
 
 ```
   STEP 1: CLARIFY
@@ -2072,9 +2072,9 @@ For each candidate notification, predict three things:
 2. **P(positive action):** Will they do something positive (buy, engage, respond)?
 3. **P(negative action):** Will they mute notifications, unsubscribe, or uninstall the app?
 
-Score = P(open) × P(positive) - λ × P(negative)
+$$\text{Score} = P(\text{open}) \times P(\text{positive}) - \lambda \times P(\text{negative})$$
 
-Where λ is BIG — because losing a user (uninstall) is much worse than missing one notification.
+Where $\lambda$ is BIG — because losing a user (uninstall) is much worse than missing one notification.
 
 **The budget constraint:**
 

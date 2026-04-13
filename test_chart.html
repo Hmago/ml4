@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Chart Test</title></head>
+<body>
+<h2>Test 1: Direct Chart.js</h2>
+<div style="max-width:400px"><canvas id="test1"></canvas></div>
+
+<h2>Test 2: Simulating marked output</h2>
+<pre><code class="language-chart">{"type":"bar","data":{"labels":["A","B","C"],"datasets":[{"label":"Test","data":[1,2,3]}]}}</code></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+console.log('Chart global:', typeof Chart);
+console.log('window.Chart:', typeof window.Chart);
+
+// Test 1: direct
+try {
+  new Chart(document.getElementById('test1'), {
+    type: 'bar',
+    data: { labels: ['X','Y','Z'], datasets: [{ label: 'Direct', data: [10,20,30] }] }
+  });
+  console.log('Test 1: OK');
+} catch(e) { console.error('Test 1 failed:', e); }
+
+// Test 2: simulate what we do in index.html
+const blocks = document.querySelectorAll('code.language-chart');
+console.log('Found chart blocks:', blocks.length);
+blocks.forEach((block, i) => {
+  console.log('Block', i, 'textContent:', block.textContent.substring(0, 50));
+  try {
+    const config = JSON.parse(block.textContent);
+    const pre = block.parentElement;
+    const canvas = document.createElement('canvas');
+    const div = document.createElement('div');
+    div.style.maxWidth = '400px';
+    div.appendChild(canvas);
+    pre.replaceWith(div);
+    new Chart(canvas, config);
+    console.log('Test 2: OK');
+  } catch(e) { console.error('Test 2 failed:', e); }
+});
+</script>
+</body>
+</html>

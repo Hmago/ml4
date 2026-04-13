@@ -37,6 +37,37 @@ Price: 100, 50000, 75, 200    →    Price: 0.02, 9.9, 0.015, 0.04
 Has_Pet: "yes", 1, "Y", True  →    Has_Pet: 1, 1, 1, 1
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Raw (Messy) Data", "Clean (Preprocessed) Data"],
+    "datasets": [
+      {
+        "label": "Model Accuracy (%)",
+        "data": [58, 89],
+        "backgroundColor": ["rgba(239, 68, 68, 0.6)", "rgba(34, 197, 94, 0.7)"],
+        "borderColor": ["rgba(239, 68, 68, 1)", "rgba(34, 197, 94, 1)"],
+        "borderWidth": 1
+      },
+      {
+        "label": "Training Time (relative)",
+        "data": [90, 40],
+        "backgroundColor": ["rgba(234, 88, 12, 0.5)", "rgba(99, 102, 241, 0.5)"],
+        "borderColor": ["rgba(234, 88, 12, 1)", "rgba(99, 102, 241, 1)"],
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Why Preprocess? — Better Accuracy AND Faster Training" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Score" }, "beginAtZero": true, "max": 100 }
+    }
+  }
+}
+```
+
 ---
 
 ## The Data Preprocessing Pipeline
@@ -87,7 +118,7 @@ Clean, Ready Data!
 
 ---
 
-## Step 1: Handling Missing Values
+## Step 1: Handling Missing Values ★★
 
 ### Why Data Goes Missing
 ```
@@ -139,6 +170,28 @@ MNAR  │ Missing Not At Random — missing for a reason!
  └──────────────────────────────────────────────────────┘
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Drop Row", "Fill with Mean", "Fill with Median", "Fill with Mode", "Forward Fill"],
+    "datasets": [{
+      "label": "When to use (relative frequency in practice)",
+      "data": [15, 35, 25, 15, 10],
+      "backgroundColor": ["rgba(239,68,68,0.6)","rgba(99,102,241,0.7)","rgba(34,197,94,0.7)","rgba(234,88,12,0.6)","rgba(200,200,200,0.6)"],
+      "borderColor": ["rgba(239,68,68,1)","rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(234,88,12,1)","rgba(160,160,160,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Missing Value Strategies — Fill with Mean/Median Most Common" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Usage (%)" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
 ---
 
 ## Step 2: Handling Outliers
@@ -165,6 +218,13 @@ Data: [160, 162, 155, 158, 163, 161, 350, 159]
 ### How to Find Outliers
 
 **Method 1: IQR (Interquartile Range)**
+
+$$IQR = Q3 - Q1$$
+
+$$\text{Lower Bound} = Q1 - 1.5 \times IQR$$
+
+$$\text{Upper Bound} = Q3 + 1.5 \times IQR$$
+
 ```
   Sort data: 10, 15, 18, 20, 22, 25, 27, 28, 35, 100
 
@@ -179,9 +239,10 @@ Data: [160, 162, 155, 158, 163, 161, 350, 159]
 ```
 
 **Method 2: Z-Score**
-```
-  Z-score = (value - mean) / standard_deviation
 
+$$Z = \frac{\text{value} - \text{mean}}{\text{standard deviation}}$$
+
+```
   If |Z| > 3  →  likely an outlier
 
   Example:
@@ -190,9 +251,31 @@ Data: [160, 162, 155, 158, 163, 161, 350, 159]
     Z = (95 - 50) / 10 = 4.5  →  OUTLIER!
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["10","15","18","20","22","25","27","28","35","100"],
+    "datasets": [{
+      "label": "Data Values",
+      "data": [10,15,18,20,22,25,27,28,35,100],
+      "backgroundColor": ["rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(239,68,68,0.8)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(239,68,68,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Spotting the Outlier — Value 100 is Way Outside the Normal Range" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Value" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
 ---
 
-## Step 3: Encoding Categorical Features
+## Step 3: Encoding Categorical Features ★★
 
 ### Simple Explanation
 Computers only understand numbers, not words like "red" or "small."
@@ -242,9 +325,31 @@ Encoding converts words into numbers.
   GOOD FOR: Data with natural order (Small < Medium < Large)
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Label Encoding", "One-Hot Encoding", "Ordinal Encoding", "Target Encoding"],
+    "datasets": [{
+      "label": "Typical Usage (%)",
+      "data": [15, 45, 20, 20],
+      "backgroundColor": ["rgba(200, 200, 200, 0.6)", "rgba(99, 102, 241, 0.7)", "rgba(34, 197, 94, 0.6)", "rgba(234, 88, 12, 0.6)"],
+      "borderColor": ["rgba(160, 160, 160, 1)", "rgba(99, 102, 241, 1)", "rgba(34, 197, 94, 1)", "rgba(234, 88, 12, 1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Encoding Methods — One-Hot is Most Common for Nominal Categories" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Usage (%)" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
 ---
 
-## Step 4: Feature Scaling / Normalization
+## Step 4: Feature Scaling / Normalization ★★
 
 ### Why Scale?
 
@@ -259,9 +364,10 @@ because its numbers are bigger!     Model learns better.
 ```
 
 ### Method 1: Min-Max Normalization (scales to 0–1)
-```
-  Formula:  X_scaled = (X - X_min) / (X_max - X_min)
 
+$$X_{\text{scaled}} = \frac{X - X_{\min}}{X_{\max} - X_{\min}}$$
+
+```
   Example:  Ages = [20, 30, 40, 50, 60]
             X_min = 20,  X_max = 60
 
@@ -273,9 +379,10 @@ because its numbers are bigger!     Model learns better.
 ```
 
 ### Method 2: Standardization / Z-score Scaling (mean=0, std=1)
-```
-  Formula:  X_scaled = (X - mean) / std_deviation
 
+$$X_{\text{scaled}} = \frac{X - \text{mean}}{\text{std deviation}}$$
+
+```
   Example:  Scores = [60, 70, 80, 90, 100]
             Mean = 80,  Std = 15.8
 
@@ -324,9 +431,47 @@ because its numbers are bigger!     Model learns better.
 └─────────────────────────────────┴─────────────────────────────────┘
 ```
 
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Age (20)", "Age (30)", "Age (40)", "Age (50)", "Age (60)"],
+    "datasets": [
+      {
+        "label": "Before Scaling (raw)",
+        "data": [20, 30, 40, 50, 60],
+        "backgroundColor": "rgba(200, 200, 200, 0.6)",
+        "borderColor": "rgba(160, 160, 160, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Min-Max (0 to 1)",
+        "data": [0.0, 2.5, 5.0, 7.5, 10.0],
+        "backgroundColor": "rgba(99, 102, 241, 0.7)",
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Z-Score (mean=0, std=1)",
+        "data": [0.64, 2.2, 3.8, 5.4, 7.0],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Feature Scaling — Raw Values vs Min-Max vs Z-Score (scaled 10x for visibility)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Value" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
 ---
 
-## Step 5: Feature Engineering
+## Step 5: Feature Engineering ★
 
 ### Simple Explanation
 Feature engineering is the art of **creating new, more useful features** from existing ones.
@@ -356,7 +501,7 @@ Price: 100               →    LogPrice: 4.6  ← handles skewed data
                                PriceBin: "low"/"medium"/"high"
 ```
 
-### Feature Selection — Removing Useless Features
+### Feature Selection — Removing Useless Features ★★
 
 ```
 Removing bad features IMPROVES models!
@@ -373,6 +518,29 @@ feature         │
 Not correlated  │ Feature has nothing to do with the target
 with target     │ Example: "Customer's favorite color" for
                 │ predicting house price
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["UserID", "Favorite Color", "Country (99% same)", "Height (cm)", "Height (inches)", "Age", "Income"],
+    "datasets": [{
+      "label": "Feature Importance (correlation with target)",
+      "data": [0.01, 0.02, 0.03, 0.85, 0.85, 0.42, 0.78],
+      "backgroundColor": ["rgba(239,68,68,0.6)","rgba(239,68,68,0.6)","rgba(239,68,68,0.6)","rgba(200,180,50,0.6)","rgba(200,180,50,0.6)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)"],
+      "borderColor": ["rgba(239,68,68,1)","rgba(239,68,68,1)","rgba(239,68,68,1)","rgba(200,180,50,1)","rgba(200,180,50,1)","rgba(34,197,94,1)","rgba(34,197,94,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "Feature Selection — Drop Red (useless), Keep One of Yellow (duplicates)" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Importance" }, "min": 0, "max": 1.0 }
+    }
+  }
+}
 ```
 
 ---
@@ -402,6 +570,28 @@ with target     │ Example: "Customer's favorite color" for
                                      │  Ready for  │
                                      │  modeling!  │
                                      └─────────────┘
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["No Preprocessing", "Handle Missing", "+ Remove Outliers", "+ Encode + Scale", "+ Feature Engineering"],
+    "datasets": [{
+      "label": "Model Accuracy (%)",
+      "data": [62, 71, 76, 84, 91],
+      "backgroundColor": ["rgba(239,68,68,0.6)","rgba(234,88,12,0.6)","rgba(200,180,50,0.6)","rgba(99,102,241,0.7)","rgba(34,197,94,0.7)"],
+      "borderColor": ["rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(200,180,50,1)","rgba(99,102,241,1)","rgba(34,197,94,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Impact of Each Preprocessing Step on Model Accuracy" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 }
+    }
+  }
+}
 ```
 
 ---
