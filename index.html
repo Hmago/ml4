@@ -658,8 +658,17 @@ body.sidebar-collapsed .sidebar {
   .dsa-problem-row { padding: 10px 12px; gap: 8px; }
   .dsa-problem-row .title { font-size: 13px; }
   .dsa-problem-row .category { display: none; }
-  .dsa-editor { min-height: 250px; font-size: 13px; padding: 14px 12px; }
-  .dsa-add-form .row { flex-direction: column; gap: 0; }
+  .dsa-editor { font-size: 13px; padding: 14px 12px; }
+  .dsa-nav-row { flex-wrap: wrap; gap: 8px; }
+  .dsa-nav-counter { display: none; }
+  .dsa-timer-wrap { margin-left: 0; }
+  .dsa-notes { min-height: 60px; }
+  .dsa-problem-hero { margin-bottom: 10px; }
+  .dsa-problem-hero h1 { font-size: 16px; }
+  .dsa-line-numbers { width: 32px; font-size: 11px; }
+  .dsa-editor-toolbar .actions { gap: 4px; }
+  .dsa-editor-toolbar button { padding: 5px 10px; font-size: 12px; }
+  .dsa-add-form .row, .dsa-add-form .row-3 { flex-direction: column; gap: 0; }
 
   /* ── Comments ── */
   .comment-form { flex-direction: column; }
@@ -1233,31 +1242,87 @@ body.sidebar-collapsed .sidebar {
 .dsa-problem-row .link-icon:hover { background:var(--bg-secondary); color:var(--accent); }
 
 /* ─── Code editor page ─── */
-.dsa-problem-page { max-width:960px; margin:0 auto; }
-.dsa-back-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); cursor:pointer; font-size:13px; margin-bottom:16px; transition:all 0.2s; }
+.content:has(.dsa-problem-page) { max-width:100%; padding-left:24px; padding-right:24px; }
+.dsa-problem-page { max-width:100%; margin:0 auto; animation:dsa-fade-in 0.35s ease-out; }
+@keyframes dsa-fade-in { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
+
+.dsa-back-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); cursor:pointer; font-size:13px; margin-bottom:0; transition:all 0.2s; }
 .dsa-back-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); transform:translateX(-2px); }
 
-.dsa-problem-meta { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px 0 16px; }
+/* ─── Problem header card ─── */
+.dsa-problem-meta { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 .dsa-tag { font-size:11px; padding:3px 10px; border-radius:10px; background:var(--bg-secondary); color:var(--text-secondary); border:1px solid var(--border); }
 .dsa-link { display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--accent); text-decoration:none; padding:3px 10px; border-radius:8px; transition:all 0.15s; }
 .dsa-link:hover { background:var(--accent-light); text-decoration:none; }
+.dsa-cat-progress { font-size:11px; color:var(--text-secondary); background:var(--bg-secondary); border:1px solid var(--border); padding:3px 10px; border-radius:10px; white-space:nowrap; }
+.dsa-cat-progress strong { color:var(--text); }
 
-.dsa-description { background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:18px; font-size:14px; line-height:1.7; }
+/* ─── Split pane layout ─── */
+.dsa-split {
+  display:flex; gap:0; min-height:520px; margin-bottom:14px;
+  border:1px solid var(--border); border-radius:14px; overflow:hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .dsa-split { box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+.dsa-split-left {
+  width:38%; min-width:280px; display:flex; flex-direction:column;
+  background:var(--bg); overflow-y:auto;
+  border-right:1px solid var(--border);
+}
+.dsa-split-right {
+  flex:1; display:flex; flex-direction:column; min-width:0;
+}
+
+/* ─── Draggable divider ─── */
+.dsa-split-divider {
+  width:5px; cursor:col-resize; background:var(--border); flex-shrink:0;
+  position:relative; transition:background 0.15s;
+}
+.dsa-split-divider:hover, .dsa-split-divider.dragging { background:var(--accent); }
+.dsa-split-divider::after {
+  content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:3px; height:32px; border-radius:3px;
+  background: color-mix(in srgb, var(--text-secondary) 40%, transparent);
+}
+.dsa-split-divider:hover::after, .dsa-split-divider.dragging::after { background:var(--accent); }
+
+/* ─── Left pane sections ─── */
+.dsa-pane-header { border-bottom:1px solid var(--border); }
+.dsa-pane-section { padding:14px 16px; border-bottom:1px solid var(--border); }
+.dsa-pane-section:last-child { border-bottom:none; flex:1; }
+.dsa-pane-section h3 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin:0 0 8px; display:flex; align-items:center; gap:5px; }
+.dsa-pane-section h3 .ico { font-style:normal; font-size:13px; }
+
+.dsa-description { font-size:13px; line-height:1.65; color:var(--text); }
 .dsa-description code { background:var(--code-bg); padding:2px 6px; border-radius:5px; font-size:13px; border:1px solid var(--border); }
 
-/* ─── Editor — IDE-inspired theme ─── */
+/* ─── Formatted examples ─── */
+.dsa-example-block { background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12px; line-height:1.6; }
+.dsa-example-block + .dsa-example-block { margin-top:6px; }
+.dsa-example-label { display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:5px; margin-bottom:4px; }
+.dsa-example-label.input { background:#dbeafe; color:#1e40af; }
+.dsa-example-label.output { background:#dcfce7; color:#166534; }
+.dsa-example-label.explain { background:#fef3c7; color:#92400e; }
+[data-theme="dark"] .dsa-example-label.input { background:#1e3a5f; color:#93c5fd; }
+[data-theme="dark"] .dsa-example-label.output { background:#14532d; color:#86efac; }
+[data-theme="dark"] .dsa-example-label.explain { background:#78350f; color:#fde68a; }
+.dsa-example-code { font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px; white-space:pre-wrap; margin-top:2px; color:var(--text); }
+
+/* ─── Editor with line numbers ─── */
+.dsa-editor-area { display:flex; flex:1; min-height:0; position:relative; }
+.dsa-line-numbers {
+  width:48px; padding:18px 8px 18px 0; text-align:right; user-select:none; pointer-events:none;
+  font-family:'JetBrains Mono','Fira Code',monospace; font-size:14px; line-height:1.65;
+  color:#475569; background:#0f172a; border-right:1px solid rgba(255,255,255,0.06);
+  overflow:hidden; flex-shrink:0;
+}
+.dsa-line-numbers div { height:calc(14px * 1.65); }
+
 .dsa-editor-wrap {
-  border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:14px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-  transition: box-shadow 0.3s;
+  border:none; border-radius:0; overflow:hidden; margin-bottom:0;
+  box-shadow:none; transition:none; flex:1; display:flex; flex-direction:column;
 }
-.dsa-editor-wrap:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 4px 24px rgba(9,105,218,0.12), 0 0 0 3px rgba(9,105,218,0.08);
-}
-[data-theme="dark"] .dsa-editor-wrap:focus-within {
-  box-shadow: 0 4px 24px rgba(88,166,255,0.1), 0 0 0 3px rgba(88,166,255,0.1);
-}
+.dsa-editor-wrap:focus-within { border-color:transparent; box-shadow:none; }
 
 .dsa-editor-toolbar {
   display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
@@ -1294,7 +1359,7 @@ body.sidebar-collapsed .sidebar {
 .dsa-editor-toolbar .run-btn:disabled { opacity:0.4; cursor:wait; transform:none; box-shadow:none; }
 
 .dsa-editor {
-  width:100%; min-height:420px; padding:18px 20px; border:none; outline:none; resize:vertical;
+  width:100%; flex:1; min-height:0; padding:18px 20px 18px 12px; border:none; outline:none; resize:none;
   font-family:'JetBrains Mono','Fira Code','SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
   font-size:14px; line-height:1.65; tab-size:4; letter-spacing:0.2px;
   background: #0f172a;
@@ -1310,8 +1375,8 @@ body.sidebar-collapsed .sidebar {
 
 /* ─── Output panel ─── */
 .dsa-output-wrap {
-  border:1px solid var(--border); border-radius:12px; overflow:hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border-top:1px solid var(--border); overflow:hidden;
+  box-shadow:none; border-radius:0;
 }
 .dsa-output-header {
   padding:10px 16px;
@@ -1333,8 +1398,8 @@ body.sidebar-collapsed .sidebar {
 @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
 .dsa-output {
-  padding:16px 20px; font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px;
-  white-space:pre-wrap; min-height:70px; max-height:300px; overflow-y:auto;
+  padding:14px 20px; font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px;
+  white-space:pre-wrap; min-height:56px; max-height:200px; overflow-y:auto;
   color:#e2e8f0; background:#0f172a;
 }
 :root:not([data-theme="dark"]) .dsa-output { background:#0f172a; color:#e2e8f0; }
@@ -1355,19 +1420,19 @@ body.sidebar-collapsed .sidebar {
 /* ─── Fullscreen IDE mode ─── */
 .dsa-fullscreen .dsa-problem-page {
   max-width:100%; position:fixed; inset:0; z-index:9999;
-  background:var(--bg); overflow-y:auto;
-  padding:12px 20px; margin:0;
+  background:var(--bg); overflow:hidden;
+  padding:0; margin:0;
   display:flex; flex-direction:column;
 }
-.dsa-fullscreen .dsa-back-btn { display:none; }
-.dsa-fullscreen .dsa-description { display:none; }
-.dsa-fullscreen h1 { font-size:18px !important; margin:0 0 4px !important; }
-.dsa-fullscreen .dsa-problem-meta { margin:4px 0 10px; }
-.dsa-fullscreen .dsa-editor-wrap { flex:1; display:flex; flex-direction:column; margin-bottom:10px; }
-.dsa-fullscreen .dsa-editor { flex:1; min-height:0; resize:none; }
+.dsa-fullscreen .dsa-nav-row { padding:6px 16px; margin:0; border-bottom:1px solid var(--border); }
+.dsa-fullscreen .dsa-hint { display:none; }
+.dsa-fullscreen .dsa-split { flex:1; min-height:0; border:none; border-radius:0; margin:0; box-shadow:none; }
+.dsa-fullscreen .dsa-split-left { min-width:220px; }
+.dsa-fullscreen .dsa-editor { min-height:0; }
 .dsa-fullscreen .dsa-output-wrap { max-height:200px; }
 .dsa-fullscreen .dsa-output { max-height:150px; }
 .dsa-fullscreen .dsa-hint { display:none; }
+.dsa-fullscreen .dsa-notes-wrap { display:none; }
 .dsa-fs-btn {
   padding:6px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:8px;
   background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:13px; cursor:pointer;
@@ -1381,25 +1446,87 @@ body.sidebar-collapsed .sidebar {
 }
 .dsa-fullscreen .dsa-fs-exit:hover { background:rgba(239,68,68,0.25); }
 
+/* ─── Problem navigation ─── */
+.dsa-nav-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.dsa-nav-row .dsa-back-btn { margin-bottom:0; padding:5px 12px; font-size:12px; }
+.dsa-nav-row .dsa-nav-btns { display:flex; gap:4px; align-items:center; margin-left:auto; }
+.dsa-nav-btn { display:inline-flex; align-items:center; gap:3px; padding:5px 12px; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text); cursor:pointer; font-size:12px; transition:all 0.15s; white-space:nowrap; }
+.dsa-nav-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.dsa-nav-btn:disabled { opacity:0.3; cursor:default; }
+.dsa-nav-counter { font-size:11px; color:var(--text-secondary); padding:0 4px; white-space:nowrap; }
+
+/* ─── Practice timer ─── */
+.dsa-timer-wrap { display:inline-flex; align-items:center; gap:4px; }
+.dsa-timer { font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px; font-weight:600; color:var(--text-secondary); letter-spacing:0.3px; min-width:50px; }
+.dsa-timer-btn { padding:3px 8px; border:1px solid var(--border); border-radius:5px; background:var(--bg-secondary); color:var(--text-secondary); cursor:pointer; font-size:11px; transition:all 0.15s; }
+.dsa-timer-btn:hover { border-color:var(--accent); color:var(--accent); }
+.dsa-timer-btn.running { border-color:#22c55e; color:#22c55e; }
+
+/* ─── Collapsible description ─── */
+.dsa-desc-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+.dsa-desc-toggle:hover h3 { color:var(--accent); }
+.dsa-desc-toggle .chevron { font-size:14px; transition:transform 0.2s; color:var(--text-secondary); }
+.dsa-desc-toggle .chevron.collapsed { transform:rotate(-90deg); }
+.dsa-desc-body { overflow:hidden; max-height:1000px; transition:max-height 0.3s ease, opacity 0.25s ease; }
+.dsa-desc-body.collapsed { max-height:0 !important; opacity:0; margin:0; }
+
+/* ─── Notes section ─── */
+.dsa-notes-wrap { padding:0; }
+.dsa-notes-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.dsa-notes-header label { font-size:13px; font-weight:600; color:var(--text-secondary); margin:0; }
+.dsa-notes-saved { font-size:11px; color:#22c55e; opacity:0; transition:opacity 0.3s; }
+.dsa-notes-saved.show { opacity:1; }
+.dsa-notes { width:100%; min-height:80px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; background:var(--bg-secondary); color:var(--text); font-family:inherit; font-size:13px; line-height:1.6; resize:vertical; outline:none; transition:border-color 0.2s; box-sizing:border-box; }
+.dsa-notes:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-light); }
+.dsa-notes::placeholder { color:var(--text-secondary); font-style:italic; }
+
+/* ─── Solved celebration ─── */
+@keyframes solve-pop { 0%{transform:scale(0.8);opacity:0;} 50%{transform:scale(1.15);} 100%{transform:scale(1);opacity:1;} }
+.dsa-solved-badge { display:inline-flex; align-items:center; gap:5px; color:var(--success,#22c55e); font-weight:700; font-size:14px; animation:solve-pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ─── Mobile: stack the split pane ─── */
+@media (max-width:900px) {
+  .dsa-split { flex-direction:column; min-height:auto; }
+  .dsa-split-left { width:100% !important; min-width:0; max-height:320px; border-right:none; border-bottom:1px solid var(--border); }
+  .dsa-split-divider { display:none; }
+  .dsa-split-right { min-height:400px; }
+  .dsa-editor { min-height:220px !important; }
+  .dsa-line-numbers { width:36px; padding:18px 4px 18px 0; font-size:12px; }
+  .dsa-pane-section { padding:14px 16px; }
+  .dsa-problem-hero { margin-bottom:10px; }
+  .dsa-problem-hero h1 { font-size:17px; }
+}
+
 .dsa-add-btn { padding:8px 18px; border:1px solid var(--accent); border-radius:10px; background:var(--accent); color:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
 .dsa-add-btn:hover { opacity:0.85; transform:translateY(-1px); }
-.dsa-add-form { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:20px 24px; margin-bottom:24px; }
-.dsa-add-form label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; color:var(--text-secondary); }
+.dsa-add-form { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; padding:0; margin-bottom:24px; overflow:hidden; }
+.dsa-add-form-header { padding:16px 24px; background:linear-gradient(135deg, var(--accent), #8b5cf6); color:#fff; }
+.dsa-add-form-header h3 { margin:0; font-size:17px; }
+.dsa-add-form-header p { margin:4px 0 0; font-size:12px; opacity:0.85; }
+.dsa-add-form-body { padding:20px 24px 24px; }
+.dsa-add-form-section { margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+.dsa-add-form-section:last-of-type { border-bottom:none; margin-bottom:8px; padding-bottom:0; }
+.dsa-add-form-section-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin:0 0 10px; }
+.dsa-add-form label { display:block; font-size:13px; font-weight:600; margin:10px 0 4px; color:var(--text-secondary); }
 .dsa-add-form label:first-child { margin-top:0; }
 .dsa-add-form input, .dsa-add-form select, .dsa-add-form textarea {
-  width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px;
-  background:var(--bg); color:var(--text); font-size:14px; font-family:inherit; outline:none; transition:border-color 0.2s; box-sizing:border-box;
+  width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+  background:var(--bg); color:var(--text); font-size:14px; font-family:inherit; outline:none; transition:border-color 0.2s, box-shadow 0.2s; box-sizing:border-box;
 }
 .dsa-add-form input:focus, .dsa-add-form select:focus, .dsa-add-form textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-light); }
 .dsa-add-form textarea { resize:vertical; min-height:60px; }
 .dsa-add-form .row { display:flex; gap:12px; }
 .dsa-add-form .row > div { flex:1; }
-.dsa-add-actions { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
-.dsa-add-actions button { padding:8px 20px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid var(--border); }
+.dsa-add-form .row-3 { display:flex; gap:12px; }
+.dsa-add-form .row-3 > div { flex:1; }
+.dsa-tag-option:hover { background:var(--accent-light); }
+.dsa-add-actions { display:flex; gap:10px; padding:16px 24px; background:var(--bg-secondary); border-top:1px solid var(--border); justify-content:flex-end; }
+.dsa-add-actions button { padding:9px 22px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; border:1px solid var(--border); }
 .dsa-add-actions .save { background:var(--accent); color:#fff; border-color:var(--accent); }
-.dsa-add-actions .save:hover { opacity:0.85; }
+.dsa-add-actions .save:hover { opacity:0.85; transform:translateY(-1px); }
 .dsa-add-actions .cancel { background:var(--bg); color:var(--text); }
 .dsa-add-actions .cancel:hover { border-color:var(--accent); color:var(--accent); }
+.dsa-field-hint { font-size:11px; color:var(--text-secondary); margin-top:3px; }
 .dsa-custom-badge { font-size:10px; padding:1px 6px; border-radius:6px; background:color-mix(in srgb, var(--accent) 15%, var(--bg)); color:var(--accent); font-weight:600; margin-left:6px; }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -1654,6 +1781,173 @@ body.sidebar-collapsed .sidebar {
 .moti-progress-fill {
   height: 100%; background: linear-gradient(90deg, #6366f1, #a78bfa);
   border-radius: 2px; transition: width 0.3s;
+}
+
+/* ─── Goals & Timetable Page ─── */
+.goals-container { max-width: 740px; margin: 0 auto; }
+.goals-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.goals-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.goals-stat { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+.goals-stat .num { font-size: 28px; font-weight: 800; }
+.goals-stat .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.goals-section { margin-bottom: 32px; }
+.goals-section-title {
+  font-size: 18px; font-weight: 700; color: var(--heading); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px; border: none;
+}
+.goal-form {
+  background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px;
+  padding: 24px; margin-bottom: 20px; animation: motiFadeIn 0.3s ease;
+}
+.goal-form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.goal-form-row > * { flex: 1; min-width: 140px; }
+.goal-input, .goal-select {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit;
+  box-sizing: border-box;
+}
+.goal-input:focus, .goal-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.goal-input::placeholder { color: var(--text-secondary); }
+.goal-form-actions { display: flex; gap: 10px; margin-top: 4px; }
+.goal-save-btn {
+  padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  background: linear-gradient(135deg, #6366f1, #a78bfa); color: white;
+}
+.goal-save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+.goal-cancel-btn {
+  padding: 10px 24px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
+  cursor: pointer; background: var(--bg); color: var(--text); transition: all 0.2s;
+}
+.goal-cancel-btn:hover { border-color: var(--accent); }
+
+.goal-card {
+  background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 10px; transition: all 0.2s;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.goal-card:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.goal-card.done { opacity: 0.55; }
+.goal-card .goal-check {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px; transition: all 0.2s; font-size: 12px; color: transparent;
+}
+.goal-card .goal-check:hover { border-color: #22c55e; background: #22c55e20; }
+.goal-card.done .goal-check { border-color: #22c55e; background: #22c55e; color: white; }
+.goal-card .goal-body { flex: 1; min-width: 0; }
+.goal-card .goal-title { font-size: 15px; font-weight: 600; color: var(--heading); }
+.goal-card.done .goal-title { text-decoration: line-through; }
+.goal-card .goal-notes { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.goal-card .goal-meta { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.goal-priority-badge {
+  font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.goal-priority-badge.high { background: #ef444418; color: #ef4444; }
+.goal-priority-badge.medium { background: #f59e0b18; color: #f59e0b; }
+.goal-priority-badge.low { background: #22c55e18; color: #22c55e; }
+.goal-deadline-badge { font-size: 12px; color: var(--text-secondary); }
+.goal-deadline-badge.overdue { color: #ef4444; font-weight: 600; }
+.goal-deadline-badge.soon { color: #f59e0b; font-weight: 500; }
+.goal-delete-btn {
+  padding: 4px 10px; border: none; border-radius: 6px; background: transparent;
+  color: var(--text-secondary); font-size: 16px; cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0; opacity: 0; line-height: 1;
+}
+.goal-card:hover .goal-delete-btn { opacity: 1; }
+.goal-delete-btn:hover { background: #ef444418; color: #ef4444; }
+
+.goals-empty {
+  text-align: center; padding: 40px 20px; color: var(--text-secondary);
+  border: 2px dashed var(--border); border-radius: 16px;
+}
+.goals-empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Timetable */
+.tt-container { margin-top: 8px; }
+.tt-grid {
+  display: grid; grid-template-columns: 70px repeat(7, 1fr); gap: 1px;
+  background: var(--border); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+}
+.tt-corner { background: var(--bg-secondary); padding: 12px 8px; }
+.tt-day-header {
+  background: linear-gradient(135deg, color-mix(in srgb, #6366f1 8%, var(--bg-secondary)), var(--bg-secondary));
+  padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 700; color: var(--heading);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.tt-day-header.today { background: linear-gradient(135deg, color-mix(in srgb, #6366f1 20%, var(--bg-secondary)), color-mix(in srgb, #a78bfa 10%, var(--bg-secondary))); }
+.tt-time-label {
+  background: var(--bg-secondary); padding: 8px 6px; font-size: 11px; color: var(--text-secondary);
+  text-align: right; display: flex; align-items: flex-start; justify-content: flex-end;
+}
+.tt-cell {
+  background: var(--bg); padding: 4px; min-height: 52px; position: relative;
+  cursor: pointer; transition: background 0.15s;
+}
+.tt-cell:hover { background: color-mix(in srgb, var(--accent) 5%, var(--bg)); }
+.tt-slot {
+  padding: 3px 6px; border-radius: 5px; font-size: 11px; line-height: 1.3;
+  margin-bottom: 2px; position: relative; cursor: pointer; word-break: break-word;
+}
+.tt-slot:hover .tt-slot-del { opacity: 1; }
+.tt-slot-del {
+  position: absolute; top: 1px; right: 2px; font-size: 10px; cursor: pointer;
+  opacity: 0; transition: opacity 0.15s; background: rgba(0,0,0,0.3); color: white;
+  border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center;
+  justify-content: center; line-height: 1; border: none; padding: 0;
+}
+
+.tt-add-form {
+  background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px; margin-bottom: 20px; animation: motiFadeIn 0.3s ease;
+}
+.tt-add-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.tt-add-row > div { display: flex; flex-direction: column; gap: 4px; }
+.tt-add-row label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.tt-color-swatch {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: all 0.15s;
+}
+.tt-color-swatch:hover, .tt-color-swatch.active { border-color: var(--heading); transform: scale(1.15); }
+
+.completed-toggle {
+  cursor: pointer; font-size: 14px; color: var(--text-secondary); padding: 8px 0;
+  display: flex; align-items: center; gap: 6px; transition: color 0.15s;
+}
+.completed-toggle:hover { color: var(--text); }
+
+@media (max-width: 600px) {
+  .goals-stats { grid-template-columns: repeat(2, 1fr); }
+  .goal-form-row { flex-direction: column; }
+  .goal-form-row > * { min-width: 100%; }
+  .tt-grid { grid-template-columns: 50px repeat(7, 1fr); }
+  .tt-day-header { font-size: 10px; padding: 8px 2px; }
+  .tt-time-label { font-size: 10px; padding: 6px 3px; }
+  .tt-cell { min-height: 40px; }
+  .tt-slot { font-size: 10px; }
+  .goal-delete-btn { opacity: 1; }
+  .tt-day-toggle { width: 28px; height: 28px; font-size: 11px; }
+  .tt-quick-sel { font-size: 10px; }
+}
+
+/* Timetable day toggle buttons */
+.tt-day-toggle {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer; font-size: 12px;
+  font-weight: 600; transition: all 0.15s; display: inline-flex; align-items: center;
+  justify-content: center; padding: 0;
+}
+.tt-day-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.tt-day-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
+.tt-quick-sel {
+  font-size: 11px; color: var(--accent); cursor: pointer; padding: 2px 0;
+  border: none; background: none; font-family: inherit; text-decoration: none;
+  opacity: 0.8; transition: opacity 0.15s;
+}
+.tt-quick-sel:hover { opacity: 1; text-decoration: underline; }
+.tt-recur-badge {
+  font-size: 9px; opacity: 0.7; display: block; margin-top: 1px;
 }
 
 /* ─── Notebook Renderer ─── */
@@ -1970,7 +2264,7 @@ mark.user-hl:hover::after { display: flex; }
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <h1>ML Study Notes</h1>
+    <h1 style="cursor:pointer;" onclick="renderWelcome();closeSidebar();">ML Study Notes</h1>
     <p id="chapter-count"></p>
   </div>
   <div class="search-box">
@@ -2425,7 +2719,7 @@ document.addEventListener('keydown', (e) => {
 // ─── Interactive Mode ───
 let interactiveMode = localStorage.getItem('ml4-interactive') === 'true';
 
-let currentPage = 'welcome'; // 'welcome', 'dashboard', 'motivation', 'chapter', 'dsa', 'dsa-problem'
+let currentPage = 'welcome'; // 'welcome', 'dashboard', 'motivation', 'goals', 'chapter', 'dsa', 'dsa-problem'
 
 function toggleInteractiveMode() {
   interactiveMode = !interactiveMode;
@@ -2434,6 +2728,7 @@ function toggleInteractiveMode() {
   // Re-render current page without breaking it
   if (currentPage === 'dashboard') showDashboard();
   else if (currentPage === 'motivation') showMotivation();
+  else if (currentPage === 'goals') showGoals();
   else if (currentPage === 'dsa') showDSAPractice();
   else if (currentIndex >= 0 && !chapters[currentIndex].section) enhanceContent();
   else renderWelcome();
@@ -2790,67 +3085,104 @@ function setupScrollSpy() {
 // ─── Animated Welcome Dashboard ───
 function renderWelcome() {
   const contentEl = document.getElementById('content');
+  contentEl.classList.remove('chapter-view');
+  currentPage = 'welcome';
+  currentIndex = -1;
+  history.replaceState(null, '', '#home');
+  document.getElementById('breadcrumb').textContent = '';
+  document.getElementById('readBtn').style.display = 'none';
+
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
   const data = getXP();
+  const quizScores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
+  const quizzesDone = Object.keys(quizScores).length;
+  const dsaProgress = JSON.parse(localStorage.getItem('ml4-dsa-progress') || '{}');
+  const dsaSolved = Object.values(dsaProgress).filter(p => p.solved).length;
 
-  if (!interactiveMode) {
-    contentEl.innerHTML = `<div class="loading">
-      <div>
-        <h1 style="font-size:28px;margin-bottom:16px;border:none;">Welcome to ML Study Notes</h1>
-        <p style="color:var(--text-secondary);max-width:500px;">
-          Select a chapter from the sidebar to start reading.<br><br>
-          <strong>Keyboard shortcuts:</strong><br>
-          <code>Ctrl+K</code> — Search &nbsp; <code>←</code> <code>→</code> — Navigate chapters<br>
-          <code>Ctrl+D</code> — Dark mode &nbsp; <code>M</code> — Mark as read
-        </p>
-      </div>
-    </div>`;
-    return;
-  }
+  const allAch = [
+    {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',tier:'common'},
+    {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',tier:'common'},
+    {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',tier:'rare'},
+    {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',tier:'epic'},
+    {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',tier:'common'},
+    {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',tier:'rare'},
+    {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',tier:'epic'},
+    {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',tier:'common'},
+    {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',tier:'rare'},
+    {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',tier:'epic'},
+    {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',tier:'rare'},
+    {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',tier:'common'},
+    {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',tier:'rare'},
+    {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',tier:'epic'},
+    {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',tier:'epic'},
+    {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',tier:'common'},
+    {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',tier:'rare'},
+    {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',tier:'epic'},
+    {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',tier:'common'},
+    {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',tier:'rare'},
+  ];
+  const unlockedIds = data.achievements || [];
+  const unlockedCount = allAch.filter(a => unlockedIds.includes(a.id)).length;
+
+  const tierColor = {common:'#6366f1',rare:'#f59e0b',epic:'#ef4444'};
+  const achHtml = allAch.sort((a,b) => {
+    const aU = unlockedIds.includes(a.id) ? 0 : 1;
+    const bU = unlockedIds.includes(b.id) ? 0 : 1;
+    return aU - bU;
+  }).map(a => {
+    const unlocked = unlockedIds.includes(a.id);
+    return `<span title="${a.desc}" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:default;
+      ${unlocked ? 'background:linear-gradient(135deg,'+tierColor[a.tier]+','+tierColor[a.tier]+'88);color:white;' : 'background:var(--border);color:var(--text-secondary);opacity:0.45;'}"
+    >${unlocked ? a.icon+' ' : '🔒 '}${a.name}</span>`;
+  }).join('');
 
   contentEl.innerHTML = `
-    <div style="max-width:600px;margin:40px auto;text-align:center;">
+    <div style="max-width:620px;margin:40px auto;text-align:center;">
       <h1 style="font-size:36px;border:none;margin-bottom:8px;background:linear-gradient(135deg,#6366f1,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
         ML Study Notes
       </h1>
-      <p style="color:var(--text-secondary);margin-bottom:32px;">Your interactive learning dashboard</p>
+      <p style="color:var(--text-secondary);margin-bottom:32px;">Your learning dashboard</p>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-number" id="statChapters">${readCount}</div>
           <div class="stat-label">of ${realCh.length} chapters read</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">${getLevel(data.xp)}</div>
-          <div class="stat-label">Level</div>
+          <div class="stat-number">${quizzesDone}</div>
+          <div class="stat-label">Quizzes done</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">${data.xp}</div>
-          <div class="stat-label">Total XP</div>
+          <div class="stat-number">${dsaSolved}</div>
+          <div class="stat-label">DSA solved</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">${data.streak > 0 ? '🔥 ' + data.streak : '0'}</div>
+          <div class="stat-number">${data.streak > 0 ? data.streak : '0'}</div>
           <div class="stat-label">Day Streak</div>
         </div>
       </div>
+      ${interactiveMode ? `
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;">
+        <div class="stat-card" style="flex:1;">
+          <div class="stat-number">${getLevel(data.xp)}</div>
+          <div class="stat-label">Level</div>
+        </div>
+        <div class="stat-card" style="flex:1;">
+          <div class="stat-number">${data.xp}</div>
+          <div class="stat-label">Total XP</div>
+        </div>
+      </div>` : ''}
       <div style="margin-top:16px;">
         <div class="stat-card" style="text-align:left;padding:20px 24px;">
-          <strong style="font-size:14px;">🏅 Achievements (${(data.achievements||[]).length}/40)</strong>
+          <strong style="font-size:14px;">Achievements (${unlockedCount}/${allAch.length} unlocked)</strong>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-            ${['First Steps','Bookworm','Scholar','Consistent','Dedicated','XP Hunter','Leveled Up','Quiz Taker','Flawless','Deep Focus']
-              .map((name, i) => {
-                const ids = ['first_read','ten_read','all_read','streak3','streak7','xp500','level5','first_quiz','quiz_perfect','study5h'];
-                const unlocked = (data.achievements||[]).includes(ids[i]);
-                return `<span style="padding:4px 12px;border-radius:20px;font-size:12px;
-                  ${unlocked ? 'background:linear-gradient(135deg,#6366f1,#a78bfa);color:white;' : 'background:var(--border);color:var(--text-secondary);opacity:0.5;'}"
-                >${unlocked?'✓ ':''}${name}</span>`;
-              }).join('')}
+            ${achHtml}
           </div>
         </div>
       </div>
       <p style="color:var(--text-secondary);margin-top:32px;font-size:14px;">
         <strong>Shortcuts:</strong>
-        <code>Ctrl+K</code> Search &nbsp; <code>←</code><code>→</code> Navigate &nbsp;
+        <code>Ctrl+K</code> Search &nbsp; <code>&larr;</code><code>&rarr;</code> Navigate &nbsp;
         <code>Ctrl+D</code> Theme &nbsp; <code>M</code> Mark read
       </p>
     </div>`;
@@ -3663,6 +3995,9 @@ function renderMotivation() {
         <button class="moti-shuffle" onclick="motiRandom()">🔀 Random</button>
         <button class="moti-btn" onclick="motiNext()" title="Next">▶</button>
       </div>
+      <div style="margin-top:32px;">
+        <button onclick="showGoals()" style="padding:10px 28px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,#6366f1 8%,var(--bg)),color-mix(in srgb,#a78bfa 6%,var(--bg)));color:var(--text);cursor:pointer;font-size:14px;font-weight:600;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none';this.style.boxShadow='none'">🎯 Set Goals & Timetable</button>
+      </div>
     </div>`;
   document.getElementById('contentWrapper').scrollTop = 0;
 }
@@ -3692,6 +4027,332 @@ function animateMotivation() {
   a.style.animation = 'motiFadeIn 0.5s ease 0.15s both';
   document.querySelector('.moti-num').textContent = `${motiIndex + 1} of ${MOTIVATION_QUOTES.length}`;
   document.querySelector('.moti-progress-fill').style.width = `${((motiIndex+1)/MOTIVATION_QUOTES.length)*100}%`;
+}
+
+// ─── Goals & Timetable Page ───
+function getGoalsData() {
+  return JSON.parse(localStorage.getItem('ml4-goals') || '{"goals":[],"timetable":[]}');
+}
+function saveGoalsData(data) {
+  localStorage.setItem('ml4-goals', JSON.stringify(data));
+}
+
+let goalsShowForm = false;
+let goalsShowTTForm = false;
+let goalsShowCompleted = false;
+
+function showGoals() {
+  trackChapterClose();
+  currentIndex = -1;
+  currentPage = 'goals';
+  renderSidebar();
+  closeSidebar();
+  document.getElementById('tocPanel').classList.remove('visible');
+  document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
+  document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('commentFab').classList.remove('visible');
+  history.replaceState(null, '', '#goals');
+  const el = document.getElementById('readingTime'); if (el) el.remove();
+  renderGoalsPage();
+}
+
+function renderGoalsPage() {
+  const contentEl = document.getElementById('content');
+  contentEl.classList.remove('chapter-view');
+  const data = getGoalsData();
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
+  const active = data.goals.filter(g => !g.completed).sort((a, b) => {
+    const pOrder = { high: 0, medium: 1, low: 2 };
+    if (pOrder[a.priority] !== pOrder[b.priority]) return pOrder[a.priority] - pOrder[b.priority];
+    if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return 0;
+  });
+  const completed = data.goals.filter(g => g.completed);
+  const overdue = active.filter(g => g.deadline && g.deadline < todayStr).length;
+  const dueThisWeek = active.filter(g => {
+    if (!g.deadline) return false;
+    const d = new Date(g.deadline);
+    const weekFromNow = new Date(now); weekFromNow.setDate(weekFromNow.getDate() + 7);
+    return d >= now && d <= weekFromNow;
+  }).length;
+
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const timeSlots = [
+    { label: 'Morning', key: 'morning', range: '6am–12pm' },
+    { label: 'Afternoon', key: 'afternoon', range: '12pm–5pm' },
+    { label: 'Evening', key: 'evening', range: '5pm–9pm' },
+    { label: 'Night', key: 'night', range: '9pm–12am' },
+  ];
+  const todayDay = days[(now.getDay() + 6) % 7]; // Convert Sun=0 to Mon=0
+
+  const ttColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+
+  function deadlineBadge(deadline) {
+    if (!deadline) return '';
+    const d = new Date(deadline + 'T00:00:00');
+    const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+    let cls = 'goal-deadline-badge';
+    let text = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diff < 0) { cls += ' overdue'; text += ' (overdue)'; }
+    else if (diff === 0) { cls += ' soon'; text += ' (today)'; }
+    else if (diff <= 3) { cls += ' soon'; text += ` (${diff}d left)`; }
+    else { text += ` (${diff}d left)`; }
+    return `<span class="${cls}">📅 ${text}</span>`;
+  }
+
+  function renderGoalCard(g) {
+    return `<div class="goal-card ${g.completed ? 'done' : ''}">
+      <div class="goal-check" onclick="toggleGoalDone('${g.id}')" title="${g.completed ? 'Mark incomplete' : 'Mark complete'}">${g.completed ? '✓' : ''}</div>
+      <div class="goal-body">
+        <div class="goal-title">${escapeHtml(g.title)}</div>
+        ${g.notes ? `<div class="goal-notes">${escapeHtml(g.notes)}</div>` : ''}
+        <div class="goal-meta">
+          <span class="goal-priority-badge ${g.priority}">${g.priority}</span>
+          ${deadlineBadge(g.deadline)}
+        </div>
+      </div>
+      <button class="goal-delete-btn" onclick="deleteGoal('${g.id}')" title="Delete">×</button>
+    </div>`;
+  }
+
+  const goalFormHtml = goalsShowForm ? `
+    <div class="goal-form">
+      <div class="goal-form-row">
+        <input class="goal-input" id="goalTitle" placeholder="What's your goal?" autofocus>
+      </div>
+      <div class="goal-form-row">
+        <input class="goal-input" id="goalNotes" placeholder="Notes (optional)">
+      </div>
+      <div class="goal-form-row">
+        <div>
+          <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Deadline</label>
+          <input class="goal-input" id="goalDeadline" type="date" min="${todayStr}">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Priority</label>
+          <select class="goal-input goal-select" id="goalPriority">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-form-actions">
+        <button class="goal-save-btn" onclick="addGoal()">Add Goal</button>
+        <button class="goal-cancel-btn" onclick="goalsShowForm=false;renderGoalsPage();">Cancel</button>
+      </div>
+    </div>` : '';
+
+  const dayLabels = { Mon: 'M', Tue: 'T', Wed: 'W', Thu: 'T', Fri: 'F', Sat: 'S', Sun: 'S' };
+  const ttFormHtml = goalsShowTTForm ? `
+    <div class="tt-add-form">
+      <div class="tt-add-row">
+        <div style="flex:1;min-width:120px;">
+          <label>Activity</label>
+          <input class="goal-input" id="ttActivity" placeholder="e.g. ML Chapter 5" style="margin-top:4px;">
+        </div>
+        <div>
+          <label>Time</label>
+          <select class="goal-input goal-select" id="ttTime" style="margin-top:4px;">
+            ${timeSlots.map(t => `<option value="${t.key}">${t.label}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Color</label>
+          <div style="display:flex;gap:4px;margin-top:4px;" id="ttColorPicker">
+            ${ttColors.map((c, i) => `<div class="tt-color-swatch ${i === 0 ? 'active' : ''}" style="background:${c};" onclick="document.querySelectorAll('.tt-color-swatch').forEach(s=>s.classList.remove('active'));this.classList.add('active');this.dataset.picked='1';" data-color="${c}"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;">Days</label>
+        <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+          ${days.map(d => `<button type="button" class="tt-day-toggle ${d === todayDay ? 'active' : ''}" data-day="${d}" onclick="this.classList.toggle('active')">${dayLabels[d]}</button>`).join('')}
+          <span style="width:1px;height:20px;background:var(--border);margin:0 4px;"></span>
+          <button type="button" class="tt-quick-sel" onclick="document.querySelectorAll('.tt-day-toggle').forEach((b,i)=>{if(i<5)b.classList.add('active');else b.classList.remove('active');})">Weekdays</button>
+          <button type="button" class="tt-quick-sel" onclick="document.querySelectorAll('.tt-day-toggle').forEach(b=>b.classList.add('active'))">Every day</button>
+          <button type="button" class="tt-quick-sel" onclick="document.querySelectorAll('.tt-day-toggle').forEach(b=>b.classList.remove('active'))">Clear</button>
+        </div>
+      </div>
+      <div class="goal-form-actions" style="margin-top:14px;">
+        <button class="goal-save-btn" onclick="addTTSlot()">Add to Schedule</button>
+        <button class="goal-cancel-btn" onclick="goalsShowTTForm=false;renderGoalsPage();">Cancel</button>
+      </div>
+    </div>` : '';
+
+  // Build timetable grid cells
+  let ttGridHtml = `<div class="tt-corner"></div>`;
+  ttGridHtml += days.map(d => `<div class="tt-day-header ${d === todayDay ? 'today' : ''}">${d}</div>`).join('');
+
+  timeSlots.forEach(ts => {
+    ttGridHtml += `<div class="tt-time-label">${ts.label}<br><span style="font-size:9px;opacity:0.7;">${ts.range}</span></div>`;
+    days.forEach(d => {
+      const slots = (data.timetable || []).filter(s => s.day === d && s.time === ts.key);
+      const slotsHtml = slots.map(s => {
+        const isRecurring = s.groupId && (data.timetable || []).filter(t => t.groupId === s.groupId).length > 1;
+        return `<div class="tt-slot" style="background:${s.color}22;color:${s.color};border-left:3px solid ${s.color};">
+          ${escapeHtml(s.activity)}${isRecurring ? '<span class="tt-recur-badge">🔁 weekly</span>' : ''}
+          <button class="tt-slot-del" onclick="event.stopPropagation();deleteTTSlot('${s.id}','${s.groupId || ''}');" title="${isRecurring ? 'Remove from all days' : 'Remove'}">×</button>
+        </div>`;
+      }).join('');
+      ttGridHtml += `<div class="tt-cell" onclick="ttCellClick('${d}','${ts.key}')">${slotsHtml}</div>`;
+    });
+  });
+
+  contentEl.innerHTML = `
+    <div class="goals-container">
+      <div class="goals-header">
+        <div>
+          <h1 style="font-size:26px;border:none;margin-bottom:2px;">🎯 Goals & Timetable</h1>
+          <p style="color:var(--text-secondary);font-size:14px;">Set targets, track progress, plan your week</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+          <button onclick="showMotivation()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">💪 Motivation</button>
+        </div>
+      </div>
+
+      <div class="goals-stats">
+        <div class="goals-stat">
+          <div class="num" style="color:var(--accent);">${active.length}</div>
+          <div class="label">Active Goals</div>
+        </div>
+        <div class="goals-stat">
+          <div class="num" style="color:#22c55e;">${completed.length}</div>
+          <div class="label">Completed</div>
+        </div>
+        <div class="goals-stat">
+          <div class="num" style="color:#f59e0b;">${dueThisWeek}</div>
+          <div class="label">Due This Week</div>
+        </div>
+        <div class="goals-stat">
+          <div class="num" style="color:#ef4444;">${overdue}</div>
+          <div class="label">Overdue</div>
+        </div>
+      </div>
+
+      <div class="goals-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2 class="goals-section-title" style="margin:0;">🎯 Goals</h2>
+          ${!goalsShowForm ? `<button class="goal-save-btn" onclick="goalsShowForm=true;renderGoalsPage();setTimeout(()=>{const el=document.getElementById('goalTitle');if(el)el.focus();},100);" style="font-size:13px;padding:8px 18px;">+ Add Goal</button>` : ''}
+        </div>
+        ${goalFormHtml}
+        ${active.length === 0 && completed.length === 0 ? `
+          <div class="goals-empty">
+            <div class="goals-empty-icon">🎯</div>
+            <div style="font-size:16px;font-weight:600;color:var(--heading);margin-bottom:6px;">No goals yet</div>
+            <div>Add your first goal to start tracking your progress</div>
+          </div>` : ''}
+        ${active.map(g => renderGoalCard(g)).join('')}
+        ${completed.length > 0 ? `
+          <div class="completed-toggle" onclick="goalsShowCompleted=!goalsShowCompleted;renderGoalsPage();">
+            <span style="transition:transform 0.2s;display:inline-block;transform:rotate(${goalsShowCompleted ? '90deg' : '0deg'});">▶</span>
+            Completed (${completed.length})
+          </div>
+          ${goalsShowCompleted ? completed.map(g => renderGoalCard(g)).join('') : ''}
+        ` : ''}
+      </div>
+
+      <div class="goals-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2 class="goals-section-title" style="margin:0;">📅 Weekly Timetable</h2>
+          ${!goalsShowTTForm ? `<button class="goal-save-btn" onclick="goalsShowTTForm=true;renderGoalsPage();setTimeout(()=>{const el=document.getElementById('ttActivity');if(el)el.focus();},100);" style="font-size:13px;padding:8px 18px;">+ Add Slot</button>` : ''}
+        </div>
+        ${ttFormHtml}
+        <div class="tt-container">
+          <div class="tt-grid">${ttGridHtml}</div>
+        </div>
+        ${(data.timetable || []).length === 0 ? `<p style="text-align:center;color:var(--text-secondary);font-size:13px;margin-top:12px;">Click any cell or use "+ Add Slot" to plan your week</p>` : ''}
+      </div>
+    </div>`;
+
+  document.getElementById('contentWrapper').scrollTop = 0;
+}
+
+function addGoal() {
+  const title = document.getElementById('goalTitle').value.trim();
+  if (!title) { document.getElementById('goalTitle').style.borderColor = '#ef4444'; return; }
+  const deadline = document.getElementById('goalDeadline').value || '';
+  const priority = document.getElementById('goalPriority').value;
+  const notes = document.getElementById('goalNotes').value.trim();
+  const data = getGoalsData();
+  data.goals.push({
+    id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    title, notes, deadline, priority, completed: false, createdAt: new Date().toISOString()
+  });
+  saveGoalsData(data);
+  goalsShowForm = false;
+  renderGoalsPage();
+}
+
+function toggleGoalDone(id) {
+  const data = getGoalsData();
+  const goal = data.goals.find(g => g.id === id);
+  if (goal) {
+    goal.completed = !goal.completed;
+    if (goal.completed) goal.completedAt = new Date().toISOString();
+    else delete goal.completedAt;
+    saveGoalsData(data);
+    renderGoalsPage();
+  }
+}
+
+function deleteGoal(id) {
+  const data = getGoalsData();
+  data.goals = data.goals.filter(g => g.id !== id);
+  saveGoalsData(data);
+  renderGoalsPage();
+}
+
+function addTTSlot() {
+  const activity = document.getElementById('ttActivity').value.trim();
+  if (!activity) { document.getElementById('ttActivity').style.borderColor = '#ef4444'; return; }
+  const selectedDays = [...document.querySelectorAll('.tt-day-toggle.active')].map(b => b.dataset.day);
+  if (selectedDays.length === 0) return;
+  const time = document.getElementById('ttTime').value;
+  const activeSwatch = document.querySelector('.tt-color-swatch.active');
+  const color = activeSwatch ? activeSwatch.dataset.color : '#6366f1';
+  const data = getGoalsData();
+  if (!data.timetable) data.timetable = [];
+  const groupId = selectedDays.length > 1 ? 'grp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) : null;
+  selectedDays.forEach(day => {
+    data.timetable.push({
+      id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      activity, day, time, color,
+      ...(groupId ? { groupId } : {})
+    });
+  });
+  saveGoalsData(data);
+  goalsShowTTForm = false;
+  renderGoalsPage();
+}
+
+function deleteTTSlot(id, groupId) {
+  const data = getGoalsData();
+  if (groupId) {
+    data.timetable = (data.timetable || []).filter(s => s.groupId !== groupId);
+  } else {
+    data.timetable = (data.timetable || []).filter(s => s.id !== id);
+  }
+  saveGoalsData(data);
+  renderGoalsPage();
+}
+
+function ttCellClick(day, time) {
+  goalsShowTTForm = true;
+  renderGoalsPage();
+  setTimeout(() => {
+    document.querySelectorAll('.tt-day-toggle').forEach(b => {
+      b.classList.toggle('active', b.dataset.day === day);
+    });
+    const timeEl = document.getElementById('ttTime');
+    const actEl = document.getElementById('ttActivity');
+    if (timeEl) timeEl.value = time;
+    if (actEl) actEl.focus();
+  }, 100);
 }
 
 // ─── Notebook Renderer ───
@@ -4511,6 +5172,10 @@ let dsaFilter = 'All';
 let dsaDiffFilter = 'All';
 let dsaCurrentProblem = null;
 let dsaAutoSaveTimer = null;
+let dsaTimerInterval = null;
+let dsaTimerSeconds = 0;
+let dsaTimerRunning = false;
+let dsaNoteSaveTimer = null;
 
 function showDSAPractice() {
   trackChapterClose();
@@ -4556,7 +5221,7 @@ function showDSAPractice() {
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
           <button onclick="showMotivation()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">💪 Motivation</button>
-          <button class="dsa-add-btn" onclick="toggleDSAAddForm()">+ Add Problem</button>
+          <button class="dsa-add-btn" onclick="toggleDSAAddForm()">+ Add Question</button>
         </div>
       </div>
       <div id="dsaAddFormWrap" style="display:none;"></div>
@@ -4618,66 +5283,146 @@ function toggleDSAAddForm() {
   if (!wrap) return;
   if (wrap.style.display !== 'none') { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
 
-  const existingCats = [...new Set(getAllDSAProblems().map(p => p.category))];
+  const allProblems = getAllDSAProblems();
+  const existingCats = [...new Set(allProblems.map(p => p.category))];
+  const existingTags = [...new Set(allProblems.flatMap(p => p.tags || []))].sort();
   wrap.style.display = 'block';
   wrap.innerHTML = `
     <div class="dsa-add-form">
-      <h3 style="margin:0 0 4px;font-size:16px;">Add a New Problem</h3>
-      <p style="color:var(--text-secondary);font-size:12px;margin:0 0 10px;">Fields marked * are required. Problem will appear in your list and count toward metrics.</p>
-      <label>Title *</label>
-      <input id="dsaAddTitle" placeholder="e.g. Merge K Sorted Lists">
-      <div class="row">
-        <div>
-          <label>Difficulty *</label>
-          <select id="dsaAddDiff">
-            <option value="Easy">Easy</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
+      <div class="dsa-add-form-header">
+        <h3>Add a New Question</h3>
+        <p>Saved locally. Appears in your problem list and counts toward stats.</p>
+      </div>
+      <div class="dsa-add-form-body">
+        <div class="dsa-add-form-section">
+          <div class="dsa-add-form-section-title">Basic Info</div>
+          <label>Title *</label>
+          <input id="dsaAddTitle" placeholder="e.g. Merge K Sorted Lists">
+          <div class="row-3" style="margin-top:2px;">
+            <div>
+              <label>Difficulty *</label>
+              <select id="dsaAddDiff">
+                <option value="Easy">Easy</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label>Category *</label>
+              <input id="dsaAddCat" list="dsaCatList" placeholder="e.g. Trees, DP...">
+              <datalist id="dsaCatList">${existingCats.map(c => '<option value="'+c+'">').join('')}</datalist>
+            </div>
+            <div>
+              <label>Link</label>
+              <input id="dsaAddLink" placeholder="https://leetcode.com/...">
+            </div>
+          </div>
         </div>
-        <div>
-          <label>Category *</label>
-          <input id="dsaAddCat" list="dsaCatList" placeholder="e.g. Trees, Graphs, DP...">
-          <datalist id="dsaCatList">${existingCats.map(c => '<option value="'+c+'">').join('')}</datalist>
+
+        <div class="dsa-add-form-section">
+          <div class="dsa-add-form-section-title">Tags</div>
+          <div style="position:relative;">
+            <div id="dsaSelectedTags" style="display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:6px;"></div>
+            <input id="dsaAddTags" placeholder="Search tags or type new ones (comma-separated)..." onfocus="document.getElementById('dsaTagDropdown').style.display='block'" oninput="filterDSATags(this.value)">
+            <div id="dsaTagDropdown" style="display:none;position:absolute;z-index:10;left:0;right:0;max-height:160px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px var(--shadow);margin-top:2px;">
+              ${existingTags.map(t => `<div class="dsa-tag-option" data-tag="${t.replace(/"/g,'&quot;')}" onclick="pickDSATag('${t.replace(/'/g, "\\'")}')" style="padding:7px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.1s;">
+                <span class="dsa-tag-check" style="width:16px;text-align:center;color:var(--accent);font-weight:bold;"></span>${t}
+              </div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="dsa-add-form-section">
+          <div class="dsa-add-form-section-title">Problem Details</div>
+          <label>Description</label>
+          <textarea id="dsaAddDesc" rows="3" placeholder="Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target."></textarea>
+          <label>Examples</label>
+          <textarea id="dsaAddExamples" rows="2" placeholder="Input: nums = [2,7,11,15], target = 9&#10;Output: [0,1]"></textarea>
+        </div>
+
+        <div class="dsa-add-form-section">
+          <div class="dsa-add-form-section-title">Starter Code</div>
+          <textarea id="dsaAddCode" rows="8" style="font-family:'JetBrains Mono','Fira Code',monospace;font-size:13px;background:#0f172a;color:#e2e8f0;border-color:#334155;" placeholder="public class Main {&#10;    public static void main(String[] args) {&#10;        // your code here&#10;    }&#10;}"></textarea>
+          <div class="dsa-field-hint">Java 22 (OpenJDK). Class must be named <code>Main</code>.</div>
         </div>
       </div>
-      <label>Tags <small style="font-weight:400;color:var(--text-secondary);">(comma-separated)</small></label>
-      <input id="dsaAddTags" placeholder="e.g. BFS, Graph, Queue">
-      <label>Link <small style="font-weight:400;color:var(--text-secondary);">(LeetCode / other URL)</small></label>
-      <input id="dsaAddLink" placeholder="https://leetcode.com/problems/...">
-      <label>Description</label>
-      <textarea id="dsaAddDesc" rows="3" placeholder="Problem statement..."></textarea>
-      <label>Starter Code (Java)</label>
-      <textarea id="dsaAddCode" rows="6" style="font-family:monospace;font-size:13px;" placeholder="public class Main {&#10;    public static void main(String[] args) {&#10;        // your code here&#10;    }&#10;}"></textarea>
+
       <div class="dsa-add-actions">
         <button class="cancel" onclick="toggleDSAAddForm()">Cancel</button>
-        <button class="save" onclick="saveNewDSAProblem()">Add Problem</button>
+        <button class="save" onclick="saveNewDSAProblem()">Add Question</button>
       </div>
     </div>`;
   wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   document.getElementById('dsaAddTitle').focus();
 }
 
+function getDSASelectedTags() {
+  const input = document.getElementById('dsaAddTags');
+  return input.dataset.tags ? input.dataset.tags.split(',').filter(Boolean) : [];
+}
+function setDSASelectedTags(tags) {
+  const input = document.getElementById('dsaAddTags');
+  input.dataset.tags = tags.join(',');
+  input.value = '';
+  // Render chips
+  const container = document.getElementById('dsaSelectedTags');
+  if (container) container.innerHTML = tags.map(t =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:12px;font-size:12px;background:var(--accent);color:#fff;">
+      ${t}<span onclick="removeDSATag('${t.replace(/'/g,"\\'")}')" style="cursor:pointer;font-size:14px;line-height:1;">&times;</span>
+    </span>`
+  ).join('');
+  // Update checkmarks
+  document.querySelectorAll('.dsa-tag-option').forEach(el => {
+    const check = el.querySelector('.dsa-tag-check');
+    if (check) check.textContent = tags.includes(el.dataset.tag) ? '✓' : '';
+  });
+}
+function pickDSATag(tag) {
+  const tags = getDSASelectedTags();
+  const idx = tags.indexOf(tag);
+  if (idx >= 0) tags.splice(idx, 1); else tags.push(tag);
+  setDSASelectedTags(tags);
+}
+function removeDSATag(tag) {
+  const tags = getDSASelectedTags().filter(t => t !== tag);
+  setDSASelectedTags(tags);
+}
+function filterDSATags(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('.dsa-tag-option').forEach(el => {
+    el.style.display = el.dataset.tag.toLowerCase().includes(q) ? '' : 'none';
+  });
+  document.getElementById('dsaTagDropdown').style.display = 'block';
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('dsaTagDropdown');
+  if (dd && !e.target.closest('#dsaTagDropdown') && e.target.id !== 'dsaAddTags') dd.style.display = 'none';
+});
+
 function saveNewDSAProblem() {
   const title = document.getElementById('dsaAddTitle').value.trim();
   const difficulty = document.getElementById('dsaAddDiff').value;
   const category = document.getElementById('dsaAddCat').value.trim();
-  if (!title) { document.getElementById('dsaAddTitle').focus(); return showToast('Missing title', 'Please enter a problem title', '⚠️'); }
+  if (!title) { document.getElementById('dsaAddTitle').focus(); return showToast('Missing title', 'Please enter a question title', '⚠️'); }
   if (!category) { document.getElementById('dsaAddCat').focus(); return showToast('Missing category', 'Please enter a category', '⚠️'); }
 
-  const tags = document.getElementById('dsaAddTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const typedTags = document.getElementById('dsaAddTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const selectedTags = getDSASelectedTags();
+  const tags = [...new Set([...selectedTags, ...typedTags])];
   const link = document.getElementById('dsaAddLink').value.trim();
   const description = document.getElementById('dsaAddDesc').value.trim() || 'No description provided.';
+  const examples = (document.getElementById('dsaAddExamples')?.value || '').trim();
   const starterCode = document.getElementById('dsaAddCode').value || 'public class Main {\n    public static void main(String[] args) {\n        // your code here\n    }\n}';
 
   const id = 'custom-' + Date.now() + '-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
-  const problem = { id, title, category, difficulty, link: link || '', tags, description, examples: '', starterCode, _custom: true };
+  const problem = { id, title, category, difficulty, link: link || '', tags, description, examples, starterCode, _custom: true };
 
   const custom = getCustomDSAProblems();
   custom.push(problem);
   saveCustomDSAProblems(custom);
 
-  showToast('Problem Added', title, '✓');
+  showToast('Question Added', title, '✓');
   const scrollPos = document.getElementById('contentWrapper').scrollTop;
   showDSAPractice();
   document.getElementById('contentWrapper').scrollTop = scrollPos;
@@ -4699,9 +5444,59 @@ function deleteCustomDSA(id) {
   document.getElementById('contentWrapper').scrollTop = scrollPos;
 }
 
+function dsaFormatExamples(raw) {
+  // Parse examples string into structured Input/Output/Explanation blocks
+  const lines = raw.split('\n');
+  let html = '<div class="dsa-example-block">';
+  let hasContent = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('Input:')) {
+      if (hasContent) html += '</div><div class="dsa-example-block">';
+      html += '<span class="dsa-example-label input">Input</span><div class="dsa-example-code">' + escapeHTML(trimmed.slice(6).trim()) + '</div>';
+      hasContent = true;
+    } else if (trimmed.startsWith('Output:')) {
+      html += '<span class="dsa-example-label output">Output</span><div class="dsa-example-code">' + escapeHTML(trimmed.slice(7).trim()) + '</div>';
+    } else if (trimmed.startsWith('Explanation:')) {
+      html += '<span class="dsa-example-label explain">Explanation</span><div class="dsa-example-code">' + escapeHTML(trimmed.slice(12).trim()) + '</div>';
+    } else {
+      html += '<div class="dsa-example-code">' + escapeHTML(trimmed) + '</div>';
+      hasContent = true;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function dsaUpdateLineNumbers() {
+  const editor = document.getElementById('dsaCodeEditor');
+  const gutter = document.getElementById('dsaLineNums');
+  if (!editor || !gutter) return;
+  const lineCount = editor.value.split('\n').length;
+  let html = '';
+  for (let i = 1; i <= lineCount; i++) html += '<div>' + i + '</div>';
+  gutter.innerHTML = html;
+}
+
+function dsaSyncLineScroll() {
+  const editor = document.getElementById('dsaCodeEditor');
+  const gutter = document.getElementById('dsaLineNums');
+  if (editor && gutter) gutter.scrollTop = editor.scrollTop;
+}
+
 function showDSAProblem(id) {
-  const problem = getAllDSAProblems().find(p => p.id === id);
+  const allProblems = getAllDSAProblems();
+  const problem = allProblems.find(p => p.id === id);
   if (!problem) return;
+
+  // Stop any existing timer
+  dsaStopTimer();
+
   dsaCurrentProblem = id;
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
@@ -4711,50 +5506,109 @@ function showDSAProblem(id) {
   const progress = getDSAProgress();
   const saved = progress[id] || {};
   const code = saved.code || problem.starterCode;
+  const notes = saved.notes || '';
+
+  // Prev/Next navigation
+  const currentIdx = allProblems.findIndex(p => p.id === id);
+  const prevProblem = currentIdx > 0 ? allProblems[currentIdx - 1] : null;
+  const nextProblem = currentIdx < allProblems.length - 1 ? allProblems[currentIdx + 1] : null;
+
+  // Category progress
+  const catProblems = allProblems.filter(p => p.category === problem.category);
+  const catSolved = catProblems.filter(p => progress[p.id]?.solved).length;
+
+  // Restore timer from saved progress
+  dsaTimerSeconds = saved.timerSeconds || 0;
+  dsaTimerRunning = false;
 
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
 
   const descHtml = problem.description.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
-  const examplesHtml = problem.examples.replace(/\n/g, '<br>');
+  const diffClass = problem.difficulty.toLowerCase();
+  const examplesHtml = dsaFormatExamples(problem.examples);
 
   contentEl.innerHTML = `
     <div class="dsa-problem-page">
-      <button class="dsa-back-btn" onclick="showDSAPractice();">&#8592; Back to Problems</button>
-
-      <h1 style="font-size:24px;border:none;margin:0 0 4px;">${problem.title}</h1>
-      <div class="dsa-problem-meta">
-        <span class="dsa-diff-badge ${problem.difficulty.toLowerCase()}">${problem.difficulty}</span>
-        ${problem.tags.map(t => `<span class="dsa-tag">${t}</span>`).join('')}
-        <a class="dsa-link" href="${problem.link}" target="_blank" rel="noopener">LeetCode &#8599;</a>
-        ${saved.solved ? '<span style="color:var(--success);font-weight:600;">&#10003; Solved</span>' : ''}
+      <div class="dsa-nav-row">
+        <button class="dsa-back-btn" onclick="showDSAPractice();">&#8592; All</button>
+        <span class="dsa-diff-badge ${diffClass}" style="font-size:10px;">${problem.difficulty}</span>
+        <h1 style="font-size:17px;font-weight:700;border:none;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${problem.title}</h1>
+        ${saved.solved ? '<span style="color:#22c55e;font-size:12px;font-weight:700;">&#10003;</span>' : ''}
+        <div class="dsa-nav-btns">
+          <button class="dsa-nav-btn" onclick="showDSAProblem('${prevProblem ? prevProblem.id : ''}')" ${!prevProblem ? 'disabled' : ''} title="${prevProblem ? prevProblem.title : ''}">&#8592;</button>
+          <span class="dsa-nav-counter">${currentIdx + 1}/${allProblems.length}</span>
+          <button class="dsa-nav-btn" onclick="showDSAProblem('${nextProblem ? nextProblem.id : ''}')" ${!nextProblem ? 'disabled' : ''} title="${nextProblem ? nextProblem.title : ''}">&#8594;</button>
+        </div>
       </div>
 
-      <div class="dsa-description">
-        <strong>Problem:</strong><br>${descHtml}
-        <br><br><strong>Example:</strong><br><code style="display:block;margin-top:6px;white-space:pre-wrap;background:var(--code-bg);padding:10px;border-radius:6px;">${problem.examples}</code>
-      </div>
-
-      <div class="dsa-editor-wrap">
-        <div class="dsa-editor-toolbar">
-          <span class="lang">Java</span>
-          <span class="dsa-save-indicator" id="dsaSaveInd">Saved</span>
-          <div class="actions">
-            <button onclick="dsaResetCode('${id}')" title="Reset to starter code">&#8635; Reset</button>
-            <button onclick="dsaToggleSolved('${id}')" id="dsaSolveBtn">${saved.solved ? '&#10003; Solved' : '&#9744; Mark Solved'}</button>
-            <button class="dsa-fs-btn" onclick="dsaToggleFullscreen()" id="dsaFsBtn" title="Toggle fullscreen IDE">&#x26F6; Fullscreen</button>
-            <button class="run-btn" onclick="dsaRunCode()" id="dsaRunBtn">&#9654; Run</button>
+      <div class="dsa-split">
+        <!-- Left pane: problem description -->
+        <div class="dsa-split-left" id="dsaSplitLeft">
+          <div class="dsa-pane-header">
+            <div class="dsa-problem-meta" style="padding:12px 16px 8px;">
+              ${problem.tags.map(t => `<span class="dsa-tag">${t}</span>`).join('')}
+              <a class="dsa-link" href="${problem.link}" target="_blank" rel="noopener">LeetCode &#8599;</a>
+              <span class="dsa-cat-progress"><strong>${catSolved}</strong>/${catProblems.length} ${problem.category}</span>
+            </div>
+          </div>
+          <div class="dsa-pane-section">
+            <div class="dsa-desc-toggle" onclick="dsaToggleDesc()">
+              <h3><i class="ico">&#128196;</i> Problem</h3>
+              <span class="chevron" id="dsaDescChevron">&#9660;</span>
+            </div>
+            <div class="dsa-desc-body" id="dsaDescBody">
+              <div class="dsa-description">${descHtml}</div>
+            </div>
+          </div>
+          <div class="dsa-pane-section">
+            <h3><i class="ico">&#128221;</i> Examples</h3>
+            ${examplesHtml}
+          </div>
+          <div class="dsa-pane-section dsa-notes-wrap">
+            <div class="dsa-notes-header">
+              <h3 style="margin:0;"><i class="ico">&#9998;</i> Notes</h3>
+              <span class="dsa-notes-saved" id="dsaNotesSaved">Saved</span>
+            </div>
+            <textarea class="dsa-notes" id="dsaNotes" placeholder="Approach, complexity, edge cases...">${escapeCode(notes)}</textarea>
           </div>
         </div>
-        <textarea class="dsa-editor" id="dsaCodeEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">${escapeCode(code)}</textarea>
-      </div>
 
-      <div class="dsa-output-wrap">
-        <div class="dsa-output-header">
-          <span>Output</span>
-          <button style="margin-left:auto;padding:3px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:6px;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'" onclick="document.getElementById('dsaOutput').textContent='';">Clear</button>
+        <!-- Draggable divider -->
+        <div class="dsa-split-divider" id="dsaSplitDivider"></div>
+
+        <!-- Right pane: editor + output -->
+        <div class="dsa-split-right">
+          <div class="dsa-editor-wrap">
+            <div class="dsa-editor-toolbar">
+              <span class="lang">Java</span>
+              <div class="dsa-timer-wrap">
+                <span class="dsa-timer" id="dsaTimer">${dsaFormatTime(dsaTimerSeconds)}</span>
+                <button class="dsa-timer-btn" id="dsaTimerBtn" onclick="dsaToggleTimer('${id}')" title="Start/pause timer">&#9654;</button>
+                <button class="dsa-timer-btn" onclick="dsaResetTimer('${id}')" title="Reset timer">&#8635;</button>
+              </div>
+              <span class="dsa-save-indicator" id="dsaSaveInd">Saved</span>
+              <div class="actions">
+                <button onclick="dsaResetCode('${id}')" title="Reset to starter code">&#8635;</button>
+                <button onclick="dsaToggleSolved('${id}')" id="dsaSolveBtn" title="${saved.solved ? 'Solved' : 'Mark as solved'}">${saved.solved ? '&#10003;' : '&#9744;'}</button>
+                <button class="dsa-fs-btn" onclick="dsaToggleFullscreen()" id="dsaFsBtn" title="Fullscreen">&#x26F6;</button>
+                <button class="run-btn" onclick="dsaRunCode()" id="dsaRunBtn">&#9654; Run</button>
+              </div>
+            </div>
+            <div class="dsa-editor-area">
+              <div class="dsa-line-numbers" id="dsaLineNums"></div>
+              <textarea class="dsa-editor" id="dsaCodeEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">${escapeCode(code)}</textarea>
+            </div>
+          </div>
+
+          <div class="dsa-output-wrap">
+            <div class="dsa-output-header">
+              <span>Output</span>
+              <button style="margin-left:auto;padding:3px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:6px;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'" onclick="document.getElementById('dsaOutput').textContent='';">Clear</button>
+            </div>
+            <div class="dsa-output" id="dsaOutput">${saved.lastOutput || 'Click "Run" to execute your code.'}</div>
+          </div>
         </div>
-        <div class="dsa-output" id="dsaOutput">${saved.lastOutput || 'Click "Run" to execute your code.'}</div>
       </div>
 
       <div class="dsa-hint">
@@ -4766,9 +5620,12 @@ function showDSAProblem(id) {
     </div>`;
   document.getElementById('contentWrapper').scrollTop = 0;
 
-  // Set up editor behaviors
+  // ── Line numbers ──
+  dsaUpdateLineNumbers();
+
+  // ── Set up editor behaviors ──
   const editor = document.getElementById('dsaCodeEditor');
-  // Tab key inserts spaces
+  editor.addEventListener('scroll', dsaSyncLineScroll);
   editor.addEventListener('keydown', function(e) {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -4777,22 +5634,60 @@ function showDSAProblem(id) {
       this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
       this.selectionStart = this.selectionEnd = start + 4;
       dsaAutoSave(id);
+      dsaUpdateLineNumbers();
     }
-    // Ctrl+Enter to run
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       dsaRunCode();
     }
-  });
-  // Auto-save on typing
-  editor.addEventListener('input', function() { dsaAutoSave(id); });
-
-  // Esc exits fullscreen
-  editor.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && document.getElementById('content').classList.contains('dsa-fullscreen')) {
       dsaToggleFullscreen();
     }
   });
+  editor.addEventListener('input', function() {
+    dsaAutoSave(id);
+    dsaUpdateLineNumbers();
+  });
+
+  // ── Notes auto-save ──
+  const notesEl = document.getElementById('dsaNotes');
+  notesEl.addEventListener('input', function() { dsaAutoSaveNotes(id); });
+
+  // ── Draggable split divider ──
+  const divider = document.getElementById('dsaSplitDivider');
+  const splitLeft = document.getElementById('dsaSplitLeft');
+  if (divider && splitLeft) {
+    let startX, startW;
+    function onDragMove(e) {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const newW = startW + (clientX - startX);
+      const container = splitLeft.parentElement;
+      const min = 220, max = container.clientWidth * 0.65;
+      splitLeft.style.width = Math.max(min, Math.min(max, newW)) + 'px';
+    }
+    function onDragEnd() {
+      divider.classList.remove('dragging');
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('touchend', onDragEnd);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+    function onDragStart(e) {
+      startX = e.touches ? e.touches[0].clientX : e.clientX;
+      startW = splitLeft.offsetWidth;
+      divider.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragEnd);
+      document.addEventListener('touchmove', onDragMove, {passive:true});
+      document.addEventListener('touchend', onDragEnd);
+    }
+    divider.addEventListener('mousedown', onDragStart);
+    divider.addEventListener('touchstart', onDragStart, {passive:true});
+  }
 }
 
 function dsaToggleFullscreen() {
@@ -4856,6 +5751,103 @@ function dsaToggleSolved(id) {
   const btn = document.getElementById('dsaSolveBtn');
   if (btn) btn.innerHTML = progress[id].solved ? '&#10003; Solved' : '&#9744; Mark Solved';
   if (progress[id].solved && interactiveMode) addXP(15, 'Solved DSA problem');
+  // Update solved badge in hero card
+  const meta = document.querySelector('.dsa-problem-meta');
+  const existing = meta?.querySelector('.dsa-solved-badge');
+  if (progress[id].solved && !existing) {
+    const badge = document.createElement('span');
+    badge.className = 'dsa-solved-badge';
+    badge.innerHTML = '&#10003; Solved';
+    meta.appendChild(badge);
+  } else if (!progress[id].solved && existing) {
+    existing.remove();
+  }
+}
+
+// ─── Timer functions ───
+function dsaFormatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function dsaToggleTimer(id) {
+  if (dsaTimerRunning) {
+    dsaPauseTimer(id);
+  } else {
+    dsaStartTimer(id);
+  }
+}
+
+function dsaStartTimer(id) {
+  dsaTimerRunning = true;
+  const btn = document.getElementById('dsaTimerBtn');
+  if (btn) { btn.innerHTML = '&#10074;&#10074;'; btn.classList.add('running'); btn.title = 'Pause timer'; }
+  dsaTimerInterval = setInterval(() => {
+    dsaTimerSeconds++;
+    const display = document.getElementById('dsaTimer');
+    if (display) display.textContent = dsaFormatTime(dsaTimerSeconds);
+    // Auto-save timer every 10 seconds
+    if (dsaTimerSeconds % 10 === 0) dsaSaveTimer(id);
+  }, 1000);
+}
+
+function dsaPauseTimer(id) {
+  dsaTimerRunning = false;
+  clearInterval(dsaTimerInterval);
+  dsaTimerInterval = null;
+  const btn = document.getElementById('dsaTimerBtn');
+  if (btn) { btn.innerHTML = '&#9654;'; btn.classList.remove('running'); btn.title = 'Start timer'; }
+  dsaSaveTimer(id);
+}
+
+function dsaStopTimer() {
+  dsaTimerRunning = false;
+  clearInterval(dsaTimerInterval);
+  dsaTimerInterval = null;
+  // Save final time for current problem
+  if (dsaCurrentProblem && dsaTimerSeconds > 0) {
+    dsaSaveTimer(dsaCurrentProblem);
+  }
+}
+
+function dsaResetTimer(id) {
+  dsaPauseTimer(id);
+  dsaTimerSeconds = 0;
+  const display = document.getElementById('dsaTimer');
+  if (display) display.textContent = dsaFormatTime(0);
+  dsaSaveTimer(id);
+}
+
+function dsaSaveTimer(id) {
+  const progress = getDSAProgress();
+  if (!progress[id]) progress[id] = {};
+  progress[id].timerSeconds = dsaTimerSeconds;
+  saveDSAProgress(progress);
+}
+
+// ─── Collapsible description ───
+function dsaToggleDesc() {
+  const body = document.getElementById('dsaDescBody');
+  const chevron = document.getElementById('dsaDescChevron');
+  if (!body) return;
+  body.classList.toggle('collapsed');
+  if (chevron) chevron.classList.toggle('collapsed');
+}
+
+// ─── Notes auto-save ───
+function dsaAutoSaveNotes(id) {
+  clearTimeout(dsaNoteSaveTimer);
+  dsaNoteSaveTimer = setTimeout(() => {
+    const notesEl = document.getElementById('dsaNotes');
+    if (!notesEl) return;
+    const progress = getDSAProgress();
+    if (!progress[id]) progress[id] = {};
+    progress[id].notes = notesEl.value;
+    saveDSAProgress(progress);
+    const ind = document.getElementById('dsaNotesSaved');
+    if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
+  }, 800);
 }
 
 async function dsaRunCode() {
@@ -4908,7 +5900,7 @@ async function dsaRunCode() {
     }
   } catch (err) {
     output.className = 'dsa-output error';
-    output.textContent = 'Failed to execute code.\n\n' + err.message + '\n\nMake sure you have an internet connection.\nThe code runs on a free API (Piston) — it may be temporarily unavailable.';
+    output.textContent = 'Failed to execute code.\n\n' + err.message + '\n\nMake sure you have an internet connection.\nThe code runs on Wandbox API — it may be temporarily unavailable.';
   } finally {
     runBtn.disabled = false;
     runBtn.innerHTML = '&#9654; Run';
@@ -4926,8 +5918,8 @@ if (localStorage.getItem('ml4-sidebar') === 'collapsed' && window.innerWidth > 7
 renderSidebar();
 setupScrollProgress();
 
-// Show welcome dashboard
-if (interactiveMode) renderWelcome();
+// Show welcome dashboard (both modes)
+renderWelcome();
 
 // Apply saved font size
 if (fontSize !== 0) {
@@ -4938,8 +5930,12 @@ if (fontSize !== 0) {
 
 // Load from URL hash
 const hash = window.location.hash.slice(1);
-if (hash === 'dashboard') {
+if (hash === 'home' || hash === '') {
+  renderWelcome();
+} else if (hash === 'dashboard') {
   showDashboard();
+} else if (hash === 'goals') {
+  showGoals();
 } else if (hash === 'dsa-practice') {
   showDSAPractice();
 } else if (hash.startsWith('dsa-problem-')) {
