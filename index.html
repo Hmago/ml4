@@ -2717,7 +2717,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ─── Interactive Mode ───
-let interactiveMode = localStorage.getItem('ml4-interactive') === 'true';
+let interactiveMode = localStorage.getItem('ml4-interactive') !== 'false';
 
 let currentPage = 'welcome'; // 'welcome', 'dashboard', 'motivation', 'goals', 'chapter', 'dsa', 'dsa-problem'
 
