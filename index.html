@@ -3580,7 +3580,7 @@ function showDashboard() {
   const chapterMinutes = {
     '00_google_ai_engineer_strategy.md': 150,
     '01_brain_training.md': 45,
-    '02_math_fundamentals.md': 150,
+    '02_math_fundamentals.md': 180,
     '03_introduction.md': 25,
     '04_core_concepts.md': 120,
     '05_data_preprocessing.md': 40,
@@ -5918,9 +5918,6 @@ if (localStorage.getItem('ml4-sidebar') === 'collapsed' && window.innerWidth > 7
 renderSidebar();
 setupScrollProgress();
 
-// Show welcome dashboard (both modes)
-renderWelcome();
-
 // Apply saved font size
 if (fontSize !== 0) {
   const el = document.getElementById('content');
@@ -5928,7 +5925,7 @@ if (fontSize !== 0) {
   if (fontSize === 1) el.classList.add('font-lg');
 }
 
-// Load from URL hash
+// Load from URL hash (preserves the page across hard refresh)
 const hash = window.location.hash.slice(1);
 if (hash === 'home' || hash === '') {
   renderWelcome();
