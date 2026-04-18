@@ -16,7 +16,7 @@ This is a **Machine Learning study notes and learning platform** — a comprehen
   - **Google ML Ecosystem** (Ch 19): TPUs, JAX, Vertex AI, key papers
   - **Supplementary**: Brain training, practical ML, staying relevant in AI era, quick reference cheat sheet
 - **README.md** — Table of contents with Google interview priority ratings (★★★/★★/★), difficulty levels, estimated reading times, chapter dependency map, and five learning tracks
-- **~74.5 hours** of total content
+- **~87.5 hours** of total content
 
 ## Web Learning Platform
 
