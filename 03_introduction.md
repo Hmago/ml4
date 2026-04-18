@@ -232,15 +232,15 @@ Why is this the center of the AI gold rush? For about 60 years, computers could 
 
 ### Quick comparison table
 
-> **Note:** "AI" is the **umbrella term** — it covers both *rule-based AI* (hand-coded logic) and *learned AI* (ML, Deep Learning, Generative AI). So the AI column shows the *full range*, and each column to the right is a progressively more specific subset of it.
+> **Note:** Each column is an **umbrella** over the columns to its right. **AI** contains everything (including ML, DL, Gen AI). **ML** contains Deep Learning and Gen AI. **Deep Learning** contains Gen AI. So cells in the wider-scope columns reflect the *full range* of what those umbrellas cover.
 
-| Dimension            | **AI** *(the umbrella)*                                                  | **ML**                                  | **Deep Learning**                                  | **Generative AI**                            |
-|----------------------|---------------------------------------------------------------------------|-----------------------------------------|----------------------------------------------------|----------------------------------------------|
-| **What it does**     | Anything that mimics human intelligence — reasoning, recognizing, planning, creating | Learns patterns from labeled examples | Learns features automatically via deep neural nets | Produces brand-new content from a prompt    |
-| **Source of rules**  | **Either** hand-coded by humans **or** learned from data                  | Algorithm fits a model to labeled data  | Same, but with deep neural networks                | Self-supervised pre-training on internet data |
-| **Data needs**       | **Varies** — zero for rule-based AI, up to billions of items for learned AI | Thousands → millions of labeled rows  | Millions of labeled examples                       | Billions of documents / images               |
-| **Flagship example** | Deep Blue (rule-based) · GPS routing (rule-based) · ChatGPT (learned) · Waymo (learned) | Gmail spam filter · Netflix recs | Face ID · AlphaGo · Waymo                          | ChatGPT · Gemini · DALL·E                    |
-| **Main limitation**  | Depends on the technique — rule-based AI is brittle; learned AI is opaque, costly, and can hallucinate | Needs hand-designed features | Data-hungry, costly, opaque                        | Hallucinates; expensive; ethics concerns     |
+| Dimension            | **AI** *(the umbrella)*                                                                                | **ML** *(includes deep learning)*                                                                       | **Deep Learning** *(includes Gen AI)*                                                                              | **Generative AI**                            |
+|----------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| **What it does**     | Anything that mimics human intelligence — reasoning, recognizing, planning, creating                   | Learns patterns from data — covers classification, regression, clustering, RL, and generation           | Learns features automatically using layered neural networks — for vision, speech, language, control, and generation | Produces brand-new content from a prompt    |
+| **Source of rules**  | **Either** hand-coded by humans **or** learned from data                                               | Discovered by an algorithm from data — supervised, unsupervised, self-supervised, or reinforcement      | Discovered by neural networks — replaces classical ML's hand-designed features with learned ones                   | Self-supervised pre-training on internet data |
+| **Data needs**       | **Varies** — zero for rule-based AI, up to billions of items for learned AI                            | **Varies** — hundreds of rows (classical ML) up to billions (large deep models)                         | Typically millions of examples for classification, up to billions for generation                                   | Billions of documents / images               |
+| **Flagship example** | Deep Blue (rule-based) · GPS routing · ChatGPT (learned) · Waymo (learned)                             | Gmail spam filter · Netflix recs · AlphaGo · ChatGPT (all are ML)                                       | AlexNet · ResNet · AlphaGo · Face ID · ChatGPT (all neural networks)                                               | ChatGPT · Gemini · DALL·E                    |
+| **Main limitation**  | Depends on the technique — rule-based is brittle; learned is opaque, costly, and can hallucinate       | Depends on the flavor — classical ML needs feature engineering; deep ML needs huge data and compute     | Data-hungry, costly, and largely opaque — true for both discriminative and generative variants                     | Hallucinates; expensive; ethics concerns     |
 
 > **One-line memory trick:**
 > **AI** = smart computer. **ML** = smart computer that *learned* from data. **DL** = ML with deep neural networks. **Gen AI** = DL that *makes new stuff*.
@@ -449,12 +449,16 @@ There's no pre-collected dataset — the agent generates its own experience thro
 
 ### Side-by-side: the four types
 
-| Type              | Input        | "Label" source          | Typical task                  | Flagship example         |
-|-------------------|--------------|-------------------------|-------------------------------|--------------------------|
-| Supervised        | x + label y  | Humans label y          | Classification / regression   | Gmail spam filter        |
-| Unsupervised      | x only       | none                    | Clustering, anomaly detection | Customer segmentation    |
-| Self-supervised   | x only       | derived from x itself   | Foundation-model pre-training | GPT next-word prediction |
-| Reinforcement     | state        | rewards from environment| Sequential decisions          | AlphaGo, robotics        |
+After reading the sections above, use this table to cement the differences at a glance.
+
+| Type              | Input                   | How it learns                                       | Example algorithms                                                   | Real-world example                       |
+|-------------------|-------------------------|-----------------------------------------------------|----------------------------------------------------------------------|------------------------------------------|
+| **Supervised**    | Features + label        | From labels provided by humans                      | Linear / Logistic Regression · Random Forest · XGBoost · Neural Nets | Gmail spam filter · medical diagnosis    |
+| **Unsupervised**  | Features only           | By finding structure in unlabeled data              | K-Means · DBSCAN · PCA · Autoencoders                                | Customer segmentation · fraud detection  |
+| **Self-supervised** | Raw data only         | By predicting parts of the input from other parts   | Masked LM (BERT) · Next-token prediction (GPT) · Contrastive (SimCLR)| GPT · BERT pre-training · CLIP           |
+| **Reinforcement** | State of an environment | From rewards earned via trial and error             | Q-Learning · DQN · PPO · Actor-Critic                                | AlphaGo · robotics · ChatGPT's RLHF      |
+
+> **How to read each row:** *"A **supervised** learner gets features + label as input, learns from human-provided labels, uses algorithms like XGBoost, and powers things like Gmail's spam filter."* Walk each row this way.
 
 ---
 
