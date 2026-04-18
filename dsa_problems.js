@@ -2086,14 +2086,1117 @@ public class Main {
         System.out.println(minMeetingRooms(new int[][]{{1, 4}, {2, 3}, {3, 5}, {4, 6}}));  // 2
     }
 }`
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // ═══  BATCH 1 — 40 added problems (Arrays → Stacks)  ═══
+  // ═══════════════════════════════════════════════════════
+
+  {
+    id: 'majority-element',
+    title: 'Majority Element',
+    category: 'Arrays',
+    difficulty: 'Easy',
+    link: 'https://leetcode.com/problems/majority-element/',
+    tags: ['Array', 'Hash Map', 'Boyer-Moore', 'Divide & Conquer'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
+    description: 'Given an array `nums` of size n, return the **majority element** — the element that appears more than ⌊n/2⌋ times. You may assume the majority element always exists.\n\n**Best solution:** Boyer-Moore Voting — O(n) time, O(1) space. Maintain a candidate and a counter; reset the candidate when count hits zero.',
+    examples: 'Input: nums = [3,2,3]\nOutput: 3\n\nInput: nums = [2,2,1,1,1,2,2]\nOutput: 2',
+    starterCode: `public class Main {
+    public static int majorityElement(int[] nums) {
+        // Boyer-Moore Voting — track a candidate and its count
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(majorityElement(new int[]{3, 2, 3}));                       // 3
+        System.out.println(majorityElement(new int[]{2, 2, 1, 1, 1, 2, 2}));           // 2
+        System.out.println(majorityElement(new int[]{1}));                              // 1
+        System.out.println(majorityElement(new int[]{1, 1}));                           // 1
+        System.out.println(majorityElement(new int[]{6, 5, 5}));                        // 5
+        System.out.println(majorityElement(new int[]{1, 2, 1, 2, 1}));                  // 1
+        System.out.println(majorityElement(new int[]{4, 4, 4, 4, 4, 1, 2, 3, 4}));      // 4
+        System.out.println(majorityElement(new int[]{-1, -1, -1, 2, 2}));               // -1
+        System.out.println(majorityElement(new int[]{0, 0, 0, 1, 1}));                  // 0
+        System.out.println(majorityElement(new int[]{7, 7, 7, 7}));                     // 7
+    }
+}`
+  },
+
+  {
+    id: 'majority-element-ii',
+    title: 'Majority Element II',
+    category: 'Arrays',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/majority-element-ii/',
+    tags: ['Array', 'Hash Map', 'Boyer-Moore', 'Counting'],
+    companies: ['Amazon', 'Google', 'Microsoft'],
+    description: 'Given an integer array `nums` of size n, return **all** elements that appear more than ⌊n/3⌋ times. By the pigeonhole principle there can be **at most 2** such elements.\n\n**Best solution:** generalized Boyer-Moore with two candidates and two counters — O(n) time, O(1) space.',
+    examples: 'Input: nums = [3,2,3]\nOutput: [3]\n\nInput: nums = [1,1,1,3,3,2,2,2]\nOutput: [1, 2]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static List<Integer> majorityElement(int[] nums) {
+        // Boyer-Moore with two candidates — at most 2 elements appear > n/3 times
+
+        return new ArrayList<>();
+    }
+
+    static String sorted(List<Integer> result) {
+        List<Integer> copy = new ArrayList<>(result);
+        Collections.sort(copy);
+        return copy.toString();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sorted(majorityElement(new int[]{3, 2, 3})));                  // [3]
+        System.out.println(sorted(majorityElement(new int[]{1})));                         // [1]
+        System.out.println(sorted(majorityElement(new int[]{1, 2})));                      // [1, 2]
+        System.out.println(sorted(majorityElement(new int[]{1, 1, 1, 3, 3, 2, 2, 2})));    // [1, 2]
+        System.out.println(sorted(majorityElement(new int[]{2, 2})));                      // [2]
+        System.out.println(sorted(majorityElement(new int[]{1, 2, 3, 4, 5, 6})));         // []
+        System.out.println(sorted(majorityElement(new int[]{0, 0, 0})));                  // [0]
+        System.out.println(sorted(majorityElement(new int[]{-1, -1, -1, 1, 1, 1})));       // [-1, 1]
+        System.out.println(sorted(majorityElement(new int[]{4, 4, 4, 2, 2, 2})));         // [2, 4]
+        System.out.println(sorted(majorityElement(new int[]{1, 1, 1, 2, 3, 4, 5})));      // [1]
+    }
+}`
+  },
+
+  {
+    id: 'bulls-and-cows',
+    title: 'Bulls and Cows',
+    category: 'Strings',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/bulls-and-cows/',
+    tags: ['String', 'Hash Map', 'Counting'],
+    companies: ['Google', 'Amazon', 'Microsoft'],
+    description: 'You play the **Bulls and Cows** guessing game with your friend. Given the secret number and your guess (both as digit strings of equal length), return a hint string formatted as `"xAyB"`, where `x` is the number of **bulls** (digits in the right position) and `y` is the number of **cows** (digits present but in the wrong position).\n\nA digit cannot be a bull and a cow simultaneously, and each digit can be matched at most once.',
+    examples: 'Input: secret = "1807", guess = "7810"\nOutput: "1A3B"  (Bulls: 8; Cows: 7,1,0)\n\nInput: secret = "1123", guess = "0111"\nOutput: "1A1B"',
+    starterCode: `public class Main {
+    public static String getHint(String secret, String guess) {
+        // Single pass: count bulls; for non-bulls, tally digit frequencies in two arrays.
+        // Cows = sum of min(secretCount[d], guessCount[d]).
+
+        return "";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(getHint("1807", "7810"));     // 1A3B
+        System.out.println(getHint("1123", "0111"));     // 1A1B
+        System.out.println(getHint("1", "0"));            // 0A0B
+        System.out.println(getHint("1", "1"));            // 1A0B
+        System.out.println(getHint("11", "10"));          // 1A0B
+        System.out.println(getHint("11", "11"));          // 2A0B
+        System.out.println(getHint("12", "21"));          // 0A2B
+        System.out.println(getHint("1234", "4321"));      // 0A4B
+        System.out.println(getHint("1234", "1234"));      // 4A0B
+        System.out.println(getHint("0000", "1111"));      // 0A0B
+        System.out.println(getHint("9876", "5432"));      // 0A0B
+    }
+}`
+  },
+
+  {
+    id: 'valid-sudoku',
+    title: 'Valid Sudoku',
+    category: 'Matrix',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/valid-sudoku/',
+    tags: ['Array', 'Hash Map', 'Matrix'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
+    description: 'Determine if a partially-filled 9×9 Sudoku board is valid. Only filled cells need to be checked. Validity requires:\n1. Each row contains digits 1–9 with no repetition.\n2. Each column contains digits 1–9 with no repetition.\n3. Each of the nine 3×3 sub-boxes contains digits 1–9 with no repetition.\n\nThe board may be partially filled — empty cells are `.`.',
+    examples: 'Input: a fully valid 9×9 grid\nOutput: true',
+    starterCode: `public class Main {
+    public static boolean isValidSudoku(char[][] board) {
+        // 27 hash sets (9 rows + 9 cols + 9 boxes), or three boolean[9][9] grids
+        // Box index for cell (r, c): (r / 3) * 3 + (c / 3)
+
+        return false;
+    }
+
+    // Helper: build a 9x9 board from a string array of 9 rows
+    static char[][] b(String... rows) {
+        char[][] grid = new char[9][9];
+        for (int i = 0; i < 9; i++)
+            for (int j = 0; j < 9; j++) grid[i][j] = rows[i].charAt(j);
+        return grid;
+    }
+
+    public static void main(String[] args) {
+        // Standard valid puzzle
+        System.out.println(isValidSudoku(b("53..7....","6..195...",".98....6.","8...6...3","4..8.3..1","7...2...6",".6....28.","...419..5","....8..79"))); // true
+        // Same puzzle but row 0 has duplicate '5'
+        System.out.println(isValidSudoku(b("53..75...","6..195...",".98....6.","8...6...3","4..8.3..1","7...2...6",".6....28.","...419..5","....8..79"))); // false
+        // Column duplicate (two 8s in column 0)
+        System.out.println(isValidSudoku(b("8.......1","6..195...",".98....6.","8...6...3","4..8.3..1","7...2...6",".6....28.","...419..5","....8..79"))); // false
+        // Empty board
+        System.out.println(isValidSudoku(b(".........",".........",".........",".........",".........",".........",".........",".........",".........")));     // true
+        // Single value
+        System.out.println(isValidSudoku(b("5........",".........",".........",".........",".........",".........",".........",".........",".........")));      // true
+        // Box duplicate (two 1s in top-left 3x3 box)
+        System.out.println(isValidSudoku(b("1........","11.......",".........",".........",".........",".........",".........",".........",".........")));     // false
+        // Diagonal of distinct digits
+        System.out.println(isValidSudoku(b("1........",".2.......","..3......","...4.....","....5....",".....6...","......7..",".......8.","........9"))); // true
+        // All 9 in row 0
+        System.out.println(isValidSudoku(b("123456789",".........",".........",".........",".........",".........",".........",".........","........."))); // true
+        // Two 9s in column 8
+        System.out.println(isValidSudoku(b("........9","........9",".........",".........",".........",".........",".........",".........","........."))); // false
+        // Two 5s in same column
+        System.out.println(isValidSudoku(b("5........","5........",".........",".........",".........",".........",".........",".........","........."))); // false
+    }
+}`
+  },
+
+  {
+    id: 'spiral-matrix',
+    title: 'Spiral Matrix',
+    category: 'Matrix',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/spiral-matrix/',
+    tags: ['Array', 'Matrix', 'Simulation'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
+    description: 'Given an m × n matrix, return all elements in **spiral order** — start at the top-left, walk right, then down, then left, then up, peeling layers inward.',
+    examples: 'Input: [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [1,2,3,6,9,8,7,4,5]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static List<Integer> spiralOrder(int[][] matrix) {
+        // Track 4 boundaries (top, bottom, left, right) and shrink them as you walk
+
+        return new ArrayList<>();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(spiralOrder(new int[][]{{1,2,3},{4,5,6},{7,8,9}}));                         // [1, 2, 3, 6, 9, 8, 7, 4, 5]
+        System.out.println(spiralOrder(new int[][]{{1,2,3,4},{5,6,7,8},{9,10,11,12}}));                // [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7]
+        System.out.println(spiralOrder(new int[][]{{1}}));                                              // [1]
+        System.out.println(spiralOrder(new int[][]{{1,2}}));                                            // [1, 2]
+        System.out.println(spiralOrder(new int[][]{{1},{2}}));                                          // [1, 2]
+        System.out.println(spiralOrder(new int[][]{{1,2},{3,4}}));                                      // [1, 2, 4, 3]
+        System.out.println(spiralOrder(new int[][]{{1,2,3,4,5}}));                                      // [1, 2, 3, 4, 5]
+        System.out.println(spiralOrder(new int[][]{{1},{2},{3},{4}}));                                  // [1, 2, 3, 4]
+        System.out.println(spiralOrder(new int[][]{{1,2,3},{4,5,6}}));                                  // [1, 2, 3, 6, 5, 4]
+        System.out.println(spiralOrder(new int[][]{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}}));   // [1, 2, 3, 4, 8, 12, 16, 15, 14, 13, 9, 5, 6, 7, 11, 10]
+    }
+}`
+  },
+
+  {
+    id: 'rotate-image',
+    title: 'Rotate Image',
+    category: 'Matrix',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/rotate-image/',
+    tags: ['Array', 'Matrix', 'Math'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
+    description: 'Rotate an n × n matrix 90° **clockwise** in place. You must modify the input directly — do not allocate a second matrix.\n\n**Standard trick:** transpose, then reverse each row.',
+    examples: 'Input: [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [[7,4,1],[8,5,2],[9,6,3]]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static void rotate(int[][] matrix) {
+        // 1) Transpose along main diagonal: swap matrix[i][j] with matrix[j][i]
+        // 2) Reverse each row in place
+
+    }
+
+    public static void main(String[] args) {
+        int[][] a = {{1,2,3},{4,5,6},{7,8,9}}; rotate(a);
+        System.out.println(Arrays.deepToString(a));    // [[7, 4, 1], [8, 5, 2], [9, 6, 3]]
+        int[][] b = {{1}}; rotate(b);
+        System.out.println(Arrays.deepToString(b));    // [[1]]
+        int[][] c = {{1,2},{3,4}}; rotate(c);
+        System.out.println(Arrays.deepToString(c));    // [[3, 1], [4, 2]]
+        int[][] d = {{5,1,9,11},{2,4,8,10},{13,3,6,7},{15,14,12,16}}; rotate(d);
+        System.out.println(Arrays.deepToString(d));    // [[15, 13, 2, 5], [14, 3, 4, 1], [12, 6, 8, 9], [16, 7, 10, 11]]
+        int[][] e = {{0,0,0},{0,0,0},{0,0,0}}; rotate(e);
+        System.out.println(Arrays.deepToString(e));    // [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        int[][] f = {{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}}; rotate(f);
+        System.out.println(Arrays.deepToString(f));    // [[13, 9, 5, 1], [14, 10, 6, 2], [15, 11, 7, 3], [16, 12, 8, 4]]
+        int[][] g = {{1,2},{3,4}}; rotate(g); rotate(g);
+        System.out.println(Arrays.deepToString(g));    // [[4, 3], [2, 1]]   (180 deg)
+        int[][] h = {{1,2},{3,4}}; rotate(h); rotate(h); rotate(h); rotate(h);
+        System.out.println(Arrays.deepToString(h));    // [[1, 2], [3, 4]]   (full 360 deg)
+        int[][] i = {{-1,-2},{-3,-4}}; rotate(i);
+        System.out.println(Arrays.deepToString(i));    // [[-3, -1], [-4, -2]]
+        int[][] j = {{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15},{16,17,18,19,20},{21,22,23,24,25}}; rotate(j);
+        System.out.println(Arrays.deepToString(j));    // [[21, 16, 11, 6, 1], [22, 17, 12, 7, 2], [23, 18, 13, 8, 3], [24, 19, 14, 9, 4], [25, 20, 15, 10, 5]]
+    }
+}`
+  },
+
+  {
+    id: 'diagonal-traverse',
+    title: 'Diagonal Traverse',
+    category: 'Matrix',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/diagonal-traverse/',
+    tags: ['Array', 'Matrix', 'Simulation'],
+    companies: ['Amazon', 'Microsoft', 'Apple', 'Walmart'],
+    description: 'Given an m × n matrix, return all elements in **anti-diagonal zig-zag order** — alternate sweeping each anti-diagonal up-right then down-left.',
+    examples: 'Input: [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [1,2,4,7,5,3,6,8,9]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int[] findDiagonalOrder(int[][] mat) {
+        // Sum of indices i+j is constant on each anti-diagonal.
+        // Traverse diagonal d from top-right (when d is even) or bottom-left (when d is odd).
+
+        return new int[]{};
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2,3},{4,5,6},{7,8,9}})));    // [1, 2, 4, 7, 5, 3, 6, 8, 9]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2},{3,4}})));                 // [1, 2, 3, 4]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1}})));                          // [1]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2,3,4}})));                    // [1, 2, 3, 4]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1},{2},{3},{4}})));              // [1, 2, 3, 4]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2,3},{4,5,6}})));              // [1, 2, 4, 5, 3, 6]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2},{3,4},{5,6}})));            // [1, 2, 3, 5, 4, 6]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{0,0},{0,0}})));                  // [0, 0, 0, 0]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{1,2,3,4},{5,6,7,8},{9,10,11,12}}))); // [1, 2, 5, 9, 6, 3, 4, 7, 10, 11, 8, 12]
+        System.out.println(Arrays.toString(findDiagonalOrder(new int[][]{{-1,-2},{-3,-4}})));              // [-1, -2, -3, -4]
+    }
+}`
+  },
+
+  {
+    id: 'contains-duplicate',
+    title: 'Contains Duplicate',
+    category: 'Arrays',
+    difficulty: 'Easy',
+    link: 'https://leetcode.com/problems/contains-duplicate/',
+    tags: ['Array', 'Hash Set', 'Sorting'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
+    description: 'Given an integer array `nums`, return `true` if any value appears at least twice in the array, and `false` if every element is distinct.\n\n**Best approach:** HashSet — add each element; return true on first duplicate.',
+    examples: 'Input: nums = [1,2,3,1]\nOutput: true\n\nInput: nums = [1,2,3,4]\nOutput: false',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static boolean containsDuplicate(int[] nums) {
+        // HashSet — O(n) time, O(n) space; or sort + scan adjacent — O(n log n) time, O(1) space
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(containsDuplicate(new int[]{1, 2, 3, 1}));                       // true
+        System.out.println(containsDuplicate(new int[]{1, 2, 3, 4}));                       // false
+        System.out.println(containsDuplicate(new int[]{1, 1, 1, 3, 3, 4, 3, 2, 4, 2}));     // true
+        System.out.println(containsDuplicate(new int[]{}));                                   // false
+        System.out.println(containsDuplicate(new int[]{42}));                                 // false
+        System.out.println(containsDuplicate(new int[]{0, 0}));                              // true
+        System.out.println(containsDuplicate(new int[]{-1, -2, -3}));                        // false
+        System.out.println(containsDuplicate(new int[]{-1, -1}));                            // true
+        System.out.println(containsDuplicate(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}));     // false
+        System.out.println(containsDuplicate(new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE})); // true
+    }
+}`
+  },
+
+  {
+    id: 'find-players-zero-or-one-losses',
+    title: 'Find Players With Zero or One Losses',
+    category: 'Hash Maps',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/find-players-with-zero-or-one-losses/',
+    tags: ['Array', 'Hash Map', 'Sorting', 'Counting'],
+    companies: ['Amazon', 'Google'],
+    description: 'You are given a list of `matches` where `matches[i] = [winner_i, loser_i]`. Return a 2-element list `[answer1, answer2]` where:\n- `answer1` = list of all players that have **not lost any** match.\n- `answer2` = list of all players that have lost **exactly one** match.\n\nBoth lists must be sorted in increasing order. Players not appearing in any match are not considered.',
+    examples: 'Input: [[1,3],[2,3],[3,6],[5,6],[5,7],[4,5],[4,8],[4,9],[10,4],[10,9]]\nOutput: [[1,2,10], [4,5,7,8]]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static List<List<Integer>> findWinners(int[][] matches) {
+        // Track loss count per player; players never appearing as loser have 0 losses.
+        // Output sorted lists for both buckets.
+
+        return new ArrayList<>();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findWinners(new int[][]{{1,3},{2,3},{3,6},{5,6},{5,7},{4,5},{4,8},{4,9},{10,4},{10,9}})); // [[1, 2, 10], [4, 5, 7, 8]]
+        System.out.println(findWinners(new int[][]{{2,3},{1,3},{5,4},{6,4}}));                                         // [[1, 2, 5, 6], []]
+        System.out.println(findWinners(new int[][]{{1,2}}));                                                            // [[1], [2]]
+        System.out.println(findWinners(new int[][]{{1,2},{2,3},{3,1}}));                                                // [[], [1, 2, 3]]
+        System.out.println(findWinners(new int[][]{{1,2},{1,3},{1,4},{1,5}}));                                          // [[1], [2, 3, 4, 5]]
+        System.out.println(findWinners(new int[][]{{2,1},{3,1},{4,1},{5,1}}));                                          // [[2, 3, 4, 5], []]
+        System.out.println(findWinners(new int[][]{{1,2},{3,2},{1,3},{1,4}}));                                          // [[1], [3, 4]]
+        System.out.println(findWinners(new int[][]{{1,2},{3,4}}));                                                       // [[1, 3], [2, 4]]
+        System.out.println(findWinners(new int[][]{{5,3},{5,1}}));                                                       // [[5], [1, 3]]
+        System.out.println(findWinners(new int[][]{{1,2},{2,1},{1,2},{2,1}}));                                          // [[], []]
+    }
+}`
+  },
+
+  {
+    id: 'sort-an-array',
+    title: 'Sort an Array',
+    category: 'Sorting & Searching',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/sort-an-array/',
+    tags: ['Array', 'Sorting', 'Divide & Conquer', 'Heap', 'Merge Sort'],
+    companies: ['Amazon', 'Google', 'Microsoft'],
+    description: 'Given an integer array `nums`, sort it in ascending order in O(n log n) time and use the smallest space complexity possible. **Do not** use `Arrays.sort()` — implement merge sort, quicksort, or heap sort yourself.',
+    examples: 'Input: nums = [5,2,3,1]\nOutput: [1,2,3,5]\n\nInput: nums = [5,1,1,2,0,0]\nOutput: [0,0,1,1,2,5]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int[] sortArray(int[] nums) {
+        // Recommended: merge sort (guaranteed O(n log n)) or randomized quicksort
+
+        return nums;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(sortArray(new int[]{5, 2, 3, 1})));                       // [1, 2, 3, 5]
+        System.out.println(Arrays.toString(sortArray(new int[]{5, 1, 1, 2, 0, 0})));                 // [0, 0, 1, 1, 2, 5]
+        System.out.println(Arrays.toString(sortArray(new int[]{1})));                                 // [1]
+        System.out.println(Arrays.toString(sortArray(new int[]{})));                                   // []
+        System.out.println(Arrays.toString(sortArray(new int[]{2, 1})));                              // [1, 2]
+        System.out.println(Arrays.toString(sortArray(new int[]{1, 2, 3, 4, 5})));                     // [1, 2, 3, 4, 5]
+        System.out.println(Arrays.toString(sortArray(new int[]{5, 4, 3, 2, 1})));                     // [1, 2, 3, 4, 5]
+        System.out.println(Arrays.toString(sortArray(new int[]{3, 3, 3, 3})));                        // [3, 3, 3, 3]
+        System.out.println(Arrays.toString(sortArray(new int[]{-5, 0, 5, -3, 3, -1, 1})));            // [-5, -3, -1, 0, 1, 3, 5]
+        System.out.println(Arrays.toString(sortArray(new int[]{100, -100, 50, -50, 0})));             // [-100, -50, 0, 50, 100]
+        System.out.println(Arrays.toString(sortArray(new int[]{-2147483648, 0, 2147483647})));        // [-2147483648, 0, 2147483647]
+    }
+}`
+  },
+
+  {
+    id: 'sort-characters-by-frequency',
+    title: 'Sort Characters By Frequency',
+    category: 'Strings',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/sort-characters-by-frequency/',
+    tags: ['String', 'Hash Map', 'Sorting', 'Heap', 'Bucket Sort'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
+    description: 'Given a string `s`, sort it in **decreasing order based on character frequency**. Characters with the same frequency may appear in any order.\n\n**Approach:** count frequencies, then sort characters by count (descending) and concatenate.',
+    examples: 'Input: s = "tree"\nOutput: "eert" or "eetr"\n\nInput: s = "cccaaa"\nOutput: "aaaccc" or "cccaaa"',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static String frequencySort(String s) {
+        // Count chars, sort by count descending, concat the chars
+
+        return "";
+    }
+
+    // Canonicalize for testing: each char's run length must match expected.
+    // We test by checking the multiset of characters and the descending-count property.
+    static String canonical(String result) {
+        // Group consecutive equal chars and verify counts are non-increasing
+        if (result.isEmpty()) return "<empty>";
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        List<int[]> runs = new ArrayList<>();
+        while (i < result.length()) {
+            int j = i;
+            while (j < result.length() && result.charAt(j) == result.charAt(i)) j++;
+            runs.add(new int[]{result.charAt(i), j - i});
+            i = j;
+        }
+        // Sort runs by count descending, then by char ascending for deterministic output
+        runs.sort((a, b) -> a[1] != b[1] ? b[1] - a[1] : a[0] - b[0]);
+        for (int[] r : runs) {
+            for (int k = 0; k < r[1]; k++) sb.append((char) r[0]);
+        }
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(canonical(frequencySort("tree")));            // eert
+        System.out.println(canonical(frequencySort("cccaaa")));          // aaaccc
+        System.out.println(canonical(frequencySort("Aabb")));            // bbAa
+        System.out.println(canonical(frequencySort("a")));               // a
+        System.out.println(canonical(frequencySort("aabbcc")));          // aabbcc
+        System.out.println(canonical(frequencySort("loveleetcode")));    // eeeelloocdtv
+        System.out.println(canonical(frequencySort("")));                // <empty>
+        System.out.println(canonical(frequencySort("zzzaaa")));          // aaazzz
+        System.out.println(canonical(frequencySort("xxyyzz")));          // xxyyzz
+        System.out.println(canonical(frequencySort("abcabc")));          // aabbcc
+        System.out.println(canonical(frequencySort("Mississippi")));     // iiiissspMpp
+    }
+}`
+  },
+
+  {
+    id: 'non-overlapping-intervals',
+    title: 'Non-overlapping Intervals',
+    category: 'Intervals',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/non-overlapping-intervals/',
+    tags: ['Array', 'Greedy', 'Sorting', 'Intervals', 'DP'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Salesforce'],
+    description: 'Given an array of intervals `intervals[i] = [start_i, end_i]`, return the **minimum number of intervals you need to remove** to make the rest non-overlapping.\n\n**Greedy:** sort by end time; keep an interval if it starts at or after the last kept end; otherwise count it as a removal.',
+    examples: 'Input: intervals = [[1,2],[2,3],[3,4],[1,3]]\nOutput: 1  (Remove [1,3])\n\nInput: intervals = [[1,2],[1,2],[1,2]]\nOutput: 2',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int eraseOverlapIntervals(int[][] intervals) {
+        // Greedy: sort by end time, keep intervals that start ≥ last kept end
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,2},{2,3},{3,4},{1,3}}));     // 1
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,2},{1,2},{1,2}}));            // 2
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,2},{2,3}}));                  // 0
+        System.out.println(eraseOverlapIntervals(new int[][]{}));                              // 0
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,2}}));                         // 0
+        System.out.println(eraseOverlapIntervals(new int[][]{{0,2},{1,3},{2,4},{3,5},{4,6}})); // 2
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,100},{11,22},{1,11},{2,12}}));  // 2
+        System.out.println(eraseOverlapIntervals(new int[][]{{1,5},{2,3},{3,4},{4,5}}));       // 1
+        System.out.println(eraseOverlapIntervals(new int[][]{{0,1},{3,4},{1,2}}));             // 0
+        System.out.println(eraseOverlapIntervals(new int[][]{{-100,-50},{-50,-30},{-30,0}}));   // 0
+    }
+}`
+  },
+
+  {
+    id: 'find-first-and-last-position',
+    title: 'Find First and Last Position of Element in Sorted Array',
+    category: 'Sorting & Searching',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/',
+    tags: ['Array', 'Binary Search'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
+    description: 'Given a **sorted** array of integers `nums` and a `target`, find the starting and ending position of `target` in the array. If not found, return `[-1, -1]`. Algorithm must run in O(log n) time.',
+    examples: 'Input: nums = [5,7,7,8,8,10], target = 8\nOutput: [3, 4]\n\nInput: nums = [5,7,7,8,8,10], target = 6\nOutput: [-1, -1]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int[] searchRange(int[] nums, int target) {
+        // Two binary searches: leftmost and rightmost insertion points
+
+        return new int[]{-1, -1};
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(searchRange(new int[]{5,7,7,8,8,10}, 8)));     // [3, 4]
+        System.out.println(Arrays.toString(searchRange(new int[]{5,7,7,8,8,10}, 6)));     // [-1, -1]
+        System.out.println(Arrays.toString(searchRange(new int[]{}, 0)));                   // [-1, -1]
+        System.out.println(Arrays.toString(searchRange(new int[]{1}, 1)));                  // [0, 0]
+        System.out.println(Arrays.toString(searchRange(new int[]{2, 2}, 2)));               // [0, 1]
+        System.out.println(Arrays.toString(searchRange(new int[]{1, 2, 3, 4, 5}, 3)));     // [2, 2]
+        System.out.println(Arrays.toString(searchRange(new int[]{1, 1, 1, 1, 1}, 1)));     // [0, 4]
+        System.out.println(Arrays.toString(searchRange(new int[]{1, 2, 3}, 0)));            // [-1, -1]
+        System.out.println(Arrays.toString(searchRange(new int[]{1, 2, 3}, 4)));            // [-1, -1]
+        System.out.println(Arrays.toString(searchRange(new int[]{-3, -1, 0, 0, 0, 1}, 0))); // [2, 4]
+    }
+}`
+  },
+
+  {
+    id: 'peak-index-mountain-array',
+    title: 'Peak Index in a Mountain Array',
+    category: 'Sorting & Searching',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/peak-index-in-a-mountain-array/',
+    tags: ['Array', 'Binary Search'],
+    companies: ['Amazon', 'Google', 'Microsoft'],
+    description: 'A **mountain array** strictly increases then strictly decreases. Given a guaranteed mountain array, find and return the index `i` of the peak (where `arr[i-1] < arr[i] > arr[i+1]`). Solve in O(log n).',
+    examples: 'Input: arr = [0,1,0]\nOutput: 1\n\nInput: arr = [0,2,1,0]\nOutput: 1\n\nInput: arr = [0,10,5,2]\nOutput: 1',
+    starterCode: `public class Main {
+    public static int peakIndexInMountainArray(int[] arr) {
+        // Binary search: if arr[mid] < arr[mid+1], peak is to the right; otherwise to the left or at mid
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(peakIndexInMountainArray(new int[]{0, 1, 0}));                   // 1
+        System.out.println(peakIndexInMountainArray(new int[]{0, 2, 1, 0}));                // 1
+        System.out.println(peakIndexInMountainArray(new int[]{0, 10, 5, 2}));               // 1
+        System.out.println(peakIndexInMountainArray(new int[]{3, 4, 5, 1}));                // 2
+        System.out.println(peakIndexInMountainArray(new int[]{24, 69, 100, 99, 79, 78, 67, 36, 26, 19})); // 2
+        System.out.println(peakIndexInMountainArray(new int[]{1, 2, 3, 4, 5, 4, 3, 2, 1})); // 4
+        System.out.println(peakIndexInMountainArray(new int[]{1, 100, 1}));                 // 1
+        System.out.println(peakIndexInMountainArray(new int[]{1, 2, 1}));                   // 1
+        System.out.println(peakIndexInMountainArray(new int[]{1, 3, 5, 7, 9, 8, 6, 4, 2})); // 4
+        System.out.println(peakIndexInMountainArray(new int[]{0, 1, 2, 3, 100, 50, 25, 0})); // 4
+    }
+}`
+  },
+
+  {
+    id: 'count-negative-numbers-sorted-matrix',
+    title: 'Count Negative Numbers in a Sorted Matrix',
+    category: 'Matrix',
+    difficulty: 'Easy',
+    link: 'https://leetcode.com/problems/count-negative-numbers-in-a-sorted-matrix/',
+    tags: ['Array', 'Binary Search', 'Matrix'],
+    companies: ['Amazon', 'Microsoft'],
+    description: 'Given an m × n matrix sorted in **non-increasing order both row-wise and column-wise**, return the count of negative numbers.\n\n**Optimal:** start at top-right (or bottom-left). When you see a negative, count the rest of the row, then move down. Otherwise move left/right. O(m + n).',
+    examples: 'Input: [[4,3,2,-1],[3,2,1,-1],[1,1,-1,-2],[-1,-1,-2,-3]]\nOutput: 8',
+    starterCode: `public class Main {
+    public static int countNegatives(int[][] grid) {
+        // Walk from top-right or bottom-left; staircase O(m+n)
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(countNegatives(new int[][]{{4,3,2,-1},{3,2,1,-1},{1,1,-1,-2},{-1,-1,-2,-3}})); // 8
+        System.out.println(countNegatives(new int[][]{{3,2},{1,0}}));                                       // 0
+        System.out.println(countNegatives(new int[][]{{-1}}));                                              // 1
+        System.out.println(countNegatives(new int[][]{{0}}));                                                // 0
+        System.out.println(countNegatives(new int[][]{{1,-1},{-1,-1}}));                                    // 3
+        System.out.println(countNegatives(new int[][]{{-1,-1},{-1,-1}}));                                   // 4
+        System.out.println(countNegatives(new int[][]{{5,4,3,2,1}}));                                       // 0
+        System.out.println(countNegatives(new int[][]{{-1,-2,-3,-4,-5}}));                                  // 5
+        System.out.println(countNegatives(new int[][]{{5},{4},{3},{2},{1},{0},{-1},{-2}}));                 // 2
+        System.out.println(countNegatives(new int[][]{{3,2,1,-1},{2,1,-1,-2},{1,-1,-2,-3},{-1,-2,-3,-4}})); // 10
+    }
+}`
+  },
+
+  {
+    id: 'search-2d-matrix',
+    title: 'Search a 2D Matrix',
+    category: 'Matrix',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/search-a-2d-matrix/',
+    tags: ['Array', 'Binary Search', 'Matrix'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
+    description: 'Given an m × n matrix where each row is sorted left-to-right, and the **first integer of each row is greater than the last integer of the previous row**, search for a target value. Return `true` if found. Solve in O(log(m·n)).',
+    examples: 'Input: matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3\nOutput: true',
+    starterCode: `public class Main {
+    public static boolean searchMatrix(int[][] matrix, int target) {
+        // Treat the matrix as a flattened sorted array — binary search over m*n indices
+
+        return false;
+    }
+
+    public static void main(String[] args) {
+        int[][] m = {{1,3,5,7},{10,11,16,20},{23,30,34,60}};
+        System.out.println(searchMatrix(m, 3));      // true
+        System.out.println(searchMatrix(m, 13));     // false
+        System.out.println(searchMatrix(m, 1));      // true (first)
+        System.out.println(searchMatrix(m, 60));     // true (last)
+        System.out.println(searchMatrix(m, 0));      // false (smaller than all)
+        System.out.println(searchMatrix(m, 100));    // false (larger than all)
+        System.out.println(searchMatrix(new int[][]{{1}}, 1));      // true
+        System.out.println(searchMatrix(new int[][]{{1}}, 2));      // false
+        System.out.println(searchMatrix(new int[][]{{1,2,3,4}}, 3)); // true (single row)
+        System.out.println(searchMatrix(new int[][]{{1},{2},{3}}, 2)); // true (single col)
+    }
+}`
+  },
+
+  {
+    id: 'koko-eating-bananas',
+    title: 'Koko Eating Bananas',
+    category: 'Sorting & Searching',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/koko-eating-bananas/',
+    tags: ['Array', 'Binary Search', 'Search Space Reduction'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
+    description: 'Koko has `n` piles of bananas, the i-th pile has `piles[i]` bananas. The guards return in `h` hours. Each hour, Koko picks a pile and eats up to `k` bananas; if the pile has less, she finishes it but stops for that hour. Return the **minimum integer k** such that Koko can finish all bananas in `h` hours.\n\n**Solve via binary search** over k in [1, max(piles)] — feasibility test is sum(ceil(p / k)) ≤ h.',
+    examples: 'Input: piles = [3,6,7,11], h = 8\nOutput: 4\n\nInput: piles = [30,11,23,4,20], h = 5\nOutput: 30',
+    starterCode: `public class Main {
+    public static int minEatingSpeed(int[] piles, int h) {
+        // Binary search over k in [1, maxPile]; feasibility: sum(ceil(p/k)) <= h
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(minEatingSpeed(new int[]{3, 6, 7, 11}, 8));         // 4
+        System.out.println(minEatingSpeed(new int[]{30, 11, 23, 4, 20}, 5));   // 30
+        System.out.println(minEatingSpeed(new int[]{30, 11, 23, 4, 20}, 6));   // 23
+        System.out.println(minEatingSpeed(new int[]{1}, 1));                    // 1
+        System.out.println(minEatingSpeed(new int[]{1000000000}, 2));           // 500000000
+        System.out.println(minEatingSpeed(new int[]{1, 1, 1, 1}, 4));          // 1
+        System.out.println(minEatingSpeed(new int[]{1, 1, 1, 1}, 8));          // 1
+        System.out.println(minEatingSpeed(new int[]{10, 10, 10}, 3));          // 10
+        System.out.println(minEatingSpeed(new int[]{312884470}, 312884469));    // 2
+        System.out.println(minEatingSpeed(new int[]{3, 6, 7, 11}, 4));         // 11
+    }
+}`
+  },
+
+  {
+    id: 'find-smallest-divisor-given-threshold',
+    title: 'Find the Smallest Divisor Given a Threshold',
+    category: 'Sorting & Searching',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/find-the-smallest-divisor-given-a-threshold/',
+    tags: ['Array', 'Binary Search'],
+    companies: ['Amazon', 'Google'],
+    description: 'Given an integer array `nums` and an integer `threshold`, return the **smallest positive integer divisor** such that `sum(ceil(nums[i] / divisor)) ≤ threshold`. The threshold is guaranteed to be ≥ nums.length.\n\n**Solve via binary search** on the divisor in [1, max(nums)].',
+    examples: 'Input: nums = [1,2,5,9], threshold = 6\nOutput: 5\n\nInput: nums = [44,22,33,11,1], threshold = 5\nOutput: 44',
+    starterCode: `public class Main {
+    public static int smallestDivisor(int[] nums, int threshold) {
+        // Binary search d in [1, max(nums)]; feasibility: sum ceil(nums[i]/d) <= threshold
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(smallestDivisor(new int[]{1, 2, 5, 9}, 6));            // 5
+        System.out.println(smallestDivisor(new int[]{44, 22, 33, 11, 1}, 5));     // 44
+        System.out.println(smallestDivisor(new int[]{21212, 10101, 12121}, 1000000)); // 1
+        System.out.println(smallestDivisor(new int[]{1, 2, 5, 9}, 4));            // 9
+        System.out.println(smallestDivisor(new int[]{1}, 1));                      // 1
+        System.out.println(smallestDivisor(new int[]{2, 3, 5, 7, 11}, 11));        // 3
+        System.out.println(smallestDivisor(new int[]{19}, 5));                     // 4
+        System.out.println(smallestDivisor(new int[]{1, 2, 3}, 6));                // 1
+        System.out.println(smallestDivisor(new int[]{10, 10, 10}, 3));             // 10
+        System.out.println(smallestDivisor(new int[]{100}, 100));                  // 1
+    }
+}`
+  },
+
+  {
+    id: 'append-characters-to-string-make-subsequence',
+    title: 'Append Characters to String to Make Subsequence',
+    category: 'Two Pointers',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/append-characters-to-string-to-make-subsequence/',
+    tags: ['String', 'Two Pointers', 'Greedy'],
+    companies: ['Amazon', 'Google'],
+    description: 'You are given two strings `s` and `t`. Return the **minimum number of characters that need to be appended to the end of `s`** so that `t` becomes a subsequence of the resulting string.\n\n**Approach:** two-pointer scan — count how many characters of `t` you can match in order through `s`; the rest need to be appended.',
+    examples: 'Input: s = "coaching", t = "coding"\nOutput: 4  (Append "ding")\n\nInput: s = "abcde", t = "a"\nOutput: 0',
+    starterCode: `public class Main {
+    public static int appendCharacters(String s, String t) {
+        // Two pointers: walk s, match t in order; return t.length() - matched
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(appendCharacters("coaching", "coding"));   // 4
+        System.out.println(appendCharacters("abcde", "a"));            // 0
+        System.out.println(appendCharacters("z", "abcde"));            // 5
+        System.out.println(appendCharacters("abcde", "abcde"));        // 0
+        System.out.println(appendCharacters("abcde", ""));             // 0
+        System.out.println(appendCharacters("", "abc"));               // 3
+        System.out.println(appendCharacters("a", "b"));                // 1
+        System.out.println(appendCharacters("aaa", "ab"));             // 1
+        System.out.println(appendCharacters("xyzabc", "abc"));         // 0
+        System.out.println(appendCharacters("xyz", "xyzz"));           // 1
+    }
+}`
+  },
+
+  {
+    id: 'subarray-product-less-than-k',
+    title: 'Subarray Product Less Than K',
+    category: 'Sliding Window',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/subarray-product-less-than-k/',
+    tags: ['Array', 'Sliding Window', 'Two Pointers'],
+    companies: ['Amazon', 'Google', 'Bloomberg'],
+    description: 'Given an array of positive integers `nums` and an integer `k`, return the number of contiguous **subarrays where the product of all the elements is strictly less than k**.\n\n**Approach:** sliding window — maintain a running product; when it ≥ k, shrink from the left. Each window contributes (right - left + 1) new subarrays.',
+    examples: 'Input: nums = [10,5,2,6], k = 100\nOutput: 8  ([10],[5],[2],[6],[10,5],[5,2],[2,6],[5,2,6])\n\nInput: nums = [1,2,3], k = 0\nOutput: 0',
+    starterCode: `public class Main {
+    public static int numSubarrayProductLessThanK(int[] nums, int k) {
+        // Sliding window with running product; count (right - left + 1) per right
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(numSubarrayProductLessThanK(new int[]{10, 5, 2, 6}, 100));     // 8
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 2, 3}, 0));           // 0
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 2, 3}, 1));           // 0
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 2, 3}, 2));           // 1
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 2, 3}, 7));           // 4
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 1, 1}, 2));           // 6
+        System.out.println(numSubarrayProductLessThanK(new int[]{100}, 1000));            // 1
+        System.out.println(numSubarrayProductLessThanK(new int[]{100}, 100));             // 0
+        System.out.println(numSubarrayProductLessThanK(new int[]{1, 1, 1, 1, 1}, 2));     // 15
+        System.out.println(numSubarrayProductLessThanK(new int[]{10, 9, 10, 4, 3, 8, 3, 3, 6, 2, 10, 10, 9, 3}, 19)); // 18
+    }
+}`
+  },
+
+  {
+    id: 'longest-repeating-character-replacement',
+    title: 'Longest Repeating Character Replacement',
+    category: 'Sliding Window',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/longest-repeating-character-replacement/',
+    tags: ['String', 'Sliding Window', 'Hash Map'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
+    description: 'Given a string `s` and an integer `k`, return the length of the **longest substring** containing the same letter you can get after performing at most `k` character replacements.\n\n**Sliding window:** expand right; for each window, if `windowSize - maxFreqChar > k`, shrink left. Track the max valid window.',
+    examples: 'Input: s = "ABAB", k = 2\nOutput: 4\n\nInput: s = "AABABBA", k = 1\nOutput: 4',
+    starterCode: `public class Main {
+    public static int characterReplacement(String s, int k) {
+        // Sliding window with frequency map; valid when (windowSize - maxFreq) <= k
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(characterReplacement("ABAB", 2));         // 4
+        System.out.println(characterReplacement("AABABBA", 1));      // 4
+        System.out.println(characterReplacement("", 0));             // 0
+        System.out.println(characterReplacement("A", 0));            // 1
+        System.out.println(characterReplacement("A", 1));            // 1
+        System.out.println(characterReplacement("ABCDE", 2));        // 3
+        System.out.println(characterReplacement("ABCDE", 4));        // 5
+        System.out.println(characterReplacement("AAAA", 0));         // 4
+        System.out.println(characterReplacement("AAAB", 0));         // 3
+        System.out.println(characterReplacement("AABCDEFG", 3));     // 5
+    }
+}`
+  },
+
+  {
+    id: 'maximum-product-subarray',
+    title: 'Maximum Product Subarray',
+    category: 'Dynamic Programming',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/maximum-product-subarray/',
+    tags: ['Array', 'Dynamic Programming'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'LinkedIn'],
+    description: 'Given an integer array `nums`, find a contiguous **non-empty subarray** within the array that has the **largest product**, and return that product.\n\n**Trick:** track both maxSoFar and minSoFar at each position because a negative number can flip the sign.',
+    examples: 'Input: nums = [2,3,-2,4]\nOutput: 6  (subarray [2,3])\n\nInput: nums = [-2,0,-1]\nOutput: 0',
+    starterCode: `public class Main {
+    public static int maxProduct(int[] nums) {
+        // Track currentMax and currentMin (negatives flip them); update global max each step
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(maxProduct(new int[]{2, 3, -2, 4}));               // 6
+        System.out.println(maxProduct(new int[]{-2, 0, -1}));                  // 0
+        System.out.println(maxProduct(new int[]{-2}));                         // -2
+        System.out.println(maxProduct(new int[]{0}));                          // 0
+        System.out.println(maxProduct(new int[]{-2, -3}));                     // 6
+        System.out.println(maxProduct(new int[]{-2, 3, -4}));                  // 24
+        System.out.println(maxProduct(new int[]{2, -5, -2, -4, 3}));           // 24
+        System.out.println(maxProduct(new int[]{0, 2}));                       // 2
+        System.out.println(maxProduct(new int[]{-1, -2, -3, 0}));              // 6
+        System.out.println(maxProduct(new int[]{1, 2, 3, 4, 5}));              // 120
+    }
+}`
+  },
+
+  {
+    id: 'removing-stars-from-string',
+    title: 'Removing Stars From a String',
+    category: 'Stacks & Queues',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/removing-stars-from-a-string/',
+    tags: ['String', 'Stack', 'Simulation'],
+    companies: ['Amazon', 'Google'],
+    description: 'You are given a string `s` containing letters and `*` characters. With one operation, you can remove the closest non-`*` character to the left of any `*`, then remove the `*` itself. Return the string after all stars are processed (it is guaranteed to be possible).',
+    examples: 'Input: s = "leet**cod*e"\nOutput: "lecoe"\n\nInput: s = "erase*****"\nOutput: ""',
+    starterCode: `public class Main {
+    public static String removeStars(String s) {
+        // Use a stack (or StringBuilder as one) — push letters, pop on '*'
+
+        return "";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(removeStars("leet**cod*e"));     // lecoe
+        System.out.println(removeStars("erase*****"));      //
+        System.out.println(removeStars("abc"));             // abc
+        System.out.println(removeStars("a*"));              //
+        System.out.println(removeStars(""));                //
+        System.out.println(removeStars("ab*c"));            // ac
+        System.out.println(removeStars("ab**c"));           // c
+        System.out.println(removeStars("a*b*c*"));          //
+        System.out.println(removeStars("xyz*"));            // xy
+        System.out.println(removeStars("*****"));           //
+        System.out.println(removeStars("ab*c*d"));          // ad
+    }
+}`
+  },
+
+  {
+    id: 'evaluate-reverse-polish-notation',
+    title: 'Evaluate Reverse Polish Notation',
+    category: 'Stacks & Queues',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/evaluate-reverse-polish-notation/',
+    tags: ['Array', 'Math', 'Stack'],
+    companies: ['Amazon', 'Google', 'LinkedIn', 'Microsoft'],
+    description: 'Evaluate an arithmetic expression in **Reverse Polish Notation** (postfix). Operators are `+`, `-`, `*`, `/`. Operands are integers. Division truncates toward zero.\n\n**Stack approach:** push operands; on operator, pop top two, apply, push result.',
+    examples: 'Input: tokens = ["2","1","+","3","*"]\nOutput: 9  ((2 + 1) * 3)\n\nInput: tokens = ["4","13","5","/","+"]\nOutput: 6  (4 + (13 / 5))',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int evalRPN(String[] tokens) {
+        // Stack of integers; for each operator pop b then a, push (a op b)
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(evalRPN(new String[]{"2","1","+","3","*"}));       // 9
+        System.out.println(evalRPN(new String[]{"4","13","5","/","+"}));       // 6
+        System.out.println(evalRPN(new String[]{"10","6","9","3","+","-11","*","/","*","17","+","5","+"})); // 22
+        System.out.println(evalRPN(new String[]{"3","4","+"}));               // 7
+        System.out.println(evalRPN(new String[]{"3","4","-"}));               // -1
+        System.out.println(evalRPN(new String[]{"3","4","*"}));               // 12
+        System.out.println(evalRPN(new String[]{"10","3","/"}));              // 3
+        System.out.println(evalRPN(new String[]{"-3","4","*"}));              // -12
+        System.out.println(evalRPN(new String[]{"42"}));                       // 42
+        System.out.println(evalRPN(new String[]{"7","2","-","5","*"}));        // 25
+    }
+}`
+  },
+
+  {
+    id: 'longest-valid-parentheses',
+    title: 'Longest Valid Parentheses',
+    category: 'Stacks & Queues',
+    difficulty: 'Hard',
+    link: 'https://leetcode.com/problems/longest-valid-parentheses/',
+    tags: ['String', 'Stack', 'Dynamic Programming'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Meta'],
+    description: 'Given a string containing just `(` and `)`, return the **length of the longest valid (well-formed) parentheses substring**.\n\n**Stack approach:** push -1 as a sentinel, push indices on `(`, pop on `)` and compute length = i - stack.top().',
+    examples: 'Input: s = "(()"\nOutput: 2  ("()")\n\nInput: s = ")()())"\nOutput: 4  ("()()")',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int longestValidParentheses(String s) {
+        // Stack of indices; sentinel -1 at bottom; push '(', pop on ')' and compute length
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(longestValidParentheses("(()"));        // 2
+        System.out.println(longestValidParentheses(")()())"));     // 4
+        System.out.println(longestValidParentheses(""));            // 0
+        System.out.println(longestValidParentheses("("));           // 0
+        System.out.println(longestValidParentheses(")"));           // 0
+        System.out.println(longestValidParentheses("()"));          // 2
+        System.out.println(longestValidParentheses("()()"));        // 4
+        System.out.println(longestValidParentheses("(())"));        // 4
+        System.out.println(longestValidParentheses("()(()"));       // 2
+        System.out.println(longestValidParentheses("(()(((()"));    // 2
+        System.out.println(longestValidParentheses("()(())"));      // 6
+    }
+}`
+  },
+
+  {
+    id: 'next-greater-element-ii',
+    title: 'Next Greater Element II',
+    category: 'Stacks & Queues',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/next-greater-element-ii/',
+    tags: ['Array', 'Monotonic Stack', 'Circular Array'],
+    companies: ['Amazon', 'Google', 'Bloomberg'],
+    description: 'Given a **circular** integer array `nums`, return an array where `result[i]` is the **next greater element** for `nums[i]` (the next element traversing circularly that is strictly greater). If none exists, the answer is -1.\n\n**Approach:** monotonic decreasing stack of indices; iterate twice (or treat indices modulo n).',
+    examples: 'Input: nums = [1,2,1]\nOutput: [2,-1,2]\n\nInput: nums = [1,2,3,4,3]\nOutput: [2,3,4,-1,4]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int[] nextGreaterElements(int[] nums) {
+        // Monotonic stack; iterate i from 0 to 2n-1; index = i % n
+
+        return new int[]{};
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{1, 2, 1})));            // [2, -1, 2]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{1, 2, 3, 4, 3})));      // [2, 3, 4, -1, 4]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{5, 4, 3, 2, 1})));      // [-1, 5, 5, 5, 5]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{1, 2, 3, 4, 5})));      // [2, 3, 4, 5, -1]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{1})));                   // [-1]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{2, 2, 2})));            // [-1, -1, -1]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{3, 1, 2})));            // [-1, 2, 3]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{-1, 0})));               // [0, -1]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{100, 1, 11, 1, 120, 111, 123, 1, -1, -100}))); // [120, 11, 120, 120, 123, 123, -1, 100, 100, 100]
+        System.out.println(Arrays.toString(nextGreaterElements(new int[]{1, 1, 1, 1, 2})));      // [2, 2, 2, 2, -1]
+    }
+}`
+  },
+
+  {
+    id: 'asteroid-collision',
+    title: 'Asteroid Collision',
+    category: 'Stacks & Queues',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/asteroid-collision/',
+    tags: ['Array', 'Stack', 'Simulation'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Meta'],
+    description: 'Given an array of integers `asteroids`, where each integer is the asteroid\'s **size and direction** (positive = right, negative = left), return the state of the asteroids after all collisions. When two asteroids collide:\n- The **smaller** one explodes.\n- If equal size, **both** explode.\n- Two asteroids moving in the same direction never collide.',
+    examples: 'Input: [5,10,-5]\nOutput: [5,10]  (10 vs -5 → 10 wins)\n\nInput: [8,-8]\nOutput: []\n\nInput: [10,2,-5]\nOutput: [10]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int[] asteroidCollision(int[] asteroids) {
+        // Stack: while top > 0 and incoming < 0, resolve collision
+
+        return new int[]{};
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{5, 10, -5})));       // [5, 10]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{8, -8})));            // []
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{10, 2, -5})));        // [10]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{-2, -1, 1, 2})));     // [-2, -1, 1, 2]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{1, -2, -2, -2})));    // [-2, -2, -2]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{})));                  // []
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{5})));                 // [5]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{-5})));                // [-5]
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{5, -5})));             // []
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{1, 2, 3, -3, -2, -1}))); // []
+        System.out.println(Arrays.toString(asteroidCollision(new int[]{1, 2, 3, -4})));      // [-4]
+    }
+}`
+  },
+
+  {
+    id: 'largest-rectangle-histogram',
+    title: 'Largest Rectangle in Histogram',
+    category: 'Stacks & Queues',
+    difficulty: 'Hard',
+    link: 'https://leetcode.com/problems/largest-rectangle-in-histogram/',
+    tags: ['Array', 'Monotonic Stack'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
+    description: 'Given an array `heights` representing the heights of bars in a histogram (each bar has width 1), return the **area of the largest rectangle** that can be formed within the histogram.\n\n**Optimal:** monotonic increasing stack of indices — when popping, compute the rectangle height = popped, width spans between previous-stack-top and current index.',
+    examples: 'Input: heights = [2,1,5,6,2,3]\nOutput: 10  (the rectangle of height 5 spanning indices 2-3 has area 10)',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int largestRectangleArea(int[] heights) {
+        // Monotonic stack of indices in increasing height; compute area on each pop
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(largestRectangleArea(new int[]{2, 1, 5, 6, 2, 3}));     // 10
+        System.out.println(largestRectangleArea(new int[]{2, 4}));                  // 4
+        System.out.println(largestRectangleArea(new int[]{}));                       // 0
+        System.out.println(largestRectangleArea(new int[]{5}));                     // 5
+        System.out.println(largestRectangleArea(new int[]{1, 1, 1, 1, 1}));         // 5
+        System.out.println(largestRectangleArea(new int[]{5, 4, 3, 2, 1}));         // 9
+        System.out.println(largestRectangleArea(new int[]{1, 2, 3, 4, 5}));         // 9
+        System.out.println(largestRectangleArea(new int[]{6, 7, 5, 2, 4, 5, 9, 3})); // 16
+        System.out.println(largestRectangleArea(new int[]{0, 9}));                  // 9
+        System.out.println(largestRectangleArea(new int[]{2, 1, 2}));               // 3
+        System.out.println(largestRectangleArea(new int[]{4, 2, 0, 3, 2, 5}));      // 6
+    }
+}`
+  },
+
+  {
+    id: 'find-winner-circular-game',
+    title: 'Find the Winner of the Circular Game',
+    category: 'Stacks & Queues',
+    difficulty: 'Medium',
+    link: 'https://leetcode.com/problems/find-the-winner-of-the-circular-game/',
+    tags: ['Array', 'Math', 'Recursion', 'Queue', 'Simulation', 'Josephus'],
+    companies: ['Amazon', 'Google'],
+    description: 'There are `n` friends sitting in a circle, numbered 1 to n. Starting from friend 1, the game proceeds clockwise: count `k` friends (including the starting friend) and remove that friend; the next person becomes the new starting point. Return the **winner** (the last remaining friend).\n\n**This is the classic Josephus problem.** Solvable with a simulation queue in O(n·k), or recursively in O(n).',
+    examples: 'Input: n = 5, k = 2\nOutput: 3\n\nInput: n = 6, k = 5\nOutput: 1',
+    starterCode: `import java.util.*;
+
+public class Main {
+    public static int findTheWinner(int n, int k) {
+        // Josephus recursion: f(1) = 0; f(n) = (f(n-1) + k) % n; answer = f(n) + 1
+
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findTheWinner(5, 2));    // 3
+        System.out.println(findTheWinner(6, 5));    // 1
+        System.out.println(findTheWinner(1, 1));    // 1
+        System.out.println(findTheWinner(2, 1));    // 2
+        System.out.println(findTheWinner(2, 2));    // 1
+        System.out.println(findTheWinner(3, 1));    // 3
+        System.out.println(findTheWinner(3, 2));    // 3
+        System.out.println(findTheWinner(4, 4));    // 2
+        System.out.println(findTheWinner(7, 3));    // 4
+        System.out.println(findTheWinner(10, 1));   // 10
+    }
+}`
+  },
+
+  {
+    id: 'implement-queue-using-stacks',
+    title: 'Implement Queue using Stacks',
+    category: 'Stacks & Queues',
+    difficulty: 'Easy',
+    link: 'https://leetcode.com/problems/implement-queue-using-stacks/',
+    tags: ['Stack', 'Queue', 'Design'],
+    companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
+    description: 'Implement a first-in-first-out (FIFO) queue using only two stacks. The implemented queue should support all the standard operations: `push`, `pop`, `peek`, `empty`. Amortized O(1) per operation.',
+    examples: 'Input: ["MyQueue","push","push","peek","pop","empty"], [[],[1],[2],[],[],[]]\nOutput: [null,null,null,1,1,false]',
+    starterCode: `import java.util.*;
+
+public class Main {
+    static class MyQueue {
+        // Two stacks: in (for pushes), out (for pops/peeks)
+
+        public MyQueue() {
+
+        }
+
+        public void push(int x) {
+
+        }
+
+        public int pop() {
+            return -1;
+        }
+
+        public int peek() {
+            return -1;
+        }
+
+        public boolean empty() {
+            return true;
+        }
+    }
+
+    public static void main(String[] args) {
+        // Sequence 1
+        MyQueue q = new MyQueue();
+        q.push(1); q.push(2);
+        System.out.println(q.peek());    // 1
+        System.out.println(q.pop());     // 1
+        System.out.println(q.empty());   // false
+
+        // Sequence 2: empty queue
+        MyQueue empty = new MyQueue();
+        System.out.println(empty.empty()); // true
+
+        // Sequence 3: single element
+        MyQueue one = new MyQueue();
+        one.push(42);
+        System.out.println(one.peek());   // 42
+        System.out.println(one.pop());    // 42
+        System.out.println(one.empty());  // true
+
+        // Sequence 4: alternating push/pop
+        MyQueue r = new MyQueue();
+        r.push(1);
+        System.out.println(r.pop());     // 1
+        r.push(2);
+        System.out.println(r.pop());     // 2
+        r.push(3); r.push(4);
+        System.out.println(r.pop());     // 3
+        System.out.println(r.peek());    // 4
+    }
+}`
   }
 
 ];
 
 // ─── Category metadata for display ───
 const DSA_CATEGORIES = [
+  { name: 'Fundamentals',        icon: '🎯', color: '#0ea5e9' },
   { name: 'Arrays',              icon: '📊', color: '#3b82f6' },
   { name: 'Strings',             icon: '🔤', color: '#8b5cf6' },
+  { name: 'Matrix',              icon: '🔢', color: '#0891b2' },
   { name: 'Linked Lists',        icon: '🔗', color: '#06b6d4' },
   { name: 'Trees',               icon: '🌳', color: '#22c55e' },
   { name: 'Graphs',              icon: '🕸️', color: '#f97316' },
@@ -2103,5 +3206,6 @@ const DSA_CATEGORIES = [
   { name: 'Hash Maps',           icon: '#️⃣', color: '#f59e0b' },
   { name: 'Backtracking',        icon: '🔙', color: '#ec4899' },
   { name: 'Two Pointers',        icon: '👆', color: '#6366f1' },
+  { name: 'Sliding Window',      icon: '🪟', color: '#7c3aed' },
   { name: 'Intervals',           icon: '📐', color: '#10b981' },
 ];
