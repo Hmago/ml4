@@ -272,6 +272,12 @@ body.sidebar-collapsed .sidebar {
   padding: 32px 48px 80px;
 }
 
+/* When sidebar is hidden: widen the whole content column uniformly
+   so prose, tables, and code blocks stay aligned at the same width. */
+body.sidebar-collapsed .content {
+  max-width: 1200px;
+}
+
 /* ─── Markdown Styles ─── */
 .content h1 {
   font-size: 32px;
