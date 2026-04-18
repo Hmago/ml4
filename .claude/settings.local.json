@@ -68,7 +68,13 @@
       "Bash(python -c ':*)",
       "Bash(awk:*)",
       "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(c['name']\\) for c in data if 'java' in c['name'].lower\\(\\) or 'jdk' in c['name'].lower\\(\\)]\")",
-      "Bash(npx -y http-server -p 8090 -c-1)"
+      "Bash(npx -y http-server -p 8090 -c-1)",
+      "Bash(netstat -aon)",
+      "Bash(chmod +x /c/Users/harshitmago/Documents/code/ml4/start.sh)",
+      "Bash(git -C /c/Users/harshitmago/Documents/code/ml4 update-index --chmod=+x start.sh)",
+      "Bash(git add *)",
+      "Bash(git update-index *)",
+      "WebFetch(domain:www.anthropic.com)"
     ]
   }
 }

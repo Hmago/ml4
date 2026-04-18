@@ -120,7 +120,7 @@ Imagine you're at a store. You buy 3 apples at 1 dollar each, 2 bananas at 0.50 
 
 Your items: [3, 2, 1]. Prices: [1, 0.50, 3].
 
-Total cost = (3 × 1) + (2 × 0.50) + (1 × 3) = 3 + 1 + 3 = 7 dollars.
+$\text{Total cost} = (3 \times 1) + (2 \times 0.50) + (1 \times 3) = 3 + 1 + 3 = 7$ dollars.
 
 That's a dot product! Multiply matching items, add them all up, get ONE number.
 
@@ -159,10 +159,10 @@ A "norm" is just a fancy word for "how big is this vector?" Like asking "how far
 
 There are different ways to measure distance:
 - **L1 norm** = Manhattan distance. Like walking on a city grid — count every block.
-  Go 3 blocks east, then 4 blocks north = 3 + 4 = 7 blocks total.
+  Go 3 blocks east, then 4 blocks north $= 3 + 4 = 7$ blocks total.
 - **L2 norm** = Straight-line distance. Like a bird flying directly.
-  3 blocks east and 4 blocks north = 5 blocks (Pythagorean theorem: 3-4-5 triangle!)
-- **Max norm** = The biggest single step. 3 east and 4 north → max is 4.
+  3 blocks east and 4 blocks north $= 5$ blocks (Pythagorean theorem: $3\text{-}4\text{-}5$ triangle!)
+- **Max norm** = The biggest single step. 3 east and 4 north → $\max = 4$.
 
 ---
 
@@ -295,14 +295,15 @@ Imagine you're ordering food for a party. You need food for 2 groups:
 - Group 1 wants: 1 pizza, 2 sodas, 3 cookies
 - Group 2 wants: 4 pizzas, 5 sodas, 6 cookies
 
-Prices are: pizza = 7 dollars, soda = 2 dollars, cookie = 1 dollar.
+Prices are: pizza $= 7$ dollars, soda $= 2$ dollars, cookie $= 1$ dollar.
 
-Group 1 total = (1 × 7) + (2 × 2) + (3 × 1) = 14 dollars.
-Group 2 total = (4 × 7) + (5 × 2) + (6 × 1) = 44 dollars.
+$$\text{Group 1 total} = (1 \times 7) + (2 \times 2) + (3 \times 1) = 14 \text{ dollars}$$
 
-That's matrix multiplication! Each row of orders times the column of prices = a total.
+$$\text{Group 2 total} = (4 \times 7) + (5 \times 2) + (6 \times 1) = 44 \text{ dollars}$$
 
-**The rule:** To multiply $A \times B$, A's number of columns must equal B's number of rows. Each answer cell = dot product of a row from A with a column from B.
+That's matrix multiplication! Each row of orders times the column of prices $=$ a total.
+
+**The rule:** To multiply $A \times B$, $A$'s number of columns must equal $B$'s number of rows. Each answer cell $=$ dot product of a row from $A$ with a column from $B$.
 
 $$A = \begin{pmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{pmatrix} \quad B = \begin{pmatrix} 7 & 8 \\ 9 & 10 \\ 11 & 12 \end{pmatrix}$$
 
@@ -315,7 +316,7 @@ C_{11} &= (4)(8) + (5)(10) + (6)(12) = 154
 
 $$C = \begin{pmatrix} 58 & 64 \\ 139 & 154 \end{pmatrix}$$
 
-**Why this is the heart of ML:** EVERY neural network layer = a matrix multiplication. GPT-4 does BILLIONS of these per second.
+**Why this is the heart of ML:** EVERY neural network layer $=$ a matrix multiplication. GPT-4 does BILLIONS of these per second.
 
 ### Transpose
 
@@ -374,7 +375,7 @@ Determinant is 7 (not zero) → this matrix is invertible!
 
 $$\det \begin{pmatrix} 2 & 4 \\ 1 & 2 \end{pmatrix} = (2)(2) - (4)(1) = 4 - 4 = 0$$
 
-Determinant is 0 → this matrix SQUISHES things flat. Not invertible! (Notice row 1 = 2 × row 2 — they carry the same information.)
+Determinant is 0 → this matrix SQUISHES things flat. Not invertible! (Notice row 1 $= 2 \times$ row 2 — they carry the same information.)
 
 In ML: Checking if covariance matrices are valid, Gaussian distribution formula uses determinant. Why? Before using a covariance matrix (which describes how your features are related), you need to check it isn't "broken." A zero determinant means two features carry the exact same information — like having "height in cm" and "height in inches" both in your data. The model can't work with that redundancy.
 
@@ -436,7 +437,7 @@ This is how Netflix recommends movies! SVD on the "users × movies" rating matri
 
 $$A = U \Sigma V^T$$
 
-> **In plain English:** "Any matrix = Rotation 1 × Stretch × Rotation 2"
+> **In plain English:** "Any matrix $= \text{Rotation 1} \times \text{Stretch} \times \text{Rotation 2}$"
 
 - $U$ = first rotation matrix
 - $\Sigma$ = stretch amounts (diagonal matrix, sorted biggest to smallest)
@@ -444,7 +445,7 @@ $$A = U \Sigma V^T$$
 
 **Why SVD matters:**
 
-1. **Compression:** Keep only the top-$k$ stretch amounts → approximate the original matrix with WAY fewer numbers. A $1000 \times 1000$ image with rank-50 SVD = 10x compression!
+1. **Compression:** Keep only the top-$k$ stretch amounts → approximate the original matrix with WAY fewer numbers. A $1000 \times 1000$ image with rank-$50$ SVD $= 10\times$ compression!
 2. **Recommendation Systems:** Netflix Prize used SVD
 3. **LoRA fine-tuning:** LoRA decomposes weight updates into two small matrices — this IS truncated SVD. This is how you fine-tune a 70B model on a laptop!
 
@@ -469,12 +470,12 @@ PCA answers: "What are the most important directions in my data?" Then it throws
 
 $$\text{Variance explained by direction 1} = \frac{8.88}{8.88 + 0.18} = 98\%$$
 
-Keep just 1 dimension. Drop from 2D to 1D. Lose only 2% of info.
+Keep just 1 dimension. Drop from 2D to 1D. Lose only $2\%$ of info.
 
 **Used for:**
-- Reduce 1000 features to 50 (speeds up training dramatically)
+- Reduce $1000$ features to $50$ (speeds up training dramatically)
 - Visualize high-dimensional data (project to 2D for plotting)
-- Remove noise (small eigenvalues = noise)
+- Remove noise (small eigenvalues $=$ noise)
 - Face recognition (Eigenfaces)
 
 ---
@@ -598,7 +599,7 @@ Loss $L$ depends on ALL weights $(w_1, w_2, \ldots, w_n)$.
 
 $\frac{\partial L}{\partial w_3}$ = "How much does the loss change if I adjust just $w_3$?"
 
-GPT-3 has 175 BILLION weights. We compute 175 billion partial derivatives every training step!
+GPT-3 has $175$ BILLION weights. We compute $175$ billion partial derivatives every training step!
 
 ---
 
@@ -607,7 +608,7 @@ GPT-3 has 175 BILLION weights. We compute 175 billion partial derivatives every 
 **Simple Explanation:**
 Imagine a chain of dominoes: Push domino A, which hits B, which hits C, which hits D.
 
-If pushing A makes B move 3× as far, and B makes C move 2× as far, and C makes D move 5× as far... then pushing A makes D move $3 \times 2 \times 5 = 30$× as far.
+If pushing A makes B move 3× as far, and B makes C move 2× as far, and C makes D move 5× as far... then pushing A makes D move $3 \times 2 \times 5 = 30\times$ as far.
 
 That's the chain rule! To find how the beginning affects the end, multiply all the "effects" along the chain.
 
@@ -655,7 +656,7 @@ $$\frac{dL}{da} = \frac{dL}{db} \times \frac{db}{da} = 1 \times 14 = 14$$
 
 $$\frac{dL}{dx} = \frac{dL}{da} \times \frac{da}{dx} = 14 \times 3 = 42$$
 
-Meaning: if $x$ increases by 0.01, Loss increases by 0.42.
+Meaning: if $x$ increases by $0.01$, Loss increases by $0.42$.
 
 ---
 
@@ -918,7 +919,7 @@ p^7 &= 0.5^7 = 0.0078 \\
 P &= 120 \times 0.0078 \times 0.125 = 0.117 = 11.7\%
 \end{aligned}$$
 
-Mean: $np = 10 \times 0.5 = 5$ (expect 5 heads on average).
+$\text{Mean}: np = 10 \times 0.5 = 5$ (expect 5 heads on average).
 
 In ML: Model accuracy over N test samples follows a binomial distribution. Why? When you test a model on 1000 images, each prediction is like a coin flip (right or wrong). Binomial tells you "if my model is 90% accurate, what's the chance it gets exactly 912 right?" This helps you know if your test results are trustworthy or just lucky.
 
@@ -1217,9 +1218,26 @@ In ML: Feature selection, understanding data, detecting multicollinearity. Why? 
 ## 3.4 Bayes' Theorem — Updating Beliefs with Evidence ★★★
 
 **Simple Explanation:**
-You hear a barking sound. Before looking, you think "probably a dog" (your PRIOR belief — 90% dog, 10% something else). Then you look and see a leash on the ground. A leash makes dogs MORE likely (EVIDENCE). Now you update to "99% sure it's a dog" (your POSTERIOR belief).
+Alex hears a barking sound. Before looking, Alex thinks "probably a dog" (PRIOR belief — 90% dog, 10% something else). Then Alex looks and sees a leash on the ground. A leash makes dogs MORE likely (EVIDENCE). Now Alex updates to "99% sure it's a dog" (POSTERIOR belief).
 
-Bayes' theorem is the math for updating beliefs when new evidence arrives. It's like being a detective — you start with a guess, then update it every time you find a new clue.
+Bayes' theorem is the math for updating beliefs when new evidence arrives. It's like being a detective — start with a guess, then update it every time a new clue arrives.
+
+```
+  THE BAYES PROCESS:
+
+  ┌──────────┐     New evidence      ┌───────────┐
+  │  PRIOR   │ ──── arrives ──────►  │ POSTERIOR  │
+  │ (old     │     (something        │ (updated   │
+  │  belief) │      observed)        │  belief)   │
+  └──────────┘                       └───────────┘
+       │                                   │
+   "1% of people                    "Given the positive
+    have this disease"               test, 16.7% chance
+                                     of having disease"
+
+  The belief SHIFTS based on how well the evidence
+  fits each possible explanation.
+```
 
 **Formula:**
 
@@ -1227,55 +1245,146 @@ $$P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}$$
 
 > Let's name each piece:
 
-| Piece | Name | What it means |
-|-------|------|---------------|
-| $P(A)$ | PRIOR | What you believed BEFORE seeing evidence |
-| $P(B \mid A)$ | LIKELIHOOD | How likely is this evidence IF A is true? |
-| $P(A \mid B)$ | POSTERIOR | Your UPDATED belief AFTER seeing evidence |
-| $P(B)$ | EVIDENCE | Total probability of seeing this evidence at all |
+| Piece | Name | What it means | Analogy |
+|-------|------|---------------|---------|
+| $P(A)$ | **PRIOR** | What was believed BEFORE seeing evidence | "1% of people have the disease" |
+| $P(B \mid A)$ | **LIKELIHOOD** | How likely is this evidence IF A is true? | "If Alex is sick, 99% chance the test says positive" |
+| $P(B)$ | **EVIDENCE** | Total probability of seeing this evidence at all | "What % of ALL people test positive (sick or not)?" |
+| $P(A \mid B)$ | **POSTERIOR** | The UPDATED belief AFTER seeing evidence | "Given Alex tested positive, what's the chance Alex is actually sick?" |
 
 > **In plain English:** "New belief = (how well the evidence fits × old belief) / how common the evidence is"
 
-**Step-by-Step Example: Medical test**
+The key insight is the **direction flip**: we know $P(B|A)$ (how likely is the evidence given the cause) and we want $P(A|B)$ (how likely is the cause given the evidence). These are NOT the same! Bayes lets us flip from one to the other.
+
+---
+
+**Step-by-Step Example 1: Medical test**
 
 Given:
 - Disease affects 1 in 100 people: $P(\text{disease}) = 0.01$
 - Test catches 99% of sick people: $P(\text{positive} \mid \text{disease}) = 0.99$
 - Test has 5% false positive rate: $P(\text{positive} \mid \text{healthy}) = 0.05$
 
-You test positive. What's the chance you're actually sick?
+Alex tests positive. What's the chance Alex is actually sick?
 
-**Step 1:** Compute $P(\text{positive})$:
+**Step 1 — Map to the formula:**
+
+| Piece | In this problem | Value |
+|-------|----------------|-------|
+| $A$ | Having the disease | — |
+| $B$ | Testing positive | — |
+| $P(A)$ — Prior | How common is the disease? | 0.01 |
+| $P(B \mid A)$ — Likelihood | If sick, chance of positive test? | 0.99 |
+| $P(\text{not } A)$ | How common is being healthy? | 0.99 |
+| $P(B \mid \text{not } A)$ | If healthy, chance of positive test? (false positive) | 0.05 |
+
+**Step 2 — Compute $P(\text{positive})$ — the total probability of testing positive for ANY reason:**
+
+This is the trickiest part. Someone can test positive in TWO ways: (a) they're sick AND the test caught it, or (b) they're healthy BUT the test gave a false alarm. Add both:
 
 $$P(\text{positive}) = P(\text{pos}|\text{disease}) \cdot P(\text{disease}) + P(\text{pos}|\text{healthy}) \cdot P(\text{healthy})$$
 
-$$= (0.99)(0.01) + (0.05)(0.99) = 0.0099 + 0.0495 = 0.0594$$
+$$= \underbrace{(0.99)(0.01)}_{\text{true positives}} + \underbrace{(0.05)(0.99)}_{\text{false positives}} = 0.0099 + 0.0495 = 0.0594$$
 
-**Step 2:** Apply Bayes:
+Notice: false positives (0.0495) VASTLY outnumber true positives (0.0099)! Because healthy people outnumber sick people 99-to-1.
 
-$$P(\text{disease} \mid \text{positive}) = \frac{0.0099}{0.0594} = 16.7\%$$
+**Step 3 — Apply Bayes' formula:**
 
-Even with a positive test, you're probably fine! (only 16.7% chance). Because the disease is rare, most positives are false alarms.
+$$P(\text{disease} \mid \text{positive}) = \frac{P(\text{pos}|\text{disease}) \times P(\text{disease})}{P(\text{positive})} = \frac{0.99 \times 0.01}{0.0594} = \frac{0.0099}{0.0594} = 16.7\%$$
 
-In ML: Naive Bayes classifier, Bayesian optimization for hyperparameters, MAP estimation, in-context learning in LLMs. Why? Models constantly need to update what they believe. A spam filter starts thinking "most emails are fine" (prior), then sees the word "FREE MONEY" (evidence) and updates to "probably spam" (posterior). That update step is Bayes' theorem. It's also how hyperparameter tuning works — each experiment updates your belief about which settings are best.
+Even with a positive test, there's only a 16.7% chance Alex is actually sick!
+
+---
+
+**Why is the answer so low? The Base Rate Fallacy**
+
+Most people's gut says "the test is 99% accurate, so Alex is 99% likely to be sick." This is WRONG, and it's one of the most common reasoning mistakes humans make. Here's why:
+
+The disease is very rare (1 in 100). So for every 1 sick person who correctly tests positive, there are roughly 5 healthy people who ALSO test positive (false alarms). The "base rate" — how rare the disease is — drowns out the test accuracy.
+
+**The easiest way to see it: think about 10,000 people**
+
+```
+  10,000 PEOPLE TAKE THE TEST
+  ├── 100 actually have the disease (1%)
+  │   ├── 99 test POSITIVE ✓  (true positives — test caught them)
+  │   └──  1 tests negative    (false negative — test missed them)
+  │
+  └── 9,900 are healthy (99%)
+      ├── 495 test POSITIVE ✗  (false positives — healthy but test said sick!)
+      └── 9,405 test negative   (true negatives — correctly cleared)
+```
+
+Total who test positive $= 99 + 495 =$ **594 people**
+
+Of those 594, only **99 are actually sick**.
+
+$$P(\text{sick} \mid \text{positive}) = \frac{99}{594} = 16.7\%$$
+
+Same answer, but now it's easy to SEE. The 495 false alarms flood the 99 real cases.
+
+> **The lesson:** When the thing you're looking for is RARE, even a good test produces mostly false alarms. This is why doctors order a SECOND test after a positive — the second test updates the prior from 16.7% (not 1%), and the answer jumps much higher.
+
+---
+
+**Sequential Updating — Applying Bayes Multiple Times**
+
+What if Alex tests positive TWICE (on independent tests)? After the first positive, the belief updates to 16.7%. Now use THAT as the new prior:
+
+$$P(\text{disease} \mid \text{2nd positive}) = \frac{(0.99)(0.167)}{(0.99)(0.167) + (0.05)(0.833)} = \frac{0.165}{0.165 + 0.042} = \frac{0.165}{0.207} = 79.9\%$$
+
+Two positive tests → 79.9% chance of disease. A third positive test → 98.7%. Each piece of evidence keeps updating the belief. This is the power of Bayes — beliefs get sharper with more evidence.
+
+---
+
+**Step-by-Step Example 2: Spam filter**
+
+A simple spam filter sees an email containing the word "FREE."
+
+Given:
+- 20% of emails are spam: $P(\text{spam}) = 0.20$
+- 80% of spam emails contain "FREE": $P(\text{"FREE"} \mid \text{spam}) = 0.80$
+- 10% of normal emails contain "FREE": $P(\text{"FREE"} \mid \text{not spam}) = 0.10$
+
+Is this email spam?
+
+$$P(\text{"FREE"}) = (0.80)(0.20) + (0.10)(0.80) = 0.16 + 0.08 = 0.24$$
+
+$$P(\text{spam} \mid \text{"FREE"}) = \frac{(0.80)(0.20)}{0.24} = \frac{0.16}{0.24} = 66.7\%$$
+
+The word "FREE" bumped the spam probability from 20% (prior) to 66.7% (posterior). If the email also contains "WINNER," Bayes updates again using 66.7% as the new prior — and the probability climbs even higher.
+
+---
+
+**Where Bayes shows up in ML:**
+
+| ML Application | Prior | Evidence | Posterior |
+|---------------|-------|----------|-----------|
+| **Naive Bayes classifier** | Class frequency in training data | Features of new input | Predicted class probabilities |
+| **Spam filter** | "20% of emails are spam" | Words in the email | "This email is 95% spam" |
+| **Bayesian optimization** | Belief about which hyperparameters are best | Results of each experiment | Updated belief → pick next experiment |
+| **MAP estimation** | Regularization (L1/L2 prior on weights) | Training data | Optimal weights |
+| **LLM in-context learning** | Model's pretrained knowledge | Few-shot examples in prompt | Updated predictions for new inputs |
+
+Why? Models constantly need to update what they believe. A spam filter starts thinking "most emails are fine" (prior), then sees the word "FREE MONEY" (evidence) and updates to "probably spam" (posterior). That update step is Bayes' theorem. It's also how hyperparameter tuning works — each experiment updates your belief about which settings are best.
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Prior P(disease)", "Posterior P(disease|positive)"],
+    "labels": ["Prior P(disease)", "After 1st positive test", "After 2nd positive test", "After 3rd positive test"],
     "datasets": [{
-      "label": "Probability",
-      "data": [1.0, 16.7],
-      "backgroundColor": ["rgba(99, 102, 241, 0.7)", "rgba(234, 88, 12, 0.7)"],
-      "borderColor": ["rgba(99, 102, 241, 1)", "rgba(234, 88, 12, 1)"],
+      "label": "Probability (%)",
+      "data": [1.0, 16.7, 79.9, 98.7],
+      "backgroundColor": ["rgba(99, 102, 241, 0.7)", "rgba(234, 88, 12, 0.7)", "rgba(239, 68, 68, 0.7)", "rgba(220, 38, 38, 0.8)"],
+      "borderColor": ["rgba(99, 102, 241, 1)", "rgba(234, 88, 12, 1)", "rgba(239, 68, 68, 1)", "rgba(220, 38, 38, 1)"],
       "borderWidth": 1
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Bayes in Action — Medical Test: Prior vs Posterior (%)" } },
+    "plugins": { "title": { "display": true, "text": "Bayes in Action — How Beliefs Sharpen with Repeated Evidence (%)" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Probability (%)" }, "beginAtZero": true, "max": 25 },
+      "y": { "title": { "display": true, "text": "P(disease) %" }, "beginAtZero": true, "max": 105 },
       "x": {}
     }
   }
@@ -1593,17 +1702,141 @@ Imagine a student who memorizes every answer in the textbook word-for-word. They
 
 Regularization is like telling the student: "You're not allowed to memorize. Keep your notes SHORT (small weights). Only write down what's actually important."
 
+The core idea: add a **penalty** to the loss function that punishes the model for having large weights. The model now has TWO goals competing against each other:
+
+1. **Fit the data** (make predictions accurate) — the original loss
+2. **Keep weights small** (stay simple) — the penalty
+
+```
+  WITHOUT REGULARIZATION:            WITH REGULARIZATION:
+
+  Loss = Prediction Error             Loss = Prediction Error + Penalty
+                                                                  │
+  Model thinks: "I'll memorize        Model thinks: "I need to    │
+  every tiny pattern, even noise"     keep weights small, so I    │
+                                      can only learn the BIG      │
+  Result: overfits                    patterns that really matter" │
+                                                                  │
+                                      Result: generalizes         │
+```
+
+**What is $\lambda$ (lambda)?** The **strength** of the penalty. It controls the trade-off:
+
+| $\lambda$ value | What happens | Analogy |
+|----------------|-------------|---------|
+| $\lambda = 0$ | No penalty at all — same as no regularization | No rules, memorize everything |
+| $\lambda$ small (e.g. $0.001$) | Gentle penalty — model mostly focuses on accuracy | Light guardrails |
+| $\lambda$ large (e.g. $10$) | Heavy penalty — model cares more about small weights than accuracy | Too strict, underfits |
+
+Finding the right $\lambda$ is a hyperparameter tuning problem (try values like $0.0001, 0.001, 0.01, 0.1$ and see which gives best validation accuracy).
+
 ---
 
 **L1 Regularization (Lasso):**
 
 $$\text{New Loss} = \text{Original Loss} + \lambda \sum |w_i|$$
 
-> **In plain English:** "Punish the model for having big weights. The punishment = add up the absolute value of all weights."
+> **In plain English:** "Add up the absolute value of every weight, multiply by $\lambda$, and add that to the loss. The model gets punished for every weight that isn't zero."
 
-Effect: pushes many weights to EXACTLY ZERO. "Only keep the most important features. Delete the rest."
+**Step-by-step example:** A model has 3 weights: $w = [0.5,\ 0.01,\ {-0.8}]$ and $\lambda = 0.1$.
 
-$$[0.5,\ 0.001,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L1}} [0.4,\ 0,\ {-0.7},\ 0,\ 0.2]$$
+**Step 1 — Compute the L1 penalty:**
+
+$$\text{L1 penalty} = \lambda \times (|w_1| + |w_2| + |w_3|) = 0.1 \times (0.5 + 0.01 + 0.8) = 0.1 \times 1.31 = 0.131$$
+
+**Step 2 — Add to the original loss:**
+
+If the original loss (prediction error) is $2.5$:
+
+$$\text{Total loss} = 2.5 + 0.131 = 2.631$$
+
+The model now has to reduce BOTH the prediction error AND the weight sizes. It will sacrifice a little accuracy to make weights smaller.
+
+**Step 3 — How L1 updates weights (the gradient):**
+
+During training, the model updates each weight using this rule:
+
+$$w_{\text{new}} = w_{\text{old}} - \text{lr} \times (\text{gradient from data} + \lambda \times \text{sign}(w))$$
+
+That looks dense. Let's break every piece apart:
+
+| Piece | What it means | In our example |
+|-------|--------------|----------------|
+| $w_{\text{old}}$ | The weight's current value | e.g. $0.5$ |
+| $\text{lr}$ | Learning rate — how big each step is | $0.01$ |
+| $\text{gradient from data}$ | "Which direction reduces prediction error?" — this comes from backpropagation | e.g. $0.3$ |
+| $\lambda$ | Regularization strength — how hard we punish big weights | $0.1$ |
+| $\text{sign}(w)$ | Just the direction of the weight: $+1$ if positive, $-1$ if negative, $0$ if zero | $\text{sign}(0.5) = +1$ |
+
+**What is $\text{sign}(w)$?** It strips away the size and keeps only the direction:
+
+$$\text{sign}(w) = \begin{cases} +1 & \text{if } w > 0 \\ -1 & \text{if } w < 0 \\ \phantom{+}0 & \text{if } w = 0 \end{cases}$$
+
+This comes from the gradient of $|w|$ (the absolute value). The slope of $|w|$ is always $+1$ or $-1$ — it doesn't depend on how big $w$ is. That constant slope is the entire reason L1 creates zeros.
+
+**Now let's plug in real numbers for all 3 weights:**
+
+Settings: $\text{lr} = 0.01$, $\lambda = 0.1$. Suppose backpropagation gives these data gradients: $[0.3,\ 0.02,\ {-0.5}]$.
+
+---
+
+**Weight $w_1 = 0.5$ (positive, medium-sized):**
+
+$$w_1^{\text{new}} = 0.5 - 0.01 \times (\underbrace{0.3}_{\text{data gradient}} + \underbrace{0.1 \times (+1)}_{\text{L1 push}})$$
+
+$$= 0.5 - 0.01 \times (0.3 + 0.1) = 0.5 - 0.004 = 0.496$$
+
+The L1 penalty added $+0.1$ to the gradient. That extra push nudges $w_1$ a little closer to zero, but it survives just fine.
+
+---
+
+**Weight $w_2 = 0.01$ (positive, tiny):**
+
+$$w_2^{\text{new}} = 0.01 - 0.01 \times (\underbrace{0.02}_{\text{data gradient}} + \underbrace{0.1 \times (+1)}_{\text{L1 push}})$$
+
+$$= 0.01 - 0.01 \times (0.02 + 0.1) = 0.01 - 0.0012 = 0.0088$$
+
+After a few more steps like this, $w_2$ reaches zero. The constant $+0.1$ push from L1 dominates the tiny $0.02$ data gradient. This weight is getting erased.
+
+---
+
+**Weight $w_3 = -0.8$ (negative, large):**
+
+$$w_3^{\text{new}} = -0.8 - 0.01 \times (\underbrace{-0.5}_{\text{data gradient}} + \underbrace{0.1 \times (-1)}_{\text{L1 push}})$$
+
+$$= -0.8 - 0.01 \times (-0.5 + (-0.1)) = -0.8 - 0.01 \times (-0.6) = -0.8 + 0.006 = -0.794$$
+
+Notice: since $w_3$ is negative, $\text{sign}(w_3) = -1$, so the L1 push is $0.1 \times (-1) = -0.1$. This pushes the weight toward zero (from the negative side, that means pushing it more positive). But $-0.8$ is big enough that the $0.1$ push barely matters.
+
+---
+
+**The pattern after many steps:**
+
+| Weight | Start | After many steps | What happened |
+|--------|-------|-------------------|---------------|
+| $w_1 = 0.5$ | Medium | $\approx 0.4$ | Shrunk, survived |
+| $w_2 = 0.01$ | Tiny | $= 0$ | Killed by constant L1 push |
+| $w_3 = -0.8$ | Large | $\approx -0.7$ | Shrunk, survived |
+
+**The key insight: L1's push is always the same size ($\lambda$).** It doesn't care if the weight is $0.8$ or $0.001$ — the push is $0.1$ either way. A big weight barely notices. A tiny weight gets overwhelmed and collapses to zero.
+
+```
+  WHY L1 ZEROS OUT SMALL WEIGHTS:
+
+  Weight = 0.8    ████████░░  L1 push = 0.1 (small relative to 0.8)
+                              → survives (shrinks to ~0.7)
+
+  Weight = 0.01   █░░░░░░░░░  L1 push = 0.1 (HUGE relative to 0.01)
+                              → gets killed (pushed to 0)
+
+  L1 applies the SAME force to all weights.
+  Small weights can't survive that force. Big ones can.
+  Result: automatic feature selection!
+```
+
+$$[0.5,\ 0.01,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L1}} [0.4,\ 0,\ {-0.7},\ 0,\ 0.2]$$
+
+> The tiny weights ($0.01$, $0.002$) got pushed to exactly zero. The model learned: "these features don't matter, throw them away."
 
 ---
 
@@ -1611,13 +1844,95 @@ $$[0.5,\ 0.001,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L1}} [0.4,\ 0,\ {-0.7}
 
 $$\text{New Loss} = \text{Original Loss} + \lambda \sum w_i^2$$
 
-> **In plain English:** "Punish the model for having big weights. The punishment = add up the squares of all weights."
+> **In plain English:** "Square every weight, add them up, multiply by $\lambda$, and add that to the loss. Big weights get punished WAY more than small ones (because squaring amplifies big numbers)."
 
-Effect: pushes all weights to be SMALL (but not zero). "Don't let any single weight get too powerful."
+**Step-by-step example:** Same weights: $w = [0.5,\ 0.01,\ {-0.8}]$ and $\lambda = 0.1$.
 
-$$[0.5,\ 0.001,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L2}} [0.3,\ 0.0008,\ {-0.5},\ 0.001,\ 0.2]$$
+**Step 1 — Compute the L2 penalty:**
+
+$$\text{L2 penalty} = \lambda \times (w_1^2 + w_2^2 + w_3^2) = 0.1 \times (0.25 + 0.0001 + 0.64) = 0.1 \times 0.8901 = 0.089$$
+
+**Step 2 — Add to the original loss:**
+
+$$\text{Total loss} = 2.5 + 0.089 = 2.589$$
+
+**Step 3 — How L2 updates weights (the gradient):**
+
+The gradient of $w^2$ is $2w$. So the L2 penalty pushes each weight by an amount **proportional to the weight itself**:
+
+$$w_{\text{new}} = w_{\text{old}} - \text{lr} \times (\text{gradient from data} + 2\lambda \times w)$$
+
+This is the key difference from L1! Big weights get a big push. Tiny weights get a tiny push:
+
+- $w_3 = -0.8$: push $= 2 \times 0.1 \times (-0.8) = -0.16$ → big correction!
+- $w_2 = 0.01$: push $= 2 \times 0.1 \times 0.01 = 0.002$ → barely touched
+
+```
+  WHY L2 SHRINKS BUT NEVER ZEROS:
+
+  Weight = 0.8    ████████░░  Push = 2λ × 0.8 = 0.16 (big push)
+                              → shrinks significantly to ~0.5
+
+  Weight = 0.01   █░░░░░░░░░  Push = 2λ × 0.01 = 0.002 (tiny push)
+                              → barely moves (0.01 → 0.008)
+
+  L2 push is PROPORTIONAL to the weight.
+  As a weight gets smaller, the push gets weaker.
+  It's like a rubber band — the closer to zero, the less it pulls.
+  Weights approach zero but never quite reach it.
+```
+
+$$[0.5,\ 0.01,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L2}} [0.3,\ 0.008,\ {-0.5},\ 0.001,\ 0.2]$$
+
+> ALL weights shrank, but none hit zero. The big weight ($-0.8$) shrank the most. The tiny ones barely moved.
 
 ---
+
+**L1 vs L2 — The Geometric Intuition**
+
+Why does L1 create zeros but L2 doesn't? There's a beautiful geometric reason:
+
+```
+  L1 CONSTRAINT (diamond):          L2 CONSTRAINT (circle):
+
+        ▲ w2                              ▲ w2
+        │   ╱╲                            │   ╭──╮
+        │  ╱  ╲                           │  │    │
+        │ ╱    ╲                          │  │    │
+   ─────◆──────◆─────► w1           ─────┤  ╰──╯ ├────► w1
+        │ ╲    ╱                          │  │    │
+        │  ╲  ╱                           │  │    │
+        │   ╲╱                            │   ╰──╯
+        │                                 │
+
+  The diamond has CORNERS on the         The circle is smooth —
+  axes (where one weight = 0).           it NEVER touches an axis
+  The optimal point often lands           except at the origin.
+  on a corner → some weight = 0!         Weights shrink but stay
+                                          nonzero.
+```
+
+The loss function wants the weights at some point in this space. The regularization constrains them to stay inside the shape. The optimal solution is where the loss function first touches the shape. For L1's diamond, that's often a corner (where a weight is zero). For L2's circle, it's almost never on an axis.
+
+---
+
+**Side-by-side Comparison:**
+
+| | L1 (Lasso) | L2 (Ridge / Weight Decay) |
+|---|---|---|
+| **Formula** | $\lambda \sum \lvert w_i \rvert$ | $\lambda \sum w_i^2$ |
+| **Gradient push** | Constant ($\pm\lambda$) | Proportional ($2\lambda w$) |
+| **Effect on weights** | Many go to exactly $0$ | All shrink, none reach $0$ |
+| **Feature selection** | Yes — automatically drops useless features | No — keeps all features, just makes them small |
+| **Constraint shape** | Diamond (corners on axes) | Circle (smooth, no corners) |
+| **Bayesian view** | Laplace prior on weights | Gaussian prior on weights |
+| **When to use** | Many features, suspect most are useless | All features might be useful, want to prevent any from dominating |
+| **Common names** | Lasso, L1, sparse regularization | Ridge, L2, weight decay, Tikhonov |
+
+**In practice:**
+- **L2 (weight decay)** is used in almost ALL neural network training — it's built into AdamW
+- **L1** is used more in classical ML when you want feature selection (e.g., which of these 500 medical measurements actually predict the disease?)
+- **Elastic Net** $= $ L1 $+$ L2 combined — get feature selection AND smooth shrinkage
 
 ```chart
 {
@@ -1627,7 +1942,7 @@ $$[0.5,\ 0.001,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L2}} [0.3,\ 0.0008,\ {
     "datasets": [
       {
         "label": "Original Weights",
-        "data": [0.5, 0.001, -0.8, 0.002, 0.3],
+        "data": [0.5, 0.01, -0.8, 0.002, 0.3],
         "backgroundColor": "rgba(99, 102, 241, 0.6)",
         "borderColor": "rgba(99, 102, 241, 1)",
         "borderWidth": 1
@@ -1641,7 +1956,7 @@ $$[0.5,\ 0.001,\ {-0.8},\ 0.002,\ 0.3] \xrightarrow{\text{L2}} [0.3,\ 0.0008,\ {
       },
       {
         "label": "After L2 (Ridge)",
-        "data": [0.3, 0.0008, -0.5, 0.001, 0.2],
+        "data": [0.3, 0.008, -0.5, 0.001, 0.2],
         "backgroundColor": "rgba(34, 197, 94, 0.6)",
         "borderColor": "rgba(34, 197, 94, 1)",
         "borderWidth": 1
@@ -1753,8 +2068,8 @@ Neural networks have non-convex loss surfaces. But the good news: in practice, m
 }
 ```
 
-Linear/logistic regression = convex (guaranteed to find the best answer).
-Neural networks = non-convex (might find a "pretty good" answer).
+Linear/logistic regression $=$ convex (guaranteed to find the best answer).
+Neural networks $=$ non-convex (might find a "pretty good" answer).
 
 ---
 
@@ -1903,7 +2218,7 @@ Always $\geq 0$. Zero only when $P = Q$ (identical distributions).
 
 $$\text{Cross-Entropy} = \text{Entropy} + \text{KL Divergence}$$
 
-Since entropy of the true data is fixed (we can't change reality), minimizing cross-entropy = minimizing KL divergence. Training = making the model's distribution match reality.
+Since entropy of the true data is fixed (we can't change reality), minimizing cross-entropy $=$ minimizing KL divergence. Training $=$ making the model's distribution match reality.
 
 In ML: RLHF/DPO use KL penalty to keep the model close to its original behavior. Why? When you fine-tune ChatGPT to be more helpful, you don't want it to forget everything it already knows. KL divergence measures "how far has the model drifted from its original self?" If it drifts too far, the penalty pulls it back — like a dog on a leash that can explore but can't run away.
 
@@ -1971,7 +2286,7 @@ Think of it like a ruler. A big ruler with lots of tiny marks (FP32) can measure
 |---------|----------------|---------|
 | **Overflow** | Number too big | $e^{1000} = \infty$ |
 | **Underflow** | Number too small | $e^{-1000} \approx 0$ |
-| **Cancellation** | Meaningful digits lost | $1.0000001 - 1.0000000 =$ garbage |
+| **Cancellation** | Meaningful digits lost | $1.0000001 - 1.0000000 = \text{garbage}$ |
 
 ---
 
