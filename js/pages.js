@@ -8,7 +8,7 @@ function renderWelcome() {
   contentEl.classList.remove('chapter-view');
   currentPage = 'welcome';
   currentIndex = -1;
-  history.replaceState(null, '', '#home');
+  pushHash('home');
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
 
@@ -126,7 +126,7 @@ function showDashboard() {
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'dashboard';
-  history.replaceState(null, '', '#dashboard');
+  pushHash('dashboard');
   renderSidebar();
   closeSidebar();
   document.getElementById('tocPanel').classList.remove('visible');
@@ -501,12 +501,18 @@ function handleImportData(event) {
 }
 
 function resetAppData() {
-  const confirmed = confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete:\n• All reading progress\n• All quiz scores\n• XP, level, and streak\n• All achievements\n• Study time and chapter tracking\n\n(Your comments and highlights will NOT be deleted)\n\nThis action CANNOT be undone.\n\nAre you sure?');
+  const confirmed = confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete:\n• All reading progress\n• All quiz scores\n• XP, level, and streak\n• All achievements\n• Study time and chapter tracking\n\n(Your comments, highlights, and preferences like theme/font/sidebar will NOT be deleted)\n\nThis action CANNOT be undone.\n\nAre you sure?');
   if (!confirmed) return;
   const doubleConfirm = confirm('Are you REALLY sure?\nAll progress will be lost forever.');
   if (!doubleConfirm) return;
-  // Clear all ml4 localStorage keys EXCEPT comments
-  Object.keys(localStorage).filter(k => k.startsWith('ml4') && k !== 'ml4-comments' && k !== 'ml4-highlights').forEach(k => localStorage.removeItem(k));
+  // Preserve user preferences and user-authored content; wipe only progress/gamification data
+  const preserve = new Set([
+    'ml4-comments', 'ml4-highlights',
+    'ml4-sidebar', 'ml4-fontsize', 'ml4-theme', 'ml4-interactive',
+    'ml4-dsa-view', 'ml4-dsa-collapsed', 'ml4-dsa-custom',
+    'ml4-migration-content-v1',
+  ]);
+  Object.keys(localStorage).filter(k => k.startsWith('ml4') && !preserve.has(k)).forEach(k => localStorage.removeItem(k));
   readChapters = {};
   // Stop timer if running
   if (timerRunning) { clearInterval(timerInterval); timerRunning = false; timerSeconds = 0;
@@ -750,7 +756,7 @@ function showGoals() {
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('commentFab').classList.remove('visible');
-  history.replaceState(null, '', '#goals');
+  pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();
 }

@@ -12,7 +12,7 @@ This is a **Machine Learning study notes and learning platform** — a comprehen
   - **Core ML Curriculum** (Ch 2–13): Math fundamentals, ML intro, core concepts, data preprocessing, supervised/unsupervised/reinforcement learning, key algorithms, neural networks, model evaluation, deep learning, LLMs
   - **Interview Preparation** (Ch 0, 15–17, 20, behavioral): Google strategy guide, ML interview questions, LLM interview questions, Google top 10 ML topics, ML system design, behavioral interview
   - **System Design** (Ch 14, Modern System Design): Design fundamentals, modern system design patterns
-  - **DSA & Coding** (Ch 18, dsa_problems.js): Trees, graphs, ML coding in Java; 30 in-browser DSA practice problems
+  - **DSA & Coding** (Ch 18, `js/data/dsa_problems_index.js` + `dsa_problems_full.js`): Trees, graphs, ML coding in Java; ~400 in-browser DSA practice problems (metadata index loads up-front; starter code lazy-loaded on first problem open)
   - **Google ML Ecosystem** (Ch 19): TPUs, JAX, Vertex AI, key papers
   - **Supplementary**: Brain training, practical ML, staying relevant in AI era, quick reference cheat sheet
 - **README.md** — Table of contents with Google interview priority ratings (★★★/★★/★), difficulty levels, estimated reading times, chapter dependency map, and five learning tracks
@@ -24,7 +24,7 @@ This is a **Machine Learning study notes and learning platform** — a comprehen
   - Sidebar navigation with chapter read-progress tracking
   - Dark/light theme toggle
   - Per-chapter quizzes (defined in `quizzes.js`) that auto-pop when marking a chapter as read
-  - DSA Practice page with 30 in-browser coding problems (`dsa_problems.js`)
+  - DSA Practice page with ~400 in-browser coding problems (`js/data/dsa_problems_index.js` + `dsa_problems_full.js`, lazy-loaded)
   - Timetable/study schedule page
   - KaTeX for math rendering, highlight.js for code syntax highlighting
   - Markdown rendered client-side using marked.js

@@ -20,23 +20,43 @@ if (fontSize !== 0) {
   if (fontSize === 1) el.classList.add('font-lg');
 }
 
-// Load from URL hash (preserves the page across hard refresh)
-const hash = window.location.hash.slice(1);
-if (hash === 'home' || hash === '') {
-  renderWelcome();
-} else if (hash === 'dashboard') {
-  showDashboard();
-} else if (hash === 'goals') {
-  showGoals();
-} else if (hash === 'dsa-practice') {
-  showDSAPractice();
-} else if (hash.startsWith('dsa-problem-')) {
-  const problemId = hash.replace('dsa-problem-', '');
-  showDSAProblem(problemId);
-} else if (hash) {
-  const idx = chapters.findIndex(ch => ch.file && ch.file.replace('.md', '') === hash);
-  if (idx >= 0) loadChapter(idx);
+// ─── Router ───
+// Defines pushHash(h) — used by render functions to push a new history entry
+// and routeFromHash() — re-renders the current page when the user hits Back/Forward.
+// A _navFromPopstate flag suppresses pushState during popstate-driven renders
+// so Back/Forward doesn't create duplicate history entries.
+let _navFromPopstate = false;
+function pushHash(h) {
+  if (_navFromPopstate) return;
+  if (window.location.hash.slice(1) === h) return;
+  history.pushState(null, '', '#' + h);
 }
+function routeFromHash() {
+  const hash = window.location.hash.slice(1);
+  _navFromPopstate = true;
+  try {
+    if (hash === 'home' || hash === '') {
+      renderWelcome();
+    } else if (hash === 'dashboard') {
+      showDashboard();
+    } else if (hash === 'goals') {
+      showGoals();
+    } else if (hash === 'dsa-practice') {
+      showDSAPractice();
+    } else if (hash.startsWith('dsa-problem-')) {
+      showDSAProblem(hash.replace('dsa-problem-', ''));
+    } else if (hash) {
+      const idx = chapters.findIndex(ch => ch.file && ch.file.replace('.md', '') === hash);
+      if (idx >= 0) loadChapter(idx);
+    }
+  } finally {
+    _navFromPopstate = false;
+  }
+}
+window.addEventListener('popstate', routeFromHash);
+
+// Initial hash-based route (preserves the page across hard refresh)
+routeFromHash();
 
 // ─── Close DSA filter dropdowns when clicking outside ───
 // Capture-phase so it runs BEFORE the panel's stopPropagation. We close every

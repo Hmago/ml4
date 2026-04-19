@@ -138,7 +138,7 @@ async function loadChapter(index) {
     document.getElementById('contentWrapper').scrollTop = 0;
 
     // Update URL hash
-    history.replaceState(null, '', '#' + ch.file.replace('.md', ''));
+    pushHash(ch.file.replace('.md', ''));
 
     // Update read button
     document.getElementById('readBtn').classList.toggle('active', !!readChapters[ch.file]);
@@ -314,10 +314,15 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('chapterList').style.display = '';
     closeSidebar();
   }
-  // Arrow keys (when not in input)
-  if (document.activeElement.tagName === 'INPUT') return;
-  if (e.key === 'ArrowLeft') { const p = findPrevChapter(currentIndex); if (p >= 0) loadChapter(p); }
-  if (e.key === 'ArrowRight') { const n = findNextChapter(currentIndex); if (n >= 0) loadChapter(n); }
+  // Arrow keys: navigate prev/next chapter — only when actually on a chapter page
+  // AND not typing in an input/textarea/contenteditable (so the DSA editor,
+  // comment box, notebook cells, etc. keep native cursor movement).
+  const ae = document.activeElement;
+  const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+  if (currentPage === 'chapter' && !typing) {
+    if (e.key === 'ArrowLeft') { const p = findPrevChapter(currentIndex); if (p >= 0) loadChapter(p); }
+    if (e.key === 'ArrowRight') { const n = findNextChapter(currentIndex); if (n >= 0) loadChapter(n); }
+  }
   // Ctrl+D — dark mode
   if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); toggleTheme(); }
   // M — mark as read
@@ -482,7 +487,7 @@ function renderQuizQuestion() {
     const file = chapters[currentIndex]?.file;
     if (file) {
       if (!scores[file] || pct > scores[file]) scores[file] = pct;
-      localStorage.setItem('ml4-quiz-scores', JSON.stringify(scores));
+      safeSetItem('ml4-quiz-scores', JSON.stringify(scores));
       // Save detailed quiz history
       const hist = getQuizHistory();
       if (!hist[file]) hist[file] = { attempts: 0, bestScore: 0, lastScore: 0, scores: [] };
@@ -490,6 +495,10 @@ function renderQuizQuestion() {
       hist[file].lastScore = pct;
       if (pct > hist[file].bestScore) hist[file].bestScore = pct;
       hist[file].scores.push({ pct, date: new Date().toISOString() });
+      // Cap per-chapter history at last 20 attempts to prevent unbounded growth
+      if (hist[file].scores.length > 20) {
+        hist[file].scores = hist[file].scores.slice(-20);
+      }
       saveQuizHistory(hist);
     }
     // Check if course is complete
@@ -1467,11 +1476,9 @@ function highlightTextInNode(root, searchText, file) {
     }
   }
 
-  // Apply highlights (process in reverse to not invalidate positions)
-  for (let i = matches.length - 1; i >= 0; i--) {
-    const { node, idx } = matches[i];
-    // Only highlight first match
-    if (i < matches.length - 1) continue;
+  // Only highlight the first match (can't disambiguate without stored position)
+  if (matches.length > 0) {
+    const { node, idx } = matches[0];
     try {
       const range = document.createRange();
       range.setStart(node, idx);

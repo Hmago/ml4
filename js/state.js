@@ -350,6 +350,26 @@ function showToast(title, subtitle, icon = '⚡') {
   setTimeout(() => { toast.remove(); }, 3200);
 }
 
+// Quota-safe localStorage write. Surfaces a toast once per session on quota error
+// so the user knows they need to export-and-reset instead of silently losing data.
+let _quotaWarned = false;
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014)) {
+      if (!_quotaWarned) {
+        _quotaWarned = true;
+        showToast('💾 Storage full', 'Export your data from Dashboard, then reset old progress.', '⚠️');
+      }
+    } else {
+      console.error('localStorage write failed:', e);
+    }
+    return false;
+  }
+}
+
 function showAchievementToast(icon, name, desc, tier) {
   if (!interactiveMode) return;
   const container = document.getElementById('toastContainer');
