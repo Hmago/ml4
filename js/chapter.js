@@ -653,6 +653,7 @@ loadChapter = async function(index) {
     await loadNotebook(ch.file);
     loadHighlights(ch.file);
     injectComments(ch.file);
+    if (typeof renderPins === 'function') setTimeout(() => renderPins(ch.file), 60);
     return;
   }
   await _origLoadChapter(index);
@@ -667,6 +668,9 @@ loadChapter = async function(index) {
     loadHighlights(chapters[index].file);
     // Always inject comments at bottom of chapter
     injectComments(chapters[index].file);
+    // Render any saved floating-note pins (Figma-style). Small delay so markdown,
+    // math, and highlighting finish first — otherwise anchor offsets would be wrong.
+    if (typeof renderPins === 'function') setTimeout(() => renderPins(chapters[index].file), 120);
   }
 };
 
@@ -1073,6 +1077,9 @@ function renderComments(file) {
   } else {
     container.innerHTML = filtered.map(x => renderSingleComment(x.comment, x.origIndex, file)).join('');
   }
+  // Keep the floating margin pins in sync whenever the list re-renders
+  // (covers resolve / reopen / edit / delete / filter changes).
+  if (typeof renderPins === 'function') renderPins(file);
 }
 
 function renderSingleComment(c, index, file, isReply = false, parentIndex = null) {
@@ -1082,9 +1089,10 @@ function renderSingleComment(c, index, file, isReply = false, parentIndex = null
   const resolved = c.resolved && !isReply;
   const resolvedBadge = resolved ? '<span class="comment-resolved-badge">&#10003; Resolved</span>' : '';
   const resolveBtn = !isReply ? `<button class="resolve-btn" onclick="resolveComment('${file}', ${index})">${resolved ? '↺ Reopen' : '✓ Resolve'}</button>` : '';
-  let html = `<div class="comment-item${resolved ? ' resolved' : ''}" id="comment-${id}">
+  const pinBadge = (!isReply && c.anchor) ? '<span class="comment-pin-badge" title="This note is pinned in the chapter margin">📍 Pinned</span>' : '';
+  let html = `<div class="comment-item${resolved ? ' resolved' : ''}${c.anchor ? ' has-pin' : ''}" id="comment-${id}">
     <div class="comment-header">
-      <span class="comment-date">${date}${edited}${resolvedBadge}</span>
+      <span class="comment-date">${date}${edited}${pinBadge}${resolvedBadge}</span>
       <div class="comment-actions">
         ${resolveBtn}
         ${!isReply ? `<button onclick="showReplyForm('${file}', ${index})">↩ Reply</button>` : ''}
@@ -1367,6 +1375,29 @@ function noteFromSelection() {
   const file = chapters[currentIndex].file;
   const quote = selectedText.substring(0, 200);
 
+  // Capture an anchor for the selection point so the new note also shows as
+  // a floating pin in the chapter margin (pins.js reads the anchor field).
+  let anchor = null;
+  try {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && typeof pinAnchorFromElement === 'function') {
+      const range = sel.getRangeAt(0);
+      let startEl = range.startContainer;
+      if (startEl && startEl.nodeType === Node.TEXT_NODE) startEl = startEl.parentElement;
+      if (startEl) {
+        const a = pinAnchorFromElement(startEl);
+        if (a) {
+          const rect = a._el.getBoundingClientRect();
+          const sRect = range.getBoundingClientRect();
+          const offsetY = rect.height > 0
+            ? Math.max(0, Math.min(1, (sRect.top - rect.top) / rect.height))
+            : 0;
+          anchor = { tag: a.tag, index: a.index, text: a.text, offsetY };
+        }
+      }
+    }
+  } catch (e) { /* fall through; note stays unanchored */ }
+
   window.getSelection().removeAllRanges();
 
   // Scroll content-wrapper to comments section
@@ -1380,6 +1411,7 @@ function noteFromSelection() {
     const input = document.getElementById('newCommentInput');
     if (input) {
       input.dataset.quote = quote;
+      if (anchor) input.dataset.anchor = JSON.stringify(anchor);
       input.placeholder = `Add note about: "${quote.substring(0, 60)}..."`;
       input.value = '';
       input.focus();
@@ -1492,7 +1524,7 @@ function highlightTextInNode(root, searchText, file) {
   }
 }
 
-// Update addComment to include quote if present
+// Update addComment to include quote + optional anchor (for floating pins)
 const _origAddComment = addComment;
 addComment = function(file) {
   const input = document.getElementById('newCommentInput');
@@ -1509,10 +1541,16 @@ addComment = function(file) {
     delete input.dataset.quote;
     input.placeholder = 'Write a note...';
   }
+  // Attach anchor (for floating pin) if present
+  if (input.dataset.anchor) {
+    try { comment.anchor = JSON.parse(input.dataset.anchor); } catch (e) {}
+    delete input.dataset.anchor;
+  }
   all[file].unshift(comment);
   saveComments(all);
   input.value = '';
   renderComments(file);
   updateCommentFab(file);
+  if (typeof renderPins === 'function') renderPins(file);
   addXP(2, 'Added a note');
 };
