@@ -74,7 +74,32 @@
       "Bash(git -C /c/Users/harshitmago/Documents/code/ml4 update-index --chmod=+x start.sh)",
       "Bash(git add *)",
       "Bash(git update-index *)",
-      "WebFetch(domain:www.anthropic.com)"
+      "WebFetch(domain:www.anthropic.com)",
+      "Bash(awk 'NR<16 {print} NR==16 {print \"<link rel=\\\\\"stylesheet\\\\\" href=\\\\\"styles.css\\\\\">\"} NR>2402 {print}' index.html)",
+      "Bash(mv /tmp/index.new.html index.html)",
+      "Bash(sed -n '14,18p' index.html)",
+      "Bash(awk 'NR<88 {print} NR==88 {print \"<script src=\\\\\"app.js\\\\\"></script>\"} NR>4116 {print}' index.html)",
+      "Bash(sed -n '85,92p' index.html)",
+      "Bash(sed -i.bak 's|<script src=\"quizzes.js\">|<script src=\"js/data/quizzes.js\">|' index.html)",
+      "Bash(sed -i.bak 's|<script src=\"dsa_problems.js\">|<script src=\"js/data/dsa_problems.js\">|' index.html)",
+      "Bash(PYTHONIOENCODING=utf-8 python *)",
+      "Bash(cat js/data/_batch7_a.js js/data/_batch7_b.js js/data/_batch7_c.js)",
+      "Read(//tmp/**)",
+      "Bash(rm js/data/_test_g*.js js/data/_batch8_merged.js)",
+      "Bash(cat js/data/_batch8_g1.js js/data/_batch8_g2.js js/data/_batch8_g3.js js/data/_batch8_g4.js js/data/_batch8_g5.js)",
+      "Bash(rm js/data/_t_*.js)",
+      "Bash(cat js/data/_batch9_ga.js js/data/_batch9_gb.js js/data/_batch9_gc.js js/data/_batch9_gd.js js/data/_batch9_ge.js)",
+      "Bash(cat js/data/_batch10_gh.js js/data/_batch10_gi.js)",
+      "Bash(rm js/data/_t_*.js js/data/_fix_batch11.js)",
+      "Bash(cat js/data/_batch11_gj.js js/data/_batch11_gk.js)",
+      "Bash(cat js/data/_batch12_gl.js js/data/_batch12_gm.js)",
+      "WebFetch(domain:leetcode.com)",
+      "WebFetch(domain:www.hackmnc.com)",
+      "WebFetch(domain:jobright.ai)",
+      "WebFetch(domain:www.teamblind.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.onsites.fyi)",
+      "Bash(cat js/data/_batch13_gn.js js/data/_batch13_go.js js/data/_batch13_gp.js)"
     ]
   }
 }
