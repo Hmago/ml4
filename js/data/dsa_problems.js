@@ -18000,4 +18000,6 @@ const DSA_CATEGORIES = [
   { name: 'Two Pointers',        icon: '👆', color: '#6366f1' },
   { name: 'Sliding Window',      icon: '🪟', color: '#7c3aed' },
   { name: 'Intervals',           icon: '📐', color: '#10b981' },
+  { name: 'Greedy',              icon: '💰', color: '#eab308' },
+  { name: 'Heap',                icon: '⛰️', color: '#84cc16' },
 ];
