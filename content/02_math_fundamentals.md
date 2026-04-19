@@ -2416,4 +2416,4 @@ FP8 (2024–2025): Even faster on H100/H200 GPUs. DeepSeek-V3 used FP8 for train
 
 **Related:** For probability fundamentals with more examples, see the LLM chapter.
 
-**Back to Start:** [README — Table of Contents](README.md)
+**Back to Start:** [README — Table of Contents](../README.md)
