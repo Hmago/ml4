@@ -450,7 +450,8 @@ function setupScrollSpy() {
 let quizState = { questions: [], current: 0, score: 0, answered: false };
 
 function startQuiz(file) {
-  const questions = (typeof QUIZ_DATA !== 'undefined' && QUIZ_DATA[file]) || [];
+  const key = file.replace(/^content\//, '');
+  const questions = (typeof QUIZ_DATA !== 'undefined' && (QUIZ_DATA[key] || QUIZ_DATA[file])) || [];
   if (!questions.length) {
     showToast('📝 No quiz yet', 'Quiz coming soon for this chapter', '📚');
     return;

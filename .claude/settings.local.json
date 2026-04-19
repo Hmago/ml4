@@ -99,7 +99,8 @@
       "WebFetch(domain:www.teamblind.com)",
       "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:www.onsites.fyi)",
-      "Bash(cat js/data/_batch13_gn.js js/data/_batch13_go.js js/data/_batch13_gp.js)"
+      "Bash(cat js/data/_batch13_gn.js js/data/_batch13_go.js js/data/_batch13_gp.js)",
+      "Bash(python3 *)"
     ]
   }
 }
