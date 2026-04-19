@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v72';
+const CACHE_NAME = 'ml-notes-v84';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -15,7 +15,8 @@ const STATIC_FILES = [
   'js/dsa.js',
   'js/init.js',
   'js/data/quizzes.js',
-  'js/data/dsa_problems.js',
+  'js/data/dsa_problems_index.js',
+  'js/data/dsa_problems_full.js',
   'manifest.json',
   'icon-192.svg',
   'icon-512.svg',
@@ -105,22 +106,34 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For local assets: network first, cache fallback (always get fresh content)
-  event.respondWith(
-    fetch(event.request).then(response => {
-      if (response.ok && url.origin === self.location.origin) {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-      }
-      return response;
-    }).catch(() => {
-      // Offline: fall back to cache
-      return caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        if (event.request.mode === 'navigate') {
-          return caches.match(BASE + 'index.html');
+  // For navigation requests (HTML): network-first with cache fallback,
+  // so users get the latest index.html when online but still work offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
-      });
+        return response;
+      }).catch(() => caches.match(event.request).then(c => c || caches.match(BASE + 'index.html')))
+    );
+    return;
+  }
+
+  // For other local assets (JS/CSS/MD/JSON/images): stale-while-revalidate.
+  // Serve from cache instantly; update cache in background so the next load is fresh.
+  // This fixes the prior "network-first undermines offline" issue.
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      const networkFetch = fetch(event.request).then(response => {
+        if (response.ok && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => cached);
+      return cached || networkFetch;
     })
   );
 });

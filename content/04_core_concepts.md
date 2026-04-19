@@ -412,45 +412,46 @@ Imagine you're learning to throw a basketball into a hoop, but you're blindfolde
 
 ### Concrete Walk-Through (Tiny Example)
 
-**Model:**
+**Task**: given today's temperature, predict whether it's an ice-cream day (`1 = yes`, `0 = no`).
 
-$$y = \sigma(w \times \text{temp} + b)$$
+**Model**: one weight `w`, one bias `b`, a sigmoid on top.
 
-(logistic regression, one weight). Initial: $w = 0.0$, $b = 0.0$.
+$$\hat{y} = \sigma(w \cdot \text{temp} + b)$$
 
-```
-  Task: predict if temperature > 20°C means "ice cream day" (1) or not (0)
+Start untrained: `w = 0`, `b = 0`.
+Training example: `temp = 25°C`, true label `y = 1`.
 
-  ─────── Training example: temp=25, label=1 ──────────────────────────
+---
 
-  STEP 1 — Forward pass:
-    raw = 0.0 × 25 + 0.0 = 0.0
-    ŷ = sigmoid(0.0) = 0.5       ← model is 50/50 unsure
-```
+**Step 1 — Forward pass.** Plug the input in.
 
-**STEP 2 — Compute loss (binary cross-entropy):**
+- raw = `0 × 25 + 0 = 0`
+- ŷ = `sigmoid(0) = 0.5`
 
-$$\text{loss} = -[y \times \log(\hat{y}) + (1 - y) \times \log(1 - \hat{y})]$$
+The model says 50/50. It knows nothing yet.
 
-$$= -[1 \times \log(0.5) + 0 \times \log(0.5)] = 0.693$$
+**Step 2 — Loss.** How wrong is 0.5 when the answer is 1? Binary cross-entropy simplifies to $-\log(\hat{y})$ when `y = 1`:
 
-```
-  STEP 3 — Backward pass:
-```
+$$\text{loss} = -\log(0.5) \approx 0.693$$
 
-$$\frac{\partial \text{loss}}{\partial w} = (\hat{y} - y) \times \text{temp} = (0.5 - 1) \times 25 = -12.5$$
+**Step 3 — Gradients.** Which direction reduces the loss?
 
-$$\frac{\partial \text{loss}}{\partial b} = (\hat{y} - y) = (0.5 - 1) = -0.5$$
+- `∂loss/∂w = (ŷ − y) × temp = (0.5 − 1) × 25 = −12.5`
+- `∂loss/∂b = (ŷ − y) = −0.5`
 
-```
-  STEP 4 — Update (learning_rate = 0.01):
-    w = 0.0 - 0.01 × (-12.5) = 0.125   ← w increased!
-    b = 0.0 - 0.01 × (-0.5)  = 0.005
+The negative gradient on `w` means *loss would fall if w were larger*. So nudge `w` up.
 
-  ─────── Next forward pass with updated weights: ─────────────────────
-    raw = 0.125 × 25 + 0.005 = 3.13
-    ŷ = sigmoid(3.13) = 0.958  ← now 96% confident! Loss decreased.
-```
+**Step 4 — Update** with learning rate `0.01`:
+
+- `w ← 0 − 0.01 × (−12.5) = 0.125`
+- `b ← 0 − 0.01 × (−0.5)  = 0.005`
+
+**Step 5 — Re-check.** Same input, updated weights:
+
+- raw = `0.125 × 25 + 0.005 = 3.13`
+- ŷ = `sigmoid(3.13) ≈ 0.958` — the model is now 96% confident.
+
+That's one training step. Loss fell from 0.693 to ≈0.04. Repeat this across many examples and many epochs and the model converges.
 
 ```chart
 {
@@ -554,21 +555,67 @@ YOUR TRAINING DATA: 1,000 examples, batch size = 100
 
 ### Why Not Use the Full Dataset Each Update?
 
-```
-  BATCH GRADIENT DESCENT       STOCHASTIC GD (SGD)       MINI-BATCH GD
-  (all data at once)            (one example at a time)    (small batches)
-  ──────────────────────        ────────────────────────   ─────────────────
-  Loss                          Loss                       Loss
-   │ ─────────────              │ * * * * *                │  *
-   │                            │*  * * * * *               │   **
-   │   very smooth              │      * *  *               │     **
-   └──────────────              └───────────────            └──────────────
-  + Stable, smooth              + Very fast per update      + Fast + stable
-  - Very slow per update        - Very noisy, jumpy         - Best of both!
-  - Needs all data in RAM       - Can escape local minima   - Used in practice
+Three flavors of gradient descent differ in **how many examples** feed each weight update. That one choice drives everything else — speed, noise, memory, convergence.
 
-  USED IN PRACTICE: Mini-batch GD (just called "SGD" in most libraries)
-  PyTorch/TensorFlow default: mini-batch with Adam optimizer
+| Variant | Examples per update | Pros | Cons |
+|---|---|---|---|
+| **Batch GD** | All N | Smoothest path; exact gradient each step | Very slow per step; whole dataset must fit in RAM |
+| **SGD** | 1 | Fastest per step; noise can escape shallow minima | Very jumpy; harder to tune learning rate |
+| **Mini-batch GD** | 32 – 512 typical | Good speed + stable; GPU-friendly | Adds a new hyperparameter (batch size) |
+
+**Used in practice:** mini-batch GD — still called "SGD" in most libraries. PyTorch and TensorFlow default to this, usually with the Adam optimizer.
+
+The chart below shows how the loss curves look across a run of ~200 update steps. Batch GD glides smoothly but barely moves per step. SGD sprints but zig-zags. Mini-batch sits between them.
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["0","5","10","15","20","25","30","35","40","45","50","55","60","65","70","75","80","85","90","95","100","110","120","130","140","150","160","170","180","190","200"],
+    "datasets": [
+      {
+        "label": "Batch GD (all data)",
+        "data": [1.00,0.93,0.87,0.81,0.76,0.71,0.66,0.62,0.58,0.54,0.51,0.47,0.44,0.41,0.39,0.36,0.34,0.32,0.30,0.28,0.26,0.23,0.20,0.18,0.16,0.14,0.13,0.11,0.10,0.09,0.08],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "backgroundColor": "rgba(34, 197, 94, 0.08)",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2,
+        "pointRadius": 0
+      },
+      {
+        "label": "SGD (one example)",
+        "data": [1.00,0.72,0.93,0.55,0.80,0.40,0.65,0.85,0.35,0.58,0.28,0.70,0.22,0.50,0.64,0.18,0.42,0.15,0.55,0.12,0.38,0.30,0.45,0.10,0.25,0.08,0.33,0.06,0.20,0.14,0.05],
+        "borderColor": "rgba(239, 68, 68, 0.9)",
+        "backgroundColor": "rgba(239, 68, 68, 0.05)",
+        "fill": false,
+        "tension": 0.15,
+        "borderWidth": 1.5,
+        "pointRadius": 0
+      },
+      {
+        "label": "Mini-batch GD (~64)",
+        "data": [1.00,0.82,0.66,0.54,0.45,0.37,0.31,0.26,0.22,0.19,0.16,0.14,0.12,0.11,0.10,0.09,0.08,0.07,0.06,0.06,0.05,0.045,0.04,0.04,0.035,0.03,0.028,0.025,0.022,0.02,0.018],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.08)",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": {
+      "title": { "display": true, "text": "Loss over Training Steps — Batch vs SGD vs Mini-batch" },
+      "legend": { "position": "bottom" }
+    },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true, "max": 1.05 },
+      "x": { "title": { "display": true, "text": "Update step" } }
+    }
+  }
+}
 ```
 
 ```chart

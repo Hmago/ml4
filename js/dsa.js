@@ -22,6 +22,23 @@ function getAllDSAProblems() {
   return [...DSA_PROBLEMS, ...getCustomDSAProblems()];
 }
 
+// Lazy-loader for DSA starter code. The practice list renders from metadata
+// (dsa_problems_index.js, loaded up-front); starter code lives in
+// dsa_problems_full.js and is fetched only when the user opens a problem.
+let _dsaFullLoadPromise = null;
+function ensureDsaFullData() {
+  if (typeof window !== 'undefined' && window.__dsaFullLoaded) return Promise.resolve();
+  if (_dsaFullLoadPromise) return _dsaFullLoadPromise;
+  _dsaFullLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'js/data/dsa_problems_full.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _dsaFullLoadPromise = null; reject(new Error('Failed to load DSA starter code')); };
+    document.head.appendChild(s);
+  });
+  return _dsaFullLoadPromise;
+}
+
 let dsaSearchQuery = '';
 let dsaSortMode = 'default';   // 'default' | 'difficulty-asc' | 'difficulty-desc' | 'alpha' | 'unsolved-first'
 // Multi-select filter sets — empty = no filter applied for that dimension
@@ -159,6 +176,31 @@ function dsaFilterDDSearch(type, query) {
 }
 
 // ─── Group collapse state (per-category, persisted) ───
+// Semantic: state[cat] === false  → expanded.
+//           state[cat] === true   → collapsed (explicit).
+//           state[cat] === undefined → collapsed (default).
+// Default is *collapsed* so the list view stays tidy; users expand categories
+// they are actively working on, and that preference persists.
+//
+// One-time cleanup: users who had "Expand all" active in the old code would
+// have every category stored as false (expanded). Drop those so they see the
+// new collapsed-default view; future user expansions still persist normally.
+(function cleanUpCollapseV1() {
+  if (localStorage.getItem('ml4-dsa-collapse-clean-v1') === 'done') return;
+  try {
+    const raw = localStorage.getItem('ml4-dsa-collapsed');
+    if (raw) {
+      const state = JSON.parse(raw);
+      let changed = false;
+      for (const k of Object.keys(state)) {
+        if (state[k] === false) { delete state[k]; changed = true; }
+      }
+      if (changed) localStorage.setItem('ml4-dsa-collapsed', JSON.stringify(state));
+    }
+  } catch {}
+  localStorage.setItem('ml4-dsa-collapse-clean-v1', 'done');
+})();
+
 function getCollapsedGroups() {
   try { return JSON.parse(localStorage.getItem('ml4-dsa-collapsed') || '{}'); }
   catch { return {}; }
@@ -166,9 +208,13 @@ function getCollapsedGroups() {
 function saveCollapsedGroups(state) {
   localStorage.setItem('ml4-dsa-collapsed', JSON.stringify(state));
 }
+function isCatCollapsed(state, cat) {
+  return state[cat] !== false;
+}
 function dsaToggleGroup(cat) {
   const state = getCollapsedGroups();
-  state[cat] = !state[cat];
+  const wasCollapsed = isCatCollapsed(state, cat);
+  state[cat] = !wasCollapsed;
   saveCollapsedGroups(state);
   // Toggle the DOM directly without re-rendering (snappy + preserves scroll position)
   const el = document.querySelector('.dsa-group[data-cat="' + CSS.escape(cat) + '"]');
@@ -301,7 +347,7 @@ function dsaBuildGroupsHTML(filtered, progress) {
   return '<div class="dsa-groups">' + seenCats.map(cat => {
     const items = byCat[cat];
     const solvedInCat = items.filter(p => progress[p.id]?.solved).length;
-    const isCollapsed = !!collapsedState[cat];
+    const isCollapsed = isCatCollapsed(collapsedState, cat);
     const meta = catMeta[cat] || {};
     const icon = meta.icon || '📁';
     const pct = items.length > 0 ? Math.round((solvedInCat / items.length) * 100) : 0;
@@ -321,12 +367,16 @@ function dsaBuildGroupsHTML(filtered, progress) {
           const isCustom = !!p._custom;
           const tagChips = (p.tags || []).slice(0, 2).map(t => `<span class="row-tag">${t}</span>`).join('');
           const compChips = (p.companies || []).slice(0, 2).map(c => `<span class="row-company">${c}</span>`).join('');
+          const solvedChip = (pr?.solved && pr.solvedDate)
+            ? `<span class="row-solved-date" title="${dsaFormatSolvedDateAbsolute(pr.solvedDate)}">&#10003; ${dsaFormatSolvedDateRelative(pr.solvedDate)}</span>`
+            : '';
+          const metaRow = tagChips + compChips + solvedChip;
           return `<div class="dsa-problem-row ${pr?.solved ? 'solved' : ''}" onclick="showDSAProblem('${p.id}')">
             <span class="seq">#${i + 1}</span>
             <span class="status">${status}</span>
             <div class="title-wrap">
               <span class="title">${p.title}${isCustom ? '<span class="dsa-custom-badge">custom</span>' : ''}</span>
-              ${(tagChips || compChips) ? `<div class="row-meta">${tagChips}${compChips}</div>` : ''}
+              ${metaRow ? `<div class="row-meta">${metaRow}</div>` : ''}
             </div>
             <span class="dsa-diff-badge ${p.difficulty.toLowerCase()}">${p.difficulty}</span>
             ${p.link ? `<a class="link-icon" href="${p.link}" target="_blank" rel="noopener" onclick="event.stopPropagation();" title="Open on LeetCode">&#8599;</a>` : ''}
@@ -384,7 +434,7 @@ function showDSAPractice() {
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('commentFab').classList.remove('visible');
-  history.replaceState(null, '', '#dsa-practice');
+  pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -435,6 +485,10 @@ function showDSAPractice() {
       <div id="dsaAddFormWrap" style="display:none;"></div>
 
       <div class="dsa-stats-bar">
+        <div class="dsa-stat">
+          <div class="num" style="color:var(--accent);">${total > 0 ? Math.round((solved / total) * 100) : 0}<small style="font-size:14px;opacity:0.5;">%</small></div>
+          <div class="label">Overall</div>
+        </div>
         <div class="dsa-stat">
           <div class="num" style="color:var(--accent);">${solved}<small style="font-size:14px;opacity:0.5;">/${total}</small></div>
           <div class="label">Solved</div>
@@ -724,7 +778,12 @@ function dsaSyncLineScroll() {
   if (editor && gutter) gutter.scrollTop = editor.scrollTop;
 }
 
-function showDSAProblem(id) {
+async function showDSAProblem(id) {
+  // Custom (user-authored) problems carry their own starterCode so we only need
+  // the shared lookup for built-in problems. Attempt to load; if it fails for a
+  // custom problem we still proceed.
+  try { await ensureDsaFullData(); } catch (e) { console.warn(e); }
+
   const allProblems = getAllDSAProblems();
   const problem = allProblems.find(p => p.id === id);
   if (!problem) return;
@@ -736,7 +795,7 @@ function showDSAProblem(id) {
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
   document.getElementById('readBtn').style.display = 'none';
-  history.replaceState(null, '', '#dsa-problem-' + id);
+  pushHash('dsa-problem-' + id);
 
   const progress = getDSAProgress();
   const saved = progress[id] || {};
@@ -786,6 +845,7 @@ function showDSAProblem(id) {
               ${(problem.companies || []).map(c => `<span class="dsa-company-tag" title="Asked at ${c}">${c}</span>`).join('')}
               <a class="dsa-link" href="${problem.link}" target="_blank" rel="noopener">LeetCode &#8599;</a>
               <span class="dsa-cat-progress"><strong>${catSolved}</strong>/${catProblems.length} ${problem.category}</span>
+              ${saved.solved ? `<span class="dsa-solved-badge" title="${dsaFormatSolvedDateAbsolute(saved.solvedDate)}">&#10003; Solved ${dsaFormatSolvedDateRelative(saved.solvedDate)}</span>` : ''}
             </div>
           </div>
           <div class="dsa-pane-section">
@@ -863,28 +923,155 @@ function showDSAProblem(id) {
   // ── Set up editor behaviors ──
   const editor = document.getElementById('dsaCodeEditor');
   editor.addEventListener('scroll', dsaSyncLineScroll);
+  // Insert text into the editor in a way that preserves native Undo/Redo.
+  // document.execCommand('insertText', ...) is the only reliable way to add
+  // a script-driven edit to the browser's undo stack. Deprecated but still
+  // universally supported in 2026 browsers (no replacement exists for textarea).
+  function insertWithUndo(text) {
+    if (document.activeElement !== editor) editor.focus();
+    const ok = document.execCommand && document.execCommand('insertText', false, text);
+    if (!ok) {
+      // Fallback for browsers that rejected execCommand: mutate directly.
+      // Undo will still break in that path but the edit goes through.
+      const s = editor.selectionStart, e2 = editor.selectionEnd;
+      editor.value = editor.value.substring(0, s) + text + editor.value.substring(e2);
+      editor.selectionStart = editor.selectionEnd = s + text.length;
+    }
+  }
+
+  // Auto-close pairs. Typing an opener inserts its close with cursor between.
+  // Typing a closer when the next char is already that closer skips over it
+  // (so `foo()` flows naturally without double `))`).
+  const BRACKET_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+  const CLOSERS = new Set([')', ']', '}']);
+
   editor.addEventListener('keydown', function(e) {
     if (e.key === 'Tab') {
       e.preventDefault();
-      const start = this.selectionStart;
-      const end = this.selectionEnd;
-      this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-      this.selectionStart = this.selectionEnd = start + 4;
+      insertWithUndo('    ');
       dsaAutoSave(id);
       dsaUpdateLineNumbers();
+      return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       dsaRunCode();
+      return;
     }
     if (e.key === 'Escape' && document.getElementById('content').classList.contains('dsa-fullscreen')) {
       dsaToggleFullscreen();
+    }
+
+    // ── Auto-close brackets & quotes ──
+    // Skip modifiers so Ctrl+C etc. still work. Only trigger for bare keypresses.
+    if (BRACKET_PAIRS[e.key] && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const nextChar = this.value[start] || '';
+      // If next char is the same quote, treat as skip-over (don't duplicate)
+      if ((e.key === '"' || e.key === "'") && nextChar === e.key && start === end) {
+        e.preventDefault();
+        this.selectionStart = this.selectionEnd = start + 1;
+        return;
+      }
+      e.preventDefault();
+      const close = BRACKET_PAIRS[e.key];
+      if (start !== end) {
+        // Wrap the current selection
+        const selected = this.value.substring(start, end);
+        insertWithUndo(e.key + selected + close);
+      } else {
+        insertWithUndo(e.key + close);
+        // Place the cursor between the two characters
+        this.selectionStart = this.selectionEnd = start + 1;
+      }
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
+
+    // ── Skip over existing closer ──
+    if (CLOSERS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const start = this.selectionStart;
+      if (start === this.selectionEnd && this.value[start] === e.key) {
+        e.preventDefault();
+        this.selectionStart = this.selectionEnd = start + 1;
+        return;
+      }
+    }
+
+    // ── Backspace deletes both sides of a matched empty pair ──
+    if (e.key === 'Backspace' && this.selectionStart === this.selectionEnd) {
+      const pos = this.selectionStart;
+      const prev = this.value[pos - 1];
+      const next = this.value[pos];
+      if (prev && next && BRACKET_PAIRS[prev] === next) {
+        e.preventDefault();
+        this.selectionStart = pos - 1;
+        this.selectionEnd = pos + 1;
+        document.execCommand('delete');
+        dsaAutoSave(id);
+        dsaUpdateLineNumbers();
+        return;
+      }
+    }
+    // ── Auto-indent on plain Enter ──
+    // Match current line's leading whitespace; if previous non-space char is an
+    // opening bracket add one level; if cursor sits between { and } split onto
+    // three lines with the } on its own row at the original indent.
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const val = this.value;
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const currentLine = val.substring(lineStart, start);
+      const indent = (currentLine.match(/^[ \t]*/) || [''])[0];
+      const prevChar = start > 0 ? val[start - 1] : '';
+      const nextChar = val[end] || '';
+      const opens = prevChar === '{' || prevChar === '[' || prevChar === '(';
+      const matchedClose =
+        (prevChar === '{' && nextChar === '}') ||
+        (prevChar === '[' && nextChar === ']') ||
+        (prevChar === '(' && nextChar === ')');
+      let insertBefore, insertAfter;
+      if (matchedClose) {
+        insertBefore = '\n' + indent + '    ';
+        insertAfter = '\n' + indent;
+      } else if (opens) {
+        insertBefore = '\n' + indent + '    ';
+        insertAfter = '';
+      } else {
+        insertBefore = '\n' + indent;
+        insertAfter = '';
+      }
+      // Insert both halves so Undo sees a single edit; then move the cursor
+      // back between them if the closing brace was split onto its own line.
+      insertWithUndo(insertBefore + insertAfter);
+      if (insertAfter) {
+        this.selectionStart = this.selectionEnd = this.selectionStart - insertAfter.length;
+      }
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      dsaSyncLineScroll();
     }
   });
   editor.addEventListener('input', function() {
     dsaAutoSave(id);
     dsaUpdateLineNumbers();
   });
+
+  // ── Preserve fullscreen state across Prev/Next navigation ──
+  // Re-rendering the problem body resets the freshly-inserted fullscreen
+  // toolbar/exit-button to their default "not fullscreen" state, even though
+  // the parent #content element still carries the dsa-fullscreen class. Sync
+  // both buttons so the user keeps the same mode when stepping between problems.
+  if (document.getElementById('content').classList.contains('dsa-fullscreen')) {
+    const exitBtn = document.getElementById('dsaFsExit');
+    const fsBtn = document.getElementById('dsaFsBtn');
+    if (exitBtn) exitBtn.style.display = '';
+    if (fsBtn) fsBtn.innerHTML = '&#10005; Exit';
+  }
 
   // ── Notes auto-save ──
   const notesEl = document.getElementById('dsaNotes');
@@ -975,6 +1162,35 @@ function dsaResetCode(id) {
   if (progress[id]) { progress[id].code = problem.starterCode; saveDSAProgress(progress); }
 }
 
+// Format an ISO timestamp as a compact relative string: "today", "yesterday",
+// "3 days ago", "2 wks ago", or the absolute date for anything older.
+// Uses calendar-day comparison (not elapsed hours) so a timestamp from
+// yesterday evening reads as "yesterday" even if only 10 hours have passed.
+function dsaFormatSolvedDateRelative(iso) {
+  if (!iso) return '';
+  const then = new Date(iso);
+  if (isNaN(then.getTime())) return '';
+  const now = new Date();
+  const thenDay = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((nowDay - thenDay) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + ' days ago';
+  if (days < 14) return '1 wk ago';
+  if (days < 30) return Math.floor(days / 7) + ' wks ago';
+  if (days < 60) return '1 mo ago';
+  if (days < 365) return Math.floor(days / 30) + ' mos ago';
+  if (days < 730) return '1 yr ago';
+  return Math.floor(days / 365) + ' yrs ago';
+}
+function dsaFormatSolvedDateAbsolute(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return 'Solved ' + d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 function dsaToggleSolved(id) {
   const progress = getDSAProgress();
   if (!progress[id]) progress[id] = {};
@@ -988,15 +1204,23 @@ function dsaToggleSolved(id) {
   const btn = document.getElementById('dsaSolveBtn');
   if (btn) btn.innerHTML = progress[id].solved ? '&#10003; Solved' : '&#9744; Mark Solved';
   if (progress[id].solved && interactiveMode) addXP(15, 'Solved DSA problem');
-  // Update solved badge in hero card
+  // Update solved badge in hero card with relative date + absolute on hover
   const meta = document.querySelector('.dsa-problem-meta');
   const existing = meta?.querySelector('.dsa-solved-badge');
-  if (progress[id].solved && !existing) {
-    const badge = document.createElement('span');
-    badge.className = 'dsa-solved-badge';
-    badge.innerHTML = '&#10003; Solved';
-    meta.appendChild(badge);
-  } else if (!progress[id].solved && existing) {
+  if (progress[id].solved) {
+    const relative = dsaFormatSolvedDateRelative(progress[id].solvedDate);
+    const absolute = dsaFormatSolvedDateAbsolute(progress[id].solvedDate);
+    if (existing) {
+      existing.innerHTML = '&#10003; Solved ' + relative;
+      existing.title = absolute;
+    } else if (meta) {
+      const badge = document.createElement('span');
+      badge.className = 'dsa-solved-badge';
+      badge.innerHTML = '&#10003; Solved ' + relative;
+      badge.title = absolute;
+      meta.appendChild(badge);
+    }
+  } else if (existing) {
     existing.remove();
   }
 }
