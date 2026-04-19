@@ -132,7 +132,6 @@ function showDashboard() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '📊 Dashboard';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('commentFab').classList.remove('visible');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -646,7 +645,6 @@ function showMotivation() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('commentFab').classList.remove('visible');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
   renderMotivation();
@@ -755,7 +753,6 @@ function showGoals() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('commentFab').classList.remove('visible');
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();

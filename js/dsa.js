@@ -433,7 +433,6 @@ function showDSAPractice() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('commentFab').classList.remove('visible');
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');

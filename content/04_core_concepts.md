@@ -687,103 +687,136 @@ Here's a real example with house prices:
 
 ### Regression Loss Functions
 
-**MAE -- Mean Absolute Error:**
+Predicting a real number (price, duration, temperature). All four below differ only in **how they penalize large errors**.
+
+#### MAE — Mean Absolute Error
+
+> Average of absolute errors.
 
 $$\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |\hat{y}_i - y_i|$$
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  MAE — Mean Absolute Error                                           │
-│  ─────────────────────────                                           │
-│  Intuition: Average of absolute errors. Easy to interpret.           │
-│  All errors weighted equally. Robust to outliers.                    │
-│                                                                      │
-│  Error 5:  |·····|         → contributes 5 to MAE                  │
-│  Error 50: |··················|→ contributes 50 to MAE             │
-└──────────────────────────────────────────────────────────────────────┘
-```
+- Every error counts proportionally: a 50-unit error contributes **10×** as much as a 5-unit error.
+- Robust to outliers — one bad point does not dominate training.
+- Gradient is ±1 everywhere (except at zero where it's undefined), which can slow fine-grained convergence near the optimum.
+- **Use when** the data has real outliers you don't want to over-punish (delivery-time estimates, noisy sensor readings).
 
-**MSE -- Mean Squared Error:**
+#### MSE — Mean Squared Error
+
+> Average of squared errors.
 
 $$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (\hat{y}_i - y_i)^2$$
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  MSE — Mean Squared Error                                            │
-│  ──────────────────────────                                          │
-│  Intuition: Squaring PUNISHES big errors much more than small ones. │
-│                                                                      │
-│  Error 5:  5²  = 25        → contributes 25 to MSE                 │
-│  Error 50: 50² = 2500      → contributes 2500 to MSE! (100×more)   │
-│                                                                      │
-│  Use MSE when large errors are especially bad.                       │
-│  RMSE (√MSE) brings units back to original scale.                   │
-└──────────────────────────────────────────────────────────────────────┘
-```
+- Squaring **punishes big errors disproportionately**: a 50-unit error contributes **100×** as much as a 5-unit error (2500 vs 25).
+- Smooth and differentiable everywhere — the default choice for gradient-based optimizers.
+- Has a clean closed-form solution for linear regression (the normal equation).
+- **Use when** large errors are especially bad and the data is relatively outlier-free.
+
+#### RMSE — Root Mean Squared Error
+
+> Square root of MSE.
+
+$$\text{RMSE} = \sqrt{\text{MSE}}$$
+
+- **Same ranking** as MSE during training — any model that minimizes MSE also minimizes RMSE.
+- Reported for interpretability: MSE is in *squared* units ("40,000 dollars²" — meaningless), while RMSE is in the original units ("$200 average error").
+- **Use for reporting results**, not for choosing between models.
+
+#### Huber Loss
+
+> Quadratic for small errors (like MSE), linear for large errors (like MAE). A tunable threshold **δ** decides the switch.
+
+$$
+L_\delta(e) =
+\begin{cases}
+\tfrac{1}{2}\,e^2 & \text{if } |e| \le \delta \\
+\delta\bigl(|e| - \tfrac{1}{2}\delta\bigr) & \text{if } |e| > \delta
+\end{cases}
+\qquad \text{where } e = \hat{y} - y
+$$
+
+- Smooth gradient near zero (like MSE → fast final convergence).
+- Outlier-robust for big errors (like MAE → not dominated by a few bad points).
+- δ controls how "big" an error must be before you stop squaring it; δ = 1.0 is the common default.
+- **Use when** you want MSE's optimization niceness without its outlier sensitivity. Standard in object-detection bounding-box regression.
+
+---
 
 ### Classification Loss Functions
 
-**Binary Cross-Entropy (Log Loss):**
+Predicting a discrete class (spam / not-spam, cat / dog / bird). All four below are based on the idea that the model's predicted probability for the correct class should be high.
 
-$$\text{Loss} = -[y \times \log(\hat{y}) + (1 - y) \times \log(1 - \hat{y})]$$
+#### Binary Cross-Entropy (Log Loss)
 
-Where: $y$ = true label (0 or 1), $\hat{y}$ = predicted probability of class 1.
+> Negative log-probability of the correct class, for two-class problems. Pair with a **sigmoid** final layer.
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  BINARY CROSS-ENTROPY (Log Loss)                                     │
-│  ──────────────────────────────                                      │
-│  Used when: predicting one of two classes (spam/not spam)            │
-│                                                                      │
-│  Example — model predicts spam probability = 0.9, actual = spam(1): │
-│    Loss = −[1 × log(0.9) + 0 × log(0.1)]                           │
-│         = −log(0.9) = 0.105   ← small loss, model is right!         │
-│                                                                      │
-│  Example — model predicts 0.1 for spam, actual = spam(1):           │
-│    Loss = −[1 × log(0.1) + 0 × log(0.9)]                           │
-│         = −log(0.1) = 2.303   ← large loss, model is very wrong!    │
-│                                                                      │
-│  KEY INSIGHT: Cross-entropy severely punishes confident wrong        │
-│  predictions (predicting 0.01 when answer is 1 → loss = 4.6!)       │
-└──────────────────────────────────────────────────────────────────────┘
-```
+$$L = -\bigl[\,y\,\log(\hat{y}) + (1 - y)\,\log(1 - \hat{y})\,\bigr]$$
 
-**Categorical Cross-Entropy:**
+Where `y ∈ {0, 1}` is the true label and `ŷ = P(class = 1)` is the model's predicted probability.
 
-$$\text{Loss} = -\sum_{i} y_i \times \log(\hat{y}_i)$$
+- When `y = 1`, only `-log(ŷ)` matters: the closer `ŷ` is to 1, the smaller the loss.
+- When `y = 0`, only `-log(1-ŷ)` matters: the closer `ŷ` is to 0, the smaller the loss.
+- **Severely punishes confident wrong answers**: predicting 0.01 when the truth is 1 gives `-log(0.01) ≈ 4.6`; predicting 0.5 gives `≈ 0.69`. See the chart below.
 
-(sum over all classes)
+| True label | Prediction | Loss |
+|---|---|---|
+| 1 | 0.9 | 0.105 |
+| 1 | 0.5 | 0.693 |
+| 1 | 0.1 | 2.303 |
+| 1 | 0.01 | 4.605 |
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  CATEGORICAL CROSS-ENTROPY                                           │
-│  ─────────────────────────                                           │
-│  Used when: predicting one of many classes (cat/dog/bird)            │
-│                                                                      │
-│  Example: true class = Cat, model output after softmax:             │
-│    Cat: 0.70,  Dog: 0.20,  Bird: 0.10                               │
-│    Loss = −[1×log(0.70) + 0×log(0.20) + 0×log(0.10)]               │
-│         = −log(0.70) = 0.357   ← moderate, correct but unsure       │
-│                                                                      │
-│  If model was more confident (Cat: 0.95):                            │
-│    Loss = −log(0.95) = 0.051   ← low loss, confident and right!     │
-└──────────────────────────────────────────────────────────────────────┘
-```
+#### Categorical Cross-Entropy
+
+> Negative log-probability of the correct class, generalized to **K** classes. Pair with a **softmax** final layer.
+
+$$L = -\sum_{i=1}^{K} y_i\,\log(\hat{y}_i)$$
+
+Where `y` is a one-hot vector (1 at the true class index, 0 elsewhere) and `ŷ` is the softmax output.
+
+- Because `y_i = 0` for every class except the true one, the sum collapses to `-log(ŷ_{true})` — exactly "how surprised were you by the right answer?"
+- Example: true class = Cat; softmax output = (Cat 0.70, Dog 0.20, Bird 0.10). Loss = `-log(0.70) ≈ 0.357`. A more confident correct output (Cat 0.95) gives `-log(0.95) ≈ 0.051`.
+
+**Sparse Categorical Cross-Entropy**: same math, but the label is passed as an integer (e.g., `3`) instead of a one-hot vector (`[0,0,0,1,0,...]`). A memory optimization — use it when you have many classes.
+
+#### KL Divergence — Kullback–Leibler
+
+> Measures how much one probability distribution `Q` diverges from another `P`.
+
+$$D_{\text{KL}}(P \,\|\, Q) = \sum_i P(i)\,\log \frac{P(i)}{Q(i)}$$
+
+- **Not symmetric**: `D_KL(P‖Q) ≠ D_KL(Q‖P)`. Conventionally `P` is the target (true) distribution and `Q` is the model's approximation.
+- Intimately related to cross-entropy: for a one-hot `P`, KL divergence equals cross-entropy minus a constant, so they give identical gradients.
+- **Use when** the target is itself a distribution rather than a single label:
+  - **Teacher–student distillation** (match the teacher's soft probabilities)
+  - **Variational autoencoders** (keep the approximate posterior close to a prior)
+  - **Reinforcement learning** (PPO's policy-update penalty)
+
+#### Hinge Loss (bonus)
+
+> Max-margin classification loss used by SVMs and some linear classifiers.
+
+$$L = \max(0,\ 1 - y \cdot \hat{y})$$
+
+Where `y ∈ {-1, +1}` and `ŷ` is the raw model score (not a probability).
+
+- Zero loss once the prediction is on the correct side of the margin (`y·ŷ ≥ 1`).
+- Does not care *how* confident beyond the margin — once you're far enough, you're done.
+- **Use when** you want a sparse, margin-based classifier. Rare in modern deep learning but still common in classical SVMs and some detection pipelines.
+
+---
 
 ### Loss Comparison at a Glance
 
-```
-┌───────────────────┬──────────────┬───────────────────────────────────┐
-│ Loss Function     │ Task         │ When to Use                       │
-├───────────────────┼──────────────┼───────────────────────────────────┤
-│ MAE               │ Regression   │ Outliers present, easy interpret  │
-│ MSE / RMSE        │ Regression   │ Large errors matter most          │
-│ Huber Loss        │ Regression   │ MAE+MSE hybrid, robust to outlier │
-│ Binary Cross-Ent. │ 2-class clf  │ Sigmoid output, 0/1 target        │
-│ Categorical C-E   │ N-class clf  │ Softmax output, one-hot target    │
-│ KL Divergence     │ Distributions│ VAEs, distillation, generative    │
-└───────────────────┴──────────────┴───────────────────────────────────┘
-```
+| Loss | Task | Pair with | Outlier sensitivity | When to use |
+|---|---|---|---|---|
+| **MAE** | Regression | — | Low | Target has real outliers; want robust fits |
+| **MSE** | Regression | — | High | Big errors must be punished; clean data |
+| **RMSE** | Regression (reporting) | — | High | You want an error in the original units |
+| **Huber** | Regression | — | Medium | MSE's smoothness, MAE's robustness — best of both |
+| **Binary CE** | 2-class classification | Sigmoid | — | Labels are 0 / 1 |
+| **Categorical CE** | N-class classification | Softmax | — | One correct class out of K |
+| **Sparse CE** | N-class, many classes | Softmax | — | Save memory — integer labels |
+| **KL Divergence** | Distribution matching | Softmax / probabilistic | — | Distillation, VAEs, RL policies |
+| **Hinge** | Binary classification | Linear score | — | SVMs, margin-based classifiers |
 
 ```chart
 {
