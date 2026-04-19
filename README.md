@@ -42,7 +42,8 @@
 | 11 | Model Evaluation & Tuning | ★★★ | [11_model_evaluation.md](content/11_model_evaluation.md) | ~1 hr | Intermediate |
 | 12 | Deep Learning — Complete Reference | ★★★ | [12_deep_learning.md](content/12_deep_learning.md) | ~3.5 hrs | Advanced |
 | 13 | Large Language Models (LLMs) | ★★★ | [13_llm.md](content/13_llm.md) | ~9 hrs | Intermediate-Advanced |
-| | **Core Total** | | | **~34 hrs** | |
+| 22 | Modern AI Stack — Agents, MCP, Skills (2026) | ★★★ | [22_modern_ai_stack.md](content/22_modern_ai_stack.md) | ~2 hrs | Intermediate-Advanced |
+| | **Core Total** | | | **~36 hrs** | |
 
 ### Interview Preparation
 
@@ -69,7 +70,7 @@
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 18 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [18_dsa_trees_graphs.md](content/18_dsa_trees_graphs.md) | ~5.5 hrs | Intermediate-Advanced |
-| -- | DSA Practice (30 problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
+| -- | DSA Practice (400+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
 | | **DSA Total** | | | **~5.5 hrs + practice** | |
 
 ### Google ML Ecosystem
@@ -90,7 +91,27 @@
 |----|-------|:------:|------|------|------------|
 | -- | Staying Relevant in the AI Era | ★ | [staying_relevant_ai_era.md](content/staying_relevant_ai_era.md) | ~1 hr | All Levels |
 | -- | Brain Training — Memory, Focus & IQ | | [01_brain_training.md](content/01_brain_training.md) | ~1.5 hrs | All Levels |
-| | **Grand Total (all content)** | | | **~87.5 hrs + DSA practice** | |
+| | **Grand Total (all content)** | | | **~89.5 hrs + DSA practice** | |
+
+---
+
+## Interactive Web Platform
+
+Open `index.html` in any modern browser (or use `start.sh` / `start.bat`) — no build step, no server. Everything runs client-side and is cached by a service worker for offline use.
+
+| Feature | Where |
+|---|---|
+| **Chapter reader** with sidebar, dark mode, font-size controls, search | All pages |
+| **Per-chapter quizzes** (auto-pop when you mark a chapter as read) | Chapter page |
+| **Floating pinned notes** — select text → 💬 Note → pin appears in the margin with a 📍 badge in the bottom notes list | Chapter page |
+| **Comments list** — edit, resolve, reply, delete, filter by open/resolved | Bottom of every chapter |
+| **Text highlights** on selection | Chapter page |
+| **XP, streaks, achievements, study timer** | Dashboard |
+| **Goals & timetable** — pick a target, track progress | Dashboard → Goals |
+| **Export / import all data** as JSON for backup | Dashboard |
+| **💻 DSA Practice** — 400+ Java problems with in-browser run via Wandbox | Dashboard → DSA Practice |
+| **DSA features** — auto-save code, timer, notes, bracket auto-close, Enter auto-indent, undo/redo preserved, test-case runner, prev/next navigation, solved-date tracking, company / tag / difficulty filters, grouped & collapsible categories | DSA problem page |
+| **PWA** — installable from the browser; works offline after first visit; stale-while-revalidate caching for fast repeat loads | Manifest + `sw.js` |
 
 ---
 
@@ -127,7 +148,8 @@ ication   sion            ing       sionality      Learning Learning
 3. **Study the diagrams** — visuals help more than text
 4. **Do the examples** — understanding comes from practice
 5. **Take the quiz** — each chapter has a quiz (auto-pops when you mark as read)
-6. **Practice DSA** — use the 💻 DSA Practice page to code in Java right in your browser
+6. **Practice DSA** — use the 💻 DSA Practice page to code in Java right in your browser (400+ problems, grouped by category, with auto-save, Run-code integration, solved-date tracking, and filters by difficulty / company / tag)
+7. **Pin notes anywhere** — select any text in a chapter, click 💬 Note, and a floating pin appears in the margin. All pins show together at the bottom of the chapter with edit / resolve / reply / delete
 
 ---
 
@@ -169,6 +191,9 @@ ication   sion            ing       sionality      Learning Learning
            ▼                                                  │
          Ch 13 (LLMs) ◄──────────────────────────────────────┘
            │
+           ▼
+         Ch 22 (Modern AI Stack — Agents, MCP, Skills)
+           │
            ├─────────────────────────────────────────┐
            ▼                                         ▼
          Ch 15, 16, 20 (Interview Qs)         Ch 17 (ML System Design)
@@ -184,7 +209,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 18 (DSA & Coding)  ← practice alongside core curriculum
   Ch 19 (Google ML Ecosystem) ← read before Google interviews
   Behavioral Interview ← prepare stories in parallel
-  DSA Practice (30 problems) ← code daily alongside study
+  DSA Practice (400+ problems) ← code daily alongside study
 ```
 
 ### Five Learning Tracks
@@ -202,15 +227,15 @@ ication   sion            ing       sionality      Learning Learning
   Ch 10 → Ch 11 → Ch 12 → Ch 13
   Complete core curriculum. Solid ML understanding.
 
-  TRACK 3: LLM / AI Focus (~26 hours)
+  TRACK 3: LLM / AI Focus (~28 hours)
   ──────────────────────────────────────────
-  Ch 3 → Ch 4 → Ch 10 → Ch 12 → Ch 13 → Ch 16
-  Fastest path to understanding modern AI and LLMs.
-  Skip classical ML, go straight to deep learning.
+  Ch 3 → Ch 4 → Ch 10 → Ch 12 → Ch 13 → Ch 22 → Ch 16
+  Fastest path to understanding modern AI, LLMs, and the
+  2026 agent / MCP / tool-use landscape. Skip classical ML.
 
-  TRACK 4: Google AI Engineer (~87.5 hours — full prep)
+  TRACK 4: Google AI Engineer (~89.5 hours — full prep)
   ──────────────────────────────────────────
-  Ch 0 (strategy!) → Full ML Engineer track →
+  Ch 0 (strategy!) → Full ML Engineer track (incl. Ch 22) →
   Ch 15 → Ch 16 → Ch 20 (Top 10 ML Topics) →
   Ch 17 (ML System Design) → Ch 14 (Design Fundamentals) →
   Modern System Design → Behavioral Interview →
@@ -268,9 +293,10 @@ ication   sion            ing       sionality      Learning Learning
   Ch 4 (what features are) → Ch 5 (preprocessing) → Ch 6 (feature importance) →
   Ch 7 (dim. reduction) → Ch 20 (Topics 8 & 9: PCA, feature engineering)
 
-  THREAD 5: From Neural Nets to LLMs
+  THREAD 5: From Neural Nets to LLMs to Agents
   Ch 10 (neurons, layers) → Ch 12 (CNNs, Transformers) →
-  Ch 13 (LLMs, RLHF, RAG) → Ch 16 (LLM interview Qs) →
+  Ch 13 (LLMs, RLHF, RAG) → Ch 22 (agents, MCP, skills,
+  reasoning models) → Ch 16 (LLM interview Qs) →
   Ch 20 (Topic 6: Transformers & Attention deep dive)
 
   THREAD 6: Trees & Ensembles → System Design
@@ -279,7 +305,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 14 (design fundamentals at scale)
 
   THREAD 7: DSA & Coding → Interview Readiness
-  Ch 18 (DSA theory & patterns) → DSA Practice (30 coding problems) →
+  Ch 18 (DSA theory & patterns) → DSA Practice (400+ coding problems) →
   Ch 15 (ML interview Qs) → Ch 17 (system design Qs)
 
   THREAD 8: Google-Specific Preparation
