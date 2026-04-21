@@ -817,7 +817,15 @@ async function showDSAProblem(id) {
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
 
-  const descHtml = problem.description.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+  // Render markdown properly (bold, italic, lists, inline code, links). Fall
+  // back to the minimal regex rendering if marked isn't loaded for some reason.
+  const descHtml = (typeof marked !== 'undefined')
+    ? marked.parse(problem.description || '')
+    : (problem.description || '')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
   const diffClass = problem.difficulty.toLowerCase();
   const examplesHtml = dsaFormatExamples(problem.examples);
 
@@ -1156,9 +1164,12 @@ function dsaResetCode(id) {
   const problem = getAllDSAProblems().find(p => p.id === id);
   if (!problem) return;
   if (!confirm('Reset code to the starter template? Your current code will be lost.')) return;
-  document.getElementById('dsaCodeEditor').value = problem.starterCode;
+  const ed = document.getElementById('dsaCodeEditor');
+  ed.value = problem.starterCode;
   const progress = getDSAProgress();
   if (progress[id]) { progress[id].code = problem.starterCode; saveDSAProgress(progress); }
+  // Setting .value does not fire 'input'; refresh the line-number gutter manually.
+  dsaUpdateLineNumbers();
 }
 
 // Format an ISO timestamp as a compact relative string: "today", "yesterday",

@@ -14,37 +14,69 @@ function renderWelcome() {
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
+  const chReadPct = realCh.length > 0 ? Math.round((readCount / realCh.length) * 100) : 0;
   const data = getXP();
   const quizScores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
   const quizzesDone = Object.keys(quizScores).length;
   const dsaProgress = (typeof getDSAProgress === 'function') ? getDSAProgress() : JSON.parse(localStorage.getItem('ml4-dsa') || '{}');
   const dsaSolved = Object.values(dsaProgress).filter(p => p.solved).length;
+  const dsaAll = typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : [];
+  const dsaByDiff = (diff) => dsaAll.filter(p => p.difficulty === diff).length;
+  const dsaSolvedByDiff = (diff) => dsaAll.filter(p => p.difficulty === diff && dsaProgress[p.id] && dsaProgress[p.id].solved).length;
+  const dsaTotals = { Easy: dsaByDiff('Easy'), Medium: dsaByDiff('Medium'), Hard: dsaByDiff('Hard') };
+  const dsaSolves = { Easy: dsaSolvedByDiff('Easy'), Medium: dsaSolvedByDiff('Medium'), Hard: dsaSolvedByDiff('Hard') };
+  const dsaTotalProblems = dsaAll.length;
+  const dsaPct = dsaTotalProblems > 0 ? Math.round((dsaSolved / dsaTotalProblems) * 100) : 0;
+  const level = getLevel(data.xp);
+  const levelXp = getLevelXP(data.xp);
+  const study = (typeof getStudyData === 'function') ? getStudyData() : { totalMinutes: 0, sessions: 0 };
+  const studyHrs = Math.round((study.totalMinutes || 0) / 60 * 10) / 10;
+  // Next chapter to read: lowest-indexed unread. Falls back to null if all done.
+  const nextUnreadIdx = chapters.findIndex(c => !c.section && !c.ref && !readChapters[c.file]);
+  const nextUnread = nextUnreadIdx >= 0 ? chapters[nextUnreadIdx] : null;
   // Pick a random quote of the day for the home page
   const welcomeQuote = (typeof MOTIVATION_QUOTES !== 'undefined' && MOTIVATION_QUOTES.length > 0)
     ? MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)]
     : { q: 'The expert in anything was once a beginner.', a: 'Helen Hayes' };
 
   const allAch = [
+    // Reading
     {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',tier:'common'},
     {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',tier:'common'},
     {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',tier:'rare'},
+    {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',tier:'rare'},
+    {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',tier:'epic'},
     {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',tier:'epic'},
+    // Streaks
     {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',tier:'common'},
     {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',tier:'rare'},
     {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',tier:'epic'},
+    {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',tier:'epic'},
+    // XP / Levels
     {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',tier:'common'},
     {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',tier:'rare'},
     {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',tier:'epic'},
     {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',tier:'rare'},
+    // Quizzes
     {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',tier:'common'},
     {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',tier:'rare'},
+    {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',tier:'epic'},
     {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',tier:'epic'},
     {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',tier:'epic'},
+    // Study
     {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',tier:'common'},
     {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',tier:'rare'},
     {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',tier:'epic'},
+    {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',tier:'rare'},
+    // Notes
     {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',tier:'common'},
+    {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',tier:'common'},
+    {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',tier:'rare'},
+    // DSA
+    {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',tier:'common'},
     {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',tier:'rare'},
+    {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',tier:'rare'},
+    {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',tier:'epic'},
   ];
   const unlockedIds = data.achievements || [];
   const unlockedCount = allAch.filter(a => unlockedIds.includes(a.id)).length;
@@ -61,12 +93,28 @@ function renderWelcome() {
     >${unlocked ? a.icon+' ' : '🔒 '}${a.name}</span>`;
   }).join('');
 
+  const continueLabel = readCount === 0 ? 'Start here' : (readCount === realCh.length ? 'All done' : 'Continue');
+  const continueCard = nextUnread
+    ? `<button class="welcome-continue" onclick="loadChapter(${nextUnreadIdx})">
+         <div class="welcome-continue-left">
+           <span class="welcome-continue-label">📖 ${continueLabel}</span>
+           <span class="welcome-continue-title">${escapeHTML(nextUnread.title)}</span>
+           <span class="welcome-continue-meta">Chapter ${nextUnread.id} &middot; ${readCount}/${realCh.length} chapters read</span>
+         </div>
+         <span class="welcome-continue-arrow">→</span>
+       </button>`
+    : `<div class="welcome-continue welcome-continue-done">
+         <div class="welcome-continue-left">
+           <span class="welcome-continue-label">🎉 All chapters read</span>
+           <span class="welcome-continue-title">You've completed the curriculum</span>
+           <span class="welcome-continue-meta">Next: try DSA Practice or retake your weakest quizzes</span>
+         </div>
+       </div>`;
+
   contentEl.innerHTML = `
-    <div style="max-width:620px;margin:40px auto;text-align:center;">
-      <h1 style="font-size:36px;border:none;margin-bottom:8px;background:linear-gradient(135deg,#6366f1,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-        ML Study Notes
-      </h1>
-      <p style="color:var(--text-secondary);margin-bottom:24px;">Your learning dashboard</p>
+    <div class="welcome-wrap">
+      <h1 class="welcome-title">ML Study Notes</h1>
+      <p class="welcome-subtitle">Your learning dashboard</p>
 
       <!-- ─── Quote of the moment ─── -->
       <div class="welcome-quote" id="welcomeQuoteCard">
@@ -75,36 +123,77 @@ function renderWelcome() {
         <button class="welcome-quote-refresh" onclick="dashRefreshQuote()" title="New quote" aria-label="Show another quote">&#x21bb;</button>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="statChapters">${readCount}</div>
-          <div class="stat-label">of ${realCh.length} chapters read</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">${quizzesDone}</div>
-          <div class="stat-label">Quizzes done</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">${dsaSolved}</div>
-          <div class="stat-label">DSA solved</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">${data.streak > 0 ? data.streak : '0'}</div>
-          <div class="stat-label">Day Streak</div>
-        </div>
+      <!-- ─── Continue card + quick actions ─── -->
+      ${continueCard}
+      <div class="welcome-quick-actions">
+        <button onclick="showDashboard()" title="See everything in one place">📊 Dashboard</button>
+        <button onclick="showDSAPractice()" title="${dsaSolved} of ${dsaTotalProblems} DSA problems solved">💻 DSA Practice</button>
+        <button onclick="showGoals()" title="Set a study target">🎯 Goals</button>
+        <button onclick="showMotivation()" title="Daily motivation">💪 Motivation</button>
       </div>
+
       ${interactiveMode ? `
-      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;">
-        <div class="stat-card" style="flex:1;">
-          <div class="stat-number">${getLevel(data.xp)}</div>
-          <div class="stat-label">Level</div>
+      <!-- ─── Level progress bar ─── -->
+      <div class="welcome-level-card">
+        <div class="welcome-level-row">
+          <span class="welcome-level-num">Level ${level}</span>
+          <span class="welcome-level-xp">${levelXp} / 100 XP to Level ${level + 1}</span>
         </div>
-        <div class="stat-card" style="flex:1;">
+        <div class="welcome-level-track"><div class="welcome-level-fill" style="width:${levelXp}%"></div></div>
+      </div>` : ''}
+
+      <!-- ─── Stat cards with icons ─── -->
+      <div class="welcome-stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📖</div>
+          <div class="stat-number" id="statChapters">${readCount}<small>/${realCh.length}</small></div>
+          <div class="stat-label">Chapters &middot; ${chReadPct}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📝</div>
+          <div class="stat-number">${quizzesDone}</div>
+          <div class="stat-label">Quizzes taken</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💻</div>
+          <div class="stat-number">${dsaSolved}<small>/${dsaTotalProblems}</small></div>
+          <div class="stat-label">DSA &middot; ${dsaPct}%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-number">${data.streak > 0 ? data.streak : '0'}</div>
+          <div class="stat-label">Day streak</div>
+        </div>
+        ${interactiveMode ? `
+        <div class="stat-card">
+          <div class="stat-icon">⚡</div>
           <div class="stat-number">${data.xp}</div>
           <div class="stat-label">Total XP</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-number">${studyHrs}<small>h</small></div>
+          <div class="stat-label">Study time</div>
+        </div>` : ''}
+      </div>
+
+      <!-- ─── DSA difficulty breakdown ─── -->
+      ${dsaTotalProblems > 0 ? `
+      <div class="welcome-dsa-breakdown">
+        <div class="welcome-dsa-head"><span>💻 DSA Progress</span><a href="javascript:showDSAPractice()">Open &rarr;</a></div>
+        ${['Easy','Medium','Hard'].map(d => {
+          const solved = dsaSolves[d];
+          const total = dsaTotals[d];
+          const pct = total > 0 ? (solved / total) * 100 : 0;
+          return `<div class="welcome-dsa-row">
+            <span class="welcome-dsa-label dsa-${d.toLowerCase()}">${d}</span>
+            <div class="welcome-dsa-track"><div class="welcome-dsa-fill dsa-${d.toLowerCase()}" style="width:${pct}%"></div></div>
+            <span class="welcome-dsa-count">${solved}<small>/${total}</small></span>
+          </div>`;
+        }).join('')}
       </div>` : ''}
-      <div style="margin-top:16px;">
+
+      <div style="margin-top:20px;">
         <div class="stat-card" style="text-align:left;padding:20px 24px;">
           <strong style="font-size:14px;">Achievements (${unlockedCount}/${allAch.length} unlocked)</strong>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
@@ -112,7 +201,7 @@ function renderWelcome() {
           </div>
         </div>
       </div>
-      <p style="color:var(--text-secondary);margin-top:32px;font-size:14px;">
+      <p class="welcome-shortcuts">
         <strong>Shortcuts:</strong>
         <code>Ctrl+K</code> Search &nbsp; <code>&larr;</code><code>&rarr;</code> Navigate &nbsp;
         <code>Ctrl+D</code> Theme &nbsp; <code>M</code> Mark read
@@ -292,7 +381,7 @@ function showDashboard() {
               <td style="color:var(--text-secondary);">${startD}</td>
               <td style="color:var(--text-secondary);">${compD}</td>
               <td style="color:var(--text-secondary);">${timeStr}</td>
-              <td>${qh ? '<span class="badge badge-score">'+scoreStr+'</span>' : '<span style="color:var(--text-secondary);">—</span>'}</td>
+              <td>${qh ? '<span class="badge badge-score">'+scoreStr+'</span> <button class="btn-retest-ch" onclick="retakeQuiz(\''+c.file.replace(/'/g,"\\'")+'\')" title="Retake this quiz">↺ Retake</button>' : '<span style="color:var(--text-secondary);">—</span>'}</td>
               <td>${(isRead || qh || ct.seconds) ? `<button class="btn-reset-ch" onclick="resetChapter('${c.file.replace(/'/g,"\\'")}', '${c.title.replace(/'/g,"\\'")}')">↺ Reset</button>` : ''}</td>
             </tr>`;
           }).join('')}
@@ -302,7 +391,7 @@ function showDashboard() {
       </div>
 
       <div class="dash-section">
-        <h3>🏅 Achievements <small style="font-weight:400;color:var(--text-secondary);">(${(data.achievements||[]).length}/20 unlocked)</small></h3>
+        <h3>🏅 Achievements <small style="font-weight:400;color:var(--text-secondary);">(${(data.achievements||[]).length}/30 unlocked)</small></h3>
         <div class="ach-grid">
           ${[
             // ── Reading (4) ──
@@ -331,7 +420,18 @@ function showDashboard() {
             // ── Notes (1) ──
             {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',cat:'note',tier:'common'},
             // ── DSA (1) ──
-            {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'quiz',tier:'rare'},
+            {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'dsa',tier:'rare'},
+            // ── New additions (v2) ──
+            {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',cat:'read',tier:'rare'},
+            {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',cat:'read',tier:'epic'},
+            {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',cat:'dsa',tier:'common'},
+            {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',cat:'dsa',tier:'epic'},
+            {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',cat:'dsa',tier:'rare'},
+            {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',cat:'note',tier:'rare'},
+            {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',cat:'note',tier:'common'},
+            {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',cat:'quiz',tier:'epic'},
+            {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',cat:'study',tier:'rare'},
+            {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',cat:'streak',tier:'epic'},
           ].sort((a, b) => {
               const aU = (data.achievements||[]).includes(a.id) ? 0 : 1;
               const bU = (data.achievements||[]).includes(b.id) ? 0 : 1;
@@ -368,9 +468,9 @@ function showDashboard() {
             '<div class="dash-card"><div class="dash-num">' + dsaAttempted + '</div><div class="dash-label">Attempted</div></div>' +
             '<div class="dash-card"><div class="dash-num">' + (dsaTotal - dsaSolved) + '</div><div class="dash-label">Remaining</div></div>' +
           '</div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px;">' +
             Object.entries(cats).map(([cat, d]) =>
-              '<div style="flex:1;min-width:140px;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;">' +
+              '<div style="padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;">' +
                 '<div style="font-size:12px;color:var(--text-secondary);">' + cat + '</div>' +
                 '<div style="font-size:16px;font-weight:700;">' + d.solved + '/' + d.total + '</div>' +
                 '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:4px;"><div style="height:100%;width:' + (d.total > 0 ? Math.round(d.solved/d.total*100) : 0) + '%;background:var(--accent);border-radius:2px;"></div></div>' +
@@ -394,9 +494,10 @@ function showDashboard() {
 
       <div class="dash-danger-zone">
         <h3>⚠️ Danger Zone</h3>
-        <p style="font-size:14px;color:var(--text-secondary);margin:8px 0 16px;">Reset progress OR delete comments. These are separate actions.</p>
+        <p style="font-size:14px;color:var(--text-secondary);margin:8px 0 16px;">Reset scoped parts of your data. Each button is independent — none of these cascade.</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <button class="dash-danger-btn" onclick="resetAppData()">🗑️ Reset Progress (keeps comments)</button>
+          <button class="dash-danger-btn" onclick="resetQuizData()" style="background:#06b6d4;">📝 Reset Quiz Scores</button>
           <button class="dash-danger-btn" onclick="deleteAllComments()" style="background:#8b5cf6;">💬 Delete All Comments</button>
           <button class="dash-danger-btn" onclick="deleteAllHighlights()" style="background:#f59e0b;color:#1a1a2e;">🖍 Delete All Highlights</button>
         </div>
@@ -520,6 +621,39 @@ function resetAppData() {
   }
   showToast('🗑️ Data Reset', 'All progress has been cleared', '⚠️');
   renderSidebar();
+  showDashboard();
+}
+
+// Load a chapter from the dashboard, then pop its quiz. Used by the Retake
+// button in the Chapter Details table so users can retest a single chapter
+// without losing the surrounding read/DSA/XP state.
+async function retakeQuiz(file) {
+  const idx = chapters.findIndex(c => c.file === file);
+  if (idx < 0) return;
+  if (typeof loadChapter === 'function') {
+    await loadChapter(idx);
+  }
+  // Small delay so marked/KaTeX/hljs finish painting before the modal overlays
+  setTimeout(() => {
+    if (typeof startQuiz === 'function') startQuiz(file);
+  }, 300);
+}
+
+// Clear only the quiz-related stores. Leaves read status, DSA progress,
+// highlights, comments, XP, and everything else untouched.
+function resetQuizData() {
+  const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
+  const history = JSON.parse(localStorage.getItem('ml4-quiz-history') || '{}');
+  const chaptersTaken = Object.keys(scores).length;
+  const totalAttempts = Object.values(history).reduce((s, h) => s + (h && h.attempts ? h.attempts : 0), 0);
+  const summary = chaptersTaken > 0
+    ? `\n\n${chaptersTaken} chapter${chaptersTaken === 1 ? '' : 's'} with quiz scores, ${totalAttempts} total attempt${totalAttempts === 1 ? '' : 's'}.`
+    : '\n\nNo quiz data found.';
+  const confirmed = confirm('Reset all quiz scores and attempt history?' + summary + '\n\nReading progress, DSA solutions, XP, comments, and highlights are NOT affected.\n\nThis cannot be undone.');
+  if (!confirmed) return;
+  localStorage.removeItem('ml4-quiz-scores');
+  localStorage.removeItem('ml4-quiz-history');
+  showToast('📝 Quizzes Reset', 'Scores and attempt history cleared', '⚠️');
   showDashboard();
 }
 
@@ -793,12 +927,18 @@ function renderGoalsPage() {
 
   const ttColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
-  function deadlineBadge(deadline) {
+  function deadlineBadge(deadline, completed) {
     if (!deadline) return '';
     const d = new Date(deadline + 'T00:00:00');
     const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
     let cls = 'goal-deadline-badge';
     let text = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Completed goals never count as overdue — they're already done, so the
+    // urgency styling is irrelevant and misleading.
+    if (completed) {
+      cls += ' done';
+      return `<span class="${cls}">📅 ${text}</span>`;
+    }
     if (diff < 0) { cls += ' overdue'; text += ' (overdue)'; }
     else if (diff === 0) { cls += ' soon'; text += ' (today)'; }
     else if (diff <= 3) { cls += ' soon'; text += ` (${diff}d left)`; }
@@ -814,7 +954,7 @@ function renderGoalsPage() {
         ${g.notes ? `<div class="goal-notes">${escapeHtml(g.notes)}</div>` : ''}
         <div class="goal-meta">
           <span class="goal-priority-badge ${g.priority}">${g.priority}</span>
-          ${deadlineBadge(g.deadline)}
+          ${deadlineBadge(g.deadline, g.completed)}
         </div>
       </div>
       <button class="goal-delete-btn" onclick="deleteGoal('${g.id}')" title="Delete">×</button>

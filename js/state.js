@@ -242,19 +242,32 @@ window.addEventListener('beforeunload', trackChapterClose);
 
 function addXP(amount, reason) {
   if (!interactiveMode) return;
+  if (!amount) return;
   const data = getXP();
-  data.xp += amount;
-  // Streak tracking
-  const today = new Date().toDateString();
-  if (data.lastDate !== today) {
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    data.streak = (data.lastDate === yesterday) ? data.streak + 1 : 1;
-    data.lastDate = today;
+  const oldXp = data.xp;
+  data.xp = Math.max(0, data.xp + amount);
+  // Streak tracking — only on positive earns. Also detect "streak break":
+  // returning after skipping at least one day when the previous streak was ≥7
+  // triggers a silent −5 XP penalty fired right after the earn-toast.
+  let streakBreakPenalty = null;
+  if (amount > 0) {
+    const today = new Date().toDateString();
+    if (data.lastDate !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const skipped = data.lastDate && data.lastDate !== yesterday;
+      if (skipped && data.streak >= 7) streakBreakPenalty = data.streak;
+      data.streak = (data.lastDate === yesterday) ? data.streak + 1 : 1;
+      data.lastDate = today;
+    }
   }
+  // Refresh idle-decay baseline on every earn/deduction
+  data.lastActive = new Date().toISOString();
   saveXP(data);
-  showToast(`+${amount} XP`, reason, amount >= 50 ? '🏆' : '⚡');
-  // Check level up
-  const oldLevel = getLevel(data.xp - amount);
+  const icon = amount < 0 ? '🔻' : (amount >= 50 ? '🏆' : '⚡');
+  const label = (amount > 0 ? '+' : '') + amount + ' XP';
+  showToast(label, reason, icon);
+  // Check level up (only meaningful when amount > 0)
+  const oldLevel = getLevel(oldXp);
   const newLevel = getLevel(data.xp);
   if (newLevel > oldLevel) {
     setTimeout(() => {
@@ -264,6 +277,10 @@ function addXP(amount, reason) {
   }
   // Check achievements
   checkAchievements(data);
+  // Fire streak-break penalty after this toast settles so both are visible
+  if (streakBreakPenalty != null) {
+    setTimeout(() => addXP(-5, `Streak broken (${streakBreakPenalty}-day streak ended)`), 1200);
+  }
 }
 
 function getLevel(xp) { return Math.floor(xp / 100) + 1; }
@@ -320,6 +337,30 @@ function checkAchievements(data) {
     { id: 'first_note', cond: totalComments >= 1, text: 'Note Taker', desc: 'Write your first note', icon: '🗒️', tier: 'common' },
     // ── DSA (1) ──
     { id: 'dsa10', cond: Object.values(getDSAProgress()).filter(p => p.solved).length >= 10, text: 'Algorithm Pro', desc: 'Solve 10 DSA problems', icon: '💻', tier: 'rare' },
+    // ── New additions (v2) ──
+    { id: 'ch20_read', cond: rch >= 20, text: 'Devoted Reader', desc: 'Read 20 chapters', icon: '📚', tier: 'rare' },
+    { id: 'ch30_read', cond: rch >= 30, text: 'True Scholar', desc: 'Read 30 chapters', icon: '🎓', tier: 'epic' },
+    { id: 'dsa1',
+      cond: Object.values(getDSAProgress()).filter(p => p.solved).length >= 1,
+      text: 'First Solve', desc: 'Solve your first DSA problem', icon: '✨', tier: 'common' },
+    { id: 'dsa50',
+      cond: Object.values(getDSAProgress()).filter(p => p.solved).length >= 50,
+      text: 'Algorithm Maestro', desc: 'Solve 50 DSA problems', icon: '🦾', tier: 'epic' },
+    { id: 'dsa_hard',
+      cond: (() => {
+        const pr = getDSAProgress();
+        const all = typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : [];
+        const diffMap = Object.fromEntries(all.map(p => [p.id, p.difficulty]));
+        return Object.entries(pr).filter(([id, p]) => p.solved && diffMap[id] === 'Hard').length >= 5;
+      })(),
+      text: 'Hard Mode', desc: 'Solve 5 Hard DSA problems', icon: '🔥', tier: 'rare' },
+    { id: 'notes10', cond: totalComments >= 10, text: 'Prolific Annotator', desc: 'Write 10 notes', icon: '🗂️', tier: 'rare' },
+    { id: 'notes_pin',
+      cond: Object.values(allComments).some(arr => arr.some(c => c && c.anchor)),
+      text: 'Pin Master', desc: 'Pin a note to a chapter spot', icon: '📍', tier: 'common' },
+    { id: 'quiz20', cond: quizCount >= 20, text: 'Quiz Champion', desc: 'Complete 20 quizzes', icon: '🎯', tier: 'epic' },
+    { id: 'session20', cond: sessions >= 20, text: 'Consistent Studier', desc: '20 study sessions', icon: '🗓️', tier: 'rare' },
+    { id: 'streak90', cond: data.streak >= 90, text: 'Relentless', desc: '90-day streak', icon: '🔱', tier: 'epic' },
   ];
   let unlockDelay = 1200;
   checks.forEach(ch => {
