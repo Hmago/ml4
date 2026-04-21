@@ -162,6 +162,30 @@ function updatePinCountBadge(n) {
   }
 }
 
+// Scroll to the chapter location a comment was anchored to, and flash the
+// anchor element. Called from the "↗ Go to source" button on each pinned
+// comment in the bottom notes list.
+function goToCommentSource(file, idx) {
+  if (typeof getComments !== 'function') return;
+  const list = getComments()[file] || [];
+  const c = list[idx];
+  if (!c || !c.anchor) return;
+  const target = pinResolveAnchor(c.anchor);
+  const wrapper = document.getElementById('contentWrapper');
+  if (!target || !wrapper) return;
+  const content = document.getElementById('content');
+  const contentRect = content.getBoundingClientRect();
+  const tRect = target.getBoundingClientRect();
+  const wrapperRect = wrapper.getBoundingClientRect();
+  // Position the anchor about 1/3 down the viewport for readability.
+  const scrollTop = wrapper.scrollTop + (tRect.top - wrapperRect.top) - Math.floor(wrapperRect.height / 3);
+  wrapper.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+  target.classList.remove('pin-flash');
+  void target.offsetWidth;
+  target.classList.add('pin-flash');
+  setTimeout(() => target.classList.remove('pin-flash'), 1800);
+}
+
 // Topbar 📍 button: jumps to the bottom notes section so users can see or add
 // a note. No "pin mode" toggle — pins are created by selecting text in the
 // chapter and clicking 💬 Note on the selection popup.

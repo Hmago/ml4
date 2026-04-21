@@ -6,6 +6,34 @@
 initTheme();
 applyInteractiveMode();
 
+// ─── Idle-decay: −5 XP per week idle after 14 days of inactivity ───
+// Runs once per app load. Caps at −100 XP so returning users aren't devastated.
+(function applyIdleDecay() {
+  if (typeof interactiveMode === 'undefined' || !interactiveMode) return;
+  if (typeof getXP !== 'function' || typeof saveXP !== 'function') return;
+  const data = getXP();
+  if (!data.lastActive) {
+    data.lastActive = new Date().toISOString();
+    saveXP(data);
+    return;
+  }
+  const last = new Date(data.lastActive);
+  if (isNaN(last.getTime())) return;
+  const days = Math.floor((Date.now() - last.getTime()) / 86400000);
+  if (days <= 14) return;
+  const weeksBeyondGrace = Math.floor((days - 14) / 7);
+  if (weeksBeyondGrace < 1) return;
+  const decay = Math.min(weeksBeyondGrace * 5, 100);
+  data.xp = Math.max(0, data.xp - decay);
+  data.lastActive = new Date().toISOString();
+  saveXP(data);
+  setTimeout(() => {
+    if (typeof showToast === 'function') {
+      showToast(`−${decay} XP`, `Idle ${days} days — XP decay`, '💤');
+    }
+  }, 1500);
+})();
+
 // Restore sidebar state
 if (localStorage.getItem('ml4-sidebar') === 'collapsed' && window.innerWidth > 768) {
   document.body.classList.add('sidebar-collapsed');

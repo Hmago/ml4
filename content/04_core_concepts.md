@@ -930,26 +930,35 @@ Loss (y-axis)                                   ← we want to minimize this
 
 ### Concrete Numerical Example
 
-```
-  Model: one weight w, loss function L(w) = (w − 5)²
-  Goal: find w that minimizes L (answer: w = 5, loss = 0)
+**Setup.** One weight `w`, loss `L(w) = (w − 5)²`. The minimum is obviously at `w = 5` with loss `0`. We'll pretend we don't know that and let gradient descent find it from `w = 0`.
 
-  ┌──────┬──────┬─────────────────────┬───────────────────────────────┐
-  │ Step │  w   │  Loss = (w−5)²      │  Update: w ← w − 0.1 × grad  │
-  ├──────┼──────┼─────────────────────┼───────────────────────────────┤
-  │  0   │ 0.0  │ (0−5)²  = 25.00     │ grad=−10, w = 0 − 0.1×(−10)  │
-  │  1   │ 1.0  │ (1−5)²  = 16.00     │ grad= −8, w = 1 − 0.1×(−8)   │
-  │  2   │ 1.8  │ (1.8−5)² = 10.24   │ grad=−6.4, w = 1.8 − 0.1×(−6.4)│
-  │  3   │ 2.44 │ (2.44−5)² = 6.55   │ ...                           │
-  │ ...  │ ...  │  ...                │  ...                          │
-  │ 30   │ 4.96 │ (4.96−5)² ≈ 0.002  │  nearly converged!            │
-  └──────┴──────┴─────────────────────┴───────────────────────────────┘
+**Gradient.** Take the derivative of the loss with respect to `w`:
 
-```
+$$\frac{\partial L}{\partial w} = 2(w - 5)$$
 
-$$w_{\text{new}} = w_{\text{old}} - \alpha \times \frac{\partial L}{\partial w}$$
+So at `w = 0`, gradient = `2(0 − 5) = −10`. At `w = 5`, gradient = `0` — we've arrived.
 
-where $\alpha = 0.1$ (learning rate).
+**Update rule** (learning rate α = 0.1):
+
+$$w_{\text{new}} = w_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial w}$$
+
+**Walk-through.** Each step multiplies the gradient by 0.1 and subtracts:
+
+| Step | `w` | Loss `(w−5)²` | Gradient `2(w−5)` | Update calculation | New `w` |
+|:---:|---:|---:|---:|---|---:|
+| 0 | 0.00 | 25.00 | −10.00 | `0 − 0.1 × (−10)` | 1.00 |
+| 1 | 1.00 | 16.00 | −8.00 | `1 − 0.1 × (−8)` | 1.80 |
+| 2 | 1.80 | 10.24 | −6.40 | `1.80 − 0.1 × (−6.40)` | 2.44 |
+| 3 | 2.44 | 6.55 | −5.12 | `2.44 − 0.1 × (−5.12)` | 2.95 |
+| 4 | 2.95 | 4.20 | −4.10 | `2.95 − 0.1 × (−4.10)` | 3.36 |
+| 5 | 3.36 | 2.69 | −3.28 | `3.36 − 0.1 × (−3.28)` | 3.69 |
+| 10 | 4.65 | 0.12 | −0.70 | `4.65 − 0.1 × (−0.70)` | 4.72 |
+| 20 | 4.96 | 0.002 | −0.09 | `4.96 − 0.1 × (−0.09)` | 4.97 |
+| 30 | 4.996 | 0.00002 | −0.008 | — | 4.997 |
+
+**Why it moves toward 5.** The gradient is negative (loss *decreases* as `w` grows toward 5). Subtracting a negative number adds to `w`, so each step moves `w` rightward. Once we cross 5 the gradient would flip positive, and the update would pull `w` back — a spring-like behavior that lands at the minimum.
+
+**Why the step size shrinks.** The gradient itself is `2(w − 5)`. As `w` approaches 5, `|w − 5|` shrinks, so the gradient shrinks, so each step shrinks. Gradient descent naturally slows down as it nears a minimum — no manual tuning required.
 
 ### Learning Rate — The Step Size
 
@@ -1680,19 +1689,64 @@ it's to do well on **data you've never seen before**.
 
 ### What Helps Generalization?
 
-```
-  MORE DATA                SIMPLER MODEL             REGULARIZATION
-  ──────────               ─────────────             ───────────────
-  More diverse examples    Fewer parameters          L1/L2, Dropout,
-  → model learns the       → less chance of          Early Stopping
-  real pattern, not noise  memorizing noise           penalize complexity
+Six reliable levers. They compound — use several together.
 
-  DATA AUGMENTATION        CROSS-VALIDATION          DIVERSE FEATURES
-  ─────────────────        ────────────────           ────────────────
-  Artificially expand      Evaluate on multiple       Redundant features
-  training data with       held-out subsets           help the model
-  transforms (flips,       → reliable estimate        average over noise
-  crops, noise)            of true performance
+**1. More data.** Every extra labeled example is one more constraint the model has to satisfy, leaving fewer free parameters for memorizing noise. In practice, doubling the dataset often beats fancier architectures. *Use when*: you have a realistic path to more labels.
+
+**2. Simpler model.** Fewer parameters → less capacity to memorize. A linear model with 10 features can't memorize a million-row dataset; a 100-layer network can. Start simple; only scale up when training error says you must. *Use when*: training error is already low but test error is much higher — you have capacity to spare.
+
+**3. Regularization.** Add a penalty to the loss that discourages complexity. The four common variants (L1, L2, Dropout, Early Stopping) are covered in depth in **§2.13 Regularization** below.
+
+**4. Data augmentation.** Generate new training examples by applying label-preserving transforms. Effectively multiplies the dataset without new labeling.
+- **Images**: random crop, flip, rotation, color jitter, cutout, Mixup.
+- **Text**: synonym swap, back-translation, random deletion.
+- **Audio**: time-shift, pitch-shift, background noise.
+
+Especially powerful for deep learning, where model capacity is huge relative to dataset size. *Use when*: the domain has obvious invariances (a flipped cat is still a cat).
+
+**5. Cross-validation.** Evaluate on *k* different held-out splits instead of one. Standard: **k-fold CV** — split data into k chunks, train on k−1, test on the remaining one, rotate k times, average the scores. Doesn't reduce overfitting by itself — it **measures** it more accurately, which helps you pick between candidate models. *Use when*: the dataset is small (single holdout is statistically noisy).
+
+**6. Feature engineering (not just more features).** Adding *arbitrary* features makes overfitting worse — you've added parameters to fit noise with. Adding *meaningful* features (polynomial terms, interactions, log transforms of skewed values, domain-derived features like BMI from height + weight) helps because the model can describe the data with lower complexity. *Use when*: classical ML on structured data. Deep learning on images / text usually learns features automatically.
+
+### The Regularization Strength Trade-off
+
+Too little regularization → model overfits (learns noise).
+Too much regularization → model underfits (can't even fit the training data).
+
+The tuning parameter (λ for L1/L2, dropout rate, early-stopping patience) needs a validation set to pick. The sweet spot is where validation loss is lowest.
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0.0001,0.001,0.005,0.01,0.05,0.1,0.3,1.0,3.0,10.0,30.0],
+    "datasets": [
+      {
+        "label": "Training loss",
+        "data": [0.02,0.03,0.04,0.06,0.10,0.14,0.22,0.35,0.55,0.78,0.95],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0
+      },
+      {
+        "label": "Validation loss",
+        "data": [0.85,0.70,0.55,0.42,0.28,0.22,0.25,0.40,0.60,0.80,0.97],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Regularization Strength vs Loss — Sweet Spot Minimizes Validation Loss" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Regularization strength λ (log scale)" }, "type": "logarithmic" },
+      "y": { "title": { "display": true, "text": "Loss" }, "beginAtZero": true }
+    }
+  }
+}
 ```
 
 ### Train / Test Distribution Mismatch (Covariate Shift)

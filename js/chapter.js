@@ -325,8 +325,9 @@ document.addEventListener('keydown', (e) => {
   }
   // Ctrl+D — dark mode
   if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); toggleTheme(); }
-  // M — mark as read
-  if ((e.key === 'm' || e.key === 'M') && currentPage === 'chapter') toggleReadStatus();
+  // M — mark as read. Skip when the user is typing (comment input, pin textarea,
+  // DSA editor, search box, etc.) so the letter 'm' stays a letter.
+  if ((e.key === 'm' || e.key === 'M') && currentPage === 'chapter' && !typing) toggleReadStatus();
 });
 
 
@@ -339,14 +340,6 @@ function setupScrollProgress() {
     const scrollHeight = wrapper.scrollHeight - wrapper.clientHeight;
     const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
     bar.style.width = progress + '%';
-    // Award XP for reaching end of chapter
-    if (progress > 95 && interactiveMode) {
-      const key = 'scroll_' + currentIndex;
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, '1');
-        addXP(10, 'Finished scrolling through chapter');
-      }
-    }
   });
 }
 
@@ -432,9 +425,6 @@ function enhanceContent() {
 
   // 6. Python Run buttons on code blocks
   addRunButtons(contentEl);
-
-  // 6. Award XP for opening a chapter
-  addXP(5, 'Opened: ' + (chapters[currentIndex]?.title || 'chapter'));
 }
 
 function setupScrollSpy() {
@@ -461,7 +451,13 @@ function startQuiz(file) {
     showToast('📝 No quiz yet', 'Quiz coming soon for this chapter', '📚');
     return;
   }
-  quizState = { questions: [...questions], current: 0, score: 0, answered: false };
+  quizState = {
+    questions: [...questions],
+    current: 0,
+    score: 0,
+    answered: false,
+    startTime: Date.now(), // used to detect "rushed" (< 1s/question) attempts
+  };
   // Shuffle questions
   for (let i = quizState.questions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -479,8 +475,28 @@ function renderQuizQuestion() {
     const grade = pct >= 80 ? 'great' : pct >= 50 ? 'good' : 'needs-work';
     const emoji = pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📖';
     const msg = pct >= 80 ? 'Excellent! You know this well!' : pct >= 50 ? 'Good job! Review the ones you missed.' : 'Keep studying — you\'ll get there!';
-    const xpEarned = Math.round(pct / 100 * 30);
-    addXP(xpEarned, `Quiz score: ${pct}% (${score}/${questions.length})`);
+
+    // XP calculation with penalties:
+    // • base:           0–30 XP proportional to score %
+    // • per wrong:      −1 XP per missed question
+    // • low-score:      −20 XP if final score < 30%
+    // • rushed (anti-spam): 0 XP if less than 1 second per question elapsed
+    const baseXp = Math.round(pct / 100 * 30);
+    const wrongCount = questions.length - score;
+    const wrongPenalty = wrongCount; // 1 XP per wrong
+    const lowScorePenalty = pct < 30 ? 20 : 0;
+    const elapsedSec = (Date.now() - (quizState.startTime || Date.now())) / 1000;
+    const rushed = questions.length > 0 && (elapsedSec / questions.length) < 1;
+    let xpEarned = rushed ? 0 : baseXp;
+    const totalPenalty = rushed ? 0 : (wrongPenalty + lowScorePenalty);
+    const netXp = xpEarned - totalPenalty;
+    const reasonParts = [`Quiz ${pct}% (${score}/${questions.length})`];
+    if (rushed) reasonParts.push('rushed — no XP');
+    else {
+      if (wrongPenalty) reasonParts.push(`−${wrongPenalty} wrong`);
+      if (lowScorePenalty) reasonParts.push('−20 low score');
+    }
+    if (netXp !== 0) addXP(netXp, reasonParts.join(', '));
 
     // Save quiz score (best score)
     const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
@@ -516,7 +532,7 @@ function renderQuizQuestion() {
           <div class="quiz-score-label">${score} of ${questions.length} correct</div>
           <div class="quiz-score-bar"><div class="quiz-score-fill ${grade}" style="width:0%"></div></div>
           <p style="margin:16px 0;color:var(--text-secondary)">${msg}</p>
-          <p style="font-size:13px;color:var(--accent);font-weight:600;">+${xpEarned} XP earned</p>
+          <p style="font-size:13px;color:${netXp < 0 ? '#ef4444' : 'var(--accent)'};font-weight:600;">${netXp >= 0 ? '+' : ''}${netXp} XP${rushed ? ' (rushed — no XP)' : (totalPenalty > 0 ? ` (${xpEarned} − ${totalPenalty} penalty)` : '')}</p>
           <button class="quiz-next-btn" onclick="closeQuiz()">Close</button>
           <button class="quiz-next-btn" onclick="quizState.current=0;quizState.score=0;renderQuizQuestion();" style="margin-top:8px;background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);">🔄 Retake Quiz</button>
         </div>
@@ -569,18 +585,18 @@ function renderQuizQuestion() {
 function closeQuiz() {
   const { questions, current, score } = quizState;
   if (current >= questions.length) {
-    // Already on results screen — just close
+    // Already on results screen — just close (no abandon penalty)
     document.querySelector('.quiz-overlay')?.remove();
     return;
   }
   const answered = current + (quizState.answered ? 1 : 0);
   const remaining = questions.length - answered;
   if (remaining > 0) {
-    const confirmed = confirm(`You have ${remaining} question${remaining > 1 ? 's' : ''} remaining.\nYour current score: ${score}/${answered}\n\nAre you sure you want to quit the quiz?`);
+    const confirmed = confirm(`You have ${remaining} question${remaining > 1 ? 's' : ''} remaining.\nYour current score: ${score}/${answered}\n\nQuitting costs 15 XP.\n\nAre you sure you want to quit the quiz?`);
     if (!confirmed) return;
   }
   document.querySelector('.quiz-overlay')?.remove();
-  // Save partial score
+  // Save partial best-score (so the attempt still counts if it beats prior)
   if (answered > 0) {
     const pct = Math.round((score / questions.length) * 100);
     const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
@@ -591,6 +607,8 @@ function closeQuiz() {
     }
     showToast('Quiz ended early', `Score: ${score}/${answered} answered (${pct}% overall)`, '📝');
   }
+  // Abandon penalty: quitting a quiz with unanswered questions costs 15 XP.
+  if (remaining > 0) addXP(-15, 'Abandoned a quiz');
 }
 
 function answerQuiz(selected) {
@@ -1090,10 +1108,12 @@ function renderSingleComment(c, index, file, isReply = false, parentIndex = null
   const resolvedBadge = resolved ? '<span class="comment-resolved-badge">&#10003; Resolved</span>' : '';
   const resolveBtn = !isReply ? `<button class="resolve-btn" onclick="resolveComment('${file}', ${index})">${resolved ? '↺ Reopen' : '✓ Resolve'}</button>` : '';
   const pinBadge = (!isReply && c.anchor) ? '<span class="comment-pin-badge" title="This note is pinned in the chapter margin">📍 Pinned</span>' : '';
+  const gotoBtn = (!isReply && c.anchor) ? `<button class="goto-source-btn" onclick="goToCommentSource('${file}', ${index})" title="Scroll to where this note was attached">↗ Go to source</button>` : '';
   let html = `<div class="comment-item${resolved ? ' resolved' : ''}${c.anchor ? ' has-pin' : ''}" id="comment-${id}">
     <div class="comment-header">
       <span class="comment-date">${date}${edited}${pinBadge}${resolvedBadge}</span>
       <div class="comment-actions">
+        ${gotoBtn}
         ${resolveBtn}
         ${!isReply ? `<button onclick="showReplyForm('${file}', ${index})">↩ Reply</button>` : ''}
         <button onclick="editComment('${file}', ${isReply ? parentIndex : index}, ${isReply ? index : -1})">✎ Edit</button>
