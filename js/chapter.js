@@ -573,9 +573,9 @@ function renderQuizQuestion() {
         <div class="quiz-progress">Question ${current + 1} of ${questions.length} &nbsp;|&nbsp; Score: ${score}</div>
         <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${(current/questions.length)*100}%"></div></div>
       </div>
-      <div class="quiz-question">${current + 1}. ${q.q}</div>
+      <div class="quiz-question">${current + 1}. ${marked.parseInline(q.q)}</div>
       ${quizState.shuffledOptions.map((opt, i) => `
-        <button class="quiz-option" onclick="answerQuiz(${i})" id="qopt${i}">${String.fromCharCode(65+i)}. ${opt}</button>
+        <button class="quiz-option" onclick="answerQuiz(${i})" id="qopt${i}">${String.fromCharCode(65+i)}. ${marked.parseInline(opt)}</button>
       `).join('')}
       <div id="quizFeedback"></div>
     </div>`;
@@ -630,7 +630,7 @@ function answerQuiz(selected) {
   const fb = document.getElementById('quizFeedback');
   fb.innerHTML = `
     <div class="quiz-explanation">
-      ${isCorrect ? '✅ Correct!' : '❌ Incorrect.'} ${q.explanation}
+      ${isCorrect ? '✅ Correct!' : '❌ Incorrect.'} ${marked.parseInline(q.explanation)}
     </div>
     <button class="quiz-next-btn" onclick="quizState.current++; renderQuizQuestion()">
       ${quizState.current + 1 < quizState.questions.length ? 'Next Question →' : 'See Results'}
