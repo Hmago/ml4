@@ -220,10 +220,21 @@ That single line is everything the SDK needs to handle the `initialize` handshak
 **3. First tool — `add_note`.**
 
 ```ts
+// server.tool(name, description, inputSchema, handler)
+//   name:        string        — unique identifier the LLM calls (e.g. "add_note")
+//   description: string        — shown to the LLM; tells it WHEN to call this
+//   inputSchema: Zod shape     — { fieldName: z.type(), ... }
+//                                validates incoming args AND is auto-converted
+//                                into JSON Schema the LLM sees
+//   handler:     async (args) => { content: ContentBlock[] }
+//                args is the validated inputSchema object
+//                return { content } — the "content" key is SINGULAR for tools
 server.tool(
   "add_note",
   "Add a note. Returns the new note's id.",
   {
+    // Zod's fluent API gives you bounds, optionality, defaults, enums — all of
+    // which travel through to the JSON Schema so the LLM knows the constraints.
     title: z.string().min(1).max(200),
     body: z.string().min(1),
     tags: z.array(z.string()).default([]),
@@ -242,6 +253,8 @@ server.tool(
     save(notes);
 
     return {
+      // A ContentBlock is { type: "text" | "image" | "resource", ... }.
+      // An array lets you return mixed content — e.g. text + an image.
       content: [{ type: "text", text: `Added ${note.id}: ${title}` }],
     };
   }
@@ -253,13 +266,16 @@ The Zod shape (third argument) becomes the JSON Schema the LLM sees when it's de
 **4. Second tool — `search_notes`.**
 
 ```ts
+// Same signature as above: server.tool(name, description, inputSchema, handler)
+// Demonstrates a richer schema — .optional() for missing fields and .default()
+// for fallbacks. The LLM sees all of this in the JSON Schema.
 server.tool(
   "search_notes",
   "Search notes by keyword, optionally filtered by tag.",
   {
-    query: z.string(),
-    tag: z.string().optional(),
-    limit: z.number().int().min(1).max(50).default(10),
+    query: z.string(),                              // required
+    tag: z.string().optional(),                     // may be absent
+    limit: z.number().int().min(1).max(50).default(10), // LLM may omit; becomes 10
   },
   async ({ query, tag, limit }) => {
     const q = query.toLowerCase();
@@ -282,9 +298,30 @@ Notice the richer schema — bounds on `limit`, an optional `tag`, a default. Al
 **5. Resource — read a note, and let the host list them.**
 
 ```ts
+// server.resource(name, uriOrTemplate, handler)
+//   name:          string                — short label the host shows
+//   uriOrTemplate: string | ResourceTemplate
+//                     string            — a static URI (e.g. "file://README.md")
+//                     ResourceTemplate  — a URI PATTERN with {placeholders},
+//                                         plus an optional `list` callback so
+//                                         the host can enumerate instances
+//   handler:       async (uri, vars) => { contents: ResourceContent[] }
+//                     uri:  URL object for the requested URI
+//                     vars: parsed template vars, e.g. { id: "abc" }
+//                     return { contents } — the "contents" key is PLURAL for
+//                                            resources (tools use singular!)
+
+// ResourceTemplate(pattern, options)
+//   pattern: string with {vars} placeholders, e.g. "note://{id}"
+//   options:
+//     list?:     async () => ({ resources: ResourceDescriptor[] })
+//                optional; when provided, hosts show your resources in a browser
+//     complete?: callbacks for autocomplete on {vars}  — we skip those here
 server.resource(
   "note",
   new ResourceTemplate("note://{id}", {
+    // `list` lets the host enumerate your notes (title + URI + MIME type).
+    // A ResourceDescriptor is { uri, name, description?, mimeType? }.
     list: async () => ({
       resources: load().map((n) => ({
         uri: `note://${n.id}`,
@@ -293,15 +330,22 @@ server.resource(
       })),
     }),
   }),
+  // Handler signature: (uri: URL, vars: Record<string, string | string[]>)
   async (uri, { id }) => {
+    // Template vars can be string OR string[] (if the pattern matches a list).
+    // Normalize to a single string for our single-value pattern.
     const noteId = Array.isArray(id) ? id[0] : id;
     const note = load().find((n) => n.id === noteId);
 
+    // Throwing an Error → MCP converts it to a JSON-RPC error response.
     if (!note) {
       throw new Error(`Note ${noteId} not found`);
     }
 
     return {
+      // ResourceContent = { uri: string, mimeType?: string, text?: string, blob?: string }
+      // `text` for utf-8, `blob` (base64) for binary. You can return multiple
+      // representations of the same resource in one read.
       contents: [
         {
           uri: uri.href,
@@ -349,9 +393,20 @@ Without the resource, the same flow requires the LLM to guess what to search for
 **6. Prompt — a reusable slash-menu template.**
 
 ```ts
+// server.prompt(name, description, argsSchema, handler)
+//   name:        string                — slash-menu identifier (e.g. "/weekly-review")
+//   description: string                — shown in the slash menu
+//   argsSchema:  Zod shape              — args the user fills in via a host form
+//   handler:     (args) => { messages: PromptMessage[] }
+//                args is the validated argsSchema object (NOT async — prompts
+//                are pure template renderings, no I/O expected)
+//                return { messages } — each PromptMessage is
+//                { role: "user" | "assistant", content: { type: "text", text } }
+//                (also supports image + resource content types)
 server.prompt(
   "weekly-review",
   "Summarize notes from a recent period",
+  // Zod shape: just one arg, `period`, with 2 valid values and a default.
   { period: z.enum(["week", "month"]).default("week") },
   ({ period }) => ({
     messages: [
@@ -518,36 +573,59 @@ The three sentences to leave with the interviewer: **the LLM orchestrates retrie
 
 ## 4. Skills — Teaching an AI a New Trick
 
-> **Skill**: a folder with a `SKILL.md` file that teaches an AI assistant a specialized capability. The AI loads the skill's instructions (and any supporting files) only when the current task needs them.
+> **Skill**: a named folder on disk (e.g. `pdf-handling/`) containing a `SKILL.md` file with step-by-step instructions, plus any helper scripts and example files the model may need. The host loads a skill **only while the task that skill covers is active** — when the task is done, the skill leaves the context.
 
-A skill is a recipe card. When the AI needs to do something specific — process PDFs, review code, run a database migration, deploy a service — it reads the skill's card, follows it, and finishes the task. When the task is unrelated, the skill stays out of the context.
+Think of it as a **role brief for a temporary specialist**. You don't permanently teach the assistant how to handle PDFs. You keep a "PDF handler" brief on a shelf, hand it over when a PDF shows up, and put it back when the PDF is done.
 
-Claude Code popularized the pattern in late 2025 and is built on the Claude Agent SDK. Cursor rules, Cline workflows, and ChatGPT's Projects-level instructions use the same idea under different names.
+Claude Code popularized the pattern in late 2025 and is built on the Claude Agent SDK. Cursor rules, Cline workflows, and ChatGPT's Projects-level instructions are the same idea under different names.
 
-### Why skills beat "just put it in the system prompt"
+### The problem skills solve
 
-- **Discoverable.** Skills are explicit capabilities — the user and the model can both see what's available.
-- **Composable.** Load only the skills the current task needs; mix and match.
-- **Reusable.** The same skill folder works across projects, repos, and teams.
-- **Git-tracked.** A skill is a plain directory; review it in a PR.
-- **Context-cheap.** A skill only consumes tokens while it's active, not on every turn.
+Before skills, teams had two options for "teach the AI how *we* do X":
 
-### Anatomy of a skill
+1. **Stuff it into the system prompt.** Works until you have 20 niche procedures — the prompt balloons past a thousand tokens, the model ignores bits of it, every chat pays for instructions it isn't using.
+2. **Build a tool for each step.** Works for atomic actions, but a procedure like "review this PR" needs a dozen tools plus orchestration logic — better expressed as prose than as a state machine.
+
+Skills give you a third option: **write the procedure in plain English, ship it as a folder, and have the host load it only when that procedure is relevant.**
+
+### Progressive disclosure — the core idea
+
+A skill has three concentric layers. Each layer loads only when the previous one isn't enough.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Frontmatter + description        ~30 tokens              │
+│     (ALWAYS visible to the host so it can decide whether     │
+│      to load the rest of this skill at all)                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  2. SKILL.md body                ~300–500 tokens       │  │
+│  │     (loads only when the skill activates for a task)   │  │
+│  │  ┌─────────────────────────────────────────────────┐  │  │
+│  │  │  3. Scripts, examples, reference docs            │  │  │
+│  │  │     (load only when the SKILL.md asks for them)  │  │  │
+│  │  └─────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+A library of 50 skills costs about 1,500 always-loaded tokens (the layer-1 descriptions) — roughly a paragraph of prose. Only one or two skills' full bodies are active per conversation, and layer-3 assets come in only when the active skill explicitly calls for them. That's how skills scale where "one giant system prompt" falls over.
+
+### Anatomy — what actually sits on disk
 
 ```
 skills/
   pdf-handling/
-    SKILL.md              ← instructions + metadata (required)
+    SKILL.md              ← required: frontmatter + instructions
     scripts/
       extract.py          ← helper script the skill can call
       extract_tables.py
     examples/
-      invoice_sample.pdf  ← few-shot example inputs/outputs
-      invoice_output.md
+      invoice_sample.pdf  ← few-shot example inputs
+      invoice_output.md   ← …and expected outputs
     README.md             ← optional: human docs for other devs
 ```
 
-Only `SKILL.md` is required. Everything else is optional and only loaded when the skill references it.
+Only `SKILL.md` is required. Everything else loads on demand when `SKILL.md`'s instructions reference it.
 
 ### Minimal SKILL.md (the "hello world" of skills)
 
@@ -577,8 +655,8 @@ Be concise. Cite line numbers when quoting. Never invent numbers that aren't in 
 
 Three things to notice:
 
-1. **Frontmatter** declares metadata: name, description, optional triggers (some hosts auto-activate skills when triggers match).
-2. **Instructions read like a handoff to a capable intern** — steps, conditions, tools to use.
+1. **Frontmatter** (the part between `---` markers) is the layer-1 metadata: name, description, optional triggers. This is what the host reads to decide whether to activate the skill for the current user message.
+2. **Instructions read like a handoff to a capable intern** — numbered steps, conditions, which tools or scripts to call. This is layer 2; it loads when the skill activates.
 3. **Tone and guard-rails** live at the bottom. This is where you keep the model honest.
 
 ### A fuller worked example — a Git-review skill
@@ -641,30 +719,23 @@ Three activation patterns, in order of common usage:
 2. **Intent detection.** Host scans the user message against each skill's `description` and `triggers`. If one matches (the user said "review my PR"), the host loads that skill's instructions into context automatically.
 3. **Agent self-activation.** When the agent decides "I need to process a PDF", it can load the `pdf-handling` skill on its own. This is how Claude Code's subagents work — the orchestrator picks skills per subtask.
 
-### Progressive disclosure — the thing that makes skills scale
+### Keep SKILL.md short
 
-If every skill loaded everything up front, a big skill library would blow the context window. The trick is **progressive disclosure**: `SKILL.md` is the always-visible summary; the scripts, examples, and supporting docs load only when the model explicitly reads them.
+Since `SKILL.md` is layer 2 (loaded on activation), its token cost is paid every time the skill is active. Aim for **under ~500 tokens**. If it's longer, split it: move the detailed cases into separate scripts or examples that SKILL.md references when needed.
 
-In practice:
+### Skill vs System Prompt vs Tool vs Prompt
 
-- `SKILL.md` is often a few hundred tokens.
-- Scripts stay on disk; the model calls them as tools.
-- Examples (few-shot pairs) are loaded only when the task resembles them.
+Four overlapping concepts. Quick decoder:
 
-Keep `SKILL.md` **short**. If it's more than ~500 tokens, split it.
+| You want to... | Use a ... | Loaded when? |
+|---|---|---|
+| Give always-on instructions to every turn ("You're a polite assistant") | **System prompt** | Every turn |
+| Call a real function (API, DB, shell) from the model | **Tool** (§2) | When the LLM decides to call it |
+| Read or serve a file / URI the model can cite | **Resource** (MCP §3) | When attached or requested |
+| Inject a reusable user-picked template (slash menu) | **Prompt** (MCP §3) | When the user picks it |
+| Bundle *instructions + scripts + examples* for a whole task that activates only when relevant | **Skill** (this section) | When the task matches |
 
-### Skill vs Tool vs Prompt
-
-New practitioners confuse these. Quick decoder:
-
-| You want to... | Use a ... |
-|---|---|
-| Call a real function (API, DB, shell) from the model | **Tool** (§2) |
-| Read or serve a file / URI the model can cite | **Resource** (MCP §3) |
-| Inject a reusable user-picked template (slash menu) | **Prompt** (MCP §3) |
-| Bundle *instructions + scripts + examples* for a whole task | **Skill** (this section) |
-
-A skill typically uses tools and can reference resources. It's the layer above.
+A skill typically *uses* tools and can *reference* resources. It's the layer above — the playbook, not the individual moves.
 
 ### Best practices
 
@@ -912,9 +983,60 @@ Two things to get right:
 
 ## 10. Modern RAG & Context Engineering
 
-> **Retrieval-augmented generation (RAG)**: an architecture that fetches relevant text from a corpus at inference time and feeds it to the LLM as context.
+> **Retrieval-Augmented Generation (RAG)**: a pattern where — at question time — the app first **looks up relevant text** from a corpus the model was never trained on, then **passes that text along with the user's question** so the model can answer using information it wouldn't otherwise know.
 
-Vanilla RAG — embed the question, grab the top-k chunks, stuff them in the prompt — is now the baseline, not the bar. Modern RAG adds more layers.
+An LLM knows roughly what was in its training data. It does **not** know your company's wiki, your user's last 30 days of orders, or the PDF the user uploaded 10 seconds ago. RAG is how you close that gap without fine-tuning the model — it's a retrieval step glued to an inference step.
+
+### How vanilla RAG works (the 2022–2023 baseline)
+
+Two phases.
+
+**Index phase** — done ahead of time, or on a schedule:
+
+```
+    docs            chunker            embedder              vector DB
+┌───────────┐   ┌─────────────┐   ┌───────────────┐   ┌────────────────────┐
+│ wiki .md  │──►│ split into  │──►│ one vector    │──►│ id, chunk, vector  │
+│ PDF, etc  │   │ 500-token   │   │ per chunk     │   │ stored for fast    │
+│           │   │ chunks      │   │ (OpenAI,      │   │ similarity lookup  │
+│           │   │             │   │  Cohere, BGE) │   │                    │
+└───────────┘   └─────────────┘   └───────────────┘   └────────────────────┘
+```
+
+**Query phase** — on every user question:
+
+```
+                              embed             cosine search
+                          ┌───────────┐     ┌──────────────────┐
+  "how do refunds work?" ►│ embedder  │────►│ vector DB returns│
+                          └───────────┘     │  top-5 chunks    │
+                                            └────────┬─────────┘
+                                                     │
+                                                     ▼
+                              ┌──────────────────────────────────┐
+                              │  prompt = system + top-5 chunks  │
+                              │         + user question          │
+                              │  ──► LLM ──► answer              │
+                              └──────────────────────────────────┘
+```
+
+That's it. Vanilla RAG powered the first wave of "chat with your docs" products. By 2026 every piece of that pipeline has a sharper alternative — because the baseline fails in predictable ways.
+
+### Why vanilla RAG is no longer the bar
+
+Each modern technique exists to fix a specific failure mode. Here's the matching:
+
+| Vanilla RAG fails when... | The fix | What it does |
+|---|---|---|
+| The question and the doc use different words ("cancel subscription" vs "stop recurring payment") | **HyDE** | Generate a hypothetical answer with the LLM, embed *that* instead of the raw question, retrieve against it |
+| A vector match misses an exact-match need (an error code, a SKU, a phone number) | **Hybrid search** | Combine dense-vector search with lexical BM25; union the top-k |
+| The top-5 by vector similarity aren't the top-5 by meaning | **Reranking** | A cross-encoder rescores the top 20 candidates → pick the best 3 |
+| A chunk is meaningless on its own (starts mid-sentence, no context) | **Contextual chunking** | Prepend a short summary of the surrounding doc to each chunk |
+| The user's question is vague or multi-part ("anything I should know before launching?") | **Query rewriting** | An LLM splits the question into sharper sub-queries; retrieve per sub-query |
+| Not every question needs retrieval at all (trivia, small talk) | **Agentic RAG** | The LLM itself decides *whether* and *what* to retrieve, as a tool call |
+| Facts are relational, not paragraph-shaped (org chart, product taxonomy) | **Graph RAG** | Retrieve subgraphs from a knowledge graph instead of flat text chunks |
+
+You don't need all seven. You bolt them on as you hit their specific failure modes.
 
 ### What is a context window?
 
@@ -929,27 +1051,17 @@ Four things to internalize:
 
 Sizes scaled fast: 8 K (GPT-3.5, 2022) → 32 K (GPT-4) → 200 K (Claude 3) → 1 M (Gemini 1.5, Claude Sonnet 4.6 beta) → 10 M (Llama 4 Scout). That growth is why RAG moved from "fit everything you can" to **context engineering**: picking *what* goes in, not piling on.
 
-### Techniques
+### Context engineering — choosing what goes in
 
-| Technique | What it adds |
-|---|---|
-| **Query rewriting** | Expand or split the user query before retrieval |
-| **Hybrid search** | Combine dense vectors with BM25 lexical |
-| **Reranking** | A cross-encoder reorders the top candidates |
-| **Contextual chunking** | Chunks carry surrounding context so they make sense |
-| **Agentic RAG** | An agent decides whether, when, and what to retrieve |
-| **Graph RAG** | Retrieve from a knowledge graph, not flat chunks |
-| **HyDE** | Generate a hypothetical answer, embed that, then retrieve |
+With 200 K–2 M tokens available, the bottleneck stopped being "will it fit" and became "will the model actually read it". Context engineering is the craft of filling that budget well.
 
-### Context engineering
+- **Context caching** — reuse prefix tokens across turns (system prompt, long instructions, retrieved docs that repeat). All major providers charge ~90% less for cached prefix tokens — the single biggest cost lever.
+- **Context compression** — summarize old turns or distant chunks before they slide out of the model's effective attention span.
+- **Attention anchoring** — put the most important constraint right before the generation point; models attend more to context ends than to the middle.
+- **Structured layout** — XML/JSON tags (`<document>...</document>`, `<user_question>...`) beat flat prose for the model's recall of what's what.
+- **Needle-in-haystack evals** — plant known canary facts at different depths in your context and measure whether the model retrieves them. Reveals where your layout breaks down.
 
-Modern context windows are huge (200 K–2 M tokens). The skill now is **choosing what goes in**, not stuffing more.
-
-- **Context caching** — reuse prefix tokens across turns. All major providers support this.
-- **Context compression** — summarize old turns or distant chunks.
-- **Attention anchoring** — put key constraints near the answer position; models pay more attention to context ends.
-- **Structured layout** — XML/JSON tags beat flat prose for recall.
-- **Needle-in-haystack evals** — plant known "needles" at different depths and see if the model finds them.
+The through-line: **long context ≠ useful context**. A 2 M-token window is a canvas, not an invitation to paint every pixel.
 
 ---
 

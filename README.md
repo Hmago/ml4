@@ -42,8 +42,8 @@
 | 11 | Model Evaluation & Tuning | ★★★ | [11_model_evaluation.md](content/11_model_evaluation.md) | ~1 hr | Intermediate |
 | 12 | Deep Learning — Complete Reference | ★★★ | [12_deep_learning.md](content/12_deep_learning.md) | ~3.5 hrs | Advanced |
 | 13 | Large Language Models (LLMs) | ★★★ | [13_llm.md](content/13_llm.md) | ~9 hrs | Intermediate-Advanced |
-| 22 | Modern AI Stack — Agents, MCP, Skills (2026) | ★★★ | [22_modern_ai_stack.md](content/22_modern_ai_stack.md) | ~2 hrs | Intermediate-Advanced |
-| | **Core Total** | | | **~36 hrs** | |
+| 22 | Modern AI Stack — Agents, MCP, Skills (2026) | ★★★ | [22_modern_ai_stack.md](content/22_modern_ai_stack.md) | ~2.5 hrs | Intermediate-Advanced |
+| | **Core Total** | | | **~36.5 hrs** | |
 
 ### Interview Preparation
 
@@ -91,7 +91,7 @@
 |----|-------|:------:|------|------|------------|
 | -- | Staying Relevant in the AI Era | ★ | [staying_relevant_ai_era.md](content/staying_relevant_ai_era.md) | ~1 hr | All Levels |
 | -- | Brain Training — Memory, Focus & IQ | | [01_brain_training.md](content/01_brain_training.md) | ~1.5 hrs | All Levels |
-| | **Grand Total (all content)** | | | **~89.5 hrs + DSA practice** | |
+| | **Grand Total (all content)** | | | **~90 hrs + DSA practice** | |
 
 ---
 
@@ -227,13 +227,13 @@ ication   sion            ing       sionality      Learning Learning
   Ch 10 → Ch 11 → Ch 12 → Ch 13
   Complete core curriculum. Solid ML understanding.
 
-  TRACK 3: LLM / AI Focus (~28 hours)
+  TRACK 3: LLM / AI Focus (~28.5 hours)
   ──────────────────────────────────────────
   Ch 3 → Ch 4 → Ch 10 → Ch 12 → Ch 13 → Ch 22 → Ch 16
   Fastest path to understanding modern AI, LLMs, and the
   2026 agent / MCP / tool-use landscape. Skip classical ML.
 
-  TRACK 4: Google AI Engineer (~89.5 hours — full prep)
+  TRACK 4: Google AI Engineer (~90 hours — full prep)
   ──────────────────────────────────────────
   Ch 0 (strategy!) → Full ML Engineer track (incl. Ch 22) →
   Ch 15 → Ch 16 → Ch 20 (Top 10 ML Topics) →
