@@ -113,39 +113,6 @@ public class Main {
         System.out.println(Arrays.toString(k));  // [-1, 0, 0, 0, 1]
     }
 }`,
-  "insertion-sort": `import java.util.*;
-
-public class Main {
-    public static void insertionSort(int[] nums) {
-        // Your solution here — shift larger elements right, insert current
-
-    }
-
-    public static void main(String[] args) {
-        int[] a = {12, 11, 13, 5, 6}; insertionSort(a);
-        System.out.println(Arrays.toString(a));  // [5, 6, 11, 12, 13]
-        int[] b = {}; insertionSort(b);
-        System.out.println(Arrays.toString(b));  // []
-        int[] c = {1}; insertionSort(c);
-        System.out.println(Arrays.toString(c));  // [1]
-        int[] d = {2, 1}; insertionSort(d);
-        System.out.println(Arrays.toString(d));  // [1, 2]
-        int[] e = {1, 2, 3, 4, 5}; insertionSort(e);
-        System.out.println(Arrays.toString(e));  // [1, 2, 3, 4, 5]
-        int[] f = {5, 4, 3, 2, 1}; insertionSort(f);
-        System.out.println(Arrays.toString(f));  // [1, 2, 3, 4, 5]
-        int[] g = {4, 4, 4, 4}; insertionSort(g);
-        System.out.println(Arrays.toString(g));  // [4, 4, 4, 4]
-        int[] h = {-1, 3, -5, 2, 0}; insertionSort(h);
-        System.out.println(Arrays.toString(h));  // [-5, -1, 0, 2, 3]
-        int[] i = {1, 5, 2, 4, 3}; insertionSort(i);
-        System.out.println(Arrays.toString(i));  // [1, 2, 3, 4, 5]
-        int[] j = {9, 8, 7, 6, 5, 4, 3, 2, 1}; insertionSort(j);
-        System.out.println(Arrays.toString(j));  // [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        int[] k = {0, 0, 1, 1, 2, 2}; insertionSort(k);
-        System.out.println(Arrays.toString(k));  // [0, 0, 1, 1, 2, 2]
-    }
-}`,
   "merge-sort": `import java.util.*;
 
 public class Main {

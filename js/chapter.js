@@ -100,6 +100,7 @@ async function loadChapter(index) {
 
   document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
   document.getElementById('readBtn').style.display = ch.ref ? 'none' : '';
+  document.getElementById('exportPdfBtn').style.display = '';
   document.getElementById('welcome')?.remove();
   renderSidebar();
   closeSidebar();
@@ -201,6 +202,177 @@ function buildTOC() {
     const text = h.textContent.length > 40 ? h.textContent.slice(0, 40) + '...' : h.textContent;
     return `<a href="#${id}" class="${cls}" onclick="event.preventDefault(); document.getElementById('${id}').scrollIntoView({behavior:'smooth'})">${text}</a>`;
   }).join('');
+}
+
+// ─── Export to PDF ───
+// Uses the browser's native print dialog (Save as PDF). Text stays vector,
+// KaTeX / code highlighting render crisp, and everything works offline.
+//
+// The print rules are injected inline at export time (rather than relying on
+// the @media print block in styles.css) so a stale service-worker cache can't
+// leave the user with old CSS — the button always applies the current rules.
+const PDF_EXPORT_CSS = `
+@media print {
+  @page { margin: 16mm 14mm; }
+
+  /* Force a light palette regardless of app theme — override the CSS
+     variables themselves so every descendant using var(--text) / var(--bg)
+     flips along with them. */
+  :root, [data-theme="dark"] {
+    --bg: #ffffff !important;
+    --bg-secondary: #f6f8fa !important;
+    --bg-sidebar: #ffffff !important;
+    --text: #111111 !important;
+    --text-secondary: #444444 !important;
+    --border: #cccccc !important;
+    --accent: #0b57d0 !important;
+    --accent-light: #e8f0fe !important;
+    --code-bg: #f5f5f5 !important;
+    --heading: #111111 !important;
+    --link: #0b57d0 !important;
+    --shadow: transparent !important;
+    --success: #1a7f37 !important;
+    --table-stripe: #f6f8fa !important;
+  }
+
+  /* Break out of the app's flex + 100vh + overflow:hidden layout so the full
+     chapter flows across pages instead of being clipped to the viewport. */
+  html, body {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .main, .content-wrapper, .content {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  /* Disable effects that force Chrome to rasterize the page into an image
+     (which strips vector text and often renders as a blank area). */
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide every bit of app chrome */
+  .sidebar, .topbar, .nav-buttons, .toc-panel,
+  .toast-container, .overlay, .sel-popup,
+  #confetti-canvas, .scroll-progress,
+  .study-timer, .hamburger, .search-box, .search-results,
+  .sidebar-nav-btns, .quiz-overlay, .comment-fab,
+  #welcomeSlot,
+  .heading-anchor, .copy-code-btn, .copy-btn,
+  .comment-actions, .comment-form, .comment-filter-bar {
+    display: none !important;
+  }
+
+  body { font-size: 11pt; line-height: 1.55; }
+  h1, h2, h3, h4, h5, h6 {
+    color: #111 !important;
+    page-break-after: avoid; break-after: avoid;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 15pt; margin-top: 18pt; }
+  h3 { font-size: 12.5pt; margin-top: 12pt; }
+
+  a { color: #0b57d0 !important; text-decoration: underline; }
+  p, li, blockquote { orphans: 3; widows: 3; }
+
+  pre, code, kbd, samp { background: #f5f5f5 !important; color: #111 !important; }
+  pre {
+    border: 1px solid #ddd !important;
+    padding: 8pt !important;
+    font-size: 9pt;
+    white-space: pre-wrap; word-wrap: break-word;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  pre code, pre code.hljs, .hljs {
+    background: #f5f5f5 !important; color: #111 !important;
+  }
+  .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df !important; }
+  .hljs-string, .hljs-attr { color: #0a3069 !important; }
+  .hljs-comment { color: #6e7781 !important; font-style: italic; }
+  .hljs-number, .hljs-literal { color: #0550ae !important; }
+  .hljs-title, .hljs-function, .hljs-name { color: #953800 !important; }
+
+  table {
+    border-collapse: collapse !important;
+    page-break-inside: avoid; break-inside: avoid;
+    width: 100% !important;
+  }
+  th, td {
+    border: 1px solid #999 !important;
+    color: #111 !important; background: #fff !important;
+    padding: 4pt 6pt !important;
+  }
+  thead, thead tr, thead th { background: #eee !important; }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+
+  blockquote {
+    border-left: 3px solid #666 !important;
+    color: #333 !important; background: #fafafa !important;
+    page-break-inside: avoid; break-inside: avoid;
+    padding: 6pt 10pt !important; margin: 8pt 0 !important;
+  }
+
+  img, svg { max-width: 100% !important; page-break-inside: avoid; }
+  .katex, .katex *,
+  .katex-display, .katex-display *,
+  .katex-html, .katex-html *,
+  .katex-mathml, .katex-mathml * { color: #111 !important; }
+  .katex-display { page-break-inside: avoid; break-inside: avoid; }
+
+  mark, .hl-yellow { background: #fff3a0 !important; color: #111 !important; }
+  .hl-green { background: #cdefc8 !important; color: #111 !important; }
+  .hl-blue  { background: #cfe4ff !important; color: #111 !important; }
+  .hl-pink  { background: #ffd4e5 !important; color: #111 !important; }
+
+  .comment-item {
+    border: 1px solid #ccc !important;
+    background: #fafafa !important; color: #111 !important;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .comment-body, .comment-quote, .comment-date { color: #333 !important; }
+}`;
+
+function exportChapterToPDF() {
+  if (currentPage !== 'chapter' || currentIndex < 0) return;
+  const ch = chapters[currentIndex];
+  const prevTitle = document.title;
+  document.title = `${ch.id} - ${ch.title}`.replace(/[\\/:*?"<>|]/g, '-');
+
+  // Remove any prior injection, then add fresh print styles at the end of
+  // <head> so they win against older cached rules.
+  document.getElementById('pdf-export-style')?.remove();
+  const styleTag = document.createElement('style');
+  styleTag.id = 'pdf-export-style';
+  styleTag.textContent = PDF_EXPORT_CSS;
+  document.head.appendChild(styleTag);
+
+  // Let the browser apply the new rules before opening the print dialog.
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      styleTag.remove();
+      document.title = prevTitle;
+    }, 500);
+  }, 80);
 }
 
 // ─── Read Status ───
@@ -665,6 +837,7 @@ loadChapter = async function(index) {
     trackChapterOpen(ch.file);
     document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
     document.getElementById('readBtn').style.display = '';
+    document.getElementById('exportPdfBtn').style.display = '';
     document.getElementById('tocPanel').classList.remove('visible');
     renderSidebar();
     closeSidebar();

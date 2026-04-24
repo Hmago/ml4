@@ -11,6 +11,7 @@ function renderWelcome() {
   pushHash('home');
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
@@ -221,6 +222,7 @@ function showDashboard() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '📊 Dashboard';
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -779,6 +781,7 @@ function showMotivation() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
   renderMotivation();
@@ -887,6 +890,7 @@ function showGoals() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();
