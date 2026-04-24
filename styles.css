@@ -1063,12 +1063,12 @@ body.sidebar-collapsed .content {
 .welcome-dsa-head a:hover { text-decoration: underline; }
 .welcome-dsa-row { display: grid; grid-template-columns: 70px 1fr 72px; gap: 12px; align-items: center; padding: 6px 0; }
 .welcome-dsa-label { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 10px; text-align: center; }
-.welcome-dsa-label.dsa-easy   { background: rgba(34,197,94,0.15);  color: #16a34a; }
+.welcome-dsa-label.dsa-easy   { background: rgba(59,130,246,0.15); color: #2563eb; }
 .welcome-dsa-label.dsa-medium { background: rgba(245,158,11,0.15); color: #d97706; }
 .welcome-dsa-label.dsa-hard   { background: rgba(239,68,68,0.15);  color: #dc2626; }
 .welcome-dsa-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
 .welcome-dsa-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.16,1,0.3,1); }
-.welcome-dsa-fill.dsa-easy   { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.welcome-dsa-fill.dsa-easy   { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
 .welcome-dsa-fill.dsa-medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 .welcome-dsa-fill.dsa-hard   { background: linear-gradient(90deg, #ef4444, #f87171); }
 .welcome-dsa-count { font-size: 13px; font-weight: 700; text-align: right; color: var(--text); }
@@ -1458,10 +1458,10 @@ body.sidebar-collapsed .content {
 .dsa-filter-btn { padding:6px 14px; border:1px solid var(--border); border-radius:20px; background:var(--bg); color:var(--text); font-size:13px; cursor:pointer; transition:all 0.15s; }
 .dsa-filter-btn:hover, .dsa-filter-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 .dsa-diff-badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:11px; font-weight:700; }
-.dsa-diff-badge.easy { background:#dcfce7; color:#166534; }
+.dsa-diff-badge.easy { background:#dbeafe; color:#1e40af; }
 .dsa-diff-badge.medium { background:#fef3c7; color:#92400e; }
 .dsa-diff-badge.hard { background:#fee2e2; color:#991b1b; }
-[data-theme="dark"] .dsa-diff-badge.easy { background:#14532d; color:#86efac; }
+[data-theme="dark"] .dsa-diff-badge.easy { background:#1e3a8a; color:#93c5fd; }
 [data-theme="dark"] .dsa-diff-badge.medium { background:#78350f; color:#fde68a; }
 [data-theme="dark"] .dsa-diff-badge.hard { background:#7f1d1d; color:#fca5a5; }
 
@@ -1616,7 +1616,7 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   cursor:pointer; font-size:10px; transition:background 0.15s;
 }
 .dsa-active-filter .x:hover { background:rgba(255,255,255,0.45); }
-.dsa-active-filter.diff-easy   { background:#22c55e; }
+.dsa-active-filter.diff-easy   { background:#3b82f6; }
 .dsa-active-filter.diff-medium { background:#f59e0b; }
 .dsa-active-filter.diff-hard   { background:#ef4444; }
 
@@ -1934,7 +1934,24 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 
 /* ─── Solved celebration ─── */
 @keyframes solve-pop { 0%{transform:scale(0.8);opacity:0;} 50%{transform:scale(1.15);} 100%{transform:scale(1);opacity:1;} }
-.dsa-solved-badge { display:inline-flex; align-items:center; gap:5px; color:var(--success,#22c55e); font-weight:700; font-size:14px; animation:solve-pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.dsa-solved-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:3px 10px; border-radius:999px;
+  background:#16a34a; color:#fff;
+  font-weight:700; font-size:12px; letter-spacing:0.02em;
+  box-shadow:0 1px 3px rgba(22,163,74,0.35), inset 0 0 0 1px rgba(255,255,255,0.15);
+  animation:solve-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+[data-theme="dark"] .dsa-solved-badge { background:#15803d; box-shadow:0 1px 3px rgba(34,197,94,0.4), inset 0 0 0 1px rgba(255,255,255,0.08); }
+.dsa-solved-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:999px;
+  background:#16a34a; color:#fff;
+  font-weight:700; font-size:11px; letter-spacing:0.02em;
+  box-shadow:0 1px 2px rgba(22,163,74,0.35);
+  animation:solve-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+[data-theme="dark"] .dsa-solved-pill { background:#15803d; }
 
 /* ─── Mobile: stack the split pane ─── */
 @media (max-width:900px) {
@@ -2707,10 +2724,164 @@ mark.user-hl:hover::after { display: flex; }
 .comment-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
 .comment-filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-/* ─── Print ─── */
+/* ─── Print / Export-to-PDF ─── */
 @media print {
-  .sidebar, .topbar, .nav-buttons, .toc-panel { display: none !important; }
-  .main { overflow: visible; }
-  .content-wrapper { overflow: visible; }
-  .content { max-width: 100%; padding: 0; }
+  @page { margin: 16mm 14mm; }
+
+  /* Force a light palette regardless of app theme.
+     Overriding the CSS variables themselves is the only way to catch every
+     descendant that uses var(--text) / var(--bg) in its own rule. */
+  :root, [data-theme="dark"] {
+    --bg: #ffffff !important;
+    --bg-secondary: #f6f8fa !important;
+    --bg-sidebar: #ffffff !important;
+    --text: #111111 !important;
+    --text-secondary: #444444 !important;
+    --border: #cccccc !important;
+    --accent: #0b57d0 !important;
+    --accent-light: #e8f0fe !important;
+    --code-bg: #f5f5f5 !important;
+    --heading: #111111 !important;
+    --link: #0b57d0 !important;
+    --shadow: transparent !important;
+    --success: #1a7f37 !important;
+    --table-stripe: #f6f8fa !important;
+  }
+
+  /* Break out of the app's flex/100vh layout so the full chapter prints,
+     not just the currently-visible scroll window. */
+  html, body {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #111 !important;
+  }
+  .main, .content-wrapper, .content {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #111 !important;
+  }
+
+  /* Hide every bit of chrome */
+  .sidebar, .topbar, .nav-buttons, .toc-panel,
+  .toast-container, .overlay, .sel-popup,
+  #confetti-canvas, .scroll-progress,
+  .study-timer, .hamburger, .search-box, .search-results,
+  .sidebar-nav-btns, .quiz-overlay, .comment-fab,
+  #welcomeSlot,
+  /* hide in-chapter interactive controls */
+  .heading-anchor, .copy-code-btn, .copy-btn,
+  .comment-actions, .comment-form, .comment-filter-bar {
+    display: none !important;
+  }
+
+  /* Full-width content */
+  .main, .content-wrapper, .content {
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Typography */
+  body { font-size: 11pt; line-height: 1.55; }
+  h1, h2, h3, h4, h5, h6 {
+    color: #111 !important;
+    page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 15pt; margin-top: 18pt; }
+  h3 { font-size: 12.5pt; margin-top: 12pt; }
+
+  /* Links — readable in black-and-white too */
+  a { color: #0b57d0 !important; text-decoration: underline; }
+
+  /* Paragraphs & lists: keep short blocks together */
+  p, li, blockquote { orphans: 3; widows: 3; }
+
+  /* Code blocks — keep intact, wrap long lines, readable mono */
+  pre, code, kbd, samp {
+    background: #f5f5f5 !important;
+    color: #111 !important;
+  }
+  pre {
+    border: 1px solid #ddd !important;
+    padding: 8pt !important;
+    font-size: 9pt;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Override highlight.js dark theme for print */
+  pre code, pre code.hljs, .hljs {
+    background: #f5f5f5 !important;
+    color: #111 !important;
+  }
+  .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df !important; }
+  .hljs-string, .hljs-attr { color: #0a3069 !important; }
+  .hljs-comment { color: #6e7781 !important; font-style: italic; }
+  .hljs-number, .hljs-literal { color: #0550ae !important; }
+  .hljs-title, .hljs-function, .hljs-name { color: #953800 !important; }
+
+  /* Tables — crisp borders, don't break mid-row */
+  table {
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    width: 100% !important;
+  }
+  th, td {
+    border: 1px solid #999 !important;
+    color: #111 !important;
+    background: #ffffff !important;
+    padding: 4pt 6pt !important;
+  }
+  thead, thead tr, thead th { background: #eee !important; }
+  tr { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Blockquotes — used heavily for textbook definitions */
+  blockquote {
+    border-left: 3px solid #666 !important;
+    color: #333 !important;
+    background: #fafafa !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    padding: 6pt 10pt !important;
+    margin: 8pt 0 !important;
+  }
+
+  /* Images & KaTeX math — force black on every nested span/mathml node */
+  img, svg { max-width: 100% !important; page-break-inside: avoid; }
+  .katex, .katex *,
+  .katex-display, .katex-display *,
+  .katex-html, .katex-html *,
+  .katex-mathml, .katex-mathml * {
+    color: #111 !important;
+  }
+  .katex-display { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Highlights — keep on paper but tame the saturation */
+  mark, .hl-yellow { background: #fff3a0 !important; color: #111 !important; }
+  .hl-green       { background: #cdefc8 !important; color: #111 !important; }
+  .hl-blue        { background: #cfe4ff !important; color: #111 !important; }
+  .hl-pink        { background: #ffd4e5 !important; color: #111 !important; }
+
+  /* User notes/comments — include them in the PDF but styled for print */
+  .comment-item {
+    border: 1px solid #ccc !important;
+    background: #fafafa !important;
+    color: #111 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .comment-body, .comment-quote, .comment-date { color: #333 !important; }
 }

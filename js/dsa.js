@@ -433,6 +433,7 @@ function showDSAPractice() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
@@ -493,7 +494,7 @@ function showDSAPractice() {
           <div class="label">Solved</div>
         </div>
         <div class="dsa-stat">
-          <div class="num" style="color:#22c55e;">${easySolved}<small style="font-size:14px;opacity:0.5;">/${easyTotal}</small></div>
+          <div class="num" style="color:#3b82f6;">${easySolved}<small style="font-size:14px;opacity:0.5;">/${easyTotal}</small></div>
           <div class="label">Easy</div>
         </div>
         <div class="dsa-stat">
@@ -794,6 +795,7 @@ async function showDSAProblem(id) {
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('exportPdfBtn').style.display = 'none';
   pushHash('dsa-problem-' + id);
 
   const progress = getDSAProgress();
@@ -801,14 +803,20 @@ async function showDSAProblem(id) {
   const code = saved.code || problem.starterCode;
   const notes = saved.notes || '';
 
-  // Prev/Next navigation
-  const currentIdx = allProblems.findIndex(p => p.id === id);
-  const prevProblem = currentIdx > 0 ? allProblems[currentIdx - 1] : null;
-  const nextProblem = currentIdx < allProblems.length - 1 ? allProblems[currentIdx + 1] : null;
-
-  // Category progress
+  // Category progress + prev/next scoped to the filtered view the user just
+  // clicked from. The practice list numbers rows per-category within the
+  // active filter (#1…#N), so using the full global list here made the
+  // counter and arrows disagree with what the user saw. Fall back to the
+  // unfiltered category if this problem is filtered out (e.g. opened via
+  // direct hash).
   const catProblems = allProblems.filter(p => p.category === problem.category);
   const catSolved = catProblems.filter(p => progress[p.id]?.solved).length;
+  const visibleInCat = dsaApplyFilters(allProblems, progress)
+    .filter(p => p.category === problem.category);
+  const navList = visibleInCat.some(p => p.id === id) ? visibleInCat : catProblems;
+  const currentIdx = navList.findIndex(p => p.id === id);
+  const prevProblem = currentIdx > 0 ? navList[currentIdx - 1] : null;
+  const nextProblem = currentIdx < navList.length - 1 ? navList[currentIdx + 1] : null;
 
   // Restore timer from saved progress
   dsaTimerSeconds = saved.timerSeconds || 0;
@@ -835,10 +843,10 @@ async function showDSAProblem(id) {
         <button class="dsa-back-btn" onclick="showDSAPractice();">&#8592; All</button>
         <span class="dsa-diff-badge ${diffClass}" style="font-size:10px;">${problem.difficulty}</span>
         <h1 style="font-size:17px;font-weight:700;border:none;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${problem.title}</h1>
-        ${saved.solved ? '<span style="color:#22c55e;font-size:12px;font-weight:700;">&#10003;</span>' : ''}
+        ${saved.solved ? '<span class="dsa-solved-pill" title="Solved">&#10003; Solved</span>' : ''}
         <div class="dsa-nav-btns">
           <button class="dsa-nav-btn" onclick="showDSAProblem('${prevProblem ? prevProblem.id : ''}')" ${!prevProblem ? 'disabled' : ''} title="${prevProblem ? prevProblem.title : ''}">&#8592;</button>
-          <span class="dsa-nav-counter">${currentIdx + 1}/${allProblems.length}</span>
+          <span class="dsa-nav-counter" title="${problem.category}">${currentIdx + 1}/${navList.length}</span>
           <button class="dsa-nav-btn" onclick="showDSAProblem('${nextProblem ? nextProblem.id : ''}')" ${!nextProblem ? 'disabled' : ''} title="${nextProblem ? nextProblem.title : ''}">&#8594;</button>
         </div>
       </div>
@@ -893,7 +901,6 @@ async function showDSAProblem(id) {
               <span class="dsa-save-indicator" id="dsaSaveInd">Saved</span>
               <div class="actions">
                 <button onclick="dsaResetCode('${id}')" title="Reset to starter code">&#8635;</button>
-                <button onclick="dsaToggleSolved('${id}')" id="dsaSolveBtn" title="${saved.solved ? 'Solved' : 'Mark as solved'}">${saved.solved ? '&#10003;' : '&#9744;'}</button>
                 <button class="dsa-fs-btn" onclick="dsaToggleFullscreen()" id="dsaFsBtn" title="Fullscreen">&#x26F6;</button>
                 <button class="run-btn" onclick="dsaRunCode()" id="dsaRunBtn">&#9654; Run</button>
               </div>
@@ -1211,8 +1218,6 @@ function dsaToggleSolved(id) {
   const editor = document.getElementById('dsaCodeEditor');
   if (editor) progress[id].code = editor.value;
   saveDSAProgress(progress);
-  const btn = document.getElementById('dsaSolveBtn');
-  if (btn) btn.innerHTML = progress[id].solved ? '&#10003; Solved' : '&#9744; Mark Solved';
   if (progress[id].solved && interactiveMode) addXP(15, 'Solved DSA problem');
   // Update solved badge in hero card with relative date + absolute on hover
   const meta = document.querySelector('.dsa-problem-meta');
