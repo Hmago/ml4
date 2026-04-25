@@ -100,7 +100,6 @@ async function loadChapter(index) {
 
   document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
   document.getElementById('readBtn').style.display = ch.ref ? 'none' : '';
-  document.getElementById('exportPdfBtn').style.display = '';
   document.getElementById('focusBtn').style.display = '';
   document.getElementById('welcome')?.remove();
   renderSidebar();
@@ -438,6 +437,110 @@ function exportChapterToPDF() {
       if (wasFocused) toggleFocusMode();
     }, 500);
   }, 80);
+}
+
+// ─── Export a single chapter to PDF by index (works from dashboard) ───
+async function exportChapterPDFByIndex(index) {
+  const ch = chapters[index];
+  if (!ch || ch.section) return;
+
+  let md = cachedContent[ch.file];
+  if (!md) {
+    const res = await fetch(ch.file);
+    if (!res.ok) { alert('Failed to load ' + ch.file); return; }
+    md = await res.text();
+    cachedContent[ch.file] = md;
+  }
+  const mathProtected = protectMath(md);
+  const html = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
+
+  const printDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${ch.id} - ${ch.title}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+@page { size: A4; margin: 16mm 14mm 20mm 14mm; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #1f2328; background: #fff; font-size: 11pt; line-height: 1.6;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  padding: 0 8mm;
+}
+h1 { font-size: 20pt; font-weight: 700; color: #1f2328; padding-bottom: 8pt; border-bottom: 2px solid #d0d7de; margin: 0 0 12pt; page-break-after: avoid; }
+h2 { font-size: 15pt; font-weight: 600; color: #1f2328; margin: 18pt 0 8pt; padding-bottom: 4pt; border-bottom: 1px solid #d0d7de; page-break-after: avoid; }
+h3 { font-size: 12.5pt; font-weight: 600; color: #1f2328; margin: 14pt 0 6pt; page-break-after: avoid; }
+h4 { font-size: 11pt; font-weight: 600; color: #1f2328; margin: 10pt 0 4pt; }
+p { margin: 6pt 0; font-size: 11pt; line-height: 1.65; }
+a { color: #0969da; text-decoration: underline; }
+strong { color: #1f2328; }
+ul, ol { margin: 6pt 0; padding-left: 22pt; }
+li { margin: 3pt 0; font-size: 11pt; line-height: 1.6; }
+blockquote {
+  border-left: 3pt solid #0969da; padding: 8pt 14pt; margin: 8pt 0;
+  background: #f6f8fa; color: #656d76; font-style: italic;
+  page-break-inside: avoid;
+}
+code {
+  background: #f6f8fa; padding: 1px 5px; border-radius: 4px; font-size: 9.5pt;
+  font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid #d0d7de;
+}
+pre {
+  background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 10pt 14pt; margin: 8pt 0; font-size: 8.5pt; line-height: 1.5;
+  white-space: pre; overflow-wrap: break-word; page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; border: none; font-size: inherit; white-space: pre; }
+.hljs { background: #f6f8fa; color: #1f2328; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df; }
+.hljs-string, .hljs-attr { color: #0a3069; }
+.hljs-comment { color: #6e7781; font-style: italic; }
+.hljs-number, .hljs-literal { color: #0550ae; }
+.hljs-title, .hljs-function, .hljs-name { color: #953800; }
+table { display: table; width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 9.5pt; page-break-inside: avoid; }
+thead { display: table-header-group; }
+tbody { display: table-row-group; }
+tr { display: table-row; page-break-inside: avoid; }
+thead th { background: #f6f8fa; padding: 6pt 8pt; text-align: left; font-weight: 600; border: 1px solid #d0d7de; }
+tbody td { padding: 5pt 8pt; border: 1px solid #d0d7de; }
+tbody tr:nth-child(even) { background: #f6f8fa; }
+hr { border: none; border-top: 1px solid #d0d7de; margin: 16pt 0; }
+img, svg { max-width: 100%; page-break-inside: avoid; }
+details { margin: 8pt 0; border: 1px solid #d0d7de; border-radius: 8px; padding: 8pt 12pt; }
+details summary { font-weight: 600; color: #0969da; }
+.katex-display { margin: 10pt 0; padding: 10pt 14pt; background: #f6f8fa; border-radius: 8px; border-left: 3pt solid #0969da; page-break-inside: avoid; overflow: visible; }
+.katex { font-size: 0.95em; }
+mark { background: #fff3a0; color: #1f2328; }
+p, li, blockquote { orphans: 3; widows: 3; }
+</style>
+</head>
+<body>
+${html}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"><\/script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.hljs) document.querySelectorAll('pre code').forEach(function(b) { if (!b.classList.contains('hljs')) hljs.highlightElement(b); });
+  if (window.renderMathInElement) renderMathInElement(document.body, { delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false, trust:true });
+  setTimeout(function() { window.print(); }, 600);
+});
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([printDoc], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) { alert('Popup blocked — please allow popups for this site.'); URL.revokeObjectURL(url); return; }
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 
 // ─── Read Status ───
@@ -944,7 +1047,6 @@ loadChapter = async function(index) {
     trackChapterOpen(ch.file);
     document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
     document.getElementById('readBtn').style.display = '';
-    document.getElementById('exportPdfBtn').style.display = '';
     document.getElementById('tocPanel').classList.remove('visible');
     renderSidebar();
     closeSidebar();

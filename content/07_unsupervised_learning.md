@@ -1,156 +1,89 @@
-# Chapter 7 — Unsupervised Learning
+# Chapter 07 — Unsupervised Learning
 
 ---
 
 ## What You'll Learn
 
-After reading this chapter, you will be able to:
-- Explain what unsupervised learning is and how it differs from supervised learning
-- Describe the Curse of Dimensionality and why it matters
-- Compare K-Means, Hierarchical Clustering, DBSCAN, and GMM
-- Choose K using the Elbow method and Silhouette score
-- Explain PCA, t-SNE, and UMAP for dimensionality reduction
-- Identify anomalies using Isolation Forest
-- Understand self-supervised learning as a modern paradigm
+After this chapter you will be able to:
+- Distinguish unsupervised from supervised learning and name core task families
+- Explain why high-dimensional data breaks distance-based methods
+- Select among K-Means, Hierarchical, DBSCAN, and GMM for a given problem
+- Evaluate clusters with Silhouette, Elbow, and Davies-Bouldin metrics
+- Apply PCA, t-SNE, UMAP, and autoencoders for dimensionality reduction
+- Detect anomalies with Isolation Forest
+- Mine association rules with Apriori
+- Describe self-supervised learning and its role in modern AI
 
 ---
 
-## Chapter Map
+## 7.1 What is Unsupervised Learning?
 
-```
-  5.1  What is Unsupervised Learning?
-  5.2  The Curse of Dimensionality        — why high-D is hard             ★
-  5.3  Clustering Overview
-  5.4  K-Means Clustering
-  5.5  Hierarchical Clustering            — dendrograms, agglomerative      ★
-  5.6  DBSCAN
-  5.7  Gaussian Mixture Models            — soft/probabilistic clustering   ★
-  5.8  Evaluating Clusters                — silhouette score, elbow method  ★
-  5.9  Dimensionality Reduction Overview
-  5.10 PCA
-  5.11 t-SNE
-  5.12 UMAP                               — modern alternative to t-SNE     ★
-  5.13 Autoencoders                       — neural network compression       ★
-  5.14 Anomaly Detection                  — Isolation Forest, methods        ★
-  5.15 Association Rule Learning          — "people who buy X also buy Y"    ★
-  5.16 Self-Supervised Learning           — the modern paradigm              ★
-  5.17 Applications
-```
+> **Unsupervised learning** discovers hidden structure, patterns, or representations in data that carries no labeled responses. Core objectives include clustering, dimensionality reduction, density estimation, and generative modeling.
 
----
+Supervised learning gets a dataset of input-output pairs and learns the mapping. Unsupervised learning gets inputs only — no targets, no answer key. The algorithm must find structure on its own: which data points are similar, what the underlying distribution looks like, whether the data lives on a lower-dimensional surface.
 
-## 5.1 What is Unsupervised Learning?
-
-### Simple Explanation
-Imagine your teacher dumps a giant bag of Halloween candy on the table and says,
-"Sort these however you want!" Nobody tells you the categories. Nobody gives you
-labels. You look at the candy and start making piles on your own — maybe gummy
-bears in one pile, chocolate bars in another, and lollipops in a third. You figured
-out the groups all by yourself, just by looking at the candy.
-
-That is exactly what unsupervised learning does with data. The computer gets a big
-pile of information with **no labels and no answer key**. It has to look at the data,
-notice which things seem similar, and organize everything into groups on its own.
-
-Another way to think about it: unsupervised learning is like being handed a box of
-random LEGO bricks with no instructions — you organize them yourself. You might
-group by color, size, or shape. Nobody told you the right grouping exists —
-**you discover structure on your own**.
+This is closer to how humans learn most things. Nobody labeled every object you ever saw; you noticed that some things look alike and grouped them yourself.
 
 ```
   SUPERVISED                          UNSUPERVISED
   ────────────────────────────        ─────────────────────────────────
-  Data + Labels                       Data ONLY
-  Model learns to predict             Model discovers hidden structure
-  known outputs                       on its own
+  Data + Labels                       Data ONLY (no y)
+  Learns input → output mapping       Discovers hidden structure
+  Evaluated against ground truth       Evaluated by internal metrics
 
-  Like a student with                 Like a scientist exploring
-  an answer key                       an unmapped territory
+  Tasks:                              Tasks:
+  - Classification / Regression       - Clustering
+  - Sequence labeling                 - Dimensionality reduction
+                                      - Anomaly detection
+                                      - Density estimation
+                                      - Association rule mining
 
-  Example tasks:                      Example tasks:
-  - "Is this email spam?"             - "What types of customers do I have?"
-  - "Will this patient survive?"      - "Are there natural groups in my data?"
+  Examples:                           Examples:
+  "Is this email spam?" (label=yes)   "What customer segments exist?"
+  "Predict house price" (label=$)     "Compress images to fewer dims"
 ```
 
-**Official Definition:**
-> **Unsupervised Learning** discovers patterns, structure, or representations in data
-> without labeled responses. Goals include: finding clusters, learning a compact
-> representation, generating new samples, or estimating the underlying data distribution.
+```mermaid
+graph LR
+    A[Unlabeled Data] --> B{Unsupervised Learning}
+    B --> C[Clustering]
+    B --> D[Dimensionality Reduction]
+    B --> E[Anomaly Detection]
+    B --> F[Association Rules]
+    B --> G[Self-Supervised Pre-training]
+    C --> C1[K-Means / DBSCAN / GMM]
+    D --> D1[PCA / t-SNE / UMAP]
+    E --> E1[Isolation Forest / LOF]
+    F --> F1[Apriori / FP-Growth]
+    G --> G1[BERT / SimCLR / MAE]
+```
+
+**Real-world scale:** Google clusters billions of web pages for search indexing. Spotify groups users by listening behavior for playlist recommendations. Credit card companies flag anomalous transactions — all without labeled training data for the specific task.
 
 ---
 
-## 5.2 The Curse of Dimensionality ★
+## 7.2 The Curse of Dimensionality
 
-### Simple Explanation
-Picture this: you are playing hide-and-seek. If your friend can only hide along a
-single hallway, finding them is pretty easy — there are not many places to look. Now
-imagine they can hide anywhere on a huge football field. Much harder! Now imagine they
-can hide anywhere in a 100-story skyscraper, on any floor, in any room, behind any
-door. You would need a lifetime to search all those places.
+> **The curse of dimensionality** refers to the collection of phenomena that arise when analyzing data in high-dimensional spaces — phenomena that do not occur in low-dimensional settings, including data sparsity, distance concentration, and exponential growth of the volume to be sampled.
 
-That is what happens when you give a computer too many "features" (details) about
-your data. Each feature is like adding another direction your friend could hide in.
-With just 2 or 3 features, the computer can look around and find patterns easily.
-But with 100 or 1,000 features, the space becomes so unbelievably huge and empty
-that every data point is basically alone in the middle of nowhere, and the computer
-cannot tell what is "close" or "far" anymore.
+Add one feature and you add an entire axis. The volume of the space grows exponentially, but your dataset does not. With enough dimensions, every point becomes roughly equidistant from every other point, and distance-based algorithms (KNN, K-Means, DBSCAN) lose their discriminative power.
 
-Think of it like searching for a friend in a city. 1D = searching along one street
-(easy!). 2D = searching across an entire city grid (harder). 3D = searching every
-floor of every building (much harder). With 100 features, you are searching in
-100-dimensional space — there is so much empty space that data points are impossibly
-far apart.
+### Why Distances Break Down
 
-This is called the "curse of dimensionality" — adding more features makes every
-ML algorithm's job exponentially harder.
+Consider $n$ points uniformly distributed in a $d$-dimensional unit hypercube. The ratio of the maximum to minimum pairwise distance converges to 1 as $d \to \infty$:
 
-### What Happens as Dimensions Increase?
+$$\lim_{d \to \infty} \frac{\text{dist}_{\max} - \text{dist}_{\min}}{\text{dist}_{\min}} \to 0$$
+
+In practical terms: with 1,000 features, the "nearest" neighbor is barely closer than the "farthest" one. KNN's entire premise collapses.
 
 ```
-  Think of filling a space with evenly spaced dots:
+  Filling a space with evenly spaced points (10 per axis):
 
-  1D (a line — 1 feature):
-  ├──────────────────────────────────────────┤
-  10 evenly spaced dots → covers the line nicely ✓
-
-  2D (a square — 2 features):
-  ┌──────────────────────────┐
-  │  .  .  .  .  .  .  .  . │  Need 100 dots for the same coverage
-  │  .  .  .  .  .  .  .  . │
-  │  .  .  .  .  .  .  .  . │
-  └──────────────────────────┘
-
-  10D (10 features — impossible to draw):
-  Need 10^10 = 10 BILLION dots for the same density!
-
-  With 100 features:
-  Need 10^100 = more atoms than exist in the observable universe!
-```
-
-### Why This Hurts ML
-
-```
-  PROBLEM 1: Distance loses meaning
-  ─────────────────────────────────────────────────────────────
-  In low dimensions:                In high dimensions (1000 features):
-  Points that are "close"           ALL points are roughly the same
-  are meaningfully similar          distance from each other!
-
-  KNN breaks down because "nearest neighbor" becomes meaningless.
-
-  PROBLEM 2: Data becomes extremely sparse
-  ─────────────────────────────────────────────────────────────
-  In 2D, 1000 points feel dense.
-  In 100D, 1000 points are tiny isolated islands in a vast void.
-  The model sees almost no examples "near" any new data point.
-
-  PROBLEM 3: Model training needs exponentially more data
-  ─────────────────────────────────────────────────────────────
-  Roughly need at least 5 examples per dimension.
-  10 features  → need 50 examples
-  100 features → need 500 examples
-  1000 features → need 5,000 examples
-  10000 features → need 50,000 examples
+  1D (line):      10 points suffice
+  2D (square):    10² = 100 points
+  3D (cube):      10³ = 1,000 points
+  10D:            10¹⁰ = 10 billion points
+  100D:           10¹⁰⁰ — more than atoms in the universe
 ```
 
 ```chart
@@ -159,15 +92,15 @@ ML algorithm's job exponentially harder.
   "data": {
     "labels": ["10 features", "100 features", "1,000 features", "10,000 features"],
     "datasets": [{
-      "label": "Minimum Examples Needed (~5× dimensions)",
-      "data": [50, 500, 5000, 50000],
+      "label": "Approx. Minimum Training Examples (~5-10x dims)",
+      "data": [100, 1000, 10000, 100000],
       "backgroundColor": ["rgba(34,197,94,0.7)","rgba(99,102,241,0.7)","rgba(234,88,12,0.7)","rgba(239,68,68,0.7)"],
       "borderColor": ["rgba(34,197,94,1)","rgba(99,102,241,1)","rgba(234,88,12,1)","rgba(239,68,68,1)"],
       "borderWidth": 1
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Curse of Dimensionality — More Features = Exponentially More Data Needed" } },
+    "plugins": { "title": { "display": true, "text": "Curse of Dimensionality — Data Requirements Grow with Feature Count" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Examples Needed" }, "beginAtZero": true },
       "x": { "title": { "display": true, "text": "Number of Features" } }
@@ -176,97 +109,56 @@ ML algorithm's job exponentially harder.
 }
 ```
 
-### Solutions
+### Remedies
+
+| Strategy | How it helps |
+|---|---|
+| **Feature selection** | Remove uninformative or redundant features |
+| **PCA / UMAP** | Project to a lower-dimensional subspace |
+| **Regularization** | Penalize model complexity, implicitly reduce effective dimensionality |
+| **Collect more data** | Fill the space more densely |
+| **Domain knowledge** | Engineer fewer, more meaningful features |
+
+---
+
+## 7.3 Clustering Overview
+
+> **Clustering** partitions a dataset into groups (clusters) such that objects within a cluster are more similar to each other than to objects in other clusters. The definition of "similar" depends on the chosen distance metric and algorithm.
+
+Clustering is probably the most intuitive unsupervised task. You hand the algorithm unlabeled data, and it discovers natural groupings. Customer segmentation, document topic grouping, image categorization, gene expression profiling — all clustering problems.
+
+### Taxonomy of Clustering Methods
 
 ```
-  ┌────────────────────────────────────────────────────────────┐
-  │  1. Feature Selection  — remove uninformative features     │
-  │  2. PCA / UMAP         — compress to fewer dimensions      │
-  │  3. Regularization     — penalize using many features      │
-  │  4. More data          — fill the space better             │
-  │  5. Domain knowledge   — engineer meaningful features      │
-  └────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│  PARTITIONAL         K-Means, K-Medoids                            │
+│  Each point assigned to exactly one cluster. Must specify K.       │
+├────────────────────────────────────────────────────────────────────┤
+│  HIERARCHICAL        Agglomerative, Divisive                       │
+│  Builds a tree of nested clusters. No need to pre-specify K.      │
+├────────────────────────────────────────────────────────────────────┤
+│  DENSITY-BASED       DBSCAN, HDBSCAN, OPTICS                      │
+│  Clusters = dense regions. Finds arbitrary shapes. Marks noise.    │
+├────────────────────────────────────────────────────────────────────┤
+│  MODEL-BASED         GMM (Gaussian Mixture Models)                 │
+│  Each cluster is a probability distribution. Soft assignments.     │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5.3 Clustering Overview
+## 7.4 K-Means Clustering
 
-### Simple Explanation
-Imagine you walk into a messy playroom where hundreds of toys are scattered all over
-the floor. Nobody labeled them, but you can see that some toys naturally belong
-together — all the action figures here, all the stuffed animals over there, and all
-the building blocks in that corner. You did not need anyone to tell you which group
-each toy belonged to; you just looked at them and noticed which ones were similar.
+> **K-Means** partitions $n$ observations into $K$ clusters by iteratively assigning each point to the nearest centroid and recomputing centroids as the mean of assigned points, minimizing the within-cluster sum of squares (WCSS / inertia):
+>
+> $$J = \sum_{k=1}^{K} \sum_{x_i \in C_k} \| x_i - \mu_k \|^2$$
 
-Clustering is exactly that: the computer looks at a pile of data and figures out
-which items naturally belong together based on how similar they are. It is like being
-the kid who organizes the playroom without anyone giving instructions.
+The algorithm is dead simple. Place K center points (centroids). Assign every data point to its nearest centroid. Move each centroid to the mean of its assigned points. Repeat until nothing changes. That is the entire algorithm.
 
-### What is Clustering?
+### The Algorithm Step by Step
 
 ```
-  BEFORE:                                AFTER:
-  ────────────────────────────           ─────────────────────────────────
-  . * . * . . * .                        ●●●●● ■■■  ▲▲▲▲
-  * . . * . *                            ●●●●● ■■■  ▲▲▲▲
-  . . * * . * .      →                   ●●●   ■■■■ ▲▲
-  . . * .   .                            ●●●   ■■■  ▲▲▲
-  * . . . * * .                          ●●●   ■■■  ▲▲▲▲
-
-  No labels known!                       Groups discovered automatically!
-                                         ● = Customer segment A
-                                         ■ = Customer segment B
-                                         ▲ = Customer segment C
-```
-
-### Types of Clustering
-
-```
-  ┌────────────────────────────────────────────────────────────────────┐
-  │  PARTITIONAL         K-Means, GMM                                  │
-  │  Each point belongs to exactly one cluster.                        │
-  │  Fast, works well for globular clusters.                           │
-  ├────────────────────────────────────────────────────────────────────┤
-  │  HIERARCHICAL        Agglomerative, Divisive                       │
-  │  Builds a TREE of clusters at multiple scales.                    │
-  │  No need to pre-specify K. Produces a dendrogram.                  │
-  ├────────────────────────────────────────────────────────────────────┤
-  │  DENSITY-BASED       DBSCAN, HDBSCAN                               │
-  │  Finds arbitrarily shaped clusters. Identifies noise/outliers.    │
-  ├────────────────────────────────────────────────────────────────────┤
-  │  SOFT / PROBABILISTIC  GMM                                         │
-  │  Each point has a PROBABILITY of belonging to each cluster.        │
-  │  (rather than a hard assignment)                                   │
-  └────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 5.4 K-Means Clustering ★★
-
-### Simple Explanation
-Imagine you are at recess and the teacher says, "We need 3 team captains." Three kids
-walk out to different spots on the playground and hold up colored flags — red, blue,
-and green. Then the teacher shouts, "Everyone run to the flag closest to you!" All the
-kids sprint to their nearest flag, forming three groups. But the groups do not look
-quite right, so each captain walks to the exact middle of their group and holds the
-flag up again. Everyone looks around, and some kids realize they are actually closer to
-a different flag now, so they switch teams. The captains move to the center of their
-new groups again. This keeps happening until everyone stays put and nobody wants to
-switch anymore.
-
-That is K-Means! The "flags" are called centroids (the center of each group), and
-the algorithm keeps moving them to the middle of their group and reassigning points
-until everything settles down.
-
-In short: place K flags on a field, everyone runs to their nearest flag, move flags
-to the center of their group, and repeat until nobody moves.
-
-### The Algorithm
-
-```
-  STEP 1: Initialize K centroids (randomly or K-means++)
+  STEP 1: Initialize K centroids (randomly or via K-Means++)
   ┌──────────────────────────────────────────────────┐
   │  . . . .  ★₁                                     │
   │  . . .                                           │
@@ -277,261 +169,160 @@ to the center of their group, and repeat until nobody moves.
 
   STEP 2: Assign each point to nearest centroid
   ┌──────────────────────────────────────────────────┐
-  │  ● ● ● ●  ★₁      ● = assigned to cluster 1     │
-  │  ● ● ●             ■ = assigned to cluster 2     │
-  │  ▲ ▲ ▲ ▲      ★₂  ▲ = assigned to cluster 3     │
+  │  ● ● ● ●  ★₁      ● = cluster 1                  │
+  │  ● ● ●             ■ = cluster 2                  │
+  │  ▲ ▲ ▲ ▲      ★₂  ▲ = cluster 3                  │
   │  ■ ■ ■  ★₃                                       │
   │  ■ ■ ■ ■ ■                                       │
   └──────────────────────────────────────────────────┘
 
-  STEP 3: Move each centroid to mean of its cluster
+  STEP 3: Recompute centroids as cluster means
   ┌──────────────────────────────────────────────────┐
   │  ● ● ● ●                                         │
-  │  ● ●★₁●   ← centroid moved to center of ●s       │
+  │  ● ●★₁●   ← centroid moves to center of ●s       │
   │  ▲ ▲ ▲ ▲                                         │
-  │  ■ ■ ■★₃  ← centroid moved to center of ■s       │
+  │  ■ ■ ■★₃                                         │
   │  ■ ■ ■ ■ ■                                       │
-  │  ▲ ▲★₂▲   ← centroid moved to center of ▲s       │
+  │  ▲ ▲★₂▲                                          │
   └──────────────────────────────────────────────────┘
 
-  STEP 4: Repeat steps 2–3 until centroids stop moving
+  STEP 4: Repeat steps 2-3 until convergence
+          (centroids stop moving / assignments stable)
 ```
 
-**Official Definition:**
-> **K-Means** partitions n observations into K clusters by minimizing the within-cluster
-> sum of squared distances (inertia). It alternates between assigning points to the
-> nearest centroid and recomputing centroids as cluster means until convergence.
+### Worked Example — Customer Segmentation
 
-### Choosing K — Elbow Method
+Suppose we have 6 customers described by two features: annual spending ($K) and visit frequency (visits/month).
 
-$$\text{Inertia} = \sum (\text{distance from each point to its centroid})^2$$
+| Customer | Spending | Visits |
+|---|---|---|
+| A | 10 | 2 |
+| B | 12 | 3 |
+| C | 50 | 8 |
+| D | 55 | 9 |
+| E | 30 | 5 |
+| F | 32 | 6 |
 
-```
-  Lower inertia = tighter, better-defined clusters
+**K=2, random init:** $\mu_1 = A = (10,2)$, $\mu_2 = D = (55,9)$.
 
-  Inertia
-     │
-  20K│ ●
-     │  ●
-  15K│    ●
-     │      ●
-  10K│        ●
-     │           ● ●
-   5K│                 ● ● ● ● ←  adding more K gives little benefit
-     └────────────────────────────── K
-         1  2  3  4  5  6  7  8
+**Iteration 1 — Assign:**
+- $d(B, \mu_1) = \sqrt{(12-10)^2+(3-2)^2} = \sqrt{5} \approx 2.2$ → Cluster 1
+- $d(E, \mu_1) = \sqrt{(30-10)^2+(5-2)^2} = \sqrt{409} \approx 20.2$; $d(E, \mu_2) = \sqrt{(30-55)^2+(5-9)^2} = \sqrt{641} \approx 25.3$ → Cluster 1
+- $d(F, \mu_1) \approx 22.4$; $d(F, \mu_2) \approx 23.2$ → Cluster 1
+- C, D → Cluster 2
 
-              ↑ "elbow" at K=4 → choose K=4
-```
+Cluster 1 = {A, B, E, F}, Cluster 2 = {C, D}
 
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [1, 2, 3, 4, 5, 6, 7, 8],
-    "datasets": [{
-      "label": "Inertia (within-cluster distance)",
-      "data": [20000, 17000, 14000, 10000, 8000, 6500, 5800, 5500],
-      "borderColor": "rgba(99, 102, 241, 1)",
-      "backgroundColor": "rgba(99, 102, 241, 0.1)",
-      "fill": true,
-      "tension": 0.3,
-      "pointRadius": 5,
-      "pointBackgroundColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(239,68,68,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"]
-    }]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Elbow Method — Inertia Drops Steeply Then Flattens (Elbow at K=4)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Inertia" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "Number of Clusters (K)" } }
-    }
-  }
-}
-```
+**Recompute centroids:** $\mu_1 = (\frac{10+12+30+32}{4}, \frac{2+3+5+6}{4}) = (21, 4)$, $\mu_2 = (52.5, 8.5)$
 
-### K-Means++ — Better Initialization
+**Iteration 2 — Reassign with new centroids:** E and F are now closer to $\mu_1=(21,4)$ at distances ~9.1 and ~11.2 respectively, vs ~25 and ~23 to $\mu_2$. Assignments stable → converged.
+
+Final clusters: **Budget shoppers** {A, B, E, F} and **Premium shoppers** {C, D}.
+
+### K-Means++ Initialization
+
+Standard random initialization can place centroids close together, leading to poor convergence. K-Means++ fixes this:
+
+1. Choose the first centroid uniformly at random from data points
+2. For each remaining point, compute $D(x)$ = distance to nearest existing centroid
+3. Choose next centroid with probability proportional to $D(x)^2$
+4. Repeat until K centroids are chosen
+
+This spreads centroids apart, yielding 2-10x faster convergence and consistently better results. It is the default in scikit-learn.
+
+### Strengths and Limitations
 
 ```
-  Problem with random initialization: centroids may start close
-  together → slow convergence or poor result.
-
-  K-Means++ solution: spread initial centroids apart!
-
-  Step 1: Choose first centroid randomly from data points
-  Step 2: Choose next centroid with probability ∝ distance²
-          from nearest existing centroid
-          (far-away points are more likely to be chosen)
-  Step 3: Repeat until K centroids chosen
-  Step 4: Proceed normally
-
-  Result: 2-10× faster convergence, consistently better clusters
-  This is the default in scikit-learn.
-```
-
-**Strengths / Weaknesses:**
-```
-  ✓ Simple and fast (O(nKI) — n points, K clusters, I iterations)
-  ✓ Scales to large datasets
-  ✓ Works well when clusters are roughly globular, equal-sized
+  ✓ Simple, fast — O(nKI) for n points, K clusters, I iterations
+  ✓ Scales to millions of points
+  ✓ Well-understood, deterministic given fixed init
   ✗ Must specify K in advance
+  ✗ Assumes spherical, equally-sized clusters
   ✗ Sensitive to outliers (outliers pull centroids)
-  ✗ Assumes globular (circular/spherical) clusters
-  ✗ Results vary with initialization (run multiple times!)
+  ✗ Finds only convex cluster boundaries
+  ✗ Result depends on initialization (run multiple times)
 ```
 
 ---
 
-## 5.5 Hierarchical Clustering ★
+## 7.5 Hierarchical Clustering
 
-### Simple Explanation
-Think about how your school organizes a buddy system on the first day. At the start,
-every single kid stands alone. Then the teacher says, "Find the person standing closest
-to you and pair up." Now you have lots of pairs. Next the teacher says, "Each pair,
-find the closest other pair and form a group of four." Then groups of four join into
-groups of eight, and so on — until the whole class is one giant group.
+> **Agglomerative hierarchical clustering** starts with each observation as a singleton cluster and iteratively merges the two closest clusters until a single cluster remains. The merge history forms a binary tree called a **dendrogram**, which can be cut at any height to produce a partition into $K$ clusters.
 
-The cool part is that you can "rewind" this at any point. Want 4 groups? Rewind to
-when there were 4 clusters. Want 8 groups? Rewind a little more. It is like building
-a family tree of who joined up with whom, and you can "cut" the tree wherever you
-want to get as many groups as you need.
+The big advantage: you do not need to specify K upfront. Build the full tree, then cut it wherever makes sense. The dendrogram gives you a view of cluster structure at every granularity simultaneously.
 
-Instead of picking K (the number of groups) upfront, hierarchical clustering builds
-this family tree of clusters. You can cut the tree at any height to get any number
-of groups.
-
-### Agglomerative (Bottom-Up) Clustering
+### Agglomerative Algorithm
 
 ```
-  START: every point is its own cluster
-  ─────────────────────────────────────
-  Points: A  B  C  D  E
+  START: n singleton clusters {A}, {B}, {C}, {D}, {E}
 
-  Step 1: Merge the two CLOSEST points/clusters
-          A  B merged (they were nearest) → [AB]
-          [AB]  C  D  E
-
-  Step 2: Merge next closest pair
-          C  D merged → [CD]
-          [AB]  [CD]  E
-
-  Step 3: Merge next
-          [AB] merges with [CD] → [ABCD]
-          [ABCD]  E
-
-  Step 4: Final merge
-          [ABCD]  E → [ABCDE] (entire dataset)
+  Step 1: Merge two closest → {A,B}    (dist=1.2)
+  Step 2: Merge two closest → {C,D}    (dist=1.5)
+  Step 3: Merge {A,B} + {E}  → {A,B,E} (dist=2.8)
+  Step 4: Merge {A,B,E} + {C,D} → all  (dist=4.1)
 ```
 
-### The Dendrogram — Reading the Tree
+### Reading the Dendrogram
 
 ```
-  HEIGHT
-  (distance
-  between     │           ┌─────────────────────────────┐
-  merged      │           │ CUT HERE → 2 clusters        │
-  clusters)   │     ┌─────┤                             ├──────┐
-              │     │     └─────────────────────────────┘      │
-            3 │  ┌──┴──┐                                    ┌──┴──┐
-              │  │     │                                    │     │
-            2 │ ┌┴┐  ┌─┴─┐                                ┌┴┐  ┌─┴─┐
-              │ │ │  │   │                                │ │  │   │
-            1 │ A B  C   D                                E F  G   H
-
-              Choose where to CUT the dendrogram:
-              ─────────────────────────────────────────────────
-              Cut at height 4 → 2 clusters: {A,B,C,D} and {E,F,G,H}
-              Cut at height 2 → 4 clusters: {A,B}, {C,D}, {E,F}, {G,H}
-              Cut at height 1 → 8 clusters: each point alone
-
-              The dendrogram lets you explore ALL possible K
-              without re-running the algorithm!
+  HEIGHT (merge distance)
+     │
+   4 │         ┌───────────────────────────────────────┐
+     │         │              CUT HERE → 2 clusters     │
+   3 │    ┌────┤                                       │
+     │    │    └─────────────────────────────┐          │
+   2 │  ┌─┴──┐                            ┌──┴──┐     │
+     │  │    │                            │     │     │
+   1 │  A    B                            C     D     E
+     │
+     └────────────────────────────────────────────────────
+       Cut at height 3 → 2 clusters: {A,B} and {C,D,E}
+       Cut at height 1.5 → 3 clusters: {A,B}, {C,D}, {E}
 ```
 
-**Official Definition:**
-> **Agglomerative Hierarchical Clustering** starts with n singleton clusters and
-> iteratively merges the two closest clusters until one cluster remains. The merge
-> history forms a binary tree called a dendrogram.
+### Linkage Criteria
 
-### Linkage Criteria — How to Measure "Closest Clusters"
+How do you measure the "distance" between two clusters containing multiple points?
 
-```
-  When merging clusters, "distance between clusters" is ambiguous.
-  Different linkage methods give very different results:
+| Linkage | Definition | Behavior |
+|---|---|---|
+| **Single** | $\min$ distance between any two points | Chaining effect; elongated clusters |
+| **Complete** | $\max$ distance between any two points | Compact, equal-sized clusters |
+| **Average** | Mean of all pairwise distances | Compromise between single and complete |
+| **Ward's** | Merge pair that minimizes total within-cluster variance | Tends to produce equal-sized, spherical clusters; best general default |
 
-  ┌────────────────┬──────────────────────────────────────────────────┐
-  │ SINGLE LINKAGE │ Distance = closest pair of points                 │
-  │                │ ● ─ ─ ─ ─ ─ ─ ─ ─ ●   ─ ─ ─ ─ ─ ─ ─ ○         │
-  │                │ Tends to produce "chained" elongated clusters    │
-  ├────────────────┼──────────────────────────────────────────────────┤
-  │ COMPLETE       │ Distance = farthest pair of points               │
-  │ LINKAGE        │ ● ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ○       │
-  │                │ Tends to produce compact, equal-sized clusters   │
-  ├────────────────┼──────────────────────────────────────────────────┤
-  │ AVERAGE        │ Distance = mean of all pairwise distances         │
-  │ LINKAGE        │ Compromise between single and complete           │
-  ├────────────────┼──────────────────────────────────────────────────┤
-  │ WARD'S METHOD  │ Merge clusters that increase total inertia least │
-  │ (default)      │ Tends to produce equal-sized, compact clusters   │
-  │                │ Best general-purpose choice                      │
-  └────────────────┴──────────────────────────────────────────────────┘
-```
+**Complexity:** $O(n^3)$ time, $O(n^2)$ memory for the distance matrix. This makes hierarchical clustering impractical beyond ~10,000 points. For larger data, use K-Means or DBSCAN as a first pass.
 
 ---
 
-## 5.6 DBSCAN — Density-Based Clustering ★
+## 7.6 DBSCAN
 
-### Simple Explanation
-Imagine looking down at a playground from a helicopter. You can see clumps of kids
-playing together — a big group at the swings, a circle of kids near the sandbox, and
-some more at the slide. But there are also a few kids just wandering around by
-themselves, far away from everyone else.
+> **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** groups together points that are closely packed — defined by a minimum number of points ($\text{minPts}$) within a radius ($\varepsilon$). Points in low-density regions are labeled as noise. It requires no pre-specification of the number of clusters and can discover clusters of arbitrary shape.
 
-DBSCAN works like that helicopter view. It looks for areas where data points are
-**crowded together** (like the kids at the swings) and calls those groups "clusters."
-The lonely kids standing by themselves? DBSCAN calls them "noise" — they do not
-belong to any group.
+K-Means forces you to choose K and assumes round clusters. DBSCAN says: "clusters are dense regions separated by sparse regions." It figures out how many clusters exist, finds them regardless of shape, and explicitly marks outliers as noise.
 
-The really cool thing is that DBSCAN does not care what shape the group makes. The
-kids at the swings might form a line, the kids at the sandbox might form a circle —
-DBSCAN finds them all. It just cares about where things are packed close together.
-
-DBSCAN finds groups based on **density** — regions where points are packed close
-together. It can find clusters of any shape and explicitly marks isolated points as
-**noise**.
-
-### Three Types of Points
+### Three Point Types
 
 ```
-  ┌────────────────────────────────────────────────────────────────┐
-  │                                                                │
-  │  CORE POINT (●):  Has ≥ minPts neighbors within radius ε      │
-  │                   The "dense center" of a cluster             │
-  │                                                                │
-  │  BORDER POINT (○): Has < minPts neighbors within ε,           │
-  │                    but IS within ε of a core point            │
-  │                   "On the edge" of a cluster                   │
-  │                                                                │
-  │  NOISE POINT (×):  Not within ε of any core point             │
-  │                   Doesn't belong to any cluster               │
-  │                                                                │
-  └────────────────────────────────────────────────────────────────┘
+  CORE POINT (●):  ≥ minPts neighbors within radius ε
+                   Forms the backbone of a cluster
 
-  Example (minPts=3, ε=1 unit):
+  BORDER POINT (○): < minPts neighbors within ε,
+                    but within ε of at least one core point
+                    Lives on the edge of a cluster
 
-  Before:                   After:
-  * * * * * *               ■ ■ ■ ■ ■ ■  ← cluster 1 (dense region)
-  * * * * *                 ■ ■ ■ ■ ■
-  * * *                     ■ ■ ■
-  * * * * * *    * *         ● ● ● ● ● ●  ← cluster 2
-  * * * *                   ● ● ● ●
-                *            ×            ← noise (isolated point)
+  NOISE POINT (×):  Not within ε of any core point
+                    Belongs to no cluster — an outlier
 ```
 
-**Official Definition:**
-> **DBSCAN** groups points that are closely packed (high density) and marks outliers in
-> low-density regions as noise. It requires two parameters: ε (neighborhood radius) and
-> minPts (minimum points to form a dense region).
+### Algorithm
+
+1. Pick an unvisited point $p$.
+2. Find all points within distance $\varepsilon$ of $p$.
+3. If $|\text{neighbors}| \geq \text{minPts}$, $p$ is a **core point** — start a new cluster. Expand the cluster by recursively adding all density-reachable points.
+4. If $|\text{neighbors}| < \text{minPts}$ and $p$ is within $\varepsilon$ of a core point, mark $p$ as a **border point**.
+5. Otherwise, mark $p$ as **noise**.
+6. Repeat until all points visited.
 
 ### DBSCAN vs K-Means
 
@@ -539,157 +330,92 @@ together. It can find clusters of any shape and explicitly marks isolated points
 ┌──────────────────────────┬────────────────────────────────────┐
 │ K-Means                  │ DBSCAN                             │
 ├──────────────────────────┼────────────────────────────────────┤
-│ Must specify K           │ K is automatic (density decides)   │
-│ Only globular clusters   │ Finds ANY shape cluster            │
-│ All points assigned       │ Noise points explicitly flagged    │
+│ Must specify K           │ K discovered automatically         │
+│ Only convex clusters     │ Arbitrary shape clusters           │
+│ All points assigned      │ Noise points explicitly flagged    │
 │ Sensitive to outliers    │ Robust to outliers                 │
-│ Fast: O(nKI)             │ Slower: O(n log n) with indexing   │
-│ Deterministic*           │ Deterministic (border pts vary)    │
+│ O(nKI) — very fast       │ O(n log n) with spatial indexing   │
+│ Deterministic (given init)│ Deterministic (border pts may vary)│
 └──────────────────────────┴────────────────────────────────────┘
 
-Cluster shapes DBSCAN handles that K-Means cannot:
+  Shapes DBSCAN handles that K-Means cannot:
 
-   Ring:         Crescents:    Interleaved:
-   ·●●●●·        ·●●●·         ●●●  ○○○
-  ●·····●         ·●●●·  ○○○  ●●●  ○○○
-  ●·····●         ·●●●·   ○○○  ●●●  ○○○
-   ·●●●●·        ·●●●·
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Specify K?", "Cluster Shape", "Handles Outliers", "Speed", "Deterministic"],
-    "datasets": [
-      {
-        "label": "K-Means",
-        "data": [1, 2, 1, 5, 5],
-        "backgroundColor": "rgba(99, 102, 241, 0.7)",
-        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
-      },
-      {
-        "label": "DBSCAN",
-        "data": [5, 5, 5, 3, 4],
-        "backgroundColor": "rgba(234, 88, 12, 0.7)",
-        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "K-Means vs DBSCAN — DBSCAN Wins on Flexibility, K-Means on Speed" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Rating (5=best)" }, "beginAtZero": true, "max": 5 },
-      "x": {}
-    }
-  }
-}
+   Ring:          Crescents:       Interleaved spirals:
+   ·●●●●·          ●●●              ●●●   ○○○
+  ●·····●          ●●●●  ○○○       ●●●  ○○○
+  ●·····●          ●●●●   ○○○     ●●●  ○○○
+   ·●●●●·          ●●●
 ```
 
 ### Choosing ε and minPts
 
+**Rule of thumb for minPts:** $2 \times d$ where $d$ = number of dimensions. For 2D data, minPts = 4 is a common starting point.
+
+**Choosing ε with a k-distance plot:**
+1. For each point, compute the distance to its $k$-th nearest neighbor (where $k = \text{minPts}$).
+2. Sort these distances in ascending order and plot.
+3. The "elbow" in the plot suggests a good ε.
+
 ```
-  Rule of thumb for minPts:
-  → Use minPts = 2 × dimensions (e.g., 2D data → minPts = 4)
-
-  Choose ε using a k-distance plot:
-  1. For each point, compute distance to its k-th nearest neighbor
-  2. Sort and plot these distances
-  3. Look for the "elbow" — that's your ε
-
   k-distance
-     │                           ● ← ε too large (one big cluster)
-  0.8│                       ● ●
-  0.6│                   ● ●        ← good ε (elbow here!)
+     │                           ●
+  0.8│                       ● ●      ← noise (large k-dist)
+  0.6│                   ● ●          ← elbow → ε ≈ 0.5
   0.4│               ●●
-  0.2│      ●●●●●●●●
+  0.2│      ●●●●●●●●                 ← dense cluster points
      └─────────────────────────── points (sorted)
 ```
 
+**Real-world use case:** geographic clustering of delivery addresses into zones. Addresses form arbitrary shapes around cities — DBSCAN naturally captures this while labeling remote rural addresses as noise.
+
 ---
 
-## 5.7 Gaussian Mixture Models (GMM) ★
+## 7.7 Gaussian Mixture Models
 
-### Simple Explanation
-Say your class is voting on favorite ice cream flavors: chocolate, vanilla, and
-strawberry. With K-Means, you HAVE to pick one — "I choose chocolate." End of story.
-But what if you really like chocolate AND vanilla almost equally, and strawberry a
-little bit too? GMM lets you say that! "I am 50% chocolate, 40% vanilla, and 10%
-strawberry."
+> A **Gaussian Mixture Model (GMM)** represents the data distribution as a weighted sum of $K$ multivariate Gaussian distributions. Each component $k$ has parameters $(\pi_k, \mu_k, \Sigma_k)$ — mixing weight, mean, and covariance. Training uses the Expectation-Maximization (EM) algorithm to maximize data likelihood.
 
-GMM is like being allowed to split your vote. Instead of forcing every data point
-into one single group, GMM says, "This data point is 70% likely to be in Group A,
-25% likely to be in Group B, and 5% likely to be in Group C." It understands that
-some things are on the border between groups and handles that gracefully.
+$$p(x) = \sum_{k=1}^{K} \pi_k \;\mathcal{N}(x \mid \mu_k, \Sigma_k)$$
 
-In short: K-Means makes hard assignments ("This point belongs to cluster 2"), while
-GMM makes soft assignments ("This point is 70% cluster 2, 25% cluster 3, 5% cluster 1").
-
-```
-  K-MEANS (hard assignment):          GMM (soft / probabilistic):
-  ────────────────────────────        ──────────────────────────────────
-  Point ★ belongs to cluster A.       Point ★ belongs to:
-                                        Cluster A with prob 0.75
-     ● ● ● ★ ○ ○ ○                     Cluster B with prob 0.20
-         A | B                          Cluster C with prob 0.05
-                                      It's near the boundary — GMM
-                                      expresses this uncertainty!
-```
-
-### What is a Gaussian Mixture?
-
-```
-  Each cluster is modeled as a Gaussian (bell curve) distribution,
-  defined by its mean (center) and covariance (shape/size/rotation).
-
-  1D example — two overlapping clusters:
-
-  Probability
-  Density
-     │          ╭──╮           ← Cluster A (mean=2, std=0.8)
-     │         /    \
-     │    ╭──╮/      \╭──╮    ← Cluster B (mean=5, std=1.2)
-     │   /    X        X  \
-     │  /     \       /    \
-     └─────────────────────── x
-         1   2   3   4   5   6
-
-  The X marks are overlapping regions — points there could
-  plausibly belong to either cluster.
-  GMM assigns PROBABILITIES instead of forcing a binary choice.
-```
-
-**Official Definition:**
-> A **Gaussian Mixture Model (GMM)** represents the data distribution as a weighted sum of
-> K Gaussian distributions. It is trained with the Expectation-Maximization (EM) algorithm
-> to find cluster means, covariances, and mixing weights that maximize data likelihood.
+K-Means makes a hard assignment: each point belongs to exactly one cluster. GMM makes a soft assignment: each point has a probability of belonging to each cluster. A customer near the boundary of two segments is not forced into one — GMM says "65% segment A, 35% segment B." This is more honest and more useful.
 
 ### GMM vs K-Means
 
 ```
-┌────────────────────────┬──────────────────────────────────────────┐
-│ K-Means                │ GMM                                      │
-├────────────────────────┼──────────────────────────────────────────┤
-│ Hard cluster assignment│ Soft (probabilistic) assignment          │
-│ Circular clusters only │ Elliptical clusters (any shape/rotation) │
-│ Minimizes inertia      │ Maximizes data likelihood (log-likelihood)│
-│ Fast (simple update)   │ Slower (EM algorithm)                    │
-│ Deterministic          │ May converge to local optima             │
-│ No uncertainty output  │ Outputs cluster probabilities per point  │
-└────────────────────────┴──────────────────────────────────────────┘
+  K-Means (hard):                   GMM (soft):
+  ────────────────────────          ────────────────────────────
+  Point ★ → cluster A.             Point ★:
+                                      P(cluster A) = 0.70
+     ● ● ● ★ ○ ○ ○                   P(cluster B) = 0.25
+         A | B                        P(cluster C) = 0.05
 
-Use GMM when:
-  - Clusters overlap significantly
-  - You need uncertainty estimates (not hard assignments)
-  - Clusters are elliptical (not round)
-  - You want a proper probabilistic model of your data
+  A boundary point is crammed       Uncertainty is explicit.
+  into one cluster with no           This is a proper probabilistic
+  indication it was close.           model.
 ```
+
+| Property | K-Means | GMM |
+|---|---|---|
+| Assignment | Hard (one cluster) | Soft (probabilities) |
+| Cluster shape | Spherical | Elliptical (full covariance) |
+| Objective | Minimize inertia | Maximize log-likelihood |
+| Algorithm | Lloyd's | Expectation-Maximization |
+| Speed | Faster | Slower (matrix ops per iteration) |
+| Output | Cluster labels | Cluster probabilities per point |
+| Model selection | Elbow / Silhouette | BIC / AIC |
+
+### The EM Algorithm (Intuition)
+
+1. **E-step (Expectation):** Given current parameters, compute the probability that each point belongs to each Gaussian ("responsibilities").
+2. **M-step (Maximization):** Given responsibilities, update each Gaussian's mean, covariance, and mixing weight to maximize likelihood.
+3. Repeat until log-likelihood converges.
+
+This is a generalization of K-Means. If you constrain all covariances to $\sigma^2 I$ and take hard assignments, EM reduces to K-Means.
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Point A (clear)", "Point B (overlap)", "Point C (edge)"],
+    "labels": ["Point A (clear center)", "Point B (overlap zone)", "Point C (boundary)"],
     "datasets": [
       {
         "label": "Cluster 1",
@@ -712,7 +438,7 @@ Use GMM when:
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "GMM Soft Assignment — Each Point Gets Probabilities (Sum = 1)" } },
+    "plugins": { "title": { "display": true, "text": "GMM Soft Assignments — Each Point Gets a Probability Vector (Sums to 1)" } },
     "scales": {
       "x": { "stacked": true },
       "y": { "stacked": true, "title": { "display": true, "text": "Probability" }, "max": 1 }
@@ -723,119 +449,83 @@ Use GMM when:
 
 ---
 
-## 5.8 Evaluating Clusters ★
+## 7.8 Evaluating Clusters
 
-### Simple Explanation
-Imagine you sorted all your crayons into groups. How do you know if you did a good
-job? Here is a trick: pick up one crayon and ask two questions. First, "How well does
-this crayon match the other crayons in its group?" (Is my red crayon sitting with
-other reds?) Second, "How different is this crayon from the crayons in the nearest
-OTHER group?" (Is my red crayon very different from the closest pile of blues?)
+> **Cluster evaluation** quantifies how well a clustering captures the structure in data. **Internal metrics** (Silhouette, Davies-Bouldin, inertia) require only the data and cluster labels. **External metrics** (Adjusted Rand Index, Normalized Mutual Information) compare against ground-truth labels when available.
 
-If the crayon matches its own group really well and looks nothing like the other
-groups, you did a great job sorting! If the crayon looks like it could easily belong
-to the other group too, maybe it is in the wrong pile.
+Without labels, you cannot simply compute accuracy. You need metrics that measure cluster compactness (how tight each cluster is) and separation (how far apart clusters are from each other).
 
-That is exactly what the "Silhouette Score" does — it checks every data point to see
-if it is in the right group, and gives you a score from -1 (definitely wrong group!)
-to +1 (perfect group!).
+### Silhouette Score
 
-### The Challenge: No Ground Truth
+For each point $i$:
+- $a(i)$ = mean distance to other points in the same cluster (compactness)
+- $b(i)$ = mean distance to points in the nearest neighboring cluster (separation)
 
-```
-  In supervised learning: "Is prediction correct?" → check against label.
-  In clustering:  "Are these good clusters?" → no labels to compare to!
+$$s(i) = \frac{b(i) - a(i)}{\max(a(i),\; b(i))} \;\;\in [-1, 1]$$
 
-  We need INTERNAL evaluation metrics that measure cluster
-  quality from the data itself.
-```
+| Score | Interpretation |
+|---|---|
+| $s \approx +1$ | Point is well inside its cluster, far from neighbors |
+| $s \approx 0$ | Point is on the boundary between clusters |
+| $s < 0$ | Point is likely assigned to the wrong cluster |
 
-### Silhouette Score — The Best Single Metric
-
-For each point $i$, compute:
-
-- $a(i)$ = average distance to other points IN its own cluster (how well it fits its cluster)
-- $b(i)$ = average distance to all points in the NEAREST other cluster (how different it is from the best alternative cluster)
-
-$$\text{Silhouette}(i) = \frac{b(i) - a(i)}{\max(a(i),\; b(i))}$$
+The **overall Silhouette Score** is the mean over all points. A good rule of thumb:
 
 ```
-  Interpretation:
-    s(i) = +1.0  → Point is perfectly placed, far from other clusters
-    s(i) =  0.0  → Point is on the boundary between clusters
-    s(i) = -1.0  → Point is probably in the WRONG cluster!
-
-  Average silhouette score over all points:
-  ┌──────────────────────────────────────────────────────────────┐
-  │ Score > 0.7   → Strong cluster structure              ✓✓    │
-  │ Score > 0.5   → Reasonable cluster structure          ✓     │
-  │ Score > 0.25  → Weak cluster structure, use carefully  ~    │
-  │ Score < 0.25  → No substantial structure found         ✗    │
-  └──────────────────────────────────────────────────────────────┘
+  > 0.70  → Strong cluster structure
+  > 0.50  → Reasonable structure
+  > 0.25  → Weak — interpret with caution
+  < 0.25  → No meaningful structure found
 ```
+
+### Elbow Method (Inertia / WCSS)
+
+Plot inertia (within-cluster sum of squares) vs K. As K increases, inertia always decreases. The "elbow" — where the rate of decrease sharply levels off — suggests a good K.
 
 ```chart
 {
-  "type": "bar",
+  "type": "line",
   "data": {
-    "labels": ["Strong (>0.7)", "Reasonable (>0.5)", "Weak (>0.25)", "No Structure (<0.25)"],
+    "labels": [1, 2, 3, 4, 5, 6, 7, 8],
     "datasets": [{
-      "label": "Silhouette Score Range",
-      "data": [0.85, 0.6, 0.35, 0.1],
-      "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(99,102,241,0.7)", "rgba(234,88,12,0.7)", "rgba(239,68,68,0.7)"],
-      "borderColor": ["rgba(34,197,94,1)", "rgba(99,102,241,1)", "rgba(234,88,12,1)", "rgba(239,68,68,1)"],
-      "borderWidth": 1
+      "label": "Inertia (WCSS)",
+      "data": [20000, 15000, 10500, 6000, 4800, 4200, 3900, 3700],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "backgroundColor": "rgba(99, 102, 241, 0.1)",
+      "fill": true,
+      "tension": 0.3,
+      "pointRadius": 5,
+      "pointBackgroundColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(239,68,68,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"]
     }]
   },
   "options": {
-    "indexAxis": "y",
-    "plugins": { "title": { "display": true, "text": "Silhouette Score Interpretation — How Good Are Your Clusters?" } },
+    "plugins": { "title": { "display": true, "text": "Elbow Method — Sharp Bend at K=4 Suggests 4 Clusters" } },
     "scales": {
-      "x": { "title": { "display": true, "text": "Silhouette Score" }, "min": 0, "max": 1 }
+      "y": { "title": { "display": true, "text": "Inertia (WCSS)" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Number of Clusters (K)" } }
     }
   }
 }
 ```
 
-### Silhouette Plot — Diagnosing Cluster Quality
+### Davies-Bouldin Index
+
+$$DB = \frac{1}{K} \sum_{i=1}^{K} \max_{j \neq i} \frac{s_i + s_j}{d_{ij}}$$
+
+where $s_i$ is the average distance of points in cluster $i$ to its centroid, and $d_{ij}$ is the distance between centroids $i$ and $j$. **Lower is better** — it penalizes clusters that are wide ($s$ large) and close together ($d$ small).
+
+### Combining Metrics for K Selection
+
+Do not rely on a single metric. Use Elbow + Silhouette + Davies-Bouldin together:
 
 ```
-  Each bar = one data point's silhouette score.
-  Bars grouped by cluster, sorted by score within each.
-
-  Cluster 1  Cluster 2  Cluster 3
-  ┌──────────────────────────────────────────────────────────────┐
-  │  ████████████████ ← long bars = points fit well              │
-  │  ████████████████                                            │
-  │  ██████████████                                              │
-  │  █████████         -- dashed line = avg score = 0.63         │
-  │  ████████████████                                            │
-  │  █████████████████████ ← cluster 2 fits even better!         │
-  │  █████████████████████                                        │
-  │  ███████   ← short = borderline points                       │
-  │  ██████████████████                                          │
-  │  ████████████████████                                        │
-  │  ███  ← negative bar = probably misassigned!                 │
-  └──────────────────────────────────────────────────────────────┘
-
-  Red flags: clusters with very different sizes, many negative bars,
-  or bars much shorter than average → consider different K.
-```
-
-### Choosing K — Elbow + Silhouette Together
-
-```
-  DON'T rely on just the elbow. Use BOTH:
-
-  K │ Inertia │ Silhouette │ Verdict
-  ──┼─────────┼────────────┼────────────────────────────────
-  2 │  8,500  │   0.71     │ Good but might be too broad
-  3 │  5,200  │   0.68     │ Good
-  4 │  3,800  │   0.74     │ ← Best silhouette, also elbow!
-  5 │  3,300  │   0.61     │ Marginal gain, worse coherence
-  6 │  3,100  │   0.55     │ Diminishing returns
-
-  Choose K=4 (elbow AND highest silhouette agree)  ✓
+  K │ Inertia │ Silhouette │ Davies-Bouldin │ Verdict
+  ──┼─────────┼────────────┼────────────────┼──────────────
+  2 │  15,000 │   0.71     │     0.42       │ Too coarse
+  3 │  10,500 │   0.68     │     0.38       │ Good
+  4 │   6,000 │   0.74     │     0.31       │ ← Best (all agree)
+  5 │   4,800 │   0.61     │     0.45       │ Marginal gain
+  6 │   4,200 │   0.55     │     0.52       │ Diminishing returns
 ```
 
 ```chart
@@ -854,7 +544,7 @@ $$\text{Silhouette}(i) = \frac{b(i) - a(i)}{\max(a(i),\; b(i))}$$
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Silhouette Score by K — Higher = Better Defined Clusters (K=4 Wins)" } },
+    "plugins": { "title": { "display": true, "text": "Silhouette Score by K — K=4 Yields Best Cluster Coherence" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Silhouette Score" }, "beginAtZero": true, "max": 1.0 },
       "x": { "title": { "display": true, "text": "Number of Clusters" } }
@@ -865,157 +555,73 @@ $$\text{Silhouette}(i) = \frac{b(i) - a(i)}{\max(a(i),\; b(i))}$$
 
 ---
 
-## 5.9 Dimensionality Reduction Overview ★★
+## 7.9 Dimensionality Reduction Overview
 
-### Simple Explanation
-Imagine you are describing your best friend to someone who has never met them. You
-COULD list every tiny detail — the exact length of each strand of hair, the position
-of every freckle, the precise shade of each fingernail. But that is way too much
-information! Instead, you just say a few important things: "She is tall, has curly
-brown hair, and always wears a red jacket." Those few details are enough for someone
-to spot her in a crowd.
+> **Dimensionality reduction** transforms data from a high-dimensional space to a lower-dimensional space while preserving as much meaningful structure as possible. It serves two purposes: **feature compression** (for downstream models) and **visualization** (projecting to 2D/3D for human inspection).
 
-Dimensionality reduction does the same thing with data. Instead of keeping hundreds
-or thousands of tiny details (features), the computer figures out which handful of
-details actually matter and throws away the rest. The result is a smaller, simpler
-description that still captures what is important — like summarizing a whole book
-into a few key sentences.
+A 28x28 grayscale image has 784 pixel values, but the actual degrees of freedom — the "intrinsic dimensionality" — are far fewer. A handwritten digit can be described by stroke angle, thickness, slant, loop size. Dimensionality reduction finds that compact description.
 
 ```
-  WHY REDUCE DIMENSIONS?
+  METHOD     │ Linear? │ Preserves       │ Use for            │ Speed
+  ───────────┼─────────┼─────────────────┼────────────────────┼──────────
+  PCA        │ Yes     │ Global variance │ Feature reduction  │ Fast
+  t-SNE      │ No      │ Local neighbors │ 2D visualization   │ Slow
+  UMAP       │ No      │ Local + global  │ Viz + features     │ Medium
+  Autoencoder│ No      │ Learned repr.   │ Complex data       │ Slow (train)
+  LDA        │ Yes     │ Class separation│ Supervised dimred  │ Fast
+```
 
-  Original data: 784 features (28×28 pixel image of a digit)
-  ─────────────────────────────────────────────────────────────
-  784D → hard to visualize, slow to train on, sparse
-
-  After PCA: 50 features capturing 95% of variance
-  ─────────────────────────────────────────────────────────────
-  50D → faster training, less overfitting, still accurate
-
-  After t-SNE: 2 features (for visualization only)
-  ─────────────────────────────────────────────────────────────
-  2D → can plot it! Reveals cluster structure visually.
-
-  ┌──────────────────────────────────────────────────────────────┐
-  │  METHOD     │ USE FOR             │ LINEAR? │ SPEED          │
-  ├─────────────┼─────────────────────┼─────────┼────────────────┤
-  │ PCA         │ Features for models │ YES     │ Fast           │
-  │ t-SNE       │ Visualization only  │ NO      │ Slow           │
-  │ UMAP        │ Viz + features      │ NO      │ Medium         │
-  │ Autoencoder │ Features for models │ NO      │ Slow (training)│
-  │ LDA         │ Supervised dimred   │ YES     │ Fast           │
-  └──────────────┴─────────────────────┴─────────┴────────────────┘
+```mermaid
+graph TD
+    A[High-Dimensional Data] --> B{Goal?}
+    B -->|Feature compression for ML| C[PCA]
+    B -->|2D visualization| D{Dataset size?}
+    B -->|Complex nonlinear structure| E[Autoencoder]
+    D -->|< 10K points| F[t-SNE]
+    D -->|> 10K points| G[UMAP]
+    C -->|Need nonlinear| E
 ```
 
 ---
 
-## 5.10 PCA — Principal Component Analysis ★★
+## 7.10 PCA — Principal Component Analysis
 
-### Simple Explanation
-Imagine you have a flat pancake sitting on a table. If you look at the pancake from
-above, you see a nice big circle — you can see its whole shape. But if you look at
-it from the side, you just see a thin line. The "from above" view gives you the MOST
-information about the pancake's shape.
+> **PCA** finds an orthogonal linear transformation that projects data onto a new coordinate system where axes (principal components) are ordered by the amount of variance they explain. PC1 captures maximum variance, PC2 the maximum remaining variance orthogonal to PC1, and so on. All principal components are uncorrelated.
 
-PCA is like finding the best camera angle for your data. It rotates and tilts the
-view until it finds the angle where the data looks the most spread out and
-interesting. Then it takes a "photograph" from that angle, squishing many dimensions
-down into just a few — but keeping as much of the interesting stuff visible as
-possible.
-
-Think of it as finding the best angle to photograph a 3D sculpture so it looks most
-informative in 2D. PCA finds the directions in which the data varies the **most**
-and projects everything onto those directions.
-
-```
-  ORIGINAL DATA (2D):               AFTER PCA (1D — projected):
-  ─────────────────────────         ────────────────────────────────
-  Feature 2                          PC1 axis (direction of max variance)
-     │         * *
-     │      *     *                  ──●──●───●──●●──●─●──
-     │    *    *                           All data collapsed
-     │  *    *                             onto one axis
-     │     *   *
-     └──────────── Feature 1          Kept ~87% of original variance!
-       ↑
-       Arrow = PC1 (direction data spreads most)
-       PC2 would be perpendicular to PC1
-```
-
-**Official Definition:**
-> **PCA** is a linear dimensionality reduction technique that finds an orthogonal
-> transformation to a new coordinate system where axes (principal components) are
-> ordered by variance explained. PC1 captures maximum variance, PC2 the next most,
-> all PCs are uncorrelated.
+PCA asks: "What direction in feature space has the most spread?" That direction becomes PC1. Then: "What direction, perpendicular to PC1, has the next most spread?" That is PC2. And so on. You keep only the top $k$ components that capture, say, 95% of total variance, and discard the rest.
 
 ### PCA Step by Step
 
-```
-  1. Center the data:  X = X - mean(X)
-     (shift so data is centered at origin)
+1. **Center the data:** subtract the mean of each feature.
+2. **Compute the covariance matrix:**
 
-  2. Compute covariance matrix:
-```
+$$C = \frac{1}{n-1} X^\top X$$
 
-$$C = \frac{1}{n} X^\top X$$
+3. **Eigendecompose** the covariance matrix: $C\mathbf{v} = \lambda \mathbf{v}$
+   - Eigenvectors $\mathbf{v}_i$ = principal component directions
+   - Eigenvalues $\lambda_i$ = variance explained by each component
+4. **Sort** eigenvectors by eigenvalue (largest first).
+5. **Project:** $X_{\text{reduced}} = X \cdot V_k$ where $V_k$ = matrix of top $k$ eigenvectors.
 
-```
-     (captures how features vary together)
-
-  3. Compute eigenvectors and eigenvalues of C:
-```
-
-$$C \mathbf{v} = \lambda \mathbf{v}$$
-
-```
-     Eigenvectors = principal component directions
-     Eigenvalues  = amount of variance explained
-
-  4. Sort eigenvectors by eigenvalue (largest first)
-
-  5. Keep top K eigenvectors → reduced dimension matrix
-
-  6. Project: X_reduced = X × [top K eigenvectors]
-```
-
-### Scree Plot — How Many Components to Keep?
-
-```
-  % Variance Explained
-  (per component)
-     │
-  40%│ ████████
-  28%│ ████████ ████████
-  18%│ ████████ ████████ ████████
-  8% │ ████████ ████████ ████████ ████████
-  4% │ ████████ ████████ ████████ ████████ ████████
-     └────────────────────────────────────────────────── PC#
-           PC1      PC2      PC3      PC4      PC5
-
-  Cumulative: 40% → 68% → 86% → 94% → 98%
-
-  Common rules:
-  → Keep enough PCs to explain 90-95% of variance (here: PC1+PC2+PC3)
-  → Look for "elbow" in scree plot (here: PC3 → PC4 is big drop)
-```
+### Scree Plot — How Many Components?
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["PC1", "PC2", "PC3", "PC4", "PC5"],
+    "labels": ["PC1", "PC2", "PC3", "PC4", "PC5", "PC6"],
     "datasets": [
       {
         "label": "Variance Explained (%)",
-        "data": [40, 28, 18, 8, 4],
-        "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.4)","rgba(99,102,241,0.4)"],
+        "data": [42, 25, 15, 9, 5, 4],
+        "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.8)","rgba(99,102,241,0.4)","rgba(99,102,241,0.4)","rgba(99,102,241,0.4)"],
         "borderColor": "rgba(99, 102, 241, 1)",
         "borderWidth": 1,
         "order": 2
       },
       {
         "label": "Cumulative %",
-        "data": [40, 68, 86, 94, 98],
+        "data": [42, 67, 82, 91, 96, 100],
         "type": "line",
         "borderColor": "rgba(234, 88, 12, 1)",
         "backgroundColor": "transparent",
@@ -1027,7 +633,7 @@ $$C \mathbf{v} = \lambda \mathbf{v}$$
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "PCA Scree Plot — Keep PC1-PC3 to Explain 86% of Variance" } },
+    "plugins": { "title": { "display": true, "text": "PCA Scree Plot — Keep PC1-PC4 for 91% Variance Explained" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Variance Explained (%)" }, "beginAtZero": true, "max": 100 },
       "x": { "title": { "display": true, "text": "Principal Component" } }
@@ -1036,524 +642,409 @@ $$C \mathbf{v} = \lambda \mathbf{v}$$
 }
 ```
 
----
+Common rules for choosing $k$:
+- Keep enough PCs to explain **90-95%** of total variance.
+- Look for an **elbow** in the scree plot.
+- Kaiser's rule: keep PCs with eigenvalue > 1 (when using correlation matrix).
 
-## 5.11 t-SNE — For Visualization ★
+### PCA Limitations
 
-### Simple Explanation
-Imagine all the kids in your school are standing in a huge 3D maze that has 100
-floors, and kids who share the same hobbies are standing near each other in this
-crazy maze. You want to draw a simple flat map of where everyone is — just on a
-piece of paper (2D). But you want to make sure that kids who were standing near each
-other in the maze are STILL near each other on your map.
+- **Linear only:** cannot capture curved or nonlinear manifolds.
+- **Variance ≠ importance:** the direction of maximum variance is not always the most informative for the task.
+- **Sensitive to scaling:** always standardize features first (zero mean, unit variance).
+- **Interpretability:** principal components are linear combinations of all original features — they may be hard to name.
 
-t-SNE is the tool that does this. It takes data that lives in a super complicated
-space with tons of dimensions and squishes it down to a flat picture you can
-actually see. The magic is that friends (similar points) stay close to each other on
-the map. But here is the catch: the distances between GROUPS on the map do not mean
-anything. Two groups might look far apart on the map even if they were neighbors in
-the original space. So use t-SNE to see "are there groups?" but do not trust the
-gaps between the groups.
-
-t-SNE is a **visualization tool** for high-dimensional data. It crushes your
-100-feature dataset into 2D while keeping similar points nearby — perfect for
-seeing if there are natural groups.
-
-```
-  High-dimensional data                    2D t-SNE plot:
-  (784 features per MNIST digit image)
-                │                      Feature 2
-                ▼ t-SNE                  │  00000  9999
-                                         │  00000   9999
-                                         │   1111  8888
-                                         │   1111   888
-                                         │     22222
-                                         │      22222  66666
-                                         └──────────────────── Feature 1
-
-                                         Each cluster = one digit!
-                                         0s cluster together,
-                                         1s cluster together, etc.
-
-  ⚠ WARNING: t-SNE is for VISUALIZATION ONLY
-  ──────────────────────────────────────────────────────────────
-  WHY: t-SNE distorts distances non-uniformly.
-  It preserves LOCAL neighborhood structure (nearby = nearby)
-  but GLOBAL distances are MEANINGLESS in the plot.
-  "Cluster A looks far from Cluster B" does NOT mean they
-  are actually far apart in the original feature space.
-  Never use t-SNE output as features for another model!
-```
-
-### t-SNE Hyperparameters
-
-```
-  PERPLEXITY (5–50, default 30):
-  Controls how many neighbors each point "cares about."
-  Low perplexity → local structure, tiny clusters
-  High perplexity → more global view, blobs merge
-
-  Same data, different perplexity:
-  perplexity=5:   [many tiny scattered dots]  ← too local
-  perplexity=30:  [distinct clear clusters]   ← good!
-  perplexity=100: [one big blob]              ← too global
-
-  RUN t-SNE MULTIPLE TIMES: results vary between runs.
-  If clusters appear consistently across runs → likely real.
-```
+**Real-world use:** Image compression. A 256x256 face image (65,536 features) can be reconstructed with high fidelity from ~100 principal components — a 650x compression ratio.
 
 ---
 
-## 5.12 UMAP — Uniform Manifold Approximation ★
+## 7.11 t-SNE
 
-### Simple Explanation
-Remember how t-SNE is like drawing a flat map of kids in a 100-floor maze? Well,
-UMAP is the newer, upgraded version of that map. Imagine t-SNE draws the map using
-crayons — it is pretty but slow, and the distances between groups on the map are
-kind of random. UMAP draws the map with a super-fast printer, AND it tries to keep
-the distances between groups more honest. If the soccer kids and the basketball kids
-were close in the real maze, they will be close on the UMAP map too.
+> **t-SNE (t-distributed Stochastic Neighbor Embedding)** is a nonlinear dimensionality reduction technique that models pairwise similarities in high-dimensional space as conditional probabilities and finds a low-dimensional (typically 2D) embedding that minimizes the KL divergence between those probabilities and corresponding probabilities in the low-dimensional space. It uses a Student-t distribution in the low-dimensional space to address the "crowding problem."
 
-Even better: the UMAP map is so reliable that you can actually use it for other
-projects (like feeding it into another computer program), while t-SNE's map is only
-good for looking at with your eyes.
+t-SNE is purpose-built for visualization. It takes your 784-dimensional MNIST digits and produces a 2D scatter plot where the 0s cluster together, the 1s cluster together, and so on. It is spectacularly good at revealing cluster structure that is invisible in raw feature space.
 
-UMAP does what t-SNE does (compress high-D to 2D for visualization) but:
-- Runs **much faster** (10-100x faster on large data)
-- Better preserves **global structure** (relationships between clusters)
-- Can also be used as **feature engineering** (unlike t-SNE!)
-- Works for 2D visualization AND reducing to 10-50 dimensions
+### How It Works (Intuition)
+
+1. In high-D, convert distances to probabilities: nearby points get high probability, distant points get low probability (using a Gaussian kernel).
+2. In low-D (2D), do the same using a **Student-t distribution** (heavier tails than Gaussian — this prevents all clusters from collapsing to the center).
+3. Minimize the **KL divergence** between the high-D and low-D probability distributions using gradient descent.
+
+### Critical Caveats
 
 ```
-  UMAP vs t-SNE on the same data:
-
-  t-SNE result:                     UMAP result:
-  ──────────────────────            ────────────────────────────
-  ○○  ●●           □□              ○○○  ●●●      □□□
-  ○○   ●●    ●●    □               ○○    ●●    ●●●  □□
-      ○○○●●                               ○○○●●   □
-
-  Clusters look similar!            BUT: the DISTANCES between
-                                    clusters in UMAP are meaningful.
-                                    ○s and ●s being close means
-                                    they are actually similar!
-
-  t-SNE: inter-cluster distances meaningless
-  UMAP:  inter-cluster distances roughly preserved  ← better!
+  ⚠ t-SNE is for VISUALIZATION ONLY — never use as features for a model
+  ⚠ Inter-cluster distances are MEANINGLESS (only local structure preserved)
+  ⚠ Cluster sizes in the plot are MEANINGLESS
+  ⚠ Results vary between runs (stochastic algorithm)
+  ⚠ Perplexity affects results dramatically — always try multiple values
 ```
 
-**Official Definition:**
-> **UMAP** is a non-linear dimensionality reduction method based on Riemannian geometry
-> and algebraic topology. It constructs a fuzzy topological representation of the data
-> and optimizes a low-dimensional representation to have a similar topological structure.
-> It preserves both local and global structure better than t-SNE.
+### Perplexity
 
-### UMAP vs t-SNE at a Glance
+The perplexity parameter (typically 5-50, default 30) controls how many neighbors each point "attends to." Think of it as a soft version of K in KNN.
 
-```
-┌────────────────────────┬──────────────────────┬─────────────────────┐
-│ Property               │ t-SNE                │ UMAP                │
-├────────────────────────┼──────────────────────┼─────────────────────┤
-│ Speed                  │ Slow (O(n log n))    │ Faster (O(n^1.14))  │
-│ Global structure       │ Poor                 │ Much better         │
-│ Local structure        │ Excellent            │ Excellent           │
-│ Reproducible           │ No (random init)     │ With random_state   │
-│ Use as features        │ NO                   │ YES (with caution)  │
-│ Parameters to tune     │ perplexity           │ n_neighbors, min_dist│
-│ Best for               │ Visualization only   │ Viz + downstream ML │
-└────────────────────────┴──────────────────────┴─────────────────────┘
-```
+- **Low perplexity (5-10):** focuses on very local structure, may fragment real clusters
+- **Medium perplexity (30-50):** good balance, usually produces clear clusters
+- **High perplexity (100+):** overly global, clusters merge into blobs
+
+Always run t-SNE at **multiple perplexity values** and check whether the clusters are consistent.
 
 ---
 
-## 5.13 Autoencoders ★
+## 7.12 UMAP
 
-### Simple Explanation
-Have you ever played the game "telephone"? You whisper a long sentence to one friend,
-who has to remember it and whisper it to the next person. But imagine the rule is:
-you can only use 5 words to pass the message along. So if the original sentence was
-"The big fluffy golden retriever jumped over the tiny wooden fence in the backyard,"
-you might squeeze it down to "big dog jumped fence backyard." That 5-word summary
-is the bottleneck — you had to figure out what mattered most!
+> **UMAP (Uniform Manifold Approximation and Projection)** is a nonlinear dimensionality reduction technique grounded in Riemannian geometry and algebraic topology. It constructs a weighted graph representation of the high-dimensional data, then optimizes a low-dimensional layout to preserve that topological structure. It preserves both local and global structure better than t-SNE, runs significantly faster, and can be used for feature engineering (not just visualization).
 
-An autoencoder works like that game. The first half (the encoder) squishes the data
-down into a tiny summary. The second half (the decoder) tries to rebuild the
-original message from just that summary. If the rebuilt version is close to the
-original, that means the tiny summary captured the important stuff!
+UMAP is the modern replacement for t-SNE in most workflows. It produces similar or better visualizations, runs 10-100x faster on large datasets, and — critically — its output can be used as input features for downstream models.
 
-An autoencoder is a neural network trained to **compress then decompress** data.
-It must learn a compact representation — the "important parts" — because it cannot
-store everything in the bottleneck. The bottleneck IS the learned representation.
+### UMAP vs t-SNE
+
+| Property | t-SNE | UMAP |
+|---|---|---|
+| Speed | $O(n \log n)$, slow in practice | Much faster (~10-100x) |
+| Global structure | Poorly preserved | Reasonably preserved |
+| Local structure | Excellent | Excellent |
+| Cluster distances | Meaningless | Roughly meaningful |
+| Use as features | No | Yes (with caution) |
+| Scalability | Struggles above 50K points | Handles millions |
+| Key parameter | `perplexity` | `n_neighbors`, `min_dist` |
+
+### UMAP Parameters
+
+- **`n_neighbors`** (default 15): controls the balance between local and global structure. Small values emphasize local; large values capture more global topology.
+- **`min_dist`** (default 0.1): controls how tightly points are packed in the embedding. Smaller = tighter clusters, larger = more uniform spread.
+
+**When to use which:**
+- Quick visualization of a large dataset → **UMAP**
+- Small dataset, publication-quality local structure → **t-SNE**
+- Need reduced features for a downstream classifier → **UMAP** (never t-SNE)
+
+---
+
+## 7.13 Autoencoders
+
+> An **autoencoder** is a neural network trained to reconstruct its input through a bottleneck layer of lower dimensionality. The encoder $f: \mathbb{R}^d \to \mathbb{R}^k$ compresses the input; the decoder $g: \mathbb{R}^k \to \mathbb{R}^d$ reconstructs it. Training minimizes reconstruction loss $\mathcal{L} = \|x - g(f(x))\|^2$, forcing the bottleneck to learn a compact, informative representation.
+
+The bottleneck is the key. The network cannot simply memorize all 784 pixel values in 32 neurons — it must learn which features matter. After training, the encoder is a nonlinear dimensionality reducer. The bottleneck activations are your compressed features.
+
+### Architecture
 
 ```
   ENCODER                  BOTTLENECK               DECODER
   ─────────────────         ────────────             ──────────────────
   Input (784 dims)                                   Output (784 dims)
   ┌──────────────┐          ┌──────────┐             ┌──────────────┐
-  │              │ ──────►  │ 32 dims  │  ──────────►│              │
-  │  28×28 image │          │          │             │ Reconstructed│
-  │              │          │(compressed              │    image     │
-  └──────────────┘          │ code)    │             └──────────────┘
-       ↓                    └──────────┘                    ↓
-  784 → 256 → 64 → 32    ← bottleneck →   32 → 64 → 256 → 784
+  │   28×28      │ ──────►  │  32 dims │  ──────────►│ Reconstructed│
+  │   image      │          │ (latent  │             │   28×28      │
+  │              │          │  code)   │             │   image      │
+  └──────────────┘          └──────────┘             └──────────────┘
 
-  Training goal: output ≈ input
-  (reconstruct the input from only 32 numbers)
+  784 → 256 → 64 → 32    bottleneck    32 → 64 → 256 → 784
 
-  What the bottleneck learns: the most important structure in the data.
-  After training, USE the bottleneck as a compressed representation!
+  Loss = ||input - output||²
+  The network learns to compress and decompress.
+  The 32-dim bottleneck IS the learned representation.
 ```
-
-**Official Definition:**
-> An **Autoencoder** is a neural network trained to encode its input into a compressed
-> (lower-dimensional) representation, then decode it back to the original. The encoder
-> learns a dimensionality reduction; the decoder learns its inverse. Trained unsupervised
-> by minimizing reconstruction error.
 
 ### Variants
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│  DENOISING AUTOENCODER                                             │
-│  Add noise to input, train to reconstruct CLEAN original.          │
-│  Forces the model to learn robust, meaningful features.            │
-│  Noisy input: [0.3, 0.8, 0.2, ...] →  Clean output: [0.0, 1.0, 0.0]│
-├────────────────────────────────────────────────────────────────────┤
-│  VARIATIONAL AUTOENCODER (VAE)                                     │
-│  Bottleneck is a DISTRIBUTION (mean + variance) not just a vector. │
-│  Can GENERATE new data by sampling from the distribution!          │
-│  Used for: image generation, drug molecule design                   │
-│  Bottleneck: μ=0.3, σ=0.1 → sample z ~ N(0.3, 0.1) → decode       │
-├────────────────────────────────────────────────────────────────────┤
-│  SPARSE AUTOENCODER                                                │
-│  Bottleneck has many neurons but most are forced to be ZERO.       │
-│  Each input activates only a few neurons → interpretable features  │
-│  Used in: feature discovery, language model interpretability        │
-└────────────────────────────────────────────────────────────────────┘
-```
+| Variant | Idea | Use Case |
+|---|---|---|
+| **Denoising AE** | Add noise to input, reconstruct clean original | Robust feature learning; image denoising |
+| **Variational AE (VAE)** | Bottleneck encodes a distribution ($\mu, \sigma$), sample $z \sim \mathcal{N}(\mu, \sigma^2)$ | Generative modeling (image synthesis, drug design) |
+| **Sparse AE** | Penalize activations to enforce sparsity | Interpretable features; model interpretability |
+| **Convolutional AE** | Use conv layers instead of dense | Image data (preserves spatial structure) |
+
+### Autoencoders vs PCA
+
+PCA is a linear autoencoder with one hidden layer and no activation function. A deep autoencoder with nonlinear activations can capture manifolds that PCA cannot. But PCA has a closed-form solution (eigendecomposition) — no training needed, no hyperparameters beyond $k$, always finds the global optimum.
+
+**Real-world use:** Fraud detection — train an autoencoder on normal transactions only. Fraudulent transactions produce high reconstruction error because the model has never seen that pattern. Threshold on reconstruction error to flag anomalies.
 
 ---
 
-## 5.14 Anomaly Detection ★★
+## 7.14 Anomaly Detection
 
-### Simple Explanation
-Picture a flock of white sheep grazing in a field. They all look the same — fluffy,
-white, doing sheep things. Now imagine one bright purple sheep walks in. You would
-spot it INSTANTLY because it sticks out like a sore thumb. You did not need anyone
-to tell you "look for the purple one" — you just know it does not belong.
+> **Anomaly detection** (outlier detection) identifies observations that deviate significantly from the majority of data. In unsupervised anomaly detection, the model learns a representation of "normal" behavior from unlabeled data and flags points that are statistically unlikely under that model.
 
-Anomaly detection is the computer doing exactly that. It looks at a huge amount of
-"normal" data (the white sheep), learns what "normal" looks like, and then when
-something weird comes along (the purple sheep), it raises its hand and says, "Hey,
-this one is different!" This is how banks catch fraudulent credit card transactions,
-how factories spot broken products on the assembly line, and how doctors notice
-unusual patterns in medical scans.
+Most data is normal. Anomalies are rare by definition. You usually cannot collect enough labeled anomalies to train a supervised classifier — and the types of anomalies change over time. Unsupervised anomaly detection learns what "normal" looks like and flags anything that deviates.
 
-Anomaly detection finds data points that are **unusually different** from the rest.
-No labeled anomalies needed — the model learns what "normal" looks like and flags
-anything far from normal.
+### Isolation Forest
+
+> **Isolation Forest** detects anomalies by randomly partitioning the feature space with axis-aligned splits. Anomalies, being few and different, are isolated in fewer splits (shorter path length). Normal points, being clustered in dense regions, require more splits.
 
 ```
-  NORMAL DATA                      ANOMALIES
-  ──────────────────────────       ────────────────────────────────
-  ●●●●● ●●●●●                      ●●●●● ●●●●●
-  ●●●●● ●●●●●     (dense           ●●●●● ●●●●●    ×  ← outlier!
-  ●●●●● ●●●●●      region)         ●●●●● ●●●●●
-                                                ×     ← outlier!
-
-  "Normal" = belongs to the dense cluster
-  "Anomaly" = isolated point far from any cluster
-```
-
-### Isolation Forest — The Best General Method
-
-```
-  IDEA: Anomalies are EASIER to isolate than normal points.
-  If you keep randomly splitting the data, anomalies get isolated
-  quickly (in few splits). Normal points need many splits.
-
-  Step 1: Pick a random feature and a random split value.
-  Step 2: Split the data. Recurse until each point is isolated.
-  Step 3: Count splits needed to isolate each point.
-
-  Normal point:    needs many splits to isolate (path length = 15)
-  Anomaly point:   isolated in very few splits (path length = 3)
-
-  Anomaly Score = 1 - (avg path length / expected path length)
-  Score near 1 = anomaly,   Score near 0 = normal
-
   WHY IT WORKS:
-  ─────────────────────────────────────────────────────────────
+
   Feature 2
-     │  ●●●●
-     │  ●●●●  │← a random split here
-     │  ●●●●              ×   ← anomaly: only 1-2 splits
-     │  ●●●●                    to be completely isolated!
+     │  ●●●●●         ← Normal points: packed together,
+     │  ●●●●●            need many random splits to isolate
+     │  ●●●●●            any single one (path length ≈ 12)
+     │  ●●●●●
+     │
+     │              ×   ← Anomaly: isolated with just 2 splits!
+     │                     (path length ≈ 2)
      └──────────────────────── Feature 1
 ```
 
-### Other Anomaly Detection Methods
+**Anomaly score:**
 
-```
-┌───────────────────────┬──────────────────────────────────────────────┐
-│ METHOD                │ HOW IT WORKS                                 │
-├───────────────────────┼──────────────────────────────────────────────┤
-│ Isolation Forest      │ Anomalies isolated in fewer random splits    │
-│ (recommended default) │ Fast, works in high-D, no assumptions        │
-├───────────────────────┼──────────────────────────────────────────────┤
-│ One-Class SVM         │ Learns a boundary around "normal" data       │
-│                       │ Good for low-D, slow on large data           │
-├───────────────────────┼──────────────────────────────────────────────┤
-│ Local Outlier Factor  │ Compares each point's density to neighbors   │
-│ (LOF)                 │ Good for local anomalies in uneven data      │
-├───────────────────────┼──────────────────────────────────────────────┤
-│ Autoencoder           │ High reconstruction error = anomaly          │
-│                       │ Great for images, time series, complex data  │
-├───────────────────────┼──────────────────────────────────────────────┤
-│ Z-Score               │ Flag points > 3 standard deviations from mean│
-│                       │ Only for univariate, normally distributed data│
-└───────────────────────┴──────────────────────────────────────────────┘
+$$s(x, n) = 2^{-\frac{E[h(x)]}{c(n)}}$$
 
-  Real-world uses:
-  - Credit card fraud detection
-  - Network intrusion detection (cybersecurity)
-  - Manufacturing defect detection
-  - Medical: unusual patient readings
-  - Server monitoring: unusual traffic patterns
-```
+where $h(x)$ = average path length for point $x$ across all trees, and $c(n)$ = average path length for a dataset of size $n$. Score near 1 = anomaly; score near 0.5 = normal.
+
+### Other Methods
+
+| Method | Mechanism | Best for |
+|---|---|---|
+| **Isolation Forest** | Short path in random trees = anomaly | General purpose, high-D, fast |
+| **Local Outlier Factor** | Compare point's local density to neighbors' density | Local anomalies in uneven density |
+| **One-Class SVM** | Learn a boundary enclosing normal data | Small, clean datasets |
+| **Autoencoder** | High reconstruction error = anomaly | Complex data (images, sequences) |
+| **Statistical (Z-score, IQR)** | Points beyond threshold from center | Simple, univariate data |
+
+**Real-world examples:**
+- **Credit card fraud:** normal spending patterns vs. sudden large purchases in a new country
+- **Network intrusion:** normal traffic patterns vs. port scanning or DDoS signatures
+- **Manufacturing:** normal sensor readings vs. vibration anomalies indicating equipment failure
+- **Healthcare:** normal vital signs vs. sudden changes predicting cardiac events
 
 ---
 
-## 5.15 Association Rule Learning ★
+## 7.15 Association Rule Learning
 
-### Simple Explanation
-Think about your school lunch table. You notice that every time your friend Sarah
-brings a peanut butter sandwich, she ALSO brings an apple juice. And every time
-Marcus has pizza, he also gets chocolate milk. After watching for a few weeks, you
-start to see patterns: certain foods just seem to go together.
+> **Association rule learning** discovers interesting relations (rules) between variables in large databases. A rule $\{A\} \Rightarrow \{B\}$ means that transactions containing item $A$ tend to also contain item $B$. The strength of a rule is measured by **support**, **confidence**, and **lift**.
 
-Stores do the exact same thing with millions of shopping receipts! They look at what
-people buy together and discover rules like: "People who buy hot dogs almost always
-buy hot dog buns too" or the famous example: "People who buy diapers also tend to
-buy beer." These patterns help stores decide what to put on sale together and what
-to recommend to shoppers. It is the same idea behind Netflix saying "Because you
-watched X, you might like Y."
-
-Association rules find items that frequently appear together —
-the foundation of recommendation systems and market basket analysis.
-
-```
-  SUPERMARKET TRANSACTION DATA:
-  ──────────────────────────────────────────────────────────────
-  Transaction 1:  [Bread, Milk, Butter]
-  Transaction 2:  [Bread, Diaper, Beer]
-  Transaction 3:  [Milk, Diaper, Beer, Butter]
-  Transaction 4:  [Bread, Milk, Diaper, Beer]
-  Transaction 5:  [Bread, Milk, Butter]
-  ──────────────────────────────────────────────────────────────
-
-  Discovered rules:
-  {Diaper} → {Beer}    confidence: 75%, support: 60%
-  {Bread, Milk} → {Butter}  confidence: 66%, support: 60%
-```
+This is the "people who bought X also bought Y" engine behind recommendation systems and retail analytics. Amazon's "frequently bought together," supermarket shelf placement, cross-selling strategies — all powered by association rules.
 
 ### Key Metrics
 
-**SUPPORT:** How often does this combination appear?
+**Support** — How frequently does the itemset appear?
 
-$$\text{Support}(\{A, B\}) = \frac{\text{transactions containing A and B}}{\text{total transactions}}$$
+$$\text{Support}(\{A, B\}) = \frac{|\text{transactions containing both A and B}|}{|\text{total transactions}|}$$
 
-$\text{Support}(\{\text{Diaper, Beer}\}) = 3/5 = 0.60$ (60% of transactions).
-Low support = rare combination, unreliable pattern.
+**Confidence** — Given A was purchased, how often was B also purchased?
 
-**CONFIDENCE:** Given A, how often is B also present?
+$$\text{Confidence}(A \Rightarrow B) = \frac{\text{Support}(A \cup B)}{\text{Support}(A)}$$
 
-$$\text{Confidence}(A \to B) = \frac{\text{Support}(A \cup B)}{\text{Support}(A)}$$
+**Lift** — Is the association stronger than random chance?
 
-$\text{Confidence}(\{\text{Diaper}\} \to \{\text{Beer}\}) = 0.60 / 0.80 = 0.75$ (75% of diaper buyers also buy beer).
+$$\text{Lift}(A \Rightarrow B) = \frac{\text{Confidence}(A \Rightarrow B)}{\text{Support}(B)}$$
 
-**LIFT:** Is this rule better than random chance?
+| Lift value | Interpretation |
+|---|---|
+| Lift > 1 | Positive association — buying A makes B more likely |
+| Lift = 1 | Independent — no relationship |
+| Lift < 1 | Negative association — buying A makes B less likely |
 
-$$\text{Lift} = \frac{\text{Confidence}(A \to B)}{\text{Support}(B)}$$
-
-$\text{Lift} = 0.75 / 0.60 = 1.25$
+### Worked Example
 
 ```
-  Lift > 1:  positive association (buying A makes B more likely)
-  Lift = 1:  independent (A and B have no relationship)
-  Lift < 1:  negative association (buying A makes B less likely)
+  5 transactions:
+  T1: {Bread, Milk, Butter}
+  T2: {Bread, Diapers, Beer}
+  T3: {Milk, Diapers, Beer, Butter}
+  T4: {Bread, Milk, Diapers, Beer}
+  T5: {Bread, Milk, Butter}
+
+  Rule: {Diapers} → {Beer}
+  Support({Diapers, Beer})    = 3/5 = 0.60
+  Support({Diapers})          = 3/5 = 0.60
+  Confidence                  = 0.60/0.60 = 1.00 (100%!)
+  Support({Beer})             = 3/5 = 0.60
+  Lift                        = 1.00/0.60 = 1.67
+```
+
+Lift = 1.67 > 1 — buying diapers makes beer 67% more likely than baseline. A real association.
+
+### The Apriori Algorithm
+
+The challenge: with $n$ items, there are $2^n$ possible itemsets. Brute-force enumeration is impossible for a real catalog.
+
+**Apriori principle:** if an itemset is infrequent, all its supersets are also infrequent. This lets you prune the search space massively.
+
+```
+  Level 1: Count all single items, keep those with support ≥ threshold
+           {Bread}=0.8 ✓  {Milk}=0.8 ✓  {Diapers}=0.6 ✓  {Beer}=0.6 ✓
+
+  Level 2: Generate candidate pairs from frequent singles
+           {Bread,Milk}=0.6 ✓   {Diapers,Beer}=0.6 ✓   ...
+
+  Level 3: Generate candidate triples from frequent pairs
+           {Bread,Milk,Butter}=0.4 ✓   ...
+
+  Continue until no frequent itemsets remain.
+  Then generate rules from frequent itemsets, filter by confidence.
 ```
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Support\n(how common?)", "Confidence\n(how reliable?)", "Lift\n(better than random?)"],
+    "labels": ["Support\n(how common?)", "Confidence\n(how reliable?)", "Lift\n(vs random?)"],
     "datasets": [{
-      "label": "{Diaper} → {Beer}",
-      "data": [0.60, 0.75, 1.25],
+      "label": "{Diapers} → {Beer}",
+      "data": [0.60, 1.00, 1.67],
       "backgroundColor": ["rgba(99,102,241,0.7)", "rgba(34,197,94,0.7)", "rgba(234,88,12,0.7)"],
       "borderColor": ["rgba(99,102,241,1)", "rgba(34,197,94,1)", "rgba(234,88,12,1)"],
       "borderWidth": 1
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Association Rule Metrics — {Diaper} → {Beer} (Lift > 1 = Real Pattern!)" } },
+    "plugins": { "title": { "display": true, "text": "Association Rule Metrics — {Diapers} → {Beer} (Lift=1.67, Real Association)" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Score" }, "beginAtZero": true, "max": 1.5 },
+      "y": { "title": { "display": true, "text": "Score" }, "beginAtZero": true, "max": 2.0 },
       "x": {}
     }
   }
 }
 ```
 
-### Apriori Algorithm — Finding Rules Efficiently
+---
+
+## 7.16 Self-Supervised Learning
+
+> **Self-supervised learning** is a paradigm where the model generates its own supervisory signal from the structure of unlabeled data. By solving a pretext task (e.g., predicting masked tokens, predicting the next frame, matching augmented views), the model learns general-purpose representations that transfer to downstream tasks with minimal labeled data.
+
+This is the paradigm behind every modern foundation model. GPT, BERT, Claude, CLIP, DALL-E — all are pre-trained with self-supervised objectives on massive unlabeled corpora, then fine-tuned or prompted for specific tasks.
+
+### Why It Matters
 
 ```
-  CHALLENGE: With 1000 products, there are 2^1000 possible itemsets!
-  KEY INSIGHT (Apriori principle):
-    If an itemset is infrequent, ALL its supersets are also infrequent.
-    This lets us prune the search space enormously!
+  SUPERVISED:                    SELF-SUPERVISED:
+  ───────────────────            ─────────────────────────────────
+  Need: 1M labeled images       Need: 1B unlabeled images
+  Cost: $500K+ in annotation    Cost: essentially free (scraped)
+  Result: good at ONE task       Result: powerful GENERAL features
+                                 that transfer to many tasks
 
-  Step 1: Find all frequent 1-item sets (items with support ≥ threshold)
-          {Bread}=0.8, {Milk}=0.8, {Diaper}=0.8, {Beer}=0.6, {Butter}=0.6
-
-  Step 2: Generate candidate 2-itemsets from frequent 1-itemsets
-          {Bread,Milk}=0.6 ✓   {Bread,Diaper}=0.4 ✓
-          {Diaper,Beer}=0.6 ✓  etc.
-
-  Step 3: Prune infrequent 2-itemsets, generate 3-itemsets...
-          Continue until no frequent itemsets remain
-
-  Step 4: Generate rules from frequent itemsets, filter by confidence
+  Pre-train on 1B unlabeled texts → fine-tune on 1K labeled examples
+  → often beats a model trained on 100K labeled examples from scratch
 ```
+
+### Pretext Tasks in NLP
+
+**Masked Language Modeling (BERT):**
+- Input: "The cat sat on the [MASK]"
+- Target: predict "mat"
+- The mask IS the label — no human annotation needed.
+
+**Next-Token Prediction (GPT):**
+- Input: "The cat sat on"
+- Target: predict "the"
+- Every token in the corpus provides a free training signal.
+
+### Pretext Tasks in Vision
+
+**Masked Autoencoders (MAE):**
+- Mask 75% of image patches randomly
+- Train the model to reconstruct the missing patches
+- The original pixels are the labels.
+
+**Contrastive Learning (SimCLR, CLIP):**
+
+```mermaid
+graph LR
+    A[Image x] --> B[Augmentation 1: crop + flip]
+    A --> C[Augmentation 2: color jitter + blur]
+    B --> D[Encoder f]
+    C --> E[Encoder f]
+    D --> F["Embedding z₁"]
+    E --> G["Embedding z₂"]
+    F --> H{Contrastive Loss}
+    G --> H
+    H --> I["z₁ ≈ z₂ (same image → pull together)"]
+    H --> J["z₁ ≠ zₖ (different images → push apart)"]
+```
+
+The core idea: two augmented views of the same image should produce similar embeddings; views from different images should produce dissimilar embeddings. No labels needed — the augmentation creates the positive/negative pairs.
+
+### CLIP — Connecting Vision and Language
+
+CLIP (Contrastive Language-Image Pre-training) extends contrastive learning across modalities:
+- Pairs: (image, caption) from the internet
+- Train image encoder and text encoder jointly so matching pairs have similar embeddings
+- Result: zero-shot image classification — describe any category in text, and CLIP can classify images into it without task-specific training.
+
+---
+
+## 7.17 Algorithm Selection Guide
+
+Choosing the right unsupervised algorithm depends on the task, data characteristics, and computational constraints.
+
+```mermaid
+graph TD
+    A[What is your goal?] --> B{Clustering?}
+    A --> C{Dimensionality Reduction?}
+    A --> D{Anomaly Detection?}
+    A --> E{Association Rules?}
+    B --> B1{Know K?}
+    B1 -->|Yes| B2{Cluster shape?}
+    B2 -->|Spherical| B3[K-Means]
+    B2 -->|Elliptical / Overlapping| B4[GMM]
+    B1 -->|No| B5{Need noise handling?}
+    B5 -->|Yes| B6[DBSCAN / HDBSCAN]
+    B5 -->|No| B7[Hierarchical + Dendrogram]
+    C --> C1{Linear structure?}
+    C1 -->|Yes| C2[PCA]
+    C1 -->|No| C3{Visualization or features?}
+    C3 -->|Visualization| C4[t-SNE or UMAP]
+    C3 -->|Features for model| C5[Autoencoder or UMAP]
+    D --> D1[Isolation Forest default]
+    E --> E1[Apriori / FP-Growth]
+```
+
+### Quick Comparison Table
+
+| Algorithm | Task | K required? | Handles noise? | Cluster shape | Scalability |
+|---|---|---|---|---|---|
+| K-Means | Clustering | Yes | No | Spherical | Excellent |
+| Hierarchical | Clustering | No (cut tree) | No | Depends on linkage | Poor (>10K) |
+| DBSCAN | Clustering | No | Yes | Arbitrary | Good |
+| GMM | Clustering | Yes | No | Elliptical | Moderate |
+| PCA | Dim. reduction | Choose # PCs | N/A | Linear only | Excellent |
+| t-SNE | Visualization | N/A | N/A | Nonlinear | Poor (>50K) |
+| UMAP | Dim. red. / viz | N/A | N/A | Nonlinear | Good |
+| Isolation Forest | Anomaly det. | N/A | Detects them | N/A | Excellent |
+| Apriori | Assoc. rules | N/A | N/A | N/A | Moderate |
 
 ```chart
 {
-  "type": "bar",
+  "type": "radar",
   "data": {
-    "labels": ["Bread", "Milk", "Diaper", "Beer", "Butter"],
-    "datasets": [{
-      "label": "Support (frequency in transactions)",
-      "data": [0.80, 0.80, 0.80, 0.60, 0.60],
-      "backgroundColor": ["rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(99,102,241,0.7)","rgba(234,88,12,0.7)","rgba(234,88,12,0.7)"],
-      "borderColor": ["rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(234,88,12,1)","rgba(234,88,12,1)"],
-      "borderWidth": 1
-    }]
+    "labels": ["Speed", "Flexibility\n(cluster shape)", "Handles\nOutliers", "No K\nRequired", "Scalability"],
+    "datasets": [
+      {
+        "label": "K-Means",
+        "data": [5, 2, 1, 1, 5],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.15)",
+        "borderWidth": 2
+      },
+      {
+        "label": "DBSCAN",
+        "data": [3, 5, 5, 5, 3],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.15)",
+        "borderWidth": 2
+      },
+      {
+        "label": "GMM",
+        "data": [3, 4, 2, 1, 3],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "backgroundColor": "rgba(34, 197, 94, 0.15)",
+        "borderWidth": 2
+      }
+    ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Apriori Step 1 — Frequent 1-Itemsets (min support = 0.5)" } },
+    "plugins": { "title": { "display": true, "text": "Clustering Algorithm Comparison (5 = Best)" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Support" }, "beginAtZero": true, "max": 1.0 },
-      "x": { "title": { "display": true, "text": "Item" } }
+      "r": { "beginAtZero": true, "max": 5 }
     }
   }
 }
-```
-
----
-
-## 5.16 Self-Supervised Learning ★
-
-### Simple Explanation
-Imagine you are reading your favorite book, but somebody has covered up random words
-with sticky notes. You can still guess what most of the hidden words are because you
-understand the story and the language. "The cat sat on the ___" — you know it is
-probably "mat" or "chair" or "couch." By practicing this guessing game over and over
-with thousands of books, you become REALLY good at understanding how language works.
-
-That is self-supervised learning! The computer takes its own data, hides part of it
-on purpose, and then tries to guess what is missing. Nobody had to sit there and
-label anything — the hidden pieces ARE the labels. It is like making your own
-homework and your own answer key at the same time. This is how AI systems like GPT
-and BERT learned to understand language — by reading billions of sentences and
-practicing the "guess the missing word" game.
-
-What if you could turn an UNLABELED dataset into a supervised one — automatically?
-Self-supervised learning creates its own labels from the structure of the data itself.
-
-```
-  EXAMPLE: Predicting masked words (BERT, GPT)
-  ─────────────────────────────────────────────────────────────
-  Original text: "The cat sat on the mat"
-
-  Mask some words: "The [MASK] sat on the [MASK]"
-
-  Task: Predict the masked words → "cat", "mat"
-
-  Labels come from the DATA ITSELF — no human annotation needed!
-  Learn from billions of internet texts without any labels.
-
-  EXAMPLE: Predicting image patches (MAE — Masked Autoencoders)
-  ─────────────────────────────────────────────────────────────
-  Original image:  [full cat photo]
-  Input:           [75% of patches masked out]
-  Task:            Reconstruct the missing patches
-  Labels:          The original image pixels → self-supervised!
-```
-
-### Why Self-Supervised Learning Matters
-
-```
-  SUPERVISED:             SELF-SUPERVISED:
-  ───────────────────     ──────────────────────────────────
-  Need:                   Need:
-  1M labeled images       1 billion unlabeled images
-  Costs: $500K+ to label  Costs: essentially free!
-
-  Result:                 Result:
-  Good model for one task Powerful GENERAL representations
-                          that transfer to many tasks!
-
-  Self-supervised pre-training → fine-tune with few labels:
-  Pre-trained on 1B texts (no labels) → fine-tune on 1K labeled
-  examples → often beats model trained on 100K labeled examples!
-```
-
-### Connection to Modern AI
-
-```
-  GPT, BERT, Claude, DALL-E all use self-supervised pre-training!
-
-  Language models:                 Vision models:
-  Next-token prediction            Masked image patches
-  Masked language modeling         Contrastive learning (SimCLR)
-  → learns language structure      → learns image structure
-
-  CONTRASTIVE LEARNING (SimCLR, CLIP):
-  ─────────────────────────────────────────────────────────────
-  Show the model two augmented views of the SAME image →
-  train it to give them SIMILAR representations.
-  Show it views from DIFFERENT images → train for DISSIMILAR.
-
-  Original image →  Crop + flip + color jitter  →  Views A, B
-                                                    (same content!)
-  Model learns: A and B should be close in embedding space.
-  Other images: should be far from A and B.
-
-  Result: excellent visual representations without any labels!
-```
-
----
-
-## 5.17 Applications
-
-```
-┌────────────────────────────────────────────────────────────────────┐
-│               UNSUPERVISED LEARNING IN THE REAL WORLD              │
-├──────────────────────┬─────────────────────────────────────────────┤
-│ Customer Segmentation│ Group customers → personalized marketing    │
-│ Anomaly Detection    │ Fraud, intrusion, manufacturing defects     │
-│ Topic Modeling       │ Group news articles / documents by theme    │
-│ Recommendation       │ "Users like you also liked..." (collab filt)│
-│ Image Compression    │ PCA/Autoencoder reduces storage size         │
-│ Gene Expression      │ Group genes with similar activation pattern │
-│ Social Networks      │ Community detection in friend graphs        │
-│ Market Basket        │ Apriori rules → product placement           │
-│ Pre-training LLMs    │ Self-supervised learning on raw text        │
-│ Drug Discovery       │ Cluster molecules by structural similarity  │
-│ Image Generation     │ VAE/GAN creates new realistic images        │
-└──────────────────────┴─────────────────────────────────────────────┘
 ```
 
 ---
@@ -1561,47 +1052,114 @@ Self-supervised learning creates its own labels from the structure of the data i
 ## Key Takeaways
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  UNSUPERVISED LEARNING — COMPLETE CHEAT SHEET                    ║
-║  ──────────────────────────────────────────────────────────────  ║
-║  No labels — model discovers structure in data alone            ║
-║  Curse of Dimensionality: distances lose meaning as D grows     ║
-║  K-Means: K centroids, hard assignment, circular clusters        ║
-║  Hierarchical: tree of merges → cut dendrogram for any K        ║
-║  DBSCAN: density-based, any shape, marks outliers as noise      ║
-║  GMM: soft probabilistic assignment, handles overlapping clusters║
-║  Silhouette Score: evaluates cluster quality without labels     ║
-║  PCA: linear projection onto max-variance axes                  ║
-║  t-SNE: visualization only, preserves local structure           ║
-║  UMAP: faster, preserves global + local, can use as features    ║
-║  Autoencoder: neural net compresses then reconstructs data      ║
-║  Isolation Forest: anomalies isolated with fewer random splits  ║
-║  Apriori: finds association rules (support, confidence, lift)   ║
-║  Self-supervised: creates labels from data itself (GPT, BERT)   ║
-╚══════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════╗
+║  1. Unsupervised learning discovers structure without labels.       ║
+║  2. The curse of dimensionality makes distances meaningless in      ║
+║     high-D — reduce dimensions or get more data.                    ║
+║  3. K-Means: fast, simple, spherical clusters, must pick K.         ║
+║  4. Hierarchical: builds a merge tree, cut anywhere for any K.      ║
+║  5. DBSCAN: density-based, arbitrary shapes, flags noise.           ║
+║  6. GMM: soft probabilistic assignments, elliptical clusters.       ║
+║  7. Evaluate clusters with Silhouette + Elbow + Davies-Bouldin.     ║
+║  8. PCA: linear, fast, captures max variance. Scale features first. ║
+║  9. t-SNE: visualization only; local structure only; never as feats.║
+║  10. UMAP: faster than t-SNE, preserves global structure, usable    ║
+║      as features.                                                   ║
+║  11. Autoencoders: nonlinear compression via neural nets. VAE       ║
+║      variant enables generation.                                    ║
+║  12. Isolation Forest: anomalies are isolated in fewer random       ║
+║      splits — fast, effective, few assumptions.                     ║
+║  13. Apriori: finds frequent itemsets + association rules.           ║
+║      Support × Confidence × Lift to evaluate rules.                 ║
+║  14. Self-supervised learning creates labels from data itself —      ║
+║      the paradigm behind GPT, BERT, CLIP.                           ║
+╚══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## Review Questions — Test Your Understanding
+## Review Questions
 
-1. You have customer data with no labels and want to find natural groups. Which clustering algorithm would you start with and why?
-2. K-Means gives you circular clusters. But your data has crescent-shaped clusters. What algorithm should you use instead?
-3. Explain the Silhouette Score in one sentence. What does a score of -0.2 mean for a specific data point?
-4. You have a dataset with 500 features. Your model is performing poorly. What could be happening (think: curse of dimensionality) and what would you try?
-5. What's the difference between PCA and t-SNE? When would you use each?
+**1.** A retailer has customer purchase data with no labels and wants to identify natural customer segments. Which algorithm would you start with, and how would you choose K?
 
 <details>
-<summary>Answers</summary>
+<summary>Answer</summary>
 
-1. Start with K-Means — it's fast, simple, and works well for globular clusters. Use the Elbow method + Silhouette score to choose K. If clusters aren't round, switch to DBSCAN.
-2. DBSCAN — it finds density-based clusters of any shape. K-Means assumes spherical clusters and would fail on crescents.
-3. Silhouette Score measures how similar a point is to its own cluster vs the nearest other cluster (range -1 to +1). A score of -0.2 means the point is probably assigned to the wrong cluster.
-4. Curse of dimensionality — with 500 features, data is extremely sparse, distances lose meaning, and the model needs exponentially more data. Try: PCA to reduce dimensions, feature selection to remove irrelevant features, or regularization.
-5. PCA preserves global variance/structure and is fast (linear). t-SNE preserves local neighborhoods and is great for visualization but slow and non-linear. Use PCA for preprocessing/compression, t-SNE (or UMAP) for visualizing clusters in 2D/3D.
+Start with **K-Means** — it is fast, simple, and works well when clusters are roughly spherical. Use the **Elbow method** (plot inertia vs K) combined with **Silhouette Score** (pick K with the highest silhouette) to select K. If the data has irregular cluster shapes or outliers, switch to **DBSCAN** which determines K automatically and handles noise.
+</details>
+
+**2.** K-Means produces poor clusters on a dataset with crescent-shaped groups. What algorithm handles this, and why?
+
+<details>
+<summary>Answer</summary>
+
+**DBSCAN** — it defines clusters as dense regions regardless of shape. K-Means assumes convex/spherical clusters because it assigns points to the nearest centroid, which always produces Voronoi-cell (convex) boundaries. DBSCAN chains together density-reachable points, so it naturally captures crescents, rings, and other arbitrary shapes.
+</details>
+
+**3.** Explain the Silhouette Score in one sentence. What does a score of -0.3 for a specific point mean?
+
+<details>
+<summary>Answer</summary>
+
+The Silhouette Score measures how similar a point is to its own cluster compared to the nearest alternative cluster, on a scale from -1 to +1. A score of **-0.3** means the point is, on average, closer to points in a neighboring cluster than to points in its assigned cluster — it is likely in the **wrong cluster**.
+</details>
+
+**4.** You have a dataset with 2,000 features and 5,000 samples. Your model performs poorly. Diagnose the issue and propose solutions.
+
+<details>
+<summary>Answer</summary>
+
+This is the **curse of dimensionality**: 2,000 features with only 5,000 samples means the data is extremely sparse in that high-dimensional space, distances lose discriminative power, and the model is likely overfitting. Solutions: (1) **PCA** to reduce to ~50-100 dimensions capturing 95% of variance, (2) **feature selection** to remove irrelevant/redundant features, (3) **regularization** (L1/L2) to penalize model complexity, (4) collect more data if possible.
+</details>
+
+**5.** Compare PCA and t-SNE. When would you use each?
+
+<details>
+<summary>Answer</summary>
+
+**PCA** is linear, fast, preserves global variance, and produces features usable in downstream models. **t-SNE** is nonlinear, slow, preserves only local neighborhood structure, and is strictly for visualization. Use PCA for dimensionality reduction as a preprocessing step (e.g., 784 → 50 dimensions before training a classifier). Use t-SNE (or UMAP) to visualize high-dimensional data in 2D to check for cluster structure.
+</details>
+
+**6.** Why does GMM use soft assignments instead of hard assignments? Give a real-world scenario where this matters.
+
+<details>
+<summary>Answer</summary>
+
+GMM assigns each point a **probability of belonging to each cluster**, reflecting genuine uncertainty about borderline points. In **customer segmentation**, a customer who shops for both luxury and budget items should not be forced into one segment. GMM says "60% premium, 40% budget" — this enables better-targeted marketing for ambiguous customers rather than misclassifying them entirely.
+</details>
+
+**7.** What is the Apriori principle, and why is it computationally essential?
+
+<details>
+<summary>Answer</summary>
+
+The Apriori principle states: **if an itemset is infrequent, all its supersets are also infrequent**. This is essential because with $n$ items there are $2^n$ possible itemsets — exhaustive enumeration is impossible. Apriori prunes the search by never generating supersets of infrequent itemsets, reducing the combinatorial explosion to a manageable search.
+</details>
+
+**8.** How does Isolation Forest detect anomalies without labeled data?
+
+<details>
+<summary>Answer</summary>
+
+Isolation Forest builds random trees by selecting a random feature and a random split value at each node. **Anomalies are isolated in fewer splits** (shorter average path length) because they sit in sparse regions where a single random cut can separate them. Normal points in dense clusters require many splits. The anomaly score is derived from the average path length across all trees — shorter path = higher anomaly score.
+</details>
+
+**9.** Explain contrastive learning in self-supervised learning. Why are no labels needed?
+
+<details>
+<summary>Answer</summary>
+
+Contrastive learning creates **positive pairs** by applying two different augmentations (crop, color jitter, flip) to the same image, and **negative pairs** from different images. The model is trained to produce similar embeddings for positive pairs and dissimilar embeddings for negative pairs. No labels are needed because the **augmentation itself defines what should match** — two views of the same image should be similar. The data provides its own supervisory signal.
+</details>
+
+**10.** You need to reduce a 500-feature dataset to use as input for a gradient-boosted tree classifier. Should you use PCA, t-SNE, or UMAP? Justify your choice.
+
+<details>
+<summary>Answer</summary>
+
+Use **PCA** or **UMAP** — never t-SNE. t-SNE distorts distances non-uniformly, produces non-deterministic results, and is explicitly a visualization tool whose output should not be used as features. **PCA** is the safest default: it is fast, deterministic, and produces uncorrelated features (which can help tree models). **UMAP** is viable if the data has nonlinear structure that PCA misses, but adds complexity and non-determinism. For a gradient-boosted tree, PCA reducing to ~50-100 components (95% variance) is the standard choice.
 </details>
 
 ---
 
-**Previous:** [Chapter 6 — Supervised Learning](06_supervised_learning.md)
-**Next:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md)
+**Previous:** [Chapter 6 — Supervised Learning](06_supervised_learning.md) | **Next:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md)

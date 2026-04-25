@@ -1,142 +1,164 @@
-# Chapter 9 — Key ML Algorithms Deep Dive
+# Chapter 09 — Key ML Algorithms Deep Dive
 
 ---
 
 ## What You'll Learn
 
-After reading this chapter, you will be able to:
-- Implement and interpret Linear and Logistic Regression
-- Explain how Decision Trees choose splits (Gini, Entropy)
-- Describe how Random Forest uses randomness to improve predictions
-- Compare Gradient Boosting variants (XGBoost, LightGBM, CatBoost)
-- Explain SVM and the kernel trick for non-linear boundaries
-- Know when to use Naive Bayes and why it works despite its "naive" assumption
-- Choose the right algorithm for any given problem using a decision framework
+After this chapter you will be able to:
+- Derive and implement Linear and Logistic Regression from first principles
+- Explain how Decision Trees choose splits and why pruning matters
+- Describe how Random Forest reduces variance through bagging and feature randomization
+- Compare XGBoost, LightGBM, and CatBoost and know when to reach for each
+- Apply the kernel trick in SVMs and tune C / gamma jointly
+- Know when KNN is a good fit and when it falls apart
+- Deploy Naive Bayes on text and understand why a "wrong" assumption still works
+- Select the right algorithm for any tabular problem using a decision framework
 
 ---
 
-## Overview: The Algorithm Landscape
+## 9.1 The Algorithm Landscape
 
+> **Algorithm taxonomy** groups supervised learning methods by how they represent the learned function. Linear models fit hyperplanes; tree models partition the feature space into axis-aligned regions; instance-based methods store examples and compare at prediction time; probabilistic models apply Bayes' theorem.
+
+```mermaid
+graph TD
+    A["Supervised Learning Algorithms"] --> B["Linear Models"]
+    A --> C["Tree-Based Models"]
+    A --> D["Instance-Based"]
+    A --> E["Probabilistic"]
+
+    B --> B1["Linear Regression"]
+    B --> B2["Logistic Regression"]
+    B --> B3["Ridge / Lasso / Elastic Net"]
+    B --> B4["SVM (linear kernel)"]
+
+    C --> C1["Decision Tree (CART)"]
+    C --> C2["Random Forest (Bagging)"]
+    C --> C3["Gradient Boosting<br/>XGBoost · LightGBM · CatBoost"]
+
+    D --> D1["K-Nearest Neighbors"]
+
+    E --> E1["Naive Bayes<br/>Gaussian · Multinomial · Bernoulli"]
+
+    style A fill:#6366f1,color:#fff
+    style B fill:#3b82f6,color:#fff
+    style C fill:#22c55e,color:#fff
+    style D fill:#f59e0b,color:#fff
+    style E fill:#ef4444,color:#fff
 ```
-                        MACHINE LEARNING ALGORITHMS
-                                    │
-         ┌──────────────────────────┼──────────────────────────┐
-         ▼                          ▼                          ▼
-   LINEAR MODELS             TREE MODELS              PROBABILISTIC
-   ────────────              ───────────              ─────────────
-   Linear Regression         Decision Tree            Naive Bayes
-   Logistic Regression       Random Forest            Gaussian NB
-   Ridge / Lasso             Gradient Boosting
-   SVM (linear)              XGBoost / LightGBM
 
-         ┌──────────────────────────┼──────────────────────────┐
-         ▼                          ▼                          ▼
-  INSTANCE-BASED           NEURAL NETWORKS           UNSUPERVISED
-  ──────────────           ───────────────           ────────────
-  K-Nearest Neighbors      MLP / CNN / RNN           K-Means
-  (lazy learner)           Transformer               DBSCAN
-                           (see Chapter 8)           (see Chapter 5)
-```
+**How this chapter relates to the rest of the curriculum:**
 
-**How to navigate:**
-- This chapter: Linear/Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, SVM, KNN, Naive Bayes
-- Deep-dive on splits/Gini/Entropy/bagging: [Chapter 6](06_supervised_learning.md) (Supervised Learning)
-- Clustering (K-Means, DBSCAN, GMM): [Chapter 7](07_unsupervised_learning.md) (Unsupervised Learning)
-- Neural networks: [Chapter 10](10_neural_networks.md)
+| Topic | Where |
+|---|---|
+| Introduction to these algorithms | [Chapter 6 — Supervised Learning](06_supervised_learning.md) |
+| Unsupervised methods (K-Means, DBSCAN) | [Chapter 7 — Unsupervised Learning](07_unsupervised_learning.md) |
+| Neural networks and deep learning | [Chapter 10 — Neural Networks](10_neural_networks.md) |
+| Model evaluation (ROC, AUC, cross-val) | [Chapter 11 — Model Evaluation](11_model_evaluation.md) |
+
+Chapter 6 gave you the "what." This chapter gives you the "how" and "why" — the math, the implementation details, the hyperparameter knobs, and the practical failure modes.
 
 ---
 
-## 7.1 Linear Regression — In Depth
+## 9.2 Linear Regression — Deep Dive
 
-### Simple Explanation
-Imagine you are selling lemonade. You notice that on hotter days, you sell more cups. So you draw a line on a piece of graph paper: temperature on the bottom, cups sold on the side. Your line goes up from left to right because hotter = more lemonade. Now, if someone tells you tomorrow will be 90 degrees, you slide your finger along the line to see how many cups you will probably sell. That line is your model!
+> **Linear Regression** fits a linear function $\hat{y} = \mathbf{w}^\top \mathbf{x} + b$ to minimize the sum of squared residuals between predicted and observed values. It is the foundation of most parametric supervised learning.
 
-Linear Regression is just drawing the best straight line through a bunch of dots. Each dot is a real example you already know about (like "it was 85 degrees and I sold 40 cups"). The computer tries millions of slightly different lines and picks the one that gets closest to ALL the dots at once. Once you have that line, you can use it to predict new answers you have never seen before -- like how many cups you will sell when it is 95 degrees.
+### The Model
 
-### The Equation
+$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2 + \cdots + w_p x_p = \mathbf{w}^\top \mathbf{x}$$
 
-$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2 + \cdots + w_n x_n$$
+In matrix form for all $n$ samples: $\hat{\mathbf{y}} = X\mathbf{w}$ where $X$ is $(n \times (p+1))$ with a column of ones for the intercept.
 
-```
-  ŷ  = predicted value
-  w₀ = intercept (bias)
-  w₁...wₙ = weights (coefficients)
-  x₁...xₙ = feature values
-```
-
-### Worked Example: Predicting House Price
+### Worked Example — House Prices
 
 ```
-  TRAINING DATA:
-  ──────────────────────────────────────────────────────────────
-  SqFt (x₁)  │ Bedrooms (x₂) │ Age (x₃) │ Price (y)
-  ───────────┼───────────────┼──────────┼──────────
-    1500     │       3        │   10     │  $250,000
-    2200     │       4        │    5     │  $370,000
-     900     │       2        │   30     │  $150,000
+  TRAINING DATA
+  ──────────────────────────────────────────────────
+  SqFt (x1)  Bedrooms (x2)  Age (x3)   Price (y)
+  ──────────────────────────────────────────────────
+    1500          3            10        $250,000
+    2200          4             5        $370,000
+     900          2            30        $150,000
 
-  LEARNED MODEL:
-  ──────────────────────────────────────────────────────────────
-  Price = 50,000 + (120 × SqFt) + (15,000 × Bedrooms) − (1,000 × Age)
+  LEARNED WEIGHTS
+  ──────────────────────────────────────────────────
+  Price = 50,000 + 120*SqFt + 15,000*Bedrooms - 1,000*Age
 
-  PREDICTION for 1800 sqft, 3 bed, 8 years old:
-  Price = 50,000 + (120×1800) + (15,000×3) − (1,000×8)
-        = 50,000 + 216,000 + 45,000 − 8,000
-        = $303,000
+  PREDICTION: 1800 sqft, 3 bed, 8 yrs old
+  = 50,000 + 120(1800) + 15,000(3) - 1,000(8) = $303,000
 ```
 
-### How Weights Are Learned
+### Two Ways to Find Optimal Weights
 
-Goal: Find $w$ that minimizes MSE:
+**Method 1 — OLS Closed-Form (Normal Equation):**
 
-$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (\hat{y}_i - y_i)^2$$
+$$\mathbf{w}^* = (X^\top X)^{-1} X^\top \mathbf{y}$$
 
-```
-  RESIDUALS:
-  y (price)
-     │     *               Residual = distance between
-  400K│   * |               actual point (*) and line (ŷ)
-     │ * ─ ─ ─
-  200K│      ← line = model
-     └────────── x (sqft)
+Computes the exact solution in one step. Works well when $p$ is small (say, under a few thousand features). Fails when $X^\top X$ is singular (collinear features) or when $n$ is very large (inverting a $p \times p$ matrix costs $O(p^3)$).
 
-  TWO WAYS TO MINIMIZE:
-  ──────────────────────────────────────────────────────────
-  OLS (Ordinary Least Squares) — closed-form, one step:
-```
+**Method 2 — Gradient Descent (Iterative):**
 
-$$\mathbf{w} = (X^\top X)^{-1} X^\top \mathbf{y}$$
+$$w_j \leftarrow w_j - \eta \frac{\partial}{\partial w_j} \text{MSE} = w_j - \frac{2\eta}{n} \sum_{i=1}^n (\hat{y}_i - y_i) x_{ij}$$
+
+Scale-independent, works with millions of rows, and naturally extends to regularized variants. The learning rate $\eta$ must be tuned — too large overshoots, too small crawls.
 
 ```
-    Fast for small/medium data. Fails if XᵀX not invertible.
+  OLS vs Gradient Descent — when to use which:
 
-  Gradient Descent — iterative (see Chapter 2, Section 2.9):
-    Used when n > ~100K rows or for regularized variants.
+  ┌───────────────────┬───────────────────────────┬──────────────────────────┐
+  │                   │ OLS (closed-form)         │ Gradient Descent         │
+  ├───────────────────┼───────────────────────────┼──────────────────────────┤
+  │ Dataset size      │ n < 100K, p < 10K         │ Any size                 │
+  │ Computation       │ O(np^2 + p^3) — one shot  │ O(np * iterations)       │
+  │ Regularization    │ Ridge only (has formula)   │ Ridge, Lasso, Elastic    │
+  │ Numerical issues  │ Needs invertible X^T X     │ Always works             │
+  │ Online learning   │ No                         │ Yes (SGD)                │
+  └───────────────────┴───────────────────────────┴──────────────────────────┘
+```
+
+### The Five Assumptions of Linear Regression
+
+1. **Linearity** — the relationship between features and target is linear
+2. **Independence** — observations are independent of each other
+3. **Homoscedasticity** — residuals have constant variance across all predicted values
+4. **Normality of residuals** — residuals are approximately normally distributed
+5. **No multicollinearity** — features are not highly correlated with each other
+
+When assumptions break: non-linearity means you need polynomial features or a non-linear model; multicollinearity inflates coefficient variance (use Ridge or drop features); heteroscedasticity means your standard errors and confidence intervals are unreliable.
+
+### Residual Analysis
+
+```
+  A well-behaved model:              A problematic model:
+
+  residual                            residual
+      │  .  .                             │        . .
+      │ . . .  .                          │     . .
+   0 ─┼──────────── predicted          0 ─┼─.──────────── predicted
+      │  . .  .                           │      . .
+      │    .                              │  . .
+                                              ↑ pattern = non-linearity!
+  Random scatter around 0 = good.     Curved pattern = model misspecified.
+  No pattern = assumptions satisfied.  Fix: add polynomial terms or use
+                                       a non-linear algorithm.
 ```
 
 ### Regularized Variants
 
-**RIDGE REGRESSION (L2):**
+$$\text{Ridge (L2):} \quad \mathcal{L} = \text{MSE} + \lambda \sum_{j=1}^{p} w_j^2$$
 
-$$\text{Loss} = \text{MSE} + \lambda \sum w_i^2$$
+$$\text{Lasso (L1):} \quad \mathcal{L} = \text{MSE} + \lambda \sum_{j=1}^{p} |w_j|$$
 
-Shrinks all weights toward zero. Keeps all features.
-Use when: all features likely matter, just need smaller weights.
+$$\text{Elastic Net:} \quad \mathcal{L} = \text{MSE} + \lambda_1 \sum |w_j| + \lambda_2 \sum w_j^2$$
 
-**LASSO REGRESSION (L1):**
+| Variant | What it does | When to use |
+|---------|-------------|-------------|
+| **Ridge** | Shrinks all weights toward zero, keeps all features | All features likely contribute; reduce multicollinearity |
+| **Lasso** | Drives some weights to exactly 0 (feature selection) | Many irrelevant features; want automatic sparsity |
+| **Elastic Net** | Combines L1 + L2 | Correlated feature groups; want selection + stability |
 
-$$\text{Loss} = \text{MSE} + \lambda \sum |w_i|$$
-
-Drives some weights to exactly 0 (automatic feature selection!).
-Use when: you suspect only a few features actually matter.
-
-**ELASTIC NET:**
-
-$$\text{Loss} = \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2$$
-
-Combines Ridge + Lasso. Best when features are correlated.
-
-$\lambda$ (lambda): regularization strength. Higher = simpler model. Too high = underfitting. Tune via cross-validation.
+The penalty strength $\lambda$ is the single most important hyperparameter. Higher $\lambda$ = simpler model. Always tune via cross-validation.
 
 ```chart
 {
@@ -151,7 +173,7 @@ $\lambda$ (lambda): regularization strength. Higher = simpler model. Too high = 
         "pointRadius": 6
       },
       {
-        "label": "Best Fit Line (Linear Regression)",
+        "label": "Best Fit Line",
         "data": [{"x":800,"y":140},{"x":1000,"y":165},{"x":1500,"y":230},{"x":2000,"y":305},{"x":2500,"y":385},{"x":3000,"y":460}],
         "borderColor": "rgba(239, 68, 68, 1)",
         "backgroundColor": "transparent",
@@ -163,7 +185,7 @@ $\lambda$ (lambda): regularization strength. Higher = simpler model. Too high = 
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Linear Regression — Best Fit Line Through House Price Data" } },
+    "plugins": { "title": { "display": true, "text": "Linear Regression — Minimizing Squared Distances to the Line" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Price ($K)" }, "min": 100, "max": 500 },
       "x": { "title": { "display": true, "text": "Square Footage" }, "min": 700, "max": 3100 }
@@ -172,47 +194,130 @@ $\lambda$ (lambda): regularization strength. Higher = simpler model. Too high = 
 }
 ```
 
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+    "datasets": [
+      {
+        "label": "Ridge (L2) — Test MSE",
+        "data": [8.2, 7.1, 5.4, 4.0, 4.8, 7.5, 12.0],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      },
+      {
+        "label": "Lasso (L1) — Test MSE",
+        "data": [8.0, 6.8, 5.0, 3.8, 5.2, 9.0, 14.0],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Regularization Strength (lambda) — Too Little or Too Much Hurts" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Test MSE" }, "min": 2, "max": 16 },
+      "x": { "type": "logarithmic", "title": { "display": true, "text": "Lambda (log scale)" } }
+    }
+  }
+}
+```
+
 ---
 
-## 7.2 Logistic Regression — Deep Dive
+## 9.3 Logistic Regression — Deep Dive
 
-### Simple Explanation
-Picture a school nurse who checks if a kid is sick enough to go home. She looks at a few things: temperature, how many times you coughed, if your eyes are watery. Each clue adds up to a "sickness score." But she does not send you home because your score is 47 -- she needs a simple YES or NO: "sick enough to go home, or stay in class?"
+> **Logistic Regression** models the probability of a binary outcome by applying the logistic (sigmoid) function to a linear combination of features. It is trained by maximizing log-likelihood, equivalently minimizing binary cross-entropy loss.
 
-So she has a magic rule: if the score is above a certain line, you go home. Below the line, you stay. Logistic Regression works exactly like this. It adds up all the clues (features) into one score, then squishes that score through a special funnel (called the "sigmoid") that turns any number into a probability between 0 and 1. If the probability is above 0.5, the answer is YES. Below 0.5, the answer is NO.
-
-In short: Linear Regression predicts a number (like "how many cups of lemonade?"). Logistic Regression predicts a yes-or-no answer (like "will this email be spam?") by squashing that number into a probability.
+Despite the name, this is a **classification** algorithm. The key insight: take the linear regression score $z = \mathbf{w}^\top \mathbf{x}$, then squash it through the sigmoid to get a probability.
 
 ### The Sigmoid Function
 
-**STEP 1:** Compute a linear score (like Linear Regression):
+$$\sigma(z) = \frac{1}{1 + e^{-z}} \quad \text{where} \quad z = w_0 + w_1 x_1 + \cdots + w_p x_p$$
 
-$$z = w_0 + w_1 x_1 + w_2 x_2 + \cdots + w_n x_n$$
-
-**STEP 2:** Squash $z$ into $[0, 1]$ with the sigmoid function.
-Think of it like a gate that slowly opens: very negative $z$ leads to nearly 0,
-very positive $z$ leads to nearly 1, and $z = 0$ gives exactly 0.5.
-
-$$\sigma(z) = \frac{1}{1 + e^{-z}}$$
+Properties that make it useful:
+- Maps any real number to $(0, 1)$ — a valid probability
+- $\sigma(0) = 0.5$ — the natural decision boundary
+- Differentiable everywhere — gradient-based optimization works
+- $\sigma'(z) = \sigma(z)(1 - \sigma(z))$ — elegant gradient
 
 ```
-  SIGMOID SHAPE:
+  SIGMOID SHAPE
   P(y=1)
-    1.0 │                    ─────────────
-    0.8 │              ─────╱
-    0.5 │─────────────╱       ← threshold (usually 0.5)
-    0.2 │        ─────╱
-    0.0 │────────
-        └─────────────────────────────────── z (score)
+    1.0 |                    _______________
+    0.8 |              _____/
+    0.5 |_____________/        <-- threshold (default 0.5)
+    0.2 |        ____/
+    0.0 |_______/
+        +-------------------------------------> z
         -6     -3      0      3      6
-
-  Output = probability that the sample belongs to class 1.
 ```
 
-**Official Definition:**
-> **Logistic Regression** models the probability of a binary outcome using the logistic
-> (sigmoid) function applied to a linear combination of features. It is trained by
-> maximizing the log-likelihood (equivalent to minimizing binary cross-entropy loss).
+### The Loss Function — Binary Cross-Entropy
+
+You cannot use MSE for classification — the loss surface would be non-convex with many local minima. Instead:
+
+$$\mathcal{L} = -\frac{1}{n}\sum_{i=1}^{n} \left[ y_i \log(\hat{p}_i) + (1 - y_i) \log(1 - \hat{p}_i) \right]$$
+
+When the true label $y = 1$, the loss is $-\log(\hat{p})$ — it punishes low predicted probabilities. When $y = 0$, the loss is $-\log(1 - \hat{p})$ — it punishes high predicted probabilities. This function is convex, so gradient descent finds the global minimum.
+
+### Worked Example — Spam Detection
+
+```
+  Features: word_free (count), has_link (0/1), caps_ratio (fraction)
+
+  Learned weights: w0 = -2.1, w1 = 1.8, w2 = 3.2, w3 = 4.5
+
+  New email: word_free=3, has_link=1, caps_ratio=0.4
+
+  z = -2.1 + 1.8(3) + 3.2(1) + 4.5(0.4) = -2.1 + 5.4 + 3.2 + 1.8 = 8.3
+  P(spam) = sigmoid(8.3) = 1/(1+e^-8.3) = 0.9998
+
+  Since 0.9998 > 0.5 threshold --> classify as SPAM
+```
+
+### Decision Boundary
+
+The decision boundary is where $P(y=1) = 0.5$, i.e., where $z = 0$:
+
+$$w_0 + w_1 x_1 + w_2 x_2 = 0 \implies x_2 = -\frac{w_0}{w_2} - \frac{w_1}{w_2} x_1$$
+
+This is always a straight line in 2D (a hyperplane in higher dimensions). If the data is not linearly separable, logistic regression will find the best linear boundary but cannot capture non-linear patterns. For that, add polynomial features or switch to a non-linear model.
+
+### Multiclass Extensions
+
+**One-vs-Rest (OvR):** Train $K$ binary classifiers, each asking "is it class $k$ or not?" Predict with the class that gives the highest probability. Simple, works with any binary classifier.
+
+**Softmax (Multinomial):** Generalize sigmoid to $K$ classes directly:
+
+$$P(y = k \mid \mathbf{x}) = \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}$$
+
+Probabilities sum to 1 across all classes. This is the standard approach in neural networks and sklearn's `multi_class='multinomial'`.
+
+### Threshold Tuning for Real-World Problems
+
+The default threshold of 0.5 is rarely optimal. Adjust it based on the cost of errors:
+
+```
+  Medical Diagnosis (fraud detection, cancer screening):
+    Lower threshold (e.g., 0.3) -> catch more positives
+    Higher recall, lower precision
+    Cost of missing a positive >> cost of false alarm
+
+  Spam Filter:
+    Higher threshold (e.g., 0.7) -> only flag clear spam
+    Higher precision, lower recall
+    Cost of blocking real email >> cost of missing some spam
+
+  Use the ROC curve or Precision-Recall curve to pick the
+  threshold that matches your business objective.
+  (See Chapter 11 for details on these curves.)
+```
 
 ```chart
 {
@@ -220,17 +325,17 @@ $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
   "data": {
     "labels": [-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6],
     "datasets": [{
-      "label": "Sigmoid: P(y=1) = 1/(1+e⁻ᶻ)",
+      "label": "Sigmoid: P(y=1) = 1/(1+e^-z)",
       "data": [0.002,0.007,0.018,0.047,0.119,0.269,0.500,0.731,0.881,0.953,0.982,0.993,0.998],
       "borderColor": "rgba(99, 102, 241, 1)",
       "backgroundColor": "rgba(99, 102, 241, 0.1)",
       "fill": true,
       "tension": 0.4,
-      "pointRadius": 2
+      "pointRadius": 3
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Sigmoid Function — Squashes Any Score into a Probability (0 to 1)" } },
+    "plugins": { "title": { "display": true, "text": "Sigmoid Function — Any Score to a Probability" } },
     "scales": {
       "y": { "title": { "display": true, "text": "P(y=1)" }, "min": 0, "max": 1 },
       "x": { "title": { "display": true, "text": "z (linear score)" } }
@@ -239,169 +344,96 @@ $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
 }
 ```
 
-### Decision Boundary
-
-```
-  Feature 2
-      │   ╲  ○ ○ ○        Decision boundary is where:
-      │    ╲ ○ ○             w₀ + w₁x₁ + w₂x₂ = 0
-   ○  │  ● ●╲● ○           (P(y=1) = 0.5)
-      │ ● ● ●╲             ● = class 1, ○ = class 0
-      └─────────── Feature 1
-
-  Key: the boundary is ALWAYS a straight line (linear model).
-  If data is not linearly separable → use kernels or neural networks.
-```
-
-### Multiclass: One-vs-Rest (OvR) Strategy
-
-```
-  For 3 classes: Cat, Dog, Bird
-
-  Train 3 separate binary classifiers:
-  ┌─────────────────────────────────────────────────┐
-  │ Classifier 1: "Is it a Cat?"   → P(Cat)  = 0.7  │
-  │ Classifier 2: "Is it a Dog?"   → P(Dog)  = 0.2  │
-  │ Classifier 3: "Is it a Bird?"  → P(Bird) = 0.3  │
-  └─────────────────────────────────────────────────┘
-
-  Pick the class with the HIGHEST probability → Cat! 🐱
-
-  Note: probabilities don't need to sum to 1 in OvR.
-  For true probabilities use softmax (multinomial logistic regression).
-```
-
-### Threshold Tuning
-
-```
-  Default threshold = 0.5, but you can change it!
-
-  High threshold (e.g., 0.8):
-    Model only predicts POSITIVE if very confident.
-    → Higher precision, lower recall
-    → Use when false positives are costly (spam filter)
-
-  Low threshold (e.g., 0.2):
-    Model predicts POSITIVE even when uncertain.
-    → Lower precision, higher recall
-    → Use when false negatives are costly (cancer screening)
-
-  See Chapter 9 for ROC curve and optimal threshold selection.
-```
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
-    "datasets": [
-      {
-        "label": "Precision",
-        "data": [0.30,0.45,0.55,0.65,0.72,0.80,0.87,0.92,0.96,0.99,1.00],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 2
-      },
-      {
-        "label": "Recall",
-        "data": [1.00,0.98,0.95,0.90,0.82,0.72,0.58,0.42,0.25,0.10,0.00],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 2
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Threshold Tuning — Precision vs Recall Trade-off" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Score" }, "min": 0, "max": 1 },
-      "x": { "title": { "display": true, "text": "Classification Threshold" } }
-    }
-  }
-}
-```
-
 ---
 
-## 7.3 Decision Trees — Deep Dive ★★★
+## 9.4 Decision Trees — Deep Dive
 
-### Simple Explanation
-Imagine you are playing 20 Questions with your friend. They are thinking of an animal, and you need to figure out what it is. You could start by asking "Is it a mammal?" -- that one question splits ALL the animals in the world into two big groups. Then you ask "Is it bigger than a dog?" -- now each group gets split again. You keep asking smart yes-or-no questions until you narrow it down to one answer: "It's a penguin!"
-
-A Decision Tree works the same way. It looks at your data and asks yes/no questions about the features. "Is the house bigger than 1500 square feet?" "Does it have more than 3 bedrooms?" Each question splits the data into two groups, and it keeps going until each group has a clear answer. The tricky part is figuring out which question to ask FIRST -- you want the question that does the best job of sorting things into neat piles, just like in 20 Questions you want to ask the question that eliminates the most possibilities right away.
+> **Decision Tree (CART)** is a non-parametric supervised algorithm that recursively partitions the feature space into axis-aligned regions by choosing splits that maximize an impurity reduction criterion (Gini impurity or information gain). Predictions are the majority class (classification) or mean value (regression) in each leaf.
 
 ### How Splits Are Chosen
 
-```
-  At each node, try EVERY possible split on EVERY feature.
-  Pick the split that creates the most "pure" child nodes.
+At every internal node, the algorithm evaluates every possible split on every feature and picks the one that produces the purest child nodes.
 
-  Two measures of purity (covered in detail in Chapter 4):
-```
+**Gini Impurity:**
 
-$$G = 1 - \sum p_i^2 \quad \text{(Gini Impurity)}$$
+$$G = 1 - \sum_{k=1}^{K} p_k^2$$
 
-$$H = -\sum p_i \log_2(p_i) \quad \text{(Entropy)}$$
+**Entropy (Information Gain):**
 
-```
-  Both answer: "how mixed are the classes in this node?"
-  Lower = purer = better split.
+$$H = -\sum_{k=1}^{K} p_k \log_2(p_k)$$
 
-  See Chapter 4, Section 4.3 for a worked numerical example
-  with the Play Tennis dataset.
-```
+Both measure "how mixed are the classes?" A pure node ($G=0$, $H=0$) contains only one class. In practice, Gini and Entropy almost always produce identical trees. Gini is slightly faster to compute (no logarithm).
 
-### The Depth Problem
+### Worked Split Example — Fraud Detection
 
 ```
-  Depth 2 tree (simple, may underfit):       Depth 10 tree (may overfit):
-  ─────────────────────────────────          ────────────────────────────
-          [Age > 30?]                         [Age > 30?]
-         /          \                        /           \
-   [Income>50K?]  [Job=Tech?]         [Income>50K?]  [Complex...]
-   /     \         /     \            /      \
-  YES    NO      YES     NO         ...   [More splits]...
-                                              │
-  Fewer splits = general rules.        Memorizes every training
-  Better on new data.                  example. Fails on new data.
+  Parent node: 100 transactions (30 fraud, 70 legit)
+  Gini(parent) = 1 - (0.3^2 + 0.7^2) = 1 - 0.58 = 0.42
 
-  SOLUTION: CONTROL TREE DEPTH with hyperparameters (see 7.10)
+  Candidate split: "amount > $500?"
+
+  Left child (amount <= 500):  60 transactions (5 fraud, 55 legit)
+    Gini(left) = 1 - (5/60)^2 - (55/60)^2 = 0.153
+
+  Right child (amount > 500):  40 transactions (25 fraud, 15 legit)
+    Gini(right) = 1 - (25/40)^2 - (15/40)^2 = 0.469
+
+  Weighted Gini after split = (60/100)*0.153 + (40/100)*0.469
+                            = 0.092 + 0.188 = 0.280
+
+  Gini reduction = 0.42 - 0.28 = 0.14  (good split!)
+
+  The algorithm tests ALL features and thresholds, picks the
+  split with the largest impurity reduction.
 ```
 
-### Pre-Pruning (Most Common)
-Stop the tree from growing too deep during training:
+### The Overfitting Problem
+
+An unrestricted decision tree will keep splitting until every leaf is pure — effectively memorizing the training data. This gives 100% training accuracy and terrible generalization.
 
 ```
-  max_depth       = 5      ← never go deeper than 5 levels
-  min_samples_split = 20   ← only split if node has ≥ 20 samples
-  min_samples_leaf  = 10   ← leaves must have ≥ 10 samples
-  max_features      = 10   ← only consider 10 features per split
-
-  These hyperparameters PREVENT memorizing training data.
+  Depth 3 (underfits slightly):       Depth 20 (memorizes noise):
+  ──────────────────────────           ────────────────────────────
+          [amount > 500?]                      [amount > 500?]
+         /              \                     /              \
+   [time < 2am?]   [country=X?]        [time < 2:03am?]  [...]
+    /      \          /      \           /         \
+  Fraud   Legit    Fraud   Legit       [...many splits...]
+                                              |
+  General rules.                       One leaf per training example.
+  Works on new data.                   Fails on new data.
 ```
 
-### Post-Pruning: Cost-Complexity Pruning
+### Pre-Pruning (Stopping Rules)
 
 ```
-  After training a full tree, work BACKWARDS removing branches
-  that don't improve accuracy enough to justify their complexity.
-
-  Score = Error on validation set + α × (number of leaves)
-            ─────────────────────   ─────────────────────
-               reward accuracy           penalize complexity
-
-  Increase α → remove more branches → simpler tree
-  Decrease α → keep more branches  → complex tree
-  (sklearn calls this parameter: ccp_alpha)
+  max_depth         = 5-10   Stop growing after N levels
+  min_samples_split = 20     Only split if node has >= 20 samples
+  min_samples_leaf  = 10     Leaves must have >= 10 samples
+  max_features      = 'sqrt' Only consider sqrt(p) features per split
+  max_leaf_nodes    = 50     Cap total number of leaves
 ```
 
-**Official Definition:**
-> **Decision Tree** is a non-parametric supervised learning algorithm that partitions the
-> feature space into axis-aligned regions by recursively choosing splits that maximize an
-> impurity criterion (e.g., Gini or Information Gain). Predictions are the majority class
-> (classification) or mean value (regression) in each leaf node.
+These are the most effective regularization controls. Start with `max_depth` — it has the biggest impact on overfitting.
+
+### Post-Pruning: Cost-Complexity (Minimal Cost-Complexity Pruning)
+
+After growing a full tree, prune it back by finding the subtree that minimizes:
+
+$$R_\alpha(T) = R(T) + \alpha \cdot |T|$$
+
+where $R(T)$ is the misclassification rate, $|T|$ is the number of leaves, and $\alpha$ is the complexity penalty. Higher $\alpha$ = more aggressive pruning = simpler tree.
+
+In sklearn, this is `ccp_alpha`. Use `cost_complexity_pruning_path()` to find candidate $\alpha$ values, then select via cross-validation.
+
+### Pros and Cons
+
+| Strengths | Weaknesses |
+|-----------|-----------|
+| Highly interpretable (visualize the tree) | High variance — small data changes = different tree |
+| No feature scaling needed | Axis-aligned splits miss diagonal boundaries |
+| Handles mixed feature types | Greedy — locally optimal splits, not global |
+| Built-in feature importance | Single tree rarely competitive for accuracy |
 
 ```chart
 {
@@ -429,7 +461,7 @@ Stop the tree from growing too deep during training:
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Decision Tree Depth — Deeper = Better Training, But Validation Peaks Then Falls" } },
+    "plugins": { "title": { "display": true, "text": "Decision Tree Depth vs Accuracy — Validation Peaks Then Drops" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
       "x": { "title": { "display": true, "text": "max_depth" } }
@@ -440,74 +472,69 @@ Stop the tree from growing too deep during training:
 
 ---
 
-## 7.4 Random Forest — Deep Dive ★★★
+## 9.5 Random Forest — Deep Dive
 
-### Simple Explanation
-Think about the TV show "Who Wants to Be a Millionaire?" where you can "Ask the Audience." If you asked just ONE person in the audience, they might be wrong. But when you ask HUNDREDS of people and go with whatever answer MOST of them picked, the crowd almost always gets it right -- even though each person alone might make mistakes.
-
-Random Forest does the exact same thing. Instead of growing just one decision tree (one person's opinion), it grows 100 or even 500 different trees. Here is the clever part: each tree gets to see a slightly different, shuffled version of the data, so they each develop a slightly different "point of view." When it is time to make a prediction, all the trees vote, and the answer that gets the most votes wins. One confused tree might get it wrong, but it gets outvoted by the many trees that got it right. The wisdom of the crowd beats any single expert!
+> **Random Forest** is an ensemble of decision trees trained on bootstrap samples with random feature subsets at each split (bagging + feature randomization). Predictions are aggregated by majority vote (classification) or averaging (regression). The decorrelation between trees reduces ensemble variance without increasing bias.
 
 ### The Two Sources of Randomness
 
+**Source 1 — Bootstrap Sampling (Bagging):**
+
+Each tree gets a random sample of $n$ rows drawn with replacement. On average, each bootstrap sample contains ~63.2% of unique training rows. The remaining ~36.8% are "out-of-bag" (OOB) for that tree.
+
 ```
-  RANDOMNESS 1: Bootstrap Sampling (Bagging)
-  ───────────────────────────────────────────
-  Original data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-  Tree 1 trains on: [2, 2, 5, 7, 3, 9, 1, 4, 4, 6]  (sample with replacement)
-  Tree 2 trains on: [8, 1, 3, 3, 7, 2, 9, 5, 6, 6]  (different sample)
-  Tree 3 trains on: [4, 7, 1, 8, 2, 5, 3, 9, 7, 1]  (yet another sample)
+  Tree 1 sample: [2, 2, 5, 7, 3, 9, 1, 4, 4, 6]  -> OOB: {8, 10}
+  Tree 2 sample: [8, 1, 3, 3, 7, 2, 9, 5, 6, 6]  -> OOB: {4, 10}
+  Tree 3 sample: [4, 7, 1, 8, 2, 5, 3, 9, 7, 1]  -> OOB: {6, 10}
+```
 
-  Each tree sees a different "view" of the data → diverse opinions!
+**Source 2 — Feature Subsampling:**
 
-  RANDOMNESS 2: Feature Subsampling
-  ───────────────────────────────────────────
-  At each split, only consider a RANDOM SUBSET of features:
-  Classification: √(total features)   e.g., √20 ≈ 4 features
-  Regression:     total features / 3  e.g., 20/3 ≈ 6 features
+At each split, only a random subset of features is considered:
 
-  Why? If one feature is very strong, every tree would use it at
-  the top → trees become correlated → defeats the purpose of voting!
-  Forcing different features = diverse trees = better ensemble.
+```
+  Classification default: max_features = sqrt(p)
+  Regression default:     max_features = p/3
+
+  Why? If one feature dominates (e.g., "amount" for fraud), every
+  tree splits on it first -> trees are correlated -> ensemble gains
+  little from averaging. Forcing different features per split
+  decorrelates trees -> individual errors cancel out.
 ```
 
 ### Out-of-Bag (OOB) Error
 
-```
-  When building each tree via bootstrap sampling,
-  ~37% of samples are NOT used for that tree.
-  These are called "out-of-bag" samples for that tree.
-
-  Original: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-  Tree 1 trains on: [2, 2, 5, 7, 3, 9, 1, 4, 4, 6]
-  Tree 1 OOB:       [8, 10]  ← these were never seen by Tree 1
-
-  OOB Error:
-  ─────────────────────────────────────────────────────
-  For each sample, collect predictions ONLY from trees
-  that did NOT train on it (its OOB trees).
-  Average those predictions → OOB accuracy.
-
-  This is essentially a FREE cross-validation estimate!
-  You don't need to hold out a separate validation set.
-  Use oob_score=True in sklearn's RandomForestClassifier.
-```
-
-### n_estimators vs Performance
+For each sample, collect predictions only from trees that did NOT train on it. This gives a free cross-validation estimate without needing a held-out validation set.
 
 ```
-  Accuracy
-      │             ─ ─ ─ ─ ─ ─ ─  plateau
-      │         ────
-      │      ───
-      │   ───
-      │───
-      └─────────────────────────────── n_estimators (trees)
-       10  50  100  200  500
+  Sample #10 was OOB for trees {1, 2, 3}
+  Tree 1 predicts: Fraud
+  Tree 2 predicts: Legit
+  Tree 3 predicts: Fraud
+  OOB prediction for sample #10: Fraud (2 vs 1 vote)
 
-  More trees = better accuracy UP TO A POINT.
-  After ~100-200 trees: minimal gain, but training takes longer.
-  Rule of thumb: start with 100, increase if time allows.
+  OOB accuracy across all samples ≈ cross-validation accuracy.
+  Use: oob_score=True in sklearn's RandomForestClassifier.
+```
+
+### Feature Importance
+
+Random Forest provides two importance measures:
+
+**Mean Decrease in Impurity (MDI):** Sum of Gini reductions across all splits on a feature, averaged over all trees. Fast but biased toward high-cardinality features.
+
+**Permutation Importance:** Shuffle one feature's values, measure accuracy drop. Unbiased, works with any model, but slower. Prefer permutation importance for final reporting.
+
+### Key Hyperparameters
+
+```
+  n_estimators:    100-500 (more is better, diminishing returns after ~200)
+  max_depth:       None (let trees grow deep) or 10-30 for regularization
+  max_features:    'sqrt' (classification) or 0.33 (regression)
+  min_samples_leaf: 1-5 (lower = more complex trees)
+  bootstrap:       True (use bagging) — almost always leave as True
 ```
 
 ```chart
@@ -537,7 +564,7 @@ Random Forest does the exact same thing. Instead of growing just one decision tr
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Random Forest — More Trees = Better Accuracy (up to a point)" } },
+    "plugins": { "title": { "display": true, "text": "Random Forest — More Trees Improve Accuracy (Diminishing Returns)" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 65, "max": 95 },
       "x": { "title": { "display": true, "text": "Number of Trees (n_estimators)" } }
@@ -546,113 +573,115 @@ Random Forest does the exact same thing. Instead of growing just one decision tr
 }
 ```
 
-**Official Definition:**
-> **Random Forest** is an ensemble method that builds multiple decision trees using
-> bootstrap sampling and random feature subsets (bagging + feature randomization).
-> The final prediction aggregates tree outputs: majority vote (classification) or
-> mean (regression). The decorrelation between trees reduces variance significantly.
-
 ---
 
-## 7.5 Gradient Boosting — The Competition Champion ★★★
+## 9.6 Gradient Boosting — The Competition King
 
-### Simple Explanation
-Imagine you are trying to guess how many jellybeans are in a big jar. Your first guess is 500, but the real answer is 800 -- so you were off by 300. Now your friend does not guess the TOTAL number; instead, they try to guess just the MISTAKE you made. Your friend says "I think you were off by about 250." Now you are only off by 50! A third friend looks at the remaining mistake and guesses "off by 40." Now you are only off by 10. Each friend focuses ONLY on fixing the leftover error, and the final answer adds up everyone's contributions: 500 + 250 + 40 = 790, which is really close to 800!
+> **Gradient Boosting** builds an additive ensemble of weak learners (shallow trees) sequentially. Each new tree is fit to the negative gradient of the loss function with respect to the current ensemble's predictions (i.e., the residuals for squared error loss). The final prediction is the weighted sum of all trees' outputs.
 
-That is exactly how Gradient Boosting works. The first small tree makes a rough guess. The second tree looks at the leftover errors (called "residuals") and tries to predict those. The third tree fixes whatever mistakes remain after the first two. You keep stacking these small corrections on top of each other, and the combined answer keeps getting closer and closer to the truth. It is like a relay team where each runner only has to cover a short distance -- together they cross the whole finish line.
+### The Core Idea
 
 ```
-  BOOSTING IDEA:
-  ──────────────────────────────────────────────────────────────
-  Real answer: 100
+  Target: 100
 
-  Tree 1 (weak): predicts 70   → Residual error = 30
-                                        │
-  Tree 2 predicts residual: 20  → Residual error = 10
-                                        │
-  Tree 3 predicts residual: 8   → Residual error = 2
-                                        │
-  Final = 70 + 20 + 8 = 98 ≈ 100  (close!)
+  Tree 1 (shallow, weak): predicts 70    --> residual = 30
+  Tree 2 fits residual:   predicts 22    --> residual = 8
+  Tree 3 fits residual:   predicts 6     --> residual = 2
+  Tree 4 fits residual:   predicts 1.5   --> residual = 0.5
 
-  Each tree CORRECTS the errors of all previous trees!
+  Final = 70 + 22 + 6 + 1.5 = 99.5  (very close!)
 ```
 
-**Official Definition:**
-> **Gradient Boosting** builds an ensemble of weak learners (shallow decision trees)
-> sequentially. Each new tree is fit to the negative gradient of the loss function
-> (equivalent to the residuals for MSE). The final prediction is the sum of all
-> trees' outputs, each scaled by a learning rate η.
+The mathematical formulation at iteration $m$:
+
+$$F_m(\mathbf{x}) = F_{m-1}(\mathbf{x}) + \eta \cdot h_m(\mathbf{x})$$
+
+where $h_m$ is the new tree fit to the pseudo-residuals $r_i = -\frac{\partial L(y_i, F_{m-1}(x_i))}{\partial F_{m-1}(x_i)}$ and $\eta$ is the learning rate.
 
 ### The Learning Rate Tradeoff
 
 ```
-  Final model = η×tree₁ + η×tree₂ + η×tree₃ + ...
+  Large eta (0.3):  Learns fast, fewer trees needed, can overshoot --> overfit
+  Small eta (0.01): Learns slowly, needs many trees, more robust --> better accuracy
 
-  Large η (e.g., 0.3): learns fast, fewer trees needed,
-                       but can overshoot the minimum → overfit
+  KEY RULE: learning_rate x n_estimators ~ constant performance
+  eta=0.1 + 100 trees  ~  eta=0.01 + 1000 trees
 
-  Small η (e.g., 0.01): learns slowly, needs many more trees,
-                        but more accurate and robust
-
-  KEY RULE: learning_rate × n_estimators ≈ constant
-  e.g., η=0.1 + 100 trees ≈ η=0.01 + 1000 trees (similar accuracy)
-
-  Best practice: use small η + many trees + early stopping.
+  Best practice: use a small learning rate + many trees + early stopping.
+  Early stopping monitors validation loss and halts when it stops improving.
 ```
 
-### XGBoost vs LightGBM vs CatBoost ★★★
+### XGBoost vs LightGBM vs CatBoost
 
-```
-┌────────────────┬────────────────────────────────────────────────┐
-│ XGBoost        │ Level-wise tree growth (balanced)              │
-│                │ Regularization built-in (L1 + L2)             │
-│                │ Handles missing values natively                │
-│                │ Great general performance                      │
-├────────────────┼────────────────────────────────────────────────┤
-│ LightGBM       │ Leaf-wise tree growth (faster, targets errors) │
-│                │ 10x faster training on large datasets          │
-│                │ Less memory usage (histogram-based splits)     │
-│                │ Best for: large n, fast iteration              │
-├────────────────┼────────────────────────────────────────────────┤
-│ CatBoost       │ Native categorical feature support             │
-│                │ No manual encoding needed (target encoding)    │
-│                │ Ordered boosting prevents leakage              │
-│                │ Best for: datasets with many categorical cols  │
-└────────────────┴────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    A["Gradient Boosting<br/>Frameworks"] --> X["XGBoost"]
+    A --> L["LightGBM"]
+    A --> C["CatBoost"]
+
+    X --> X1["Level-wise growth<br/>Built-in L1+L2 reg<br/>Handles missing values<br/>Great general performance"]
+    L --> L1["Leaf-wise growth<br/>Histogram-based splits<br/>10x faster on large data<br/>Lower memory usage"]
+    C --> C1["Ordered boosting<br/>Native categorical support<br/>No manual encoding<br/>Best out-of-box defaults"]
+
+    style X fill:#6366f1,color:#fff
+    style L fill:#22c55e,color:#fff
+    style C fill:#f59e0b,color:#fff
 ```
 
-### Tree Growth Strategy Comparison
+**Level-wise vs Leaf-wise Growth:**
 
 ```
-  Level-wise (XGBoost):           Leaf-wise (LightGBM):
-  ──────────────────────          ─────────────────────────
-          root                            root
-         /    \                          /    \
-        A      B        vs             A      B
-       / \    / \                     / \
-      C   D  E   F                   C   D
-                                    / \
-                                   G   H  ← always splits highest-error leaf
+  Level-wise (XGBoost):              Leaf-wise (LightGBM):
+  ──────────────────────             ─────────────────────────
+          root                               root
+         /    \                             /    \
+        A      B                           A      B
+       / \    / \                         / \
+      C   D  E   F                       C   D
+                                        / \
+  Grows all nodes at                   G   H  <-- always splits
+  each depth level.                    highest-loss leaf next.
 
-  Balanced tree.                  Unbalanced but faster convergence.
-  Safer on small data.            Can overfit small datasets (tune max_depth).
+  Safer on small data.                Faster convergence.
+  Balanced tree structure.            Can overfit small data
+                                      (control via max_depth,
+                                       num_leaves).
+```
+
+**Practical Guidance:**
+
+| Scenario | Recommended |
+|----------|------------|
+| General tabular data, first try | XGBoost |
+| Large dataset (>100K rows), need speed | LightGBM |
+| Many categorical features (no encoding) | CatBoost |
+| Kaggle competition, squeeze last 0.1% | Try all three, ensemble the best |
+
+### Hyperparameter Tuning Strategy
+
+```
+  STEP 1: Fix learning_rate=0.1, find good n_estimators via early stopping
+  STEP 2: Tune tree structure: max_depth (3-8), min_child_weight
+  STEP 3: Tune regularization: subsample (0.6-0.9), colsample_bytree (0.6-0.9)
+  STEP 4: Tune L1/L2 penalties: reg_alpha, reg_lambda
+  STEP 5: Lower learning_rate to 0.01-0.05, increase n_estimators proportionally
 ```
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Residual after Tree 1", "Residual after Tree 1+2", "Residual after Tree 1+2+3", "Residual after 10 Trees", "Residual after 50 Trees"],
+    "labels": ["After Tree 1", "After Trees 1-2", "After Trees 1-3", "After 10 Trees", "After 50 Trees"],
     "datasets": [{
       "label": "Remaining Error",
-      "data": [30, 10, 2, 0.3, 0.01],
-      "backgroundColor": ["rgba(239,68,68,0.7)","rgba(234,88,12,0.7)","rgba(200,180,50,0.7)","rgba(99,102,241,0.7)","rgba(34,197,94,0.7)"],
-      "borderColor": ["rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(200,180,50,1)","rgba(99,102,241,1)","rgba(34,197,94,1)"],
+      "data": [30, 8, 2, 0.3, 0.01],
+      "backgroundColor": ["rgba(239,68,68,0.7)","rgba(234,88,12,0.7)","rgba(234,179,8,0.7)","rgba(99,102,241,0.7)","rgba(34,197,94,0.7)"],
+      "borderColor": ["rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(234,179,8,1)","rgba(99,102,241,1)","rgba(34,197,94,1)"],
       "borderWidth": 1
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Each Tree Fixes Previous Mistakes (Error Shrinks)" } },
+    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Residual Error Shrinks with Each Tree" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Error" }, "beginAtZero": true }
     }
@@ -662,110 +691,108 @@ That is exactly how Gradient Boosting works. The first small tree makes a rough 
 
 ---
 
-## 7.6 Support Vector Machines — Deep Dive ★★
+## 9.7 Support Vector Machines — Deep Dive
 
-### Simple Explanation
-Imagine you are on a playground and you need to draw a chalk line on the ground to separate the kickball kids on one side from the jump-rope kids on the other side. You could draw the line anywhere between the two groups, but the SMARTEST place to draw it is right in the middle, as far from both groups as possible. That way, if a few kids wander around a little, they still stay on the correct side.
+> **Support Vector Machine (SVM)** finds the hyperplane that maximizes the geometric margin between two classes. With soft margins (the C parameter) it tolerates some misclassifications. The kernel trick implicitly maps inputs to a high-dimensional feature space where linear separation is possible, enabling non-linear classification without explicit feature transformation.
 
-SVM (Support Vector Machine) draws that "best dividing line." It does not just find ANY line that separates two groups -- it finds the one with the BIGGEST gap (called the "margin") between the line and the closest kids on each side. Those closest kids are the "support vectors" -- they are the ones who matter the most because they define where the line goes.
+### Maximum Margin — The Core Idea
 
-But what if the kickball kids and jump-rope kids are all mixed up together and you cannot draw a straight line between them? That is where the "kernel trick" comes in. Imagine you could pick up all the kids and lift some of them into the air on a jungle gym. Now, looking from the side, the kickball kids might all be on the ground and the jump-rope kids might all be up high -- and you CAN draw a flat line between them! SVM does something like this mathematically: it lifts the data into a higher dimension where a straight divider works.
-
-### The Core Idea: Maximum Margin
+Many hyperplanes can separate two classes. SVM picks the one with the widest possible gap (margin) between the nearest points of each class.
 
 ```
-  Many lines can separate two classes.
-  SVM finds the ONE line (or hyperplane) with the LARGEST MARGIN.
-
   Feature 2
-      │    ○ ○   ╱  ← margin (as wide as possible!)
-      │   ○ ○  ╱╱
-      │       ╱╱╱← decision boundary (the middle of the margin)
-      │      ╱╱╱╱
-      │     ╱╱● ●
-      │    ╱  ● ● ●
-      └─────────── Feature 1
+      |    o o   /  <-- margin
+      |   o o  //
+      |       ///  <-- decision boundary (maximizes margin)
+      |      ////
+      |     //  * *
+      |    /  * * *
+      +------------- Feature 1
 
-  Support Vectors: the training points closest to the boundary.
-  They "support" (define) the margin. All other points don't matter!
-
-  Why maximize margin?
-  Larger margin → more room for new data → better generalization.
+  o = class 0,  * = class 1
+  Support Vectors: the points ON the margin boundary.
+  Only these points define the hyperplane — all other points are irrelevant.
 ```
+
+The optimization problem:
+
+$$\min_{\mathbf{w}, b} \frac{1}{2} \|\mathbf{w}\|^2 \quad \text{subject to} \quad y_i(\mathbf{w}^\top \mathbf{x}_i + b) \geq 1 \; \forall i$$
+
+The margin width is $\frac{2}{\|\mathbf{w}\|}$, so minimizing $\|\mathbf{w}\|^2$ maximizes the margin.
 
 ### Hard Margin vs Soft Margin (C Parameter)
 
+Real data is rarely perfectly separable. The soft-margin formulation introduces slack variables $\xi_i$:
+
+$$\min_{\mathbf{w}, b} \frac{1}{2}\|\mathbf{w}\|^2 + C \sum_{i=1}^{n} \xi_i$$
+
 ```
-  HARD MARGIN (no errors allowed):
-    Requires perfectly separable data.
-    Rare in practice — one outlier breaks everything!
+  C controls the tradeoff between margin width and misclassifications:
 
-  SOFT MARGIN (allows some errors):
-    C parameter controls the tradeoff:
+  Small C (e.g., 0.01):               Large C (e.g., 1000):
+  ─────────────────────                ─────────────────────
+  Wide margin, some errors allowed.    Narrow margin, few errors.
+  More regularization.                 Less regularization.
+  Better generalization (usually).     Can overfit to outliers.
 
-  Low C (soft margin):          High C (hard margin):
-  ─────────────────────         ──────────────────────
-  ○ ○  ╱  ─ ─ ─ ╲  ● ●        ○ ○  ╱──╲  ● ●
-       ↑ wide margin ↑               ↑ narrow margin ↑
-  Allows misclassification.    Fits training data tightly.
-  More robust to outliers.     More sensitive to outliers.
-  May underfit noisy data.     May overfit.
-
-  Tuning C:
-    C too small → underfitting (too many errors allowed)
-    C too large → overfitting (memorizes training data)
-    Tune with cross-validation! Typical range: 0.001 to 1000.
+  Analogy: C is "how angry the model gets about misclassified points."
+  Low C = chill teacher, tolerates some mistakes.
+  High C = strict teacher, every mistake is unacceptable.
 ```
 
 ### The Kernel Trick
 
-```
-  PROBLEM: Data is NOT linearly separable in 2D!
-
-  Feature 2
-     │  ● ● ○ ● ●   ← circles inside ring of squares
-     │ ○ ● ● ● ○
-     │ ○ ● ● ● ○    Can't draw a straight line!
-     └─────────── Feature 1
-
-  SOLUTION: Project to higher dimension!
-  Add feature: x₃ = x₁² + x₂²  (distance from center)
-
-  Feature 3
-     │
-   5 │              ○ ○ ○ ○   ← circles far from center (high x₃)
-   2 │  ● ● ● ●             ← dots close to center (low x₃)
-     └──────────────── Feature 1
-
-  Now it's linearly separable with a flat plane!
-
-  The Kernel Trick: computes the similarity in high-dimensional
-  space WITHOUT explicitly transforming the data. Saves memory!
-```
-
-### Kernel Selection Guide
-
-| Kernel | Formula | When to Use |
-|--------|---------|-------------|
-| Linear | $K(\mathbf{x}, \mathbf{y}) = \mathbf{x}^\top \mathbf{y}$ | Linearly separable, high-dimensional (text) |
-| Polynomial | $K(\mathbf{x}, \mathbf{y}) = (\mathbf{x}^\top \mathbf{y} + c)^d$ | Polynomial relationships, image recognition |
-| RBF (Gaussian) | $K(\mathbf{x}, \mathbf{y}) = e^{-\gamma \lVert \mathbf{x} - \mathbf{y} \rVert^2}$ | Most popular default. Works well for non-linear data. Start here! |
+When data is not linearly separable, map it to a higher-dimensional space where it becomes separable. The kernel trick computes dot products in that space without ever computing the explicit transformation — a massive computational saving.
 
 ```
+  PROBLEM: data not linearly separable in 2D
 
-  RBF γ parameter:
-    High γ: small "reach" — each point only influences close neighbors
-            → complex decision boundary → can overfit
-    Low γ:  large "reach" — each point influences far-away points
-            → smooth decision boundary → can underfit
-  Tune γ together with C (grid search both simultaneously).
+  x2 |  * * o * *
+     | o * * * o      Can't draw a straight line!
+     | o * * * o
+     +-----------> x1
+
+  SOLUTION: add feature x3 = x1^2 + x2^2
+
+  x3 |             o o o o   (far from origin -> high x3)
+     |  * * * *              (close to origin -> low x3)
+     +-------------------> x1
+
+  Now linearly separable with a flat plane!
+  The RBF kernel does this implicitly in infinite dimensions.
 ```
 
-**Official Definition:**
-> **SVM** finds the hyperplane that maximizes the geometric margin between two classes.
-> With soft margins (C parameter) it tolerates some misclassifications. The kernel trick
-> implicitly maps inputs to high-dimensional feature spaces where linear separation
-> is possible, enabling non-linear classification without explicit transformation.
+### Kernel Selection
+
+| Kernel | Formula | Use When |
+|--------|---------|----------|
+| Linear | $K(\mathbf{x}, \mathbf{z}) = \mathbf{x}^\top \mathbf{z}$ | High-dimensional data (text, genomics); linearly separable |
+| Polynomial | $K(\mathbf{x}, \mathbf{z}) = (\mathbf{x}^\top \mathbf{z} + c)^d$ | Polynomial relationships; degree $d$ is a hyperparameter |
+| RBF (Gaussian) | $K(\mathbf{x}, \mathbf{z}) = \exp(-\gamma\|\mathbf{x} - \mathbf{z}\|^2)$ | Default choice. Works for most non-linear data |
+
+**RBF gamma parameter:**
+
+```
+  High gamma: each point has small "influence radius"
+    -> complex, wiggly boundary -> can overfit
+  Low gamma:  each point has large "influence radius"
+    -> smooth boundary -> can underfit
+
+  ALWAYS tune C and gamma together (grid search in log-space):
+    C:     [0.01, 0.1, 1, 10, 100, 1000]
+    gamma: [0.001, 0.01, 0.1, 1, 10]
+```
+
+### When to Use SVM (and When Not To)
+
+```
+  GOOD FIT:                              POOR FIT:
+  - Medium-sized datasets (n < 10K)      - Large datasets (n > 50K) -- too slow
+  - High-dimensional sparse data (text)  - Need probability outputs (SVM gives
+  - Clear margin of separation             scores, not calibrated probabilities)
+  - Binary classification                - Need interpretability (black box)
+  - Feature scaling applied              - Many features, few samples (use Lasso)
+```
 
 ```chart
 {
@@ -793,7 +820,7 @@ But what if the kickball kids and jump-rope kids are all mixed up together and y
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "SVM C Parameter — Low C = Underfit, High C = Overfit, Sweet Spot in Middle" } },
+    "plugins": { "title": { "display": true, "text": "SVM — C Parameter Sweep (Sweet Spot Around C=1)" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
       "x": { "type": "logarithmic", "title": { "display": true, "text": "C (log scale)" } }
@@ -804,62 +831,107 @@ But what if the kickball kids and jump-rope kids are all mixed up together and y
 
 ---
 
-## 7.7 K-Nearest Neighbors — Deep Dive ★
+## 9.8 K-Nearest Neighbors — Deep Dive
 
-### Simple Explanation
-Imagine you just moved to a new school and you do not know anyone. At lunchtime, you sit down and look around at the 5 kids closest to you. Three of them are eating pizza and two are eating salad. "This must be the pizza section!" you think. You are making a decision based on your nearest neighbors.
-
-KNN (K-Nearest Neighbors) works exactly like this. When it sees a new data point it has never met before, it looks at the K closest examples from the training data (K might be 3, 5, or 7 -- you choose). Whatever category most of those neighbors belong to, that is the prediction. If 4 out of 5 nearest neighbors are "cats," the new point is probably a cat too.
-
-The fun thing about KNN is that it does not study ahead of time -- it is the ultimate "I'll figure it out when I get there" algorithm. It stores ALL the training data and only does the hard work when you ask it for an answer. That makes "training" instant, but predictions can be slow because it has to measure the distance to every single stored example every time.
+> **K-Nearest Neighbors (KNN)** is a non-parametric, instance-based (lazy) learning algorithm. It stores the entire training set and classifies a new point by majority vote among its $K$ closest neighbors by distance. It has no explicit training phase.
 
 ### Distance Metrics
 
-TWO POINTS: $A = (1, 2)$ and $B = (4, 6)$
+Given points $A = (a_1, \ldots, a_p)$ and $B = (b_1, \ldots, b_p)$:
 
-**Euclidean Distance** (straight-line):
+**Euclidean Distance** (straight line, L2):
 
-$$d = \sqrt{\sum (x_i - y_i)^2} = \sqrt{(4-1)^2 + (6-2)^2} = \sqrt{9 + 16} = \sqrt{25} = 5$$
+$$d(A, B) = \sqrt{\sum_{j=1}^{p} (a_j - b_j)^2}$$
 
-**Manhattan Distance** (city blocks):
+**Manhattan Distance** (city blocks, L1):
 
-$$d = \sum |x_i - y_i| = |4-1| + |6-2| = 3 + 4 = 7$$
+$$d(A, B) = \sum_{j=1}^{p} |a_j - b_j|$$
 
 **Minkowski Distance** (generalizes both):
 
-$$d = \left( \sum |x_i - y_i|^p \right)^{1/p}$$
+$$d(A, B) = \left(\sum_{j=1}^{p} |a_j - b_j|^q\right)^{1/q}$$
 
-$p = 1$ gives Manhattan, $p = 2$ gives Euclidean.
+$q=1$ gives Manhattan, $q=2$ gives Euclidean. In practice, Euclidean is the default and works well for most problems.
+
+### Feature Scaling Is Mandatory
 
 ```
-  IMPORTANT: KNN requires feature scaling!
-  If age is 0-80 and income is 0-100,000,
-  income dominates distance → age becomes irrelevant.
-  Always StandardScaler or MinMaxScaler before KNN!
+  UNSCALED features:
+    age: 0-80        income: 0-100,000
+
+  Distance between two people:
+    d = sqrt((30-25)^2 + (80000-20000)^2)
+      = sqrt(25 + 3,600,000,000)
+      = ~60,000
+
+  Income completely dominates! Age is irrelevant.
+
+  SOLUTION: StandardScaler or MinMaxScaler BEFORE fitting KNN.
+  After scaling, both features contribute equally to distance.
 ```
 
 ### Choosing K
 
 ```
-  K=1 (overfit):          K=15 (underfit):         K=5 (balanced):
-  ─────────────           ──────────────           ──────────────
-  Boundary follows         Too smooth, misses        Smooth but
-  every single point.      real structure.           captures shape.
+  K=1:  Decision boundary follows every single training point.
+        Memorizes noise. High variance, low bias.
 
-  Validation Error
-      │
-   0.3│ *
-      │  *
-   0.2│    *
-      │      *
-   0.1│           * *
-      │                 * * * * * *
-      └────────────────────────────── K
-           1  3  5  7  9 11 13 15
+  K=n:  Predicts the majority class for everything.
+        Ignores all structure. Low variance, high bias.
 
-  Rule of thumb: start at K = √(n_training_samples)
-  Always use cross-validation to find the best K.
-  Use odd K for binary classification (avoids ties).
+  K=5-9: Usually a good starting point.
+         Use odd K for binary classification (avoids ties).
+
+  Formal approach: cross-validate over K in {1, 3, 5, 7, ..., sqrt(n)}.
+```
+
+### Weighted KNN
+
+Standard KNN: each neighbor gets an equal vote.
+Weighted KNN: closer neighbors get more influence.
+
+$$\text{weight}_i = \frac{1}{d(x_{\text{new}}, x_i)^2}$$
+
+```
+  Example (K=3):
+  Neighbor 1: Class A, distance = 1.0  -->  weight = 1.00
+  Neighbor 2: Class B, distance = 1.1  -->  weight = 0.83
+  Neighbor 3: Class A, distance = 3.0  -->  weight = 0.11
+
+  Standard vote: A=2, B=1 --> A
+  Weighted vote: A=1.11, B=0.83 --> A (still A, but margin tighter)
+
+  Use weights='distance' in sklearn.
+```
+
+### The Curse of Dimensionality
+
+As dimensions increase, distances become meaningless — all points are roughly equidistant.
+
+```
+  In 1D: nearest neighbor is CLOSE (few points between them)
+  In 10D: nearest neighbor is FAR (data is sparse)
+  In 100D: "nearest" and "farthest" neighbors have nearly the same distance
+
+  Rule of thumb: KNN works well with p < 20 meaningful features.
+  For high-dimensional data: use dimensionality reduction (PCA) first,
+  or switch to a model that handles high dimensions natively (SVM, trees).
+```
+
+### Speeding Up KNN: KD-Trees and Ball Trees
+
+Brute-force KNN computes distance to all $n$ training points — $O(np)$ per prediction. For large datasets, use spatial data structures:
+
+```
+  KD-Tree: partitions space into axis-aligned regions.
+    Average query: O(p log n) instead of O(np)
+    Degrades in high dimensions (p > 20)
+
+  Ball Tree: partitions space into nested hyperspheres.
+    Works better in high dimensions than KD-Tree.
+    Still degrades eventually.
+
+  sklearn uses algorithm='auto' which picks the best structure.
 ```
 
 ```chart
@@ -878,7 +950,7 @@ $p = 1$ gives Manhattan, $p = 2$ gives Euclidean.
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "KNN — Choosing K: Too Small = Overfit, Too Large = Underfit" } },
+    "plugins": { "title": { "display": true, "text": "KNN — Optimal K Minimizes Validation Error" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Validation Error" }, "beginAtZero": true, "max": 0.35 },
       "x": { "title": { "display": true, "text": "K (number of neighbors)" } }
@@ -887,107 +959,80 @@ $p = 1$ gives Manhattan, $p = 2$ gives Euclidean.
 }
 ```
 
-### Weighted KNN
-
-Standard KNN: each of the K neighbors gets equal vote.
-
-Weighted KNN: closer neighbors get MORE influence.
-
-$$\text{weight} = \frac{1}{\text{distance}^2}$$
-
-```
-
-  Example (K=3):
-  ───────────────────────────────────────────────
-  Neighbor 1: Class A, distance = 1.0 → weight = 1.00
-  Neighbor 2: Class A, distance = 2.0 → weight = 0.25
-  Neighbor 3: Class B, distance = 1.1 → weight = 0.83
-
-  Standard: A=2 votes, B=1 vote → Class A
-  Weighted: A=1.25, B=0.83 → Class A (but closer vote!)
-
-  Use weights='distance' in sklearn's KNeighborsClassifier.
-```
-
-**Official Definition:**
-> **K-Nearest Neighbors** is a non-parametric, lazy learning algorithm that classifies
-> a new point by majority vote of its K closest training points (by distance). It stores
-> the entire training set and defers computation to prediction time. It has no explicit
-> training phase — making it simple but slow for large datasets.
-
 ---
 
-## 7.8 Naive Bayes — Deep Dive ★★
+## 9.9 Naive Bayes — Deep Dive
 
-### Simple Explanation
-Imagine you are a detective trying to figure out who ate the cookies from the cookie jar. You have clues: there are chocolate crumbs on the table, the jar lid is on the floor, and there are tiny footprints. You know from experience that your little brother leaves crumbs 90% of the time, drops lids 80% of the time, and has tiny feet. Your big sister only leaves crumbs 10% of the time, rarely drops lids, and has bigger feet. You multiply all the clues together for each suspect, and whoever has the highest combined score is your best guess. It was probably your little brother!
+> **Naive Bayes** is a family of probabilistic classifiers based on applying Bayes' theorem with the "naive" assumption of conditional independence between features given the class label. Despite this simplification, it achieves competitive accuracy and is particularly strong for text classification and high-dimensional sparse data.
 
-Naive Bayes works the same way. Given a bunch of evidence (like words in an email), it asks: "What is the probability of seeing all this evidence if it IS spam? And what is the probability if it is NOT spam?" It multiplies together the probability of each individual clue, then picks whichever category gave the higher score.
+### Bayes' Theorem
 
-It is called "naive" because it assumes every clue is independent -- as if the word "free" showing up has nothing to do with the word "money" showing up. In real life, those words obviously go together! But here is the surprising thing: even though that assumption is technically wrong, Naive Bayes still gives really good answers most of the time. It is like a detective who ignores some connections between clues but still catches the right suspect.
+$$P(\text{class} \mid \mathbf{x}) = \frac{P(\mathbf{x} \mid \text{class}) \cdot P(\text{class})}{P(\mathbf{x})}$$
 
-### Spam Filter Example
+- $P(\text{class})$ — prior probability (how common is this class?)
+- $P(\mathbf{x} \mid \text{class})$ — likelihood (how likely are these features given the class?)
+- $P(\mathbf{x})$ — evidence (constant across classes, so we can ignore it for comparison)
 
-```
-  "FREE MONEY CLICK HERE!!!" → Is this spam?
+The "naive" assumption: features are conditionally independent given the class. This lets us decompose the joint likelihood:
 
-  P(spam | words) ∝ P(spam) × P("free"|spam) × P("money"|spam) × P("click"|spam)
-                  ∝  0.40   ×     0.90        ×     0.85        ×     0.88
-                  ∝ 0.268
+$$P(\mathbf{x} \mid \text{class}) = \prod_{j=1}^{p} P(x_j \mid \text{class})$$
 
-  P(not spam | words) ∝ 0.60 × 0.05 × 0.02 × 0.01
-                      ∝ 0.0000006
-
-  Since 0.268 >> 0.0000006 → SPAM ✓
-```
-
-### Gaussian Naive Bayes (for continuous features)
+### Worked Example — Spam Filter
 
 ```
-  Problem: standard NB uses counts/frequencies → only works for
-  discrete features (words, categories).
+  Email: "FREE MONEY CLICK NOW"
 
-  For continuous features (age, temperature, salary):
-  Assume each feature follows a Normal (Gaussian) distribution!
+  P(spam | words) ~ P(spam) * P("free"|spam) * P("money"|spam)
+                     * P("click"|spam) * P("now"|spam)
+                  ~ 0.40 * 0.90 * 0.85 * 0.88 * 0.70
+                  ~ 0.189
+
+  P(ham | words)  ~ P(ham) * P("free"|ham) * P("money"|ham)
+                     * P("click"|ham) * P("now"|ham)
+                  ~ 0.60 * 0.05 * 0.02 * 0.01 * 0.40
+                  ~ 0.0000024
+
+  P(spam) >> P(ham), so classify as SPAM.
 ```
 
-$$P(x \mid \text{class}) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)$$
+### The Three Variants
+
+| Variant | Feature Type | Likelihood Model | Typical Use Case |
+|---------|-------------|-----------------|-----------------|
+| **Gaussian NB** | Continuous | Normal distribution per feature | Medical diagnosis, sensor data |
+| **Multinomial NB** | Counts / frequencies | Multinomial distribution | Text classification (word counts, TF-IDF) |
+| **Bernoulli NB** | Binary (0/1) | Bernoulli distribution | Text (word present/absent), binary features |
+
+**Gaussian NB** assumes each feature follows a normal distribution within each class:
+
+$$P(x_j \mid \text{class} = k) = \frac{1}{\sqrt{2\pi\sigma_{jk}^2}} \exp\left(-\frac{(x_j - \mu_{jk})^2}{2\sigma_{jk}^2}\right)$$
+
+Training just computes $\mu$ and $\sigma$ per feature per class — extremely fast.
+
+### Laplace Smoothing (Handling Zero Probabilities)
 
 ```
-  TRAINING: For each class, compute mean (μ) and std (σ) per feature.
-  ─────────────────────────────────────────────────────────────
-  Feature: Temperature
-  Class "Play Tennis":  μ = 25°C,  σ = 3.5
-  Class "Skip Tennis":  μ = 35°C,  σ = 2.1
+  PROBLEM: "lottery" never appeared in spam training data.
+  P("lottery" | spam) = 0/1000 = 0.0
 
-  PREDICTION: Given temp = 28°C, which class is more likely?
-    P(28 | Play) = Gaussian(28; μ=25, σ=3.5) = 0.085
-    P(28 | Skip) = Gaussian(28; μ=35, σ=2.1) = 0.001
-    → Predicted: "Play Tennis"
-```
+  Then: P(spam | words) ~ ... * 0.0 = 0.0 (entire computation zeroed out!)
 
-### Laplace Smoothing (Zero Probability Problem)
+  SOLUTION: Laplace smoothing — add alpha to every count:
 
-```
-  PROBLEM: What if "lottery" never appeared in spam training data?
-    P("lottery" | spam) = 0/1000 = 0.0
+  P("lottery" | spam) = (0 + alpha) / (1000 + alpha * V)
 
-  Then: P(spam | "free lottery") ∝ 0.268 × 0.0 = 0.0 (entire prediction broken!)
-
-  SOLUTION: Laplace Smoothing (add 1 to every count):
-    P("lottery" | spam) = (0 + 1) / (1000 + V)
-                              ↑           ↑
-                        add 1 count    V = vocabulary size
-
+  where V = vocabulary size, alpha = smoothing parameter (default 1.0).
   This ensures no probability is ever exactly zero.
-  α=1 is standard. Use smaller α for less smoothing.
+  Smaller alpha = less smoothing (closer to raw counts).
 ```
 
-**Official Definition:**
-> **Naive Bayes** is a probabilistic classifier applying Bayes' theorem with the
-> "naive" conditional independence assumption between features. Despite this
-> simplification, it achieves competitive accuracy and excels in text classification,
-> spam filtering, and high-dimensional discrete data due to fast training and prediction.
+### Why Does It Work Despite the "Naive" Assumption?
+
+The independence assumption is almost always wrong — features ARE correlated. But Naive Bayes works well anyway for several reasons:
+
+1. **Classification only needs the ranking right.** We pick $\arg\max_k P(k | \mathbf{x})$. The exact probabilities can be wrong as long as the correct class still has the highest score.
+2. **Low variance.** With few parameters to estimate ($p \times K$ means and variances instead of a full covariance matrix), the model is resistant to overfitting, especially on small datasets.
+3. **Errors cancel out.** Overestimates and underestimates of individual feature probabilities tend to balance out when multiplied together.
 
 ```chart
 {
@@ -1012,7 +1057,7 @@ $$P(x \mid \text{class}) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x -
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Naive Bayes Spam Filter — Word Probabilities by Class" } },
+    "plugins": { "title": { "display": true, "text": "Naive Bayes — Word Probabilities Differ Dramatically by Class" } },
     "scales": {
       "y": { "title": { "display": true, "text": "P(word | class)" }, "beginAtZero": true, "max": 1.0 }
     }
@@ -1022,40 +1067,37 @@ $$P(x \mid \text{class}) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\!\left(-\frac{(x -
 
 ---
 
-## 7.9 Time & Space Complexity
+## 9.10 Time & Space Complexity Comparison
 
 ```
-  n = training samples, p = features, K = neighbors/trees, d = tree depth
+  n = samples, p = features, K = trees/neighbors, d = tree depth, SV = support vectors
 
-┌─────────────────────┬──────────────────┬──────────────┬────────────────┐
-│ Algorithm           │ Train Time       │ Predict Time │ Memory         │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Linear Regression   │ O(np²) or O(n)   │ O(p)         │ O(p)           │
-│ (OLS or GD)         │ OLS fast; GD iter│ Instant      │ Tiny           │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Logistic Regression │ O(n × p × iter)  │ O(p)         │ O(p)           │
-│                     │ Iterative        │ Instant      │ Tiny           │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Decision Tree       │ O(n × p × log n) │ O(depth)     │ O(nodes)       │
-│                     │ Sort each feat.  │ Fast         │ Small          │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Random Forest       │ O(K×n×√p×log n)  │ O(K × depth) │ O(K × nodes)   │
-│                     │ Parallelizable   │ Medium       │ Medium         │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Gradient Boosting   │ O(K×n×p×log n)   │ O(K × depth) │ O(K × nodes)   │
-│                     │ Sequential!      │ Medium       │ Medium         │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ SVM (RBF kernel)    │ O(n² to n³)      │ O(SV × p)    │ O(SV × p)      │
-│                     │ Slow for n>10K   │ Fast         │ Stores SVs     │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ KNN                 │ O(1) — lazy!     │ O(n × p)     │ O(n × p)       │
-│                     │ Just stores data │ SLOW at pred │ Stores all!    │
-├─────────────────────┼──────────────────┼──────────────┼────────────────┤
-│ Naive Bayes         │ O(n × p)         │ O(p)         │ O(classes × p) │
-│                     │ Very fast        │ Instant      │ Tiny           │
-└─────────────────────┴──────────────────┴──────────────┴────────────────┘
+  ┌─────────────────────┬────────────────────┬────────────────┬────────────────┐
+  │ Algorithm           │ Train Time         │ Predict Time   │ Space          │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Linear Regression   │ O(np^2 + p^3) OLS  │ O(p)           │ O(p)           │
+  │ (OLS / GD)          │ O(np * iter) GD    │                │                │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Logistic Regression │ O(np * iter)       │ O(p)           │ O(p)           │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Decision Tree       │ O(np * log n)      │ O(d)           │ O(nodes)       │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Random Forest       │ O(K * n * sqrt(p)  │ O(K * d)       │ O(K * nodes)   │
+  │                     │   * log n)         │                │                │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Gradient Boosting   │ O(K * n * p *      │ O(K * d)       │ O(K * nodes)   │
+  │                     │   log n) SEQUENTIAL│                │                │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ SVM (RBF kernel)    │ O(n^2) to O(n^3)   │ O(SV * p)      │ O(SV * p)      │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ KNN                 │ O(1) — lazy!       │ O(n * p)       │ O(n * p)       │
+  ├─────────────────────┼────────────────────┼────────────────┼────────────────┤
+  │ Naive Bayes         │ O(n * p)           │ O(p * K_class) │ O(p * K_class) │
+  └─────────────────────┴────────────────────┴────────────────┴────────────────┘
 
-SV = number of support vectors (can be large in high dimensions)
+  KEY INSIGHT: Random Forest training is parallelizable (each tree independent).
+  Gradient Boosting is sequential (each tree depends on previous residuals).
+  This is why LightGBM invests heavily in making each individual tree fast.
 ```
 
 ```chart
@@ -1082,9 +1124,9 @@ SV = number of support vectors (can be large in high dimensions)
   },
   "options": {
     "indexAxis": "y",
-    "plugins": { "title": { "display": true, "text": "Algorithm Speed Comparison — Training vs Prediction (higher = faster)" } },
+    "plugins": { "title": { "display": true, "text": "Training vs Prediction Speed by Algorithm" } },
     "scales": {
-      "x": { "title": { "display": true, "text": "Speed Score" }, "beginAtZero": true, "max": 100 }
+      "x": { "title": { "display": true, "text": "Speed Score (higher = faster)" }, "beginAtZero": true, "max": 100 }
     }
   }
 }
@@ -1092,127 +1134,147 @@ SV = number of support vectors (can be large in high dimensions)
 
 ---
 
-## 7.10 Key Hyperparameters Cheat Sheet
+## 9.11 Key Hyperparameters Cheat Sheet
 
 ```
-┌──────────────────────┬──────────────────────────────────────────────────────┐
-│ Algorithm            │ Key Hyperparameters (most important first)           │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ Linear/Logistic Reg. │ C or alpha (regularization strength)                │
-│                      │ penalty: 'l1', 'l2', 'elasticnet'                   │
-│                      │ solver: 'lbfgs', 'saga' (for large n)               │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ Decision Tree        │ max_depth (most impactful, try 3–15)                 │
-│                      │ min_samples_split, min_samples_leaf                 │
-│                      │ max_features, ccp_alpha (post-pruning)              │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ Random Forest        │ n_estimators (100–500, more = better)               │
-│                      │ max_depth, max_features                             │
-│                      │ min_samples_leaf, bootstrap                         │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ XGBoost / LightGBM   │ learning_rate (0.01–0.3) + n_estimators together    │
-│                      │ max_depth (3–8), subsample (0.6–0.9)                │
-│                      │ colsample_bytree, reg_alpha, reg_lambda             │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ SVM                  │ C (0.001–1000, log scale) — MOST important          │
-│                      │ kernel: 'rbf', 'linear', 'poly'                     │
-│                      │ gamma: 'scale', 'auto', or float (for RBF)          │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ KNN                  │ n_neighbors K (try 1–20, use cross-val)             │
-│                      │ weights: 'uniform' or 'distance'                    │
-│                      │ metric: 'euclidean', 'manhattan', 'minkowski'       │
-├──────────────────────┼──────────────────────────────────────────────────────┤
-│ Naive Bayes          │ var_smoothing (Gaussian NB): default 1e-9           │
-│                      │ alpha (Laplace smoothing, MultinomialNB): 1.0       │
-└──────────────────────┴──────────────────────────────────────────────────────┘
+┌──────────────────────┬──────────────────────────────────────────────────────────┐
+│ Algorithm            │ Key Hyperparameters (most impactful first)               │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ Linear Regression    │ alpha (Ridge/Lasso strength), penalty type               │
+│ (regularized)        │ l1_ratio (Elastic Net blend)                             │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ Logistic Regression  │ C (inverse regularization, default=1.0)                  │
+│                      │ penalty: 'l1', 'l2', 'elasticnet'                       │
+│                      │ solver: 'lbfgs'(default), 'saga'(large n, L1)           │
+│                      │ class_weight: 'balanced' for imbalanced data             │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ Decision Tree        │ max_depth (3-15, most impactful)                         │
+│                      │ min_samples_split (2-20), min_samples_leaf (1-10)        │
+│                      │ ccp_alpha (post-pruning), criterion ('gini'/'entropy')   │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ Random Forest        │ n_estimators (100-500), max_features ('sqrt' or 0.33)    │
+│                      │ max_depth (None or 10-30), min_samples_leaf (1-5)        │
+│                      │ oob_score=True for free validation estimate              │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ XGBoost / LightGBM   │ learning_rate (0.01-0.3) + n_estimators (use together)   │
+│                      │ max_depth (3-8), subsample (0.6-0.9)                     │
+│                      │ colsample_bytree (0.6-0.9), reg_alpha, reg_lambda        │
+│                      │ early_stopping_rounds (always use!)                      │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ SVM                  │ C (0.001-1000, log scale) — most important               │
+│                      │ kernel: 'rbf' (default), 'linear', 'poly'               │
+│                      │ gamma: 'scale' (default), 'auto', or float              │
+│                      │ ALWAYS tune C and gamma together via grid search         │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ KNN                  │ n_neighbors (1-21, odd for binary, CV to pick)           │
+│                      │ weights: 'uniform' or 'distance'                        │
+│                      │ metric: 'euclidean', 'manhattan', 'minkowski'           │
+├──────────────────────┼──────────────────────────────────────────────────────────┤
+│ Naive Bayes          │ alpha (Laplace smoothing, MultinomialNB, default=1.0)    │
+│                      │ var_smoothing (GaussianNB, default=1e-9)                │
+└──────────────────────┴──────────────────────────────────────────────────────────┘
 
-General Tuning Order:
-  1. Start with defaults → establish baseline
-  2. Tune most impactful hyperparameter first (see above)
-  3. Use RandomizedSearchCV then narrow with GridSearchCV
-  4. Always tune on VALIDATION set, report final on TEST set
+TUNING ORDER:
+  1. Establish baseline with default hyperparameters
+  2. Tune the most impactful parameter first (see table above)
+  3. Use RandomizedSearchCV to explore broad ranges
+  4. Narrow down with GridSearchCV on the best region
+  5. Always evaluate on a held-out TEST set at the very end
 ```
 
 ---
 
-## 7.11 Algorithm Comparison for Tabular Data
+## 9.12 Algorithm Selection Guide
 
-<table>
-  <thead>
-    <tr>
-      <th>Algorithm</th>
-      <th>Speed</th>
-      <th>Accuracy</th>
-      <th>Memory</th>
-      <th>Best For</th>
-      <th>Weak Spots</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><strong>Linear / Logistic Regression</strong></td>
-      <td>5/5 — Very fast</td>
-      <td>3/5 — OK</td>
-      <td>5/5 — Tiny</td>
-      <td>Baseline, linearly separable data</td>
-      <td>Non-linear patterns</td>
-    </tr>
-    <tr>
-      <td><strong>Decision Tree</strong></td>
-      <td>5/5 — Very fast</td>
-      <td>3/5 — OK</td>
-      <td>4/5 — Small</td>
-      <td>Interpretable, explainable</td>
-      <td>Overfits easily, high variance</td>
-    </tr>
-    <tr>
-      <td><strong>Random Forest</strong></td>
-      <td>4/5 — Medium</td>
-      <td>4/5 — Good</td>
-      <td>3/5 — Medium</td>
-      <td>General purpose baseline</td>
-      <td>Slower prediction than single tree</td>
-    </tr>
-    <tr>
-      <td><strong>XGBoost / LightGBM</strong></td>
-      <td>3/5 — Medium</td>
-      <td>5/5 — Best</td>
-      <td>3/5 — Medium</td>
-      <td>Tabular data, competitions</td>
-      <td>Many hyperparams to tune</td>
-    </tr>
-    <tr>
-      <td><strong>SVM</strong></td>
-      <td>2/5 — Slow</td>
-      <td>4/5 — Good</td>
-      <td>3/5 — Medium</td>
-      <td>Medium datasets, clear margins</td>
-      <td>Slow for n &gt; 10K, hard to tune</td>
-    </tr>
-    <tr>
-      <td><strong>KNN</strong></td>
-      <td>3/5 — Fast train</td>
-      <td>3/5 — OK</td>
-      <td>2/5 — Stores all data</td>
-      <td>Non-linear, small datasets</td>
-      <td>Very slow prediction, needs scaling</td>
-    </tr>
-    <tr>
-      <td><strong>Naive Bayes</strong></td>
-      <td>5/5 — Very fast</td>
-      <td>3/5 — OK</td>
-      <td>5/5 — Tiny</td>
-      <td>Text, spam, high-dim data</td>
-      <td>Assumes feature independence</td>
-    </tr>
-  </tbody>
-</table>
+```mermaid
+graph TD
+    START["New Supervised Problem"] --> TYPE{"Regression or<br/>Classification?"}
+    TYPE -->|Regression| REG_SIZE{"Dataset Size?"}
+    TYPE -->|Classification| CLS_INTERP{"Need<br/>Interpretability?"}
+
+    CLS_INTERP -->|Yes| CLS_INTERP_ALG["Logistic Regression<br/>or Decision Tree"]
+    CLS_INTERP -->|No| CLS_SIZE{"Dataset Size?"}
+
+    CLS_SIZE -->|"< 1K rows"| SMALL_CLS["Logistic Regression<br/>Naive Bayes<br/>KNN (if p < 20)"]
+    CLS_SIZE -->|"1K - 100K rows"| MED_CLS["Random Forest<br/>XGBoost"]
+    CLS_SIZE -->|"> 100K rows"| LARGE_CLS{"Data Type?"}
+
+    LARGE_CLS -->|Tabular| LARGE_TAB["LightGBM<br/>Linear Models"]
+    LARGE_CLS -->|"Image/Text/Audio"| LARGE_UNSTRUCT["Neural Networks<br/>(see Chapter 10)"]
+
+    REG_SIZE -->|"< 10K rows"| SMALL_REG["Linear Regression (baseline)<br/>Ridge/Lasso<br/>Random Forest"]
+    REG_SIZE -->|"> 10K rows"| LARGE_REG["LightGBM / XGBoost<br/>Ridge (if linear)"]
+
+    style START fill:#6366f1,color:#fff
+    style CLS_INTERP_ALG fill:#22c55e,color:#fff
+    style SMALL_CLS fill:#22c55e,color:#fff
+    style MED_CLS fill:#22c55e,color:#fff
+    style LARGE_TAB fill:#22c55e,color:#fff
+    style LARGE_UNSTRUCT fill:#f59e0b,color:#fff
+    style SMALL_REG fill:#22c55e,color:#fff
+    style LARGE_REG fill:#22c55e,color:#fff
+```
+
+### Special Cases
+
+| Scenario | Best Choice | Why |
+|----------|------------|-----|
+| Many categorical features | CatBoost | Native categorical support, no manual encoding |
+| Text / NLP baseline | Multinomial Naive Bayes | Fast, surprisingly competitive on text |
+| High-dimensional, clear margin | Linear SVM | Efficient in high dimensions, strong regularization |
+| Need probability calibration | Logistic Regression | Naturally outputs well-calibrated probabilities |
+| Explain model to stakeholders | Decision Tree (shallow) | Easily visualizable, maps to business rules |
+| Imbalanced classes | XGBoost with `scale_pos_weight` | Built-in handling of class imbalance |
+
+### The Universal Rule
+
+```
+  ALWAYS START SIMPLE:
+
+  1. Logistic Regression / Linear Regression (baseline)
+     -> If it works well, ship it. Simpler = easier to maintain.
+
+  2. Random Forest (strong default, minimal tuning needed)
+     -> Beats the baseline? Good. If not, data may be too noisy.
+
+  3. XGBoost / LightGBM (squeeze out the best tabular accuracy)
+     -> More tuning required, but usually the highest accuracy.
+
+  4. Ensemble / Stack the best models
+     -> For competitions and when 0.1% matters.
+
+  COMPLEX != BETTER. A well-tuned Logistic Regression on clean data
+  often beats a poorly-tuned XGBoost on messy data.
+```
+
+### Common Mistakes by Algorithm
+
+```
+  ┌─────────────────┬──────────────────────────────────────────────────┐
+  │ Algorithm       │ Most Common Mistake                              │
+  ├─────────────────┼──────────────────────────────────────────────────┤
+  │ Linear Reg.     │ Not checking residual plots for non-linearity    │
+  │ Logistic Reg.   │ Not scaling features, using wrong threshold      │
+  │ Decision Tree   │ Not setting max_depth -> memorizes training data │
+  │ Random Forest   │ Using too few trees (n_estimators < 50)          │
+  │ XGBoost         │ Not using early stopping -> overfits             │
+  │ SVM             │ Forgetting to scale features (distance-based!)   │
+  │ KNN             │ Using unscaled features, high dimensionality     │
+  │ Naive Bayes     │ Using GaussianNB on text (use MultinomialNB)     │
+  └─────────────────┴──────────────────────────────────────────────────┘
+
+  ALGORITHMS THAT REQUIRE FEATURE SCALING:
+    SVM, KNN, Logistic Regression, Linear Regression
+
+  ALGORITHMS THAT DO NOT:
+    Decision Tree, Random Forest, XGBoost, LightGBM, CatBoost, Naive Bayes
+```
 
 ```chart
 {
   "type": "radar",
   "data": {
-    "labels": ["Accuracy", "Speed (Training)", "Speed (Prediction)", "Interpretability", "Handles Non-linear"],
+    "labels": ["Accuracy", "Training Speed", "Prediction Speed", "Interpretability", "Handles Non-linearity"],
     "datasets": [
       {
         "label": "Logistic Regression",
@@ -1239,8 +1301,8 @@ General Tuning Order:
         "pointRadius": 3
       },
       {
-        "label": "KNN",
-        "data": [70, 99, 20, 50, 80],
+        "label": "SVM (RBF)",
+        "data": [85, 20, 85, 15, 88],
         "borderColor": "rgba(239, 68, 68, 1)",
         "backgroundColor": "rgba(239, 68, 68, 0.1)",
         "borderWidth": 2,
@@ -1249,7 +1311,7 @@ General Tuning Order:
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Each Has Different Strengths" } },
+    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Every Algorithm Has Different Strengths" } },
     "scales": {
       "r": { "beginAtZero": true, "max": 100 }
     }
@@ -1259,130 +1321,110 @@ General Tuning Order:
 
 ---
 
-## How to Choose an Algorithm
-
-```
-  START HERE
-      │
-      ▼
-  ┌──────────────────────────────────────────────┐
-  │ What TYPE of problem?                        │
-  └──────────────────────────────────────────────┘
-      │                       │                       │
-      ▼                       ▼                       ▼
-  Classification           Regression             Clustering
-  (predict category)       (predict number)       (no labels)
-      │                       │                       │
-      │                   → same flow             See Chapter 5
-      ▼
-  ┌──────────────────────────────────────────────┐
-  │ Do you need INTERPRETABILITY?                │
-  └──────────────────────────────────────────────┘
-      │                               │
-      YES                             NO
-      │                               │
-      ▼                               ▼
-  Logistic Regression            How much DATA?
-  or Decision Tree               │
-  (explainable to                ├── < 1,000 rows
-  stakeholders)                  │       → Logistic Regression
-                                 │         Naive Bayes, KNN
-                                 │
-                                 ├── 1,000 – 100,000 rows
-                                 │       → Random Forest or XGBoost
-                                 │         (works well out of the box)
-                                 │
-                                 └── > 100,000 rows
-                                         → LightGBM or Linear models
-                                           for structured/tabular data
-                                           Neural Networks for
-                                           images / text / audio
-  ┌──────────────────────────────────────────────┐
-  │ Special cases:                               │
-  │ • Lots of categorical features → CatBoost   │
-  │ • Text/NLP → Naive Bayes (baseline),        │
-  │              then Transformers              │
-  │ • High-dimensional, clear margin → SVM     │
-  │ • Survival/time-to-event → CoxPH model     │
-  └──────────────────────────────────────────────┘
-
-  UNIVERSAL RULE:
-  ─────────────────────────────────────────────────────────
-  Always start simple! Logistic Regression baseline → beat it.
-  Then Random Forest → beat it.
-  Then XGBoost/LightGBM → probably your best tabular model.
-  Complex ≠ better. A well-tuned simpler model often wins.
-```
-
----
-
-## Common Algorithm Mistakes
-
-```
-  ┌─────────────────┬──────────────────────────────────────────────┐
-  │ Algorithm       │ Most Common Mistake                          │
-  ├─────────────────┼──────────────────────────────────────────────┤
-  │ Linear Reg.     │ Not checking residual plots (assumes linear) │
-  │ Logistic Reg.   │ Not scaling features, forgetting threshold   │
-  │ Decision Tree   │ Not setting max_depth → always overfits      │
-  │ Random Forest   │ Using too few trees (n_estimators < 50)      │
-  │ XGBoost         │ Not using early stopping → overfits          │
-  │ SVM             │ Not scaling features (SVM is distance-based) │
-  │ KNN             │ Forgetting to scale → dominated by one feat  │
-  │ Naive Bayes     │ Using with continuous features without GNB   │
-  └─────────────────┴──────────────────────────────────────────────┘
-
-  THREE FEATURES ALL DISTANCE-BASED ALGORITHMS NEED SCALED:
-  SVM, KNN, Logistic Regression, Linear Regression
-  (Tree-based: Decision Tree, Random Forest, XGBoost → no scaling needed)
-```
-
----
-
 ## Key Takeaways
 
-```
-╔═══════════════════════════════════════════════════════════════════╗
-║  KEY ALGORITHMS CHEAT SHEET                                       ║
-║  ─────────────────────────────────────────────────────────────   ║
-║  Linear Regression  → predict numbers (needs feature scaling)   ║
-║  Ridge/Lasso        → regularized regression (tune λ)           ║
-║  Logistic Regression→ binary/multiclass classification          ║
-║  Decision Tree      → interpretable, set max_depth to control   ║
-║  Random Forest      → ensemble, robust, OOB error = free CV     ║
-║  Gradient Boosting  → sequential, best tabular accuracy         ║
-║  XGBoost/LightGBM   → competition winners, tune η+n together    ║
-║  SVM                → maximize margin, tune C + γ + kernel      ║
-║  KNN                → lazy, slow prediction, scale features!    ║
-║  Naive Bayes        → fast, text/NLP, use Gaussian for cont.    ║
-║  ─────────────────────────────────────────────────────────────   ║
-║  START SIMPLE → BEAT BASELINE → LEVEL UP → USE CROSS-VAL        ║
-╚═══════════════════════════════════════════════════════════════════╝
-```
+1. **Linear Regression** minimizes squared residuals. Use OLS for small data, gradient descent for large. Regularize with Ridge (keep all features), Lasso (drop irrelevant ones), or Elastic Net (correlated features).
+
+2. **Logistic Regression** adds a sigmoid to produce probabilities. Tune the classification threshold based on your cost of false positives vs false negatives. Extend to multiclass with OvR or softmax.
+
+3. **Decision Trees** are interpretable but overfit easily. Control depth aggressively with `max_depth`, `min_samples_leaf`, or post-pruning via `ccp_alpha`.
+
+4. **Random Forest** reduces variance by averaging many decorrelated trees (bagging + feature subsampling). OOB error gives free cross-validation. Rarely needs much tuning beyond `n_estimators`.
+
+5. **Gradient Boosting** (XGBoost, LightGBM, CatBoost) is the king of tabular data. Each tree corrects the previous ensemble's residuals. Always use early stopping. Tune `learning_rate` and `n_estimators` together.
+
+6. **SVM** maximizes the margin between classes. The kernel trick enables non-linear boundaries. Always scale features and tune C and gamma jointly.
+
+7. **KNN** stores all data and predicts by neighbor vote. Simple but slow at prediction time. Requires scaling and struggles in high dimensions (curse of dimensionality).
+
+8. **Naive Bayes** applies Bayes' theorem with independence assumption. Fast, effective for text. Works despite wrong assumptions because classification only needs the correct ranking, not exact probabilities.
+
+9. **Start simple.** Logistic/Linear Regression baseline, then Random Forest, then gradient boosting. Complex models on bad data lose to simple models on clean data.
 
 ---
 
-## Review Questions — Test Your Understanding
+## Review Questions
 
-1. What's the key difference between Ridge (L2) and Lasso (L1) regression? When would you choose Lasso?
-2. A Decision Tree with max_depth=20 on a small dataset is overfitting. Name three hyperparameters you could tune to fix this.
-3. Explain in one sentence why Random Forest is better than a single Decision Tree.
-4. Your dataset has 1 million rows and 200 features. Which gradient boosting library would you try first and why?
-5. SVM with a linear kernel can't separate your data. What do you do?
-6. Naive Bayes assumes all features are independent (which is almost never true). Why does it still work well in practice?
+**1.** What is the closed-form solution for linear regression weights, and when does it fail?
 
 <details>
-<summary>Answers</summary>
+<summary>Answer</summary>
 
-1. Ridge shrinks all weights toward zero but keeps all features. Lasso drives some weights to exactly zero, performing automatic feature selection. Choose Lasso when you suspect many features are irrelevant — it will remove them for you.
-2. Reduce max_depth (e.g., 5-10), increase min_samples_split (e.g., 20+), increase min_samples_leaf (e.g., 10+). You could also use post-pruning (ccp_alpha).
-3. Random Forest averages predictions from many diverse trees, each trained on different random subsets, so individual trees' errors cancel out — giving lower variance and better generalization.
-4. LightGBM — it's the fastest on large datasets due to leaf-wise growth and histogram-based splits. XGBoost is also good. CatBoost if you have many categorical features.
-5. Use a non-linear kernel (RBF/Gaussian is the default). The kernel trick maps data to a higher-dimensional space where it becomes linearly separable. Alternatively, switch to a different algorithm like Random Forest.
-6. Even though the independence assumption is violated, Naive Bayes often gets the ranking of class probabilities right (which class is most likely), even if the exact probabilities are wrong. It also has very low variance, making it robust on small datasets.
+$\mathbf{w}^* = (X^\top X)^{-1} X^\top \mathbf{y}$ (the Normal Equation). It fails when $X^\top X$ is singular (non-invertible), which happens with multicollinear features or when $p > n$. It also becomes impractical when $p$ is very large because matrix inversion costs $O(p^3)$.
+</details>
+
+**2.** Why can't you use MSE as the loss function for logistic regression?
+
+<details>
+<summary>Answer</summary>
+
+MSE applied to the sigmoid output produces a non-convex loss surface with many local minima, making gradient-based optimization unreliable. Binary cross-entropy is convex for logistic regression, guaranteeing a single global minimum.
+</details>
+
+**3.** Explain the difference between Gini impurity and Entropy. Does the choice matter in practice?
+
+<details>
+<summary>Answer</summary>
+
+Gini impurity measures $1 - \sum p_k^2$ (probability of misclassification under random assignment). Entropy measures $-\sum p_k \log_2(p_k)$ (information content). Both reach their minimum at pure nodes and maximum at uniform distributions. In practice, they produce nearly identical trees — Gini is marginally faster since it avoids computing logarithms.
+</details>
+
+**4.** A decision tree with max_depth=25 on 500 training samples is overfitting badly. Name three ways to fix it.
+
+<details>
+<summary>Answer</summary>
+
+(1) Reduce `max_depth` to 5-10. (2) Increase `min_samples_leaf` to 5-10 so leaves cannot be too specific. (3) Apply post-pruning via `ccp_alpha` to remove branches that do not improve validation accuracy enough to justify their complexity. You could also increase `min_samples_split` or reduce `max_leaf_nodes`.
+</details>
+
+**5.** Why does Random Forest use both bootstrap sampling AND random feature subsets? Why not just one?
+
+<details>
+<summary>Answer</summary>
+
+Bootstrap sampling (bagging) alone gives different trees, but if one feature is very strong, every tree will still split on it first, making the trees correlated. Averaging correlated trees provides limited variance reduction. Random feature subsets force trees to use different features at the top, decorrelating them. The combination — diverse data (bagging) plus diverse features — creates maximally diverse trees, and averaging their predictions yields much greater variance reduction.
+</details>
+
+**6.** Your dataset has 2 million rows and 200 features (100 of which are categorical). Which gradient boosting framework would you try first, and why?
+
+<details>
+<summary>Answer</summary>
+
+CatBoost — it handles categorical features natively (no need for one-hot or target encoding), which is critical with 100 categorical columns. Its ordered boosting also prevents target leakage during encoding. If speed is the primary concern, LightGBM with its histogram-based approach would also be a strong choice, but you would need to handle categorical encoding yourself (or use LightGBM's native categorical support, which is less robust than CatBoost's).
+</details>
+
+**7.** Explain the kernel trick in SVM in one paragraph. Why is it computationally efficient?
+
+<details>
+<summary>Answer</summary>
+
+The kernel trick replaces every dot product $\mathbf{x}_i^\top \mathbf{x}_j$ in the SVM optimization with a kernel function $K(\mathbf{x}_i, \mathbf{x}_j)$ that computes the dot product in a high-dimensional (possibly infinite-dimensional) feature space without explicitly computing the transformation. For example, the RBF kernel operates in an infinite-dimensional space, but computing $K(\mathbf{x}_i, \mathbf{x}_j) = \exp(-\gamma\|\mathbf{x}_i - \mathbf{x}_j\|^2)$ costs only $O(p)$ — the same as a regular dot product. This makes non-linear SVM feasible even when the explicit feature space would be intractable.
+</details>
+
+**8.** KNN achieves 95% training accuracy but only 70% test accuracy. What are two likely causes and how do you fix each?
+
+<details>
+<summary>Answer</summary>
+
+(1) K is too small (likely K=1, which gives 100% training accuracy by definition). Fix: increase K using cross-validation (try 5-15). (2) Features are on different scales, so distance is dominated by high-magnitude features. Fix: apply StandardScaler or MinMaxScaler before fitting. A third possibility is the curse of dimensionality — too many features making distances meaningless. Fix: apply PCA or feature selection to reduce dimensionality.
+</details>
+
+**9.** Why does Naive Bayes work well for spam detection despite the obviously wrong independence assumption?
+
+<details>
+<summary>Answer</summary>
+
+For classification, we only need $\arg\max_k P(k | \mathbf{x})$ — the correct ranking, not the exact probabilities. Even though individual feature probability estimates are biased by the independence assumption, the product tends to be higher for the correct class than the wrong class. Additionally, Naive Bayes has very low model complexity (few parameters), so it has low variance and resists overfitting, which compensates for the bias introduced by the naive assumption.
+</details>
+
+**10.** You are building a fraud detection system. The model must be fast at prediction time, handle 10 million rows of tabular data, and achieve the highest possible recall. Which algorithm do you choose and what threshold strategy do you use?
+
+<details>
+<summary>Answer</summary>
+
+Use LightGBM — it trains fast on large datasets (histogram-based, leaf-wise growth), prediction is efficient ($O(K \times d)$ where $d$ is shallow), and it consistently delivers top accuracy on tabular data. For maximizing recall in fraud detection, lower the classification threshold well below 0.5 (e.g., 0.2-0.3). This increases recall (catching more fraud) at the cost of precision (more false alarms). Use the Precision-Recall curve to find the threshold that meets your recall target while keeping precision at an acceptable level. Also set `scale_pos_weight` to handle the class imbalance inherent in fraud data.
 </details>
 
 ---
 
-**Previous:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md)
-**Next:** [Chapter 10 — Neural Networks & Deep Learning](10_neural_networks.md)
+**Previous:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md) | **Next:** [Chapter 10 — Neural Networks](10_neural_networks.md)
