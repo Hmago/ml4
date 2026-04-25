@@ -12,7 +12,7 @@ function renderWelcome() {
   pushHash('home');
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   document.getElementById('focusBtn').style.display = 'none';
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
@@ -592,9 +592,9 @@ function showDashboard() {
   renderSidebar();
   closeSidebar();
   document.getElementById('tocPanel').classList.remove('visible');
-  document.getElementById('breadcrumb').textContent = '📊 Dashboard';
+  document.getElementById('breadcrumb').textContent = 'Dashboard';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   document.getElementById('focusBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
@@ -613,29 +613,30 @@ function showDashboard() {
     'content/01_brain_training.md': 100,
     'content/02_math_fundamentals.md': 280,
     'content/03_introduction.md': 90,
-    'content/04_core_concepts.md': 180,
+    'content/04_core_concepts.md': 210,
     'content/05_data_preprocessing.md': 55,
-    'content/06_supervised_learning.md': 150,
-    'content/07_unsupervised_learning.md': 165,
-    'content/08_reinforcement_learning.md': 70,
-    'content/09_key_algorithms.md': 135,
-    'content/10_neural_networks.md': 135,
-    'content/11_model_evaluation.md': 60,
+    'content/06_supervised_learning.md': 220,
+    'content/07_unsupervised_learning.md': 140,
+    'content/08_reinforcement_learning.md': 105,
+    'content/09_key_algorithms.md': 145,
+    'content/10_neural_networks.md': 120,
+    'content/11_model_evaluation.md': 120,
     'content/12_deep_learning.md': 200,
     'content/13_llm.md': 540,
+    'content/22_modern_ai_stack.md': 160,
     'content/14_design_fundamentals.md': 285,
-    'content/15_interview_questions.md': 215,
+    'content/15_interview_questions.md': 220,
     'content/16_llm_interview_questions.md': 445,
     'content/17_ml_system_design.md': 225,
     'content/behavioral_interview.md': 145,
     'content/practical_ml.md': 195,
     'content/practical_ml.ipynb': 195,
     'content/staying_relevant_ai_era.md': 75,
-    'README.md': 30,
+    'README.md': 40,
     'content/18_dsa_trees_graphs.md': 340,
     'content/19_google_ml_ecosystem.md': 160,
     'content/20_Modern System Design.md': 160,
-    'content/20_google_top10_ml_interview.md': 490,
+    'content/20_google_top10_ml_interview.md': 495,
     'content/21_quick_reference_cheat_sheet.md': 180,
   };
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
@@ -647,7 +648,7 @@ function showDashboard() {
   // (not a raw "chapters read / total chapters" count) — so a 9-hour
   // chapter contributes much more than a 1-hour one.
   const pct = totalMinutesAll > 0 ? Math.round(completedMinutes / totalMinutesAll * 100) : 0;
-  const ringR = 58;
+  const ringR = 62;
   const circumference = 2 * Math.PI * ringR;
   const offset = circumference - (pct / 100) * circumference;
   const xpProgress = getLevelXP(data.xp);
@@ -667,163 +668,385 @@ function showDashboard() {
   const openComments = Object.values(allComments).reduce((s, arr) => s + arr.filter(c => !c.resolved).length, 0);
   const chaptersWithComments = Object.keys(allComments).filter(k => allComments[k].length > 0).length;
 
+  // SVG icon helper — inline Lucide-style icons for a modern look
+  const ico = {
+    book:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+    clock:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    timer:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>',
+    target:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+    check:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    zap:      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    award:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>',
+    flame:    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    pen:      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+    palette:  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',
+    calendar: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
+    flag:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>',
+    layers:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+    download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+    upload:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>',
+    trash:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  };
+
   contentEl.innerHTML = `
-    <div style="max-width:740px;margin:0 auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+    <div class="db">
+
+      <!-- ─── Header ─── -->
+      <div class="db-header">
         <div>
-          <h1 style="font-size:26px;border:none;margin-bottom:2px;">📊 Your Learning Dashboard</h1>
-          <p style="color:var(--text-secondary);font-size:14px;">Track your progress, scores, and study time</p>
+          <h1 class="db-title">Dashboard</h1>
+          <p class="db-subtitle">${readCount === realCh.length ? 'Curriculum complete — review and keep sharp' : readCount === 0 ? 'Your learning journey starts here' : Math.round(pct) + '% through the curriculum — keep going'}</p>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-          <button onclick="showMotivation()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">💪 Motivation</button>
+        <div class="db-header-actions">
+          <button class="db-btn" onclick="exportAllChaptersPDF()" title="Export all chapters">${ico.download} Export All PDF</button>
           <div class="mode-toggle ${interactiveMode ? 'active' : ''}" onclick="toggleInteractiveMode();" style="cursor:pointer;">
-            <span>Interactive</span>
+            <span>Gamify</span>
             <div class="mode-switch"></div>
           </div>
         </div>
       </div>
 
-      <div class="dash-hero">
-        <div class="progress-ring-wrap" title="Weighted by estimated study time per chapter — a 9h chapter counts more than a 1h chapter.">
-          <svg width="150" height="150">
-            <defs><linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle class="progress-ring-bg" cx="75" cy="75" r="58"/>
-            <circle class="progress-ring-fill" cx="75" cy="75" r="58" stroke-dasharray="${2*Math.PI*58}" stroke-dashoffset="${2*Math.PI*58}" id="progressRing"/>
-            <g class="progress-ring-text" style="transform-origin:75px 75px;">
-              <text x="75" y="68" text-anchor="middle" fill="var(--heading)" font-size="34" font-weight="800">${pct}%</text>
-              <text x="75" y="90" text-anchor="middle" fill="var(--text-secondary)" font-size="11" text-transform="uppercase">complete</text>
-            </g>
-          </svg>
-          <div style="text-align:center;font-size:11px;color:var(--text-secondary);margin-top:4px;">~${doneH}h of ${totalH}h · <span style="opacity:0.7;" title="Weighted by each chapter's estimated study time.">time-weighted</span></div>
+      <!-- ─── Hero Banner ─── -->
+      <div class="db-hero">
+        <!-- Row 1: Ring + Progress bar + Level -->
+        <div class="db-hero-top">
+          <div class="db-hero-ring" title="Weighted by estimated study time per chapter">
+            <svg width="160" height="160">
+              <defs><linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="rgba(255,255,255,0.7)"/></linearGradient></defs>
+              <circle class="progress-ring-bg" cx="80" cy="80" r="62"/>
+              <circle class="progress-ring-fill" cx="80" cy="80" r="62" stroke-dasharray="${2*Math.PI*62}" stroke-dashoffset="${2*Math.PI*62}" id="progressRing"/>
+              <g class="progress-ring-text" style="transform-origin:80px 80px;">
+                <text x="80" y="72" text-anchor="middle" fill="#fff" font-size="36" font-weight="800">${pct}%</text>
+                <text x="80" y="96" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" text-transform="uppercase" letter-spacing="1.5">complete</text>
+              </g>
+            </svg>
+            <div class="db-hero-ring-sub">${doneH}h of ${totalH}h studied</div>
+          </div>
+          <div class="db-hero-main">
+            <div class="db-hero-progress">
+              <div class="db-hero-progress-label">
+                <span>Chapter progress</span>
+                <span>${readCount} of ${realCh.length}</span>
+              </div>
+              <div class="db-hero-progress-bar"><div class="db-hero-progress-fill" style="width:${pct}%"></div></div>
+            </div>
+            <div class="db-hero-level">
+              <div class="db-hero-level-top">
+                <span class="db-hero-level-badge">Lvl ${getLevel(data.xp)}</span>
+                <span class="db-hero-level-xp">${data.xp} XP &middot; ${xpProgress}/100 to next</span>
+              </div>
+              <div class="db-xp-track"><div class="db-xp-fill" id="dashXpFill" style="width:0%"></div></div>
+            </div>
+            <div class="db-hero-meta">
+              ${ico.calendar} Started ${startDate} &nbsp;&middot;&nbsp; ${ico.flag} ${completionDate}
+            </div>
+          </div>
         </div>
-        <div style="text-align:left;">
-          <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Level</div>
-          <div style="font-size:40px;font-weight:800;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;">${getLevel(data.xp)}</div>
-          <div style="font-size:13px;color:var(--text-secondary);margin:6px 0 8px;">${data.xp} XP &middot; ${xpProgress}/100 to next level</div>
-          <div class="dash-xp-track" style="width:180px;"><div class="dash-xp-fill" id="dashXpFill" style="width:0%"></div></div>
-          <div style="font-size:13px;margin-top:10px;">${data.streak > 0 ? '<span style="background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">🔥 '+data.streak+' day streak</span>' : '<span style="color:var(--text-secondary);">Start your streak today!</span>'}</div>
+        <!-- Row 2: Big stat tiles -->
+        <div class="db-hero-grid">
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${readCount}<small>/${realCh.length}</small></div>
+            <div class="db-hero-tile-lbl">${ico.book} Chapters Read</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${studyHrs}<small>h</small></div>
+            <div class="db-hero-tile-lbl">${ico.timer} Time Studied</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${remainH}<small>h</small></div>
+            <div class="db-hero-tile-lbl">${ico.clock} Remaining</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${data.streak}</div>
+            <div class="db-hero-tile-lbl">${ico.flame} Day Streak</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${avgScore}<small>%</small></div>
+            <div class="db-hero-tile-lbl">${ico.target} Quiz Average</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${passedQuizzes}<small>/${totalQuizzes}</small></div>
+            <div class="db-hero-tile-lbl">${ico.award} Quizzes Passed</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${study.sessions||0}</div>
+            <div class="db-hero-tile-lbl">${ico.layers} Sessions</div>
+          </div>
+          <div class="db-hero-tile">
+            <div class="db-hero-tile-num">${totalComments}</div>
+            <div class="db-hero-tile-lbl">${ico.pen} Notes</div>
+          </div>
         </div>
       </div>
 
-      <div class="dash-grid">
-        <div class="dash-card" title="Raw chapter count — the main ring at the top is weighted by study time."><div class="dash-num">${readCount}<small style="font-size:16px;opacity:0.5;">/${realCh.length}</small></div><div class="dash-label">Chapters Read</div></div>
-        <div class="dash-card"><div class="dash-num">${remainH}<small style="font-size:14px;opacity:0.5;">h</small></div><div class="dash-label">Est. Remaining</div></div>
-        <div class="dash-card"><div class="dash-num">${studyHrs}<small style="font-size:14px;opacity:0.5;">h</small></div><div class="dash-label">Study Time</div></div>
-        <div class="dash-card"><div class="dash-num">${study.sessions||0}</div><div class="dash-label">Sessions</div></div>
-        <div class="dash-card"><div class="dash-num">${totalAttempts}</div><div class="dash-label">Quiz Attempts</div></div>
-        <div class="dash-card"><div class="dash-num">${avgScore}<small style="font-size:14px;opacity:0.5;">%</small></div><div class="dash-label">Avg Quiz Score</div></div>
-        <div class="dash-card"><div class="dash-num">${bestQuiz}<small style="font-size:14px;opacity:0.5;">%</small></div><div class="dash-label">Best Quiz</div></div>
-        <div class="dash-card"><div class="dash-num">${passedQuizzes}<small style="font-size:14px;opacity:0.5;">/${totalQuizzes}</small></div><div class="dash-label">Quizzes Passed</div></div>
-        <div class="dash-card"><div class="dash-num">${openComments}${resolvedComments > 0 ? '<small style="font-size:14px;opacity:0.5;">+' + resolvedComments + '✓</small>' : ''}</div><div class="dash-label">Notes (open${resolvedComments > 0 ? '+resolved' : ''})</div></div>
-        <div class="dash-card"><div class="dash-num">${Object.values(JSON.parse(localStorage.getItem('ml4-highlights')||'{}')).reduce((s,a)=>s+a.length,0)}</div><div class="dash-label">Highlights</div></div>
+      <!-- ─── Two-column stat panels ─── -->
+      <div class="db-panels">
+        <div class="db-panel">
+          <h3 class="db-panel-title">${ico.book} Study Progress</h3>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.book}</span>
+            <span class="db-stat-label">Chapters read</span>
+            <span class="db-stat-value">${readCount} / ${realCh.length}</span>
+          </div>
+          <div class="db-bar-wrap"><div class="db-bar"><div class="db-bar-fill" style="width:${pct}%"></div></div></div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.timer}</span>
+            <span class="db-stat-label">Study time</span>
+            <span class="db-stat-value">${studyHrs}h</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.layers}</span>
+            <span class="db-stat-label">Sessions</span>
+            <span class="db-stat-value">${study.sessions||0}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.clock}</span>
+            <span class="db-stat-label">Remaining</span>
+            <span class="db-stat-value">${remainH}h</span>
+          </div>
+        </div>
+        <div class="db-panel">
+          <h3 class="db-panel-title">${ico.target} Quiz Performance</h3>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.target}</span>
+            <span class="db-stat-label">Attempts</span>
+            <span class="db-stat-value">${totalAttempts}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.check}</span>
+            <span class="db-stat-label">Average score</span>
+            <span class="db-stat-value">${avgScore}%</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.award}</span>
+            <span class="db-stat-label">Best score</span>
+            <span class="db-stat-value">${bestQuiz}%</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.zap}</span>
+            <span class="db-stat-label">Passed</span>
+            <span class="db-stat-value">${passedQuizzes} / ${totalQuizzes}</span>
+          </div>
+          <div class="db-bar-wrap"><div class="db-bar"><div class="db-bar-fill db-bar-fill--quiz" style="width:${totalQuizzes > 0 ? Math.round(passedQuizzes/totalQuizzes*100) : 0}%"></div></div></div>
+        </div>
       </div>
 
-      <div class="dash-timeline">
-        <div class="dash-timeline-item"><div class="tl-label">📅 Started</div><div class="tl-value">${startDate}</div></div>
-        <div class="dash-timeline-item"><div class="tl-label">🏁 Completion</div><div class="tl-value">${completionDate}</div></div>
-        <div class="dash-timeline-item"><div class="tl-label">⏱️ Study Time</div><div class="tl-value">${studyHrs} hours</div></div>
+      <!-- ─── Progress Breakdown by Section ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.layers} Progress by Section</h3>
+        <div class="db-progress-grid">
+        ${(() => {
+          const sections = [];
+          let cur = null;
+          for (const item of chapters) {
+            if (item.section) {
+              cur = { name: item.section, total: 0, done: 0, estMin: 0, doneMin: 0, quizzes: 0, bestScore: -1 };
+              sections.push(cur);
+            } else if (cur && !item.ref && !item.notebook) {
+              cur.total++;
+              const mins = chapterMinutes[item.file] || 30;
+              cur.estMin += mins;
+              if (readChapters[item.file]) { cur.done++; cur.doneMin += mins; }
+              const qh = quizHist[item.file];
+              if (qh) { cur.quizzes++; if (qh.bestScore > cur.bestScore) cur.bestScore = qh.bestScore; }
+            }
+          }
+          return sections.map(s => {
+            const sPct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+            const estH = s.estMin >= 60 ? Math.floor(s.estMin/60) + 'h ' + s.estMin%60 + 'm' : s.estMin + 'm';
+            const barColor = sPct === 100 ? 'var(--success)' : 'var(--accent)';
+            return '<div class="db-prog-card">' +
+              '<div class="db-prog-head">' +
+                '<span class="db-prog-name">' + s.name + '</span>' +
+                '<span class="db-prog-pct" style="color:' + (sPct === 100 ? 'var(--success)' : 'var(--heading)') + '">' + sPct + '%</span>' +
+              '</div>' +
+              '<div class="db-prog-bar"><div class="db-prog-bar-fill" style="width:' + sPct + '%;background:' + barColor + '"></div></div>' +
+              '<div class="db-prog-meta">' +
+                '<span>' + s.done + '/' + s.total + ' chapters</span>' +
+                '<span>' + estH + ' est.</span>' +
+                (s.bestScore >= 0 ? '<span>Best quiz: ' + s.bestScore + '%</span>' : '') +
+              '</div>' +
+            '</div>';
+          }).join('');
+        })()}
+        </div>
       </div>
 
-      <div class="dash-section">
-        <h3>📚 Chapter Details</h3>
-        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;">
-        <table class="dash-table">
-          <thead><tr>
-            <th>Chapter</th>
-            <th>Status</th>
-            <th>Est.</th>
-            <th>Started</th>
-            <th>Completed</th>
-            <th>Time Spent</th>
-            <th>Quiz</th>
-            <th></th>
-          </tr></thead>
-          <tbody>
-          ${realCh.map(c => {
+      <!-- ─── Notes & Highlights Overview ─── -->
+      <div class="db-panels" style="margin-bottom:0;">
+        <div class="db-panel">
+          <h3 class="db-panel-title">${ico.pen} Notes</h3>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.pen}</span>
+            <span class="db-stat-label">Total notes</span>
+            <span class="db-stat-value">${totalComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.check}</span>
+            <span class="db-stat-label">Resolved</span>
+            <span class="db-stat-value">${resolvedComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.flag}</span>
+            <span class="db-stat-label">Open</span>
+            <span class="db-stat-value">${openComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.book}</span>
+            <span class="db-stat-label">Chapters with notes</span>
+            <span class="db-stat-value">${chaptersWithComments}</span>
+          </div>
+        </div>
+        <div class="db-panel">
+          <h3 class="db-panel-title">${ico.palette} Highlights & Study</h3>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.palette}</span>
+            <span class="db-stat-label">Total highlights</span>
+            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-highlights')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.timer}</span>
+            <span class="db-stat-label">Estimated total</span>
+            <span class="db-stat-value">${totalH}h</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.clock}</span>
+            <span class="db-stat-label">Time completed</span>
+            <span class="db-stat-value">${doneH}h</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.calendar}</span>
+            <span class="db-stat-label">Started</span>
+            <span class="db-stat-value">${startDate}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Chapter List (main focus) ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.book} Chapter Details</h3>
+        <div class="ch-detail-list">
+        ${(() => {
+          const icoSm = {
+            clock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+            cal:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
+            check: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+            book:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+          };
+          let html = '';
+          let curSection = '';
+          let chIdx = 0;
+          for (const item of chapters) {
+            if (item.section) {
+              curSection = item.section;
+              html += '<div class="ch-section-row">' + curSection + '</div>';
+              continue;
+            }
+            if (item.ref) continue;
+            chIdx++;
+            const c = item;
+            const idx = chapters.indexOf(c);
             const isRead = !!readChapters[c.file];
             const qh = quizHist[c.file];
             const ct = chTrack[c.file] || {};
             const estMin = chapterMinutes[c.file] || 30;
             const estStr = estMin >= 60 ? Math.floor(estMin/60)+'h '+estMin%60+'m' : estMin+'m';
-            const timeStr = ct.seconds ? (ct.seconds >= 3600 ? Math.floor(ct.seconds/3600)+'h '+Math.floor((ct.seconds%3600)/60)+'m' : Math.floor(ct.seconds/60)+'m') : '—';
-            const startD = ct.startDate ? new Date(ct.startDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-            const compD = ct.completedDate ? new Date(ct.completedDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-            const scoreStr = qh ? qh.bestScore+'% <small>('+qh.attempts+'x)</small>' : '';
-            return `<tr>
-              <td>${isRead ? '✅' : '⬜'} ${c.title}</td>
-              <td>${isRead ? '<span class="badge badge-read">Done</span>' : '<span class="badge badge-unread">Todo</span>'}</td>
-              <td style="color:var(--text-secondary);">${estStr}</td>
-              <td style="color:var(--text-secondary);">${startD}</td>
-              <td style="color:var(--text-secondary);">${compD}</td>
-              <td style="color:var(--text-secondary);">${timeStr}</td>
-              <td>${qh ? '<span class="badge badge-score">'+scoreStr+'</span> <button class="btn-retest-ch" onclick="retakeQuiz(\''+c.file.replace(/'/g,"\\'")+'\')" title="Retake this quiz">↺ Retake</button>' : '<span style="color:var(--text-secondary);">—</span>'}</td>
-              <td>${(isRead || qh || ct.seconds) ? `<button class="btn-reset-ch" onclick="resetChapter('${c.file.replace(/'/g,"\\'")}', '${c.title.replace(/'/g,"\\'")}')">↺ Reset</button>` : ''}</td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table>
+            const spentSec = ct.seconds || 0;
+            const spentMin = Math.floor(spentSec / 60);
+            const spentStr = spentSec >= 3600 ? Math.floor(spentSec/3600)+'h '+Math.floor((spentSec%3600)/60)+'m' : (spentMin > 0 ? spentMin+'m' : '');
+            const timePct = Math.min(100, Math.round(spentMin / estMin * 100));
+            const startD = ct.startDate ? new Date(ct.startDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+            const compD = ct.completedDate ? new Date(ct.completedDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+            const quizScore = qh ? qh.bestScore : -1;
+            const quizScoreColor = quizScore >= 90 ? 'var(--success)' : quizScore >= 70 ? 'var(--accent)' : quizScore >= 0 ? '#f59e0b' : '';
+
+            html += '<div class="ch-row' + (isRead ? ' ch-row-done' : '') + '">' +
+              '<div class="ch-row-left">' +
+                '<div class="ch-row-status">' + (isRead ? '<span class="ch-check done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : '<span class="ch-check">' + chIdx + '</span>') + '</div>' +
+                '<div class="ch-row-info">' +
+                  '<div class="ch-row-title"><a href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + c.title + '</a></div>' +
+                  '<div class="ch-row-meta">' +
+                    '<span class="ch-meta-tag" title="Estimated study time">' + icoSm.clock + ' ' + estStr + '</span>' +
+                    (startD ? '<span class="ch-meta-tag" title="Started">' + icoSm.cal + ' ' + startD + '</span>' : '') +
+                    (compD ? '<span class="ch-meta-tag ch-meta-done" title="Completed">' + icoSm.check + ' ' + compD + '</span>' : '') +
+                    (spentStr ? '<span class="ch-meta-tag" title="Time spent">' + icoSm.book + ' ' + spentStr + '</span>' : '') +
+                  '</div>' +
+                  (spentMin > 0 || isRead ? '<div class="ch-row-progress"><div class="ch-row-progress-fill' + (isRead ? ' complete' : '') + '" style="width:' + (isRead ? 100 : timePct) + '%"></div></div>' : '') +
+                '</div>' +
+              '</div>' +
+              '<div class="ch-row-right">' +
+                (quizScore >= 0
+                  ? '<div class="ch-quiz-score" style="color:' + quizScoreColor + ';" title="Best quiz score: ' + quizScore + '% (' + qh.attempts + ' attempt' + (qh.attempts > 1 ? 's' : '') + ')">' + quizScore + '%</div>'
+                  : '') +
+                '<div class="ch-row-actions">' +
+                  (qh ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + c.file.replace(/'/g,"\\'") + '\')" title="Retake quiz">↺ Quiz</button>' : '') +
+                  '<button class="ch-btn" onclick="exportChapterPDFByIndex(' + idx + ')" title="Export as PDF">' + ico.download + '</button>' +
+                  ((isRead || qh || ct.seconds) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + c.file.replace(/'/g,"\\'") + '\', \'' + c.title.replace(/'/g,"\\'") + '\')" title="Reset progress">↺</button>' : '') +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          }
+          return html;
+        })()}
         </div>
       </div>
 
-      <div class="dash-section">
-        <h3>🏅 Achievements <small style="font-weight:400;color:var(--text-secondary);">(${(data.achievements||[]).length}/30 unlocked)</small></h3>
-        <div class="ach-grid">
-          ${[
-            // ── Reading (4) ──
-            {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',cat:'read',tier:'common'},
-            {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',cat:'read',tier:'common'},
-            {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',cat:'read',tier:'rare'},
-            {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',cat:'read',tier:'epic'},
-            // ── Streaks (3) ──
-            {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',cat:'streak',tier:'common'},
-            {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',cat:'streak',tier:'rare'},
-            {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',cat:'streak',tier:'epic'},
-            // ── XP & Levels (4) ──
-            {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',cat:'xp',tier:'common'},
-            {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',cat:'xp',tier:'rare'},
-            {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',cat:'xp',tier:'epic'},
-            {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',cat:'xp',tier:'rare'},
-            // ── Quizzes (4) ──
-            {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',cat:'quiz',tier:'common'},
-            {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',cat:'quiz',tier:'rare'},
-            {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',cat:'quiz',tier:'epic'},
-            {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',cat:'quiz',tier:'epic'},
-            // ── Study (3) ──
-            {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',cat:'study',tier:'common'},
-            {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',cat:'study',tier:'rare'},
-            {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',cat:'study',tier:'epic'},
-            // ── Notes (1) ──
-            {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',cat:'note',tier:'common'},
-            // ── DSA (1) ──
-            {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'dsa',tier:'rare'},
-            // ── New additions (v2) ──
-            {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',cat:'read',tier:'rare'},
-            {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',cat:'read',tier:'epic'},
-            {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',cat:'dsa',tier:'common'},
-            {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',cat:'dsa',tier:'epic'},
-            {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',cat:'dsa',tier:'rare'},
-            {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',cat:'note',tier:'rare'},
-            {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',cat:'note',tier:'common'},
-            {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',cat:'quiz',tier:'epic'},
-            {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',cat:'study',tier:'rare'},
-            {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',cat:'streak',tier:'epic'},
-          ].sort((a, b) => {
-              const aU = (data.achievements||[]).includes(a.id) ? 0 : 1;
-              const bU = (data.achievements||[]).includes(b.id) ? 0 : 1;
-              return aU - bU;
-          }).map(a => {
-              const unlocked = (data.achievements||[]).includes(a.id);
-              const tierLabel = unlocked && a.tier !== 'common' ? `<span class="ach-tier-label">${a.tier}</span>` : '';
-              return `<div class="ach-item ${unlocked?'unlocked':''}" data-cat="${a.cat}" data-tier="${a.tier}">
-                <span class="ach-icon">${unlocked ? a.icon : '🔒'}</span>
-                <span class="ach-name">${a.name}</span>
-                <span class="ach-desc">${a.desc}</span>${tierLabel}</div>`;
-            }).join('')}
+      <!-- ─── Achievements (collapsed) ─── -->
+      <details class="db-collapse">
+        <summary class="db-collapse-summary">${ico.award} Achievements <span class="db-collapse-badge">${(data.achievements||[]).length}/30</span></summary>
+        <div class="db-collapse-body">
+          <div class="ach-grid">
+            ${[
+              {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',cat:'read',tier:'common'},
+              {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',cat:'read',tier:'common'},
+              {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',cat:'read',tier:'rare'},
+              {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',cat:'read',tier:'epic'},
+              {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',cat:'streak',tier:'common'},
+              {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',cat:'streak',tier:'rare'},
+              {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',cat:'streak',tier:'epic'},
+              {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',cat:'xp',tier:'common'},
+              {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',cat:'xp',tier:'rare'},
+              {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',cat:'xp',tier:'epic'},
+              {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',cat:'xp',tier:'rare'},
+              {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',cat:'quiz',tier:'common'},
+              {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',cat:'quiz',tier:'rare'},
+              {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',cat:'quiz',tier:'epic'},
+              {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',cat:'quiz',tier:'epic'},
+              {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',cat:'study',tier:'common'},
+              {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',cat:'study',tier:'rare'},
+              {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',cat:'study',tier:'epic'},
+              {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',cat:'note',tier:'common'},
+              {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'dsa',tier:'rare'},
+              {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',cat:'read',tier:'rare'},
+              {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',cat:'read',tier:'epic'},
+              {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',cat:'dsa',tier:'common'},
+              {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',cat:'dsa',tier:'epic'},
+              {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',cat:'dsa',tier:'rare'},
+              {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',cat:'note',tier:'rare'},
+              {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',cat:'note',tier:'common'},
+              {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',cat:'quiz',tier:'epic'},
+              {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',cat:'study',tier:'rare'},
+              {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',cat:'streak',tier:'epic'},
+            ].sort((a, b) => {
+                const aU = (data.achievements||[]).includes(a.id) ? 0 : 1;
+                const bU = (data.achievements||[]).includes(b.id) ? 0 : 1;
+                return aU - bU;
+            }).map(a => {
+                const unlocked = (data.achievements||[]).includes(a.id);
+                const tierLabel = unlocked && a.tier !== 'common' ? `<span class="ach-tier-label">${a.tier}</span>` : '';
+                return `<div class="ach-item ${unlocked?'unlocked':''}" data-cat="${a.cat}" data-tier="${a.tier}">
+                  <span class="ach-icon">${unlocked ? a.icon : '🔒'}</span>
+                  <span class="ach-name">${a.name}</span>
+                  <span class="ach-desc">${a.desc}</span>${tierLabel}</div>`;
+              }).join('')}
+          </div>
         </div>
-      </div>
+      </details>
 
-      <div class="dash-section">
-        <h3>💻 DSA Practice Progress</h3>
+      <!-- ─── DSA Progress (collapsed) ─── -->
+      <details class="db-collapse">
+        <summary class="db-collapse-summary">${ico.zap} DSA Practice Progress</summary>
+        <div class="db-collapse-body">
         ${(() => {
           const dsaProg = JSON.parse(localStorage.getItem('ml4-dsa') || '{}');
           const dsaAll = typeof getAllDSAProblems === 'function' ? getAllDSAProblems() : (typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : []);
@@ -837,46 +1060,54 @@ function showDashboard() {
             cats[p.category].total++;
             if (dsaProg[p.id]?.solved) cats[p.category].solved++;
           });
-          return '<div class="dash-grid" style="margin-bottom:16px;">' +
-            '<div class="dash-card"><div class="dash-num">' + dsaSolved + '<small style="font-size:14px;opacity:0.5;">/' + dsaTotal + '</small></div><div class="dash-label">Problems Solved</div></div>' +
-            '<div class="dash-card"><div class="dash-num">' + dsaPct + '<small style="font-size:14px;opacity:0.5;">%</small></div><div class="dash-label">Completion</div></div>' +
-            '<div class="dash-card"><div class="dash-num">' + dsaAttempted + '</div><div class="dash-label">Attempted</div></div>' +
-            '<div class="dash-card"><div class="dash-num">' + (dsaTotal - dsaSolved) + '</div><div class="dash-label">Remaining</div></div>' +
+          return '<div class="db-dsa-stats">' +
+            '<div class="db-stat-row"><span class="db-stat-icon">' + ico.check + '</span><span class="db-stat-label">Solved</span><span class="db-stat-value">' + dsaSolved + ' / ' + dsaTotal + '</span></div>' +
+            '<div class="db-stat-row"><span class="db-stat-icon">' + ico.target + '</span><span class="db-stat-label">Complete</span><span class="db-stat-value">' + dsaPct + '%</span></div>' +
+            '<div class="db-stat-row"><span class="db-stat-icon">' + ico.pen + '</span><span class="db-stat-label">Attempted</span><span class="db-stat-value">' + dsaAttempted + '</span></div>' +
+            '<div class="db-stat-row"><span class="db-stat-icon">' + ico.clock + '</span><span class="db-stat-label">Remaining</span><span class="db-stat-value">' + (dsaTotal - dsaSolved) + '</span></div>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px;">' +
-            Object.entries(cats).map(([cat, d]) =>
-              '<div style="padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;">' +
-                '<div style="font-size:12px;color:var(--text-secondary);">' + cat + '</div>' +
-                '<div style="font-size:16px;font-weight:700;">' + d.solved + '/' + d.total + '</div>' +
-                '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:4px;"><div style="height:100%;width:' + (d.total > 0 ? Math.round(d.solved/d.total*100) : 0) + '%;background:var(--accent);border-radius:2px;"></div></div>' +
-              '</div>'
-            ).join('') +
+          '<div class="dsa-cat-grid" style="margin-top:16px;">' +
+            Object.entries(cats).map(([cat, d]) => {
+              const pctCat = d.total > 0 ? Math.round(d.solved/d.total*100) : 0;
+              return '<div class="dsa-cat-card">' +
+                '<div class="dsa-cat-card-head"><span class="dsa-cat-card-name">' + cat + '</span><span class="dsa-cat-card-count">' + d.solved + '/' + d.total + '</span></div>' +
+                '<div class="dsa-cat-card-bar"><div class="dsa-cat-card-fill" style="width:' + pctCat + '%"></div></div>' +
+              '</div>';
+            }).join('') +
           '</div>' +
-          '<button onclick="showDSAPractice()" style="padding:8px 20px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:14px;">Open DSA Practice &#8594;</button>';
+          '<button class="db-btn db-btn--accent" onclick="showDSAPractice()" style="margin-top:14px;">' + ico.zap + ' Open DSA Practice</button>';
         })()}
-      </div>
-
-      <div class="dash-section">
-        <h3>💾 Backup &amp; Restore</h3>
-        <p style="font-size:14px;color:var(--text-secondary);margin:8px 0 16px;">Export your full progress — chapters read, quiz scores, DSA solutions &amp; code, notes, highlights, study time, settings — as a JSON file. Useful for backups, syncing to another device, or sharing with yourself.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-          <button onclick="exportUserData()" style="padding:9px 18px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">&#x2913; Export All Data</button>
-          <button onclick="triggerImportData()" style="padding:9px 18px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">&#x2912; Import from File&hellip;</button>
-          <input type="file" id="dashImportFile" accept=".json,application/json" style="display:none;" onchange="handleImportData(event)">
-          <span style="font-size:12px;color:var(--text-secondary);">Importing replaces all current data.</span>
         </div>
-      </div>
+      </details>
 
-      <div class="dash-danger-zone">
-        <h3>⚠️ Danger Zone</h3>
-        <p style="font-size:14px;color:var(--text-secondary);margin:8px 0 16px;">Reset scoped parts of your data. Each button is independent — none of these cascade.</p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button class="dash-danger-btn" onclick="resetAppData()">🗑️ Reset Progress (keeps comments)</button>
-          <button class="dash-danger-btn" onclick="resetQuizData()" style="background:#06b6d4;">📝 Reset Quiz Scores</button>
-          <button class="dash-danger-btn" onclick="deleteAllComments()" style="background:#8b5cf6;">💬 Delete All Comments</button>
-          <button class="dash-danger-btn" onclick="deleteAllHighlights()" style="background:#f59e0b;color:#1a1a2e;">🖍 Delete All Highlights</button>
+      <!-- ─── Backup & Restore (collapsed) ─── -->
+      <details class="db-collapse">
+        <summary class="db-collapse-summary">${ico.download} Backup & Restore</summary>
+        <div class="db-collapse-body">
+          <p class="db-collapse-desc">Export your full progress as JSON. Useful for backups or syncing to another device.</p>
+          <div class="db-action-row">
+            <button class="db-btn db-btn--accent" onclick="exportUserData()">${ico.download} Export Data</button>
+            <button class="db-btn" onclick="triggerImportData()">${ico.upload} Import</button>
+            <input type="file" id="dashImportFile" accept=".json,application/json" style="display:none;" onchange="handleImportData(event)">
+            <span class="db-action-hint">Import replaces all current data.</span>
+          </div>
         </div>
-      </div>
+      </details>
+
+      <!-- ─── Danger Zone (collapsed) ─── -->
+      <details class="db-collapse db-collapse--danger">
+        <summary class="db-collapse-summary db-collapse-summary--danger">${ico.trash} Danger Zone</summary>
+        <div class="db-collapse-body">
+          <p class="db-collapse-desc">Reset parts of your data independently.</p>
+          <div class="db-action-row">
+            <button class="db-danger-btn" onclick="resetAppData()">${ico.trash} Reset Progress</button>
+            <button class="db-danger-btn" style="background:#06b6d4;" onclick="resetQuizData()">${ico.target} Reset Quizzes</button>
+            <button class="db-danger-btn" style="background:#8b5cf6;" onclick="deleteAllComments()">${ico.pen} Delete Notes</button>
+            <button class="db-danger-btn" style="background:#f59e0b;color:#1a1a2e;" onclick="deleteAllHighlights()">${ico.palette} Delete Highlights</button>
+          </div>
+        </div>
+      </details>
+
     </div>`;
   document.getElementById('contentWrapper').scrollTop = 0;
   // Animate ring and XP bar
@@ -1155,7 +1386,7 @@ function showMotivation() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   document.getElementById('focusBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
@@ -1266,7 +1497,7 @@ function showGoals() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   document.getElementById('focusBtn').style.display = 'none';
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();

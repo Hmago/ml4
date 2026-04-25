@@ -508,7 +508,7 @@ function showDSAPractice() {
   document.getElementById('tocPanel').classList.remove('visible');
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   document.getElementById('focusBtn').style.display = 'none';
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
@@ -547,7 +547,7 @@ function showDSAPractice() {
   }
 
   contentEl.innerHTML = `
-    <div style="max-width:800px;margin:0 auto;">
+    <div style="max-width:80%;margin:0 auto;">
       <div class="dsa-header">
         <div>
           <h1 style="font-size:26px;border:none;margin-bottom:2px;">💻 DSA Coding Practice</h1>
@@ -881,7 +881,7 @@ async function showDSAProblem(id) {
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
   document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('exportPdfBtn').style.display = 'none';
+
   pushHash('dsa-problem-' + id);
 
   const progress = getDSAProgress();
