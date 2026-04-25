@@ -46,6 +46,7 @@ let dsaDiffSet = [];           // subset of ['Easy','Medium','Hard']
 let dsaStatusSet = [];         // subset of ['solved','attempted','not-started']
 let dsaCompanySet = [];        // any company names
 let dsaTagSet = [];            // any tag/topic names
+let dsaImportantOnly = false;  // when true, show only important-flagged problems
 let dsaCurrentProblem = null;
 let dsaAutoSaveTimer = null;
 let dsaTimerInterval = null;
@@ -62,6 +63,7 @@ let dsaNoteSaveTimer = null;
     if (Array.isArray(saved.status)) dsaStatusSet = saved.status;
     if (Array.isArray(saved.companies)) dsaCompanySet = saved.companies;
     if (Array.isArray(saved.tags)) dsaTagSet = saved.tags;
+    if (saved.importantOnly) dsaImportantOnly = true;
   } catch (e) { /* ignore */ }
 })();
 function saveDSAView() {
@@ -71,6 +73,7 @@ function saveDSAView() {
     status: dsaStatusSet,
     companies: dsaCompanySet,
     tags: dsaTagSet,
+    importantOnly: dsaImportantOnly,
   }));
 }
 
@@ -111,6 +114,7 @@ function dsaResetFilters() {
   dsaStatusSet = [];
   dsaCompanySet = [];
   dsaTagSet = [];
+  dsaImportantOnly = false;
   saveDSAView();
   showDSAPractice();
 }
@@ -291,8 +295,12 @@ function dsaApplyFilters(allProblems, progress) {
     // Status (OR)
     if (dsaStatusSet.length) {
       const pr = progress[p.id];
-      const status = pr?.solved ? 'solved' : (pr?.code ? 'attempted' : 'not-started');
-      if (!dsaStatusSet.includes(status)) return false;
+      const statuses = [];
+      if (pr?.solved) statuses.push('solved');
+      else if (pr?.code) statuses.push('attempted');
+      else statuses.push('not-started');
+      if (pr?.skipped) statuses.push('skipped');
+      if (!dsaStatusSet.some(s => statuses.includes(s))) return false;
     }
     // Companies (OR — problem must list at least one of the selected companies)
     if (dsaCompanySet.length) {
@@ -304,6 +312,8 @@ function dsaApplyFilters(allProblems, progress) {
       const ts = p.tags || [];
       if (!ts.some(t => dsaTagSet.includes(t))) return false;
     }
+    // Important filter
+    if (dsaImportantOnly && !progress[p.id]?.important) return false;
     // Search haystack
     if (q) {
       const hay = (p.title + ' ' + p.category + ' ' + p.difficulty + ' ' + (p.tags || []).join(' ') + ' ' + (p.companies || []).join(' ')).toLowerCase();
@@ -370,7 +380,9 @@ function dsaBuildGroupsHTML(filtered, progress) {
           const solvedChip = (pr?.solved && pr.solvedDate)
             ? `<span class="row-solved-date" title="${dsaFormatSolvedDateAbsolute(pr.solvedDate)}">&#10003; ${dsaFormatSolvedDateRelative(pr.solvedDate)}</span>`
             : '';
-          const metaRow = tagChips + compChips + solvedChip;
+          const hintChip = pr?.hintUsed ? '<span class="row-hint-used" title="Hint was used">💡</span>' : '';
+          const importantChip = pr?.important ? '<span class="row-important" title="Important">&#9733;</span>' : '';
+          const metaRow = importantChip + tagChips + compChips + solvedChip + hintChip;
           return `<div class="dsa-problem-row ${pr?.solved ? 'solved' : ''}" onclick="showDSAProblem('${p.id}')">
             <span class="seq">#${i + 1}</span>
             <span class="status">${status}</span>
@@ -415,13 +427,75 @@ function dsaRefreshList() {
   if (list) list.innerHTML = dsaBuildGroupsHTML(filtered, progress);
   const info = document.getElementById('dsaResultsInfo');
   if (info) {
-    const anyFilter = dsaSearchQuery || dsaDiffSet.length || dsaStatusSet.length || dsaCompanySet.length || dsaTagSet.length;
+    const anyFilter = dsaSearchQuery || dsaDiffSet.length || dsaStatusSet.length || dsaCompanySet.length || dsaTagSet.length || dsaImportantOnly;
     info.innerHTML = `Showing <strong>${filtered.length}</strong> of ${allProblems.length}` + (anyFilter ? ' &middot; <a href="javascript:dsaResetFilters()" style="color:var(--accent);text-decoration:none;">reset</a>' : '');
   }
 }
 function dsaRefreshActiveChips() {
   const el = document.getElementById('dsaActiveFilters');
   if (el) el.innerHTML = dsaBuildActiveChipsHTML();
+}
+
+// Pick the next problem to resume on:
+//   1. most recently run problem that has code saved but isn't solved → resume
+//   2. else, in the category of the most recently touched problem, the first
+//      not-started problem after that position (so working through Fundamentals
+//      doesn't suddenly suggest a much earlier item in the same list)
+//   3. else any not-started problem in that category (gap-fill)
+//   4. else the first not-started problem anywhere
+//   5. else null (everything solved)
+function dsaPickContinueProblem() {
+  const progress = getDSAProgress();
+  const allProblems = getAllDSAProblems();
+
+  // (1) resume: most recently run attempted-not-solved
+  let bestAttempted = null;
+  let bestRunTime = 0;
+  for (const p of allProblems) {
+    const pr = progress[p.id];
+    if (!pr || pr.solved || !pr.code) continue;
+    const t = pr.lastRun ? Date.parse(pr.lastRun) : 0;
+    if (t >= bestRunTime) { bestRunTime = t; bestAttempted = p; }
+  }
+  if (bestAttempted) return { problem: bestAttempted, kind: 'resume' };
+
+  // Identify the most recently touched problem (by last run or last solve).
+  let lastTouchedTime = 0;
+  let lastTouched = null;
+  for (const p of allProblems) {
+    const pr = progress[p.id];
+    if (!pr) continue;
+    const t = Math.max(
+      pr.lastRun ? Date.parse(pr.lastRun) : 0,
+      pr.solvedDate ? Date.parse(pr.solvedDate) : 0
+    );
+    if (t > lastTouchedTime) { lastTouchedTime = t; lastTouched = p; }
+  }
+
+  if (lastTouched) {
+    const catList = allProblems.filter(p => p.category === lastTouched.category);
+    const startIdx = catList.findIndex(p => p.id === lastTouched.id);
+    // (2) first not-started AFTER the user's current position in the category
+    const after = catList.slice(startIdx + 1).find(p => !progress[p.id]);
+    if (after) return { problem: after, kind: 'start' };
+    // (3) gap-fill: first not-started anywhere in this category
+    const inCat = catList.find(p => !progress[p.id]);
+    if (inCat) return { problem: inCat, kind: 'start' };
+  }
+
+  // (4) final fallback: first not-started anywhere
+  const fresh = allProblems.find(p => !progress[p.id]);
+  if (fresh) return { problem: fresh, kind: 'start' };
+  return null;
+}
+
+function dsaContinue() {
+  const next = dsaPickContinueProblem();
+  if (!next) {
+    if (typeof showToast === 'function') showToast('All clear', 'No problems left to continue', '🎉');
+    return;
+  }
+  showDSAProblem(next.problem.id);
 }
 
 function showDSAPractice() {
@@ -478,6 +552,14 @@ function showDSAPractice() {
           <p style="color:var(--text-secondary);font-size:14px;">Google's most asked Data Structures & Algorithms problems</p>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+          ${(() => {
+            const next = dsaPickContinueProblem();
+            if (!next) return '';
+            const label = next.kind === 'resume' ? '▶ Continue' : '▶ Start next';
+            const safeTitle = next.problem.title.replace(/"/g, '&quot;');
+            const tip = (next.kind === 'resume' ? 'Resume: ' : 'Start: ') + safeTitle;
+            return `<button class="dsa-continue-btn" onclick="dsaContinue()" title="${tip}">${label}<span class="dsa-continue-title">${next.problem.title}</span></button>`;
+          })()}
           <button onclick="showMotivation()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">💪 Motivation</button>
           <button class="dsa-add-btn" onclick="toggleDSAAddForm()">+ Add Question</button>
         </div>
@@ -527,6 +609,7 @@ function showDSAPractice() {
           { value: 'not-started', label: 'Not started', count: allProblems.filter(p => !progress[p.id]).length },
           { value: 'attempted',   label: 'Attempted',   count: allProblems.filter(p => progress[p.id]?.code && !progress[p.id]?.solved).length },
           { value: 'solved',      label: 'Solved',      count: allProblems.filter(p => progress[p.id]?.solved).length },
+          { value: 'skipped',     label: 'Skipped',     count: allProblems.filter(p => progress[p.id]?.skipped).length },
         ], dsaStatusSet)}
         ${(() => {
           const counts = {};
@@ -534,6 +617,7 @@ function showDSAPractice() {
           const opts = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).map(c => ({ value: c, count: counts[c] }));
           return dsaBuildFilterDropdown('company', '🏢 Companies', opts, dsaCompanySet, true);
         })()}
+        <button class="dsa-important-filter ${dsaImportantOnly ? 'active' : ''}" id="dsaImportantFilterBtn" onclick="dsaToggleImportantFilter()">&#9733; Important <span class="badge">${allProblems.filter(p => progress[p.id]?.important).length}</span></button>
         ${(() => {
           const counts = {};
           for (const p of allProblems) for (const t of (p.tags || [])) counts[t] = (counts[t] || 0) + 1;
@@ -825,15 +909,23 @@ async function showDSAProblem(id) {
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
 
-  // Render markdown properly (bold, italic, lists, inline code, links). Fall
-  // back to the minimal regex rendering if marked isn't loaded for some reason.
-  const descHtml = (typeof marked !== 'undefined')
-    ? marked.parse(problem.description || '')
-    : (problem.description || '')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        .replace(/\n/g, '<br>');
+  const renderMd = (md) => (typeof marked !== 'undefined')
+    ? marked.parse(md)
+    : md.replace(/`([^`]+)`/g, '<code>$1</code>')
+         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+         .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+         .replace(/\n/g, '<br>');
+
+  // Split description: first paragraph = problem statement, rest = hint.
+  // An explicit `hint` field on the problem takes priority over auto-split.
+  const rawDesc = problem.description || '';
+  const splitIdx = rawDesc.indexOf('\n\n');
+  const problemText = splitIdx > 0 ? rawDesc.slice(0, splitIdx) : rawDesc;
+  const autoHint = splitIdx > 0 ? rawDesc.slice(splitIdx + 2) : '';
+  const hintText = problem.hint || autoHint;
+  const descHtml = renderMd(problemText);
+  const hintHtml = hintText ? renderMd(hintText) : '';
+  const hintUsed = saved.hintUsed || false;
   const diffClass = problem.difficulty.toLowerCase();
   const examplesHtml = dsaFormatExamples(problem.examples);
 
@@ -844,6 +936,8 @@ async function showDSAProblem(id) {
         <span class="dsa-diff-badge ${diffClass}" style="font-size:10px;">${problem.difficulty}</span>
         <h1 style="font-size:17px;font-weight:700;border:none;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${problem.title}</h1>
         ${saved.solved ? '<span class="dsa-solved-pill" title="Solved">&#10003; Solved</span>' : ''}
+        <button class="dsa-important-btn ${saved.important ? 'active' : ''}" id="dsaImportantBtn" onclick="dsaToggleImportant('${id}')" title="${saved.important ? 'Marked as important' : 'Mark as important'}">${saved.important ? '&#9733; Important' : '&#9734; Important'}</button>
+        <button class="dsa-skip-btn" onclick="dsaSkipProblem()" title="Skip to next unsolved">Skip &#9197;</button>
         <div class="dsa-nav-btns">
           <button class="dsa-nav-btn" onclick="showDSAProblem('${prevProblem ? prevProblem.id : ''}')" ${!prevProblem ? 'disabled' : ''} title="${prevProblem ? prevProblem.title : ''}">&#8592;</button>
           <span class="dsa-nav-counter" title="${problem.category}">${currentIdx + 1}/${navList.length}</span>
@@ -876,6 +970,16 @@ async function showDSAProblem(id) {
             <h3><i class="ico">&#128221;</i> Examples</h3>
             ${examplesHtml}
           </div>
+          ${hintHtml ? `<div class="dsa-pane-section dsa-hint-section">
+            <div class="dsa-hint-header">
+              <h3 style="margin:0;"><i class="ico">&#128161;</i> Hint</h3>
+              ${hintUsed ? '<span class="dsa-hint-used-badge">used</span>' : ''}
+            </div>
+            <div class="dsa-hint-body ${hintUsed ? 'revealed' : ''}" id="dsaHintBody">
+              <div class="dsa-hint-content">${hintHtml}</div>
+            </div>
+            ${!hintUsed ? `<button class="dsa-hint-btn" id="dsaHintBtn" onclick="dsaRevealHint('${id}')">Show Hint</button>` : ''}
+          </div>` : ''}
           <div class="dsa-pane-section dsa-notes-wrap">
             <div class="dsa-notes-header">
               <h3 style="margin:0;"><i class="ico">&#9998;</i> Notes</h3>
@@ -896,10 +1000,11 @@ async function showDSAProblem(id) {
               <div class="dsa-timer-wrap">
                 <span class="dsa-timer" id="dsaTimer">${dsaFormatTime(dsaTimerSeconds)}</span>
                 <button class="dsa-timer-btn" id="dsaTimerBtn" onclick="dsaToggleTimer('${id}')" title="Start/pause timer">&#9654;</button>
-                <button class="dsa-timer-btn" onclick="dsaResetTimer('${id}')" title="Reset timer">&#8635;</button>
+                <button class="dsa-timer-btn" onclick="dsaResetTimer('${id}')" title="Reset timer">&#9201;</button>
               </div>
               <span class="dsa-save-indicator" id="dsaSaveInd">Saved</span>
               <div class="actions">
+                <button onclick="dsaFormatCode()" title="Auto-indent code">{ }</button>
                 <button onclick="dsaResetCode('${id}')" title="Reset to starter code">&#8635;</button>
                 <button class="dsa-fs-btn" onclick="dsaToggleFullscreen()" id="dsaFsBtn" title="Fullscreen">&#x26F6;</button>
                 <button class="run-btn" onclick="dsaRunCode()" id="dsaRunBtn">&#9654; Run</button>
@@ -1029,6 +1134,100 @@ async function showDSAProblem(id) {
         return;
       }
     }
+    // ── Ctrl+/ — toggle line comment ──
+    if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      e.preventDefault();
+      const val = this.value;
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const lineEnd = val.indexOf('\n', end);
+      const block = val.substring(lineStart, lineEnd < 0 ? val.length : lineEnd);
+      const lines = block.split('\n');
+      const allCommented = lines.every(l => /^\s*\/\//.test(l));
+      const toggled = allCommented
+        ? lines.map(l => l.replace(/^(\s*)\/\/ ?/, '$1')).join('\n')
+        : lines.map(l => l.replace(/^(\s*)/, '$1// ')).join('\n');
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineEnd < 0 ? val.length : lineEnd;
+      insertWithUndo(toggled);
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineStart + toggled.length;
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
+    // ── Ctrl+] — indent right ──
+    if ((e.ctrlKey || e.metaKey) && e.key === ']') {
+      e.preventDefault();
+      const val = this.value;
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const lineEnd = val.indexOf('\n', end);
+      const block = val.substring(lineStart, lineEnd < 0 ? val.length : lineEnd);
+      const indented = block.split('\n').map(l => '    ' + l).join('\n');
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineEnd < 0 ? val.length : lineEnd;
+      insertWithUndo(indented);
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineStart + indented.length;
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
+    // ── Ctrl+[ — indent left ──
+    if ((e.ctrlKey || e.metaKey) && e.key === '[') {
+      e.preventDefault();
+      const val = this.value;
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const lineEnd = val.indexOf('\n', end);
+      const block = val.substring(lineStart, lineEnd < 0 ? val.length : lineEnd);
+      const dedented = block.split('\n').map(l => l.replace(/^( {1,4}|\t)/, '')).join('\n');
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineEnd < 0 ? val.length : lineEnd;
+      insertWithUndo(dedented);
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineStart + dedented.length;
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
+    // ── Ctrl+D — duplicate line ──
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault();
+      const val = this.value;
+      const pos = this.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      let lineEnd = val.indexOf('\n', pos);
+      if (lineEnd < 0) lineEnd = val.length;
+      const line = val.substring(lineStart, lineEnd);
+      this.selectionStart = lineEnd;
+      this.selectionEnd = lineEnd;
+      insertWithUndo('\n' + line);
+      this.selectionStart = this.selectionEnd = lineEnd + 1 + line.length;
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
+    // ── Ctrl+Shift+K — delete line ──
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'K') {
+      e.preventDefault();
+      const val = this.value;
+      const pos = this.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      let lineEnd = val.indexOf('\n', pos);
+      if (lineEnd < 0) lineEnd = val.length;
+      else lineEnd += 1;
+      this.selectionStart = lineStart;
+      this.selectionEnd = lineEnd;
+      document.execCommand('delete');
+      dsaAutoSave(id);
+      dsaUpdateLineNumbers();
+      return;
+    }
     // ── Auto-indent on plain Enter ──
     // Match current line's leading whitespace; if previous non-space char is an
     // opening bracket add one level; if cursor sits between { and } split onto
@@ -1076,15 +1275,9 @@ async function showDSAProblem(id) {
   });
 
   // ── Preserve fullscreen state across Prev/Next navigation ──
-  // Re-rendering the problem body resets the freshly-inserted fullscreen
-  // toolbar/exit-button to their default "not fullscreen" state, even though
-  // the parent #content element still carries the dsa-fullscreen class. Sync
-  // both buttons so the user keeps the same mode when stepping between problems.
   if (document.getElementById('content').classList.contains('dsa-fullscreen')) {
     const exitBtn = document.getElementById('dsaFsExit');
-    const fsBtn = document.getElementById('dsaFsBtn');
     if (exitBtn) exitBtn.style.display = '';
-    if (fsBtn) fsBtn.innerHTML = '&#10005; Exit';
   }
 
   // ── Notes auto-save ──
@@ -1132,17 +1325,13 @@ function dsaToggleFullscreen() {
   const contentEl = document.getElementById('content');
   const isFS = contentEl.classList.toggle('dsa-fullscreen');
   const exitBtn = document.getElementById('dsaFsExit');
-  const fsBtn = document.getElementById('dsaFsBtn');
   if (isFS) {
     document.body.style.overflow = 'hidden';
     if (exitBtn) exitBtn.style.display = '';
-    if (fsBtn) fsBtn.innerHTML = '&#10005; Exit';
   } else {
     document.body.style.overflow = '';
     if (exitBtn) exitBtn.style.display = 'none';
-    if (fsBtn) fsBtn.innerHTML = '&#x26F6; Fullscreen';
   }
-  // Re-focus editor
   var ed = document.getElementById('dsaCodeEditor');
   if (ed) ed.focus();
 }
@@ -1165,6 +1354,30 @@ function dsaAutoSave(id) {
     const ind = document.getElementById('dsaSaveInd');
     if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
   }, 800);
+}
+
+function dsaFormatCode() {
+  const ed = document.getElementById('dsaCodeEditor');
+  if (!ed) return;
+  const lines = ed.value.split('\n');
+  const indent = '    ';
+  let depth = 0;
+  const result = [];
+  for (let raw of lines) {
+    const trimmed = raw.trim();
+    if (!trimmed) { result.push(''); continue; }
+    // Only track { and } for indentation (parens/brackets balance within a line)
+    const leadingCloses = (trimmed.match(/^}+/) || [''])[0].length;
+    depth = Math.max(0, depth - leadingCloses);
+    result.push(indent.repeat(depth) + trimmed);
+    // Net brace change for subsequent lines — leading closes already applied
+    const allOpens = (trimmed.match(/\{/g) || []).length;
+    const allCloses = (trimmed.match(/\}/g) || []).length;
+    depth = Math.max(0, depth + allOpens - (allCloses - leadingCloses));
+  }
+  ed.value = result.join('\n');
+  ed.dispatchEvent(new Event('input'));
+  if (typeof showToast === 'function') showToast('Formatted', 'Code indentation applied', '✓');
 }
 
 function dsaResetCode(id) {
@@ -1206,6 +1419,65 @@ function dsaFormatSolvedDateAbsolute(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
   return 'Solved ' + d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function dsaToggleImportant(id) {
+  const progress = getDSAProgress();
+  if (!progress[id]) progress[id] = {};
+  progress[id].important = !progress[id].important;
+  saveDSAProgress(progress);
+  const btn = document.getElementById('dsaImportantBtn');
+  if (btn) {
+    btn.classList.toggle('active', progress[id].important);
+    btn.innerHTML = progress[id].important ? '&#9733; Important' : '&#9734; Important';
+    btn.title = progress[id].important ? 'Marked as important' : 'Mark as important';
+  }
+}
+
+function dsaToggleImportantFilter() {
+  dsaImportantOnly = !dsaImportantOnly;
+  saveDSAView();
+  dsaRefreshList();
+  dsaRefreshActiveChips();
+  const btn = document.getElementById('dsaImportantFilterBtn');
+  if (btn) btn.classList.toggle('active', dsaImportantOnly);
+}
+
+function dsaRevealHint(id) {
+  const progress = getDSAProgress();
+  if (!progress[id]) progress[id] = {};
+  progress[id].hintUsed = true;
+  saveDSAProgress(progress);
+  const body = document.getElementById('dsaHintBody');
+  if (body) body.classList.add('revealed');
+  const btn = document.getElementById('dsaHintBtn');
+  if (btn) btn.remove();
+  const header = document.querySelector('.dsa-hint-header');
+  if (header && !header.querySelector('.dsa-hint-used-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'dsa-hint-used-badge';
+    badge.textContent = 'used';
+    header.appendChild(badge);
+  }
+}
+
+function dsaSkipProblem() {
+  if (!dsaCurrentProblem) return;
+  const allProblems = getAllDSAProblems();
+  const progress = getDSAProgress();
+  const problem = allProblems.find(p => p.id === dsaCurrentProblem);
+  if (!problem) return;
+  if (!progress[dsaCurrentProblem]) progress[dsaCurrentProblem] = {};
+  progress[dsaCurrentProblem].skipped = true;
+  saveDSAProgress(progress);
+  const catList = allProblems.filter(p => p.category === problem.category);
+  const idx = catList.findIndex(p => p.id === dsaCurrentProblem);
+  const next = catList.slice(idx + 1).find(p => !progress[p.id]?.solved);
+  if (next) {
+    showDSAProblem(next.id);
+  } else if (typeof showToast === 'function') {
+    showToast('End of category', 'No more unsolved problems in ' + problem.category, '🏁');
+  }
 }
 
 function dsaToggleSolved(id) {
