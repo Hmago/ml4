@@ -499,6 +499,7 @@ function dsaContinue() {
 }
 
 function showDSAPractice() {
+  exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'dsa';
@@ -508,6 +509,7 @@ function showDSAPractice() {
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('exportPdfBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none';
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');

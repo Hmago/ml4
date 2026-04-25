@@ -1,4 +1,4 @@
-# Chapter 6 — Supervised Learning
+# Chapter 06 — Supervised Learning
 
 > "Supervised learning is the workhorse of machine learning."
 > — Andrew Ng
@@ -8,83 +8,101 @@
 ## What You'll Learn
 
 After reading this chapter, you will be able to:
-- Explain the difference between classification and regression with examples
-- Distinguish binary, multi-class, and multi-label classification
-- Describe how Logistic Regression, KNN, Decision Trees, and SVMs work
-- Explain how ensemble methods (Bagging, Boosting, Stacking) improve single models
-- Read and interpret feature importance and SHAP values
-- Choose the right algorithm for a given problem
+- Explain supervised learning and how it differs from other ML paradigms
+- Distinguish classification from regression and choose the right framing for a problem
+- Describe how models learn through loss functions and gradient-based optimization
+- Properly split data into train, validation, and test sets
+- Diagnose overfitting and underfitting using the bias-variance tradeoff
+- Explain how Logistic Regression, KNN, Decision Trees, SVMs, and ensemble methods work
+- Select appropriate loss functions, evaluation metrics, and regularization strategies
+- Handle class imbalance without falling into the "99% accuracy" trap
+- Use feature importance and SHAP values to explain model predictions
 
 ---
 
 ## Chapter Map
 
 ```
-  4.1  What is Supervised Learning?
-  4.2  Classification vs Regression       — the two problem types
-  4.3  Classification in Depth            — binary, multi-class, multi-label
-  4.4  Classification Algorithms          — LogReg, KNN, DT, RF, SVM, GBM
-  4.5  Decision Tree Splits               — Gini, Entropy, worked example  ★
-  4.6  Ensemble Methods                   — Bagging, Boosting, Stacking     ★
-  4.7  Feature Importance                 — what the model learned           ★
-  4.8  Regression in Depth                — types, algorithms, comparison    ★
-  4.9  Class Imbalance                    — the 99% trap and how to fix it   ★
-  4.10 Algorithm Comparison               — when to use what
+  6.1   What is Supervised Learning?
+  6.2   The Two Flavors: Classification vs Regression
+  6.3   How Models Learn: Loss Functions & Optimization
+  6.4   The Training Pipeline: Train / Val / Test Splits
+  6.5   Overfitting, Underfitting & the Bias-Variance Tradeoff
+  6.6   Classification Algorithms
+  6.7   Decision Tree Splits: Gini vs Entropy
+  6.8   Ensemble Methods: Bagging, Boosting, Stacking
+  6.9   Regression Algorithms
+  6.10  Feature Importance & Model Explainability (SHAP)
+  6.11  Class Imbalance: The 99% Trap
+  6.12  Algorithm Selection Guide
+  Key Takeaways
+  Review Questions
 ```
 
 ---
 
-## 4.1 What is Supervised Learning?
+## 6.1 What is Supervised Learning?
 
-### Simple Explanation
-Imagine you are learning to tell apart different fruits. Your mom sits next to you and holds
-up an apple: "This is an apple." Then she holds up a banana: "This is a banana." She does
-this over and over -- hundreds of fruits -- always telling you the right answer. After a while,
-she holds up a fruit you have never seen before and asks, "What is this?" Because you learned
-the patterns (round and red = apple, long and yellow = banana), you can guess correctly even
-though nobody told you the answer for that one.
+> **Supervised Learning** is a machine learning paradigm where the algorithm learns a mapping function $f: X \rightarrow Y$ from a labeled training dataset of $(x_i, y_i)$ pairs, and is evaluated on its ability to generalize that mapping to unseen inputs.
 
-That is exactly what supervised learning is! The "teacher" (your mom, in this story) gives the
-computer tons of examples *with the correct answers already written on them*, and the computer
-figures out the pattern so it can answer on its own next time.
+You give the model a stack of solved examples — inputs paired with their correct answers — and it figures out the pattern connecting them. Once trained, it can predict answers for inputs it has never seen before.
+
+Think of it like studying for an exam with the answer key. You see hundreds of practice problems with solutions, notice the patterns, and use those patterns on the actual test where you don't have the answers.
 
 ```
   Training Phase:
   ───────────────────────────────────────────────────────────────────
-  Example 1:  [25°C, Sunny]    →  "Wear t-shirt"   ✓ (correct answer)
-  Example 2:  [5°C,  Cloudy]   →  "Wear jacket"    ✓
-  Example 3:  [15°C, Rainy]    →  "Wear raincoat"  ✓
-  Example 4:  [30°C, Sunny]    →  "Wear t-shirt"   ✓
+  Example 1:  [2000 sqft, 3 beds, suburb]  →  $350,000   (labeled)
+  Example 2:  [800 sqft, 1 bed, downtown]  →  $275,000   (labeled)
+  Example 3:  [3500 sqft, 5 beds, rural]   →  $420,000   (labeled)
+                        ⋮
+  Example N:  [features]                   →  [label]    (labeled)
                    │
-                   │  Model learns the pattern from (input, answer) pairs
+                   │  Model learns the mapping: features → label
                    ▼
   Prediction Phase:
-  ─────────────────────────────────────────────────────────────────
-  New input:  [22°C, Sunny]    →  "Wear t-shirt"   ← predicted!
+  ───────────────────────────────────────────────────────────────────
+  New input:  [1500 sqft, 2 beds, suburb]  →  $310,000   ← predicted!
 ```
 
-**Official Definition:**
-> **Supervised Learning** is a type of ML where the algorithm learns from a *labeled* training
-> dataset. Each training example is an (input, desired output) pair. The algorithm learns a
-> function f: X → Y and is evaluated on its ability to generalize to unseen inputs.
+The word "supervised" comes from the supervisor — the labels. Without labels, you're doing unsupervised learning (Chapter 7). With labels, the model has a teacher checking its work during training.
+
+```mermaid
+flowchart LR
+    A[Labeled Data<br/>X, Y pairs] --> B[Learning Algorithm]
+    B --> C[Trained Model f]
+    D[New Input X_new] --> C
+    C --> E[Prediction Ŷ]
+    E --> F{Compare to<br/>True Label?}
+    F -->|Training| G[Update Model]
+    G --> B
+    F -->|Testing| H[Evaluate Performance]
+```
+
+### Why Supervised Learning Dominates
+
+Most real-world ML applications are supervised learning:
+
+| Application | Input (X) | Output (Y) | Type |
+|---|---|---|---|
+| Email spam filter | Email text, metadata | Spam / Not spam | Classification |
+| House price estimation | Sqft, beds, location | Price in dollars | Regression |
+| Medical diagnosis | Symptoms, lab results | Disease present / absent | Classification |
+| Weather forecasting | Temp, pressure, humidity | Tomorrow's temperature | Regression |
+| Credit scoring | Income, history, debt | Default / No default | Classification |
+| Recommendation rating | User profile, item features | Star rating (1-5) | Regression |
+
+Supervised learning works so well because labeled data encodes human knowledge directly. The hard part is usually getting enough high-quality labels, not the algorithm itself.
 
 ---
 
-## 4.2 Classification vs Regression
+## 6.2 The Two Flavors: Classification vs Regression
 
-### Simple Explanation
-Think about two different kinds of questions your teacher might ask you.
+Every supervised learning problem falls into one of two categories, depending on what the output looks like.
 
-**Classification** is like a sorting game: "Which bucket does this go in?" Imagine you have a
-big pile of Halloween candy and three buckets labeled "Chocolate," "Gummy," and "Hard Candy."
-You pick up each piece and drop it into the right bucket. There are only a few buckets to choose
-from -- you are putting things into groups.
+> **Classification** predicts a discrete category from a finite set of classes. **Regression** predicts a continuous numerical value.
 
-**Regression** is like a guessing-a-number game: "How many jellybeans are in this jar?" There is
-no bucket -- the answer is a number, and it could be anything: 42, 119, 2,006. You are not sorting
-into groups; you are predicting a specific amount.
-
-So: classification = "Which group?" and regression = "What number?"
+The distinction is simple: if the answer is a label ("spam", "cat", "malignant"), it's classification. If the answer is a number on a continuous scale ($342,000, 23.5 degrees, 4.7 stars), it's regression.
 
 ```
                       SUPERVISED LEARNING
@@ -93,197 +111,487 @@ So: classification = "Which group?" and regression = "What number?"
               ▼                               ▼
        CLASSIFICATION                    REGRESSION
               │                               │
-  Output = discrete category           Output = continuous number
+  Output = discrete label              Output = continuous number
               │                               │
-  "What box does this belong to?"      "What number is this?"
+  "Which category?"                    "How much / how many?"
               │                               │
   ┌─────────────────────┐            ┌──────────────────────┐
   │ Examples:           │            │ Examples:            │
-  │ - Spam / Not Spam   │            │ - House price: $250K  │
-  │ - Cat / Dog / Bird  │            │ - Temperature: 23.5°C │
-  │ - Benign / Malignant│            │ - Stock price: $142   │
-  │ - Positive sentiment│            │ - Age: 34.2 years     │
+  │ - Spam / Not Spam   │            │ - House price: $350K │
+  │ - Cat / Dog / Bird  │            │ - Temperature: 23.5°C│
+  │ - Benign / Malignant│            │ - Stock return: 4.2% │
+  │ - Positive sentiment│            │ - Time to failure: 8d│
   └─────────────────────┘            └──────────────────────┘
               │                               │
-  Measured by:                       Measured by:
-  Accuracy, F1, AUC                  MAE, RMSE, R²
+  Loss: Cross-Entropy               Loss: MSE / MAE
+  Metrics: Accuracy, F1, AUC        Metrics: RMSE, R², MAE
+```
+
+### Classification Subtypes
+
+**Binary classification** has exactly two classes — yes/no, spam/not-spam, positive/negative. The model outputs a probability for one class, and you threshold it (typically at 0.5) to get the final prediction.
+
+**Multi-class classification** has three or more mutually exclusive classes — the input belongs to exactly one. A handwritten digit recognizer (0-9) is multi-class: each image is one and only one digit.
+
+**Multi-label classification** allows multiple labels per input simultaneously. A movie can be Action AND Comedy AND Thriller. Each label is an independent binary decision.
+
+```
+  BINARY:        Spam ─── or ─── Not Spam
+                 (one probability, one threshold)
+
+  MULTI-CLASS:   Cat ─── or ─── Dog ─── or ─── Bird
+                 (softmax: probabilities sum to 1, pick the highest)
+
+  MULTI-LABEL:   [Action: ✓] [Comedy: ✓] [Horror: ✗] [Thriller: ✓]
+                 (sigmoid per label: each is independent)
+```
+
+| Property | Multi-class | Multi-label |
+|---|---|---|
+| Labels per input | Exactly 1 | 0 or more |
+| Output activation | Softmax | Sigmoid (per label) |
+| Loss function | Categorical cross-entropy | Binary cross-entropy (per label) |
+| Probabilities sum to 1? | Yes | No |
+| Example | Digit recognition (0-9) | Movie genre tagging |
+
+### When Is It Actually Ambiguous?
+
+Sometimes the line between classification and regression blurs. Star ratings (1-5) are discrete, but treating them as regression often works better because 4 stars is closer to 5 than to 1 — the ordering matters. Age prediction could be regression (predict 34.2 years) or classification (predict age bracket: 30-40). The right choice depends on what decision you'll make with the output.
+
+**Rule of thumb:** If the output has a natural ordering and the gaps between values matter, lean toward regression. If the categories are fundamentally different kinds of things, use classification.
+
+---
+
+## 6.3 How Models Learn: Loss Functions & Optimization
+
+> A **loss function** (also called a cost function or objective function) quantifies the difference between the model's predictions and the true labels. Training a model means finding the parameters that minimize this loss over the training data.
+
+Every supervised learning algorithm follows the same core loop: make a prediction, measure how wrong it is, adjust parameters to be less wrong, repeat. The loss function is the ruler that measures "how wrong."
+
+```
+  THE LEARNING LOOP
+  ═══════════════════════════════════════════════════════
+  ┌──────────┐     ┌────────────┐     ┌──────────────┐
+  │  Input X  │────►│  Model f   │────►│ Prediction ŷ │
+  └──────────┘     └────────────┘     └──────┬───────┘
+                         ▲                    │
+                         │              ┌─────▼──────┐
+                   ┌─────┴──────┐      │ True Label y│
+                   │  Update    │      └─────┬───────┘
+                   │  Weights   │            │
+                   └─────┬──────┘      ┌─────▼──────┐
+                         │             │ Loss L(ŷ,y)│
+                         ◄─────────────┘            │
+                      Gradient of Loss              │
+                      (which direction              │
+                       to adjust?)                  │
+  ═══════════════════════════════════════════════════════
+  Repeat until loss is small enough (or stops improving)
+```
+
+### Loss Functions for Regression
+
+**Mean Squared Error (MSE)** is the most common regression loss. It penalizes large errors heavily because of the squaring — an error of 10 costs 100 times more than an error of 1.
+
+$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2$$
+
+**Mean Absolute Error (MAE)** treats all errors linearly. An error of 10 costs exactly 10 times more than an error of 1. This makes MAE more robust to outliers than MSE.
+
+$$\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$$
+
+**Huber Loss** combines the best of both: it behaves like MSE for small errors (smooth gradients for easy optimization) and like MAE for large errors (robust to outliers).
+
+```
+  Comparison: how each loss penalizes a prediction error of size δ
+
+  Error (δ)  │  MSE (δ²)  │  MAE (|δ|)  │  Behavior
+  ───────────┼────────────┼─────────────┼──────────────────────
+  0.1        │  0.01      │  0.1        │  MSE is more lenient
+  1.0        │  1.0       │  1.0        │  Equal
+  5.0        │  25.0      │  5.0        │  MSE punishes 5× more
+  10.0       │  100.0     │  10.0       │  MSE punishes 10× more
+  100.0      │  10,000    │  100.0      │  Outlier dominates MSE!
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [-5,-4,-3,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,3,4,5],
+    "datasets": [
+      {
+        "label": "MSE (error²)",
+        "data": [25,16,9,4,2.25,1,0.25,0,0.25,1,2.25,4,9,16,25],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.05)",
+        "fill": false,
+        "tension": 0.3,
+        "pointRadius": 2
+      },
+      {
+        "label": "MAE (|error|)",
+        "data": [5,4,3,2,1.5,1,0.5,0,0.5,1,1.5,2,3,4,5],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.05)",
+        "fill": false,
+        "tension": 0,
+        "pointRadius": 2
+      },
+      {
+        "label": "Huber (δ=1)",
+        "data": [4.5,3.5,2.5,1.5,1.125,0.5,0.125,0,0.125,0.5,1.125,1.5,2.5,3.5,4.5],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "backgroundColor": "rgba(34, 197, 94, 0.05)",
+        "fill": false,
+        "tension": 0.3,
+        "pointRadius": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Loss Functions Compared — MSE Explodes on Large Errors" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Loss Value" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Prediction Error (ŷ - y)" } }
+    }
+  }
+}
+```
+
+### Loss Functions for Classification
+
+**Binary Cross-Entropy** (log loss) is used when there are two classes. It heavily penalizes confident wrong predictions — predicting 0.99 when the true label is 0 is far worse than predicting 0.6.
+
+$$\text{BCE} = -\frac{1}{n}\sum_{i=1}^{n}\left[y_i \log(\hat{y}_i) + (1-y_i)\log(1-\hat{y}_i)\right]$$
+
+**Categorical Cross-Entropy** generalizes this to multiple classes:
+
+$$\text{CCE} = -\frac{1}{n}\sum_{i=1}^{n}\sum_{c=1}^{C} y_{i,c}\log(\hat{y}_{i,c})$$
+
+```
+  Why cross-entropy works so well:
+
+  True label: SPAM (y=1)
+
+  Prediction   │ Cross-Entropy Loss │ Interpretation
+  ─────────────┼────────────────────┼─────────────────────────
+  ŷ = 0.99     │  0.01              │ Confident & correct → tiny loss
+  ŷ = 0.90     │  0.11              │ Pretty confident → small loss
+  ŷ = 0.50     │  0.69              │ Unsure → moderate loss
+  ŷ = 0.10     │  2.30              │ Wrong direction → big loss
+  ŷ = 0.01     │  4.61              │ Confident & wrong → HUGE loss!
+
+  Cross-entropy absolutely punishes confident mistakes.
+  This is exactly the behavior we want.
+```
+
+### Gradient Descent: The Optimization Engine
+
+> **Gradient descent** is an iterative optimization algorithm that updates model parameters by moving them in the direction that decreases the loss function, with step size controlled by the learning rate.
+
+Almost every supervised learning model is trained using some form of gradient descent. The idea: compute the gradient (slope) of the loss with respect to each parameter, then nudge each parameter in the opposite direction of its gradient.
+
+$$w_{new} = w_{old} - \alpha \cdot \frac{\partial L}{\partial w}$$
+
+where $\alpha$ is the **learning rate** — how big each step is.
+
+```
+  Loss
+   │\
+   │ \
+   │  \         ← too large a learning rate: overshoots
+   │   \  /\
+   │    \/  \
+   │         \_________  ← just right: converges smoothly
+   │
+   └──────────────────── Iterations
+
+  Learning rate too small: takes forever, may get stuck
+  Learning rate too large: bounces around, may diverge
+  Learning rate just right: converges quickly to minimum
+```
+
+**Variants of gradient descent:**
+
+| Variant | Batch Size | Speed | Stability | Notes |
+|---|---|---|---|---|
+| Batch GD | All N samples | Slow per step | Stable gradient | Exact gradient, but expensive |
+| Stochastic GD (SGD) | 1 sample | Fast per step | Very noisy | Can escape local minima |
+| Mini-batch GD | 32-512 samples | Fast per step | Moderate noise | Best of both; the standard choice |
+
+Modern optimizers like **Adam** (Adaptive Moment Estimation) automatically adjust the learning rate per parameter, making training much easier in practice. Adam is the default choice for most deep learning and many classical ML tasks.
+
+---
+
+## 6.4 The Training Pipeline: Train / Val / Test Splits
+
+> The **train/validation/test split** divides labeled data into three disjoint sets: one for fitting model parameters (train), one for tuning hyperparameters and model selection (validation), and one held-out set for final unbiased evaluation (test).
+
+You never evaluate a model on data it trained on. That would be like grading a student on the exact practice problems they memorized — it tells you nothing about whether they actually understand the material.
+
+```
+  YOUR LABELED DATASET
+  ══════════════════════════════════════════════════════════
+  ┌──────────────────────────┬──────────┬──────────────────┐
+  │       TRAINING SET       │   VAL    │    TEST SET      │
+  │        (60-80%)          │ (10-20%) │    (10-20%)      │
+  │                          │          │                  │
+  │  Used to LEARN the       │ Used to  │  Used ONCE at    │
+  │  model's parameters      │ TUNE     │  the very end    │
+  │  (weights, splits, etc.) │ hyper-   │  for FINAL       │
+  │                          │ params   │  evaluation      │
+  │  Model sees this data    │ & pick   │                  │
+  │  during training         │ best     │  NEVER used      │
+  │                          │ model    │  during training  │
+  └──────────────────────────┴──────────┴──────────────────┘
+         LEARN                  SELECT        REPORT
+         parameters             model         performance
+```
+
+### Why Three Sets, Not Two?
+
+It's tempting to just split data into train and test. But then how do you tune hyperparameters (like the number of trees, or the learning rate)? If you tune on the test set, you're implicitly training on it — your test performance becomes optimistic.
+
+The validation set solves this: tune all you want on validation data, and save the test set for one final, honest evaluation.
+
+```
+  Common splits:
+
+  Small dataset (< 10K):    60% train / 20% val / 20% test
+  Medium dataset (10K-1M):  80% train / 10% val / 10% test
+  Large dataset (> 1M):     98% train / 1% val / 1% test
+                            (1% of 10M is still 100K examples — plenty)
+```
+
+### Cross-Validation: Making the Most of Limited Data
+
+> **K-fold cross-validation** partitions the training data into K equal folds, trains K models each using K-1 folds for training and the remaining fold for validation, and averages the results for a more robust performance estimate.
+
+When data is scarce, setting aside 20% for validation feels wasteful. K-fold cross-validation uses every example for both training and validation across different runs:
+
+```
+  5-Fold Cross-Validation:
+  ═══════════════════════════════════════════════════════
+  Fold 1:  [VAL ] [train] [train] [train] [train]  → score₁
+  Fold 2:  [train] [VAL ] [train] [train] [train]  → score₂
+  Fold 3:  [train] [train] [VAL ] [train] [train]  → score₃
+  Fold 4:  [train] [train] [train] [VAL ] [train]  → score₄
+  Fold 5:  [train] [train] [train] [train] [VAL ]  → score₅
+  ═══════════════════════════════════════════════════════
+  Final estimate = mean(score₁ ... score₅)  ±  std
+
+  Every example is in the validation set exactly once.
+  More reliable than a single split, but K× more expensive.
+  K=5 or K=10 is standard.
+```
+
+**Stratified K-fold** ensures each fold has roughly the same class distribution as the full dataset — essential when classes are imbalanced.
+
+### Data Leakage: The Silent Killer
+
+> **Data leakage** occurs when information from outside the training set (typically from the test set or future data) is used to create the model, leading to overly optimistic performance estimates that won't generalize.
+
+Data leakage is one of the most common and dangerous mistakes in ML. Your model looks great during development but falls apart in production.
+
+```
+  COMMON LEAKAGE PATTERNS:
+  ──────────────────────────────────────────────────────────
+  1. Scaling before splitting:
+     ✗  scaler.fit(ALL_DATA)  → then split → test info leaked!
+     ✓  split first → scaler.fit(TRAIN_ONLY) → transform test
+
+  2. Feature engineering on full dataset:
+     ✗  mean_encoding using all labels → test labels leaked!
+     ✓  compute encodings from train set only
+
+  3. Time series without temporal ordering:
+     ✗  random split → future data used to predict past!
+     ✓  train on past, validate/test on future (time-based split)
+
+  4. Duplicate or near-duplicate rows across splits:
+     ✗  same patient in train AND test → memorization, not learning
+     ✓  split by patient ID, not by row
 ```
 
 ---
 
-## 4.3 Classification in Depth
+## 6.5 Overfitting, Underfitting, and the Bias-Variance Tradeoff
 
-### Simple Explanation
-Classification is all about sorting things into groups. Sometimes there are only two groups
-(like "yes" or "no"), sometimes there are many groups (like picking which animal is in a photo),
-and sometimes one thing can belong to several groups at once (like a song that is both "pop"
-AND "dance" at the same time). Let's look at each kind.
+This is the single most important concept in all of machine learning. Every modeling decision you make — algorithm choice, hyperparameter tuning, regularization, data augmentation — is ultimately about managing this tradeoff.
 
-### Binary Classification — Two Classes
+### Underfitting
 
-**Simple Explanation:**
-Binary means "two." Think of it like a light switch -- it is either ON or OFF, nothing in between.
-A binary classifier looks at something and decides: "Is this one thing or the other?" For example,
-your email app looks at every message and asks one simple question: "Is this spam or not spam?"
-Only two possible answers, just like a true-or-false quiz at school.
+> **Underfitting** occurs when a model is too simple to capture the underlying patterns in the data. It performs poorly on both training data and new data.
 
-```
-  Input features → Model → ONE of TWO classes
+An underfitting model hasn't learned enough. Imagine trying to fit a straight line through data that follows a clear curve — no matter how you tilt the line, it can't capture the bend.
 
-  ┌──────────────┐         ┌──────────────────────────┐
-  │ Email text,  │         │  P(spam) = 0.95           │
-  │ sender, links│ ──────► │  P(not spam) = 0.05       │  →  SPAM
-  │              │         │                           │
-  └──────────────┘         │  Decision threshold = 0.5 │
-                           │  0.95 ≥ 0.5 → SPAM ✓      │
-                           └──────────────────────────┘
+### Overfitting
 
-  Adjusting the threshold:
-  ─────────────────────────────────────────────────────────────────
-  threshold = 0.5  →  balanced (default)
-  threshold = 0.3  →  more spam caught (↑ recall, ↓ precision)
-  threshold = 0.8  →  only very confident positives flagged (↑ precision, ↓ recall)
+> **Overfitting** occurs when a model learns the noise and random fluctuations in the training data rather than the true underlying pattern. It performs well on training data but poorly on new data.
 
-  Choose threshold based on what costs more: false alarms or misses.
-```
-
-### Multi-class Classification — Three or More Classes
-
-**Simple Explanation:**
-Now imagine a multiple-choice test instead of true-or-false. You see a picture of an animal and
-have to pick ONE answer: is it a cat, a dog, a bird, or a fish? There are more than two choices,
-but you can only pick exactly one. That is multi-class classification -- many groups to choose
-from, but each thing goes in only one group, like putting each student into exactly one classroom.
+An overfitting model has memorized the training data instead of learning the general pattern. It's like a student who memorizes every answer in the practice exam booklet verbatim but can't handle a rephrased question on the actual test.
 
 ```
-  One input can belong to exactly ONE of N classes.
+  UNDERFITTING              GOOD FIT               OVERFITTING
+  (too simple)              (just right)            (too complex)
+  ────────────              ────────────            ────────────
+      *   *                     *   *                   *   *
+    *       *               * ─────── *             * ╭─╮ ╭─╮ *
+  ──────────────          *    ╱   ╲    *         * ─╯   ╰╯   ╰─ *
+  *             *        *   ╱       ╲   *       *                 *
+                        *  ╱           ╲  *
 
-  Model output: raw scores (called **logits** — just numbers showing
-  which class the model leans toward, before converting to percentages)
-               → softmax → probabilities
-
-  Input: flower measurements
-  ┌───────────────────────────────────────────────────────────────┐
-  │  Logits:       Setosa=-0.5   Versicolor=1.2   Virginica=3.1  │
-  │                     ↓ softmax                                 │
-  │  Probabilities: Setosa=2%    Versicolor=18%   Virginica=80%  │
-  │                                                 ↑             │
-  │  Prediction: Virginica  (80% confidence)                      │
-  └───────────────────────────────────────────────────────────────┘
+  Train error: HIGH       Train error: LOW         Train error: ≈ 0
+  Test error:  HIGH       Test error:  LOW         Test error:  HIGH
+                                                   ↑ gap between train
+  "Can't even fit         "Learned the real        & test = overfitting
+   the training data"      pattern"                "Memorized noise"
 ```
 
-$$P(\text{class}_i) = \frac{e^{\text{logit}_i}}{\sum_j e^{\text{logit}_j}}$$
-
-Guarantees: all probabilities positive, sum to 1.0
-
-### Multi-label Classification — Multiple Classes at Once ★
-
-**Simple Explanation:**
-Think about describing your best friend. Your friend is not just ONE thing -- they might be
-"funny" AND "smart" AND "good at soccer" all at the same time! Multi-label classification
-works the same way. Instead of picking just one label, the computer can stick as many labels
-as it wants onto a single thing. A photo of a beach at sunset could be tagged "beach" AND
-"sunset" AND "ocean" AND "nature" -- all at once.
-
-```
-  One input can belong to MULTIPLE classes simultaneously.
-
-  ┌───────────────────────────────────────────────────────────────────┐
-  │  Example: movie genre tagging                                     │
-  │                                                                   │
-  │  Input: movie description                                         │
-  │  Output: Action=0.92 ✓  Comedy=0.04 ✗  Thriller=0.87 ✓          │
-  │                                                                   │
-  │  ← this movie is BOTH Action AND Thriller!                        │
-  │                                                                   │
-  │  Other examples:                                                  │
-  │  - Medical diagnosis: patient has diabetes AND hypertension       │
-  │  - Image tagging: photo contains cat AND grass AND outdoors       │
-  │  - Document tagging: article covers politics AND economics        │
-  └───────────────────────────────────────────────────────────────────┘
-
-  KEY DIFFERENCE from multi-class:
-  Multi-class:  exactly 1 label   → use Softmax + Categorical Cross-Entropy
-  Multi-label:  0 or more labels  → use Sigmoid per class + Binary Cross-Entropy
-
-  Each output neuron is an INDEPENDENT binary classifier!
-  Class probabilities do NOT need to sum to 1.
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["Very Simple", "", "Simple", "", "Moderate", "", "Complex", "", "Very Complex"],
+    "datasets": [
+      {
+        "label": "Training Error",
+        "data": [0.45, 0.35, 0.25, 0.18, 0.12, 0.07, 0.04, 0.02, 0.005],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.05)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      },
+      {
+        "label": "Validation Error",
+        "data": [0.47, 0.36, 0.24, 0.19, 0.16, 0.17, 0.22, 0.30, 0.42],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.05)",
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "The Classic U-Curve — Validation Error Has a Sweet Spot" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Error" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Model Complexity →" } }
+    }
+  }
+}
 ```
 
-### Decision Boundary — What Separates Classes
+### The Bias-Variance Tradeoff
 
-**Simple Explanation:**
-Imagine you are at recess and need to split the playground so that soccer players are on one
-side and basketball players are on the other. If you can just stretch a jump rope across the
-middle in a straight line and everyone ends up on the correct side, that is a *linear* boundary
--- nice and simple! But what if the soccer players are scattered all around and the basketball
-players are clumped in the middle? You would need to draw a wiggly circle or a weird curvy line
-to separate them. That is a *non-linear* boundary -- harder, but sometimes the only way to do it.
+> **Bias** is the error introduced by approximating a complex real-world problem with a simpler model. **Variance** is the error introduced by the model's sensitivity to fluctuations in the training data. The total expected error decomposes as: $\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible Noise}$.
+
+**High bias** means the model consistently misses the target in the same direction — it's systematically wrong because it's too simple. A linear model trying to fit a quadratic relationship will always be biased.
+
+**High variance** means the model's predictions change wildly depending on which training data you happened to use. A very deep decision tree trained on 100 examples will produce a completely different tree if you swap out 5 examples.
 
 ```
-  LINEAR boundary              NON-LINEAR boundary
-  (Logistic Regression)        (Neural Net, RBF-SVM, DT)
-  ─────────────────────        ────────────────────────────
-  Feature 2                    Feature 2
-     │ ○ ○ ○ /  ■ ■               │ ○ ○ ○ ╭────╮ ■ ■
-     │ ○ ○ /    ■ ■               │ ○ ○ ╭─╯    ╰─╮ ■
-     │ ○ /   ■  ■ ■               │ ○ ╭─╯ ■ ■ ■  ╰╮
-     │ /  ■ ■   ■ ■               │   ╰────────────╯
-     └──────────────              └────────────────────
-       Feature 1                    Feature 1
-
-  Simple, may underfit         More flexible, can overfit
+  ┌─────────────────────────────────────────────────────┐
+  │               BIAS-VARIANCE TRADEOFF                │
+  │                                                     │
+  │  HIGH BIAS          │         HIGH VARIANCE         │
+  │  LOW VARIANCE       │         LOW BIAS              │
+  │  ┌───────┐          │         ┌───────┐             │
+  │  │ ·  ·  │          │         │·      │             │
+  │  │  ·  · │  Target: │         │  ·    │  Target:    │
+  │  │ ·  ·  │    ⊕     │         │    ⊕  │    ⊕       │
+  │  │  ·  · │          │         │·    · │             │
+  │  └───────┘          │         └───────┘             │
+  │  All shots cluster  │  Shots scatter around         │
+  │  together but MISS  │  the target but are           │
+  │  the bullseye       │  SPREAD OUT                   │
+  │                     │                               │
+  │  Fix: more complex  │  Fix: simpler model,          │
+  │  model, more        │  more data, or                │
+  │  features           │  regularization               │
+  └─────────────────────┴───────────────────────────────┘
 ```
+
+### Diagnosing and Fixing Overfitting vs Underfitting
+
+```mermaid
+flowchart TD
+    A[Train your model] --> B{Training error<br/>acceptable?}
+    B -->|No — High training error| C[UNDERFITTING]
+    C --> C1[Try a more complex model]
+    C --> C2[Add more / better features]
+    C --> C3[Reduce regularization]
+    C --> C4[Train longer]
+    B -->|Yes — Low training error| D{Validation error<br/>close to training?}
+    D -->|No — Big gap| E[OVERFITTING]
+    E --> E1[Get more training data]
+    E --> E2[Add regularization L1/L2/dropout]
+    E --> E3[Simplify the model]
+    E --> E4[Early stopping]
+    E --> E5[Data augmentation]
+    D -->|Yes — Small gap| F[GOOD FIT ✓]
+    F --> G[Evaluate on test set once]
+```
+
+| Symptom | Diagnosis | Fixes |
+|---|---|---|
+| High train error, high val error | Underfitting (high bias) | More complex model, better features, less regularization |
+| Low train error, high val error | Overfitting (high variance) | More data, regularization, simpler model, early stopping |
+| Low train error, low val error | Good fit | Ship it (after confirming on test set) |
+| High train error, low val error | Bug in your code | Check for data leakage or evaluation bugs |
+
+### Regularization: The Overfitting Antidote
+
+Regularization adds a penalty to the loss function that discourages overly complex models. It's like saying to the model: "Find the simplest explanation that still fits the data well."
+
+```
+  UNREGULARIZED LOSS:     L(ŷ, y)            → fit training data perfectly
+  REGULARIZED LOSS:       L(ŷ, y) + λR(w)    → fit data AND keep weights small
+
+  λ = regularization strength
+  λ = 0:     no penalty → may overfit
+  λ = large: heavy penalty → may underfit
+  λ = right: balanced → generalizes well
+```
+
+We'll see specific regularization techniques (Ridge, Lasso) in Section 6.9.
 
 ---
 
-## 4.4 Classification Algorithms
+## 6.6 Classification Algorithms
 
-### 1. Logistic Regression ★★★
+### Logistic Regression ★★★
 
-**Simple explanation:**
-Imagine you are trying to decide if you should bring an umbrella to school. You think about a
-few clues: "Are there dark clouds?" (big clue!), "Did the weather app say rain?" (another big
-clue), "Is it windy?" (small clue). You give each clue a score for how important it is, add
-them all up, and if the total is high enough you think, "Yep, it is probably going to rain --
-I should bring my umbrella!" Logistic Regression works the same way: it adds up weighted clues,
-then squashes the total through a special S-shaped curve (called the sigmoid) that turns it into
-a percentage between 0% and 100% -- a probability of "yes" or "no."
+> **Logistic Regression** is a linear classifier that models the posterior probability $P(y=1|x)$ using the logistic sigmoid function applied to a linear combination of input features. It is trained by minimizing binary cross-entropy loss.
+
+Despite the name, logistic regression is a classification algorithm, not a regression algorithm. It takes a weighted sum of features, pushes that sum through the sigmoid function to get a probability between 0 and 1, and classifies based on a threshold.
 
 $$z = w_0 + w_1 x_1 + w_2 x_2 + \dots + w_n x_n$$
 
 $$\hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}}$$
 
+The sigmoid function is the key. It squashes any real number into the (0, 1) range, which we interpret as a probability.
+
 ```
   Example — spam detection:
-    z = -3.0 + (0.8 × has_word_FREE)
-             + (1.2 × has_word_MONEY)
-             + (0.3 × num_links)
-             + (-0.5 × is_known_sender)
 
-    email: FREE=1, MONEY=1, links=5, known=0
-    z = -3.0 + 0.8 + 1.2 + 1.5 - 0 = 0.5
-    ŷ = σ(0.5) = 0.622   →  62% spam probability  →  SPAM
+    Features and learned weights:
+      w₀ = -3.0  (bias/intercept)
+      has_word_FREE:    w₁ = +0.8   (spam signal)
+      has_word_MONEY:   w₂ = +1.2   (strong spam signal)
+      num_links:        w₃ = +0.3   (mild spam signal)
+      is_known_sender:  w₄ = -0.5   (anti-spam signal)
 
-  Learned weights tell you WHICH features matter most:
-    MONEY (1.2) > FREE (0.8) > links (0.3) > known (-0.5)
-```
+    Incoming email: FREE=1, MONEY=1, links=5, known=0
+      z = -3.0 + 0.8(1) + 1.2(1) + 0.3(5) + (-0.5)(0) = 0.5
+      ŷ = σ(0.5) = 0.622
+      → 62.2% probability of spam → classify as SPAM (threshold 0.5)
 
-**The Sigmoid (S-Curve):**
-```
-  Output
-  1.0  │                    ───────────────
-       │                  /
-  0.5  │                /   ← threshold (default 0.5)
-       │              /
-  0.0  │────────────/
-       └───────────────────────────── Input (z)
-        -10     -5      0      5     10
-
-  Interpretation:
-  z >> 0  →  confident class 1  (probability near 1)
-  z = 0   →  completely uncertain  (probability = 0.5)
-  z << 0  →  confident class 0  (probability near 0)
+  The learned weights are directly interpretable:
+    MONEY (+1.2) is the strongest spam indicator
+    known_sender (-0.5) is evidence AGAINST spam
 ```
 
 ```chart
@@ -304,164 +612,301 @@ $$\hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}}$$
   "options": {
     "plugins": { "title": { "display": true, "text": "The Sigmoid Function — Squashes Any Input to (0, 1)" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Probability" }, "min": 0, "max": 1 },
+      "y": { "title": { "display": true, "text": "P(class = 1)" }, "min": 0, "max": 1 },
       "x": { "title": { "display": true, "text": "z (weighted sum of inputs)" } }
     }
   }
 }
 ```
 
-**Official Definition:**
-> **Logistic Regression** is a linear classifier that models the probability of class membership
-> using the logistic (sigmoid) function. It finds a linear decision boundary in feature space
-> and is trained by maximizing the log-likelihood (minimizing binary cross-entropy loss).
+**Adjusting the Decision Threshold**
 
-**Strengths / Weaknesses:**
+The default threshold of 0.5 isn't always right. In medical diagnosis, you might lower it to 0.1 to catch more true positives (higher recall), accepting more false alarms. In spam filtering, you might raise it to 0.8 to avoid blocking legitimate emails (higher precision).
+
 ```
-  ✓ Fast to train and predict         ✗ Only linear decision boundaries
-  ✓ Outputs well-calibrated probs     ✗ Needs feature engineering for
-  ✓ Highly interpretable weights        non-linear problems
-  ✓ Works well on high-dim text       ✗ Assumes features are independent
+  threshold = 0.5  →  balanced (default)
+  threshold = 0.2  →  more positives caught (↑ recall, ↓ precision)
+  threshold = 0.8  →  only very confident positives (↑ precision, ↓ recall)
+
+  Choose threshold based on: what's the cost of a false positive
+  vs. a false negative in YOUR specific domain?
+```
+
+**Multi-class Logistic Regression** (softmax regression) extends this to C classes using the softmax function:
+
+$$P(\text{class}_k) = \frac{e^{z_k}}{\sum_{j=1}^{C} e^{z_j}}$$
+
+This guarantees all class probabilities are positive and sum to 1.
+
+**Strengths and limitations:**
+```
+  ✓ Fast to train (scales to millions of features)
+  ✓ Outputs well-calibrated probabilities
+  ✓ Highly interpretable (weights show feature importance)
+  ✓ Excellent baseline for text classification (high-dim sparse data)
+  ✓ Low risk of overfitting with proper regularization
+
+  ✗ Only linear decision boundaries (can't learn XOR)
+  ✗ Needs feature engineering for non-linear patterns
+  ✗ Assumes features contribute independently
+  ✗ Sensitive to outliers in features
 ```
 
 ---
 
-### 2. K-Nearest Neighbors (KNN) ★
+### K-Nearest Neighbors (KNN) ★
 
-**Simple explanation:**
-Picture this: you are the new kid at school and nobody knows which friend group you belong to.
-How do people figure it out? They look at who you hang out with! If your three closest friends
-all love art, people will guess you probably love art too. That is exactly how KNN works --
-"you are judged by the company you keep!" To classify something new, the computer looks at the
-K most similar examples it already knows about, and whatever group most of those neighbors belong
-to, that is the group the new thing gets put into. It is like a vote: ask your nearest neighbors,
-and the majority wins.
+> **K-Nearest Neighbors** is a non-parametric, instance-based algorithm that classifies a new point by finding the K closest training examples (using a distance metric) and assigning the majority class among those neighbors.
+
+KNN is the simplest classification algorithm to understand: to classify a new point, find the K training points closest to it, and vote. Whatever class the majority of neighbors belong to is the prediction. There's no explicit training phase — the entire training set IS the model.
 
 ```
   Feature 2
      │                    K=3: who are the 3 nearest?
-     │  ○ ○                ○ ○
-     │  ○   ○  ○           ○   ○  ← neighbor 1 (class ○)
-     │          ★          ← NEW POINT
-     │     ●  ●   ○            ●  ← neighbor 2 (class ●)
-     │  ●        ●             ●  ← neighbor 3 (class ●)
+     │  ○ ○
+     │  ○   ○  ○           ○ ← neighbor 1 (class ○)
+     │          ★  ← NEW POINT
+     │     ●  ●   ○        ● ← neighbor 2 (class ●)
+     │  ●        ●         ● ← neighbor 3 (class ●)
      └──────────────── Feature 1
 
   Vote: ○=1, ●=2  →  Predict class ●  (majority wins!)
-
-  K=1: noisy, overfits          K=15: smooth, may underfit
-  K=5: usually a good start     K=√n: common rule of thumb
 ```
 
-**Official Definition:**
-> **KNN** is a non-parametric (makes no assumptions about data shape), lazy (stores all
-> training data instead of learning a formula) algorithm. At prediction time it finds the K
-> training points nearest to the query (by Euclidean or other distance), and returns the
-> majority class (classification) or mean value (regression).
+The choice of K dramatically affects behavior:
 
-**Key properties:**
 ```
-  "Lazy learner" — no training phase, entire dataset is the model
-  Prediction cost: O(n × d) per query (slow on large datasets!)
-  Solution: KD-trees or Ball trees for approximate fast lookup
+  K=1:   Highly sensitive to noise. One mislabeled neighbor
+         changes the prediction. Very jagged decision boundary.
 
-  ✓ Simple, no assumptions about data         ✗ Slow at prediction time
-  ✓ Works for any decision boundary shape     ✗ Memory-intensive (stores all data)
-  ✓ Naturally multi-class                     ✗ Hurt by irrelevant features
-  ✓ Easy to update (just add new data)        ✗ Needs feature scaling!
+  K=5:   Smooths out noise. Good default starting point.
+
+  K=√n:  Common rule of thumb (n = training set size).
+
+  K=n:   Always predicts the majority class. Useless.
+
+  Always choose K as an ODD number (for binary classification)
+  to avoid ties.
+```
+
+**Distance Metrics:**
+
+| Metric | Formula | When to Use |
+|---|---|---|
+| Euclidean | $\sqrt{\sum(x_i - y_i)^2}$ | Default; continuous features |
+| Manhattan | $\sum|x_i - y_i|$ | High-dimensional data; sparse features |
+| Cosine | $1 - \frac{x \cdot y}{\|x\|\|y\|}$ | Text/document similarity |
+
+**Critical requirement:** KNN is distance-based, so features MUST be scaled to the same range. Without scaling, a feature measured in thousands (income) will dominate a feature measured in single digits (number of children).
+
+**Strengths and limitations:**
+```
+  ✓ Zero training time (lazy learner)
+  ✓ No assumptions about data distribution
+  ✓ Naturally handles multi-class problems
+  ✓ Decision boundaries can be any shape
+  ✓ Easy to update (just add new data points)
+
+  ✗ Slow at prediction time: O(n × d) per query
+  ✗ Memory-intensive (stores entire training set)
+  ✗ Severely hurt by irrelevant features (curse of dimensionality)
+  ✗ Requires feature scaling
+  ✗ Doesn't produce a model or feature importance
 ```
 
 ---
 
-### 3. Decision Trees ★★★
+### Decision Trees ★★★
 
-**Simple explanation:**
-Have you ever played the game "20 Questions"? Someone thinks of something and you ask yes-or-no
-questions to narrow it down: "Is it alive?" Yes. "Is it bigger than a dog?" No. "Does it have
-fur?" Yes. "Is it a cat?" Yes! A Decision Tree works exactly like that game. The computer builds
-a flowchart of yes/no questions about the data. Each question splits the answers into smaller and
-smaller groups until the computer reaches the end and says, "I know the answer!" You can even
-draw the whole tree on paper and follow the path with your finger -- that is why people love
-Decision Trees: they are easy to understand and explain.
+> A **Decision Tree** recursively partitions the feature space using axis-aligned splits. Each internal node tests a feature against a threshold, each branch represents the outcome, and each leaf node holds a class prediction (classification) or a numerical value (regression).
+
+A decision tree is a flowchart of if-then-else questions. At each node, it asks: "Is feature X greater than threshold T?" Based on the answer, it goes left or right until it reaches a leaf with a prediction. You can trace the entire decision path for any prediction, making it one of the most interpretable models.
 
 ```
-                       Is outlook = Sunny?
-                      /                    \
-                    YES                     NO
-                     │                      │
-            Is humidity > 70?         Is outlook = Overcast?
-             /          \               /              \
-           YES            NO          YES               NO
-            │              │           │                 │
-      "Don't play"    "Play!"     "Play!"          Is wind = Strong?
-                                                    /           \
-                                                  YES             NO
-                                                   │               │
-                                            "Don't play"       "Play!"
+                   Is income > $50K?
+                  /                  \
+                YES                   NO
+                 │                    │
+        Is age > 30?           Has college degree?
+         /        \              /             \
+       YES         NO          YES              NO
+        │           │           │                │
+    "Approve"   "Review"    "Review"         "Deny"
+    (leaf)       (leaf)      (leaf)           (leaf)
 ```
 
-**Official Definition:**
-> A **Decision Tree** partitions the feature space recursively using axis-aligned splits.
-> Each internal node selects the feature and threshold that best separates the target
-> classes (measured by impurity). Leaf nodes hold the predicted class or value.
+**How does the tree choose which question to ask?** At each node, it evaluates every possible feature and every possible threshold, picks the split that creates the "purest" child nodes (we'll see the exact math in Section 6.7), and recurses. It stops when a node is pure (all one class), hits a depth limit, or has too few samples to split further.
+
+```mermaid
+flowchart TD
+    A[Start: all training data in one node] --> B{Can we split further?}
+    B -->|Yes| C[Try every feature × every threshold]
+    C --> D[Pick split with lowest impurity]
+    D --> E[Create left and right child nodes]
+    E --> B
+    B -->|No: node is pure, or<br/>max depth reached, or<br/>too few samples| F[Create leaf node<br/>with majority class]
+```
+
+**Strengths and limitations:**
+```
+  ✓ Completely interpretable — you can draw the decision path
+  ✓ No feature scaling needed
+  ✓ Handles both numerical and categorical features
+  ✓ Fast training and prediction
+  ✓ Captures non-linear relationships and interactions
+
+  ✗ Prone to overfitting (deep trees memorize noise)
+  ✗ Unstable: small data change → very different tree
+  ✗ Biased toward features with many unique values
+  ✗ Greedy: finds locally optimal splits, not globally optimal
+  ✗ Axis-aligned splits: can't capture diagonal boundaries efficiently
+```
 
 ---
 
-## 4.5 Decision Tree Splits — How the Algorithm Chooses ★
+### Support Vector Machines (SVMs) ★★
 
-### Simple Explanation
-Imagine you are sorting a big mixed bag of M&Ms and Skittles into two bowls. You could sort by
-color, by size, or by whether they have an "M" printed on them. Which rule would separate them
-the fastest? Sorting by the "M" stamp would give you a nearly perfect split -- one bowl is all
-M&Ms, the other is all Skittles. Sorting by color would leave both bowls still mixed up. The
-tree tries *every possible sorting rule* and picks the one that makes the two groups as "pure"
-as possible -- meaning each group has mostly one type of candy, not a messy mix.
+> A **Support Vector Machine** finds the hyperplane that maximizes the margin — the distance between the hyperplane and the nearest data points of each class (the support vectors). It can handle non-linear boundaries using the kernel trick.
 
-At each node, the tree must decide: "Which question best separates my data?"
-It tries every feature and every possible threshold, picks the split that
-creates the "purest" child nodes.
+The core idea of SVMs is elegant: among all possible lines (or hyperplanes) that separate two classes, choose the one with the widest possible gap between the classes. This maximum-margin hyperplane tends to generalize best.
+
+```
+  Feature 2
+     │
+     │  ○ ○                ○ ○
+     │  ○   ○  ╱           ○   ○     ← margin
+     │     ○  ╱   ● ●          ╱  ← decision boundary (hyperplane)
+     │       ╱   ●  ●         ╱   ← margin
+     │      ╱  ●    ● ●     ╱
+     │     ╱  ●   ●        ╱
+     └────────────────────────── Feature 1
+
+  The circled points right on the margin edge are "support vectors."
+  They're the only points that actually determine where the boundary goes.
+  Remove any other training point and the boundary doesn't change.
+```
+
+**The Kernel Trick**
+
+Real-world data is rarely linearly separable. SVMs handle this with kernels — functions that implicitly map data to a higher-dimensional space where a linear separator exists.
+
+```
+  Original 1D space:       ● ● ○ ○ ○ ● ●    ← no line can separate!
+
+  Mapped to 2D (x → x²):
+     x²│
+       │ ●           ●      ← NOW separable by a line!
+       │   ●       ●
+       │     ○ ○ ○
+       └──────────── x
+
+  Common Kernels:
+  ┌────────────┬─────────────────────────────────────┐
+  │ Linear     │ K(x,y) = x·y           (just the dot product)  │
+  │ Polynomial │ K(x,y) = (x·y + c)^d   (degree-d polynomial)  │
+  │ RBF/Gauss  │ K(x,y) = exp(-γ‖x-y‖²) (most popular)        │
+  └────────────┴─────────────────────────────────────┘
+
+  RBF kernel can model virtually any decision boundary shape.
+  γ controls how "local" each support vector's influence is:
+    small γ → smooth boundary (may underfit)
+    large γ → wiggly boundary (may overfit)
+```
+
+**Strengths and limitations:**
+```
+  ✓ Effective in high-dimensional spaces
+  ✓ Memory-efficient (only stores support vectors)
+  ✓ Versatile via different kernels
+  ✓ Strong theoretical guarantees (margin maximization)
+  ✓ Works well with clear margin of separation
+
+  ✗ Slow on large datasets: O(n² to n³) training time
+  ✗ Sensitive to feature scaling (must normalize)
+  ✗ Hard to interpret (especially with non-linear kernels)
+  ✗ Doesn't directly output probabilities (needs calibration)
+  ✗ Choosing the right kernel and C parameter requires tuning
+```
+
+---
+
+### Naive Bayes ★
+
+> **Naive Bayes** is a probabilistic classifier based on Bayes' theorem with the "naive" assumption that features are conditionally independent given the class label.
+
+$$P(y|x_1,...,x_n) = \frac{P(y) \prod_{i=1}^n P(x_i|y)}{P(x_1,...,x_n)}$$
+
+The "naive" assumption — that features are independent — is almost never true in practice. Email words are definitely correlated ("Nigerian" and "prince" tend to appear together). Yet Naive Bayes works surprisingly well anyway, especially for text classification. This is one of the great paradoxes of ML: a model built on a clearly wrong assumption can still make accurate predictions.
+
+```
+  Why it works for spam detection:
+
+  P(spam | "free money") ∝ P("free"|spam) × P("money"|spam) × P(spam)
+                         ∝ 0.8 × 0.7 × 0.3
+                         = 0.168
+
+  P(ham | "free money")  ∝ P("free"|ham) × P("money"|ham) × P(ham)
+                         ∝ 0.1 × 0.05 × 0.7
+                         = 0.0035
+
+  Normalize: P(spam) = 0.168 / (0.168 + 0.0035) = 97.96%  → SPAM
+```
+
+**Strengths and limitations:**
+```
+  ✓ Extremely fast to train and predict
+  ✓ Works well with small training sets
+  ✓ Excellent for text classification (document categorization, sentiment)
+  ✓ Handles high-dimensional sparse data gracefully
+  ✓ Not sensitive to irrelevant features
+
+  ✗ Independence assumption is usually wrong
+  ✗ Probabilities are poorly calibrated (often too extreme)
+  ✗ Can't learn feature interactions
+  ✗ "Zero frequency" problem (a word never seen in spam → P(spam)=0)
+      → Fix: Laplace smoothing
+```
+
+---
+
+## 6.7 Decision Tree Splits: Gini vs Entropy
+
+At each node, the tree must decide: "Which feature and which threshold give the best split?" It evaluates every possible split and picks the one that creates the purest child nodes. But how do we measure "purity"?
 
 ### Gini Impurity
 
-**Simple Explanation:**
-Think of Gini Impurity as a "messiness score." If you reach into a bowl and every piece of candy
-is a chocolate bar, the bowl is perfectly sorted -- not messy at all (Gini = 0). But if the bowl
-is half chocolate bars and half gummy bears all mixed together, it is maximally messy (Gini = 0.5
-for two groups). The tree wants to make splits that create the *least messy* groups possible, so
-it picks the question that drives the Gini score as close to zero as it can.
+> **Gini Impurity** measures the probability that a randomly chosen element would be incorrectly classified if it were randomly labeled according to the distribution of classes in the node.
 
-$$\text{Gini} = 1 - \sum_i p_i^2$$
+$$\text{Gini}(S) = 1 - \sum_{i=1}^{C} p_i^2$$
 
-where $p_i$ = fraction of class $i$ in the node.
+where $p_i$ is the fraction of class $i$ in the node.
+
+A pure node (all one class) has Gini = 0. A perfectly mixed binary node (50/50) has Gini = 0.5. The tree picks the split that minimizes the weighted average Gini of the child nodes.
 
 ```
-  Pure node (all one class):     Gini = 1 - (1² + 0²)    = 0.0
-  Mixed 50/50:                   Gini = 1 - (0.5² + 0.5²) = 0.5
-  Mixed 70/30:                   Gini = 1 - (0.7² + 0.3²) = 0.42
+  Pure node (all class A):     Gini = 1 - (1.0² + 0.0²) = 0.0   ← perfect
+  Mixed 70/30:                 Gini = 1 - (0.7² + 0.3²) = 0.42
+  Mixed 50/50:                 Gini = 1 - (0.5² + 0.5²) = 0.50  ← worst
 
   LOWER Gini = PURER node = BETTER split
 ```
 
-### Information Gain (Entropy-based)
+### Entropy & Information Gain
 
-**Simple Explanation:**
-Entropy is another way to measure messiness, but think of it as "surprise." If you know a bowl
-is 100% chocolate, there is zero surprise when you pull out a chocolate -- boring! (Entropy = 0.)
-But if the bowl is 50/50 chocolate and gummy bears, every time you reach in you have no idea
-what you will get -- maximum surprise! (Entropy = 1.) Information Gain asks: "How much did this
-question REDUCE my surprise?" If asking "Is it round?" takes you from maximum surprise to almost
-no surprise, that question has high information gain -- it is a really useful question to ask!
+> **Entropy** measures the uncertainty or disorder in a set. **Information Gain** is the reduction in entropy achieved by splitting on a particular feature.
 
-$$\text{Entropy} = -\sum_i p_i \times \log_2(p_i)$$
+$$\text{Entropy}(S) = -\sum_{i=1}^{C} p_i \log_2(p_i)$$
 
-$$\text{Information Gain} = \text{Parent Entropy} - \text{Weighted Avg Child Entropy}$$
+$$\text{Information Gain} = \text{Entropy}(parent) - \sum_{k} \frac{|S_k|}{|S|} \cdot \text{Entropy}(S_k)$$
+
+Entropy uses information theory — it measures how many bits you need to encode the class label. A pure node needs 0 bits (you already know the class). A 50/50 node needs 1 bit (a single yes/no question).
 
 ```
-  Pure node:     Entropy = -(1×log₂1 + 0×log₂0)     = 0.0  bits
-  50/50 split:   Entropy = -(0.5×log₂0.5 + 0.5×log₂0.5) = 1.0  bits
-  70/30 split:   Entropy = -(0.7×log₂0.7 + 0.3×log₂0.3) = 0.88 bits
+  Pure node:     Entropy = -(1.0 × log₂(1.0)) = 0.0 bits
+  Mixed 70/30:   Entropy = -(0.7 × log₂(0.7) + 0.3 × log₂(0.3)) = 0.88 bits
+  Mixed 50/50:   Entropy = -(0.5 × log₂(0.5) + 0.5 × log₂(0.5)) = 1.0 bits
 
-  HIGHER info gain = BETTER split
+  HIGHER information gain = BETTER split
 ```
 
 ```chart
@@ -480,7 +925,7 @@ $$\text{Information Gain} = \text{Parent Entropy} - \text{Weighted Avg Child Ent
         "pointRadius": 2
       },
       {
-        "label": "Entropy (scaled to 0–1)",
+        "label": "Entropy (in bits)",
         "data": [0.0, 0.47, 0.72, 0.88, 0.97, 1.0, 0.97, 0.88, 0.72, 0.47, 0.0],
         "borderColor": "rgba(234, 88, 12, 1)",
         "backgroundColor": "rgba(234, 88, 12, 0.1)",
@@ -494,191 +939,238 @@ $$\text{Information Gain} = \text{Parent Entropy} - \text{Weighted Avg Child Ent
     "plugins": { "title": { "display": true, "text": "Gini vs Entropy — Both Peak at 50/50 Mix, Zero When Pure" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Impurity Score" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "% of Class 1 in Node" } }
+      "x": { "title": { "display": true, "text": "% of Class 1 in Node (Binary Classification)" } }
     }
   }
 }
 ```
 
-### Worked Example: Which Feature to Split On?
+### Gini vs Entropy: Does It Matter?
+
+In practice, they almost always produce the same tree. Gini is slightly faster to compute (no logarithm), which is why scikit-learn uses it as the default. The main difference: Gini tends to isolate the most frequent class in its own branch, while entropy tends to produce more balanced trees.
 
 ```
-  Dataset: 10 examples, predicting "Play tennis?" (6 Yes, 4 No)
-  Considering two possible first splits:
+  ┌────────────────────┬─────────────┬────────────────────┐
+  │ Property           │ Gini        │ Entropy            │
+  ├────────────────────┼─────────────┼────────────────────┤
+  │ Range (binary)     │ [0, 0.5]    │ [0, 1.0]           │
+  │ Computation        │ Faster      │ Slightly slower    │
+  │ Default in sklearn │ ✓ Yes       │ No (but available) │
+  │ Tends to produce   │ Isolate     │ More balanced      │
+  │                    │ largest     │ splits             │
+  │                    │ class       │                    │
+  │ Result difference  │ <2% of splits differ (Breiman)   │
+  └────────────────────┴─────────────┴────────────────────┘
+```
+
+### Worked Example: Choosing the Best Split
+
+```
+  Dataset: 10 examples predicting "Play tennis?" (6 Yes, 4 No)
+  Comparing two candidate features for the first split:
 
   ┌────────────────────────────────────────────────────────────────┐
-  │  OPTION A: Split on Outlook                                    │
+  │  OPTION A: Split on "Outlook"                                  │
   │                                                                │
   │  Parent: [6Y, 4N]  →  Entropy = 0.971                        │
   │                                                                │
-  │  Sunny  branch: [2Y, 3N]  Entropy = 0.971                     │
-  │  Overcast branch: [4Y, 0N] Entropy = 0.0    ← pure!           │
-  │  Rainy  branch: [3Y, 1N]  Entropy = 0.811                     │
+  │  Sunny    → [2Y, 3N]  Entropy = 0.971                         │
+  │  Overcast → [4Y, 0N]  Entropy = 0.0    ← pure!                │
+  │  Rainy    → [3Y, 1N]  Entropy = 0.811                         │
   │                                                                │
-  │  Weighted avg = (5/10)×0.971 + (4/10)×0 + (4/10)*0.811       │
-  │               = 0.693                                          │
-  │  Info Gain    = 0.971 − 0.693 = 0.278                         │
+  │  Weighted child entropy = (5/10)×0.971 + (4/10)×0 + (1/10)×0.811│
+  │                        ≈ 0.567                                  │
+  │  Info Gain = 0.971 - 0.567 = 0.404                             │
   ├────────────────────────────────────────────────────────────────┤
-  │  OPTION B: Split on Wind                                       │
+  │  OPTION B: Split on "Wind"                                     │
   │                                                                │
-  │  Weak  branch: [6Y, 2N]  Entropy = 0.811                      │
-  │  Strong branch: [3Y, 3N] Entropy = 1.0                        │
+  │  Weak   → [6Y, 2N]  Entropy = 0.811                           │
+  │  Strong → [0Y, 2N]  Entropy = 0.0   ← but small!              │
   │                                                                │
-  │  Weighted avg = (8/10)×0.811 + (6/10)×1.0 = 1.249 ← BUG      │
-  │  Info Gain    = 0.971 − weighted = 0.048                       │
+  │  Weighted child entropy = (8/10)×0.811 + (2/10)×0.0           │
+  │                        = 0.649                                 │
+  │  Info Gain = 0.971 - 0.649 = 0.322                            │
   └────────────────────────────────────────────────────────────────┘
 
-  Info Gain(Outlook)=0.278 > Info Gain(Wind)=0.048
-  → Choose OUTLOOK as the first split! ✓
+  Info Gain(Outlook) = 0.404 > Info Gain(Wind) = 0.322
+  → Choose OUTLOOK as the first split ✓
 ```
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Outlook", "Wind"],
+    "labels": ["Outlook", "Wind", "Humidity", "Temperature"],
     "datasets": [{
       "label": "Information Gain",
-      "data": [0.278, 0.048],
-      "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(239,68,68,0.5)"],
-      "borderColor": ["rgba(34,197,94,1)", "rgba(239,68,68,1)"],
+      "data": [0.404, 0.322, 0.151, 0.029],
+      "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(99,102,241,0.7)", "rgba(234,88,12,0.5)", "rgba(239,68,68,0.4)"],
+      "borderColor": ["rgba(34,197,94,1)", "rgba(99,102,241,1)", "rgba(234,88,12,1)", "rgba(239,68,68,1)"],
       "borderWidth": 1
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Which Feature to Split First? Outlook Wins (5.8× More Info Gain)" } },
+    "plugins": { "title": { "display": true, "text": "Which Feature to Split First? Outlook Has the Highest Information Gain" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Information Gain (bits)" }, "beginAtZero": true, "max": 0.35 },
+      "y": { "title": { "display": true, "text": "Information Gain (bits)" }, "beginAtZero": true, "max": 0.5 },
       "x": { "title": { "display": true, "text": "Candidate Feature" } }
     }
   }
 }
 ```
 
-**Strengths / Weaknesses:**
-```
-  ✓ Completely interpretable (can visualize the tree)
-  ✓ No feature scaling needed
-  ✓ Handles mixed feature types
-  ✓ Fast training and prediction
-  ✗ Prone to overfitting (deep trees memorize data)
-  ✗ Unstable: small data change → very different tree
-  ✗ Biased toward features with many unique values
-```
-
 ---
 
-## 4.6 Ensemble Methods ★★★
+## 6.8 Ensemble Methods: Bagging, Boosting, Stacking
 
-### Simple Explanation
-Imagine you are on a game show, and you can either ask ONE person for the answer or ask a crowd
-of 100 people and go with whatever most of them say. One person might be wrong, but when you
-ask a whole crowd and take the most popular answer, the mistakes tend to cancel out and you get
-the right answer way more often. This is called the "wisdom of the crowd."
+> **Ensemble methods** combine multiple models to produce a single, stronger model. The core insight: a group of diverse, imperfect models often outperforms any single model, just as a committee of experts typically makes better decisions than any individual.
 
-Ensemble methods do exactly this with machine learning models. One decision tree is like asking
-one person -- it might make silly mistakes. But if you train *hundreds* of trees, each one
-looking at the problem from a slightly different angle, and then let them all vote, the group
-is much smarter and more reliable than any single tree.
-
-**Ensemble methods combine multiple weak models into one strong one.**
+One decision tree is fragile — change a few training examples and you get a completely different tree. But combine hundreds of trees, each trained on slightly different data, and the noise cancels out. This is the wisdom of crowds, applied to algorithms.
 
 ```
-  INDIVIDUAL TREE (high variance):     ENSEMBLE (stable, accurate):
-  ──────────────────────────────        ───────────────────────────────
-  Change 3 training examples →          Change 3 training examples →
-  totally different tree!               barely changes the prediction!
+  SINGLE DECISION TREE:                ENSEMBLE OF 500 TREES:
+  ──────────────────────               ─────────────────────────
+  Change 5 training examples →         Change 5 training examples →
+  totally different tree!              barely changes the output!
 
-  Accuracy: ~75%                        Accuracy: ~92%
+  Accuracy: ~78%                       Accuracy: ~94%
+  Variance: HIGH                       Variance: LOW
 ```
 
-### Bagging — Parallel Independent Trees
+### Bagging (Bootstrap Aggregating)
 
-**Simple Explanation:**
-Imagine your class has to study for a big test, but there is way too much material for one
-person to memorize. So everyone takes a *different* random mix of study notes and learns from
-those. On test day, everyone writes down their answer and you go with whatever most people said.
-Since each person studied a slightly different set of notes, their mistakes are in different
-places, and the group answer is almost always better than any single person's answer. That is
-Bagging: give each tree a different random sample of the data, let them all learn separately (at
-the same time!), and then combine their answers.
+> **Bagging** trains multiple instances of the same model on different bootstrap samples (random samples with replacement) from the training data, then aggregates their predictions by voting (classification) or averaging (regression).
+
+Each model gets a different random subset of the training data (sampling with replacement means some examples appear multiple times, others are left out). Because each model sees different data, they make different errors, and averaging cancels out the noise.
 
 ```
-  "Bootstrap Aggregating"
-
   Training Data (N examples)
          │
-         │  Create B bootstrap samples
-         │  (sample N examples WITH REPLACEMENT)
-         ├─────────────────────────────────┐
-         │                                 │
-  Sample 1 (some dups, some missing) ... Sample B
-         │                                 │
-      Tree 1                            Tree B
-         │                                 │
-         └─────────────────────────────────┘
-                           │
-               AGGREGATE:
-               Classification → majority VOTE
-               Regression     → AVERAGE predictions
-
-  KEY IDEA: Each tree sees a different "version" of the data,
-  so they make different errors. Averaging cancels them out!
-
-  ● Also randomly selects a SUBSET of features at each split
-    (reduces correlation between trees!)
+         │  Sample N examples WITH REPLACEMENT (bootstrap)
+         │
+    ┌────┴─────┬──────────┬──────────┬──── ... ──┐
+    ▼          ▼          ▼          ▼            ▼
+  Sample 1   Sample 2   Sample 3   Sample 4    Sample B
+  (has dups)  (has dups)
+    │          │          │          │            │
+  Tree 1     Tree 2     Tree 3     Tree 4      Tree B
+    │          │          │          │            │
+    └──────────┴──────────┴──────────┴────────────┘
+                          │
+              Classification → majority VOTE
+              Regression     → AVERAGE
 ```
 
-**Random Forest = Bagging + Random Feature Subsets at each split**
+**Random Forest = Bagging + Random Feature Selection**
+
+> **Random Forest** extends bagging by also randomly selecting a subset of features at each split, which decorrelates the trees and makes the ensemble more effective.
+
+Without random feature selection, all trees would split on the same dominant feature first, making them highly correlated — and averaging correlated models doesn't help much. By forcing each split to consider only a random subset of features, trees are forced to explore different patterns.
 
 ```
-  Why random feature selection helps:
-  ─────────────────────────────────────────────────────────────
-  Without it: all trees would split on the same strong feature
-  first → highly correlated trees → averaging doesn't help much
+  Random feature selection at each split:
+  ─────────────────────────────────────────────────────
+  Total features: 20
 
-  With it: trees are forced to find different patterns
-  → diverse trees → uncorrelated errors → averaging works!
+  Classification: try √20 ≈ 4 random features per split
+  Regression:     try 20/3 ≈ 7 random features per split
 
-  Standard: try √(total features) at each split for classification
-            try total/3 features at each split for regression
+  This is the key innovation that makes Random Forest work.
+  Without it, you just have bagged trees (less effective).
 ```
 
-### Boosting — Sequential Error Correction
+**Key hyperparameters:**
+- `n_estimators`: Number of trees (100-1000; more is usually better, with diminishing returns)
+- `max_depth`: Maximum tree depth (controls overfitting)
+- `max_features`: Features considered per split (sqrt for classification, n/3 for regression)
+- `min_samples_leaf`: Minimum samples in a leaf (prevents tiny, overfit leaves)
 
-**Simple Explanation:**
-Think of learning to ride a bike. On your first try, you keep falling when you turn left.
-So you practice left turns over and over. Once you fix that, you notice you wobble going
-uphill -- so you practice hills next. Each time you focus on whatever you are *still doing
-wrong*. That is Boosting! The first tree makes its best guesses. Then the second tree looks
-ONLY at the mistakes the first tree made and tries to fix those. The third tree fixes whatever
-the second one still got wrong. And so on. Each new tree is like a tutor who specializes in
-the questions you keep getting wrong, and together they make a super-strong team.
+### Boosting: Sequential Error Correction
+
+> **Boosting** builds models sequentially, where each new model focuses on correcting the errors made by the previous models. The final prediction is a weighted combination of all models.
+
+While bagging reduces variance (each tree makes different random errors that cancel out), boosting reduces bias (each new tree specifically targets what the ensemble still gets wrong).
 
 ```
-  Trees built ONE AT A TIME. Each tree focuses on where the
-  previous trees were WRONG.
-
-  Round 1: Train tree on original data
-           ┌──────┐
-           │Tree 1│ → predictions → Errors: examples 3, 7, 12 wrong
-           └──────┘
-                 │
-                 ↓ Increase weight of misclassified examples
-  Round 2: Train tree on REWEIGHTED data (hard examples get more attention)
-           ┌──────┐
-           │Tree 2│ → focuses on examples 3, 7, 12
-           └──────┘
-                 │
-                 ↓ Reweight again
-  Round 3: Train tree focusing on new errors
-           ┌──────┐
-           │Tree 3│
-           └──────┘
-                 │
-  Final: Weighted sum of all tree predictions
-         (better trees get higher vote weight)
+  Round 1:  Train tree on data, equal weights
+            ┌──────┐
+            │Tree 1│ → predictions → Errors on examples 3, 7, 12
+            └──────┘
+                  │
+                  ↓ Increase weight of misclassified examples
+  Round 2:  Train tree on REWEIGHTED data
+            ┌──────┐
+            │Tree 2│ → focuses on examples 3, 7, 12
+            └──────┘
+                  │
+                  ↓ Reweight again
+  Round 3:  Train tree on new REWEIGHTED data
+            ┌──────┐
+            │Tree 3│ → focuses on whatever is still wrong
+            └──────┘
+                  │
+  Final:  Weighted sum of all trees (better trees get more vote weight)
 ```
+
+### Gradient Boosting ★★★
+
+> **Gradient Boosting** extends boosting by training each new tree to predict the negative gradient (residual) of the loss function, effectively performing gradient descent in function space.
+
+Each tree doesn't just "focus on errors" — it literally predicts the remaining gap between the current ensemble's prediction and the true value. The ensemble gradually converges on the correct answer.
+
+```
+  Predicting house price (true = $300K):
+
+  Tree 1 predicts: $200K          residual = $100K
+  Tree 2 predicts residual: $60K  residual = $40K
+  Tree 3 predicts residual: $25K  residual = $15K
+  Tree 4 predicts residual: $10K  residual = $5K
+  Tree 5 predicts residual: $3K   residual = $2K
+  ...
+  Final: $200K + $60K + $25K + $10K + $3K + ... ≈ $300K ✓
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["After Tree 1", "After Tree 2", "After Tree 3", "After Tree 4", "After Tree 5", "After Tree 6"],
+    "datasets": [
+      {
+        "label": "Cumulative Prediction ($K)",
+        "data": [200, 260, 285, 295, 298, 299.5],
+        "backgroundColor": "rgba(34, 197, 94, 0.7)",
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "borderWidth": 1
+      },
+      {
+        "label": "Remaining Residual ($K)",
+        "data": [100, 40, 15, 5, 2, 0.5],
+        "backgroundColor": "rgba(239, 68, 68, 0.7)",
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "borderWidth": 1
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Each Tree Shrinks the Residual (Target = $300K)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Value ($K)" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Boosting Round" } }
+    }
+  }
+}
+```
+
+**The Big Three Implementations:**
+
+| Library | Growth Strategy | Key Advantage | Best For |
+|---|---|---|---|
+| **XGBoost** | Level-wise | Regularized; GPU support; first to dominate Kaggle | General purpose, medium data |
+| **LightGBM** | Leaf-wise | Fastest training; handles large datasets | Large data, speed-critical |
+| **CatBoost** | Symmetric trees | Best native categorical feature handling | Data with many categorical features |
+
+Gradient boosted trees (especially XGBoost and LightGBM) are the dominant algorithm for tabular/structured data. If you're working with a spreadsheet-like dataset and need maximum accuracy, start here.
 
 ### Bagging vs Boosting — Side by Side
 
@@ -687,347 +1179,90 @@ the questions you keep getting wrong, and together they make a super-strong team
 │ Property           │ BAGGING              │ BOOSTING             │
 ├────────────────────┼──────────────────────┼──────────────────────┤
 │ Trees built        │ In PARALLEL          │ SEQUENTIALLY         │
-│ Each tree focuses  │ Random subset        │ Previous errors      │
-│ Main benefit       │ Reduces VARIANCE     │ Reduces BIAS         │
-│ Best for           │ High-variance models │ Weak models          │
-│ Overfitting risk   │ Low                  │ Higher (can overfit) │
-│ Speed              │ Fast (parallel)      │ Slower (sequential)  │
-│ Example            │ Random Forest        │ XGBoost, LightGBM    │
+│ Each tree focuses  │ Random subset of data│ Previous errors      │
+│ Reduces            │ VARIANCE             │ BIAS                 │
+│ Overfitting risk   │ Low                  │ Higher               │
+│ Training speed     │ Fast (parallelizable)│ Slower (sequential)  │
+│ Sensitivity to     │ Low                  │ High (can amplify    │
+│ noisy labels       │                      │ label noise)         │
+│ Example algorithms │ Random Forest        │ XGBoost, LightGBM,  │
+│                    │                      │ AdaBoost, CatBoost   │
 └────────────────────┴──────────────────────┴──────────────────────┘
 ```
 
-### Gradient Boosting — The Modern Standard ★★★
+```mermaid
+flowchart LR
+    subgraph Bagging ["Bagging (Parallel)"]
+        direction TB
+        D1[Bootstrap 1] --> T1[Tree 1]
+        D2[Bootstrap 2] --> T2[Tree 2]
+        D3[Bootstrap 3] --> T3[Tree 3]
+        T1 --> V[Vote / Average]
+        T2 --> V
+        T3 --> V
+    end
 
-**Simple Explanation:**
-Imagine you are guessing how many marbles are in a jar. Your first guess is 50, but the real
-answer is 100 -- you are off by 50. So your friend helps: they guess you are off by about 30,
-and you add that (now you are at 80, only off by 20). Then another friend says you are still
-off by about 15 -- add that (now you are at 95, only off by 5!). Each friend focuses on fixing
-the *remaining gap* between your guess and the real answer. That gap is called the "residual."
-Gradient Boosting works exactly like this: each new tree predicts how far off the previous
-answer still is, and you keep adding corrections until you are super close.
-
-```
-  Extends boosting: each new tree predicts the GRADIENT of the loss,
-  not just which examples were misclassified.
-
-  Loss surface:         Each tree moves predictions
-  (high = wrong)        in the direction that REDUCES loss most
-
-  Iteration 1:  prediction = 50  |  true = 100  |  residual = 50
-  Iteration 2:  tree predicts residual → adds 30  |  residual = 20
-  Iteration 3:  tree predicts residual → adds 15  |  residual = 5
-  Iteration 4:  tree adds 4    |  residual = 1
-  ...
-  Final:        50 + 30 + 15 + 4 + ... ≈ 100  ✓
-
-  Popular implementations:
-  ┌────────────┬────────────────────────────────────────────────┐
-  │ XGBoost    │ Level-wise growth, regularized, GPU support    │
-  │ LightGBM   │ Leaf-wise growth, fastest on large data        │
-  │ CatBoost   │ Best native handling of categorical features   │
-  └────────────┴────────────────────────────────────────────────┘
+    subgraph Boosting ["Boosting (Sequential)"]
+        direction TB
+        S1[Tree 1] -->|errors| S2[Tree 2]
+        S2 -->|errors| S3[Tree 3]
+        S3 --> W[Weighted Sum]
+    end
 ```
 
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Iter 1", "Iter 2", "Iter 3", "Iter 4", "Iter 5", "Iter 6"],
-    "datasets": [
-      {
-        "label": "Prediction (cumulative)",
-        "data": [50, 80, 95, 99, 99.8, 99.95],
-        "backgroundColor": "rgba(34, 197, 94, 0.7)",
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "borderWidth": 1
-      },
-      {
-        "label": "Remaining Residual",
-        "data": [50, 20, 5, 1, 0.2, 0.05],
-        "backgroundColor": "rgba(239, 68, 68, 0.7)",
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Gradient Boosting — Each Tree Shrinks the Residual (Target = 100)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Value" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "Boosting Iteration" } }
-    }
-  }
-}
-```
+### Stacking: Ensembling Different Model Types
 
-### Stacking — Ensembling Different Model Types
+> **Stacking** (stacked generalization) trains a "meta-learner" on the predictions of multiple diverse base models. The meta-learner learns which base models to trust for different types of inputs.
 
-**Simple Explanation:**
-Imagine you need to figure out what a mystery object is. You ask three friends with very
-different skills: one friend is amazing at identifying shapes, another is great at recognizing
-colors, and the third knows a lot about textures. They each give their best guess. Then you ask
-a FOURTH friend -- the smartest one -- to listen to all three guesses and combine them into one
-final answer. That fourth friend learns *which of the other friends to trust more* for different
-kinds of questions. Stacking works the same way: instead of using the same type of model over
-and over, you use completely different types of models and then train a "boss" model on top to
-combine their answers in the smartest way.
+Instead of combining 500 trees (like Random Forest), stacking combines fundamentally different algorithms — a tree, a linear model, a neural network, and an SVM, for instance. The diversity of approaches is the strength.
 
 ```
-  Why use 3 decision trees when you could combine a tree,
-  a neural network, AND a linear model?
-
   LAYER 1 (base learners — trained on training data):
-  ┌────────────┐  ┌─────────────┐  ┌────────────────┐
-  │Random Forest│  │Neural Network│  │Logistic Regr.  │
-  │pred: 0.82  │  │pred: 0.91   │  │pred: 0.75      │
-  └────────────┘  └─────────────┘  └────────────────┘
-         │               │                 │
-         └───────────────┼─────────────────┘
-                         ↓
-  LAYER 2 (meta-learner — trained on layer 1 predictions):
-                  ┌─────────────┐
-                  │ Final Model │  →  Final prediction: 0.88
-                  │(learns which│
-                  │base learners│
-                  │to trust)    │
-                  └─────────────┘
+  ┌────────────────┐  ┌─────────────────┐  ┌──────────────┐
+  │ Random Forest  │  │ Neural Network  │  │ Logistic Reg │
+  │ pred: 0.82     │  │ pred: 0.91      │  │ pred: 0.75   │
+  └────────┬───────┘  └────────┬────────┘  └──────┬───────┘
+           │                   │                   │
+           └───────────────────┼───────────────────┘
+                               ▼
+  LAYER 2 (meta-learner — trained on Layer 1 outputs):
+                    ┌─────────────────┐
+                    │   Final Model   │  → prediction: 0.88
+                    │ (e.g., Logistic │
+                    │  Regression)    │
+                    └─────────────────┘
 
-  Often gives the best results but is complex to implement.
-  Commonly used in ML competitions (Kaggle).
+  The meta-learner discovers patterns like:
+  "The neural net is best for text features,
+   but the tree is better for numerical features."
 ```
+
+**Important:** The base learners' predictions used to train the meta-learner must come from cross-validation (not the training set directly), or the meta-learner will overfit to the base learners' training-set predictions.
+
+Stacking is complex to implement and computationally expensive, but it frequently wins ML competitions (Kaggle).
 
 ---
 
-## 4.7 Feature Importance ★
+## 6.9 Regression Algorithms
 
-### Simple Explanation
-Imagine you just aced a spelling test, and your teacher asks, "What helped you the most?"
-You think about it: "Well, reading before bed every night was the biggest help. Flashcards
-helped a little. And eating a good breakfast that morning maybe helped a tiny bit." Feature
-importance is like asking the computer the same question after it makes a prediction: "Hey
-computer, which clues mattered the most when you made your decision?" The computer looks back
-at all the questions it asked (its decision-tree splits) and tells you which pieces of information
-were the most useful. This is really important because it helps us understand *why* the model
-made its choice, not just *what* it chose.
+### Linear Regression
 
-### Tree-Based Feature Importance
+> **Linear Regression** models the relationship between input features and a continuous output as a linear function. The parameters are found by minimizing the sum of squared residuals (OLS) or equivalently by minimizing MSE.
+
+$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2 + \dots + w_n x_n$$
+
+This is the simplest and most interpretable regression model. Each weight $w_i$ tells you: "For every 1-unit increase in feature $x_i$, the predicted output changes by $w_i$ units, holding everything else constant."
 
 ```
-  How it works: track how much each feature REDUCES impurity
-  across all splits in all trees. Average it. Normalize to sum=1.
+  House Price = $30,000
+              + $150 × (square feet)
+              + $20,000 × (# bedrooms)
+              - $1,000 × (age in years)
 
-  Example output (Random Forest, house price prediction):
-  ┌─────────────────────────────────────────────────────────────┐
-  │  Feature Importance                                         │
-  │                                                             │
-  │  Square Feet:  ████████████████████  0.42  ← most important!│
-  │  Location:     ██████████████        0.28                   │
-  │  # Bedrooms:   ████████              0.16                   │
-  │  Age:          █████                 0.09                   │
-  │  # Bathrooms:  ██                    0.05                   │
-  │                                                             │
-  │  Interpretation: square footage explains 42% of prediction  │
-  │  variation. Location is second most important at 28%.        │
-  └─────────────────────────────────────────────────────────────┘
-
-  WARNING: This importance is biased toward high-cardinality features!
-  A feature with 1000 unique values looks more important than it is.
-  Use PERMUTATION IMPORTANCE or SHAP for more reliable estimates.
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Square Feet", "Location", "# Bedrooms", "Age", "# Bathrooms"],
-    "datasets": [{
-      "label": "Feature Importance",
-      "data": [0.42, 0.28, 0.16, 0.09, 0.05],
-      "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.65)","rgba(99,102,241,0.5)","rgba(99,102,241,0.35)","rgba(99,102,241,0.2)"],
-      "borderColor": "rgba(99, 102, 241, 1)",
-      "borderWidth": 1
-    }]
-  },
-  "options": {
-    "indexAxis": "y",
-    "plugins": { "title": { "display": true, "text": "Random Forest Feature Importance — House Price Prediction" } },
-    "scales": {
-      "x": { "title": { "display": true, "text": "Importance (sums to 1.0)" }, "beginAtZero": true, "max": 0.5 }
-    }
-  }
-}
-```
-
-### Permutation Importance (More Reliable)
-
-**Simple Explanation:**
-Here is a fun way to figure out how important each player on your soccer team is: make one
-player wear a blindfold during the game (so they are basically playing randomly) and see how
-much worse the team does. If you blindfold the star striker and the team barely scores, that
-player was SUPER important. If you blindfold the backup goalie and nothing changes, they
-were not contributing much. Permutation importance does the same thing with data: it scrambles
-(shuffles) one column of information so it becomes random nonsense, and then checks how much
-the model's accuracy drops. Big drop = that feature was really important!
-
-```
-  IDEA: randomly shuffle one feature column and see how much
-  the model's accuracy drops. Big drop = important feature.
-
-  Original accuracy:        88%
-  Shuffle Square Feet:      61%  → importance = 27%  ← crucial!
-  Shuffle Location:         74%  → importance = 14%
-  Shuffle # Bedrooms:       82%  → importance = 6%
-  Shuffle Age:              86%  → importance = 2%
-  Shuffle # Bathrooms:      87%  → importance = 1%
-
-  Why more reliable: tests actual predictive contribution,
-  not just how often the tree happened to use the feature.
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Original", "Shuffle Sq Feet", "Shuffle Location", "Shuffle Bedrooms", "Shuffle Age", "Shuffle Bathrooms"],
-    "datasets": [{
-      "label": "Accuracy After Shuffling (%)",
-      "data": [88, 61, 74, 82, 86, 87],
-      "backgroundColor": ["rgba(34,197,94,0.7)","rgba(239,68,68,0.8)","rgba(234,88,12,0.7)","rgba(99,102,241,0.6)","rgba(99,102,241,0.4)","rgba(99,102,241,0.3)"],
-      "borderColor": ["rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"],
-      "borderWidth": 1
-    }]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Permutation Importance — Bigger Drop = More Important Feature" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 95 },
-      "x": {}
-    }
-  }
-}
-```
-
-### SHAP Values — Per-Prediction Explanations
-
-**Simple Explanation:**
-Regular feature importance is like saying "In general, studying is the most helpful thing for
-getting good grades." But SHAP is more specific -- it explains a *single* prediction. It is
-like your teacher looking at YOUR test and saying: "You got a B+ because: you studied the
-vocabulary (+10 points!), you understood the main ideas (+8 points), BUT you rushed through
-the essay (-5 points), and you missed a few easy questions (-3 points)." SHAP breaks down
-*each individual prediction* into contributions from each feature, telling you exactly what
-pushed the answer up and what pulled it down. It is the gold standard for explaining what
-a model is thinking.
-
-```
-  Feature importance gives one global score per feature.
-  SHAP (SHapley Additive exPlanations) explains EACH prediction.
-
-  "Why did the model predict $320K for THIS specific house?"
-
-  Base value (avg prediction):     $250,000
-  + Square Feet = 2100 sqft        + $40,000  (large → pushes up)
-  + Location = Downtown            + $35,000  (premium area)
-  + Age = 25 years                 - $15,000  (older → pushes down)
-  + Bedrooms = 4                   + $8,000
-  + Bathrooms = 2                  + $2,000
-  ─────────────────────────────────────────
-  Final prediction:                $320,000  ✓
-
-  SHAP is the gold standard for model explainability.
-  Works with any model (not just trees).
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Base Value", "+ Sq Feet", "+ Location", "- Age", "+ Bedrooms", "+ Bathrooms"],
-    "datasets": [{
-      "label": "SHAP Contribution ($K)",
-      "data": [250, 40, 35, -15, 8, 2],
-      "backgroundColor": ["rgba(99,102,241,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(239,68,68,0.7)","rgba(34,197,94,0.6)","rgba(34,197,94,0.5)"],
-      "borderColor": ["rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(34,197,94,1)","rgba(34,197,94,1)"],
-      "borderWidth": 1
-    }]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "SHAP — Why Did the Model Predict $320K for This House?" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Contribution ($K)" } },
-      "x": {}
-    }
-  }
-}
-```
-
----
-
-## 4.8 Regression in Depth ★
-
-### Simple Explanation
-Classification is like sorting mail into mailboxes -- each letter goes into one specific box.
-Regression is totally different: it is like guessing someone's height, or how much your
-lemonade stand will earn this weekend. The answer is not a category; it is a *number* that
-could be anything. How tall is that tree? Maybe 12 feet, maybe 12.5, maybe 13.2 -- the answer
-can land anywhere on a number line. Regression models are the computer's way of drawing the
-best line (or curve) through a bunch of dots so it can guess the right number for something new.
-
-### Regression vs Classification — Revisited
-
-```
-  CLASSIFICATION:   "Is this tumor malignant?"   → Yes / No
-  REGRESSION:       "How large will the tumor be?" → 2.3 cm
-
-  Both use the same algorithms (mostly) — different loss functions!
-  Classification → cross-entropy loss
-  Regression     → MAE / MSE / RMSE
-```
-
-### Types of Regression Problems
-
-Simple: $y = w_1 x_1 + w_0$
-
-Multiple: $y = \sum w_i x_i + w_0$
-
-Polynomial: $y = w_0 + w_1 x + w_2 x^2 + w_3 x^3$
-
-Multivariate: $Y = XW + B$
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ SIMPLE REGRESSION       │ One feature → one output               │
-│  y = w₁x₁ + w₀          │ Price = 150 × SqFt + 30,000           │
-├─────────────────────────┼───────────────────────────────────────┤
-│ MULTIPLE REGRESSION     │ Many features → one output             │
-│  y = Σwᵢxᵢ + w₀         │ Price = 150×SqFt + 20K×Beds - 1K×Age  │
-├─────────────────────────┼───────────────────────────────────────┤
-│ POLYNOMIAL REGRESSION   │ Non-linear (add x², x³ as features)   │
-│  y = w₀+w₁x+w₂x²+w₃x³  │ Curve fits non-linear relationships    │
-├─────────────────────────┼───────────────────────────────────────┤
-│ MULTIVARIATE REGRESSION │ Many features → MANY outputs           │
-│  Y = XW + B              │ Predict [price, days_on_market] at once│
-└─────────────────────────┴───────────────────────────────────────┘
-```
-
-### Regression Algorithms Compared
-
-**Linear Regression (baseline)**
-
-$$\hat{y} = w_0 + w_1 x_1 + \dots + w_n x_n$$
-
-```
-  Price
-    │                         ★ ← new house (prediction)
-    │               ╱ ← learned line
-    │         * * ╱
-    │     * ╱
-    │ * ╱
-    └──────────────── SqFt
-
-  Assumes:  LINEAR relationship between X and y
-  Use when: data roughly follows a straight-line pattern
+  A 2000 sqft, 3-bed, 10-year-old house:
+  = 30,000 + 150(2000) + 20,000(3) - 1,000(10)
+  = 30,000 + 300,000 + 60,000 - 10,000
+  = $380,000
 ```
 
 ```chart
@@ -1037,17 +1272,17 @@ $$\hat{y} = w_0 + w_1 x_1 + \dots + w_n x_n$$
     "labels": [500, 800, 1000, 1200, 1500, 1800, 2000, 2200, 2500, 3000],
     "datasets": [
       {
-        "label": "Linear Fit (y = 150x + 30K)",
+        "label": "Linear Fit: Price = 150 × SqFt + 30K",
         "data": [105, 150, 180, 210, 255, 300, 330, 360, 405, 480],
         "borderColor": "rgba(99, 102, 241, 1)",
         "fill": false, "tension": 0, "pointRadius": 0, "borderWidth": 2
       },
       {
-        "label": "Actual Prices (scattered)",
+        "label": "Actual House Prices",
         "data": [95, 140, 190, 195, 270, 310, 320, 380, 420, 510],
         "borderColor": "transparent",
         "backgroundColor": "rgba(234, 88, 12, 0.8)",
-        "showLine": false, "pointRadius": 5
+        "showLine": false, "pointRadius": 6
       }
     ]
   },
@@ -1061,105 +1296,166 @@ $$\hat{y} = w_0 + w_1 x_1 + \dots + w_n x_n$$
 }
 ```
 
-**Regularized Linear Regression**
+### Types of Regression Problems
 
-**Simple Explanation:**
-Regular linear regression sometimes tries TOO hard to fit every little bump in the data, like
-a student who memorizes every single practice question word-for-word instead of understanding the
-concept. Regularization is like a teacher saying, "Keep your answers simple! Don't overthink it."
-It adds a penalty for making the model too complicated, so the model is forced to find a simpler,
-more general pattern that works well on new data it has never seen before. Ridge gently nudges all
-the weights to be smaller. Lasso is stricter -- it can force some weights all the way down to zero,
-basically saying "these features do not matter at all, ignore them!"
+| Type | Formula | When to Use |
+|---|---|---|
+| **Simple** | $y = w_1x + w_0$ | One feature, linear relationship |
+| **Multiple** | $y = w_0 + \sum w_i x_i$ | Multiple features, linear relationship |
+| **Polynomial** | $y = w_0 + w_1x + w_2x^2 + w_3x^3$ | Non-linear, but add $x^2, x^3$ as new features |
+| **Multivariate** | $Y = XW + B$ | Predict multiple outputs simultaneously |
 
-$$\text{Ridge (L2):} \quad \text{MSE} + \lambda \sum w_i^2$$
+**Polynomial regression** is just linear regression with engineered features. You add $x^2$, $x^3$, etc. as new columns, and the linear model can now fit curves. But be careful — high-degree polynomials overfit wildly outside the training range.
 
-$$\text{Lasso (L1):} \quad \text{MSE} + \lambda \sum |w_i|$$
+### Assumptions of Linear Regression
 
-$$\text{Elastic Net:} \quad \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2$$
+Linear regression makes several assumptions. When they're violated, the model may still predict well, but the coefficient interpretations and confidence intervals become unreliable.
 
 ```
-  Ridge (L2):  → Shrinks all weights, keeps all features
-               → Best when many features all contribute a little
+  1. LINEARITY:       y is a linear function of features
+                      Fix: add polynomial/interaction features
 
-  Lasso (L1):  → Drives some weights to exactly ZERO
-               → Built-in feature selection!
-               → Best when only a few features truly matter
+  2. INDEPENDENCE:    errors are independent across observations
+                      Violated: time series with autocorrelation
 
-  Elastic Net: → Hybrid of Ridge + Lasso
-               → Best when features are correlated
+  3. HOMOSCEDASTICITY: error variance is constant across all x
+                      Violated: prediction errors grow with x
+                      Fix: weighted least squares or log-transform y
 
-  As λ increases:  model gets simpler → less overfitting
-                   but may underfit if λ too large
+  4. NORMALITY:       errors are normally distributed
+                      Less critical for prediction (CLT helps)
+                      Critical for confidence intervals and p-values
+
+  5. NO MULTICOLLINEARITY: features aren't highly correlated
+                      Problem: weights become unstable
+                      Fix: regularization (Ridge) or drop features
 ```
 
-**Decision Tree Regression**
+### Regularization: Ridge, Lasso, and Elastic Net
+
+When ordinary linear regression overfits (too many features relative to samples, or correlated features), regularization constrains the model by penalizing large weights.
+
+> **Ridge Regression (L2)** adds the sum of squared weights to the loss. **Lasso Regression (L1)** adds the sum of absolute weights. **Elastic Net** combines both.
+
+$$\text{Ridge: } \mathcal{L} = \text{MSE} + \lambda \sum_{i=1}^{n} w_i^2$$
+
+$$\text{Lasso: } \mathcal{L} = \text{MSE} + \lambda \sum_{i=1}^{n} |w_i|$$
+
+$$\text{Elastic Net: } \mathcal{L} = \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w_i^2$$
+
+The key difference: **Lasso can drive weights to exactly zero**, effectively removing features from the model. This makes Lasso a built-in feature selector. Ridge only shrinks weights toward zero but never fully eliminates them.
+
 ```
-  Same tree structure as classification, but:
-  - Leaf nodes output the MEAN of training examples in that region
-  - Split criterion: minimize MSE (not Gini/Entropy)
+  ┌───────────┬───────────────────────────────────────────────────────┐
+  │ Ridge     │ Shrinks ALL weights toward zero                       │
+  │ (L2)      │ Keeps all features (none go to exactly 0)             │
+  │           │ Best when: many features all contribute a little      │
+  │           │ Handles correlated features well (spreads weight)     │
+  ├───────────┼───────────────────────────────────────────────────────┤
+  │ Lasso     │ Some weights become EXACTLY zero                      │
+  │ (L1)      │ Built-in feature selection!                           │
+  │           │ Best when: few features truly matter, rest are noise  │
+  │           │ Struggles with correlated features (picks one, drops  │
+  │           │ the rest arbitrarily)                                 │
+  ├───────────┼───────────────────────────────────────────────────────┤
+  │ Elastic   │ Combines L1 + L2 penalties                            │
+  │ Net       │ Gets Lasso's sparsity + Ridge's stability             │
+  │           │ Best when: features are correlated AND you want        │
+  │           │ some feature selection                                │
+  └───────────┴───────────────────────────────────────────────────────┘
+
+  λ controls regularization strength:
+  λ = 0        → no penalty → standard linear regression (may overfit)
+  λ → ∞        → all weights → 0 → model predicts the mean (underfits)
+  λ = optimal  → best bias-variance balance (find via cross-validation)
+```
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["0.001", "0.01", "0.1", "1", "10", "100", "1000"],
+    "datasets": [
+      {
+        "label": "Ridge: weight of Feature A",
+        "data": [4.8, 4.5, 3.8, 2.5, 1.2, 0.4, 0.1],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "fill": false, "tension": 0.4, "pointRadius": 3
+      },
+      {
+        "label": "Ridge: weight of Feature B",
+        "data": [2.1, 2.0, 1.7, 1.1, 0.5, 0.2, 0.05],
+        "borderColor": "rgba(99, 102, 241, 0.5)",
+        "borderDash": [5,5],
+        "fill": false, "tension": 0.4, "pointRadius": 3
+      },
+      {
+        "label": "Lasso: weight of Feature A",
+        "data": [4.8, 4.5, 3.5, 1.5, 0.0, 0.0, 0.0],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "fill": false, "tension": 0.4, "pointRadius": 3
+      },
+      {
+        "label": "Lasso: weight of Feature B",
+        "data": [2.1, 1.9, 1.0, 0.0, 0.0, 0.0, 0.0],
+        "borderColor": "rgba(239, 68, 68, 0.5)",
+        "borderDash": [5,5],
+        "fill": false, "tension": 0.4, "pointRadius": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Ridge vs Lasso — How Weights Shrink as λ Increases" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Weight Value" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Regularization Strength (λ)" } }
+    }
+  }
+}
+```
+
+### Tree-Based Regression
+
+Decision trees, Random Forests, and Gradient Boosting all work for regression — you just change the split criterion from Gini/entropy to MSE, and leaf nodes output the mean value instead of a class.
+
+```
+  Decision Tree Regression:
+  - Splits partition feature space into rectangular regions
+  - Each leaf outputs the MEAN of training targets in that region
 
   Feature 2
-     │  Region A │  Region B │   Region C
-     │  ŷ=$180K  │  ŷ=$310K  │   ŷ=$450K
-     │  * * *    │ * * * *   │   * * *
-     │───────────┤           ├──────────
-     │           │ * * * *   │
-     └──────────────────────────────── Feature 1
-  (splits partition the space into rectangular regions)
-```
-
-**Support Vector Regression (SVR)**
-```
-  Regular SVM finds a margin between classes.
-  SVR finds a "tube" that captures most training points.
-
-  y
-  │   * *              *
-  │  ─────────────────────  ← upper tube bound
-  │     * * * * * * *        ← tube: errors inside don't count
-  │  ─────────────────────  ← lower tube bound
-  │ *
-  └──────────────── x
-
-  Only points OUTSIDE the tube affect the model (support vectors).
-  Width of tube (ε) = hyperparameter: wider = simpler model.
-  Robust to outliers compared to linear regression.
-```
-
-**Tree-Based Regression (Random Forest / Gradient Boosting)**
-```
-  Same ensemble ideas as classification, but predicting numbers.
+     │  Region A  │  Region B  │  Region C
+     │  ŷ=$180K   │  ŷ=$310K   │  ŷ=$450K
+     │  * * *     │ * * * *    │   * * *
+     │────────────┤            ├───────────
+     │            │ * * * *    │
+     └──────────────────────────────────── Feature 1
 
   Random Forest Regression:
-  → Each tree predicts a number
-  → Final prediction = AVERAGE of all tree predictions
+  → Average of all trees' predictions
 
   Gradient Boosting Regression:
-  → Each tree predicts the RESIDUAL (remaining error)
-  → Final prediction = sum of all trees' contributions
+  → Sum of all trees' residual predictions
+  → State of the art for tabular regression (XGBoost, LightGBM)
+```
 
-  These are the best general-purpose regression algorithms
-  for tabular data (beating linear regression on most datasets).
+### Regression Evaluation Metrics
+
+| Metric | Formula | Interpretation |
+|---|---|---|
+| **MAE** | $\frac{1}{n}\sum\|y_i-\hat{y}_i\|$ | Average absolute error in original units |
+| **MSE** | $\frac{1}{n}\sum(y_i-\hat{y}_i)^2$ | Penalizes large errors more |
+| **RMSE** | $\sqrt{MSE}$ | In original units; most common |
+| **R-squared** | $1 - \frac{SS_{res}}{SS_{tot}}$ | % of variance explained (0 to 1) |
+| **MAPE** | $\frac{1}{n}\sum\|\frac{y_i-\hat{y}_i}{y_i}\|$ | % error (unit-free, but undefined at $y=0$) |
+
+```
+  R² = 0.85 means: "The model explains 85% of the variance in the data."
+  R² = 0.0  means: "The model is no better than always predicting the mean."
+  R² < 0.0  means: "The model is WORSE than predicting the mean." (yes, this happens)
 ```
 
 ### Regression Algorithm Comparison
-
-```
-┌─────────────────────┬──────────┬──────────┬────────────┬──────────────────────┐
-│ Algorithm           │ Speed    │ Accuracy │ Interpreta │ Best For             │
-│                     │ Training │ (typical)│ -ble?      │                      │
-├─────────────────────┼──────────┼──────────┼────────────┼──────────────────────┤
-│ Linear Regression   │ Fastest  │ Medium   │ YES        │ Baseline, linear     │
-│ Ridge / Lasso       │ Fastest  │ Medium   │ YES        │ When overfitting      │
-│ Polynomial Regr.    │ Fast     │ Med-High │ Partial    │ Non-linear, small n  │
-│ Decision Tree       │ Fast     │ Medium   │ YES        │ Explainability       │
-│ Random Forest       │ Medium   │ HIGH     │ Partial    │ General purpose      │
-│ Gradient Boosting   │ Medium   │ HIGHEST  │ Partial    │ Tabular data, comps  │
-│ SVR                 │ Slow     │ High     │ Partial    │ Small-medium dataset │
-│ Neural Network      │ Slow     │ Varies   │ NO         │ Images, text, complex│
-└─────────────────────┴──────────┴──────────┴────────────┴──────────────────────┘
-```
 
 ```chart
 {
@@ -1199,64 +1495,197 @@ $$\text{Elastic Net:} \quad \text{MSE} + \lambda_1 \sum |w_i| + \lambda_2 \sum w
 
 ---
 
-## 4.9 Class Imbalance ★
+## 6.10 Feature Importance & Model Explainability (SHAP)
 
-### Simple Explanation
-Imagine you are training a dog to find a four-leaf clover in a huge field. Almost every clover
-has three leaves (99 out of 100), and only 1 in 100 has four leaves. If the dog just says
-"three leaves!" for EVERY clover it sniffs, it will be "right" 99% of the time -- but it will
-never, ever find the special four-leaf clover, which was the whole point! That is the class
-imbalance problem: when one group is way bigger than the other, the model can cheat by always
-guessing the common answer and still *look* like it is doing great, even though it is completely
-failing at the rare thing you actually care about.
+Understanding WHY a model makes its predictions is often as important as the predictions themselves. In healthcare, finance, and legal applications, you can't just say "the model says so" — you need to explain the reasoning.
 
-### The 99% Trap
+### Tree-Based Feature Importance
+
+> **Impurity-based feature importance** measures how much each feature contributes to reducing impurity (Gini or entropy) across all splits in all trees of an ensemble, normalized to sum to 1.
 
 ```
-  Dataset: 10,000 transactions
-    9,900 = legitimate  (99%)
-      100 = fraud       (1%)
+  Random Forest feature importance for house price prediction:
 
-  Dumb model: ALWAYS predict "legitimate"
-  Accuracy = 9,900 / 10,000 = 99%  ← looks great!
-  Fraud detection rate = 0%         ← completely useless!
+  Square Feet:  ████████████████████  0.42  ← most important
+  Location:     ██████████████        0.28
+  # Bedrooms:   ████████              0.16
+  Age:          █████                 0.09
+  # Bathrooms:  ██                    0.05
 
-  This is the class imbalance problem.
-  Accuracy is misleading when classes are unequal.
-  Use Precision, Recall, F1, or AUC instead.
+  Interpretation: square footage explains 42% of the model's
+  decision-making. Location is second at 28%.
 ```
 
-### Detection: Is My Data Imbalanced?
+**Warning:** Impurity-based importance is biased toward high-cardinality features (features with many unique values). A random ID column with 10,000 unique values would appear highly "important" because it creates many possible splits, even though it has no predictive value.
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Square Feet", "Location", "# Bedrooms", "Age", "# Bathrooms"],
+    "datasets": [{
+      "label": "Feature Importance",
+      "data": [0.42, 0.28, 0.16, 0.09, 0.05],
+      "backgroundColor": ["rgba(99,102,241,0.8)","rgba(99,102,241,0.65)","rgba(99,102,241,0.5)","rgba(99,102,241,0.35)","rgba(99,102,241,0.2)"],
+      "borderColor": "rgba(99, 102, 241, 1)",
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "indexAxis": "y",
+    "plugins": { "title": { "display": true, "text": "Impurity-Based Feature Importance — House Price Model" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Importance (sums to 1.0)" }, "beginAtZero": true, "max": 0.5 }
+    }
+  }
+}
+```
+
+### Permutation Importance (More Reliable)
+
+> **Permutation importance** measures how much the model's performance degrades when a single feature's values are randomly shuffled, breaking the relationship between that feature and the target.
+
+The idea is beautifully simple: take a trained model, shuffle one feature column so it becomes random noise, and measure the drop in accuracy. Big drop = important feature. This method is model-agnostic (works with any model) and unbiased.
 
 ```
-  Class distribution:
-  ┌────────────────────────────────────────────────────────────┐
-  │  Legitimate: ████████████████████████████████████ 99%     │
-  │  Fraud:      ▌ 1%                                         │
-  └────────────────────────────────────────────────────────────┘
+  Procedure:
+  1. Compute baseline accuracy on validation data: 88%
+  2. For each feature:
+     a. Shuffle that feature column (break its relationship with y)
+     b. Recompute accuracy
+     c. Importance = baseline accuracy - shuffled accuracy
 
-  Mild imbalance (60/40):  usually fine, monitor F1
-  Moderate (80/20):        use class weights
-  Severe (95/5):           use resampling techniques
-  Extreme (99/1):          need specialized approaches
+  Results:
+  Shuffle Square Feet:  accuracy → 61%  → importance = 27%  ← crucial!
+  Shuffle Location:     accuracy → 74%  → importance = 14%
+  Shuffle # Bedrooms:   accuracy → 82%  → importance = 6%
+  Shuffle Age:          accuracy → 86%  → importance = 2%
+  Shuffle # Bathrooms:  accuracy → 87%  → importance = 1%
 ```
 
 ```chart
 {
   "type": "bar",
   "data": {
-    "labels": ["Balanced (50/50)", "Mild (60/40)", "Moderate (80/20)", "Severe (95/5)", "Extreme (99/1)"],
+    "labels": ["Baseline", "Shuffle SqFt", "Shuffle Location", "Shuffle Beds", "Shuffle Age", "Shuffle Baths"],
+    "datasets": [{
+      "label": "Accuracy After Shuffling (%)",
+      "data": [88, 61, 74, 82, 86, 87],
+      "backgroundColor": ["rgba(34,197,94,0.7)","rgba(239,68,68,0.8)","rgba(234,88,12,0.7)","rgba(99,102,241,0.6)","rgba(99,102,241,0.4)","rgba(99,102,241,0.3)"],
+      "borderColor": ["rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(234,88,12,1)","rgba(99,102,241,1)","rgba(99,102,241,1)","rgba(99,102,241,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Permutation Importance — Bigger Drop = More Important Feature" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 95 },
+      "x": {}
+    }
+  }
+}
+```
+
+### SHAP Values: Explaining Individual Predictions
+
+> **SHAP (SHapley Additive exPlanations)** assigns each feature an importance value for each individual prediction, based on Shapley values from cooperative game theory. The sum of all SHAP values plus the base value equals the model's prediction.
+
+Feature importance tells you "in general, square footage matters most." SHAP tells you "for THIS specific house, square footage pushed the price up by $40K, but the age pulled it down by $15K."
+
+```
+  "Why did the model predict $320K for THIS house?"
+
+  Base value (average prediction):     $250,000
+  + Square Feet = 2100 sqft            +$40,000  (large → price up)
+  + Location = Downtown                +$35,000  (premium → price up)
+  + Age = 25 years                     -$15,000  (old → price down)
+  + Bedrooms = 4                       +$8,000   (more beds → up)
+  + Bathrooms = 2                      +$2,000
+  ──────────────────────────────────────────────
+  Final prediction:                    $320,000  ✓
+
+  Every prediction decomposes into additive feature contributions.
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Base ($250K)", "+ SqFt (+$40K)", "+ Location (+$35K)", "- Age (-$15K)", "+ Beds (+$8K)", "+ Baths (+$2K)"],
+    "datasets": [{
+      "label": "SHAP Contribution ($K)",
+      "data": [250, 40, 35, -15, 8, 2],
+      "backgroundColor": ["rgba(99,102,241,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(239,68,68,0.7)","rgba(34,197,94,0.6)","rgba(34,197,94,0.5)"],
+      "borderColor": ["rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(34,197,94,1)","rgba(239,68,68,1)","rgba(34,197,94,1)","rgba(34,197,94,1)"],
+      "borderWidth": 1
+    }]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "SHAP — Why Did the Model Predict $320K for This House?" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Contribution ($K)" } },
+      "x": {}
+    }
+  }
+}
+```
+
+**Why SHAP is the gold standard:**
+
+| Property | Impurity Importance | Permutation Importance | SHAP |
+|---|---|---|---|
+| Scope | Global only | Global only | **Local AND global** |
+| Model-agnostic? | Trees only | **Yes** | **Yes** |
+| Per-prediction? | No | No | **Yes** |
+| Theoretically grounded? | Weak | Moderate | **Strong (Shapley values)** |
+| Computational cost | Cheap | Moderate | Expensive |
+| Handles correlated features? | No | Partially | **Yes** |
+
+---
+
+## 6.11 Class Imbalance: The 99% Trap
+
+> **Class imbalance** occurs when the distribution of classes in the training data is highly skewed. Standard classifiers optimized for accuracy will be biased toward the majority class and fail to learn the minority class.
+
+This is one of the most common and most dangerous gotchas in applied ML. If 99% of your data belongs to one class, a model that always predicts that class achieves 99% accuracy while being completely useless for the task you actually care about.
+
+```
+  Fraud detection dataset:
+    9,900 legitimate transactions  (99%)
+      100 fraudulent transactions  (1%)
+
+  Naive model: ALWAYS predict "legitimate"
+    Accuracy = 99.0%   ← impressive!
+    Fraud recall = 0%  ← catches zero fraud. Completely useless.
+
+  This is why accuracy is a TERRIBLE metric for imbalanced datasets.
+```
+
+### Severity Levels
+
+```
+  Mild (60/40 — 80/20):    Usually fine; monitor F1 score
+  Moderate (80/20 — 95/5):  Use class weights at minimum
+  Severe (95/5 — 99/1):    Need resampling techniques
+  Extreme (99/1+):          Specialized approaches required
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["Balanced\n(50/50)", "Mild\n(70/30)", "Moderate\n(90/10)", "Severe\n(97/3)", "Extreme\n(99.5/0.5)"],
     "datasets": [
       {
         "label": "Majority Class %",
-        "data": [50, 60, 80, 95, 99],
+        "data": [50, 70, 90, 97, 99.5],
         "backgroundColor": "rgba(34, 197, 94, 0.7)",
         "borderColor": "rgba(34, 197, 94, 1)",
         "borderWidth": 1
       },
       {
         "label": "Minority Class %",
-        "data": [50, 40, 20, 5, 1],
+        "data": [50, 30, 10, 3, 0.5],
         "backgroundColor": "rgba(239, 68, 68, 0.7)",
         "borderColor": "rgba(239, 68, 68, 1)",
         "borderWidth": 1
@@ -1264,7 +1693,7 @@ failing at the rare thing you actually care about.
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Class Imbalance Levels — How Skewed Is Your Data?" } },
+    "plugins": { "title": { "display": true, "text": "Class Imbalance Severity — How Skewed Is Your Data?" } },
     "scales": {
       "x": { "stacked": true },
       "y": { "stacked": true, "title": { "display": true, "text": "% of Dataset" }, "max": 100 }
@@ -1275,160 +1704,318 @@ failing at the rare thing you actually care about.
 
 ### Solutions
 
+**Solution 1: Class Weights**
+
+Tell the algorithm that misclassifying the minority class is much more costly. Most sklearn classifiers accept `class_weight='balanced'`, which automatically sets weight proportional to $\frac{n_{samples}}{n_{classes} \times n_{class}}$.
+
 ```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  SOLUTION 1: CLASS WEIGHTS                                      │
-  │  Tell the model: "missing a fraud costs 99× more than a         │
-  │  false alarm."                                                  │
-  │                                                                 │
-  │  weight_fraud = n_samples / (n_classes × n_fraud)               │
-  │              = 10000 / (2 × 100) = 50                          │
-  │                                                                 │
-  │  Loss for missing fraud is now 50× larger than missing legit.  │
-  │  Model is forced to pay attention to the minority class.        │
-  ├─────────────────────────────────────────────────────────────────┤
-  │  SOLUTION 2: OVERSAMPLING — create more minority examples       │
-  │                                                                 │
-  │  Random Oversampling: duplicate minority examples (can overfit) │
-  │                                                                 │
-  │  SMOTE (Synthetic Minority Over-sampling Technique):            │
-  │  Generate SYNTHETIC minority examples by interpolating          │
-  │  between existing ones.                                         │
-  │                                                                 │
-  │  Original fraud:    ●  ●           Synthetic fraud:   ●●●●●    │
-  │                    ●    ●          (between real ones): ●●●●●●●│
-  │                                                                 │
-  │  New example = random point on line between two real examples   │
-  ├─────────────────────────────────────────────────────────────────┤
-  │  SOLUTION 3: UNDERSAMPLING — remove majority examples           │
-  │                                                                 │
-  │  Random undersampling: delete majority examples randomly        │
-  │  Risk: losing useful information!                               │
-  │                                                                 │
-  │  Better: NearMiss — remove majority examples closest to         │
-  │  minority boundary (keep the most informative ones)             │
-  ├─────────────────────────────────────────────────────────────────┤
-  │  SOLUTION 4: ADJUST THE DECISION THRESHOLD                      │
-  │                                                                 │
-  │  Default: predict fraud if P(fraud) > 0.5                       │
-  │  Better:  predict fraud if P(fraud) > 0.1  (catch more fraud!) │
-  │                                                                 │
-  │  Use the Precision-Recall curve to find the optimal threshold   │
-  │  for your specific cost of false positives vs false negatives.  │
-  └─────────────────────────────────────────────────────────────────┘
+  weight_fraud = 10000 / (2 × 100) = 50
+  weight_legit = 10000 / (2 × 9900) ≈ 0.51
+
+  The model now treats one missed fraud as equivalent to
+  missing ~100 legitimate classifications. It's forced to
+  pay attention to the minority class.
+```
+
+**Solution 2: Resampling**
+
+```
+  OVERSAMPLING (increase minority):
+  ─────────────────────────────────────────────────
+  Random Oversampling: duplicate minority examples
+    Pro: simple
+    Con: can overfit to duplicated examples
+
+  SMOTE (Synthetic Minority Over-sampling Technique):
+    Creates NEW synthetic examples by interpolating
+    between existing minority examples
+
+    minority_1: [2, 3]
+    minority_2: [4, 7]
+    synthetic:  [3, 5]  ← random point on the line between them
+
+    Pro: avoids exact duplication
+    Con: can create noisy examples in overlapping regions
+
+  UNDERSAMPLING (reduce majority):
+  ─────────────────────────────────────────────────
+  Random Undersampling: randomly remove majority examples
+    Pro: faster training
+    Con: loses potentially useful data
+
+  Best practice: combine SMOTE + undersampling (e.g., SMOTE-Tomek)
+```
+
+**Solution 3: Adjust the Decision Threshold**
+
+```
+  Default: predict fraud if P(fraud) > 0.5
+  Better:  predict fraud if P(fraud) > 0.1  (lower threshold → catch more)
+
+  Use the Precision-Recall curve to find the best threshold
+  for your specific cost of false positives vs. false negatives.
+```
+
+**Solution 4: Use the Right Metrics**
+
+Don't rely on accuracy. Use these instead:
+
+| Metric | Formula | What It Measures |
+|---|---|---|
+| **Precision** | $\frac{TP}{TP+FP}$ | Of those predicted positive, how many really are? |
+| **Recall** | $\frac{TP}{TP+FN}$ | Of all actual positives, how many did we catch? |
+| **F1 Score** | $\frac{2 \times P \times R}{P + R}$ | Harmonic mean of precision and recall |
+| **AUC-ROC** | Area under ROC curve | Overall discrimination ability |
+| **AUC-PR** | Area under PR curve | Better than ROC for severe imbalance |
+
+```
+  Confusion Matrix for fraud detection (threshold = 0.1):
+
+                        Predicted
+                   Fraud       Legit
+  Actual  Fraud  │   85  (TP) │   15  (FN) │  Recall = 85/100 = 85%
+          Legit  │  300  (FP) │ 9600  (TN) │
+                                              Precision = 85/385 = 22%
+
+  Low precision is often acceptable in fraud detection:
+  investigating 300 false alarms to catch 85 out of 100 frauds
+  may be a good trade-off.
 ```
 
 ---
 
-## 4.10 Algorithm Comparison
+## 6.12 Algorithm Selection Guide
 
-### Simple Explanation
-Choosing a machine learning algorithm is like choosing which tool to use for a school project.
-Need to cut paper? Scissors are fast and easy. Need to cut wood? You need a saw -- slower but
-more powerful. Need to carve something really detailed? You might need a special craft knife.
-No single tool is the best for everything! Some algorithms are super fast but only work on
-simple problems (like scissors for paper). Others are slow but incredibly powerful and can
-handle tricky patterns (like a laser cutter). The trick is matching the right tool to your job.
+Choosing an algorithm isn't about finding "the best" one — it's about finding the best one for YOUR problem, given your data, your constraints, and your goals.
+
+```mermaid
+flowchart TD
+    A[New supervised learning problem] --> B{Classification<br/>or Regression?}
+    B -->|Classification| C{How much data?}
+    B -->|Regression| D{Need interpretability?}
+
+    C -->|Small < 1K| E[Try: Logistic Regression<br/>KNN, Naive Bayes]
+    C -->|Medium 1K-100K| F[Try: Random Forest<br/>XGBoost, SVM]
+    C -->|Large > 100K| G[Try: LightGBM<br/>Logistic Regression<br/>Neural Network]
+
+    D -->|Yes| H[Linear Regression<br/>Ridge/Lasso<br/>Decision Tree]
+    D -->|No| I{Tabular or<br/>unstructured?}
+    I -->|Tabular| J[XGBoost / LightGBM]
+    I -->|Image/Text/Audio| K[Neural Network<br/>see Ch 10-11]
+```
+
+### Full Algorithm Comparison
 
 ```
-┌────────────────────┬──────────┬──────────┬───────┬────────────────────────────┐
-│ Algorithm          │ Training │ Accuracy │ Inter │ Ideal Use Case             │
-│                    │ Speed    │ Typical  │ pret? │                            │
-├────────────────────┼──────────┼──────────┼───────┼────────────────────────────┤
-│ Logistic Regr.     │ ★★★★★   │ ★★★      │  ✓✓   │ Binary clf, high-dim text  │
-│ KNN                │ ★★★★★   │ ★★★      │  ✓    │ Small data, any shape      │
-│ Decision Tree      │ ★★★★★   │ ★★★      │  ✓✓✓  │ Need explainability        │
-│ Random Forest      │ ★★★★    │ ★★★★     │  ✓    │ General tabular data       │
-│ Gradient Boosting  │ ★★★     │ ★★★★★    │  ✓    │ Tabular competitions       │
-│ SVM (linear)       │ ★★★★    │ ★★★★     │  ✓    │ Linear, high-dim data      │
-│ SVM (RBF kernel)   │ ★★      │ ★★★★     │  ✗    │ Non-linear, medium data    │
-│ Neural Network     │ ★       │ ★★★★★    │  ✗    │ Images, text, audio        │
-└────────────────────┴──────────┴──────────┴───────┴────────────────────────────┘
-
-  START HERE for any new problem:
-  ──────────────────────────────────────────────────────────────
-  1. Establish a naive baseline (always predict most common class)
-  2. Try Logistic / Linear Regression (fast, interpretable)
-  3. Try Gradient Boosting (XGBoost/LightGBM) — beats most things
-  4. Only then consider neural networks if tabular GBM underperforms
+┌────────────────────┬──────────┬──────────┬────────┬──────────────────────────────┐
+│ Algorithm          │ Speed    │ Accuracy │ Inter- │ Best For                     │
+│                    │ (train)  │ (typical)│ pret?  │                              │
+├────────────────────┼──────────┼──────────┼────────┼──────────────────────────────┤
+│ Logistic Regr.     │ ★★★★★   │ ★★★      │  ✓✓   │ Binary clf, text, baseline   │
+│ Naive Bayes        │ ★★★★★   │ ★★★      │  ✓✓   │ Text clf, small data         │
+│ KNN                │ ★★★★★   │ ★★★      │  ✓    │ Small data, any boundary     │
+│ Decision Tree      │ ★★★★★   │ ★★★      │  ✓✓✓  │ Explainability required      │
+│ Random Forest      │ ★★★★    │ ★★★★     │  ✓    │ General tabular data         │
+│ Gradient Boosting  │ ★★★     │ ★★★★★    │  ✓    │ Max accuracy on tabular      │
+│ SVM (linear)       │ ★★★★    │ ★★★★     │  ✓    │ Linear, high-dim data        │
+│ SVM (RBF)          │ ★★      │ ★★★★     │  ✗    │ Non-linear, medium data      │
+│ Linear Regression  │ ★★★★★   │ ★★       │  ✓✓✓  │ Regression baseline          │
+│ Ridge / Lasso      │ ★★★★★   │ ★★★      │  ✓✓✓  │ Regularized regression       │
+│ Neural Network     │ ★       │ ★★★★★    │  ✗    │ Unstructured data            │
+└────────────────────┴──────────┴──────────┴────────┴──────────────────────────────┘
 ```
 
 ```chart
 {
-  "type": "bar",
+  "type": "radar",
   "data": {
-    "labels": ["Logistic Regr.", "KNN", "Decision Tree", "Random Forest", "Gradient Boost", "SVM (linear)", "SVM (RBF)", "Neural Network"],
+    "labels": ["Speed", "Accuracy", "Interpretability", "Scalability", "Ease of Tuning"],
     "datasets": [
       {
-        "label": "Training Speed (5=fastest)",
-        "data": [5, 5, 5, 4, 3, 4, 2, 1],
-        "backgroundColor": "rgba(34, 197, 94, 0.7)",
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "borderWidth": 1
+        "label": "Logistic Regression",
+        "data": [5, 3, 5, 5, 5],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.1)"
       },
       {
-        "label": "Typical Accuracy (5=best)",
-        "data": [3, 3, 3, 4, 5, 4, 4, 5],
-        "backgroundColor": "rgba(99, 102, 241, 0.7)",
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "borderWidth": 1
+        "label": "Random Forest",
+        "data": [4, 4, 2, 4, 4],
+        "borderColor": "rgba(34, 197, 94, 1)",
+        "backgroundColor": "rgba(34, 197, 94, 0.1)"
+      },
+      {
+        "label": "Gradient Boosting",
+        "data": [3, 5, 2, 3, 2],
+        "borderColor": "rgba(234, 88, 12, 1)",
+        "backgroundColor": "rgba(234, 88, 12, 0.1)"
+      },
+      {
+        "label": "Neural Network",
+        "data": [1, 5, 1, 5, 1],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "rgba(239, 68, 68, 0.1)"
       }
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Speed vs Accuracy Trade-off" } },
+    "plugins": { "title": { "display": true, "text": "Algorithm Profiles — No Single Algorithm Wins on Everything" } },
     "scales": {
-      "y": { "title": { "display": true, "text": "Rating (1-5 stars)" }, "beginAtZero": true, "max": 5 },
-      "x": {}
+      "r": { "beginAtZero": true, "max": 5 }
     }
   }
 }
 ```
+
+### The Practical Workflow
+
+For any new supervised learning problem, follow this sequence:
+
+```
+  1. BASELINE:  Naive model (predict most common class / predict mean)
+                → sets the floor. If you can't beat this, something is wrong.
+
+  2. SIMPLE:    Logistic Regression / Linear Regression
+                → fast, interpretable, surprisingly competitive
+                → establishes what a linear model can achieve
+
+  3. POWERFUL:  Gradient Boosting (XGBoost / LightGBM)
+                → almost always the best for tabular data
+                → this is where most Kaggle competitions are won
+
+  4. COMPLEX:   Neural Networks (only if GBM isn't enough)
+                → for images, text, audio, or very complex interactions
+                → requires more data, more compute, more tuning
+
+  5. ENSEMBLE:  Stack your best diverse models
+                → when you need that last 0.5% accuracy
+                → common in competitions, rare in production
+```
+
+**The uncomfortable truth:** For tabular data (spreadsheets, databases), gradient boosted trees beat neural networks in most benchmarks. Neural networks dominate on images, text, and audio, but for structured data, XGBoost/LightGBM are still king as of 2025. Several recent papers (TabNet, TabTransformer, FT-Transformer) have tried to change this, with mixed results.
 
 ---
 
 ## Key Takeaways
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  SUPERVISED LEARNING — COMPLETE CHEAT SHEET                      ║
-║  ──────────────────────────────────────────────────────────────  ║
-║  Classification = predict a category;  Regression = predict #   ║
-║  Multi-label = multiple classes per example (sigmoid per class)  ║
-║  Logistic Regression = linear + sigmoid → probability            ║
-║  KNN = majority vote from K nearest neighbors                    ║
-║  Decision Tree = recursive splits by info gain / Gini            ║
-║  Bagging = parallel trees on bootstrap samples (Random Forest)   ║
-║  Boosting = sequential trees fixing errors (XGBoost, LightGBM)  ║
-║  Stacking = ensembling different model types with a meta-learner ║
-║  Feature Importance = what drives the model's predictions        ║
-║  SHAP = per-prediction explanation of feature contributions      ║
-║  Ridge = L2 penalty, shrinks weights; Lasso = L1, zeros them     ║
-║  Class imbalance: use class weights, SMOTE, or threshold tuning  ║
-╚══════════════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════════════╗
+║  SUPERVISED LEARNING — COMPLETE SUMMARY                              ║
+║  ────────────────────────────────────────────────────────────────    ║
+║  Supervised learning = learn from labeled (input, output) pairs      ║
+║  Classification = discrete labels; Regression = continuous values    ║
+║  Multi-label = sigmoid per class; Multi-class = softmax              ║
+║                                                                      ║
+║  Loss functions: MSE/MAE for regression; cross-entropy for clf       ║
+║  Optimization: gradient descent (SGD, Adam) minimizes the loss       ║
+║  Train/Val/Test split prevents overfitting during model selection    ║
+║  Cross-validation gives robust estimates from limited data           ║
+║                                                                      ║
+║  Underfitting = too simple (high bias) → more complex model          ║
+║  Overfitting = too complex (high variance) → regularize or get data  ║
+║  Bias-Variance Tradeoff: Error = Bias² + Variance + Noise           ║
+║                                                                      ║
+║  Logistic Regression = linear + sigmoid → probability → threshold    ║
+║  KNN = vote of K nearest neighbors (lazy learner, needs scaling)     ║
+║  Decision Tree = recursive splits by Gini/entropy                    ║
+║  SVM = maximum margin hyperplane + kernel trick                      ║
+║  Naive Bayes = Bayes theorem + independence assumption               ║
+║                                                                      ║
+║  Bagging = parallel trees on bootstrap samples (Random Forest)       ║
+║  Boosting = sequential trees fixing errors (XGBoost, LightGBM)      ║
+║  Stacking = diverse models + meta-learner                            ║
+║                                                                      ║
+║  Ridge (L2) = shrink weights; Lasso (L1) = zero out weights          ║
+║  SHAP = gold standard for per-prediction explainability              ║
+║  Class imbalance: use weights, SMOTE, threshold tuning, and F1/AUC  ║
+║                                                                      ║
+║  For tabular data: always start with logistic/linear → then GBM      ║
+╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
 ## Review Questions — Test Your Understanding
 
-1. You're building a model to predict whether a customer will churn (yes/no). Is this classification or regression? Binary or multi-class?
-2. A movie can be tagged as Action, Comedy, AND Thriller at the same time. Is this multi-class or multi-label? What activation function should the output layer use?
-3. Explain the difference between Bagging and Boosting in two sentences.
-4. Your Random Forest says "Square Feet" is the most important feature. But you suspect this is biased because it has many unique values. What more reliable method could you use?
-5. When would you choose KNN over Logistic Regression? When would you NOT use KNN?
+**1.** You're building a model to predict whether a customer will churn (yes/no). Is this classification or regression? Binary or multi-class?
 
 <details>
-<summary>Answers</summary>
+<summary>Answer</summary>
 
-1. Classification (discrete output: yes/no). Binary classification (only two classes).
-2. Multi-label — one input can have multiple labels simultaneously. Use Sigmoid per output (not Softmax), because each label is an independent binary decision.
-3. Bagging trains multiple models independently on random subsets, then averages them (reduces variance). Boosting trains models sequentially, each focusing on the previous model's mistakes (reduces bias).
-4. Permutation Importance — shuffle the feature column and measure how much accuracy drops. Or SHAP values for per-prediction explanations.
-5. Use KNN when: decision boundaries are complex/non-linear, dataset is small, you want no training phase. Avoid KNN when: dataset is very large (prediction is slow O(n)), many irrelevant features exist (distance becomes meaningless), or features aren't scaled.
+Binary classification. The output is a discrete label with exactly two classes (churn / no churn). You'd use binary cross-entropy loss and evaluate with precision, recall, F1, and AUC-ROC.
+</details>
+
+**2.** A movie can be tagged as Action, Comedy, AND Thriller simultaneously. Is this multi-class or multi-label? What activation function and loss function should you use?
+
+<details>
+<summary>Answer</summary>
+
+Multi-label classification. Each label is an independent binary decision, so use sigmoid activation (not softmax) on each output neuron, and binary cross-entropy loss per label. The probabilities do NOT need to sum to 1.
+</details>
+
+**3.** Your model achieves 98% training accuracy but only 72% validation accuracy. What's happening, and what are three concrete things you can try?
+
+<details>
+<summary>Answer</summary>
+
+This is overfitting (high variance). The 26-point gap between training and validation performance means the model memorized training noise instead of learning generalizable patterns. Three fixes: (1) Get more training data, (2) Add regularization (L1/L2, dropout, increase min_samples_leaf), (3) Reduce model complexity (fewer trees, shallower depth, fewer features).
+</details>
+
+**4.** Explain the difference between Bagging and Boosting in two sentences.
+
+<details>
+<summary>Answer</summary>
+
+Bagging trains multiple models independently on random subsets of the data, then averages their predictions — this reduces variance (stabilizes noisy models). Boosting trains models sequentially, with each new model focusing on the errors of the previous ones — this reduces bias (makes weak models stronger).
+</details>
+
+**5.** Your Random Forest says "user_id" is the most important feature for predicting churn. Should you trust this? Why or why not?
+
+<details>
+<summary>Answer</summary>
+
+No. Impurity-based importance is biased toward high-cardinality features. user_id has a unique value for every row, giving the tree many possible split points, which artificially inflates its importance score. Use permutation importance instead — shuffle the user_id column and check if accuracy actually drops. It almost certainly won't, confirming user_id is not truly predictive.
+</details>
+
+**6.** When would you choose Lasso over Ridge regression? Give a concrete scenario.
+
+<details>
+<summary>Answer</summary>
+
+Choose Lasso when you suspect only a few features truly matter and the rest are noise. For example: predicting house price with 200 features (including many irrelevant ones like "seller's favorite color"). Lasso will drive the noisy feature weights to exactly zero, performing automatic feature selection. Ridge would shrink all 200 weights but keep them all non-zero.
+</details>
+
+**7.** Your fraud detection model has 99.5% accuracy. Your manager is thrilled. Should you be?
+
+<details>
+<summary>Answer</summary>
+
+No — this is the class imbalance trap. If only 0.5% of transactions are fraudulent, a model that always predicts "legitimate" achieves 99.5% accuracy while catching zero fraud. You need to check recall (what fraction of actual fraud was detected), precision, F1, and AUC-PR. A useful fraud model might have only 95% accuracy but 80% recall — catching 80% of fraud while flagging some legitimate transactions for review.
+</details>
+
+**8.** You have a dataset with 500 samples and 50 features. Which algorithm would you try first and why? Which would you avoid?
+
+<details>
+<summary>Answer</summary>
+
+Try first: Logistic Regression or Ridge/Lasso. With only 500 samples and 50 features, you're at high risk of overfitting. Linear models with regularization are robust in this regime. Avoid: deep neural networks (need much more data), KNN (curse of dimensionality with 50 features — distance becomes meaningless in high dimensions), deep decision trees (will overfit 500 samples easily).
+</details>
+
+**9.** What is the kernel trick in SVMs, and why is it useful?
+
+<details>
+<summary>Answer</summary>
+
+The kernel trick computes the dot product of data points in a higher-dimensional space without explicitly mapping them there. It's useful because many datasets aren't linearly separable in their original space, but become separable in a higher-dimensional space. The RBF kernel, for example, implicitly maps to infinite-dimensional space, allowing SVMs to learn almost any decision boundary shape — all while avoiding the computational cost of actually computing in that space.
+</details>
+
+**10.** You're explaining your model to a non-technical stakeholder. Would you use impurity-based feature importance, permutation importance, or SHAP? Why?
+
+<details>
+<summary>Answer</summary>
+
+SHAP — because it explains individual predictions, not just global trends. A stakeholder doesn't care that "income is generally important." They care about "why was THIS customer's loan denied?" SHAP says: "The model denied the loan because: low credit score pushed the risk up by 15%, high debt-to-income ratio added another 10%, but their long employment history reduced the risk by 8%. Overall, the risk factors outweighed the positives." This per-prediction narrative is far more actionable and understandable.
 </details>
 
 ---
 
-**Previous:** [Chapter 5 — Data Preprocessing](05_data_preprocessing.md)
-**Next:** [Chapter 7 — Unsupervised Learning](07_unsupervised_learning.md)
+**Previous:** [Chapter 5 — Data Preprocessing](05_data_preprocessing.md) | **Next:** [Chapter 7 — Unsupervised Learning](07_unsupervised_learning.md)

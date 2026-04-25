@@ -101,6 +101,7 @@ async function loadChapter(index) {
   document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
   document.getElementById('readBtn').style.display = ch.ref ? 'none' : '';
   document.getElementById('exportPdfBtn').style.display = '';
+  document.getElementById('focusBtn').style.display = '';
   document.getElementById('welcome')?.remove();
   renderSidebar();
   closeSidebar();
@@ -215,9 +216,7 @@ const PDF_EXPORT_CSS = `
 @media print {
   @page { margin: 16mm 14mm; }
 
-  /* Force a light palette regardless of app theme — override the CSS
-     variables themselves so every descendant using var(--text) / var(--bg)
-     flips along with them. */
+  /* Force a light palette regardless of app theme */
   :root, [data-theme="dark"] {
     --bg: #ffffff !important;
     --bg-secondary: #f6f8fa !important;
@@ -246,7 +245,7 @@ const PDF_EXPORT_CSS = `
     background: #fff !important;
     color: #111 !important;
   }
-  .main, .content-wrapper, .content {
+  .main, .content-wrapper {
     display: block !important;
     height: auto !important;
     max-height: none !important;
@@ -258,10 +257,27 @@ const PDF_EXPORT_CSS = `
     background: #fff !important;
     color: #111 !important;
   }
+  .content {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 auto !important;
+    padding: 0 8mm !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
 
-  /* Disable effects that force Chrome to rasterize the page into an image
-     (which strips vector text and often renders as a blank area). */
-  * {
+  /* Kill ALL animations, transitions, and scroll-reveal states.
+     Elements below the fold have opacity:0 from IntersectionObserver —
+     this resets them so the entire chapter prints. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     filter: none !important;
@@ -272,10 +288,10 @@ const PDF_EXPORT_CSS = `
   /* Hide every bit of app chrome */
   .sidebar, .topbar, .nav-buttons, .toc-panel,
   .toast-container, .overlay, .sel-popup,
-  #confetti-canvas, .scroll-progress,
+  #confetti-canvas, .scroll-progress, .focus-bar,
   .study-timer, .hamburger, .search-box, .search-results,
   .sidebar-nav-btns, .quiz-overlay, .comment-fab,
-  #welcomeSlot,
+  #welcomeSlot, .pins-layer,
   .heading-anchor, .copy-code-btn, .copy-btn,
   .comment-actions, .comment-form, .comment-filter-bar {
     display: none !important;
@@ -294,35 +310,52 @@ const PDF_EXPORT_CSS = `
   a { color: #0b57d0 !important; text-decoration: underline; }
   p, li, blockquote { orphans: 3; widows: 3; }
 
+  /* Tables: override display:block back to table so they render properly */
+  table {
+    display: table !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid; break-inside: avoid;
+    width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+  thead { display: table-header-group !important; }
+  tbody { display: table-row-group !important; }
+  tr { display: table-row !important; page-break-inside: avoid; break-inside: avoid; }
+  th, td {
+    display: table-cell !important;
+    border: 1px solid #999 !important;
+    color: #111 !important; background: #fff !important;
+    padding: 4pt 6pt !important;
+  }
+  thead, thead tr, thead th { background: #eee !important; }
+
+  /* Code blocks: use pre-wrap so long lines don't get clipped */
   pre, code, kbd, samp { background: #f5f5f5 !important; color: #111 !important; }
   pre {
     border: 1px solid #ddd !important;
     padding: 8pt !important;
     font-size: 9pt;
-    white-space: pre-wrap; word-wrap: break-word;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: visible !important;
+  }
+  .code-wrapper {
+    display: block !important;
+    overflow: visible !important;
     page-break-inside: avoid; break-inside: avoid;
   }
   pre code, pre code.hljs, .hljs {
     background: #f5f5f5 !important; color: #111 !important;
+    white-space: pre-wrap !important;
   }
   .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df !important; }
   .hljs-string, .hljs-attr { color: #0a3069 !important; }
   .hljs-comment { color: #6e7781 !important; font-style: italic; }
   .hljs-number, .hljs-literal { color: #0550ae !important; }
   .hljs-title, .hljs-function, .hljs-name { color: #953800 !important; }
-
-  table {
-    border-collapse: collapse !important;
-    page-break-inside: avoid; break-inside: avoid;
-    width: 100% !important;
-  }
-  th, td {
-    border: 1px solid #999 !important;
-    color: #111 !important; background: #fff !important;
-    padding: 4pt 6pt !important;
-  }
-  thead, thead tr, thead th { background: #eee !important; }
-  tr { page-break-inside: avoid; break-inside: avoid; }
 
   blockquote {
     border-left: 3px solid #666 !important;
@@ -332,11 +365,31 @@ const PDF_EXPORT_CSS = `
   }
 
   img, svg { max-width: 100% !important; page-break-inside: avoid; }
+
+  /* Mermaid diagrams */
+  .mermaid, .mermaid svg {
+    max-width: 100% !important;
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: visible !important;
+  }
+  .mermaid text { fill: #111 !important; }
+
+  /* KaTeX math */
   .katex, .katex *,
   .katex-display, .katex-display *,
   .katex-html, .katex-html *,
   .katex-mathml, .katex-mathml * { color: #111 !important; }
-  .katex-display { page-break-inside: avoid; break-inside: avoid; }
+  .katex-display {
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: visible !important;
+  }
+
+  /* Chart.js — canvas renders as-is in print */
+  .chart-container {
+    page-break-inside: avoid; break-inside: avoid;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+  }
 
   mark, .hl-yellow { background: #fff3a0 !important; color: #111 !important; }
   .hl-green { background: #cdefc8 !important; color: #111 !important; }
@@ -357,6 +410,13 @@ function exportChapterToPDF() {
   const prevTitle = document.title;
   document.title = `${ch.id} - ${ch.title}`.replace(/[\\/:*?"<>|]/g, '-');
 
+  // Force all scroll-reveal elements visible (they have opacity:0 until
+  // IntersectionObserver fires, which never happens for off-screen content).
+  const contentEl = document.getElementById('content');
+  contentEl.querySelectorAll('h1,h2,h3,p,pre,.code-wrapper,table,ul,ol,blockquote,.katex-display,hr').forEach(el => {
+    el.classList.add('vis');
+  });
+
   // Remove any prior injection, then add fresh print styles at the end of
   // <head> so they win against older cached rules.
   document.getElementById('pdf-export-style')?.remove();
@@ -365,12 +425,17 @@ function exportChapterToPDF() {
   styleTag.textContent = PDF_EXPORT_CSS;
   document.head.appendChild(styleTag);
 
+  // Exit focus mode if active (its fixed positioning breaks print flow)
+  const wasFocused = focusModeActive;
+  if (wasFocused) exitFocusMode();
+
   // Let the browser apply the new rules before opening the print dialog.
   setTimeout(() => {
     window.print();
     setTimeout(() => {
       styleTag.remove();
       document.title = prevTitle;
+      if (wasFocused) toggleFocusMode();
     }, 500);
   }, 80);
 }
@@ -478,8 +543,9 @@ document.addEventListener('keydown', (e) => {
       document.getElementById('overlay').classList.add('visible');
     }
   }
-  // Escape — close search / sidebar
+  // Escape — exit focus mode first, then close search / sidebar
   if (e.key === 'Escape') {
+    if (focusModeActive) { toggleFocusMode(); return; }
     document.getElementById('search').value = '';
     document.getElementById('search').blur();
     document.getElementById('searchResults').classList.remove('visible');
@@ -497,6 +563,8 @@ document.addEventListener('keydown', (e) => {
   }
   // Ctrl+D — dark mode
   if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); toggleTheme(); }
+  // F — toggle focus mode
+  if ((e.key === 'f' || e.key === 'F') && currentPage === 'chapter' && !typing && !e.ctrlKey && !e.metaKey) toggleFocusMode();
   // M — mark as read. Skip when the user is typing (comment input, pin textarea,
   // DSA editor, search box, etc.) so the letter 'm' stays a letter.
   if ((e.key === 'm' || e.key === 'M') && currentPage === 'chapter' && !typing) toggleReadStatus();
@@ -598,6 +666,45 @@ function enhanceContent() {
   // 6. Python Run buttons on code blocks
   addRunButtons(contentEl);
 }
+
+// ─── Focus Mode (browser fullscreen) ───
+let focusModeActive = false;
+
+function exitFocusMode() {
+  if (!focusModeActive) return;
+  focusModeActive = false;
+  document.body.classList.remove('focus-mode');
+  document.getElementById('focusBtn').classList.remove('active');
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function toggleFocusMode() {
+  if (focusModeActive) {
+    exitFocusMode();
+    return;
+  }
+
+  focusModeActive = true;
+  document.body.classList.add('focus-mode');
+  document.getElementById('focusBtn').classList.add('active');
+
+  const focusBar = document.getElementById('focusBar');
+  if (currentIndex >= 0 && chapters[currentIndex]) {
+    document.getElementById('focusBarTitle').textContent = chapters[currentIndex].title;
+    focusBar.classList.add('visible');
+    setTimeout(() => focusBar.classList.remove('visible'), 3000);
+  }
+
+  document.documentElement.requestFullscreen().catch(() => {});
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && focusModeActive) {
+    focusModeActive = false;
+    document.body.classList.remove('focus-mode');
+    document.getElementById('focusBtn').classList.remove('active');
+  }
+});
 
 function setupScrollSpy() {
   const wrapper = document.getElementById('contentWrapper');

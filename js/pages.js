@@ -4,6 +4,7 @@
 
 // ─── Animated Welcome Dashboard ───
 function renderWelcome() {
+  exitFocusMode();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
   currentPage = 'welcome';
@@ -12,6 +13,7 @@ function renderWelcome() {
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('exportPdfBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none';
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
@@ -130,7 +132,7 @@ function renderWelcome() {
         <button onclick="showDashboard()" title="See everything in one place">📊 Dashboard</button>
         <button onclick="showDSAPractice()" title="${dsaSolved} of ${dsaTotalProblems} DSA problems solved">💻 DSA Practice</button>
         <button onclick="showGoals()" title="Set a study target">🎯 Goals</button>
-        <button onclick="showMotivation()" title="Daily motivation">💪 Motivation</button>
+        <button onclick="exportAllChaptersPDF()" title="Export all chapters to one PDF">📄 Export All PDF</button>
       </div>
 
       ${interactiveMode ? `
@@ -211,8 +213,378 @@ function renderWelcome() {
 }
 
 
+// ─── Export All Chapters to PDF ───
+async function exportAllChaptersPDF() {
+  const exportable = chapters.filter(c => !c.section && !c.notebook);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pdf-all-overlay';
+  overlay.innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:36px 44px;
+      max-width:420px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+      <div style="font-size:28px;margin-bottom:12px;">📄</div>
+      <h3 style="margin:0 0 8px;font-size:18px;color:var(--heading);">Generating PDF</h3>
+      <p style="color:var(--text-secondary);font-size:14px;margin:0 0 20px;" id="pdfAllStatus">
+        Loading chapters... 0 / ${exportable.length}
+      </p>
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+        <div id="pdfAllBar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#a78bfa);
+          border-radius:3px;transition:width 0.3s;"></div>
+      </div>
+    </div>`;
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10002;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);';
+  document.body.appendChild(overlay);
+
+  const statusEl = document.getElementById('pdfAllStatus');
+  const barEl = document.getElementById('pdfAllBar');
+
+  // Use the same marked config that the main app uses — this keeps syntax
+  // highlighting identical to single-chapter rendering because marked's
+  // `highlight` callback runs hljs on every fenced code block.
+  const renderedChapters = [];
+  let loaded = 0;
+
+  for (const ch of exportable) {
+    try {
+      let md = cachedContent[ch.file];
+      if (!md) {
+        const res = await fetch(ch.file);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        md = await res.text();
+        cachedContent[ch.file] = md;
+      }
+      const mathProtected = protectMath(md);
+      const html = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
+      renderedChapters.push({ ch, html });
+    } catch (e) {
+      renderedChapters.push({ ch, html: `<p style="color:red;">Failed to load ${ch.file}: ${e.message}</p>` });
+    }
+    loaded++;
+    statusEl.textContent = `Loading chapters... ${loaded} / ${exportable.length}`;
+    barEl.style.width = (loaded / exportable.length * 100) + '%';
+  }
+
+  statusEl.textContent = 'Rendering...';
+
+  // Build section→chapters map for TOC
+  const tocSections = [];
+  let curSec = null;
+  let chNum = 0;
+  for (const item of chapters) {
+    if (item.section) {
+      curSec = { name: item.section, chapters: [] };
+      tocSections.push(curSec);
+    } else if (!item.notebook && curSec) {
+      chNum++;
+      curSec.chapters.push({ num: chNum, title: item.title, id: item.id });
+    }
+  }
+
+  // TOC placeholder — page numbers filled by script after layout
+  const tocHtml = tocSections.map(sec => `
+    <div class="toc-section">
+      <div class="toc-section-title">${sec.name}</div>
+      ${sec.chapters.map(c =>
+        `<div class="toc-entry">
+          <span class="toc-num">${c.num}.</span>
+          <span class="toc-chap-title">${c.title}</span>
+          <span class="toc-dots"></span>
+          <span class="toc-page" data-chapter="${c.num}"></span>
+        </div>`
+      ).join('')}
+    </div>`).join('');
+
+  // Chapter blocks
+  let ci = 0;
+  const chaptersHtml = renderedChapters.map(({ ch, html }) => {
+    ci++;
+    return `<div class="pdf-chapter" data-ch-num="${ci}">${html}</div>`;
+  }).join('');
+
+  // ─── Build the self-contained print document ───
+  const printDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ML Study Notes — Complete</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+/* ── Page & page-number footer ── */
+@page {
+  size: A4;
+  margin: 16mm 14mm 20mm 14mm;
+}
+@media print {
+  .page-footer { display: none; }
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #1f2328; background: #fff;
+  font-size: 11pt; line-height: 1.6;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Cover ── */
+.cover {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 96vh; text-align: center;
+  page-break-after: always; break-after: page;
+  border-bottom: 3px solid #0969da;
+  padding-bottom: 40px;
+}
+.cover h1 {
+  font-size: 38pt; font-weight: 800; color: #1f2328;
+  margin-bottom: 6px; border: none; padding: 0;
+}
+.cover .sub { font-size: 13pt; color: #656d76; margin-bottom: 36px; font-weight: 400; }
+.cover .meta { font-size: 10pt; color: #8b949e; }
+.cover .meta span { display: block; margin: 2px 0; }
+
+/* ── TOC ── */
+.toc { page-break-after: always; break-after: page; padding: 0; }
+.toc h2 {
+  font-size: 20pt; font-weight: 700; text-align: center; color: #1f2328;
+  margin: 0 0 28px; padding-bottom: 10px;
+  border-bottom: 2px solid #d0d7de;
+}
+.toc-section { margin-bottom: 16px; }
+.toc-section-title {
+  font-size: 9.5pt; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.2px; color: #0969da; padding-bottom: 3px;
+  border-bottom: 1px solid #d0d7de; margin-bottom: 5px;
+}
+.toc-entry {
+  display: flex; align-items: baseline; gap: 5px;
+  padding: 2.5px 0; font-size: 10.5pt; line-height: 1.5;
+}
+.toc-num { font-weight: 700; min-width: 24px; color: #1f2328; }
+.toc-chap-title { color: #1f2328; }
+.toc-dots {
+  flex: 1; border-bottom: 1px dotted #b0b8c1;
+  margin: 0 3px; min-width: 16px;
+  position: relative; top: -3px;
+}
+.toc-page {
+  font-size: 10pt; font-weight: 600; color: #656d76;
+  min-width: 24px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Chapter blocks ── */
+.pdf-chapter { page-break-before: always; break-before: page; }
+
+/* ── Typography — matches single-chapter print ── */
+h1 {
+  font-size: 20pt; font-weight: 700; color: #1f2328;
+  padding-bottom: 8pt; border-bottom: 2px solid #d0d7de;
+  margin: 0 0 12pt; page-break-after: avoid;
+}
+h2 {
+  font-size: 15pt; font-weight: 600; color: #1f2328;
+  margin: 18pt 0 8pt; padding-bottom: 4pt;
+  border-bottom: 1px solid #d0d7de; page-break-after: avoid;
+}
+h3 { font-size: 12.5pt; font-weight: 600; color: #1f2328; margin: 14pt 0 6pt; page-break-after: avoid; }
+h4 { font-size: 11pt; font-weight: 600; color: #1f2328; margin: 10pt 0 4pt; page-break-after: avoid; }
+
+p  { margin: 6pt 0; font-size: 11pt; line-height: 1.65; }
+a  { color: #0969da; text-decoration: underline; }
+strong { color: #1f2328; }
+
+ul, ol { margin: 6pt 0; padding-left: 22pt; }
+li { margin: 3pt 0; font-size: 11pt; line-height: 1.6; }
+
+blockquote {
+  border-left: 3pt solid #0969da; padding: 8pt 14pt; margin: 8pt 0;
+  background: #f6f8fa; color: #656d76; font-style: italic;
+  border-radius: 0 6pt 6pt 0;
+  page-break-inside: avoid;
+}
+
+/* ── Code ── */
+code {
+  background: #f6f8fa; padding: 1px 5px; border-radius: 4px;
+  font-size: 9.5pt;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  border: 1px solid #d0d7de;
+}
+pre {
+  background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 10pt 14pt; margin: 8pt 0;
+  font-size: 8.5pt; line-height: 1.5;
+  white-space: pre; overflow-x: visible; overflow-wrap: break-word;
+  page-break-inside: avoid;
+}
+pre code {
+  background: none; padding: 0; border: none; font-size: inherit;
+  white-space: pre;
+}
+
+/* highlight.js token colours — light print-friendly palette */
+.hljs { background: #f6f8fa; color: #1f2328; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df; }
+.hljs-string, .hljs-attr { color: #0a3069; }
+.hljs-comment { color: #6e7781; font-style: italic; }
+.hljs-number, .hljs-literal { color: #0550ae; }
+.hljs-title, .hljs-function, .hljs-name { color: #953800; }
+.hljs-type, .hljs-class { color: #116329; }
+.hljs-meta, .hljs-params { color: #1f2328; }
+
+/* ── Tables ── */
+table {
+  display: table; width: 100%; border-collapse: collapse;
+  margin: 8pt 0; font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+thead { display: table-header-group; }
+tbody { display: table-row-group; }
+tr { display: table-row; page-break-inside: avoid; }
+thead th {
+  background: #f6f8fa; padding: 6pt 8pt; text-align: left;
+  font-weight: 600; border: 1px solid #d0d7de; white-space: nowrap;
+}
+tbody td { padding: 5pt 8pt; border: 1px solid #d0d7de; }
+tbody tr:nth-child(even) { background: #f6f8fa; }
+
+hr { border: none; border-top: 1px solid #d0d7de; margin: 16pt 0; }
+img, svg { max-width: 100%; page-break-inside: avoid; }
+
+details { margin: 8pt 0; border: 1px solid #d0d7de; border-radius: 8px; padding: 8pt 12pt; page-break-inside: avoid; }
+details summary { font-weight: 600; color: #0969da; cursor: default; }
+
+/* ── KaTeX ── */
+.katex-display {
+  margin: 10pt 0; padding: 10pt 14pt; background: #f6f8fa;
+  border-radius: 8px; border-left: 3pt solid #0969da;
+  page-break-inside: avoid; overflow: visible;
+}
+.katex { font-size: 0.95em; }
+.katex-display .katex { font-size: 1.02em; }
+
+/* ── Mermaid / Charts ── */
+.mermaid, .mermaid svg { max-width: 100%; page-break-inside: avoid; }
+.chart-container { page-break-inside: avoid; }
+
+/* ── Highlights ── */
+mark { background: #fff3a0; color: #1f2328; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>ML Study Notes</h1>
+  <p class="sub">Complete Reference &mdash; All Chapters</p>
+  <div class="meta">
+    <span>Generated ${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}</span>
+    <span>${exportable.length} chapters</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  ${tocHtml}
+</div>
+
+${chaptersHtml}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"><\/script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. Run highlight.js on all code blocks that marked didn't already highlight
+  if (window.hljs) {
+    document.querySelectorAll('pre code').forEach(function(block) {
+      if (!block.classList.contains('hljs')) hljs.highlightElement(block);
+    });
+  }
+
+  // 2. Render KaTeX math
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false }
+      ],
+      throwOnError: false, trust: true
+    });
+  }
+
+  // 3. Estimate page numbers for TOC
+  //    A4 content area ≈ 297mm - 16mm - 20mm = 261mm.
+  //    At 96 CSS-px/inch ≈ 3.78 px/mm → ~987px per page.
+  //    We use a measured ratio: the cover (100vh ≈ one page) sets baseline.
+  setTimeout(function() {
+    var pageH = 987;
+    // The cover is page 1, TOC starts on page 2.
+    // Count how many pages the TOC itself takes:
+    var tocEl = document.querySelector('.toc');
+    var tocBottom = tocEl.offsetTop + tocEl.offsetHeight;
+    var tocPages = Math.ceil(tocBottom / pageH);
+
+    document.querySelectorAll('.pdf-chapter').forEach(function(ch) {
+      var num = ch.getAttribute('data-ch-num');
+      var pageNum = Math.floor(ch.offsetTop / pageH) + 1;
+      var span = document.querySelector('.toc-page[data-chapter="' + num + '"]');
+      if (span) span.textContent = pageNum;
+    });
+
+    // 4. Print after a short delay for layout to settle
+    setTimeout(function() { window.print(); }, 400);
+  }, 300);
+});
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([printDoc], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
+  if (!win) {
+    overlay.remove();
+    URL.revokeObjectURL(url);
+    alert('Popup blocked — please allow popups for this site and try again.');
+    return;
+  }
+
+  // Show dismiss button immediately
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    overlay.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  statusEl.textContent = 'PDF ready in new tab — Save as PDF from print dialog';
+  barEl.style.width = '100%';
+  overlay.querySelector('div').insertAdjacentHTML('beforeend',
+    `<button onclick="document.getElementById('pdf-all-overlay').remove()" style="
+      margin-top:18px;padding:8px 24px;border:1px solid var(--border);border-radius:8px;
+      background:var(--bg);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;
+    ">Dismiss</button>`
+  );
+
+  const poll = setInterval(() => {
+    if (win.closed) { clearInterval(poll); cleanup(); }
+  }, 1000);
+}
+
+
 // ─── Dashboard Page ───
 function showDashboard() {
+  exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'dashboard';
@@ -223,6 +595,7 @@ function showDashboard() {
   document.getElementById('breadcrumb').textContent = '📊 Dashboard';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('exportPdfBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -773,6 +1146,7 @@ const MOTIVATION_QUOTES = [
 let motiIndex = 0;
 
 function showMotivation() {
+  exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'motivation';
@@ -782,6 +1156,7 @@ function showMotivation() {
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('exportPdfBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none';
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
   renderMotivation();
@@ -882,6 +1257,7 @@ let goalsShowTTForm = false;
 let goalsShowCompleted = false;
 
 function showGoals() {
+  exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'goals';
@@ -891,6 +1267,7 @@ function showGoals() {
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
   document.getElementById('exportPdfBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none';
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();
