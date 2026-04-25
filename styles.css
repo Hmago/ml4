@@ -2817,13 +2817,200 @@ mark.user-hl:hover::after { display: flex; }
 .comment-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
 .comment-filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
+/* ═══════════════════════════════════════════════════════ */
+/* ═══  FOCUS MODE — distraction-free reading          ═══ */
+/* ═══════════════════════════════════════════════════════ */
+
+body.focus-mode {
+  overflow: hidden;
+}
+
+body.focus-mode .sidebar,
+body.focus-mode .topbar,
+body.focus-mode .toc-panel,
+body.focus-mode .scroll-progress,
+body.focus-mode .sel-popup,
+body.focus-mode .toast-container,
+body.focus-mode .overlay {
+  display: none !important;
+}
+
+body.focus-mode .main {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg);
+}
+
+body.focus-mode .content-wrapper {
+  height: 100vh;
+  padding-top: 0;
+}
+
+body.focus-mode .content {
+  max-width: 80vw;
+  padding: 60px 64px 120px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+body.focus-mode .content p,
+body.focus-mode .content li {
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+body.focus-mode .content h1 {
+  font-size: 36px;
+  margin-top: 48px;
+}
+
+body.focus-mode .content h2 {
+  font-size: 26px;
+  margin-top: 40px;
+}
+
+body.focus-mode .content h3 {
+  font-size: 21px;
+}
+
+body.focus-mode .content pre {
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+body.focus-mode .content.font-sm { font-size: 15px; }
+body.focus-mode .content.font-sm p,
+body.focus-mode .content.font-sm li { font-size: 15px; }
+body.focus-mode .content.font-lg { font-size: 19px; }
+body.focus-mode .content.font-lg p,
+body.focus-mode .content.font-lg li { font-size: 19px; }
+
+/* Focus floating bar */
+.focus-bar {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 24px var(--shadow);
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+body.focus-mode .focus-bar {
+  display: flex;
+  pointer-events: auto;
+}
+
+body.focus-mode:hover .focus-bar,
+body.focus-mode .focus-bar:hover,
+body.focus-mode .focus-bar.visible {
+  opacity: 1;
+}
+
+.focus-bar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focus-bar-actions button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.focus-bar-actions button:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.focus-bar-actions button:last-child {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.focus-bar-actions button:last-child:hover {
+  filter: brightness(1.15);
+  background: var(--accent);
+  color: white;
+}
+
+/* Focus mode entrance/exit animation */
+body.focus-mode .content {
+  animation: focusEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes focusEnter {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Hide nav buttons and pins layer in focus mode for cleaner reading */
+body.focus-mode .nav-buttons,
+body.focus-mode .pins-layer {
+  display: none;
+}
+
+/* Mobile adjustments for focus mode */
+@media (max-width: 768px) {
+  body.focus-mode .content {
+    padding: 48px 18px 100px;
+    max-width: 100%;
+    font-size: 16px;
+  }
+  body.focus-mode .content p,
+  body.focus-mode .content li { font-size: 16px; }
+  body.focus-mode .content h1 { font-size: 26px; }
+  body.focus-mode .content h2 { font-size: 20px; }
+  body.focus-mode .content h3 { font-size: 17px; }
+
+  .focus-bar {
+    top: auto;
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: 100%;
+  }
+  .focus-bar-title { display: none; }
+}
+
 /* ─── Print / Export-to-PDF ─── */
 @media print {
   @page { margin: 16mm 14mm; }
 
-  /* Force a light palette regardless of app theme.
-     Overriding the CSS variables themselves is the only way to catch every
-     descendant that uses var(--text) / var(--bg) in its own rule. */
+  /* Force a light palette regardless of app theme */
   :root, [data-theme="dark"] {
     --bg: #ffffff !important;
     --bg-secondary: #f6f8fa !important;
@@ -2841,8 +3028,7 @@ mark.user-hl:hover::after { display: flex; }
     --table-stripe: #f6f8fa !important;
   }
 
-  /* Break out of the app's flex/100vh layout so the full chapter prints,
-     not just the currently-visible scroll window. */
+  /* Break out of the app's flex/100vh layout so the full chapter prints */
   html, body {
     display: block !important;
     height: auto !important;
@@ -2851,73 +3037,89 @@ mark.user-hl:hover::after { display: flex; }
     background: #ffffff !important;
     color: #111 !important;
   }
-  .main, .content-wrapper, .content {
+  .main, .content-wrapper {
     display: block !important;
     height: auto !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    color: #111 !important;
-  }
-
-  /* Hide every bit of chrome */
-  .sidebar, .topbar, .nav-buttons, .toc-panel,
-  .toast-container, .overlay, .sel-popup,
-  #confetti-canvas, .scroll-progress,
-  .study-timer, .hamburger, .search-box, .search-results,
-  .sidebar-nav-btns, .quiz-overlay, .comment-fab,
-  #welcomeSlot,
-  /* hide in-chapter interactive controls */
-  .heading-anchor, .copy-code-btn, .copy-btn,
-  .comment-actions, .comment-form, .comment-filter-bar {
-    display: none !important;
-  }
-
-  /* Full-width content */
-  .main, .content-wrapper, .content {
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
+    background: #ffffff !important;
+    color: #111 !important;
+  }
+  .content {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 auto !important;
+    padding: 0 8mm !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #111 !important;
+  }
+
+  /* Kill ALL animations, transitions, and scroll-reveal states.
+     Elements below the fold have opacity:0 from IntersectionObserver. */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide every bit of chrome */
+  .sidebar, .topbar, .nav-buttons, .toc-panel,
+  .toast-container, .overlay, .sel-popup,
+  #confetti-canvas, .scroll-progress, .focus-bar,
+  .study-timer, .hamburger, .search-box, .search-results,
+  .sidebar-nav-btns, .quiz-overlay, .comment-fab,
+  #welcomeSlot, .pins-layer,
+  .heading-anchor, .copy-code-btn, .copy-btn,
+  .comment-actions, .comment-form, .comment-filter-bar {
+    display: none !important;
   }
 
   /* Typography */
   body { font-size: 11pt; line-height: 1.55; }
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
-    page-break-after: avoid;
-    break-after: avoid;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-after: avoid; break-after: avoid;
+    page-break-inside: avoid; break-inside: avoid;
   }
   h1 { font-size: 20pt; }
   h2 { font-size: 15pt; margin-top: 18pt; }
   h3 { font-size: 12.5pt; margin-top: 12pt; }
 
-  /* Links — readable in black-and-white too */
   a { color: #0b57d0 !important; text-decoration: underline; }
-
-  /* Paragraphs & lists: keep short blocks together */
   p, li, blockquote { orphans: 3; widows: 3; }
 
-  /* Code blocks — keep intact, wrap long lines, readable mono */
-  pre, code, kbd, samp {
-    background: #f5f5f5 !important;
-    color: #111 !important;
-  }
+  /* Code blocks */
+  pre, code, kbd, samp { background: #f5f5f5 !important; color: #111 !important; }
   pre {
     border: 1px solid #ddd !important;
     padding: 8pt !important;
     font-size: 9pt;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    page-break-inside: avoid; break-inside: avoid;
   }
-  /* Override highlight.js dark theme for print */
+  .code-wrapper {
+    display: block !important;
+    overflow: visible !important;
+    page-break-inside: avoid; break-inside: avoid;
+  }
   pre code, pre code.hljs, .hljs {
-    background: #f5f5f5 !important;
-    color: #111 !important;
+    background: #f5f5f5 !important; color: #111 !important;
+    white-space: pre-wrap !important;
   }
   .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #8250df !important; }
   .hljs-string, .hljs-attr { color: #0a3069 !important; }
@@ -2925,56 +3127,75 @@ mark.user-hl:hover::after { display: flex; }
   .hljs-number, .hljs-literal { color: #0550ae !important; }
   .hljs-title, .hljs-function, .hljs-name { color: #953800 !important; }
 
-  /* Tables — crisp borders, don't break mid-row */
+  /* Tables: restore proper table display (overrides display:block from normal CSS) */
   table {
+    display: table !important;
     border-collapse: collapse !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid; break-inside: avoid;
     width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
   }
+  thead { display: table-header-group !important; }
+  tbody { display: table-row-group !important; }
+  tr { display: table-row !important; page-break-inside: avoid; break-inside: avoid; }
   th, td {
+    display: table-cell !important;
     border: 1px solid #999 !important;
     color: #111 !important;
     background: #ffffff !important;
     padding: 4pt 6pt !important;
   }
   thead, thead tr, thead th { background: #eee !important; }
-  tr { page-break-inside: avoid; break-inside: avoid; }
 
-  /* Blockquotes — used heavily for textbook definitions */
+  /* Blockquotes */
   blockquote {
     border-left: 3px solid #666 !important;
     color: #333 !important;
     background: #fafafa !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid; break-inside: avoid;
     padding: 6pt 10pt !important;
     margin: 8pt 0 !important;
   }
 
-  /* Images & KaTeX math — force black on every nested span/mathml node */
+  /* Images & diagrams */
   img, svg { max-width: 100% !important; page-break-inside: avoid; }
+  .mermaid, .mermaid svg {
+    max-width: 100% !important;
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: visible !important;
+  }
+  .mermaid text { fill: #111 !important; }
+
+  /* KaTeX math */
   .katex, .katex *,
   .katex-display, .katex-display *,
   .katex-html, .katex-html *,
-  .katex-mathml, .katex-mathml * {
-    color: #111 !important;
+  .katex-mathml, .katex-mathml * { color: #111 !important; }
+  .katex-display {
+    page-break-inside: avoid; break-inside: avoid;
+    overflow: visible !important;
   }
-  .katex-display { page-break-inside: avoid; break-inside: avoid; }
 
-  /* Highlights — keep on paper but tame the saturation */
+  /* Chart.js */
+  .chart-container {
+    page-break-inside: avoid; break-inside: avoid;
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Highlights */
   mark, .hl-yellow { background: #fff3a0 !important; color: #111 !important; }
   .hl-green       { background: #cdefc8 !important; color: #111 !important; }
   .hl-blue        { background: #cfe4ff !important; color: #111 !important; }
   .hl-pink        { background: #ffd4e5 !important; color: #111 !important; }
 
-  /* User notes/comments — include them in the PDF but styled for print */
+  /* User notes/comments */
   .comment-item {
     border: 1px solid #ccc !important;
     background: #fafafa !important;
     color: #111 !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid; break-inside: avoid;
   }
   .comment-body, .comment-quote, .comment-date { color: #333 !important; }
 }
