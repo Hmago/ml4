@@ -102,7 +102,10 @@
       "Bash(cat js/data/_batch13_gn.js js/data/_batch13_go.js js/data/_batch13_gp.js)",
       "Bash(python3 *)",
       "Bash(python *)",
-      "Bash(bc)"
+      "Bash(bc)",
+      "Bash(sort -t: -k2 -rn)",
+      "WebFetch(domain:highlightjs.org)",
+      "WebFetch(domain:highlightjs.readthedocs.io)"
     ]
   }
 }

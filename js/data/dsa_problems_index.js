@@ -15,7 +15,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://www.geeksforgeeks.org/linear-search/',
     tags: ['Search', 'Array', 'Fundamentals'],
-    description: 'Given an array `nums` and a target value, return the index of the first occurrence of `target`. Return -1 if not found. The array is **not** sorted â€” you must scan every element.\n\n**Complexity:** Time O(n), Space O(1).',
+    description: 'Given an array `nums` and a target value, return the index of the first occurrence of `target`. Return -1 if not found. The array is **not** sorted.',
     examples: 'Input: nums = [3, 7, 1, 9, 4], target = 9\nOutput: 3\n\nInput: nums = [3, 7, 1, 9, 4], target = 8\nOutput: -1',
     starterCode: null
   },
@@ -27,7 +27,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://www.geeksforgeeks.org/binary-search/',
     tags: ['Search', 'Divide & Conquer', 'Fundamentals'],
-    description: 'Implement binary search **iteratively** on a sorted array. Return the index of `target` if found, otherwise -1. Do not use `Arrays.binarySearch`.\n\n**Key idea:** at each step, compare with the middle element and discard half the search space. Be careful with the mid-index to avoid integer overflow: use `left + (right - left) / 2`.\n\n**Complexity:** Time O(log n), Space O(1).',
+    description: 'Implement binary search **iteratively** on a sorted array. Return the index of `target` if found, otherwise -1. Do not use `Arrays.binarySearch`.',
     examples: 'Input: nums = [1, 3, 5, 7, 9, 11], target = 7\nOutput: 3\n\nInput: nums = [1, 3, 5, 7, 9, 11], target = 4\nOutput: -1',
     starterCode: null
   },
@@ -39,7 +39,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://www.geeksforgeeks.org/bubble-sort/',
     tags: ['Sorting', 'Fundamentals'],
-    description: 'Sort an array in ascending order using **bubble sort**. Repeatedly step through the list, compare adjacent pairs, and swap them if they are in the wrong order. After each pass, the largest remaining element "bubbles" to its correct position at the end.\n\n**Optimization:** exit early if a full pass makes zero swaps â€” the array is already sorted.\n\n**Complexity:** Time O(nÂ²), Space O(1). Stable sort.',
+    description: 'Sort an array in ascending order using **bubble sort**. Repeatedly step through the list, compare adjacent pairs, and swap them if they are in the wrong order. After each pass, the largest remaining element “bubbles” to its correct position at the end.',
     examples: 'Input: [5, 2, 8, 1, 9]\nOutput: [1, 2, 5, 8, 9]',
     starterCode: null
   },
@@ -51,7 +51,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://www.geeksforgeeks.org/selection-sort/',
     tags: ['Sorting', 'Fundamentals'],
-    description: 'Sort an array using **selection sort**. On each pass, find the minimum element in the unsorted portion and swap it into the next position of the sorted portion.\n\n**Complexity:** Time O(nÂ²) in all cases, Space O(1). **Not** stable (swapping can reorder equal elements).',
+    description: 'Sort an array using **selection sort**. On each pass, find the minimum element in the unsorted portion and swap it into the next position of the sorted portion.',
     examples: 'Input: [64, 25, 12, 22, 11]\nOutput: [11, 12, 22, 25, 64]',
     starterCode: null
   },
@@ -63,7 +63,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://www.geeksforgeeks.org/merge-sort/',
     tags: ['Sorting', 'Divide & Conquer', 'Recursion', 'Fundamentals'],
-    description: 'Sort an array using **merge sort**. Recursively split the array into halves, sort each half, and merge the two sorted halves back together.\n\n**Why merge sort matters:** guaranteed O(n log n), stable, and the algorithm behind many production sorts (Java `Collections.sort` for objects, Python Timsort).\n\n**Complexity:** Time O(n log n) in all cases, Space O(n). Stable.',
+    description: 'Sort an array using **merge sort**. Recursively split the array into halves, sort each half, and merge the two sorted halves back together.',
     examples: 'Input: [38, 27, 43, 3, 9, 82, 10]\nOutput: [3, 9, 10, 27, 38, 43, 82]',
     starterCode: null
   },
@@ -75,7 +75,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://www.geeksforgeeks.org/quick-sort/',
     tags: ['Sorting', 'Divide & Conquer', 'Recursion', 'Partition', 'Fundamentals'],
-    description: 'Sort an array using **quick sort**. Pick a pivot, partition the array so smaller elements go left and larger go right, then recursively sort the two partitions in place.\n\n**Why quick sort matters:** in-place, cache-friendly, fast in practice. Java\'s `Arrays.sort` for primitives uses a dual-pivot quicksort variant.\n\n**Watch-out:** a naive pivot on an already-sorted array degenerates to O(nÂ²). Randomize the pivot or use median-of-three.\n\n**Complexity:** Time O(n log n) average, O(nÂ²) worst case. Space O(log n) recursion. Not stable.',
+    description: 'Sort an array using **quick sort**. Pick a pivot, partition the array so smaller elements go left and larger go right, then recursively sort the two partitions in place.',
     examples: 'Input: [10, 7, 8, 9, 1, 5]\nOutput: [1, 5, 7, 8, 9, 10]',
     starterCode: null
   },
@@ -87,7 +87,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://www.geeksforgeeks.org/heap-sort/',
     tags: ['Sorting', 'Heap', 'Priority Queue', 'Fundamentals'],
-    description: 'Sort an array using **heap sort**. First build a max-heap from the array in place. Then repeatedly swap the root (the maximum) with the last unsorted element and "sift down" the new root to restore the heap property, shrinking the heap by one each time.\n\n**Why heap sort matters:** in-place O(n log n) with guaranteed worst case â€” unlike quicksort. Also the conceptual basis for priority-queue-driven algorithms.\n\n**Complexity:** Time O(n log n) worst case, Space O(1). Not stable.',
+    description: 'Sort an array using **heap sort**. First build a max-heap from the array in place. Then repeatedly swap the root (the maximum) with the last unsorted element and “sift down” the new root to restore the heap property, shrinking the heap by one each time.',
     examples: 'Input: [12, 11, 13, 5, 6, 7]\nOutput: [5, 6, 7, 11, 12, 13]',
     starterCode: null
   },
@@ -127,7 +127,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/maximum-subarray/',
     tags: ['Array', 'Dynamic Programming', 'Divide and Conquer'],
-    description: 'Given an integer array `nums`, find the subarray with the largest sum, and return its sum. A subarray is a contiguous non-empty sequence of elements within an array.',
+    description: 'Given an integer array `nums`, find the **subarray** with the largest sum, and return its sum. A subarray is a contiguous non-empty sequence of elements within an array.\n\n**Example 1:**\nInput: nums = [-2,1,-3,4,-1,2,1,-5,4]\nOutput: 6 (the subarray [4,-1,2,1] has the largest sum)\n\n**Example 2:**\nInput: nums = [1]\nOutput: 1\n\n**Example 3:**\nInput: nums = [5,4,-1,7,8]\nOutput: 23 (the entire array)\n\n**Constraints:**\n- 1 <= nums.length <= 10^5\n- -10^4 <= nums[i] <= 10^4',
     examples: 'Input: nums = [-2,1,-3,4,-1,2,1,-5,4]\nOutput: 6\nExplanation: The subarray [4,-1,2,1] has the largest sum 6.',
     starterCode: null
   },
@@ -139,7 +139,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/product-of-array-except-self/',
     tags: ['Array', 'Prefix Sum'],
-    description: 'Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all the elements of `nums` except `nums[i]`. You must solve it without using division and in O(n) time.',
+    description: 'Given an integer array `nums`, return an array `answer` such that `answer[i]` is equal to the product of all the elements of `nums` **except** `nums[i]`. The product of any prefix or suffix of `nums` is guaranteed to fit in a 32-bit integer.\n\nYou must write an algorithm that runs in **O(n)** time and **without using the division operator**.\n\n**Example 1:**\nInput: nums = [1,2,3,4]\nOutput: [24,12,8,6]\n\n**Example 2:**\nInput: nums = [-1,1,0,-3,3]\nOutput: [0,0,9,0,0]\n\n**Constraints:**\n- 2 <= nums.length <= 10^5\n- -30 <= nums[i] <= 30',
     examples: 'Input: nums = [1,2,3,4]\nOutput: [24,12,8,6]',
     starterCode: null
   },
@@ -163,7 +163,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/valid-anagram/',
     tags: ['String', 'Hash Map', 'Sorting'],
-    description: 'Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise. An anagram is a word formed by rearranging the letters of another word using all the original letters exactly once.',
+    description: 'Given two strings `s` and `t`, return `true` if `t` is an **anagram** of `s`, and `false` otherwise. An anagram is a word or phrase formed by rearranging the letters of another, using all the original letters exactly once.\n\n**Example 1:**\nInput: s = "anagram", t = "nagaram"\nOutput: true\n\n**Example 2:**\nInput: s = "rat", t = "car"\nOutput: false\n\n**Constraints:**\n- 1 <= s.length, t.length <= 5 * 10^4\n- `s` and `t` consist of lowercase English letters',
     examples: 'Input: s = "anagram", t = "nagaram"\nOutput: true',
     starterCode: null
   },
@@ -175,7 +175,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/',
     tags: ['String', 'Sliding Window', 'Hash Map'],
-    description: 'Given a string `s`, find the length of the longest substring without repeating characters.',
+    description: 'Given a string `s`, find the length of the **longest substring** without repeating characters. A substring is a contiguous sequence of characters within the string.\n\n**Example 1:**\nInput: s = "abcabcbb"\nOutput: 3 (the answer is "abc", with length 3)\n\n**Example 2:**\nInput: s = "bbbbb"\nOutput: 1 (the answer is "b", with length 1)\n\n**Example 3:**\nInput: s = "pwwkew"\nOutput: 3 (the answer is "wke")\n\n**Constraints:**\n- 0 <= s.length <= 5 * 10^4\n- `s` consists of English letters, digits, symbols, and spaces',
     examples: 'Input: s = "abcabcbb"\nOutput: 3\nExplanation: The answer is "abc", with length 3.',
     starterCode: null
   },
@@ -187,7 +187,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/group-anagrams/',
     tags: ['String', 'Hash Map', 'Sorting'],
-    description: 'Given an array of strings `strs`, group the anagrams together. You can return the answer in any order.',
+    description: 'Given an array of strings `strs`, group the **anagrams** together. You can return the answer in any order. An anagram is a word formed by rearranging all letters of another word, using each letter exactly once.\n\n**Example 1:**\nInput: strs = ["eat","tea","tan","ate","nat","bat"]\nOutput: [["bat"],["nat","tan"],["ate","eat","tea"]]\n\n**Example 2:**\nInput: strs = ["a"]\nOutput: [["a"]]\n\n**Constraints:**\n- 1 <= strs.length <= 10^4\n- 0 <= strs[i].length <= 100\n- `strs[i]` consists of lowercase English letters',
     examples: 'Input: strs = ["eat","tea","tan","ate","nat","bat"]\nOutput: [["bat"],["nat","tan"],["ate","eat","tea"]]',
     starterCode: null
   },
@@ -203,7 +203,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/reverse-linked-list/',
     tags: ['Linked List', 'Recursion'],
-    description: 'Given the head of a singly linked list, reverse the list, and return the reversed list.',
+    description: 'Given the `head` of a singly linked list, reverse the list **in place** and return the new head (the former tail).\n\nYou may solve this iteratively or recursively.\n\n**Example 1:**\nInput: head = [1,2,3,4,5]\nOutput: [5,4,3,2,1]\n\n**Example 2:**\nInput: head = [1,2]\nOutput: [2,1]\n\n**Constraints:**\n- 0 <= number of nodes <= 5000\n- -5000 <= Node.val <= 5000',
     examples: 'Input: head = [1,2,3,4,5]\nOutput: [5,4,3,2,1]',
     starterCode: null
   },
@@ -215,7 +215,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/merge-two-sorted-lists/',
     tags: ['Linked List', 'Recursion'],
-    description: 'Merge two sorted linked lists and return it as a sorted list. The list should be made by splicing together the nodes of the first two lists.',
+    description: 'You are given the heads of two sorted linked lists `list1` and `list2`. Merge the two lists into one **sorted** list by splicing together the nodes of the first two lists. Return the head of the merged linked list.\n\n**Example 1:**\nInput: list1 = [1,2,4], list2 = [1,3,4]\nOutput: [1,1,2,3,4,4]\n\n**Example 2:**\nInput: list1 = [], list2 = [0]\nOutput: [0]\n\n**Constraints:**\n- Both lists are sorted in non-decreasing order',
     examples: 'Input: list1 = [1,2,4], list2 = [1,3,4]\nOutput: [1,1,2,3,4,4]',
     starterCode: null
   },
@@ -227,7 +227,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/linked-list-cycle/',
     tags: ['Linked List', 'Two Pointers', 'Floyd\'s Cycle'],
-    description: 'Given head of a linked list, determine if the linked list has a cycle in it. There is a cycle if some node can be reached again by continuously following the next pointer. Solve in O(1) space.',
+    description: 'Given `head`, the head of a linked list, determine if the linked list has a **cycle** in it. There is a cycle if some node in the list can be reached again by continuously following the `next` pointer.\n\nReturn `true` if there is a cycle, otherwise return `false`. Solve using **O(1) memory**.\n\n**Example 1:**\nInput: head = [3,2,0,-4], pos = 1 (tail connects to node index 1)\nOutput: true\n\n**Example 2:**\nInput: head = [1,2], pos = 0 (tail connects to node index 0)\nOutput: true\n\n**Example 3:**\nInput: head = [1], pos = -1 (no cycle)\nOutput: false\n\n**Constraints:**\n- 0 <= number of nodes <= 10^4\n- `pos` is -1 or a valid index in the linked list',
     examples: 'Input: head = [3,2,0,-4], pos = 1 (cycle at index 1)\nOutput: true',
     starterCode: null
   },
@@ -243,7 +243,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/maximum-depth-of-binary-tree/',
     tags: ['Tree', 'DFS', 'BFS', 'Recursion'],
-    description: 'Given the root of a binary tree, return its maximum depth. A binary tree\'s maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.',
+    description: 'Given the `root` of a binary tree, return its **maximum depth**. A binary tree\'s maximum depth is the number of nodes along the longest path from the root node down to the farthest leaf node.\n\n**Example 1:**\nInput: root = [3,9,20,null,null,15,7]\nOutput: 3\n\n**Example 2:**\nInput: root = [1,null,2]\nOutput: 2\n\n**Constraints:**\n- 0 <= number of nodes <= 10^4\n- -100 <= Node.val <= 100',
     examples: 'Input: root = [3,9,20,null,null,15,7]\nOutput: 3',
     starterCode: null
   },
@@ -267,7 +267,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/binary-tree-level-order-traversal/',
     tags: ['Tree', 'BFS', 'Queue'],
-    description: 'Given the root of a binary tree, return the level order traversal of its nodes\' values. (i.e., from left to right, level by level).',
+    description: 'Given the `root` of a binary tree, return the **level order traversal** of its nodes\' values (i.e., from left to right, level by level). Each level is returned as a separate list.\n\n**Example 1:**\nInput: root = [3,9,20,null,null,15,7]\nOutput: [[3],[9,20],[15,7]]\n\n**Example 2:**\nInput: root = [1]\nOutput: [[1]]\n\n**Example 3:**\nInput: root = []\nOutput: []\n\n**Constraints:**\n- 0 <= number of nodes <= 2000\n- -1000 <= Node.val <= 1000',
     examples: 'Input: root = [3,9,20,null,null,15,7]\nOutput: [[3],[9,20],[15,7]]',
     starterCode: null
   },
@@ -279,7 +279,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/',
     tags: ['Tree', 'DFS', 'Recursion'],
-    description: 'Given a binary tree, find the lowest common ancestor (LCA) of two given nodes. The LCA is the lowest node that has both p and q as descendants (a node can be a descendant of itself).',
+    description: 'Given a binary tree, find the **lowest common ancestor (LCA)** of two given nodes `p` and `q`. The LCA is defined as the lowest node in the tree that has both `p` and `q` as descendants (where a node can be a descendant of itself).\n\nAll node values are unique, and `p` and `q` are guaranteed to exist in the tree.\n\n**Example 1:**\nInput: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1\nOutput: 3 (the LCA of nodes 5 and 1 is 3)\n\n**Example 2:**\nInput: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4\nOutput: 5 (node 5 is an ancestor of 4 and itself)\n\n**Constraints:**\n- 2 <= number of nodes <= 10^5\n- All Node.val are unique\n- p != q',
     examples: 'Input: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1\nOutput: 3',
     starterCode: null
   },
@@ -307,7 +307,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/clone-graph/',
     tags: ['Graph', 'BFS', 'DFS', 'Hash Map'],
-    description: 'Given a reference of a node in a connected undirected graph, return a deep copy (clone) of the graph. Each node has a value and a list of neighbors.',
+    description: 'Given a reference of a node in a **connected undirected** graph, return a **deep copy** (clone) of the graph. Each node in the graph contains a `val` (int) and a list of its `neighbors` (List<Node>).\n\nThe cloned graph must have entirely new node objects with the same values and the same neighbor structure. No node in the cloned graph should reference any node in the original graph.\n\n**Example 1:**\nInput: adjList = [[2,4],[1,3],[2,4],[1,3]]\nOutput: [[2,4],[1,3],[2,4],[1,3]] (deep copy with new nodes)\n\n**Constraints:**\n- 1 <= number of nodes <= 100\n- 1 <= Node.val <= 100\n- No duplicate edges or self-loops',
     examples: 'Input: adjList = [[2,4],[1,3],[2,4],[1,3]]\nOutput: [[2,4],[1,3],[2,4],[1,3]] (deep copy)',
     starterCode: null
   },
@@ -347,7 +347,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/climbing-stairs/',
     tags: ['DP', 'Fibonacci'],
-    description: 'You are climbing a staircase with `n` steps. Each time you can climb 1 or 2 steps. In how many distinct ways can you climb to the top?',
+    description: 'You are climbing a staircase. It takes `n` steps to reach the top. Each time you can either climb **1** or **2** steps. In how many **distinct ways** can you climb to the top?\n\n**Example 1:**\nInput: n = 2\nOutput: 2 (1+1 or 2)\n\n**Example 2:**\nInput: n = 3\nOutput: 3 (1+1+1, 1+2, 2+1)\n\n**Constraints:**\n- 1 <= n <= 45',
     examples: 'Input: n = 3\nOutput: 3\nExplanation: 1+1+1, 1+2, 2+1',
     starterCode: null
   },
@@ -371,7 +371,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/longest-increasing-subsequence/',
     tags: ['DP', 'Binary Search'],
-    description: 'Given an integer array `nums`, return the length of the longest strictly increasing subsequence. A subsequence does not need to be contiguous.',
+    description: 'Given an integer array `nums`, return the length of the **longest strictly increasing subsequence**. A subsequence is derived from the array by deleting some or no elements without changing the order of the remaining elements.\n\n**Example 1:**\nInput: nums = [10,9,2,5,3,7,101,18]\nOutput: 4 (the LIS is [2,3,7,101])\n\n**Example 2:**\nInput: nums = [0,1,0,3,2,3]\nOutput: 4\n\n**Example 3:**\nInput: nums = [7,7,7,7,7,7,7]\nOutput: 1\n\n**Constraints:**\n- 1 <= nums.length <= 2500\n- -10^4 <= nums[i] <= 10^4',
     examples: 'Input: nums = [10,9,2,5,3,7,101,18]\nOutput: 4 ([2,3,7,101])',
     starterCode: null
   },
@@ -383,7 +383,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/word-break/',
     tags: ['DP', 'String', 'Hash Set'],
-    description: 'Given a string `s` and a dictionary of strings `wordDict`, return true if `s` can be segmented into a space-separated sequence of one or more dictionary words.',
+    description: 'Given a string `s` and a dictionary of strings `wordDict`, return `true` if `s` can be segmented into a space-separated sequence of one or more dictionary words. The same word in the dictionary may be reused multiple times in the segmentation.\n\n**Example 1:**\nInput: s = "leetcode", wordDict = ["leet","code"]\nOutput: true (can be segmented as "leet code")\n\n**Example 2:**\nInput: s = "applepenapple", wordDict = ["apple","pen"]\nOutput: true (can be segmented as "apple pen apple")\n\n**Example 3:**\nInput: s = "catsandog", wordDict = ["cats","dog","sand","and","cat"]\nOutput: false\n\n**Constraints:**\n- 1 <= s.length <= 300\n- 1 <= wordDict.length <= 1000',
     examples: 'Input: s = "leetcode", wordDict = ["leet","code"]\nOutput: true ("leet code")',
     starterCode: null
   },
@@ -399,7 +399,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/binary-search/',
     tags: ['Binary Search', 'Array'],
-    description: 'Given a sorted array of integers `nums` and a target value, return the index of target if found. Otherwise, return -1. You must write an O(log n) algorithm.',
+    description: 'Given a sorted (ascending) array of integers `nums` and a `target` value, return the index of `target` if it is found. Otherwise, return `-1`. You must write an algorithm with **O(log n)** runtime complexity.\n\n**Example 1:**\nInput: nums = [-1,0,3,5,9,12], target = 9\nOutput: 4 (nums[4] = 9)\n\n**Example 2:**\nInput: nums = [-1,0,3,5,9,12], target = 2\nOutput: -1 (2 does not exist in the array)\n\n**Constraints:**\n- 1 <= nums.length <= 10^4\n- All elements in `nums` are unique\n- `nums` is sorted in ascending order',
     examples: 'Input: nums = [-1,0,3,5,9,12], target = 9\nOutput: 4',
     starterCode: null
   },
@@ -411,7 +411,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/search-in-rotated-sorted-array/',
     tags: ['Binary Search', 'Array'],
-    description: 'Given a rotated sorted array (e.g., [4,5,6,7,0,1,2] was [0,1,2,4,5,6,7] rotated at pivot index 3), search for a target in O(log n) time.',
+    description: 'There is an integer array `nums` sorted in ascending order (with **distinct** values) that has been rotated at an unknown pivot index. For example, `[0,1,2,4,5,6,7]` might become `[4,5,6,7,0,1,2]`.\n\nGiven the rotated array `nums` and a `target` value, return the index of `target` if it is in `nums`, or `-1` if it is not. You must write an algorithm with **O(log n)** runtime complexity.\n\n**Example 1:**\nInput: nums = [4,5,6,7,0,1,2], target = 0\nOutput: 4\n\n**Example 2:**\nInput: nums = [4,5,6,7,0,1,2], target = 3\nOutput: -1\n\n**Constraints:**\n- 1 <= nums.length <= 5000\n- All values of `nums` are unique',
     examples: 'Input: nums = [4,5,6,7,0,1,2], target = 0\nOutput: 4',
     starterCode: null
   },
@@ -423,7 +423,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/kth-largest-element-in-an-array/',
     tags: ['Sorting', 'Heap', 'Quickselect'],
-    description: 'Given an integer array `nums` and an integer `k`, return the kth largest element. Note that it is the kth largest element in the sorted order, not the kth distinct element.',
+    description: 'Given an integer array `nums` and an integer `k`, return the **k-th largest** element in the array. Note that it is the k-th largest element in the sorted order, not the k-th distinct element. You must solve it without sorting the entire array.\n\n**Example 1:**\nInput: nums = [3,2,1,5,6,4], k = 2\nOutput: 5 (sorted order: [6,5,4,3,2,1], 2nd largest is 5)\n\n**Example 2:**\nInput: nums = [3,2,3,1,2,4,5,5,6], k = 4\nOutput: 4\n\n**Constraints:**\n- 1 <= k <= nums.length <= 10^5\n- -10^4 <= nums[i] <= 10^4',
     examples: 'Input: nums = [3,2,1,5,6,4], k = 2\nOutput: 5',
     starterCode: null
   },
@@ -451,7 +451,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/min-stack/',
     tags: ['Stack', 'Design'],
-    description: 'Design a stack that supports push, pop, top, and retrieving the minimum element in constant time O(1).',
+    description: 'Design a stack that supports `push`, `pop`, `top`, and retrieving the **minimum element** in **constant time O(1)**.\n\nImplement the `MinStack` class:\n- `MinStack()` initializes the stack object.\n- `void push(int val)` pushes the element `val` onto the stack.\n- `void pop()` removes the element on the top of the stack.\n- `int top()` gets the top element of the stack.\n- `int getMin()` retrieves the minimum element in the stack.\n\nAll operations must be O(1) time.\n\n**Example:**\nMinStack ms = new MinStack();\nms.push(-2); ms.push(0); ms.push(-3);\nms.getMin(); // returns -3\nms.pop();\nms.top();    // returns 0\nms.getMin(); // returns -2',
     examples: 'MinStack ms = new MinStack();\nms.push(-2); ms.push(0); ms.push(-3);\nms.getMin(); // -3\nms.pop();\nms.top();    // 0\nms.getMin(); // -2',
     starterCode: null
   },
@@ -467,7 +467,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/top-k-frequent-elements/',
     tags: ['Hash Map', 'Heap', 'Bucket Sort'],
-    description: 'Given an integer array `nums` and an integer `k`, return the `k` most frequent elements. You may return the answer in any order.',
+    description: 'Given an integer array `nums` and an integer `k`, return the `k` most frequent elements. You may return the answer in **any order**. It is guaranteed that the answer is unique.\n\n**Example 1:**\nInput: nums = [1,1,1,2,2,3], k = 2\nOutput: [1,2]\n\n**Example 2:**\nInput: nums = [1], k = 1\nOutput: [1]\n\n**Constraints:**\n- 1 <= nums.length <= 10^5\n- -10^4 <= nums[i] <= 10^4\n- `k` is in the range [1, number of unique elements]\n- The answer is guaranteed to be unique',
     examples: 'Input: nums = [1,1,1,2,2,3], k = 2\nOutput: [1,2]',
     starterCode: null
   },
@@ -495,7 +495,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/subsets/',
     tags: ['Backtracking', 'Recursion', 'Bit Manipulation'],
-    description: 'Given an integer array `nums` of unique elements, return all possible subsets (the power set). The solution set must not contain duplicate subsets.',
+    description: 'Given an integer array `nums` of **unique** elements, return all possible subsets (the power set). The solution set **must not** contain duplicate subsets. Return the subsets in any order.\n\n**Example 1:**\nInput: nums = [1,2,3]\nOutput: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]\n\n**Example 2:**\nInput: nums = [0]\nOutput: [[],[0]]\n\n**Constraints:**\n- 1 <= nums.length <= 10\n- -10 <= nums[i] <= 10\n- All elements of `nums` are unique',
     examples: 'Input: nums = [1,2,3]\nOutput: [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]',
     starterCode: null
   },
@@ -507,7 +507,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/permutations/',
     tags: ['Backtracking', 'Recursion'],
-    description: 'Given an array `nums` of distinct integers, return all the possible permutations. You can return the answer in any order.',
+    description: 'Given an array `nums` of **distinct** integers, return all the possible permutations. You can return the answer in any order.\n\n**Example 1:**\nInput: nums = [1,2,3]\nOutput: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]\n\n**Example 2:**\nInput: nums = [0,1]\nOutput: [[0,1],[1,0]]\n\n**Constraints:**\n- 1 <= nums.length <= 6\n- -10 <= nums[i] <= 10\n- All elements of `nums` are unique',
     examples: 'Input: nums = [1,2,3]\nOutput: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]',
     starterCode: null
   },
@@ -523,7 +523,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/container-with-most-water/',
     tags: ['Two Pointers', 'Greedy'],
-    description: 'Given n non-negative integers `height` where each represents a vertical line at position i with height `height[i]`, find two lines that together with the x-axis form a container that holds the most water.',
+    description: 'You are given an integer array `height` of length `n`. There are `n` vertical lines drawn such that the two endpoints of the i-th line are `(i, 0)` and `(i, height[i])`. Find two lines that together with the x-axis form a container, such that the container contains the **most water**.\n\nReturn the maximum amount of water a container can store. You may not slant the container.\n\n**Example 1:**\nInput: height = [1,8,6,2,5,4,8,3,7]\nOutput: 49 (lines at index 1 and 8, area = min(8,7) * (8-1) = 49)\n\n**Example 2:**\nInput: height = [1,1]\nOutput: 1\n\n**Constraints:**\n- 2 <= n <= 10^5\n- 0 <= height[i] <= 10^4',
     examples: 'Input: height = [1,8,6,2,5,4,8,3,7]\nOutput: 49',
     starterCode: null
   },
@@ -535,7 +535,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/3sum/',
     tags: ['Two Pointers', 'Sorting', 'Array'],
-    description: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j != k and nums[i] + nums[j] + nums[k] == 0. The solution set must not contain duplicate triplets.',
+    description: 'Given an integer array `nums`, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`. The solution set must **not** contain duplicate triplets.\n\n**Example 1:**\nInput: nums = [-1,0,1,2,-1,-4]\nOutput: [[-1,-1,2],[-1,0,1]]\n\n**Example 2:**\nInput: nums = [0,1,1]\nOutput: [] (no triplets sum to 0)\n\n**Example 3:**\nInput: nums = [0,0,0]\nOutput: [[0,0,0]]\n\n**Constraints:**\n- 3 <= nums.length <= 3000\n- -10^5 <= nums[i] <= 10^5',
     examples: 'Input: nums = [-1,0,1,2,-1,-4]\nOutput: [[-1,-1,2],[-1,0,1]]',
     starterCode: null
   },
@@ -547,7 +547,7 @@ const DSA_PROBLEMS = [
     difficulty: 'Hard',
     link: 'https://leetcode.com/problems/minimum-window-substring/',
     tags: ['Sliding Window', 'Hash Map', 'String'],
-    description: 'Given two strings `s` and `t`, return the minimum window substring of `s` such that every character in `t` (including duplicates) is included. If no such substring exists, return "".',
+    description: 'Given two strings `s` and `t` of lengths `m` and `n` respectively, return the **minimum window substring** of `s` such that every character in `t` (including duplicates) is included in the window. If there is no such substring, return the empty string `""`.\n\nIf there are multiple minimum-length windows, return the one that appears first (leftmost).\n\n**Example 1:**\nInput: s = "ADOBECODEBANC", t = "ABC"\nOutput: "BANC" (the minimum window containing A, B, and C)\n\n**Example 2:**\nInput: s = "a", t = "a"\nOutput: "a"\n\n**Example 3:**\nInput: s = "a", t = "aa"\nOutput: "" (both \'a\' characters must be present)\n\n**Constraints:**\n- 1 <= m, n <= 10^5\n- `s` and `t` consist of uppercase and lowercase English letters',
     examples: 'Input: s = "ADOBECODEBANC", t = "ABC"\nOutput: "BANC"',
     starterCode: null
   },
@@ -580,7 +580,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/majority-element/',
     tags: ['Array', 'Hash Map', 'Boyer-Moore', 'Divide & Conquer'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'Given an array `nums` of size n, return the **majority element** â€” the element that appears more than âŒŠn/2âŒ‹ times. You may assume the majority element always exists.\n\n**Best solution:** Boyer-Moore Voting â€” O(n) time, O(1) space. Maintain a candidate and a counter; reset the candidate when count hits zero.',
+    description: 'Given an array `nums` of size n, return the **majority element** â€” the element that appears more than âŒŠn/2âŒ‹ times. You may assume the majority element always exists.',
     examples: 'Input: nums = [3,2,3]\nOutput: 3\n\nInput: nums = [2,2,1,1,1,2,2]\nOutput: 2',
     starterCode: null
   },
@@ -593,7 +593,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/majority-element-ii/',
     tags: ['Array', 'Hash Map', 'Boyer-Moore', 'Counting'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Given an integer array `nums` of size n, return **all** elements that appear more than âŒŠn/3âŒ‹ times. By the pigeonhole principle there can be **at most 2** such elements.\n\n**Best solution:** generalized Boyer-Moore with two candidates and two counters â€” O(n) time, O(1) space.',
+    description: 'Given an integer array `nums` of size n, return **all** elements that appear more than âŒŠn/3âŒ‹ times. By the pigeonhole principle there can be **at most 2** such elements.',
     examples: 'Input: nums = [3,2,3]\nOutput: [3]\n\nInput: nums = [1,1,1,3,3,2,2,2]\nOutput: [1, 2]',
     starterCode: null
   },
@@ -645,7 +645,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/rotate-image/',
     tags: ['Array', 'Matrix', 'Math'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Rotate an n Ã— n matrix 90Â° **clockwise** in place. You must modify the input directly â€” do not allocate a second matrix.\n\n**Standard trick:** transpose, then reverse each row.',
+    description: 'Rotate an n Ã— n matrix 90Â° **clockwise** in place. You must modify the input directly â€” do not allocate a second matrix.',
     examples: 'Input: [[1,2,3],[4,5,6],[7,8,9]]\nOutput: [[7,4,1],[8,5,2],[9,6,3]]',
     starterCode: null
   },
@@ -671,7 +671,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/contains-duplicate/',
     tags: ['Array', 'Hash Set', 'Sorting'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Given an integer array `nums`, return `true` if any value appears at least twice in the array, and `false` if every element is distinct.\n\n**Best approach:** HashSet â€” add each element; return true on first duplicate.',
+    description: 'Given an integer array `nums`, return `true` if any value appears at least twice in the array, and `false` if every element is distinct.',
     examples: 'Input: nums = [1,2,3,1]\nOutput: true\n\nInput: nums = [1,2,3,4]\nOutput: false',
     starterCode: null
   },
@@ -710,7 +710,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/sort-characters-by-frequency/',
     tags: ['String', 'Hash Map', 'Sorting', 'Heap', 'Bucket Sort'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'Given a string `s`, sort it in **decreasing order based on character frequency**. Characters with the same frequency may appear in any order.\n\n**Approach:** count frequencies, then sort characters by count (descending) and concatenate.',
+    description: 'Given a string `s`, sort it in **decreasing order based on character frequency**. Characters with the same frequency may appear in any order.',
     examples: 'Input: s = "tree"\nOutput: "eert" or "eetr"\n\nInput: s = "cccaaa"\nOutput: "aaaccc" or "cccaaa"',
     starterCode: null
   },
@@ -723,7 +723,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/non-overlapping-intervals/',
     tags: ['Array', 'Greedy', 'Sorting', 'Intervals', 'DP'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Salesforce'],
-    description: 'Given an array of intervals `intervals[i] = [start_i, end_i]`, return the **minimum number of intervals you need to remove** to make the rest non-overlapping.\n\n**Greedy:** sort by end time; keep an interval if it starts at or after the last kept end; otherwise count it as a removal.',
+    description: 'Given an array of intervals `intervals[i] = [start_i, end_i]`, return the **minimum number of intervals you need to remove** to make the rest non-overlapping.',
     examples: 'Input: intervals = [[1,2],[2,3],[3,4],[1,3]]\nOutput: 1  (Remove [1,3])\n\nInput: intervals = [[1,2],[1,2],[1,2]]\nOutput: 2',
     starterCode: null
   },
@@ -814,7 +814,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/append-characters-to-string-to-make-subsequence/',
     tags: ['String', 'Two Pointers', 'Greedy'],
     companies: ['Amazon', 'Google'],
-    description: 'You are given two strings `s` and `t`. Return the **minimum number of characters that need to be appended to the end of `s`** so that `t` becomes a subsequence of the resulting string.\n\n**Approach:** two-pointer scan â€” count how many characters of `t` you can match in order through `s`; the rest need to be appended.',
+    description: 'You are given two strings `s` and `t`. Return the **minimum number of characters that need to be appended to the end of `s`** so that `t` becomes a subsequence of the resulting string.',
     examples: 'Input: s = "coaching", t = "coding"\nOutput: 4  (Append "ding")\n\nInput: s = "abcde", t = "a"\nOutput: 0',
     starterCode: null
   },
@@ -827,7 +827,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/subarray-product-less-than-k/',
     tags: ['Array', 'Sliding Window', 'Two Pointers'],
     companies: ['Amazon', 'Google', 'Bloomberg'],
-    description: 'Given an array of positive integers `nums` and an integer `k`, return the number of contiguous **subarrays where the product of all the elements is strictly less than k**.\n\n**Approach:** sliding window â€” maintain a running product; when it â‰¥ k, shrink from the left. Each window contributes (right - left + 1) new subarrays.',
+    description: 'Given an array of positive integers `nums` and an integer `k`, return the number of contiguous **subarrays where the product of all the elements is strictly less than k**.',
     examples: 'Input: nums = [10,5,2,6], k = 100\nOutput: 8  ([10],[5],[2],[6],[10,5],[5,2],[2,6],[5,2,6])\n\nInput: nums = [1,2,3], k = 0\nOutput: 0',
     starterCode: null
   },
@@ -840,7 +840,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/longest-repeating-character-replacement/',
     tags: ['String', 'Sliding Window', 'Hash Map'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Given a string `s` and an integer `k`, return the length of the **longest substring** containing the same letter you can get after performing at most `k` character replacements.\n\n**Sliding window:** expand right; for each window, if `windowSize - maxFreqChar > k`, shrink left. Track the max valid window.',
+    description: 'Given a string `s` and an integer `k`, return the length of the **longest substring** containing the same letter you can get after performing at most `k` character replacements.',
     examples: 'Input: s = "ABAB", k = 2\nOutput: 4\n\nInput: s = "AABABBA", k = 1\nOutput: 4',
     starterCode: null
   },
@@ -853,7 +853,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/maximum-product-subarray/',
     tags: ['Array', 'Dynamic Programming'],
     companies: ['Amazon', 'Google', 'Microsoft', 'LinkedIn'],
-    description: 'Given an integer array `nums`, find a contiguous **non-empty subarray** within the array that has the **largest product**, and return that product.\n\n**Trick:** track both maxSoFar and minSoFar at each position because a negative number can flip the sign.',
+    description: 'Given an integer array `nums`, find a contiguous **non-empty subarray** within the array that has the **largest product**, and return that product.',
     examples: 'Input: nums = [2,3,-2,4]\nOutput: 6  (subarray [2,3])\n\nInput: nums = [-2,0,-1]\nOutput: 0',
     starterCode: null
   },
@@ -879,7 +879,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/evaluate-reverse-polish-notation/',
     tags: ['Array', 'Math', 'Stack'],
     companies: ['Amazon', 'Google', 'LinkedIn', 'Microsoft'],
-    description: 'Evaluate an arithmetic expression in **Reverse Polish Notation** (postfix). Operators are `+`, `-`, `*`, `/`. Operands are integers. Division truncates toward zero.\n\n**Stack approach:** push operands; on operator, pop top two, apply, push result.',
+    description: 'Evaluate an arithmetic expression in **Reverse Polish Notation** (postfix). Operators are `+`, `-`, `*`, `/`. Operands are integers. Division truncates toward zero.',
     examples: 'Input: tokens = ["2","1","+","3","*"]\nOutput: 9  ((2 + 1) * 3)\n\nInput: tokens = ["4","13","5","/","+"]\nOutput: 6  (4 + (13 / 5))',
     starterCode: null
   },
@@ -892,7 +892,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/longest-valid-parentheses/',
     tags: ['String', 'Stack', 'Dynamic Programming'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Meta'],
-    description: 'Given a string containing just `(` and `)`, return the **length of the longest valid (well-formed) parentheses substring**.\n\n**Stack approach:** push -1 as a sentinel, push indices on `(`, pop on `)` and compute length = i - stack.top().',
+    description: 'Given a string containing just `(` and `)`, return the **length of the longest valid (well-formed) parentheses substring**.',
     examples: 'Input: s = "(()"\nOutput: 2  ("()")\n\nInput: s = ")()())"\nOutput: 4  ("()()")',
     starterCode: null
   },
@@ -905,7 +905,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/next-greater-element-ii/',
     tags: ['Array', 'Monotonic Stack', 'Circular Array'],
     companies: ['Amazon', 'Google', 'Bloomberg'],
-    description: 'Given a **circular** integer array `nums`, return an array where `result[i]` is the **next greater element** for `nums[i]` (the next element traversing circularly that is strictly greater). If none exists, the answer is -1.\n\n**Approach:** monotonic decreasing stack of indices; iterate twice (or treat indices modulo n).',
+    description: 'Given a **circular** integer array `nums`, return an array where `result[i]` is the **next greater element** for `nums[i]` (the next element traversing circularly that is strictly greater). If none exists, the answer is -1.',
     examples: 'Input: nums = [1,2,1]\nOutput: [2,-1,2]\n\nInput: nums = [1,2,3,4,3]\nOutput: [2,3,4,-1,4]',
     starterCode: null
   },
@@ -1000,7 +1000,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/basic-calculator-ii/',
     tags: ['String', 'Stack', 'Math'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Implement a basic calculator to evaluate a simple expression string `s` containing **non-negative integers** and operators `+`, `-`, `*`, `/`. Operators have standard precedence (`*` and `/` before `+` and `-`). Integer division truncates toward zero. The expression contains no parentheses.\n\n**Stack approach:** push numbers onto a stack; when you see `*` or `/`, pop the top, apply, push result. For `+` push the number, for `-` push its negation. Final answer = sum of stack.',
+    description: 'Implement a basic calculator to evaluate a simple expression string `s` containing **non-negative integers** and operators `+`, `-`, `*`, `/`. Operators have standard precedence (`*` and `/` before `+` and `-`). Integer division truncates toward zero. The expression contains no parentheses.',
     examples: 'Input: "3+2*2"\nOutput: 7\n\nInput: " 3/2 "\nOutput: 1\n\nInput: " 3+5 / 2 "\nOutput: 5',
     starterCode: null
   },
@@ -1013,7 +1013,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/task-scheduler/',
     tags: ['Array', 'Hash Map', 'Heap', 'Greedy', 'Counting'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'You are given an array of CPU `tasks`, each labeled with an uppercase letter. There must be a gap of **at least `n` cooling cycles** between any two tasks of the same kind. Return the **minimum number of intervals** (units of time) needed to finish all tasks. The CPU may also be idle.\n\n**Greedy / heap solution** â€” always schedule the most-frequent remaining task; OR closed-form: answer = max(len(tasks), (maxFreq âˆ’ 1) Ã— (n + 1) + countOfMostFrequent).',
+    description: 'You are given an array of CPU `tasks`, each labeled with an uppercase letter. There must be a gap of **at least `n` cooling cycles** between any two tasks of the same kind. Return the **minimum number of intervals** (units of time) needed to finish all tasks. The CPU may also be idle.',
     examples: 'Input: tasks = ["A","A","A","B","B","B"], n = 2\nOutput: 8  (A â†’ B â†’ idle â†’ A â†’ B â†’ idle â†’ A â†’ B)\n\nInput: tasks = ["A","A","A","B","B","B"], n = 0\nOutput: 6  (any order)',
     starterCode: null
   },
@@ -1026,7 +1026,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/sliding-window-maximum/',
     tags: ['Array', 'Queue', 'Sliding Window', 'Monotonic Deque', 'Heap'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta', 'Bloomberg'],
-    description: 'Given an integer array `nums` and a window size `k`, return an array containing the **maximum of every contiguous subarray of length `k`** as the window slides from left to right.\n\n**Optimal:** monotonic decreasing deque storing indices. O(n) time. Each index is pushed and popped at most once.',
+    description: 'Given an integer array `nums` and a window size `k`, return an array containing the **maximum of every contiguous subarray of length `k`** as the window slides from left to right.',
     examples: 'Input: nums = [1,3,-1,-3,5,3,6,7], k = 3\nOutput: [3,3,5,5,6,7]',
     starterCode: null
   },
@@ -1039,7 +1039,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/reorganize-string/',
     tags: ['Hash Map', 'String', 'Greedy', 'Heap', 'Counting'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'Given a string `s`, rearrange its characters so that **no two adjacent characters are the same**. Return any valid rearrangement, or an empty string if impossible.\n\n**Greedy (max-heap of chars by frequency):** repeatedly take the two most-frequent chars not last appended and append them.',
+    description: 'Given a string `s`, rearrange its characters so that **no two adjacent characters are the same**. Return any valid rearrangement, or an empty string if impossible.',
     examples: 'Input: s = "aab"\nOutput: "aba"\n\nInput: s = "aaab"\nOutput: ""  (impossible)',
     starterCode: null
   },
@@ -1065,7 +1065,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/shortest-subarray-with-sum-at-least-k/',
     tags: ['Array', 'Prefix Sum', 'Monotonic Deque', 'Binary Search'],
     companies: ['Google', 'Amazon'],
-    description: 'Given an integer array `nums` (may include negatives) and an integer `k`, return the **length of the shortest non-empty subarray** with a sum of at least `k`. Return -1 if no such subarray exists.\n\n**Approach:** prefix sums + monotonic increasing deque of indices. O(n) time.',
+    description: 'Given an integer array `nums` (may include negatives) and an integer `k`, return the **length of the shortest non-empty subarray** with a sum of at least `k`. Return -1 if no such subarray exists.',
     examples: 'Input: nums = [1], k = 1\nOutput: 1\n\nInput: nums = [1,2], k = 4\nOutput: -1\n\nInput: nums = [2,-1,2], k = 3\nOutput: 3',
     starterCode: null
   },
@@ -1078,7 +1078,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/maximum-absolute-sum-of-any-subarray/',
     tags: ['Array', 'Dynamic Programming', 'Kadane', 'Prefix Sum'],
     companies: ['Amazon', 'Google'],
-    description: 'You are given an integer array `nums`. The **absolute sum** of a subarray `[a, b, c, â€¦]` is `|a + b + c + â€¦|`. Return the **maximum absolute sum of any non-empty subarray** of `nums`.\n\n**Trick:** answer = max(maxSubarraySum, |minSubarraySum|). Run Kadane twice (or in one pass) â€” for max and min subarray sums.',
+    description: 'You are given an integer array `nums`. The **absolute sum** of a subarray `[a, b, c, â€¦]` is `|a + b + c + â€¦|`. Return the **maximum absolute sum of any non-empty subarray** of `nums`.',
     examples: 'Input: nums = [1,-3,2,3,-4]\nOutput: 5  (subarray [2,3])\n\nInput: nums = [2,-5,1,-4,3,-2]\nOutput: 8  (subarray [-5,1,-4])',
     starterCode: null
   },
@@ -1091,7 +1091,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/candy/',
     tags: ['Array', 'Greedy', 'Two Passes'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'There are `n` children with `ratings`. Give each child at least 1 candy, and any child with a higher rating than their neighbor must get more candies than that neighbor. Return the **minimum total candies** needed.\n\n**Two-pass greedy:** initialize each child with 1 candy. Left-to-right: if rating[i] > rating[i-1], candies[i] = candies[i-1] + 1. Right-to-left: if rating[i] > rating[i+1], candies[i] = max(candies[i], candies[i+1] + 1). Sum.',
+    description: 'There are `n` children with `ratings`. Give each child at least 1 candy, and any child with a higher rating than their neighbor must get more candies than that neighbor. Return the **minimum total candies** needed.',
     examples: 'Input: ratings = [1,0,2]\nOutput: 5  (2,1,2)\n\nInput: ratings = [1,2,2]\nOutput: 4  (1,2,1)',
     starterCode: null
   },
@@ -1117,7 +1117,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/largest-number/',
     tags: ['Array', 'Sorting', 'Greedy', 'String'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Given a list of non-negative integers `nums`, arrange them so that they form the **largest possible number**. Return the result as a string (since it may be very large).\n\n**Custom-sort key:** compare two strings `a` and `b` by which concatenation is bigger â€” `a+b` vs `b+a`. Edge case: if the largest number is 0, the result is just `"0"`.',
+    description: 'Given a list of non-negative integers `nums`, arrange them so that they form the **largest possible number**. Return the result as a string (since it may be very large). Edge case: if the largest number is 0, the result is just `”0”`.',
     examples: 'Input: nums = [10,2]\nOutput: "210"\n\nInput: nums = [3,30,34,5,9]\nOutput: "9534330"',
     starterCode: null
   },
@@ -1130,7 +1130,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/bag-of-tokens/',
     tags: ['Array', 'Two Pointers', 'Greedy', 'Sorting'],
     companies: ['Amazon', 'Google'],
-    description: 'You start with `power` energy and `0` score. You have a bag of `tokens`. For each token you can either **play it face-up** (cost: `tokens[i]` power; gain: 1 score) or **face-down** (cost: 1 score; gain: `tokens[i]` power). Return the **maximum score** achievable.\n\n**Greedy two-pointer (after sorting):** play smallest face-up while you have power; if not, play largest face-down to gain power (only if you have at least 1 score and still have moves to make it worthwhile).',
+    description: 'You start with `power` energy and `0` score. You have a bag of `tokens`. For each token you can either **play it face-up** (cost: `tokens[i]` power; gain: 1 score) or **face-down** (cost: 1 score; gain: `tokens[i]` power). Return the **maximum score** achievable.',
     examples: 'Input: tokens = [100], power = 50\nOutput: 0\n\nInput: tokens = [100,200], power = 150\nOutput: 1\n\nInput: tokens = [100,200,300,400], power = 200\nOutput: 2',
     starterCode: null
   },
@@ -1156,7 +1156,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string/',
     tags: ['Two Pointers', 'String', 'String Matching', 'KMP'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta', 'Bloomberg'],
-    description: 'Given two strings `haystack` and `needle`, return the **index of the first occurrence of `needle` in `haystack`**, or `-1` if `needle` is not part of `haystack`.\n\n**Approaches:** (1) brute force O(nÂ·m); (2) KMP O(n+m); (3) Rabin-Karp rolling hash O(n+m).',
+    description: 'Given two strings `haystack` and `needle`, return the **index of the first occurrence of `needle` in `haystack`**, or `-1` if `needle` is not part of `haystack`.',
     examples: 'Input: haystack = "sadbutsad", needle = "sad"\nOutput: 0\n\nInput: haystack = "leetcode", needle = "leeto"\nOutput: -1',
     starterCode: null
   },
@@ -1182,7 +1182,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/longest-happy-string/',
     tags: ['String', 'Greedy', 'Heap'],
     companies: ['Google', 'Amazon'],
-    description: 'A "happy string" uses only `a`, `b`, `c` and never has 3 consecutive identical characters. Given counts `a`, `b`, `c`, return the **longest happy string** you can build, using at most that many of each.\n\n**Greedy (max-heap by remaining count):** always append the most-available character unless that would create three in a row â€” in which case pick the next most available.',
+    description: 'A “happy string” uses only `a`, `b`, `c` and never has 3 consecutive identical characters. Given counts `a`, `b`, `c`, return the **longest happy string** you can build, using at most that many of each.',
     examples: 'Input: a = 1, b = 1, c = 7\nOutput: "ccaccbcc"  (or any valid happy string of max length)\n\nInput: a = 7, b = 1, c = 0\nOutput: "aabaa"',
     starterCode: null
   },
@@ -1234,7 +1234,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/find-right-interval/',
     tags: ['Array', 'Binary Search', 'Sorting', 'Intervals'],
     companies: ['Google', 'Amazon'],
-    description: 'You are given `intervals` with **distinct start points**. For each interval, find the index of the smallest interval whose `start` is â‰¥ this interval\'s `end`. If none, output -1. Return all such indices.\n\n**Approach:** map start â†’ original index; sort starts; binary-search for each interval\'s end.',
+    description: 'You are given `intervals` with **distinct start points**. For each interval, find the index of the smallest interval whose `start` is â‰¥ this interval\'s `end`. If none, output -1. Return all such indices.',
     examples: 'Input: intervals = [[3,4],[2,3],[1,2]]\nOutput: [-1, 0, 1]\n\nInput: intervals = [[1,4],[2,3],[3,4]]\nOutput: [-1, 2, -1]',
     starterCode: null
   },
@@ -1247,7 +1247,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/shortest-unsorted-continuous-subarray/',
     tags: ['Array', 'Two Pointers', 'Sorting', 'Stack', 'Monotonic Stack'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'Given an integer array `nums`, find one **continuous subarray** that, if sorted in ascending order, makes the entire array sorted. Return its length (or 0 if already sorted).\n\n**O(n) approach:** scan left-to-right tracking max-so-far â€” record the last index where `nums[i] < max`. Scan right-to-left tracking min-so-far â€” record the first index where `nums[i] > min`.',
+    description: 'Given an integer array `nums`, find one **continuous subarray** that, if sorted in ascending order, makes the entire array sorted. Return its length (or 0 if already sorted).',
     examples: 'Input: nums = [2,6,4,8,10,9,15]\nOutput: 5  (subarray [6,4,8,10,9])\n\nInput: nums = [1,2,3,4]\nOutput: 0',
     starterCode: null
   },
@@ -1273,7 +1273,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/array-of-doubled-pairs/',
     tags: ['Array', 'Hash Map', 'Greedy', 'Sorting'],
     companies: ['Amazon', 'Google'],
-    description: 'Given an integer array `arr` of even length, return `true` iff it can be reordered so that for every index `i`, `arr[2i+1] = 2 * arr[2i]`. (i.e., it can be partitioned into pairs `(x, 2x)`.)\n\n**Greedy:** sort by absolute value; use a frequency map; for each smallest absolute value remaining, consume one of `x` and one of `2x`. (Negatives work because if x < 0, 2x is the smaller in absolute value â€” sort by `|x|` to process the "anchor" first.)',
+    description: 'Given an integer array `arr` of even length, return `true` iff it can be reordered so that for every index `i`, `arr[2i+1] = 2 * arr[2i]`. (i.e., it can be partitioned into pairs `(x, 2x)`.)',
     examples: 'Input: arr = [3,1,3,6]\nOutput: false\n\nInput: arr = [4,-2,2,-4]\nOutput: true ((-2,-4) and (2,4))',
     starterCode: null
   },
@@ -1286,7 +1286,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/count-the-number-of-fair-pairs/',
     tags: ['Array', 'Two Pointers', 'Binary Search', 'Sorting'],
     companies: ['Amazon', 'Google'],
-    description: 'Given an integer array `nums` and inclusive bounds `lower` and `upper`, return the number of **fair pairs** `(i, j)` with `i < j` such that `lower â‰¤ nums[i] + nums[j] â‰¤ upper`.\n\n**Approach:** sort, then for each i, count j > i with nums[j] in `[lower-nums[i], upper-nums[i]]` via binary search. O(n log n).',
+    description: 'Given an integer array `nums` and inclusive bounds `lower` and `upper`, return the number of **fair pairs** `(i, j)` with `i < j` such that `lower â‰¤ nums[i] + nums[j] â‰¤ upper`.',
     examples: 'Input: nums = [0,1,7,4,4,5], lower = 3, upper = 6\nOutput: 6\n\nInput: nums = [1,7,9,2,5], lower = 11, upper = 11\nOutput: 1',
     starterCode: null
   },
@@ -1472,7 +1472,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/',
     tags: ['Array', 'Hash Map', 'Tree', 'DFS', 'Recursion'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Bloomberg'],
-    description: 'Given two integer arrays `preorder` and `inorder` where preorder is the **preorder traversal** of a binary tree and inorder is the **inorder traversal** of the same tree, construct and return the binary tree.\n\n**Approach:** preorder[0] is the root. Find it in inorder â€” everything to its left is the left subtree (in inorder), everything to its right is the right subtree. Recurse with index map for O(1) lookup â†’ O(n) total.',
+    description: 'Given two integer arrays `preorder` and `inorder` where preorder is the **preorder traversal** of a binary tree and inorder is the **inorder traversal** of the same tree, construct and return the binary tree.',
     examples: 'Input: preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]\nOutput: tree [3,9,20,null,null,15,7]',
     starterCode: null
   },
@@ -1658,7 +1658,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/combinations/',
     tags: ['Backtracking', 'Recursion'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Given two integers `n` and `k`, return all possible combinations of `k` numbers chosen from `1..n`. Order within combos and across combos may vary â€” both are normalized for testing.',
+    description: 'Given two integers `n` and `k`, return all possible **combinations** of `k` numbers chosen from the range `[1, n]`. You may return the answer in any order.\n\n**Example 1:**\nInput: n = 4, k = 2\nOutput: [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]\n\n**Example 2:**\nInput: n = 1, k = 1\nOutput: [[1]]\n\n**Constraints:**\n- 1 <= n <= 20\n- 1 <= k <= n',
     examples: 'Input: n = 4, k = 2\nOutput: [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]',
     starterCode: null
   },
@@ -1762,7 +1762,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/surrounded-regions/',
     tags: ['Array', 'DFS', 'BFS', 'Matrix', 'Union-Find'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Given an `m Ã— n` board of `X` and `O`, **flip all `O`s surrounded by `X`** (capturing them) into `X`. An `O` is "safe" if it touches the border or is connected (4-directionally) to a border `O`. Solve in place.\n\n**Trick:** flip all border-connected `O`s to `#`. Then walk the grid: every `O` left becomes `X`; every `#` becomes `O`.',
+    description: 'Given an `m Ã— n` board of `X` and `O`, **flip all `O`s surrounded by `X`** (capturing them) into `X`. An `O` is "safe" if it touches the border or is connected (4-directionally) to a border `O`. Solve in place.',
     examples: 'Input: [["X","X","X","X"],["X","O","O","X"],["X","X","O","X"],["X","O","X","X"]]\nOutput: [["X","X","X","X"],["X","X","X","X"],["X","X","X","X"],["X","O","X","X"]]',
     starterCode: null
   },
@@ -1801,7 +1801,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/house-robber-ii/',
     tags: ['Array', 'Dynamic Programming'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Same as House Robber, but houses are arranged in a **circle** â€” first and last are now adjacent. Return the maximum money you can rob.\n\n**Trick:** run House Robber I twice â€” once excluding the first house, once excluding the last house. Take the max.',
+    description: 'You are a robber planning to rob houses arranged in a **circle** (the first and last houses are adjacent). Each house has some money stashed. You **cannot rob two adjacent houses** without triggering the alarm. Return the **maximum amount of money** you can rob.\n\nSince the first and last houses are adjacent, you cannot rob both. This reduces to solving House Robber twice: once excluding the first house, once excluding the last, and taking the max.\n\n**Example 1:**\nInput: nums = [2,3,2]\nOutput: 3 (rob house 2)\n\n**Example 2:**\nInput: nums = [1,2,3,1]\nOutput: 4 (rob houses 1 and 3)\n\n**Constraints:**\n- 1 <= nums.length <= 100\n- 0 <= nums[i] <= 1000',
     examples: 'Input: nums = [2,3,2]\nOutput: 3\n\nInput: nums = [1,2,3,1]\nOutput: 4',
     starterCode: null
   },
@@ -1840,7 +1840,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/insert-delete-getrandom-o1/',
     tags: ['Array', 'Hash Map', 'Math', 'Design', 'Randomized'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Implement `RandomizedSet` with average O(1) `insert(val)`, `remove(val)`, and `getRandom()` operations. `getRandom` returns any current element with equal probability.\n\n**Trick:** keep an `ArrayList` for O(1) random access plus a `HashMap<value, index>` for O(1) lookup. To remove: swap target with the last element, then pop the back of the list.',
+    description: 'Implement `RandomizedSet` with average O(1) `insert(val)`, `remove(val)`, and `getRandom()` operations. `getRandom` returns any current element with equal probability.',
     examples: 'insert(1)â†’T; remove(2)â†’F; insert(2)â†’T; getRandom() âˆˆ {1,2}; remove(1)â†’T; insert(2)â†’F; getRandom()â†’2',
     starterCode: null
   },
@@ -1896,7 +1896,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/merge-two-binary-trees/',
     tags: ['Tree', 'DFS', 'BFS', 'Recursion'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Merge two binary trees by overlapping them. Where two nodes overlap, sum their values. Where only one tree has a node, that node becomes the merged node. Return the merged tree.',
+    description: 'You are given two binary trees `root1` and `root2`. Merge the two trees into a new binary tree by the following rules: if two nodes overlap, **sum their values** as the new node value. Otherwise, use the non-null node as the node of the new tree.\n\nReturn the merged tree.\n\n**Example 1:**\nInput: root1 = [1,3,2,5], root2 = [2,1,3,null,4,null,7]\nOutput: [3,4,5,5,4,null,7]\n\n**Example 2:**\nInput: root1 = [1], root2 = [1,2]\nOutput: [2,2]\n\n**Constraints:**\n- 0 <= number of nodes <= 2000\n- -10^4 <= Node.val <= 10^4',
     examples: 'Input: root1 = [1,3,2,5], root2 = [2,1,3,null,4,null,7]\nOutput: [3,4,5,5,4,null,7]',
     starterCode: null
   },
@@ -1935,7 +1935,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/all-nodes-distance-k-in-binary-tree/',
     tags: ['Tree', 'BFS', 'DFS', 'Hash Map'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Given a binary tree, a target node, and an integer `k`, return all node values that are exactly **distance `k`** from the target.\n\n**Approach:** convert the tree to an undirected graph (parent map), then BFS from target up to depth k.',
+    description: 'Given the `root` of a binary tree, a target node `target`, and an integer `k`, return an array of the values of all nodes that have a distance `k` from the target node. You can return the answer in any order.\n\nThe distance between two nodes is the number of edges on the path between them.\n\n**Example 1:**\nInput: root = [3,5,1,6,2,0,8,null,null,7,4], target = 5, k = 2\nOutput: [7, 4, 1] (nodes at distance 2 from node 5)\n\n**Example 2:**\nInput: root = [1], target = 1, k = 3\nOutput: [] (no node at distance 3)\n\n**Constraints:**\n- 1 <= number of nodes <= 500\n- 0 <= Node.val <= 500\n- All values are unique\n- `target` is a node in the tree',
     examples: 'Input: root = [3,5,1,6,2,0,8,null,null,7,4], target = 5, k = 2\nOutput: [7, 4, 1]',
     starterCode: null
   },
@@ -2013,7 +2013,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/letter-case-permutation/',
     tags: ['Bit Manipulation', 'String', 'Backtracking'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Given a string `s` of letters and digits, return all strings that can be obtained by transforming each letter to either upper or lower case (digits stay).',
+    description: 'Given a string `s`, you can transform every letter individually to be lowercase or uppercase to create another string. Return a list of **all possible strings** you could create. Digits remain unchanged.\n\n**Example 1:**\nInput: s = "a1b2"\nOutput: ["a1b2","a1B2","A1b2","A1B2"]\n\n**Example 2:**\nInput: s = "3z4"\nOutput: ["3z4","3Z4"]\n\n**Constraints:**\n- 1 <= s.length <= 12\n- `s` consists of lowercase letters, uppercase letters, and digits',
     examples: 'Input: s = "a1b2"\nOutput: ["a1b2","a1B2","A1b2","A1B2"]',
     starterCode: null
   },
@@ -2026,7 +2026,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/',
     tags: ['Array', 'Dynamic Programming', 'Greedy'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Bloomberg'],
-    description: 'You may complete **as many transactions as you like** (buy then sell). You cannot hold more than one share at a time. Return the maximum profit.\n\n**Greedy:** sum every positive day-to-day delta. Each "rise" is a separate buy/sell cycle.',
+    description: 'You are given an integer array `prices` where `prices[i]` is the price of a given stock on the i-th day. On each day, you may decide to buy and/or sell the stock. You can hold **at most one** share at a time, but you may complete **as many transactions as you like** (buy one and sell one share of the stock multiple times).\n\nReturn the **maximum profit** you can achieve.\n\n**Example 1:**\nInput: prices = [7,1,5,3,6,4]\nOutput: 7 (buy on day 2 at price 1, sell on day 3 at price 5, profit = 4; buy on day 4 at price 3, sell on day 5 at price 6, profit = 3; total = 7)\n\n**Example 2:**\nInput: prices = [1,2,3,4,5]\nOutput: 4 (buy on day 1, sell on day 5)\n\n**Constraints:**\n- 1 <= prices.length <= 3 * 10^4\n- 0 <= prices[i] <= 10^4',
     examples: 'Input: prices = [7,1,5,3,6,4]\nOutput: 7  (buy@1 sell@5; buy@3 sell@6)\n\nInput: prices = [1,2,3,4,5]\nOutput: 4',
     starterCode: null
   },
@@ -2186,7 +2186,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/binary-tree-paths/',
     tags: ['Tree', 'DFS', 'Backtracking'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Return all root-to-leaf paths in any order, formatted as `"a->b->c"`. DFS while building a path string; emit at every leaf.',
+    description: 'Given the `root` of a binary tree, return all **root-to-leaf paths** in any order. A leaf is a node with no children. Each path should be formatted as a string with values separated by `"->"` (e.g., `"1->2->5"`).\n\n**Example 1:**\nInput: root = [1,2,3,null,5]\nOutput: ["1->2->5", "1->3"]\n\n**Example 2:**\nInput: root = [1]\nOutput: ["1"]\n\n**Constraints:**\n- 1 <= number of nodes <= 100\n- -100 <= Node.val <= 100',
     examples: 'Input: root = [1,2,3,null,5]\nOutput: ["1->2->5", "1->3"]',
     starterCode: null
   },
@@ -2225,7 +2225,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/recover-binary-search-tree/',
     tags: ['Tree', 'BST', 'DFS'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Two nodes in a BST were swapped. Restore the BST without changing structure.\n\n**Approach:** inorder traversal yields sorted sequence in a valid BST. Find the two violations (prev > curr); swap their values. After fix, inorder must be strictly non-decreasing.',
+    description: 'You are given the `root` of a binary search tree (BST) where the values of **exactly two** nodes were swapped by mistake. Recover the tree so it is a valid BST again, **without changing its structure**.\n\n**Example 1:**\nInput: root = [1,3,null,null,2]\nOutput: [3,1,null,null,2] (nodes 1 and 3 were swapped)\n\n**Example 2:**\nInput: root = [3,1,4,null,null,2]\nOutput: [2,1,4,null,null,3] (nodes 2 and 3 were swapped)\n\n**Constraints:**\n- 2 <= number of nodes <= 1000\n- -2^31 <= Node.val <= 2^31 - 1',
     examples: 'Input: root = [1,3,null,null,2]\nOutput: [3,1,null,null,2]',
     starterCode: null
   },
@@ -2238,7 +2238,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/reverse-nodes-in-k-group/',
     tags: ['Linked List', 'Recursion'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Reverse every k consecutive nodes. Leftover nodes (fewer than k) at the end stay as-is. Use a dummy node; for each group, first verify k more nodes exist, then reverse in place.',
+    description: 'Given the `head` of a linked list, reverse the nodes of the list `k` at a time and return the modified list. `k` is a positive integer and is less than or equal to the length of the linked list. If the number of nodes is not a multiple of `k`, then the leftover nodes at the end should remain as they are.\n\nYou may not alter the values in the list nodes, only the nodes themselves may be changed.\n\n**Example 1:**\nInput: head = [1,2,3,4,5], k = 2\nOutput: [2,1,4,3,5]\n\n**Example 2:**\nInput: head = [1,2,3,4,5], k = 3\nOutput: [3,2,1,4,5]\n\n**Constraints:**\n- 1 <= k <= n <= 5000',
     examples: 'Input: head = [1,2,3,4,5], k = 2\nOutput: [2,1,4,3,5]',
     starterCode: null
   },
@@ -2251,7 +2251,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/rotate-list/',
     tags: ['Linked List', 'Two Pointers'],
     companies: ['Amazon', 'Microsoft', 'Bloomberg'],
-    description: 'Rotate the list to the right by `k` places. Find length, take `k mod length`, splice the tail to the front.',
+    description: 'Given the `head` of a linked list, rotate the list to the right by `k` places.\n\n**Example 1:**\nInput: head = [1,2,3,4,5], k = 2\nOutput: [4,5,1,2,3] (the last 2 nodes move to the front)\n\n**Example 2:**\nInput: head = [0,1,2], k = 4\nOutput: [2,0,1] (k=4 is equivalent to k=1 since length is 3)\n\n**Constraints:**\n- 0 <= number of nodes <= 500\n- 0 <= k <= 2 * 10^9',
     examples: 'Input: head = [1,2,3,4,5], k = 2\nOutput: [4,5,1,2,3]',
     starterCode: null
   },
@@ -2277,7 +2277,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/unique-paths-ii/',
     tags: ['DP', 'Matrix'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Bloomberg'],
-    description: 'Like Unique Paths but with obstacles (1 = obstacle, 0 = free). dp[i][j] = 0 if obstacle, else dp[i-1][j] + dp[i][j-1]. Start or end on obstacle â†’ return 0.',
+    description: 'You are given an `m x n` integer grid `obstacleGrid`. A robot starts at the top-left corner and wants to reach the bottom-right corner. It can only move **right** or **down** at each step. Grid cells containing `1` are obstacles; the robot cannot step on them.\n\nReturn the number of unique paths the robot can take to reach the bottom-right corner.\n\n**Example 1:**\nInput: obstacleGrid = [[0,0,0],[0,1,0],[0,0,0]]\nOutput: 2 (the center cell is blocked)\n\n**Example 2:**\nInput: obstacleGrid = [[0,1],[0,0]]\nOutput: 1\n\n**Constraints:**\n- 1 <= m, n <= 100\n- obstacleGrid[i][j] is 0 or 1',
     examples: 'Input: [[0,0,0],[0,1,0],[0,0,0]]\nOutput: 2',
     starterCode: null
   },
@@ -2290,7 +2290,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/perfect-squares/',
     tags: ['DP', 'BFS', 'Math'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Bloomberg'],
-    description: 'Return least number of perfect squares (1, 4, 9, 16, â€¦) summing to n.\n\n**DP recurrence:** dp[n] = 1 + min(dp[n - i*i]) for i*i â‰¤ n; dp[0] = 0.\n\n**Lagrange four-square theorem:** answer is always 1, 2, 3, or 4.',
+    description: 'Given an integer `n`, return the **least number of perfect square numbers** that sum to `n`. A perfect square is an integer that is the square of an integer (e.g., 1, 4, 9, 16, ...).\n\n**Example 1:**\nInput: n = 12\nOutput: 3 (12 = 4 + 4 + 4)\n\n**Example 2:**\nInput: n = 13\nOutput: 2 (13 = 4 + 9)\n\n**Constraints:**\n- 1 <= n <= 10^4',
     examples: 'Input: n = 12\nOutput: 3  (4+4+4)',
     starterCode: null
   },
@@ -2303,7 +2303,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/interleaving-string/',
     tags: ['DP', 'String'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Bloomberg'],
-    description: 'Return true iff s3 is formed by interleaving s1 and s2 (preserving each\'s order).\n\n**2D DP:** dp[i][j] = whether s3[:i+j] is interleaving of s1[:i] and s2[:j]. Transition: dp[i][j] = (dp[i-1][j] && s1[i-1]==s3[i+j-1]) || (dp[i][j-1] && s2[j-1]==s3[i+j-1]).',
+    description: 'Given strings `s1`, `s2`, and `s3`, return `true` if `s3` is formed by an **interleaving** of `s1` and `s2`. An interleaving of two strings preserves the left-to-right ordering of characters from each string while allowing them to be interspersed.\n\n**Example 1:**\nInput: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbcbcac"\nOutput: true\n\n**Example 2:**\nInput: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbbaccc"\nOutput: false\n\n**Constraints:**\n- 0 <= s1.length, s2.length <= 100\n- 0 <= s3.length <= 200\n- `s1`, `s2`, and `s3` consist of lowercase English letters',
     examples: 'Input: s1="aabcc", s2="dbbca", s3="aadbbcbcac"\nOutput: true',
     starterCode: null
   },
@@ -2316,7 +2316,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/distinct-subsequences/',
     tags: ['DP', 'String'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Return number of distinct subsequences of s that equal t.\n\n**2D DP:** dp[i][j] = ways s[:i] forms t[:j]. If chars match: dp[i-1][j-1] + dp[i-1][j]. Else dp[i-1][j]. Base: dp[i][0] = 1.',
+    description: 'Given two strings `s` and `t`, return the number of **distinct subsequences** of `s` which equals `t`. A subsequence of a string is formed by deleting some (or none) of the characters without changing the relative order of the remaining characters.\n\nThe test cases are generated so that the answer fits in a 32-bit signed integer.\n\n**Example 1:**\nInput: s = "rabbbit", t = "rabbit"\nOutput: 3 (three ways to choose characters from s to form "rabbit")\n\n**Example 2:**\nInput: s = "babgbag", t = "bag"\nOutput: 5\n\n**Constraints:**\n- 1 <= s.length, t.length <= 1000\n- `s` and `t` consist of English letters',
     examples: 'Input: s="rabbbit", t="rabbit"\nOutput: 3',
     starterCode: null
   },
@@ -2342,7 +2342,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/maximal-rectangle/',
     tags: ['DP', 'Stack', 'Monotonic Stack'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Given binary matrix (0/1), find max-area rectangle of 1s.\n\n**Reduces to "Largest Rectangle in Histogram":** treat each row as the base; heights[j] = consecutive 1s in column j ending at this row (reset to 0 on a 0). Apply histogram subroutine row by row.',
+    description: 'Given an `m x n` binary matrix filled with `0`s and `1`s, find the **largest rectangle** containing only `1`s and return its area.\n\n**Example 1:**\nInput: matrix = [["1","0","1","0","0"],["1","0","1","1","1"],["1","1","1","1","1"],["1","0","0","1","0"]]\nOutput: 6 (the maximal rectangle of 1s has area 6)\n\n**Example 2:**\nInput: matrix = [["0"]]\nOutput: 0\n\n**Constraints:**\n- 1 <= m, n <= 200\n- matrix[i][j] is \'0\' or \'1\'',
     examples: 'Input: [[1,0,1,0,0],[1,0,1,1,1],[1,1,1,1,1],[1,0,0,1,0]]\nOutput: 6',
     starterCode: null
   },
@@ -2355,7 +2355,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/regular-expression-matching/',
     tags: ['DP', 'Recursion', 'String'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta', 'Bloomberg'],
-    description: 'Implement regex matching with `.` (any single char) and `*` (zero or more of preceding element). Match must cover the **entire** string.\n\n**2D DP:** dp[i][j] = whether s[:i] matches p[:j]. When p[j-1] is `*`: zero occurrences (dp[i][j-2]) OR match more (dp[i-1][j] when p[j-2] matches s[i-1]).',
+    description: 'Given an input string `s` and a pattern `p`, implement regular expression matching with support for `.` and `*` where:\n- `.` matches any single character\n- `*` matches zero or more of the **preceding** element\n\nThe matching should cover the **entire** input string (not partial).\n\n**Example 1:**\nInput: s = "aa", p = "a"\nOutput: false ("a" does not match entire "aa")\n\n**Example 2:**\nInput: s = "aa", p = "a*"\nOutput: true (\'*\' means zero or more of \'a\', so "aa" matches)\n\n**Example 3:**\nInput: s = "ab", p = ".*"\nOutput: true (".*" means zero or more of any character)\n\n**Constraints:**\n- 1 <= s.length <= 20\n- 1 <= p.length <= 20\n- `s` contains only lowercase English letters\n- `p` contains only lowercase English letters, `.`, and `*`\n- Each `*` has a valid preceding character to repeat',
     examples: 'Input: s="aa", p="a*"\nOutput: true',
     starterCode: null
   },
@@ -2368,7 +2368,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/partition-to-k-equal-sum-subsets/',
     tags: ['Backtracking', 'Bitmask DP'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Partition `nums` into k non-empty subsets with equal sums. If `total % k != 0` â†’ false. Sort descending; backtracking places each num into one of k buckets, skipping overflow and equivalent buckets.',
+    description: 'Given an integer array `nums` and an integer `k`, return `true` if it is possible to divide the array into `k` non-empty subsets whose sums are all equal.\n\n**Example 1:**\nInput: nums = [4,3,2,3,5,2,1], k = 4\nOutput: true (subsets: (5), (1,4), (2,3), (2,3) each sum to 5)\n\n**Example 2:**\nInput: nums = [1,2,3,4], k = 3\nOutput: false (total = 10, not divisible by 3)\n\n**Constraints:**\n- 1 <= k <= nums.length <= 16\n- 1 <= nums[i] <= 10^4',
     examples: 'Input: nums = [4,3,2,3,5,2,1], k = 4\nOutput: true  ((5),(1,4),(2,3),(2,3))',
     starterCode: null
   },
@@ -2381,7 +2381,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/most-stones-removed-with-same-row-or-column/',
     tags: ['Union-Find', 'Graph', 'DFS'],
     companies: ['Amazon', 'Google'],
-    description: 'A stone can be removed if it shares a row or column with another stone. Return max removable stones.\n\n**Insight:** stones connected via shared row/col form components; each component of size k contributes k-1 removals. Answer = n - (number of components). Union-Find on (row, col + offset).',
+    description: 'On a 2D plane, we place `n` stones at some integer coordinate points. A stone can be removed if it shares the **same row or same column** as another stone that has not yet been removed. Given an array `stones` where `stones[i] = [x_i, y_i]`, return the **maximum number of stones** that can be removed.\n\n**Example 1:**\nInput: stones = [[0,0],[0,1],[1,0],[1,2],[2,1],[2,2]]\nOutput: 5\n\n**Example 2:**\nInput: stones = [[0,0],[0,2],[1,1],[2,0],[2,2]]\nOutput: 3\n\n**Constraints:**\n- 1 <= stones.length <= 1000\n- 0 <= x_i, y_i <= 10^4',
     examples: 'Input: stones = [[0,0],[0,1],[1,0],[1,2],[2,1],[2,2]]\nOutput: 5',
     starterCode: null
   },
@@ -2394,7 +2394,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/min-cost-to-connect-all-points/',
     tags: ['MST', 'Prim', 'Kruskal', 'Union-Find', 'Graph'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple'],
-    description: 'Connect all points with minimum total Manhattan distance (MST). **Prim\'s O(nÂ²)** is optimal for dense graphs: maintain `minDist[]` from current tree to non-tree vertices.',
+    description: 'You are given an array `points` where `points[i] = [x_i, y_i]` represents a point on the X-Y plane. The cost to connect two points is the **Manhattan distance** between them: `|x_i - x_j| + |y_i - y_j|`.\n\nReturn the **minimum cost** to connect all points such that there is exactly one simple path between any two points (i.e., find the Minimum Spanning Tree).\n\n**Example 1:**\nInput: points = [[0,0],[2,2],[3,10],[5,2],[7,0]]\nOutput: 20\n\n**Example 2:**\nInput: points = [[3,12],[-2,5],[-4,1]]\nOutput: 18\n\n**Constraints:**\n- 1 <= points.length <= 1000\n- -10^6 <= x_i, y_i <= 10^6\n- All pairs (x_i, y_i) are distinct',
     examples: 'Input: points = [[0,0],[2,2],[3,10],[5,2],[7,0]]\nOutput: 20',
     starterCode: null
   },
@@ -2407,7 +2407,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/path-with-minimum-effort/',
     tags: ['Dijkstra', 'Binary Search', 'Graph'],
     companies: ['Amazon', 'Google', 'Microsoft'],
-    description: 'Min effort path top-left to bottom-right; effort = max abs height-difference along the path.\n\n**Modified Dijkstra:** PQ ordered by max-edge-weight along the path so far. Tentative effort to neighbor = max(currentEffort, |h[u] - h[v]|).',
+    description: 'You are given a 2D `heights` matrix of size `m x n` where `heights[i][j]` represents the height of cell `(i, j)`. You want to travel from the **top-left** `(0, 0)` to the **bottom-right** `(m-1, n-1)`. You can move to any adjacent cell (up, down, left, right).\n\nThe **effort** of a route is the **maximum absolute difference** in heights between two consecutive cells along the path. Return the minimum effort required to travel from the top-left to the bottom-right.\n\n**Example 1:**\nInput: heights = [[1,2,2],[3,8,2],[5,3,5]]\nOutput: 2 (path 1->2->2->2->5, max difference is 2)\n\n**Example 2:**\nInput: heights = [[1,2,3],[3,8,4],[5,3,5]]\nOutput: 1\n\n**Constraints:**\n- 1 <= m, n <= 100',
     examples: 'Input: heights = [[1,2,2],[3,8,2],[5,3,5]]\nOutput: 2',
     starterCode: null
   },
@@ -2420,7 +2420,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/number-of-ways-to-arrive-at-destination/',
     tags: ['Dijkstra', 'Shortest Path', 'DP'],
     companies: ['Amazon', 'Google'],
-    description: 'Return number of shortest-path routes from 0 to n-1, modulo 10^9+7.\n\n**Modified Dijkstra:** track ways[v] in addition to dist[v]. Relax: if new dist == dist[v] then ways[v] += ways[u]; if strictly less, replace.',
+    description: 'You are in a city with `n` intersections numbered `0` to `n - 1` and bidirectional roads, each with a travel time. Return the **number of ways** to travel from intersection `0` to intersection `n - 1` in the **shortest amount of time**. Since the answer may be large, return it **modulo 10^9 + 7**.\n\n**Example 1:**\nInput: n = 7, roads = [[0,6,7],[0,1,2],[1,2,3],[1,3,3],[6,3,3],[3,5,1],[6,5,1],[2,5,1],[0,4,5],[4,6,2]]\nOutput: 4 (four shortest paths exist from 0 to 6)\n\n**Constraints:**\n- 1 <= n <= 200\n- 1 <= roads.length <= n * (n - 1) / 2',
     examples: 'Input: n = 7, roads = [...]\nOutput: 4',
     starterCode: null
   },
@@ -2446,7 +2446,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/longest-increasing-path-in-a-matrix/',
     tags: ['DFS', 'Memoization', 'DP', 'Graph'],
     companies: ['Amazon', 'Google', 'Microsoft', 'Apple', 'Meta'],
-    description: 'Find length of longest strictly-increasing path (4-directional moves). DFS + memoization: f(r,c) = 1 + max(f(neighbors with larger values)). Each cell computed once.',
+    description: 'Given an `m x n` integers matrix, return the length of the **longest increasing path** in the matrix. From each cell, you can move in four directions (left, right, up, down). You **may not** move diagonally or move outside the boundary. Each step must go to a cell with a **strictly greater** value.\n\n**Example 1:**\nInput: matrix = [[9,9,4],[6,6,8],[2,1,1]]\nOutput: 4 (path: 1 -> 2 -> 6 -> 9)\n\n**Example 2:**\nInput: matrix = [[3,4,5],[3,2,6],[2,2,1]]\nOutput: 4 (path: 3 -> 4 -> 5 -> 6)\n\n**Constraints:**\n- 1 <= m, n <= 200\n- 0 <= matrix[i][j] <= 2^31 - 1',
     examples: 'Input: matrix = [[9,9,4],[6,6,8],[2,1,1]]\nOutput: 4',
     starterCode: null
   },
@@ -2856,7 +2856,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/intersection-of-two-linked-lists/',
     tags: ['Linked List', 'Two Pointers', 'Hash Table'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'],
-    description: 'Given the heads of two singly linked-lists headA and headB, return the node at which the two lists intersect. If the two linked lists have no intersection at all, return null. The test cases are generated such that there are no cycles anywhere in the entire linked structure.',
+    description: 'Given the heads of two singly linked-lists `headA` and `headB`, return the node at which the two lists **intersect**. If the two linked lists have no intersection at all, return `null`.\n\nThe linked lists must retain their original structure after the function returns. There are no cycles in the linked structure.\n\n**Example 1:**\nInput: listA = [4,1,8,4,5], listB = [5,6,1,8,4,5], intersectVal = 8\nOutput: Intersected at node with value 8\n\n**Example 2:**\nInput: listA = [2,6,4], listB = [1,5], intersectVal = 0\nOutput: null (no intersection)\n\n**Constraints:**\n- 1 <= number of nodes in each list <= 3 * 10^4\n- 1 <= Node.val <= 10^5',
     examples: 'Input: intersectVal = 8, listA = [4,1,8,4,5], listB = [5,6,1,8,4,5], skipA = 2, skipB = 3\nOutput: Intersected at 8',
     starterCode: null
   },
@@ -2868,7 +2868,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/remove-duplicates-from-sorted-list/',
     tags: ['Linked List'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Apple'],
-    description: 'Given the head of a sorted linked list, delete all duplicates such that each element appears only once. Return the linked list sorted as well.',
+    description: 'Given the `head` of a sorted linked list, delete all duplicates such that each element appears only **once**. Return the linked list sorted as well.\n\n**Example 1:**\nInput: head = [1,1,2]\nOutput: [1,2]\n\n**Example 2:**\nInput: head = [1,1,2,3,3]\nOutput: [1,2,3]\n\n**Constraints:**\n- 0 <= number of nodes <= 300\n- -100 <= Node.val <= 100\n- The list is sorted in non-decreasing order',
     examples: 'Input: head = [1,1,2]\nOutput: [1,2]',
     starterCode: null
   },
@@ -2880,7 +2880,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/',
     tags: ['Linked List', 'Two Pointers'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta'],
-    description: 'Given the head of a sorted linked list, delete all nodes that have duplicate numbers, leaving only distinct numbers from the original list. Return the linked list sorted as well.',
+    description: 'Given the `head` of a sorted linked list, delete **all** nodes that have duplicate numbers, leaving only numbers that are distinct from the original list. Return the linked list sorted as well.\n\nUnlike Remove Duplicates I (which keeps one copy of each duplicate), this problem removes **all** copies of any duplicated value.\n\n**Example 1:**\nInput: head = [1,2,3,3,4,4,5]\nOutput: [1,2,5] (nodes with values 3 and 4 are completely removed)\n\n**Example 2:**\nInput: head = [1,1,1,2,3]\nOutput: [2,3]\n\n**Constraints:**\n- 0 <= number of nodes <= 300\n- The list is sorted in non-decreasing order',
     examples: 'Input: head = [1,2,3,3,4,4,5]\nOutput: [1,2,5]',
     starterCode: null
   },
@@ -2892,7 +2892,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/swap-nodes-in-pairs/',
     tags: ['Linked List', 'Recursion'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'],
-    description: 'Given a linked list, swap every two adjacent nodes and return its head. You must solve the problem without modifying the values in the lists nodes (i.e., only nodes themselves may be changed).',
+    description: 'Given a linked list, swap every two adjacent nodes and return its head. You must solve the problem without modifying the values in the list\'s nodes (i.e., only nodes themselves may be changed).\n\n**Example 1:**\nInput: head = [1,2,3,4]\nOutput: [2,1,4,3]\n\n**Example 2:**\nInput: head = [1,2,3]\nOutput: [2,1,3] (the last node has no pair, so it stays)\n\n**Example 3:**\nInput: head = []\nOutput: []\n\n**Constraints:**\n- 0 <= number of nodes <= 100\n- 0 <= Node.val <= 100',
     examples: 'Input: head = [1,2,3,4]\nOutput: [2,1,4,3]',
     starterCode: null
   },
@@ -2904,7 +2904,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/partition-list/',
     tags: ['Linked List', 'Two Pointers'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta'],
-    description: 'Given the head of a linked list and a value x, partition it such that all nodes less than x come before nodes greater than or equal to x. You should preserve the original relative order of the nodes in each of the two partitions.',
+    description: 'Given the `head` of a linked list and a value `x`, partition it such that all nodes with values **less than** `x` come before nodes with values **greater than or equal to** `x`. You should preserve the original relative order of the nodes in each of the two partitions.\n\n**Example 1:**\nInput: head = [1,4,3,2,5,2], x = 3\nOutput: [1,2,2,4,3,5] (values < 3 come first, preserving their order)\n\n**Example 2:**\nInput: head = [2,1], x = 2\nOutput: [1,2]\n\n**Constraints:**\n- 0 <= number of nodes <= 200\n- -100 <= Node.val <= 100\n- -200 <= x <= 200',
     examples: 'Input: head = [1,4,3,2,5,2], x = 3\nOutput: [1,2,2,4,3,5]',
     starterCode: null
   },
@@ -2916,7 +2916,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/reverse-linked-list-ii/',
     tags: ['Linked List'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'],
-    description: 'Given the head of a singly linked list and two integers left and right where left <= right, reverse the nodes of the list from position left to position right, and return the reversed list. Positions are 1-indexed.',
+    description: 'Given the `head` of a singly linked list and two integers `left` and `right` where `left <= right`, reverse the nodes of the list from position `left` to position `right`, and return the reversed list. Positions are **1-indexed**.\n\n**Example 1:**\nInput: head = [1,2,3,4,5], left = 2, right = 4\nOutput: [1,4,3,2,5] (nodes at positions 2-4 are reversed)\n\n**Example 2:**\nInput: head = [5], left = 1, right = 1\nOutput: [5]\n\n**Constraints:**\n- 1 <= number of nodes <= 500\n- 1 <= left <= right <= n',
     examples: 'Input: head = [1,2,3,4,5], left = 2, right = 4\nOutput: [1,4,3,2,5]',
     starterCode: null
   },
@@ -2928,7 +2928,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/odd-even-linked-list/',
     tags: ['Linked List'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Bloomberg'],
-    description: 'Given the head of a singly linked list, group all the nodes with odd indices together followed by the nodes with even indices, and return the reordered list. The first node is considered odd, and the second node is even, and so on. You must solve the problem in O(1) extra space and O(n) time.',
+    description: 'Given the `head` of a singly linked list, group all the nodes with **odd indices** together followed by the nodes with **even indices**, and return the reordered list. The first node is considered odd (index 1), the second node is even (index 2), and so on.\n\nNote that the relative order within both the odd and even groups should remain as it was in the input. You must solve the problem in **O(1) extra space** and **O(n) time**.\n\n**Example 1:**\nInput: head = [1,2,3,4,5]\nOutput: [1,3,5,2,4]\n\n**Example 2:**\nInput: head = [2,1,3,5,6,4,7]\nOutput: [2,3,6,7,1,5,4]\n\n**Constraints:**\n- 0 <= number of nodes <= 10^4',
     examples: 'Input: head = [1,2,3,4,5]\nOutput: [1,3,5,2,4]',
     starterCode: null
   },
@@ -2964,7 +2964,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/move-zeroes/',
     tags: ['Array', 'Two Pointers'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple', 'Bloomberg'],
-    description: 'Given an integer array nums, move all 0s to the end of it while maintaining the relative order of the non-zero elements. Note that you must do this in-place without making a copy of the array.',
+    description: 'Given an integer array `nums`, move all `0`s to the **end** of the array while maintaining the relative order of the non-zero elements. You must do this **in-place** without making a copy of the array.\n\n**Example 1:**\nInput: nums = [0,1,0,3,12]\nOutput: [1,3,12,0,0]\n\n**Example 2:**\nInput: nums = [0]\nOutput: [0]\n\n**Constraints:**\n- 1 <= nums.length <= 10^4\n- -2^31 <= nums[i] <= 2^31 - 1',
     examples: 'Input: nums = [0,1,0,3,12]\nOutput: [1,3,12,0,0]',
     starterCode: null
   },
@@ -2976,7 +2976,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/rotate-array/',
     tags: ['Array', 'Math', 'Two Pointers'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple'],
-    description: 'Given an integer array nums, rotate the array to the right by k steps, where k is non-negative. Try to do this in-place with O(1) extra space.',
+    description: 'Given an integer array `nums`, rotate the array to the **right** by `k` steps, where `k` is non-negative. Solve this in-place with **O(1) extra space**.\n\n**Example 1:**\nInput: nums = [1,2,3,4,5,6,7], k = 3\nOutput: [5,6,7,1,2,3,4] (rotated 3 steps to the right)\n\n**Example 2:**\nInput: nums = [-1,-100,3,99], k = 2\nOutput: [3,99,-1,-100]\n\n**Constraints:**\n- 1 <= nums.length <= 10^5\n- -2^31 <= nums[i] <= 2^31 - 1\n- 0 <= k <= 10^5',
     examples: 'Input: nums = [1,2,3,4,5,6,7], k = 3\nOutput: [5,6,7,1,2,3,4]',
     starterCode: null
   },
@@ -3168,7 +3168,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/jump-game/',
     tags: ['Array', 'DP', 'Greedy'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Facebook'],
-    description: 'You are given an integer array **nums**. You are initially positioned at the array\'s **first index**, and each element in the array represents your **maximum jump length** at that position.\n\nReturn **true** if you can reach the last index, or **false** otherwise.\n\n**Greedy** approach: track the furthest index reachable so far. If at index **i** you are past the furthest reach, return false. Otherwise update reach = max(reach, i + nums[i]).',
+    description: 'You are given an integer array **nums**. You are initially positioned at the array\'s **first index**, and each element in the array represents your **maximum jump length** at that position.\n\nReturn **true** if you can reach the last index, or **false** otherwise.',
     examples: 'Input: nums = [2,3,1,1,4]\nOutput: true\nExplanation: Jump 1 step from index 0 to 1, then 3 steps to the last index.\n\nInput: nums = [3,2,1,0,4]\nOutput: false\nExplanation: You will always arrive at index 3 with max jump 0, stuck.',
     starterCode: null
   },
@@ -3180,7 +3180,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/jump-game-ii/',
     tags: ['Array', 'DP', 'Greedy', 'BFS'],
     companies: ['Google', 'Amazon', 'Microsoft', 'Apple'],
-    description: 'You are given a **0-indexed** array of integers **nums** of length **n**. You start at **nums[0]** and can jump at most **nums[i]** steps from index **i**.\n\nReturn the **minimum number of jumps** to reach **nums[n-1]**. The test cases are generated so that you can always reach it.\n\n**Greedy BFS**: expand the current "jump window" to the farthest index reachable; when you cross its end, increment jumps and extend the window.',
+    description: 'You are given a **0-indexed** array of integers **nums** of length **n**. You start at **nums[0]** and can jump at most **nums[i]** steps from index **i**.\n\nReturn the **minimum number of jumps** to reach **nums[n-1]**. The test cases are generated so that you can always reach it.',
     examples: 'Input: nums = [2,3,1,1,4]\nOutput: 2\nExplanation: Jump 1 step from index 0 to 1, then 3 steps to the last index.\n\nInput: nums = [2,3,0,1,4]\nOutput: 2',
     starterCode: null
   },
@@ -4277,7 +4277,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/decode-string/',
     tags: ['Stack', 'String', 'Recursion'],
     companies: ['Google', 'Amazon', 'Meta', 'Apple', 'Bloomberg'],
-    description: 'Given an encoded string, return its decoded form. The encoding rule is k[encoded_string] where encoded_string inside the brackets is repeated exactly k times. k is guaranteed to be a positive integer. The input is always valid; no extra white spaces and square brackets are well-formed.\n\n**Approach:** use two stacks â€” one for counts, one for partial strings. On digit, build current k. On \'[\', push current string and k, reset both. On \']\', pop and repeat. On letter, append to current.\n\n**Complexity:** Time O(maxK * n), Space O(n).',
+    description: 'Given an encoded string, return its decoded form. The encoding rule is k[encoded_string] where encoded_string inside the brackets is repeated exactly k times. k is guaranteed to be a positive integer. The input is always valid; no extra white spaces and square brackets are well-formed.',
     examples: 'Input: s = "3[a]2[bc]"\nOutput: "aaabcbc"\n\nInput: s = "3[a2[c]]"\nOutput: "accaccacc"\n\nInput: s = "2[abc]3[cd]ef"\nOutput: "abcabccdcdcdef"',
     starterCode: null
   },
@@ -4290,7 +4290,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/basic-calculator/',
     tags: ['Stack', 'Math', 'String', 'Recursion'],
     companies: ['Google', 'Amazon', 'Meta', 'Microsoft', 'Uber'],
-    description: 'Given a string s representing a valid expression, implement a basic calculator to evaluate it and return the result of the evaluation. The expression contains only non-negative integers, \'+\', \'-\', \'(\', \')\', and spaces. You are not allowed to use any built-in eval function.\n\n**Approach:** single scan with a stack of (prevResult, prevSign). Maintain current result and current sign. On digit, build number. On \'+\'/\'-\', fold number into result with sign. On \'(\', push (result, sign) and reset. On \')\', fold number and combine with pushed frame.\n\n**Complexity:** Time O(n), Space O(n).',
+    description: 'Given a string s representing a valid expression, implement a basic calculator to evaluate it and return the result of the evaluation. The expression contains only non-negative integers, \'+\', \'-\', \'(\', \')\', and spaces. You are not allowed to use any built-in eval function.',
     examples: 'Input: s = "1 + 1"\nOutput: 2\n\nInput: s = " 2-1 + 2 "\nOutput: 3\n\nInput: s = "(1+(4+5+2)-3)+(6+8)"\nOutput: 23',
     starterCode: null
   },
@@ -4303,7 +4303,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/minimum-remove-to-make-valid-parentheses/',
     tags: ['Stack', 'String', 'Two Pass'],
     companies: ['Google', 'Meta', 'Amazon', 'Bloomberg', 'Microsoft'],
-    description: 'Given a string s of \'(\', \')\' and lowercase English letters, remove the minimum number of parentheses so that the resulting string is valid and return any valid string. A valid string has every opening bracket matched with a later closing one.\n\n**Approach (deterministic two-pass):** 1) Left-to-right, drop any \')\' that has no preceding unmatched \'(\'. 2) Right-to-left, drop excess \'(\' that has no following \')\'. The canonical two-scan algorithm yields a unique output.\n\n**Complexity:** Time O(n), Space O(n).',
+    description: 'Given a string s of \'(\', \')\' and lowercase English letters, remove the minimum number of parentheses so that the resulting string is valid and return any valid string. A valid string has every opening bracket matched with a later closing one.',
     examples: 'Input: s = "lee(t(c)o)de)"\nOutput: "lee(t(c)o)de"\n\nInput: s = "a)b(c)d"\nOutput: "ab(c)d"\n\nInput: s = "))(("\nOutput: ""',
     starterCode: null
   },
@@ -4316,7 +4316,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/text-justification/',
     tags: ['String', 'Simulation', 'Greedy'],
     companies: ['Google', 'Meta', 'LinkedIn', 'Airbnb', 'Microsoft'],
-    description: 'Given an array of strings words and a width maxWidth, format the text such that each line has exactly maxWidth characters and is fully (left and right) justified. Pack as many words as possible per line greedily. Pad extra spaces between words, distributing spaces left-to-right. The last line and lines with a single word are left-justified (trailing spaces only).\n\n**Approach:** two-phase greedy. Phase 1 â€” group words into lines. Phase 2 â€” for each line, compute total spaces and spread evenly (with extras starting from the left gap). Last line is special.\n\n**Complexity:** Time O(n), Space O(n) for output.',
+    description: 'Given an array of strings words and a width maxWidth, format the text such that each line has exactly maxWidth characters and is fully (left and right) justified. Pack as many words as possible per line. Pad extra spaces between words, distributing spaces left-to-right. The last line and lines with a single word are left-justified (trailing spaces only).',
     examples: 'Input: words = ["This","is","an","example","of","text","justification."], maxWidth = 16\nOutput:\n[\n   "This    is    an",\n   "example  of text",\n   "justification.  "\n]',
     starterCode: null
   },
@@ -4329,7 +4329,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/expression-add-operators/',
     tags: ['Backtracking', 'Math', 'String'],
     companies: ['Google', 'Meta', 'Amazon', 'Apple'],
-    description: 'Given a string num containing only digits and an integer target, return all possible ways to insert the binary operators \'+\', \'-\', and \'*\' between the digits of num so that the resulting expression evaluates to target. Operands may not contain leading zeros (except the single digit "0" itself).\n\n**Approach:** backtracking with four pieces of state â€” position, currentExpr, evaluatedValue, lastOperand (needed to undo \'+/-\' folding when applying \'*\'). For multiplication we do: newVal = evaluatedValue - lastOperand + lastOperand * currentOperand.\n\n**Complexity:** Time O(4^n), Space O(n) recursion.',
+    description: 'Given a string num containing only digits and an integer target, return all possible ways to insert the binary operators \'+\', \'-\', and \'*\' between the digits of num so that the resulting expression evaluates to target. Operands may not contain leading zeros (except the single digit “0” itself).',
     examples: 'Input: num = "123", target = 6\nOutput: ["1*2*3","1+2+3"]\n\nInput: num = "232", target = 8\nOutput: ["2*3+2","2+3*2"]\n\nInput: num = "3456237490", target = 9191\nOutput: []',
     starterCode: null
   },
@@ -4342,7 +4342,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/insert-interval/',
     tags: ['Array', 'Intervals', 'Sorting'],
     companies: ['Google', 'LinkedIn', 'Amazon', 'Meta', 'Microsoft'],
-    description: 'You are given a sorted array of non-overlapping intervals and a new interval. Insert the new interval into the array so that the intervals are still sorted and non-overlapping (merging if needed). Return the updated list.\n\n**Approach:** three-phase scan â€” copy intervals strictly before newInterval, merge all intervals that overlap newInterval, then copy all intervals strictly after. No sorting needed since input is already sorted.\n\n**Complexity:** Time O(n), Space O(n).',
+    description: 'You are given a sorted array of non-overlapping intervals and a new interval. Insert the new interval into the array so that the intervals are still sorted and non-overlapping (merging if needed). Return the updated list.',
     examples: 'Input: intervals = [[1,3],[6,9]], newInterval = [2,5]\nOutput: [[1,5],[6,9]]\n\nInput: intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]\nOutput: [[1,2],[3,10],[12,16]]',
     starterCode: null
   },
@@ -4355,7 +4355,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/meeting-rooms/',
     tags: ['Array', 'Intervals', 'Sorting'],
     companies: ['Google', 'Meta', 'Amazon', 'Bloomberg'],
-    description: 'Given an array of meeting time intervals where intervals[i] = [start_i, end_i], determine if a person could attend all meetings (i.e., none overlap). Touching intervals (end of one equals start of next) do NOT count as overlap.\n\n**Approach:** sort by start time, then for each adjacent pair check if intervals[i].start < intervals[i-1].end â€” if so, overlap exists.\n\n**Complexity:** Time O(n log n), Space O(1) or O(n) depending on sort.',
+    description: 'Given an array of meeting time intervals where intervals[i] = [start_i, end_i], determine if a person could attend all meetings (i.e., none overlap). Touching intervals (end of one equals start of next) do NOT count as overlap.',
     examples: 'Input: intervals = [[0,30],[5,10],[15,20]]\nOutput: false\n\nInput: intervals = [[7,10],[2,4]]\nOutput: true',
     starterCode: null
   },
@@ -4458,7 +4458,7 @@ const DSA_PROBLEMS = [
     link: 'https://leetcode.com/problems/random-pick-with-weight/',
     companies: ['Google', 'Amazon', 'Meta', 'Apple'],
     tags: ['Binary Search', 'Prefix Sum', 'Randomized'],
-    description: 'You are given a 0-indexed array `w` where `w[i]` is the weight of index `i`. Implement `pickIndex()` which returns a random index in `[0, w.length)` with probability proportional to `w[i]`.\n\n**Approach:** Build prefix sums `prefix[i] = w[0] + ... + w[i]`. Generate a random integer `target` in `[1, prefix[n-1]]`, then binary-search for the smallest `i` where `prefix[i] >= target`.\n\n**Complexity:** Constructor O(n); `pickIndex` O(log n).',
+    description: 'You are given a 0-indexed array `w` where `w[i]` is the weight of index `i`. Implement `pickIndex()` which returns a random index in `[0, w.length)` with probability proportional to `w[i]`.',
     examples: 'Input: Solution([1,3]); pickIndex() many times\nOutput: index 0 ~25%, index 1 ~75%',
     starterCode: null
   },

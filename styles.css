@@ -428,7 +428,8 @@ body.sidebar-collapsed .content {
   margin: 16px 0;
   overflow-x: auto;
   font-size: 13.5px;
-  line-height: 1.55;
+  line-height: 1.6;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 
 .content pre code {
@@ -436,7 +437,127 @@ body.sidebar-collapsed .content {
   padding: 0;
   border: none;
   font-size: inherit;
+  font-family: inherit;
 }
+
+/* ═══════════════════════════════════════════════════ */
+/* ═══  VS Code Dark+ Syntax Theme (dark mode)     ═══ */
+/* ═══════════════════════════════════════════════════ */
+[data-theme="dark"] .content pre {
+  background: #1e1e1e;
+  border-color: #333;
+}
+[data-theme="dark"] .content pre code,
+[data-theme="dark"] .hljs { background: #1e1e1e; color: #d4d4d4; }
+
+/* Keywords: public, class, for, if, return, new, static, void, import */
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag { color: #569cd6; font-weight: normal; }
+
+/* Types: int, boolean, char, double, long + Java standard classes */
+[data-theme="dark"] .hljs-type,
+[data-theme="dark"] .hljs-built_in { color: #4ec9b0; }
+
+/* Class/interface names (Solution, TreeNode, etc.) */
+[data-theme="dark"] .hljs-title,
+[data-theme="dark"] .hljs-title.class_,
+[data-theme="dark"] .hljs-title.class_.inherited__ { color: #4ec9b0; }
+
+/* Method/function names (twoSum, dfs, main) */
+[data-theme="dark"] .hljs-title.function_,
+[data-theme="dark"] .hljs-function .hljs-title { color: #dcdcaa; }
+
+/* Strings */
+[data-theme="dark"] .hljs-string { color: #ce9178; }
+
+/* Numbers */
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal { color: #b5cea8; }
+
+/* Comments */
+[data-theme="dark"] .hljs-comment { color: #6a9955; font-style: italic; }
+
+/* Variables, parameters, properties */
+[data-theme="dark"] .hljs-variable,
+[data-theme="dark"] .hljs-params,
+[data-theme="dark"] .hljs-property,
+[data-theme="dark"] .hljs-attr { color: #9cdcfe; }
+
+/* Annotations, imports, package (@Override, import) */
+[data-theme="dark"] .hljs-meta,
+[data-theme="dark"] .hljs-meta .hljs-keyword { color: #c586c0; }
+
+/* Regex */
+[data-theme="dark"] .hljs-regexp { color: #d16969; }
+
+/* Symbols, operators */
+[data-theme="dark"] .hljs-symbol { color: #b5cea8; }
+[data-theme="dark"] .hljs-punctuation,
+[data-theme="dark"] .hljs-operator { color: #d4d4d4; }
+
+/* Diff */
+[data-theme="dark"] .hljs-deletion { color: #ce9178; background: rgba(206,145,120,0.1); }
+[data-theme="dark"] .hljs-addition { color: #b5cea8; background: rgba(181,206,168,0.1); }
+
+/* Python-specific: decorators, self */
+[data-theme="dark"] .hljs-decorator { color: #dcdcaa; }
+
+/* Inline code in dark mode */
+[data-theme="dark"] .content code {
+  background: #2d2d2d;
+  border-color: #404040;
+  color: #d4d4d4;
+}
+
+/* ═══════════════════════════════════════════════════ */
+/* ═══  VS Code Light+ Syntax Theme (light mode)   ═══ */
+/* ═══════════════════════════════════════════════════ */
+:root .content pre {
+  background: #ffffff;
+  border-color: #e0e0e0;
+}
+:root .content pre code,
+:root .hljs { background: #ffffff; color: #1e1e1e; }
+
+/* Keywords */
+:root .hljs-keyword,
+:root .hljs-selector-tag { color: #0000ff; }
+
+/* Types + built-ins */
+:root .hljs-type,
+:root .hljs-built_in { color: #267f99; }
+
+/* Class names */
+:root .hljs-title,
+:root .hljs-title.class_,
+:root .hljs-title.class_.inherited__ { color: #267f99; }
+
+/* Method names */
+:root .hljs-title.function_,
+:root .hljs-function .hljs-title { color: #795e26; }
+
+/* Strings */
+:root .hljs-string { color: #a31515; }
+
+/* Numbers */
+:root .hljs-number,
+:root .hljs-literal { color: #098658; }
+
+/* Comments */
+:root .hljs-comment { color: #008000; font-style: italic; }
+
+/* Variables, params */
+:root .hljs-variable,
+:root .hljs-params,
+:root .hljs-property,
+:root .hljs-attr { color: #001080; }
+
+/* Annotations, meta */
+:root .hljs-meta,
+:root .hljs-meta .hljs-keyword { color: #af00db; }
+
+/* Regex */
+:root .hljs-regexp { color: #811f3f; }
 
 .content table {
   width: 100%;
@@ -1171,7 +1292,7 @@ body.sidebar-collapsed .content {
   z-index: 9999;
 }
 
-/* Code copy button */
+/* Code block wrapper with copy button + language badge */
 .code-wrapper {
   position: relative;
 }
@@ -1195,6 +1316,24 @@ body.sidebar-collapsed .content {
 .code-wrapper:hover .copy-btn { opacity: 1; }
 .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
 .copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+.code-lang-badge {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 1;
+}
 
 /* Chart.js containers */
 .chart-container {

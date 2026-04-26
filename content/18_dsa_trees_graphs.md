@@ -218,6 +218,142 @@ private void swap(int[] a, int i, int j) {
 - Forgetting `prefixCount.put(0, 1)` in prefix sum + hashmap pattern.
 - In Kadane's, initializing `best = 0` instead of `nums[0]` fails when all elements are negative.
 
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Two Sum II (Sorted)</strong> — Easy</summary>
+
+**Problem:** Given a 1-indexed sorted array `numbers`, find two numbers that add up to `target`. Return their indices.
+
+**Example:**
+Input: numbers = [2, 7, 11, 15], target = 9
+Output: [1, 2]  (numbers[1] + numbers[2] = 2 + 7 = 9)
+
+**Approach:** Two converging pointers. If sum < target, move left right. If sum > target, move right left. Sorted order guarantees convergence.
+
+**Java:**
+```java
+public int[] twoSum(int[] nums, int target) {
+    int l = 0, r = nums.length - 1;
+    while (l < r) {
+        int sum = nums[l] + nums[r];
+        if (sum == target) return new int[]{l + 1, r + 1};
+        else if (sum < target) l++;
+        else r--;
+    }
+    return new int[]{};
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>3Sum</strong> — Medium</summary>
+
+**Problem:** Given an integer array `nums`, find all unique triplets `[nums[i], nums[j], nums[k]]` such that `i != j != k` and `nums[i] + nums[j] + nums[k] == 0`.
+
+**Example:**
+Input: nums = [-1, 0, 1, 2, -1, -4]
+Output: [[-1, -1, 2], [-1, 0, 1]]
+
+**Approach:** Sort the array. Fix one element, then use two pointers on the remaining portion to find pairs that sum to the negative of the fixed element. Skip duplicates at each level.
+
+**Java:**
+```java
+public List<List<Integer>> threeSum(int[] nums) {
+    Arrays.sort(nums);
+    List<List<Integer>> res = new ArrayList<>();
+    for (int i = 0; i < nums.length - 2; i++) {
+        if (i > 0 && nums[i] == nums[i - 1]) continue; // skip dup
+        int lo = i + 1, hi = nums.length - 1;
+        while (lo < hi) {
+            int sum = nums[i] + nums[lo] + nums[hi];
+            if (sum == 0) {
+                res.add(List.of(nums[i], nums[lo], nums[hi]));
+                while (lo < hi && nums[lo] == nums[lo + 1]) lo++;
+                while (lo < hi && nums[hi] == nums[hi - 1]) hi--;
+                lo++; hi--;
+            } else if (sum < 0) lo++;
+            else hi--;
+        }
+    }
+    return res;
+}
+// Time: O(n^2)  Space: O(1) excluding output
+```
+
+**Complexity:** O(n^2) time, O(1) space (excluding output)
+</details>
+
+<details>
+<summary><strong>Product of Array Except Self</strong> — Medium</summary>
+
+**Problem:** Given an integer array `nums`, return an array `answer` where `answer[i]` is the product of all elements except `nums[i]`. You must not use division and run in O(n).
+
+**Example:**
+Input: nums = [1, 2, 3, 4]
+Output: [24, 12, 8, 6]
+
+**Approach:** Two passes. First pass (left to right) builds prefix products. Second pass (right to left) multiplies in suffix products. Each element gets the product of everything before it times everything after it.
+
+**Java:**
+```java
+public int[] productExceptSelf(int[] nums) {
+    int n = nums.length;
+    int[] ans = new int[n];
+    ans[0] = 1;
+    for (int i = 1; i < n; i++)
+        ans[i] = ans[i - 1] * nums[i - 1];   // prefix product
+    int suffix = 1;
+    for (int i = n - 1; i >= 0; i--) {
+        ans[i] *= suffix;
+        suffix *= nums[i];                     // suffix product
+    }
+    return ans;
+}
+// Time: O(n)  Space: O(1) excluding output
+```
+
+**Complexity:** O(n) time, O(1) space (output array not counted)
+</details>
+
+<details>
+<summary><strong>Trapping Rain Water</strong> — Hard</summary>
+
+**Problem:** Given `n` non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.
+
+**Example:**
+Input: height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
+Output: 6
+
+**Approach:** Two pointers from both ends. Track leftMax and rightMax. Water at any position = min(leftMax, rightMax) - height[i]. Process the side with the smaller max since that determines the water level.
+
+**Java:**
+```java
+public int trap(int[] height) {
+    int l = 0, r = height.length - 1;
+    int leftMax = 0, rightMax = 0, water = 0;
+    while (l < r) {
+        if (height[l] < height[r]) {
+            leftMax = Math.max(leftMax, height[l]);
+            water += leftMax - height[l];
+            l++;
+        } else {
+            rightMax = Math.max(rightMax, height[r]);
+            water += rightMax - height[r];
+            r--;
+        }
+    }
+    return water;
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
+
 ### Problem List
 
 | # | Problem | Difficulty | Pattern | Key Insight |
@@ -357,6 +493,104 @@ public int longestConsecutive(int[] nums) {
 - Don't use mutable objects (`int[]`) as HashMap keys — they use reference equality. Convert to `String` or `List<Integer>`.
 - `HashMap.get()` returns `null` for missing keys — unboxing null to `int` throws NPE.
 
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Two Sum</strong> — Easy</summary>
+
+**Problem:** Given an array of integers `nums` and an integer `target`, return the indices of the two numbers that add up to `target`. Each input has exactly one solution and you may not use the same element twice.
+
+**Example:**
+Input: nums = [2, 7, 11, 15], target = 9
+Output: [0, 1]  (nums[0] + nums[1] = 2 + 7 = 9)
+
+**Approach:** One-pass HashMap. For each element, check if `target - nums[i]` already exists in the map. If yes, return both indices. Otherwise, store `nums[i] -> i` in the map.
+
+**Java:**
+```java
+public int[] twoSum(int[] nums, int target) {
+    Map<Integer, Integer> seen = new HashMap<>();
+    for (int i = 0; i < nums.length; i++) {
+        int comp = target - nums[i];
+        if (seen.containsKey(comp)) return new int[]{seen.get(comp), i};
+        seen.put(nums[i], i);
+    }
+    return new int[]{};
+}
+// Time: O(n)  Space: O(n)
+```
+
+**Complexity:** O(n) time, O(n) space
+</details>
+
+<details>
+<summary><strong>Group Anagrams</strong> — Medium</summary>
+
+**Problem:** Given an array of strings `strs`, group the anagrams together. An anagram is a word formed by rearranging letters of another word.
+
+**Example:**
+Input: strs = ["eat", "tea", "tan", "ate", "nat", "bat"]
+Output: [["eat", "tea", "ate"], ["tan", "nat"], ["bat"]]
+
+**Approach:** Use a HashMap where the key is the sorted version of each string. All anagrams produce the same sorted key. Group strings by this canonical key.
+
+**Java:**
+```java
+public List<List<String>> groupAnagrams(String[] strs) {
+    Map<String, List<String>> map = new HashMap<>();
+    for (String s : strs) {
+        char[] ch = s.toCharArray();
+        Arrays.sort(ch);
+        String key = new String(ch);
+        map.computeIfAbsent(key, k -> new ArrayList<>()).add(s);
+    }
+    return new ArrayList<>(map.values());
+}
+// Time: O(n * k log k)  Space: O(n * k)  where k = max string length
+```
+
+**Complexity:** O(n * k log k) time, O(n * k) space
+</details>
+
+<details>
+<summary><strong>LRU Cache</strong> — Medium</summary>
+
+**Problem:** Design a data structure that supports `get(key)` and `put(key, value)` in O(1) time. When capacity is exceeded, evict the least recently used key.
+
+**Example:**
+LRUCache cache = new LRUCache(2);
+cache.put(1, 1); cache.put(2, 2);
+cache.get(1);       // returns 1
+cache.put(3, 3);    // evicts key 2
+cache.get(2);       // returns -1 (not found)
+
+**Approach:** Combine a HashMap (O(1) lookup) with a doubly linked list (O(1) insert/remove). On access, move the node to the front. On capacity overflow, remove from the tail.
+
+**Java:**
+```java
+class LRUCache extends LinkedHashMap<Integer, Integer> {
+    private int cap;
+    public LRUCache(int capacity) {
+        super(capacity, 0.75f, true); // accessOrder = true
+        this.cap = capacity;
+    }
+    public int get(int key) {
+        return super.getOrDefault(key, -1);
+    }
+    public void put(int key, int value) {
+        super.put(key, value);
+    }
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {
+        return size() > cap;
+    }
+}
+// Time: O(1) for both get and put  Space: O(capacity)
+```
+
+**Complexity:** O(1) time per operation, O(capacity) space
+</details>
+
 ### Problem List
 
 | # | Problem | Difficulty | Pattern | Key Insight |
@@ -485,6 +719,135 @@ public ListNode removeNthFromEnd(ListNode head, int n) {
 - Always draw 3-4 nodes and trace your pointer logic before coding.
 - Don't lose the `next` reference before overwriting `curr.next` in reversal.
 - Check for `null` before accessing `.next.next`.
+
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Reverse Linked List</strong> — Easy</summary>
+
+**Problem:** Given the head of a singly linked list, reverse the list and return the new head.
+
+**Example:**
+Input: 1 -> 2 -> 3 -> 4 -> 5
+Output: 5 -> 4 -> 3 -> 2 -> 1
+
+**Approach:** Iterative three-pointer technique. Keep track of prev, curr, and next. At each step, point curr.next to prev, then advance all three pointers.
+
+**Java:**
+```java
+public ListNode reverseList(ListNode head) {
+    ListNode prev = null, curr = head;
+    while (curr != null) {
+        ListNode next = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = next;
+    }
+    return prev;
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Merge Two Sorted Lists</strong> — Easy</summary>
+
+**Problem:** Merge two sorted linked lists into one sorted list by splicing their nodes together.
+
+**Example:**
+Input: l1 = 1 -> 2 -> 4, l2 = 1 -> 3 -> 4
+Output: 1 -> 1 -> 2 -> 3 -> 4 -> 4
+
+**Approach:** Use a dummy head node to simplify edge cases. Compare heads of both lists, append the smaller one, advance that pointer. Attach remaining nodes at the end.
+
+**Java:**
+```java
+public ListNode mergeTwoLists(ListNode l1, ListNode l2) {
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (l1 != null && l2 != null) {
+        if (l1.val <= l2.val) { tail.next = l1; l1 = l1.next; }
+        else                  { tail.next = l2; l2 = l2.next; }
+        tail = tail.next;
+    }
+    tail.next = (l1 != null) ? l1 : l2;
+    return dummy.next;
+}
+// Time: O(n + m)  Space: O(1)
+```
+
+**Complexity:** O(n + m) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Linked List Cycle</strong> — Easy</summary>
+
+**Problem:** Given the head of a linked list, determine if it contains a cycle.
+
+**Example:**
+Input: head = [3, 2, 0, -4] with tail connecting to node index 1
+Output: true
+
+**Approach:** Floyd's Tortoise and Hare. Slow pointer moves 1 step, fast moves 2 steps. If they meet, there's a cycle. If fast reaches null, there's no cycle.
+
+**Java:**
+```java
+public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Reorder List</strong> — Medium</summary>
+
+**Problem:** Reorder a linked list from L0 -> L1 -> ... -> Ln to L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...
+
+**Example:**
+Input: 1 -> 2 -> 3 -> 4 -> 5
+Output: 1 -> 5 -> 2 -> 4 -> 3
+
+**Approach:** Three steps: (1) Find middle using slow/fast pointers, (2) Reverse the second half, (3) Merge the two halves by interleaving.
+
+**Java:**
+```java
+public void reorderList(ListNode head) {
+    if (head == null || head.next == null) return;
+    // 1. Find middle
+    ListNode slow = head, fast = head;
+    while (fast.next != null && fast.next.next != null) {
+        slow = slow.next; fast = fast.next.next;
+    }
+    // 2. Reverse second half
+    ListNode prev = null, curr = slow.next;
+    slow.next = null;
+    while (curr != null) {
+        ListNode next = curr.next;
+        curr.next = prev; prev = curr; curr = next;
+    }
+    // 3. Merge two halves
+    ListNode first = head, second = prev;
+    while (second != null) {
+        ListNode tmp1 = first.next, tmp2 = second.next;
+        first.next = second; second.next = tmp1;
+        first = tmp1; second = tmp2;
+    }
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
 
 ### Problem List
 
@@ -832,6 +1195,117 @@ This template also solves: split array largest sum, capacity to ship packages, m
 - Off-by-one in `hi`: bisect templates use `hi = n` (past end); exact match uses `hi = n-1`.
 - `lo = mid` (not `mid + 1`) causes infinite loops when `lo + 1 == hi`.
 
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Search in Rotated Sorted Array</strong> — Medium</summary>
+
+**Problem:** Given a sorted array that has been rotated at some pivot, search for a target in O(log n). Array has no duplicates.
+
+**Example:**
+Input: nums = [4, 5, 6, 7, 0, 1, 2], target = 0
+Output: 4
+
+**Approach:** Standard binary search with one extra check: determine which half is sorted. If target falls within the sorted half, search there; otherwise search the other half.
+
+**Java:**
+```java
+public int search(int[] nums, int target) {
+    int lo = 0, hi = nums.length - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (nums[mid] == target) return mid;
+        if (nums[lo] <= nums[mid]) { // left half sorted
+            if (target >= nums[lo] && target < nums[mid]) hi = mid - 1;
+            else lo = mid + 1;
+        } else { // right half sorted
+            if (target > nums[mid] && target <= nums[hi]) lo = mid + 1;
+            else hi = mid - 1;
+        }
+    }
+    return -1;
+}
+// Time: O(log n)  Space: O(1)
+```
+
+**Complexity:** O(log n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Find First and Last Position of Element</strong> — Medium</summary>
+
+**Problem:** Given a sorted array of integers, find the starting and ending position of a given target value. Return [-1, -1] if not found. Must be O(log n).
+
+**Example:**
+Input: nums = [5, 7, 7, 8, 8, 10], target = 8
+Output: [3, 4]
+
+**Approach:** Run bisect-left to find the first occurrence and bisect-right to find one past the last occurrence. Two binary searches, each O(log n).
+
+**Java:**
+```java
+public int[] searchRange(int[] nums, int target) {
+    int left = bisectLeft(nums, target);
+    int right = bisectRight(nums, target) - 1;
+    if (left <= right && left < nums.length && nums[left] == target)
+        return new int[]{left, right};
+    return new int[]{-1, -1};
+}
+private int bisectLeft(int[] nums, int target) {
+    int lo = 0, hi = nums.length;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (nums[mid] >= target) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+private int bisectRight(int[] nums, int target) {
+    int lo = 0, hi = nums.length;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (nums[mid] <= target) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
+}
+// Time: O(log n)  Space: O(1)
+```
+
+**Complexity:** O(log n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Koko Eating Bananas</strong> — Medium</summary>
+
+**Problem:** Koko has `piles` of bananas and `h` hours. Each hour she eats at speed `k` bananas from one pile. Find the minimum integer `k` such that she can eat all bananas within `h` hours.
+
+**Example:**
+Input: piles = [3, 6, 7, 11], h = 8
+Output: 4  (at speed 4: ceil(3/4)+ceil(6/4)+ceil(7/4)+ceil(11/4) = 1+2+2+3 = 8 <= 8)
+
+**Approach:** Binary search on the answer space [1, max(piles)]. For each candidate speed, check if Koko can finish within h hours. The feasibility function is monotonic: higher speed always finishes faster.
+
+**Java:**
+```java
+public int minEatingSpeed(int[] piles, int h) {
+    int lo = 1, hi = 0;
+    for (int p : piles) hi = Math.max(hi, p);
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        int hours = 0;
+        for (int p : piles) hours += (p + mid - 1) / mid;
+        if (hours <= h) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+// Time: O(n * log(max(piles)))  Space: O(1)
+```
+
+**Complexity:** O(n * log(max(piles))) time, O(1) space
+</details>
+
 ### Problem List
 
 | # | Problem | Difficulty | Pattern | Key Insight |
@@ -956,6 +1430,112 @@ public int characterReplacement(String s, int k) {
 - **Longest:** shrink only when invalid, update after while. **Shortest:** update inside while loop.
 - **Exactly K:** `atMost(K) - atMost(K-1)`.
 - Use `.equals()` for Integer comparison (not `==`, which fails for values > 127).
+
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Longest Substring Without Repeating Characters</strong> — Medium</summary>
+
+**Problem:** Given a string `s`, find the length of the longest substring without repeating characters.
+
+**Example:**
+Input: s = "abcabcbb"
+Output: 3  (the substring "abc")
+
+**Approach:** Variable-size sliding window. Expand right, tracking last seen index of each character in a map. When a duplicate is found within the current window, jump left past its previous occurrence.
+
+**Java:**
+```java
+public int lengthOfLongestSubstring(String s) {
+    Map<Character, Integer> lastSeen = new HashMap<>();
+    int left = 0, maxLen = 0;
+    for (int right = 0; right < s.length(); right++) {
+        char c = s.charAt(right);
+        if (lastSeen.containsKey(c) && lastSeen.get(c) >= left)
+            left = lastSeen.get(c) + 1;
+        lastSeen.put(c, right);
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}
+// Time: O(n)  Space: O(min(n, charset))
+```
+
+**Complexity:** O(n) time, O(min(n, charset size)) space
+</details>
+
+<details>
+<summary><strong>Minimum Window Substring</strong> — Hard</summary>
+
+**Problem:** Given strings `s` and `t`, find the minimum window in `s` that contains all characters of `t` (including duplicates). Return "" if no such window exists.
+
+**Example:**
+Input: s = "ADOBECODEBANC", t = "ABC"
+Output: "BANC"
+
+**Approach:** Variable-size window with a "have/need" counter. Expand right, incrementing character counts. When all required characters are satisfied, shrink from left to minimize the window while recording the best.
+
+**Java:**
+```java
+public String minWindow(String s, String t) {
+    Map<Character, Integer> need = new HashMap<>(), window = new HashMap<>();
+    for (char c : t.toCharArray()) need.merge(c, 1, Integer::sum);
+    int have = 0, total = need.size();
+    int left = 0, minLen = Integer.MAX_VALUE, minStart = 0;
+    for (int right = 0; right < s.length(); right++) {
+        char c = s.charAt(right);
+        window.merge(c, 1, Integer::sum);
+        if (need.containsKey(c) && window.get(c).equals(need.get(c))) have++;
+        while (have == total) {
+            if (right - left + 1 < minLen) {
+                minLen = right - left + 1; minStart = left;
+            }
+            char d = s.charAt(left);
+            window.merge(d, -1, Integer::sum);
+            if (need.containsKey(d) && window.get(d) < need.get(d)) have--;
+            left++;
+        }
+    }
+    return minLen == Integer.MAX_VALUE ? "" : s.substring(minStart, minStart + minLen);
+}
+// Time: O(|s| + |t|)  Space: O(|s| + |t|)
+```
+
+**Complexity:** O(|s| + |t|) time, O(|s| + |t|) space
+</details>
+
+<details>
+<summary><strong>Longest Repeating Character Replacement</strong> — Medium</summary>
+
+**Problem:** Given a string `s` and integer `k`, find the length of the longest substring containing the same letter after performing at most `k` character replacements.
+
+**Example:**
+Input: s = "AABABBA", k = 1
+Output: 4  (replace the one 'B' in "AABA" to get "AAAA")
+
+**Approach:** Variable-size window. Track the frequency of the most common character in the window (maxFreq). The window is valid if `windowSize - maxFreq <= k` (replacements needed fit within budget). Key insight: maxFreq never needs to decrease because only a larger maxFreq can yield a longer valid window.
+
+**Java:**
+```java
+public int characterReplacement(String s, int k) {
+    int[] count = new int[26];
+    int left = 0, maxFreq = 0, result = 0;
+    for (int right = 0; right < s.length(); right++) {
+        count[s.charAt(right) - 'A']++;
+        maxFreq = Math.max(maxFreq, count[s.charAt(right) - 'A']);
+        while ((right - left + 1) - maxFreq > k) {
+            count[s.charAt(left) - 'A']--;
+            left++;
+        }
+        result = Math.max(result, right - left + 1);
+    }
+    return result;
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space (26-letter array)
+</details>
 
 ### Problem List
 
@@ -1132,6 +1712,130 @@ private TreeNode desHelper(Queue<String> q) {
 - **Global variable pattern:** diameter, max path sum — update instance var during DFS.
 - Use `long` bounds in BST validation (not `int`), or nodes at `Integer.MIN/MAX_VALUE` break.
 - "Height" = edges from node to deepest leaf. "Depth" = edges from root to node.
+
+### Key Problems — Detailed Solutions
+
+<details>
+<summary><strong>Validate BST</strong> — Medium</summary>
+
+**Problem:** Given the root of a binary tree, determine if it is a valid binary search tree (BST). Every node in the left subtree must be strictly less than the node, and every node in the right subtree must be strictly greater.
+
+**Example:**
+Input: root = [5, 1, 4, null, null, 3, 6]
+Output: false  (node 4 is in the right subtree of 5 but 4 < 5)
+
+**Approach:** DFS passing a valid range (min, max) down the tree. Each node must fall within its allowed range. Use long to handle edge cases at Integer.MIN_VALUE/MAX_VALUE.
+
+**Java:**
+```java
+public boolean isValidBST(TreeNode root) {
+    return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+}
+private boolean validate(TreeNode node, long min, long max) {
+    if (node == null) return true;
+    if (node.val <= min || node.val >= max) return false;
+    return validate(node.left, min, node.val)
+        && validate(node.right, node.val, max);
+}
+// Time: O(n)  Space: O(h) where h = tree height
+```
+
+**Complexity:** O(n) time, O(h) space
+</details>
+
+<details>
+<summary><strong>Lowest Common Ancestor of a Binary Tree</strong> — Medium</summary>
+
+**Problem:** Given a binary tree and two nodes `p` and `q`, find their lowest common ancestor (LCA). The LCA is the deepest node that is an ancestor of both p and q (a node can be an ancestor of itself).
+
+**Example:**
+Input: root = [3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], p = 5, q = 1
+Output: 3
+
+**Approach:** Post-order DFS. If current node is null, p, or q, return it. Recurse left and right. If both return non-null, current node is the LCA. If only one returns non-null, propagate it upward.
+
+**Java:**
+```java
+public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+    if (root == null || root == p || root == q) return root;
+    TreeNode left = lowestCommonAncestor(root.left, p, q);
+    TreeNode right = lowestCommonAncestor(root.right, p, q);
+    if (left != null && right != null) return root;
+    return left != null ? left : right;
+}
+// Time: O(n)  Space: O(h)
+```
+
+**Complexity:** O(n) time, O(h) space
+</details>
+
+<details>
+<summary><strong>Level Order Traversal</strong> — Medium</summary>
+
+**Problem:** Given the root of a binary tree, return the level order traversal of its nodes' values (i.e., from left to right, level by level).
+
+**Example:**
+Input: root = [3, 9, 20, null, null, 15, 7]
+Output: [[3], [9, 20], [15, 7]]
+
+**Approach:** BFS with a queue. Snapshot the queue size at the start of each level, process that many nodes, and add their children. Each iteration of the outer loop processes one complete level.
+
+**Java:**
+```java
+public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> res = new ArrayList<>();
+    if (root == null) return res;
+    Queue<TreeNode> q = new LinkedList<>();
+    q.offer(root);
+    while (!q.isEmpty()) {
+        int size = q.size();
+        List<Integer> level = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            TreeNode node = q.poll();
+            level.add(node.val);
+            if (node.left != null) q.offer(node.left);
+            if (node.right != null) q.offer(node.right);
+        }
+        res.add(level);
+    }
+    return res;
+}
+// Time: O(n)  Space: O(n)
+```
+
+**Complexity:** O(n) time, O(n) space
+</details>
+
+<details>
+<summary><strong>Binary Tree Maximum Path Sum</strong> — Hard</summary>
+
+**Problem:** Given a binary tree, find the maximum path sum. A path goes from any node to any node along parent-child connections. The path must contain at least one node.
+
+**Example:**
+Input: root = [-10, 9, 20, null, null, 15, 7]
+Output: 42  (path: 15 -> 20 -> 7)
+
+**Approach:** DFS with a global variable tracking the best path sum seen. At each node, compute the max gain from left and right children (clamped to 0 to discard negative paths). Update the global max with left + right + node.val. Return node.val + max(left, right) upward since a path through a parent can only go through one child.
+
+**Java:**
+```java
+private int maxSum = Integer.MIN_VALUE;
+public int maxPathSum(TreeNode root) {
+    dfs(root);
+    return maxSum;
+}
+private int dfs(TreeNode node) {
+    if (node == null) return 0;
+    int left = Math.max(0, dfs(node.left));
+    int right = Math.max(0, dfs(node.right));
+    maxSum = Math.max(maxSum, left + right + node.val);
+    return node.val + Math.max(left, right);
+}
+// Time: O(n)  Space: O(h)
+```
+
+**Complexity:** O(n) time, O(h) space
+</details>
 
 ### Problem List
 
@@ -1550,6 +2254,140 @@ public void dfsIterative(Map<Integer, List<Integer>> graph, int start) {
 - Not handling disconnected components — always loop through all nodes if the graph might be disconnected.
 - Using recursion for DFS on large inputs (10^5+ nodes) — switch to iterative.
 
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>Clone Graph</strong> — Medium</summary>
+
+**Problem:** Given a reference to a node in a connected undirected graph, return a deep copy of the graph. Each node has a value and a list of neighbors.
+
+**Example:**
+Input: adjList = [[2,4],[1,3],[2,4],[1,3]]  (4-node cycle)
+Output: deep copy of the same graph structure
+
+**Approach:** BFS (or DFS) with a HashMap mapping old nodes to new nodes. When visiting a neighbor, if it hasn't been cloned yet, create the clone and add it to the queue. Always use the cloned version when building the adjacency list.
+
+**Java:**
+```java
+public Node cloneGraph(Node node) {
+    if (node == null) return null;
+    Map<Node, Node> map = new HashMap<>();
+    Queue<Node> queue = new LinkedList<>();
+    map.put(node, new Node(node.val));
+    queue.offer(node);
+    while (!queue.isEmpty()) {
+        Node curr = queue.poll();
+        for (Node neighbor : curr.neighbors) {
+            if (!map.containsKey(neighbor)) {
+                map.put(neighbor, new Node(neighbor.val));
+                queue.offer(neighbor);
+            }
+            map.get(curr).neighbors.add(map.get(neighbor));
+        }
+    }
+    return map.get(node);
+}
+// Time: O(V + E)  Space: O(V)
+```
+
+**Complexity:** O(V + E) time, O(V) space
+</details>
+
+<details>
+<summary><strong>Word Ladder</strong> — Hard</summary>
+
+**Problem:** Given `beginWord`, `endWord`, and a `wordList`, find the length of the shortest transformation sequence from beginWord to endWord, where each step changes exactly one letter and the intermediate word must exist in wordList.
+
+**Example:**
+Input: beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log","cog"]
+Output: 5  (hit -> hot -> dot -> dog -> cog)
+
+**Approach:** BFS where each word is a node and edges connect words differing by one letter. To find neighbors efficiently, try replacing each character with 'a'-'z' and check if the result is in the word set.
+
+**Java:**
+```java
+public int ladderLength(String begin, String end, List<String> wordList) {
+    Set<String> dict = new HashSet<>(wordList);
+    if (!dict.contains(end)) return 0;
+    Queue<String> queue = new LinkedList<>();
+    queue.offer(begin);
+    dict.remove(begin);
+    int steps = 1;
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        for (int i = 0; i < size; i++) {
+            char[] word = queue.poll().toCharArray();
+            for (int j = 0; j < word.length; j++) {
+                char orig = word[j];
+                for (char c = 'a'; c <= 'z'; c++) {
+                    word[j] = c;
+                    String next = new String(word);
+                    if (next.equals(end)) return steps + 1;
+                    if (dict.contains(next)) {
+                        dict.remove(next);
+                        queue.offer(next);
+                    }
+                }
+                word[j] = orig;
+            }
+        }
+        steps++;
+    }
+    return 0;
+}
+// Time: O(M^2 * N) where M = word length, N = wordList size  Space: O(M * N)
+```
+
+**Complexity:** O(M^2 * N) time, O(M * N) space
+</details>
+
+<details>
+<summary><strong>Pacific Atlantic Water Flow</strong> — Medium</summary>
+
+**Problem:** Given an `m x n` matrix of heights, find all cells where water can flow to both the Pacific (top/left border) and Atlantic (bottom/right border) oceans. Water flows from a cell to neighbors with equal or lower height.
+
+**Example:**
+Input: heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]
+Output: [[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]
+
+**Approach:** Reverse the problem: BFS/DFS from ocean borders inward, moving to neighbors with equal or greater height. Run once from Pacific borders, once from Atlantic borders. The answer is the intersection of reachable cells.
+
+**Java:**
+```java
+public List<List<Integer>> pacificAtlantic(int[][] heights) {
+    int m = heights.length, n = heights[0].length;
+    boolean[][] pacific = new boolean[m][n], atlantic = new boolean[m][n];
+    for (int i = 0; i < m; i++) {
+        dfs(heights, pacific, i, 0);
+        dfs(heights, atlantic, i, n - 1);
+    }
+    for (int j = 0; j < n; j++) {
+        dfs(heights, pacific, 0, j);
+        dfs(heights, atlantic, m - 1, j);
+    }
+    List<List<Integer>> res = new ArrayList<>();
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++)
+            if (pacific[i][j] && atlantic[i][j])
+                res.add(List.of(i, j));
+    return res;
+}
+private void dfs(int[][] h, boolean[][] visited, int r, int c) {
+    visited[r][c] = true;
+    int[][] dirs = {{0,1},{0,-1},{1,0},{-1,0}};
+    for (int[] d : dirs) {
+        int nr = r + d[0], nc = c + d[1];
+        if (nr >= 0 && nr < h.length && nc >= 0 && nc < h[0].length
+            && !visited[nr][nc] && h[nr][nc] >= h[r][c])
+            dfs(h, visited, nr, nc);
+    }
+}
+// Time: O(m * n)  Space: O(m * n)
+```
+
+**Complexity:** O(m * n) time, O(m * n) space
+</details>
+
 **Problem List — Graph Fundamentals:**
 
 | #   | Problem                            | Difficulty | Key Insight                          |
@@ -1751,6 +2589,127 @@ public boolean hasCycleUndirected(int n, int[][] edges) {
 - Confusing topological sort with general sorting — topo sort only works on DAGs.
 - In Union-Find, forgetting path compression — degrades from O(alpha(n)) to O(n).
 
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>Course Schedule</strong> — Medium</summary>
+
+**Problem:** There are `numCourses` courses labeled 0 to n-1. Given prerequisites as pairs [a, b] meaning "you must take b before a", determine if it is possible to finish all courses (i.e., no cycle in the prerequisite graph).
+
+**Example:**
+Input: numCourses = 4, prerequisites = [[1,0],[2,0],[3,1],[3,2]]
+Output: true  (take 0, then 1 and 2 in any order, then 3)
+
+**Approach:** Build a directed graph and run Kahn's topological sort (BFS). Start with all nodes having indegree 0. If the topological order includes all nodes, no cycle exists. If fewer nodes are processed, a cycle prevents completion.
+
+**Java:**
+```java
+public boolean canFinish(int numCourses, int[][] prerequisites) {
+    int[] indegree = new int[numCourses];
+    List<List<Integer>> graph = new ArrayList<>();
+    for (int i = 0; i < numCourses; i++) graph.add(new ArrayList<>());
+    for (int[] p : prerequisites) {
+        graph.get(p[1]).add(p[0]);
+        indegree[p[0]]++;
+    }
+    Queue<Integer> queue = new LinkedList<>();
+    for (int i = 0; i < numCourses; i++)
+        if (indegree[i] == 0) queue.offer(i);
+    int count = 0;
+    while (!queue.isEmpty()) {
+        int node = queue.poll();
+        count++;
+        for (int next : graph.get(node))
+            if (--indegree[next] == 0) queue.offer(next);
+    }
+    return count == numCourses;
+}
+// Time: O(V + E)  Space: O(V + E)
+```
+
+**Complexity:** O(V + E) time, O(V + E) space
+</details>
+
+<details>
+<summary><strong>Network Delay Time</strong> — Medium</summary>
+
+**Problem:** Given a network of `n` nodes and weighted directed edges `times[i] = [u, v, w]`, send a signal from node `k`. Return the time it takes for all nodes to receive the signal, or -1 if impossible.
+
+**Example:**
+Input: times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2
+Output: 2
+
+**Approach:** Dijkstra's algorithm from source k. Use a min-heap ordered by distance. The answer is the maximum distance across all reachable nodes. If any node is unreachable, return -1.
+
+**Java:**
+```java
+public int networkDelayTime(int[][] times, int n, int k) {
+    List<int[]>[] graph = new List[n + 1];
+    for (int i = 1; i <= n; i++) graph[i] = new ArrayList<>();
+    for (int[] t : times) graph[t[0]].add(new int[]{t[1], t[2]});
+    int[] dist = new int[n + 1];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[k] = 0;
+    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] - b[0]);
+    pq.offer(new int[]{0, k});
+    while (!pq.isEmpty()) {
+        int[] curr = pq.poll();
+        int d = curr[0], u = curr[1];
+        if (d > dist[u]) continue;
+        for (int[] edge : graph[u]) {
+            int v = edge[0], w = edge[1];
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.offer(new int[]{dist[v], v});
+            }
+        }
+    }
+    int ans = 0;
+    for (int i = 1; i <= n; i++) ans = Math.max(ans, dist[i]);
+    return ans == Integer.MAX_VALUE ? -1 : ans;
+}
+// Time: O((V + E) log V)  Space: O(V + E)
+```
+
+**Complexity:** O((V + E) log V) time, O(V + E) space
+</details>
+
+<details>
+<summary><strong>Redundant Connection</strong> — Medium</summary>
+
+**Problem:** Given an undirected graph that started as a tree with n nodes, one additional edge was added. Find the edge that, when removed, results in a tree. If multiple answers, return the one appearing last in the input.
+
+**Example:**
+Input: edges = [[1,2],[1,3],[2,3]]
+Output: [2,3]
+
+**Approach:** Union-Find. Process edges in order. For each edge, union the two nodes. If they are already in the same component (find returns the same root), this edge creates a cycle and is the answer.
+
+**Java:**
+```java
+public int[] findRedundantConnection(int[][] edges) {
+    int n = edges.length;
+    int[] parent = new int[n + 1], rank = new int[n + 1];
+    for (int i = 1; i <= n; i++) parent[i] = i;
+    for (int[] e : edges) {
+        int px = find(parent, e[0]), py = find(parent, e[1]);
+        if (px == py) return e;
+        if (rank[px] < rank[py]) { int t = px; px = py; py = t; }
+        parent[py] = px;
+        if (rank[px] == rank[py]) rank[px]++;
+    }
+    return new int[]{};
+}
+private int find(int[] parent, int x) {
+    if (parent[x] != x) parent[x] = find(parent, parent[x]);
+    return parent[x];
+}
+// Time: O(n * alpha(n)) ~ O(n)  Space: O(n)
+```
+
+**Complexity:** O(n * alpha(n)) effectively O(n) time, O(n) space
+</details>
+
 **Problem List — Advanced Graphs:**
 
 | #   | Problem                               | Difficulty | Key Insight                        |
@@ -1901,6 +2860,125 @@ public int orangesRotting(int[][] grid) {
 - Forgetting to mark visited before enqueueing (BFS) — causes TLE from duplicate processing.
 - Modifying the grid when you're not supposed to — use a separate `visited` array.
 - Off-by-one in bounds checking — always test edges of the grid.
+
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>Number of Islands</strong> — Medium</summary>
+
+**Problem:** Given a 2D grid of '1's (land) and '0's (water), count the number of islands. An island is surrounded by water and formed by connecting adjacent land cells horizontally or vertically.
+
+**Example:**
+Input: grid = [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]
+Output: 3
+
+**Approach:** Iterate through the grid. When a '1' is found, increment the island count and DFS/flood-fill to mark the entire island as visited (sink it by setting cells to '0').
+
+**Java:**
+```java
+public int numIslands(char[][] grid) {
+    int count = 0;
+    for (int i = 0; i < grid.length; i++)
+        for (int j = 0; j < grid[0].length; j++)
+            if (grid[i][j] == '1') { count++; dfs(grid, i, j); }
+    return count;
+}
+private void dfs(char[][] grid, int r, int c) {
+    if (r < 0 || r >= grid.length || c < 0 || c >= grid[0].length
+        || grid[r][c] != '1') return;
+    grid[r][c] = '0';
+    dfs(grid, r + 1, c); dfs(grid, r - 1, c);
+    dfs(grid, r, c + 1); dfs(grid, r, c - 1);
+}
+// Time: O(m * n)  Space: O(m * n) worst-case recursion stack
+```
+
+**Complexity:** O(m * n) time, O(m * n) space (recursion depth)
+</details>
+
+<details>
+<summary><strong>Rotting Oranges</strong> — Medium</summary>
+
+**Problem:** Given a grid where 0 = empty, 1 = fresh orange, 2 = rotten orange, every minute each rotten orange rots adjacent fresh oranges. Return the minimum minutes until no fresh orange remains, or -1 if impossible.
+
+**Example:**
+Input: grid = [[2,1,1],[1,1,0],[0,1,1]]
+Output: 4
+
+**Approach:** Multi-source BFS. Enqueue all initially rotten oranges at once. Each BFS level represents one minute. Track remaining fresh count; if it reaches 0, return the number of minutes elapsed.
+
+**Java:**
+```java
+public int orangesRotting(int[][] grid) {
+    int m = grid.length, n = grid[0].length, fresh = 0;
+    Queue<int[]> queue = new LinkedList<>();
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++) {
+            if (grid[i][j] == 2) queue.offer(new int[]{i, j});
+            if (grid[i][j] == 1) fresh++;
+        }
+    if (fresh == 0) return 0;
+    int[][] dirs = {{0,1},{0,-1},{1,0},{-1,0}};
+    int mins = 0;
+    while (!queue.isEmpty() && fresh > 0) {
+        int size = queue.size();
+        mins++;
+        for (int i = 0; i < size; i++) {
+            int[] cell = queue.poll();
+            for (int[] d : dirs) {
+                int nr = cell[0] + d[0], nc = cell[1] + d[1];
+                if (nr >= 0 && nr < m && nc >= 0 && nc < n && grid[nr][nc] == 1) {
+                    grid[nr][nc] = 2; fresh--;
+                    queue.offer(new int[]{nr, nc});
+                }
+            }
+        }
+    }
+    return fresh == 0 ? mins : -1;
+}
+// Time: O(m * n)  Space: O(m * n)
+```
+
+**Complexity:** O(m * n) time, O(m * n) space
+</details>
+
+<details>
+<summary><strong>Word Search</strong> — Medium</summary>
+
+**Problem:** Given an `m x n` board of characters and a string `word`, return true if the word exists in the grid. The word can be constructed from letters of sequentially adjacent cells (horizontal or vertical). Each cell may be used at most once.
+
+**Example:**
+Input: board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"
+Output: true
+
+**Approach:** DFS backtracking from each cell. At each step, mark the cell visited (e.g., set to '#'), explore all 4 directions for the next character, then restore the cell. Return true if the full word is matched.
+
+**Java:**
+```java
+public boolean exist(char[][] board, String word) {
+    for (int i = 0; i < board.length; i++)
+        for (int j = 0; j < board[0].length; j++)
+            if (dfs(board, word, i, j, 0)) return true;
+    return false;
+}
+private boolean dfs(char[][] board, String word, int r, int c, int idx) {
+    if (idx == word.length()) return true;
+    if (r < 0 || r >= board.length || c < 0 || c >= board[0].length
+        || board[r][c] != word.charAt(idx)) return false;
+    char tmp = board[r][c];
+    board[r][c] = '#';
+    boolean found = dfs(board, word, r+1, c, idx+1)
+                 || dfs(board, word, r-1, c, idx+1)
+                 || dfs(board, word, r, c+1, idx+1)
+                 || dfs(board, word, r, c-1, idx+1);
+    board[r][c] = tmp;
+    return found;
+}
+// Time: O(m * n * 4^L) where L = word length  Space: O(L) recursion depth
+```
+
+**Complexity:** O(m * n * 4^L) time, O(L) space
+</details>
 
 **Problem List — Grid/Matrix:**
 
@@ -2196,6 +3274,125 @@ public int numDecodings(String s) {
 }
 ```
 
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>House Robber</strong> — Medium</summary>
+
+**Problem:** Given an array `nums` representing money in each house along a street, find the maximum amount you can rob without robbing two adjacent houses.
+
+**Example:**
+Input: nums = [2, 7, 9, 3, 1]
+Output: 12  (rob houses 0, 2, 4: 2 + 9 + 1 = 12)
+
+**Approach:** dp[i] = max money robbing houses 0..i. At each house, choose the better of: (1) skip this house (dp[i-1]), or (2) rob this house plus the best from two houses back (dp[i-2] + nums[i]). Space-optimize to two variables.
+
+**Java:**
+```java
+public int rob(int[] nums) {
+    if (nums.length == 1) return nums[0];
+    int prev2 = nums[0], prev1 = Math.max(nums[0], nums[1]);
+    for (int i = 2; i < nums.length; i++) {
+        int curr = Math.max(prev1, prev2 + nums[i]);
+        prev2 = prev1;
+        prev1 = curr;
+    }
+    return prev1;
+}
+// Time: O(n)  Space: O(1)
+```
+
+**Complexity:** O(n) time, O(1) space
+</details>
+
+<details>
+<summary><strong>Coin Change</strong> — Medium</summary>
+
+**Problem:** Given an array `coins` of coin denominations and an integer `amount`, return the fewest number of coins needed to make up that amount. Return -1 if it cannot be made.
+
+**Example:**
+Input: coins = [1, 3, 4], amount = 6
+Output: 2  (3 + 3, or 2 + 4)
+
+**Approach:** dp[i] = minimum coins to make amount i. For each amount, try every coin: dp[i] = min(dp[i], dp[i - coin] + 1). Base case: dp[0] = 0. Initialize all other entries to amount + 1 as "infinity."
+
+**Java:**
+```java
+public int coinChange(int[] coins, int amount) {
+    int[] dp = new int[amount + 1];
+    Arrays.fill(dp, amount + 1);
+    dp[0] = 0;
+    for (int i = 1; i <= amount; i++)
+        for (int coin : coins)
+            if (coin <= i)
+                dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+    return dp[amount] > amount ? -1 : dp[amount];
+}
+// Time: O(amount * coins.length)  Space: O(amount)
+```
+
+**Complexity:** O(amount * n) time, O(amount) space
+</details>
+
+<details>
+<summary><strong>Longest Increasing Subsequence</strong> — Medium</summary>
+
+**Problem:** Given an integer array `nums`, find the length of the longest strictly increasing subsequence.
+
+**Example:**
+Input: nums = [10, 9, 2, 5, 3, 7, 101, 18]
+Output: 4  (subsequence [2, 3, 7, 101])
+
+**Approach:** Maintain a "tails" array where tails[i] = smallest ending element of all increasing subsequences of length i+1. For each number, binary search for its position in tails. If it extends the longest subsequence, append; otherwise, replace to maintain the smallest possible tail.
+
+**Java:**
+```java
+public int lengthOfLIS(int[] nums) {
+    List<Integer> tails = new ArrayList<>();
+    for (int num : nums) {
+        int pos = Collections.binarySearch(tails, num);
+        if (pos < 0) pos = -(pos + 1);
+        if (pos == tails.size()) tails.add(num);
+        else tails.set(pos, num);
+    }
+    return tails.size();
+}
+// Time: O(n log n)  Space: O(n)
+```
+
+**Complexity:** O(n log n) time, O(n) space
+</details>
+
+<details>
+<summary><strong>Word Break</strong> — Medium</summary>
+
+**Problem:** Given a string `s` and a dictionary of strings `wordDict`, return true if `s` can be segmented into a space-separated sequence of dictionary words.
+
+**Example:**
+Input: s = "leetcode", wordDict = ["leet", "code"]
+Output: true  ("leet" + "code")
+
+**Approach:** dp[i] = true if s[0..i-1] can be segmented. For each position i, check all positions j < i: if dp[j] is true and s[j..i] is in the dictionary, then dp[i] = true.
+
+**Java:**
+```java
+public boolean wordBreak(String s, List<String> wordDict) {
+    Set<String> dict = new HashSet<>(wordDict);
+    boolean[] dp = new boolean[s.length() + 1];
+    dp[0] = true;
+    for (int i = 1; i <= s.length(); i++)
+        for (int j = 0; j < i; j++)
+            if (dp[j] && dict.contains(s.substring(j, i))) {
+                dp[i] = true; break;
+            }
+    return dp[s.length()];
+}
+// Time: O(n^2 * m) where m = avg substring length  Space: O(n)
+```
+
+**Complexity:** O(n^2 * m) time, O(n) space
+</details>
+
 **Problem List — 1D DP:**
 
 | #   | Problem                          | Difficulty | Pattern                       |
@@ -2387,6 +3584,98 @@ public int countSubstrings(String s) {
     return count;
 }
 ```
+
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>Edit Distance</strong> — Medium</summary>
+
+**Problem:** Given two strings `word1` and `word2`, return the minimum number of operations (insert, delete, replace) to convert word1 into word2.
+
+**Example:**
+Input: word1 = "horse", word2 = "ros"
+Output: 3  (horse -> rorse -> rose -> ros)
+
+**Approach:** dp[i][j] = min edits to convert word1[0..i-1] to word2[0..j-1]. If characters match, dp[i][j] = dp[i-1][j-1]. Otherwise, take the min of replace (dp[i-1][j-1]), delete (dp[i-1][j]), or insert (dp[i][j-1]), plus 1.
+
+**Java:**
+```java
+public int minDistance(String word1, String word2) {
+    int m = word1.length(), n = word2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 0; i <= m; i++) dp[i][0] = i;
+    for (int j = 0; j <= n; j++) dp[0][j] = j;
+    for (int i = 1; i <= m; i++)
+        for (int j = 1; j <= n; j++)
+            if (word1.charAt(i-1) == word2.charAt(j-1))
+                dp[i][j] = dp[i-1][j-1];
+            else
+                dp[i][j] = 1 + Math.min(dp[i-1][j-1],
+                                Math.min(dp[i-1][j], dp[i][j-1]));
+    return dp[m][n];
+}
+// Time: O(m * n)  Space: O(m * n)
+```
+
+**Complexity:** O(m * n) time, O(m * n) space
+</details>
+
+<details>
+<summary><strong>Longest Common Subsequence</strong> — Medium</summary>
+
+**Problem:** Given two strings `text1` and `text2`, return the length of their longest common subsequence. A subsequence can skip characters but must maintain relative order.
+
+**Example:**
+Input: text1 = "abcde", text2 = "ace"
+Output: 3  (LCS is "ace")
+
+**Approach:** dp[i][j] = LCS length of text1[0..i-1] and text2[0..j-1]. If characters match, dp[i][j] = dp[i-1][j-1] + 1. Otherwise, dp[i][j] = max(dp[i-1][j], dp[i][j-1]).
+
+**Java:**
+```java
+public int longestCommonSubsequence(String text1, String text2) {
+    int m = text1.length(), n = text2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 1; i <= m; i++)
+        for (int j = 1; j <= n; j++)
+            if (text1.charAt(i-1) == text2.charAt(j-1))
+                dp[i][j] = dp[i-1][j-1] + 1;
+            else
+                dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+    return dp[m][n];
+}
+// Time: O(m * n)  Space: O(m * n)
+```
+
+**Complexity:** O(m * n) time, O(m * n) space
+</details>
+
+<details>
+<summary><strong>Unique Paths</strong> — Medium</summary>
+
+**Problem:** A robot starts at the top-left corner of an m x n grid and can only move right or down. How many unique paths are there to the bottom-right corner?
+
+**Example:**
+Input: m = 3, n = 7
+Output: 28
+
+**Approach:** dp[i][j] = dp[i-1][j] + dp[i][j-1]. First row and first column are all 1 (only one way to reach them). Space-optimize to a single 1D array since each row only depends on the row above.
+
+**Java:**
+```java
+public int uniquePaths(int m, int n) {
+    int[] dp = new int[n];
+    Arrays.fill(dp, 1);
+    for (int i = 1; i < m; i++)
+        for (int j = 1; j < n; j++)
+            dp[j] += dp[j - 1];
+    return dp[n - 1];
+}
+// Time: O(m * n)  Space: O(n)
+```
+
+**Complexity:** O(m * n) time, O(n) space
+</details>
 
 **Problem List — 2D DP:**
 
@@ -2685,6 +3974,113 @@ void solve(List<List<String>> res, char[][] board, int row,
 - Forgetting `new ArrayList<>(current)` — without the copy, all results point to the same (now-empty) list.
 - Not pruning early — backtracking without good pruning degenerates into brute force.
 - Off-by-one in `start` index — using `i` instead of `i+1` allows reuse of the same element.
+
+**Key Problems — Detailed Solutions:**
+
+<details>
+<summary><strong>Subsets</strong> — Medium</summary>
+
+**Problem:** Given an integer array `nums` of unique elements, return all possible subsets (the power set). The solution must not contain duplicate subsets.
+
+**Example:**
+Input: nums = [1, 2, 3]
+Output: [[], [1], [2], [3], [1,2], [1,3], [2,3], [1,2,3]]
+
+**Approach:** Backtracking with a start index. At each recursive call, add the current partial subset to the result (every state is valid). Then for each element from start to end, include it and recurse with start = i + 1 to avoid duplicates.
+
+**Java:**
+```java
+public List<List<Integer>> subsets(int[] nums) {
+    List<List<Integer>> res = new ArrayList<>();
+    backtrack(res, new ArrayList<>(), nums, 0);
+    return res;
+}
+private void backtrack(List<List<Integer>> res, List<Integer> curr, int[] nums, int start) {
+    res.add(new ArrayList<>(curr));
+    for (int i = start; i < nums.length; i++) {
+        curr.add(nums[i]);
+        backtrack(res, curr, nums, i + 1);
+        curr.remove(curr.size() - 1);
+    }
+}
+// Time: O(n * 2^n)  Space: O(n) recursion depth
+```
+
+**Complexity:** O(n * 2^n) time, O(n) space (excluding output)
+</details>
+
+<details>
+<summary><strong>Permutations</strong> — Medium</summary>
+
+**Problem:** Given an array `nums` of distinct integers, return all possible permutations.
+
+**Example:**
+Input: nums = [1, 2, 3]
+Output: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+
+**Approach:** Backtracking with a boolean used[] array. At each level, try every unused element. When the permutation is complete (length == nums.length), record it. Mark elements as used/unused on choose/unchoose.
+
+**Java:**
+```java
+public List<List<Integer>> permute(int[] nums) {
+    List<List<Integer>> res = new ArrayList<>();
+    backtrack(res, new ArrayList<>(), nums, new boolean[nums.length]);
+    return res;
+}
+private void backtrack(List<List<Integer>> res, List<Integer> curr,
+                       int[] nums, boolean[] used) {
+    if (curr.size() == nums.length) {
+        res.add(new ArrayList<>(curr));
+        return;
+    }
+    for (int i = 0; i < nums.length; i++) {
+        if (used[i]) continue;
+        used[i] = true;
+        curr.add(nums[i]);
+        backtrack(res, curr, nums, used);
+        curr.remove(curr.size() - 1);
+        used[i] = false;
+    }
+}
+// Time: O(n * n!)  Space: O(n)
+```
+
+**Complexity:** O(n * n!) time, O(n) space (excluding output)
+</details>
+
+<details>
+<summary><strong>Combination Sum</strong> — Medium</summary>
+
+**Problem:** Given an array of distinct integers `candidates` and a target, return all unique combinations where the chosen numbers sum to target. Each number can be used unlimited times.
+
+**Example:**
+Input: candidates = [2, 3, 6, 7], target = 7
+Output: [[2, 2, 3], [7]]
+
+**Approach:** Backtracking with a start index (to avoid permutations of the same combination). At each level, try candidates from start onward. Recurse with the same index i (allowing reuse). Stop when remaining target is 0 (valid) or negative (prune).
+
+**Java:**
+```java
+public List<List<Integer>> combinationSum(int[] candidates, int target) {
+    List<List<Integer>> res = new ArrayList<>();
+    backtrack(res, new ArrayList<>(), candidates, target, 0);
+    return res;
+}
+private void backtrack(List<List<Integer>> res, List<Integer> curr,
+                       int[] cands, int remain, int start) {
+    if (remain == 0) { res.add(new ArrayList<>(curr)); return; }
+    if (remain < 0) return;
+    for (int i = start; i < cands.length; i++) {
+        curr.add(cands[i]);
+        backtrack(res, curr, cands, remain - cands[i], i); // i, not i+1 (reuse)
+        curr.remove(curr.size() - 1);
+    }
+}
+// Time: O(n^(target/min)) worst case  Space: O(target/min) recursion depth
+```
+
+**Complexity:** O(n^(target/min)) time, O(target/min) space
+</details>
 
 **Problem List — Backtracking:**
 

@@ -696,13 +696,29 @@ function enhanceContent() {
   contentEl.classList.add('page-enter');
   setTimeout(() => contentEl.classList.remove('page-enter'), 600);
 
-  // 1. Copy buttons on code blocks
+  // 1. Copy buttons + language badges on code blocks
   contentEl.querySelectorAll('pre').forEach(pre => {
     if (pre.parentElement?.classList.contains('code-wrapper')) return;
     const wrapper = document.createElement('div');
     wrapper.className = 'code-wrapper';
     pre.parentNode.insertBefore(wrapper, pre);
     wrapper.appendChild(pre);
+
+    // Language badge
+    const codeEl = pre.querySelector('code');
+    if (codeEl) {
+      const langClass = Array.from(codeEl.classList).find(c => c.startsWith('language-'));
+      if (langClass) {
+        const lang = langClass.replace('language-', '');
+        if (lang !== 'chart' && lang !== 'mermaid') {
+          const badge = document.createElement('span');
+          badge.className = 'code-lang-badge';
+          badge.textContent = lang;
+          wrapper.appendChild(badge);
+        }
+      }
+    }
+
     const btn = document.createElement('button');
     btn.className = 'copy-btn';
     btn.textContent = 'Copy';
