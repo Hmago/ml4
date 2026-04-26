@@ -63,13 +63,39 @@ let cachedContent = {};
 let fontSize = parseInt(localStorage.getItem('ml4-fontsize') || '0');
 
 // ─── Marked Config ───
+// Java/Python standard library types not recognized by hljs — post-process to colorize them
+var _javaTypes = 'String|Integer|Long|Double|Float|Boolean|Character|Byte|Short|Object|Number|Math|System|Arrays|Collections|Map|HashMap|TreeMap|LinkedHashMap|Set|HashSet|TreeSet|LinkedHashSet|List|ArrayList|LinkedList|Queue|Deque|ArrayDeque|PriorityQueue|Stack|Vector|StringBuilder|StringBuffer|Optional|Stream|Collectors|Iterator|Comparator|Comparable|Iterable|Map\\.Entry|Random|Scanner|BufferedReader|InputStreamReader|PrintWriter|File|Path|Paths|Files|Pattern|Matcher|Thread|Runnable|Future|CompletableFuture|ExecutorService|Executors|AtomicInteger|ConcurrentHashMap|CountDownLatch|Exception|RuntimeException|IOException|NullPointerException|IllegalArgumentException|IndexOutOfBoundsException|TreeNode|ListNode|Node';
+var _javaTypeRe = new RegExp('(?<![\\w.])(' + _javaTypes + ')(?=[^\\w]|$)', 'g');
+
 marked.setOptions({
   highlight: function(code, lang) {
     if (lang === 'chart' || lang === 'mermaid') return code;
+    var html;
     if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
+      html = hljs.highlight(code, { language: lang }).value;
+    } else {
+      var asciiIndicators = /[┌┐└┘├┤─│═║╔╗╚╝╠╣╦╩┬┴▼▲►◄●○★☆✓✗→←↑↓]/;
+      var dashHeavy = (code.match(/[-─═|│┌┐└┘├┤]/g) || []).length > code.length * 0.08;
+      if (asciiIndicators.test(code) || dashHeavy) return code;
+      var result = hljs.highlightAuto(code);
+      if (result.relevance < 5) return code;
+      html = result.value;
     }
-    return hljs.highlightAuto(code).value;
+    // Post-process: colorize Java standard library types that hljs misses.
+    // Only replace bare text nodes (not inside existing <span> tags).
+    if (lang === 'java' || (!lang && html.indexOf('hljs-keyword') !== -1)) {
+      html = html.replace(/>([^<]+)</g, function(match, text) {
+        return '>' + text.replace(_javaTypeRe, '<span class="hljs-type">$1</span>') + '<';
+      });
+      // Also handle text at the very start (before any tag)
+      if (html.charAt(0) !== '<') {
+        var firstTag = html.indexOf('<');
+        if (firstTag === -1) firstTag = html.length;
+        var prefix = html.substring(0, firstTag);
+        html = prefix.replace(_javaTypeRe, '<span class="hljs-type">$1</span>') + html.substring(firstTag);
+      }
+    }
+    return html;
   },
   breaks: false,
   gfm: true,
@@ -102,7 +128,10 @@ function initTheme() {
   if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.documentElement.setAttribute('data-theme', 'dark');
     document.getElementById('hljs-theme').href =
-      'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+      'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css';
+  } else {
+    document.getElementById('hljs-theme').href =
+      'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css';
   }
 }
 
@@ -110,8 +139,8 @@ function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
   document.getElementById('hljs-theme').href = isDark
-    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'
-    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css';
   localStorage.setItem('ml4-theme', isDark ? 'light' : 'dark');
 }
 
