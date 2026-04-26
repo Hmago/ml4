@@ -2739,16 +2739,67 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   gap: 2px;
 }
 
+/* Collapsible chapter sections */
+.ch-section-collapse {
+  margin-top: 6px;
+}
+.ch-section-collapse:first-child { margin-top: 0; }
+
 .ch-section-row {
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   color: var(--accent);
-  padding: 18px 16px 6px;
-  margin-top: 4px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 10px;
+  transition: background 0.15s;
+  list-style: none;
 }
-.ch-section-row:first-child { margin-top: 0; padding-top: 8px; }
+.ch-section-row::-webkit-details-marker { display: none; }
+.ch-section-row::marker { display: none; content: ''; }
+.ch-section-row:hover { background: var(--bg-secondary); }
+
+.ch-section-caret {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.ch-section-collapse:not([open]) .ch-section-caret {
+  transform: rotate(-90deg);
+}
+
+.ch-section-name { flex: 1; }
+
+.ch-section-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ch-section-badge-done {
+  background: color-mix(in srgb, var(--success) 12%, var(--bg));
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+  color: var(--success);
+}
+
+.ch-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 0 4px;
+}
 
 .ch-row {
   display: flex;

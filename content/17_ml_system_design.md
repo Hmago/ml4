@@ -448,20 +448,37 @@ At Google, the Vertex AI Feature Store serves this role. But the concept is univ
 
 Production ML systems almost always need both batch features (precomputed) and real-time features (computed at request time). The architecture looks like this:
 
-```mermaid
-flowchart TD
-    subgraph Batch["Batch Pipeline (hourly/daily)"]
-        A["Raw Data\n(Bigtable, Spanner)"] --> B["Cloud Dataflow\n(aggregation)"]
-        B --> C["Feature Store\n(Vertex AI)"]
-    end
-    subgraph RT["Real-Time Pipeline (per request)"]
-        D["User Request"] --> E["Feature Server"]
-        E --> F["Compute real-time features\n(time_since_last_click,\nsession_query_count)"]
-    end
-    C --> G["Merge batch +\nreal-time features"]
-    F --> G
-    G --> H["Model Server\n(TF Serving)"]
-    H --> I["Response to User"]
+```
+  Feature Pipeline: Batch + Real-Time
+  ════════════════════════════════════════════════════════════════
+
+  BATCH PIPELINE (hourly/daily):
+  ┌──────────────────────────────────────────────────┐
+  │ Raw Data (Bigtable, Spanner)                      │
+  │        ▼                                          │
+  │ Cloud Dataflow (aggregation)                      │
+  │        ▼                                          │
+  │ Feature Store (Vertex AI)  ─────────┐             │
+  └─────────────────────────────────────┼─────────────┘
+                                        │
+  REAL-TIME PIPELINE (per request):     │
+  ┌─────────────────────────────────────┼─────────────┐
+  │ User Request                        │             │
+  │        ▼                            │             │
+  │ Feature Server                      │             │
+  │        ▼                            │             │
+  │ Compute: time_since_last_click,     │             │
+  │   session_query_count, etc. ────────┤             │
+  └─────────────────────────────────────┼─────────────┘
+                                        │
+                                        ▼
+                              Merge batch + real-time
+                                        │
+                                        ▼
+                              Model Server (TF Serving)
+                                        │
+                                        ▼
+                                 Response to User
 ```
 
 | Feature Type | Update Frequency | Latency to Compute | Storage | Examples |
@@ -1123,34 +1140,35 @@ The core challenge is surfacing relevant videos from a corpus of 800M+ items to 
 
 ### Architecture
 
-```mermaid
-graph LR
-    A[User Request] --> B[Candidate Gen]
-    B -->|~1000 candidates| C[Rank]
-    C -->|~100 scored| D[Re-Rank]
-    D -->|~25 final| E[Served to User]
+```
+  YouTube Recommendation Architecture
+  ════════════════════════════════════════════════════════════════
 
-    subgraph CandGen["Candidate Generation"]
-        B1[Two-Tower ANN] --> B
-        B2[Collaborative Filtering] --> B
-        B3[Subscription Feed] --> B
-    end
-
-    subgraph RankStage["Ranking"]
-        C1[Deep Ranking Model] --> C
-    end
-
-    subgraph ReRankStage["Re-Ranking"]
-        D1[Diversity Filter] --> D
-        D2[Freshness Boost] --> D
-        D3[Policy / Safety] --> D
-    end
-
-    F[(User Feature Store)] --> B1
-    F --> C1
-    G[(Video Feature Store)] --> B1
-    G --> C1
-    H[Embedding Index - ScaNN] --> B1
+  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────┐
+  │ User Feature     │    │ Video Feature    │    │ Embedding    │
+  │ Store            │    │ Store            │    │ Index (ScaNN)│
+  └────────┬─────────┘    └────────┬─────────┘    └──────┬───────┘
+           │                       │                      │
+           ▼                       ▼                      ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  CANDIDATE GENERATION (~1000 from 800M+)                     │
+  │  Two-Tower ANN + Collaborative Filtering + Subscriptions     │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │ ~1000 candidates
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  RANKING — Deep Neural Network                               │
+  │  User features + video features + context → engagement score │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │ ~100 scored
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │  RE-RANKING                                                  │
+  │  Diversity filter + Freshness boost + Policy/Safety check    │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │ ~25 final
+                             ▼
+                     [ Served to User ]
 ```
 
 ### Candidate Generation
@@ -1214,23 +1232,38 @@ Web search ranking must return the most relevant results from an index of hundre
 
 ### Architecture
 
-```mermaid
-graph LR
-    A[User Query] --> B[Query Understanding]
-    B --> C[Retrieval]
-    C -->|~1000 docs| D[Phase-1 Ranking]
-    D -->|~100 docs| E[Phase-2 Ranking]
-    E -->|~10 docs| F[Final SERP]
+```
+  Search Ranking Pipeline
+  ════════════════════════════════════════════════════════════════
 
-    B1[Spell Correction] --> B
-    B2[Query Expansion] --> B
-    B3[Intent Classification] --> B
-
-    C1[Inverted Index] --> C
-    C2[Embedding Retrieval] --> C
-
-    D1[LTR Gradient Boosted Trees] --> D
-    E1[BERT Cross-Encoder] --> E
+  User Query
+      │
+      ▼
+  ┌─────────────────────────────────────────────┐
+  │  QUERY UNDERSTANDING  (<10ms)                │
+  │  Spell correction → Expansion → Intent clf.  │
+  └──────────────────────┬──────────────────────┘
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+  ┌────────────────┐          ┌─────────────────┐
+  │ Inverted Index │          │ Embedding Retr.  │
+  │ (BM25)         │          │ (ScaNN)          │
+  └───────┬────────┘          └────────┬────────┘
+          └──────────────┬─────────────┘
+                         │ ~1000 docs
+                         ▼
+  ┌─────────────────────────────────────────────┐
+  │  PHASE-1: LTR Gradient Boosted Trees (<20ms) │
+  └──────────────────────┬──────────────────────┘
+                         │ ~100 docs
+                         ▼
+  ┌─────────────────────────────────────────────┐
+  │  PHASE-2: BERT Cross-Encoder (<50ms)         │
+  └──────────────────────┬──────────────────────┘
+                         │ ~10 docs
+                         ▼
+                   [ Final SERP ]
 ```
 
 ### Query Understanding
@@ -1293,27 +1326,34 @@ Financial fraud detection operates under extreme constraints: class imbalance (0
 
 ### Architecture
 
-```mermaid
-graph LR
-    A[Transaction Event] --> B[Feature Computation]
-    B --> C[Rule Engine]
-    C --> D[ML Scoring]
-    D --> E{Decision}
-    E -->|Approve| F[Allow]
-    E -->|Reject| G[Block]
-    E -->|Review| H[Human Queue]
+```
+  Fraud Detection Pipeline (Real-Time)
+  ════════════════════════════════════════════════════════════════
 
-    I[(Streaming Features - Pub/Sub)] --> B
-    J[(Historical Features - Bigtable)] --> B
-    K[Feedback Loop] --> D
-
-    subgraph RTP["Real-Time Pipeline"]
-        A
-        B
-        C
-        D
-        E
-    end
+  ┌───────────────────┐   ┌───────────────────┐
+  │ Streaming Features│   │ Historical Features│
+  │ (Pub/Sub)         │   │ (Bigtable)         │
+  └────────┬──────────┘   └────────┬───────────┘
+           │                       │
+           └───────────┬───────────┘
+                       ▼
+  Transaction ──► Feature Computation ──► Rule Engine ──► ML Scoring
+  Event                                                      │
+                                                             ▼
+                                                        ┌─────────┐
+                                        ┌──── Approve → │  Allow  │
+                                        │               └─────────┘
+                                   {Decision}
+                                        │               ┌─────────┐
+                                        ├──── Reject ─→ │  Block  │
+                                        │               └─────────┘
+                                        │               ┌─────────┐
+                                        └──── Review ─→ │ Human Q │
+                                                        └─────────┘
+                       ▲
+                       │
+                 Feedback Loop
+           (confirmed fraud labels)
 ```
 
 ### Data & Features
@@ -1376,33 +1416,33 @@ Content moderation at platform scale (YouTube, Instagram) must process billions 
 
 ### Architecture
 
-```mermaid
-graph TD
-    A[Upload] --> B[Media Processing]
-    B --> MM["Multi-Modal Analysis"]
+```
+  Content Moderation Pipeline (Multi-Modal)
+  ════════════════════════════════════════════════════════════════
 
-    subgraph MMA["Classifiers"]
-        C1[Video: Frame + CNN]
-        C2[Audio: ASR + Text]
-        C3[Text: Transformer]
-        C4[Image: Object Det.]
-    end
-
-    MM --> C1
-    MM --> C2
-    MM --> C3
-    MM --> C4
-    C1 --> SC[Score Fusion]
-    C2 --> SC
-    C3 --> SC
-    C4 --> SC
-    SC --> D{Confidence}
-    D -->|High Violation| E[Auto-Remove]
-    D -->|Uncertain| F[Human Review]
-    D -->|Safe| G[Publish]
-    F --> H[Human Decision]
-    H --> I[Label Feedback]
-    I --> MMA
+  Upload ──► Media Processing
+                    │
+      ┌─────────────┼─────────────┬──────────────┐
+      ▼             ▼             ▼              ▼
+  ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │ Video  │  │  Audio   │  │   Text   │  │  Image   │
+  │Frame+CNN│  │ ASR+Clf │  │Transformer│  │Object Det│
+  └───┬────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
+      └─────────────┴─────────────┴──────────────┘
+                          │
+                    Score Fusion
+                          │
+                    ┌─────┴─────┐
+                    │ Confidence │
+                    └─────┬─────┘
+            ┌─────────────┼──────────────┐
+            ▼             ▼              ▼
+       Auto-Remove   Human Review    Publish
+      (high conf.)   (uncertain)    (safe)
+                          │
+                    Human Decision
+                          │
+                    Label Feedback ──► Retrain classifiers
 ```
 
 ### Two-Stage Pipeline
@@ -1451,35 +1491,41 @@ Modern conversational AI systems go beyond simple chatbots. They combine retriev
 
 ### Architecture
 
-```mermaid
-graph TD
-    A[User Message] --> B[Intent Router]
-    B -->|Knowledge Query| C[RAG]
-    B -->|Action Request| D[Agent]
-    B -->|Chitchat| E[Direct LLM Response]
+```
+  LLM Conversational AI Architecture
+  ════════════════════════════════════════════════════════════════
 
-    subgraph RAGPipe["RAG Pipeline"]
-        C1[Query Rewriting] --> C2[Retrieval]
-        C2 --> C3[Reranker]
-        C3 --> C4[Context Assembly]
-        C4 --> C5[Generator LLM]
-    end
-
-    subgraph AgentLayer["Agent / Tool Use"]
-        D1[Function Calling / MCP] --> D2[Tool Execution]
-        D2 --> D3[Result Synthesis]
-    end
-
-    C --> C1
-    D --> D1
-    C5 --> F[Guardrails]
-    D3 --> F
-    E --> F
-    F --> G[Response]
-
-    H[(Vector Store)] --> C2
-    I[(Knowledge Base - Spanner)] --> C2
-    J[Tool Registry] --> D1
+  User Message ──► Intent Router
+                       │
+          ┌────────────┼────────────────┐
+          ▼            ▼                ▼
+     Knowledge     Action           Chitchat
+       Query       Request              │
+          │            │                │
+          ▼            ▼                │
+  ┌─────────────┐ ┌──────────────┐     │
+  │ RAG Pipeline│ │ Agent Layer  │     │
+  │             │ │              │     │
+  │ Query       │ │ Function     │     │
+  │ Rewriting   │ │ Calling/MCP  │     │
+  │   ▼         │ │   ▼          │     │
+  │ Retrieval   │ │ Tool         │     │
+  │ (Vector DB) │ │ Execution    │     │
+  │   ▼         │ │   ▼          │     │
+  │ Reranker    │ │ Result       │     │
+  │   ▼         │ │ Synthesis    │     │
+  │ Context     │ └──────┬───────┘     │
+  │ Assembly    │        │             │
+  │   ▼         │        │             │
+  │ Generator   │        │             │
+  │ LLM         │        │             │
+  └──────┬──────┘        │             │
+         └───────────────┴─────────────┘
+                         │
+                    Guardrails
+                  (safety, factuality)
+                         │
+                      Response
 ```
 
 ### RAG Pipeline
