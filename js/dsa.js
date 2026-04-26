@@ -189,20 +189,11 @@ function dsaFilterDDSearch(type, query) {
 // One-time cleanup: users who had "Expand all" active in the old code would
 // have every category stored as false (expanded). Drop those so they see the
 // new collapsed-default view; future user expansions still persist normally.
-(function cleanUpCollapseV1() {
-  if (localStorage.getItem('ml4-dsa-collapse-clean-v1') === 'done') return;
-  try {
-    const raw = localStorage.getItem('ml4-dsa-collapsed');
-    if (raw) {
-      const state = JSON.parse(raw);
-      let changed = false;
-      for (const k of Object.keys(state)) {
-        if (state[k] === false) { delete state[k]; changed = true; }
-      }
-      if (changed) localStorage.setItem('ml4-dsa-collapsed', JSON.stringify(state));
-    }
-  } catch {}
-  localStorage.setItem('ml4-dsa-collapse-clean-v1', 'done');
+(function cleanUpCollapseV2() {
+  if (localStorage.getItem('ml4-dsa-collapse-clean-v2') === 'done') return;
+  // Reset all groups to collapsed (default) so sections open collapsed
+  localStorage.removeItem('ml4-dsa-collapsed');
+  localStorage.setItem('ml4-dsa-collapse-clean-v2', 'done');
 })();
 
 function getCollapsedGroups() {
