@@ -1125,22 +1125,22 @@ The core challenge is surfacing relevant videos from a corpus of 800M+ items to 
 
 ```mermaid
 graph LR
-    A[User Request] --> B[Candidate Generation]
-    B -->|~1000 candidates| C[Ranking]
-    C -->|~100 scored| D[Re-Ranking]
+    A[User Request] --> B[Candidate Gen]
+    B -->|~1000 candidates| C[Rank]
+    C -->|~100 scored| D[Re-Rank]
     D -->|~25 final| E[Served to User]
 
-    subgraph Candidate Generation
+    subgraph CandGen["Candidate Generation"]
         B1[Two-Tower ANN] --> B
         B2[Collaborative Filtering] --> B
         B3[Subscription Feed] --> B
     end
 
-    subgraph Ranking
+    subgraph RankStage["Ranking"]
         C1[Deep Ranking Model] --> C
     end
 
-    subgraph Re-Ranking
+    subgraph ReRankStage["Re-Ranking"]
         D1[Diversity Filter] --> D
         D2[Freshness Boost] --> D
         D3[Policy / Safety] --> D
@@ -1307,7 +1307,7 @@ graph LR
     J[(Historical Features - Bigtable)] --> B
     K[Feedback Loop] --> D
 
-    subgraph Real-Time Pipeline
+    subgraph RTP["Real-Time Pipeline"]
         A
         B
         C
@@ -1379,21 +1379,30 @@ Content moderation at platform scale (YouTube, Instagram) must process billions 
 ```mermaid
 graph TD
     A[Upload] --> B[Media Processing]
-    B --> C[Automated Classifiers]
-    C --> D{Confidence}
-    D -->|High Confidence Violation| E[Auto-Remove]
-    D -->|Uncertain| F[Human Review Queue]
-    D -->|High Confidence Safe| G[Publish]
+    B --> MM["Multi-Modal Analysis"]
 
-    subgraph Multi-Modal Analysis
-        C1[Video: Frame Sampling + CNN] --> C
-        C2[Audio: ASR + Text Classifier] --> C
-        C3[Text: Transformer Classifier] --> C
-        C4[Image: Object Detection] --> C
+    subgraph MMA["Classifiers"]
+        C1[Video: Frame + CNN]
+        C2[Audio: ASR + Text]
+        C3[Text: Transformer]
+        C4[Image: Object Det.]
     end
 
-    H[Human Decision] --> I[Label Feedback]
-    I --> C
+    MM --> C1
+    MM --> C2
+    MM --> C3
+    MM --> C4
+    C1 --> SC[Score Fusion]
+    C2 --> SC
+    C3 --> SC
+    C4 --> SC
+    SC --> D{Confidence}
+    D -->|High Violation| E[Auto-Remove]
+    D -->|Uncertain| F[Human Review]
+    D -->|Safe| G[Publish]
+    F --> H[Human Decision]
+    H --> I[Label Feedback]
+    I --> MMA
 ```
 
 ### Two-Stage Pipeline
@@ -1445,22 +1454,24 @@ Modern conversational AI systems go beyond simple chatbots. They combine retriev
 ```mermaid
 graph TD
     A[User Message] --> B[Intent Router]
-    B -->|Knowledge Query| C[RAG Pipeline]
-    B -->|Action Request| D[Agent / Tool Use]
+    B -->|Knowledge Query| C[RAG]
+    B -->|Action Request| D[Agent]
     B -->|Chitchat| E[Direct LLM Response]
 
-    subgraph RAG Pipeline
+    subgraph RAGPipe["RAG Pipeline"]
         C1[Query Rewriting] --> C2[Retrieval]
         C2 --> C3[Reranker]
         C3 --> C4[Context Assembly]
         C4 --> C5[Generator LLM]
     end
 
-    subgraph Agent Layer
+    subgraph AgentLayer["Agent / Tool Use"]
         D1[Function Calling / MCP] --> D2[Tool Execution]
         D2 --> D3[Result Synthesis]
     end
 
+    C --> C1
+    D --> D1
     C5 --> F[Guardrails]
     D3 --> F
     E --> F
