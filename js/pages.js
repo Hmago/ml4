@@ -609,7 +609,7 @@ function showDashboard() {
   // Estimate reading time: study-pace ~55 words/min (reading + thinking + diagrams)
   // Values below are derived from actual word counts in each chapter, rounded to the nearest 5 min.
   const chapterMinutes = {
-    'content/00_google_ai_engineer_strategy.md': 150,
+    'content/00_google_ai_engineer_strategy.md': 130,
     'content/01_brain_training.md': 100,
     'content/02_math_fundamentals.md': 280,
     'content/03_introduction.md': 90,
@@ -618,22 +618,22 @@ function showDashboard() {
     'content/06_supervised_learning.md': 220,
     'content/07_unsupervised_learning.md': 140,
     'content/08_reinforcement_learning.md': 105,
-    'content/09_key_algorithms.md': 145,
+    'content/09_key_algorithms.md': 175,
     'content/10_neural_networks.md': 120,
     'content/11_model_evaluation.md': 120,
     'content/12_deep_learning.md': 200,
     'content/13_llm.md': 540,
     'content/22_modern_ai_stack.md': 160,
-    'content/14_design_fundamentals.md': 285,
+    'content/14_design_fundamentals.md': 335,
     'content/15_interview_questions.md': 220,
     'content/16_llm_interview_questions.md': 445,
-    'content/17_ml_system_design.md': 225,
+    'content/17_ml_system_design.md': 340,
     'content/behavioral_interview.md': 145,
     'content/practical_ml.md': 195,
     'content/practical_ml.ipynb': 195,
     'content/staying_relevant_ai_era.md': 75,
     'README.md': 40,
-    'content/18_dsa_trees_graphs.md': 340,
+    'content/18_dsa_trees_graphs.md': 475,
     'content/19_google_ml_ecosystem.md': 160,
     'content/20_Modern System Design.md': 160,
     'content/20_google_top10_ml_interview.md': 495,
@@ -956,10 +956,28 @@ function showDashboard() {
           let html = '';
           let curSection = '';
           let chIdx = 0;
+          let sectionOpen = false;
           for (const item of chapters) {
             if (item.section) {
+              if (sectionOpen) html += '</div></details>';
               curSection = item.section;
-              html += '<div class="ch-section-row">' + curSection + '</div>';
+              // Count done/total for this section
+              let secTotal = 0, secDone = 0;
+              for (let si = chapters.indexOf(item) + 1; si < chapters.length && !chapters[si].section; si++) {
+                if (chapters[si].ref) continue;
+                secTotal++;
+                if (readChapters[chapters[si].file]) secDone++;
+              }
+              const secPct = secTotal > 0 ? Math.round(secDone / secTotal * 100) : 0;
+              const secComplete = secDone === secTotal && secTotal > 0;
+              html += '<details class="ch-section-collapse">' +
+                '<summary class="ch-section-row">' +
+                  '<span class="ch-section-caret">▼</span>' +
+                  '<span class="ch-section-name">' + curSection + '</span>' +
+                  '<span class="ch-section-badge' + (secComplete ? ' ch-section-badge-done' : '') + '">' + secDone + '/' + secTotal + '</span>' +
+                '</summary>' +
+                '<div class="ch-section-body">';
+              sectionOpen = true;
               continue;
             }
             if (item.ref) continue;
@@ -1006,6 +1024,7 @@ function showDashboard() {
               '</div>' +
             '</div>';
           }
+          if (sectionOpen) html += '</div></details>';
           return html;
         })()}
         </div>
