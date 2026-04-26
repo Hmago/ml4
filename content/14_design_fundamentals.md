@@ -1,3335 +1,2681 @@
-# Design Fundamentals for Senior Software Engineers — Google Interview Edition
+# Chapter 14 — Design Fundamentals (Java)
 
-> "Any fool can write code that a computer can understand. Good programmers write code
-> that humans can understand." — Martin Fowler
-
-**What this document covers:**
-Everything a Senior Software Engineer needs to know about software design — from SOLID principles to system design, from design patterns to distributed systems. All code examples use **Java** (Google's primary backend language). Written to be understood by anyone, but deep enough for interviews at Google, Amazon, Meta, and top-tier companies.
-
-**Why Java?** Google's backend is predominantly Java (and C++/Go). Demonstrating clean Java in design interviews signals fluency with Google's ecosystem.
+> "Any fool can write code that a computer can understand. Good programmers write code that humans can understand." — Martin Fowler
 
 ---
 
 ## What You'll Learn
 
-After reading this document, you will be able to:
-- Apply SOLID principles and know when each one matters most
-- Recognize and implement the most important design patterns
-- Design scalable systems handling millions of users
-- Choose the right database, caching strategy, and messaging system
-- Explain CAP theorem, consistency models, and distributed system tradeoffs
-- Design clean APIs (REST, GraphQL, gRPC) and know when to use each
-- Structure code using Clean Architecture, DDD, and CQRS
-- Ace system design interviews with a repeatable framework
+This chapter equips you with the design vocabulary and patterns that separate junior developers from senior engineers. You will learn SOLID principles with real Java code, the Gang of Four patterns that matter in interviews, system design fundamentals with real numbers, and the estimation skills needed to reason about scale.
 
 ---
 
 ## Table of Contents
-
-| Part | Topic | Key Concepts |
-|------|-------|--------------|
-| 1 | Software Design Principles | SOLID, DRY, KISS, YAGNI, Coupling & Cohesion, Separation of Concerns |
-| 2 | Design Patterns | Creational, Structural, Behavioral (incl. State, Template Method) |
-| 3 | System Design Fundamentals | Scalability, Latency Percentiles (p50/p95/p99), Availability, CAP, Estimation |
-| 4 | API Design & Database Design | REST, GraphQL, gRPC, Normalization (1NF-3NF), N+1 Problem, Pagination, Idempotency, Indexing, Sharding |
-| 5 | Distributed Systems | Microservices, API Gateway, Caching, Rate Limiting, Saga Pattern, Consistent Hashing, Messaging, Load Balancing |
-| 6 | Architecture Patterns | Clean Architecture, **DDD** (Entities, Aggregates, Bounded Contexts), CQRS, Event Sourcing |
-| 7 | Security Fundamentals | Auth, OAuth, JWT, OWASP Top 10 |
-| 8 | **Java Concurrency** (Google Must-Know) | Thread safety, synchronized, AtomicInteger, ConcurrentHashMap, ExecutorService, CompletableFuture, deadlocks |
-| 9 | **Google Interview Tips** | What Google L5 looks for, scale thinking, trade-offs, Google tech (Bigtable, Spanner, Pub/Sub) |
-| 10 | System Design Interview Framework | Step-by-step approach, estimation, common designs |
-| 11 | Review Questions | Self-test with detailed answers |
-
----
-
-# PART 1: SOFTWARE DESIGN PRINCIPLES
+| Part | Topic |
+|------|-------|
+| 14.1 | Software Design Principles (SOLID, DRY, KISS, YAGNI, Coupling & Cohesion) |
+| 14.2 | Design Patterns — Creational (Singleton, Factory, Builder, Prototype) |
+| 14.3 | Design Patterns — Structural (Adapter, Facade, Decorator, Proxy, Composite) |
+| 14.4 | Design Patterns — Behavioral (Observer, Strategy, Command, State, Template Method) |
+| 14.5 | System Design Fundamentals (Scalability, Latency, CAP, Consistency, Estimation) |
+| 14.6 | API Design (REST, GraphQL, gRPC) |
+| 14.7 | Database Design (SQL/NoSQL, Indexing, Sharding, ACID/BASE) |
+| 14.8 | Distributed Systems (Caching, Queues, Rate Limiting, Sagas, Load Balancing) |
+| 14.9 | Architecture Patterns (Clean Architecture, DDD, CQRS, Event Sourcing) |
+| 14.10 | Security (Auth, JWT, OAuth, OWASP) |
+| 14.11 | Java Concurrency (Thread Safety, Executors, CompletableFuture) |
+| 14.12 | System Design Interview Framework |
 
 ---
 
-## 1.1 Why Design Principles Matter
+## 14.1 Software Design Principles
 
-### Simple Explanation
-Imagine building a house. You COULD just start nailing boards together randomly.
-It might even stand up for a while. But the first time you need to add a room,
-fix plumbing, or survive a storm — it falls apart.
-
-Design principles are the architectural rules that make your code survive
-real-world change. Code that's easy to change is code that lasts.
-
-```
-  WITHOUT PRINCIPLES:                WITH PRINCIPLES:
-  ───────────────────────            ──────────────────────────
-  "It works!" (day 1)               "It works!" (day 1)
-  "It's fragile" (month 1)          "It's clean" (month 1)
-  "Don't touch it" (month 6)        "Easy to extend" (month 6)
-  "Rewrite everything" (year 1)     "Still maintainable" (year 3)
-```
-
-### The Cost of Bad Design
-
-```
-  Cost of
-  Change
-     |                        * <- Bad design
-     |                    *       (exponential cost)
-     |                *
-     |            *
-     |        *  ___________  <- Good design
-     |    *  /                   (near-constant cost)
-     |  * /
-     | */
-     |/
-     +-----------------------> Time / Project Size
-```
+Good design is about understanding trade-offs. These principles exist because thousands of engineers learned the hard way what makes code maintainable at scale. Internalize the reasoning behind each one, not just the acronym.
 
 ---
 
-## 1.2 SOLID Principles
+### SOLID Principles
 
-SOLID is a set of five principles that make software designs more understandable,
-flexible, and maintainable. Created by Robert C. Martin ("Uncle Bob").
+SOLID is a set of five principles coined by Robert C. Martin that guide object-oriented class design. They are the most important design principles for interview discussions.
 
-```
-  S — Single Responsibility Principle
-  O — Open/Closed Principle
-  L — Liskov Substitution Principle
-  I — Interface Segregation Principle
-  D — Dependency Inversion Principle
-```
+#### S — Single Responsibility Principle (SRP)
 
----
+> **A class should have one, and only one, reason to change.** — Robert C. Martin
 
-### S — Single Responsibility Principle (SRP)
-
-**Simple Explanation:**
-A class should have only ONE reason to change. Like how a chef cooks food but
-doesn't also do the accounting. Each person (class) has one job.
+A class that does one thing well is easy to test, easy to name, and easy to replace. When a class handles both business logic and persistence, a change to your database schema forces you to modify the same class that contains your core algorithms.
 
 ```java
-  // BAD: One class does everything
-  // ────────────────────────────────────────────────────────
-  public class UserManager {
-      public boolean authenticate(User user, String password) { ... }  // auth logic
-      public void saveToDatabase(User user) { ... }                    // database logic
-      public void sendWelcomeEmail(User user) { ... }                  // email logic
-      public Report generateReport(User user) { ... }                  // reporting logic
-  }
+// BAD: Two reasons to change (report logic AND persistence)
+class Report {
+    String generate(List<Sale> sales) { /* format report */ return "..."; }
+    void saveToFile(String report, String path) throws IOException {
+        Files.write(Path.of(path), report.getBytes());
+    }
+}
 
-  // If email service changes, you modify UserManager.
-  // If database changes, you modify UserManager.
-  // If auth changes, you modify UserManager.
-  // One class, FOUR reasons to change. Fragile!
+// GOOD: Each class has exactly one responsibility
+class ReportGenerator {
+    String generate(List<Sale> sales) { /* format report */ return "..."; }
+}
 
-  // GOOD: Each class has one responsibility
-  // ────────────────────────────────────────────────────────
-  public class Authenticator {
-      public boolean authenticate(User user, String password) { ... }
-  }
-
-  public class UserRepository {
-      public void save(User user) { ... }
-      public Optional<User> findById(long id) { ... }
-  }
-
-  public class EmailService {
-      public void sendWelcomeEmail(User user) { ... }
-  }
-
-  public class ReportGenerator {
-      public Report generate(User user) { ... }
-  }
-
-  // Now email changes only affect EmailService.
-  // Database changes only affect UserRepository.
-  // Each class has ONE reason to change.
+class ReportPersistence {
+    void saveToFile(String report, String path) throws IOException {
+        Files.write(Path.of(path), report.getBytes());
+    }
+}
 ```
 
-**How to spot SRP violations:**
-```
-  Ask: "What does this class do?"
-  If you use the word "AND" — it probably does too much.
-
-  "This class handles authentication AND sends emails"  ← violation!
-  "This class handles authentication"                   ← good
-```
-
-**Official Definition:**
-> A class should have one, and only one, reason to change. A "reason to change"
-> corresponds to a single actor or stakeholder whose needs might evolve.
+**When it matters most:** Services with multiple integration points (API + DB + messaging). If your service class is 800 lines, SRP is being violated.
 
 ---
 
-### O — Open/Closed Principle (OCP)
+#### O — Open/Closed Principle (OCP)
 
-**Simple Explanation:**
-Software entities should be **open for extension, but closed for modification.**
-Think of a power strip — you can plug new devices in (extension) without
-rewiring the strip itself (modification).
+> **Software entities should be open for extension but closed for modification.** — Bertrand Meyer
+
+You should be able to add new behavior without changing existing, tested code. The mechanism is abstraction: define contracts (interfaces), then add new implementations.
 
 ```java
-  // BAD: Modifying existing code for every new shape
-  // ────────────────────────────────────────────────────────
-  public class AreaCalculator {
-      public double calculate(Shape shape) {
-          if (shape.getType().equals("circle")) {
-              return Math.PI * shape.getRadius() * shape.getRadius();
-          } else if (shape.getType().equals("rectangle")) {
-              return shape.getWidth() * shape.getHeight();
-          } else if (shape.getType().equals("triangle")) {  // ← must modify
-              return 0.5 * shape.getBase() * shape.getH();   // ← every time!
-          }
-          throw new IllegalArgumentException("Unknown shape");
-      }
-  }
-  // Adding a new shape = editing AreaCalculator = risk of breaking existing shapes!
+// BAD: Adding a new shape requires modifying this method
+class AreaCalculator {
+    double calculate(Object shape) {
+        if (shape instanceof Circle c) return Math.PI * c.radius * c.radius;
+        else if (shape instanceof Rectangle r) return r.width * r.height;
+        throw new IllegalArgumentException("Unknown shape");
+    }
+}
 
-  // GOOD: Extending through polymorphism
-  // ────────────────────────────────────────────────────────
-  public interface Shape {
-      double area();
-  }
+// GOOD: New shapes extend behavior without touching existing code
+interface Shape { double area(); }
 
-  public class Circle implements Shape {
-      private final double radius;
-      public Circle(double radius) { this.radius = radius; }
-      @Override public double area() { return Math.PI * radius * radius; }
-  }
+class Circle implements Shape {
+    private final double radius;
+    Circle(double r) { this.radius = r; }
+    public double area() { return Math.PI * radius * radius; }
+}
 
-  public class Rectangle implements Shape {
-      private final double width, height;
-      public Rectangle(double w, double h) { this.width = w; this.height = h; }
-      @Override public double area() { return width * height; }
-  }
+class Rectangle implements Shape {
+    private final double w, h;
+    Rectangle(double w, double h) { this.w = w; this.h = h; }
+    public double area() { return w * h; }
+}
 
-  public class Triangle implements Shape {              // ← just ADD a new class
-      private final double base, height;
-      public Triangle(double b, double h) { this.base = b; this.height = h; }
-      @Override public double area() { return 0.5 * base * height; }
-  }
-
-  public class AreaCalculator {
-      public double calculate(Shape shape) {
-          return shape.area();                           // ← works for ANY shape, forever
-      }
-  }
+// Never needs to change when new shapes are added
+class AreaCalculator {
+    double calculate(Shape shape) { return shape.area(); }
+}
 ```
 
-**The key insight:** Use abstractions (interfaces, base classes) so new behavior
-can be added by writing new code, not by changing existing code.
+**When it matters most:** Plugin architectures, payment processors, notification channels.
 
 ---
 
-### L — Liskov Substitution Principle (LSP)
+#### L — Liskov Substitution Principle (LSP)
 
-**Simple Explanation:**
-If you have a parent class and a child class, you should be able to use the
-child ANYWHERE the parent is expected without breaking anything. A child should
-be a TRUE substitute for its parent.
+> **Objects of a superclass should be replaceable with objects of a subclass without breaking the program.** — Barbara Liskov
+
+If `B extends A`, then every place that uses `A` must work correctly with `B`. The classic violation is `Square extends Rectangle` -- a square cannot independently set width and height.
 
 ```java
-  // THE CLASSIC VIOLATION: Square extends Rectangle
-  // ────────────────────────────────────────────────────────
+// BAD: Square breaks the Rectangle contract
+class Rectangle {
+    protected int width, height;
+    void setWidth(int w)  { this.width = w; }
+    void setHeight(int h) { this.height = h; }
+    int area() { return width * height; }
+}
+class Square extends Rectangle {
+    void setWidth(int w)  { this.width = w; this.height = w; }  // Side effect!
+    void setHeight(int h) { this.width = h; this.height = h; }  // Side effect!
+}
+// r.setWidth(5); r.setHeight(4); r.area() == 20 -- FAILS for Square (gives 16)
 
-  public class Rectangle {
-      protected int width, height;
-      public void setWidth(int w)  { this.width = w; }
-      public void setHeight(int h) { this.height = h; }
-      public int area() { return width * height; }
-  }
-
-  public class Square extends Rectangle {
-      @Override public void setWidth(int w)  {
-          this.width = w;
-          this.height = w;     // ← forces both to be equal!
-      }
-      @Override public void setHeight(int h) {
-          this.width = h;
-          this.height = h;     // ← forces both to be equal!
-      }
-  }
-
-  // TEST (should work for ANY Rectangle):
-  // ────────────────────────────────────────────────────────
-  public void testArea(Rectangle rect) {
-      rect.setWidth(5);
-      rect.setHeight(4);
-      assert rect.area() == 20;    // ← PASSES for Rectangle
-                                    // ← FAILS for Square! (area = 16)
-  }
-
-  // Square VIOLATES LSP because it can't substitute for Rectangle
-  // without breaking expectations. Mathematically a square IS a
-  // rectangle, but in OOP behavior matters more than "is-a" taxonomy.
+// GOOD: Use a common interface, no misleading inheritance
+interface Shape { int area(); }
+record Rectangle(int width, int height) implements Shape {
+    public int area() { return width * height; }
+}
+record Square(int side) implements Shape {
+    public int area() { return side * side; }
+}
 ```
 
-**How to check LSP:**
-```
-  1. Can the subclass do everything the parent promises?
-  2. Does the subclass strengthen preconditions? (bad!)
-  3. Does the subclass weaken postconditions? (bad!)
-  4. Would existing tests pass if you swap parent for child?
-```
-
-**Official Definition:**
-> Objects of a superclass should be replaceable with objects of its subclasses
-> without affecting the correctness of the program.
+**When it matters most:** Anywhere you use polymorphism. If your subclass overrides a method and changes its observable behavior, you have an LSP violation.
 
 ---
 
-### I — Interface Segregation Principle (ISP)
+#### I — Interface Segregation Principle (ISP)
 
-**Simple Explanation:**
-Don't force classes to implement interfaces they don't use. It's like forcing
-every restaurant employee to know how to cook, serve, AND do accounting.
-The waiter doesn't need to know accounting.
+> **No client should be forced to depend on methods it does not use.** — Robert C. Martin
+
+Fat interfaces force implementors to write stub methods they do not need. Split large interfaces into focused ones.
 
 ```java
-  // BAD: One fat interface forces unnecessary implementations
-  // ────────────────────────────────────────────────────────
-  public interface Worker {
-      void code();
-      void test();
-      void design();
-      void managePeople();
-      void writeDocumentation();
-  }
+// BAD: A fat interface — Robot doesn't eat or sleep
+interface Worker { void work(); void eat(); void sleep(); }
 
-  public class JuniorDeveloper implements Worker {
-      public void code() { /* OK */ }
-      public void test() { /* OK */ }
-      public void design() { /* doesn't do this! */ }
-      public void managePeople() { /* definitely doesn't do this! */ }
-      public void writeDocumentation() { /* forced to implement! */ }
-  }
+class Robot implements Worker {
+    public void work()  { /* productive */ }
+    public void eat()   { throw new UnsupportedOperationException(); }
+    public void sleep() { throw new UnsupportedOperationException(); }
+}
 
-  // GOOD: Split into focused interfaces
-  // ────────────────────────────────────────────────────────
-  public interface Coder    { void code(); }
-  public interface Tester   { void test(); }
-  public interface Designer { void design(); }
-  public interface Manager  { void managePeople(); }
+// GOOD: Segregated interfaces
+interface Workable { void work(); }
+interface Feedable { void eat(); }
+interface Restable { void sleep(); }
 
-  public class JuniorDeveloper implements Coder, Tester {
-      public void code() { ... }      // ← only what's needed
-      public void test() { ... }
-  }
-
-  public class TechLead implements Coder, Designer, Manager {
-      public void code() { ... }
-      public void design() { ... }
-      public void managePeople() { ... }
-  }
+class Human implements Workable, Feedable, Restable { /* all three */ }
+class Robot implements Workable { public void work() { /* productive */ } }
 ```
 
-**Rule of thumb:** If a class implements an interface but leaves some methods
-empty or throws "not supported" exceptions, the interface is too fat. Split it.
+**When it matters most:** SDK/library design. Spring's `JpaRepository` vs `CrudRepository` vs `PagingAndSortingRepository` is a textbook ISP example.
 
 ---
 
-### D — Dependency Inversion Principle (DIP)
+#### D — Dependency Inversion Principle (DIP)
 
-**Simple Explanation:**
-High-level modules should NOT depend on low-level modules. Both should depend
-on abstractions. Think of a lamp and a wall outlet — the lamp doesn't care if
-electricity comes from solar, coal, or wind. It depends on the OUTLET (abstraction),
-not the power plant (implementation).
+> **High-level modules should not depend on low-level modules. Both should depend on abstractions.** — Robert C. Martin
+
+Your business logic should never import a concrete database class. It should import an interface. This is the foundation of dependency injection.
 
 ```java
-  // BAD: High-level depends directly on low-level
-  // ────────────────────────────────────────────────────────
+// BAD: High-level OrderService depends on concrete MySQLDatabase
+class OrderService {
+    private MySQLDatabase db = new MySQLDatabase(); // Tight coupling
+    void placeOrder(Order order) { db.save(order.toString()); }
+}
 
-  public class OrderService {                       // ← HIGH-LEVEL (business logic)
-      private final MySQLDatabase db = new MySQLDatabase();       // ← DIRECTLY depends on MySQL!
-      private final SendGridMailer mailer = new SendGridMailer();  // ← DIRECTLY depends on SendGrid!
+// GOOD: Both depend on an abstraction
+interface Database { void save(String data); }
 
-      public void placeOrder(Order order) {
-          db.save(order);
-          mailer.send(order.getCustomerEmail(), "Order placed!");
-      }
-  }
+class MySQLDatabase implements Database {
+    public void save(String data) { /* MySQL-specific */ }
+}
 
-  // Problem: want to switch to PostgreSQL? Must modify OrderService.
-  // Want to test without sending real emails? Can't!
-
-  // GOOD: Both depend on abstractions (Dependency Injection)
-  // ────────────────────────────────────────────────────────
-
-  public interface Database {                       // ← ABSTRACTION
-      void save(Object entity);
-  }
-
-  public interface Mailer {                         // ← ABSTRACTION
-      void send(String to, String message);
-  }
-
-  public class OrderService {                       // ← HIGH-LEVEL
-      private final Database db;                    // ← depends on ABSTRACTION
-      private final Mailer mailer;                  // ← depends on ABSTRACTION
-
-      public OrderService(Database db, Mailer mailer) {   // ← Constructor Injection
-          this.db = db;
-          this.mailer = mailer;
-      }
-
-      public void placeOrder(Order order) {
-          db.save(order);
-          mailer.send(order.getCustomerEmail(), "Order placed!");
-      }
-  }
-
-  // Production:
-  OrderService service = new OrderService(new MySQLDatabase(), new SendGridMailer());
-
-  // Testing:
-  OrderService testService = new OrderService(new MockDatabase(), new MockMailer());  // ← easy!
-
-  // Switch DB:
-  OrderService service = new OrderService(new PostgresDatabase(), new SendGridMailer());  // ← no code change!
+class OrderService {
+    private final Database db;
+    OrderService(Database db) { this.db = db; } // Injected
+    void placeOrder(Order order) { db.save(order.toString()); }
+}
 ```
 
-```
-  DEPENDENCY DIRECTION:
-
-  BAD (high depends on low):          GOOD (both depend on abstraction):
-  ───────────────────────             ─────────────────────────────────
-
-  OrderService                        OrderService
-       │                                   │
-       │ depends on                        │ depends on
-       ▼                                   ▼
-  MySQLDatabase                       <<interface>>
-                                       Database
-                                        ▲    ▲
-                              depends  │    │  depends
-                              on       │    │  on
-                                MySQL    Postgres
-```
+**When it matters most:** Every service boundary. If you cannot unit-test a class without spinning up a real database, you are violating DIP.
 
 ---
-
-## 1.3 Other Key Design Principles
 
 ### DRY — Don't Repeat Yourself
 
+> **Every piece of knowledge must have a single, unambiguous, authoritative representation within a system.** — Andy Hunt & Dave Thomas
+
+DRY is not about eliminating duplicate lines of code. It is about eliminating duplicate **knowledge**. Two methods can have identical code but represent different concepts -- that is fine. Two methods with different code that encode the same business rule -- that is the real violation.
+
 ```java
-  // "Every piece of knowledge must have a single, unambiguous,
-  //  authoritative representation within a system."
+// BAD: Tax logic duplicated — if rate changes, must update both
+class InvoiceService { double tax(double amt) { return amt * 0.08; } }
+class ReceiptService { double tax(double amt) { return amt * 0.08; } }
 
-  // BAD:
-  // ────────────────────────────────────────────────────────
-  public double calculateEmployeeTax(double salary) {
-      return salary * 0.30;    // ← tax rate hardcoded here
-  }
-
-  public String generateTaxReport(double salary) {
-      double tax = salary * 0.30;     // ← AND duplicated here!
-      return String.format("Tax: %.2f", tax);
-  }
-
-  // Tax rate changes? Must find EVERY copy. Miss one? Bug.
-
-  // GOOD:
-  // ────────────────────────────────────────────────────────
-  private static final double TAX_RATE = 0.30;     // ← single source of truth
-
-  public double calculateEmployeeTax(double salary) {
-      return salary * TAX_RATE;
-  }
-
-  public String generateTaxReport(double salary) {
-      double tax = salary * TAX_RATE;
-      return String.format("Tax: %.2f", tax);
-  }
-
-  // CAUTION: DRY is about KNOWLEDGE, not just code.
-  // Two methods that look similar but represent different
-  // business rules should NOT be merged. They'll diverge later.
+// GOOD: Single source of truth
+class TaxCalculator {
+    private static final double RATE = 0.08;
+    static double calculate(double amount) { return amount * RATE; }
+}
 ```
+
+---
 
 ### KISS — Keep It Simple, Stupid
 
-```java
-  // The simplest solution that works IS the best solution.
+> **Simplicity is the ultimate sophistication.**
 
-  // BAD:
-  // ────────────────────────────────────────────────────────
-  public boolean isEven(int n) {
-      return IntStream.range(0, Integer.toBinaryString(n).length())
-          .map(i -> Character.getNumericValue(Integer.toBinaryString(n).charAt(i)))
-          .reduce(0, (a, b) -> a ^ b) == 0;
-  }
-
-  // GOOD:
-  // ────────────────────────────────────────────────────────
-  public boolean isEven(int n) {
-      return n % 2 == 0;
-  }
-
-  // Both correct. One is maintainable. One is a riddle.
-```
-
-### YAGNI — You Aren't Gonna Need It
-
-```
-  Don't build features until you actually need them.
-
-  REAL SCENARIO:
-  ────────────────────────────────────────────────────────
-  Task: "Build a user registration form."
-
-  YAGNI violation (over-engineering):
-  "Let me also add support for OAuth, SAML, biometric auth,
-   multi-tenant organizations, and an admin dashboard...
-   just in case we need it someday."
-
-  Result: 3 months of work. Customer just needed email + password.
-  90% of that code is never used and now must be maintained.
-
-  YAGNI approach:
-  Build email + password registration. Ship it.
-  Add OAuth when a customer actually asks for it.
-
-  ┌──────────────────────────────────────────────────────┐
-  │  "The best code is code you didn't have to write."   │
-  │  Every line of code is a liability, not an asset.    │
-  └──────────────────────────────────────────────────────┘
-```
-
-### Composition Over Inheritance
+The simplest solution that works is almost always the best one. If a junior engineer cannot read your code and understand it within a few minutes, it is too complex.
 
 ```java
-  // Prefer HAS-A over IS-A relationships.
+// Overengineered
+boolean isPalindrome(String s) {
+    return IntStream.range(0, s.length() / 2)
+        .noneMatch(i -> s.charAt(i) != s.charAt(s.length() - 1 - i));
+}
 
-  // INHERITANCE (rigid, creates coupling):
-  // ────────────────────────────────────────────────────────
-  // class Animal
-  //     ├── class Bird
-  //     │    ├── class Penguin       ← Penguin IS-A Bird... but can't fly!
-  //     │    └── class Eagle
-  //     └── class Fish
-  //          └── class FlyingFish    ← FlyingFish IS-A Fish... but can fly?!
-  //
-  // Inheritance hierarchies become fragile when the real world
-  // doesn't fit neat parent-child trees.
-
-  // COMPOSITION (flexible, swappable):
-  // ────────────────────────────────────────────────────────
-  public interface Flyable   { void fly(); }
-  public interface Swimmable { void swim(); }
-
-  public class Eagle implements Flyable {
-      public void fly() { System.out.println("Soaring high!"); }
-  }
-
-  public class Penguin implements Swimmable {
-      public void swim() { System.out.println("Swimming fast!"); }
-  }
-
-  public class FlyingFish implements Flyable, Swimmable {  // ← mix and match!
-      public void fly()  { System.out.println("Gliding!"); }
-      public void swim() { System.out.println("Swimming!"); }
-  }
+// KISS: clear, debuggable, same performance
+boolean isPalindrome(String s) {
+    int left = 0, right = s.length() - 1;
+    while (left < right) {
+        if (s.charAt(left++) != s.charAt(right--)) return false;
+    }
+    return true;
+}
 ```
 
-### Separation of Concerns (SoC)
+---
 
+### YAGNI — You Ain't Gonna Need It
+
+> **Always implement things when you actually need them, never when you just foresee that you need them.** — Ron Jeffries
+
+Do not build abstractions for future requirements that may never arrive. A factory pattern with one implementation is unnecessary ceremony. Add the abstraction when the second use case appears.
+
+```java
+// YAGNI violation: Full strategy + factory for ONE notification type
+interface NotificationStrategy { void send(String msg); }
+class EmailNotification implements NotificationStrategy { /* ... */ }
+class NotificationFactory { static NotificationStrategy create(String type) { /* ... */ } }
+
+// YAGNI: Just send the email. Refactor when SMS is actually needed.
+class NotificationService {
+    void sendEmail(String to, String msg) { /* send email */ }
+}
 ```
-  Each module handles ONE concern (aspect of functionality).
 
-  Web application concerns:
-  ┌─────────────────────────────────────────────────────────────┐
-  │                                                             │
-  │  PRESENTATION (UI)        <- how things look                │
-  │       │                                                     │
-  │       ▼                                                     │
-  │  BUSINESS LOGIC           <- what the app does              │
-  │       │                                                     │
-  │       ▼                                                     │
-  │  DATA ACCESS              <- how data is stored/retrieved   │
-  │       │                                                     │
-  │       ▼                                                     │
-  │  INFRASTRUCTURE           <- external services, networking  │
-  │                                                             │
-  └─────────────────────────────────────────────────────────────┘
+---
 
-  Each layer can change independently.
-  UI redesign? Only touch presentation.
-  Switch databases? Only touch data access.
+### Composition over Inheritance
+
+Inheritance creates rigid hierarchies. Composition lets you assemble behavior from small, reusable pieces. Prefer `has-a` over `is-a`.
+
+```java
+// PROBLEM: Penguin inherits fly() from Bird — but penguins can't fly
+class Animal { void eat() { } }
+class Bird extends Animal { void fly() { } }
+class Penguin extends Bird {
+    @Override void fly() { throw new UnsupportedOperationException(); } // Awkward
+}
+
+// SOLUTION: Compose behaviors via interfaces
+interface Eater  { void eat(); }
+interface Flyer  { void fly(); }
+interface Swimmer { void swim(); }
+
+class Sparrow implements Eater, Flyer {
+    public void eat() { } public void fly() { }
+}
+class Penguin implements Eater, Swimmer {
+    public void eat() { } public void swim() { }
+    // No fly() — no problem
+}
 ```
+
+Use inheritance for genuine `is-a` relationships with shared behavior. Use composition for everything else.
+
+---
+
+### Coupling & Cohesion
+
+**Coupling** measures how much one module depends on another. **Cohesion** measures how related the responsibilities within a single module are. You want **low coupling** and **high cohesion**.
+
+| Coupling Level | Description | Example |
+|---|---|---|
+| **Content** (worst) | One module modifies another's internals | Accessing private fields via reflection |
+| **Common** | Modules share global mutable state | Static mutable singletons |
+| **Control** | One module controls another's flow via flags | Passing a boolean to change behavior |
+| **Stamp** | Passing a whole object when only a field is needed | `process(User user)` when you only need email |
+| **Data** | Only passing the data actually needed | `process(String email)` |
+| **Message** (best) | Communicating via messages/events | Event-driven, pub/sub |
+
+<div class="chart-container" style="max-width: 650px; margin: 2rem auto;">
+<canvas id="couplingChart"></canvas>
+</div>
+<script>
+(function() {
+    const ctx = document.getElementById('couplingChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Content', 'Common', 'Control', 'Stamp', 'Data', 'Message'],
+            datasets: [{
+                label: 'Coupling Severity (lower is better)',
+                data: [10, 8, 6, 4, 2, 1],
+                backgroundColor: ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60','#1abc9c'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Coupling Spectrum (Tight → Loose)', font: { size: 14 } },
+                legend: { display: false }
+            },
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Severity' } } }
+        }
+    });
+})();
+</script>
+
+---
+
+### Separation of Concerns
+
+Each module, class, or layer should address a distinct concern. Do not mix database queries into your UI code.
+
+```java
+// BAD: Controller does validation, business logic, persistence, AND notification
+@RestController
+class OrderController {
+    @PostMapping("/orders")
+    ResponseEntity<?> create(@RequestBody OrderRequest req) {
+        if (req.getItems().isEmpty()) throw new BadRequestException("No items");
+        double total = req.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQty()).sum();
+        jdbcTemplate.update("INSERT INTO orders ...", total);
+        emailService.send(req.getEmail(), "Order placed!");
+        return ResponseEntity.ok("done");
+    }
+}
+
+// GOOD: Each concern in its own layer
+@RestController
+class OrderController {
+    private final OrderService service;
+    @PostMapping("/orders")
+    ResponseEntity<?> create(@RequestBody @Valid OrderRequest req) {
+        return ResponseEntity.ok(service.placeOrder(req));
+    }
+}
+
+@Service
+class OrderService {
+    private final OrderRepository repo;
+    private final NotificationService notifier;
+    Order placeOrder(OrderRequest req) {
+        Order order = Order.from(req);
+        repo.save(order);
+        notifier.orderPlaced(order);
+        return order;
+    }
+}
+```
+
+---
 
 ### Law of Demeter (Principle of Least Knowledge)
 
-```java
-  // "Don't talk to strangers." A method should only call methods on:
-  // 1. Its own object (this)
-  // 2. Objects passed as parameters
-  // 3. Objects it creates
-  // 4. Its direct fields
+> **A method should only talk to its immediate friends, not to strangers.**
 
-  // BAD (train wreck / chained calls):
-  // ────────────────────────────────────────────────────────
-  customer.getWallet().getCreditCard().charge(100);
-
-  // You're reaching deep into the internals of Customer,
-  // then Wallet, then CreditCard. If ANY of those change,
-  // YOUR code breaks.
-
-  // GOOD:
-  // ────────────────────────────────────────────────────────
-  customer.charge(100);
-
-  // Customer internally delegates to Wallet, which delegates
-  // to CreditCard. You only talk to your direct friend.
-```
-
-### Coupling and Cohesion — The Two Most Important Quality Metrics
-
-These are the most fundamental measures of design quality. Every other principle (SOLID, DRY, SoC) exists to improve coupling and cohesion.
-
-**Cohesion = how closely related the things INSIDE a module are.**
-High cohesion = good. Everything in the module works toward one purpose.
-
-**Coupling = how much one module depends on another.**
-Low coupling = good. Modules can change independently.
+Do not chain calls through intermediate objects -- this couples you to the entire chain.
 
 ```java
-  // HIGH COHESION (good):              LOW COHESION (bad):
-  // ──────────────────────             ──────────────────────
+// BAD: Train wreck — depends on Order, Customer, AND Address
+String city = order.getCustomer().getAddress().getCity();
 
-  public class UserAuthentication {     public class Utility {
-      void login() { ... }                  void login() { ... }
-      void logout() { ... }                 void sendEmail() { ... }
-      void resetPassword() { ... }          double calculateTax() { ... }
-      boolean validateToken() { ... }       void resizeImage() { ... }
-  }                                         List<String> parseCsv() { ... }
-                                        }
-  // Everything is about auth.
-  // One clear purpose.              // Random grab-bag of unrelated functions.
-
-  Ask yourself: "If I describe what this module does,
-  do I need the word AND?"
-  
-  "Handles authentication" → high cohesion ✓
-  "Handles auth AND email AND tax AND images" → low cohesion ✗
+// GOOD: Ask, don't reach
+String city = order.getShippingCity(); // Order encapsulates the traversal
 ```
+
+---
+
+## 14.2 Design Patterns — Creational
+
+Creational patterns control **how objects are created**, abstracting the instantiation process.
+
+### Singleton
+
+> **Ensure a class has only one instance and provide a global point of access to it.** — GoF
+
+Use it for genuinely shared resources: connection pools, configuration, caches. The most overused pattern -- reach for it only when you truly need exactly one instance.
+
+**Thread-safe double-checked locking:**
 
 ```java
-  // TIGHT COUPLING (bad):
-  // ──────────────────────
-  public class OrderService {
-      public void placeOrder(Order order) {
-          MySQLDatabase db = new MySQLDatabase();
-          db.connect("localhost", "root", "pass123");
-          db.execute("INSERT INTO orders...");
-          SmtpClient smtp = new SmtpClient("smtp.gmail.com");
-          smtp.send(order.getEmail(), "Order placed!");
-      }
-  }
-  // Knows EXACTLY which DB, which email server, connection details, SQL syntax...
-  // Change ANYTHING → OrderService must change too.
+public class ConnectionPool {
+    private static volatile ConnectionPool instance;
+    private ConnectionPool() { /* init pool */ }
 
-  // LOOSE COUPLING (good):
-  // ──────────────────────
-  public class OrderService {
-      private final Database db;
-      private final Mailer mailer;
-      public OrderService(Database db, Mailer mailer) {
-          this.db = db;
-          this.mailer = mailer;
-      }
-      public void placeOrder(Order order) {
-          db.save(order);
-          mailer.send(order.getEmail(), "Order placed!");
-      }
-  }
-  // Knows NOTHING about which database or email service.
-  // It depends on ABSTRACTIONS. Change database/email → OrderService stays untouched.
+    public static ConnectionPool getInstance() {
+        if (instance == null) {
+            synchronized (ConnectionPool.class) {
+                if (instance == null) instance = new ConnectionPool();
+            }
+        }
+        return instance;
+    }
+}
 ```
 
-```
-  THE GOAL:
-  ┌──────────────────────────────────────────────────────────────┐
-  │                                                              │
-  │   HIGH COHESION   +   LOW COUPLING   =   GREAT DESIGN       │
-  │                                                              │
-  │   Each module does     Modules are        Easy to understand,│
-  │   ONE thing well.      independent.       change, test, and  │
-  │                                           reuse.             │
-  │                                                              │
-  │   SRP → improves cohesion                                    │
-  │   DIP → reduces coupling                                     │
-  │   SoC → improves both                                        │
-  │   OCP → reduces coupling to future changes                   │
-  └──────────────────────────────────────────────────────────────┘
+**Enum singleton (preferred -- inherently thread-safe and serialization-safe):**
+
+```java
+public enum AppConfig {
+    INSTANCE;
+    private final Properties props = new Properties();
+    AppConfig() {
+        try (var is = getClass().getResourceAsStream("/config.properties")) {
+            props.load(is);
+        } catch (IOException e) { throw new RuntimeException(e); }
+    }
+    public String get(String key) { return props.getProperty(key); }
+}
+// Usage: AppConfig.INSTANCE.get("db.url")
 ```
 
-### Principle Summary
+**When to avoid:** When you need testability (singletons are hard to mock), when the "one instance" assumption may change, or when it is just a disguised global variable.
 
+---
+
+### Factory Method
+
+> **Define an interface for creating an object, but let subclasses decide which class to instantiate.** — GoF
+
+The client codes to an interface; the factory decides which implementation to return.
+
+```java
+interface Notification { void send(String message); }
+
+class EmailNotification implements Notification {
+    public void send(String msg) { System.out.println("Email: " + msg); }
+}
+class SmsNotification implements Notification {
+    public void send(String msg) { System.out.println("SMS: " + msg); }
+}
+class PushNotification implements Notification {
+    public void send(String msg) { System.out.println("Push: " + msg); }
+}
+
+class NotificationFactory {
+    public static Notification create(String channel) {
+        return switch (channel.toLowerCase()) {
+            case "email" -> new EmailNotification();
+            case "sms"   -> new SmsNotification();
+            case "push"  -> new PushNotification();
+            default -> throw new IllegalArgumentException("Unknown: " + channel);
+        };
+    }
+}
+
+// Client — no dependency on concrete classes
+Notification n = NotificationFactory.create("email");
+n.send("Your order shipped");
 ```
-┌───────────────────┬──────────────────────────────────────────────────┐
-│ Principle         │ One-Line Summary                                  │
-├───────────────────┼──────────────────────────────────────────────────┤
-│ SRP               │ One class, one reason to change                  │
-│ OCP               │ Extend behavior without modifying existing code  │
-│ LSP               │ Subtypes must be substitutable for base types    │
-│ ISP               │ Many specific interfaces > one general interface │
-│ DIP               │ Depend on abstractions, not implementations      │
-│ DRY               │ Single source of truth for every piece of logic  │
-│ KISS              │ Simplest solution that works wins                 │
-│ YAGNI             │ Don't build it until you need it                 │
-│ Composition > Inh │ Prefer HAS-A over IS-A relationships             │
-│ SoC               │ Each module handles one concern                   │
-│ Law of Demeter    │ Don't reach through objects to their internals   │
-└───────────────────┴──────────────────────────────────────────────────┘
+
+**When to use:** When the decision of which class to instantiate depends on configuration, user input, or runtime context.
+
+---
+
+### Abstract Factory
+
+> **Provide an interface for creating families of related objects without specifying their concrete classes.** — GoF
+
+A factory of factories -- useful when you have multiple product families (e.g., UI themes).
+
+```java
+interface Button    { void render(); }
+interface TextField { void render(); }
+
+// Material family
+class MaterialButton implements Button { public void render() { System.out.println("Material btn"); } }
+class MaterialTextField implements TextField { public void render() { System.out.println("Material txt"); } }
+
+// iOS family
+class IOSButton implements Button { public void render() { System.out.println("iOS btn"); } }
+class IOSTextField implements TextField { public void render() { System.out.println("iOS txt"); } }
+
+interface UIFactory {
+    Button createButton();
+    TextField createTextField();
+}
+class MaterialFactory implements UIFactory {
+    public Button createButton() { return new MaterialButton(); }
+    public TextField createTextField() { return new MaterialTextField(); }
+}
+class IOSFactory implements UIFactory {
+    public Button createButton() { return new IOSButton(); }
+    public TextField createTextField() { return new IOSTextField(); }
+}
 ```
 
 ---
 
-# PART 2: DESIGN PATTERNS
+### Builder
+
+> **Separate the construction of a complex object from its representation.** — GoF
+
+Ideal for objects with many optional parameters. Eliminates telescoping constructors.
+
+```java
+public class HttpRequest {
+    private final String url, method, body;
+    private final Map<String, String> headers;
+    private final int timeoutMs;
+
+    private HttpRequest(Builder b) {
+        this.url = b.url; this.method = b.method; this.body = b.body;
+        this.headers = Map.copyOf(b.headers); this.timeoutMs = b.timeoutMs;
+    }
+
+    public static class Builder {
+        private final String url;                              // Required
+        private String method = "GET";                         // Defaults
+        private final Map<String, String> headers = new HashMap<>();
+        private String body;
+        private int timeoutMs = 5000;
+
+        public Builder(String url)                { this.url = url; }
+        public Builder method(String m)           { this.method = m; return this; }
+        public Builder header(String k, String v) { headers.put(k, v); return this; }
+        public Builder body(String b)             { this.body = b; return this; }
+        public Builder timeout(int ms)            { this.timeoutMs = ms; return this; }
+
+        public HttpRequest build() {
+            if (url == null || url.isBlank()) throw new IllegalStateException("URL required");
+            return new HttpRequest(this);
+        }
+    }
+}
+
+// Usage — readable, self-documenting
+HttpRequest req = new HttpRequest.Builder("https://api.example.com/users")
+    .method("POST")
+    .header("Content-Type", "application/json")
+    .body("{\"name\": \"Alice\"}")
+    .timeout(3000)
+    .build();
+```
+
+In production, **Lombok's `@Builder`** generates this for you. Know the manual implementation for interviews.
 
 ---
 
-## 2.1 What Are Design Patterns?
+### Prototype
 
-### Simple Explanation
-Design patterns are **proven solutions to common problems** in software design.
-They're like recipes — you don't reinvent pasta from scratch every time you cook.
-Someone already figured out the best way to do it.
+> **Create new objects by copying an existing instance rather than constructing from scratch.** — GoF
 
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │                    DESIGN PATTERN CATEGORIES                  │
-  ├─────────────────┬────────────────────┬───────────────────────┤
-  │   CREATIONAL    │    STRUCTURAL      │     BEHAVIORAL        │
-  │ (how to create  │ (how to compose    │ (how objects          │
-  │  objects)       │  classes/objects)   │  communicate)         │
-  ├─────────────────┼────────────────────┼───────────────────────┤
-  │ Singleton       │ Adapter            │ Observer              │
-  │ Factory Method  │ Facade             │ Strategy              │
-  │ Abstract Factory│ Decorator          │ Command               │
-  │ Builder         │ Proxy              │ State                 │
-  │ Prototype       │ Composite          │ Chain of Resp.        │
-  │                 │ Bridge             │ Template Method       │
-  │                 │                    │ Iterator              │
-  └─────────────────┴────────────────────┴───────────────────────┘
-```
+Use when object creation is expensive and you need multiple similar instances.
 
----
+```java
+public class GameUnit implements Cloneable {
+    private String type;
+    private int health, attack;
+    private List<String> abilities;
 
-## 2.2 Creational Patterns
+    public GameUnit(String type, int hp, int atk, List<String> abilities) {
+        this.type = type; this.health = hp; this.attack = atk;
+        this.abilities = new ArrayList<>(abilities);
+    }
 
-### Singleton — One Instance Only
+    @Override
+    public GameUnit clone() {
+        try {
+            GameUnit copy = (GameUnit) super.clone();
+            copy.abilities = new ArrayList<>(this.abilities); // Deep copy mutables
+            return copy;
+        } catch (CloneNotSupportedException e) { throw new AssertionError(); }
+    }
+}
 
-```
-  PROBLEM: You need exactly ONE instance of a class.
-  Examples: database connection pool, logger, configuration manager.
-
-  ┌─────────────────────────────────────────────────┐
-  │  Application                                     │
-  │                                                  │
-  │  Module A ──┐                                    │
-  │             │                                    │
-  │  Module B ──┼──► DatabasePool.getInstance()      │
-  │             │         │                          │
-  │  Module C ──┘         ▼                          │
-  │                  ┌──────────┐                    │
-  │                  │ SINGLE   │                    │
-  │                  │ INSTANCE │  (shared by all)   │
-  │                  └──────────┘                    │
-  └─────────────────────────────────────────────────┘
-
-  // Thread-safe Singleton (important for Google-scale concurrency!)
-  public class DatabasePool {
-      private static volatile DatabasePool instance;
-
-      private DatabasePool() { }    // private constructor
-
-      public static DatabasePool getInstance() {
-          if (instance == null) {                      // first check (no lock)
-              synchronized (DatabasePool.class) {
-                  if (instance == null) {              // second check (with lock)
-                      instance = new DatabasePool();
-                  }
-              }
-          }
-          return instance;
-      }
-  }
-
-  // OR: Use an enum (Josh Bloch's recommended approach — simplest, thread-safe):
-  public enum DatabasePool {
-      INSTANCE;
-      public Connection getConnection() { ... }
-  }
-
-  CAUTION: Singletons are often overused. They're essentially
-  global state — harder to test, harder to parallelize.
-  At Google, prefer dependency injection (Guice/Dagger) over singletons.
-```
-
-### Factory Method — Let Subclasses Decide What to Create
-
-```
-  PROBLEM: You need to create objects but don't know the exact
-  type until runtime.
-
-  EXAMPLE: A notification system that sends via different channels.
-
-  // Without Factory (brittle):
-  Notifier notifier;
-  if (channel.equals("email"))     notifier = new EmailNotifier();
-  else if (channel.equals("sms")) notifier = new SMSNotifier();
-  else if (channel.equals("push"))notifier = new PushNotifier();  // ← must modify every time!
-
-  // With Factory (extensible):
-  public class NotificationFactory {
-      private static final Map<String, Supplier<Notifier>> FACTORIES = Map.of(
-          "email", EmailNotifier::new,
-          "sms",   SMSNotifier::new,
-          "push",  PushNotifier::new
-      );
-
-      public static Notifier create(String channel) {
-          Supplier<Notifier> factory = FACTORIES.get(channel);
-          if (factory == null) throw new IllegalArgumentException("Unknown: " + channel);
-          return factory.get();
-      }
-  }
-
-  Notifier notifier = NotificationFactory.create("email");
-  notifier.send("Hello!");
-
-  // To add Slack notifications: just add one entry. No if/else chain.
-```
-
-### Builder — Construct Complex Objects Step by Step
-
-```
-  PROBLEM: Object has many optional parameters. Constructor
-  becomes unwieldy.
-
-  // Without Builder (telescoping constructor):
-  User user = new User("Alice", "alice@email.com", 25, "NYC",
-                        "Engineer", true, false, "en", null, "UTC");
-  // What do all these booleans mean?! Unreadable.
-
-  // With Builder (readable, self-documenting):
-  User user = User.builder()
-      .name("Alice")
-      .email("alice@email.com")
-      .age(25)
-      .city("NYC")
-      .role("Engineer")
-      .isActive(true)
-      .build();
-
-  // Implementation:
-  public class User {
-      private final String name;
-      private final String email;
-      private final int age;
-      // ... more fields
-
-      private User(Builder builder) {
-          this.name = builder.name;
-          this.email = builder.email;
-          this.age = builder.age;
-      }
-
-      public static Builder builder() { return new Builder(); }
-
-      public static class Builder {
-          private String name;
-          private String email;
-          private int age;
-
-          public Builder name(String name)   { this.name = name; return this; }
-          public Builder email(String email) { this.email = email; return this; }
-          public Builder age(int age)        { this.age = age; return this; }
-
-          public User build() {
-              Objects.requireNonNull(name, "name is required");
-              Objects.requireNonNull(email, "email is required");
-              return new User(this);
-          }
-      }
-  }
-
-  // Each step is clear. Optional fields can be skipped.
-  // The .build() method validates and returns an immutable object.
-  // REAL-WORLD: Protocol Buffers (Google's standard), Guava ImmutableList.builder(),
-  // HTTP request builders, SQL query builders.
+// Clone and customize
+GameUnit template = new GameUnit("Archer", 100, 15, List.of("Ranged"));
+GameUnit a1 = template.clone();
+GameUnit a2 = template.clone();
 ```
 
 ---
 
-## 2.3 Structural Patterns
+## 14.3 Design Patterns — Structural
 
-### Adapter — Make Incompatible Interfaces Work Together
+Structural patterns deal with **how classes and objects are composed** to form larger structures.
 
-```
-  PROBLEM: You have an existing class that doesn't match the
-  interface your code expects. Like using a US power plug in
-  a European outlet — you need an ADAPTER.
+### Adapter
 
-  // Your code expects:           Third-party library provides:
-  // ─────────────────            ──────────────────────────────
-  public interface PaymentGateway {     public class StripeAPI {
-      void charge(double amount,            void createCharge(int cents,
-                  String currency);                           String currencyCode);
-  }                                     }
+> **Convert the interface of a class into another interface that clients expect.** — GoF
 
-  public class StripeAdapter implements PaymentGateway {
-      private final StripeAPI stripe;
+Think of a power adapter: your laptop plug does not fit the foreign outlet, so you bridge the gap without changing either side.
 
-      public StripeAdapter(StripeAPI stripe) { this.stripe = stripe; }
+```java
+interface MediaPlayer { void play(String filename); }
 
-      @Override
-      public void charge(double amount, String currency) {
-          int cents = (int)(amount * 100);    // convert dollars to cents
-          stripe.createCharge(cents, currency.toUpperCase());
-      }
-  }
+// Third-party library with incompatible interface
+class VLCEngine {
+    void loadMedia(String path) { System.out.println("VLC loading: " + path); }
+    void startPlayback()        { System.out.println("VLC playing"); }
+}
 
-  // Your code works with ANY PaymentGateway:
-  PaymentGateway gateway = new StripeAdapter(new StripeAPI());
-  gateway.charge(29.99, "usd");
+class VLCAdapter implements MediaPlayer {
+    private final VLCEngine vlc = new VLCEngine();
+    public void play(String filename) { vlc.loadMedia(filename); vlc.startPlayback(); }
+}
 
-  // Tomorrow: switch to PayPal? Write PayPalAdapter. Zero changes elsewhere.
+MediaPlayer player = new VLCAdapter();
+player.play("song.mp3"); // Client doesn't know about VLC internals
 ```
 
-### Facade — Simple Interface to Complex Subsystem
+**When to use:** Integrating legacy code, wrapping third-party libraries, incremental API migration.
 
-```
-  PROBLEM: A subsystem has many classes and complex interactions.
-  Clients need a simple way to use it.
+---
 
-  // WITHOUT FACADE (client deals with complexity):
-  // ─────────────────────────────────────────────────────
-  DVDPlayer dvd = new DVDPlayer();
-  Amplifier amp = new Amplifier();
-  Projector projector = new Projector();
-  TheaterLights lights = new TheaterLights();
-  dvd.on(); dvd.play("Inception");
-  amp.on(); amp.setVolume(8);
-  projector.on(); projector.wideScreenMode();
-  lights.dim(30);
+### Facade
 
-  // WITH FACADE (one simple method):
-  // ─────────────────────────────────────────────────────
-  public class HomeTheaterFacade {
-      private final DVDPlayer dvd;
-      private final Amplifier amp;
-      private final Projector projector;
-      private final TheaterLights lights;
+> **Provide a unified, simplified interface to a set of interfaces in a subsystem.** — GoF
 
-      // constructor takes all dependencies...
+A facade hides complexity. Think of a hotel concierge: you say "book me dinner and a show," and the concierge coordinates everything.
 
-      public void watchMovie(String title) {
-          lights.dim(30);
-          projector.on();
-          projector.wideScreenMode();
-          amp.on();
-          amp.setVolume(8);
-          dvd.on();
-          dvd.play(title);
-      }
-  }
+```java
+class InventoryService { boolean check(String id) { return true; } void reserve(String id) { } }
+class PaymentService   { boolean charge(String cid, double amt) { return true; } }
+class ShippingService  { String ship(String id, String addr) { return "TRACK-123"; } }
 
-  HomeTheaterFacade theater = new HomeTheaterFacade(...);
-  theater.watchMovie("Inception");    // one call does everything!
+class OrderFacade {
+    private final InventoryService inv = new InventoryService();
+    private final PaymentService pay = new PaymentService();
+    private final ShippingService ship = new ShippingService();
 
-  // REAL-WORLD: SDK wrappers, Google Cloud client libraries, ORM facades.
+    public String placeOrder(String custId, String itemId, double amt, String addr) {
+        if (!inv.check(itemId)) throw new RuntimeException("Out of stock");
+        inv.reserve(itemId);
+        if (!pay.charge(custId, amt)) throw new RuntimeException("Payment failed");
+        return ship.ship(itemId, addr);
+    }
+}
 ```
 
-### Decorator — Add Behavior Without Modifying Original
+**When to use:** Simplifying complex libraries, providing a clean API over messy internals.
 
-```
-  PROBLEM: You want to add responsibilities to objects dynamically,
-  without subclassing.
+---
 
-  EXAMPLE: Adding features to a coffee order.
+### Decorator
 
-  Coffee coffee = new SimpleCoffee();                     // $2.00
-  coffee = new MilkDecorator(coffee);                     // $2.00 + $0.50
-  coffee = new SugarDecorator(coffee);                    // $2.50 + $0.20
-  double finalCost = coffee.cost();                       // $2.70
+> **Attach additional responsibilities to an object dynamically. A flexible alternative to subclassing.** — GoF
 
-  ┌──────────────────────────────────────────────────────────────┐
-  │  SugarDecorator                                              │
-  │  ┌────────────────────────────────────────────────────────┐  │
-  │  │  MilkDecorator                                         │  │
-  │  │  ┌──────────────────────────────────────────────────┐  │  │
-  │  │  │  SimpleCoffee ($2.00)                             │  │  │
-  │  │  └──────────────────────────────────────────────────┘  │  │
-  │  │  + milk ($0.50) = $2.50                                │  │
-  │  └────────────────────────────────────────────────────────┘  │
-  │  + sugar ($0.20) = $2.70                                     │
-  └──────────────────────────────────────────────────────────────┘
+The decorator implements the same interface as the object it wraps, so decorators can be stacked. Java's I/O streams are the textbook example:
 
-  Each decorator wraps the previous one. You can stack them
-  in any order. Compare to subclassing:
-  - CoffeeWithMilk, CoffeeWithSugar, CoffeeWithMilkAndSugar,
-    CoffeeWithDoubleMilk... class explosion!
-
-  REAL-WORLD: Java I/O streams, Python decorators (@property, @cache),
-  middleware in web frameworks, logging wrappers.
+```java
+// Stacked decorators: each adds a layer
+InputStream is = new BufferedInputStream(       // Adds buffering
+                    new GZIPInputStream(        // Adds decompression
+                        new FileInputStream("data.gz")));
 ```
 
-### Proxy — Control Access to an Object
+Custom decorator:
 
+```java
+interface DataSource {
+    void writeData(String data);
+    String readData();
+}
+
+class FileDataSource implements DataSource {
+    private final String file;
+    FileDataSource(String file) { this.file = file; }
+    public void writeData(String data) { /* write */ }
+    public String readData()           { return "raw data"; }
+}
+
+abstract class DataSourceDecorator implements DataSource {
+    protected final DataSource wrapped;
+    DataSourceDecorator(DataSource src) { this.wrapped = src; }
+    public void writeData(String data) { wrapped.writeData(data); }
+    public String readData()           { return wrapped.readData(); }
+}
+
+class EncryptionDecorator extends DataSourceDecorator {
+    EncryptionDecorator(DataSource src) { super(src); }
+    public void writeData(String data) { super.writeData("ENC(" + data + ")"); }
+    public String readData()           { return super.readData().replace("ENC(","").replace(")",""); }
+}
+
+class CompressionDecorator extends DataSourceDecorator {
+    CompressionDecorator(DataSource src) { super(src); }
+    public void writeData(String data) { super.writeData("ZIP(" + data + ")"); }
+    public String readData()           { return super.readData().replace("ZIP(","").replace(")",""); }
+}
+
+// Stack: file -> compress -> encrypt
+DataSource src = new EncryptionDecorator(new CompressionDecorator(new FileDataSource("data.txt")));
 ```
-  PROBLEM: You need to control access, add caching, logging,
-  or lazy loading to an object without changing it.
 
-  Types of Proxies:
-  ┌────────────────┬──────────────────────────────────────────┐
-  │ Virtual Proxy  │ Delays creation until actually needed     │
-  │                │ (lazy loading heavy resources)            │
-  ├────────────────┼──────────────────────────────────────────┤
-  │ Protection     │ Controls access based on permissions      │
-  │ Proxy          │ (auth check before allowing operation)   │
-  ├────────────────┼──────────────────────────────────────────┤
-  │ Caching Proxy  │ Stores results of expensive operations    │
-  │                │ (return cached result if available)       │
-  ├────────────────┼──────────────────────────────────────────┤
-  │ Remote Proxy   │ Represents object in a different process  │
-  │                │ (RPC, gRPC stubs)                        │
-  └────────────────┴──────────────────────────────────────────┘
+**When to use:** Logging, caching, compression, encryption, metrics -- any layered behavior.
 
-  // EXAMPLE (Caching Proxy):
-  public class CachingWeatherProxy implements WeatherService {
-      private final WeatherService realService;
-      private final Map<String, Forecast> cache = new ConcurrentHashMap<>();
+---
 
-      public CachingWeatherProxy(WeatherService realService) {
-          this.realService = realService;
-      }
+### Proxy
 
-      @Override
-      public Forecast getForecast(String city) {
-          return cache.computeIfAbsent(city, realService::getForecast);
-      }
-  }
+> **Provide a surrogate or placeholder for another object to control access to it.** — GoF
+
+Common types: virtual proxy (lazy init), protection proxy (access control), caching proxy.
+
+```java
+interface ImageLoader { void display(); }
+
+class RealImage implements ImageLoader {
+    private final String file;
+    RealImage(String file) { this.file = file; loadFromDisk(); }
+    private void loadFromDisk() { System.out.println("Loading: " + file); }
+    public void display() { System.out.println("Displaying: " + file); }
+}
+
+class LazyImageProxy implements ImageLoader {
+    private final String file;
+    private RealImage real;
+    LazyImageProxy(String file) { this.file = file; }
+
+    public void display() {
+        if (real == null) real = new RealImage(file); // Load on first use
+        real.display();
+    }
+}
+
+ImageLoader img = new LazyImageProxy("photo.jpg"); // No disk load yet
+img.display(); // NOW it loads
+```
+
+**When to use:** Lazy loading, access control, logging/auditing, caching expensive operations.
+
+---
+
+### Composite
+
+> **Compose objects into tree structures to represent part-whole hierarchies.** — GoF
+
+Lets you treat a single item and a group of items through the same interface.
+
+```java
+interface FileSystemEntry {
+    String getName();
+    long getSize();
+    void print(String indent);
+}
+
+class File implements FileSystemEntry {
+    private final String name;
+    private final long size;
+    File(String name, long size) { this.name = name; this.size = size; }
+    public String getName() { return name; }
+    public long getSize()   { return size; }
+    public void print(String indent) { System.out.println(indent + name + " (" + size + "B)"); }
+}
+
+class Directory implements FileSystemEntry {
+    private final String name;
+    private final List<FileSystemEntry> children = new ArrayList<>();
+    Directory(String name) { this.name = name; }
+    void add(FileSystemEntry e) { children.add(e); }
+    public String getName() { return name; }
+    public long getSize()   { return children.stream().mapToLong(FileSystemEntry::getSize).sum(); }
+    public void print(String indent) {
+        System.out.println(indent + name + "/");
+        children.forEach(c -> c.print(indent + "  "));
+    }
+}
+
+Directory root = new Directory("root");
+root.add(new File("readme.md", 1024));
+Directory src = new Directory("src");
+src.add(new File("Main.java", 2048));
+root.add(src);
+root.print(""); // Prints entire tree
+```
+
+**When to use:** Tree structures, UI component hierarchies, organizational charts, menus.
+
+---
+
+## 14.4 Design Patterns — Behavioral
+
+Behavioral patterns define **how objects interact and distribute responsibility**.
+
+### Observer
+
+> **Define a one-to-many dependency so that when one object changes state, all dependents are notified automatically.** — GoF
+
+The backbone of event-driven programming. Think of YouTube subscriptions: when a creator uploads, all subscribers are notified. The creator does not need to know who the subscribers are.
+
+```java
+interface EventListener {
+    void onEvent(String eventType, String data);
+}
+
+class EventBus {
+    private final Map<String, List<EventListener>> listeners = new HashMap<>();
+
+    void subscribe(String event, EventListener listener) {
+        listeners.computeIfAbsent(event, k -> new ArrayList<>()).add(listener);
+    }
+
+    void publish(String event, String data) {
+        for (EventListener l : listeners.getOrDefault(event, List.of())) {
+            l.onEvent(event, data);
+        }
+    }
+}
+
+class EmailAlert implements EventListener {
+    public void onEvent(String type, String data) { System.out.println("Email: [" + type + "] " + data); }
+}
+class SlackNotifier implements EventListener {
+    public void onEvent(String type, String data) { System.out.println("Slack: [" + type + "] " + data); }
+}
+
+EventBus bus = new EventBus();
+bus.subscribe("order.placed", new EmailAlert());
+bus.subscribe("order.placed", new SlackNotifier());
+bus.publish("order.placed", "Order #1234 for $99.99");
+```
+
+**When to use:** Event systems, UI updates, audit logging, real-time notifications.
+
+---
+
+### Strategy
+
+> **Define a family of algorithms, encapsulate each one, and make them interchangeable.** — GoF
+
+Swap algorithms at runtime without modifying the client. Think of navigation apps: driving, walking, or transit each use a different routing algorithm behind the same interface.
+
+```java
+interface CompressionStrategy {
+    byte[] compress(byte[] data);
+    String extension();
+}
+
+class ZipCompression implements CompressionStrategy {
+    public byte[] compress(byte[] data) { System.out.println("ZIP"); return data; }
+    public String extension() { return ".zip"; }
+}
+class GzipCompression implements CompressionStrategy {
+    public byte[] compress(byte[] data) { System.out.println("GZIP"); return data; }
+    public String extension() { return ".gz"; }
+}
+
+class FileCompressor {
+    private CompressionStrategy strategy;
+    FileCompressor(CompressionStrategy s) { this.strategy = s; }
+    void setStrategy(CompressionStrategy s) { this.strategy = s; }
+
+    void compress(String filename, byte[] data) {
+        byte[] result = strategy.compress(data);
+        System.out.println("Output: " + filename + strategy.extension());
+    }
+}
+
+FileCompressor c = new FileCompressor(new ZipCompression());
+c.compress("report.pdf", data);
+c.setStrategy(new GzipCompression()); // Swap at runtime
+c.compress("report.pdf", data);
+```
+
+**When to use:** Sorting, pricing, authentication, serialization -- anywhere you choose between algorithms at runtime.
+
+---
+
+### Command
+
+> **Encapsulate a request as an object, letting you queue, log, and undo operations.** — GoF
+
+The killer feature: because commands are objects, you can store, queue, undo, and replay them.
+
+```java
+interface Command { void execute(); void undo(); }
+
+class TextEditor {
+    private final StringBuilder content = new StringBuilder();
+    void insert(String text, int pos) { content.insert(pos, text); }
+    void delete(int pos, int len)     { content.delete(pos, pos + len); }
+    String getContent()               { return content.toString(); }
+}
+
+class InsertCommand implements Command {
+    private final TextEditor editor;
+    private final String text;
+    private final int position;
+
+    InsertCommand(TextEditor e, String text, int pos) {
+        this.editor = e; this.text = text; this.position = pos;
+    }
+    public void execute() { editor.insert(text, position); }
+    public void undo()    { editor.delete(position, text.length()); }
+}
+
+class CommandHistory {
+    private final Deque<Command> history = new ArrayDeque<>();
+    void execute(Command cmd) { cmd.execute(); history.push(cmd); }
+    void undo() { if (!history.isEmpty()) history.pop().undo(); }
+}
+
+TextEditor editor = new TextEditor();
+CommandHistory hist = new CommandHistory();
+hist.execute(new InsertCommand(editor, "Hello", 0));
+hist.execute(new InsertCommand(editor, " World", 5));
+System.out.println(editor.getContent()); // "Hello World"
+hist.undo();
+System.out.println(editor.getContent()); // "Hello"
+```
+
+**When to use:** Undo/redo, task queues, macro recording, transactional operations.
+
+---
+
+### State
+
+> **Allow an object to alter its behavior when its internal state changes.** — GoF
+
+Eliminates complex if/else chains based on an object's current state. Each state becomes its own class.
+
+```java
+interface OrderState {
+    void next(OrderContext ctx);
+    void cancel(OrderContext ctx);
+    String status();
+}
+
+class OrderContext {
+    private OrderState state;
+    OrderContext() { this.state = new PendingState(); }
+    void setState(OrderState s) { this.state = s; }
+    void next()   { state.next(this); }
+    void cancel() { state.cancel(this); }
+    String status() { return state.status(); }
+}
+
+class PendingState implements OrderState {
+    public void next(OrderContext c)   { c.setState(new ProcessingState()); }
+    public void cancel(OrderContext c) { c.setState(new CancelledState()); }
+    public String status() { return "PENDING"; }
+}
+class ProcessingState implements OrderState {
+    public void next(OrderContext c)   { c.setState(new ShippedState()); }
+    public void cancel(OrderContext c) { throw new IllegalStateException("Already processing"); }
+    public String status() { return "PROCESSING"; }
+}
+class ShippedState implements OrderState {
+    public void next(OrderContext c)   { c.setState(new DeliveredState()); }
+    public void cancel(OrderContext c) { throw new IllegalStateException("Already shipped"); }
+    public String status() { return "SHIPPED"; }
+}
+class DeliveredState implements OrderState {
+    public void next(OrderContext c)   { throw new IllegalStateException("Already delivered"); }
+    public void cancel(OrderContext c) { throw new IllegalStateException("Already delivered"); }
+    public String status() { return "DELIVERED"; }
+}
+class CancelledState implements OrderState {
+    public void next(OrderContext c)   { throw new IllegalStateException("Cancelled"); }
+    public void cancel(OrderContext c) { throw new IllegalStateException("Already cancelled"); }
+    public String status() { return "CANCELLED"; }
+}
+
+OrderContext order = new OrderContext();
+order.next();  // PENDING -> PROCESSING
+order.next();  // PROCESSING -> SHIPPED
+```
+
+**When to use:** Workflow engines, UI modes, connection state machines, game character states.
+
+---
+
+### Template Method
+
+> **Define the skeleton of an algorithm in a superclass, letting subclasses override specific steps.** — GoF
+
+The base class controls the workflow; subclasses fill in the blanks. Hollywood Principle: "Don't call us, we'll call you."
+
+```java
+abstract class DataPipeline {
+    public final void run() {           // Template method
+        String raw = extract();
+        String cleaned = transform(raw);
+        load(cleaned);
+    }
+    abstract String extract();
+    abstract String transform(String raw);
+    void load(String data) { System.out.println("Loading: " + data); } // Default
+}
+
+class CsvPipeline extends DataPipeline {
+    String extract()             { return "col1,col2\na,b"; }
+    String transform(String raw) { return raw.toUpperCase(); }
+}
+class ApiPipeline extends DataPipeline {
+    String extract()             { return "{\"key\": \"value\"}"; }
+    String transform(String raw) { return raw.replace("\"", "'"); }
+}
+
+new CsvPipeline().run();
+new ApiPipeline().run();
+```
+
+**When to use:** Frameworks (Spring's `JdbcTemplate`), data pipelines, test fixtures.
+
+---
+
+### Chain of Responsibility
+
+> **Pass a request along a chain of handlers. Each decides to process it or pass it on.** — GoF
+
+Think of support escalation: L1 tries first, then L2, then L3.
+
+```java
+abstract class SupportHandler {
+    private SupportHandler next;
+    SupportHandler setNext(SupportHandler n) { this.next = n; return n; }
+    void handle(Ticket t) {
+        if (next != null) next.handle(t);
+        else System.out.println("Unresolved: " + t.issue());
+    }
+}
+
+record Ticket(String issue, int severity) {}
+
+class L1Support extends SupportHandler {
+    void handle(Ticket t) {
+        if (t.severity() <= 1) System.out.println("L1 resolved: " + t.issue());
+        else super.handle(t);
+    }
+}
+class L2Support extends SupportHandler {
+    void handle(Ticket t) {
+        if (t.severity() <= 3) System.out.println("L2 resolved: " + t.issue());
+        else super.handle(t);
+    }
+}
+class L3Support extends SupportHandler {
+    void handle(Ticket t) { System.out.println("L3 escalated: " + t.issue()); }
+}
+
+SupportHandler chain = new L1Support();
+chain.setNext(new L2Support()).setNext(new L3Support());
+chain.handle(new Ticket("Password reset", 1));  // L1
+chain.handle(new Ticket("Server outage", 4));   // L3
+```
+
+**When to use:** Middleware pipelines, servlet filters, validation chains, authorization checks.
+
+---
+
+### Pattern Selection Decision Tree
+
+```mermaid
+flowchart TD
+    A[What problem are you solving?] --> B{Object Creation?}
+    A --> C{Object Structure?}
+    A --> D{Object Behavior?}
+
+    B --> B1{One instance globally?}
+    B1 -->|Yes| S1[Singleton]
+    B1 -->|No| B2{Complex object, many params?}
+    B2 -->|Yes| S2[Builder]
+    B2 -->|No| B3{Choose type at runtime?}
+    B3 -->|Yes| S3[Factory Method]
+    B3 -->|No| B4{Clone existing objects?}
+    B4 -->|Yes| S4[Prototype]
+    B4 -->|No| B5{Family of related objects?}
+    B5 -->|Yes| S5[Abstract Factory]
+
+    C --> C1{Incompatible interfaces?}
+    C1 -->|Yes| S6[Adapter]
+    C1 -->|No| C2{Simplify complex subsystem?}
+    C2 -->|Yes| S7[Facade]
+    C2 -->|No| C3{Add behavior dynamically?}
+    C3 -->|Yes| S8[Decorator]
+    C3 -->|No| C4{Control access?}
+    C4 -->|Yes| S9[Proxy]
+    C4 -->|No| C5{Part-whole tree?}
+    C5 -->|Yes| S10[Composite]
+
+    D --> D1{React to state changes?}
+    D1 -->|Yes| S11[Observer]
+    D1 -->|No| D2{Swap algorithms?}
+    D2 -->|Yes| S12[Strategy]
+    D2 -->|No| D3{Undo/redo or queue?}
+    D3 -->|Yes| S13[Command]
+    D3 -->|No| D4{Behavior depends on state?}
+    D4 -->|Yes| S14[State]
+    D4 -->|No| D5{Algorithm skeleton?}
+    D5 -->|Yes| S15[Template Method]
+    D5 -->|No| D6{Pass through handlers?}
+    D6 -->|Yes| S16[Chain of Responsibility]
 ```
 
 ---
 
-## 2.4 Behavioral Patterns
+## 14.5 System Design Fundamentals
 
-### Observer — "Something changed! Tell everyone who cares."
+System design is about making trade-offs under constraints. There is no single correct answer -- only trade-offs you can articulate clearly.
 
-```
-  PROBLEM: When one object changes state, multiple other objects
-  need to be notified automatically.
+---
 
-  ┌─────────────────┐    notify    ┌─────────────────┐
-  │                 │ ──────────> │  Email Service   │
-  │   ORDER PLACED  │ ──────────> │  Inventory Svc   │
-  │   (Subject)     │ ──────────> │  Analytics Svc   │
-  │                 │ ──────────> │  Notification Svc│
-  └─────────────────┘             └─────────────────┘
-       ONE event              MANY listeners (observers)
+### Scalability
 
-  public class EventBus<T> {
-      private final Map<String, List<Consumer<T>>> listeners = new ConcurrentHashMap<>();
+Scalability is the system's ability to handle increased load by adding resources.
 
-      public void subscribe(String event, Consumer<T> callback) {
-          listeners.computeIfAbsent(event, k -> new CopyOnWriteArrayList<>()).add(callback);
-      }
+| Dimension | Vertical (Scale Up) | Horizontal (Scale Out) |
+|---|---|---|
+| **Mechanism** | Bigger machine (more CPU/RAM) | More machines |
+| **Complexity** | Low -- no code changes | High -- load balancing, data partitioning |
+| **Cost curve** | Exponential | Linear (commodity hardware) |
+| **Limit** | Hardware ceiling | Practically unlimited |
+| **Failure mode** | Single point of failure | Fault tolerant |
+| **Best for** | Databases, stateful services | Stateless services, web/API layers |
 
-      public void publish(String event, T data) {
-          listeners.getOrDefault(event, List.of()).forEach(cb -> cb.accept(data));
-      }
-  }
+Most production systems use both: scale the database vertically and the application layer horizontally. Pure horizontal scaling requires stateless applications -- session data must live externally (Redis, database).
 
-  // Usage:
-  EventBus<Order> bus = new EventBus<>();
-  bus.subscribe("order_placed", emailService::sendConfirmation);
-  bus.subscribe("order_placed", inventory::reduceStock);
-  bus.subscribe("order_placed", analytics::logPurchase);
+<div class="chart-container" style="max-width: 600px; margin: 2rem auto;">
+<canvas id="scalingChart"></canvas>
+</div>
+<script>
+(function() {
+    const ctx = document.getElementById('scalingChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['1x', '2x', '4x', '8x', '16x', '32x'],
+            datasets: [
+                { label: 'Vertical (cost)', data: [100,250,700,2000,6000,20000],
+                  borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', tension: 0.3, fill: true },
+                { label: 'Horizontal (cost)', data: [100,200,400,800,1600,3200],
+                  borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', tension: 0.3, fill: true }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { title: { display: true, text: 'Scaling Cost: Vertical vs Horizontal', font: { size: 14 } } },
+            scales: {
+                x: { title: { display: true, text: 'Capacity Multiplier' } },
+                y: { title: { display: true, text: 'Relative Cost ($)' }, beginAtZero: true }
+            }
+        }
+    });
+})();
+</script>
 
-  bus.publish("order_placed", order);  // all three get notified!
+---
 
-  REAL-WORLD: DOM event listeners, React state management,
-  message brokers (Kafka, RabbitMQ), webhooks.
-```
+### Latency & Throughput
 
-### Strategy — Swap Algorithms at Runtime
+**Latency** is how long a single request takes. **Throughput** is how many requests the system handles per unit time. You can have low latency with low throughput (one fast worker) or high throughput with high latency (many slow workers).
 
-```
-  PROBLEM: You need different algorithms for the same task,
-  and want to switch between them easily.
+#### Latency Numbers Every Engineer Should Know
 
-  EXAMPLE: Different pricing strategies for an e-commerce site.
+| Operation | Latency |
+|---|---|
+| L1 cache reference | 0.5 ns |
+| L2 cache reference | 7 ns |
+| Main memory reference | 100 ns |
+| SSD random read | 16 us |
+| HDD random read | 2 ms |
+| Send 1 MB over 1 Gbps network | 10 ms |
+| Read 1 MB from SSD | 1 ms |
+| Read 1 MB from HDD | 20 ms |
+| Round trip within data center | 0.5 ms |
+| Round trip CA to Netherlands | 150 ms |
 
-  public interface PricingStrategy {
-      double calculate(double basePrice);
-  }
+#### Percentile Latencies
 
-  public class RegularPricing implements PricingStrategy {
-      public double calculate(double basePrice) { return basePrice; }
-  }
+Average latency is misleading. A service with 50ms average might have p99 of 2 seconds -- meaning 1% of users wait 40x longer than the median. Always measure percentiles.
 
-  public class HolidaySale implements PricingStrategy {
-      public double calculate(double basePrice) { return basePrice * 0.80; }  // 20% off
-  }
+| Percentile | Meaning | Typical Target |
+|---|---|---|
+| **p50** (median) | 50% faster | < 100 ms |
+| **p95** | 95% faster | < 500 ms |
+| **p99** | 99% faster | < 1 s |
+| **p99.9** | 99.9% faster | < 2 s |
 
-  public class VIPPricing implements PricingStrategy {
-      public double calculate(double basePrice) { return basePrice * 0.70; }  // 30% off
-  }
+In microservice architectures, tail latencies compound: if one request fans out to 10 services each at p99 = 100ms, the overall p99 is much worse.
 
-  public class ShoppingCart {
-      private final PricingStrategy strategy;
+<div class="chart-container" style="max-width: 650px; margin: 2rem auto;">
+<canvas id="latencyChart"></canvas>
+</div>
+<script>
+(function() {
+    const ctx = document.getElementById('latencyChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['p50', 'p75', 'p90', 'p95', 'p99', 'p99.9'],
+            datasets: [{
+                label: 'Latency (ms)',
+                data: [45, 72, 130, 280, 850, 2100],
+                backgroundColor: ['#27ae60','#2ecc71','#f1c40f','#e67e22','#e74c3c','#c0392b'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Typical API Latency Distribution', font: { size: 14 } },
+                legend: { display: false }
+            },
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Latency (ms)' } } }
+        }
+    });
+})();
+</script>
 
-      public ShoppingCart(PricingStrategy strategy) { this.strategy = strategy; }
+---
 
-      public double checkout(List<Item> items) {
-          return items.stream()
-              .mapToDouble(item -> strategy.calculate(item.getPrice()))
-              .sum();
-      }
-  }
+### Availability
 
-  // At runtime, pick the strategy:
-  ShoppingCart cart = new ShoppingCart(new HolidaySale());     // holiday pricing
-  ShoppingCart vipCart = new ShoppingCart(new VIPPricing());   // VIP pricing
-  // No if/else chains! Clean, extensible.
+Availability is the percentage of time a system is operational, measured in "nines":
 
-  // Java 8+ shortcut using lambdas (Strategy is a functional interface!):
-  ShoppingCart cart = new ShoppingCart(price -> price * 0.85); // 15% off
+| Availability | Downtime/year | Downtime/month | Downtime/week |
+|---|---|---|---|
+| 99% (two nines) | 3.65 days | 7.3 hours | 1.68 hours |
+| 99.9% (three nines) | 8.77 hours | 43.8 min | 10.1 min |
+| 99.95% | 4.38 hours | 21.9 min | 5.04 min |
+| 99.99% (four nines) | 52.6 min | 4.38 min | 1.01 min |
+| 99.999% (five nines) | 5.26 min | 26.3 sec | 6.05 sec |
 
-  REAL-WORLD: sorting algorithms, compression algorithms,
-  authentication methods, payment processing.
-```
+**Series vs. Parallel:**
+- **Series** (both must be up): `A = A1 x A2`. Two 99.9% in series = 99.8%.
+- **Parallel** (either can serve): `A = 1 - (1-A1)(1-A2)`. Two 99.9% in parallel = 99.9999%.
 
-### Command — Encapsulate a Request as an Object
+Higher availability costs exponentially more. Going from 99.9% to 99.99% is a 10x reduction in allowed downtime, requiring multi-region, active-active, automated failover.
 
-```
-  PROBLEM: You need to parameterize actions, queue them,
-  log them, or support undo/redo.
+---
 
-  ┌────────────────────────────────────────────────────────┐
-  │  Without Command:                                       │
-  │  button.on_click = editor.bold_text   <- tightly coupled│
-  │                                                        │
-  │  With Command:                                          │
-  │  button.on_click = BoldCommand(editor) <- decoupled!   │
-  │  Commands can be queued, undone, logged, replayed       │
-  └────────────────────────────────────────────────────────┘
+### CAP Theorem
 
-  public interface Command {
-      void execute();
-      void undo();
-  }
+> **In a distributed data store, you can only guarantee two of three: Consistency, Availability, and Partition tolerance.** — Eric Brewer
 
-  public class BoldCommand implements Command {
-      private final Editor editor;
-      public BoldCommand(Editor editor) { this.editor = editor; }
-      public void execute() { editor.makeBold(); }
-      public void undo()    { editor.removeBold(); }
-  }
+Since network partitions are inevitable, the real choice is **CP** vs **AP**.
 
-  public class CommandHistory {
-      private final Deque<Command> history = new ArrayDeque<>();
+```mermaid
+graph TD
+    subgraph CAP Theorem
+        C[Consistency<br>Every read gets the<br>most recent write]
+        A[Availability<br>Every request gets<br>a response]
+        P[Partition Tolerance<br>System works despite<br>network failures]
+    end
 
-      public void execute(Command command) {
-          command.execute();
-          history.push(command);
-      }
+    C --- CP[CP Systems]
+    P --- CP
+    A --- AP[AP Systems]
+    P --- AP
+    C --- CA[CA Systems]
+    A --- CA
 
-      public void undo() {
-          if (!history.isEmpty()) {
-              history.pop().undo();
-          }
-      }
-  }
+    CP --> CP1[Google Spanner]
+    CP --> CP2[HBase / MongoDB]
 
-  REAL-WORLD: Undo/redo in editors, transaction processing,
-  task queues, macro recording, Git commits.
-```
+    AP --> AP1[DynamoDB]
+    AP --> AP2[Cassandra / CouchDB]
 
-### State — Different Behavior Per State
+    CA --> CA1[Single-node RDBMS<br>Not practical distributed]
 
-```
-  PROBLEM: An object behaves differently depending on its internal state.
-  Without the pattern, you get massive if/else chains.
-
-  EXAMPLE: A document workflow.
-
-  // BAD (if/else explosion):
-  // ────────────────────────────────────────────────────────
-  public class Document {
-      private String state = "draft";
-      public void publish() {
-          if (state.equals("draft"))          state = "review";
-          else if (state.equals("review"))    state = "published";
-          else if (state.equals("published")) throw new IllegalStateException("Already published!");
-      }
-  }
-  // Every method needs this if/else chain. Add a new state? Touch EVERY method.
-
-  // GOOD (State Pattern):
-  // ────────────────────────────────────────────────────────
-  public interface DocumentState {
-      void publish(Document doc);
-      void reject(Document doc);
-  }
-
-  public class DraftState implements DocumentState {
-      public void publish(Document doc) {
-          doc.setState(new ReviewState());      // transition to review
-          System.out.println("Sent for review!");
-      }
-      public void reject(Document doc) {
-          System.out.println("Nothing to reject.");
-      }
-  }
-
-  public class ReviewState implements DocumentState {
-      public void publish(Document doc) {
-          doc.setState(new PublishedState());    // transition to published
-          System.out.println("Published!");
-      }
-      public void reject(Document doc) {
-          doc.setState(new DraftState());        // back to draft
-          System.out.println("Sent back to draft.");
-      }
-  }
-
-  public class PublishedState implements DocumentState {
-      public void publish(Document doc) { System.out.println("Already published!"); }
-      public void reject(Document doc)  { doc.setState(new DraftState()); }
-  }
-
-  public class Document {
-      private DocumentState state = new DraftState();
-      public void setState(DocumentState state) { this.state = state; }
-      public void publish() { state.publish(this); }   // delegate to current state!
-      public void reject()  { state.reject(this); }
-  }
-
-  ┌─────────┐  publish   ┌──────────┐  publish   ┌───────────┐
-  │  Draft   │ ────────> │  Review  │ ────────> │ Published │
-  │         │ <──────── │          │ <──────── │           │
-  └─────────┘  reject    └──────────┘  reject    └───────────┘
-
-  Add a new state? Just add a new class. No existing code changes.
-
-  REAL-WORLD: Order status (placed→paid→shipped→delivered),
-  TCP connections, game character states, UI components.
+    style CP fill:#3498db,color:#fff
+    style AP fill:#2ecc71,color:#fff
+    style CA fill:#95a5a6,color:#fff
 ```
 
-### Template Method — Define Skeleton, Let Subclasses Fill In Details
+**CP:** During a partition, the system blocks or errors rather than return stale data. Choose for banking, inventory, leader election.
+
+**AP:** During a partition, the system responds but may return stale data. Choose for social feeds, product catalogs, DNS.
+
+In practice, most systems make different trade-offs per operation. A shopping site might use CP for checkout (do not oversell) but AP for browsing (slightly stale price is acceptable).
+
+---
+
+### PACELC Extension
+
+CAP only describes behavior during partitions. PACELC extends: **if Partition**, choose A or C; **Else** (normal), choose **Latency** or **Consistency**.
+
+| System | Partition (PAC) | Normal (ELC) |
+|---|---|---|
+| Google Spanner | PC (blocks writes) | EC (TrueTime sync) |
+| DynamoDB | PA (always available) | EL (low latency) |
+| Cassandra | PA | EL (tunable) |
+| MongoDB | PC (primary required) | EC (reads from primary) |
+
+---
+
+### Consistency Models
+
+| Model | Guarantee | Latency | Use Case |
+|---|---|---|---|
+| **Strong** | Every read sees latest write | Highest | Banking, inventory |
+| **Eventual** | Reads will eventually see write | Lowest | DNS, social feeds |
+| **Causal** | Reads respect causal ordering | Medium | Chat, comments |
+| **Read-Your-Writes** | User sees their own writes | Medium | Profile updates |
+| **Monotonic Reads** | User never sees data go backwards | Medium | Dashboard metrics |
+
+**Strong consistency** requires coordination (Paxos, Raft), adding latency. Google Spanner achieves it globally using TrueTime, accepting ~7ms write latency.
+
+**Eventual consistency** means writes propagate asynchronously. DynamoDB replicates across 3 AZs; a write is acknowledged after 2 replicas, the third catches up (typically milliseconds).
+
+**Causal consistency** is a practical middle ground -- sufficient for most applications and much cheaper than strong consistency.
+
+---
+
+### Back-of-the-Envelope Estimation
+
+The goal is not precision -- it is demonstrating you can reason about order of magnitude and identify bottlenecks.
+
+#### Key Numbers to Memorize
+
+| Metric | Value |
+|---|---|
+| Seconds in a day | ~86,400 (~10^5) |
+| Seconds in a year | ~31.5 million (~3 x 10^7) |
+| 1M requests/day | ~12 QPS |
+| 1B requests/day | ~12,000 QPS |
+| Average tweet/message | ~200 bytes |
+| Average image (compressed) | ~200 KB |
+| Average HD video minute | ~50 MB |
+| Typical SSD IOPS | 50K-100K |
+| Typical HDD IOPS | 100-200 |
+| Single server concurrent connections | ~10K-50K |
+
+#### Worked Example: Estimate QPS for YouTube
+
+**Step 1: User scale**
+- ~2.5B monthly active users, ~10% daily: **250M DAU**
+
+**Step 2: Requests per user**
+- 5 videos/day x ~10 API calls each = ~50 requests/user/day
+
+**Step 3: Average QPS**
+- 250M x 50 = 12.5B requests/day
+- 12.5B / 86,400 = **~145,000 QPS**
+
+**Step 4: Peak QPS** (2-3x average)
+- **~350,000-450,000 QPS**
+
+**Step 5: Storage**
+- 500 hrs uploaded/min x 5 GB (multi-resolution) = **~3.6 PB/day**
+
+**Step 6: Bandwidth**
+- 250M users x 5 videos x 10 min x 5 Mbps = **~100+ Tbps globally**
+
+#### QPS Quick-Reference
 
 ```
-  PROBLEM: Multiple classes share the same algorithm structure,
-  but differ in specific steps.
+QPS = daily_requests / 86,400
 
-  EXAMPLE: Generating reports in different formats.
+  1 million/day    ≈     12 QPS
+  10 million/day   ≈    120 QPS
+  100 million/day  ≈  1,200 QPS
+  1 billion/day    ≈ 12,000 QPS
 
-  public abstract class ReportGenerator {              // base class (the "template")
-
-      public final void generate(Data data) {          // the template method (final = can't override!)
-          prepareHeader();
-          Data processed = processData(data);
-          formatOutput(processed);
-          sendReport();
-      }
-
-      private void prepareHeader() {                   // shared step (same for all)
-          System.out.println("Report generated at " + Instant.now());
-      }
-
-      protected abstract Data processData(Data data);  // abstract — subclass fills in
-
-      protected abstract void formatOutput(Data data);  // abstract — subclass fills in
-
-      private void sendReport() {                       // shared step (same for all)
-          System.out.println("Report sent to stakeholders");
-      }
-  }
-
-  public class PDFReport extends ReportGenerator {
-      protected Data processData(Data data)  { return cleanAndAggregate(data); }
-      protected void formatOutput(Data data) { renderToPdf(data); }
-  }
-
-  public class ExcelReport extends ReportGenerator {
-      protected Data processData(Data data)  { return cleanAndAggregate(data); }
-      protected void formatOutput(Data data) { writeToSpreadsheet(data); }
-  }
-
-  The ALGORITHM STRUCTURE (prepare → process → format → send) is fixed.
-  The DETAILS (how to format) vary by subclass.
-
-  REAL-WORLD: web framework request handling (Django views),
-  data pipeline ETL steps, test setup/teardown (setUp/test/tearDown).
+Storage:
+  1M records x 1 KB = 1 GB
+  1B records x 1 KB = 1 TB
 ```
 
-### Pattern Selection Guide
+**Estimation framework** (top-down):
+1. Total users / DAU
+2. Actions per user per day
+3. Total actions/day
+4. QPS (divide by 86,400)
+5. Peak QPS (2-3x average)
+6. Storage (record size x records/day x retention)
+7. Bandwidth (data size x QPS)
+
+---
+
+*Sections 14.6 through 14.12 continue in Part 2.*
+
+## 14.6 API Design
+
+An API is a contract between systems. A well-designed API is intuitive, consistent, and hard to misuse. A bad API generates support tickets forever. At Google scale, every API decision multiplies across thousands of internal consumers, so precision matters.
+
+---
+
+### REST — The Industry Standard
+
+REST (REpresentational State Transfer) models everything as a **resource** you manipulate with standard HTTP methods. It is not a protocol — it is an architectural style defined by six constraints:
+
+1. **Client-Server** — Separate UI concerns from data storage. Either side can evolve independently.
+2. **Stateless** — Every request carries all the information the server needs. No server-side session state.
+3. **Cacheable** — Responses must declare themselves cacheable or not. HTTP gives you this for free with `Cache-Control` headers.
+4. **Uniform Interface** — Resources identified by URIs, manipulated through representations (JSON), self-descriptive messages, HATEOAS (hypermedia links in responses).
+5. **Layered System** — Client cannot tell whether it is connected to the end server or an intermediary (load balancer, CDN, gateway).
+6. **Code on Demand** (optional) — Server can send executable code to the client (JavaScript).
+
+#### Resource Naming — use **nouns** (not verbs), **plural** names, **nesting** for relationships, **query params** for filtering.
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  WHEN TO USE WHICH PATTERN                                        │
-├───────────────────────┬──────────────────────────────────────────┤
-│ "I need ONE instance" │ Singleton (or better: DI container)      │
-│ "Create without       │ Factory Method / Abstract Factory        │
-│  knowing exact type"  │                                          │
-│ "Complex construction"│ Builder                                  │
-│ "Wrap incompatible    │ Adapter                                  │
-│  interfaces"          │                                          │
-│ "Simplify complex     │ Facade                                   │
-│  subsystem"           │                                          │
-│ "Add behavior         │ Decorator                                │
-│  dynamically"         │                                          │
-│ "React to changes"    │ Observer / Event Bus                     │
-│ "Swap algorithms"     │ Strategy                                 │
-│ "Undo/redo, queue     │ Command                                  │
-│  actions"             │                                          │
-│ "Different behavior   │ State                                    │
-│  per state"           │                                          │
-│ "Control access"      │ Proxy                                    │
-└───────────────────────┴──────────────────────────────────────────┘
+  GOOD                              BAD
+  GET /users/123/orders             GET /getUserOrders
+  POST /users                       POST /createUser
+  GET /users?role=admin&active=true GET /filterUsers/admin/true
+```
+
+#### HTTP Methods and Status Codes
+
+| Method | Semantics | Idempotent | Safe |
+|--------|-----------|------------|------|
+| GET | Read a resource | Yes | Yes |
+| POST | Create a resource | No | No |
+| PUT | Replace a resource entirely | Yes | No |
+| PATCH | Partial update | No* | No |
+| DELETE | Remove a resource | Yes | No |
+
+*PATCH can be made idempotent if you send the target state, not a diff.
+
+| Code | Meaning | When to Use |
+|------|---------|-------------|
+| 200 | OK | Successful GET, PUT, PATCH |
+| 201 | Created | Successful POST that created a resource |
+| 204 | No Content | Successful DELETE |
+| 400 | Bad Request | Malformed JSON, missing required fields |
+| 401 | Unauthorized | Missing or invalid authentication token |
+| 403 | Forbidden | Authenticated but lacks permission |
+| 404 | Not Found | Resource does not exist |
+| 409 | Conflict | Duplicate resource, version conflict |
+| 429 | Too Many Requests | Client exceeded rate limit |
+| 500 | Internal Server Error | Unhandled server exception |
+
+#### Versioning — `URL-based` (/v1/users) is most common and what Google's public APIs use. `Header-based` (Accept: application/vnd.api.v2+json) keeps URLs clean for internal services.
+
+---
+
+### GraphQL — Client-Driven Queries
+
+GraphQL lets the client specify exactly which fields it needs in a single request. This solves two chronic REST problems: **over-fetching** (getting 30 fields when you need 3) and **under-fetching** (needing 5 REST calls to assemble one screen).
+
+```
+  REST approach (3 round trips):
+  GET /users/123           → { id, name, email, address, ... 30 fields }
+  GET /users/123/orders    → [ { id, total, items, ... } ]
+  GET /orders/456/items    → [ { id, name, price, ... } ]
+
+  GraphQL approach (1 round trip):
+  query {
+    user(id: 123) {
+      name
+      orders(last: 5) {
+        total
+        items { name, price }
+      }
+    }
+  }
+```
+
+**The N+1 Problem in GraphQL** — A naive resolver fires a separate DB query for each nested object. Solution: **DataLoader** batches all IDs in a single tick into one `WHERE id IN (...)` query.
+
+**When to use:** Mobile apps (bandwidth), BFF layers, dashboards aggregating many services. **Tradeoffs:** harder to cache (no URL-based HTTP caching), complex field-level authorization, expensive deep queries (mitigate with depth limits).
+
+---
+
+### gRPC — High-Performance Internal Communication
+
+gRPC uses HTTP/2 and Protocol Buffers (protobuf) for binary serialization. Messages are 5-10x smaller and 10x faster to parse than JSON.
+
+```
+  // user.proto — the contract
+  syntax = "proto3";
+  service UserService {
+    rpc GetUser (UserRequest) returns (UserResponse);           // Unary
+    rpc ListUsers (ListRequest) returns (stream UserResponse);  // Server streaming
+    rpc UploadLogs (stream LogEntry) returns (Summary);         // Client streaming
+    rpc Chat (stream Message) returns (stream Message);         // Bidirectional
+  }
+  message UserRequest { int64 id = 1; }
+  message UserResponse { int64 id = 1; string name = 2; string email = 3; }
+```
+
+Four streaming types: **Unary** (standard request-response), **Server streaming** (real-time feeds), **Client streaming** (log ingestion), **Bidirectional** (chat, gaming).
+
+**When to use:** Microservice-to-microservice calls, latency-sensitive paths, polyglot environments. Google uses gRPC for nearly all internal service-to-service communication. **Tradeoffs:** not browser-friendly without gRPC-Web, binary is not human-readable, steeper learning curve.
+
+---
+
+### API Comparison
+
+```chart
+{
+  "type": "radar",
+  "data": {
+    "labels": ["Latency", "Flexibility", "Learning Curve", "Tooling", "Browser Support", "Streaming"],
+    "datasets": [
+      {
+        "label": "REST",
+        "data": [6, 5, 9, 9, 10, 3],
+        "borderColor": "rgba(54, 162, 235, 1)",
+        "backgroundColor": "rgba(54, 162, 235, 0.15)"
+      },
+      {
+        "label": "GraphQL",
+        "data": [6, 10, 6, 7, 9, 4],
+        "borderColor": "rgba(255, 99, 132, 1)",
+        "backgroundColor": "rgba(255, 99, 132, 0.15)"
+      },
+      {
+        "label": "gRPC",
+        "data": [10, 4, 5, 6, 3, 10],
+        "borderColor": "rgba(75, 192, 192, 1)",
+        "backgroundColor": "rgba(75, 192, 192, 0.15)"
+      }
+    ]
+  },
+  "options": {
+    "scales": {
+      "r": { "beginAtZero": true, "max": 10 }
+    },
+    "plugins": {
+      "title": { "display": true, "text": "API Technology Comparison (higher = better)" }
+    }
+  }
+}
 ```
 
 ---
 
-# PART 3: SYSTEM DESIGN FUNDAMENTALS
+### Idempotency
+
+An operation is **idempotent** if performing it multiple times produces the same result as performing it once. GET, PUT, and DELETE are naturally idempotent. POST is not — calling `POST /orders` twice creates two orders.
+
+**Solution: Idempotency Keys.** The client generates a unique key (UUID) and sends it in a header. The server stores the key with the result. If the same key arrives again, the server returns the stored result without re-executing.
+
+```java
+public Response createOrder(Request req) {
+    String key = req.getHeader("Idempotency-Key");
+    Optional<Response> cached = idempotencyStore.get(key);
+    if (cached.isPresent()) return cached.get();  // Return stored result — no re-execution
+
+    Response result = processOrder(req);
+    idempotencyStore.put(key, result, TTL_24_HOURS);
+    return result;
+}
+```
+
+Stripe, Google Pay, and every serious payment API requires idempotency keys on POST.
 
 ---
 
-## 3.1 Scalability
+### Pagination
 
-### Simple Explanation
-Scalability is your system's ability to handle growth. Like a restaurant —
-can you serve 10 customers? 1,000? 100,000? What changes do you need to make?
+| Aspect | Offset-Based | Cursor-Based |
+|--------|-------------|--------------|
+| Request | `GET /users?page=3&limit=20` | `GET /users?after=abc123&limit=20` |
+| How it works | `OFFSET 40 LIMIT 20` | `WHERE id > 'abc123' LIMIT 20` |
+| Performance | Degrades on large offsets (DB scans skipped rows) | Constant — uses indexed column |
+| Consistency | Misses/duplicates items if data changes between pages | Stable — cursor anchors position |
+| Random access | Yes (jump to page 50) | No (must traverse sequentially) |
+| Best for | Admin dashboards, small datasets | Infinite scroll, real-time feeds, large datasets |
 
-### Vertical vs Horizontal Scaling
-
-```
-  VERTICAL SCALING (Scale Up)          HORIZONTAL SCALING (Scale Out)
-  ──────────────────────────           ─────────────────────────────
-  Add more power to ONE machine        Add MORE machines
-
-  ┌──────────────────────┐             ┌──────┐ ┌──────┐ ┌──────┐
-  │                      │             │Server│ │Server│ │Server│
-  │   BIGGER SERVER      │             │  1   │ │  2   │ │  3   │
-  │   More CPU, RAM,     │             └──────┘ └──────┘ └──────┘
-  │   faster disks       │             ┌──────┐ ┌──────┐ ┌──────┐
-  │                      │             │Server│ │Server│ │Server│
-  │                      │             │  4   │ │  5   │ │  6   │
-  └──────────────────────┘             └──────┘ └──────┘ └──────┘
-
-  Pros:                                Pros:
-  + Simple, no code changes            + Virtually unlimited scale
-  + No distributed complexity          + Redundancy (one fails, others work)
-                                       + Cost-effective (commodity hardware)
-  Cons:
-  - Has a hard ceiling                 Cons:
-  - Single point of failure            - Complex (distributed systems)
-  - Expensive at high end              - Data consistency is harder
-  - Downtime during upgrade            - Need load balancing
-
-  USE: Start vertical, go horizontal when you hit limits.
-```
-
-### Stateless vs Stateful Services
-
-```
-  STATELESS (easy to scale):          STATEFUL (hard to scale):
-  ─────────────────────────           ─────────────────────────
-  Server stores NO user data          Server stores user sessions
-
-  Request 1 → Server A               Request 1 → Server A (has session)
-  Request 2 → Server B  (works!)     Request 2 → Server B  (no session!)
-  Request 3 → Server C  (works!)
-
-  Any server can handle any request.  Requests must go to the SAME server.
-  Just add more servers!              Need "sticky sessions" or shared state.
-
-  ┌──────────────────────────────────────────────────────────────┐
-  │  RULE: Make your application servers STATELESS.              │
-  │  Store state in a separate layer:                            │
-  │  - Sessions: Redis / Memcached                               │
-  │  - Data: Database                                            │
-  │  - Files: Object storage (S3)                                │
-  └──────────────────────────────────────────────────────────────┘
-```
+Google APIs use cursor-based pagination with a `nextPageToken` field. Always prefer cursor-based for anything user-facing at scale.
 
 ---
 
-## 3.2 Latency and Throughput — The Two Performance Metrics
+## 14.7 Database Design
 
-```
-  LATENCY = how long ONE request takes (time)
-  THROUGHPUT = how many requests the system handles per second (volume)
-
-  Analogy: A highway.
-  Latency = how long it takes ONE car to drive from A to B (speed)
-  Throughput = how many cars pass per hour (capacity)
-
-  A wide highway (high throughput) can still have slow traffic (high latency).
-  A fast sports car (low latency) doesn't mean the road handles many cars.
-```
-
-### Percentile Latency — What Really Matters
-
-```
-  AVERAGE latency is MISLEADING.
-
-  Example: 100 requests.
-  99 take 50ms each. 1 takes 5000ms (5 seconds!).
-  Average = (99×50 + 1×5000) / 100 = 99.5ms
-  Looks fine! But one user waited 5 SECONDS.
-
-  PERCENTILES tell the real story:
-  ────────────────────────────────────────────────────────
-  p50 (median):  50% of requests are faster than this.
-                 The "typical" experience.
-
-  p95:           95% of requests are faster. 5% are slower.
-                 The "almost everyone" experience.
-
-  p99:           99% of requests are faster. 1% are slower.
-                 The "worst case for most users."
-
-  p99.9:         Only 1 in 1000 requests is slower.
-                 The "tail latency" that hits your best customers
-                 (high-volume users see rare events more often).
-
-  EXAMPLE:
-  ┌────────────┬───────────────┬──────────────────────────────┐
-  │ Percentile │ Latency       │ What it means                 │
-  ├────────────┼───────────────┼──────────────────────────────┤
-  │ p50        │ 45ms          │ Half of users wait <45ms      │
-  │ p95        │ 200ms         │ 95% of users wait <200ms      │
-  │ p99        │ 1200ms        │ 99% of users wait <1.2 sec    │
-  │ p99.9      │ 5000ms        │ 1 in 1000 waits 5 seconds!   │
-  └────────────┴───────────────┴──────────────────────────────┘
-
-  SLAs (Service Level Agreements) use percentiles:
-  "p99 latency must be under 500ms" is a real production target.
-
-  WHY TAIL LATENCY MATTERS:
-  ────────────────────────────────────────────────────────
-  If a single page load calls 20 microservices:
-  P(at least one is slow) = 1 - (0.99)^20 = 18%!
-  
-  Even with 99% of requests being fast,
-  18% of PAGE LOADS will feel slow because of one slow service call.
-  This is why p99 and p99.9 matter more than averages.
-```
+The database is the foundation of every system. Choose wrong and you will spend months migrating under pressure. Choose right and the system scales naturally.
 
 ---
 
-## 3.3 Availability & Reliability
+### SQL vs NoSQL
 
-```
-  AVAILABILITY = % of time the system is operational
-  ──────────────────────────────────────────────────────────
+| Aspect | SQL (Relational) | Document (NoSQL) | Wide-Column | Key-Value |
+|--------|-------------------|-------------------|-------------|-----------|
+| Example | PostgreSQL, MySQL, Cloud Spanner | MongoDB, Firestore | Cassandra, Bigtable | Redis, DynamoDB |
+| Data model | Tables with rows and columns | JSON-like documents | Column families, sparse rows | Simple key → value |
+| Schema | Strict, predefined | Flexible, schema-on-read | Semi-structured | None |
+| Query language | SQL (powerful joins, aggregations) | Query API or custom QL | CQL (Cassandra), scan-based | GET/SET by key |
+| Joins | Native, efficient | Expensive or impossible | Not supported | Not supported |
+| Transactions | Full ACID | Single-document ACID | Limited (lightweight transactions) | Single-key atomic |
+| Scaling | Vertical (read replicas for reads) | Horizontal (auto-sharding) | Horizontal (built for it) | Horizontal |
+| Best for | Complex queries, relationships, financial data | Rapidly evolving schemas, content management | Time-series, IoT, write-heavy at massive scale | Caching, sessions, leaderboards |
 
-  ┌───────────────┬──────────────────────────────────────────┐
-  │ Availability  │ Downtime per year                         │
-  ├───────────────┼──────────────────────────────────────────┤
-  │ 99%    (two 9s)   │ 3.65 days                            │
-  │ 99.9%  (three 9s) │ 8.77 hours                           │
-  │ 99.99% (four 9s)  │ 52.6 minutes                         │
-  │ 99.999%(five 9s)  │ 5.26 minutes                         │
-  └───────────────┴──────────────────────────────────────────┘
+**Decision heuristic:** Start with SQL unless you have a specific reason not to. "We might need to scale" is not a reason — PostgreSQL handles millions of rows. Switch to NoSQL when your access pattern is simple key lookups at massive scale, or your schema genuinely cannot be defined upfront.
 
-  Most services target: 99.9% (three nines) to 99.99% (four nines)
-
-  HOW TO IMPROVE AVAILABILITY:
-  ────────────────────────────
-  1. Redundancy — no single point of failure
-  2. Load balancing — distribute traffic
-  3. Health checks — detect and remove failed nodes
-  4. Failover — automatic switch to backup
-  5. Graceful degradation — serve partial results if some services are down
-```
-
-### Redundancy Eliminates Single Points of Failure
-
-```
-  SINGLE POINT OF FAILURE:           REDUNDANT:
-  ──────────────────────────          ──────────────────────────
-
-  Client → [Server] → [DB]           Client → [Load Balancer]
-                                              /      |      \
-  Server dies = EVERYTHING dies!        [Srv 1] [Srv 2] [Srv 3]
-                                              \      |      /
-                                          [DB Primary] → [DB Replica]
-                                                         [DB Replica]
-
-  Every layer has backups. Any single component can fail
-  and the system keeps running.
-```
+Google Cloud Spanner blurs this line — globally distributed SQL with horizontal scaling — but it is expensive and operationally complex.
 
 ---
 
-## 3.4 CAP Theorem
+### Normalization
 
-### Simple Explanation
-In a distributed system, when a network partition happens (some servers can't
-talk to each other), you can only guarantee TWO out of three properties:
+Normalization eliminates data redundancy and update anomalies. Each normal form builds on the previous one.
 
-```
-  ┌─────────────────────────────────────────────────────────────┐
-  │                      CAP THEOREM                             │
-  │                                                              │
-  │                    Consistency (C)                            │
-  │                        /\                                    │
-  │                       /  \                                   │
-  │                      /    \                                  │
-  │                     / PICK \                                 │
-  │                    /  TWO   \                                │
-  │                   /          \                               │
-  │    Availability (A) ──────── Partition Tolerance (P)         │
-  │                                                              │
-  │  C = Every read receives the most recent write               │
-  │  A = Every request receives a response (even if stale)       │
-  │  P = System works despite network failures between nodes     │
-  └─────────────────────────────────────────────────────────────┘
-
-  In practice, network partitions WILL happen (P is mandatory).
-  So the real choice is: CP or AP?
-
-  CP (Consistency + Partition Tolerance):
-  ────────────────────────────────────────
-  "I'd rather return an error than give you stale data."
-  Examples: Banking systems, inventory counts
-  Databases: MongoDB (default), HBase, Redis (cluster mode)
-
-  AP (Availability + Partition Tolerance):
-  ────────────────────────────────────────
-  "I'd rather give you possibly-stale data than no data at all."
-  Examples: Social media feeds, shopping carts, DNS
-  Databases: Cassandra, DynamoDB, CouchDB
-```
-
-### PACELC — The Extended Version
+**1NF (First Normal Form)** — Every column contains atomic (indivisible) values. No repeating groups.
 
 ```
-  CAP only describes behavior DURING a partition.
-  PACELC adds: what about when there's NO partition?
-
-  If Partition → choose A or C
-  Else         → choose Latency or Consistency
-
-  ┌───────────────────────────────────────────────────────┐
-  │  System      │ During Partition │ Normal Operation     │
-  ├──────────────┼─────────────────┼──────────────────────┤
-  │ DynamoDB     │ Choose A         │ Choose Latency (EL)  │
-  │ Cassandra    │ Choose A         │ Choose Latency (EL)  │
-  │ MongoDB      │ Choose C         │ Choose Consistency(EC)│
-  │ MySQL/Postgres│ Choose C        │ Choose Consistency(EC)│
-  └──────────────┴─────────────────┴──────────────────────┘
+  VIOLATES 1NF:                         SATISFIES 1NF:
+  ┌────┬───────────────────────┐        ┌────┬────────────┐
+  │ id │ phone_numbers          │        │ id │ phone      │
+  ├────┼───────────────────────┤        ├────┼────────────┤
+  │ 1  │ 555-0100, 555-0200    │        │ 1  │ 555-0100   │
+  └────┴───────────────────────┘        │ 1  │ 555-0200   │
+                                         └────┴────────────┘
 ```
+
+**2NF (Second Normal Form)** — 1NF + every non-key column depends on the **entire** primary key (not just part of a composite key).
+
+```
+  VIOLATES 2NF (composite key: student_id + course_id):
+  ┌────────────┬───────────┬──────────────┬──────────────┐
+  │ student_id │ course_id │ student_name │ grade        │
+  ├────────────┼───────────┼──────────────┼──────────────┤
+  │ 1          │ CS101     │ Alice        │ A            │
+  │ 1          │ CS201     │ Alice        │ B            │  ← student_name
+  └────────────┴───────────┴──────────────┴──────────────┘    depends only on
+                                                               student_id!
+  FIX: Split into Students(student_id, student_name)
+       and Enrollments(student_id, course_id, grade)
+```
+
+**3NF (Third Normal Form)** — 2NF + no transitive dependencies. Every non-key column depends directly on the primary key, not through another non-key column.
+
+```
+  VIOLATES 3NF:
+  ┌────────────┬──────────┬─────────────┐
+  │ employee_id│ dept_id  │ dept_name   │   ← dept_name depends on dept_id,
+  ├────────────┼──────────┼─────────────┤      not on employee_id
+  │ 1          │ D10      │ Engineering │
+  │ 2          │ D10      │ Engineering │   ← redundant!
+  └────────────┴──────────┴─────────────┘
+
+  FIX: Employees(employee_id, dept_id)
+       Departments(dept_id, dept_name)
+```
+
+**Denormalization for Reads.** Normalize writes, denormalize reads. When a JOIN across six tables takes 200ms and your SLA is 50ms, duplicate data into a read-optimized materialized view. Every OLAP data warehouse is heavily denormalized.
 
 ---
 
-## 3.5 Consistency Models
+### Indexing
 
-```
-  ┌────────────────────────────────────────────────────────────────┐
-  │ STRONG CONSISTENCY                                              │
-  │ ────────────────                                               │
-  │ Every read sees the latest write. Period.                       │
-  │ Like a single database server — everyone sees the same data.   │
-  │ Cost: higher latency (must wait for all replicas to agree)     │
-  │ Example: bank balance                                          │
-  ├────────────────────────────────────────────────────────────────┤
-  │ EVENTUAL CONSISTENCY                                            │
-  │ ─────────────────                                              │
-  │ All replicas will converge to the same value... eventually.    │
-  │ Reads may return stale data for a short period.                │
-  │ Cost: lower latency (write returns immediately)                │
-  │ Example: social media "like" count                             │
-  ├────────────────────────────────────────────────────────────────┤
-  │ CAUSAL CONSISTENCY                                              │
-  │ ──────────────────                                             │
-  │ Operations that are causally related are seen in order.        │
-  │ Unrelated operations can be in any order.                      │
-  │ Example: if I post, then reply to my own post — you'll see    │
-  │ the post before the reply (causal order preserved)             │
-  ├────────────────────────────────────────────────────────────────┤
-  │ READ-YOUR-WRITES                                                │
-  │ ────────────────                                               │
-  │ A user always sees their own writes immediately.               │
-  │ Other users may see a delay.                                   │
-  │ Example: you update your profile and immediately see it change │
-  └────────────────────────────────────────────────────────────────┘
-```
+An index speeds up lookups (O(log N) or O(1) instead of O(N) full table scan) at the cost of slower writes and extra storage.
+
+| Index Type | Structure | Best For | Example |
+|-----------|-----------|----------|---------|
+| B-tree | Balanced tree | Range queries, sorting, equality — **the default** | `WHERE age BETWEEN 20 AND 30` |
+| Hash | Hash table | Exact equality lookups only | `WHERE email = 'alice@google.com'` |
+| Composite | B-tree on multiple columns | Queries filtering on multiple columns | `INDEX(country, city)` — works for country alone or country+city, NOT city alone |
+| Covering | Index that includes all queried columns | Eliminating table lookups entirely | `INDEX(user_id, name, email)` for `SELECT name, email WHERE user_id = 5` |
+
+**Column order matters in composite indexes** (leftmost prefix rule). An index on `(A, B, C)` supports `A`, `A+B`, or `A+B+C`, but NOT `B` alone or `C` alone.
 
 ---
 
-## 3.6 Back-of-Envelope Estimation
+### Sharding
 
-```
-  NUMBERS EVERY ENGINEER SHOULD KNOW:
-  ────────────────────────────────────────────────────────────────
-  L1 cache reference:                    1 ns
-  L2 cache reference:                    4 ns
-  Main memory (RAM) reference:          100 ns
-  SSD random read:                   15,000 ns  (15 us)
-  HDD random read:                2,000,000 ns  (2 ms)
-  Send packet CA -> Netherlands:  150,000,000 ns (150 ms)
+When a single database cannot handle the load, you split data across multiple database instances (shards).
 
-  THROUGHPUT:
-  ────────────────────────────────────────────────────────────────
-  Sequential read from SSD:    500 MB/s
-  Sequential read from HDD:    100 MB/s
-  Network (1 Gbps):            125 MB/s
-  Network (10 Gbps):         1,250 MB/s
+| Strategy | How It Works | Pros | Cons |
+|----------|-------------|------|------|
+| Hash-based | `shard = hash(key) % N` | Even distribution | Adding/removing shards rehashes everything (use consistent hashing to mitigate) |
+| Range-based | Shard by value ranges (A-M, N-Z) | Range queries stay on one shard | Hot spots if distribution is uneven |
+| Geo-based | Shard by region (US, EU, APAC) | Data locality, compliance (GDPR) | Cross-region queries are expensive |
 
-  SCALE REFERENCE:
-  ────────────────────────────────────────────────────────────────
-  1 million seconds  =  ~11.5 days
-  1 billion seconds  =  ~31.7 years
-
-  QPS (Queries Per Second) estimation:
-  ────────────────────────────────────────────────────────────────
-  Daily Active Users (DAU): 10 million
-  Each user makes 10 requests/day
-  Total requests = 100 million/day
-  QPS = 100M / 86,400 seconds = ~1,150 QPS
-  Peak QPS = 2x to 5x average = ~2,300 to 5,750 QPS
-
-  STORAGE estimation:
-  ────────────────────────────────────────────────────────────────
-  1 tweet = ~140 chars = ~280 bytes + metadata = ~500 bytes
-  500 million tweets/day = 250 GB/day = ~90 TB/year
-```
+**Cross-shard queries are expensive** (scatter-gather across all shards). Design your shard key so the most common queries hit a single shard. For social media, shard by `user_id`.
 
 ---
 
-# PART 4: API DESIGN & DATABASE DESIGN
+### The N+1 Query Problem
+
+The most common performance bug in applications that use ORMs.
+
+```java
+// BAD: N+1 queries — 1 query for orders + N queries for users
+List<Order> orders = orderRepo.findAll();          // 1 query
+for (Order order : orders) {
+    User user = userRepo.findById(order.getUserId()); // N queries!
+    System.out.println(order.getId() + " by " + user.getName());
+}
+
+// GOOD: JOIN — 1 query total
+@Query("SELECT o FROM Order o JOIN FETCH o.user")
+List<Order> findAllWithUsers();                    // 1 query
+```
+
+If you have 1,000 orders, the bad version fires 1,001 database queries. The good version fires 1. This is often the difference between a 50ms response and a 5-second response.
 
 ---
-
-## 4.1 REST API Design
-
-### Simple Explanation
-REST (REpresentational State Transfer) treats everything as a resource
-that you can create, read, update, or delete using standard HTTP methods.
-
-```
-  THE CORE IDEA: Resources + HTTP Verbs
-  ────────────────────────────────────────────────────────────────
-
-  Resource: /users, /orders, /products
-
-  ┌──────────┬──────────────┬──────────────────────────────────┐
-  │ HTTP Verb│ Action       │ Example                           │
-  ├──────────┼──────────────┼──────────────────────────────────┤
-  │ GET      │ Read         │ GET /users/123     (get user 123) │
-  │ POST     │ Create       │ POST /users        (create user)  │
-  │ PUT      │ Replace      │ PUT /users/123     (replace user) │
-  │ PATCH    │ Partial Edit │ PATCH /users/123   (update field) │
-  │ DELETE   │ Delete       │ DELETE /users/123  (delete user)  │
-  └──────────┴──────────────┴──────────────────────────────────┘
-
-  REST BEST PRACTICES:
-  ┌────────────────────────────────────────────────────────────────┐
-  │ Use nouns, not verbs:     /users  NOT  /getUsers               │
-  │ Use plural names:         /users  NOT  /user                   │
-  │ Use nesting for relations: /users/123/orders                   │
-  │ Use query params for filtering: /users?role=admin&active=true  │
-  │ Version your API:         /v1/users  or  Accept: v1            │
-  │ Return proper status codes: 200, 201, 400, 401, 404, 500      │
-  │ Use pagination:           /users?page=2&limit=20               │
-  │ Use HATEOAS for discoverability (links in responses)           │
-  └────────────────────────────────────────────────────────────────┘
-```
-
-### HTTP Status Codes
-
-```
-  ┌─────────────────────────────────────────────────────────────┐
-  │  2xx SUCCESS                                                 │
-  │  200 OK             — request succeeded                      │
-  │  201 Created        — resource created (after POST)          │
-  │  204 No Content     — success, no body (after DELETE)        │
-  ├─────────────────────────────────────────────────────────────┤
-  │  3xx REDIRECT                                                │
-  │  301 Moved Permanently  — resource has a new URL             │
-  │  304 Not Modified       — use cached version                 │
-  ├─────────────────────────────────────────────────────────────┤
-  │  4xx CLIENT ERROR                                            │
-  │  400 Bad Request    — malformed request                      │
-  │  401 Unauthorized   — not authenticated                      │
-  │  403 Forbidden      — authenticated but not allowed          │
-  │  404 Not Found      — resource doesn't exist                 │
-  │  409 Conflict       — resource conflict (duplicate)          │
-  │  429 Too Many Reqs  — rate limited                           │
-  ├─────────────────────────────────────────────────────────────┤
-  │  5xx SERVER ERROR                                            │
-  │  500 Internal Error — server bug                             │
-  │  502 Bad Gateway    — upstream server error                  │
-  │  503 Service Unavail— server overloaded or in maintenance    │
-  └─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 4.2 REST vs GraphQL vs gRPC
-
-```
-┌────────────────┬──────────────────┬──────────────────┬──────────────────┐
-│                │ REST             │ GraphQL          │ gRPC             │
-├────────────────┼──────────────────┼──────────────────┼──────────────────┤
-│ Protocol       │ HTTP/JSON        │ HTTP/JSON        │ HTTP/2 + Protobuf│
-│ Data fetching  │ Fixed endpoints  │ Client specifies │ Defined in .proto│
-│                │ /users returns   │ exactly what     │ file (strict     │
-│                │ everything       │ fields it wants  │ contract)        │
-│ Over-fetching  │ Common problem   │ Solved!          │ N/A (typed)      │
-│ Under-fetching │ Need multiple    │ Solved! One      │ N/A (typed)      │
-│                │ requests         │ query gets all   │                  │
-│ Performance    │ Good             │ Good             │ Best (binary)    │
-│ Caching        │ Easy (HTTP cache)│ Complex          │ No HTTP caching  │
-│ Learning curve │ Low              │ Medium           │ Medium-High      │
-│ Best for       │ Public APIs,     │ Frontend-heavy   │ Microservice-    │
-│                │ simple CRUD      │ apps, mobile     │ to-microservice  │
-│                │                  │ (minimize data)  │ (internal APIs)  │
-└────────────────┴──────────────────┴──────────────────┴──────────────────┘
-
-  WHEN TO USE WHAT:
-  ─────────────────────────────────────────────────────────────────
-  Public API for external developers?      -> REST (industry standard)
-  Mobile app needing flexible queries?     -> GraphQL (fetch only what you need)
-  Internal service-to-service calls?       -> gRPC (fast, typed, streaming)
-  Simple CRUD app?                         -> REST (simplest)
-  Real-time bidirectional streaming?       -> gRPC (built-in support)
-```
-
----
-
-## 4.3 Database Design — SQL vs NoSQL
-
-```
-  SQL (Relational)                     NoSQL (Non-Relational)
-  ──────────────────────               ──────────────────────────
-  Tables with rows/columns             Various data models
-  Fixed schema (must define upfront)   Flexible/dynamic schema
-  ACID transactions                    BASE (eventually consistent)
-  Complex joins across tables          Denormalized, minimal joins
-  Vertical scaling (mainly)            Horizontal scaling (designed for it)
-
-  ┌────────────────────────────────────────────────────────────────┐
-  │  SQL DATABASES        │  NoSQL DATABASES                       │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ PostgreSQL            │ Document: MongoDB, CouchDB             │
-  │ MySQL                 │ Key-Value: Redis, DynamoDB             │
-  │ SQL Server            │ Wide-Column: Cassandra, HBase          │
-  │ Oracle                │ Graph: Neo4j, Amazon Neptune           │
-  │ SQLite                │ Time-Series: InfluxDB, TimescaleDB     │
-  └───────────────────────┴────────────────────────────────────────┘
-```
-
-### When to Use SQL vs NoSQL
-
-```
-  USE SQL WHEN:                       USE NoSQL WHEN:
-  ─────────────────────               ──────────────────────────
-  Data is highly structured           Schema changes frequently
-  Complex queries / joins needed      Need horizontal scaling
-  ACID transactions required          High write throughput
-  Data integrity is critical          Data is semi/unstructured
-  Relational data (users, orders)     Caching (Redis)
-  Financial / banking systems         Real-time analytics
-  Reporting / analytics               Social graphs (Neo4j)
-```
-
-### Database Normalization — Organizing Data to Eliminate Redundancy
-
-Normalization is the process of structuring tables to reduce data duplication and prevent inconsistencies.
-
-```
-  UNNORMALIZED (messy — data repeated everywhere):
-  ────────────────────────────────────────────────────────
-
-  orders table:
-  ┌──────────┬────────────┬──────────────┬───────────────┬────────────┐
-  │ order_id │ customer   │ cust_email   │ product       │ product_price│
-  ├──────────┼────────────┼──────────────┼───────────────┼────────────┤
-  │ 1        │ Alice      │ alice@co.com │ Laptop        │ $999       │
-  │ 2        │ Alice      │ alice@co.com │ Mouse         │ $29        │
-  │ 3        │ Bob        │ bob@co.com   │ Laptop        │ $999       │
-  │ 4        │ Alice      │ alice@co.com │ Keyboard      │ $79        │
-  └──────────┴────────────┴──────────────┴───────────────┴────────────┘
-
-  Problems:
-  - "Alice" and her email are stored 3 times (redundancy!)
-  - "Laptop $999" is stored 2 times
-  - If Alice changes her email, you must update 3 rows (risk of inconsistency)
-  - If you delete order 3, you lose the fact that Bob exists
-
-
-  1NF (First Normal Form): Every cell has ONE value. No repeating groups.
-  ──────────────────────────────────────────────────────────────────────
-  Rule: Each column holds atomic (indivisible) values.
-
-  BAD: address = "123 Main St, NYC, NY 10001"
-  GOOD: street = "123 Main St", city = "NYC", state = "NY", zip = "10001"
-
-  BAD: phone_numbers = "555-1234, 555-5678"  (multiple values in one cell)
-  GOOD: separate rows or a separate phone_numbers table
-
-
-  2NF (Second Normal Form): 1NF + every non-key column depends on the WHOLE key.
-  ──────────────────────────────────────────────────────────────────────
-  Rule: No partial dependencies (where a column depends on only PART of
-  a composite primary key).
-
-  BAD (key is [order_id, product_id]):
-  product_name depends only on product_id, NOT on order_id!
-  → Move product_name to a separate products table.
-
-
-  3NF (Third Normal Form): 2NF + no column depends on ANOTHER non-key column.
-  ──────────────────────────────────────────────────────────────────────
-  Rule: No transitive dependencies.
-
-  BAD: orders table has customer_name AND customer_email.
-  customer_email depends on customer_name (not on order_id directly).
-  → Move customer info to a separate customers table.
-
-
-  NORMALIZED (clean — no redundancy):
-  ────────────────────────────────────────────────────────
-
-  customers:                    products:
-  ┌─────┬───────┬─────────────┐ ┌────────┬──────────┬───────┐
-  │ id  │ name  │ email       │ │ id     │ name     │ price │
-  ├─────┼───────┼─────────────┤ ├────────┼──────────┼───────┤
-  │ 1   │ Alice │ alice@co.com│ │ 1      │ Laptop   │ $999  │
-  │ 2   │ Bob   │ bob@co.com  │ │ 2      │ Mouse    │ $29   │
-  └─────┴───────┴─────────────┘ │ 3      │ Keyboard │ $79   │
-                                 └────────┴──────────┴───────┘
-  orders:
-  ┌──────────┬─────────────┬────────────┐
-  │ order_id │ customer_id │ product_id │
-  ├──────────┼─────────────┼────────────┤
-  │ 1        │ 1           │ 1          │
-  │ 2        │ 1           │ 2          │
-  │ 3        │ 2           │ 1          │
-  │ 4        │ 1           │ 3          │
-  └──────────┴─────────────┴────────────┘
-
-  Now: change Alice's email? Update ONE row. Laptop price? ONE row.
-  No inconsistency. No redundancy.
-
-  TRADE-OFF: Normalization means you need JOINs to reconstruct the data.
-  For read-heavy systems, sometimes DENORMALIZATION (intentional duplication)
-  is better for performance. This is a conscious trade-off, not a mistake.
-```
-
-### The N+1 Query Problem — The Silent Performance Killer
-
-```
-  THE PROBLEM:
-  You want to display 10 blog posts with their authors.
-
-  BAD (N+1 queries):
-  ────────────────────────────────────────────────────────
-  # Query 1: Get all posts
-  posts = db.query("SELECT * FROM posts LIMIT 10")    # 1 query
-
-  for post in posts:
-      # Query 2-11: Get each post's author (one query per post!)
-      author = db.query(f"SELECT * FROM authors WHERE id = {post.author_id}")
-      print(f"{post.title} by {author.name}")
-
-  Total: 1 + 10 = 11 queries!
-  With 100 posts: 101 queries. With 1000 posts: 1001 queries!
-
-  GOOD (JOIN — 1 query):
-  ────────────────────────────────────────────────────────
-  results = db.query("""
-      SELECT posts.title, authors.name
-      FROM posts
-      JOIN authors ON posts.author_id = authors.id
-      LIMIT 10
-  """)
-
-  Total: 1 query! Same result, 10x fewer database round trips.
-
-  GOOD (Eager Loading — 2 queries):
-  ────────────────────────────────────────────────────────
-  posts = db.query("SELECT * FROM posts LIMIT 10")
-  author_ids = [p.author_id for p in posts]
-  authors = db.query("SELECT * FROM authors WHERE id IN (?)", author_ids)
-
-  Total: 2 queries regardless of how many posts. Scales perfectly.
-
-  HOW TO DETECT:
-  - Enable query logging → see repeated queries with only the ID changing
-  - ORMs are common culprits — they lazy-load by default
-  - Use SQL EXPLAIN or ORM eager loading (.select_related(), .include())
-```
-
-### Pagination Strategies — How to Return Large Result Sets
-
-```
-  Returning 1 million records in one response? Bad idea.
-  Pagination splits results into manageable pages.
-
-  STRATEGY 1: OFFSET-BASED (simplest, most common)
-  ────────────────────────────────────────────────────────
-  GET /users?page=3&limit=20
-
-  SQL: SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 40
-
-  Page 1: rows 1-20   (OFFSET 0)
-  Page 2: rows 21-40  (OFFSET 20)
-  Page 3: rows 41-60  (OFFSET 40)
-
-  Pros: Simple, supports "jump to page 50"
-  Cons: SLOW for deep pages! OFFSET 1000000 still scans 1M rows.
-        If data changes between pages, items can be skipped or duplicated.
-
-
-  STRATEGY 2: CURSOR-BASED (better for large datasets)
-  ────────────────────────────────────────────────────────
-  GET /users?after=user_id_40&limit=20
-
-  SQL: SELECT * FROM users WHERE id > 40 ORDER BY id LIMIT 20
-
-  First page: returns users 1-20, cursor = "user_20"
-  Next page:  GET /users?after=user_20&limit=20 → users 21-40
-
-  Pros: Constant performance (no scanning skipped rows!)
-        No skipped/duplicate items when data changes.
-  Cons: Can't "jump to page 50" — must traverse sequentially.
-        Requires a unique, orderable cursor field.
-
-
-  STRATEGY 3: KEYSET / SEEK (best performance)
-  ────────────────────────────────────────────────────────
-  GET /users?created_after=2024-01-15T10:30:00&limit=20
-
-  SQL: SELECT * FROM users
-       WHERE created_at > '2024-01-15T10:30:00'
-       ORDER BY created_at LIMIT 20
-
-  Like cursor-based but uses a meaningful field (timestamp, score).
-  Best for infinite scroll, time-series data, sorted feeds.
-
-  ┌──────────────────┬──────────────────┬──────────────────┐
-  │                  │ Offset           │ Cursor/Keyset     │
-  ├──────────────────┼──────────────────┼──────────────────┤
-  │ Deep pages       │ Slow (O(offset)) │ Fast (O(1))       │
-  │ Jump to page N   │ Yes              │ No                 │
-  │ Data consistency │ Items can shift  │ Stable             │
-  │ Implementation   │ Simplest         │ Slightly complex   │
-  │ Best for         │ Admin panels,    │ APIs, mobile apps, │
-  │                  │ small datasets   │ large datasets     │
-  └──────────────────┴──────────────────┴──────────────────┘
-```
-
-### Idempotency — Safe to Retry
-
-```
-  An operation is IDEMPOTENT if doing it multiple times
-  has the same effect as doing it once.
-
-  IDEMPOTENT (safe to retry):
-  ────────────────────────────────────────────────────────
-  GET  /users/123         → returns same user every time ✓
-  PUT  /users/123 {age:30}→ sets age to 30 every time ✓
-  DELETE /users/123       → user is deleted (already deleted = no-op) ✓
-
-  NOT IDEMPOTENT (dangerous to retry):
-  ────────────────────────────────────────────────────────
-  POST /orders {item: laptop}  → creates a NEW order each time!
-  POST /payments {amount: 100} → charges $100 each time!
-
-  WHY IT MATTERS: Network failures happen. Requests get retried.
-  If "pay $100" runs twice, the customer is charged $200!
-
-  THE FIX: Idempotency Keys
-  ────────────────────────────────────────────────────────
-  Client generates a unique ID for each operation:
-
-  POST /payments
-  Idempotency-Key: "abc-123-def-456"
-  Body: {amount: 100}
-
-  Server checks: "Have I seen key abc-123-def-456 before?"
-  First time: process payment, store key → return success
-  Retry:      find stored key → return same response (no double charge!)
-
-  ┌────────────────────────────────────────────────────────────┐
-  │  HTTP Verb │ Idempotent? │ Safe to retry?                  │
-  ├────────────┼─────────────┼─────────────────────────────────┤
-  │ GET        │ Yes         │ Always                           │
-  │ PUT        │ Yes         │ Always                           │
-  │ DELETE     │ Yes         │ Always                           │
-  │ PATCH      │ Depends     │ If setting absolute values: yes  │
-  │            │             │ If incrementing: NO              │
-  │ POST       │ No          │ Only with idempotency key        │
-  └────────────┴─────────────┴─────────────────────────────────┘
-
-  REAL-WORLD: Stripe uses idempotency keys for all payment APIs.
-  AWS APIs are idempotent by design. This is table stakes for production APIs.
-```
-
-### Database Indexing
-
-```
-  WITHOUT INDEX:                      WITH INDEX:
-  ─────────────────────               ──────────────────────────
-  "Find user with email               B-Tree index on 'email':
-   alice@test.com"
-                                      [a-m] ──── [n-z]
-  Scan EVERY row:                      /  \        /  \
-  Row 1: bob@...     (no)            [a-f] [g-m] [n-s] [t-z]
-  Row 2: charlie@... (no)              |
-  Row 3: dave@...    (no)            alice@test.com -> Row 47
-  ...
-  Row 47: alice@... (found!)         Jump directly to Row 47!
-
-  Without index: O(n) — scan all rows
-  With index:    O(log n) — binary search through tree
-
-  COSTS OF INDEXES:
-  ┌────────────────────────────────────────────────────────────┐
-  │ Faster reads, slower writes (must update index on insert)  │
-  │ Uses additional storage (index takes disk space)           │
-  │ Too many indexes = write performance degradation           │
-  │                                                            │
-  │ RULE: Index columns you frequently:                        │
-  │  - Search on (WHERE clause)                                │
-  │  - Sort by (ORDER BY)                                      │
-  │  - Join on (foreign keys)                                  │
-  │  - Filter on (frequently queried fields)                   │
-  └────────────────────────────────────────────────────────────┘
-```
-
-### Database Sharding
-
-```
-  SHARDING = splitting data across multiple database servers
-
-  WHY: Single database can't handle the load (reads, writes, or storage)
-
-  EXAMPLE: Shard users by user_id
-  ────────────────────────────────────────────────────────────
-
-  User request (user_id = 12345)
-       │
-       ▼
-  Shard Key: user_id % 4 = 12345 % 4 = 1
-       │
-       ├── Shard 0: user_id % 4 == 0  (users 4, 8, 12...)
-       ├── Shard 1: user_id % 4 == 1  (users 1, 5, 9...) <-- HERE
-       ├── Shard 2: user_id % 4 == 2  (users 2, 6, 10...)
-       └── Shard 3: user_id % 4 == 3  (users 3, 7, 11...)
-
-  SHARDING STRATEGIES:
-  ┌────────────────┬─────────────────────────────────────────────┐
-  │ Hash-based     │ shard = hash(key) % num_shards              │
-  │                │ + Even distribution                         │
-  │                │ - Hard to add/remove shards (resharding)    │
-  ├────────────────┼─────────────────────────────────────────────┤
-  │ Range-based    │ shard by date range, alphabet, etc.         │
-  │                │ + Easy range queries                        │
-  │                │ - Hot spots (all today's data hits one shard)│
-  ├────────────────┼─────────────────────────────────────────────┤
-  │ Consistent     │ Hash ring with virtual nodes                │
-  │ Hashing        │ + Minimal redistribution when adding nodes  │
-  │                │ - More complex implementation               │
-  └────────────────┴─────────────────────────────────────────────┘
-```
 
 ### ACID vs BASE
 
-```
-  ACID (SQL databases):              BASE (NoSQL databases):
-  ─────────────────────              ──────────────────────────
-  Atomicity    — all or nothing      Basically Available
-  Consistency  — valid state always   Soft state
-  Isolation    — concurrent txns      Eventually consistent
-                 don't interfere
-  Durability   — committed data
-                 survives crashes
+| Property | ACID (SQL default) | BASE (NoSQL default) |
+|----------|-------------------|---------------------|
+| **A** | Atomicity — all or nothing | **B**asically **A**vailable — system always responds |
+| **C** | Consistency — data always valid | **S**oft state — data may be temporarily inconsistent |
+| **I** | Isolation — concurrent txns don't interfere | **E**ventual consistency — given enough time, all replicas converge |
+| **D** | Durability — committed data survives crashes | (Same — no one skips durability) |
+| Tradeoff | Correctness over availability | Availability over immediate consistency |
+| Best for | Banking, inventory, booking systems | Social feeds, analytics, content delivery |
 
-  ACID example (bank transfer):
-  ────────────────────────────────────────────────────────
-  BEGIN TRANSACTION
-    UPDATE accounts SET balance = balance - 100 WHERE id = 1
-    UPDATE accounts SET balance = balance + 100 WHERE id = 2
-  COMMIT
-  -- Either BOTH succeed or NEITHER does. Never half-done.
+Most systems use ACID for the write path (source of truth) and BASE for the read path (caches, search indexes).
 
-  BASE example (social media likes):
-  ────────────────────────────────────────────────────────
-  User likes a post. Write goes to nearest replica.
-  Other replicas will sync... eventually.
-  For a few seconds, different users may see different like counts.
-  That's OK for likes. NOT OK for bank balances.
+---
+
+### Database Performance Comparison
+
+```chart
+{
+  "type": "radar",
+  "data": {
+    "labels": ["Read Throughput", "Write Throughput", "Query Flexibility", "Horizontal Scale", "Consistency", "Operational Simplicity"],
+    "datasets": [
+      {
+        "label": "PostgreSQL (SQL)",
+        "data": [7, 6, 10, 4, 10, 7],
+        "borderColor": "rgba(54, 162, 235, 1)",
+        "backgroundColor": "rgba(54, 162, 235, 0.15)"
+      },
+      {
+        "label": "MongoDB (Document)",
+        "data": [7, 7, 7, 8, 6, 6],
+        "borderColor": "rgba(255, 159, 64, 1)",
+        "backgroundColor": "rgba(255, 159, 64, 0.15)"
+      },
+      {
+        "label": "Cassandra (Wide-Column)",
+        "data": [9, 10, 3, 10, 4, 5],
+        "borderColor": "rgba(255, 99, 132, 1)",
+        "backgroundColor": "rgba(255, 99, 132, 0.15)"
+      },
+      {
+        "label": "Redis (Key-Value)",
+        "data": [10, 10, 2, 7, 5, 8],
+        "borderColor": "rgba(75, 192, 192, 1)",
+        "backgroundColor": "rgba(75, 192, 192, 0.15)"
+      }
+    ]
+  },
+  "options": {
+    "scales": {
+      "r": { "beginAtZero": true, "max": 10 }
+    },
+    "plugins": {
+      "title": { "display": true, "text": "Database Type Comparison (higher = better)" }
+    }
+  }
+}
 ```
 
 ---
 
-# PART 5: DISTRIBUTED SYSTEMS, CACHING & MESSAGING
+## 14.8 Distributed Systems
+
+Every system that outgrows a single machine enters the world of distributed systems. The core challenge shifts from "how to write correct code" to "how to coordinate multiple machines that fail independently."
 
 ---
 
-## 5.1 Microservices vs Monolith
+### Microservices vs Monolith
 
+A monolith is a single deployable unit containing all business logic. Microservices decompose the system into independently deployable services, each owning its own data.
+
+```mermaid
+flowchart TB
+    subgraph Monolith ["Monolith (Single Deploy Unit)"]
+        direction TB
+        A[User Module] --- B[Order Module]
+        B --- C[Payment Module]
+        C --- D[Notification Module]
+        A --- E[Shared Database]
+        B --- E
+        C --- E
+        D --- E
+    end
+
+    subgraph Microservices ["Microservices (Independent Services)"]
+        direction TB
+        F[User Service] -->|REST/gRPC| G[Order Service]
+        G -->|Events| H[Payment Service]
+        H -->|Events| I[Notification Service]
+        F --- J[(User DB)]
+        G --- K[(Order DB)]
+        H --- L[(Payment DB)]
+        I --- M[(Notif DB)]
+    end
 ```
-  MONOLITH:                           MICROSERVICES:
-  ───────────────────────             ──────────────────────────
 
-  ┌──────────────────────┐           ┌──────┐  ┌──────┐  ┌──────┐
-  │    ONE BIG APP       │           │ User │  │Order │  │Notif.│
-  │                      │           │ Svc  │  │ Svc  │  │ Svc  │
-  │  Users  Orders       │           └──┬───┘  └──┬───┘  └──┬───┘
-  │  Payments Notifs     │              │         │         │
-  │  Analytics           │           ┌──┴───┐  ┌──┴───┐  ┌──┴───┐
-  │                      │           │UserDB│  │OrdDB │  │MsgQ  │
-  └──────────────────────┘           └──────┘  └──────┘  └──────┘
+| Aspect | Monolith | Microservices |
+|--------|----------|---------------|
+| Deployment | Single unit — deploy everything | Independent — deploy one service |
+| Development speed (early) | Fast — no network calls, shared DB | Slow — need service mesh, API contracts |
+| Development speed (late) | Slow — changes break other modules | Fast — teams work independently |
+| Data consistency | Easy — single DB transaction | Hard — distributed transactions (Sagas) |
+| Debugging | Easy — single stack trace | Hard — distributed tracing (Jaeger, Zipkin) |
+| Scaling | Scale entire app even if only one module is hot | Scale individual services independently |
+| Team size | Works for < 20 engineers | Necessary for 50+ engineers |
 
-  ONE deployment unit                MANY independent services
-  ONE shared database                EACH owns its own data
-  ONE codebase                       SEPARATE codebases per service
-
-  ┌──────────────────────┬───────────────────┬───────────────────┐
-  │ Aspect               │ Monolith          │ Microservices     │
-  ├──────────────────────┼───────────────────┼───────────────────┤
-  │ Deployment           │ All or nothing    │ Independent       │
-  │ Scaling              │ Scale everything  │ Scale per service │
-  │ Technology           │ One stack         │ Polyglot possible │
-  │ Team structure       │ One team          │ Team per service  │
-  │ Complexity           │ Simple at start   │ Complex at start  │
-  │ Data consistency     │ Easy (one DB)     │ Hard (distributed)│
-  │ Debugging            │ Easy (one process)│ Hard (distributed)│
-  │ Best for             │ Small teams,      │ Large orgs,       │
-  │                      │ early startups    │ complex domains   │
-  └──────────────────────┴───────────────────┴───────────────────┘
-
-  RULE: Start with a monolith. Extract microservices when you
-  have a specific reason (team scaling, independent deployment,
-  different scaling needs).
-```
+**Start with a monolith, extract microservices when justified:** a module needs independent scaling, a team boundary requires independent deployment, or a module has fundamentally different tech requirements (ML serving in Python while the rest is Java).
 
 ---
 
-## 5.2 Caching
+### Caching
 
-### Simple Explanation
-Caching stores frequently accessed data in fast memory so you don't have to
-fetch it from a slow source every time. Like keeping your most-used tools
-on your desk instead of walking to the shed each time.
+Caching stores frequently accessed data closer to the consumer, reducing latency and database load.
 
-```
-  WITHOUT CACHE:                     WITH CACHE:
-  ──────────────────────             ─────────────────────────
-  Client → Server → DB               Client → Server → Cache → hit? → return!
-                    (slow)                                │
-                                                         miss?
-                                                          ↓
-                                                         DB → store in cache → return
-                                                        (slow, but only first time)
+| Strategy | How It Works | Pros | Cons |
+|----------|-------------|------|------|
+| **Cache-Aside** (Lazy) | App checks cache first. On miss, reads from DB, writes to cache. | Simple, only caches what is actually requested | Cache miss = slower (DB read + cache write). Stale data until TTL expires. |
+| **Write-Through** | App writes to cache, cache synchronously writes to DB. | Cache always consistent with DB | Higher write latency (two writes on every mutation) |
+| **Write-Back** (Write-Behind) | App writes to cache, cache asynchronously writes to DB later. | Lowest write latency, batches DB writes | Risk of data loss if cache crashes before flushing to DB |
 
-  CACHE HIT RATIO:
-  ────────────────────────────────────────────────────────────────
-  If 90% of requests hit the cache:
-  - 90% are served in 1ms (from cache)
-  - 10% are served in 100ms (from DB)
-  - Average: 0.9 * 1ms + 0.1 * 100ms = 10.9ms
-  - Without cache: 100ms average. That's ~10x improvement!
-```
+**Cache-aside is the most common pattern.** Use it unless you have a specific reason not to.
 
-### Caching Strategies
+#### Eviction Policies
 
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ CACHE-ASIDE (Lazy Loading) — Most Common                        │
-  │ ────────────────────────────────────────                        │
-  │ 1. App checks cache first                                      │
-  │ 2. Cache miss? Read from DB, then write to cache                │
-  │ 3. Cache hit? Return cached data                                │
-  │ + Only caches what's needed    - First request is always slow   │
-  │ + Cache failures don't break app  - Data can go stale           │
-  ├─────────────────────────────────────────────────────────────────┤
-  │ WRITE-THROUGH                                                    │
-  │ ───────────────                                                 │
-  │ Every write goes to BOTH cache and DB simultaneously.           │
-  │ + Data always fresh in cache   - Higher write latency           │
-  │ + No stale data                - Caches data that may never be read│
-  ├─────────────────────────────────────────────────────────────────┤
-  │ WRITE-BEHIND (Write-Back)                                        │
-  │ ──────────────────────────                                      │
-  │ Write to cache only. Cache asynchronously writes to DB later.   │
-  │ + Very fast writes             - Risk of data loss if cache dies│
-  │ + Reduces DB load              - Complex to implement           │
-  └─────────────────────────────────────────────────────────────────┘
-```
+| Policy | Evicts | Best For |
+|--------|--------|----------|
+| LRU (Least Recently Used) | Item not accessed for the longest time | General purpose — the default choice |
+| LFU (Least Frequently Used) | Item accessed fewest times overall | Workloads with stable hot sets |
+| TTL (Time To Live) | Item that has been in cache longer than N seconds | Data with known freshness requirements |
 
-### Cache Eviction Policies
-
-```
-  When the cache is full, WHAT to remove?
-
-  ┌───────────────┬──────────────────────────────────────────────┐
-  │ LRU           │ Least Recently Used — remove what hasn't     │
-  │               │ been accessed the longest. Most common.      │
-  ├───────────────┼──────────────────────────────────────────────┤
-  │ LFU           │ Least Frequently Used — remove what's        │
-  │               │ accessed the fewest times overall.           │
-  ├───────────────┼──────────────────────────────────────────────┤
-  │ TTL           │ Time To Live — expire after N seconds.       │
-  │               │ Good for data that changes periodically.     │
-  ├───────────────┼──────────────────────────────────────────────┤
-  │ FIFO          │ First In, First Out — oldest entry removed.  │
-  └───────────────┴──────────────────────────────────────────────┘
-
-  "There are only two hard problems in computer science:
-   cache invalidation, naming things, and off-by-one errors."
-```
-
-### Where to Cache
-
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │  LAYER          │ WHAT TO CACHE                               │
-  ├─────────────────┼────────────────────────────────────────────┤
-  │ Browser         │ Static assets (JS, CSS, images) via HTTP    │
-  │                 │ cache headers (Cache-Control, ETag)         │
-  ├─────────────────┼────────────────────────────────────────────┤
-  │ CDN             │ Static content, media, API responses        │
-  │ (CloudFront,    │ Geographically distributed, close to users │
-  │  Cloudflare)    │                                            │
-  ├─────────────────┼────────────────────────────────────────────┤
-  │ Application     │ Frequently queried data (user sessions,    │
-  │ (Redis,         │ product catalogs, configuration)           │
-  │  Memcached)     │ In-memory, microsecond access              │
-  ├─────────────────┼────────────────────────────────────────────┤
-  │ Database        │ Query result cache, materialized views      │
-  │ (built-in)      │ Transparent to application                 │
-  └─────────────────┴────────────────────────────────────────────┘
-```
+**Where to cache:** Client (HTTP cache headers) → CDN (static assets, API responses) → Application (Redis/Memcached for objects, sessions, query results) → Database (query cache, materialized views). Each layer reduces load on the next. At Google scale, cache aggressively at every layer.
 
 ---
 
-## 5.3 Message Queues & Async Processing
+### Message Queues
 
-### Simple Explanation
-Instead of calling Service B directly (and waiting), Service A puts a message
-in a queue. Service B picks it up whenever it's ready. Like leaving a voicemail
-instead of making someone answer the phone immediately.
+Message queues decouple producers from consumers, enabling asynchronous processing, load leveling, and fault tolerance.
 
-```
-  SYNCHRONOUS (tight coupling):      ASYNCHRONOUS (loose coupling):
-  ─────────────────────────          ─────────────────────────────
+| Feature | Kafka | SQS | RabbitMQ |
+|---------|-------|-----|----------|
+| Model | Distributed log (append-only) | Managed queue (AWS) | Traditional message broker |
+| Ordering | Per-partition ordering guaranteed | Best-effort (FIFO available at extra cost) | Per-queue ordering |
+| Retention | Configurable (days/weeks/forever) | 14 days max | Until consumed |
+| Replay | Yes — consumers can re-read old messages | No — once consumed, deleted | No |
+| Throughput | Millions of messages/sec | Thousands/sec | Tens of thousands/sec |
+| Consumer model | Pull (consumers poll partitions) | Pull (long polling) | Push (broker delivers to consumer) |
+| Best for | Event streaming, event sourcing, real-time analytics, audit logs | Simple task queues, decoupling AWS services | Complex routing, RPC patterns, low-latency task queues |
 
-  Service A → Service B              Service A → [Queue] → Service B
-              │
-  A waits for B to respond.          A drops message and moves on.
-  If B is slow, A is slow.           If B is slow, messages pile up.
-  If B is down, A fails!             If B is down, messages wait in queue.
-                                     B processes when ready.
-```
-
-### Message Queue Patterns
-
-```
-  POINT-TO-POINT (Queue):            PUBLISH-SUBSCRIBE (Topic):
-  ─────────────────────────          ─────────────────────────────
-
-  Producer → [Queue] → Consumer      Publisher → [Topic] → Subscriber A
-                                                         → Subscriber B
-  One message, ONE consumer.                             → Subscriber C
-  (work distribution)
-                                     One message, MANY consumers.
-                                     (event broadcasting)
-
-  Example: processing orders          Example: "order placed" event
-  (one worker handles each order)     (email, inventory, analytics ALL react)
-```
-
-### Popular Message Systems
-
-```
-  ┌──────────────┬────────────────────────────────────────────────────┐
-  │ Apache Kafka │ Distributed log. Persistent. Ordered. Replayable. │
-  │              │ Best for: event streaming, high throughput,        │
-  │              │ data pipelines. Millions of msgs/sec.              │
-  ├──────────────┼────────────────────────────────────────────────────┤
-  │ RabbitMQ     │ Traditional message broker. Feature-rich routing. │
-  │              │ Best for: task queues, complex routing,            │
-  │              │ request-reply patterns.                            │
-  ├──────────────┼────────────────────────────────────────────────────┤
-  │ Amazon SQS   │ Managed queue service. Simple, reliable.          │
-  │              │ Best for: AWS workloads, decoupling services,     │
-  │              │ no infrastructure management.                     │
-  ├──────────────┼────────────────────────────────────────────────────┤
-  │ Redis Streams│ Lightweight, fast. In-memory.                      │
-  │              │ Best for: real-time use cases, simple event        │
-  │              │ streaming when you already have Redis.             │
-  └──────────────┴────────────────────────────────────────────────────┘
-```
+**Kafka** when you need replay, multiple consumers, or event-driven architecture (GCP equivalent: Cloud Pub/Sub). **SQS/RabbitMQ** for simple fire-and-forget tasks (emails, image resizing) where replay is unnecessary.
 
 ---
 
-## 5.4 API Gateway — The Front Door
+### API Gateway
 
-```
-  An API Gateway is a single entry point for all client requests.
-  It sits between clients and your microservices.
+An API gateway is the single entry point for all client requests. It handles cross-cutting concerns so individual services do not have to.
 
-  WITHOUT GATEWAY:                   WITH GATEWAY:
-  ──────────────────────             ──────────────────────
-  
-  Client knows about every service:  Client knows ONE endpoint:
-  
-  Client → User Service              Client → [API Gateway] → User Service
-  Client → Order Service                                    → Order Service
-  Client → Payment Service                                  → Payment Service
-  Client → Notification Service                             → Notification Service
-  
-  Client must handle:                Gateway handles:
-  - Service discovery                - Routing to correct service
-  - Auth for each service            - Authentication (once!)
-  - Rate limiting itself             - Rate limiting
-  - Different protocols              - Protocol translation
-  - SSL for each service             - SSL termination
+Key responsibilities: **authentication/authorization** (validate JWT, API keys), **rate limiting** (protect backend), **request routing** (route `/users/*` to User Service), **protocol translation** (REST to gRPC), **response aggregation**, **logging and monitoring**.
 
-  ┌──────────────────────────────────────────────────────────────┐
-  │                    API GATEWAY                                │
-  │                                                              │
-  │  ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐│
-  │  │ Auth    │  │ Rate     │  │ Routing  │  │ Response     ││
-  │  │ Check   │→ │ Limiting │→ │ (which   │→ │ Aggregation  ││
-  │  │         │  │          │  │  service)│  │ (combine     ││
-  │  │ Valid   │  │ Under    │  │          │  │  responses)  ││
-  │  │ token?  │  │ limit?   │  │ /users→  │  │              ││
-  │  └─────────┘  └──────────┘  │ UserSvc  │  └──────────────┘│
-  │                             └──────────┘                    │
-  └──────────────────────────────────────────────────────────────┘
-
-  POPULAR API GATEWAYS:
-  ┌──────────────┬────────────────────────────────────────────┐
-  │ Kong         │ Open-source, plugin-based, high performance│
-  │ AWS API GW   │ Managed, integrates with Lambda/ECS        │
-  │ Nginx        │ Reverse proxy + API gateway capabilities   │
-  │ Envoy        │ Service mesh sidecar, used in Istio        │
-  │ Traefik      │ Cloud-native, auto-discovery               │
-  └──────────────┴────────────────────────────────────────────┘
-```
+Examples: Kong, NGINX, AWS API Gateway, Google Cloud Endpoints, Envoy (Google's preferred sidecar proxy).
 
 ---
 
-## 5.5 Rate Limiting — Protecting Your Services
+### Rate Limiting
 
+Rate limiting protects services from being overwhelmed by too many requests, whether from legitimate traffic spikes or malicious attacks.
+
+#### Token Bucket Algorithm
+
+The most widely used algorithm. A bucket holds tokens. Each request consumes one token. Tokens are added at a fixed rate. If the bucket is empty, the request is rejected.
+
+```java
+public class TokenBucketRateLimiter {
+    private final int maxTokens;
+    private final double refillRatePerSecond;
+    private double currentTokens;
+    private long lastRefillTimestamp;
+
+    public TokenBucketRateLimiter(int maxTokens, double refillRatePerSecond) {
+        this.maxTokens = maxTokens;
+        this.refillRatePerSecond = refillRatePerSecond;
+        this.currentTokens = maxTokens;
+        this.lastRefillTimestamp = System.nanoTime();
+    }
+
+    public synchronized boolean allowRequest() {
+        refill();
+        if (currentTokens >= 1) {
+            currentTokens--;
+            return true;
+        }
+        return false;
+    }
+
+    private void refill() {
+        long now = System.nanoTime();
+        double elapsedSeconds = (now - lastRefillTimestamp) / 1_000_000_000.0;
+        currentTokens = Math.min(maxTokens, currentTokens + elapsedSeconds * refillRatePerSecond);
+        lastRefillTimestamp = now;
+    }
+}
 ```
-  Rate limiting controls how many requests a client can make
-  in a given time window. Without it:
-  - One user can overload your entire system
-  - Bots can scrape all your data
-  - DDoS attacks bring everything down
 
-  COMMON LIMITS:
-  - 100 requests per minute per user
-  - 1000 requests per hour per API key
-  - 10 login attempts per minute per IP
-```
-
-### Rate Limiting Algorithms
-
-```
-  TOKEN BUCKET (most common):
-  ────────────────────────────────────────────────────────
-  Imagine a bucket that holds tokens.
-  - Tokens are added at a steady rate (e.g., 10/second)
-  - Each request takes 1 token
-  - If bucket is empty → request rejected (429 Too Many Requests)
-  - Bucket has a max size (allows bursts)
-
-  ┌────────────────────────────────┐
-  │  BUCKET (max 10 tokens)        │
-  │  ██████████                    │  ← full (10 tokens)
-  │                                │
-  │  3 requests come in...         │
-  │  ███████                       │  ← 7 tokens left
-  │                                │
-  │  Wait 1 second (10 tokens/sec) │
-  │  ██████████                    │  ← refilled to 10
-  └────────────────────────────────┘
-
-  Pros: Allows short bursts. Simple. Memory-efficient.
-  Used by: AWS, Stripe, most production systems.
-
-
-  SLIDING WINDOW LOG:
-  ────────────────────────────────────────────────────────
-  Keep a log of every request timestamp.
-  Count requests in the last N seconds.
-  If count > limit → reject.
-
-  Window: last 60 seconds, limit: 5 requests
-  
-  Timestamps: [0:01, 0:15, 0:30, 0:45, 0:50]  → 5 requests, at limit
-  New request at 0:55 → 6 requests in window → REJECTED!
-  New request at 1:02 → 0:01 falls out of window → 5 requests → ALLOWED
-
-  Pros: Very accurate. Cons: Stores every timestamp (memory heavy).
-
-
-  FIXED WINDOW COUNTER:
-  ────────────────────────────────────────────────────────
-  Divide time into fixed windows. Count requests per window.
-
-  Window: 1 minute, limit: 100 requests
-  
-  12:00:00 - 12:00:59 → counter = 87 (under limit)
-  12:01:00 - 12:01:59 → counter resets to 0
-
-  Pros: Memory-efficient (one counter per window)
-  Cons: Burst at window boundary (99 at 12:00:59 + 99 at 12:01:00 = 198!)
-
-
-  SLIDING WINDOW COUNTER (best balance):
-  ────────────────────────────────────────────────────────
-  Combines fixed window + weighted overlap.
-  
-  Current window count × weight + Previous window count × (1 - weight)
-  where weight = how far into the current window we are.
-
-  Pros: Accurate like log, memory-efficient like counter.
-  Used by: Redis-based rate limiters, Cloudflare.
-```
+| Algorithm | How It Works | Pros | Cons |
+|-----------|-------------|------|------|
+| Token Bucket | Tokens added at fixed rate, consumed per request | Allows bursts up to bucket size, smooth rate | Needs per-user state |
+| Sliding Window Log | Store timestamp of each request, count in window | Exact, no boundary issues | High memory (stores every timestamp) |
+| Sliding Window Counter | Weighted sum of current + previous window counts | Low memory, accurate enough | Approximate (not exact) |
 
 ---
 
-## 5.6 Saga Pattern — Distributed Transactions Across Services
+### Consistent Hashing
+
+Standard hashing (`hash(key) % N`) breaks when you add or remove servers — nearly all keys get remapped. Consistent hashing minimizes remapping by arranging servers on a virtual ring.
 
 ```
-  PROBLEM: In microservices, a single business operation spans multiple services.
-  You CAN'T use a traditional database transaction across services.
-
-  EXAMPLE: Placing an order involves:
-  1. Order Service → create order
-  2. Payment Service → charge customer
-  3. Inventory Service → reserve items
-  4. Notification Service → send confirmation
-
-  What if Payment succeeds but Inventory fails? 
-  You need to UNDO the payment! But it's in a different service/database.
+         0
+         │
+    S3 ──┤── S1          Each key goes to the NEXT
+         │                server clockwise on the ring.
+    K2 ──┤
+         │                Adding S4 between S1 and S2:
+    S2 ──┤── K1           only keys in arc S1→S4 move.
+         │                Without consistent hashing: ~100% keys move.
+       2^32              With consistent hashing: ~1/N keys move.
 ```
 
-### Choreography Saga — Events Trigger Next Steps
-
-```
-  Each service listens for events and acts independently.
-  No central coordinator.
-
-  ┌──────────┐   OrderCreated   ┌──────────┐  PaymentDone  ┌───────────┐
-  │  Order   │ ──────────────> │ Payment  │ ───────────> │ Inventory │
-  │ Service  │                  │ Service  │               │ Service   │
-  └──────────┘                  └──────────┘               └───────────┘
-       ▲                             │                          │
-       │        PaymentFailed        │    InventoryReserved     │
-       └─────────────────────────────┘          │               │
-       (cancel order)                           ▼               │
-                                         ┌──────────┐          │
-                                         │  Notify  │ <────────┘
-                                         │ Service  │
-                                         └──────────┘
-
-  If Inventory fails → emits InventoryFailed event
-  → Payment Service hears it → refunds payment
-  → Order Service hears it → cancels order
-
-  Pros: Simple, loosely coupled, no single point of failure
-  Cons: Hard to track the overall flow, complex failure handling
-```
-
-### Orchestration Saga — Central Coordinator
-
-```
-  A "Saga Orchestrator" tells each service what to do and handles failures.
-
-  ┌──────────────────────────────────────────────────┐
-  │              SAGA ORCHESTRATOR                     │
-  │                                                    │
-  │  Step 1: Call Order Service → create_order()       │
-  │  Step 2: Call Payment Service → charge()           │
-  │  Step 3: Call Inventory Service → reserve()        │
-  │  Step 4: Call Notification Service → notify()      │
-  │                                                    │
-  │  If Step 3 fails:                                  │
-  │    Compensate Step 2: Payment.refund()             │
-  │    Compensate Step 1: Order.cancel()               │
-  └──────────────────────────────────────────────────┘
-
-  Each step has a COMPENSATING ACTION (undo):
-  ┌──────────────────┬──────────────────────────────┐
-  │ Action           │ Compensation (undo)           │
-  ├──────────────────┼──────────────────────────────┤
-  │ create_order()   │ cancel_order()                │
-  │ charge()         │ refund()                      │
-  │ reserve_stock()  │ release_stock()               │
-  │ send_email()     │ (no undo — best effort)       │
-  └──────────────────┴──────────────────────────────┘
-
-  Pros: Clear flow, easy to track, centralized error handling
-  Cons: Orchestrator is a single point of failure, more coupling
-```
+**Virtual nodes:** Place each server at 100-200 points on the ring instead of one. Spreads load evenly. More powerful servers get more virtual nodes.
 
 ---
 
-## 5.7 Consistent Hashing — Distributing Data Evenly
+### Load Balancing
 
-```
-  PROBLEM: You have N cache servers. How do you decide which server
-  stores which data?
+A load balancer distributes incoming requests across multiple server instances.
 
-  NAIVE APPROACH: server = hash(key) % N
-  ────────────────────────────────────────────────────────
-  hash("user_123") % 3 = 1 → Server 1
-  hash("user_456") % 3 = 0 → Server 0
-  hash("user_789") % 3 = 2 → Server 2
+| Algorithm | How It Works | Best For |
+|-----------|-------------|----------|
+| Round Robin | Rotate through servers sequentially | Servers with equal capacity |
+| Weighted Round Robin | Higher-capacity servers get more requests | Heterogeneous server fleet |
+| Least Connections | Route to server with fewest active connections | Long-lived connections (WebSockets) |
+| IP Hash | Hash client IP to pick server | Sticky sessions without cookies |
+| Random | Pick a random server | Simple, surprisingly effective at scale |
 
-  Works great... until you ADD or REMOVE a server!
-  hash("user_123") % 4 = 3 → NOW it goes to Server 3!
-  
-  Almost ALL keys get reassigned → massive cache miss storm → DB overload!
-
-  CONSISTENT HASHING: Only ~1/N of keys move when a server changes.
-  ────────────────────────────────────────────────────────
-
-  Imagine a CIRCLE (hash ring) from 0 to 2^32:
-
-            0
-           ╱ ╲
-         ╱     ╲
-       S1         S2          Servers are placed on the ring
-       │           │          at their hash positions.
-       │           │
-       S3─────────╱           Each KEY goes to the NEXT server
-            ╲ ╱               clockwise on the ring.
-            2^32
-
-  Key "user_123" → hash to position 42000 → walk clockwise → hits S2
-  Key "user_456" → hash to position 98000 → walk clockwise → hits S3
-
-  ADD Server S4 between S1 and S2:
-  Only keys between S1 and S4 move to S4. Everything else stays!
-  That's ~1/4 of keys, not all of them.
-
-  REMOVE Server S2:
-  Only S2's keys move to S3 (next clockwise). Everything else stays!
-
-  VIRTUAL NODES (solving uneven distribution):
-  ────────────────────────────────────────────────────────
-  3 physical servers → 300 virtual nodes (100 each)
-  Each physical server gets 100 positions on the ring.
-  This ensures even data distribution even with few servers.
-
-  USED BY: DynamoDB, Cassandra, Memcached, CDNs, load balancers.
-```
+**L4** load balancers route by IP/port (fast, no content inspection). **L7** load balancers route by URL/headers/cookies (flexible, use for microservices routing).
 
 ---
 
-## 5.8 Load Balancing
+### Saga Pattern
 
+In a microservices architecture, a single business operation often spans multiple services. You cannot use a traditional database transaction across service boundaries. The Saga pattern manages distributed transactions as a sequence of local transactions, each with a compensating action (undo).
+
+#### Choreography — Event-Driven, No Central Coordinator
+
+```mermaid
+sequenceDiagram
+    participant O as Order Service
+    participant P as Payment Service
+    participant I as Inventory Service
+    participant N as Notification Service
+
+    O->>O: Create Order (PENDING)
+    O-->>P: OrderCreated event
+    P->>P: Charge customer
+    P-->>I: PaymentCompleted event
+    I->>I: Reserve items
+    alt Reservation succeeds
+        I-->>N: ItemsReserved event
+        N->>N: Send confirmation
+        I-->>O: ItemsReserved event
+        O->>O: Mark order CONFIRMED
+    else Reservation fails
+        I-->>P: ReservationFailed event
+        P->>P: Refund customer
+        I-->>O: ReservationFailed event
+        O->>O: Mark order CANCELLED
+    end
 ```
-  LOAD BALANCER distributes incoming traffic across multiple servers.
 
-  Clients
-    │  │  │  │  │
-    ▼  ▼  ▼  ▼  ▼
-  ┌──────────────────┐
-  │  LOAD BALANCER   │
-  └──────────────────┘
-    │     │     │
-    ▼     ▼     ▼
-  [S1]  [S2]  [S3]
+Pros: loosely coupled, no single point of failure. Cons: hard to track, complex failure handling.
 
-  ALGORITHMS:
-  ┌───────────────────┬──────────────────────────────────────────┐
-  │ Round Robin       │ Rotate through servers in order (1,2,3,1)│
-  │                   │ Simple. Assumes equal server capacity.   │
-  ├───────────────────┼──────────────────────────────────────────┤
-  │ Weighted RR       │ Servers with more capacity get more      │
-  │                   │ traffic. S1(3x) gets 3x the requests.   │
-  ├───────────────────┼──────────────────────────────────────────┤
-  │ Least Connections │ Send to server with fewest active conns. │
-  │                   │ Good when requests vary in duration.     │
-  ├───────────────────┼──────────────────────────────────────────┤
-  │ IP Hash           │ Hash client IP to always route to same   │
-  │                   │ server. Ensures session stickiness.      │
-  ├───────────────────┼──────────────────────────────────────────┤
-  │ Consistent Hash   │ Minimizes redistribution when servers    │
-  │                   │ added/removed. Used in distributed caches│
-  └───────────────────┴──────────────────────────────────────────┘
+#### Orchestration — Central Coordinator Controls the Flow
 
-  LAYERS OF LOAD BALANCING:
-  ─────────────────────────────────────────────────────────────
-  L4 (Transport) — routes based on IP/port. Faster, less smart.
-  L7 (Application) — routes based on URL, headers, cookies.
-                     Smarter, can do content-based routing.
+```mermaid
+sequenceDiagram
+    participant S as Saga Orchestrator
+    participant O as Order Service
+    participant P as Payment Service
+    participant I as Inventory Service
+    participant N as Notification Service
+
+    S->>O: Create order
+    O-->>S: Order created
+    S->>P: Charge customer
+    P-->>S: Payment completed
+    S->>I: Reserve items
+    alt Reservation succeeds
+        I-->>S: Items reserved
+        S->>N: Send confirmation
+        S->>O: Confirm order
+    else Reservation fails
+        I-->>S: Reservation failed
+        S->>P: Refund (compensate)
+        S->>O: Cancel order (compensate)
+    end
 ```
+
+Pros: clear flow, easy to test and monitor. Cons: orchestrator is a single point of failure, tighter coupling.
+
+**Google's preference:** Orchestration for critical paths (payments, bookings). Choreography for non-critical, high-throughput event flows (analytics, notifications).
 
 ---
-
-## 5.9 Resilience Patterns
 
 ### Circuit Breaker
 
+A circuit breaker detects repeated downstream failures and "opens" the circuit to fail fast, preventing cascade failures.
+
 ```
-  PROBLEM: Service B is down. Service A keeps calling it,
-  waiting for timeout every time. Cascade failure!
-
-  CIRCUIT BREAKER (like an electrical circuit breaker):
-  ─────────────────────────────────────────────────────
-
-  ┌────────┐     calls     ┌────────┐      calls    ┌────────┐
-  │Service │ ──────────>   │Circuit │ ──────────>   │Service │
-  │   A    │               │Breaker │               │   B    │
-  └────────┘               └────────┘               └────────┘
-
-  States:
-  ┌──────────────────────────────────────────────────────────┐
-  │ CLOSED (normal)                                          │
-  │   All requests pass through to Service B.                │
-  │   If failures exceed threshold → switch to OPEN          │
-  ├──────────────────────────────────────────────────────────┤
-  │ OPEN (protecting)                                        │
-  │   All requests IMMEDIATELY FAIL (don't call B).          │
-  │   Return fallback response or error instantly.           │
-  │   After timeout → switch to HALF-OPEN                    │
-  ├──────────────────────────────────────────────────────────┤
-  │ HALF-OPEN (testing)                                      │
-  │   Allow ONE request through to test if B is recovered.   │
-  │   If success → switch to CLOSED                          │
-  │   If failure → switch back to OPEN                       │
-  └──────────────────────────────────────────────────────────┘
-
-  CLOSED ──(failures > threshold)──> OPEN ──(timeout)──> HALF-OPEN
-     ^                                                       │
-     └──────────────────(success)────────────────────────────┘
+  ┌────────┐  failures > threshold  ┌────────┐
+  │ CLOSED │ ────────────────────> │  OPEN  │  (fail fast, no call made)
+  └────────┘                        └────────┘
+       ▲                               │ timeout expires
+       │ probe succeeds                ▼
+       │                          ┌───────────┐
+       └───────────────────────── │ HALF-OPEN │  (allow ONE probe request)
+              probe fails  ──────┘
+              → back to OPEN
 ```
+
+```java
+public class CircuitBreaker {
+    enum State { CLOSED, OPEN, HALF_OPEN }
+
+    private State state = State.CLOSED;
+    private int failureCount = 0;
+    private final int failureThreshold = 5;
+    private long lastFailureTime = 0;
+    private final long timeoutMs = 30_000;
+
+    public <T> T execute(Supplier<T> action, Supplier<T> fallback) {
+        if (state == State.OPEN) {
+            if (System.currentTimeMillis() - lastFailureTime > timeoutMs) {
+                state = State.HALF_OPEN;
+            } else {
+                return fallback.get();  // Fail fast
+            }
+        }
+        try {
+            T result = action.get();
+            reset();
+            return result;
+        } catch (Exception e) {
+            recordFailure();
+            return fallback.get();
+        }
+    }
+
+    private void reset() {
+        failureCount = 0;
+        state = State.CLOSED;
+    }
+
+    private void recordFailure() {
+        failureCount++;
+        lastFailureTime = System.currentTimeMillis();
+        if (failureCount >= failureThreshold) {
+            state = State.OPEN;
+        }
+    }
+}
+```
+
+In production, use a library like Resilience4j (Java) instead of rolling your own.
+
+---
 
 ### Retry with Exponential Backoff
 
+When a transient failure occurs, retrying immediately amplifies the problem. Exponential backoff spaces retries exponentially: `wait_time = base * 2^attempt + random_jitter`.
+
+```java
+public <T> T retryWithBackoff(Supplier<T> action, int maxRetries) {
+    int attempt = 0;
+    while (true) {
+        try {
+            return action.get();
+        } catch (TransientException e) {
+            attempt++;
+            if (attempt > maxRetries) {
+                throw new RuntimeException("Max retries exceeded", e);
+            }
+            long waitMs = (long) (Math.pow(2, attempt) * 1000);  // 2s, 4s, 8s, 16s...
+            long jitter = ThreadLocalRandom.current().nextLong(0, waitMs / 2);
+            try {
+                Thread.sleep(waitMs + jitter);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ie);
+            }
+        }
+    }
+}
 ```
-  When a request fails, don't just retry immediately.
-  Wait longer between each retry to avoid overwhelming the server.
 
-  Attempt 1: fail → wait 1 second
-  Attempt 2: fail → wait 2 seconds
-  Attempt 3: fail → wait 4 seconds
-  Attempt 4: fail → wait 8 seconds
-  Attempt 5: fail → give up, return error
-
-  Add JITTER (random delay) to prevent thundering herd:
-  All clients retrying at exactly the same time = worse than the original problem!
-
-  wait_time = min(base * 2^attempt + random(0, 1), max_wait)
-```
+**Jitter is critical** — without it, all clients retry simultaneously (thundering herd). Google recommends full jitter: `random(0, base * 2^attempt)`.
 
 ---
 
-# PART 6: ARCHITECTURE PATTERNS
+## 14.9 Architecture Patterns
+
+Architecture patterns define how you organize code at the highest level — where business logic lives, how data flows, and which components depend on which.
 
 ---
 
-## 6.1 Layered Architecture
+### Layered Architecture
+
+The simplest and most common pattern. Code is organized into horizontal layers, each with a specific responsibility.
 
 ```
-  The most common architecture. Separate code into layers,
-  each with a specific responsibility.
+  ┌─────────────────────────────────┐
+  │      Presentation Layer          │   Controllers, views, API endpoints
+  │      (handles HTTP)              │
+  ├─────────────────────────────────┤
+  │      Business Logic Layer        │   Services, domain rules, validation
+  │      (the "why")                 │
+  ├─────────────────────────────────┤
+  │      Data Access Layer           │   Repositories, DAO, ORM queries
+  │      (talks to storage)          │
+  ├─────────────────────────────────┤
+  │      Database                    │   PostgreSQL, Redis, S3
+  └─────────────────────────────────┘
 
-  ┌────────────────────────────────────────────┐
-  │           PRESENTATION LAYER               │  UI, API controllers
-  │  (HTTP handlers, serialization, validation)│
-  ├────────────────────────────────────────────┤
-  │           BUSINESS LOGIC LAYER             │  Core rules, workflows
-  │  (Services, use cases, domain logic)       │
-  ├────────────────────────────────────────────┤
-  │           DATA ACCESS LAYER                │  Repositories, ORMs
-  │  (Database queries, external API calls)    │
-  ├────────────────────────────────────────────┤
-  │           INFRASTRUCTURE LAYER             │  Frameworks, drivers
-  │  (Database, message queues, file system)   │
-  └────────────────────────────────────────────┘
-
-  RULE: Dependencies flow DOWNWARD only.
-  Presentation depends on Business Logic.
-  Business Logic depends on Data Access.
-  NEVER the reverse.
+  RULE: Each layer only calls the layer directly below it.
+  Controllers → Services → Repositories → Database
+  NEVER: Controllers → Database (skipping the service layer)
 ```
+
+Pros: simple, clear separation. Cons: tight coupling between layers, business logic tends to leak into controllers or repositories.
 
 ---
 
-## 6.2 Clean / Hexagonal Architecture
+### Clean / Hexagonal Architecture
 
+Clean Architecture (Robert C. Martin) and Hexagonal Architecture (Alistair Cockburn) share the same core idea: **the domain is at the center and depends on nothing**. All dependencies point inward.
+
+```mermaid
+flowchart TB
+    subgraph External ["External (Frameworks, DB, UI)"]
+        direction TB
+        W[Web Controller]
+        DB[Database]
+        MQ[Message Queue]
+        EXT[External API]
+    end
+
+    subgraph Adapters ["Adapters (Interface Implementations)"]
+        direction TB
+        REST[REST Controller]
+        REPO[Repository Impl]
+        MSG[Message Publisher]
+    end
+
+    subgraph UseCases ["Application (Use Cases)"]
+        direction TB
+        UC1[CreateOrderUseCase]
+        UC2[ProcessPaymentUseCase]
+    end
+
+    subgraph Domain ["Domain (Entities + Business Rules)"]
+        direction TB
+        E1[Order Entity]
+        E2[Payment Entity]
+        E3[Domain Services]
+    end
+
+    W --> REST
+    REST --> UC1
+    UC1 --> E1
+    UC2 --> E2
+    UC1 -.->|uses interface| REPO
+    REPO --> DB
+    UC2 -.->|uses interface| MSG
+    MSG --> MQ
+
+    style Domain fill:#4CAF50,color:#fff
+    style UseCases fill:#2196F3,color:#fff
+    style Adapters fill:#FF9800,color:#fff
+    style External fill:#9E9E9E,color:#fff
 ```
-  CORE IDEA: Business logic is at the CENTER and depends on NOTHING.
-  External concerns (DB, UI, APIs) are on the OUTSIDE and are pluggable.
 
-  ┌──────────────────────────────────────────────────────────────┐
-  │                    EXTERNAL WORLD                             │
-  │  ┌─────────────────────────────────────────────────────────┐ │
-  │  │               ADAPTERS (Ports & Adapters)                │ │
-  │  │  ┌──────────────────────────────────────────────────┐   │ │
-  │  │  │            APPLICATION SERVICES                   │   │ │
-  │  │  │  ┌────────────────────────────────────────────┐  │   │ │
-  │  │  │  │                                            │  │   │ │
-  │  │  │  │         DOMAIN / BUSINESS LOGIC            │  │   │ │
-  │  │  │  │         (Entities, Value Objects,          │  │   │ │
-  │  │  │  │          Business Rules)                   │  │   │ │
-  │  │  │  │                                            │  │   │ │
-  │  │  │  │   NO dependencies on frameworks, DB, UI    │  │   │ │
-  │  │  │  └────────────────────────────────────────────┘  │   │ │
-  │  │  └──────────────────────────────────────────────────┘   │ │
-  │  │                                                         │ │
-  │  │  REST API adapter    PostgreSQL adapter    Email adapter│ │
-  │  └─────────────────────────────────────────────────────────┘ │
-  │  Web UI    CLI    Message Queue    Third-party APIs          │
-  └──────────────────────────────────────────────────────────────┘
+**The Dependency Rule:** Source code dependencies always point inward. The domain layer knows nothing about databases, HTTP, or message queues. It defines interfaces (ports) that outer layers implement (adapters).
 
-  The domain NEVER imports Flask, Django, SQLAlchemy, etc.
-  It defines INTERFACES (ports). Adapters implement them.
+```java
+// DOMAIN LAYER — no framework imports, no annotations
+public class Order {
+    private final OrderId id;
+    private OrderStatus status;
+    private final List<LineItem> items;
 
-  Want to switch from PostgreSQL to MongoDB?
-  Write a new adapter. Domain code stays untouched.
+    public Money calculateTotal() {
+        return items.stream()
+            .map(LineItem::subtotal)
+            .reduce(Money.ZERO, Money::add);
+    }
+
+    public void confirm() {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Only pending orders can be confirmed");
+        }
+        this.status = OrderStatus.CONFIRMED;
+    }
+}
+
+// PORT (interface defined in domain layer)
+public interface OrderRepository {
+    Order findById(OrderId id);
+    void save(Order order);
+}
+
+// ADAPTER (implementation in infrastructure layer)
+public class JpaOrderRepository implements OrderRepository {
+    private final JpaRepository<OrderEntity, Long> jpa;
+
+    @Override
+    public Order findById(OrderId id) {
+        return jpa.findById(id.value())
+            .map(this::toDomain)
+            .orElseThrow(() -> new OrderNotFoundException(id));
+    }
+}
 ```
+
+Your business logic becomes testable without any framework or database. You can swap PostgreSQL for MongoDB without touching domain code. Google expects this separation in senior-level design discussions.
 
 ---
 
-## 6.3 Domain-Driven Design (DDD) — Modeling Complex Business Logic
+### Domain-Driven Design (DDD)
 
-DDD is a way of designing software that focuses on the **business domain** — the real-world problem you're solving. The code should mirror how the business actually works.
+DDD is a set of patterns for modeling complex business domains. It is not an architecture — it is a way of thinking about the problem space.
 
-### Core DDD Concepts
+**Entities** have a unique identity that persists over time. `User(id=1, name="Alice")` and `User(id=2, name="Alice")` are different users.
 
-```
-  UBIQUITOUS LANGUAGE:
-  ────────────────────────────────────────────────────────
-  Everyone (developers, product managers, business experts)
-  uses the SAME words to describe the same things.
+**Value Objects** have no identity — defined by attributes only. `Money(100, "USD")` equals another `Money(100, "USD")`. Always immutable.
 
-  BAD: Developer says "User entity with order_id FK"
-       Business says "Customer places a purchase"
-       → Confusion! Translation errors!
+**Aggregates** are clusters of entities and value objects treated as a single unit. The aggregate root is the only entry point — call `order.addItem(item)`, never `order.getItems().add(item)`.
 
-  GOOD: Everyone says "Customer places an Order containing Order Items."
-       Code uses these EXACT same terms:
-       class Customer, class Order, class OrderItem
+**Repositories** provide collection-like access to aggregates. One repository per aggregate root.
 
-  The code IS the documentation of the business rules.
-```
+**Bounded Contexts** define clear model boundaries. "User" means credentials in Auth, payment methods in Billing, friends in Social. Each context has its own model, database, and team.
 
-```
-  BOUNDED CONTEXT:
-  ────────────────────────────────────────────────────────
-  A BOUNDARY within which a specific model and language apply.
-  The same word can mean different things in different contexts.
-
-  "Account" in Banking Context → bank account with balance
-  "Account" in Auth Context → login credentials, username, password
-  "Account" in Marketing Context → customer profile with preferences
-
-  Each bounded context has its own models, its own database,
-  and its own team. They communicate through well-defined interfaces.
-
-  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-  │  SALES CONTEXT    │  │  SHIPPING CONTEXT │  │  BILLING CONTEXT │
-  │                   │  │                   │  │                  │
-  │  Customer         │  │  Recipient        │  │  PayingCustomer  │
-  │  Order            │  │  Shipment         │  │  Invoice         │
-  │  Product          │  │  Package          │  │  Payment         │
-  │                   │  │                   │  │                  │
-  │  own database     │  │  own database     │  │  own database    │
-  └──────────────────┘  └──────────────────┘  └──────────────────┘
-         │                      │                      │
-         └──────────── communicate via events/APIs ────┘
-
-  In microservices, each bounded context typically = one microservice.
-```
-
-### DDD Building Blocks
-
-```
-  ENTITY:
-  ────────────────────────────────────────────────────────
-  An object with a unique IDENTITY that persists over time.
-  Two entities with the same data but different IDs are DIFFERENT.
-
-  Example: User(id=1, name="Alice") ≠ User(id=2, name="Alice")
-  Even though names match, they're different users.
-
-  VALUE OBJECT:
-  ────────────────────────────────────────────────────────
-  An object defined by its ATTRIBUTES, not by identity.
-  Two value objects with the same data ARE the same.
-
-  Example: Money(amount=10, currency="USD") = Money(amount=10, currency="USD")
-  Address(street="123 Main", city="NYC") = Address(street="123 Main", city="NYC")
-
-  Value objects are IMMUTABLE. To change, create a new one.
-
-  AGGREGATE:
-  ────────────────────────────────────────────────────────
-  A cluster of entities and value objects treated as a single unit.
-  Has one AGGREGATE ROOT — the entry point for all changes.
-
-  Example:
-  Order (aggregate root)
-    ├── OrderItem (entity)
-    ├── OrderItem (entity)
-    └── ShippingAddress (value object)
-
-  Rules:
-  - External code can ONLY reference the aggregate root (Order)
-  - Never reach inside to modify an OrderItem directly
-  - All changes go through Order: order.add_item(), order.cancel()
-  - One transaction = one aggregate. Never span aggregates in one transaction.
-
-  DOMAIN EVENT:
-  ────────────────────────────────────────────────────────
-  Something important that happened in the domain.
-  Past tense: OrderPlaced, PaymentReceived, ItemShipped.
-
-  class OrderPlaced:
-      order_id: str
-      customer_id: str
-      total: Money
-      placed_at: datetime
-
-  Domain events trigger reactions in other parts of the system:
-  OrderPlaced → Inventory reserves stock
-  OrderPlaced → Email sends confirmation
-  OrderPlaced → Analytics logs the sale
-```
-
-```
-  WHEN TO USE DDD:
-  ┌─────────────────────────────────────────────────────────────┐
-  │ USE DDD when:                                                │
-  │ ✓ Business logic is complex (many rules, edge cases)         │
-  │ ✓ Domain experts are available to collaborate                │
-  │ ✓ The project will be maintained for years                   │
-  │ ✓ Multiple teams work on the same system                     │
-  │                                                              │
-  │ SKIP DDD when:                                               │
-  │ ✗ Simple CRUD app (just forms and database)                  │
-  │ ✗ No domain expert access                                    │
-  │ ✗ Small team, short project                                  │
-  │ ✗ Prototype / MVP                                            │
-  └─────────────────────────────────────────────────────────────┘
-```
+**Ubiquitous Language** — code uses the same terms as the business. If the business says "Policy," the class is `Policy`, not `InsuranceDocument`.
 
 ---
-
-## 6.4 Event Sourcing & CQRS
 
 ### Event Sourcing
 
+Instead of storing the current state, store the sequence of events that led to the current state. To know the current state, replay all events from the beginning.
+
 ```
-  TRADITIONAL: Store the CURRENT state.
-  EVENT SOURCING: Store every EVENT that led to the current state.
+  TRADITIONAL (state-based):
+  Account table: { id: 1, balance: 750 }
 
-  TRADITIONAL (bank account):
-  ─────────────────────────
-  account_balance = $500    <- just the final number
+  EVENT SOURCING:
+  Event store:
+    1. AccountCreated { id: 1, initialBalance: 1000 }
+    2. MoneyWithdrawn { id: 1, amount: 200 }
+    3. MoneyDeposited { id: 1, amount: 50 }
+    4. MoneyWithdrawn { id: 1, amount: 100 }
 
-  EVENT SOURCED (bank account):
-  ─────────────────────────
-  Event 1: AccountOpened(amount=$0)
-  Event 2: MoneyDeposited(amount=$1000)
-  Event 3: MoneyWithdrawn(amount=$200)
-  Event 4: MoneyWithdrawn(amount=$300)
-  Current balance: $0 + $1000 - $200 - $300 = $500
+  Current balance = 1000 - 200 + 50 - 100 = 750 ✓
 
-  WHY? Full audit trail. Can rebuild state at any point in time.
-  Can replay events to fix bugs or migrate to new systems.
-
-  USED IN: Banking, accounting, e-commerce orders, Git (commits are events!)
+  You get a COMPLETE AUDIT TRAIL for free.
+  You can answer: "What was the balance on March 15?"
+  by replaying events up to that date.
 ```
+
+Pros: full audit trail, temporal queries, event-driven architectures. Cons: replay is slow (mitigate with snapshots), eventual consistency, harder to query (need read projections).
+
+---
 
 ### CQRS (Command Query Responsibility Segregation)
 
-```
-  TRADITIONAL: Same model for reads and writes.
-  CQRS: Separate models for reads (queries) and writes (commands).
+Separate the write model (commands) from the read model (queries). The write model is normalized for consistency. The read model is denormalized for query performance.
 
-  ┌──────────────────────────────────────────────────────────┐
-  │                                                          │
-  │  Commands (writes)          Queries (reads)              │
-  │       │                          │                       │
-  │       ▼                          ▼                       │
-  │  ┌──────────┐             ┌──────────────┐              │
-  │  │  Write   │   events    │   Read       │              │
-  │  │  Model   │ ──────────> │   Model      │              │
-  │  │(normalize│  (sync/     │(denormalized,│              │
-  │  │ for      │   async)    │ optimized    │              │
-  │  │ integrity│             │ for queries) │              │
-  │  └──────────┘             └──────────────┘              │
-  │       │                          │                       │
-  │       ▼                          ▼                       │
-  │  Write DB                   Read DB / Cache              │
-  │  (source of truth)         (optimized views)             │
-  │                                                          │
-  └──────────────────────────────────────────────────────────┘
-
-  WHY? Reads and writes have different optimization needs.
-  Reads: denormalized, fast, cached.
-  Writes: normalized, validated, consistent.
 ```
+  TRADITIONAL: Same model for reads AND writes
+  ┌──────────┐      ┌──────────┐
+  │  Client   │ ───> │ Same DB   │
+  │ (R + W)   │ <─── │ Same Model│
+  └──────────┘      └──────────┘
+
+  CQRS: Separate read and write paths
+  ┌──────────┐  Command   ┌──────────┐  Events   ┌──────────┐
+  │  Client   │ ────────> │ Write DB  │ ────────> │ Read DB   │
+  │           │           │(normalized)│           │(denorm'd) │
+  │           │  Query    └──────────┘           └──────────┘
+  │           │ ─────────────────────────────────────────┘
+  └──────────┘                      (fast reads)
+```
+
+**When to use:** Read and write patterns are fundamentally different, the read-to-write ratio is heavily skewed (100:1+), or you need to scale reads and writes independently. **When NOT to use:** Simple CRUD applications — CQRS adds unnecessary complexity.
 
 ---
 
-# PART 7: SECURITY FUNDAMENTALS
+## 14.10 Security Fundamentals
+
+Security is not a feature — it is a constraint that shapes every design decision. At Google, every engineer is expected to understand the basics.
 
 ---
 
-## 7.1 Authentication vs Authorization
+### Authentication vs Authorization
+
+**Authentication** answers "Who are you?" — verifying identity. Login with username/password, OAuth, biometrics.
+
+**Authorization** answers "What are you allowed to do?" — checking permissions. Role-based access control (RBAC), attribute-based access control (ABAC).
 
 ```
-  AUTHENTICATION (AuthN)             AUTHORIZATION (AuthZ)
-  ──────────────────────             ──────────────────────
-  "WHO are you?"                     "WHAT are you allowed to do?"
-
-  Proving your identity              Checking your permissions
-  (username + password,              (admin can delete, user
-   fingerprint, token)                can only read)
-
-  Happens FIRST                      Happens AFTER authentication
-
-  Example: Logging into Gmail        Example: Can you access the
-  with your password                 "Admin Settings" page?
+  Authentication → "You are Alice"         (identity)
+  Authorization  → "Alice can read orders" (permission)
+  
+  Authentication MUST happen before authorization.
+  You cannot check what someone is allowed to do
+  if you don't know who they are.
 ```
+
+---
 
 ### JWT (JSON Web Token)
 
-```
-  JWT = a self-contained token that carries user info.
-  The server doesn't need to store session state!
+A JWT is a self-contained, signed token that encodes claims (user ID, roles, expiry). The server does not need to store session state — the token itself contains everything needed to validate the request.
 
-  Structure:
-  ───────────────────────────────────────────────────
-  HEADER.PAYLOAD.SIGNATURE
-
-  Header:  {"alg": "HS256", "typ": "JWT"}
-  Payload: {"user_id": 123, "role": "admin", "exp": 1700000000}
-  Signature: HMAC-SHA256(header + "." + payload, secret_key)
-
-  HOW IT WORKS:
-  ┌──────────┐  1. Login (username, password)  ┌──────────┐
-  │          │ ──────────────────────────────> │          │
-  │  Client  │  2. Returns JWT token           │  Server  │
-  │          │ <────────────────────────────── │          │
-  │          │  3. Every request: sends JWT     │          │
-  │          │    in Authorization header       │          │
-  │          │ ──────────────────────────────> │          │
-  │          │  4. Server validates JWT sig     │          │
-  │          │    (no DB lookup needed!)        │          │
-  └──────────┘                                 └──────────┘
-
-  PROS: Stateless, scalable, works across services
-  CONS: Can't revoke (until expiry), payload is NOT encrypted (just encoded)
-```
-
-### OAuth 2.0 — Delegated Authorization
+Structure: `header.payload.signature`
 
 ```
-  "Let this app access my Google Drive WITHOUT giving it my Google password."
-
-  ┌──────────┐     1. "I want to access       ┌──────────┐
-  │          │        user's photos"           │          │
-  │ Your App │ ──────────────────────────────> │  Google  │
-  │ (Client) │     2. Google asks user:        │ (Auth    │
-  │          │        "Allow this app?"        │  Server) │
-  │          │                                 │          │
-  │          │     3. User clicks "Allow"      │          │
-  │          │                                 │          │
-  │          │     4. Google gives access_token │          │
-  │          │ <────────────────────────────── │          │
-  │          │                                 │          │
-  │          │     5. Use token to get photos  │  Google  │
-  │          │ ──────────────────────────────> │  Photos  │
-  │          │     6. Here are the photos      │  (Resource│
-  │          │ <────────────────────────────── │  Server) │
-  └──────────┘                                 └──────────┘
-
-  Your app NEVER sees the user's Google password.
-  The token has LIMITED scope (only photos, not email).
-  The token EXPIRES (short-lived).
+  eyJhbGciOiJIUzI1NiJ9.           ← Header (algorithm: HS256)
+  eyJzdWIiOiIxMjM0NTY3ODkwIn0.    ← Payload (claims: sub, iat, exp, roles)
+  SflKxwRJSMeKKF2QT4fwpMeJf36POk  ← Signature (HMAC of header+payload+secret)
 ```
-
----
-
-## 7.2 Common Security Threats (OWASP Top 10)
-
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  THREAT                  │ WHAT IT IS           │ PREVENTION     │
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ SQL Injection            │ Malicious SQL in     │ Parameterized  │
-  │                          │ user input           │ queries, ORMs  │
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ XSS (Cross-Site         │ Injecting scripts    │ Escape output, │
-  │  Scripting)              │ into web pages       │ CSP headers    │
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ Broken Authentication   │ Weak passwords,      │ MFA, rate      │
-  │                          │ session hijacking    │ limiting, bcrypt│
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ Broken Access Control   │ Users accessing       │ RBAC, check    │
-  │                          │ unauthorized data    │ permissions    │
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ CSRF (Cross-Site        │ Forged requests      │ CSRF tokens,   │
-  │  Request Forgery)        │ from other sites     │ SameSite cookies│
-  ├──────────────────────────┼──────────────────────┼────────────────┤
-  │ Sensitive Data Exposure │ Unencrypted PII      │ HTTPS, encrypt │
-  │                          │ in transit/at rest   │ at rest, mask  │
-  └──────────────────────────┴──────────────────────┴────────────────┘
-
-  SQL INJECTION EXAMPLE:
-  ─────────────────────────────────────────────────────
-  // BAD (Java):
-  String query = "SELECT * FROM users WHERE name = '" + userInput + "'";
-  // userInput = "'; DROP TABLE users; --"
-  // Result: your entire table is deleted!
-
-  // GOOD (Java — PreparedStatement):
-  PreparedStatement stmt = conn.prepareStatement(
-      "SELECT * FROM users WHERE name = ?");
-  stmt.setString(1, userInput);
-  ResultSet rs = stmt.executeQuery();
-  // Result: treated as data, not code. Safe!
-```
-
----
-
-# PART 8: JAVA CONCURRENCY ESSENTIALS (Google Interview Must-Know)
-
----
-
-## 8.1 Why Concurrency Matters at Google
-
-```
-  Google serves BILLIONS of requests per day. Every service must handle
-  thousands of concurrent connections. Understanding concurrency is
-  NON-NEGOTIABLE for a Google Senior Engineer interview.
-```
-
-## 8.2 Thread Safety Fundamentals
 
 ```java
-  // PROBLEM: Two threads incrementing the same counter
-  public class UnsafeCounter {
-      private int count = 0;
+// Creating a JWT
+String token = Jwts.builder()
+    .setSubject(user.getId())
+    .claim("roles", user.getRoles())
+    .setIssuedAt(new Date())
+    .setExpiration(new Date(System.currentTimeMillis() + 3600_000))
+    .signWith(SignatureAlgorithm.HS256, secretKey)
+    .compact();
 
-      public void increment() {
-          count++;   // NOT atomic! Read → Modify → Write = race condition
-      }
-  }
-
-  // Thread 1: reads count=5, increments to 6
-  // Thread 2: reads count=5 (BEFORE Thread 1 writes!), increments to 6
-  // Expected: 7. Actual: 6. Lost update!
-
-  // FIX 1: synchronized
-  public class SafeCounter {
-      private int count = 0;
-
-      public synchronized void increment() {     // only one thread at a time
-          count++;
-      }
-  }
-
-  // FIX 2: AtomicInteger (lock-free, faster)
-  public class AtomicCounter {
-      private final AtomicInteger count = new AtomicInteger(0);
-
-      public void increment() {
-          count.incrementAndGet();   // atomic compare-and-swap (CAS)
-      }
-  }
-
-  // FIX 3: ConcurrentHashMap (thread-safe Map)
-  // BAD:  HashMap with external synchronization (error-prone)
-  // GOOD: ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
-  //       map.merge(key, 1, Integer::sum);   // atomic increment per key
+// Validating a JWT
+Claims claims = Jwts.parser()
+    .setSigningKey(secretKey)
+    .parseClaimsJws(token)
+    .getBody();
+String userId = claims.getSubject();
 ```
 
-## 8.3 Common Concurrency Patterns
+**Key rules:** Never store secrets in the payload (it is Base64-encoded, not encrypted). Use short expiry (15-60 min) with refresh tokens. Use RS256 (asymmetric) over HS256 when multiple services validate tokens.
+
+---
+
+### OAuth 2.0 — Authorization Code Flow
+
+OAuth 2.0 delegates authorization to a trusted third party. The Authorization Code flow is the standard for web applications.
+
+```mermaid
+sequenceDiagram
+    participant U as User (Browser)
+    participant A as Your App (Client)
+    participant AS as Auth Server (Google)
+    participant R as Resource Server (Google API)
+
+    U->>A: Click "Login with Google"
+    A->>U: Redirect to Google login
+    U->>AS: Login + consent
+    AS->>U: Redirect back with auth code
+    U->>A: Auth code in callback URL
+    A->>AS: Exchange code + client_secret for tokens
+    AS->>A: Access token + refresh token
+    A->>R: API request with access token
+    R->>A: Protected resource (user profile)
+```
+
+Never expose the client secret in frontend code. The code-for-token exchange happens server-to-server.
+
+---
+
+### OWASP Top 10 — Common Vulnerabilities
+
+#### SQL Injection
+
+Untrusted input is concatenated into a SQL query, allowing attackers to execute arbitrary SQL.
 
 ```java
-  // PRODUCER-CONSUMER (with BlockingQueue)
-  // ────────────────────────────────────────────────────────
-  BlockingQueue<Task> queue = new LinkedBlockingQueue<>(100);
-
-  // Producer thread:
-  queue.put(new Task("process-order"));    // blocks if queue is full
-
-  // Consumer thread:
-  Task task = queue.take();                // blocks if queue is empty
-  task.execute();
-
-  // Used in: Thread pools, message processing, work distribution
-
-
-  // THREAD POOL (ExecutorService)
-  // ────────────────────────────────────────────────────────
-  ExecutorService pool = Executors.newFixedThreadPool(10);
-
-  // Submit tasks:
-  Future<Result> future = pool.submit(() -> processOrder(order));
-
-  // Get result (blocks until complete):
-  Result result = future.get(5, TimeUnit.SECONDS);
-
-  // Google best practice: always set pool sizes explicitly.
-  // Avoid Executors.newCachedThreadPool() — unbounded thread creation!
-
-
-  // COMPLETABLEFUTURE (async composition — modern Java)
-  // ────────────────────────────────────────────────────────
-  CompletableFuture<User> userFuture = CompletableFuture
-      .supplyAsync(() -> userService.getUser(userId))          // async call 1
-      .thenCompose(user -> orderService.getOrders(user.getId()))// chain call 2
-      .thenApply(orders -> enrichWithRecommendations(orders))   // transform
-      .exceptionally(ex -> fallbackResponse());                 // error handling
-
-  // This is how Google services chain RPCs without blocking threads.
-
-
-  // READ-WRITE LOCK (many readers OR one writer)
-  // ────────────────────────────────────────────────────────
-  private final ReadWriteLock lock = new ReentrantReadWriteLock();
-  private final Map<String, String> cache = new HashMap<>();
-
-  public String get(String key) {
-      lock.readLock().lock();       // multiple readers can enter simultaneously
-      try { return cache.get(key); }
-      finally { lock.readLock().unlock(); }
-  }
-
-  public void put(String key, String value) {
-      lock.writeLock().lock();      // only ONE writer, blocks all readers
-      try { cache.put(key, value); }
-      finally { lock.writeLock().unlock(); }
-  }
+// VULNERABLE: String query = "SELECT * FROM users WHERE name = '" + userInput + "'";
+// SAFE — parameterized query
+PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE name = ?");
+stmt.setString(1, userInput);  // Input is escaped automatically
 ```
 
-## 8.4 Concurrency Pitfalls to Know
+#### Cross-Site Scripting (XSS)
 
+Untrusted input is rendered as HTML, allowing attackers to inject malicious scripts.
+
+```java
+// VULNERABLE: "<p>Welcome, " + userName + "</p>"  → script injection
+// SAFE — escape HTML entities
+String html = "<p>Welcome, " + HtmlUtils.htmlEscape(userName) + "</p>";
 ```
-  ┌────────────────────┬──────────────────────────────────────────────────┐
-  │ Pitfall            │ What It Is                                        │
-  ├────────────────────┼──────────────────────────────────────────────────┤
-  │ Race Condition     │ Two threads access shared state without sync.     │
-  │                    │ Result depends on who runs first. Non-deterministic│
-  ├────────────────────┼──────────────────────────────────────────────────┤
-  │ Deadlock           │ Thread A holds Lock 1, waits for Lock 2.          │
-  │                    │ Thread B holds Lock 2, waits for Lock 1.          │
-  │                    │ Both wait forever. Fix: always lock in same order.│
-  ├────────────────────┼──────────────────────────────────────────────────┤
-  │ Starvation         │ Low-priority thread never gets to run because     │
-  │                    │ high-priority threads always grab the lock.       │
-  ├────────────────────┼──────────────────────────────────────────────────┤
-  │ Livelock           │ Threads keep responding to each other but         │
-  │                    │ make no progress (like two people in a hallway    │
-  │                    │ both stepping aside to the same side).            │
-  ├────────────────────┼──────────────────────────────────────────────────┤
-  │ False Sharing      │ Two threads modify different variables that       │
-  │                    │ happen to be on the same CPU cache line.          │
-  │                    │ Performance tanks due to cache invalidation.      │
-  └────────────────────┴──────────────────────────────────────────────────┘
 
-  GOOGLE INTERVIEW TIP: If asked to design a concurrent system,
-  always discuss: thread safety, deadlock prevention, and how you'd
-  test for race conditions.
+#### Cross-Site Request Forgery (CSRF)
+
+A malicious site tricks the user's browser into making an authenticated request to your site.
+
+```java
+// SAFE — CSRF token per session
+String csrfToken = UUID.randomUUID().toString();
+session.setAttribute("csrf_token", csrfToken);
+// Validate on every POST/PUT/DELETE:
+if (!expected.equals(request.getParameter("csrf_token")))
+    throw new SecurityException("CSRF token mismatch");
+```
+
+Also use `SameSite=Strict` cookies and validate `Origin`/`Referer` headers.
+
+---
+
+## 14.11 Java Concurrency
+
+Google processes millions of requests per second. Every request touches multiple threads. Understanding Java concurrency is not optional for a senior engineer — it is table stakes.
+
+---
+
+### Thread Safety
+
+A class is thread-safe if it behaves correctly when accessed from multiple threads simultaneously, with no additional synchronization from the caller.
+
+**Race Condition** — Two threads read-modify-write a shared variable, and the final value depends on who runs last.
+
+```java
+// NOT THREAD-SAFE — count++ is read-modify-write (3 ops, not 1)
+public class UnsafeCounter {
+    private int count = 0;
+    public void increment() { count++; }  // Two threads: both read 5, both write 6. Lost update!
+}
+
+// THREAD-SAFE with synchronized — only one thread at a time
+public class SafeCounter {
+    private int count = 0;
+    public synchronized void increment() { count++; }
+    public synchronized int getCount() { return count; }
+}
+```
+
+**`volatile`** — Ensures visibility across threads. Without it, a thread might never see another thread's write due to CPU caching. `volatile` does NOT provide atomicity — it only guarantees reads see the latest write.
+
+```java
+private volatile boolean running = true;  // All threads see updates immediately
+// Thread A sets running = false; Thread B will see the change.
+// Without volatile, Thread B might loop forever with a stale cached value.
 ```
 
 ---
 
-# PART 9: GOOGLE SYSTEM DESIGN INTERVIEW TIPS
+### Atomic Classes
+
+`java.util.concurrent.atomic` provides lock-free, thread-safe operations using CPU-level compare-and-swap (CAS) instructions. Faster than `synchronized` for simple counters and references.
+
+```java
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+// AtomicInteger — thread-safe counter without locks
+AtomicInteger counter = new AtomicInteger(0);
+counter.incrementAndGet();          // Atomically: count++, return new value
+counter.addAndGet(5);               // Atomically: count += 5, return new value
+counter.compareAndSet(6, 0);        // If count == 6, set to 0. Return true if swapped.
+
+// AtomicReference — thread-safe reference swap
+AtomicReference<Config> configRef = new AtomicReference<>(loadConfig());
+// Another thread updates config:
+configRef.set(newConfig);
+// Reader thread always sees a consistent Config object:
+Config current = configRef.get();
+```
+
+Use `AtomicInteger` for simple counters, `AtomicReference` for atomically swapping entire objects (e.g., config reload).
 
 ---
 
-## 9.1 What Google Looks For in Senior Engineers
+### ConcurrentHashMap
+
+`HashMap` is not thread-safe. Concurrent reads and writes can cause infinite loops (in Java 7) or lost updates (Java 8+). Two alternatives:
+
+```java
+// BAD — coarse-grained lock on ALL operations
+Map<String, Integer> map = Collections.synchronizedMap(new HashMap<>());
+
+// GOOD — fine-grained lock-striping, concurrent reads
+ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+map.computeIfAbsent("key", k -> expensiveCompute(k));  // Atomic compute
+map.merge("key", 1, Integer::sum);                       // Atomic increment
+```
+
+`ConcurrentHashMap` uses fine-grained lock-striping — different threads can write to different segments simultaneously, and reads are almost always lock-free.
+
+---
+
+### ExecutorService — Thread Pool Management
+
+Creating a new thread per request is expensive (~1MB stack each). Thread pools reuse a fixed set of threads.
+
+```java
+// Fixed pool — exactly N threads. Use for CPU-bound work.
+ExecutorService pool = Executors.newFixedThreadPool(
+    Runtime.getRuntime().availableProcessors()
+);
+
+// Cached pool — creates threads as needed, reuses idle ones. Use for I/O-bound.
+ExecutorService cached = Executors.newCachedThreadPool();
+
+// Submitting tasks
+Future<String> future = pool.submit(() -> {
+    return fetchFromDatabase(userId);
+});
+String result = future.get();  // Blocks until done
+
+// ALWAYS shut down when done
+pool.shutdown();
+pool.awaitTermination(30, TimeUnit.SECONDS);
+```
+
+**Production rule:** Never use `newCachedThreadPool()` in a server — it creates unlimited threads. Use `new ThreadPoolExecutor(core, max, keepAlive, unit, boundedQueue)` with explicit rejection policy.
+
+---
+
+### CompletableFuture — Async Composition
+
+`CompletableFuture` enables non-blocking, composable asynchronous programming. Essential for building reactive pipelines.
+
+```java
+// Sequential: fetch user → fetch orders → format
+CompletableFuture<String> result = CompletableFuture
+    .supplyAsync(() -> userService.getUser(userId))
+    .thenApply(user -> orderService.getOrders(user.getId()))
+    .thenApply(orders -> formatResponse(orders))
+    .exceptionally(ex -> "Error: " + ex.getMessage());
+
+// Parallel: fetch user AND recommendations simultaneously, combine
+CompletableFuture<User> userF = CompletableFuture.supplyAsync(() -> getUser(id));
+CompletableFuture<List<Item>> recsF = CompletableFuture.supplyAsync(() -> getRecs(id));
+CompletableFuture<Page> page = userF.thenCombine(recsF, Page::new);
+```
+
+Key methods: `supplyAsync` (run), `thenApply` (map), `thenCompose` (flatMap), `thenCombine` (join two), `allOf`/`anyOf` (fan-out).
+
+---
+
+### Concurrency Pitfalls
+
+**Deadlock** — Thread A holds Lock 1 and waits for Lock 2. Thread B holds Lock 2 and waits for Lock 1. Neither can proceed.
+
+```java
+// Thread A: synchronized(lock1) { synchronized(lock2) { ... } }
+// Thread B: synchronized(lock2) { synchronized(lock1) { ... } }
+// → Thread A holds lock1, waits for lock2. Thread B holds lock2, waits for lock1. DEADLOCK.
+```
+
+**Prevention:** Always acquire locks in a consistent global order. **Starvation** — a thread never runs because higher-priority threads monopolize the lock. **Livelock** — two threads keep responding to each other but neither progresses.
+
+---
+
+## 14.12 System Design Interview Framework
+
+A structured approach keeps you on track during the 45-minute interview. Interviewers are evaluating your process, not just your answer.
+
+---
+
+### Step 1: Requirements (5 minutes)
+
+Clarify before you design. Ask questions. Never assume.
+
+**Functional requirements** — What does the system DO?
+- "Users can shorten a URL and get redirected when they visit the short URL"
+- "Users can send messages in real-time to other online users"
+
+**Non-functional requirements** — HOW WELL does it do it?
+- Scale: How many users? How many requests per second?
+- Latency: What is the acceptable response time? (p99 < 200ms?)
+- Availability: How many nines? (99.9% = 8.7 hours downtime/year)
+- Consistency: Can we tolerate stale data? For how long?
+- Durability: Can we ever lose data?
+
+---
+
+### Step 2: Estimation (3 minutes)
+
+Back-of-envelope math demonstrates you think at scale.
 
 ```
-  Google Senior Engineer (L5) interviews focus on:
-
-  ┌──────────────────────────────────────────────────────────────────┐
-  │ 1. SCALE THINKING                                                 │
-  │    "How does this work with 1 billion users?"                     │
-  │    Don't design for 1000 users. Design for Google scale.          │
-  │                                                                   │
-  │ 2. TRADE-OFF ANALYSIS                                             │
-  │    Every choice has pros and cons. Discuss them explicitly.        │
-  │    "I chose AP over CP because for a social feed, slightly stale  │
-  │     data is acceptable but downtime isn't."                       │
-  │                                                                   │
-  │ 3. DEPTH + BREADTH                                                │
-  │    Know the full stack: from DNS → Load Balancer → App → DB.      │
-  │    But also go DEEP on any component when asked.                  │
-  │                                                                   │
-  │ 4. COMMUNICATION                                                  │
-  │    Think out loud. Draw diagrams. Ask questions.                   │
-  │    A silent candidate who writes a perfect design LOSES to a      │
-  │    communicative candidate who explains their reasoning.           │
-  │                                                                   │
-  │ 5. GOOGLE TECH AWARENESS                                          │
-  │    Know Google's systems (don't name-drop, but show you understand│
-  │    the concepts behind them):                                      │
-  │    - Bigtable → wide-column NoSQL store                            │
-  │    - Spanner → globally distributed SQL with strong consistency    │
-  │    - MapReduce → batch processing at scale                         │
-  │    - Pub/Sub → managed message queue                               │
-  │    - Borg/Kubernetes → container orchestration                     │
-  │    - Protocol Buffers → binary serialization (like gRPC)           │
-  │    - Colossus/GFS → distributed file system                        │
-  └──────────────────────────────────────────────────────────────────┘
+  URL Shortener estimation:
+  ─────────────────────────────────────────────
+  100M new URLs/month
+  = ~40 URLs/second (write QPS)
+  
+  Read:write ratio = 100:1
+  = ~4,000 reads/second (read QPS)
+  
+  Each URL: ~500 bytes (short code + original URL + metadata)
+  100M × 500 bytes = 50 GB/month
+  50 GB × 12 months × 5 years = 3 TB total storage
+  
+  Peak load = 2-3x average → plan for ~10K read QPS
 ```
 
 ---
 
-# PART 10: SYSTEM DESIGN INTERVIEW FRAMEWORK
+### Step 3: High-Level Design (10 minutes)
 
----
-
-## The Step-by-Step Approach
+Draw the major components and how they connect. Start broad, refine later.
 
 ```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  SYSTEM DESIGN INTERVIEW: 4 STEPS (45 minutes)                  │
-  ├─────────────────────────────────────────────────────────────────┤
-  │                                                                 │
-  │  STEP 1: REQUIREMENTS (5 min)                                   │
-  │  ─────────────────────────────                                  │
-  │  Ask clarifying questions. Don't assume!                        │
-  │  - Functional: What features? What can users do?                │
-  │  - Non-functional: Scale? Latency? Availability?                │
-  │  - Constraints: DAU? QPS? Storage? Read vs write heavy?         │
-  │                                                                 │
-  │  STEP 2: HIGH-LEVEL DESIGN (15 min)                             │
-  │  ──────────────────────────────────                             │
-  │  Draw the big boxes and arrows.                                 │
-  │  - Client → Load Balancer → App Servers → Database              │
-  │  - Identify core components (services, databases, caches)       │
-  │  - Define APIs between components                               │
-  │                                                                 │
-  │  STEP 3: DEEP DIVE (20 min)                                     │
-  │  ───────────────────────────                                    │
-  │  Interviewer picks 1-2 components to dig into.                  │
-  │  - Data model / schema design                                   │
-  │  - Scaling bottlenecks and solutions                            │
-  │  - Algorithm details (ranking, search, matching)                │
-  │  - Caching strategy, database choice, consistency               │
-  │                                                                 │
-  │  STEP 4: WRAP UP (5 min)                                        │
-  │  ────────────────────────                                       │
-  │  - Summarize design decisions and tradeoffs                     │
-  │  - Mention monitoring, alerting, deployment                     │
-  │  - Discuss failure scenarios and mitigation                     │
-  │  - Suggest future improvements                                  │
-  │                                                                 │
-  └─────────────────────────────────────────────────────────────────┘
-```
-
-### Common System Design Problems
-
-```
-  ┌───────────────────────┬────────────────────────────────────────┐
-  │ Problem               │ Key Components to Discuss               │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ URL Shortener         │ Hashing, base62, read-heavy cache      │
-  │ (TinyURL)             │ 301 vs 302 redirect, analytics         │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Twitter / News Feed   │ Fan-out on write vs read, timeline     │
-  │                       │ service, caching, celebrity problem    │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Chat System           │ WebSockets, presence service,          │
-  │ (WhatsApp)            │ message storage, delivery receipts     │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Web Crawler           │ BFS/DFS, URL frontier, politeness,     │
-  │                       │ dedup (bloom filter), robots.txt       │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Notification System   │ Push vs pull, delivery guarantees,     │
-  │                       │ rate limiting, priority queues         │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Rate Limiter          │ Token bucket, sliding window,          │
-  │                       │ distributed Redis counter              │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Distributed Cache     │ Consistent hashing, replication,       │
-  │                       │ eviction policies, hot keys            │
-  ├───────────────────────┼────────────────────────────────────────┤
-  │ Search Autocomplete   │ Trie data structure, ranking,          │
-  │                       │ caching popular queries                │
-  └───────────────────────┴────────────────────────────────────────┘
+  URL Shortener — High-Level Design:
+  ──────────────────────────────────────────────────────
+  
+  ┌──────┐     ┌──────────┐     ┌──────────────┐     ┌──────┐
+  │Client│────>│API Gateway│────>│  App Server   │────>│  DB  │
+  └──────┘     │(rate limit│     │(shorten/      │     │(URLs)│
+               │ auth)     │     │ redirect)     │     └──────┘
+               └──────────┘     └──────────────┘         │
+                                      │                   │
+                                ┌──────────┐         ┌──────┐
+                                │  Cache   │         │Counter│
+                                │ (Redis)  │         │Service│
+                                └──────────┘         └──────┘
+  
+  Write path: Client → Gateway → App → generate short code → store in DB
+  Read path:  Client → Gateway → App → check Cache → (miss?) → DB → cache it → redirect
 ```
 
 ---
 
-# PART 11: REVIEW QUESTIONS — TEST YOUR UNDERSTANDING
+### Step 4: Deep Dive (20 minutes)
+
+The interviewer picks a component. Common deep-dives: data model (tables, indexes, sharding), scaling bottleneck (what breaks at 10x?), failure modes (cache down, mid-write crash), consistency (eventual vs strong, race conditions).
 
 ---
 
-## Design Principles
+### Step 5: Tradeoffs and Alternatives (5 minutes)
 
-1. Explain the Single Responsibility Principle. Give an example of a class that violates it and show how to fix it.
-2. What's the difference between the Open/Closed Principle and the Strategy Pattern? How do they relate?
-3. Your colleague argues "Composition over Inheritance" but another says inheritance is fine for an `Animal -> Dog -> GoldenRetriever` hierarchy. Who's right? When?
-4. What is Dependency Inversion? Why does it make testing easier?
+No design is perfect. Acknowledge tradeoffs: "I chose SQL for consistency, but it limits horizontal scaling — Cloud Spanner could solve this." "Cache-aside means cache misses are slower — write-through for hot keys is an alternative." Always present at least one alternative approach.
 
-## Design Patterns
+---
 
-5. When would you use a Factory Pattern instead of just calling `new`?
-6. Explain the Observer Pattern. How is it different from a message queue?
-7. You need to add logging, caching, and rate-limiting to an API client without modifying its code. Which pattern(s) would you use?
-8. What's the difference between Adapter and Facade? Give one example of each.
+### Common Designs to Practice
 
-## System Design
-
-9. Explain CAP theorem. Your system is an e-commerce cart. Do you choose CP or AP? Why?
-10. You have a service handling 10,000 QPS with 50ms average latency. You need to get to 100,000 QPS. What strategies would you consider?
-11. Explain the difference between horizontal and vertical scaling. At what point do you NEED horizontal scaling?
-12. Your database has 1 billion rows and reads are slowing down. Walk through your troubleshooting steps.
-
-## Database & API
-
-13. When would you choose NoSQL over SQL? Give three specific scenarios.
-14. Explain database sharding. What are the challenges?
-15. What's the difference between REST, GraphQL, and gRPC? When would you use each?
-
-## Distributed Systems
-
-16. What is a Circuit Breaker? Draw the state diagram.
-17. Explain eventual consistency. Give an example where it's acceptable and one where it's not.
-18. Compare cache-aside and write-through caching. When would you use each?
-
-## Architecture
-
-19. Explain Clean Architecture in three sentences. What is the Dependency Rule?
-20. What is CQRS and when would you use it? What problems does it solve?
-
-<details>
-<summary>Selected Answers</summary>
-
-**Q4:** Dependency Inversion means high-level modules depend on abstractions (interfaces), not concrete implementations. This makes testing easier because you can inject mock implementations. Instead of `OrderService` depending on `MySQLDatabase`, it depends on a `Database` interface. In tests, you inject `MockDatabase` — no real DB needed.
-
-**Q7:** Decorator Pattern — wrap the API client in layers: `LoggingDecorator(CachingDecorator(RateLimitDecorator(realClient)))`. Each decorator adds behavior without modifying the original. Alternatively, use Proxy pattern for each concern.
-
-**Q9:** AP for a shopping cart. If there's a network partition, you'd rather let the customer keep adding items (availability) and reconcile any inconsistencies later, than show them an error page. A temporarily stale cart is better than a broken checkout experience.
-
-**Q10:** Strategies for 10x QPS: (1) Add caching layer (Redis) for frequent reads, (2) Horizontal scaling with load balancer, (3) Database read replicas, (4) CDN for static content, (5) Async processing for non-critical work, (6) Connection pooling, (7) Consider sharding if DB is the bottleneck.
-
-**Q12:** Troubleshooting slow reads on 1B rows: (1) Check EXPLAIN plan for slow queries, (2) Add missing indexes on WHERE/JOIN columns, (3) Check for N+1 query problems, (4) Add read replicas for read-heavy workloads, (5) Implement caching for hot data, (6) Consider partitioning/sharding the table, (7) Archive old data to reduce table size.
-
-**Q19:** Clean Architecture organizes code in concentric layers where the innermost layer (domain/business logic) has zero external dependencies. The outer layers (UI, database, frameworks) depend inward. The Dependency Rule: source code dependencies must point INWARD — nothing in an inner circle can know about anything in an outer circle.
-
-</details>
+| System | Key Challenges |
+|--------|----------------|
+| URL Shortener | ID generation, read-heavy caching, analytics |
+| Rate Limiter | Distributed counting, token bucket, sliding window |
+| Chat System | WebSockets, message ordering, online presence |
+| Notification Service | Multi-channel, priority queues, delivery guarantees |
+| Distributed Cache | Consistent hashing, eviction, cache stampede |
+| News Feed | Fan-out on write vs read, ranking, celebrity problem |
+| Search Autocomplete | Trie, ranking by frequency, prefix matching |
+| File Storage | Chunking, deduplication, sync conflicts |
 
 ---
 
@@ -3337,47 +2683,134 @@ DDD is a way of designing software that focuses on the **business domain** — t
 
 ```
 ╔══════════════════════════════════════════════════════════════════════╗
-║  DESIGN FUNDAMENTALS CHEAT SHEET                                     ║
-║  ────────────────────────────────────────────────────────────────   ║
+║  DESIGN FUNDAMENTALS — SECOND HALF CHEAT SHEET                      ║
+║  ────────────────────────────────────────────────────────────────    ║
 ║                                                                      ║
-║  PRINCIPLES:                                                         ║
-║  SOLID = SRP + OCP + LSP + ISP + DIP                                ║
-║  DRY = don't duplicate knowledge; KISS = simplest solution wins     ║
-║  YAGNI = don't build it until you need it                           ║
-║  Composition over Inheritance = prefer HAS-A over IS-A              ║
-║  High Cohesion + Low Coupling = the ultimate design goal            ║
+║  APIs:                                                               ║
+║  REST for public APIs, gRPC for internal, GraphQL for flexible reads║
+║  Make POST idempotent with idempotency keys                         ║
+║  Use cursor-based pagination for anything at scale                  ║
 ║                                                                      ║
-║  PATTERNS:                                                           ║
-║  Factory = create without knowing exact type                        ║
-║  Observer = notify many when one changes                            ║
-║  Strategy = swap algorithms at runtime                              ║
-║  Decorator = add behavior without modifying original                ║
-║  Adapter = make incompatible interfaces work together               ║
+║  DATABASES:                                                          ║
+║  Start with SQL. Move to NoSQL only for a specific access pattern   ║
+║  Normalize writes (3NF), denormalize reads (materialized views)     ║
+║  Index the columns you query. Column order in composites matters    ║
+║  Fix N+1 queries with JOINs. Shard by access pattern, not by size  ║
 ║                                                                      ║
-║  SYSTEM DESIGN:                                                      ║
-║  Scale: start vertical, go horizontal when needed                   ║
-║  CAP: in practice, choose CP or AP (P is mandatory)                 ║
-║  Latency: measure p50/p95/p99, not averages                        ║
-║  Cache: cache-aside is most common; LRU for eviction                ║
-║  Queues: decouple services; Kafka for streaming, SQS for tasks     ║
-║  DB: SQL for consistency + joins; NoSQL for scale + flexibility     ║
-║  Normalize DB to 3NF, denormalize intentionally for read speed     ║
-║  APIs: make POST idempotent with idempotency keys                  ║
-║  Rate limit: token bucket is the standard algorithm                 ║
+║  DISTRIBUTED SYSTEMS:                                                ║
+║  Start monolith, extract microservices when justified                ║
+║  Cache-aside + LRU is the default caching pattern                   ║
+║  Kafka for event streaming, SQS for task queues                     ║
+║  Token bucket for rate limiting, consistent hashing for sharding    ║
+║  Circuit breaker for resilience, exponential backoff for retries    ║
 ║                                                                      ║
 ║  ARCHITECTURE:                                                       ║
-║  Start monolith, extract microservices when justified               ║
-║  Clean Architecture: domain at center, dependencies point inward    ║
-║  DDD: bounded contexts, entities, value objects, aggregates         ║
-║  CQRS: separate read and write models when they have different needs║
-║  Sagas: orchestration or choreography for distributed transactions  ║
+║  Clean Architecture: domain depends on nothing, dependencies inward ║
+║  DDD: bounded contexts, aggregates, ubiquitous language             ║
+║  CQRS: separate read/write models when access patterns diverge      ║
 ║                                                                      ║
-║  INTERVIEWS:                                                         ║
-║  Step 1: Requirements → Step 2: High-Level → Step 3: Deep Dive     ║
-║  Always discuss TRADEOFFS. There is no perfect design.              ║
+║  SECURITY: JWT for stateless auth, OAuth 2.0 for delegation         ║
+║  CONCURRENCY: Prefer AtomicInteger/ConcurrentHashMap over sync      ║
+║  INTERVIEWS: Requirements → Estimation → Design → Deep dive → Tradeoffs ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-**Back to Start:** [README — Table of Contents](../README.md)
+## Review Questions
+
+Test yourself on the material above. Click to reveal each answer.
+
+**1. What are the six REST constraints, and which one is optional?**
+<details>
+<summary>Answer</summary>
+Client-Server, Stateless, Cacheable, Uniform Interface, Layered System, and Code on Demand. Code on Demand (server sending executable code to the client) is the only optional constraint.
+</details>
+
+**2. When would you choose gRPC over REST?**
+<details>
+<summary>Answer</summary>
+For internal microservice-to-microservice communication where low latency matters, when you need streaming (server, client, or bidirectional), in polyglot environments where code generation from a single .proto file saves effort, or when binary serialization (protobuf) significantly reduces payload size compared to JSON.
+</details>
+
+**3. What is an idempotency key and why is it necessary for POST requests?**
+<details>
+<summary>Answer</summary>
+An idempotency key is a unique identifier (typically a UUID) sent by the client in a request header. The server stores the key with the response. If the same key is sent again (e.g., due to network retry), the server returns the cached response instead of re-executing the operation. This prevents duplicate resource creation — critical for payment processing where a retry should not double-charge a customer.
+</details>
+
+**4. Explain the difference between 1NF, 2NF, and 3NF.**
+<details>
+<summary>Answer</summary>
+1NF: Every column contains atomic (indivisible) values — no arrays or comma-separated lists. 2NF: 1NF plus every non-key column depends on the entire composite primary key, not just part of it. 3NF: 2NF plus no transitive dependencies — every non-key column depends directly on the primary key, not through another non-key column.
+</details>
+
+**5. Why does column order matter in a composite index?**
+<details>
+<summary>Answer</summary>
+Because of the leftmost prefix rule. An index on (A, B, C) supports queries filtering on A, A+B, or A+B+C, but NOT B alone or C alone. The database can only use the index by matching columns from left to right. This is like a phone book sorted by last name, then first name — you can look up by last name, but searching by first name alone requires a full scan.
+</details>
+
+**6. What is the N+1 query problem and how do you fix it?**
+<details>
+<summary>Answer</summary>
+The N+1 problem occurs when code fetches a list of N parent records (1 query) and then fetches related data for each record individually (N queries). Example: fetching 100 orders, then 100 separate queries to get each order's user. Fix it with a JOIN (single query that fetches both tables) or batch loading (WHERE id IN (...) for the related records). In GraphQL, use DataLoader to batch and cache per-request.
+</details>
+
+**7. Compare cache-aside, write-through, and write-back caching strategies.**
+<details>
+<summary>Answer</summary>
+Cache-aside: Application checks cache first; on miss, reads from DB and populates cache. Simple and only caches requested data, but cache misses are slower. Write-through: Application writes to cache, and cache synchronously writes to DB. Cache is always consistent, but write latency is higher. Write-back: Application writes to cache, cache asynchronously flushes to DB later. Fastest writes, but risk of data loss if cache crashes before flushing.
+</details>
+
+**8. When should you use Kafka vs a simple message queue like SQS?**
+<details>
+<summary>Answer</summary>
+Use Kafka when you need event replay (consumers can re-read old messages), multiple independent consumers need the same data, ordering within a partition matters, or you are building an event-driven/event-sourcing architecture. Use SQS for simple task queues where messages are processed once and deleted, like sending emails or processing background jobs — simpler to operate, no infrastructure to manage.
+</details>
+
+**9. Explain the three states of a circuit breaker.**
+<details>
+<summary>Answer</summary>
+Closed (normal): Requests flow through to the downstream service. The circuit breaker tracks failures. If failures exceed a threshold, it transitions to Open. Open (tripped): All requests fail immediately without calling the downstream service (fail fast). After a configured timeout, it transitions to Half-Open. Half-Open (probing): Allows a single test request through. If it succeeds, the circuit returns to Closed. If it fails, it returns to Open.
+</details>
+
+**10. What is the Dependency Rule in Clean Architecture?**
+<details>
+<summary>Answer</summary>
+Source code dependencies must always point inward — toward higher-level policies (the domain). The domain layer at the center depends on nothing. Use cases depend only on the domain. Adapters depend on use cases and domain. Frameworks and external systems (databases, web frameworks) are in the outermost layer and depend on everything, but nothing depends on them. This is achieved through dependency inversion — the domain defines interfaces (ports) that outer layers implement (adapters).
+</details>
+
+**11. What is a bounded context in DDD and why does it matter?**
+<details>
+<summary>Answer</summary>
+A bounded context is an explicit boundary within which a particular domain model applies. The same real-world concept (e.g., "User") can have different meanings in different contexts — in Authentication it has credentials and sessions, in Billing it has payment methods, in Social it has friends. Each bounded context has its own model, database, and team. This prevents a single bloated model that tries to serve every use case and ensures each team can evolve its model independently.
+</details>
+
+**12. Why is jitter important in retry with exponential backoff?**
+<details>
+<summary>Answer</summary>
+Without jitter, all clients that failed at the same time will retry at the same time (after 2s, 4s, 8s, etc.), creating a "thundering herd" that overwhelms the recovering service. Jitter adds randomness to the wait time, spreading retries over a time window instead of concentrating them at a single point. Google recommends full jitter: wait_time = random(0, base * 2^attempt).
+</details>
+
+**13. What is the difference between `synchronized` and `AtomicInteger` in Java?**
+<details>
+<summary>Answer</summary>
+`synchronized` uses mutual exclusion (locks) — only one thread can enter the synchronized block at a time. It works for any complex operation but has overhead from lock acquisition and can cause contention. `AtomicInteger` uses lock-free compare-and-swap (CAS) CPU instructions — faster for simple operations (increment, compare-and-set) because threads do not block each other. Use `AtomicInteger` for simple counters; use `synchronized` when you need to guard multiple operations as a single atomic unit.
+</details>
+
+**14. What are the five steps of a system design interview?**
+<details>
+<summary>Answer</summary>
+Step 1: Requirements — clarify functional and non-functional requirements (5 min). Step 2: Estimation — back-of-envelope calculations for QPS, storage, bandwidth (3 min). Step 3: High-level design — draw major components and their interactions (10 min). Step 4: Deep dive — the interviewer picks a component and you go deep on data model, scaling, failure modes, consistency (20 min). Step 5: Tradeoffs and alternatives — acknowledge limitations and discuss what you would change under different constraints (5 min).
+</details>
+
+**15. You are designing a notification service at Google scale (1B users, 10B notifications/day). What database, messaging, and caching choices would you make, and why?**
+<details>
+<summary>Answer</summary>
+Database: Use Bigtable or Cassandra for notification storage — write-heavy workload (10B writes/day) with simple key-based lookups (get notifications by user_id + timestamp). SQL cannot handle this write volume on a single node without sharding, and the access pattern does not require joins. Messaging: Use Kafka (or Cloud Pub/Sub) — notifications come from many source services, multiple consumers need the same events (push service, email service, SMS service), and you need replay capability for reprocessing failures. Caching: Use Redis with cache-aside for user preferences and device tokens — these are read on every notification send and change infrequently. Use TTL-based eviction (preferences rarely change, so 1-hour TTL is sufficient). For the notification feed itself, cursor-based pagination over Bigtable is fast enough without caching the feed — Bigtable handles the read throughput natively.
+</details>
+
+---
+
+**Previous:** [Chapter 13 — Large Language Models](13_llm.md) | **Next:** [Chapter 15 — ML Interview Questions](15_interview_questions.md)

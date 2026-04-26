@@ -228,6 +228,27 @@ The penalty strength $\lambda$ is the single most important hyperparameter. High
 }
 ```
 
+### Implementation
+
+```python
+# sklearn
+from sklearn.linear_model import LinearRegression
+model = LinearRegression().fit(X_train, y_train)
+predictions = model.predict(X_test)
+print(f"R² = {model.score(X_test, y_test):.3f}")
+print(f"Coefficients: {dict(zip(feature_names, model.coef_))}")
+
+# From scratch — gradient descent
+import numpy as np
+def linear_regression_gd(X, y, lr=0.01, epochs=1000):
+    X = np.c_[np.ones(len(X)), X]  # add bias column
+    w = np.zeros(X.shape[1])
+    for _ in range(epochs):
+        grad = (2 / len(X)) * X.T @ (X @ w - y)
+        w -= lr * grad
+    return w  # w[0] = intercept, w[1:] = coefficients
+```
+
 ---
 
 ## 9.3 Logistic Regression — Deep Dive
@@ -342,6 +363,28 @@ The default threshold of 0.5 is rarely optimal. Adjust it based on the cost of e
     }
   }
 }
+```
+
+### Implementation
+
+```python
+# sklearn
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression(C=1.0, max_iter=1000).fit(X_train, y_train)
+probs = model.predict_proba(X_test)[:, 1]  # P(class=1)
+
+# From scratch
+import numpy as np
+def sigmoid(z): return 1 / (1 + np.exp(-z))
+
+def logistic_regression_gd(X, y, lr=0.01, epochs=1000):
+    X = np.c_[np.ones(len(X)), X]
+    w = np.zeros(X.shape[1])
+    for _ in range(epochs):
+        p = sigmoid(X @ w)
+        grad = X.T @ (p - y) / len(X)
+        w -= lr * grad
+    return w
 ```
 
 ---
@@ -573,6 +616,17 @@ Random Forest provides two importance measures:
 }
 ```
 
+### Implementation
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier(n_estimators=200, max_depth=10,
+                            min_samples_leaf=5, random_state=42, n_jobs=-1)
+rf.fit(X_train, y_train)
+print(f"OOB Score: {rf.oob_score_:.3f}")  # requires oob_score=True
+importances = dict(zip(feature_names, rf.feature_importances_))
+```
+
 ---
 
 ## 9.6 Gradient Boosting — The Competition King
@@ -687,6 +741,93 @@ graph LR
     }
   }
 }
+```
+
+### Histogram-Based Splitting — Why LightGBM Is Faster
+
+> Standard gradient boosting evaluates every unique value of every feature at every split — O(n x features x unique_values). Histogram-based methods bucket continuous features into ~256 bins first, reducing split evaluation to O(bins x features).
+
+This is the single biggest reason LightGBM trains 5-10x faster than vanilla XGBoost on large datasets. XGBoost added histogram support (`tree_method='hist'`) but LightGBM was built for it from day one.
+
+### Leaf-Wise vs Level-Wise Growth
+
+```
+  LEVEL-WISE (XGBoost default):     LEAF-WISE (LightGBM):
+  ────────────────────────────       ─────────────────────────
+  Grows all nodes at same depth      Grows the leaf with highest loss reduction
+  
+  Level 1:    [root]                 Step 1:   [root]
+              /    \                           /    \
+  Level 2:  [A]    [B]              Step 2:  [A]    B
+             /\     /\                        /\
+  Level 3: [C][D] [E][F]            Step 3: [C] D
+  
+  → Balanced tree, slower to fit     → Asymmetric, reaches lower loss faster
+  → Less prone to overfitting        → Can overfit — control with num_leaves
+```
+
+### CatBoost — Ordered Boosting
+
+> CatBoost prevents **target leakage** in categorical encoding by using a time-ordered permutation: when encoding the category value for example i, it only uses labels from examples 1..i-1, never from i itself.
+
+This eliminates the subtle overfitting that happens with standard target encoding (where the target mean for a category leaks future information into the encoding). CatBoost also uses **oblivious trees** (all nodes at the same depth use the same split feature and threshold), which makes prediction extremely fast via bit manipulation.
+
+### Tuning Strategy — What to Tune First
+
+```
+  PRIORITY ORDER (tune top to bottom):
+  ────────────────────────────────────────────────
+  1. n_estimators + learning_rate (inverse relationship)
+     → Start: 300 trees, lr=0.1. Then try 1000 trees, lr=0.03.
+  
+  2. max_depth / num_leaves (model complexity)
+     → XGBoost: max_depth 4-8
+     → LightGBM: num_leaves 20-100 (≈ 2^depth - 1)
+  
+  3. subsample + colsample_bytree (regularization)
+     → Both 0.7-0.9 usually works
+  
+  4. min_child_weight / min_data_in_leaf (leaf constraints)
+     → Prevents tiny leaves. Start with 20-50.
+  
+  5. reg_alpha (L1) + reg_lambda (L2)
+     → Only if still overfitting after steps 1-4
+```
+
+```chart
+{
+  "type": "bar",
+  "data": {
+    "labels": ["XGBoost", "LightGBM", "CatBoost"],
+    "datasets": [
+      { "label": "Training Time (s)", "data": [120, 25, 45], "backgroundColor": "rgba(239, 68, 68, 0.7)" },
+      { "label": "AUC-ROC (%)", "data": [94.2, 94.5, 94.8], "backgroundColor": "rgba(34, 197, 94, 0.7)" }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "GBM Framework Comparison — 1M Rows, 50 Features, Binary Classification" } },
+    "scales": { "y": { "beginAtZero": true } }
+  }
+}
+```
+
+### Implementation — XGBoost vs LightGBM
+
+```python
+import xgboost as xgb
+import lightgbm as lgb
+
+# XGBoost
+xgb_model = xgb.XGBClassifier(n_estimators=300, max_depth=6,
+    learning_rate=0.1, subsample=0.8, colsample_bytree=0.8)
+xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)],
+              early_stopping_rounds=20, verbose=False)
+
+# LightGBM — typically 3-5x faster
+lgb_model = lgb.LGBMClassifier(n_estimators=300, num_leaves=31,
+    learning_rate=0.1, subsample=0.8, colsample_bytree=0.8)
+lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)],
+              callbacks=[lgb.early_stopping(20), lgb.log_evaluation(0)])
 ```
 
 ---
@@ -1065,6 +1206,21 @@ The independence assumption is almost always wrong — features ARE correlated. 
 }
 ```
 
+### Implementation — Text Classification
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+
+spam_pipeline = Pipeline([
+    ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2))),
+    ('nb', MultinomialNB(alpha=1.0))  # alpha = Laplace smoothing
+])
+spam_pipeline.fit(train_texts, train_labels)
+predictions = spam_pipeline.predict(test_texts)
+```
+
 ---
 
 ## 9.10 Time & Space Complexity Comparison
@@ -1318,6 +1474,172 @@ graph TD
   }
 }
 ```
+
+### 2026 Update: GBMs Still Dominate Tabular Data
+
+Recent Kaggle competitions and benchmarks (2025-2026) continue to show gradient boosting (LightGBM, XGBoost, CatBoost) as the clear winner on tabular/structured data. In a meta-analysis of 200+ Kaggle competitions, GBMs won 70%+ of tabular competitions.
+
+**When to consider neural nets for tabular data:**
+- **TabNet** (Google, 2019): attention-based, built-in feature selection, works without feature engineering. Occasionally matches GBMs but rarely beats them, and trains much slower.
+- **FT-Transformer** (2021): applies Transformer architecture to tabular data with feature tokenization. Competitive with GBMs on some datasets but 10-50x slower to train.
+- **TabPFN** (2022): meta-learned prior-fitted network. Impressive on small datasets (< 10K rows) but doesn't scale.
+
+**Bottom line:** Start with LightGBM. Try CatBoost if you have many categorical features. Only reach for neural-net tabular approaches if GBMs plateau AND you have a very large dataset with complex feature interactions.
+
+---
+
+## 9.13 Practical Algorithm Tuning
+
+> **Hyperparameter tuning** is the process of finding the configuration that maximizes validation performance. The right tuning strategy can improve a model by 2-5% — often more impactful than switching algorithms.
+
+### The Tuning Workflow
+
+```mermaid
+flowchart LR
+    A[Baseline<br/>Default Params] --> B[Random Search<br/>50-100 trials]
+    B --> C[Bayesian Optimization<br/>Optuna / HyperOpt]
+    C --> D[Final Model<br/>Retrain on Full Data]
+```
+
+**Step 1: Baseline.** Train with default hyperparameters. This is your floor — everything must beat it.
+
+**Step 2: Random Search.** Randomly sample 50-100 configurations from reasonable ranges. This beats grid search because it explores the space more efficiently (most hyperparameters have only 1-2 dimensions that truly matter).
+
+**Step 3: Bayesian Optimization.** Use Optuna or HyperOpt to intelligently explore around the best configurations found by random search. Usually 50-100 more trials.
+
+```python
+# Optuna example — tuning LightGBM
+import optuna
+import lightgbm as lgb
+from sklearn.model_selection import cross_val_score
+
+def objective(trial):
+    params = {
+        'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
+        'num_leaves': trial.suggest_int('num_leaves', 15, 127),
+        'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
+    }
+    model = lgb.LGBMClassifier(**params, random_state=42, verbose=-1)
+    score = cross_val_score(model, X_train, y_train, cv=5, scoring='roc_auc')
+    return score.mean()
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=100)
+print(f"Best AUC: {study.best_value:.4f}")
+print(f"Best params: {study.best_params}")
+```
+
+### The 80/20 of Hyperparameters
+
+Not all hyperparameters are created equal. These are the ones that actually move the needle:
+
+```
+  ALGORITHM            │ TUNE THESE FIRST             │ USUALLY LEAVE DEFAULT
+  ─────────────────────┼──────────────────────────────┼──────────────────────
+  Linear / Logistic    │ C (regularization), penalty  │ solver, tol
+  Decision Tree        │ max_depth, min_samples_leaf  │ criterion, splitter
+  Random Forest        │ n_estimators, max_depth,     │ bootstrap, criterion
+                       │ min_samples_leaf             │
+  XGBoost / LightGBM   │ n_estimators, learning_rate, │ reg_alpha/lambda
+                       │ max_depth/num_leaves,        │ (unless overfitting)
+                       │ subsample, colsample_bytree  │
+  SVM                  │ C, gamma (RBF), kernel       │ shrinking, cache_size
+  KNN                  │ n_neighbors, weights, metric │ algorithm, leaf_size
+```
+
+### Feature Importance — MDI vs Permutation vs SHAP
+
+```
+  METHOD              │ WHAT IT MEASURES                   │ CAVEAT
+  ────────────────────┼────────────────────────────────────┼───────────────────────
+  MDI (impurity-      │ Total impurity reduction from      │ Biased toward high-
+  based, default)     │ splits using that feature          │ cardinality features
+  ────────────────────┼────────────────────────────────────┼───────────────────────
+  Permutation         │ Accuracy drop when feature is      │ Slow; correlated
+  Importance          │ randomly shuffled                  │ features split credit
+  ────────────────────┼────────────────────────────────────┼───────────────────────
+  SHAP                │ Per-prediction contribution        │ Slowest; gold standard
+                      │ based on Shapley values            │ for explanation
+```
+
+> **Rule of thumb:** Use permutation importance for model selection (reliable, fast enough). Use SHAP when you need to explain individual predictions to stakeholders.
+
+### Debugging Checklist — "My Model Won't Learn"
+
+```
+  □ Is the data loaded correctly? (Check shapes, dtypes, NaN counts)
+  □ Are features scaled? (Critical for SVM, KNN, logistic regression)
+  □ Is target encoding correct? (Binary 0/1, not strings)
+  □ Is there data leakage? (Future info in features? Target in features?)
+  □ Is class imbalance extreme? (Try class_weight='balanced')
+  □ Are there constant/near-constant features? (Drop them)
+  □ Is the train/val split time-ordered if data is temporal?
+  □ Is learning rate too high? (Loss oscillating instead of decreasing)
+  □ Is the model too simple for the pattern? (Try a more complex model)
+  □ Is there enough data? (Try learning curves — does more data help?)
+```
+
+---
+
+## 9.14 Model Calibration
+
+> **Calibration** means a model's predicted probabilities match the actual frequencies. If a model says "80% chance of spam" for 100 emails, roughly 80 of them should actually be spam.
+
+Most models are NOT well-calibrated out of the box. Logistic regression tends to be well-calibrated; tree-based models (Random Forest, GBMs) and neural networks are often poorly calibrated — they produce overconfident or underconfident probabilities.
+
+### Why Calibration Matters
+
+- **Ads bidding:** If your CTR model predicts 5% click probability but the true rate is 3%, you'll overbid and waste budget.
+- **Medical diagnosis:** A model saying "90% chance of cancer" when the true probability is 60% causes unnecessary anxiety and invasive procedures.
+- **Multi-model systems:** When combining scores from different models (e.g., relevance score + freshness score), they must be on the same scale.
+
+### Calibration Methods
+
+**Platt Scaling:** Fit a logistic regression on the model's raw scores to map them to calibrated probabilities. Works well when the calibration curve is roughly sigmoid-shaped.
+
+**Isotonic Regression:** Fit a non-parametric, monotonically increasing function. More flexible than Platt scaling but needs more data (risk of overfitting with < 1000 samples).
+
+```python
+from sklearn.calibration import CalibratedClassifierCV
+
+# Platt scaling (sigmoid)
+calibrated_model = CalibratedClassifierCV(base_model, method='sigmoid', cv=5)
+calibrated_model.fit(X_train, y_train)
+
+# Isotonic regression
+calibrated_model = CalibratedClassifierCV(base_model, method='isotonic', cv=5)
+calibrated_model.fit(X_train, y_train)
+```
+
+### Reliability Diagram
+
+A calibration plot divides predictions into bins (e.g., 0-0.1, 0.1-0.2, ..., 0.9-1.0) and compares the mean predicted probability in each bin against the actual fraction of positives.
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": ["0.0-0.1", "0.1-0.2", "0.2-0.3", "0.3-0.4", "0.4-0.5", "0.5-0.6", "0.6-0.7", "0.7-0.8", "0.8-0.9", "0.9-1.0"],
+    "datasets": [
+      { "label": "Perfect Calibration", "data": [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95], "borderColor": "rgba(150,150,150,0.5)", "borderDash": [5,5], "fill": false, "pointRadius": 0 },
+      { "label": "Uncalibrated GBM", "data": [0.02, 0.08, 0.18, 0.25, 0.38, 0.52, 0.71, 0.85, 0.95, 0.99], "borderColor": "rgba(239, 68, 68, 1)", "fill": false, "tension": 0.3 },
+      { "label": "After Platt Scaling", "data": [0.06, 0.14, 0.24, 0.33, 0.44, 0.54, 0.64, 0.76, 0.84, 0.94], "borderColor": "rgba(34, 197, 94, 1)", "fill": false, "tension": 0.3 }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "Reliability Diagram — Before and After Calibration" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Actual Positive Rate" }, "min": 0, "max": 1 },
+      "x": { "title": { "display": true, "text": "Predicted Probability Bin" } }
+    }
+  }
+}
+```
+
+The diagonal dashed line is perfect calibration. The closer your curve is to that line, the better calibrated your model is.
 
 ---
 
