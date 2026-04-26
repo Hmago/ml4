@@ -723,10 +723,33 @@ function showDashboard() {
             <div class="db-hero-ring-sub">${doneH}h of ${totalH}h studied</div>
           </div>
           <div class="db-hero-main">
+            <div class="db-hero-info-row">
+              <div class="db-hero-info-card">
+                <div class="db-hero-info-icon">${ico.calendar}</div>
+                <div>
+                  <div class="db-hero-info-label">Started</div>
+                  <div class="db-hero-info-value">${startDate}</div>
+                </div>
+              </div>
+              <div class="db-hero-info-card">
+                <div class="db-hero-info-icon">${ico.flag}</div>
+                <div>
+                  <div class="db-hero-info-label">Status</div>
+                  <div class="db-hero-info-value">${completionDate}</div>
+                </div>
+              </div>
+              <div class="db-hero-info-card">
+                <div class="db-hero-info-icon">${ico.flame}</div>
+                <div>
+                  <div class="db-hero-info-label">Streak</div>
+                  <div class="db-hero-info-value">${data.streak} day${data.streak !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+            </div>
             <div class="db-hero-progress">
               <div class="db-hero-progress-label">
                 <span>Chapter progress</span>
-                <span>${readCount} of ${realCh.length}</span>
+                <span class="db-hero-progress-count">${readCount} of ${realCh.length}</span>
               </div>
               <div class="db-hero-progress-bar"><div class="db-hero-progress-fill" style="width:${pct}%"></div></div>
             </div>
@@ -736,9 +759,6 @@ function showDashboard() {
                 <span class="db-hero-level-xp">${data.xp} XP &middot; ${xpProgress}/100 to next</span>
               </div>
               <div class="db-xp-track"><div class="db-xp-fill" id="dashXpFill" style="width:0%"></div></div>
-            </div>
-            <div class="db-hero-meta">
-              ${ico.calendar} Started ${startDate} &nbsp;&middot;&nbsp; ${ico.flag} ${completionDate}
             </div>
           </div>
         </div>
