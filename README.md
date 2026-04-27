@@ -164,96 +164,121 @@ ication   sion            ing       sionality      Learning Learning
 ### Chapter Dependency Map
 
 ```
-                         (numbers match file prefixes)
-  ─────────────────────────────────────────────────────────────
+  HOW CHAPTERS BUILD ON EACH OTHER
+  ═══════════════════════════════════════════════════════════
 
+  PHASE 1: FOUNDATIONS
+  ────────────────────
   Ch 0 (Strategy) ← read first if targeting Google
     │
     ▼
-  Ch 3 (Introduction)
+  Ch 3 (Intro to ML)
     │
-    ├──── Ch 2 (Math Fundamentals) ← review as needed
+    ├── Ch 2 (Math) ← reference as needed, don't read cover-to-cover
     ▼
-  Ch 4 (Core Concepts) ──────────────────────────────────────┐
-    │                                                         │
-    ├──────────────┬──────────────┐                           │
-    ▼              ▼              ▼                           │
-  Ch 5 (Data     Ch 6 (Super-  Ch 7 (Unsuper-  Ch 8 (RL)    │
-  Preprocess.)   vised)        vised)                        │
-    │              │              │              │            │
-    └──────┬───────┘              │              │            │
-           ▼                      │              │            │
-         Ch 9 (Key Algorithms)    │              │            │
-           │                      │              │            │
-           ▼                      ▼              │            │
-         Ch 11 (Evaluation) ◄─────┘              │            │
-           │                                     │            │
-           ▼                                     │            │
-         Ch 10 (Neural Networks) ◄───────────────┘            │
-           │                                                  │
-           ▼                                                  │
-         Ch 12 (Deep Learning)                                │
-           │                                                  │
-           ▼                                                  │
-         Ch 13 (LLMs) ◄──────────────────────────────────────┘
-           │
-           ▼
-         Ch 22 (Modern AI Stack — Agents, MCP, Skills)
-           │
-           ├─────────────────────────────────────────┐
-           ▼                                         ▼
-         Ch 15, 16, 20 (Interview Qs)         Ch 17 (ML System Design)
-                                                     │
-                                                     ▼
-                                              Ch 14 (Design Fundamentals)
-                                                     │
-                                                     ▼
-                                              Modern System Design
+  Ch 4 (Core Concepts) ← most important foundation chapter
+    │
+    ▼
+  Ch 5 (Data Preprocessing)
 
-  (Independently, at any time)
-  ────────────────────────────
-  Ch 18 (DSA & Coding)  ← practice alongside core curriculum
-  Ch 19 (Google ML Ecosystem) ← read before Google interviews
-  Behavioral Interview ← prepare stories in parallel
-  DSA Practice (400+ problems) ← code daily alongside study
+  PHASE 2: THE THREE PILLARS
+  ──────────────────────────
+  Ch 4 unlocks all three:
+
+  Ch 6 (Supervised)     Ch 7 (Unsupervised)     Ch 8 (RL)
+       │                     │                       │
+       ▼                     │                       │
+  Ch 9 (Algorithms)          │                       │
+       │                     │                       │
+       ▼                     │                       │
+  Ch 11 (Evaluation)         │                       │
+       │                     │                       │
+       └─────────────────────┘───────────────────────┘
+                             │
+  PHASE 3: DEEP LEARNING     ▼
+  ──────────────────────
+  Ch 10 (Neural Networks) ← needs Ch 6 + Ch 9 + Ch 11
+       │
+       ▼
+  Ch 12 (Deep Learning)
+       │
+       ▼
+  Ch 13 (LLMs) ← the big one: 9 hours
+       │
+       ▼
+  Ch 22 (Modern AI — Agents, MCP, 2026)
+
+  PHASE 4: INTERVIEW PREP
+  ───────────────────────
+  Ch 15, 16, 20 (Interview Questions)
+  Ch 17 (ML System Design)
+  Ch 14 (Design Fundamentals)
+  Modern System Design
+  Behavioral Interview
+
+  PARALLEL TRACKS (start any time, practice daily):
+  ─────────────────────────────────────────────────
+  Ch 18 (DSA) + DSA Practice (400+ problems)
+  Ch 19 (Google ML Ecosystem) ← read before interviews
+  Practical ML ← hands-on project experience
 ```
 
-### Five Learning Tracks
+### Six Learning Tracks
 
 ```
-  TRACK 1: Beginner Fast Track (~11.5 hours)
+  TRACK 1: Beginner Fast Track (~14 hours)
   ──────────────────────────────────────────
-  Ch 3 → Ch 4 → Ch 5 → Ch 6 → Ch 11
-  Get the foundations. Enough to understand ML conversations
-  and start building simple models.
+  Ch 3 (Intro) → Ch 4 (Core Concepts) → Ch 5 (Data) →
+  Ch 6 (Supervised) → Ch 9 (Algorithms) → Ch 11 (Evaluation)
+  Get solid foundations. Understand ML conversations and
+  build simple models. Enough for junior ML roles.
 
-  TRACK 2: Full ML Engineer (~38 hours)
+  TRACK 2: Full ML Engineer (~40 hours)
   ──────────────────────────────────────────
-  Ch 3 → Ch 2 → Ch 4 → Ch 5 → Ch 6 → Ch 7 → Ch 8 → Ch 9 →
-  Ch 10 → Ch 11 → Ch 12 → Ch 13
-  Complete core curriculum. Solid ML understanding.
+  Track 1 → Ch 7 (Unsupervised) → Ch 8 (RL) →
+  Ch 10 (Neural Nets) → Ch 12 (Deep Learning) →
+  Ch 13 (LLMs) → Ch 22 (Modern AI)
+  Complete core curriculum. Strong enough for mid-level roles.
 
-  TRACK 3: LLM / AI Focus (~29.5 hours)
+  TRACK 3: LLM & Modern AI Focus (~34 hours)
   ──────────────────────────────────────────
-  Ch 3 → Ch 4 → Ch 10 → Ch 12 → Ch 13 → Ch 22 → Ch 16
-  Fastest path to understanding modern AI, LLMs, and the
-  2026 agent / MCP / tool-use landscape. Skip classical ML.
+  Ch 3 → Ch 4 → Ch 6 (Supervised — need loss functions) →
+  Ch 10 (Neural Nets) → Ch 11 (Evaluation — need metrics) →
+  Ch 12 (Deep Learning) → Ch 13 (LLMs) →
+  Ch 22 (Agents/MCP) → Ch 16 (LLM Interview Qs)
+  Fastest path to modern AI fluency. Skips classical ML depth
+  but covers the prerequisites LLMs depend on. Includes Ch 11
+  because LLM evaluation (perplexity, BLEU, MMLU) needs it.
 
   TRACK 4: Google AI Engineer (~102 hours — full prep)
   ──────────────────────────────────────────
-  Ch 0 (strategy!) → Full ML Engineer track (incl. Ch 22) →
-  Ch 15 → Ch 16 → Ch 20 (Top 10 ML Topics) →
-  Ch 17 (ML System Design) → Ch 14 (Design Fundamentals) →
-  Modern System Design → Behavioral Interview →
-  Ch 19 (Google Ecosystem) → Ch 18 (DSA) →
-  DSA Practice → Practical ML
-  Complete Google-specific preparation path.
+  Ch 0 (Strategy — read first!) →
+  Track 2 (full core curriculum) →
+  Ch 14 (Design Fundamentals — do BEFORE system design) →
+  Ch 17 (ML System Design) → Modern System Design →
+  Ch 15 + Ch 16 + Ch 20 (Interview Questions) →
+  Behavioral Interview → Ch 19 (Google Ecosystem) →
+  Ch 18 (DSA) → DSA Practice (aim for 200+ problems) →
+  Practical ML
+  The complete path. Plan 12-16 weeks.
 
-  TRACK 5: System Design Focus (~22 hours)
+  TRACK 5: System Design Focus (~14 hours)
   ──────────────────────────────────────────
-  Ch 14 (Design Fundamentals) → Ch 17 (ML System Design) →
-  Modern System Design → Ch 20 (Top 10: Topic 10)
-  For engineers preparing specifically for system design rounds.
+  Ch 14 (Design Fundamentals — SOLID, patterns, DBs, caching) →
+  Ch 17 (ML System Design — 7 full designs) →
+  Modern System Design
+  For experienced engineers focusing on design rounds.
+  Prerequisite: ML fundamentals (Track 1 or equivalent) —
+  you can't design ML systems without knowing what models are.
+  Add Ch 20 Topics 4, 6, 10 for deeper ML design context.
+
+  TRACK 6: DSA Grind (~8 hours reading + practice)
+  ──────────────────────────────────────────
+  Ch 18 (DSA theory — all 27 sections, Big-O through DP) →
+  DSA Practice (start with Easy, progress to Medium/Hard)
+  Target: 2 problems/day for 12 weeks = 168 problems.
+  Focus order: Arrays → Trees → Graphs → DP → Sliding Window.
+  For anyone whose primary gap is coding interviews.
 ```
 
 ---
