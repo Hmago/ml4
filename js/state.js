@@ -65,7 +65,7 @@ let fontSize = parseInt(localStorage.getItem('ml4-fontsize') || '0');
 // ─── Marked Config ───
 // Java/Python standard library types not recognized by hljs — post-process to colorize them
 var _javaTypes = 'String|Integer|Long|Double|Float|Boolean|Character|Byte|Short|Object|Number|Math|System|Arrays|Collections|Map|HashMap|TreeMap|LinkedHashMap|Set|HashSet|TreeSet|LinkedHashSet|List|ArrayList|LinkedList|Queue|Deque|ArrayDeque|PriorityQueue|Stack|Vector|StringBuilder|StringBuffer|Optional|Stream|Collectors|Iterator|Comparator|Comparable|Iterable|Map\\.Entry|Random|Scanner|BufferedReader|InputStreamReader|PrintWriter|File|Path|Paths|Files|Pattern|Matcher|Thread|Runnable|Future|CompletableFuture|ExecutorService|Executors|AtomicInteger|ConcurrentHashMap|CountDownLatch|Exception|RuntimeException|IOException|NullPointerException|IllegalArgumentException|IndexOutOfBoundsException|TreeNode|ListNode|Node';
-var _javaTypeRe = new RegExp('(?<![\\w.])(' + _javaTypes + ')(?=[^\\w]|$)', 'g');
+var _javaTypeRe = new RegExp('(^|[^\\w.])(' + _javaTypes + ')(?=[^\\w]|$)', 'g');
 
 marked.setOptions({
   highlight: function(code, lang) {
@@ -85,14 +85,13 @@ marked.setOptions({
     // Only replace bare text nodes (not inside existing <span> tags).
     if (lang === 'java' || (!lang && html.indexOf('hljs-keyword') !== -1)) {
       html = html.replace(/>([^<]+)</g, function(match, text) {
-        return '>' + text.replace(_javaTypeRe, '<span class="hljs-type">$1</span>') + '<';
+        return '>' + text.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + '<';
       });
-      // Also handle text at the very start (before any tag)
       if (html.charAt(0) !== '<') {
         var firstTag = html.indexOf('<');
         if (firstTag === -1) firstTag = html.length;
         var prefix = html.substring(0, firstTag);
-        html = prefix.replace(_javaTypeRe, '<span class="hljs-type">$1</span>') + html.substring(firstTag);
+        html = prefix.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + html.substring(firstTag);
       }
     }
     return html;
