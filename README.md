@@ -1,18 +1,16 @@
 # Machine Learning — Complete Study Notes
 
-```
- __  __ _                _     _
-|  \/  | |              | |   (_)
-| \  / | |    ___   __ _| |__  _ _ __   __ _
-| |\/| | |   / _ \ / _` | '_ \| | '_ \ / _` |
-| |  | | |__| (_) | (_| | | | | | | | | (_| |
-|_|  |_|_____\___/ \__,_|_| |_|_|_| |_|\__, |
-                                         __/ |
-                                        |___/
-```
+> "Machine learning is the field of study that gives computers the ability to learn without being explicitly programmed." — Arthur Samuel, 1959
 
-> "Machine learning is the field of study that gives computers the ability to learn without being explicitly programmed."
-> — Arthur Samuel, 1959
+A comprehensive, self-contained learning platform for ML, deep learning, LLMs, system design, and DSA — built for Google AI Engineer interview preparation but useful for anyone learning ML seriously.
+
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │  28 chapters · ~102 hours of content · 400+ DSA problems │
+  │  Interactive quizzes · Mermaid diagrams · Chart.js visuals│
+  │  Dark mode · Focus mode · Offline PWA · Export to PDF    │
+  └─────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -49,7 +47,7 @@
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 0 | Google AI Engineer — Strategy Guide | ★★ | [00_google_ai_engineer_strategy.md](content/00_google_ai_engineer_strategy.md) | ~2.5 hrs | All Levels |
+| 0 | Google AI Engineer — Strategy Guide | ★★ | [00_google_ai_engineer_strategy.md](content/00_google_ai_engineer_strategy.md) | ~2 hrs | All Levels |
 | 15 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [15_interview_questions.md](content/15_interview_questions.md) | ~3.5 hrs | Intermediate-Advanced |
 | 16 | LLM Interview Questions | ★★★ | [16_llm_interview_questions.md](content/16_llm_interview_questions.md) | ~7.5 hrs | Intermediate-Advanced |
 | 20 | Google's Top 10 ML Interview Topics | ★★★ | [20_google_top10_ml_interview.md](content/20_google_top10_ml_interview.md) | ~8.5 hrs | Intermediate-Advanced |
@@ -97,21 +95,29 @@
 
 ## Interactive Web Platform
 
-Open `index.html` in any modern browser (or use `start.sh` / `start.bat`) — no build step, no server. Everything runs client-side and is cached by a service worker for offline use.
+Open `index.html` in any modern browser — no build step, no server needed. Everything runs client-side.
 
-| Feature | Where |
-|---|---|
-| **Chapter reader** with sidebar, dark mode, font-size controls, search | All pages |
-| **Per-chapter quizzes** (auto-pop when you mark a chapter as read) | Chapter page |
-| **Floating pinned notes** — select text → 💬 Note → pin appears in the margin with a 📍 badge in the bottom notes list | Chapter page |
-| **Comments list** — edit, resolve, reply, delete, filter by open/resolved | Bottom of every chapter |
-| **Text highlights** on selection | Chapter page |
-| **XP, streaks, achievements, study timer** | Dashboard |
-| **Goals & timetable** — pick a target, track progress | Dashboard → Goals |
-| **Export / import all data** as JSON for backup | Dashboard |
-| **💻 DSA Practice** — 400+ Java problems with in-browser run via Wandbox | Dashboard → DSA Practice |
-| **DSA features** — auto-save code, timer, notes, bracket auto-close, Enter auto-indent, undo/redo preserved, test-case runner, prev/next navigation, solved-date tracking, company / tag / difficulty filters, grouped & collapsible categories | DSA problem page |
-| **PWA** — installable from the browser; works offline after first visit; stale-while-revalidate caching for fast repeat loads | Manifest + `sw.js` |
+```
+  READING                         PRACTICE
+  ────────────────────────        ────────────────────────
+  ▸ Sidebar navigation           ▸ 400+ DSA problems (Java)
+  ▸ Dark / light mode             ▸ In-browser code editor
+  ▸ Focus mode (fullscreen)       ▸ Auto-save, timer, notes
+  ▸ Font size controls            ▸ Run code via Wandbox
+  ▸ Full-text search (Ctrl+K)    ▸ Filters: difficulty/company/tag
+  ▸ VS Code syntax highlighting  ▸ Collapsible categories
+  ▸ KaTeX math rendering         ▸ Solved-date tracking
+  ▸ Mermaid diagrams              ▸ Prev/next navigation
+
+  STUDY TOOLS                     PLATFORM
+  ────────────────────────        ────────────────────────
+  ▸ Per-chapter quizzes           ▸ PWA — installable, offline
+  ▸ Pinned notes on any text     ▸ Export/import all data (JSON)
+  ▸ Text highlights               ▸ Export chapters as PDF
+  ▸ XP, streaks, achievements    ▸ Service worker caching
+  ▸ Study timer                   ▸ Mobile responsive
+  ▸ Progress dashboard            ▸ GitHub Pages deployable
+```
 
 ---
 
@@ -144,12 +150,12 @@ ication   sion            ing       sionality      Learning Learning
 ## How to Use These Notes
 
 1. **Start from the top** — topics build on each other
-2. **Read the "Simple Explanation" first** — then the official definition
-3. **Study the diagrams** — visuals help more than text
-4. **Do the examples** — understanding comes from practice
-5. **Take the quiz** — each chapter has a quiz (auto-pops when you mark as read)
-6. **Practice DSA** — use the 💻 DSA Practice page to code in Java right in your browser (400+ problems, grouped by category, with auto-save, Run-code integration, solved-date tracking, and filters by difficulty / company / tag)
-7. **Pin notes anywhere** — select any text in a chapter, click 💬 Note, and a floating pin appears in the margin. All pins show together at the bottom of the chapter with edit / resolve / reply / delete
+2. **Read the definition first** — every concept leads with a formal blockquote definition, then an intuitive explanation
+3. **Study the diagrams** — each chapter includes ASCII diagrams, Mermaid flowcharts, and Chart.js visualizations
+4. **Run the code** — Java and Python examples throughout are ready to copy and run
+5. **Take the quiz** — each chapter has a quiz that auto-pops when you mark it as read
+6. **Practice DSA daily** — 400+ Java problems with in-browser editor, auto-save, timer, filters by difficulty/company/tag
+7. **Pin notes anywhere** — select text, click Note, and a floating pin appears in the margin
 
 ---
 
@@ -255,21 +261,49 @@ ication   sion            ing       sionality      Learning Learning
 ## Quick Reference Cheat Sheet
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    ML TERMINOLOGY                       │
-├──────────────────┬──────────────────────────────────────┤
-│ Feature (X)      │ An input variable / column in data   │
-│ Label (y)        │ The answer/output we want to predict │
-│ Training Data    │ Data used to teach the model         │
-│ Test Data        │ Data used to check how well it works │
-│ Model            │ The mathematical function that learns│
-│ Hyperparameter   │ Settings we tune before training     │
-│ Epoch            │ One full pass through training data  │
-│ Loss             │ How wrong the model's predictions are│
-│ Gradient Descent │ Method to reduce the loss            │
-│ Overfitting      │ Model memorized, can't generalize    │
-│ Underfitting     │ Model too simple, misses patterns    │
-└──────────────────┴──────────────────────────────────────┘
+  ML FUNDAMENTALS
+  ┌──────────────────────┬────────────────────────────────────────┐
+  │ Feature (X)          │ Input variable / column in data        │
+  │ Label (y)            │ The answer we want to predict          │
+  │ Training / Test Data │ Learn from train, evaluate on test     │
+  │ Model                │ Mathematical function that learns      │
+  │ Hyperparameter       │ Settings tuned before training         │
+  │ Epoch                │ One full pass through training data    │
+  │ Loss Function        │ Measures how wrong predictions are     │
+  │ Gradient Descent     │ Iteratively reduces loss               │
+  │ Overfitting          │ Memorized training data, fails on new  │
+  │ Underfitting         │ Too simple, misses the pattern         │
+  │ Bias-Variance        │ Simple→high bias. Complex→high variance│
+  │ Regularization       │ Penalizes complexity (L1/L2/dropout)   │
+  │ Cross-Validation     │ K-fold evaluation for reliability      │
+  └──────────────────────┴────────────────────────────────────────┘
+
+  KEY ALGORITHMS
+  ┌──────────────────────┬────────────────────────────────────────┐
+  │ Linear Regression    │ Predict a number (house price)         │
+  │ Logistic Regression  │ Predict a probability (spam or not)    │
+  │ Decision Tree        │ Flowchart of if/else splits            │
+  │ Random Forest        │ Many trees vote → reduces variance     │
+  │ XGBoost / LightGBM   │ Sequential trees fixing errors → SOTA  │
+  │ SVM                  │ Maximum-margin classifier              │
+  │ KNN                  │ Classify by nearest neighbors          │
+  │ K-Means              │ Group data into K clusters             │
+  │ PCA                  │ Reduce dimensions, keep variance       │
+  │ Neural Network       │ Layers of neurons + backpropagation    │
+  │ Transformer          │ Self-attention → powers all LLMs       │
+  └──────────────────────┴────────────────────────────────────────┘
+
+  MODERN AI (2026)
+  ┌──────────────────────┬────────────────────────────────────────┐
+  │ LLM                  │ Large Language Model (GPT, Gemini)     │
+  │ RLHF / DPO           │ Align LLMs with human preferences     │
+  │ RAG                  │ Retrieve docs → feed to LLM → answer  │
+  │ AI Agent             │ LLM + tools + planning + memory        │
+  │ MCP                  │ Model Context Protocol (tool standard) │
+  │ Fine-tuning / LoRA   │ Adapt a pretrained model cheaply       │
+  │ Quantization         │ Shrink model (FP16 → INT4)            │
+  │ Flash Attention      │ O(n) memory attention algorithm        │
+  └──────────────────────┴────────────────────────────────────────┘
 ```
 
 ---

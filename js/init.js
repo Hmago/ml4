@@ -74,8 +74,10 @@ function routeFromHash() {
     } else if (hash.startsWith('dsa-problem-')) {
       showDSAProblem(hash.replace('dsa-problem-', ''));
     } else if (hash) {
-      const idx = chapters.findIndex(ch => ch.file && ch.file.replace('.md', '') === hash);
+      const hashLower = hash.toLowerCase();
+      const idx = chapters.findIndex(ch => ch.file && ch.file.replace('.md', '').toLowerCase() === hashLower);
       if (idx >= 0) loadChapter(idx);
+      else renderWelcome();
     }
   } finally {
     _navFromPopstate = false;
