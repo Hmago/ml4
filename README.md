@@ -41,7 +41,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 12 | Deep Learning — Complete Reference | ★★★ | [12_deep_learning.md](content/12_deep_learning.md) | ~3.5 hrs | Advanced |
 | 13 | Large Language Models (LLMs) | ★★★ | [13_llm.md](content/13_llm.md) | ~9 hrs | Intermediate-Advanced |
 | 22 | Modern AI Stack — Agents, MCP, Skills (2026) | ★★★ | [22_modern_ai_stack.md](content/22_modern_ai_stack.md) | ~2.5 hrs | Intermediate-Advanced |
-| | **Core Total** | | | **~40 hrs** | |
+| 23 | Building Semantic Search (Text, Images & Metadata) | ★★ | [23_semantic_search.md](content/23_semantic_search.md) | ~2 hrs | Intermediate-Advanced |
+| | **Core Total** | | | **~42 hrs** | |
 
 ### Interview Preparation
 
@@ -89,7 +90,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | -- | Staying Relevant in the AI Era | ★ | [staying_relevant_ai_era.md](content/staying_relevant_ai_era.md) | ~1 hr | All Levels |
 | -- | Brain Training — Memory, Focus & IQ | | [01_brain_training.md](content/01_brain_training.md) | ~1.5 hrs | All Levels |
-| | **Grand Total (all content)** | | | **~102 hrs + DSA practice** | |
+| | **Grand Total (all content)** | | | **~104 hrs + DSA practice** | |
 
 ---
 

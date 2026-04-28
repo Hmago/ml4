@@ -33,6 +33,7 @@ const chapters = [
   { id: '12', file: 'content/12_deep_learning.md', title: 'Deep Learning Reference' },
   { id: '13', file: 'content/13_llm.md', title: 'Large Language Models' },
   { id: '22', file: 'content/22_modern_ai_stack.md', title: 'Modern AI Stack — Agents, MCP, Skills (2026)' },
+  { id: '23', file: 'content/23_semantic_search.md', title: 'Building Semantic Search (Text, Images & Metadata)' },
 
   // ── SYSTEM DESIGN ──
   { section: 'System Design' },

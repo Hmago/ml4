@@ -624,6 +624,7 @@ function showDashboard() {
     'content/12_deep_learning.md': 200,
     'content/13_llm.md': 540,
     'content/22_modern_ai_stack.md': 160,
+    'content/23_semantic_search.md': 135,
     'content/14_design_fundamentals.md': 335,
     'content/15_interview_questions.md': 220,
     'content/16_llm_interview_questions.md': 445,
