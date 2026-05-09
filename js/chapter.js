@@ -10,6 +10,10 @@ const chapters = [
   { id: '00', file: 'content/00_google_ai_engineer_strategy.md', title: 'Google AI Engineer Strategy' },
   { id: '\u2302', file: 'README.md', title: 'Learning Roadmap' },
   { id: '\u2605', file: 'content/staying_relevant_ai_era.md', title: 'Staying Relevant in AI Era' },
+
+  // ── APTITUDE & BRAIN TRAINING ──
+  { section: 'Aptitude & Brain Training' },
+  { id: '25', file: 'content/25_aptitude_mental_math.md', title: 'Aptitude & Mental Math' },
   { id: '01', file: 'content/01_brain_training.md', title: 'Brain Training & Memory' },
 
   // ── MATH FOUNDATIONS ──
@@ -34,6 +38,7 @@ const chapters = [
   { id: '13', file: 'content/13_llm.md', title: 'Large Language Models' },
   { id: '22', file: 'content/22_modern_ai_stack.md', title: 'Modern AI Stack — Agents, MCP, Skills (2026)' },
   { id: '23', file: 'content/23_semantic_search.md', title: 'Building Semantic Search (Text, Images & Metadata)' },
+  { id: '24', file: 'content/24_misc_topics.md', title: 'GPUs, TPUs & AI Infrastructure' },
 
   // ── SYSTEM DESIGN ──
   { section: 'System Design' },
@@ -102,6 +107,8 @@ async function loadChapter(index) {
   document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
   document.getElementById('readBtn').style.display = ch.ref ? 'none' : '';
   document.getElementById('focusBtn').style.display = '';
+  document.getElementById('ttsBtn').style.display = '';
+  ttsStop();
   document.getElementById('welcome')?.remove();
   renderSidebar();
   closeSidebar();
@@ -548,13 +555,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleReadStatus() {
   if (currentIndex < 0) return;
   const file = chapters[currentIndex].file;
-  if (readChapters[file]) {
-    delete readChapters[file];
-  } else {
-    readChapters[file] = true;
-  }
+  if (readChapters[file]) return;
+  readChapters[file] = true;
   localStorage.setItem('ml4-read', JSON.stringify(readChapters));
-  document.getElementById('readBtn').classList.toggle('active', !!readChapters[file]);
+  document.getElementById('readBtn').classList.toggle('active', true);
   renderSidebar();
 }
 
@@ -1973,3 +1977,224 @@ addComment = function(file) {
   if (typeof renderPins === 'function') renderPins(file);
   addXP(2, 'Added a note');
 };
+
+// ═══════════════════════════════════════════════════════════
+// ═══  Text-to-Speech (TTS) — Chapter Reader              ═══
+// ═══════════════════════════════════════════════════════════
+
+let _ttsParagraphs = [];
+let _ttsIndex = 0;
+let _ttsPlaying = false;
+let _ttsSpeed = 1;
+let _ttsUtterance = null;
+let _ttsVoice = null;
+
+// Auto-pick the best English voice on the system (runs once, zero latency)
+function _ttsPickBestVoice() {
+  var voices = speechSynthesis.getVoices();
+  if (!voices.length) return;
+  // Score each English voice — higher is better
+  var best = null, bestScore = -1;
+  for (var i = 0; i < voices.length; i++) {
+    var v = voices[i];
+    if (!/en/i.test(v.lang)) continue;
+    var score = 0;
+    var n = v.name.toLowerCase();
+    // Premium/natural voices (Windows 11, macOS, Chrome)
+    if (/natural|neural|enhanced|premium/.test(n)) score += 100;
+    if (/microsoft.*(jenny|guy|aria|ryan|steffan)/.test(n)) score += 90;
+    if (/samantha|karen|daniel|fiona|alex/.test(n)) score += 80;
+    if (/google\s+us\s+english|google\s+uk\s+english/.test(n)) score += 70;
+    // Prefer local voices (no network latency)
+    if (!v.localService === false) score += 10;
+    if (v.localService) score += 20;
+    // Prefer en-US over other English variants
+    if (/en.US/i.test(v.lang)) score += 5;
+    if (score > bestScore) { best = v; bestScore = score; }
+  }
+  _ttsVoice = best || voices.find(function(v) { return /en/i.test(v.lang); }) || null;
+}
+speechSynthesis.onvoiceschanged = _ttsPickBestVoice;
+_ttsPickBestVoice();
+
+function _ttsExtractParagraphs() {
+  const content = document.getElementById('content');
+  if (!content) return [];
+  const blocks = [];
+  content.querySelectorAll('h1,h2,h3,h4,p,li,blockquote,summary').forEach(el => {
+    if (el.closest('pre') || el.closest('code') || el.closest('.code-wrapper')) return;
+    if (el.closest('.nav-buttons') || el.closest('.comment-section')) return;
+    const text = el.textContent.trim();
+    if (!text || text.length < 5) return;
+    if (/^[┌┐└┘├┤─│═║╔╗╚╝▼▲►◄●○★☆✓✗→←↑↓\s\-|+]+$/.test(text)) return;
+    blocks.push({ el: el, text: text });
+  });
+  return blocks;
+}
+
+function _ttsSplitSentences(text) {
+  // Browser speechSynthesis can choke on long text (>200 chars).
+  // Split into sentences but keep each under ~200 chars.
+  var parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+  var result = [];
+  var current = '';
+  for (var i = 0; i < parts.length; i++) {
+    if ((current + parts[i]).length > 200 && current.length > 0) {
+      result.push(current.trim());
+      current = parts[i];
+    } else {
+      current += parts[i];
+    }
+  }
+  if (current.trim()) result.push(current.trim());
+  return result;
+}
+
+function toggleTTS() {
+  if (_ttsPlaying) {
+    ttsStop();
+  } else {
+    _ttsParagraphs = _ttsExtractParagraphs();
+    if (_ttsParagraphs.length === 0) return;
+    _ttsIndex = 0;
+    _ttsPlaying = true;
+    document.getElementById('ttsPlayer').classList.add('visible');
+    document.getElementById('ttsBtn').classList.add('active');
+    document.getElementById('ttsBtn').innerHTML = '&#9646;&#9646; Pause';
+    _ttsUpdateCounter();
+    _ttsSpeakCurrent();
+  }
+}
+
+function ttsPlayPause() {
+  if (!_ttsPlaying) {
+    if (_ttsParagraphs.length === 0) { toggleTTS(); return; }
+    _ttsPlaying = true;
+    document.getElementById('ttsBtn').classList.add('active');
+    document.getElementById('ttsBtn').innerHTML = '&#9646;&#9646; Pause';
+    document.getElementById('ttsPlayBtn').innerHTML = '&#9646;&#9646;';
+    if (speechSynthesis.paused) {
+      speechSynthesis.resume();
+    } else {
+      _ttsSpeakCurrent();
+    }
+  } else {
+    _ttsPlaying = false;
+    document.getElementById('ttsBtn').innerHTML = '&#9655; Listen';
+    document.getElementById('ttsPlayBtn').innerHTML = '&#9655;';
+    speechSynthesis.pause();
+  }
+}
+
+function ttsStop() {
+  speechSynthesis.cancel();
+  _ttsPlaying = false;
+  _ttsParagraphs = [];
+  _ttsIndex = 0;
+  _ttsUtterance = null;
+  var player = document.getElementById('ttsPlayer');
+  if (player) player.classList.remove('visible');
+  var btn = document.getElementById('ttsBtn');
+  if (btn) { btn.classList.remove('active'); btn.innerHTML = '&#9655; Listen'; }
+  var playBtn = document.getElementById('ttsPlayBtn');
+  if (playBtn) playBtn.innerHTML = '&#9655;';
+  document.querySelectorAll('.tts-highlight').forEach(function(el) {
+    el.classList.remove('tts-highlight');
+  });
+}
+
+function ttsBack() {
+  if (_ttsIndex > 0) {
+    speechSynthesis.cancel();
+    _ttsIndex--;
+    _ttsUpdateCounter();
+    if (_ttsPlaying) _ttsSpeakCurrent();
+  }
+}
+
+function ttsForward() {
+  if (_ttsIndex < _ttsParagraphs.length - 1) {
+    speechSynthesis.cancel();
+    _ttsIndex++;
+    _ttsUpdateCounter();
+    if (_ttsPlaying) _ttsSpeakCurrent();
+  }
+}
+
+function ttsSetSpeed(val) {
+  _ttsSpeed = parseFloat(val);
+  if (_ttsPlaying && _ttsUtterance) {
+    var wasIndex = _ttsIndex;
+    speechSynthesis.cancel();
+    _ttsIndex = wasIndex;
+    _ttsSpeakCurrent();
+  }
+}
+
+function _ttsUpdateCounter() {
+  var counter = document.getElementById('ttsCounter');
+  var fill = document.getElementById('ttsProgressFill');
+  if (counter) counter.textContent = (_ttsIndex + 1) + '/' + _ttsParagraphs.length;
+  if (fill) fill.style.width = ((_ttsIndex + 1) / _ttsParagraphs.length * 100) + '%';
+}
+
+function _ttsHighlight(el) {
+  document.querySelectorAll('.tts-highlight').forEach(function(e) {
+    e.classList.remove('tts-highlight');
+  });
+  if (el) {
+    el.classList.add('tts-highlight');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function _ttsSpeakCurrent() {
+  if (_ttsIndex >= _ttsParagraphs.length) { ttsStop(); return; }
+  var para = _ttsParagraphs[_ttsIndex];
+  _ttsHighlight(para.el);
+  var sentences = _ttsSplitSentences(para.text);
+  var sentIdx = 0;
+  var advancing = false;
+
+  function speakNext() {
+    if (advancing) return;
+    advancing = true;
+    if (sentIdx >= sentences.length) {
+      _ttsIndex++;
+      _ttsUpdateCounter();
+      if (_ttsIndex < _ttsParagraphs.length && _ttsPlaying) {
+        setTimeout(function() { _ttsSpeakCurrent(); }, 50);
+      } else if (_ttsIndex >= _ttsParagraphs.length) {
+        ttsStop();
+      }
+      return;
+    }
+    var utt = new SpeechSynthesisUtterance(sentences[sentIdx]);
+    if (_ttsVoice) utt.voice = _ttsVoice;
+    utt.rate = _ttsSpeed;
+    utt.pitch = 1.02;
+    var handled = false;
+    utt.onend = function() {
+      if (handled) return;
+      handled = true;
+      sentIdx++;
+      advancing = false;
+      speakNext();
+    };
+    utt.onerror = function() {
+      if (handled) return;
+      handled = true;
+      sentIdx++;
+      advancing = false;
+      speakNext();
+    };
+    _ttsUtterance = utt;
+    advancing = false;
+    speechSynthesis.speak(utt);
+  }
+  speakNext();
+}
+
+// Chrome stops speechSynthesis after ~15s of continuous speech.
+// Workaround: queue sentences short enough (<200 chars each via _ttsSplitSentences)
+// so each utterance finishes well within the limit. No pause/resume hack needed.

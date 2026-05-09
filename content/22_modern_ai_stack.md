@@ -753,6 +753,273 @@ Each extra agent adds cost (more tokens) and latency (more LLM calls). Only add 
 
 ---
 
+## 6b. LangChain Ecosystem — The Most Popular AI Framework
+
+> **LangChain** is an open-source framework that provides composable abstractions for building LLM-powered applications — chains, agents, tools, memory, and retrieval — so you wire components together instead of writing everything from scratch.
+
+Think of LangChain as the "React of AI apps." You don't build a web app by writing raw DOM manipulation — you use React components. Similarly, LangChain gives you pre-built components (retrievers, prompt templates, output parsers, agents) that snap together.
+
+### Core Concepts
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    LANGCHAIN ARCHITECTURE                    │
+  │                                                              │
+  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌─────────┐ │
+  │  │  Prompt   │──►│   LLM    │──►│  Output  │──►│  Result  │ │
+  │  │ Template  │   │  (GPT,   │   │  Parser  │   │         │ │
+  │  │          │   │  Gemini, │   │  (JSON,  │   │         │ │
+  │  │          │   │  Claude) │   │  Pydantic)│   │         │ │
+  │  └──────────┘   └──────────┘   └──────────┘   └─────────┘ │
+  │       ▲                                                     │
+  │       │                                                     │
+  │  ┌────┴─────┐   ┌──────────┐   ┌──────────┐               │
+  │  │ Memory   │   │Retriever │   │  Tools   │               │
+  │  │(history) │   │(vector DB│   │(search,  │               │
+  │  │          │   │ + docs)  │   │ APIs)    │               │
+  │  └──────────┘   └──────────┘   └──────────┘               │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+| Concept | What it does | Example |
+|---|---|---|
+| **Chain** | A sequence of steps: prompt → LLM → parse | Summarization chain, Q&A chain |
+| **Agent** | An LLM that decides which tools to call and in what order | "Search the web, then summarize results" |
+| **Tool** | A function the agent can invoke | Web search, calculator, database query, API call |
+| **Memory** | Stores conversation history for multi-turn chat | Buffer memory, summary memory, vector memory |
+| **Retriever** | Fetches relevant documents from a vector DB | ChromaDB retriever, FAISS retriever |
+| **Prompt Template** | A parameterized prompt with variables | `"Summarize this: {text}"` |
+| **Output Parser** | Parses LLM output into structured format | JSON parser, Pydantic parser |
+| **Callback** | Hooks into chain execution for logging/tracing | LangSmith, custom logging |
+
+### LCEL — LangChain Expression Language (Modern Syntax)
+
+The old `Chain` classes are deprecated. Modern LangChain uses LCEL — a pipe-based syntax:
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Modern LCEL: pipe components together
+chain = (
+    ChatPromptTemplate.from_template("Explain {topic} in 3 bullet points")
+    | ChatOpenAI(model="gpt-4o", temperature=0)
+    | StrOutputParser()
+)
+
+result = chain.invoke({"topic": "gradient descent"})
+print(result)
+```
+
+### RAG with LangChain (5 lines of real code)
+
+```python
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain.chains import RetrievalQA
+
+# Load docs into vector DB (one-time)
+vectorstore = Chroma.from_documents(documents, OpenAIEmbeddings())
+
+# Create RAG chain
+qa = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(model="gpt-4o"),
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
+)
+
+answer = qa.invoke("What is Flash Attention?")
+```
+
+### LangGraph — Stateful Multi-Step Agents
+
+> **LangGraph** extends LangChain for agents that need explicit state management, cycles, and conditional branching — things a simple chain can't do.
+
+Use LangChain for linear workflows. Use LangGraph when the agent needs to loop, branch, or maintain complex state across steps.
+
+```python
+from langgraph.graph import StateGraph, START, END
+
+# Define a graph where the agent can loop between "think" and "act"
+graph = StateGraph(dict)
+graph.add_node("think", think_fn)
+graph.add_node("act", act_fn)
+graph.add_edge(START, "think")
+graph.add_conditional_edges("think", should_act, {"yes": "act", "no": END})
+graph.add_edge("act", "think")  # loop back
+app = graph.compile()
+```
+
+### LangSmith — Observability & Debugging
+
+LangSmith traces every LLM call, retrieval, and tool invocation in your chain. When your RAG gives a wrong answer, LangSmith shows: which documents were retrieved, what prompt was sent, what the LLM returned, and where it went wrong. Essential for production debugging.
+
+### When to Use LangChain vs Alternatives
+
+```
+  ┌──────────────────────┬───────────────────────────────────────────┐
+  │ USE LANGCHAIN WHEN   │ DON'T USE LANGCHAIN WHEN                  │
+  ├──────────────────────┼───────────────────────────────────────────┤
+  │ Building RAG apps    │ Simple API wrapper (just use OpenAI SDK)  │
+  │ Multi-step agents    │ You need maximum control over every call  │
+  │ Prototyping fast     │ Extremely latency-sensitive (overhead)    │
+  │ Integrating many     │ You dislike framework abstractions        │
+  │ tools/providers      │                                           │
+  │ Team needs standards │ Solo project with simple requirements     │
+  └──────────────────────┴───────────────────────────────────────────┘
+```
+
+---
+
+## 6c. LlamaIndex — Data Framework for LLMs
+
+> **LlamaIndex** is a data framework that makes it easy to ingest, structure, and query your data with LLMs — optimized specifically for RAG and knowledge retrieval.
+
+If LangChain is a general-purpose AI framework, LlamaIndex is a specialist for **connecting LLMs to your data**. It handles document parsing, chunking, indexing, and retrieval with much less code than building it yourself.
+
+```python
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+# Load all docs from a folder, chunk, embed, index — one line
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+
+# Query
+engine = index.as_query_engine()
+response = engine.query("What are the key findings in the Q3 report?")
+```
+
+**LangChain vs LlamaIndex:** LangChain for general AI apps (agents, chains, tools). LlamaIndex for data-heavy RAG where document ingestion quality matters most. Many production systems use both.
+
+---
+
+## 6d. The Modern AI Engineering Toolkit
+
+These tools appear in nearly every production AI system. Know what each does and when to reach for it.
+
+### Hugging Face — The GitHub of ML Models
+
+> **Hugging Face** is the platform where the ML community shares models, datasets, and spaces (hosted demos). The `transformers` library provides a unified API to load and run 400K+ pretrained models.
+
+```python
+from transformers import pipeline
+
+# Sentiment analysis in 2 lines
+classifier = pipeline("sentiment-analysis")
+result = classifier("This chapter is incredibly helpful!")
+# [{'label': 'POSITIVE', 'score': 0.9998}]
+
+# Summarization
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+summary = summarizer(long_text, max_length=100)
+```
+
+**What to know for interviews:** Hugging Face Hub (model hosting), `transformers` library (load any model), `datasets` library (load any dataset), Spaces (hosted demos with Gradio), PEFT/LoRA (efficient fine-tuning).
+
+### MLflow & Weights & Biases — Experiment Tracking
+
+> **Experiment tracking** logs every training run's hyperparameters, metrics, and artifacts so you can compare runs, reproduce results, and debug regressions.
+
+| Tool | Strengths | Best for |
+|---|---|---|
+| **MLflow** | Open-source, model registry, deployment | Teams wanting full ML lifecycle, self-hosted |
+| **Weights & Biases (W&B)** | Beautiful dashboards, easy setup, collaboration | Experiment tracking, hyperparameter sweeps |
+
+```python
+import wandb
+
+wandb.init(project="my-model")
+wandb.config = {"lr": 0.001, "epochs": 10, "batch_size": 32}
+
+for epoch in range(10):
+    train_loss = train_one_epoch()
+    val_acc = evaluate()
+    wandb.log({"train_loss": train_loss, "val_acc": val_acc, "epoch": epoch})
+# Dashboard at wandb.ai shows curves, comparisons, hyperparameter importance
+```
+
+### Gradio & Streamlit — Build ML Demos in Minutes
+
+> **Gradio** and **Streamlit** let you wrap any Python function in a web UI with a few lines of code — essential for demos, prototypes, and internal tools.
+
+```python
+# Gradio: ML demo in 4 lines
+import gradio as gr
+
+def classify(text):
+    return classifier(text)[0]
+
+gr.Interface(fn=classify, inputs="text", outputs="json").launch()
+```
+
+```python
+# Streamlit: data app in 5 lines
+import streamlit as st
+
+st.title("ML Model Demo")
+text = st.text_input("Enter text:")
+if text:
+    st.json(classifier(text))
+```
+
+**When to use which:** Gradio for ML model demos (built-in support for images, audio, video). Streamlit for data dashboards and internal tools.
+
+### FastAPI — Serving ML Models as APIs
+
+> **FastAPI** is a high-performance Python web framework for building APIs. It's the standard way to serve ML models behind REST endpoints.
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class PredictRequest(BaseModel):
+    text: str
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    result = model.predict(req.text)
+    return {"prediction": result, "confidence": 0.95}
+
+# Run: uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+**Why FastAPI over Flask:** Async by default (handles concurrent requests), automatic OpenAPI docs, Pydantic validation, type hints. Flask is simpler but FastAPI is the modern standard for ML serving.
+
+### MLOps — The Bigger Picture
+
+> **MLOps** is the practice of deploying, monitoring, and maintaining ML models in production reliably and at scale — the "DevOps of ML."
+
+```
+  THE MLOPS LIFECYCLE:
+  ════════════════════════════════════════════════════════
+
+  Data ──► Train ──► Evaluate ──► Deploy ──► Monitor ──► Retrain
+   │                                           │            │
+   └──── Feature Store                         └── Drift ───┘
+                                               Detection
+
+  KEY TOOLS BY STAGE:
+  ┌──────────────────┬────────────────────────────────────────┐
+  │ Stage            │ Tools                                  │
+  ├──────────────────┼────────────────────────────────────────┤
+  │ Data versioning  │ DVC, LakeFS                            │
+  │ Feature store    │ Feast, Tecton, Vertex AI Feature Store │
+  │ Experiment track │ MLflow, W&B, Neptune                   │
+  │ Training         │ PyTorch, JAX, TensorFlow               │
+  │ Model registry   │ MLflow, Vertex AI Model Registry       │
+  │ Serving          │ FastAPI, TF Serving, vLLM, Triton      │
+  │ Monitoring       │ Evidently AI, Whylabs, Prometheus      │
+  │ Pipeline orch.   │ Kubeflow, Airflow, Vertex Pipelines    │
+  │ CI/CD for ML     │ GitHub Actions, Jenkins, CML           │
+  └──────────────────┴────────────────────────────────────────┘
+```
+
+**Interview tip:** When designing ML systems, always mention monitoring and retraining. "Deploy and forget" is the biggest red flag in a system design interview.
+
+---
+
 ## 7. Reasoning Models
 
 > **Reasoning model**: an LLM that generates a long internal "thinking" chain before the final answer. The hidden thinking helps it solve harder problems.
