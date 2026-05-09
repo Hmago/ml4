@@ -5,21 +5,21 @@
 // ─── One-time migration: chapter files moved from root → content/ folder ───
 // User-saved data (read status, scores, comments, etc.) keys are file paths.
 // Rewrite any old-format keys (e.g., "03_introduction.md") to new-format
-// ("content/03_introduction.md") so existing progress survives the move.
+// ("content/06_introduction.md") so existing progress survives the move.
 (function migrateChapterPathsToContentFolder() {
   if (localStorage.getItem('ml4-migration-content-v1') === 'done') return;
   const moved = [
-    '00_google_ai_engineer_strategy.md', '01_brain_training.md', '02_math_fundamentals.md',
-    '03_introduction.md', '04_core_concepts.md', '05_data_preprocessing.md',
-    '06_supervised_learning.md', '07_unsupervised_learning.md', '08_reinforcement_learning.md',
-    '09_key_algorithms.md', '10_neural_networks.md', '11_model_evaluation.md',
-    '12_deep_learning.md', '13_llm.md', '14_design_fundamentals.md',
-    '15_interview_questions.md', '16_llm_interview_questions.md', '17_ml_system_design.md',
-    '18_dsa_trees_graphs.md', '19_google_ml_ecosystem.md',
-    '20_google_top10_ml_interview.md', '20_Modern System Design.md',
-    '21_quick_reference_cheat_sheet.md',
-    'behavioral_interview.md', 'practical_ml.md', 'practical_ml.ipynb',
-    'staying_relevant_ai_era.md',
+    '01_google_ai_engineer_strategy.md', '04_brain_training.md', '05_math_fundamentals.md',
+    '06_introduction.md', '07_core_concepts.md', '08_data_preprocessing.md',
+    '09_supervised_learning.md', '10_unsupervised_learning.md', '11_reinforcement_learning.md',
+    '12_key_algorithms.md', '13_neural_networks.md', '14_model_evaluation.md',
+    '15_deep_learning.md', '16_llm.md', '20_design_fundamentals.md',
+    '29_interview_questions.md', '30_llm_interview_questions.md', '21_ml_system_design.md',
+    '27_dsa_coding.md', '26_google_ml_ecosystem.md',
+    '31_google_top10_ml_interview.md', '22_modern_system_design.md',
+    '32_quick_reference_cheat_sheet.md',
+    '28_behavioral_interview.md', '23_practical_ml.md', '23_practical_ml.ipynb',
+    '02_staying_relevant_ai_era.md',
   ];
   const movedSet = new Set(moved);
   // These localStorage keys hold {fileName: ...} maps — need their keys rewritten
@@ -54,6 +54,61 @@
   if (touched > 0) {
     console.log('[ml4] Migrated chapter-path keys in', touched, 'localStorage stores → content/ prefix');
   }
+})();
+
+
+// ─── Migration v2: chapter files renamed to sequential numbering ───
+(function migrateChapterPathsV2() {
+  if (localStorage.getItem('ml4-migration-rename-v2') === 'done') return;
+  var remap = {
+    'content/00_google_ai_engineer_strategy.md': 'content/01_google_ai_engineer_strategy.md',
+    'content/staying_relevant_ai_era.md': 'content/02_staying_relevant_ai_era.md',
+    'content/25_aptitude_mental_math.md': 'content/03_aptitude_mental_math.md',
+    'content/01_brain_training.md': 'content/04_brain_training.md',
+    'content/02_math_fundamentals.md': 'content/05_math_fundamentals.md',
+    'content/03_introduction.md': 'content/06_introduction.md',
+    'content/04_core_concepts.md': 'content/07_core_concepts.md',
+    'content/05_data_preprocessing.md': 'content/08_data_preprocessing.md',
+    'content/06_supervised_learning.md': 'content/09_supervised_learning.md',
+    'content/07_unsupervised_learning.md': 'content/10_unsupervised_learning.md',
+    'content/08_reinforcement_learning.md': 'content/11_reinforcement_learning.md',
+    'content/09_key_algorithms.md': 'content/12_key_algorithms.md',
+    'content/10_neural_networks.md': 'content/13_neural_networks.md',
+    'content/11_model_evaluation.md': 'content/14_model_evaluation.md',
+    'content/12_deep_learning.md': 'content/15_deep_learning.md',
+    'content/13_llm.md': 'content/16_llm.md',
+    'content/22_modern_ai_stack.md': 'content/17_ai_agents.md',
+    'content/14_design_fundamentals.md': 'content/20_design_fundamentals.md',
+    'content/17_ml_system_design.md': 'content/21_ml_system_design.md',
+    'content/20_Modern System Design.md': 'content/22_modern_system_design.md',
+    'content/practical_ml.md': 'content/23_practical_ml.md',
+    'content/practical_ml.ipynb': 'content/23_practical_ml.ipynb',
+    'content/23_semantic_search.md': 'content/24_semantic_search.md',
+    'content/24_misc_topics.md': 'content/25_gpus_tpus_infrastructure.md',
+    'content/19_google_ml_ecosystem.md': 'content/26_google_ml_ecosystem.md',
+    'content/18_dsa_trees_graphs.md': 'content/27_dsa_coding.md',
+    'content/behavioral_interview.md': 'content/28_behavioral_interview.md',
+    'content/15_interview_questions.md': 'content/29_interview_questions.md',
+    'content/16_llm_interview_questions.md': 'content/30_llm_interview_questions.md',
+    'content/20_google_top10_ml_interview.md': 'content/31_google_top10_ml_interview.md',
+    'content/21_quick_reference_cheat_sheet.md': 'content/32_quick_reference_cheat_sheet.md',
+  };
+  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights'];
+  storeKeys.forEach(function(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      var obj = JSON.parse(raw);
+      var changed = false;
+      var out = {};
+      Object.keys(obj).forEach(function(k) {
+        if (remap[k] && !obj[remap[k]]) { out[remap[k]] = obj[k]; changed = true; }
+        else { out[k] = obj[k]; }
+      });
+      if (changed) localStorage.setItem(key, JSON.stringify(out));
+    } catch(e) {}
+  });
+  localStorage.setItem('ml4-migration-rename-v2', 'done');
 })();
 
 // ─── State ───

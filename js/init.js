@@ -110,6 +110,9 @@ document.addEventListener('keydown', (e) => {
 // ─── PWA Service Worker Registration ───
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    // Force SW update check on every page load (bypass 24h HTTP cache)
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      reg.update().catch(() => {});
+    }).catch(() => {});
   });
 }

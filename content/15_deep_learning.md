@@ -1,4 +1,4 @@
-# Chapter 12 — Deep Learning: Complete Reference
+# Chapter 15 — Deep Learning: Complete Reference
 
 > "Deep learning is a superpower. With it, you can build an AI that figures out
 > things even its creator doesn't fully understand." — Andrew Ng
@@ -1843,4 +1843,4 @@ DEBUGGING (in order)
 
 ---
 
-**Previous:** [Chapter 11 — Model Evaluation](11_model_evaluation.md)
+**Previous:** [Chapter 11 — Model Evaluation](14_model_evaluation.md)

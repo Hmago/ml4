@@ -1,4 +1,4 @@
-# Chapter 09 — Key ML Algorithms Deep Dive
+# Chapter 12 — Key ML Algorithms Deep Dive
 
 ---
 
@@ -51,10 +51,10 @@ graph TD
 
 | Topic | Where |
 |---|---|
-| Introduction to these algorithms | [Chapter 6 — Supervised Learning](06_supervised_learning.md) |
-| Unsupervised methods (K-Means, DBSCAN) | [Chapter 7 — Unsupervised Learning](07_unsupervised_learning.md) |
-| Neural networks and deep learning | [Chapter 10 — Neural Networks](10_neural_networks.md) |
-| Model evaluation (ROC, AUC, cross-val) | [Chapter 11 — Model Evaluation](11_model_evaluation.md) |
+| Introduction to these algorithms | [Chapter 6 — Supervised Learning](09_supervised_learning.md) |
+| Unsupervised methods (K-Means, DBSCAN) | [Chapter 7 — Unsupervised Learning](10_unsupervised_learning.md) |
+| Neural networks and deep learning | [Chapter 10 — Neural Networks](13_neural_networks.md) |
+| Model evaluation (ROC, AUC, cross-val) | [Chapter 11 — Model Evaluation](14_model_evaluation.md) |
 
 Chapter 6 gave you the "what." This chapter gives you the "how" and "why" — the math, the implementation details, the hyperparameter knobs, and the practical failure modes.
 
@@ -1749,4 +1749,4 @@ Use LightGBM — it trains fast on large datasets (histogram-based, leaf-wise gr
 
 ---
 
-**Previous:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md) | **Next:** [Chapter 10 — Neural Networks](10_neural_networks.md)
+**Previous:** [Chapter 8 — Reinforcement Learning](11_reinforcement_learning.md) | **Next:** [Chapter 10 — Neural Networks](13_neural_networks.md)

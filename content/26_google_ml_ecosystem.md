@@ -1,4 +1,4 @@
-# Chapter 19 — Google's ML Ecosystem: TPUs, JAX, Vertex AI & Key Papers
+# Chapter 24 — Google ML Ecosystem: TPUs, JAX, Vertex AI & Key Papers
 
 > "We are not just using machine learning — we are building the infrastructure
 > to make machine learning accessible to everyone."

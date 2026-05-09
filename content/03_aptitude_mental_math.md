@@ -1,4 +1,4 @@
-# Chapter 25 — Aptitude & Mental Math for Engineers
+# Chapter 03 — Aptitude & Mental Math for Engineers
 
 > "The ability to estimate quickly and reason logically under pressure separates good engineers from great ones."
 
@@ -1894,4 +1894,4 @@ Build the habit. 30 minutes a day. Track your progress. In 4 weeks, you will be 
 
 ---
 
-**Previous:** [Chapter 24 — GPUs, TPUs & AI Infrastructure](24_misc_topics.md)
+**Previous:** [Chapter 24 — GPUs, TPUs & AI Infrastructure](23_gpus_tpus_infrastructure.md)

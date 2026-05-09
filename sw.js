@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v156';
+const CACHE_NAME = 'ml-notes-v165';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -22,37 +22,39 @@ const STATIC_FILES = [
   'icon-192.svg',
   'icon-512.svg',
   'README.md',
-  'content/00_google_ai_engineer_strategy.md',
-  'content/01_brain_training.md',
-  'content/02_math_fundamentals.md',
-  'content/03_introduction.md',
-  'content/04_core_concepts.md',
-  'content/05_data_preprocessing.md',
-  'content/06_supervised_learning.md',
-  'content/07_unsupervised_learning.md',
-  'content/08_reinforcement_learning.md',
-  'content/09_key_algorithms.md',
-  'content/10_neural_networks.md',
-  'content/11_model_evaluation.md',
-  'content/12_deep_learning.md',
-  'content/13_llm.md',
-  'content/14_design_fundamentals.md',
-  'content/15_interview_questions.md',
-  'content/16_llm_interview_questions.md',
-  'content/17_ml_system_design.md',
-  'content/18_dsa_trees_graphs.md',
-  'content/19_google_ml_ecosystem.md',
-  'content/20_google_top10_ml_interview.md',
-  'content/20_Modern System Design.md',
-  'content/21_quick_reference_cheat_sheet.md',
-  'content/22_modern_ai_stack.md',
-  'content/23_semantic_search.md',
-  'content/24_misc_topics.md',
-  'content/25_aptitude_mental_math.md',
-  'content/behavioral_interview.md',
-  'content/practical_ml.md',
-  'content/practical_ml.ipynb',
-  'content/staying_relevant_ai_era.md',
+  'content/01_google_ai_engineer_strategy.md',
+  'content/04_brain_training.md',
+  'content/05_math_fundamentals.md',
+  'content/06_introduction.md',
+  'content/07_core_concepts.md',
+  'content/08_data_preprocessing.md',
+  'content/09_supervised_learning.md',
+  'content/10_unsupervised_learning.md',
+  'content/11_reinforcement_learning.md',
+  'content/12_key_algorithms.md',
+  'content/13_neural_networks.md',
+  'content/14_model_evaluation.md',
+  'content/15_deep_learning.md',
+  'content/16_llm.md',
+  'content/20_design_fundamentals.md',
+  'content/29_interview_questions.md',
+  'content/30_llm_interview_questions.md',
+  'content/21_ml_system_design.md',
+  'content/27_dsa_coding.md',
+  'content/26_google_ml_ecosystem.md',
+  'content/31_google_top10_ml_interview.md',
+  'content/22_modern_system_design.md',
+  'content/32_quick_reference_cheat_sheet.md',
+  'content/17_ai_agents.md',
+  'content/18_ai_frameworks.md',
+  'content/19_2026_landscape.md',
+  'content/24_semantic_search.md',
+  'content/25_gpus_tpus_infrastructure.md',
+  'content/03_aptitude_mental_math.md',
+  'content/28_behavioral_interview.md',
+  'content/23_practical_ml.md',
+  'content/23_practical_ml.ipynb',
+  'content/02_staying_relevant_ai_era.md',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 
@@ -125,9 +127,22 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For other local assets (JS/CSS/MD/JSON/images): stale-while-revalidate.
-  // Serve from cache instantly; update cache in background so the next load is fresh.
-  // This fixes the prior "network-first undermines offline" issue.
+  // For .md and .js files: network-first so content updates are seen immediately.
+  // Falls back to cache when offline.
+  if (url.pathname.endsWith('.md') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // For other assets (images, fonts): stale-while-revalidate.
   event.respondWith(
     caches.match(event.request).then(cached => {
       const networkFetch = fetch(event.request).then(response => {

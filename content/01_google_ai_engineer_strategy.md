@@ -1,4 +1,4 @@
-# Chapter 00 — Google AI Engineer Interview Strategy
+# Chapter 01 — Google AI Engineer Interview Strategy
 
 > A battle-tested preparation guide for Google AI/ML Engineer roles — mapped to these study notes, informed by 2026 interview data, and written like a senior Google engineer is sitting across the table from you.
 

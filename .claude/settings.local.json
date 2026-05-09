@@ -105,7 +105,9 @@
       "Bash(bc)",
       "Bash(sort -t: -k2 -rn)",
       "WebFetch(domain:highlightjs.org)",
-      "WebFetch(domain:highlightjs.readthedocs.io)"
+      "WebFetch(domain:highlightjs.readthedocs.io)",
+      "Bash(ls content/00_*)",
+      "Bash(ls content/01_google*)"
     ]
   }
 }

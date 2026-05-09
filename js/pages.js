@@ -209,6 +209,9 @@ function renderWelcome() {
         <code>Ctrl+K</code> Search &nbsp; <code>&larr;</code><code>&rarr;</code> Navigate &nbsp;
         <code>Ctrl+D</code> Theme &nbsp; <code>M</code> Mark read
       </p>
+      <div class="welcome-footer">
+        Created by <strong>Harshit Mago</strong> &middot; <a href="mailto:hmago18@gmail.com">hmago18@gmail.com</a>
+      </div>
     </div>`;
 }
 
@@ -609,38 +612,40 @@ function showDashboard() {
   // Estimate reading time: study-pace ~55 words/min (reading + thinking + diagrams)
   // Values below are derived from actual word counts in each chapter, rounded to the nearest 5 min.
   const chapterMinutes = {
-    'content/00_google_ai_engineer_strategy.md': 130,
-    'content/01_brain_training.md': 100,
-    'content/02_math_fundamentals.md': 280,
-    'content/03_introduction.md': 90,
-    'content/04_core_concepts.md': 210,
-    'content/05_data_preprocessing.md': 55,
-    'content/06_supervised_learning.md': 220,
-    'content/07_unsupervised_learning.md': 140,
-    'content/08_reinforcement_learning.md': 105,
-    'content/09_key_algorithms.md': 175,
-    'content/10_neural_networks.md': 120,
-    'content/11_model_evaluation.md': 120,
-    'content/12_deep_learning.md': 200,
-    'content/13_llm.md': 540,
-    'content/22_modern_ai_stack.md': 185,
-    'content/23_semantic_search.md': 135,
-    'content/24_misc_topics.md': 160,
-    'content/25_aptitude_mental_math.md': 225,
-    'content/14_design_fundamentals.md': 335,
-    'content/15_interview_questions.md': 220,
-    'content/16_llm_interview_questions.md': 445,
-    'content/17_ml_system_design.md': 340,
-    'content/behavioral_interview.md': 145,
-    'content/practical_ml.md': 195,
-    'content/practical_ml.ipynb': 195,
-    'content/staying_relevant_ai_era.md': 75,
+    'content/01_google_ai_engineer_strategy.md': 130,
+    'content/04_brain_training.md': 100,
+    'content/05_math_fundamentals.md': 280,
+    'content/06_introduction.md': 90,
+    'content/07_core_concepts.md': 210,
+    'content/08_data_preprocessing.md': 55,
+    'content/09_supervised_learning.md': 220,
+    'content/10_unsupervised_learning.md': 140,
+    'content/11_reinforcement_learning.md': 105,
+    'content/12_key_algorithms.md': 175,
+    'content/13_neural_networks.md': 120,
+    'content/14_model_evaluation.md': 120,
+    'content/15_deep_learning.md': 200,
+    'content/16_llm.md': 540,
+    'content/17_ai_agents.md': 100,
+    'content/18_ai_frameworks.md': 55,
+    'content/19_2026_landscape.md': 35,
+    'content/24_semantic_search.md': 135,
+    'content/25_gpus_tpus_infrastructure.md': 160,
+    'content/03_aptitude_mental_math.md': 225,
+    'content/20_design_fundamentals.md': 335,
+    'content/29_interview_questions.md': 220,
+    'content/30_llm_interview_questions.md': 445,
+    'content/21_ml_system_design.md': 340,
+    'content/28_behavioral_interview.md': 145,
+    'content/23_practical_ml.md': 195,
+    'content/23_practical_ml.ipynb': 195,
+    'content/02_staying_relevant_ai_era.md': 75,
     'README.md': 40,
-    'content/18_dsa_trees_graphs.md': 475,
-    'content/19_google_ml_ecosystem.md': 160,
-    'content/20_Modern System Design.md': 160,
-    'content/20_google_top10_ml_interview.md': 495,
-    'content/21_quick_reference_cheat_sheet.md': 180,
+    'content/27_dsa_coding.md': 475,
+    'content/26_google_ml_ecosystem.md': 160,
+    'content/22_modern_system_design.md': 160,
+    'content/31_google_top10_ml_interview.md': 495,
+    'content/32_quick_reference_cheat_sheet.md': 180,
   };
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
   realCh.forEach(c => { const m = chapterMinutes[c.file] || 30; totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });

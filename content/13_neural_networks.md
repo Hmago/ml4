@@ -1,4 +1,4 @@
-# Chapter 10 — Neural Networks & Deep Learning
+# Chapter 13 — Neural Networks & Deep Learning
 
 ---
 
@@ -1015,4 +1015,4 @@ This is mode collapse. The generator found a single output that reliably fools t
 
 ---
 
-**Previous:** [Chapter 9 — Key Algorithms Deep Dive](09_key_algorithms.md) | **Next:** [Chapter 11 — Model Evaluation & Tuning](11_model_evaluation.md)
+**Previous:** [Chapter 9 — Key Algorithms Deep Dive](12_key_algorithms.md) | **Next:** [Chapter 11 — Model Evaluation & Tuning](14_model_evaluation.md)

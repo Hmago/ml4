@@ -1,4 +1,4 @@
-# Chapter 06 — Supervised Learning
+# Chapter 09 — Supervised Learning
 
 > "Supervised learning is the workhorse of machine learning."
 > — Andrew Ng
@@ -2018,4 +2018,4 @@ SHAP — because it explains individual predictions, not just global trends. A s
 
 ---
 
-**Previous:** [Chapter 5 — Data Preprocessing](05_data_preprocessing.md) | **Next:** [Chapter 7 — Unsupervised Learning](07_unsupervised_learning.md)
+**Previous:** [Chapter 5 — Data Preprocessing](08_data_preprocessing.md) | **Next:** [Chapter 7 — Unsupervised Learning](10_unsupervised_learning.md)
