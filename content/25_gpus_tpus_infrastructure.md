@@ -1,4 +1,4 @@
-# Chapter 24 — Miscellaneous Topics for AI Engineers
+# Chapter 23 — GPUs, TPUs & AI Infrastructure
 
 This chapter covers the hardware and infrastructure that makes modern AI possible. You can write the most elegant model architecture in the world — if you do not understand the hardware running it, you will waste money, time, and sanity. GPUs, TPUs, distributed training, and inference optimization are not optional knowledge for an AI engineer. They are the difference between a model that trains in 3 hours and one that takes 3 weeks.
 
@@ -1143,4 +1143,4 @@ In practice: unstructured pruning is useful for reducing model storage/transmiss
 
 ---
 
-**Previous:** [Chapter 23 — Building Semantic Search](23_semantic_search.md)
+**Previous:** [Chapter 23 — Building Semantic Search](22_semantic_search.md)

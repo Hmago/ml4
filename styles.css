@@ -1143,6 +1143,16 @@ body.sidebar-collapsed .content {
   gap: 14px;
 }
 .welcome-shortcuts { color: var(--text-secondary); margin-top: 32px; font-size: 14px; }
+.welcome-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.welcome-footer a { color: var(--accent); text-decoration: none; }
+.welcome-footer a:hover { text-decoration: underline; }
 
 /* ── Continue / Next-up card ── */
 .welcome-continue {

@@ -1,4 +1,4 @@
-# Chapter 17 — ML System Design (Google)
+# Chapter 19 — ML System Design (Google)
 
 > "At Google, system design is not about memorizing architectures — it's about demonstrating structured thinking at scale."
 
@@ -2095,4 +2095,4 @@ Traditional ML evaluation compares predictions against known ground-truth labels
 
 ---
 
-**Previous:** [Chapter 14 — Design Fundamentals](14_design_fundamentals.md) | **Next:** [Chapter 18 — DSA & ML Coding](18_dsa_trees_graphs.md)
+**Previous:** [Chapter 14 — Design Fundamentals](18_design_fundamentals.md) | **Next:** [Chapter 18 — DSA & ML Coding](25_dsa_coding.md)

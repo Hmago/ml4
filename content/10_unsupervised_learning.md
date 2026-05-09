@@ -1,4 +1,4 @@
-# Chapter 07 — Unsupervised Learning
+# Chapter 10 — Unsupervised Learning
 
 ---
 
@@ -1162,4 +1162,4 @@ Use **PCA** or **UMAP** — never t-SNE. t-SNE distorts distances non-uniformly,
 
 ---
 
-**Previous:** [Chapter 6 — Supervised Learning](06_supervised_learning.md) | **Next:** [Chapter 8 — Reinforcement Learning](08_reinforcement_learning.md)
+**Previous:** [Chapter 6 — Supervised Learning](09_supervised_learning.md) | **Next:** [Chapter 8 — Reinforcement Learning](11_reinforcement_learning.md)

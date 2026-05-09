@@ -1,4 +1,4 @@
-# Chapter 23 — Building Semantic Search (Text, Images & Metadata)
+# Chapter 22 — Building Semantic Search (Text, Images & Metadata)
 
 > "Search is not about finding documents that contain a keyword. It's about finding the answer the user needs." — Every search engineer, eventually.
 
@@ -1332,4 +1332,4 @@ Challenge: text embeddings and CLIP embeddings live in different vector spaces �
 
 ---
 
-**Previous:** [Chapter 22 — Modern AI Stack](22_modern_ai_stack.md)
+**Previous:** [Chapter 22 — Modern AI Stack](17_modern_ai_stack.md)

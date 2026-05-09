@@ -1,4 +1,4 @@
-# Chapter 15 — Interview Questions: Google, Amazon & OpenAI
+# Chapter 27 — ML Interview Questions
 
 > Covering Data Science & AI Engineer positions at the world's top AI companies.
 

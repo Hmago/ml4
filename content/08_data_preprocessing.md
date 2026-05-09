@@ -1,4 +1,4 @@
-# Chapter 5 — Data Preprocessing
+# Chapter 08 — Data Preprocessing
 
 > "Data preparation accounts for about 80% of the work of data scientists."
 > — Forbes, 2016
@@ -665,5 +665,5 @@ with target     │ Example: "Customer's favorite color" for
 
 ---
 
-**Previous:** [Chapter 4 — Core Concepts](04_core_concepts.md)
-**Next:** [Chapter 6 — Supervised Learning](06_supervised_learning.md)
+**Previous:** [Chapter 4 — Core Concepts](07_core_concepts.md)
+**Next:** [Chapter 6 — Supervised Learning](09_supervised_learning.md)

@@ -4832,4 +4832,4 @@ public class SelfAttention {
 
 ---
 
-**Previous:** [Chapter 17 — ML System Design](17_ml_system_design.md) | **Next:** [Chapter 19 — Google ML Ecosystem](19_google_ml_ecosystem.md)
+**Previous:** [Chapter 17 — ML System Design](19_ml_system_design.md) | **Next:** [Chapter 19 — Google ML Ecosystem](24_google_ml_ecosystem.md)
