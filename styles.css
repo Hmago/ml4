@@ -3798,6 +3798,114 @@ body.focus-mode .pins-layer {
   .focus-bar-title { display: none; }
 }
 
+/* ═══════════════════════════════════════════════════════ */
+/* ═══  Text-to-Speech Player                          ═══ */
+/* ═══════════════════════════════════════════════════════ */
+
+.tts-player {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  background: color-mix(in srgb, var(--bg-secondary) 95%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 18px;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+.tts-player.visible { display: block; }
+
+.tts-player-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tts-ctrl {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: all 0.15s;
+  line-height: 1;
+}
+.tts-ctrl:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.tts-ctrl.tts-play {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-size: 15px;
+  padding: 6px 14px;
+}
+.tts-ctrl.tts-play:hover {
+  filter: brightness(1.15);
+}
+
+.tts-progress {
+  width: 120px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tts-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.tts-counter {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: center;
+}
+
+.tts-speed {
+  font-size: 11px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Highlight the paragraph being read */
+.tts-highlight {
+  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  border-radius: 0 6px 6px 0;
+  transition: background 0.3s, border-left 0.3s;
+}
+
+@media (max-width: 768px) {
+  .tts-player {
+    bottom: 12px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .tts-progress { width: 60px; }
+  .tts-counter { display: none; }
+}
+
 /* ─── Print / Export-to-PDF ─── */
 @media print {
   @page { margin: 16mm 14mm; }

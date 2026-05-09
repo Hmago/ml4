@@ -51,6 +51,7 @@
       <button class="hide-mobile" onclick="changeFontSize(-1)" title="Smaller text">A-</button>
       <button class="hide-mobile" onclick="changeFontSize(1)" title="Larger text">A+</button>
       <button onclick="toggleFocusMode()" id="focusBtn" title="Focus mode (F)" style="display:none;">&#9678; Focus</button>
+      <button onclick="toggleTTS()" id="ttsBtn" title="Listen to chapter" style="display:none;">&#9655; Listen</button>
       <button onclick="toggleReadStatus()" id="readBtn" title="Mark as read">&#10003; Read</button>
       <button onclick="toggleTheme()" id="themeBtn" title="Toggle dark mode">&#9790;</button>
     </div>
@@ -61,6 +62,26 @@
     </div>
   </div>
 </main>
+
+<div class="tts-player" id="ttsPlayer">
+  <div class="tts-player-inner">
+    <button class="tts-ctrl" onclick="ttsBack()" title="Previous paragraph">&#9664;&#9664;</button>
+    <button class="tts-ctrl tts-play" onclick="ttsPlayPause()" id="ttsPlayBtn" title="Play/Pause">&#9655;</button>
+    <button class="tts-ctrl" onclick="ttsForward()" title="Next paragraph">&#9654;&#9654;</button>
+    <button class="tts-ctrl" onclick="ttsStop()" title="Stop">&#9632;</button>
+    <div class="tts-progress">
+      <div class="tts-progress-fill" id="ttsProgressFill"></div>
+    </div>
+    <span class="tts-counter" id="ttsCounter">0/0</span>
+    <select class="tts-speed" id="ttsSpeed" onchange="ttsSetSpeed(this.value)" title="Speed">
+      <option value="0.75">0.75x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
+</div>
 
 <div class="sel-popup" id="selPopup">
   <button class="sp-note" onclick="noteFromSelection()">💬 Note</button>

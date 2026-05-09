@@ -13,7 +13,7 @@ function renderWelcome() {
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
@@ -595,7 +595,7 @@ function showDashboard() {
   document.getElementById('breadcrumb').textContent = 'Dashboard';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -623,8 +623,10 @@ function showDashboard() {
     'content/11_model_evaluation.md': 120,
     'content/12_deep_learning.md': 200,
     'content/13_llm.md': 540,
-    'content/22_modern_ai_stack.md': 160,
+    'content/22_modern_ai_stack.md': 185,
     'content/23_semantic_search.md': 135,
+    'content/24_misc_topics.md': 160,
+    'content/25_aptitude_mental_math.md': 225,
     'content/14_design_fundamentals.md': 335,
     'content/15_interview_questions.md': 220,
     'content/16_llm_interview_questions.md': 445,
@@ -1427,7 +1429,7 @@ function showMotivation() {
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
   renderMotivation();
@@ -1538,7 +1540,7 @@ function showGoals() {
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();

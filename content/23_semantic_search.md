@@ -1,5 +1,24 @@
 # Chapter 23 — Building Semantic Search (Text, Images & Metadata)
 
+> "Search is not about finding documents that contain a keyword. It's about finding the answer the user needs." — Every search engineer, eventually.
+
+---
+
+## What You'll Learn
+
+After reading this chapter, you will be able to:
+- Explain how semantic search works and why it beats keyword search
+- Choose the right embedding model for text, images, and multimodal content
+- Build a document processing pipeline (PDF, Word, images → vectors)
+- Design and implement a full semantic search system in Python
+- Compare vector databases and pick the right one for your use case
+- Implement hybrid search (dense + sparse + metadata filtering)
+- Add reranking to go from good to great search quality
+- Connect search to LLMs via RAG for question-answering
+- Handle production concerns: scaling, cost, access control, embedding drift
+
+---
+
 ```
 Contents:
   23.1   What is Semantic Search?
@@ -398,6 +417,68 @@ flowchart TD
 ```
 
 **Pre-filter vs post-filter:** Pre-filter applies metadata constraints before vector search (faster, needs DB support). Post-filter retrieves top-K first then filters (simpler but may eliminate all results). Most production systems use pre-filtering — Pinecone, Weaviate, and Qdrant support it natively.
+
+### Metadata Filtering in Practice
+
+Metadata turns semantic search from "find similar text" into "find similar text that matches my constraints." In enterprise search, this is the feature users rely on most.
+
+```python
+# ChromaDB — metadata filtering
+results = collection.query(
+    query_texts=["Q3 revenue growth"],
+    n_results=10,
+    where={                          # Pre-filter on metadata
+        "$and": [
+            {"file_type": {"$eq": "pdf"}},
+            {"department": {"$eq": "finance"}},
+            {"year": {"$gte": 2025}},
+        ]
+    }
+)
+
+# Pinecone — metadata filtering
+results = index.query(
+    vector=query_embedding,
+    top_k=10,
+    filter={
+        "file_type": {"$eq": "pdf"},
+        "department": {"$in": ["finance", "accounting"]},
+        "date": {"$gte": "2025-01-01"},
+        "access_level": {"$lte": user_access_level},  # access control!
+    }
+)
+
+# Weaviate — GraphQL-style filtering
+result = client.query.get("Document", ["text", "source"]) \
+    .with_near_text({"concepts": ["Q3 revenue"]}) \
+    .with_where({
+        "operator": "And",
+        "operands": [
+            {"path": ["file_type"], "operator": "Equal", "valueText": "pdf"},
+            {"path": ["year"], "operator": "GreaterThanEqual", "valueInt": 2025},
+        ]
+    }) \
+    .with_limit(10).do()
+```
+
+**Common metadata fields for enterprise search:**
+
+```
+  ┌────────────────────┬────────────────────────────────────────────┐
+  │ Field              │ Use case                                   │
+  ├────────────────────┼────────────────────────────────────────────┤
+  │ file_type          │ Filter: "only PDFs" or "only images"       │
+  │ department         │ Filter: "only finance docs"                │
+  │ author             │ Filter: "docs written by Alice"            │
+  │ date / created_at  │ Filter: "last 6 months only"               │
+  │ access_level       │ Security: pre-filter by user permission    │
+  │ language           │ Filter: "only English documents"           │
+  │ page_number        │ Display: show which page the result is from│
+  │ heading / section  │ Display: show the section title            │
+  │ source_url         │ Display: link back to the original doc     │
+  │ tags / categories  │ Filter: "only tagged as 'policy'"          │
+  └────────────────────┴────────────────────────────────────────────┘
+```
 
 ---
 
@@ -920,6 +1001,35 @@ results = collection.query(
     },
 )
 ```
+
+### Cost Estimation — What Does This Actually Cost?
+
+```
+  EMBEDDING COSTS (per 1 million documents, ~500 tokens each):
+  ──────────────────────────────────────────────────────────────
+  OpenAI text-embedding-3-small    ~$10       (cheapest quality option)
+  OpenAI text-embedding-3-large    ~$65       (best OpenAI quality)
+  Gemini text-embedding-004        ~$6        (Google, very competitive)
+  Cohere embed-v3                  ~$5        (good multilingual)
+  Self-hosted (sentence-transformers on GPU)   ~$0 marginal, $200/mo GPU
+
+  VECTOR DB HOSTING (per 1 million 768-dim vectors):
+  ──────────────────────────────────────────────────────────────
+  ChromaDB (self-hosted)           Free (just RAM — ~3GB for 1M vectors)
+  Pinecone Serverless              ~$35/month
+  Weaviate Cloud                   ~$25/month (starter)
+  Qdrant Cloud                     ~$30/month
+  Vertex AI Vector Search          ~$100/month (enterprise SLA)
+  pgvector (existing Postgres)     $0 additional (but slower ANN)
+
+  TOTAL FOR 1M DOCS (embedding once + hosting monthly):
+  ──────────────────────────────────────────────────────────────
+  Budget option:  Gemini embed ($6) + ChromaDB (free)   = ~$6 one-time
+  Production:     OpenAI large ($65) + Pinecone ($35/mo) = $65 + $35/mo
+  Enterprise:     Self-hosted + Vertex AI ($200/mo GPU + $100/mo) = ~$300/mo
+```
+
+> **Rule of thumb:** Embedding is a one-time cost (re-embed only when changing models). Vector DB hosting is the ongoing cost. For most startups, the total is under $100/month for millions of documents.
 
 ---
 
