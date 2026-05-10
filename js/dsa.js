@@ -974,19 +974,31 @@ async function showDSAProblem(id) {
             </div>
             ${!hintUsed ? `<button class="dsa-hint-btn" id="dsaHintBtn" onclick="dsaRevealHint('${id}')">Show Hint</button>` : ''}
           </div>` : ''}
-          <div class="dsa-pane-section dsa-scratch-pane">
-            <div class="dsa-scratch-pane-header">
-              <h3 style="margin:0;"><i class="ico">&#128221;</i> Rough work / Scratch pad</h3>
+
+          <!-- Collapsible scratch / rough-work pad (left pane, below Hint) -->
+          <details class="dsa-pane-section dsa-scratch-section" id="dsaScratchWrap"${scratch ? ' open' : ''}>
+            <summary class="dsa-scratch-summary">
+              <h3 style="margin:0;flex:1;"><i class="ico">&#128221;</i> Rough work / Scratch pad</h3>
               <span class="dsa-scratch-saved" id="dsaScratchSaved">Saved</span>
-            </div>
+            </summary>
             <textarea class="dsa-scratch" id="dsaScratch" spellcheck="false" placeholder="// Approach, pseudocode, walkthrough on a small example, complexity, edge cases.&#10;// Auto-saves per problem.">${escapeCode(scratch)}</textarea>
+          </details>
+
+          <!-- Output (left pane, below scratch) -->
+          <div class="dsa-pane-section dsa-output-section">
+            <div class="dsa-output-header">
+              <h3 style="margin:0;flex:1;"><i class="ico">&#9889;</i> Output</h3>
+              <button class="dsa-output-clear" onclick="document.getElementById('dsaOutput').textContent='';document.getElementById('dsaTestResultsWrap').classList.remove('visible');">Clear</button>
+            </div>
+            <div class="dsa-output" id="dsaOutput">${saved.lastOutput || 'Click "Run" to execute your code.'}</div>
+            <div class="dsa-test-results-wrap" id="dsaTestResultsWrap"></div>
           </div>
         </div>
 
         <!-- Draggable divider -->
         <div class="dsa-split-divider" id="dsaSplitDivider"></div>
 
-        <!-- Right pane: editor + output -->
+        <!-- Right pane: editor only -->
         <div class="dsa-split-right">
           <div class="dsa-editor-wrap">
             <div class="dsa-editor-toolbar">
@@ -1009,15 +1021,6 @@ async function showDSAProblem(id) {
               <textarea class="dsa-editor" id="dsaCodeEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">${escapeCode(code)}</textarea>
             </div>
           </div>
-
-          <div class="dsa-output-wrap">
-            <div class="dsa-output-header">
-              <span>Output</span>
-              <button style="margin-left:auto;padding:3px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:6px;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'" onclick="document.getElementById('dsaOutput').textContent='';document.getElementById('dsaTestResultsWrap').classList.remove('visible');">Clear</button>
-            </div>
-            <div class="dsa-output" id="dsaOutput">${saved.lastOutput || 'Click "Run" to execute your code.'}</div>
-          </div>
-          <div class="dsa-test-results-wrap" id="dsaTestResultsWrap"></div>
         </div>
       </div>
 
