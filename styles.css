@@ -2619,6 +2619,73 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   .db-progress-grid { grid-template-columns: 1fr; }
 }
 
+/* ─── Quick References (playbook + cheat sheet) ─── */
+.db-quickref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+.db-quickref-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.db-quickref-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px var(--shadow);
+  transform: translateY(-1px);
+}
+.db-quickref-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.db-quickref-body { flex: 1; min-width: 0; }
+.db-quickref-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--heading);
+  margin-bottom: 4px;
+}
+.db-quickref-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  align-items: center;
+}
+.db-quickref-done {
+  color: var(--success);
+  font-weight: 600;
+}
+.db-quickref-pending {
+  padding: 2px 8px;
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+.db-quickref-arrow {
+  color: var(--text-secondary);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.db-quickref-card:hover .db-quickref-arrow { color: var(--accent); }
+@media (max-width: 480px) {
+  .db-quickref-grid { grid-template-columns: 1fr; }
+}
+
 /* ─── Collapsible Sections ─── */
 .db-collapse {
   margin: 12px 0;
