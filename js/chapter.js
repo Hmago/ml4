@@ -34,6 +34,7 @@ const chapters = [
 
   // ── DEEP LEARNING & LLMs ──
   { section: 'Deep Learning & LLMs' },
+  { id: '★', file: 'content/15p_dl_llm_playbook.md', title: 'DL & LLMs — Playbook', ref: true },
   { id: '15', file: 'content/15_deep_learning.md', title: 'Deep Learning Reference' },
   { id: '16', file: 'content/16_llm.md', title: 'Large Language Models' },
   { id: '17', file: 'content/17_ai_agents.md', title: 'AI Agents & Tool Use' },
@@ -1327,17 +1328,102 @@ async function runPythonCode(code, outputEl) {
 
     outputEl.innerHTML = '<div class="py-loading"><div class="spinner"></div>Installing packages...</div>';
 
-    // Detect and install needed packages
+    // ─── Parse import statements (top-level module only) ───
+    // Matches "import foo" or "from foo.bar import baz" → captures "foo".
+    const importedModules = new Set();
+    const importRe = /(?:^|\n)\s*(?:from|import)\s+([a-zA-Z_][\w.]*)/g;
+    let _m;
+    while ((_m = importRe.exec(code)) !== null) {
+      importedModules.add(_m[1].split('.')[0]);
+    }
+
+    // ─── Packages that CAN'T run in the browser sandbox ───
+    // Heavy native deps, GPU code, server runtimes, paid APIs — show friendly skip message.
+    const browserIncompatible = {
+      // Deep learning frameworks
+      'torch': 'PyTorch',
+      'torchvision': 'torchvision',
+      'tensorflow': 'TensorFlow',
+      'tf': 'TensorFlow',
+      'keras': 'Keras',
+      'jax': 'JAX',
+      'flax': 'Flax',
+      // HuggingFace ecosystem
+      'datasets': 'HuggingFace datasets',
+      'transformers': 'HuggingFace transformers',
+      'peft': 'HuggingFace peft',
+      'trl': 'HuggingFace trl',
+      'accelerate': 'HuggingFace accelerate',
+      'bitsandbytes': 'bitsandbytes',
+      'huggingface_hub': 'huggingface_hub',
+      // Agent / LLM frameworks (need API keys + heavy deps)
+      'langchain': 'LangChain',
+      'langchain_openai': 'LangChain',
+      'langchain_core': 'LangChain',
+      'langchain_community': 'LangChain',
+      'langgraph': 'LangGraph',
+      'llama_index': 'LlamaIndex',
+      'dspy': 'DSPy',
+      'pydantic_ai': 'Pydantic AI',
+      'crewai': 'CrewAI',
+      'autogen': 'AutoGen',
+      'instructor': 'Instructor',
+      // LLM provider SDKs (need API keys + network)
+      'openai': 'OpenAI SDK',
+      'anthropic': 'Anthropic SDK',
+      'cohere': 'Cohere SDK',
+      'google': 'Google GenAI SDK',
+      // Inference / serving (server-only)
+      'vllm': 'vLLM',
+      'ollama': 'Ollama',
+      // Web / app frameworks
+      'gradio': 'Gradio',
+      'streamlit': 'Streamlit',
+      'fastapi': 'FastAPI',
+      'uvicorn': 'Uvicorn',
+      // Eval / observability
+      'mlflow': 'MLflow',
+      'wandb': 'Weights & Biases',
+      'ragas': 'Ragas',
+      'deepeval': 'DeepEval',
+      'requests': null,  // works in pyodide via micropip but blocked by CORS — skip silently
+    };
+    const blockedHits = [];
+    for (const mod of importedModules) {
+      if (browserIncompatible.hasOwnProperty(mod) && browserIncompatible[mod]) {
+        blockedHits.push(browserIncompatible[mod]);
+      }
+    }
+    if (blockedHits.length > 0) {
+      const uniq = [...new Set(blockedHits)];
+      outputEl.innerHTML =
+        '<div class="py-info" style="line-height:1.5;">' +
+          'ℹ️ This example needs <strong>' + uniq.join(', ') + '</strong> ' +
+          'which can\'t run in the browser sandbox (heavy native deps, GPU, server runtime, or remote API).<br>' +
+          '<span style="opacity:0.8;">Copy the code to a local Python environment to try it.</span>' +
+        '</div>';
+      return;
+    }
+
+    // ─── Pyodide-installable packages ───
+    // Maps a top-level module name to the Pyodide / PyPI package name.
     const pkgMap = {
       'pandas': 'pandas',
       'sklearn': 'scikit-learn',
       'scipy': 'scipy',
       'seaborn': 'seaborn',
       'matplotlib': 'matplotlib',
+      'joblib': 'joblib',
+      'imblearn': 'imbalanced-learn',
+      'statsmodels': 'statsmodels',
+      'networkx': 'networkx',
+      'sympy': 'sympy',
+      'PIL': 'pillow',
+      'pydantic': 'pydantic',
     };
     const neededPkgs = [];
-    for (const [imp, pkg] of Object.entries(pkgMap)) {
-      if (code.includes(imp)) neededPkgs.push(pkg);
+    for (const mod of importedModules) {
+      if (pkgMap[mod]) neededPkgs.push(pkgMap[mod]);
     }
     if (neededPkgs.length > 0) {
       for (const pkg of neededPkgs) {

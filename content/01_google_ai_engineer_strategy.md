@@ -189,21 +189,25 @@ These are the 15 topics Google interviewers ask about most frequently, ranked by
 
 | Rank | Topic | Chapter Reference | What They Ask |
 |------|-------|------------------|---------------|
-| 1 | Transformer / Self-Attention | Ch 20 T6+T11, Ch 13 Sec 2 | Derive scaled dot-product attention. Why sqrt(d_k)? Multi-head purpose. |
-| 2 | ML System Design | Ch 17, Ch 20 Modern | Design an end-to-end recommendation/ranking/fraud system at Google scale |
-| 3 | RLHF / DPO / Alignment | Ch 20 T12 | Compare RLHF vs DPO. What is reward hacking? Why is DPO more stable? |
-| 4 | Recommendation Systems | Ch 17 (YouTube, Ads) | Two-tower retrieval, multi-stage ranking, Wide & Deep |
-| 5 | Distributed Training | Ch 20 T13 Sec 13.3 | Data vs tensor vs pipeline parallelism. ZeRO. 3D parallelism. |
-| 6 | Evaluation Metrics | Ch 20 T7+T14 | AUC-ROC vs AUC-PR, NDCG, perplexity, MMLU, LLM-as-judge |
-| 7 | AI Agents & Tool Use | Ch 16 Q63-64, Ch 22 | ReAct pattern, MCP, function calling, multi-step planning |
-| 8 | Embeddings / ANN Search | Ch 13 Sec 10, Ch 16 Q32 | Cosine vs dot product, HNSW, FAISS, embedding drift |
-| 9 | Bias-Variance Tradeoff | Ch 20 T1, Ch 4 | Explain it cold, draw the diagram, map it to real model choices |
-| 10 | Multimodal Models | Ch 13, Ch 16 | Cross-modal attention, image-text alignment, video understanding |
-| 11 | Responsible AI / Safety | Ch 16 Q54-Q60 | Bias detection, toxicity filtering, Constitutional AI, red-teaming |
-| 12 | Gradient Descent / Optimizers | Ch 20 T2, Ch 4 | Derive SGD update rule, Adam internals, learning rate warmup |
-| 13 | Overfitting & Regularization | Ch 20 T3, Ch 4 | L1 vs L2 geometry, dropout at test time, early stopping |
-| 14 | Gemini Architecture (MoE) | Ch 20 T11, Ch 19 | Mixture of Experts routing, load balancing, expert specialization |
-| 15 | Feature Engineering at Scale | Ch 20 T9, Ch 5, Ch 17 | Feature stores, real-time vs batch features, embedding features |
+| 1 | Transformer / Self-Attention | Ch 31 T6+T11, Ch 15 | Derive scaled dot-product attention. Why sqrt(d_k)? Multi-head purpose. |
+| 2 | ML System Design | Ch 21, Ch 22 | Design an end-to-end recommendation/ranking/fraud system at Google scale |
+| 3 | RLHF / DPO / Alignment | Ch 16, Ch 19, Ch 31 T12 | Compare RLHF vs DPO. What is reward hacking? Why is DPO more stable? |
+| 4 | Recommendation Systems | Ch 21 (YouTube, Ads) | Two-tower retrieval, multi-stage ranking, Wide & Deep |
+| 5 | Distributed Training | Ch 25, Ch 31 T13 | Data vs tensor vs pipeline parallelism. ZeRO. 3D parallelism. |
+| 6 | Evaluation Metrics | Ch 14, Ch 31 T7+T14 | AUC-ROC vs AUC-PR, NDCG, perplexity, MMLU, LLM-as-judge |
+| 7 | AI Agents & Tool Use | Ch 17, Ch 18, Ch 30 | ReAct pattern, MCP, A2A, function calling, multi-step planning |
+| 8 | Embeddings / ANN Search | Ch 24, Ch 30 | Cosine vs dot product, HNSW, FAISS, embedding drift, hybrid search |
+| 9 | Bias-Variance Tradeoff | Ch 07, Ch 31 T1 | Explain it cold, draw the diagram, map it to real model choices |
+| 10 | Multimodal Models | Ch 16, Ch 19 | Cross-modal attention, image-text alignment, video understanding |
+| 11 | Responsible AI / Safety | Ch 16, Ch 19 | Bias detection, toxicity filtering, Constitutional AI, red-teaming, EU AI Act |
+| 12 | Gradient Descent / Optimizers | Ch 07, Ch 31 T2 | Derive SGD update rule, Adam internals, learning rate warmup |
+| 13 | Overfitting & Regularization | Ch 07, Ch 31 T3 | L1 vs L2 geometry, dropout at test time, early stopping |
+| 14 | Reasoning Models & Test-time Compute | Ch 19, ★ Playbook | When to use o3 / Opus 4.7 thinking. Cost vs accuracy tradeoff. |
+| 15 | Frameworks & Inference Servers | Ch 18, ★ Playbook | LangChain 1.0, vLLM (TGI is dead), DSPy, Pydantic AI, ADK |
+| 16 | Coding Agents | Ch 19, ★ Playbook | SWE-bench 13% → 88%. Claude Code, Cursor, Devin. Scaffold matters. |
+| 17 | Context Engineering | Ch 17, Ch 19, ★ Playbook | The full context stack — system + RAG + tools + memory + history |
+| 18 | Gemini / MoE Architecture | Ch 19, Ch 31 T11 | Mixture of Experts routing, load balancing, expert specialization |
+| 19 | Feature Engineering at Scale | Ch 08, Ch 21, Ch 31 T9 | Feature stores, real-time vs batch features, embedding features |
 
 > In a real Google interview, they might ask: "Walk me through how you would train a reward model for RLHF. What data do you need? What loss function? What can go wrong?" Then they will push: "Now compare that to DPO. Why might DPO be preferred in practice? When would you still choose RLHF?"
 

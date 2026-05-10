@@ -624,11 +624,12 @@ function showDashboard() {
     'content/12_key_algorithms.md': 175,
     'content/13_neural_networks.md': 120,
     'content/14_model_evaluation.md': 120,
+    'content/15p_dl_llm_playbook.md': 25,
     'content/15_deep_learning.md': 200,
     'content/16_llm.md': 540,
     'content/17_ai_agents.md': 100,
-    'content/18_ai_frameworks.md': 55,
-    'content/19_2026_landscape.md': 35,
+    'content/18_ai_frameworks.md': 90,
+    'content/19_2026_landscape.md': 55,
     'content/24_semantic_search.md': 135,
     'content/25_gpus_tpus_infrastructure.md': 160,
     'content/03_aptitude_mental_math.md': 225,
@@ -897,6 +898,30 @@ function showDashboard() {
             '</div>';
           }).join('');
         })()}
+        </div>
+      </div>
+
+      <!-- ─── Quick References (playbook + cheat sheet) ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.zap} Quick References</h3>
+        <div class="db-quickref-grid">
+        ${chapters.filter(c => c.ref).map(c => {
+          const idx = chapters.indexOf(c);
+          const mins = chapterMinutes[c.file] || 30;
+          const estH = mins >= 60 ? Math.floor(mins/60) + 'h ' + (mins%60 ? mins%60 + 'm' : '') : mins + 'm';
+          const isRead = !!readChapters[c.file];
+          return '<button class="db-quickref-card" onclick="loadChapter(' + idx + ')">' +
+            '<span class="db-quickref-icon">' + (c.id === '★' ? '⭐' : '📋') + '</span>' +
+            '<div class="db-quickref-body">' +
+              '<div class="db-quickref-title">' + escapeHTML(c.title) + '</div>' +
+              '<div class="db-quickref-meta">' +
+                '<span>' + estH + '</span>' +
+                (isRead ? '<span class="db-quickref-done">✓ Read</span>' : '<span class="db-quickref-pending">Reference</span>') +
+              '</div>' +
+            '</div>' +
+            '<span class="db-quickref-arrow">→</span>' +
+          '</button>';
+        }).join('')}
         </div>
       </div>
 
@@ -1311,6 +1336,7 @@ function resetQuizData() {
 }
 
 const MOTIVATION_QUOTES = [
+  { q: "One life, one goal — to be impactful always.", a: "Harshit Mago" },
   // ── Chinese Proverbs ──
   { q: "A journey of a thousand miles begins with a single step.", a: "Lao Tzu (Chinese Proverb)" },
   { q: "The best time to plant a tree was 20 years ago. The second best time is now.", a: "Chinese Proverb" },
