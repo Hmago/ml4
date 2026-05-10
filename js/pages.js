@@ -613,7 +613,7 @@ function showDashboard() {
   // Values below are derived from actual word counts in each chapter, rounded to the nearest 5 min.
   const chapterMinutes = {
     'content/01_google_ai_engineer_strategy.md': 130,
-    'content/04_brain_training.md': 100,
+    'content/04_brain_training.md': 130,
     'content/05_math_fundamentals.md': 280,
     'content/06_introduction.md': 90,
     'content/07_core_concepts.md': 210,
@@ -632,7 +632,7 @@ function showDashboard() {
     'content/19_2026_landscape.md': 55,
     'content/24_semantic_search.md': 135,
     'content/25_gpus_tpus_infrastructure.md': 160,
-    'content/03_aptitude_mental_math.md': 225,
+    'content/03_aptitude_mental_math.md': 380,
     'content/20_design_fundamentals.md': 335,
     'content/29_interview_questions.md': 220,
     'content/30_llm_interview_questions.md': 445,

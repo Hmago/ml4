@@ -3908,7 +3908,7 @@ const DSA_PROBLEMS = [
   {
     id: 'number-of-1-bits',
     title: 'Number of 1 Bits',
-    category: 'Fundamentals',
+    category: 'Bit Manipulation',
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/number-of-1-bits/',
     tags: ['Bit Manipulation', 'Divide and Conquer'],
@@ -3920,7 +3920,7 @@ const DSA_PROBLEMS = [
   {
     id: 'reverse-bits',
     title: 'Reverse Bits',
-    category: 'Fundamentals',
+    category: 'Bit Manipulation',
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/reverse-bits/',
     tags: ['Bit Manipulation', 'Divide and Conquer'],
@@ -3932,7 +3932,7 @@ const DSA_PROBLEMS = [
   {
     id: 'sum-of-two-integers',
     title: 'Sum of Two Integers',
-    category: 'Fundamentals',
+    category: 'Bit Manipulation',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/sum-of-two-integers/',
     tags: ['Bit Manipulation', 'Math'],
@@ -3980,7 +3980,7 @@ const DSA_PROBLEMS = [
   {
     id: 'design-tic-tac-toe',
     title: 'Design Tic-Tac-Toe',
-    category: 'Fundamentals',
+    category: 'Design',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/design-tic-tac-toe/',
     tags: ['Array', 'Hash Table', 'Design', 'Matrix', 'Simulation'],
@@ -3992,7 +3992,7 @@ const DSA_PROBLEMS = [
   {
     id: 'design-hit-counter',
     title: 'Design Hit Counter',
-    category: 'Fundamentals',
+    category: 'Design',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/design-hit-counter/',
     tags: ['Array', 'Hash Table', 'Binary Search', 'Design', 'Queue'],
@@ -4004,7 +4004,7 @@ const DSA_PROBLEMS = [
   {
     id: 'power-of-two',
     title: 'Power of Two',
-    category: 'Fundamentals',
+    category: 'Bit Manipulation',
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/power-of-two/',
     tags: ['Math', 'Bit Manipulation', 'Recursion'],
@@ -4161,7 +4161,7 @@ const DSA_PROBLEMS = [
   {
     id: 'divide-two-integers',
     title: 'Divide Two Integers',
-    category: 'Fundamentals',
+    category: 'Bit Manipulation',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/divide-two-integers/',
     tags: ['Math', 'Bit Manipulation'],
@@ -4173,7 +4173,7 @@ const DSA_PROBLEMS = [
   {
     id: 'moving-average-stream',
     title: 'Moving Average from Data Stream',
-    category: 'Fundamentals',
+    category: 'Design',
     difficulty: 'Easy',
     link: 'https://leetcode.com/problems/moving-average-from-data-stream/',
     tags: ['Design', 'Queue', 'Data Stream'],
@@ -4197,7 +4197,7 @@ const DSA_PROBLEMS = [
   {
     id: 'snake-game',
     title: 'Design Snake Game',
-    category: 'Fundamentals',
+    category: 'Design',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/design-snake-game/',
     tags: ['Design', 'Queue', 'Hash Table', 'Matrix', 'Simulation'],
@@ -4233,7 +4233,7 @@ const DSA_PROBLEMS = [
   {
     id: 'range-sum-query-mutable',
     title: 'Range Sum Query - Mutable',
-    category: 'Fundamentals',
+    category: 'Design',
     difficulty: 'Medium',
     link: 'https://leetcode.com/problems/range-sum-query-mutable/',
     tags: ['Array', 'Binary Indexed Tree', 'Segment Tree', 'Design'],

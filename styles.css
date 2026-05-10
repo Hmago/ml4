@@ -2052,6 +2052,42 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 .dsa-save-indicator { font-size:12px; color:#22c55e; margin-left:8px; opacity:0; transition:opacity 0.3s; }
 .dsa-save-indicator.show { opacity:1; }
 
+/* ─── Scratch pad (lives in the left pane — replaced the Notes field) ─── */
+.dsa-scratch-pane { padding: 0; }
+.dsa-scratch-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.dsa-scratch-pane-header h3 { font-size: 13px; }
+.dsa-scratch-saved {
+  font-size: 11px;
+  color: #22c55e;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.dsa-scratch-saved.show { opacity: 1; }
+.dsa-scratch {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  tab-size: 2;
+}
+.dsa-scratch:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.dsa-scratch::placeholder { color: var(--text-secondary); font-style: italic; }
+
 /* ─── Keyboard shortcut hint ─── */
 .dsa-hint { display:flex; align-items:center; justify-content:center; gap:16px; padding:8px 0; font-size:12px; color:var(--text-secondary); margin-top:6px; }
 .dsa-hint kbd {
@@ -2074,8 +2110,6 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 .dsa-fullscreen .dsa-editor { min-height:0; }
 .dsa-fullscreen .dsa-output-wrap { max-height:200px; }
 .dsa-fullscreen .dsa-output { max-height:150px; }
-.dsa-fullscreen .dsa-hint { display:none; }
-.dsa-fullscreen .dsa-notes-wrap { display:none; }
 .dsa-fs-btn {
   padding:6px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:8px;
   background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:13px; cursor:pointer;

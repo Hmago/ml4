@@ -52,7 +52,7 @@ let dsaAutoSaveTimer = null;
 let dsaTimerInterval = null;
 let dsaTimerSeconds = 0;
 let dsaTimerRunning = false;
-let dsaNoteSaveTimer = null;
+// (legacy Notes timer removed; scratch pad uses dsaScratchSaveTimer below)
 
 // Restore DSA list view preferences from localStorage
 (function() {
@@ -878,7 +878,8 @@ async function showDSAProblem(id) {
   const progress = getDSAProgress();
   const saved = progress[id] || {};
   const code = saved.code || problem.starterCode;
-  const notes = saved.notes || '';
+  // Scratch pad replaces the older Notes field; migrate prior content once.
+  const scratch = saved.scratch || saved.notes || '';
 
   // Category progress + prev/next scoped to the filtered view the user just
   // clicked from. The practice list numbers rows per-category within the
@@ -973,12 +974,12 @@ async function showDSAProblem(id) {
             </div>
             ${!hintUsed ? `<button class="dsa-hint-btn" id="dsaHintBtn" onclick="dsaRevealHint('${id}')">Show Hint</button>` : ''}
           </div>` : ''}
-          <div class="dsa-pane-section dsa-notes-wrap">
-            <div class="dsa-notes-header">
-              <h3 style="margin:0;"><i class="ico">&#9998;</i> Notes</h3>
-              <span class="dsa-notes-saved" id="dsaNotesSaved">Saved</span>
+          <div class="dsa-pane-section dsa-scratch-pane">
+            <div class="dsa-scratch-pane-header">
+              <h3 style="margin:0;"><i class="ico">&#128221;</i> Rough work / Scratch pad</h3>
+              <span class="dsa-scratch-saved" id="dsaScratchSaved">Saved</span>
             </div>
-            <textarea class="dsa-notes" id="dsaNotes" placeholder="Approach, complexity, edge cases...">${escapeCode(notes)}</textarea>
+            <textarea class="dsa-scratch" id="dsaScratch" spellcheck="false" placeholder="// Approach, pseudocode, walkthrough on a small example, complexity, edge cases.&#10;// Auto-saves per problem.">${escapeCode(scratch)}</textarea>
           </div>
         </div>
 
@@ -1273,9 +1274,9 @@ async function showDSAProblem(id) {
     if (exitBtn) exitBtn.style.display = '';
   }
 
-  // ── Notes auto-save ──
-  const notesEl = document.getElementById('dsaNotes');
-  notesEl.addEventListener('input', function() { dsaAutoSaveNotes(id); });
+  // ── Scratch-pad auto-save (replaces the older Notes field) ──
+  const scratchEl = document.getElementById('dsaScratch');
+  if (scratchEl) scratchEl.addEventListener('input', function() { dsaAutoSaveScratch(id); });
 
   // ── Draggable split divider ──
   const divider = document.getElementById('dsaSplitDivider');
@@ -1576,17 +1577,20 @@ function dsaToggleDesc() {
   if (chevron) chevron.classList.toggle('collapsed');
 }
 
-// ─── Notes auto-save ───
-function dsaAutoSaveNotes(id) {
-  clearTimeout(dsaNoteSaveTimer);
-  dsaNoteSaveTimer = setTimeout(() => {
-    const notesEl = document.getElementById('dsaNotes');
-    if (!notesEl) return;
+// ─── Scratch-pad auto-save (replaces the older Notes field) ───
+let dsaScratchSaveTimer = null;
+function dsaAutoSaveScratch(id) {
+  clearTimeout(dsaScratchSaveTimer);
+  dsaScratchSaveTimer = setTimeout(() => {
+    const el = document.getElementById('dsaScratch');
+    if (!el) return;
     const progress = getDSAProgress();
     if (!progress[id]) progress[id] = {};
-    progress[id].notes = notesEl.value;
+    progress[id].scratch = el.value;
+    // Notes field is gone; clear it so progress export doesn't carry stale data.
+    if (progress[id].notes !== undefined) delete progress[id].notes;
     saveDSAProgress(progress);
-    const ind = document.getElementById('dsaNotesSaved');
+    const ind = document.getElementById('dsaScratchSaved');
     if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
   }, 800);
 }
