@@ -21,7 +21,7 @@ Technical interviews test more than algorithms. When a system design interviewer
 
 ---
 
-## 25.1 Mental Math Shortcuts & Number Sense
+## 3.1 Mental Math Shortcuts & Number Sense
 
 Every engineer should have a set of numbers burned into memory. These are the constants you reach for when estimating system capacity, algorithm complexity, or back-of-envelope calculations.
 
@@ -244,7 +244,7 @@ $1000/20 = 50$ tokens/second. For 500 tokens: $500/50 = 10$ seconds.
 
 ---
 
-## 25.2 Number Series & Pattern Recognition
+## 3.2 Number Series & Pattern Recognition
 
 Pattern recognition is a core reasoning skill. In interviews and aptitude tests, you see a sequence and must find the rule. The strategy is systematic: compute differences, look for known patterns, and check your rule against all given terms.
 
@@ -440,7 +440,7 @@ $a_{20} = 3 + 19 \times 5 = 3 + 95 = 98$.
 
 ---
 
-## 25.3 Percentages, Profit & Loss, Ratios
+## 3.3 Percentages, Profit & Loss, Ratios
 
 These come up in business logic, A/B testing analysis, and surprisingly often in system design discussions ("if we reduce latency by 20%, what's the impact on throughput?").
 
@@ -621,7 +621,7 @@ New: $1.4p \times (1 - x/100) \times c = 1.12pc$. $1.4(1 - x/100) = 1.12$. $1 - 
 
 ---
 
-## 25.4 Time, Speed & Distance
+## 3.4 Time, Speed & Distance
 
 ### Key Formulas
 
@@ -749,7 +749,7 @@ At 3/4 speed, time becomes 4/3 of normal. Extra time = $4/3 \cdot T - T = T/3 = 
 
 ---
 
-## 25.5 Time & Work
+## 3.5 Time & Work
 
 ### Key Formulas
 
@@ -868,7 +868,7 @@ Day 13 (full rate): $1/10$ done. Total = **13 days**.
 
 ---
 
-## 25.6 Probability
+## 3.6 Probability
 
 Probability is everywhere in ML — from naive Bayes to dropout to sampling. If you understand probability deeply, half of machine learning becomes intuitive.
 
@@ -1068,7 +1068,7 @@ The first mover has an advantage.
 
 ---
 
-## 25.7 Combinatorics & Counting
+## 3.7 Combinatorics & Counting
 
 ### Key Formulas
 
@@ -1190,7 +1190,7 @@ We divide by $3!$ because the groups are unordered.
 
 ---
 
-## 25.8 Logical Reasoning
+## 3.8 Logical Reasoning
 
 Logical reasoning tests your ability to structure information and draw valid conclusions. The universal tip: **draw it out**. Every logical reasoning problem becomes manageable when you sketch a diagram.
 
@@ -1391,7 +1391,7 @@ With 5: Pirate 5 needs 3 votes (including own). Pirates 1 and 3 get 0 with 4 pir
 
 ---
 
-## 25.9 Data Interpretation
+## 3.9 Data Interpretation
 
 In interviews, you often need to read charts and extract insights quickly. The key skill is knowing when to approximate and when to be precise. If answer choices are 23%, 37%, 52%, 68% — you absolutely do not need exact math.
 
@@ -1557,7 +1557,7 @@ Combined = $27 + 20 = 47\%$. Larger than X (38%) by $47 - 38 = 9$ percentage poi
 
 ---
 
-## 25.10 Fermi Estimation (System Design Essential)
+## 3.10 Fermi Estimation (System Design Essential)
 
 Fermi estimation is the art of making reasonable guesses about quantities you don't know, using facts you do know. Every system design interview starts with estimation: "how much storage?", "what QPS?", "how many servers?". This is arguably the most practically useful section in this chapter.
 
@@ -1575,6 +1575,7 @@ Fermi estimation is the art of making reasonable guesses about quantities you do
 
 ```
 ┌───────────────────────────────────────────────┐
+│ POPULATION & USAGE                             │
 │ World population:           ~8 billion         │
 │ US population:              ~330 million       │
 │ India population:           ~1.4 billion       │
@@ -1584,15 +1585,75 @@ Fermi estimation is the art of making reasonable guesses about quantities you do
 │ YouTube uploads/minute:     ~500 hours         │
 │ Emails sent/day:            ~300 billion       │
 │ WhatsApp messages/day:      ~100 billion       │
+│                                                │
+│ DATA SIZES                                     │
 │ Average webpage size:       ~2-3 MB            │
 │ Average photo (phone):      ~3-5 MB            │
 │ Average email size:         ~75 KB             │
 │ 1 minute of HD video:       ~130 MB            │
 │ 1 tweet (with metadata):    ~1-2 KB            │
+│ 1 token (English text):     ~4 chars / ~0.75 wd │
 │ Average human reads:        ~250 words/min     │
 │ Average typing speed:       ~40 words/min      │
 └───────────────────────────────────────────────┘
 ```
+
+### AI / ML Engineer's Numbers (2026)
+
+By 2026 every system-design interview either *is* an AI system or includes an AI component. Memorise these the way you memorise powers of 2.
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ MODELS & PARAMETERS                                         │
+│ 1 parameter (BF16 / FP16):          2 bytes                │
+│ 1 parameter (INT8):                 1 byte                 │
+│ 1 parameter (INT4):                 0.5 bytes              │
+│ 7B model in BF16:                   ~14 GB                 │
+│ 7B model in INT4:                   ~3.5 GB (fits a phone) │
+│ 70B model in BF16:                  ~140 GB                │
+│ 70B model in INT4:                  ~35 GB (fits 1 H100)   │
+│ Frontier MoE (e.g. DeepSeek V4):    ~1.6 T total / 49 B act│
+│                                                             │
+│ HARDWARE                                                    │
+│ NVIDIA H100 HBM:                    80 GB                  │
+│ NVIDIA B200 HBM:                    192 GB                 │
+│ Google TPU v7 (Ironwood) HBM:       192 GB                 │
+│ Ironwood pod (9,216 chips):         ~42.5 exaFLOPS         │
+│ One H100 inference (Llama 8B BF16): ~30-100 tokens/sec     │
+│ vLLM throughput vs naive:           ~5-10×                 │
+│                                                             │
+│ TOKENS & COSTS (May 2026)                                   │
+│ 1 English word ≈                    ~1.3 tokens            │
+│ 1 page of text ≈                    ~500 tokens            │
+│ Frontier API (Gemini 3 Pro):        $2 in / $12 out per M │
+│ Cheap API (Flash / Haiku tier):     ~$0.05-0.15 per M tok │
+│ "GPT-4 quality" cost (2026):        ~$0.06 per M tok       │
+│ Token price drop 2022 → 2026:       ~1000×                 │
+│                                                             │
+│ CONTEXT & LATENCY                                           │
+│ Standard context window (2026):     1-2 M tokens           │
+│ Llama 4 Scout context:              10 M tokens            │
+│ TTFT for 8B model on H100:          ~50-100 ms             │
+│ Reasoning model thinking budget:    1 K - 100 K tokens     │
+│                                                             │
+│ TRAINING (rule-of-thumb)                                    │
+│ Compute-optimal tokens per param:   ~20 (Chinchilla)       │
+│ FLOPs to train: ~6 × params × tokens  (Kaplan 2020)        │
+│ GPT-4-class training compute:       ~10^25 FLOPs           │
+│ Cost to train a 70B model in 2026:  ~$1-5 M USD            │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Solved Example: How much does it cost to serve an LLM chatbot?
+
+A startup wants to serve 100K daily active users on a Llama-3.1-8B chatbot. Estimate monthly inference cost.
+
+1. DAUs: 100K. Sessions/user/day: ~3. Messages/session: ~5. → **1.5 M messages/day**.
+2. Avg input tokens/message: ~500 (system prompt + history + query). Output: ~200.
+3. Daily tokens: $1.5\text{M} \times 700 \approx 10^9$ tokens/day = **30 B tokens/month**.
+4. **Option A — hosted API (e.g. Gemini 3 Flash)**: ~$0.10 per M tokens blended → $30\text{B} \times \$0.10/\text{M} = \$3{,}000/\text{month}$.
+5. **Option B — self-host on vLLM + 1 H100** ($2/hour): one H100 sustains ~50 tok/s output × 86,400 s = **~4.3 M tok/day**. You need $30\text{B}/(30 \times 4.3\text{M}) \approx 230$ GPU-hours/day, or ~10 H100s running 24/7. $10 \times \$2 \times 24 \times 30 = \$14{,}400/\text{month}$.
+6. **Conclusion**: hosted API is ~5× cheaper at this scale. Self-host wins above ~10–100× this volume, or for privacy-critical workloads.
 
 ### Solved Example: How Many Piano Tuners in Chicago?
 
@@ -1709,7 +1770,7 @@ Total bandwidth: $10M \times (3 + 1.5) Mbps = 45 \times 10^6 Mbps = 45 Tbps$.
 
 ---
 
-## 25.11 Puzzles & Brain Teasers
+## 3.11 Puzzles & Brain Teasers
 
 Interviewers use puzzles to see how you think, not whether you've memorized the answer. State your assumptions. Think aloud. Break big problems into smaller ones.
 
@@ -1727,17 +1788,13 @@ Interviewers use puzzles to see how you think, not whether you've memorized the 
 
 <details><summary>Answer</summary>
 
-Start both. When the 4-min runs out (at t=4), flip it. When the 7-min runs out (at t=7), flip the 4-min (which has 1 minute of sand left, now has 3 minutes). Wait for the flipped 4-min at t=7: it runs for 1 min (the sand remaining from before flipping at t=4). That gives t=8. Hmm, let me reconsider.
+The trick: each time the 4-min ends, you've created a 1-min "remainder" of sand in the 7-min hourglass that you can then flip and re-use.
 
-Start both at t=0. At t=4, flip the 4-min. At t=7, the 7-min runs out. The 4-min has 1 min left. Flip the 7-min. When the 4-min finishes (t=8), flip the 7-min (it has run 1 min, so 6 left). That's not clean either.
-
-Better approach: Start both. At t=4, flip the 4-min. At t=7, flip the 4-min (has 1 min left, flip it → 3 min of sand on top). At t=7, also start timing. When the 4-min runs out (2 more minutes later at t=9). Wait — the 4-min was flipped at t=7 with 1 min of sand having run since t=4 flip, so 3 min had run and 1 min remains. Flipping gives 3 min. Ends at t=10.
-
-Simplest: Start both. At t=4, flip 4-min. At t=7, 7-min done, 4-min has 1 min left. Wait for 4-min to finish at t=8. Flip 4-min. At t=8+1=t=9... no, flipping a finished 4-min gives 4 more min.
-
-Correct: Start both at t=0. At t=4, flip the 4-min. At t=7, the 7-min finishes. The 4-min has been running for 3 minutes since flip, 1 minute left. Let it run. At t=8, the 4-min finishes. Flip the 4-min. But we wanted 9 min from start. At t=8, flip the 4-min, count 1 more minute? We have no 1-min device.
-
-**Actual answer:** Start both. At t=4, flip 4-min. At t=7, the 4-min has 1 min left. Flip the 7-min hourglass. When the 4-min runs out (t=8), 1 min has passed on the 7-min. Flip the 7-min again. When it runs out, 1 more minute passes. Total: t=8+1 = **9 minutes.** ✓
+Start both at t = 0.
+- **t = 4** — 4-min finishes. Flip it.
+- **t = 7** — 7-min finishes. Flip it. (The 4-min has 1 min left.)
+- **t = 8** — 4-min finishes. Flip the 7-min *again* — only 1 min of sand has fallen into the bottom since t=7, so the flipped hourglass has just 1 min of sand on top.
+- **t = 9** — that 1 min runs out. **Total elapsed: 9 minutes.** ✓
 </details>
 
 **P2 (Easy).** A farmer has to cross a river with a fox, a chicken, and a bag of grain. The boat holds only the farmer + one item. The fox eats the chicken if left alone. The chicken eats the grain if left alone. How?
@@ -1819,7 +1876,7 @@ Mathematically: find smallest $n$ where $n + (n-1) + (n-2) + ... + 1 \geq 100$. 
 **Minimum worst case: 14 drops.**
 </details>
 
-**P10 (Hard).** There are 5 pirates (ranked 1-5, 5 is most senior) dividing 100 gold coins. Same rules as P20 in section 25.8 but with a twist: if a pirate is indifferent (gets the same either way), they vote to throw the proposer overboard. What changes?
+**P10 (Hard).** There are 5 pirates (ranked 1-5, 5 is most senior) dividing 100 gold coins. Same rules as P20 in section 3.8 but with a twist: if a pirate is indifferent (gets the same either way), they vote to throw the proposer overboard. What changes?
 
 <details><summary>Answer</summary>
 
@@ -1831,7 +1888,991 @@ With 5: Pirate 5 needs 3 votes. If pirate 5 goes, pirate 4 does (1,0,0,99). Pira
 
 ---
 
-## 25.12 Daily Practice Plan
+## 3.12 Calendar & Clocks
+
+> Two classical aptitude topics that show up in nearly every campus test and occasionally in interview puzzle rounds (e.g., "if today is Wednesday, what day will it be in 1000 days?").
+
+### 3.12.1 Calendar Arithmetic
+
+```
+   KEY FACTS:
+      ▸ Ordinary year: 365 days = 52 weeks + 1 odd day.
+      ▸ Leap year: 366 days = 52 weeks + 2 odd days.
+      ▸ Leap rule: divisible by 4, except centuries unless divisible by 400.
+                   1900: NOT leap. 2000: leap. 2024: leap.
+      ▸ A century has 24 leap years (76 ordinary): 76 + 2×24 = 124 odd days = 17×7 + 5.
+        So 100 years = 5 odd days. 200 years = 3. 300 years = 1. 400 years = 0.
+
+   ALGORITHM (find day of any date):
+      1. Count odd days from a known reference (e.g., 1 Jan 1900 was Monday).
+      2. Add odd days for full centuries, partial years, months in current year, and the date.
+      3. Mod 7. Map 0→Sunday, 1→Monday, ..., 6→Saturday.
+```
+
+### Practice Problems
+
+**P1 (Easy).** Today is Wednesday. What day will it be 100 days from now?
+
+<details><summary>Answer</summary>
+
+100 mod 7 = 2 (since 14×7 = 98). Wednesday + 2 = **Friday**.
+</details>
+
+**P2 (Easy).** Is the year 2100 a leap year?
+
+<details><summary>Answer</summary>
+
+Divisible by 100 but not by 400 → **NOT** a leap year. (Same with 1700, 1800, 1900. But 2000 IS a leap year.)
+</details>
+
+**P3 (Medium).** A project started on Monday and runs for 1000 days. What day does it end?
+
+<details><summary>Answer</summary>
+
+1000 mod 7 = 6 (since 142×7 = 994). Monday + 6 = **Sunday**. (Counting day 1 as Monday, day 1000 lands on Sunday.)
+</details>
+
+### 3.12.2 Clocks — Angles & Hand Overlaps
+
+```
+   KEY FACTS:
+      ▸ Hour hand moves 360° / 12 hours = 30°/hour = 0.5°/min.
+      ▸ Minute hand moves 360° / 60 min = 6°/min.
+      ▸ Relative speed: 6 − 0.5 = 5.5°/min.
+
+   ANGLE BETWEEN HANDS at h:m:
+      |30 × h − 5.5 × m|   (take min with 360 minus result if > 180).
+
+   HOW OFTEN DO HANDS OVERLAP?
+      Minute hand laps hour hand once per 12/11 hours = ~65.45 min.
+      So in 12 hours: 11 overlaps. In 24 hours: 22.
+      (NOT 12 — they don't overlap at exactly 12:00 AND 12:60 — there is no 12:60.)
+```
+
+### Practice Problems
+
+**P1 (Easy).** What's the angle between the hands at 3:15?
+
+<details><summary>Answer</summary>
+
+|30×3 − 5.5×15| = |90 − 82.5| = **7.5°**. (Counterintuitive — at 3:15 the minute hand is exactly on 3, but the hour hand has moved 7.5° past 3.)
+</details>
+
+**P2 (Medium).** At what time between 4 and 5 do the hands first overlap?
+
+<details><summary>Answer</summary>
+
+At 4:00, hour hand is at 120°, minute hand at 0°. Minute hand catches up at 5.5°/min. Time = 120/5.5 = **21.818... min** past 4 ≈ 4:21:49.
+</details>
+
+**P3 (Medium).** A clock loses 2 minutes per day. After 30 days, by how much is it wrong?
+
+<details><summary>Answer</summary>
+
+2 × 30 = **60 minutes** = 1 hour slow.
+</details>
+
+---
+
+## 3.13 Compound Interest, EMI & Time-Value Math
+
+> The Rule of 72 (§3.1) is the lazy version. Real engineering finance — for ML monetisation, infra cost projections, your own salary negotiation — needs the actual formulas.
+
+### 3.13.1 Compound Interest
+
+```
+   AMOUNT after n years at rate r (compounded annually):
+      A = P × (1 + r)^n        where r is decimal (5% → 0.05)
+
+   MENTAL APPROXIMATIONS:
+      ▸ (1 + r)^n ≈ 1 + n·r           for small r·n (Taylor)
+      ▸ (1 + r)^n ≈ e^(n·r)           for any small r
+      ▸ Doubling time ≈ ln(2)/r ≈ 0.693/r ≈ 70/rate% (a tighter Rule of 70/72)
+
+   COMPOUNDED m TIMES PER YEAR:
+      A = P × (1 + r/m)^(m·n)
+   In the limit m → ∞ (continuous compounding): A = P × e^(r·n).
+```
+
+### 3.13.2 EMI — Equated Monthly Installment
+
+```
+   EMI = P × r × (1+r)^n / ((1+r)^n − 1)
+      where r is monthly rate, n is months.
+
+   MENTAL CHECK: for a long loan at low rate, EMI ≈ P/n + P·r/2.
+                 For a 30-year mortgage at 6% APR (0.5%/mo, n=360):
+                 monthly rate × P ≈ half the EMI; remainder is principal repayment.
+```
+
+### 3.13.3 Time-Value Math (NPV)
+
+```
+   NPV (Net Present Value) of cashflows C_0, C_1, ..., C_n at discount rate r:
+      NPV = Σ C_t / (1 + r)^t
+
+   "Money next year is worth less than money today."
+
+   PERPETUITY (cashflow C every year forever): PV = C / r.
+   GROWING PERPETUITY (grows at g): PV = C / (r − g).      [Gordon growth model]
+```
+
+### Practice Problems
+
+**P1 (Easy).** $10,000 invested at 6% compound annual, for 12 years. What's it worth?
+
+<details><summary>Answer</summary>
+
+Doubling time ≈ 72/6 = 12 years. So **~$20,000**. (Exact: 10,000 × 1.06^12 ≈ $20,122.)
+</details>
+
+**P2 (Medium).** A $100K SaaS contract pays $30K/year for 4 years. At a 10% discount rate, what's its NPV?
+
+<details><summary>Answer</summary>
+
+NPV = 30/1.1 + 30/1.21 + 30/1.331 + 30/1.4641
+   ≈ 27.3 + 24.8 + 22.5 + 20.5 ≈ **$95K** (slightly less than $100K nominal).
+</details>
+
+**P3 (Medium).** Your startup is offered $1M for X% equity. You estimate the company will generate $200K/year forever. At a 15% discount rate, what's the company worth, and how much equity should you sell for $1M?
+
+<details><summary>Answer</summary>
+
+Perpetuity value: $200K / 0.15 ≈ **$1.33M**. Equity for $1M = 1/1.33 ≈ **75%**. (Brutal — but explains why founders raise smaller rounds.)
+</details>
+
+**P4 (Hard).** A model API costs $0.10 per M tokens today, dropping at 30% per year (compound). What does it cost in 5 years?
+
+<details><summary>Answer</summary>
+
+$0.10 × (0.7)^5 = $0.10 × 0.168 ≈ **$0.017 / M tokens** — about 6× cheaper. (Matches the 2022→2026 ~1000× drop pattern.)
+</details>
+
+---
+
+## 3.14 Mixtures, Pipes, Boats & Trains
+
+> Four classical aptitude topics that share one common idea: **rates that combine linearly**. Master one and the rest fall.
+
+### 3.14.1 Mixtures & Allegations
+
+```
+   ALLEGATION RULE — for two-ingredient mixtures:
+
+       Cheaper            Dearer
+        Cprice              Dprice
+            \              /
+             \            /
+              Mean (Mprice)
+             /            \
+            /              \
+       Dprice − Mprice : Mprice − Cprice    ← ratio of cheaper : dearer
+
+   USE: blend two materials with known prices/concentrations to hit a target.
+```
+
+### Practice Problems
+
+**P1 (Easy).** Mix coffee at $8/lb and $14/lb to make a blend at $10/lb. In what ratio?
+
+<details><summary>Answer</summary>
+
+Allegation: (14 − 10) : (10 − 8) = 4 : 2 = **2:1** (cheaper to dearer). Use 2 parts $8 coffee for every 1 part $14 coffee.
+</details>
+
+**P2 (Medium).** A 60-litre solution is 30% acid. How much pure water must be added to dilute to 20%?
+
+<details><summary>Answer</summary>
+
+Acid is 18 L. After dilution, 18 L = 20% of total → total = 90 L. Water added = **30 L**.
+</details>
+
+### 3.14.2 Pipes & Cisterns
+
+> Same as work problems (§3.5) but with inflow vs outflow.
+
+```
+   ▸ Pipe A fills tank in a hours → rate 1/a per hour.
+   ▸ Pipe B drains in b hours → rate −1/b per hour.
+   ▸ Both open: net rate = 1/a − 1/b.
+```
+
+**P3 (Medium).** Pipe A fills in 6 hours, pipe B drains in 9 hours. Both open — how long to fill?
+
+<details><summary>Answer</summary>
+
+Net rate = 1/6 − 1/9 = 3/18 − 2/18 = 1/18. Time = **18 hours**.
+</details>
+
+### 3.14.3 Boats & Streams
+
+```
+   ▸ Boat speed in still water = b
+   ▸ Stream speed                = s
+   ▸ Downstream:    b + s
+   ▸ Upstream:      b − s
+
+   KEY: average speed for round trip is harmonic mean, NOT arithmetic.
+        Round-trip avg = 2bd / (d_down + d_up)... or: 2 × (b² − s²) / (2b) = (b² − s²)/b.
+```
+
+**P4 (Medium).** A boat does 10 km downstream in 1 hour and 10 km upstream in 2 hours. Find boat and stream speeds.
+
+<details><summary>Answer</summary>
+
+b + s = 10, b − s = 5 → b = 7.5 km/h, s = 2.5 km/h.
+</details>
+
+### 3.14.4 Trains
+
+```
+   ▸ Time to cross a STATIONARY POINT (pole/man):  L / v       (length / speed)
+   ▸ Time to cross a PLATFORM/BRIDGE:              (L_train + L_platform) / v
+   ▸ Time for two trains to CROSS in opposite dirs: (L_1 + L_2) / (v_1 + v_2)
+   ▸ Time for FASTER to overtake SLOWER:            (L_1 + L_2) / (v_1 − v_2)
+```
+
+**P5 (Medium).** A 200m train running at 90 km/h passes a 400m platform. How long?
+
+<details><summary>Answer</summary>
+
+90 km/h × (5/18) = 25 m/s. Total distance = 200 + 400 = 600 m. Time = 600/25 = **24 sec**.
+</details>
+
+**P6 (Hard).** Two trains 150m and 200m long run in opposite directions on parallel tracks at 54 km/h and 72 km/h. How long to cross each other?
+
+<details><summary>Answer</summary>
+
+54 + 72 = 126 km/h = 35 m/s. Combined length = 350m. Time = 350/35 = **10 sec**.
+</details>
+
+---
+
+## 3.15 Geometry & Mensuration
+
+> Show up in: image-processing math (bounding boxes, ROIs), bin packing, ML data augmentation (rotation/scale), and physical-system Fermi estimates (warehouse, delivery routes).
+
+### Key Formulas (Memorise)
+
+```
+   2D AREAS:
+      Square (side a):              a²
+      Rectangle (l, w):             l × w
+      Triangle (base b, height h):  ½ × b × h
+      Circle (radius r):            π r²       ≈ 3.14 r²
+      Ellipse (a, b):               π a b
+
+   2D PERIMETERS:
+      Circle (radius r):            2π r       ≈ 6.28 r
+
+   3D VOLUMES:
+      Cube (side a):                a³
+      Cuboid (l, w, h):             l × w × h
+      Cylinder (r, h):              π r² h
+      Cone (r, h):                  ⅓ π r² h
+      Sphere (r):                   ⁴⁄₃ π r³
+      Pyramid (base A, h):          ⅓ × A × h
+
+   3D SURFACE AREAS:
+      Cylinder (r, h):              2π r (r + h)
+      Sphere (r):                   4π r²
+
+   PYTHAGORAS:
+      For right triangle:           a² + b² = c²
+      3-4-5 triple:                 always recognisable
+      5-12-13, 8-15-17, 7-24-25:    other useful triples
+```
+
+### Practice Problems
+
+**P1 (Easy).** A square has perimeter 40. What's its area?
+
+<details><summary>Answer</summary>
+
+Side = 40/4 = 10. Area = **100**.
+</details>
+
+**P2 (Medium).** A cone has base radius 6 and height 8. Find slant height and surface area.
+
+<details><summary>Answer</summary>
+
+Slant ℓ = √(36+64) = √100 = **10**. Surface = π r ℓ + π r² = π·60 + π·36 = **96π ≈ 302**.
+</details>
+
+**P3 (Medium).** ML augmentation: an image is rotated 30° and rescaled to 80%. Original 1024×1024. New bounding box?
+
+<details><summary>Answer</summary>
+
+Rotated bbox max = original × (|cos θ| + |sin θ|). cos 30 + sin 30 ≈ 0.866 + 0.5 = 1.366. New side = 1024 × 1.366 × 0.8 ≈ **1119 px**.
+</details>
+
+**P4 (Hard).** A ML batch contains 32 images, each 224×224×3 bytes. Total bytes? GPU memory at FP16 if doubled for activations?
+
+<details><summary>Answer</summary>
+
+Per image: 224² × 3 = 150,528 bytes ≈ 150 KB. Batch: 32 × 150 KB ≈ **4.8 MB** raw. FP16 activations through a typical CNN: ~10× input → ~50 MB. Doubled: **~100 MB**. Negligible vs model weights for any modern net.
+</details>
+
+---
+
+## 3.16 Logarithms & Exponentials Mental Math
+
+> Logs are the engineer's best friend: they turn multiplication into addition, exponential growth into linear, and "how many bits do I need?" into a one-liner.
+
+### Key Identities & Mental Numbers
+
+```
+   IDENTITIES:
+      log(a·b)    = log a + log b
+      log(a/b)    = log a − log b
+      log(a^n)    = n · log a
+      log_b(x)    = log_a(x) / log_a(b)        [change of base]
+
+   MEMORISE (base 10):
+      log₁₀(1)   = 0
+      log₁₀(2)   ≈ 0.301
+      log₁₀(3)   ≈ 0.477
+      log₁₀(5)   = 1 − log 2 ≈ 0.699
+      log₁₀(7)   ≈ 0.845
+      log₁₀(10)  = 1
+
+   USEFUL APPROX:
+      ln(2) ≈ 0.693
+      ln(10) ≈ 2.303         (so log₁₀(x) ≈ ln(x) / 2.303)
+      e ≈ 2.718
+      log₂(10) ≈ 3.32         (so 10 bits ≈ 3 decimal digits, 20 bits ≈ 6 digits)
+```
+
+### Mental Tricks
+
+```
+   "How many digits does 2^100 have?"
+      log₁₀(2^100) = 100 × 0.301 = 30.1
+      → 31 digits.
+
+   "How many bits to represent 1 billion?"
+      log₂(10^9) = 9 × log₂(10) ≈ 9 × 3.32 ≈ 30 bits.
+
+   "Doubling time at 5% growth?"
+      ln(2) / 0.05 ≈ 0.693 / 0.05 ≈ 14 years. (Rule of 70.)
+
+   "Perplexity 32 — how many bits per token?"
+      log₂(32) = 5 bits per token.
+```
+
+### Practice Problems
+
+**P1 (Easy).** How many digits in 2^30?
+
+<details><summary>Answer</summary>
+
+30 × 0.301 = 9.03 → **10 digits**. (Exact: 1,073,741,824.)
+</details>
+
+**P2 (Medium).** An LLM has perplexity of 16 on a corpus. What does that mean in bits?
+
+<details><summary>Answer</summary>
+
+log₂(16) = **4 bits per token**. (Cross-entropy = log₂(perplexity).)
+</details>
+
+**P3 (Medium).** You compress text with 8-bit ASCII to a Huffman code averaging 5 bits per char. Compression ratio?
+
+<details><summary>Answer</summary>
+
+5/8 = **62.5%** of original size, or **37.5% saved**.
+</details>
+
+**P4 (Hard).** Approximate ln(50) without a calculator.
+
+<details><summary>Answer</summary>
+
+ln(50) = ln(100/2) = ln(100) − ln(2) = 2·ln(10) − ln(2) ≈ 2(2.303) − 0.693 ≈ **3.91**. (Exact: 3.912.)
+</details>
+
+---
+
+## 3.17 Statistics Mental Math
+
+> Speed-running through interview-relevant stats: mean / median / std dev / weighted average / outlier intuition.
+
+### Key Formulas & Tricks
+
+```
+   MEAN:        μ = Σ x_i / n
+   MEDIAN:      middle value when sorted (n odd)
+                    or average of two middle (n even)
+   MODE:        most frequent value
+   VARIANCE:    σ² = Σ(x_i − μ)² / n
+   STD DEV:     σ = √variance
+
+   WEIGHTED AVG: μ_w = Σ w_i · x_i / Σ w_i
+
+   QUICK STD DEV CHECK:
+      For symmetric data, σ ≈ (max − min) / 4 to / 6.
+      (Empirically: ~95% of data lies within ±2σ of mean.)
+
+   RULE OF THUMB:
+      mean > median  →  right-skew (long right tail).
+      mean < median  →  left-skew.
+      Salary, wealth, latency tails: right-skew → use median.
+```
+
+### Practice Problems
+
+**P1 (Easy).** Numbers: 4, 7, 9, 12, 13. Mean? Median?
+
+<details><summary>Answer</summary>
+
+Sum = 45, mean = 9. Sorted middle is 9 → median = **9**.
+</details>
+
+**P2 (Medium).** Test scores: A's mean = 80 (n=10); B's mean = 70 (n=20). Combined mean?
+
+<details><summary>Answer</summary>
+
+Weighted: (10·80 + 20·70) / 30 = (800 + 1400) / 30 = 2200/30 ≈ **73.3**.
+</details>
+
+**P3 (Medium).** A latency dataset has mean = 100 ms, median = 60 ms. What does this tell you?
+
+<details><summary>Answer</summary>
+
+Mean ≫ median → **right-skewed with long tail** (slow outliers). Use **median or p95** for SLOs, never the mean.
+</details>
+
+**P4 (Hard).** ML model accuracies on 5 holdouts: 85, 87, 84, 86, 92. Quick estimate of std dev?
+
+<details><summary>Answer</summary>
+
+Mean ≈ 86.8. Range = 92 − 84 = 8. σ ≈ 8/4 = **~2 percentage points**. (Exact: ≈ 3.0; the rule-of-thumb is loose but useful.)
+</details>
+
+---
+
+## 3.18 Sets & Venn Diagrams (Inclusion–Exclusion)
+
+> Used in: SQL JOIN intuition, A/B test analysis, A∪B query estimation, feature overlap.
+
+### Key Formulas
+
+```
+   TWO SETS:
+      |A ∪ B| = |A| + |B| − |A ∩ B|
+
+   THREE SETS:
+      |A ∪ B ∪ C| = |A| + |B| + |C|
+                  − |A ∩ B| − |A ∩ C| − |B ∩ C|
+                  + |A ∩ B ∩ C|
+
+   COMPLEMENT:    |A^c| = U − |A|
+   DEMORGAN:      (A ∪ B)^c = A^c ∩ B^c
+
+   PROBABILITY VERSION:
+      P(A ∪ B) = P(A) + P(B) − P(A ∩ B).
+      Independent A, B → P(A ∩ B) = P(A)·P(B).
+```
+
+### Practice Problems
+
+**P1 (Easy).** 60 students take Math, 50 take Physics, 30 take both. How many take at least one?
+
+<details><summary>Answer</summary>
+
+|M ∪ P| = 60 + 50 − 30 = **80**.
+</details>
+
+**P2 (Medium).** A survey: 70% use Gmail, 50% use Outlook, 30% use both. What % use neither?
+
+<details><summary>Answer</summary>
+
+|G ∪ O| = 70 + 50 − 30 = 90%. Neither = **10%**.
+</details>
+
+**P3 (Hard).** 100 servers: 80 ran job A, 60 ran job B, 50 ran job C. 40 ran A and B, 30 ran A and C, 20 ran B and C, 10 ran all three. How many servers ran NONE of the jobs?
+
+<details><summary>Answer</summary>
+
+|A∪B∪C| = 80+60+50 −40−30−20 +10 = 110. Wait — that's > 100 unless some servers ran multiple. The inclusion-exclusion gives the count of servers that ran at least one. Check: 110 — but max is 100, so the data is internally inconsistent or my interpretation is off. Assuming 110 is the count *with* multiple-counting handled correctly, |A∪B∪C| = 110 contradicts the universe size. The answer either: data is inconsistent, OR the universe is larger than 100. If we trust the formula and reinterpret universe as {servers used at least once}, then the union = 110 > 100 means at least 10 servers must have run more than what's been accounted — this is one of those puzzles where you flag the inconsistency. **In an interview, point out the contradiction.**
+</details>
+
+---
+
+## 3.19 Sequences — AP, GP, HP
+
+> Three sequence types every aptitude test loves. Plus they show up in algorithm analysis (geometric sums in amortised cost) and ML (exponential moving averages).
+
+### Arithmetic Progression (AP)
+
+```
+   AP: a, a+d, a+2d, ..., a+(n−1)d.
+   ▸ nth term:        T_n = a + (n−1)d
+   ▸ Sum of first n:  S_n = n/2 · [2a + (n−1)d]  =  n · (a + L) / 2  (L = last term)
+
+   FAMOUS:  1 + 2 + ... + n = n(n+1)/2
+            1² + 2² + ... + n² = n(n+1)(2n+1)/6
+            1³ + 2³ + ... + n³ = [n(n+1)/2]²
+```
+
+### Geometric Progression (GP)
+
+```
+   GP: a, ar, ar², ar³, ..., ar^(n−1).
+   ▸ nth term:        T_n = a · r^(n−1)
+   ▸ Sum of first n:  S_n = a · (1 − r^n) / (1 − r)         for r ≠ 1
+   ▸ Sum to infinity: S_∞ = a / (1 − r)                      for |r| < 1
+
+   FAMOUS:  1/2 + 1/4 + 1/8 + ... = 1
+            Bytes in 2^0 + 2^1 + ... + 2^(n-1) = 2^n − 1
+```
+
+### Harmonic Progression (HP)
+
+```
+   HP: reciprocals form an AP. e.g., 1, 1/2, 1/3, 1/4, ...
+   No closed-form sum (the harmonic series diverges, but slowly).
+
+   ▸ HARMONIC MEAN of a, b:   2ab / (a + b)
+   ▸ For round-trip avg speed at speeds u, v: HM = 2uv/(u+v).
+```
+
+### Practice Problems
+
+**P1 (Easy).** Sum of first 100 natural numbers?
+
+<details><summary>Answer</summary>
+
+100 × 101 / 2 = **5050**. (Famous Gauss-as-a-child anecdote.)
+</details>
+
+**P2 (Medium).** A geometric series 2 + 6 + 18 + 54 + ... Find the sum of the first 8 terms.
+
+<details><summary>Answer</summary>
+
+a = 2, r = 3, n = 8. S = 2 · (3^8 − 1) / (3 − 1) = 2 · (6561 − 1) / 2 = **6560**.
+</details>
+
+**P3 (Medium).** Round trip: 30 km/h there, 60 km/h back. Average speed?
+
+<details><summary>Answer</summary>
+
+HM = 2·30·60 / (30+60) = 3600/90 = **40 km/h**. (NOT 45 — that's the arithmetic mean.)
+</details>
+
+**P4 (Hard).** Amortised analysis: doubling array — costs 1, 2, 4, 8, ..., 2^k after k operations. Total cost? Average per operation?
+
+<details><summary>Answer</summary>
+
+Sum = 2^(k+1) − 1 ≈ 2^(k+1). With ~2^k operations, average = ~2 per op → **O(1) amortised**.
+</details>
+
+---
+
+## 3.20 Bayes' Theorem — The ML Engineer's Mental Math
+
+> **Bayes' theorem** updates a prior belief in light of new evidence. It is the single most-asked topic at the intersection of probability and ML interviews. (Ch 12 has the deep dive; this is the mental-math angle.)
+
+```
+   P(A | B) = P(B | A) · P(A) / P(B)
+
+   Plain English:
+      "How likely is hypothesis A given that I observed B?"
+       = (likelihood of B given A) × (prior on A)
+       ÷ (overall probability of B).
+```
+
+### The base-rate trap (the classic interview question)
+
+> 1% of the population has a disease. A test is 99% accurate (both sensitivity and specificity). You test positive. What's the probability you actually have the disease?
+
+Most people guess **99%**. The right answer is **~50%**.
+
+```
+   Mental math, no calculator:
+      Imagine 10,000 people.
+      ▸ 100 actually have it (1%).      → 99 test positive (true positives)
+      ▸ 9,900 don't have it.            → 99 test positive too (1% false positive rate)
+      ▸ Total positives: 99 + 99 = 198.
+      ▸ P(disease | positive) = 99 / 198 = 50%.
+
+   The base rate (1%) DOMINATES even a 99% accurate test.
+   This is "the base-rate fallacy" and it crushes intuition.
+```
+
+### Why Bayes shows up everywhere in ML
+
+```
+   ▸ ML CLASSIFIER calibration:  what's P(spam | features)?
+   ▸ A/B TESTING:                what's P(B better | observed lift)?
+   ▸ MEDICAL / FRAUD detection:  rare events + imperfect tests.
+   ▸ NAIVE BAYES classifier:     literal application of the theorem.
+   ▸ LLM HALLUCINATION:          P(answer correct | model confident)
+                                  ≪ P(model confident).
+```
+
+### Mental Bayes — the 2-step shortcut
+
+```
+   When you hear: "test is X% accurate, base rate is Y%":
+
+   1. Imagine 10,000 people.
+   2. Compute true positives, false positives. Add them.
+      P(actual | positive) = TP / (TP + FP).
+
+   That's it. Don't try to apply the formula directly under pressure.
+```
+
+### Practice Problems
+
+**P1 (Easy).** A spam filter flags 95% of spam and 2% of legitimate emails. 30% of incoming email is spam. Given a flagged email, what's the probability it's actually spam?
+
+<details><summary>Answer</summary>
+
+Out of 10,000 emails: 3,000 spam (95% flagged → 2,850 TP); 7,000 legit (2% flagged → 140 FP). P(spam | flagged) = 2850 / (2850 + 140) ≈ **95.3%**. With a 30% base rate, the filter is reliable.
+</details>
+
+**P2 (Medium).** An ML model predicts loan defaults with 80% sensitivity and 90% specificity. Default rate is 5%. A customer is flagged as a default risk. Probability they actually default?
+
+<details><summary>Answer</summary>
+
+10,000 customers: 500 defaulters (80% flagged → 400 TP), 9,500 non-defaulters (10% FP rate → 950 FP). P(default | flagged) = 400 / (400 + 950) ≈ **30%**. Even with a "good" model, low base rate means most flagged customers won't default.
+</details>
+
+**P3 (Hard).** Your LLM says "I'm 90% confident this code is correct." On historical data, when it says 90% confident, it's actually correct 70% of the time. What's the calibration gap, and is the model over- or under-confident?
+
+<details><summary>Answer</summary>
+
+Calibration gap = stated confidence (90%) − actual accuracy (70%) = **20 points overconfident**. This is a common LLM pathology — frontier models are typically over-confident at high-stated-confidence levels. Treat any LLM "I'm sure" claim with a Bayesian prior of doubt.
+</details>
+
+---
+
+## 3.21 Engineering Math — Latency, Big-O & Bits
+
+> Three more mental-math skills every senior engineer needs at the whiteboard: budgeting latency across a request path, deciding whether an algorithm scales, and reading binary/hex without thinking.
+
+### 3.21.1 Latency Budget Arithmetic
+
+A user-facing request has a fixed budget (commonly **200 ms p99** for web, **100 ms** for autocomplete, **30 ms** for ad serving). Every layer eats into it.
+
+```
+   TYPICAL LATENCY BUDGET (~200 ms total):
+
+   ┌────────────────────────────────────────┐
+   │  TLS handshake / connection            │  10–30 ms (cached: 0)
+   ├────────────────────────────────────────┤
+   │  Frontend → API gateway                │  1–5 ms
+   ├────────────────────────────────────────┤
+   │  API gateway → service mesh            │  1–5 ms
+   ├────────────────────────────────────────┤
+   │  Service compute                       │  10–50 ms
+   ├────────────────────────────────────────┤
+   │  Database / cache lookup               │  1–10 ms (cache) / 20–50 ms (DB)
+   ├────────────────────────────────────────┤
+   │  Response serialization                │  1–5 ms
+   ├────────────────────────────────────────┤
+   │  Network back to user                  │  20–80 ms (depends on geography)
+   └────────────────────────────────────────┘
+
+   Sum of medians ≠ p99. Tail latency adds:
+      ▸ p50 sum:   ~80 ms
+      ▸ p99 sum:   ~250 ms (each component's tail compounds)
+```
+
+**Key reference latencies (memorise):**
+
+```
+   L1 cache reference:         ~1 ns
+   L2 cache reference:         ~3 ns
+   Branch mispredict:          ~5 ns
+   Mutex lock/unlock:          ~25 ns
+   Main memory reference:      ~100 ns
+   SSD random read:            ~150 µs   = 0.15 ms
+   Round trip same DC:         ~500 µs   = 0.5 ms
+   HDD seek:                   ~10 ms
+   Round trip US coast-to-coast: ~40 ms
+   Round trip US ↔ Europe:     ~80 ms
+   LLM TTFT (frontier API):    ~300-1000 ms
+   LLM full response (~500 tok): ~5-10 s
+```
+
+### 3.21.2 Big-O Feasibility — Will It Run At This Scale?
+
+When an interviewer says "we have N = 1 billion users," you need to know **instantly** which complexities are feasible.
+
+```
+   Rule of thumb on a single modern core (~10^8 ops/sec):
+
+   ┌──────────────┬────────────────────────────────────┐
+   │ COMPLEXITY   │  N where it finishes in ~1 second  │
+   ├──────────────┼────────────────────────────────────┤
+   │ O(1)         │  any N                             │
+   │ O(log N)     │  N up to 10^18 (basically any N)   │
+   │ O(N)         │  N up to ~10^8                     │
+   │ O(N log N)   │  N up to ~10^7                     │
+   │ O(N√N)       │  N up to ~10^6                     │
+   │ O(N²)        │  N up to ~10^4                     │
+   │ O(N³)        │  N up to ~500                      │
+   │ O(2^N)       │  N up to ~25                       │
+   │ O(N!)        │  N up to ~10                       │
+   └──────────────┴────────────────────────────────────┘
+
+   Mental shortcut: if total ops > ~10^9, you can't do it
+   on one core in one second. Need parallelism, caching,
+   or a better algorithm.
+```
+
+**Practice quick-checks**:
+
+- **N = 10^6 users, you want pairwise comparisons?** O(N²) = 10^12. **No.** Need a sublinear method.
+- **N = 10^9 entries, you want sorting?** O(N log N) ≈ 3 × 10^10. **No** on one machine. Distribute or sample.
+- **N = 10^4 entries, dynamic programming with O(N²)?** 10^8 ops. **Yes**, fits in ~1 second.
+
+### 3.21.3 Bits, Bytes, Hex & Binary — Mental Conversion
+
+```
+   ┌──────────┬──────────┬──────────────────────────┐
+   │  HEX     │  BIN     │  USE                      │
+   ├──────────┼──────────┼──────────────────────────┤
+   │  0x10    │  10000   │  16, IPv6 prefix         │
+   │  0xFF    │  11111111│  255, max byte           │
+   │  0xFFFF  │  16 ones │  65,535, IPv4 mask part  │
+   │  0x100   │  9 bits  │  256, common buffer size │
+   │  0x1000  │  13 bits │  4,096 = 4 KB page       │
+   │  0x10000 │  17 bits │  65,536 = 64 KB          │
+   └──────────┴──────────┴──────────────────────────┘
+
+   QUICK TRICKS:
+      ▸ Each hex digit = 4 bits. So 0xABCD = 4 hex × 4 = 16 bits.
+      ▸ N bytes = N << 3 bits (shift left by 3).
+      ▸ 1 KiB = 1024 = 2^10. 1 MiB = 2^20. 1 GiB = 2^30.
+      ▸ 8-bit byte: 256 distinct values. UTF-8: variable 1-4 bytes.
+      ▸ Color #RRGGBB: 24 bits = 16.7M colors.
+
+   IPv4: 32 bits = 4 bytes = ~4.3B addresses.
+   IPv6: 128 bits = 16 bytes = 2^128 ≈ 3.4 × 10^38 addresses.
+```
+
+### Practice Problems
+
+**P1 (Easy).** Your service has 5 sequential downstream calls, each with p99 = 50 ms. What's your service's p99?
+
+<details><summary>Answer</summary>
+
+Sequential calls compose by **summing**. Naive answer: 5 × 50 = **250 ms**. (More precisely, p99 of a sum of independent components is somewhat less than the sum of p99s — but for interviews "sum the p99s" is the right back-of-envelope.)
+</details>
+
+**P2 (Easy).** What's `0x1A` in decimal?
+
+<details><summary>Answer</summary>
+
+`1A = 1 × 16 + 10 = 26`.
+</details>
+
+**P3 (Medium).** N = 10⁶ items. You want to find the top-10 most-similar pairs. Pairwise: O(N²) = 10¹². On one machine, give the budget. Suggest a faster approach.
+
+<details><summary>Answer</summary>
+
+10¹² ops / 10⁸ per sec = ~10⁴ sec = **~3 hours on one core.** Not feasible interactively. Faster approach: LSH (Locality-Sensitive Hashing), MinHash, or ANN index — drops to ~O(N log N) ≈ 2 × 10⁷ ops, sub-second.
+</details>
+
+**P4 (Medium).** A service has 4 dependencies, each at p99 = 100 ms. You call them in **parallel**. What's your p99?
+
+<details><summary>Answer</summary>
+
+Parallel calls: your latency is the **maximum** of the 4 p99s. So **~100 ms** in the best case — but tail latency is worse than max-of-medians; common rule of thumb says parallel p99 ≈ 1.2-1.5× single p99 due to tail combination. Plan for ~120-150 ms.
+</details>
+
+**P5 (Hard).** You're designing a recommendation system for 100M users × 10K items. You want to compute a similarity matrix. Storage in INT8?
+
+<details><summary>Answer</summary>
+
+10⁸ × 10⁴ × 1 byte = **10¹² bytes = 1 TB**. Will not fit on one machine's RAM. Use sparse representation (most pairs have low similarity), or compute on-demand via approximate methods.
+</details>
+
+---
+
+## 3.22 The Birthday Paradox & Hash Collisions
+
+> "How many people in a room before two share a birthday?" The answer (just 23 for >50% probability) is wildly counter-intuitive — and it's the single most important mental-math result for designing hash tables, distributed IDs, and cryptographic hashes.
+
+### The Birthday Paradox
+
+```
+   N people, each with one of K possible "buckets" (birthdays: K=365).
+
+   Probability of NO collision after N draws:
+      P(no collision) = K! / [(K − N)! · K^N]
+                      ≈ exp(−N(N−1) / (2K))     for K ≫ N
+
+   Probability of AT LEAST ONE collision:
+      P(collision) ≈ 1 − exp(−N²/(2K))
+
+   "50% collision threshold" (the rule-of-thumb):
+      N ≈ √(2K · ln 2) ≈ 1.18 · √K
+```
+
+```
+   ┌─────────────────────────────────────────────────────────────┐
+   │  K (bucket size)        50% threshold N    Quick ≈           │
+   ├─────────────────────────────────────────────────────────────┤
+   │  365 (birthdays)        23                  ≈ √365 ≈ 19      │
+   │  1 million (1 M)        ~1,180              ≈ 1.18 × √1M     │
+   │  1 billion (10⁹)        ~37,000             ≈ √10⁹ × 1.18    │
+   │  2³² (uint32)           ~77,000             ≈ √(2³²) × 1.18  │
+   │  2⁶⁴ (uint64)           ~5 × 10⁹             ≈ √(2⁶⁴) × 1.18  │
+   │  2¹²⁸ (UUID, 128-bit)   ~2 × 10¹⁹            ≈ √(2¹²⁸) × 1.18 │
+   └─────────────────────────────────────────────────────────────┘
+
+   Mental shortcut: 50% collision threshold ≈ √K.
+                    1% collision threshold ≈ √(K/50) ≈ √K / 7.
+```
+
+### Why It Matters in Engineering
+
+```
+   ▸ HASH TABLES: collisions begin in earnest at √(table size).
+                   A 1M-bucket hash with 1K entries is ~50% likely to collide
+                   on at least one slot. Plan resolution strategy.
+
+   ▸ DISTRIBUTED IDS: 64-bit random IDs are safe up to ~5 billion entries.
+                       128-bit (UUID v4) is safe to roughly 10¹⁹ entries.
+                       Snowflake-style IDs (timestamp + machine + counter)
+                       avoid this issue entirely.
+
+   ▸ CRYPTO HASHES: SHA-256 has 128-bit second-preimage / 128-bit collision
+                     resistance — finding a collision needs ~2¹²⁸ ≈ 10³⁸
+                     hash operations. Effectively impossible.
+
+   ▸ MD5 (128-bit, broken): collision findable in ~2⁶⁴ operations,
+                             demonstrated in practice — never use for security.
+```
+
+### Practice Problems
+
+**P1 (Easy).** A 32-bit hash function. Roughly how many random inputs before you expect a collision?
+
+<details><summary>Answer</summary>
+
+50% threshold ≈ √(2³²) = √(4 × 10⁹) ≈ **65,000**. With 1.18 multiplier ≈ **77,000**. So a 32-bit hash for 100K entries is unsafe.
+</details>
+
+**P2 (Medium).** Your service generates 1 million UUIDs per day. How long until you expect a collision with random 64-bit IDs?
+
+<details><summary>Answer</summary>
+
+50% threshold for 64-bit ≈ √(2⁶⁴) ≈ **5 × 10⁹** IDs. At 1M/day = 365M/year, that's **~14 years**. UUIDs (128-bit) make this absurdly long; 64-bit Snowflake-style is fine if structured.
+</details>
+
+**P3 (Medium).** A bloom filter has 1 million bits and stores 100K elements with 5 hash functions. Approximate false-positive rate?
+
+<details><summary>Answer</summary>
+
+After inserting 100K × 5 = 500K bits set out of 1M (some collisions). Fraction set ≈ 1 − (1 − 1/10⁶)^(500K) ≈ 1 − e^(−0.5) ≈ 0.39. FPR = (0.39)^5 ≈ **0.9%**. Tunable; rule of thumb is ~10 bits / element for ~1% FPR.
+</details>
+
+**P4 (Hard).** A distributed system uses 8-byte random IDs. The team estimates "we'll never have more than a billion." Critique.
+
+<details><summary>Answer</summary>
+
+8 bytes = 64 bits. 50% collision threshold ≈ 5 × 10⁹. **A billion is dangerously close.** Even at 10¹⁰ inserts, expected collisions are several. Use 128-bit IDs, structured IDs (Snowflake), or guarantee uniqueness via central allocator.
+</details>
+
+---
+
+## 3.23 Information Theory Mental Math — Entropy, Bits & Compression
+
+> Shannon's information theory underpins ML loss functions (cross-entropy), compression (Huffman), and any "how many bits do I need?" question. The key intuition: **entropy is the number of bits to encode an outcome you don't know.**
+
+### Key Formulas
+
+```
+   SHANNON ENTROPY (in bits) of a distribution p:
+      H(X) = − Σ p(x) · log₂ p(x)
+
+   Properties:
+      ▸ H(X) ≥ 0, always.
+      ▸ H(X) maximised by uniform distribution: H_max = log₂ |X|.
+      ▸ H(X) = 0 when X is deterministic.
+
+   CROSS-ENTROPY (used as ML loss):
+      H(p, q) = − Σ p(x) · log₂ q(x)            [or natural log; both valid]
+   This is the "average bits to encode samples from p using a code optimised for q."
+
+   KL DIVERGENCE:
+      D_KL(p || q) = H(p, q) − H(p) = Σ p(x) · log [p(x) / q(x)]
+   "Extra bits incurred by using the wrong distribution q."
+
+   PERPLEXITY (popular for LLM eval):
+      Perplexity = 2^H = exp(cross-entropy in nats).
+      Perplexity 32 means "the model is as uncertain as if there were 32 equally
+      likely choices per token."
+```
+
+### Mental Numbers (Memorise)
+
+```
+   ┌────────────────────┬──────────────────┐
+   │ TASK                │  BITS / SYMBOL   │
+   ├────────────────────┼──────────────────┤
+   │ Coin flip (fair)    │  1 bit           │
+   │ 6-sided die (fair)  │  log₂ 6 ≈ 2.58   │
+   │ Roulette (1 in 38)  │  log₂ 38 ≈ 5.25  │
+   │ Random ASCII char   │  log₂ 95 ≈ 6.57  │
+   │ English text        │  ~1-1.5 bits/char│
+   │   (highly redundant — Huffman / gzip can exploit)│
+   │ Random English word │  log₂ 50000 ≈ 15.6 (50k vocab)│
+   └────────────────────┴──────────────────┘
+
+   QUICK SHANNON FOR 2-OUTCOME EVENT:
+      ▸ p = 0.5:  H = 1 bit
+      ▸ p = 0.9:  H ≈ 0.47 bits
+      ▸ p = 0.99: H ≈ 0.08 bits
+      ▸ p = 0.999: H ≈ 0.011 bits
+
+   "Lower entropy = less surprise = easier to compress."
+```
+
+### Practice Problems
+
+**P1 (Easy).** A loaded coin lands heads 75% of the time. What's its entropy?
+
+<details><summary>Answer</summary>
+
+H = −(0.75 · log₂ 0.75 + 0.25 · log₂ 0.25) = −(0.75 · −0.415 + 0.25 · −2) ≈ 0.31 + 0.5 = **0.81 bits**. (Less than the 1 bit of a fair coin — because it's more predictable.)
+</details>
+
+**P2 (Medium).** An LLM achieves a perplexity of 8 on a held-out corpus. What's the cross-entropy in bits per token?
+
+<details><summary>Answer</summary>
+
+log₂ 8 = **3 bits/token**. (Means the model treats each token as if it had ~8 equally likely options.)
+</details>
+
+**P3 (Medium).** English has ~1.1 bits of entropy per character. A novel of 500K characters — minimum bytes after optimal compression?
+
+<details><summary>Answer</summary>
+
+500K × 1.1 / 8 ≈ **69 KB**. (Real-world gzip on English achieves ~30-40 KB for this; theoretically you could get to ~70 KB.) Compare to ASCII at 500 KB — the ratio gives English's redundancy.
+</details>
+
+**P4 (Hard).** A multi-class classifier on 100 classes outputs uniform predictions (worst case). What's its cross-entropy loss?
+
+<details><summary>Answer</summary>
+
+H = log₂(100) ≈ **6.64 bits** (or ln(100) ≈ 4.6 nats). For comparison, a perfect classifier outputs the correct class with p=1, giving H = 0. Random guessing is the upper bound.
+</details>
+
+**P5 (Hard).** Your image classifier has 1000 classes, current cross-entropy = 3 nats. How many "effective classes" worth of uncertainty remain?
+
+<details><summary>Answer</summary>
+
+Perplexity = e^3 ≈ **20**. The model has narrowed the choice from 1000 down to ~20 plausible classes per image — meaningful progress, but not yet confident.
+</details>
+
+---
+
+## 3.24 Daily Practice Plan
 
 Aptitude improves with consistent, focused practice. Here is a plan designed for 30 minutes per day, 6 days per week.
 
@@ -1894,4 +2935,239 @@ Build the habit. 30 minutes a day. Track your progress. In 4 weeks, you will be 
 
 ---
 
-**Previous:** [Chapter 24 — GPUs, TPUs & AI Infrastructure](23_gpus_tpus_infrastructure.md)
+## 3.25 Common Pitfalls
+
+1. **Mental math under pressure freezes you.** The fix: practice for speed, not just correctness. Set a 60-second timer per problem during practice.
+2. **Order-of-magnitude errors are worse than precision errors.** "About 1 GB" when the real answer is 10 GB or 100 MB is fine; "about 10 GB" when it's 1 PB is a fail.
+3. **Forgetting to sanity-check.** "1 trillion users" means you skipped a factor of 1000 somewhere — recompute.
+4. **Confusing 10⁹ (billion) and 10¹² (trillion).** Mostly a US-English thing. Always write the exponent.
+5. **Confusing 1 GB ≈ 10⁹ bytes (decimal) vs 1 GiB = 2³⁰ bytes (binary).** ~7% gap. Acceptable in Fermi.
+6. **Assuming average == p99.** Tail latency dominates user experience. Always ask "p99 or average?" up front.
+7. **Bayes intuition without writing it out.** Even experienced engineers blow base-rate problems if they reason verbally instead of imagining 10,000 people.
+8. **Skipping units in the chain.** "1 Mbps × 1 hour = ?" Track GB / s × 3600 = GB explicitly.
+9. **Treating Big-O as exact.** O(N log N) hides constants — a 50× constant difference is normal. Useful for *feasibility*, not for *which sort is faster*.
+10. **Memorising AI numbers without context.** GPT-4-class costs ~$0.06/M tokens *today* (May 2026); cite the date or you'll be wrong in six months.
+
+---
+
+## 3.26 Decision Tree — What to Compute When
+
+```
+   Interviewer says "estimate ___"
+           │
+           ▼
+   What kind of estimate?
+           │
+           ├── Storage / capacity   → §3.10 Fermi + §3.21 bits.
+           │
+           ├── QPS / throughput     → daily total ÷ 86,400 ≈ ÷ 10^5.
+           │                          Then peak ≈ 2-3× average.
+           │
+           ├── Latency budget       → §3.21.1; sum p99s for serial,
+           │                          max-with-buffer for parallel.
+           │
+           ├── Algorithm feasible?  → §3.21.2 Big-O table.
+           │                          Total ops > 10^9 = not in 1 sec.
+           │
+           ├── Cost (LLM/GPU)       → §3.10 AI numbers; tokens × rate.
+           │
+           ├── Probability / risk   → Bayes if rare event + imperfect test.
+           │                          Always picture 10,000 people.
+           │
+           └── "How many ___"       → Fermi framework (clarify, break,
+                                      estimate, multiply, sanity-check).
+```
+
+---
+
+## 3.27 Interview Questions Bank
+
+Ten questions actually asked at Google / Meta / OpenAI / Anthropic in 2025–2026, and the answer skeletons.
+
+**Q1. Estimate Google Search's daily query volume.**
+8.5 B searches/day. Average QPS ≈ 8.5 × 10⁹ / 86,400 ≈ **~100 K QPS** average; peak 2-3× → **200-300 K QPS**. (Cite the date — searches drift up over time.)
+
+**Q2. How many H100 GPUs would you need to serve 1 M concurrent users on a Llama-3.1-8B chatbot?**
+1 H100 sustains ~50 tok/s output × ~10 concurrent (with continuous batching) = 500 tok/s aggregate. 1 M users × ~1 message every 30 s × 200 output tokens ≈ ~7 M tok/s. **~14,000 H100s** at peak. (Continuous batching + speculative decoding could halve this.)
+
+**Q3. A 7B-param model in BF16 — will it run on a 24 GB consumer GPU?**
+7 × 10⁹ × 2 bytes = **14 GB** for weights, plus ~5-10 GB KV cache at production batch size = ~20-25 GB. **Tight on a 24 GB card.** Drop to INT8 (~7 GB weights) for headroom. INT4 fits with KV cache to spare.
+
+**Q4. p99 latency of your service is 200 ms. You're adding a new dependency at p99 = 50 ms. What's your new p99?**
+If sequential: ~250 ms (sum the p99s — slightly conservative because the tails aren't perfectly correlated, but close). If parallelizable: ~200 ms unchanged.
+
+**Q5. Your A/B test shows variant B has 5% higher CTR. Sample size 10K users per arm. Statistically significant?**
+Standard error ≈ √(p(1-p)/N). With baseline CTR ~5%, SE per arm ≈ √(0.05 × 0.95 / 10K) ≈ 0.22 percentage points. Difference of arms has SE ≈ √2 × 0.22 ≈ 0.31 pp. Observed lift = 5% → 5.25%? Or is "5% higher" relative? **Always clarify**. If absolute 0.25 pp lift / SE 0.31 pp ≈ 0.8 σ → not significant. Need 4× sample size.
+
+**Q6. A drug test is 99% accurate. 0.5% of athletes use the drug. An athlete tests positive. Probability they actually used?**
+10,000 athletes: 50 users (49.5 TP); 9,950 clean (99.5 FP). P(user | positive) = 49.5 / 149 ≈ **33%**. The base-rate trap.
+
+**Q7. What's the cost to fine-tune a 7B model with LoRA on 100K examples?**
+LoRA trains <1% of params. Compute ≈ 6 × 7 × 10⁹ × 100K × 2K (avg seq len) × 0.01 ≈ ~10¹³ FLOPs. One H100 ≈ 10¹⁵ FLOPs/sec. ~10 seconds of GPU? Way too low — overlooked overhead. Reality: ~5-30 GPU-hours on H100. Cost: ~$10-60.
+
+**Q8. Estimate global internet bandwidth to YouTube during peak hours.**
+Peak users: ~1 B simultaneously. Average bitrate: ~5 Mbps (mixed mobile + 1080p). Total = 5 × 10⁹ Mbps = **5 Pbps** = 5,000 Tbps. (Real number is in this ballpark.)
+
+**Q9. You have N = 10⁹ images. You want to find near-duplicates. Algorithm and cost?**
+Pairwise O(N²) = 10¹⁸ — impossible. Use perceptual hashing + LSH. Each image gets a 64-bit hash; bucket by hash prefix. Lookup is ~O(N log N). Total: ~3 × 10¹⁰ ops, hours on one machine, minutes distributed.
+
+**Q10. Estimate the carbon footprint of training GPT-4-class.**
+Training compute ~10²⁵ FLOPs. H100 TDP ~700 W, ~3 × 10¹⁵ FLOPs/sec → ~3 × 10⁹ GPU-seconds = ~10⁶ GPU-hours. At ~0.7 kW each = ~700 GWh. At ~0.5 kg CO₂/kWh (mixed grid) ≈ **~350,000 tonnes CO₂.** (Real numbers depend heavily on grid — Anthropic and Google use mostly low-carbon grids, dropping this by 5-10×.)
+
+---
+
+## 3.28 FAQ
+
+**Q: Should I memorise all the powers-of-2 table or just key ones?**
+Memorise 2¹⁰ = ~1 K, 2²⁰ = ~1 M, 2³⁰ = ~1 G, 2⁴⁰ = ~1 T. Everything else, derive.
+
+**Q: How precise should a Fermi estimate be?**
+Within an order of magnitude is the gold standard. "About 100 K" when the real answer is 60 K-300 K is a perfect Fermi estimate.
+
+**Q: I know the math but blank out under pressure. What do I do?**
+Talk through your reasoning out loud. The interviewer wants your *process*, not just the number. State your assumptions explicitly: "I'm assuming 8 B people, 50% on the internet…" Even if your final number is wrong, clear assumptions earn full credit.
+
+**Q: Calculator vs mental math in interviews?**
+Mental math always wins for the *first* estimate (signals quick reasoning). If the interviewer offers a calculator for refinement, take it. Some companies (Anthropic, OpenAI) explicitly allow scratch paper but rarely calculators.
+
+**Q: What's the single biggest thing to memorise for system design?**
+Latency reference numbers (§3.21.1) and the AI/ML numbers table (§3.10). Not optional — without these you can't reason about feasibility at all.
+
+**Q: How many problems should I do per day?**
+30 minutes / 5–8 problems is the right rate. More than that, you're cramming; less, you're not building reflexes. 4 weeks of consistent practice produces a measurable speedup.
+
+---
+
+## 3.29 Hello-World Code
+
+### A Fermi-estimate Python helper
+
+```python
+def fermi(label, **factors):
+    """Multiply named factors, print the chain, return the result."""
+    result = 1.0
+    print(f"{label}:")
+    for name, value in factors.items():
+        print(f"  × {name:<25} = {value:>14,.2e}")
+        result *= value
+    print(f"  ─────────────────────────────")
+    print(f"  = {result:,.2e}")
+    return result
+
+# Example: storage for a Twitter clone
+fermi("Daily storage",
+      DAU=2e8,
+      tweets_per_user_per_day=2,
+      avg_tweet_size_kb=1,
+      replication=3)
+# Daily storage:
+#   × DAU                       =       2.00e+08
+#   × tweets_per_user_per_day   =       2.00e+00
+#   × avg_tweet_size_kb         =       1.00e+00
+#   × replication               =       3.00e+00
+#   = 1.20e+09  KB = 1.2 TB/day
+```
+
+### Big-O feasibility checker
+
+```python
+import math
+
+def feasible(complexity, N, ops_per_sec=1e8, budget_sec=1.0):
+    """Will an algorithm of this complexity finish in budget_sec?"""
+    cost = {
+        "1": 1, "log N": math.log2(N),
+        "N": N, "N log N": N * math.log2(N),
+        "N sqrt N": N * math.sqrt(N),
+        "N^2": N**2, "N^3": N**3,
+        "2^N": 2**min(N, 60), "N!": math.factorial(min(N, 20)),
+    }[complexity]
+    seconds = cost / ops_per_sec
+    print(f"{complexity:<10} N={N:,} → {cost:.2e} ops, {seconds:.2e} s",
+          "  ✓" if seconds < budget_sec else "  ✗")
+
+feasible("N log N", 10**7)  # ✓
+feasible("N^2",     10**5)  # ✗
+```
+
+### Latency-budget calculator
+
+```python
+def latency_budget(target_p99_ms, components):
+    """Check whether a serial chain fits in the budget."""
+    total = sum(components.values())
+    print(f"Target p99: {target_p99_ms} ms.  Used: {total} ms.")
+    for name, ms in components.items():
+        share = ms / target_p99_ms * 100
+        print(f"  {name:<25} {ms:>5} ms  ({share:>4.0f}%)")
+    print("  PASS ✓" if total <= target_p99_ms else "  OVER BUDGET ✗")
+
+latency_budget(200, {
+    "TLS":             20,
+    "API gateway":      5,
+    "Service compute": 50,
+    "DB lookup":       30,
+    "LLM call":        80,  # ← this one will eat your budget
+    "Serialize":        5,
+})
+```
+
+---
+
+## 3.30 References & Further Reading
+
+- **Powers of 2 reference card** — Jeff Dean's "[Numbers Everyone Should Know](https://gist.github.com/jboner/2841832)" (canonical latency cheat sheet).
+- **Fermi estimation** — Sanjoy Mahajan, *The Art of Insight in Science and Engineering* (free MIT Press download).
+- **Bayes & base rates** — Daniel Kahneman, *Thinking, Fast and Slow*, chs. 13–18.
+- **Big-O & competitive complexity** — Skiena, *The Algorithm Design Manual* (App. A — Big-O reference).
+- **System-design estimation** — Alex Xu, *System Design Interview Vol. 1*, ch. 2 (back-of-envelope).
+- **Modern LLM pricing & specs** — Artificial Analysis ([https://artificialanalysis.ai](https://artificialanalysis.ai)) — live leaderboard of model price, latency, context.
+- **TPU / GPU specs** — Google Cloud TPU docs, NVIDIA H100/B200 datasheets.
+- **AI training compute scaling laws** — Hoffmann et al. (2022), "Training Compute-Optimal Large Language Models" (Chinchilla paper).
+
+---
+
+## 3.31 Key Takeaways — One-Page Cheat Sheet
+
+```
+   ┌────────────────────────────────────────────────────────────┐
+   │  APTITUDE & MENTAL MATH — 1-PAGE CARD                       │
+   ├────────────────────────────────────────────────────────────┤
+   │                                                              │
+   │  POWERS OF 2:                                                │
+   │  2^10 ≈ 1 K   2^20 ≈ 1 M   2^30 ≈ 1 G   2^40 ≈ 1 T          │
+   │                                                              │
+   │  TIME:                                                       │
+   │  1 day = 86,400 s ≈ 10^5     1 year ≈ 3 × 10^7 s            │
+   │  Rule of 72: doubling time = 72 / rate%                      │
+   │                                                              │
+   │  AI / ML (May 2026):                                         │
+   │  1 BF16 param  = 2 B    1 INT4 param = 0.5 B                 │
+   │  H100 / TPU v7 HBM = 80 / 192 GB                             │
+   │  GPT-4 quality cost ≈ $0.06 / M tokens (was $20 in 2022)     │
+   │  Llama 4 Scout context: 10 M tokens                          │
+   │                                                              │
+   │  LATENCY:                                                    │
+   │  L1 / L2 cache: 1 / 3 ns    Main mem: 100 ns                 │
+   │  SSD: 0.15 ms    HDD seek: 10 ms                             │
+   │  Same-DC RTT: 0.5 ms    Coast-to-coast: 40 ms                │
+   │  Web SLO: ~200 ms p99    Autocomplete: ~100 ms               │
+   │                                                              │
+   │  BIG-O FEASIBILITY (1 sec, single core, 10^8 ops/s):         │
+   │  N: 10^8    N log N: 10^7    N^2: 10^4    2^N: 25            │
+   │                                                              │
+   │  BAYES SHORTCUT (always):                                    │
+   │  Imagine 10,000 people. TP / (TP + FP). Don't reason verbally.│
+   │                                                              │
+   │  FERMI FRAMEWORK:                                            │
+   │  1. Clarify  2. Break  3. Estimate  4. Multiply  5. Sanity   │
+   │                                                              │
+   │  BAND OF ACCEPTABLE ANSWER:                                  │
+   │  Within 1 order of magnitude = correct.                      │
+   │  Stated assumptions = full credit even if number is off.     │
+   └────────────────────────────────────────────────────────────┘
+```
+
+---
+
+**Previous:** [Chapter 02 — Staying Relevant in AI Era](02_staying_relevant_ai_era.md) &middot; **Next:** [Chapter 04 — Brain Training](04_brain_training.md) &middot; **See also:** [Ch 31 Top 10 ML Topics](31_google_top10_ml_interview.md) &middot; [Ch 32 Cheat Sheet](32_quick_reference_cheat_sheet.md)
