@@ -3833,8 +3833,8 @@ body.focus-mode .content-wrapper {
 }
 
 body.focus-mode .content {
-  max-width: 80vw;
-  padding: 60px 64px 120px;
+  max-width: 85vw;
+  padding: 56px 56px 120px;
   margin: 0 auto;
   font-size: 17px;
   line-height: 1.8;
