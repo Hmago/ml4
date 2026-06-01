@@ -44,6 +44,15 @@
 - [15. WhatsApp](#15-whatsapp)
 - [16. Typeahead Suggestion System](#16-typeahead-suggestion-system)
 - [17. Google Docs](#17-google-docs)
+- [18. CAP Theorem, Consensus, and Google's Distributed Databases](#18-cap-theorem-consensus)
+   * [18.1 CAP Theorem](#181-cap-theorem--the-formal-statement)
+   * [18.2 Consensus — Raft and Paxos](#182-consensus--raft-and-paxos)
+- [19. ML-Specific System Design](#19-ml-system-design)
+   * [19.1 Feature Store](#191-feature-store--bridging-training-and-serving)
+   * [19.2 Model Serving — Batch vs Real-Time](#192-model-serving--batch-vs-real-time)
+   * [19.3 Training-Serving Skew](#193-training-serving-skew)
+   * [19.4 Model Rollout — Shadow, Canary, Blue/Green](#194-model-rollout--shadow-canary-and-bluegreen)
+   * [19.5 Quick Reference — ML System Design Building Blocks](#195-quick-reference--ml-system-design-building-blocks)
 
 <!-- TOC end -->
 
@@ -502,6 +511,434 @@ We’re also interested in keeping the document state consistent across differen
 Why should we use strong consistency instead of eventual consistency for conflict resolution in a collaborative document editing service?
 - From Amazon’s Dynamo system, we learn that if we use eventual consistency for conflict resolution, we might have multiple versions of a document that are eventually reconciled, either automatically or manually. In the case of automatic reconciliation, the document might update abruptly, which defeats the purpose of collaboration. The second case, manual resolution, is tedious labor that we want to avoid.
 - Therefore, we use strong consistency for conflict resolution, and the logically centralized server provides the final order of events to all clients. We use a replicated operations queue so that even if our ordering service dies, it can easily restart on a new server and resume where it left off. Clients might encounter short service unavailability while the failed component is being respawned.
+
+---
+
+# 18. CAP Theorem, Consensus, and Google's Distributed Databases
+
+<!-- TOC --><a name="18-cap-theorem-consensus"></a>
+
+## 18.1 CAP Theorem — The Formal Statement
+
+> **CAP Theorem (Brewer, 2000):** A distributed data store can guarantee at most two of the following three properties simultaneously:
+> - **Consistency (C):** Every read returns the most recent write (or an error). All nodes see the same data at the same time.
+> - **Availability (A):** Every request receives a non-error response — though the response might not contain the most recent data.
+> - **Partition Tolerance (P):** The system continues to function even when network partitions (message loss or delay) occur between nodes.
+
+Network partitions are not optional — they happen in every real distributed system (network cables fail, switches restart, data centers become isolated). This means **P is mandatory**. The practical choice is always **CP vs AP**.
+
+```
+                       Consistency (C)
+                            /\
+                           /  \
+                          /    \
+                         / PICK \
+                        /  TWO   \
+                       /          \
+  Availability (A) ───────────────── Partition Tolerance (P)
+
+  Since P is unavoidable in real networks, the real choice is:
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  CP  (Consistency + Partition Tolerance)                     │
+  │  During a partition: reject requests rather than serve       │
+  │  stale data. Availability is sacrificed.                     │
+  │  Use when: financial data, inventory counts, distributed     │
+  │  locks, leader election.                                     │
+  │                                                              │
+  │  AP  (Availability + Partition Tolerance)                    │
+  │  During a partition: serve potentially stale data rather     │
+  │  than return errors. Consistency is sacrificed.              │
+  │  Use when: social feeds, shopping carts, DNS, caches,        │
+  │  recommendation scores.                                      │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+### CAP in Practice: Google Examples
+
+```
+  ┌────────────────────┬──────────┬────────────────────────────────────────┐
+  │ System             │ CAP bias │ Why                                     │
+  ├────────────────────┼──────────┼────────────────────────────────────────┤
+  │ Cloud Spanner      │ CP       │ Uses TrueTime (GPS+atomic-clock bounded │
+  │                    │          │ uncertainty) to assign globally ordered  │
+  │                    │          │ commit timestamps. External consistency: │
+  │                    │          │ reads always see the latest committed   │
+  │                    │          │ state across all replicas worldwide.    │
+  │                    │          │ Availability SLA is high (99.999%) but  │
+  │                    │          │ correctness is never sacrificed.        │
+  ├────────────────────┼──────────┼────────────────────────────────────────┤
+  │ Bigtable           │ AP-lean  │ Single-master per tablet; replicas may  │
+  │                    │          │ serve slightly stale reads. Designed    │
+  │                    │          │ for massive throughput over strict      │
+  │                    │          │ cross-row consistency.                  │
+  ├────────────────────┼──────────┼────────────────────────────────────────┤
+  │ Cassandra          │ AP       │ Tunable consistency (quorum reads/writes│
+  │                    │          │ exist but AP is the default posture).   │
+  ├────────────────────┼──────────┼────────────────────────────────────────┤
+  │ Chubby (Google)    │ CP       │ Distributed lock service built on Paxos.│
+  │                    │          │ Returns errors rather than stale locks. │
+  └────────────────────┴──────────┴────────────────────────────────────────┘
+```
+
+**TrueTime insight:** Spanner's TrueTime API returns a time interval `[earliest, latest]` rather than a single timestamp. Spanner commits wait out the uncertainty interval before acknowledging, ensuring no two transactions overlap in time. This is how Google achieves CP at global scale without sacrificing much availability.
+
+---
+
+## 18.2 Consensus — Raft and Paxos
+
+**Consensus** is the problem of getting a group of nodes to agree on a single value (or a sequence of values) even when some nodes crash or messages are delayed. It is the foundation of distributed databases, leader election, and replicated state machines.
+
+### Why Consensus Is Hard
+
+```
+  3 nodes. Node A proposes "commit X".
+  Node B receives the message. Node C's message is delayed.
+
+  If A crashes before C responds:
+    - Did the commit happen? Did B apply it?
+    - C doesn't know.
+    - Without a protocol, B and C can diverge.
+
+  Consensus protocols guarantee: either ALL nodes commit X,
+  or NONE do — regardless of crashes and delays.
+```
+
+### Paxos — The Classic Algorithm
+
+Paxos (Lamport, 1989) operates in two phases. Nodes play three roles: **Proposer**, **Acceptor**, and **Learner**.
+
+```
+  PHASE 1 — PREPARE / PROMISE
+  ────────────────────────────
+  Proposer picks a proposal number n and sends Prepare(n) to acceptors.
+  Acceptor responds with Promise(n) if n > any proposal it has seen,
+  and includes the highest-numbered proposal it already accepted (if any).
+
+  PHASE 2 — ACCEPT / ACCEPTED
+  ────────────────────────────
+  If proposer receives promises from a QUORUM (majority):
+    Send Accept(n, value) to acceptors.
+  Acceptor accepts if n is still the highest it has promised.
+  Once a quorum accepts → value is chosen. Learners are notified.
+
+  QUORUM = majority = floor(N/2) + 1
+  With 5 nodes: quorum = 3. Can tolerate 2 failures.
+
+  ┌──────────┐  Prepare(5)   ┌──────────┐
+  │ Proposer │ ─────────────>│Acceptor 1│
+  │          │ ─────────────>│Acceptor 2│  3 of 5 promise → quorum
+  │          │ ─────────────>│Acceptor 3│
+  │          │<─────────────  Promise   │
+  │          │  Accept(5,v)  │          │
+  │          │ ─────────────>│          │
+  └──────────┘               └──────────┘
+```
+
+Paxos is notoriously difficult to implement correctly for a full replicated log (Multi-Paxos). Google's **Chubby** (the distributed lock service) and **Spanner's Paxos groups** use Paxos-family protocols.
+
+### Raft — Designed for Understandability
+
+Raft (Ongaro & Ousterhout, 2014) achieves the same guarantees as Paxos but decomposes the problem into:
+1. **Leader Election**
+2. **Log Replication**
+3. **Safety**
+
+```
+  RAFT CLUSTER STATE:
+  ────────────────────────────────────────────────
+  Each node is in one of three states:
+  FOLLOWER → CANDIDATE → LEADER
+
+  TERM: A logical clock. Each election starts a new term.
+  A leader is valid for exactly one term.
+
+  LEADER ELECTION:
+  ────────────────────────────────────────────────
+  - All nodes start as followers.
+  - If no heartbeat received within election timeout (150-300ms):
+      Follower → Candidate, increments term, votes for self,
+      sends RequestVote to all nodes.
+  - First node to get majority votes becomes LEADER.
+  - Leader sends heartbeats (AppendEntries with empty payload)
+    to prevent re-elections.
+
+  LOG REPLICATION:
+  ────────────────────────────────────────────────
+  Client → Leader (writes go here ONLY)
+  Leader appends to its log → sends AppendEntries to followers
+  When majority ACK → leader commits → applies to state machine
+  → responds to client → followers commit on next heartbeat
+
+  ┌────────────┐   AppendEntries   ┌────────────┐
+  │   LEADER   │ ─────────────────>│ Follower 1 │
+  │            │ ─────────────────>│ Follower 2 │
+  │            │ ─────────────────>│ Follower 3 │
+  │            │<── ACK (2 of 3) ──┤            │
+  │  COMMITTED │                   │            │
+  └────────────┘                   └────────────┘
+
+  Majority = 2 of 3. One node can crash with no data loss.
+```
+
+### Paxos vs Raft
+
+```
+  ┌───────────────────┬──────────────────────┬──────────────────────┐
+  │                   │ Paxos                │ Raft                 │
+  ├───────────────────┼──────────────────────┼──────────────────────┤
+  │ Leader election   │ Implicit / complex   │ Explicit term-based  │
+  │ Log replication   │ Multi-Paxos needed   │ Built-in             │
+  │ Understandability │ Hard                 │ Designed for clarity │
+  │ Google usage      │ Chubby, Spanner PGs  │ etcd (K8s), CockroachDB│
+  │ Fault tolerance   │ floor(N/2) failures  │ floor(N/2) failures  │
+  └───────────────────┴──────────────────────┴──────────────────────┘
+
+  Both guarantee: linearizability (reads always see the latest
+  committed write) in the presence of minority node failures.
+```
+
+### Where Google Uses Consensus
+
+```
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Chubby (Paxos)                                                  │
+  │   Distributed lock service. Master election for GFS, Bigtable, │
+  │   Megastore. Stores small configuration data with strong        │
+  │   consistency. Inspired ZooKeeper (open-source equivalent).     │
+  ├────────────────────────────────────────────────────────────────┤
+  │ Spanner Paxos Groups                                            │
+  │   Each Spanner shard is a Paxos group. Leader handles reads    │
+  │   and writes. Failover is automatic (new leader elected in     │
+  │   seconds). TrueTime provides the globally ordered timestamps  │
+  │   across all groups.                                           │
+  ├────────────────────────────────────────────────────────────────┤
+  │ etcd (Raft) — used by Kubernetes                                │
+  │   Stores all cluster state (pod specs, service configs,         │
+  │   secrets). Every K8s control plane depends on etcd for        │
+  │   consistent distributed coordination.                          │
+  └────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 19. ML-Specific System Design
+
+<!-- TOC --><a name="19-ml-system-design"></a>
+
+> Full ML system design walkthroughs (recommendation engines, ad ranking, search ranking, fraud detection) live in **Chapter 21**. This section covers the infrastructure primitives that appear in every ML system design question.
+
+## 19.1 Feature Store — Bridging Training and Serving
+
+A **feature store** is a centralized repository for computed ML features. Its core problem: if training uses one feature computation pipeline and serving uses another, predictions in production diverge from what the model learned — **training-serving skew**.
+
+```
+  WITHOUT FEATURE STORE (skew-prone):
+  ─────────────────────────────────────────────────────────────
+  Training pipeline:
+    SQL batch job → features written to Parquet files
+    Model trained on these features
+
+  Serving pipeline:
+    Different Python code computing "same" features in real time
+    Subtle differences: different null handling, different bucketing
+    → Model sees different distribution than it trained on
+    → Silent accuracy degradation in production
+
+  WITH FEATURE STORE (parity enforced):
+  ─────────────────────────────────────────────────────────────
+  One feature definition → reused by both training and serving
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    FEATURE STORE                             │
+  │                                                             │
+  │  Feature Definitions (versioned, typed)                     │
+  │       │                                                     │
+  │       ├──────────────────────────────────────────┐         │
+  │       ▼                                          ▼         │
+  │  OFFLINE STORE                          ONLINE STORE        │
+  │  (S3 / BigQuery / GCS)                  (Redis / Bigtable)  │
+  │  - Full historical features             - Latest features   │
+  │  - Used for training                    - Sub-10ms lookup   │
+  │  - Batch materialization                - Used at serve time │
+  │  - Cheap storage, slow reads            - Expensive, fast   │
+  └─────────────────────────────────────────────────────────────┘
+
+  Same feature logic → offline for training, online for serving.
+  Parity is guaranteed by construction.
+```
+
+**Key design decisions:**
+- **Point-in-time correctness:** Training data must not use features from the future (label leakage). The offline store must support time-travel queries: "what were user X's features at time T?"
+- **Freshness vs cost:** Online store features must be kept fresh (batch or streaming writes). Stale features degrade model accuracy. Stream processing (Kafka → Flink) enables low-latency feature updates.
+
+---
+
+## 19.2 Model Serving — Batch vs Real-Time
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │ BATCH INFERENCE                                              │
+  │ ─────────────────────────────────────────────────────────── │
+  │ Run predictions over a large dataset on a schedule.         │
+  │ Results stored in a database; serving just does a lookup.   │
+  │                                                             │
+  │ Pipeline:                                                   │
+  │ Trigger (cron / event)                                      │
+  │   → Load model + batch of input data                        │
+  │   → Run inference (GPU cluster / Dataflow / Spark)          │
+  │   → Write predictions to database (Bigtable / BigQuery)     │
+  │   → Serving reads pre-computed predictions                  │
+  │                                                             │
+  │ Latency budget: minutes to hours.                           │
+  │ Use when: email recommendations, ad targeting, risk scores  │
+  │ that do not need to reflect events in the last few seconds. │
+  ├─────────────────────────────────────────────────────────────┤
+  │ REAL-TIME INFERENCE                                          │
+  │ ─────────────────────────────────────────────────────────── │
+  │ Model called synchronously on the critical path of a        │
+  │ user request.                                               │
+  │                                                             │
+  │ Pipeline:                                                   │
+  │ User request → Feature lookup (online store, ~5ms)          │
+  │   → Model server (TensorFlow Serving / Triton / Vertex AI)  │
+  │   → Prediction → response                                   │
+  │                                                             │
+  │ Latency budget: typically 10-100ms total; model inference   │
+  │ budget is often 20-50ms of that.                            │
+  │ Use when: search ranking, fraud detection, autocomplete.    │
+  └─────────────────────────────────────────────────────────────┘
+
+  LATENCY BUDGET BREAKDOWN (real-time serving, 100ms total):
+  ─────────────────────────────────────────────────────────────
+  Network (client → edge)      10ms
+  API gateway + routing         5ms
+  Feature retrieval (Redis)     5ms
+  Model inference (GPU)        50ms
+  Post-processing + response   10ms
+  Network (edge → client)      20ms
+                              ─────
+                              100ms
+
+  If the model is too slow, options:
+  1. Distill/quantize the model (smaller, faster)
+  2. Reduce input feature count
+  3. Precompute embeddings for the query / item offline
+  4. Use a two-stage pipeline: cheap ranker → expensive reranker
+     on top-K candidates only
+```
+
+---
+
+## 19.3 Training-Serving Skew
+
+**Training-serving skew** is any difference between the data distribution the model was trained on and the distribution it sees in production. It is the most common source of silent model degradation.
+
+```
+  SOURCES OF SKEW:
+  ─────────────────────────────────────────────────────────────
+  1. Feature computation differs (as above — the feature store
+     solves this)
+
+  2. Data freshness: model trained on data from 6 months ago;
+     user behavior has shifted (concept drift)
+
+  3. Feedback loops: model predictions affect user behavior,
+     which becomes future training data
+     Example: recommender shows only popular items → users only
+     click popular items → model learns only popular items → ...
+
+  4. Missing features at serve time: a feature available in
+     training logs is not available in real-time serving
+     (e.g., aggregate stats that take minutes to compute)
+
+  DETECTION:
+  ─────────────────────────────────────────────────────────────
+  - Log model inputs at serving time; compare distributions to
+    training set using statistical tests (KS test, PSI)
+  - Monitor prediction distribution drift (not just accuracy)
+  - Shadow mode: run new model in parallel, compare outputs
+    without affecting users
+```
+
+---
+
+## 19.4 Model Rollout — Shadow, Canary, and Blue/Green
+
+Never deploy a new model version to 100% of traffic immediately.
+
+```
+  SHADOW MODE (safest — zero user impact):
+  ─────────────────────────────────────────────────────────────
+  Both old and new models run on every request.
+  Only old model's predictions are returned to users.
+  New model's predictions are logged and compared offline.
+
+  User Request ──► [Model v1]  ──► Response (served to user)
+                └► [Model v2]  ──► Logged only (shadow)
+
+  Use when: new model architecture, high-stakes domain.
+
+  CANARY (incremental exposure):
+  ─────────────────────────────────────────────────────────────
+  Route a small fraction (1%, 5%, 10%) of live traffic to the
+  new model. Monitor key metrics vs control group.
+
+  Traffic ── 95% ──► [Model v1]
+          └── 5% ──► [Model v2]  ← monitor latency, errors,
+                                    business metrics (CTR, revenue)
+
+  Hold for 24-48 hours; promote if metrics hold.
+
+  BLUE/GREEN (instant switchover):
+  ─────────────────────────────────────────────────────────────
+  Run two identical serving environments.
+  Switch routing from blue (old) to green (new) atomically.
+  Rollback = switch back to blue. Zero downtime.
+
+  ┌──────────┐         ┌──────────────┐
+  │ Load     │         │ Blue (v1)    │ ← idle (standby for rollback)
+  │ Balancer │ ──────► │ Green (v2)   │ ← serving 100%
+  └──────────┘         └──────────────┘
+
+  VERSION PINNING:
+  Store model version alongside predictions in the database.
+  Essential for A/B experiment attribution and debugging:
+  "all complaints from this user cohort came from v2 predictions."
+```
+
+---
+
+## 19.5 Quick Reference — ML System Design Building Blocks
+
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ COMPONENT              │ KEY DESIGN DECISION                     │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Feature Store          │ Offline (S3/BQ) + Online (Redis/BT)     │
+  │                        │ Point-in-time correctness for training   │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Training pipeline      │ Batch (Spark/Dataflow) or online        │
+  │                        │ (streaming features from Kafka/Flink)   │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Model serving          │ Batch for latency-tolerant; real-time   │
+  │                        │ for user-facing; TF Serving / Triton    │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Latency optimization   │ Quantization, distillation, two-stage   │
+  │                        │ retrieval + reranking, embedding cache  │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Skew monitoring        │ Log serving inputs; PSI / KS drift test │
+  │                        │ on feature distributions                │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Model rollout          │ Shadow → Canary → Blue/Green            │
+  │                        │ Log model version with every prediction │
+  ├────────────────────────┼─────────────────────────────────────────┤
+  │ Full system designs    │ See Chapter 21 (Recommendation, Ranking,│
+  │                        │ Fraud, Search, Ad systems)              │
+  └────────────────────────┴─────────────────────────────────────────┘
+```
+
+---
 
 # References
 

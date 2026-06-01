@@ -1,4 +1,4 @@
-# Chapter 22 — Building Semantic Search (Text, Images & Metadata)
+# Chapter 24 — Building Semantic Search (Text, Images & Metadata)
 
 > "Search is not about finding documents that contain a keyword. It's about finding the answer the user needs." — Every search engineer, eventually.
 
@@ -21,25 +21,25 @@ After reading this chapter, you will be able to:
 
 ```
 Contents:
-  23.1   What is Semantic Search?
-  23.2   The Embedding Foundation
-  23.3   Document Processing Pipeline
-  23.4   Image Search with CLIP
-  23.5   Multimodal Search — Combining Text, Images & Metadata
-  23.6   Vector Databases
-  23.7   Building the Full Pipeline (Python)
-  23.8   Reranking — From Good to Great
-  23.9   Evaluation Metrics for Search
-  23.10  Production Considerations
-  23.11  RAG: Connecting Search to LLMs
-  23.12  Interview Questions
+  24.1   What is Semantic Search?
+  24.2   The Embedding Foundation
+  24.3   Document Processing Pipeline
+  24.4   Image Search with CLIP
+  24.5   Multimodal Search — Combining Text, Images & Metadata
+  24.6   Vector Databases
+  24.7   Building the Full Pipeline (Python)
+  24.8   Reranking — From Good to Great
+  24.9   Evaluation Metrics for Search
+  24.10  Production Considerations
+  24.11  RAG: Connecting Search to LLMs
+  24.12  Interview Questions
   Key Takeaways
   Review Questions
 ```
 
 ---
 
-## 23.1 What is Semantic Search?
+## 24.1 What is Semantic Search?
 
 > **Semantic search** retrieves results by meaning rather than exact keyword matches. It converts queries and documents into dense vector representations, then ranks results by vector similarity — so "car repair" matches "auto mechanic" even though no words overlap.
 
@@ -74,7 +74,7 @@ The pipeline has two phases: **indexing** (offline — embed all your documents 
 
 ---
 
-## 23.2 The Embedding Foundation
+## 24.2 The Embedding Foundation
 
 > **Embedding**: a dense vector of fixed dimensionality that encodes the semantic meaning of a piece of content (text, image, audio). Similar meanings map to nearby points in vector space.
 
@@ -176,7 +176,7 @@ print(f"Dissimilar pair: {cosine_similarity(v1, v3):.4f}")   # ~0.08
 
 ---
 
-## 23.3 Document Processing Pipeline
+## 24.3 Document Processing Pipeline
 
 > **Document processing pipeline**: the system that ingests raw files (PDFs, Word docs, HTML, images), extracts text, splits it into chunks, generates embeddings, and stores them in a vector database.
 
@@ -272,7 +272,7 @@ def build_chunk_metadata(chunk_text, source_path, page_num, heading):
 
 ---
 
-## 23.4 Image Search with CLIP
+## 24.4 Image Search with CLIP
 
 > **CLIP (Contrastive Language-Image Pre-training)**: a model trained by OpenAI that maps both text and images into the same embedding space, enabling cross-modal search — find images by describing them in words.
 
@@ -355,7 +355,7 @@ print(f"Top match: photos/{best_match[0]}.jpg (similarity: {similarities[best_ma
 
 ---
 
-## 23.5 Multimodal Search — Combining Text, Images & Metadata
+## 24.5 Multimodal Search — Combining Text, Images & Metadata
 
 > **Multimodal search** retrieves results across content types — text documents, images, structured data — by unifying them in a shared representation space and combining multiple retrieval signals.
 
@@ -482,7 +482,7 @@ result = client.query.get("Document", ["text", "source"]) \
 
 ---
 
-## 23.6 Vector Databases
+## 24.6 Vector Databases
 
 > **Vector database**: a database purpose-built to store, index, and search high-dimensional vectors using approximate nearest neighbor (ANN) algorithms, returning the most similar vectors to a query in milliseconds.
 
@@ -537,7 +537,7 @@ Search: Start at Layer 2, jump to nearest node,
 
 ---
 
-## 23.7 Building the Full Pipeline (Python)
+## 24.7 Building the Full Pipeline (Python)
 
 A working semantic search system end-to-end using open-source tools — no API keys required for the core pipeline.
 
@@ -706,7 +706,7 @@ print(answer)
 
 ---
 
-## 23.8 Reranking — From Good to Great
+## 24.8 Reranking — From Good to Great
 
 > **Reranking**: a second-stage scoring step where a more powerful model (typically a cross-encoder) jointly evaluates each (query, document) pair to produce a refined relevance score, applied to the top candidates from initial retrieval.
 
@@ -828,7 +828,7 @@ Doc B ranks #2 in dense but #1 in BM25 — RRF correctly promotes it to the top.
 
 ---
 
-## 23.9 Evaluation Metrics for Search
+## 24.9 Evaluation Metrics for Search
 
 > **Search evaluation** measures how well your system ranks relevant results — not just whether it finds them, but how high it ranks them.
 
@@ -927,7 +927,7 @@ def llm_judge(query: str, document: str) -> int:
 
 ---
 
-## 23.10 Production Considerations
+## 24.10 Production Considerations
 
 Building a demo on 100 documents is easy. Handling 10 million documents at 1000 QPS with continuous updates — that is engineering.
 
@@ -1033,7 +1033,7 @@ results = collection.query(
 
 ---
 
-## 23.11 RAG: Connecting Search to LLMs
+## 24.11 RAG: Connecting Search to LLMs
 
 > **Retrieval-Augmented Generation (RAG)**: a pattern where an LLM's input is augmented with relevant documents retrieved from a search system, grounding the LLM's answer in factual, up-to-date, source-attributed content.
 
@@ -1121,7 +1121,7 @@ These managed services trade cost for engineering time — no pipeline to build 
 
 ---
 
-## 23.12 Interview Questions
+## 24.12 Interview Questions
 
 **Q1: Design a semantic search system for an enterprise with 10 million documents (PDFs, Word, emails). Walk through the architecture.**
 
@@ -1332,4 +1332,4 @@ Challenge: text embeddings and CLIP embeddings live in different vector spaces �
 
 ---
 
-**Previous:** [Chapter 22 — Modern AI Stack](17_modern_ai_stack.md)
+**Previous:** [Chapter 23 — Practical ML](23_practical_ml.md) | **Next:** [Chapter 25 — GPUs, TPUs & AI Infrastructure](25_gpus_tpus_infrastructure.md)

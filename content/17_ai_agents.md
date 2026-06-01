@@ -1152,7 +1152,35 @@ Think of it this way: MCP is how you use your hands (tools). A2A is how you talk
 
 </details>
 
-### Q8: How would you add long-term memory to an agent?
+### Q8: How would you instrument an agent eval pipeline?
+
+<details><summary>Answer</summary>
+
+Structure the pipeline around four layers: (1) **Tracing** — log every LLM call, every tool call, token counts, latency, and cost at the individual step level. This is the raw data for all downstream metrics. (2) **Scoring** — apply automated graders for objective criteria (does the file exist, does the test pass?) and LLM-as-judge for subjective quality (is the response accurate and complete?). (3) **Dashboards** — track pass rate, average steps, average cost, and p95 latency over time and across agent versions. (4) **Regression** — always compare a new agent version against a frozen baseline on the same task suite, so you detect when a prompt change breaks previously passing tasks.
+
+For LLM-as-judge, include a rubric with calibration examples and require the judge to cite evidence from the agent output — this reduces verbosity bias and hallucinated justifications. Use a different model family as judge to reduce self-preference bias.
+
+</details>
+
+### Q9: What are the main failure modes of LLM-as-judge evaluation?
+
+<details><summary>Answer</summary>
+
+The five main failure modes: (1) **Verbosity bias** — the judge prefers longer answers regardless of quality; mitigate by explicitly penalizing unnecessary length. (2) **Self-preference bias** — a GPT-4o judge gives higher scores to GPT-4o outputs; use a different model family as judge. (3) **Position bias** — the judge rates the first option higher when comparing two; swap ordering and average both scores. (4) **Rubric drift** — the judge interprets the rubric inconsistently across runs; fix with calibration examples (few-shot anchors) that anchor each score level. (5) **Hallucinated justifications** — the judge fabricates reasons that do not reflect the actual output; require citation of specific spans from the agent output before the final score.
+
+</details>
+
+### Q10: What is human-in-the-loop (HITL) and when should you use it?
+
+<details><summary>Answer</summary>
+
+HITL is an agent design pattern that pauses agent execution at specific decision points — typically before irreversible or high-risk actions — to collect a human approval before proceeding. The agent serializes its full state (messages, tool history, step counter) to a checkpoint store, notifies a human reviewer with the proposed action and its blast radius, and resumes from the checkpoint only after receiving an explicit approve or deny.
+
+Use HITL for: any action that is irreversible (delete, drop, deploy), any action with high blast radius (bulk updates, external communications, financial transactions), and any situation where the agent's confidence is below a threshold. For read-only or easily reversible actions, HITL adds latency without meaningful safety benefit. Most production agents sit at the "guarded" autonomy level: automated for low-risk steps, gated for high-risk ones.
+
+</details>
+
+### Q11: How would you add long-term memory to an agent?
 
 <details><summary>Answer</summary>
 
@@ -1167,6 +1195,332 @@ For stateful multi-step tasks, use checkpoint-based persistence (e.g., LangGraph
 For production systems, you typically combine both: vector DB for long-term knowledge and checkpoints for in-progress task state.
 
 </details>
+
+---
+
+## 17.12 Agent Evaluation
+
+> **Agent evaluation**: the systematic measurement of an agent's performance across dimensions including task completion, efficiency, accuracy, cost, and latency — using automated harnesses, benchmark tasks, and LLM-as-judge scoring.
+
+Unlike a classifier (where you compare a label to ground truth), evaluating an agent is hard because: the output is a multi-step trajectory, there are often many valid paths to a correct answer, and "did it work?" can itself require judgment.
+
+### Core Metrics
+
+| Metric | Definition | How to measure |
+|---|---|---|
+| **Task success rate** | Fraction of tasks completed correctly end-to-end | Binary pass/fail grader per task; aggregate over benchmark suite |
+| **Partial credit (step score)** | Credit for partially completing a multi-step task | Score each milestone (e.g., 3/5 subtasks correct = 0.6) |
+| **Step efficiency** | Number of agent turns / tool calls to complete the task | Count LLM calls; compare to a human baseline or optimal path |
+| **Tool-call accuracy** | Fraction of tool calls that are valid and correct | Check: tool exists, arguments are valid, call achieves intended effect |
+| **Invalid-call rate** | Fraction of tool calls that are malformed or call non-existent tools | Count schema validation failures + unknown-tool errors |
+| **Cost per task** | Total tokens × token price across all LLM calls in a session | Sum input + output tokens; apply current model pricing |
+| **Latency (p50 / p95)** | Wall-clock time from user request to final response | Measure end-to-end; break down by LLM calls vs. tool execution |
+| **Context efficiency** | Tokens consumed per unit of useful output | Useful proxy for prompt bloat; lower is better |
+
+### End-to-End vs. Per-Step Evaluation
+
+These two evaluation scopes answer different questions:
+
+```
+End-to-End Eval:                     Per-Step Eval:
+─────────────────                    ────────────────────────────
+User goal ──────────► Final result   Step 1 ──► Step 2 ──► Step 3
+       Did it work?                     Good?    Good?      Good?
+
++ Catches emergent failures          + Localizes where agent breaks
++ Mirrors real user experience       + Easier to diagnose root cause
+- Slow and expensive to run          - May not reflect overall quality
+- High variance on hard tasks        - Requires labeled step-level data
+```
+
+Use **end-to-end eval** for benchmarking models and release decisions. Use **per-step eval** for debugging and iterating on prompts or tool design.
+
+### Benchmark-Style Harnesses
+
+A benchmark harness provides a fixed set of tasks with automated graders, so results are reproducible and comparable across agent versions.
+
+**SWE-bench** and **τ-bench** (tau-bench) are the canonical examples:
+- **SWE-bench**: real GitHub issues; grader checks whether the agent's code patch passes the repo's test suite
+- **τ-bench**: tool-use tasks with a simulated environment; grader checks final state of the environment (e.g., "did the file get created with the right content?")
+
+Structure of a minimal harness:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Eval Harness Loop                          │
+│                                                             │
+│  Task dataset ──► [Task N]                                  │
+│                       │                                     │
+│                       ▼                                     │
+│               Agent runs task                               │
+│               (all tool calls recorded)                     │
+│                       │                                     │
+│                       ▼                                     │
+│               Automated grader                              │
+│               checks final state                            │
+│                       │                                     │
+│          ┌────────────┴────────────┐                        │
+│          │                         │                        │
+│        Pass                       Fail                      │
+│          │                         │                        │
+│          └────────────┬────────────┘                        │
+│                       │                                     │
+│               Aggregate metrics:                            │
+│               success rate, avg steps,                      │
+│               cost per task, latency                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+In code, each task typically has: an `input` (the user request), `setup` (environment state before the agent runs), and `expected_outcome` (state the grader checks after).
+
+```python
+# Minimal eval harness sketch
+import statistics
+
+def run_eval(agent, task_suite):
+    results = []
+    for task in task_suite:
+        task["setup"]()                          # Restore environment to known state
+        trajectory = agent.run(task["input"])    # Agent runs; all steps recorded
+        passed = task["grader"](trajectory)      # Automated pass/fail check
+        results.append({
+            "task_id":   task["id"],
+            "passed":    passed,
+            "steps":     len(trajectory.tool_calls),
+            "cost_usd":  trajectory.total_cost(),
+            "latency_s": trajectory.wall_time_s,
+        })
+
+    pass_rate  = sum(r["passed"] for r in results) / len(results)
+    avg_steps  = statistics.mean(r["steps"]  for r in results)
+    avg_cost   = statistics.mean(r["cost_usd"]  for r in results)
+    print(f"Pass rate: {pass_rate:.1%}  Avg steps: {avg_steps:.1f}  Avg cost: ${avg_cost:.4f}")
+    return results
+```
+
+### LLM-as-Judge
+
+When there is no deterministic grader (open-ended writing, research tasks, multi-step reasoning), use a separate LLM to score the agent's output against a rubric.
+
+```
+Agent output ──► Judge LLM ──► Score (0–5) + Rationale
+                    ▲
+               Rubric / criteria
+               (specificity, accuracy,
+                completeness, relevance)
+```
+
+**Pitfalls to know for interviews:**
+
+| Pitfall | Description | Mitigation |
+|---|---|---|
+| **Verbosity bias** | Judge prefers longer answers, regardless of quality | Explicitly penalize unnecessary length in the rubric |
+| **Self-preference / model bias** | GPT-4o judge rates GPT-4o outputs higher; Claude judge rates Claude outputs higher | Use a different model family as judge, or average across two judges |
+| **Position bias** | Judge scores option A higher when it appears first | Swap ordering; compare both orderings and take the average |
+| **Rubric drift** | Judge interprets the same rubric differently across different runs | Include calibration examples (few-shot anchors) in the judge prompt |
+| **Hallucinated justifications** | Judge fabricates reasons that don't reflect the actual output | Require the judge to quote specific spans from the agent output |
+
+A well-designed judge prompt includes: a scoring rubric with anchored examples (score 1 looks like X, score 5 looks like Y), an instruction to cite evidence, and a chain-of-thought requirement before the final score.
+
+### Instrumenting an Eval Pipeline in Practice
+
+A production eval pipeline tracks four layers:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Tracing     — log every LLM call, tool call, token count│
+│  2. Scoring     — automated graders + LLM-as-judge          │
+│  3. Dashboards  — pass rate, cost, latency trends over time  │
+│  4. Regression  — compare new agent version vs. baseline     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Tools commonly used: LangSmith (LangChain's tracing + eval), Braintrust, Weights & Biases Weave, Arize Phoenix, or a custom Postgres + Grafana stack.
+
+> **Interview tip**: When asked "How would you instrument an agent eval pipeline?", describe the four layers above. Emphasize: (1) every tool call must be logged with inputs, outputs, latency, and token counts — this is the raw data for all downstream metrics; (2) you need both automated graders for objective criteria and LLM-as-judge for subjective quality; (3) always track regression against a frozen baseline, not just absolute numbers, so you detect when a new prompt change breaks previously passing tasks.
+
+---
+
+## 17.13 Human-in-the-Loop (HITL) & Approval Gates
+
+> **Human-in-the-Loop (HITL)**: an agent design pattern where human judgment is incorporated at specific decision points — typically before irreversible or high-risk actions — by pausing the agent, presenting a proposed action for review, and resuming only after explicit approval (or redirecting after denial).
+
+Full autonomy is appropriate for low-risk, easily reversible operations. For destructive, expensive, or irreversible actions, inserting a human checkpoint is both safer and often legally required.
+
+### When to Insert a Human Gate
+
+| Action type | Risk | Recommended gate |
+|---|---|---|
+| Read-only (search, fetch, query) | Low | None — agent proceeds automatically |
+| Write to internal state (create file, update DB record) | Medium | Optional: log and alert, gate on high-value records |
+| Send external communication (email, Slack, webhook) | Medium-high | Gate: show draft, require approval before send |
+| Financial transaction (purchase, transfer, refund) | High | Gate: always require human approval |
+| Delete / drop (file, DB row, deployment) | High | Gate: always require human approval + confirmation prompt |
+| Privileged access (admin API, production deploy) | Critical | Gate: multi-person approval or out-of-band verification |
+
+### The Levels-of-Autonomy Spectrum
+
+```
+Full Manual          Assisted            Supervised         Guarded           Full Autonomous
+─────────────        ─────────           ──────────         ───────           ───────────────
+Human decides        Human decides,      Agent acts,        Agent acts;       Agent acts
+every step           agent suggests      human monitors;    gates only for    completely;
+                     next action         human can           high-risk ops     no human in
+                                         interrupt at                          the loop
+                                         any step
+
+← More safety, less throughput ────────────────────────── More throughput, more risk →
+```
+
+Most production agents (2026) sit at **Supervised** or **Guarded**, not Full Autonomous. The right level depends on reversibility, blast radius, and regulatory requirements.
+
+### Confidence-Threshold Escalation
+
+Rather than gating every action, agents can escalate selectively when their confidence in the correct action is low.
+
+```
+Agent plans action
+        │
+        ▼
+  Confidence score
+  (from model logprobs,
+   classifier, or
+   self-assessment prompt)
+        │
+    ┌───┴───┐
+  High    Low / uncertain
+    │         │
+    ▼         ▼
+ Proceed    Escalate to human:
+ auto.      "I'm not sure whether to
+             delete record #4421 or
+             archive it. Which do you
+             prefer?"
+```
+
+Practical implementation: after the agent produces a planned action, run a secondary prompt: "On a scale of 1–5, how confident are you that this action is correct and safe? If below 4, explain the uncertainty." If the self-assessed score is below threshold, route to human review.
+
+### Interrupt / Resume: Checkpoint State
+
+When an agent is paused for human review, its full state must be persisted so it can resume exactly where it left off after approval.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                   HITL Interrupt / Resume Flow                │
+│                                                              │
+│  Agent running ──────────────────────────────────────────►  │
+│                                                              │
+│  Step N-1 complete                                           │
+│       │                                                      │
+│       ▼                                                      │
+│  [Approval gate triggered]                                   │
+│       │                                                      │
+│       ▼                                                      │
+│  Serialize agent state ──► Checkpoint store (DB / Redis)     │
+│  (messages, tool history, variables, step counter)           │
+│       │                                                      │
+│       ▼                                                      │
+│  Notify human reviewer ──► Review UI                         │
+│  "Agent proposes: DELETE /prod/users/4421"                   │
+│       │                                                      │
+│   ┌───┴────────────────────────┐                            │
+│   │                            │                            │
+│  Approve                      Deny / Edit                   │
+│   │                            │                            │
+│   ▼                            ▼                            │
+│  Resume from checkpoint       Inject feedback into          │
+│  → execute action             context → agent re-plans      │
+│       │                            │                        │
+│       └────────────┬───────────────┘                        │
+│                    ▼                                         │
+│            Continue agent loop                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### LangGraph Interrupt / Resume Example
+
+LangGraph (the dominant stateful agent framework in 2026) supports first-class `interrupt` / `resume` via its `NodeInterrupt` mechanism:
+
+```python
+from langgraph.graph import StateGraph, START, END
+from langgraph.types import interrupt, Command
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    messages: list
+    pending_action: dict | None
+    approved: bool
+
+def plan_action(state: AgentState) -> AgentState:
+    # Agent decides what to do next
+    action = {"tool": "delete_file", "path": "/prod/config.yaml"}
+    return {"pending_action": action}
+
+def approval_gate(state: AgentState) -> AgentState:
+    action = state["pending_action"]
+    # Pause execution; surface action to human reviewer
+    # LangGraph serializes state to the configured checkpointer automatically
+    human_decision = interrupt({
+        "message": f"Agent proposes: {action['tool']}({action['path']}). Approve?",
+        "action": action,
+    })
+    # Execution resumes here only after human responds
+    return {"approved": human_decision["approved"]}
+
+def execute_or_abort(state: AgentState) -> AgentState:
+    if state["approved"]:
+        # Actually perform the destructive action
+        perform_action(state["pending_action"])
+        return {"messages": state["messages"] + [{"role": "system", "content": "Action executed."}]}
+    else:
+        return {"messages": state["messages"] + [{"role": "system", "content": "Action denied by user."}]}
+
+# Build graph
+graph = StateGraph(AgentState)
+graph.add_node("plan_action",      plan_action)
+graph.add_node("approval_gate",    approval_gate)
+graph.add_node("execute_or_abort", execute_or_abort)
+graph.add_edge(START,            "plan_action")
+graph.add_edge("plan_action",    "approval_gate")
+graph.add_edge("approval_gate",  "execute_or_abort")
+graph.add_edge("execute_or_abort", END)
+
+from langgraph.checkpoint.memory import MemorySaver
+app = graph.compile(checkpointer=MemorySaver(), interrupt_before=["approval_gate"])
+
+# --- Run 1: agent plans, then pauses at approval gate ---
+config = {"configurable": {"thread_id": "task-001"}}
+result = app.invoke({"messages": [], "pending_action": None, "approved": False}, config)
+# result is a GraphInterrupt — state is saved in checkpointer
+
+# --- Human reviews, then resumes ---
+app.invoke(Command(resume={"approved": True}), config)
+# Agent continues from the saved checkpoint, executes the action
+```
+
+Key points: `interrupt()` serializes the full graph state to the checkpointer. The `thread_id` identifies the conversation. `Command(resume=...)` injects the human decision and restarts from the interrupted node.
+
+### Designing Approval Gate Messages
+
+A good gate message gives the reviewer exactly what they need to decide quickly:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Agent Action Review                            [Task #4821] │
+├─────────────────────────────────────────────────────────────┤
+│  Original goal:  "Clean up stale user accounts"             │
+│  Proposed action: DELETE /users WHERE last_login < 2024-01  │
+│  Affected rows:   1,432 records                             │
+│  Reversible?      No — rows will be permanently deleted     │
+│  Agent confidence: 3/5 (uncertain about cutoff date)        │
+├─────────────────────────────────────────────────────────────┤
+│  [Approve]   [Deny]   [Edit action]   [Ask agent to explain]│
+└─────────────────────────────────────────────────────────────┘
+```
+
+Show: the original goal, the exact action, the blast radius, whether it is reversible, and the agent's confidence. Do not require the reviewer to know the full agent history.
+
+> **Interview tip**: When asked "How do you handle safety in agentic systems?", structure the answer around three things: (1) the levels-of-autonomy spectrum — where on that spectrum does your agent sit, and why; (2) approval gates — which specific tools trigger a gate, and how is state persisted during the pause; (3) confidence-threshold escalation — how the agent knows when it is uncertain and should ask rather than act. This shows you have a principled framework, not just "we added human review."
 
 ---
 
@@ -1200,6 +1554,21 @@ For production systems, you typically combine both: vector DB for long-term know
 │    Hallucinated tools | Cost explosion | Context overflow   │
 │                                                             │
 │  Memory: short-term (context) + long-term (vector DB)       │
+│                                                             │
+│  Agent Eval Metrics:                                        │
+│    Task success rate | Step efficiency | Tool-call accuracy  │
+│    Invalid-call rate | Cost per task | Latency (p50/p95)    │
+│  Eval scopes: end-to-end (release) + per-step (debug)       │
+│  Harness: fixed tasks + automated grader (SWE-bench style)  │
+│  LLM-as-judge: use rubric + calibration examples;           │
+│    watch for verbosity bias, self-preference, position bias  │
+│                                                             │
+│  HITL & Approval Gates:                                     │
+│    Gate destructive / irreversible / high-blast-radius ops  │
+│    Autonomy spectrum: Manual → Assisted → Supervised →      │
+│                       Guarded → Full Autonomous             │
+│    Interrupt: serialize state → notify human → resume       │
+│    Confidence escalation: low confidence → ask, don't act   │
 │                                                             │
 │  Golden Rule: Start with one agent. Add more only when      │
 │  you have evidence that one agent cannot handle the task.    │
@@ -1283,11 +1652,43 @@ The model receives a screenshot of the screen (as an image), interprets what it 
 
 </details>
 
-### 10. What is the golden rule for choosing agent complexity?
+### 10. Name four core metrics for evaluating an agent and what each measures.
+
+<details><summary>Answer</summary>
+
+(1) **Task success rate** — the fraction of benchmark tasks the agent completes correctly end-to-end, measured by an automated grader against expected final state. (2) **Step efficiency** — the number of LLM calls or tool calls consumed per completed task; lower is better and proxies for cost. (3) **Tool-call accuracy / invalid-call rate** — the fraction of tool calls that are valid, correctly formed, and achieve their intended effect; the invalid-call rate is the complementary failure metric. (4) **Cost per task** — total tokens consumed across all LLM calls in a session multiplied by the model's token price; tracks budget impact and detects cost regressions.
+
+</details>
+
+### 11. What is the difference between end-to-end and per-step agent evaluation?
+
+<details><summary>Answer</summary>
+
+End-to-end evaluation measures whether the agent achieved the final goal — correct outcome or not. It mirrors real user experience and catches emergent failures (where individual steps look fine but the overall result is wrong). Per-step evaluation scores each intermediate action individually against expected behavior. It is better for diagnosing exactly where the agent breaks down but requires labeled step-level data and may not reflect overall quality. Production eval pipelines use both: end-to-end for model selection and release decisions, per-step for debugging specific failure modes.
+
+</details>
+
+### 12. What is the levels-of-autonomy spectrum, and where do most production agents sit?
+
+<details><summary>Answer</summary>
+
+The spectrum ranges from Full Manual (human decides every step) through Assisted (agent suggests, human decides), Supervised (agent acts, human monitors and can interrupt), Guarded (agent acts autonomously; approval gates trigger only for high-risk or irreversible operations), to Full Autonomous (agent acts completely without human checkpoints). Most production agents in 2026 sit at Supervised or Guarded — not Full Autonomous — because irreversible actions (deletes, sends, purchases) require human accountability, and confidence-threshold escalation is cheaper than fixing a mistake after the fact.
+
+</details>
+
+### 13. What is the golden rule for choosing agent complexity?
 
 <details><summary>Answer</summary>
 
 Start with a single agent. Add more agents only when you have evidence that one agent cannot handle the task. Every additional agent adds cost (more LLM calls), latency (more round trips), and complexity (harder to debug). A well-designed single agent with good tools can handle most tasks. Move to a router when you have distinct task types, and to an orchestrator only when tasks genuinely need parallel decomposition across different specialties.
+
+</details>
+
+### 14. How does LangGraph's interrupt / resume mechanism work for human approval gates?
+
+<details><summary>Answer</summary>
+
+When an agent node calls `interrupt(payload)`, LangGraph immediately serializes the full graph state — messages, all node outputs, step counter — to the configured checkpointer (e.g., MemorySaver, PostgresSaver). Execution halts and the caller receives a `GraphInterrupt` object containing the payload (the proposed action shown to the reviewer). When the human responds, `app.invoke(Command(resume=decision), config)` injects the human's decision and restarts execution from the interrupted node, loading all prior state from the checkpointer. The thread_id in the config identifies which session to resume. This design separates the interruption mechanism (LangGraph's built-in checkpoint plumbing) from the notification mechanism (email, Slack, review UI — handled by the application layer outside the graph).
 
 </details>
 

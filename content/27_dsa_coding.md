@@ -15,8 +15,9 @@
 | 3 | Graphs | 18.12–18.14: BFS/DFS, Dijkstra, Topo Sort, Union-Find, Grids |
 | 4 | Dynamic Programming | 18.15–18.18: 1D DP, 2D DP, Advanced DP |
 | 5 | Advanced Patterns | 18.19–18.23: Backtracking, Greedy, Bit Manipulation, Intervals, Math |
-| 6 | Pattern Recognition | 18.24–18.26: Master Table, Decision Flowchart, Interview Strategy |
-| 7 | ML Coding | 18.27: Implement ML from Scratch in Java |
+| 6 | Advanced DS & Paths | 18.24–18.28: Segment Tree, BIT/Fenwick, Bellman-Ford, Floyd-Warshall, Monotonic Deque |
+| 7 | Pattern Recognition | 18.29–18.31: Master Table, Decision Flowchart, Interview Strategy |
+| 8 | ML Coding | 18.32: Implement ML from Scratch in Java |
 
 ---
 
@@ -1077,8 +1078,7 @@ public void countingSort(int[] arr, int maxVal) {
 ### Custom Comparators
 
 ```java
-Arrays.sort(intervals, (a, b) -> a[0] - b[0]); // by start time
-// WARNING: a - b overflows for large values! Use Integer.compare(a, b) instead.
+Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0])); // by start time
 ```
 
 ### Tips & Common Mistakes
@@ -1896,7 +1896,7 @@ Min-heap of K list heads. Extract min, push next node from that list.
 
 ```java
 public ListNode mergeKLists(ListNode[] lists) {
-    PriorityQueue<ListNode> pq = new PriorityQueue<>((a, b) -> a.val - b.val);
+    PriorityQueue<ListNode> pq = new PriorityQueue<>((a, b) -> Integer.compare(a.val, b.val));
     for (ListNode h : lists) if (h != null) pq.offer(h);
     ListNode dummy = new ListNode(0), tail = dummy;
     while (!pq.isEmpty()) {
@@ -2441,7 +2441,7 @@ public int[] dijkstra(List<int[]>[] graph, int n, int src) {
     dist[src] = 0;
 
     // PQ stores [distance, node], sorted by distance
-    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] - b[0]);
+    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));
     pq.offer(new int[]{0, src});
 
     while (!pq.isEmpty()) {
@@ -2650,7 +2650,7 @@ public int networkDelayTime(int[][] times, int n, int k) {
     int[] dist = new int[n + 1];
     Arrays.fill(dist, Integer.MAX_VALUE);
     dist[k] = 0;
-    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> a[0] - b[0]);
+    PriorityQueue<int[]> pq = new PriorityQueue<>((a, b) -> Integer.compare(a[0], b[0]));
     pq.offer(new int[]{0, k});
     while (!pq.isEmpty()) {
         int[] curr = pq.poll();
@@ -4113,7 +4113,7 @@ A greedy algorithm makes the locally optimal choice at each step, hoping it lead
 ```java
 // LC 435: Non-overlapping Intervals (minimum removals)
 public int eraseOverlapIntervals(int[][] intervals) {
-    Arrays.sort(intervals, (a, b) -> a[1] - b[1]); // sort by end time
+    Arrays.sort(intervals, (a, b) -> Integer.compare(a[1], b[1])); // sort by end time
     int count = 0, prevEnd = Integer.MIN_VALUE;
 
     for (int[] interval : intervals) {
@@ -4270,7 +4270,7 @@ Interval problems almost always start the same way: **sort by start time** (or e
 
 ```java
 // TEMPLATE: Sort intervals, then merge/process
-Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
+Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));
 ```
 
 ### Merge Intervals
@@ -4278,7 +4278,7 @@ Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
 ```java
 // LC 56: Merge Intervals
 public int[][] merge(int[][] intervals) {
-    Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
+    Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));
     List<int[]> merged = new ArrayList<>();
     merged.add(intervals[0]);
 
@@ -4299,7 +4299,7 @@ public int[][] merge(int[][] intervals) {
 ```java
 // LC 253: find minimum rooms needed (max overlapping intervals)
 public int minMeetingRooms(int[][] intervals) {
-    Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
+    Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));
     PriorityQueue<Integer> pq = new PriorityQueue<>(); // tracks end times
 
     for (int[] interval : intervals) {
@@ -4415,11 +4415,378 @@ Math.abs(Integer.MIN_VALUE);           // returns Integer.MIN_VALUE (still negat
 
 ---
 
-# PART 6: PATTERN RECOGNITION & STRATEGY
+# PART 6: ADVANCED DATA STRUCTURES & SHORTEST PATHS
 
 ---
 
-## 18.24 Master Pattern Table
+## 18.24 Segment Tree
+
+**When to use:** range aggregate queries (sum, min, max) with point updates on a static-length array. O(n) build, O(log n) per query and update. Prefer over a Fenwick Tree when you need range min/max (not just sum).
+
+```
+Array: [2, 4, 5, 1, 8, 3]   (0-indexed, length 6)
+
+                [0,5] sum=23
+               /            \
+        [0,2] sum=11      [3,5] sum=12
+        /       \          /       \
+   [0,1] sum=6  [2,2]=5  [3,4] sum=9  [5,5]=3
+   /      \               /      \
+[0,0]=2  [1,1]=4       [3,3]=1  [4,4]=8
+
+Node at index i stores aggregate for its range.
+Left child  = 2*i,   Right child = 2*i+1
+Parent      = i/2
+```
+
+### Java Template — Sum Segment Tree
+
+```java
+class SegmentTree {
+    private final int[] tree;
+    private final int n;
+
+    // Build in O(n)
+    SegmentTree(int[] nums) {
+        n = nums.length;
+        tree = new int[4 * n];   // 4n is a safe upper bound
+        build(nums, 1, 0, n - 1);
+    }
+
+    private void build(int[] nums, int node, int lo, int hi) {
+        if (lo == hi) {
+            tree[node] = nums[lo];
+            return;
+        }
+        int mid = lo + (hi - lo) / 2;
+        build(nums, 2 * node,     lo,      mid);
+        build(nums, 2 * node + 1, mid + 1, hi);
+        tree[node] = tree[2 * node] + tree[2 * node + 1];
+    }
+
+    // Point update: set nums[idx] = val — O(log n)
+    public void update(int idx, int val) {
+        update(1, 0, n - 1, idx, val);
+    }
+
+    private void update(int node, int lo, int hi, int idx, int val) {
+        if (lo == hi) {
+            tree[node] = val;
+            return;
+        }
+        int mid = lo + (hi - lo) / 2;
+        if (idx <= mid) update(2 * node,     lo,      mid, idx, val);
+        else            update(2 * node + 1, mid + 1, hi,  idx, val);
+        tree[node] = tree[2 * node] + tree[2 * node + 1];
+    }
+
+    // Range sum query [l, r] — O(log n)
+    public int query(int l, int r) {
+        return query(1, 0, n - 1, l, r);
+    }
+
+    private int query(int node, int lo, int hi, int l, int r) {
+        if (l > hi || r < lo) return 0;               // out of range: identity for sum
+        if (l <= lo && hi <= r) return tree[node];    // fully covered
+        int mid = lo + (hi - lo) / 2;
+        return query(2 * node,     lo,      mid, l, r)
+             + query(2 * node + 1, mid + 1, hi,  l, r);
+    }
+}
+```
+
+**Complexity:** Build O(n), query O(log n), update O(log n). Space O(n).
+
+**Range minimum variant:** replace `tree[node] = tree[L] + tree[R]` with `Math.min(...)`, and the out-of-range identity becomes `Integer.MAX_VALUE`.
+
+**Lazy propagation (range updates):** When you need to add a value to every element in a range (not just a point), doing O(log n) individual updates is insufficient. Lazy propagation tags each node with a pending delta; the tag is pushed down to children only when their subtrees are accessed. This keeps range updates and queries both at O(log n). The implementation adds a `lazy[]` array and a `pushDown` helper called at the start of every recursive step.
+
+**Key problems:** Range Sum Query — Mutable (LC 307), Count of Smaller Numbers After Self (LC 315), Rectangle Area (LC 850).
+
+---
+
+## 18.25 Fenwick Tree (Binary Indexed Tree / BIT)
+
+**When to use:** prefix-sum queries with point updates, in O(log n) time and O(n) space. Simpler and faster constant than a segment tree when the aggregate is *invertible* (sum, XOR). Cannot do range min/max; use a segment tree for those.
+
+```
+Responsibility of each BIT index (1-indexed, n=8):
+
+Index: 1  2  3  4  5  6  7  8
+Bits:  1  10 11 100 101 110 111 1000
+Resp:  [1] [1,2] [3] [1,4] [5] [5,6] [7] [1,8]
+
+Each index i is responsible for the range of length lowbit(i) = i & (-i)
+ending at i. The update and query walks the tree by adding/subtracting
+lowbit(i) at each step.
+```
+
+### Java Template
+
+```java
+class BIT {
+    private final int[] tree;
+    private final int n;
+
+    BIT(int n) {
+        this.n = n;
+        tree = new int[n + 1];   // 1-indexed
+    }
+
+    // Add delta to index i (1-indexed) — O(log n)
+    public void update(int i, int delta) {
+        for (; i <= n; i += i & (-i))
+            tree[i] += delta;
+    }
+
+    // Prefix sum [1..i] — O(log n)
+    public int query(int i) {
+        int sum = 0;
+        for (; i > 0; i -= i & (-i))
+            sum += tree[i];
+        return sum;
+    }
+
+    // Range sum [l..r] (1-indexed) — O(log n)
+    public int query(int l, int r) {
+        return query(r) - query(l - 1);
+    }
+}
+```
+
+**The `i & (-i)` idiom:** `-i` in two's complement flips all bits then adds 1, so `i & (-i)` isolates the lowest set bit of `i`. Adding this to `i` in `update` moves to the next responsible ancestor; subtracting it in `query` moves to the next responsible prefix.
+
+**BIT vs Segment Tree:**
+
+| | BIT | Segment Tree |
+|---|---|---|
+| Space | O(n) | O(4n) |
+| Constant factor | ~2× faster | larger |
+| Range min/max | No | Yes |
+| Range update (lazy) | Requires two BITs | Yes |
+| Implementation size | ~15 lines | ~50 lines |
+
+Prefer BIT when the aggregate is sum/XOR and you only need point updates.
+
+**Key problems:** Range Sum Query — Mutable (LC 307), Count of Smaller Numbers After Self (LC 315), Reverse Pairs (LC 493).
+
+---
+
+## 18.26 Bellman-Ford
+
+**When to use:** single-source shortest path when the graph may have **negative edge weights**. Also the only standard algorithm that detects negative-weight cycles. O(V·E) — much slower than Dijkstra's O((V+E) log V), so only reach for it when negative weights are present.
+
+**Why Dijkstra fails with negative edges:** Dijkstra's greedy assumption — once a node is settled, its distance is final — breaks when a future negative edge could reduce that distance.
+
+### Algorithm
+
+Relax all edges V−1 times. After k rounds, every shortest path using at most k edges is correctly computed. Since the longest acyclic path in a V-node graph has V−1 edges, V−1 rounds suffice. A V-th relaxation round that still finds improvements signals a negative cycle.
+
+```
+Graph with negative edge:
+  A --(-3)--> C
+  A --( 4)--> B
+  B --( 2)--> C
+
+After round 1: dist[A]=0, dist[B]=4, dist[C]=-3
+After round 2: dist[C] checked via B: 4+2=6 > -3, no update
+Result: dist[C] = -3  (direct A->C is shortest)
+Dijkstra would have settled C at 0+(-3)=-3 immediately by luck here,
+but on graphs where the negative edge creates a shortcut discovered late,
+Dijkstra gives wrong answers.
+```
+
+### Java Template
+
+```java
+// Bellman-Ford — O(V * E) time, O(V) space
+// edges[i] = {u, v, weight}
+public int[] bellmanFord(int n, int[][] edges, int src) {
+    int[] dist = new int[n];
+    Arrays.fill(dist, Integer.MAX_VALUE);
+    dist[src] = 0;
+
+    // Relax all edges V-1 times
+    for (int round = 0; round < n - 1; round++) {
+        boolean updated = false;
+        for (int[] edge : edges) {
+            int u = edge[0], v = edge[1], w = edge[2];
+            if (dist[u] != Integer.MAX_VALUE && dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                updated = true;
+            }
+        }
+        if (!updated) break;   // early exit: already converged
+    }
+
+    // V-th relaxation: detect negative cycle
+    for (int[] edge : edges) {
+        int u = edge[0], v = edge[1], w = edge[2];
+        if (dist[u] != Integer.MAX_VALUE && dist[u] + w < dist[v]) {
+            throw new IllegalStateException("Negative cycle detected");
+        }
+    }
+
+    return dist;
+}
+```
+
+**Dijkstra vs Bellman-Ford:**
+
+| | Dijkstra | Bellman-Ford |
+|---|---|---|
+| Negative weights | No | Yes |
+| Negative cycle detection | No | Yes |
+| Time complexity | O((V+E) log V) | O(V·E) |
+| Space | O(V) | O(V) |
+| Use when | Non-negative weights | Negative weights present |
+
+**Key problems:** Cheapest Flights Within K Stops (LC 787), Negative Weight Cycle (LC 3194), Network Delay Time (LC 743) — Dijkstra preferred unless negatives present.
+
+---
+
+## 18.27 Floyd-Warshall
+
+**When to use:** **all-pairs** shortest paths in a dense graph. O(V³) time, O(V²) space. Handles negative edges (but not negative cycles). Correct answer after the algorithm requires checking the diagonal: if `dist[i][i] < 0`, a negative cycle exists through node i.
+
+### The k-i-j Loop Order
+
+The key insight is the DP formulation: `dist[i][j]` = shortest path from i to j using only nodes `{0, 1, ..., k}` as intermediaries. The outer loop over k expands the allowed intermediate set one node at a time. The inner i-j loops read values that were computed in earlier k iterations, so the order is critical: **k outermost, then i, then j**.
+
+```
+dist[i][j] = min(dist[i][j],          // current best: no new intermediate
+                 dist[i][k] + dist[k][j])  // route through k
+```
+
+```
+4-node example (∞ = no direct edge):
+
+Initial dist:          After k=0 (via node 0):
+  0  1  2  3             0  1  2  3
+0[0, 3, ∞, 7]         0[0, 3, ∞, 7]
+1[8, 0, 2, ∞]         1[8, 0, 2, ∞]   (1->0->? doesn't help yet)
+2[5, ∞, 0, 1]         2[5, 8, 0, 1]   (2->0->1: 5+3=8 < ∞)
+3[2, ∞, ∞, 0]         3[2, 5, ∞, 0]   (3->0->1: 2+3=5 < ∞)
+```
+
+### Java Template
+
+```java
+// Floyd-Warshall — O(V^3) time, O(V^2) space
+// Returns dist[i][j] = shortest path from i to j, or Integer.MAX_VALUE/2 if unreachable.
+// Call with an adjacency matrix where graph[i][j] = edge weight, or INF if no edge.
+public int[][] floydWarshall(int[][] graph) {
+    int v = graph.length;
+    int INF = Integer.MAX_VALUE / 2;   // divide by 2 to avoid overflow on addition
+    int[][] dist = new int[v][v];
+
+    // Initialize: copy direct edge weights
+    for (int i = 0; i < v; i++)
+        for (int j = 0; j < v; j++)
+            dist[i][j] = (i == j) ? 0 : graph[i][j];
+
+    // k = intermediate node being considered
+    for (int k = 0; k < v; k++) {
+        for (int i = 0; i < v; i++) {
+            for (int j = 0; j < v; j++) {
+                if (dist[i][k] < INF && dist[k][j] < INF) {
+                    dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
+                }
+            }
+        }
+    }
+
+    // Optional: negative cycle check
+    for (int i = 0; i < v; i++) {
+        if (dist[i][i] < 0)
+            throw new IllegalStateException("Negative cycle detected at node " + i);
+    }
+
+    return dist;
+}
+```
+
+**Complexity:** O(V³) time, O(V²) space. For sparse graphs with E << V², run Dijkstra from every source (O(V·(V+E) log V)) instead.
+
+**Key problems:** Find the City With the Smallest Number of Neighbors at a Threshold Distance (LC 1334), Network Delay Time (LC 743), Evaluate Division (LC 399 — treat as weighted graph).
+
+---
+
+## 18.28 Monotonic Deque — Sliding Window Maximum
+
+**When to use:** maximum (or minimum) of every fixed-size window of length k in O(n). The deque maintains a *decreasing* invariant so the front is always the window's maximum. Each element is added and removed at most once — O(n) total.
+
+**Recognition trigger:** "maximum/minimum in every window of size k", "sliding window extremum".
+
+### The Decreasing-Deque Invariant
+
+The deque stores **indices** of array elements in decreasing order of their values. Before adding index `right`:
+1. **Remove expired indices** from the front (index <= right − k).
+2. **Pop from the back** any index whose value is <= `nums[right]` — those elements can never be the window maximum while `nums[right]` is still in the window.
+
+After both cleanups, `deque.peekFirst()` is the index of the current window maximum.
+
+```
+Array: [1, 3, -1, -3, 5, 3, 6, 7],  k = 3
+
+right=0  add 0(val=1).  Deque: [0]          window not full yet
+right=1  pop 0(1<3).    Deque: [1]          window not full yet
+right=2  add 2(-1<3).   Deque: [1, 2]       window=[1,3,-1]  max=3  front=1
+right=3  add 3(-3<-1).  Deque: [1, 2, 3]   window=[3,-1,-3] max=3  front=1
+right=4  expire 1(<=4-3=1). pop 2(-1<5),
+         pop 3(-3<5).   Deque: [4]           window=[-1,-3,5] max=5  front=4
+right=5  pop nothing(3<5).  Deque: [4, 5]   window=[-3,5,3]  max=5  front=4
+right=6  expire 4(<=6-3=3). pop 5(3<6).     Deque: [6]       window=[5,3,6] max=6
+right=7  pop nothing(7>6).  Deque: [6, 7]   window=[3,6,7]   max=7  front=6... wait
+         expire 6? 6 <= 7-3=4? No.          Deque: [6, 7]    max=7  front=6... 
+         Actually pop 6(6<7). Deque: [7]     window=[3,6,7]   max=7
+
+Output: [3, 3, 5, 5, 6, 7]
+```
+
+### Java — LeetCode 239 Full Solution
+
+```java
+// Sliding Window Maximum — LC 239 — O(n) time, O(k) space
+public int[] maxSlidingWindow(int[] nums, int k) {
+    int n = nums.length;
+    int[] result = new int[n - k + 1];
+    // Deque stores indices; front = index of window maximum
+    Deque<Integer> deque = new ArrayDeque<>();
+
+    for (int right = 0; right < n; right++) {
+        // 1. Remove index that has fallen outside the window
+        if (!deque.isEmpty() && deque.peekFirst() <= right - k) {
+            deque.pollFirst();
+        }
+
+        // 2. Maintain decreasing order: pop smaller values from the back
+        while (!deque.isEmpty() && nums[deque.peekLast()] <= nums[right]) {
+            deque.pollLast();
+        }
+
+        deque.offerLast(right);
+
+        // 3. Window is full starting at right = k-1
+        if (right >= k - 1) {
+            result[right - k + 1] = nums[deque.peekFirst()];
+        }
+    }
+    return result;
+}
+```
+
+**Why O(n):** Each index is pushed to the deque exactly once and popped at most once — from the back when a larger element arrives, or from the front when it expires. Total work is O(2n) = O(n), regardless of k.
+
+**Minimum sliding window:** use an *increasing* deque — pop from the back when `nums[deque.peekLast()] >= nums[right]`.
+
+---
+
+# PART 7: PATTERN RECOGNITION & STRATEGY
+
+---
+
+## 18.29 Master Pattern Table
 
 This is your cheat sheet. When you read a problem, scan for keywords. The keyword tells you the pattern. The pattern tells you the first line of code.
 
@@ -4439,7 +4806,7 @@ This is your cheat sheet. When you read a problem, scan for keywords. The keywor
 | "parentheses", "brackets", "nested"| Stack                   | Deque<> stack = new ArrayDeque<>();     |
 | "linked list cycle"                | Fast & Slow Pointers    | ListNode slow = head, fast = head;      |
 | "merge k sorted"                   | Heap merge              | PQ with one element from each list      |
-| "overlapping intervals"            | Sort + Sweep            | Arrays.sort(intervals, (a,b)->a[0]-b[0])|
+| "overlapping intervals"            | Sort + Sweep            | Arrays.sort(intervals, (a,b)->Integer.compare(a[0],b[0]))|
 | "string anagram/permutation"       | Hash Map / Counter      | int[] count = new int[26];              |
 | "trie", "prefix", "dictionary"     | Trie                    | class TrieNode { TrieNode[] children; } |
 | "tree paths", "tree depth"         | DFS on tree             | int dfs(TreeNode node) { ... }          |
@@ -4452,12 +4819,17 @@ This is your cheat sheet. When you read a problem, scan for keywords. The keywor
 | "design data structure"            | HashMap + LinkedList    | Think LRU Cache pattern                 |
 | "stock buy/sell"                   | State Machine DP        | dp[day][txn][holding]                   |
 | "bit operations", "XOR"            | Bit Manipulation        | result ^= num; or (n & (n-1))           |
+| "range sum/min query + updates"    | Segment Tree or BIT     | int[] tree = new int[4*n];              |
+| "prefix sums with point updates"   | Fenwick Tree (BIT)      | i += i & (-i) / i -= i & (-i)          |
+| "negative edge weights"            | Bellman-Ford            | relax all edges V-1 times              |
+| "all-pairs shortest path"          | Floyd-Warshall          | for k: for i: for j: dist[i][k]+[k][j] |
+| "max/min in sliding window size k" | Monotonic Deque         | Deque<Integer> deque = new ArrayDeque<>();|
 +------------------------------------+-------------------------+------------------------------------------+
 ```
 
 ---
 
-## 18.25 Decision Flowchart
+## 18.30 Decision Flowchart
 
 ```mermaid
 flowchart TD
@@ -4501,7 +4873,7 @@ flowchart TD
 
 ---
 
-## 18.26 Google Interview Strategy
+## 18.31 Google Interview Strategy
 
 ### The 45-Minute Timeline
 
@@ -4559,11 +4931,11 @@ Always state both time and space. Use this format:
 
 ---
 
-# PART 7: ML-SPECIFIC CODING
+# PART 8: ML-SPECIFIC CODING
 
 ---
 
-## 18.27 Implement from Scratch
+## 18.32 Implement from Scratch
 
 These are the classic "implement ML algorithm X from scratch" problems that come up in ML-focused coding interviews. Each implementation is kept concise and interview-ready.
 
@@ -4832,4 +5204,4 @@ public class SelfAttention {
 
 ---
 
-**Previous:** [Chapter 17 — ML System Design](19_ml_system_design.md) | **Next:** [Chapter 19 — Google ML Ecosystem](24_google_ml_ecosystem.md)
+**Previous:** [Chapter 26 — Google ML Ecosystem](26_google_ml_ecosystem.md) | **Next:** [Chapter 28 — Behavioral Interview](28_behavioral_interview.md)

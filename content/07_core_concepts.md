@@ -21,26 +21,29 @@ After reading this chapter, you will be able to:
 ## Chapter Map
 
 ```
-  2.1  Data                   — what we learn from
-  2.2  Features & Labels      — inputs and outputs
-  2.3  Train / Val / Test     — how we split data
-  2.4  The Model              — what we're building
-  2.5  The Training Loop      — how learning actually works  ★ new
-  2.6  Epochs, Batches, Iters — the units of training        ★ new
-  2.7  Loss Functions         — how we measure "wrong"
-  2.8  Gradient Descent       — how we fix "wrong"
-  2.9  Optimizers             — smarter ways to fix "wrong"   ★ new
-  2.10 Overfitting/Underfitting— the central tension
-  2.11 Bias–Variance Tradeoff — formalizing that tension
-  2.12 Regularization         — tools to prevent overfitting
-  2.13 Generalization         — the actual goal of ML         ★ new
-  2.14 Probability in ML      — predictions as confidence     ★ new
-  2.15 No Free Lunch Theorem  — why no algorithm rules all    ★ new
+  7.1  Data                      — what we learn from
+  7.2  Features & Labels         — inputs and outputs
+  7.3  Train / Val / Test        — how we split data
+  7.4  The Model                 — what we're building
+  7.5  Parameters vs Hyperparams — set by training vs set by you
+  7.6  The Training Loop         — how learning actually works
+  7.7  Epochs, Batches, Iters    — the units of training
+  7.8  Loss Functions            — how we measure "wrong"
+  7.9  Gradient Descent          — how we fix "wrong"
+  7.10 Optimizers                — smarter ways to fix "wrong"
+  7.11 Overfitting/Underfitting  — the central tension
+  7.12 Bias–Variance Tradeoff    — formalizing that tension
+  7.13 Regularization            — tools to prevent overfitting
+  7.14 Generalization            — the actual goal of ML
+  7.15 Probability in ML         — predictions as confidence
+  7.16 No Free Lunch Theorem     — why no algorithm rules all
+  7.17 Weight Initialization     — why starting values matter
+  7.18 Learning-Rate Schedules   — varying the step size over training
 ```
 
 ---
 
-## 2.1 Data: The Foundation of ML
+## 7.1 Data: The Foundation of ML
 
 ### Simple Explanation
 Imagine you want to teach your little brother how to tell dogs apart from cats.
@@ -93,7 +96,7 @@ Each row = one example / data point / observation    This is what
 
 ---
 
-## 2.2 Features and Labels ★★
+## 7.2 Features and Labels ★★
 
 ### Features (X) — The Inputs
 
@@ -160,7 +163,7 @@ only the clues and ask: "Now YOU tell me the answer."
 
 ---
 
-## 2.3 Training, Validation & Test Sets ★★
+## 7.3 Training, Validation & Test Sets ★★
 
 ### Simple Explanation
 Imagine you're studying for a big math exam:
@@ -243,7 +246,7 @@ More formally:
 
 ---
 
-## 2.4 The Model
+## 7.4 The Model
 
 ### Simple Explanation
 Think of a model like a **recipe-making machine**. You feed ingredients in one side
@@ -307,7 +310,7 @@ answer looks like — that's inductive bias. Every ML algorithm has one too.
 
 ---
 
-## 2.5 Parameters vs Hyperparameters ★★
+## 7.5 Parameters vs Hyperparameters ★★
 
 ### Simple Explanation
 Imagine you're learning to ride a bike:
@@ -346,7 +349,7 @@ Imagine you're learning to ride a bike:
 
 ---
 
-## 2.6 The Training Loop ★
+## 7.6 The Training Loop ★
 
 This is the most important section in this chapter. Understanding the training loop
 means you understand *how* machine learning actually works.
@@ -492,7 +495,7 @@ That's one training step. Loss fell from 0.693 to ≈0.04. Repeat this across ma
 
 ---
 
-## 2.7 Epochs, Batches, and Iterations ★
+## 7.7 Epochs, Batches, and Iterations ★
 
 ### Simple Explanation
 Imagine you have a big box of 1,000 flashcards to study:
@@ -651,7 +654,7 @@ The chart below shows how the loss curves look across a run of ~200 update steps
 
 ---
 
-## 2.8 Loss Functions — Measuring "How Wrong" ★★★
+## 7.8 Loss Functions — Measuring "How Wrong" ★★★
 
 ### Simple Explanation
 Remember the blindfolded basketball game? The **loss function** is your friend who
@@ -888,7 +891,7 @@ Where `y ∈ {-1, +1}` and `ŷ` is the raw model score (not a probability).
 
 ---
 
-## 2.9 Gradient Descent — How We Minimize Loss
+## 7.9 Gradient Descent — How We Minimize Loss
 
 ### Simple Explanation
 Imagine you're standing on a mountain on a foggy day. You can't see the bottom, but
@@ -1021,7 +1024,7 @@ $$w_{\text{new}} = w_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial w}$$
 
 ---
 
-## 2.10 Optimizers — Smarter Gradient Descent ★
+## 7.10 Optimizers — Smarter Gradient Descent ★
 
 ### Simple Explanation
 Basic gradient descent is like walking downhill in the fog wearing the same shoes
@@ -1182,7 +1185,7 @@ where $g = \nabla L$ (gradient), $\hat{m}$ and $\hat{v}$ are bias-corrected esti
 
 ---
 
-## 2.11 Overfitting and Underfitting ★★★
+## 7.11 Overfitting and Underfitting ★★★
 
 ### Simple Explanation
 This is the **Goldilocks Problem** of machine learning — and it's one of the most
@@ -1361,7 +1364,7 @@ Model too simple          Model fits               Model too complex
 
 ---
 
-## 2.12 The Bias–Variance Tradeoff ★★★
+## 7.12 The Bias–Variance Tradeoff ★★★
 
 ### Simple Explanation
 Imagine you're throwing darts at a target:
@@ -1491,7 +1494,7 @@ Every model's error can be broken down into two sources:
 
 ---
 
-## 2.13 Regularization — Controlling Complexity ★★★
+## 7.13 Regularization — Controlling Complexity ★★★
 
 ### Simple Explanation
 Remember the "Memorizer" student from overfitting? Regularization is like a teacher
@@ -1626,7 +1629,7 @@ $$L2\ \text{Loss} = \text{data loss} + \lambda \sum w^2$$
 
 ---
 
-## 2.14 Generalization — The Actual Goal of ML ★
+## 7.14 Generalization — The Actual Goal of ML ★
 
 ### Simple Explanation
 If you memorize every single math problem in your textbook, you'll ace the homework.
@@ -1695,7 +1698,7 @@ Six reliable levers. They compound — use several together.
 
 **2. Simpler model.** Fewer parameters → less capacity to memorize. A linear model with 10 features can't memorize a million-row dataset; a 100-layer network can. Start simple; only scale up when training error says you must. *Use when*: training error is already low but test error is much higher — you have capacity to spare.
 
-**3. Regularization.** Add a penalty to the loss that discourages complexity. The four common variants (L1, L2, Dropout, Early Stopping) are covered in depth in **§2.13 Regularization** below.
+**3. Regularization.** Add a penalty to the loss that discourages complexity. The four common variants (L1, L2, Dropout, Early Stopping) are covered in depth in **§7.13 Regularization** above.
 
 **4. Data augmentation.** Generate new training examples by applying label-preserving transforms. Effectively multiplies the dataset without new labeling.
 - **Images**: random crop, flip, rotation, color jitter, cutout, Mixup.
@@ -1766,7 +1769,7 @@ The tuning parameter (λ for L1/L2, dropout rate, early-stopping patience) needs
 
 ---
 
-## 2.15 Probability in ML ★
+## 7.15 Probability in ML ★
 
 ### Simple Explanation
 Imagine you're looking at a blurry photo and someone asks "Is that a cat or a dog?"
@@ -1910,7 +1913,7 @@ $$= \frac{0.95 \times 0.01}{(0.95 \times 0.01) + (0.05 \times 0.99)} = \frac{0.0
 
 ---
 
-## 2.16 The No Free Lunch Theorem ★
+## 7.16 The No Free Lunch Theorem ★
 
 ### Simple Explanation
 Imagine you have a Swiss Army knife. It has a blade, scissors, a screwdriver, and
@@ -1975,6 +1978,209 @@ why good ML engineers always try several approaches and pick what works best for
 
 ---
 
+## 7.17 Weight Initialization ★★
+
+> **Weight initialization** sets the starting values of a neural network's learnable parameters before training begins. The choice matters because a poor starting point can make gradient signals vanish, explode, or produce a network that cannot break symmetry and learn distinct features.
+
+### Why You Cannot Initialize All Weights to Zero
+
+Set every weight to 0 and the network collapses: every neuron in a layer receives the same input, computes the same gradient, and updates identically. All neurons remain identical forever — the network effectively has one neuron per layer, not many. This is the **symmetry problem**.
+
+```
+  ALL ZEROS — what happens at layer 1:
+  ──────────────────────────────────────
+  neuron_1  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
+  neuron_2  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
+  neuron_3  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
+
+  gradient for neuron_1 == gradient for neuron_2 == gradient for neuron_3
+  → all weights move by the same amount → symmetry is never broken
+  → no matter how long you train, all neurons stay identical
+
+  SOLUTION: initialize with small random values so neurons start at
+  different positions and gradients diverge from the very first step.
+```
+
+### The Variance-Preservation Rationale
+
+The core insight behind principled initialization is **keeping activation variance stable across layers**. If variance grows from layer to layer, activations explode and gradients overflow. If it shrinks, activations saturate at zero and gradients vanish. Both kill learning.
+
+For a layer with $n_\text{in}$ inputs, the output variance of a neuron is:
+
+$$\text{Var}(z) = n_\text{in} \cdot \text{Var}(w) \cdot \text{Var}(x)$$
+
+To keep $\text{Var}(z) \approx \text{Var}(x)$, set $\text{Var}(w) = \frac{1}{n_\text{in}}$.
+
+### Xavier / Glorot Initialization (for tanh and sigmoid)
+
+> **Xavier initialization** (Glorot & Bengio, 2010) draws weights from a distribution with variance $\frac{2}{n_\text{in} + n_\text{out}}$, balancing both forward signal propagation and backward gradient flow.
+
+$$\text{Var}(w) = \frac{2}{n_\text{in} + n_\text{out}}$$
+
+In practice this is sampled as:
+
+- **Uniform:** $w \sim U\!\left[-\sqrt{\frac{6}{n_\text{in}+n_\text{out}}},\; +\sqrt{\frac{6}{n_\text{in}+n_\text{out}}}\right]$
+- **Normal:** $w \sim \mathcal{N}\!\left(0,\; \frac{2}{n_\text{in}+n_\text{out}}\right)$
+
+The symmetric derivation accounts for both the forward pass (keeping activations from exploding) and the backward pass (keeping gradients from vanishing). It is the standard initialization for **tanh** and **sigmoid** activations, which are approximately linear near zero — the assumption Xavier relies on.
+
+### He Initialization (for ReLU)
+
+> **He initialization** (He et al., 2015) uses variance $\frac{2}{n_\text{in}}$, accounting for the fact that ReLU zeroes out half its inputs on average, which would halve the effective variance under Xavier.
+
+$$\text{Var}(w) = \frac{2}{n_\text{in}}$$
+
+In practice:
+
+- **Normal:** $w \sim \mathcal{N}\!\left(0,\; \frac{2}{n_\text{in}}\right)$
+- **Uniform:** $w \sim U\!\left[-\sqrt{\frac{6}{n_\text{in}}},\; +\sqrt{\frac{6}{n_\text{in}}}\right]$
+
+The factor of 2 in the numerator corrects for the expected 50% of activations that ReLU kills. Without it, variance halves at every layer and signals vanish.
+
+```
+  VARIANCE FLOW THROUGH A DEEP NETWORK
+
+  No init / zeros:
+  Layer:  1     2     3     4     5
+  Var:  [0.00, 0.00, 0.00, 0.00, 0.00]   ← dead network
+
+  Too large (e.g., std = 1.0, deep ReLU net):
+  Layer:  1     2     3     4     5
+  Var:  [1.0,  2.0,  4.0,  8.0, 16.0]   ← exploding activations
+
+  He init (std = sqrt(2/n_in)):
+  Layer:  1     2     3     4     5
+  Var:  [1.0,  1.0,  1.0,  1.0,  1.0]   ← stable ✓
+```
+
+### Quick Reference Table
+
+| Activation | Recommended Init | Variance Formula |
+|---|---|---|
+| **ReLU** | He (Kaiming) | $2 / n_\text{in}$ |
+| **Leaky ReLU** | He (with slope factor) | $2 / ((1+a^2) \cdot n_\text{in})$ |
+| **tanh** | Xavier / Glorot | $2 / (n_\text{in} + n_\text{out})$ |
+| **sigmoid** | Xavier / Glorot | $2 / (n_\text{in} + n_\text{out})$ |
+| **Linear (output)** | Xavier or small normal | $1 / n_\text{in}$ |
+
+**Practical rule:** use He for any network with ReLU-family activations (the vast majority of modern nets). Use Xavier for older architectures or when you explicitly need tanh/sigmoid.
+
+---
+
+## 7.18 Learning-Rate Schedules ★★
+
+> A **learning-rate schedule** (or **LR schedule**) adjusts the learning rate during training according to a predefined policy. A fixed learning rate is rarely optimal: too large at the end of training prevents settling into a sharp minimum; too small from the start slows initial convergence.
+
+### Why Schedules Help
+
+The optimal step size for gradient descent changes during training. Early on, the loss landscape is rough and the gradient is large — you want to take big steps to make rapid progress. Near convergence, gradients are small and the minimum is close — you need tiny steps to avoid overshooting.
+
+```
+  FIXED LR: one size for the whole run
+  ─────────────────────────────────────
+  early training  → too small: slow to escape high-loss plateau
+  late training   → too large: bounces around the minimum
+
+  WITH A SCHEDULE: step size adapts to the phase of training
+  ─────────────────────────────────────────────────────────
+  early training  → large LR: fast initial descent
+  late training   → small LR: fine-grained convergence
+```
+
+### Step Decay
+
+Reduce the learning rate by a constant factor every $k$ epochs:
+
+$$\eta_t = \eta_0 \cdot \gamma^{\lfloor t / k \rfloor}$$
+
+Typical values: $\gamma = 0.1$ (drop by 10×), $k = 30$ epochs. Simple and predictable. The loss curve has visible "staircase" jumps downward at each drop.
+
+### Exponential Decay
+
+Multiply by a constant factor each step:
+
+$$\eta_t = \eta_0 \cdot e^{-\lambda t}$$
+
+Smoother than step decay; no sudden drops. Requires tuning the decay rate $\lambda$.
+
+### Cosine Annealing
+
+Follows a cosine curve from $\eta_{\max}$ down to $\eta_{\min}$ over $T$ steps:
+
+$$\eta_t = \eta_{\min} + \frac{1}{2}(\eta_{\max} - \eta_{\min})\left(1 + \cos\!\left(\frac{\pi t}{T}\right)\right)$$
+
+Smooth, gradual reduction. Often paired with **warm restarts** (SGDR): after reaching $\eta_{\min}$, reset to $\eta_{\max}$ with a longer cycle. The periodic restarts help the optimizer escape local minima by briefly re-expanding the search radius.
+
+### Linear Warmup
+
+Start from a very small (or zero) learning rate and ramp linearly to the target learning rate over the first $w$ steps:
+
+$$\eta_t = \eta_\text{target} \cdot \frac{t}{w} \quad \text{for } t \leq w$$
+
+**Why warm up?** At initialization, weights are random and gradients are large and noisy. A full-sized learning rate in step 1 can produce a destructively large update that destabilizes the network. Warmup lets the optimizer "settle in" before committing to large steps. Especially critical for large-batch training (where the noise of small batches is absent) and for Transformers (whose layer norms are sensitive to large early updates).
+
+### Warmup + Cosine (LLM Standard)
+
+The dominant schedule for training large language models and Transformers: linear warmup for the first 1–5% of training, then cosine annealing for the remainder.
+
+```
+  LR
+  ▲
+  │         ╭──────────╮
+  │        /            \
+  │       /              \
+  │      /                \
+  │     /                  \────────── (cosine decay to ~0)
+  │    /
+  │───╱  ← linear warmup
+  │
+  └──────────────────────────────────▶ Training steps
+     warmup   ←────── cosine decay ────────────────►
+     (1-5%)
+```
+
+Rationale: warmup stabilizes the early phase; cosine annealing then produces smooth, calibrated reduction without requiring manual tuning of a decay rate.
+
+### ReduceLROnPlateau
+
+An adaptive, metric-driven schedule: monitor a validation metric (e.g., val loss); if it fails to improve for `patience` epochs, multiply the learning rate by a `factor` (e.g., 0.5).
+
+```python
+# PyTorch
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6
+)
+scheduler.step(val_loss)  # call after each epoch
+```
+
+Good default for practitioners who want a schedule without specifying the total number of steps in advance. Can be slow to react in noisy settings — increase `patience` if the metric fluctuates.
+
+### ASCII Curve Sketch
+
+```
+  LR
+  ▲
+  │  Step decay     Exponential    Cosine         Warmup+Cosine
+  │  ┌───┐          \              ╭──────╮        ╭──────╮
+  │  │   └──┐        \             \      \        /       \
+  │  │      └──┐      \             \      \   ╭──╯         \
+  │  │         └──     \             \      ╰──╯             ╰──
+  │  └──────────────  ──────────────  ─────────────  ──────────────
+  └────────────────────────────────────────────────────────▶ Steps
+```
+
+### When to Use Each
+
+| Schedule | When to use |
+|---|---|
+| **Step decay** | Classical CNNs (ResNet-style); training budget is fixed and known in advance |
+| **Exponential decay** | When you want smooth reduction without abrupt jumps; easy to implement |
+| **Cosine annealing** | Modern CNNs; combined with warm restarts to escape local minima |
+| **Warmup + cosine** | Transformers, LLMs, large-batch training — effectively the universal standard |
+| **ReduceLROnPlateau** | Unknown total steps; prototyping; when validation metric is reliable and smooth |
+
+---
+
 ## Key Takeaways
 
 ```
@@ -2001,6 +2207,8 @@ why good ML engineers always try several approaches and pick what works best for
 ║  Generalization = performing well on UNSEEN data (true goal!)    ║
 ║  Probability  = model outputs confidence, not just class         ║
 ║  No Free Lunch = no algorithm wins everywhere — always baseline  ║
+║  Weight Init  = He for ReLU (Var=2/n_in); Xavier for tanh/sig   ║
+║  LR Schedule  = warmup+cosine for Transformers; plateau for CV   ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 

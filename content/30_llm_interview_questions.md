@@ -1,4 +1,4 @@
-# Chapter 28 — LLM Interview Questions
+# Chapter 30 — LLM Interview Questions
 
 > The most frequently asked interview questions on Large Language Models — for AI/ML Engineer,
 > Data Scientist, and NLP positions at top tech companies.
@@ -35,6 +35,7 @@
 | 6 | Evaluation & Benchmarks | Q48 – Q53 |
 | 7 | Safety, Alignment & Ethics | Q54 – Q60 |
 | 8 | Frontier Topics (2024-2025) | Q61 – Q68 |
+| 9 | Advanced Alignment & Production (2025) | Q69 – Q72 |
 
 ---
 
@@ -3484,6 +3485,338 @@ systems face stricter rules.
 - **Responsible Scaling Policies**: Anthropic's self-governance framework (ASL levels) — voluntary safety commitments tied to model capabilities
 - **AI Safety Institutes**: US AISI and UK AISI established for pre-deployment testing of frontier models
 - Interview tip: showing awareness of regulation demonstrates maturity — interviewers increasingly ask about responsible deployment
+
+---
+
+# PART 9 — Advanced Alignment & Production (2025)
+
+---
+
+### Q69. What is DPO (Direct Preference Optimization) and how does it differ from RLHF/PPO?
+*[TRAIN] | ★★★*
+
+**Simple Answer:**
+RLHF trains a separate "judge" model (reward model) to score responses, then uses reinforcement learning (PPO) to make the main model score higher. That's two models to train, a fiddly RL loop, and lots of instability.
+
+DPO skips both. Given pairs of responses where one is preferred over the other, it directly adjusts the model's weights so preferred responses become more likely relative to the base model — using only supervised learning. Same goal, far simpler pipeline.
+
+```
+  RLHF PIPELINE (3 stages):
+  ─────────────────────────
+  Stage 1: SFT  — fine-tune on demonstrations
+  Stage 2: RM   — train a reward model on (preferred, rejected) pairs
+  Stage 3: PPO  — optimize policy against RM with RL
+
+  Problems: reward model needs its own training data + training run;
+  PPO is unstable (clipping, KL penalty tuning, actor-critic overhead);
+  reward hacking — policy games the reward model.
+
+  DPO PIPELINE (2 stages):
+  ─────────────────────────
+  Stage 1: SFT  — fine-tune on demonstrations  (same as RLHF)
+  Stage 2: DPO  — directly optimize on (preferred, rejected) pairs
+                  with a single cross-entropy-style loss
+
+  No reward model. No RL loop. No clipping. Just supervised training.
+```
+
+**Official Definition:**
+> **DPO (Direct Preference Optimization)** (Rafailov et al., 2023) shows that the RLHF
+> objective — maximizing expected reward under a KL-constrained policy — has a closed-form
+> optimal solution. This allows the reward to be expressed implicitly in terms of the
+> policy itself, eliminating the need for an explicit reward model. The resulting loss is:
+>
+> L_DPO = −E_{(x,y_w,y_l)} [ log σ( β · [ log(π_θ(y_w|x)/π_ref(y_w|x)) − log(π_θ(y_l|x)/π_ref(y_l|x)) ] ) ]
+>
+> where y_w is the preferred response, y_l the rejected response, π_ref is the frozen
+> reference (SFT) model, β controls the strength of the KL penalty, and σ is the
+> sigmoid function.
+
+```
+  DPO LOSS — INTUITION:
+  ──────────────────────────────────────────────────────────────────────
+  log(π_θ(y_w|x) / π_ref(y_w|x))  =  how much MORE likely the policy
+                                       makes the preferred response
+                                       compared to the reference model
+
+  log(π_θ(y_l|x) / π_ref(y_l|x))  =  how much MORE likely the policy
+                                       makes the rejected response
+
+  The loss pushes their difference to be large and positive:
+  → preferred response probability ↑ relative to reference
+  → rejected response probability ↓ relative to reference
+  β controls how far the policy can stray from the reference
+  (high β = stay close to SFT; low β = more aggressive preference tuning)
+
+  COMPARISON:
+  ┌──────────────┬──────────────────────────┬────────────────────────────┐
+  │              │ RLHF / PPO               │ DPO                        │
+  ├──────────────┼──────────────────────────┼────────────────────────────┤
+  │ Reward model │ Explicit (trained)       │ Implicit (in loss)         │
+  │ RL loop      │ Yes (PPO)                │ No                         │
+  │ Stability    │ Tricky (many RL knobs)   │ Stable (supervised loss)   │
+  │ Memory       │ 4× model copies*         │ 2× (policy + reference)    │
+  │ Quality      │ Slightly better ceiling  │ Competitive, simpler       │
+  │ Used by      │ GPT-4, early LLaMA       │ Llama 3, Zephyr, Mistral   │
+  └──────────────┴──────────────────────────┴────────────────────────────┘
+  * PPO: policy, reference, reward model, value model
+```
+
+**Interview Answer:**
+- RLHF requires training a separate reward model, then running PPO (policy, value network, reward model, reference model all in memory simultaneously)
+- DPO re-parameterizes the RL objective: reward is defined implicitly via log-likelihood ratios between policy and reference model — no separate reward model or RL needed
+- The DPO loss maximizes the log-likelihood ratio gap between preferred and rejected completions, penalized by β to stay near the reference (SFT) model
+- Pros of DPO: simpler, stable, lower memory, no reward hacking, faster iteration
+- Cons of DPO: slightly lower ceiling on complex instruction-following vs well-tuned PPO; needs high-quality preference data
+- **GRPO** (Group Relative Policy Optimization, used by DeepSeek-R1): a PPO variant that computes a baseline from the group average reward on a batch of samples, eliminating the value/critic network while keeping RL — bridges DPO simplicity and PPO flexibility for reasoning tasks
+- In practice: DPO is the default starting point for preference tuning; PPO or GRPO is used when a verifiable reward signal exists (math, code)
+
+---
+
+### Q70. What is Mixture of Experts (MoE)? How does it give more capacity at constant FLOPs?
+*[ARCH] | ★★★*
+
+**Simple Answer:**
+A normal ("dense") model runs ALL its neurons for every input token. A Mixture of Experts model has many specialist "expert" sub-networks, but only a few of them activate for any given token. The model learns a router that picks which experts to use.
+
+The payoff: you can have a 671B-parameter model (DeepSeek-V3) that only activates 37B parameters per token — giving you a massive model's capacity while paying only a smaller model's compute bill.
+
+```
+  DENSE TRANSFORMER LAYER:
+  ────────────────────────
+  Token → Attention → FFN (all 4096 neurons active) → next layer
+  Every token uses every neuron. FLOPs ∝ total parameters.
+
+  MoE TRANSFORMER LAYER:
+  ────────────────────────
+  Token → Attention → Router → Expert 2, Expert 7 → Merge → next layer
+                            ↑
+                    Only 2 of 64 experts activate
+  FLOPs per token ≈ dense model with (2/64)th of the FFN size.
+
+  ARCHITECTURE:
+  ─────────────
+  ┌─────────────────────────────────────────────────────────────┐
+  │  MoE Layer                                                   │
+  │                                                              │
+  │  input token                                                 │
+  │       │                                                      │
+  │       ▼                                                      │
+  │  ┌─────────┐  router scores                                  │
+  │  │ Router  │ ──────────────► top-k experts selected          │
+  │  │(softmax)│                      │                          │
+  │  └─────────┘          ┌───────────┼───────────┐             │
+  │                        ▼           ▼           ▼             │
+  │                   Expert 2    Expert 7    (others: idle)     │
+  │                   [FFN block] [FFN block]                    │
+  │                        └───────────┘                         │
+  │                              │                               │
+  │                    weighted sum (by router scores)           │
+  │                              │                               │
+  │                          output                              │
+  └─────────────────────────────────────────────────────────────┘
+
+  REAL NUMBERS (DeepSeek-V3, 2024):
+  ──────────────────────────────────
+  Total parameters:   671B
+  Active per token:    37B  (top-2 of 256 experts activated)
+  FLOPs vs. dense 37B: comparable
+  Quality vs. dense 37B: much higher (larger total knowledge capacity)
+```
+
+**Official Definition:**
+> **Mixture of Experts (MoE)** replaces the dense feed-forward network (FFN) in some or
+> all Transformer layers with N expert FFNs plus a learned router (gating network). For
+> each token, the router produces softmax scores over all experts and selects the top-k
+> (typically k=1 or k=2). Only the selected experts execute forward passes; others are
+> idle. Total parameters scale with N, but active parameters per token scale with k,
+> decoupling model capacity from per-token compute. A load-balancing auxiliary loss
+> (added to the training objective) encourages uniform expert utilization to avoid
+> "expert collapse" where a few experts capture all traffic.
+
+**Interview Answer:**
+- Total parameters = capacity of knowledge; active parameters = per-token compute cost. MoE decouples them
+- Router: a small linear + softmax producing scores for each expert; top-k (usually k=1 or 2) are selected per token
+- Load-balancing loss: auxiliary loss term added during training to penalize unequal expert utilization — without it, a few experts dominate and capacity is wasted
+- Used by: Mixtral (8×7B → 46.7B total, 12.9B active), DeepSeek-V3 (671B total, 37B active), Gemini 1.5 Pro / 2.0, LLaMA 4 (Maverick: 128 experts)
+- Trade-offs: MoE models are expensive to serve — all expert weights must be loaded into memory even though only a few activate per step. Requires tensor parallelism across many GPUs for large MoE models
+- Communication overhead: in distributed settings, different tokens may be routed to experts on different GPUs (Expert Parallelism), requiring all-to-all communication — a key engineering challenge
+- Expert specialization: experts often learn domain specialization (some specialize in code, others in multilingual text) even without explicit supervision
+
+---
+
+### Q71. What is prompt caching and how does it reduce cost and latency?
+*[DEPLOY] | ★★*
+
+**Simple Answer:**
+Every time you send a request to an LLM, the model processes the entire input — including your long system prompt — from scratch. Prompt caching saves the processed KV-cache state of a stable prefix so subsequent requests reuse it instead of recomputing.
+
+Think of it like a teacher who has read the textbook once and memorized their key-value notes. When students ask questions, the teacher doesn't re-read the whole textbook — they start from their notes.
+
+```
+  WITHOUT CACHING (every request):
+  ──────────────────────────────────────────────────────────────
+  [System prompt: 4000 tokens] + [User message: 100 tokens]
+        ↓                              ↓
+  Process 4000 tokens again    Process 100 tokens
+  = 4100 input tokens billed   = full compute every time
+
+  WITH PREFIX/KV CACHING:
+  ──────────────────────────────────────────────────────────────
+  First request:
+  [System prompt: 4000 tokens]  →  compute + SAVE KV cache
+  [User message: 100 tokens]    →  compute
+  = 4100 tokens charged (normal)
+
+  Subsequent requests (same prefix):
+  [System prompt: 4000 tokens]  →  CACHE HIT — reuse saved KV state
+  [User message: 100 tokens]    →  compute (only new tokens)
+  = ~100 tokens of compute  +  cache lookup fee (much cheaper)
+
+  IMPACT:
+  ┌─────────────────┬──────────────────────────────────────────┐
+  │ Latency (TTFT)  │ 80–90% reduction for long cached prefix  │
+  │ Cost            │ 60–90% reduction for cached tokens       │
+  │ Throughput      │ Higher: less compute per request         │
+  └─────────────────┴──────────────────────────────────────────┘
+```
+
+**Official Definition:**
+> **Prompt caching** (also prefix caching or KV caching across requests) stores the
+> key-value (KV) tensors computed during attention for a stable input prefix. On a cache
+> hit, the model skips recomputation of the cached tokens, resuming generation from the
+> cached KV state. The prefix must match exactly (byte-for-byte) — any change invalidates
+> the cache. Providers (Anthropic, OpenAI, Google) implement this server-side; cache hits
+> are charged at a lower per-token rate (or free) and have lower TTFT.
+
+```
+  HOW TO MAXIMIZE CACHE HITS:
+  ───────────────────────────────────────────────────────────────
+  Rule 1: Put stable content FIRST in the prompt
+          System prompt → documents/context → user query (last)
+          (Cache is prefix-matched: only a leading match hits)
+
+  Rule 2: Keep the system prompt consistent across requests
+          Even a single character change = cache miss
+
+  Rule 3: Long, stable documents are the best cache candidates
+          RAG retrieved docs, code files, reference material
+
+  Rule 4: In multi-turn conversations, keep the conversation
+          history prefix stable; only the latest turn is new
+
+  PROVIDER DETAILS (mid-2026):
+  ─────────────────────────────
+  Anthropic Claude:  automatic; cached tokens ~10% of input price
+  OpenAI GPT-4o:     automatic; cached tokens 50% of input price
+  Google Gemini:     explicit cache creation via API; ~4× cheaper
+                     for cached content; minimum 32K tokens
+```
+
+**Interview Answer:**
+- Caching saves KV tensors for a stable prefix — reused across requests without recomputation
+- Requirement: the prefix must be byte-for-byte identical. Even one character difference = full cache miss
+- Design principle: order prompts as "static system content → stable context → dynamic user query." The longer the stable prefix, the more you save
+- Cost impact: with a 4K-token system prompt and 100-token query, caching can reduce input cost by ~97%
+- Latency impact: TTFT drops proportionally to the fraction of tokens that hit the cache
+- Conversational agents, RAG systems, and tools with large fixed system prompts benefit most
+- Google's context caching requires explicit API calls and has a minimum size (32K tokens) — appropriate for very long documents; Anthropic/OpenAI do it automatically
+
+---
+
+### Q72. What are structured outputs and how does constrained decoding work?
+*[DEPLOY] | ★★*
+
+**Simple Answer:**
+When you ask an LLM to return JSON, it might produce almost-valid JSON — missing a closing bracket, using unquoted keys, or adding a prose explanation before the JSON. In production tool-use pipelines, any malformed output breaks the downstream code.
+
+Constrained decoding solves this by restricting which tokens the model is allowed to generate at each step — based on a grammar or JSON schema. The model can only produce tokens that keep the output valid.
+
+```
+  UNCONSTRAINED GENERATION:
+  ─────────────────────────────────────────────────────────────────
+  Prompt: "Return user data as JSON: {name, age, email}"
+  Output: "Sure! Here is the JSON:
+           { "name": "Alice", "age": 30, "email": "alice@example.com }
+                                                                    ^
+                                         missing closing quote — BROKEN
+
+  CONSTRAINED GENERATION (JSON schema enforced):
+  ─────────────────────────────────────────────────────────────────
+  At each decode step, a Finite State Machine (FSM) tracks which
+  characters are valid given the schema and the tokens emitted so far.
+
+  Step 1:  Must emit '{'      → only '{' has non-zero logit
+  Step 2:  Must emit '"name"' → only valid JSON keys allowed
+  Step 3:  Must emit ':'      → grammar requires colon after key
+  ...
+  Final:   Must close with '}' → guaranteed well-formed JSON ✓
+
+  HOW LOGIT MASKING WORKS:
+  ─────────────────────────────────────────────────────────────────
+  Raw logits (model's next-token scores, vocab size ~128K):
+  [0.3, 0.2, 0.1, 0.8, ...]   ← unnormalized scores for all tokens
+
+  Grammar mask (which tokens are valid at this state):
+  [1,   0,   0,   1,   ...]   ← 1 = allowed, 0 = forbidden
+
+  Masked logits (invalid tokens set to -∞ before softmax):
+  [0.3, -∞,  -∞,  0.8, ...]
+
+  Softmax only distributes probability over valid tokens.
+  The model's "style" and content choices are preserved;
+  only structurally invalid tokens are blocked.
+```
+
+**Official Definition:**
+> **Constrained decoding** (also grammar-constrained generation) enforces a formal grammar
+> or JSON schema during autoregressive decoding by masking invalid tokens at each step.
+> A Finite State Machine (FSM) derived from the grammar tracks the current parse state;
+> only tokens whose addition keeps the output in a valid state receive non-zero probability
+> (all others are set to −∞ before softmax). This guarantees output adheres to the
+> schema without any post-processing. Libraries implementing this include Outlines,
+> Guidance, and llama.cpp's grammar mode. Providers (OpenAI, Anthropic, Google) expose
+> structured outputs via API as a higher-level abstraction.
+
+```
+  WHY IT MATTERS FOR PRODUCTION:
+  ─────────────────────────────────────────────────────────────────
+  Without constraints:
+  ✗ JSON parse errors crash pipelines
+  ✗ Retry logic adds latency and cost
+  ✗ Model may add preamble ("Here is the JSON: ...")
+  ✗ Inconsistent field names across requests
+
+  With constrained decoding:
+  ✓ 100% schema-valid outputs — no retries needed
+  ✓ Tool-use / function-calling reliability jumps significantly
+  ✓ Downstream code can deserialize without try/catch
+  ✓ Works for JSON, XML, SQL, custom DSLs, regex patterns
+
+  TRADEOFFS:
+  ┌────────────────────┬──────────────────────────────────────────┐
+  │ Latency overhead   │ Small (~1–5%) — FSM lookup per step      │
+  │ Quality impact     │ Negligible for well-designed schemas;     │
+  │                    │ over-constrained schemas can hurt quality │
+  │ Schema design      │ Must match intended semantics; too strict │
+  │                    │ → model forced into awkward token choices │
+  └────────────────────┴──────────────────────────────────────────┘
+
+  TOOL-USE CONNECTION:
+  When a model calls a function/tool (OpenAI function calling,
+  Anthropic tool use), the arguments are enforced via constrained
+  decoding under the tool's JSON schema — this is why tool calls
+  rarely produce malformed arguments even for complex schemas.
+```
+
+**Interview Answer:**
+- Constrained decoding works by building an FSM from the grammar/schema, then masking all tokens that would violate it before softmax — the model can only generate structurally valid outputs
+- Logit masking is the key operation: set invalid token logits to −∞ before softmax so they get zero probability; the remaining tokens are re-normalized
+- Quality vs. constraint tension: a schema that is too fine-grained can force the model into unnatural token sequences, degrading output quality — schemas should express structure, not over-constrain content
+- Production use cases: LLM-powered APIs that return typed data, function/tool-calling, code generation targeting a specific AST, SQL generation, classification with a fixed label set
+- Libraries: Outlines (Python, works with any HuggingFace model), Guidance (Microsoft), llama.cpp's GBNF grammar, SGLang's native structured generation
+- Provider APIs: OpenAI `response_format: {type: "json_schema"}`, Anthropic tool use, Google Gemini `response_schema` — all expose constrained decoding as a high-level feature
+- Unlike prompt engineering ("always return valid JSON"), constrained decoding provides a hard guarantee — the FSM is a mathematical proof, not a suggestion
 
 ---
 

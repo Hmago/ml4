@@ -32,7 +32,7 @@ After reading this document, you will be able to:
 | 2 | Design Patterns | Creational, Structural, Behavioral (incl. State, Template Method) |
 | 3 | System Design Fundamentals | Scalability, Latency Percentiles (p50/p95/p99), Availability, CAP, Estimation |
 | 4 | API Design & Database Design | REST, GraphQL, gRPC, Normalization (1NF-3NF), N+1 Problem, Pagination, Idempotency, Indexing, Sharding |
-| 5 | Distributed Systems | Microservices, API Gateway, Caching, Rate Limiting, Saga Pattern, Consistent Hashing, Messaging, Load Balancing |
+| 5 | Distributed Systems | Microservices, API Gateway, Caching, Rate Limiting, Saga Pattern, Consistent Hashing, Messaging, Load Balancing, **Distributed Tracing & Observability** (logs/metrics/traces, OpenTelemetry, exemplars, Dapper/Cloud Trace) |
 | 6 | Architecture Patterns | Clean Architecture, **DDD** (Entities, Aggregates, Bounded Contexts), CQRS, Event Sourcing |
 | 7 | Security Fundamentals | Auth, OAuth, JWT, OWASP Top 10 |
 | 8 | **Java Concurrency** (Google Must-Know) | Thread safety, synchronized, AtomicInteger, ConcurrentHashMap, ExecutorService, CompletableFuture, deadlocks |
@@ -2831,6 +2831,162 @@ Instead of clicking through cloud console UIs, you write a `.tf` file and run `t
 
 ---
 
+## Distributed Tracing & Observability — The Three Pillars
+
+> **Observability** is the ability to understand a system's internal state from its external outputs. The three pillars are **logs** (discrete events), **metrics** (aggregated measurements), and **traces** (the journey of a single request through many services).
+
+Prometheus covers metrics well. But in a microservices system, a single user request can touch 10 services. A metric can tell you "p99 latency spiked" — but it cannot tell you *which* service in which call chain is responsible. That is what distributed tracing answers.
+
+### The Three Pillars
+
+```
+  ┌─────────────────┬──────────────────────────────────────────────────────┐
+  │ LOGS            │ Timestamped, structured text records of events.       │
+  │                 │ Best for: debugging specific errors; the full context  │
+  │                 │ of what happened at a moment.                          │
+  │                 │ Tool: structured JSON logs → Cloud Logging / Loki      │
+  ├─────────────────┼──────────────────────────────────────────────────────┤
+  │ METRICS         │ Aggregated numbers over time (counters, gauges,        │
+  │                 │ histograms). Best for: dashboards, SLO alerting,       │
+  │                 │ capacity planning. Tool: Prometheus + Grafana           │
+  ├─────────────────┼──────────────────────────────────────────────────────┤
+  │ TRACES          │ The causal chain of a request as it moves across       │
+  │                 │ services. Each hop is a SPAN. Spans are linked by a   │
+  │                 │ shared TRACE ID. Best for: diagnosing where latency    │
+  │                 │ actually lives in a distributed request.               │
+  │                 │ Tool: OpenTelemetry → Cloud Trace / Jaeger / Zipkin    │
+  └─────────────────┴──────────────────────────────────────────────────────┘
+```
+
+### Traces, Spans, and Context Propagation
+
+A **trace** is a directed acyclic graph of **spans**, each representing one unit of work (an RPC call, a DB query, a cache lookup). Every span carries:
+- **Trace ID** — the same across all spans for one request
+- **Span ID** — unique to this span
+- **Parent Span ID** — links child to parent in the call tree
+- **Start time + duration**
+- **Attributes** — service name, HTTP method, status code, user ID, etc.
+
+```
+  TRACE ID: abc-1234
+  ─────────────────────────────────────────────── time ──────────>
+
+  [Gateway              |──────────────────────────────────────────] 120ms
+     [AuthService       |────────────]  22ms
+     [ProductService    |                  ──────────────────────]   72ms
+        [DB query       |                  ─────────────]  50ms
+        [Cache set      |                              ──]  4ms
+     [RecommendService  |                                    ──────]  25ms
+        [ML inference   |                                    ────]   20ms
+
+  Each bar is a SPAN.
+  Indentation = parent/child relationship (span tree).
+  Width = wall-clock duration.
+  This is a "trace waterfall" — the standard view in any tracing UI.
+```
+
+**Context propagation** is the mechanism for passing trace/span IDs across service boundaries — typically as HTTP headers (W3C `traceparent` standard) or gRPC metadata. Without propagation, each service would start a fresh trace and you could not stitch them together.
+
+```
+  Request: GET /checkout
+  Headers injected by OpenTelemetry SDK:
+  ──────────────────────────────────────
+  traceparent: 00-abc1234567890abcdef-spanid001-01
+               │  │                  │          │
+               │  trace-id (128 bit) span-id    sampled flag
+               version
+```
+
+### OpenTelemetry — The Unified Standard
+
+**OpenTelemetry (OTel)** is a CNCF project that standardizes how applications emit telemetry. It replaces vendor-specific SDKs (Zipkin, Jaeger, Datadog agents) with a single API.
+
+```
+  APPLICATION CODE
+       │ (OTel SDK — one dependency)
+       ▼
+  OTEL COLLECTOR
+  (receives, batches, and forwards)
+       │          │          │
+       ▼          ▼          ▼
+  Jaeger /   Prometheus   Cloud Trace
+  Zipkin     (metrics)    (Google)
+  (traces)
+
+  Benefit: instrument once, send to any backend.
+  Vendor lock-in is eliminated at the instrumentation layer.
+```
+
+### Sampling
+
+Tracing every request is expensive. **Sampling** records only a fraction:
+
+```
+  HEAD-BASED (decision at the root span):
+    Sample 1% of requests. Simple. May miss rare slow requests.
+
+  TAIL-BASED (decision after the full trace completes):
+    Always record traces where p99 > 2s, or where any span errored.
+    More useful for finding the long-tail bugs that matter most.
+    Cost: must buffer full traces before deciding to keep or drop.
+
+  EXEMPLARS:
+    Prometheus supports exemplars — a metric data point annotated
+    with a trace ID. When you see a p99 spike in a Grafana panel,
+    click the exemplar to jump directly to a representative trace.
+    This links the metrics and traces pillars together.
+```
+
+### Debugging a p99 Latency Spike — Step by Step
+
+```
+  ALERT: "checkout p99 > 3s over last 5 min"
+
+  Step 1 — Metrics (Prometheus / Grafana)
+  ──────────────────────────────────────
+  Look at per-service error rates and latency histograms.
+  Find: ProductService p99 = 2.8s. Other services normal.
+
+  Step 2 — Traces (Cloud Trace / Jaeger)
+  ──────────────────────────────────────
+  Filter traces: service=ProductService, duration>2s.
+  Open a slow trace. Expand the waterfall.
+  Find: DB query span = 2.6s (normally 50ms). RED FLAG.
+
+  Step 3 — Logs (Cloud Logging / Loki)
+  ──────────────────────────────────────
+  Copy the trace ID. Query logs for that trace ID.
+  Find: "full table scan on products; missing index on category_id"
+
+  Root cause: A new feature deployed at 14:03 added a WHERE clause
+  on a column with no index. 100% of DB queries do full scans at
+  high cardinality → p99 explodes.
+
+  Fix: Add index. Rollback while index builds.
+  Without distributed tracing, this took days to find.
+  With tracing, it took 8 minutes.
+```
+
+### Google Cloud Trace / Dapper Lineage
+
+Google's internal distributed tracing system is **Dapper** (2010), one of the first large-scale distributed tracing systems and the paper that defined the field. **Google Cloud Trace** is the externally available managed successor. **Zipkin** (Twitter) and **Jaeger** (Uber) were both directly inspired by the Dapper paper. OpenTelemetry's data model maps directly onto the concepts Dapper introduced: trace IDs, span IDs, parent-child relationships, and probabilistic sampling.
+
+```
+  ┌──────────────────────────────────────────────────────────┐
+  │  OBSERVABILITY STACK AT GOOGLE SCALE                      │
+  │                                                          │
+  │  Metrics   → Monarch (internal) / Cloud Monitoring       │
+  │  Logs      → Dremel / Cloud Logging (structured JSON)    │
+  │  Traces    → Dapper / Cloud Trace                        │
+  │  Alerts    → Borgmon (inspiration for Prometheus)        │
+  │  Dashboards → internal; externally Cloud Monitoring      │
+  └──────────────────────────────────────────────────────────┘
+```
+
+**Interview signal:** When you design any multi-service system, mention: "I'd instrument all services with OpenTelemetry, propagate trace context on every RPC, send traces to Cloud Trace, and link exemplars from Prometheus metrics to traces so p99 spikes are directly navigable to the offending span."
+
+---
+
 ## Quick Reference — Which Tool for Which Problem
 
 ```
@@ -2845,6 +3001,7 @@ Instead of clicking through cloud console UIs, you write a `.tf` file and run `t
   "Document store, flexible schema"    │ MongoDB / Firestore
   "Massive write throughput"           │ Cassandra / Bigtable
   "Monitor metrics, set alerts"        │ Prometheus + Grafana
+  "Trace requests across services"     │ OpenTelemetry + Cloud Trace
   "Define infra as code"              │ Terraform
   "CI/CD pipeline"                     │ GitHub Actions / Jenkins
   "Full-text + vector search"          │ Elasticsearch / Vertex AI

@@ -5344,7 +5344,7 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
 ---
 
-**Next:** Explore further with the [15_interview_questions.md](27_interview_questions.md) for common ML/AI interview topics including LLM-specific questions.
+**Next:** Explore further with [Chapter 29 — ML Interview Questions](29_interview_questions.md) for common ML/AI interview topics including LLM-specific questions.
 
 ---
 
@@ -5374,4 +5374,4 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
 ---
 
-**Previous:** [Chapter 12 — Deep Learning](15_deep_learning.md)
+**Previous:** [Chapter 15 — Deep Learning](15_deep_learning.md) | **Next:** [Chapter 17 — AI Agents & Tool Use](17_ai_agents.md)

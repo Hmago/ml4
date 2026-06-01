@@ -665,5 +665,5 @@ with target     │ Example: "Customer's favorite color" for
 
 ---
 
-**Previous:** [Chapter 4 — Core Concepts](07_core_concepts.md)
-**Next:** [Chapter 6 — Supervised Learning](09_supervised_learning.md)
+**Previous:** [Chapter 7 — Core Concepts](07_core_concepts.md)
+**Next:** [Chapter 9 — Supervised Learning](09_supervised_learning.md)

@@ -44,6 +44,7 @@ After working through this guide, you will be able to:
 | 15 | Algorithm Selection Cheat Sheet | Reference |
 | 16 | Saving & Loading Models | Reference |
 | 17 | Progressive Practice Challenges (10 projects) | All Levels |
+| 18 | From Notebook to Production (MLOps) | Advanced |
 
 ---
 
@@ -2586,6 +2587,618 @@ Build these projects in order. Each one teaches new skills.
   4. After completing a challenge, ask: "What would I do differently?"
   5. Keep a notebook of patterns: "When I see X, I do Y"
 ```
+
+---
+
+# PART 18: FROM NOTEBOOK TO PRODUCTION (MLOps)
+
+---
+
+MLOps is the discipline of moving trained models into reliable, monitored production systems. A notebook prototype that achieves 92% accuracy is worthless if nobody can call it, it returns garbage after a data shift, or it silently degrades over six months. This section covers the full deployment loop: serving, registries, CI/CD, experiment tracking, drift detection, and safe rollout.
+
+---
+
+## 18.1 The Production ML Loop
+
+```
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                   PRODUCTION ML DEPLOYMENT LOOP                      │
+  │                                                                      │
+  │  Data         Experiment     Model         Serving      Monitoring   │
+  │  Pipeline     Tracking       Registry      Layer        & Alerting   │
+  │     │              │             │             │              │      │
+  │  raw data    log runs &    version &       REST API /    drift +     │
+  │  feature     metrics to    tag models      batch job     perf        │
+  │  store       MLflow/W&B    (stage: dev     FastAPI /     metrics     │
+  │                            / staging /     Vertex AI                 │
+  │                            production)                               │
+  │     │              │             │             │              │      │
+  │     └──────────────┴─────────────┴──────┬──────┘              │      │
+  │                                         │                     │      │
+  │                      CI/CD Pipeline     │    retraining       │      │
+  │                      (test + validate   │◄────trigger ────────┘      │
+  │                       + deploy)         │                            │
+  └─────────────────────────────────────────┴────────────────────────────┘
+```
+
+---
+
+## 18.2 Model Serving — Online vs Batch
+
+**Online (real-time) serving** answers one request at a time with a latency SLO (e.g., < 100 ms). Use it when the downstream consumer is a user or live system.
+
+**Batch serving** scores large datasets offline on a schedule. Use it when you can tolerate hours of latency and want to amortize infrastructure cost.
+
+```
+  ONLINE SERVING                       BATCH SERVING
+  ─────────────────────────────        ────────────────────────────────
+  Request → API endpoint → model       Trigger (cron / event)
+             ↓                         → load data from storage
+          Response in milliseconds     → run model on entire dataset
+                                       → write predictions back to storage
+
+  Use when:                            Use when:
+  - user-facing (search rank,          - nightly churn scores
+    fraud check, recommendation)       - weekly risk scoring
+  - SLA on latency                     - pre-computing embeddings
+  - single or small batch of rows      - large-scale re-scoring
+
+  Examples:                            Examples:
+  - FastAPI / Flask endpoint           - Spark / pandas batch job
+  - Vertex AI Prediction endpoint      - Vertex AI Batch Prediction
+  - TorchServe / BentoML               - Dataflow / BigQuery ML
+```
+
+---
+
+## 18.3 FastAPI Serving Endpoint
+
+A minimal but production-viable endpoint. Input validation with Pydantic prevents malformed data from ever reaching the model.
+
+```python
+# serve.py
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, validator
+import joblib
+import numpy as np
+import logging
+
+app = FastAPI(title="ML Model API", version="1.0")
+logger = logging.getLogger(__name__)
+
+# Load artifact once at startup — never inside a request handler
+pipeline = joblib.load("production_pipeline.pkl")
+MODEL_VERSION = "v1.2.3"
+
+# ── Input schema with validation ──────────────────────────────────────
+class PredictRequest(BaseModel):
+    age: float = Field(..., ge=0, le=120, description="Passenger age in years")
+    fare: float = Field(..., ge=0, description="Ticket fare (non-negative)")
+    pclass: int = Field(..., ge=1, le=3, description="Passenger class 1/2/3")
+    sex: str = Field(..., pattern="^(male|female)$")
+
+    @validator("fare")
+    def fare_not_nan(cls, v):
+        if np.isnan(v):
+            raise ValueError("fare must not be NaN")
+        return v
+
+class PredictResponse(BaseModel):
+    prediction: int
+    probability: float
+    model_version: str
+
+# ── Health check (required by load balancers) ─────────────────────────
+@app.get("/health")
+def health():
+    return {"status": "ok", "model_version": MODEL_VERSION}
+
+# ── Prediction endpoint ───────────────────────────────────────────────
+@app.post("/predict", response_model=PredictResponse)
+def predict(req: PredictRequest):
+    import pandas as pd
+    try:
+        row = pd.DataFrame([req.dict()])
+        pred = int(pipeline.predict(row)[0])
+        prob = float(pipeline.predict_proba(row)[0][pred])
+        logger.info("prediction", extra={"pred": pred, "prob": prob,
+                                          "input": req.dict()})
+        return PredictResponse(prediction=pred, probability=prob,
+                                model_version=MODEL_VERSION)
+    except Exception as e:
+        logger.error("prediction_error", exc_info=True)
+        raise HTTPException(status_code=500, detail="Prediction failed")
+
+# Run: uvicorn serve:app --host 0.0.0.0 --port 8080
+```
+
+Key practices above:
+- Schema validation with Pydantic rejects bad input before it reaches the model.
+- Model loaded once at startup; per-request I/O is negligible.
+- Structured logging enables downstream drift monitoring.
+- `/health` endpoint required by Kubernetes liveness probes and load balancers.
+
+---
+
+## 18.4 Experiment Tracking
+
+Experiment tracking records every training run: hyperparameters, metrics, data versions, and artifacts. Without it you cannot reproduce results or explain which model you deployed.
+
+### MLflow (open source, self-hosted)
+
+```python
+import mlflow
+import mlflow.sklearn
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
+
+mlflow.set_experiment("titanic-survival")
+
+with mlflow.start_run(run_name="rf-depth6"):
+    # Log hyperparameters
+    params = {"n_estimators": 200, "max_depth": 6, "random_state": 42}
+    mlflow.log_params(params)
+
+    model = RandomForestClassifier(**params)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    # Log metrics
+    f1 = f1_score(y_test, y_pred)
+    mlflow.log_metrics({"f1": f1, "accuracy": (y_pred == y_test).mean()})
+
+    # Log model artifact + sklearn signature
+    signature = mlflow.models.infer_signature(X_train, model.predict(X_train))
+    mlflow.sklearn.log_model(model, "model", signature=signature,
+                              registered_model_name="TitanicSurvivor")
+    print(f"Run logged. F1={f1:.4f}")
+```
+
+### Weights & Biases (hosted, strong visualization)
+
+```python
+import wandb
+
+wandb.init(project="titanic-survival", config={"n_estimators": 200, "max_depth": 6})
+config = wandb.config
+
+model = RandomForestClassifier(n_estimators=config.n_estimators,
+                                max_depth=config.max_depth)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+wandb.log({"f1": f1_score(y_test, y_pred),
+            "accuracy": (y_pred == y_test).mean()})
+wandb.finish()
+```
+
+### Vertex AI Experiments (GCP-native)
+
+```python
+from google.cloud import aiplatform
+
+aiplatform.init(project="my-gcp-project", location="us-central1",
+                experiment="titanic-survival")
+
+with aiplatform.start_run("rf-depth6"):
+    aiplatform.log_params({"n_estimators": 200, "max_depth": 6})
+    aiplatform.log_metrics({"f1": 0.83, "accuracy": 0.81})
+```
+
+---
+
+## 18.5 Model Registry & Versioning
+
+A model registry is the system of record for trained models. It stores artifacts, links them to the experiment run that produced them, and tracks lifecycle stage (staging → production → archived).
+
+```
+  MODEL LIFECYCLE IN A REGISTRY:
+  ┌──────────────────────────────────────────────────────────┐
+  │  Training run  →  Registered  →  Staging  →  Production  │
+  │  (experiment       (artifact      (human       (serving   │
+  │   tracked)          stored,        review,      traffic)  │
+  │                     tagged)        tests)                  │
+  │                                       ↓                    │
+  │                                   Archived                 │
+  │                             (superseded but kept           │
+  │                              for rollback)                 │
+  └──────────────────────────────────────────────────────────┘
+```
+
+```python
+# Promote a model from Staging to Production in MLflow
+import mlflow
+from mlflow.tracking import MlflowClient
+
+client = MlflowClient()
+model_name = "TitanicSurvivor"
+
+# List all versions in Staging
+for mv in client.search_model_versions(f"name='{model_name}'"):
+    if mv.current_stage == "Staging":
+        print(f"Version {mv.version}: {mv.run_id}")
+
+# Promote version 3 to Production, archive the old one
+client.transition_model_version_stage(
+    name=model_name, version=3, stage="Production",
+    archive_existing_versions=True
+)
+
+# Load the current production model
+model_uri = f"models:/{model_name}/Production"
+prod_model = mlflow.sklearn.load_model(model_uri)
+```
+
+---
+
+## 18.6 CI/CD for ML
+
+A CI/CD pipeline for ML runs automated tests on every commit that touches model code or training data. It gates deployments behind validation checks, preventing regressions from reaching production silently.
+
+```
+  ML CI/CD PIPELINE (GitHub Actions / Vertex Pipelines / Kubeflow):
+
+  Code push / PR
+       │
+       ▼
+  ┌──────────────┐    fail → block merge
+  │  Unit tests  │─────────────────────────────────────┐
+  │  (transform  │                                     │
+  │   functions, │                                     │
+  │   schema)    │                                     │
+  └──────┬───────┘                                     │
+         │ pass                                        │
+         ▼                                             │
+  ┌──────────────────┐    fail → block merge           │
+  │  Train on        │─────────────────────────────────┤
+  │  reference data  │                                 │
+  │  + eval metrics  │                                 │
+  │  vs threshold    │                                 │
+  └──────┬───────────┘                                 │
+         │ pass                                        │
+         ▼                                             │
+  ┌──────────────────┐    fail → alert                 │
+  │  Bias / fairness │─────────────────────────────────┤
+  │  checks          │                                 │
+  └──────┬───────────┘                                 │
+         │ pass                                        │
+         ▼                                             │
+  ┌──────────────────┐                                 │
+  │  Deploy to       │                                 │
+  │  Staging →       │                                 │
+  │  shadow / canary │                                 │
+  │  → Production    │                                 │
+  └──────────────────┘◄────────────────────────────────┘
+```
+
+A minimal GitHub Actions workflow for testing + training:
+
+```yaml
+# .github/workflows/ml_ci.yml
+name: ML CI
+
+on: [push, pull_request]
+
+jobs:
+  test-and-train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest tests/ -v
+
+      - name: Train and validate model
+        run: python train.py --validate-thresholds
+        # train.py exits non-zero if F1 drops below threshold
+
+      - name: Upload model artifact
+        if: github.ref == 'refs/heads/main'
+        run: python register_model.py --stage staging
+```
+
+---
+
+## 18.7 Monitoring — Operational Metrics
+
+Operational monitoring tracks that the serving infrastructure is functioning. These metrics should alert before users are affected.
+
+| Metric | What it measures | Alert threshold |
+|--------|-----------------|-----------------|
+| Request latency (P95, P99) | End-to-end response time | > SLA (e.g., 200 ms) |
+| Error rate | HTTP 4xx / 5xx per minute | > 1% |
+| Prediction throughput | Requests per second | < baseline × 0.5 (drop-off) |
+| Model load time | Seconds to warm up | > 30 s |
+| GPU/CPU utilization | Compute saturation | > 90% sustained |
+| Memory utilization | OOM risk | > 85% |
+
+```python
+# Minimal Prometheus-style metrics with the prometheus_client library
+from prometheus_client import Counter, Histogram, start_http_server
+import time
+
+REQUEST_COUNT = Counter("model_requests_total", "Total prediction requests",
+                         ["status"])
+REQUEST_LATENCY = Histogram("model_request_latency_seconds",
+                             "Prediction latency",
+                             buckets=[.01, .05, .1, .25, .5, 1.0])
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    start = time.time()
+    try:
+        result = _run_model(req)
+        REQUEST_COUNT.labels(status="success").inc()
+        return result
+    except Exception as e:
+        REQUEST_COUNT.labels(status="error").inc()
+        raise
+    finally:
+        REQUEST_LATENCY.observe(time.time() - start)
+```
+
+---
+
+## 18.8 Data Drift & Concept Drift Detection
+
+Operational metrics tell you the infrastructure is up. Drift detection tells you whether the **model is still making good predictions** on real traffic.
+
+### Definitions
+
+> **Data drift (covariate shift):** the distribution of input features P(X) changes after deployment. The model itself is unchanged, but it is now being asked to predict on inputs it was not trained for.
+
+> **Concept drift:** the relationship between inputs and the target P(Y|X) changes. Even if the inputs look the same, the correct answer has shifted — e.g., customer behavior patterns after an economic shock.
+
+```
+  DATA DRIFT:                         CONCEPT DRIFT:
+  Training: age ~ N(35, 10)           Training: high income → churns more
+  Production: age ~ N(52, 15)         Production: high income → churns less
+       ↑ user demographics shifted         ↑ behavior pattern changed
+  Model still valid but operating     Model predictions are now wrong
+  in a range it barely saw            even for normal inputs
+```
+
+### Detecting Data Drift — PSI and KS Test
+
+**Population Stability Index (PSI)** quantifies the shift in a feature's distribution between training (reference) and current serving data. Originally from credit risk modeling.
+
+```
+  PSI = Σ (Actual% − Expected%) × ln(Actual% / Expected%)
+          over N buckets
+
+  Rule of thumb:
+  ┌─────────────┬──────────────────────────────────────────┐
+  │ PSI < 0.10  │ No significant change — monitor normally │
+  │ 0.10–0.20   │ Moderate shift — investigate             │
+  │ PSI > 0.20  │ Major shift — retrain or flag for review │
+  └─────────────┴──────────────────────────────────────────┘
+```
+
+```python
+import numpy as np
+import pandas as pd
+
+def compute_psi(reference: np.ndarray, current: np.ndarray,
+                n_bins: int = 10) -> float:
+    """
+    Compute Population Stability Index between reference and current
+    distributions. Higher PSI = more drift.
+    """
+    # Build bins from reference distribution
+    breakpoints = np.nanpercentile(reference,
+                                    np.linspace(0, 100, n_bins + 1))
+    breakpoints = np.unique(breakpoints)  # deduplicate edge cases
+
+    ref_counts, _ = np.histogram(reference, bins=breakpoints)
+    cur_counts, _ = np.histogram(current,   bins=breakpoints)
+
+    # Convert to proportions, clamp zeros to avoid log(0)
+    ref_pct = np.clip(ref_counts / len(reference), 1e-6, None)
+    cur_pct = np.clip(cur_counts / len(current),   1e-6, None)
+
+    psi = np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct))
+    return float(psi)
+
+
+# Example: check drift in "age" feature over 7-day windows
+train_ages   = X_train["age"].values          # reference (training data)
+recent_ages  = recent_traffic["age"].values   # production traffic, last 7 days
+
+psi_age = compute_psi(train_ages, recent_ages)
+print(f"Age PSI = {psi_age:.4f}")
+if psi_age > 0.20:
+    print("ALERT: major distribution shift in 'age' — consider retraining")
+```
+
+**Kolmogorov-Smirnov (KS) Test** is a statistical test for whether two samples come from the same distribution. It returns a p-value: low p-value means the distributions are significantly different.
+
+```python
+from scipy.stats import ks_2samp
+
+stat, p_value = ks_2samp(train_ages, recent_ages)
+print(f"KS statistic = {stat:.4f}, p-value = {p_value:.4f}")
+if p_value < 0.05:
+    print("ALERT: distributions are significantly different (p < 0.05)")
+```
+
+### Feature and Label Monitoring
+
+```python
+import pandas as pd
+
+def monitor_features(reference_df: pd.DataFrame,
+                     production_df: pd.DataFrame,
+                     threshold_psi: float = 0.20) -> pd.DataFrame:
+    """Compute PSI for every numeric feature and flag drifters."""
+    results = []
+    for col in reference_df.select_dtypes(include="number").columns:
+        psi = compute_psi(reference_df[col].dropna().values,
+                          production_df[col].dropna().values)
+        results.append({"feature": col, "psi": psi,
+                         "drifted": psi > threshold_psi})
+    return pd.DataFrame(results).sort_values("psi", ascending=False)
+
+drift_report = monitor_features(X_train, recent_traffic)
+print(drift_report)
+#    feature    psi   drifted
+#    age        0.23  True      ← needs attention
+#    fare       0.08  False
+#    pclass     0.03  False
+
+# Label / prediction monitoring (detect concept drift indirectly)
+# If ground-truth labels are available with a delay:
+from sklearn.metrics import f1_score
+
+daily_f1 = f1_score(ground_truth_labels, production_predictions)
+print(f"Rolling F1 (last 24h) = {daily_f1:.4f}")
+if daily_f1 < 0.75:
+    print("ALERT: model performance degraded below threshold")
+```
+
+```
+  DRIFT MONITORING STRATEGY:
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  Daily:     PSI on all input features against training baseline   │
+  │  Daily:     prediction distribution shift (expected vs actual %)  │
+  │  Weekly:    KS test on key features                               │
+  │  When       compute F1/AUC against delayed labels if available    │
+  │  labels     (labels often arrive hours/days after prediction)     │
+  │  arrive:                                                          │
+  └──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 18.9 Retraining Triggers
+
+Retraining is not always better. Triggering it too often wastes compute; triggering it too rarely lets the model drift silently. Use a combination of signals:
+
+```
+  RETRAINING DECISION TREE:
+  ┌───────────────────────────────────────────────────────────────┐
+  │                                                               │
+  │  Is PSI > 0.20 for any critical feature?                     │
+  │  YES → investigate. If data quality OK → schedule retrain.   │
+  │  NO  → continue monitoring.                                  │
+  │                                                               │
+  │  Is rolling F1/AUC below threshold (requires label delay)?   │
+  │  YES → immediate retrain pipeline.                           │
+  │                                                               │
+  │  Is scheduled retrain window reached (e.g., weekly/monthly)? │
+  │  YES → retrain on freshest N days of data + validate.        │
+  │                                                               │
+  │  Is there a known business event (product launch, pandemic)?  │
+  │  YES → manual trigger for emergency retrain.                 │
+  │                                                               │
+  └───────────────────────────────────────────────────────────────┘
+
+  After retraining: VALIDATE before replacing production model.
+  Compare new model vs current on a held-out recent slice.
+  If new model is worse → do not promote.
+```
+
+---
+
+## 18.10 Safe Rollout — Shadow, Canary, A/B
+
+Never flip 100% of traffic to a new model instantly. Use progressive delivery patterns to catch regressions early.
+
+```
+  SHADOW DEPLOYMENT
+  ─────────────────────────────────────────────────────────────────
+  Production   ─── 100% traffic → Model v1 → response to user
+  traffic ─┤
+  (mirrored)   ─── 100% traffic → Model v2 → /dev/null (no response)
+
+  Purpose: compare v2 predictions and latency to v1 without any
+           user impact. Best for high-risk changes.
+  ─────────────────────────────────────────────────────────────────
+
+  CANARY DEPLOYMENT
+  ─────────────────────────────────────────────────────────────────
+  Production   ─── 95% traffic → Model v1
+  traffic ─┤
+             ─── 5% traffic  → Model v2  (real users, small %)
+
+  Gradually increase v2 %: 5% → 20% → 50% → 100%
+  Monitor P95 latency and error rate at each step.
+  Roll back if metrics degrade.
+  ─────────────────────────────────────────────────────────────────
+
+  A/B TESTING
+  ─────────────────────────────────────────────────────────────────
+  Assign users deterministically (e.g., hash of user_id):
+  Group A (50%) → Model v1
+  Group B (50%) → Model v2
+
+  Measure business metric (CTR, revenue, churn) after N days.
+  Statistical significance test before declaring a winner.
+  A/B is about measuring business impact; canary is about
+  catching infrastructure/quality regressions.
+  ─────────────────────────────────────────────────────────────────
+```
+
+```python
+# Simple canary routing in FastAPI
+import hashlib
+
+def route_to_model(user_id: str, canary_pct: float = 0.05) -> str:
+    """Return 'v2' for canary_pct fraction of users, else 'v1'."""
+    # Deterministic: same user always gets same model
+    h = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
+    return "v2" if (h % 100) < (canary_pct * 100) else "v1"
+
+@app.post("/predict")
+def predict(req: PredictRequest, user_id: str = "anonymous"):
+    model_version = route_to_model(user_id, canary_pct=0.05)
+    model = model_v2 if model_version == "v2" else model_v1
+    pred = model.predict(req.to_frame())[0]
+    # Log which model version served this prediction for analysis
+    logger.info("served", extra={"model_version": model_version,
+                                  "prediction": int(pred)})
+    return {"prediction": int(pred), "model_version": model_version}
+```
+
+---
+
+## 18.11 MLOps Maturity Levels
+
+```
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  LEVEL 0 — Manual                                                │
+  │  Notebook → manual export → ad-hoc deployment → no monitoring   │
+  │  Suitable for: one-off analyses, no real users                   │
+  │                                                                  │
+  │  LEVEL 1 — Automated Training                                    │
+  │  Experiment tracking + model registry + scheduled retraining     │
+  │  + basic operational monitoring                                  │
+  │  Suitable for: internal tools, low-risk models                   │
+  │                                                                  │
+  │  LEVEL 2 — Automated Pipeline                                    │
+  │  + CI/CD for model code + drift detection + canary deployments   │
+  │  + label monitoring + auto-retrain triggers                      │
+  │  Suitable for: customer-facing models, regulated industries      │
+  │                                                                  │
+  │  Most teams should target Level 1–2. Level 0 is a liability.     │
+  └──────────────────────────────────────────────────────────────────┘
+```
+
+### Tool Reference
+
+| Category | Open Source | Managed (Cloud) |
+|----------|-------------|-----------------|
+| Experiment tracking | MLflow, DVC | Vertex AI Experiments, W&B, Comet |
+| Model registry | MLflow Model Registry | Vertex AI Model Registry, SageMaker Registry |
+| Serving (online) | FastAPI, BentoML, TorchServe | Vertex AI Prediction, SageMaker Endpoint |
+| Serving (batch) | Spark, pandas job | Vertex AI Batch Prediction, SageMaker Batch |
+| Orchestration | Apache Airflow, Kubeflow Pipelines | Vertex AI Pipelines, SageMaker Pipelines |
+| Drift detection | Evidently AI, Alibi Detect, whylogs | Amazon SageMaker Model Monitor |
+| Feature store | Feast | Vertex AI Feature Store, Tecton |
 
 ---
 

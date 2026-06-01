@@ -1,4 +1,4 @@
-# Chapter 23 — GPUs, TPUs & AI Infrastructure
+# Chapter 25 — GPUs, TPUs & AI Infrastructure
 
 This chapter covers the hardware and infrastructure that makes modern AI possible. You can write the most elegant model architecture in the world — if you do not understand the hardware running it, you will waste money, time, and sanity. GPUs, TPUs, distributed training, and inference optimization are not optional knowledge for an AI engineer. They are the difference between a model that trains in 3 hours and one that takes 3 weeks.
 
@@ -542,6 +542,176 @@ def train(rank, world_size):
 
 ---
 
+## 24.6a Ring All-Reduce
+
+> **Ring All-Reduce:** a collective communication algorithm that averages gradients across N GPUs using a ring topology, achieving bandwidth-optimal throughput independent of the number of nodes.
+
+### Why the naive approach fails
+
+The simplest gradient-sync strategy is a parameter server: every GPU sends gradients to a central node, which sums them and broadcasts the result back. The parameter server receives N gradient tensors simultaneously — its uplink bandwidth is fully saturated while other GPUs wait. This is a **bandwidth bottleneck that grows with N**.
+
+Ring All-Reduce eliminates the central bottleneck by making every GPU both a sender and receiver simultaneously.
+
+### The algorithm
+
+Arrange N GPUs in a logical ring. Ring All-Reduce runs in two phases:
+
+```
+  N = 4 GPUs, each holds gradient tensor G (split into N chunks)
+  Initial state: GPU0=[g0,g1,g2,g3], GPU1=[g0,g1,g2,g3], ...
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  PHASE 1: Reduce-Scatter  (N−1 = 3 steps)                    │
+  │                                                              │
+  │   Step 1                    Step 2                           │
+  │   GPU0 ──g3──► GPU1         GPU0 ──(g2+g3)──► GPU1          │
+  │   GPU1 ──g0──► GPU2         GPU1 ──(g3+g0)──► GPU2          │
+  │   GPU2 ──g1──► GPU3         GPU2 ──(g0+g1)──► GPU3          │
+  │   GPU3 ──g2──► GPU0         GPU3 ──(g1+g2)──► GPU0          │
+  │                                                              │
+  │  After N−1 steps each GPU holds one fully-reduced chunk      │
+  │  GPU0: sum(g2), GPU1: sum(g3), GPU2: sum(g0), GPU3: sum(g1)  │
+  │                                                              │
+  │  PHASE 2: All-Gather  (N−1 = 3 steps)                        │
+  │  Each GPU broadcasts its reduced chunk around the ring.      │
+  │  After N−1 steps every GPU holds the full averaged gradient. │
+  └──────────────────────────────────────────────────────────────┘
+
+  Total steps: 2(N−1)
+  Each GPU sends/receives 2(N−1)/N × |G| bytes of data.
+  As N→∞ this approaches 2|G| — independent of N.
+```
+
+### Why bandwidth-optimal
+
+Each GPU sends and receives at most 2|G| bytes regardless of how many GPUs are in the ring. Adding more GPUs does not increase the per-GPU communication volume; it only adds more steps. Compare to parameter server: every GPU sends |G| bytes to one node, so the server receives N×|G| bytes — scales linearly with N.
+
+### In practice
+
+PyTorch DDP and FSDP use NCCL, which implements Ring All-Reduce (or variants like recursive halving-doubling for smaller tensors). You do not implement this manually — but understanding it explains why DDP scales nearly linearly up to hundreds of GPUs when the interconnect is uniform (e.g., NVLink within a node or InfiniBand across nodes).
+
+```python
+# DDP uses Ring All-Reduce automatically via NCCL
+# The "backend='nccl'" line selects the NCCL collective implementation
+dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
+model = DDP(model, device_ids=[rank])
+# After loss.backward(), DDP triggers All-Reduce on all grad tensors
+```
+
+---
+
+## 24.6b Sequence Parallelism
+
+> **Sequence Parallelism (SP):** a form of model parallelism that partitions the sequence dimension of activations across devices. It complements tensor parallelism, data parallelism, and pipeline parallelism, and is specifically motivated by the activation memory cost of long-context training.
+
+### The problem it solves
+
+In a transformer with sequence length L, batch size B, hidden dimension d, and num_layers N_L, activation memory scales as O(B × L × d × N_L). For a 7B model training at L=32K tokens with B=4, activations alone consume tens of gigabytes per GPU. Gradient checkpointing helps (Section 24.3) but trades compute for memory. Sequence parallelism trades neither — it simply splits the work.
+
+### How it works
+
+In standard tensor parallelism (Section 24.6), the attention and MLP layers are split across devices. The LayerNorm and Dropout layers before and after them are replicated on every device — they operate on the full [B, L, d] tensor. Sequence parallelism partitions these replicated regions along the sequence dimension:
+
+```
+  WITHOUT Sequence Parallelism:
+  ┌──────────────────────────────────────────────────────────────┐
+  │  GPU 0 AND GPU 1 (both hold):                                │
+  │  Input: [B, L, d]  → LayerNorm → [B, L, d]                  │
+  │  Then tensor-parallel attention splits d across GPUs         │
+  └──────────────────────────────────────────────────────────────┘
+
+  WITH Sequence Parallelism (TP=2):
+  ┌──────────────────────────────────────────────────────────────┐
+  │  GPU 0 holds [B, L/2, d]  → LayerNorm → [B, L/2, d]         │
+  │  GPU 1 holds [B, L/2, d]  → LayerNorm → [B, L/2, d]         │
+  │                                                              │
+  │  AllGather before attention (reconstruct full sequence)      │
+  │  Tensor-parallel attention (split along head dimension)      │
+  │  ReduceScatter after attention (re-split along sequence)     │
+  └──────────────────────────────────────────────────────────────┘
+```
+
+The AllGather + ReduceScatter at each attention boundary replaces the AllReduce that standard tensor parallelism already needs — so the communication cost is the same. The memory benefit is a factor-of-TP reduction in the activation memory held outside the attention/MLP blocks.
+
+### When it helps
+
+| Scenario | Without SP | With SP (TP=8) |
+|----------|-----------|----------------|
+| L=8K, 7B model | Moderate activation memory | Marginal gain |
+| L=128K, 70B model | OOM likely | Enables training |
+| Inference | Not applicable | Not applicable |
+
+Sequence parallelism is standard in Megatron-LM and is increasingly used for training frontier models with long contexts (Llama 3 128K, Gemini 1M). It is typically applied at the same granularity as tensor parallelism (same TP group size).
+
+---
+
+## 24.6c MFU — Model FLOPs Utilization
+
+> **MFU (Model FLOPs Utilization):** the fraction of a hardware accelerator's peak throughput that is actually spent on useful model computation. MFU = (achieved model FLOPs/s) ÷ (hardware peak FLOPs/s).
+
+MFU is the single most useful efficiency metric for large-scale training. It separates "the hardware is fast" from "we are using the hardware well." Low MFU means you are paying for performance you are not getting — every percentage point of MFU translates directly to cost and time.
+
+### The 6N FLOPs-per-token rule
+
+For a transformer with N parameters, one forward + backward pass over a single token costs approximately **6N FLOPs**.
+
+Derivation sketch:
+- Each parameter participates in one multiply-add in the forward pass: ~2N FLOPs forward.
+- Backward pass costs ~2x forward: ~4N FLOPs backward.
+- Total: ~6N FLOPs per token.
+
+The approximation ignores attention FLOPs (O(L²d) per layer), which dominate only for very long sequences relative to model size. For most practical training runs on large models, 6N is accurate to within 10-15%.
+
+### Computing MFU
+
+```
+  Achieved model FLOPs/s  =  tokens_per_second × 6N
+
+  MFU  =  (tokens_per_second × 6N)  /  hardware_peak_FLOPs/s
+```
+
+```python
+def compute_mfu(tokens_per_second: float,
+                num_params: int,
+                hardware_peak_flops: float) -> float:
+    """
+    tokens_per_second: measured training throughput
+    num_params:        total model parameters (e.g., 7e9)
+    hardware_peak_flops: peak FLOPs/s for the hardware
+                         (e.g., H100 BF16 Tensor = 989e12 TFLOPS → 989e12)
+    Returns MFU as a fraction (0.0 – 1.0).
+    """
+    achieved_flops = tokens_per_second * 6 * num_params
+    return achieved_flops / hardware_peak_flops
+
+
+# Example: 7B model on a single H100, measuring 3,500 tokens/s
+mfu = compute_mfu(
+    tokens_per_second=3_500,
+    num_params=7e9,
+    hardware_peak_flops=989e12   # H100 SXM BF16 Tensor Core TFLOPS
+)
+print(f"MFU = {mfu:.1%}")   # → ~14.9%  — reasonably good for a single GPU
+```
+
+### Typical MFU ranges
+
+| Setup | Typical MFU | Notes |
+|-------|------------|-------|
+| Single H100, naive PyTorch | 10–20% | No mixed precision, no Flash Attention |
+| Single H100, optimized (BF16 + FA2 + compile) | 35–50% | Common baseline for good implementations |
+| Multi-node H100 cluster (8–64 GPUs) | 30–45% | Communication overhead reduces MFU |
+| TPU v4 pod, Megatron-LM | 45–55% | Tight ICI interconnect helps |
+| State-of-the-art (Llama, PaLM reported) | 38–57% | Best published numbers for large models |
+
+A 50% MFU is considered excellent. Getting above 60% requires very careful kernel fusion, memory layout tuning, and minimal communication overhead. Going from 20% to 40% MFU halves your training cost for the same result.
+
+### Why MFU matters at Google-scale
+
+At 10,000 H100 GPUs running for 30 days, a 10-percentage-point MFU improvement (e.g., 40% → 50%) is equivalent to saving 2,000 GPU-days — roughly $5–10M at cloud rates. This is why teams invest heavily in custom CUDA kernels, Flash Attention, and compiler optimizations. MFU is the KPI that makes those investments legible.
+
+---
+
 ## 24.7 TPUs — Google's Custom AI Hardware
 
 > **TPU (Tensor Processing Unit):** Google's custom-designed ASIC (Application-Specific Integrated Circuit) optimized specifically for neural network matrix operations. Unlike general-purpose GPUs, TPUs sacrifice flexibility for maximum efficiency on the specific workloads that dominate ML training and inference.
@@ -1018,6 +1188,9 @@ Systematic debugging, in order:
 > - **Mixed precision:** Always use BF16 on modern hardware (A100+). It gives 2x speedup with virtually no quality loss. BF16 > FP16 because of larger dynamic range.
 > - **Flash Attention:** Reduces attention memory from O(n^2) to O(n) by tiling into SRAM. Enables long context. Use it always.
 > - **Distributed training:** Data parallel = replicate model, split batch. Tensor parallel = split layers across GPUs. Pipeline parallel = split model stages. Combine all three for the largest models.
+> - **Ring All-Reduce:** Bandwidth-optimal gradient sync. Every GPU sends/receives 2|G| bytes regardless of N. PyTorch DDP uses it via NCCL. Beats parameter-server AllReduce at any scale.
+> - **Sequence Parallelism:** Splits the sequence dimension across the TP group for activations outside attention/MLP. Same communication cost as TP but TP-fold reduction in activation memory. Essential for long-context training (L ≥ 32K).
+> - **MFU:** Achieved model FLOPs/s ÷ hardware peak FLOPs/s. Good training runs hit 35–50%. The 6N FLOPs-per-token rule lets you compute it from tokens/s alone. MFU is the efficiency KPI — every 10pp improvement cuts cost proportionally.
 > - **TPUs vs GPUs:** TPU pods excel at large-scale training (better interconnect). GPUs win on ecosystem and flexibility. Google uses TPUs internally for Gemini.
 > - **Quantization:** INT8 is nearly lossless. INT4 is the sweet spot for LLM serving. Below INT4, quality drops fast.
 > - **Speculative decoding:** Use a small draft model + large verifier for 2-3x inference speedup with no quality loss.
@@ -1143,4 +1316,4 @@ In practice: unstructured pruning is useful for reducing model storage/transmiss
 
 ---
 
-**Previous:** [Chapter 23 — Building Semantic Search](22_semantic_search.md)
+**Previous:** [Chapter 24 — Building Semantic Search](24_semantic_search.md) | **Next:** [Chapter 26 — Google ML Ecosystem](26_google_ml_ecosystem.md)

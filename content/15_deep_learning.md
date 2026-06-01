@@ -26,9 +26,9 @@ After reading this chapter, you will be able to:
 |------|-------|
 | 1 | Training Deep Networks |
 | 2 | Computer Vision |
-| 3 | Attention & Transformers |
+| 3 | Attention & Transformers (incl. LSTM/GRU, Positional Encodings) |
 | 4 | Language Models & LLMs |
-| 5 | Generative Models |
+| 5 | Generative Models (VAE, Diffusion, Contrastive, **GANs**) |
 | 6 | Specialized Architectures |
 | 7 | Practical Deep Learning |
 
@@ -798,6 +798,75 @@ The model should recognize a cat whether it's flipped, slightly darker, or cropp
 
 ---
 
+## 3.0 Recurrent Architectures — LSTM & GRU ★★
+
+**LSTM (Long Short-Term Memory)** and **GRU (Gated Recurrent Unit)** are RNN variants that solve the vanishing gradient problem through learnable gates controlling information flow along a dedicated memory pathway.
+
+### Why Plain RNNs Fail on Long Sequences
+
+A standard RNN updates its hidden state as:
+
+$$h_t = \tanh(W_x x_t + W_h h_{t-1} + b)$$
+
+The gradient of the loss with respect to $h_0$ involves a product of $T$ Jacobians. If the dominant eigenvalue of $W_h$ is less than 1, gradients vanish exponentially — early steps receive near-zero updates and nothing is learned from distant context.
+
+### LSTM: Full Gate Equations
+
+$$f_t = \sigma(W_f [h_{t-1}, x_t] + b_f) \quad \text{(forget gate)}$$
+
+$$i_t = \sigma(W_i [h_{t-1}, x_t] + b_i) \quad \text{(input gate)}$$
+
+$$\tilde{C}_t = \tanh(W_C [h_{t-1}, x_t] + b_C) \quad \text{(candidate values)}$$
+
+$$C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \quad \text{(cell state update)}$$
+
+$$o_t = \sigma(W_o [h_{t-1}, x_t] + b_o) \quad \text{(output gate)}$$
+
+$$h_t = o_t \odot \tanh(C_t)$$
+
+The **cell state** $C_t$ is the gradient highway. When $f_t \approx 1$ (keep gate open), gradients flow across many time steps with near-unit multiplication — the vanishing gradient problem is dramatically reduced. When $f_t \approx 0$, irrelevant information is erased.
+
+```
+  TIME ────────────────────────────────────────────►
+  ══════════════════ Cell State Cₜ ════════════════►
+         │  × fₜ        +  iₜ⊙C̃ₜ        × oₜ  │
+         │  (forget)       (write)        (read) │
+         ▼                                       ▼
+    ┌────────┐                             ┌────────┐
+    │ hₜ₋₁  │                             │   hₜ   │  ← hidden state
+    └────────┘                             └────────┘
+         ↑ xₜ₋₁                                 ↑ xₜ
+  (all gates take [hₜ₋₁, xₜ] as input and apply σ or tanh)
+```
+
+### GRU: Simplified Gates
+
+GRU merges the forget and input gates into a single **update gate** $z_t$, and removes the separate cell state:
+
+$$z_t = \sigma(W_z [h_{t-1}, x_t]) \quad \text{(update gate: how much to blend old vs new)}$$
+
+$$r_t = \sigma(W_r [h_{t-1}, x_t]) \quad \text{(reset gate: how much past to expose)}$$
+
+$$\tilde{h}_t = \tanh(W [r_t \odot h_{t-1},\; x_t])$$
+
+$$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t$$
+
+When $z_t \approx 0$ the hidden state is copied unchanged (gradient flows unmodified). When $z_t \approx 1$ the new candidate replaces the old state.
+
+**GRU vs LSTM:**
+
+| | LSTM | GRU |
+|---|---|---|
+| Gates | 3 (forget, input, output) | 2 (update, reset) |
+| Parameters | More (~33% more per unit) | Fewer |
+| Separate cell state | Yes | No |
+| Long-range memory | Slightly better empirically | Comparable |
+| When to prefer | Long sequences, complex dependencies | Shorter sequences, less data |
+
+**Practical note:** For new projects, prefer Transformers. LSTMs/GRUs remain useful when you must process tokens *one at a time* at low latency (e.g., real-time streaming ASR, embedded systems).
+
+---
+
 ## 3.1 Seq2Seq + Bahdanau Attention ★★★
 
 **In one sentence:** The attention mechanism that preceded Transformers — it lets the decoder focus on different parts of the input at each step.
@@ -890,9 +959,93 @@ $$\text{Output} = \text{softmax}\!\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
 
 This computes attention for ALL tokens simultaneously using matrix multiplication. Very GPU-friendly.
 
+### Multi-Head Attention + Output Projection
+
+Running attention once captures one type of relationship (e.g., syntactic subject-verb agreement). **Multi-head attention** runs $h$ attention operations in parallel with separate learned projections, then merges the results:
+
+$$\text{head}_i = \text{Attention}(Q W^Q_i,\; K W^K_i,\; V W^V_i)$$
+
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\, W^O$$
+
+The output projection $W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}$ mixes information from all heads back into a single $d_{\text{model}}$-dimensional vector. Without $W^O$ the concatenated output would have the wrong dimension and the heads could not coordinate — each head would contribute independently with no cross-head integration.
+
+```
+  h=8 heads, d_model=512, d_k=d_v=64:
+
+  Input (seq_len × 512)
+       ↓  × 8 parallel heads
+  head_i = Attention(Q·Wᵢᴼ, K·Wᵢᴷ, V·Wᵢᵛ)  → each: (seq_len × 64)
+       ↓  Concat
+  Concatenated                                → (seq_len × 512)
+       ↓  × W^O  (512 × 512 learned matrix)
+  MultiHead output                            → (seq_len × 512)
+```
+
+Typical: 8 heads in BERT-base, 12 in GPT-2 (medium), 96 in GPT-3.
+
 ---
 
-## 3.3 BERT ★★★
+## 3.3 Positional Encodings ★★★
+
+**Transformers are permutation-invariant**: the self-attention formula treats "cat sat mat" and "mat cat sat" identically — token order carries no information unless explicitly injected. Positional encodings add order signals to the token embeddings.
+
+### Sinusoidal (original Transformer, Vaswani et al. 2017)
+
+$$PE(\text{pos},\, 2i) = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
+
+$$PE(\text{pos},\, 2i+1) = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
+
+$\text{pos}$ = token position; $i$ = dimension index (0 to $d/2$); $d$ = embedding dimension.
+
+Each position gets a unique $d$-dimensional vector added to its token embedding. Low-frequency components ($i$ large) vary slowly — they encode absolute position at a coarse scale. High-frequency components vary quickly — they encode fine-grained local order. Because of the sin/cos structure, relative positions can be recovered via dot products, allowing the model to generalise to sequence lengths not seen in training.
+
+```
+  pos=0: [sin(0/1), cos(0/1), sin(0/100), cos(0/100), ...]
+  pos=1: [sin(1/1), cos(1/1), sin(1/100), cos(1/100), ...]
+  pos=2: [sin(2/1), cos(2/1), sin(2/100), cos(2/100), ...]
+
+  Low-freq dims (rightmost): change slowly  → coarse position
+  High-freq dims (leftmost): change quickly → fine position
+
+  ─────────────────────────────────────────────────────
+  Token embedding   + Positional encoding = model input
+  [0.3, 0.8, -0.1]   [sin, cos, sin, ...]  = [sum]
+```
+
+### Learned Positional Embeddings (BERT, GPT)
+
+BERT and early GPT models replace the fixed formula with a **learned embedding table**: one vector per position, trained end-to-end. Simple and effective, but cannot extrapolate to sequences longer than the training maximum.
+
+### Rotary Position Embedding — RoPE (LLaMA, Gemini, GPT-NeoX)
+
+> **RoPE** rotates the query and key vectors by a position-dependent angle before computing $QK^T$. Because the rotation angle is proportional to position, the dot product $q_m \cdot k_n$ depends only on the *relative* distance $m - n$, not absolute positions.
+
+Concretely, for position $m$ and dimension pair $(2i, 2i+1)$:
+
+$$q'_{m,2i} = q_{m,2i}\cos(m\theta_i) - q_{m,2i+1}\sin(m\theta_i)$$
+
+$$q'_{m,2i+1} = q_{m,2i}\sin(m\theta_i) + q_{m,2i+1}\cos(m\theta_i)$$
+
+where $\theta_i = 10000^{-2i/d}$. Keys are rotated identically.
+
+**Why it matters:** Because attention depends on relative position, RoPE generalises better to long contexts than absolute positional encodings. It is the dominant choice in 2024–2026 LLMs (LLaMA 2/3, Gemini, Mistral, Qwen).
+
+### ALiBi — Attention with Linear Biases (Press et al. 2022)
+
+Rather than modifying embeddings, ALiBi adds a **negative linear penalty** to attention logits: each head subtracts $m \times |i - j|$ from the score between positions $i$ and $j$ (with head-specific slope $m$). No positional vectors needed; enables strong extrapolation to longer sequences without any retraining.
+
+### Summary Table
+
+| Method | Where Used | Relative Pos? | Extrapolates? |
+|--------|-----------|---------------|--------------|
+| Sinusoidal | Original Transformer | Partially | Yes (fixed) |
+| Learned | BERT, GPT-2 | No | No (truncates) |
+| RoPE | LLaMA, Gemini, Mistral | Yes | Good |
+| ALiBi | BLOOM, MPT | Yes | Excellent |
+
+---
+
+## 3.4 BERT ★★★
 
 **In one sentence:** A pre-trained language model that reads text in both directions simultaneously, pre-trained on "fill in the blank" and "do these sentences connect?" tasks.
 
@@ -950,7 +1103,7 @@ Only the new layer learns from scratch. BERT's weights adjust slightly through f
 
 ---
 
-## 3.4 GPT ★★★
+## 3.5 GPT ★★★
 
 **In one sentence:** A model trained to predict the next word — trained billions of times, it learned a surprisingly broad understanding of language.
 
@@ -1416,6 +1569,88 @@ Works for any class you can describe in a sentence.
 
 ---
 
+## 5.4 Generative Adversarial Networks (GANs) ★★
+
+> A **Generative Adversarial Network (GAN)** consists of two networks trained in opposition: a **generator** $G$ that maps random noise $z$ to synthetic data, and a **discriminator** $D$ that assigns probabilities of real vs. fake. Training is framed as a minimax game.
+
+### Generator vs Discriminator
+
+```
+  Noise z ~ N(0,I)
+       ↓
+  Generator G  →  fake sample x̂ = G(z)
+                         ↓
+  Discriminator D ← real sample x ~ p_data
+       ↓           ↓
+  D(x) → P(real)   D(G(z)) → P(fake is real)
+
+  G wants D(G(z)) → 1   (fool discriminator)
+  D wants D(x) → 1, D(G(z)) → 0   (catch fakes)
+```
+
+### The Minimax Objective
+
+$$\min_G \max_D \; \mathbb{E}_{x \sim p_{\text{data}}}[\log D(x)] \;+\; \mathbb{E}_{z \sim p_z}[\log(1 - D(G(z)))]$$
+
+At the optimal Nash equilibrium, $G$ perfectly models the data distribution and $D$ outputs $0.5$ everywhere — it cannot do better than random guessing.
+
+In practice $G$ minimises $-\mathbb{E}_z[\log D(G(z))]$ (non-saturating version) instead of $\mathbb{E}_z[\log(1-D(G(z)))]$, because the original saturates early in training when $D$ is strong.
+
+### Training Instability and Mode Collapse
+
+**Training instability** arises because the minimax objective is non-convex and the two networks must remain balanced. If $D$ becomes too accurate too quickly, $\nabla_G$ approaches zero — the generator receives no useful signal and stops learning. If $G$ improves too fast, $D$ cannot keep up and provides noisy gradients.
+
+**Mode collapse** is the most common GAN failure mode: the generator learns to produce a small subset of outputs (sometimes just one image) that reliably fools $D$, ignoring the full diversity of the data distribution. The generator has found a local optimum — a "mode" — and collapses onto it.
+
+```
+  True distribution: cats, dogs, birds, horses, ...
+  Mode-collapsed G:  → cat, cat, cat, cat, cat ...
+                         (one output, always)
+```
+
+Symptoms: output images look identical regardless of input noise $z$; FID score is high (generated images are not diverse).
+
+### Wasserstein GAN (WGAN)
+
+Standard GAN training is equivalent to minimising Jensen-Shannon divergence between $p_{\text{data}}$ and $p_G$. When the two distributions have disjoint support (common early in training), JS divergence is constant at $\log 2$ — zero gradient, no learning.
+
+**WGAN** replaces JS divergence with the **Earth Mover's (Wasserstein-1) distance**:
+
+$$W(p_{\text{data}}, p_G) = \sup_{\|f\|_L \leq 1} \mathbb{E}_{x \sim p_{\text{data}}}[f(x)] - \mathbb{E}_{x \sim p_G}[f(x)]$$
+
+$f$ is a 1-Lipschitz function — the **critic** (no longer a classifier; it outputs a real-valued score, not a probability). A higher critic score means "more real."
+
+Wasserstein distance provides a **smooth, meaningful gradient** even when distributions are far apart, leading to more stable training and better correlation between critic loss and sample quality.
+
+**Enforcing the Lipschitz constraint:**
+
+- **Weight clipping** (original WGAN): clip all critic weights to $[-c, c]$ after each update. Simple but constrains the critic's capacity.
+- **Gradient penalty** (WGAN-GP, preferred): add $\lambda \cdot \mathbb{E}_{\hat{x}}[(\|\nabla_{\hat{x}} D(\hat{x})\|_2 - 1)^2]$ to the critic loss, where $\hat{x}$ is sampled along straight lines between real and generated samples. More stable and no capacity loss.
+
+```python
+  # WGAN-GP gradient penalty (conceptual)
+  alpha = torch.rand(batch_size, 1, 1, 1)
+  x_hat = alpha * real + (1 - alpha) * fake
+  grad = autograd.grad(critic(x_hat).sum(), x_hat)[0]
+  gp = ((grad.norm(2, dim=1) - 1) ** 2).mean()
+  critic_loss = -real_scores.mean() + fake_scores.mean() + lambda_gp * gp
+```
+
+### GAN vs Diffusion Models
+
+| Aspect | GAN | Diffusion |
+|--------|-----|-----------|
+| Generation speed | Single forward pass (fast) | 50–1000 denoising steps (slow) |
+| Training stability | Notoriously unstable | Stable (simple regression loss) |
+| Mode coverage | Often drops modes | Strong mode coverage |
+| Image quality | High, but artifacts | State-of-the-art (DALL-E 3, SD) |
+| Controllability | Harder (requires conditioning tricks) | Natural (via classifier-free guidance) |
+| Current dominance | Largely replaced for image gen | Dominant (2022–present) |
+
+GANs remain competitive for **video generation** and real-time applications where single-pass synthesis matters.
+
+---
+
 # PART 6: SPECIALIZED ARCHITECTURES
 
 ---
@@ -1804,8 +2039,21 @@ TRANSFORMERS & LLMs
   RLHF = SFT → Reward Model → PPO (with KL penalty to stay on track)
   RAG = retrieve relevant documents → add to prompt → generate
 
+RECURRENT ARCHITECTURES
+  LSTM gates: forget fₜ, input iₜ, output oₜ; cell state Cₜ = highway for gradients
+  GRU: 2 gates (update zₜ, reset rₜ); fewer params, similar quality to LSTM
+  Prefer Transformers for new NLP; use LSTM/GRU for streaming/low-latency tasks
+
+POSITIONAL ENCODINGS
+  Sinusoidal: PE(pos,2i)=sin(pos/10000^(2i/d)); fixed, generalises to unseen lengths
+  Learned: BERT/GPT-2; simple, but cannot extrapolate beyond training max length
+  RoPE: rotates Q,K by position angle → relative-position attention; LLaMA/Gemini
+  ALiBi: linear bias on attention logits; excellent length extrapolation; no vectors
+
 GENERATIVE MODELS
   VAE = encode to distribution, not a point; reparameterization trick
+  GAN = Generator vs Discriminator; minimax objective; mode collapse risk
+  WGAN = Wasserstein distance + critic + gradient penalty → stable GAN training
   Diffusion = learn to reverse noise → DALL-E, Stable Diffusion, Midjourney
   CLIP = image + text trained together → zero-shot classification
 
@@ -1843,4 +2091,4 @@ DEBUGGING (in order)
 
 ---
 
-**Previous:** [Chapter 11 — Model Evaluation](14_model_evaluation.md)
+**Previous:** [Chapter 14 — Model Evaluation](14_model_evaluation.md) | **Next:** [Chapter 16 — Large Language Models](16_llm.md)
