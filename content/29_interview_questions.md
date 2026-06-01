@@ -1,4 +1,4 @@
-# Chapter 27 — ML Interview Questions
+# Chapter 29 — ML Interview Questions
 
 > Covering Data Science & AI Engineer positions at the world's top AI companies.
 
@@ -61,9 +61,10 @@
 | 3 | Deep Learning | Q26 – Q35 |
 | 4 | Data, Features & Evaluation | Q36 – Q42 |
 | 5 | ML System Design | Q43 – Q48 |
-| 6 | Google-Specific | Q49 – Q53 |
-| 7 | Amazon-Specific | Q54 – Q58 |
-| 8 | OpenAI-Specific | Q59 – Q63 |
+| 6 | Ranking & Retrieval Metrics | Q49 |
+| 7 | Google-Specific | Q50 – Q54 |
+| 8 | Amazon-Specific | Q55 – Q59 |
+| 9 | OpenAI-Specific | Q60 – Q64 |
 
 ---
 
@@ -2008,6 +2009,161 @@ AI systems actually do what we MEAN, not just what we technically asked for.
   scale with capability. A technique that works for GPT-4 may fail
   for a hypothetical GPT-100. This is the research frontier.
 ```
+
+---
+
+# PART 6 — Ranking & Retrieval Metrics
+
+---
+
+### Q49. What are NDCG, MRR, and MAP? Why do Search, Ads, and YouTube use ranking metrics instead of accuracy?
+*[All] | ★★★*
+
+**Simple Answer:**
+Accuracy asks "did the model get it right?" Ranking metrics ask "did the model put the right thing at the top?" For a search engine or recommendation system, getting the right result at position 1 is far more valuable than getting it at position 100. A classifier's accuracy does not capture this; NDCG, MRR, and MAP do.
+
+```
+  WHY RANKING METRICS MATTER:
+  ─────────────────────────────────────────────────────────────────
+  Scenario: Google returns 10 results for your query.
+  The relevant page is result #1 vs result #9.
+  Accuracy says: both are "correct" (relevant page returned).
+  NDCG says:     first case is ~3× better than the second.
+
+  Google, YouTube, Amazon Ads, Spotify — every system where
+  the user only looks at the top few results MUST use a metric
+  that rewards ranking relevant items higher.
+```
+
+**Official Definition:**
+> **NDCG (Normalized Discounted Cumulative Gain)**, **MRR (Mean Reciprocal Rank)**, and
+> **MAP (Mean Average Precision)** are information retrieval metrics that assess the quality
+> of a ranked list rather than a binary classification. They are the standard offline
+> evaluation metrics for Search, Ads Ranking, Recommendation, and Question Answering systems.
+
+**Interview Answer:**
+
+**1. DCG and NDCG**
+
+```
+  DCG@k (Discounted Cumulative Gain at rank k):
+  ─────────────────────────────────────────────
+               k      rel_i
+  DCG@k  =   Σ    ─────────────
+              i=1   log₂(i + 1)
+
+  rel_i  = relevance score of item at rank i
+           (binary: 0 or 1; or graded: 0, 1, 2, 3)
+  log₂(i+1) = discount — items lower in the list contribute less
+
+  WORKED EXAMPLE (k = 4, binary relevance: 1=relevant, 0=not):
+  ─────────────────────────────────────────────────────────────
+  Rank 1: relevant   (rel=1)  →  1   / log₂(2) = 1   / 1.00 = 1.000
+  Rank 2: not        (rel=0)  →  0   / log₂(3) = 0   / 1.58 = 0.000
+  Rank 3: relevant   (rel=1)  →  1   / log₂(4) = 1   / 2.00 = 0.500
+  Rank 4: relevant   (rel=1)  →  1   / log₂(5) = 1   / 2.32 = 0.431
+  DCG@4 = 1.000 + 0 + 0.500 + 0.431 = 1.931
+
+  Ideal ranking (all relevant items first):
+  Rank 1: rel=1 → 1.000
+  Rank 2: rel=1 → 0.631
+  Rank 3: rel=1 → 0.500
+  Rank 4: rel=0 → 0.000
+  IDCG@4 = 1.000 + 0.631 + 0.500 = 2.131
+
+  NDCG@4 = DCG@4 / IDCG@4 = 1.931 / 2.131 = 0.906
+
+  NDCG ranges 0–1. NDCG=1 means perfect ranking.
+  Normalizing by IDCG allows comparing across queries with
+  different numbers of relevant documents.
+```
+
+**2. MRR (Mean Reciprocal Rank)**
+
+```
+  MRR focuses on a single key item: the FIRST relevant result.
+  ─────────────────────────────────────────────────────────────
+  For each query q, find the rank r_q of the first relevant result:
+
+  MRR = (1/|Q|) × Σ_q (1 / r_q)
+
+  EXAMPLE (3 queries):
+  Query 1: first relevant at rank 1  →  1/1  = 1.000
+  Query 2: first relevant at rank 3  →  1/3  = 0.333
+  Query 3: first relevant at rank 2  →  1/2  = 0.500
+
+  MRR = (1.000 + 0.333 + 0.500) / 3 = 0.611
+
+  Best for: single-answer QA ("what is the capital of France?"),
+  navigational queries, fact lookups — where there is ONE right answer
+  and you care only about finding it fast.
+```
+
+**3. MAP (Mean Average Precision)**
+
+```
+  AP (Average Precision) for a single query:
+  ─────────────────────────────────────────────────────────────
+  For each position k where a relevant item appears:
+    - Compute Precision@k = (# relevant in top-k) / k
+  Average these Precision@k values across all relevant positions.
+
+  EXAMPLE (5 results, relevant items marked ✓):
+  Rank 1: ✓  Precision@1 = 1/1 = 1.000
+  Rank 2: ✗
+  Rank 3: ✓  Precision@3 = 2/3 = 0.667
+  Rank 4: ✗
+  Rank 5: ✓  Precision@5 = 3/5 = 0.600
+
+  AP = (1.000 + 0.667 + 0.600) / 3 = 0.756
+  (denominator = total number of relevant items = 3)
+
+  MAP = mean of AP across all queries in the test set.
+
+  Best for: document retrieval where ALL relevant items matter
+  (e.g., patent search, legal discovery, multi-hop QA).
+  Penalizes both missing relevant items AND bad ordering.
+```
+
+**Comparison table and when to use each:**
+
+```
+  ┌────────┬───────────────────────────────────┬──────────────────────────────────┐
+  │ Metric │ Best for                          │ Key property                      │
+  ├────────┼───────────────────────────────────┼──────────────────────────────────┤
+  │ NDCG   │ Web search, ad ranking, RecSys,   │ Supports graded relevance;       │
+  │        │ YouTube (handles graded rel.)     │ normalized → comparable queries  │
+  ├────────┼───────────────────────────────────┼──────────────────────────────────┤
+  │ MRR    │ QA systems, navigational search,  │ Only cares about the FIRST hit;  │
+  │        │ spell-check / autocomplete        │ fast to compute; easy to explain │
+  ├────────┼───────────────────────────────────┼──────────────────────────────────┤
+  │ MAP    │ Patent search, legal discovery,   │ Evaluates full ranked list;      │
+  │        │ academic IR benchmarks (TREC)     │ penalizes missed relevant docs   │
+  └────────┴───────────────────────────────────┴──────────────────────────────────┘
+
+  WHY NOT ACCURACY/AUC FOR RANKING?
+  ─────────────────────────────────────────────────────────────────
+  AUC-ROC: measures overall classifier quality across all thresholds.
+           Does not know anything about ordering — a 0.95 AUC model
+           that puts the relevant result at position 100 is useless.
+
+  Accuracy: % correct (binary). A search engine that returns 10 results
+            and gets 3 right has 30% accuracy regardless of their order.
+
+  NDCG/MAP/MRR: reward the model for putting relevant items EARLIER.
+                This is exactly what matters to users.
+
+  Google Search team:  primary offline metric is NDCG@10
+  YouTube:             NDCG with watch-time-weighted relevance
+  Amazon Ads:          NDCG (revenue-weighted relevance)
+  RAG pipelines:       Recall@K, MRR (first relevant chunk rank)
+```
+
+- NDCG is the dominant metric in industry ranking systems — supports graded relevance (critical for systems where result 1 is 10× more valuable than result 5), and normalizes across queries
+- MRR is simpler and interpretable: "on average, users need to look at 1/MRR results before finding what they want." Easy to communicate to stakeholders
+- MAP is the standard benchmark metric for classic information retrieval research (TREC tracks); less common in production where graded relevance and position weighting are preferred
+- Always specify @k (e.g., NDCG@10): users only see the top-k results, so measuring beyond k is irrelevant to user experience
+- Offline metrics (NDCG) must be validated against online metrics (CTR, dwell time, conversions) — a model with better NDCG should win A/B tests, otherwise the relevance labels are misaligned with user behavior
 
 ---
 

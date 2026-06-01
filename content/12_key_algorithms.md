@@ -146,19 +146,11 @@ When assumptions break: non-linearity means you need polynomial features or a no
 
 ### Regularized Variants
 
-$$\text{Ridge (L2):} \quad \mathcal{L} = \text{MSE} + \lambda \sum_{j=1}^{p} w_j^2$$
+Ridge adds an L2 penalty ($\lambda \sum w_j^2$) — shrinks all weights, keeps all features. Lasso adds an L1 penalty ($\lambda \sum |w_j|$) — drives some weights to exactly zero (built-in feature selection). Elastic Net combines both. The penalty strength $\lambda$ is tuned via cross-validation.
 
-$$\text{Lasso (L1):} \quad \mathcal{L} = \text{MSE} + \lambda \sum_{j=1}^{p} |w_j|$$
+→ **Full treatment of regularization mechanics: Chapter 7 §7.13 (Regularization)**
 
-$$\text{Elastic Net:} \quad \mathcal{L} = \text{MSE} + \lambda_1 \sum |w_j| + \lambda_2 \sum w_j^2$$
-
-| Variant | What it does | When to use |
-|---------|-------------|-------------|
-| **Ridge** | Shrinks all weights toward zero, keeps all features | All features likely contribute; reduce multicollinearity |
-| **Lasso** | Drives some weights to exactly 0 (feature selection) | Many irrelevant features; want automatic sparsity |
-| **Elastic Net** | Combines L1 + L2 | Correlated feature groups; want selection + stability |
-
-The penalty strength $\lambda$ is the single most important hyperparameter. Higher $\lambda$ = simpler model. Always tune via cross-validation.
+The chart below shows how test MSE changes with $\lambda$ for a linear regression problem — the U-shape confirms that both under-regularization (overfitting) and over-regularization (underfitting) hurt.
 
 ```chart
 {
@@ -281,11 +273,11 @@ Properties that make it useful:
 
 ### The Loss Function — Binary Cross-Entropy
 
-You cannot use MSE for classification — the loss surface would be non-convex with many local minima. Instead:
+MSE cannot be used for classification — it produces a non-convex loss surface. Binary cross-entropy is convex (gradient descent finds the global minimum) and punishes confident wrong answers severely:
 
 $$\mathcal{L} = -\frac{1}{n}\sum_{i=1}^{n} \left[ y_i \log(\hat{p}_i) + (1 - y_i) \log(1 - \hat{p}_i) \right]$$
 
-When the true label $y = 1$, the loss is $-\log(\hat{p})$ — it punishes low predicted probabilities. When $y = 0$, the loss is $-\log(1 - \hat{p})$ — it punishes high predicted probabilities. This function is convex, so gradient descent finds the global minimum.
+→ **Full treatment of loss functions: Chapter 7 §7.8 (Loss Functions)**
 
 ### Worked Example — Spam Detection
 
@@ -1749,4 +1741,4 @@ Use LightGBM — it trains fast on large datasets (histogram-based, leaf-wise gr
 
 ---
 
-**Previous:** [Chapter 8 — Reinforcement Learning](11_reinforcement_learning.md) | **Next:** [Chapter 10 — Neural Networks](13_neural_networks.md)
+**Previous:** [Chapter 11 — Reinforcement Learning](11_reinforcement_learning.md) | **Next:** [Chapter 13 — Neural Networks](13_neural_networks.md)

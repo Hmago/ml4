@@ -729,4 +729,4 @@ Try to answer these without scrolling up. Then check your answers.
 
 ---
 
-**Next:** [Chapter 4 — Core Concepts & Terminology](07_core_concepts.md)
+**Next:** [Chapter 7 — Core Concepts & Terminology](07_core_concepts.md)

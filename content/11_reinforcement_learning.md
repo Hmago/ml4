@@ -2,7 +2,7 @@
 
 ---
 
-## 8.1 What is Reinforcement Learning?
+## 11.1 What is Reinforcement Learning?
 
 > **Reinforcement Learning (RL)** is a branch of machine learning in which an agent learns to make sequential decisions by interacting with an environment, receiving reward signals, and adjusting its behaviour to maximise cumulative long-term reward.
 
@@ -26,7 +26,7 @@ The loop is deceptively simple: observe state, take action, receive reward, repe
 
 ---
 
-## 8.2 Core Components
+## 11.2 Core Components
 
 > **The six primitives of any RL problem are: Agent, Environment, State, Action, Reward, and Policy.**
 
@@ -63,7 +63,7 @@ The loop is deceptively simple: observe state, take action, receive reward, repe
 
 ---
 
-## 8.3 Markov Decision Processes (MDPs)
+## 11.3 Markov Decision Processes (MDPs)
 
 > **A Markov Decision Process is a mathematical framework for modelling sequential decision-making where outcomes are partly random and partly under the agent's control. It is defined by the tuple $(S, A, P, R, \gamma)$.**
 
@@ -98,7 +98,7 @@ MDP example — simple grid world:
 
 ---
 
-## 8.4 Policies and Value Functions
+## 11.4 Policies and Value Functions
 
 > **A policy $\pi$ maps states to actions. A value function estimates how good it is — in terms of expected cumulative reward — to be in a given state (or to take a given action in a given state).**
 
@@ -157,7 +157,7 @@ If you know $Q^*$, the optimal policy is trivial: always pick $\arg\max_a Q^*(s,
 
 ---
 
-## 8.5 Exploration vs Exploitation
+## 11.5 Exploration vs Exploitation
 
 > **The exploration-exploitation dilemma is the fundamental tension in RL: should the agent exploit its current best-known action, or explore other actions that might yield higher long-term reward?**
 
@@ -228,7 +228,7 @@ Temperature $\tau$ controls randomness: high $\tau$ is nearly uniform, low $\tau
 
 ---
 
-## 8.6 The Bellman Equation
+## 11.6 The Bellman Equation
 
 > **The Bellman equation expresses the value of a state as the immediate reward plus the discounted value of the successor state. It is the recursive foundation of nearly all RL algorithms.**
 
@@ -271,7 +271,7 @@ Grid world (deterministic transitions):
 
 ---
 
-## 8.7 Q-Learning
+## 11.7 Q-Learning
 
 > **Q-Learning is an off-policy, model-free RL algorithm that learns the optimal action-value function $Q^*$ by iteratively applying a sample-based Bellman update.**
 
@@ -391,7 +391,7 @@ for episode in range(num_episodes):
 
 ---
 
-## 8.8 Deep Q-Networks (DQN)
+## 11.8 Deep Q-Networks (DQN)
 
 > **A Deep Q-Network replaces the Q-table with a neural network that approximates $Q(s, a; \theta)$, enabling Q-learning to scale to high-dimensional state spaces like raw pixel inputs.**
 
@@ -444,7 +444,7 @@ flowchart TD
 
 ---
 
-## 8.9 Policy Gradient Methods
+## 11.9 Policy Gradient Methods
 
 > **Policy gradient methods directly parameterise the policy $\pi_\theta(a|s)$ and optimise it by ascending the gradient of expected cumulative reward with respect to the policy parameters $\theta$.**
 
@@ -494,11 +494,11 @@ for episode in range(num_episodes):
     optimizer.step()
 ```
 
-**Weakness:** High variance. The returns $G_t$ can swing wildly between episodes, making gradients noisy. This motivates actor-critic methods (Section 8.10).
+**Weakness:** High variance. The returns $G_t$ can swing wildly between episodes, making gradients noisy. This motivates actor-critic methods (Section 11.10).
 
 ---
 
-## 8.10 Actor-Critic Methods
+## 11.10 Actor-Critic Methods
 
 > **Actor-critic methods combine policy gradient (actor) with a learned value function (critic). The critic reduces variance in the policy gradient estimate by providing a baseline, yielding faster and more stable learning.**
 
@@ -585,7 +585,7 @@ Where $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ is
 
 ---
 
-## 8.11 Multi-Armed Bandits
+## 11.11 Multi-Armed Bandits
 
 > **The multi-armed bandit problem is the simplest RL setting: a single state, $k$ possible actions (arms), each with an unknown reward distribution. The goal is to maximise total reward over $T$ pulls.**
 
@@ -660,7 +660,7 @@ There is no state transition — the agent just repeatedly picks an arm and obse
 
 ---
 
-## 8.12 Model-Based vs Model-Free RL
+## 11.12 Model-Based vs Model-Free RL
 
 > **Model-free methods learn a policy or value function directly from experience without modelling environment dynamics. Model-based methods learn a model of the environment (transition and reward functions) and use it for planning.**
 
@@ -697,7 +697,7 @@ In practice, the most impressive RL results (AlphaGo, MuZero) often combine both
 
 ---
 
-## 8.13 Famous RL Milestones
+## 11.13 Famous RL Milestones
 
 > **RL has produced some of the most dramatic demonstrations of AI capability, from mastering ancient board games to training the language models you interact with daily.**
 
@@ -753,7 +753,7 @@ AlphaZero went further: zero human data, pure self-play. It learned chess, Go, a
 
 ---
 
-## 8.14 RLHF — Training LLMs with Human Feedback
+## 11.14 RLHF — Training LLMs with Human Feedback
 
 > **Reinforcement Learning from Human Feedback (RLHF) is a technique for aligning language models with human preferences by training a reward model on human comparisons and then optimising the LLM policy against that reward model using PPO.**
 
@@ -838,7 +838,7 @@ DPO is simpler to implement (no reward model, no PPO loop) and has become increa
 
 ---
 
-## 8.15 When to Use RL
+## 11.15 When to Use RL
 
 > **RL is most appropriate for sequential decision-making problems with clear reward signals and available simulators. It is overkill for pattern recognition tasks where supervised learning suffices.**
 
@@ -980,4 +980,4 @@ Model-free (e.g., DQN, PPO): learns directly from experience without modelling e
 
 ---
 
-**Previous:** [Chapter 7 — Unsupervised Learning](10_unsupervised_learning.md) | **Next:** [Chapter 9 — Key Algorithms Deep Dive](12_key_algorithms.md)
+**Previous:** [Chapter 10 — Unsupervised Learning](10_unsupervised_learning.md) | **Next:** [Chapter 12 — Key Algorithms Deep Dive](12_key_algorithms.md)

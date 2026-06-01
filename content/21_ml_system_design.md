@@ -1,4 +1,4 @@
-# Chapter 19 — ML System Design (Google)
+# Chapter 21 — ML System Design (Google)
 
 > "At Google, system design is not about memorizing architectures — it's about demonstrating structured thinking at scale."
 
@@ -16,28 +16,27 @@ Every section is written with a single goal: prepare you to walk into a 45-minut
 
 | Section | Topic | Key Concepts |
 |---------|-------|--------------|
-| 17.1 | The ML System Design Framework | 6-step structure, time management, scoring rubric, anti-patterns |
-| 17.2 | Problem Framing & Metrics | Business-to-ML translation, offline/online metrics, metric disagreement |
-| 17.3 | Data & Feature Engineering at Scale | Labels, data quality, feature categories, feature stores, training-serving skew |
-| 17.4 | Model Selection & Training | Baselines, two-tower, Wide & Deep, DCN, multi-stage pipelines, distributed training |
-| 17.5 | Evaluation & A/B Testing | Time-based splits, experiment design, guardrails, interleaving |
-| 17.6 | Model Serving & Infrastructure | Batch vs real-time, latency budgets, compression, ANN search, ScaNN |
-| 17.7 | Monitoring & Maintenance | Data drift, concept drift, retraining triggers, canary releases |
-| 17.8 | Responsible AI in System Design | Bias detection, fairness constraints, content safety, explainability |
-| 17.9 | Full Design: Recommendation System | YouTube-scale recommendations end to end |
-| 17.10 | Full Design: Search Ranking | Google Search-style ranking pipeline |
-| 17.11 | Full Design: Fraud Detection | Payment fraud detection at scale |
-| 17.12 | Full Design: Content Moderation | Detecting harmful content across text, image, and video |
-| 17.13 | Full Design: Ads Click Prediction | Predicting ad clicks for billions of impressions |
-| 17.14 | Full Design: Notification System | Deciding what to send, when, and to whom |
-| 17.15 | Full Design: RAG-Based Enterprise Search | Retrieval-augmented generation at production scale |
-| 17.16 | Trade-offs Cheat Sheet | Common trade-offs interviewers push on |
-| 17.17 | Interview Tips & Anti-Patterns | What to do and what to avoid |
-| 17.18 | Quick Reference | Frameworks, metrics, and checklists |
+| 21.1 | The ML System Design Framework | 6-step structure, time management, scoring rubric, anti-patterns |
+| 21.2 | Problem Framing & Metrics | Business-to-ML translation, offline/online metrics, metric disagreement |
+| 21.3 | Data & Feature Engineering at Scale | Labels, data quality, feature categories, feature stores, training-serving skew |
+| 21.4 | Model Selection & Training | Baselines, two-tower, Wide & Deep, DCN, multi-stage pipelines, distributed training |
+| 21.5 | Evaluation & A/B Testing | Time-based splits, experiment design, guardrails, interleaving |
+| 21.6 | Model Serving & Infrastructure | Batch vs real-time, latency budgets, compression, ANN search, ScaNN |
+| 21.7 | Monitoring & Maintenance | Data drift, concept drift, retraining triggers, canary releases |
+| 21.8 | Responsible AI in System Design | Bias detection, fairness constraints, content safety, explainability |
+| 21.9 | Full Design: Video Recommendation | YouTube-scale recommendations end to end |
+| 21.10 | Full Design: Search Ranking | Google Search-style ranking pipeline |
+| 21.11 | Full Design: Fraud Detection | Real-time payment fraud detection at scale |
+| 21.12 | Full Design: Content Moderation | Detecting harmful content across text, image, and video |
+| 21.13 | Full Design: LLM-Powered Conversational AI | Production RAG + conversational assistant (2026) |
+| 21.14 | Full Design: Ads Click Prediction | Predicting ad clicks for billions of impressions |
+| 21.15 | Full Design: Real-Time Personalization | Low-latency on-the-fly personalization |
+| 21.16 | Trade-Offs Cheat Sheet | Common trade-offs interviewers push on |
+| 21.17 | Interview Questions & Answers | Deep-dive follow-ups interviewers actually ask |
 
 ---
 
-# 17.1 The ML System Design Framework
+# 21.1 The ML System Design Framework
 
 Every Google ML system design interview follows the same arc: the interviewer gives you an open-ended problem — "Design YouTube recommendations," "Build a fraud detection system," "Create a notification relevance ranker" — and watches how you decompose it. The candidates who succeed are the ones who follow a clear structure instead of jumping straight to "use a transformer."
 
@@ -84,23 +83,23 @@ Before you design anything, demonstrate that you think before you build. Ask cla
 
 ### Step 2 — Metrics (5 minutes)
 
-Define both offline metrics (how you evaluate the model before launch) and online metrics (how you measure success in production). More detail in Section 17.2.
+Define both offline metrics (how you evaluate the model before launch) and online metrics (how you measure success in production). More detail in Section 21.2.
 
 ### Step 3 — Data & Features (8 minutes)
 
-Describe what data you need, how you get labels, what features you engineer, and how you serve those features at scale. This is where Google interviewers probe for practical experience. More detail in Section 17.3.
+Describe what data you need, how you get labels, what features you engineer, and how you serve those features at scale. This is where Google interviewers probe for practical experience. More detail in Section 21.3.
 
 ### Step 4 — Model Architecture (10 minutes)
 
-Start with a simple baseline, then layer on complexity with justification. Show the multi-stage pipeline pattern (candidate generation → ranking → re-ranking) that Google uses across Search, YouTube, and Ads. More detail in Section 17.4.
+Start with a simple baseline, then layer on complexity with justification. Show the multi-stage pipeline pattern (candidate generation → ranking → re-ranking) that Google uses across Search, YouTube, and Ads. More detail in Section 21.4.
 
 ### Step 5 — Serving & Infrastructure (10 minutes)
 
-How do predictions reach users? Discuss batch vs. real-time, latency budgets, model compression, and caching. This is where you demonstrate systems thinking. More detail in Section 17.6.
+How do predictions reach users? Discuss batch vs. real-time, latency budgets, model compression, and caching. This is where you demonstrate systems thinking. More detail in Section 21.6.
 
 ### Step 6 — Monitoring & Iteration (7 minutes)
 
-How do you know the system still works next month? Discuss drift detection, retraining, feedback loops, and safe deployment. More detail in Section 17.7.
+How do you know the system still works next month? Discuss drift detection, retraining, feedback loops, and safe deployment. More detail in Section 21.7.
 
 ---
 
@@ -153,7 +152,7 @@ Google uses a structured rubric. Each dimension is scored independently:
 
 ---
 
-# 17.2 Problem Framing & Metrics
+# 21.2 Problem Framing & Metrics
 
 The first thing you say in an ML system design interview defines the trajectory of the entire conversation. Get the problem framing wrong and every subsequent decision — data, model, serving — compounds the error. Get it right and the rest of the interview flows naturally.
 
@@ -310,7 +309,7 @@ Common causes:
 
 ---
 
-# 17.3 Data & Feature Engineering at Scale
+# 21.3 Data & Feature Engineering at Scale
 
 Data is the foundation of every ML system. At Google, data decisions often matter more than model decisions — a simple model trained on clean, well-labeled data at scale will outperform a complex model trained on noisy, biased data. This section covers how production ML systems collect data, ensure quality, and engineer features that serve predictions to billions of users.
 
@@ -507,7 +506,7 @@ Common sources of skew:
 
 ---
 
-# 17.4 Model Selection & Training
+# 21.4 Model Selection & Training
 
 In a system design interview, model selection is where candidates either demonstrate depth or reveal that they only know buzzwords. The key principle: **always start simple, then add complexity with justification.**
 
@@ -690,7 +689,7 @@ If your training data includes position as an implicit feature, your model learn
 
 ---
 
-# 17.5 Evaluation & A/B Testing
+# 21.5 Evaluation & A/B Testing
 
 An ML model is only as valuable as your ability to prove it works. Offline evaluation tells you whether a model is *likely* better. Online evaluation (A/B testing) tells you whether it *actually is* better — in the real world, with real users, at real scale.
 
@@ -818,7 +817,7 @@ A/B tests typically run for 1-4 weeks. But some effects only appear over months:
 
 ---
 
-# 17.6 Model Serving & Infrastructure
+# 21.6 Model Serving & Infrastructure
 
 A model that cannot serve predictions within latency budgets is a model that does not exist. Serving is where ML meets systems engineering, and Google interviewers probe deeply here — they want to know you can build systems that handle billions of requests per day with millisecond response times.
 
@@ -958,7 +957,7 @@ Caching is essential at Google scale. Common patterns:
 
 ---
 
-# 17.7 Monitoring & Maintenance
+# 21.7 Monitoring & Maintenance
 
 Deploying a model is not the finish line — it is the starting line. Models degrade over time as the world changes around them. The difference between a prototype and a production system is monitoring.
 
@@ -1032,7 +1031,7 @@ The pipeline flows: **Offline Eval → Shadow Deployment → Canary (1-5%) → G
 
 ---
 
-# 17.8 Responsible AI in System Design
+# 21.8 Responsible AI in System Design
 
 Responsible AI is no longer a "nice-to-have" section you mention in the last 30 seconds of an interview. At Google, especially after the high-profile Gemini incidents in early 2024, Responsible AI is embedded in the design process from day one. Interviewers expect you to proactively raise fairness, bias, and safety concerns — not wait to be asked.
 
@@ -1131,10 +1130,10 @@ Google publishes AI Principles that are directly relevant to system design inter
 
 ---
 
-**Next sections (17.9-17.18)** cover full end-to-end system designs — Recommendation Systems, Search Ranking, Fraud Detection, Content Moderation, Ads Click Prediction, Notification Systems, RAG-Based Enterprise Search — plus the Trade-offs Cheat Sheet, Interview Tips, and Quick Reference.
+**Next sections (21.9-21.17)** cover full end-to-end system designs — Video Recommendation, Search Ranking, Fraud Detection, Content Moderation, LLM-Powered Conversational AI, Ads Click Prediction, and Real-Time Personalization — plus the Trade-Offs Cheat Sheet and Interview Questions & Answers.
 
 ---
-## 17.9 Full Design: Video Recommendation (YouTube-scale)
+## 21.9 Full Design: Video Recommendation (YouTube-scale)
 
 The core challenge is surfacing relevant videos from a corpus of 800M+ items to hundreds of millions of users, each with distinct taste profiles, in under 300ms.
 
@@ -1226,7 +1225,7 @@ The ranked list is post-processed before serving:
 
 ---
 
-## 17.10 Full Design: Search Ranking (Google-scale)
+## 21.10 Full Design: Search Ranking (Google-scale)
 
 Web search ranking must return the most relevant results from an index of hundreds of billions of pages in under 200ms end-to-end, including network latency.
 
@@ -1320,7 +1319,7 @@ Breaking news queries require fresh results within minutes. A freshness classifi
 
 ---
 
-## 17.11 Full Design: Fraud Detection (Real-time)
+## 21.11 Full Design: Fraud Detection (Real-time)
 
 Financial fraud detection operates under extreme constraints: class imbalance (0.1% positive rate), real-time latency requirements (<100ms per transaction), adversarial actors who constantly adapt, and the high cost of both false positives (customer friction) and false negatives (financial loss).
 
@@ -1410,7 +1409,7 @@ Solution: three-tier decision with separate thresholds:
 
 ---
 
-## 17.12 Full Design: Content Moderation (Multi-modal)
+## 21.12 Full Design: Content Moderation (Multi-modal)
 
 Content moderation at platform scale (YouTube, Instagram) must process billions of uploads across video, image, audio, and text — detecting policy violations while minimizing over-removal of legitimate content.
 
@@ -1485,7 +1484,7 @@ The same content may be acceptable in news reporting but violating in entertainm
 
 ---
 
-## 17.13 Full Design: LLM-Powered Conversational AI (2026)
+## 21.13 Full Design: LLM-Powered Conversational AI (2026)
 
 Modern conversational AI systems go beyond simple chatbots. They combine retrieval-augmented generation (RAG), tool use via function calling, and multi-turn reasoning — while maintaining safety guardrails and factual accuracy.
 
@@ -1585,7 +1584,7 @@ Conversational AI lacks clean ground-truth labels. Evaluation combines:
 
 ---
 
-## 17.14 Full Design: Ads Click Prediction
+## 21.14 Full Design: Ads Click Prediction
 
 Click prediction is the economic engine of Google Ads. The model predicts the probability that a user clicks an ad given a query, and this probability feeds directly into the ad auction. Even a 0.1% improvement in prediction accuracy translates to billions in revenue.
 
@@ -1674,7 +1673,7 @@ The ad rank is computed as: `bid × P(click) × quality_score`. The actual cost-
 
 ---
 
-## 17.15 Full Design: Real-Time Personalization
+## 21.15 Full Design: Real-Time Personalization
 
 A homepage (Google Discover, YouTube homepage, e-commerce landing page) must assemble a personalized feed incorporating live user signals — a click that happened 10 seconds ago should immediately influence what appears next.
 
@@ -1743,7 +1742,7 @@ The final feed is not just a ranked list — it is a two-dimensional layout with
 
 ---
 
-## 17.16 Trade-Offs Cheat Sheet
+## 21.16 Trade-Offs Cheat Sheet
 
 Every ML system design involves tradeoffs. This table summarizes the most common ones and when to choose each side.
 
@@ -1791,7 +1790,7 @@ Every ML system design involves tradeoffs. This table summarizes the most common
 
 ---
 
-## 17.17 Interview Questions & Answers
+## 21.17 Interview Questions & Answers
 
 ### Q1: Design a video recommendation system. Walk through the key components.
 
@@ -2095,4 +2094,4 @@ Traditional ML evaluation compares predictions against known ground-truth labels
 
 ---
 
-**Previous:** [Chapter 14 — Design Fundamentals](18_design_fundamentals.md) | **Next:** [Chapter 18 — DSA & ML Coding](25_dsa_coding.md)
+**Previous:** [Chapter 20 — Design Fundamentals](20_design_fundamentals.md) | **Next:** [Chapter 22 — Modern System Design](22_modern_system_design.md)

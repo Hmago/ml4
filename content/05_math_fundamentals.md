@@ -18,10 +18,10 @@ Every math concept you need for ML and AI — from vectors to backpropagation, f
 
 | Part | Topic | Key Concepts |
 |------|-------|--------------|
-| 1 | Linear Algebra | Vectors, matrices, dot product, matrix multiplication, norms, eigenvalues, SVD, PCA |
+| 1 | Linear Algebra | Vectors, matrices, dot product, matrix multiplication, norms, eigenvalues, SVD, PCA, scaled dot-product & multi-head attention |
 | 2 | Calculus | Derivatives, partial derivatives, chain rule, gradients, backpropagation |
-| 3 | Probability & Statistics | Distributions, Bayes' theorem, expected value, variance, correlation, CLT, MLE, hypothesis testing |
-| 4 | Optimization | Gradient descent, learning rate, momentum, Adam, regularization |
+| 3 | Probability & Statistics | Distributions, Bayes' theorem, expected value, variance, correlation, CLT, MLE, hypothesis testing, bias–variance decomposition |
+| 4 | Optimization | Gradient descent, learning rate, momentum, Adam, AdamW, regularization, batch norm & layer norm |
 | 5 | Information Theory | Entropy, cross-entropy, KL divergence |
 | 6 | Numerical Methods | Floating point, log-sum-exp trick, mixed precision |
 | 7 | Quick Reference | All formulas in one table |
@@ -477,6 +477,66 @@ Keep just 1 dimension. Drop from 2D to 1D. Lose only $2\%$ of info.
 - Visualize high-dimensional data (project to 2D for plotting)
 - Remove noise (small eigenvalues $=$ noise)
 - Face recognition (Eigenfaces)
+
+---
+
+## 1.7 Scaled Dot-Product & Multi-Head Attention ★★★
+
+Attention is a weighted sum of values, where the weights are determined by the compatibility between a query and a set of keys.
+
+**Scaled dot-product attention:**
+
+$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$
+
+**Q / K / V — what they are:**
+
+| Matrix | Stands for | Role |
+|--------|-----------|------|
+| $Q$ | Queries | "What am I looking for?" — the current token asking a question |
+| $K$ | Keys | "What do I contain?" — every token advertising its content |
+| $V$ | Values | "What should I return?" — the actual information to aggregate |
+
+All three are linear projections of the same input (or encoder/decoder inputs for cross-attention). For a sequence of $n$ tokens with model dimension $d_\text{model}$, $Q, K, V \in \mathbb{R}^{n \times d_k}$.
+
+**Why divide by $\sqrt{d_k}$:**
+
+The raw dot product $QK^T$ has entries that are sums of $d_k$ products of independent unit-variance random variables, so each entry has variance $d_k$. Dividing by $\sqrt{d_k}$ rescales the variance back to $\approx 1$. Without this, large $d_k$ pushes the softmax inputs into regions where the gradient of softmax is near zero (the distribution becomes peaky), causing vanishing gradients and slow learning.
+
+**Causal vs bidirectional masking:**
+
+In causal (decoder-only) attention, the upper triangle of the $n \times n$ attention score matrix is set to $-\infty$ before softmax so each position can only attend to earlier positions; bidirectional (encoder) attention uses no mask and every position attends to all others.
+
+**Multi-head attention:**
+
+Rather than running one attention function, $h$ separate heads each learn different projections:
+
+$$\text{head}_i = \text{Attention}(QW_i^Q,\; KW_i^K,\; VW_i^V)$$
+
+$$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\,W^O$$
+
+where $W_i^Q, W_i^K, W_i^V \in \mathbb{R}^{d_\text{model} \times d_k}$ and $W^O \in \mathbb{R}^{hd_v \times d_\text{model}}$. Each head specialises in a different type of relationship (e.g., syntactic vs semantic vs positional). The heads run in parallel and their outputs are concatenated then projected back.
+
+**Worked shape example** ($d_\text{model} = 512$, $h = 8$):
+
+```
+d_k = d_v = d_model / h = 512 / 8 = 64
+
+Per head:
+  Q_i : (n × 512) × (512 × 64) → (n × 64)
+  K_i : (n × 64)   [same]
+  V_i : (n × 64)   [same]
+
+  Score matrix : (n × 64) × (64 × n) = (n × n)
+  After softmax+V: (n × 64)
+
+After concat (8 heads):
+  (n × 64) × 8 = (n × 512)
+
+After W^O (512 × 512):
+  (n × 512)    ← same shape as input, easy to stack layers
+```
+
+Compute cost is $O(n^2 d_k)$ per head — the quadratic $n^2$ term is why long-context inference is expensive and why techniques like sliding-window attention (Mistral) or linear attention exist.
 
 ---
 
@@ -1500,6 +1560,52 @@ In ML: Comparing models, A/B testing in production, validating that improvements
 
 ---
 
+## 3.8 Bias–Variance Decomposition ★★★
+
+The expected mean squared error of any estimator $\hat{f}(x)$ on a new point can be decomposed exactly into three additive terms:
+
+$$E\!\left[(y - \hat{f}(x))^2\right] = \underbrace{\left(\text{Bias}[\hat{f}(x)]\right)^2}_{\text{systematic error}} + \underbrace{\text{Var}[\hat{f}(x)]}_{\text{sensitivity to data}} + \underbrace{\sigma^2}_{\text{irreducible noise}}$$
+
+where $\text{Bias}[\hat{f}(x)] = E[\hat{f}(x)] - f(x)$ is the gap between the average prediction and the true function, $\text{Var}[\hat{f}(x)] = E[(\hat{f}(x) - E[\hat{f}(x)])^2]$ is how much the prediction fluctuates across different training sets, and $\sigma^2$ is the variance of the label noise inherent in the data-generating process — no model can eliminate it.
+
+**Derivation sketch:**
+
+Let $f = f(x)$ (true function), $\hat{f} = \hat{f}(x)$, $\bar{f} = E[\hat{f}]$, and $y = f + \varepsilon$ with $E[\varepsilon] = 0$, $\text{Var}(\varepsilon) = \sigma^2$.
+
+$$E[(y - \hat{f})^2] = E[(f + \varepsilon - \hat{f})^2]$$
+
+Expand and use $E[\varepsilon]=0$ and independence of $\varepsilon$ from $\hat{f}$:
+
+$$= (f - \bar{f})^2 + E[(\hat{f} - \bar{f})^2] + \sigma^2 = \text{Bias}^2 + \text{Variance} + \sigma^2$$
+
+**Term-by-term interpretation:**
+
+| Term | What drives it | Model behaviour |
+|------|---------------|-----------------|
+| $\text{Bias}^2$ | Model too simple to capture the true pattern | **Underfitting** — high training error and high test error |
+| $\text{Variance}$ | Model too sensitive; memorises training noise | **Overfitting** — low training error, high test error |
+| $\sigma^2$ | Noise in the labels themselves | Irreducible; sets the performance ceiling |
+
+**Tie to practice:**
+
+Increasing model capacity (more parameters, deeper network, lower regularisation) reduces bias but raises variance. Regularisation, dropout, early stopping, and ensembling all reduce variance at the cost of some added bias. The optimal model sits at the point where $\text{Bias}^2 + \text{Variance}$ is minimised — the classic bias–variance trade-off.
+
+```
+  Bias²                   high
+    │ ╲
+    │  ╲
+    │   ╲           Total Error
+    │    ╲         ╱──────────
+    │     ╲       ╱
+    │      ╲     ╱  Variance
+    │       ╲   ╱╱───────────
+    │        ╲ ╱╱
+    │         X   ← sweet spot
+    └─────────────────────────────→ model complexity
+```
+
+---
+
 # PART 4: OPTIMIZATION — MAKING MODELS LEARN ★★★
 
 ---
@@ -1662,36 +1768,47 @@ $$\theta = \theta - \text{lr} \times v_t$$
 
 ---
 
-## 4.4 Adam Optimizer ★★
+## 4.4 Adam & AdamW ★★★
 
-**Simple Explanation:**
-Adam is the "smart" optimizer that most people use. It combines two ideas:
+Adam (Adaptive Moment Estimation) maintains a per-parameter running estimate of the first moment (mean gradient) and second moment (uncentered variance), then normalises the update by the estimated standard deviation so every parameter gets an effective learning rate appropriate to its own gradient scale.
 
-1. **Momentum** — remember which direction you've been going (smooths out noise)
-2. **Adaptive rate** — give each weight its OWN learning rate. Weights that get big gradients take smaller steps. Weights that get tiny gradients take bigger steps.
+**Full Adam update (per step $t$):**
 
-It's like having a personal trainer for each of your billions of weights. Some weights need gentle coaching, others need a big push.
+```
+m_t = β₁ · m_{t-1} + (1 − β₁) · g_t          # 1st moment (momentum)
+v_t = β₂ · v_{t-1} + (1 − β₂) · g_t²          # 2nd moment (adaptive scale)
 
-**Formula:**
+m̂_t = m_t / (1 − β₁ᵗ)                          # bias-corrected
+v̂_t = v_t / (1 − β₂ᵗ)                          # bias-corrected
 
-$$\theta = \theta - \text{lr} \times \frac{\hat{m}}{\sqrt{\hat{v}} + \epsilon}$$
+θ_t = θ_{t-1} − lr · m̂_t / (√v̂_t + ε)
+```
 
-| Setting | Default | What it controls |
-|---------|---------|-----------------|
-| learning_rate | $0.001$ | Overall step size |
-| $\beta_1$ | $0.9$ | How much to remember past direction (momentum) |
-| $\beta_2$ | $0.999$ | How much to remember past step sizes (adaptive rates) |
-| $\epsilon$ | $10^{-8}$ | Tiny number to prevent dividing by zero |
+| Hyperparameter | Default | Role |
+|---------------|---------|------|
+| $\beta_1$ | $0.9$ | Momentum decay — how much to remember past gradient direction |
+| $\beta_2$ | $0.999$ | Variance decay — how much to remember past squared gradients |
+| $\epsilon$ | $10^{-8}$ | Numerical stability; prevents division by zero |
 
-**Why Adam is great:**
-- Adaptive: each parameter gets its own learning rate
-- Momentum: smooths noisy gradients
-- Works out of the box with default settings
-- Used for training GPT, BERT, LLaMA, most LLMs
+Bias-correction divides by $(1 - \beta^t)$ to undo the initialisation-to-zero bias that would otherwise make early steps too small.
+
+**AdamW — decoupled weight decay:**
+
+Vanilla Adam applies L2 regularisation by adding $\lambda\theta$ to the gradient before the moment update. This folds weight decay into the adaptive scaling, so parameters with large gradients (and therefore small effective learning rates) receive proportionally weaker weight decay — the opposite of what is intended. AdamW fixes this by applying weight decay directly to the parameters, outside the gradient path:
+
+$$\theta_t = \theta_{t-1} - \text{lr} \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon} - \text{lr} \cdot \lambda \cdot \theta_{t-1}$$
+
+The $-\text{lr} \cdot \lambda \cdot \theta$ term is a multiplicative shrink of every weight (equivalent to $\theta \leftarrow \theta \cdot (1 - \text{lr} \cdot \lambda)$). Because it bypasses the adaptive denominator, every weight receives the same proportional decay regardless of its gradient history.
+
+**Why it matters:** Decoupled weight decay consistently improves generalisation on transformers. AdamW — not vanilla Adam — is the standard optimiser for training GPT, BERT, LLaMA, Gemini, and all modern LLMs.
 
 **When to use what:**
-- **Adam/AdamW:** Default choice. Fast. Works with default params.
-- **SGD+Momentum:** Sometimes generalizes better. Needs more tuning.
+
+| Optimiser | Use case |
+|-----------|----------|
+| **AdamW** | Default for transformers and most deep learning; built-in PyTorch (`torch.optim.AdamW`) |
+| **Adam** | Acceptable for small experiments; weight decay is subtly wrong at scale |
+| **SGD + Momentum** | Sometimes better final accuracy on CNNs/ResNets with careful LR tuning |
 
 ---
 
@@ -2073,6 +2190,56 @@ Neural networks $=$ non-convex (might find a "pretty good" answer).
 
 ---
 
+## 4.7 Batch Normalization & Layer Normalization ★★★
+
+Both normalisation layers stabilise activations during training, but they differ in *which* axis they normalise over.
+
+### Batch Normalization (BatchNorm)
+
+Normalises each feature dimension across the mini-batch. For a mini-batch of $m$ samples and feature $j$:
+
+$$\mu_B^{(j)} = \frac{1}{m}\sum_{i=1}^{m} x_i^{(j)} \qquad \sigma_B^{2(j)} = \frac{1}{m}\sum_{i=1}^{m}\!\left(x_i^{(j)} - \mu_B^{(j)}\right)^2$$
+
+$$\hat{x}_i^{(j)} = \frac{x_i^{(j)} - \mu_B^{(j)}}{\sqrt{\sigma_B^{2(j)} + \varepsilon}} \qquad y_i^{(j)} = \gamma^{(j)} \hat{x}_i^{(j)} + \beta^{(j)}$$
+
+$\gamma$ and $\beta$ are learnable scale and shift parameters (one pair per feature) that let the network undo the normalisation if needed. During **training**, $\mu_B$ and $\sigma_B^2$ are computed from the current mini-batch. During **inference**, these are replaced by exponentially-smoothed running averages accumulated over training — so the output depends only on the single input, not on what else happens to be in the batch.
+
+BatchNorm is standard in CNNs (ResNet, EfficientNet) but problematic for small batches or variable-length sequences.
+
+### Layer Normalization (LayerNorm)
+
+Normalises each sample across its own feature dimension, completely independent of the rest of the batch:
+
+$$\mu^{(i)} = \frac{1}{d}\sum_{j=1}^{d} x_{ij} \qquad \sigma^{2(i)} = \frac{1}{d}\sum_{j=1}^{d}\!\left(x_{ij} - \mu^{(i)}\right)^2$$
+
+$$\hat{x}_{ij} = \frac{x_{ij} - \mu^{(i)}}{\sqrt{\sigma^{2(i)} + \varepsilon}} \qquad y_{ij} = \gamma_j \hat{x}_{ij} + \beta_j$$
+
+Because statistics are computed over the feature dimension of a single token, LayerNorm behaves identically at training and inference and scales to any batch size or sequence length. It is the standard normalisation in transformers (every pre-norm or post-norm block in GPT, BERT, and their descendants uses LayerNorm).
+
+**RMSNorm** (used by LLaMA, Gemini, and Mistral) drops the mean-subtraction step entirely, normalising only by root-mean-square: $\hat{x}_{ij} = x_{ij} / \sqrt{\frac{1}{d}\sum_j x_{ij}^2 + \varepsilon}$. This reduces compute and has empirically matched LayerNorm quality at scale.
+
+**Side-by-side:**
+
+```
+  Mini-batch: 4 samples, 3 features
+
+  Sample 1:  [a, b, c]
+  Sample 2:  [d, e, f]    ← BatchNorm normalises down each COLUMN
+  Sample 3:  [g, h, i]       (across the batch, per feature)
+  Sample 4:  [j, k, l]
+                             LayerNorm normalises across each ROW
+                             (across features, per sample)
+```
+
+| Property | BatchNorm | LayerNorm | RMSNorm |
+|----------|-----------|-----------|---------|
+| Normalises over | Batch (per feature) | Features (per sample) | Features, no mean shift |
+| Train ≠ inference stats | Yes (running avg at inference) | No | No |
+| Common use | CNNs | Transformers | LLaMA, Gemini, Mistral |
+| Requires large batch | Yes | No | No |
+
+---
+
 # PART 5: INFORMATION THEORY ★★
 
 > Information theory measures surprise and uncertainty. How surprised are you
@@ -2373,6 +2540,8 @@ FP8 (2024–2025): Even faster on H100/H200 GPUs. DeepSeek-V3 used FP8 for train
 | Matrix multiply | $C_{ij} = \sum A_{ik} B_{kj}$ | Dot product of row i, col j | Every neural layer |
 | Eigenvalue | $A\vec{v} = \lambda\vec{v}$ | Matrix just stretches this vector | PCA, PageRank |
 | SVD | $A = U \Sigma V^T$ | Any matrix = rotate, stretch, rotate | Dim reduction, LoRA |
+| Attention | $\text{softmax}(QK^T/\sqrt{d_k})V$ | Weighted value aggregation | Transformers |
+| Multi-head | $\text{Concat}(\text{head}_i)W^O$ | Parallel specialised attention | GPT, BERT, Gemini |
 
 ### Calculus
 
@@ -2392,6 +2561,7 @@ FP8 (2024–2025): Even faster on H100/H200 GPUs. DeepSeek-V3 used FP8 for train
 | Variance | $\text{Var}(X) = E[(X-\mu)^2]$ | How spread out are the values? | LayerNorm, stability |
 | Gaussian | $\frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}$ | Bell curve probability | Init, noise, VAE |
 | MLE | $\theta^{*} = \operatorname{argmax} \sum \log P(x_i \mid \theta)$ | Best settings for observed data | Pre-training |
+| Bias–variance | $E[(y-\hat{f})^2] = \text{Bias}^2 + \text{Var} + \sigma^2$ | Error decomposition | Under/overfitting |
 
 ### Information Theory
 
@@ -2408,7 +2578,10 @@ FP8 (2024–2025): Even faster on H100/H200 GPUs. DeepSeek-V3 used FP8 for train
 | Softmax | $\frac{e^{x_i}}{\sum e^{x_j}}$ | Turn numbers into probabilities | Output layer, attention |
 | Sigmoid | $\frac{1}{1 + e^{-x}}$ | Squash any number to 0-1 | Binary classification |
 | ReLU | $\max(0, x)$ | Keep positives, zero out negatives | Hidden layers |
-| Adam | $\theta = \theta - \text{lr} \cdot \frac{\hat{m}}{\sqrt{\hat{v}} + \epsilon}$ | Smart adaptive step downhill | Standard optimizer |
+| Adam | $\theta = \theta - \text{lr} \cdot \frac{\hat{m}}{\sqrt{\hat{v}} + \epsilon}$ | Adaptive moment estimation | Base optimizer |
+| AdamW | $\theta \mathrel{-}= \text{lr} \cdot \frac{\hat{m}}{\sqrt{\hat{v}}+\varepsilon} + \text{lr}\cdot\lambda\cdot\theta$ | Decoupled weight decay | LLM/transformer training |
+| BatchNorm | $\hat{x} = (x-\mu_B)/\sqrt{\sigma_B^2+\varepsilon}$, $y=\gamma\hat{x}+\beta$ | Normalise per feature across batch | CNNs |
+| LayerNorm | Same formula, over features of each sample | Normalise per sample across features | Transformers |
 | L1 reg | $\text{Loss} + \lambda \sum \lvert w_i \rvert$ | Penalize for having any weight | Sparsity |
 | L2 reg | $\text{Loss} + \lambda \sum w_i^2$ | Penalize for having big weights | Weight decay |
 

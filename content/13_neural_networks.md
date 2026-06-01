@@ -438,7 +438,7 @@ Typical rates: 0.3-0.5 for fully connected layers, 0.1-0.2 for convolutional lay
 
 $$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \qquad y_i = \gamma \hat{x}_i + \beta$$
 
-Benefits: enables higher learning rates, reduces sensitivity to initialization, adds mild regularization via batch statistics noise. Standard in CNNs. For Transformers, **Layer Normalization** (normalizing across features instead of across the batch) is preferred.
+Benefits: enables higher learning rates, reduces sensitivity to initialization, adds mild regularization via batch statistics noise. Standard in CNNs. For Transformers, **Layer Normalization** (normalizing across features instead of across the batch) is preferred. Modern LLMs (LLaMA, Gemini) further simplify to **RMSNorm**, which skips the mean-subtraction step and normalises only by root-mean-square — slightly cheaper and empirically equivalent in quality.
 
 ### Weight Decay (L2 Regularization)
 
@@ -618,7 +618,11 @@ $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\r
 
 The $QK^\top$ dot product measures similarity between every pair of tokens. Division by $\sqrt{d_k}$ prevents the softmax from saturating. The result is a weighted sum of value vectors — each token's representation becomes a blend of information from the most relevant other tokens.
 
-**Multi-head attention** runs $H$ parallel attention operations with different weight matrices, then concatenates results. Each head can capture a different type of relationship (syntactic, semantic, positional). Typical: 8-16 heads in medium models, up to 96+ in large models.
+**Multi-head attention** runs $H$ parallel attention operations with different weight matrices, then concatenates and projects the results:
+
+$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_H)\, W^O$$
+
+The output projection $W^O$ mixes information across all heads back into a single $d_{\text{model}}$-dimensional vector. Each head captures a different type of relationship (syntactic, semantic, positional). Typical: 8–16 heads in medium models, up to 96+ in large models.
 
 ### Positional Encoding
 
@@ -1015,4 +1019,4 @@ This is mode collapse. The generator found a single output that reliably fools t
 
 ---
 
-**Previous:** [Chapter 9 — Key Algorithms Deep Dive](12_key_algorithms.md) | **Next:** [Chapter 11 — Model Evaluation & Tuning](14_model_evaluation.md)
+**Previous:** [Chapter 12 — Key Algorithms Deep Dive](12_key_algorithms.md) | **Next:** [Chapter 14 — Model Evaluation & Tuning](14_model_evaluation.md)

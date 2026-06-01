@@ -1042,4 +1042,4 @@ Deploy **Model A** (91% ± 1.0%). Although Model B has a higher mean (92%), its 
 
 ---
 
-**Previous:** [Chapter 10 — Neural Networks](13_neural_networks.md) | **Next:** [Chapter 12 — Deep Learning Reference](15_deep_learning.md)
+**Previous:** [Chapter 13 — Neural Networks](13_neural_networks.md) | **Next:** [Chapter 15 — Deep Learning Reference](15_deep_learning.md)

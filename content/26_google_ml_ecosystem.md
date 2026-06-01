@@ -1,4 +1,4 @@
-# Chapter 24 — Google ML Ecosystem: TPUs, JAX, Vertex AI & Key Papers
+# Chapter 26 — Google ML Ecosystem: TPUs, JAX, Vertex AI & Key Papers
 
 > "We are not just using machine learning — we are building the infrastructure
 > to make machine learning accessible to everyone."
@@ -1622,4 +1622,4 @@ Scaling laws discovered the same pattern for AI: as you make models bigger, trai
 
 ---
 
-*End of Chapter 19 — Google's ML Ecosystem*
+*End of Chapter 26 — Google's ML Ecosystem*

@@ -35,6 +35,7 @@ After reading this chapter, you will be able to:
   6.10  Feature Importance & Model Explainability (SHAP)
   6.11  Class Imbalance: The 99% Trap
   6.12  Algorithm Selection Guide
+  6.13  Case Study: Churn Model for YouTube Premium
   Key Takeaways
   Review Questions
 ```
@@ -164,162 +165,20 @@ Sometimes the line between classification and regression blurs. Star ratings (1-
 
 ## 6.3 How Models Learn: Loss Functions & Optimization
 
-> A **loss function** (also called a cost function or objective function) quantifies the difference between the model's predictions and the true labels. Training a model means finding the parameters that minimize this loss over the training data.
+> A **loss function** quantifies the difference between predictions and true labels. Training means finding parameters that minimize this loss via iterative gradient-based updates.
 
-Every supervised learning algorithm follows the same core loop: make a prediction, measure how wrong it is, adjust parameters to be less wrong, repeat. The loss function is the ruler that measures "how wrong."
+Every supervised learning algorithm follows the same loop: make a prediction, measure error with the loss function, compute gradients, update parameters. The right loss depends on the task: MSE or MAE for regression, binary cross-entropy for two-class problems, categorical cross-entropy for multi-class problems. The optimizer (almost always Adam or mini-batch SGD) takes a step in the direction of the negative gradient, scaled by the learning rate.
 
-```
-  THE LEARNING LOOP
-  ═══════════════════════════════════════════════════════
-  ┌──────────┐     ┌────────────┐     ┌──────────────┐
-  │  Input X  │────►│  Model f   │────►│ Prediction ŷ │
-  └──────────┘     └────────────┘     └──────┬───────┘
-                         ▲                    │
-                         │              ┌─────▼──────┐
-                   ┌─────┴──────┐      │ True Label y│
-                   │  Update    │      └─────┬───────┘
-                   │  Weights   │            │
-                   └─────┬──────┘      ┌─────▼──────┐
-                         │             │ Loss L(ŷ,y)│
-                         ◄─────────────┘            │
-                      Gradient of Loss              │
-                      (which direction              │
-                       to adjust?)                  │
-  ═══════════════════════════════════════════════════════
-  Repeat until loss is small enough (or stops improving)
-```
+→ **Full treatment: Chapter 7 §7.8 (Loss Functions) and §7.9 (Gradient Descent and variants)**
 
-### Loss Functions for Regression
+The key supervised-learning–specific point: the loss function must match the output type.
 
-**Mean Squared Error (MSE)** is the most common regression loss. It penalizes large errors heavily because of the squaring — an error of 10 costs 100 times more than an error of 1.
-
-$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2$$
-
-**Mean Absolute Error (MAE)** treats all errors linearly. An error of 10 costs exactly 10 times more than an error of 1. This makes MAE more robust to outliers than MSE.
-
-$$\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|$$
-
-**Huber Loss** combines the best of both: it behaves like MSE for small errors (smooth gradients for easy optimization) and like MAE for large errors (robust to outliers).
-
-```
-  Comparison: how each loss penalizes a prediction error of size δ
-
-  Error (δ)  │  MSE (δ²)  │  MAE (|δ|)  │  Behavior
-  ───────────┼────────────┼─────────────┼──────────────────────
-  0.1        │  0.01      │  0.1        │  MSE is more lenient
-  1.0        │  1.0       │  1.0        │  Equal
-  5.0        │  25.0      │  5.0        │  MSE punishes 5× more
-  10.0       │  100.0     │  10.0       │  MSE punishes 10× more
-  100.0      │  10,000    │  100.0      │  Outlier dominates MSE!
-```
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [-5,-4,-3,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,3,4,5],
-    "datasets": [
-      {
-        "label": "MSE (error²)",
-        "data": [25,16,9,4,2.25,1,0.25,0,0.25,1,2.25,4,9,16,25],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "backgroundColor": "rgba(239, 68, 68, 0.05)",
-        "fill": false,
-        "tension": 0.3,
-        "pointRadius": 2
-      },
-      {
-        "label": "MAE (|error|)",
-        "data": [5,4,3,2,1.5,1,0.5,0,0.5,1,1.5,2,3,4,5],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "backgroundColor": "rgba(99, 102, 241, 0.05)",
-        "fill": false,
-        "tension": 0,
-        "pointRadius": 2
-      },
-      {
-        "label": "Huber (δ=1)",
-        "data": [4.5,3.5,2.5,1.5,1.125,0.5,0.125,0,0.125,0.5,1.125,1.5,2.5,3.5,4.5],
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "backgroundColor": "rgba(34, 197, 94, 0.05)",
-        "fill": false,
-        "tension": 0.3,
-        "pointRadius": 2
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Loss Functions Compared — MSE Explodes on Large Errors" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Loss Value" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "Prediction Error (ŷ - y)" } }
-    }
-  }
-}
-```
-
-### Loss Functions for Classification
-
-**Binary Cross-Entropy** (log loss) is used when there are two classes. It heavily penalizes confident wrong predictions — predicting 0.99 when the true label is 0 is far worse than predicting 0.6.
-
-$$\text{BCE} = -\frac{1}{n}\sum_{i=1}^{n}\left[y_i \log(\hat{y}_i) + (1-y_i)\log(1-\hat{y}_i)\right]$$
-
-**Categorical Cross-Entropy** generalizes this to multiple classes:
-
-$$\text{CCE} = -\frac{1}{n}\sum_{i=1}^{n}\sum_{c=1}^{C} y_{i,c}\log(\hat{y}_{i,c})$$
-
-```
-  Why cross-entropy works so well:
-
-  True label: SPAM (y=1)
-
-  Prediction   │ Cross-Entropy Loss │ Interpretation
-  ─────────────┼────────────────────┼─────────────────────────
-  ŷ = 0.99     │  0.01              │ Confident & correct → tiny loss
-  ŷ = 0.90     │  0.11              │ Pretty confident → small loss
-  ŷ = 0.50     │  0.69              │ Unsure → moderate loss
-  ŷ = 0.10     │  2.30              │ Wrong direction → big loss
-  ŷ = 0.01     │  4.61              │ Confident & wrong → HUGE loss!
-
-  Cross-entropy absolutely punishes confident mistakes.
-  This is exactly the behavior we want.
-```
-
-### Gradient Descent: The Optimization Engine
-
-> **Gradient descent** is an iterative optimization algorithm that updates model parameters by moving them in the direction that decreases the loss function, with step size controlled by the learning rate.
-
-Almost every supervised learning model is trained using some form of gradient descent. The idea: compute the gradient (slope) of the loss with respect to each parameter, then nudge each parameter in the opposite direction of its gradient.
-
-$$w_{new} = w_{old} - \alpha \cdot \frac{\partial L}{\partial w}$$
-
-where $\alpha$ is the **learning rate** — how big each step is.
-
-```
-  Loss
-   │\
-   │ \
-   │  \         ← too large a learning rate: overshoots
-   │   \  /\
-   │    \/  \
-   │         \_________  ← just right: converges smoothly
-   │
-   └──────────────────── Iterations
-
-  Learning rate too small: takes forever, may get stuck
-  Learning rate too large: bounces around, may diverge
-  Learning rate just right: converges quickly to minimum
-```
-
-**Variants of gradient descent:**
-
-| Variant | Batch Size | Speed | Stability | Notes |
-|---|---|---|---|---|
-| Batch GD | All N samples | Slow per step | Stable gradient | Exact gradient, but expensive |
-| Stochastic GD (SGD) | 1 sample | Fast per step | Very noisy | Can escape local minima |
-| Mini-batch GD | 32-512 samples | Fast per step | Moderate noise | Best of both; the standard choice |
-
-Modern optimizers like **Adam** (Adaptive Moment Estimation) automatically adjust the learning rate per parameter, making training much easier in practice. Adam is the default choice for most deep learning and many classical ML tasks.
+| Task | Output layer | Loss |
+|---|---|---|
+| Binary classification | Sigmoid | Binary cross-entropy |
+| Multi-class classification | Softmax | Categorical cross-entropy |
+| Regression | Linear (no activation) | MSE or MAE |
+| Multi-label classification | Sigmoid per label | Binary CE per label (summed) |
 
 ---
 
@@ -417,146 +276,33 @@ Data leakage is one of the most common and dangerous mistakes in ML. Your model 
 
 ## 6.5 Overfitting, Underfitting, and the Bias-Variance Tradeoff
 
-This is the single most important concept in all of machine learning. Every modeling decision you make — algorithm choice, hyperparameter tuning, regularization, data augmentation — is ultimately about managing this tradeoff.
+Every modeling decision — algorithm choice, hyperparameter tuning, regularization, data augmentation — is ultimately about managing this tradeoff.
 
-### Underfitting
+**Underfitting** (high bias): the model is too simple to capture the data's pattern; both training and validation error are high. Fix by increasing model complexity, adding features, or reducing regularization.
 
-> **Underfitting** occurs when a model is too simple to capture the underlying patterns in the data. It performs poorly on both training data and new data.
+**Overfitting** (high variance): the model memorizes training noise; training error is low but validation error is much higher. Fix with more data, regularization (L1/L2/dropout/early stopping), or a simpler model.
 
-An underfitting model hasn't learned enough. Imagine trying to fit a straight line through data that follows a clear curve — no matter how you tilt the line, it can't capture the bend.
+Total expected error = Bias² + Variance + Irreducible Noise. The sweet spot minimizes their sum.
 
-### Overfitting
+→ **Full treatment: Chapter 7 §7.11 (Overfitting/Underfitting), §7.12 (Bias–Variance Tradeoff), and §7.13 (Regularization)**
 
-> **Overfitting** occurs when a model learns the noise and random fluctuations in the training data rather than the true underlying pattern. It performs well on training data but poorly on new data.
-
-An overfitting model has memorized the training data instead of learning the general pattern. It's like a student who memorizes every answer in the practice exam booklet verbatim but can't handle a rephrased question on the actual test.
-
-```
-  UNDERFITTING              GOOD FIT               OVERFITTING
-  (too simple)              (just right)            (too complex)
-  ────────────              ────────────            ────────────
-      *   *                     *   *                   *   *
-    *       *               * ─────── *             * ╭─╮ ╭─╮ *
-  ──────────────          *    ╱   ╲    *         * ─╯   ╰╯   ╰─ *
-  *             *        *   ╱       ╲   *       *                 *
-                        *  ╱           ╲  *
-
-  Train error: HIGH       Train error: LOW         Train error: ≈ 0
-  Test error:  HIGH       Test error:  LOW         Test error:  HIGH
-                                                   ↑ gap between train
-  "Can't even fit         "Learned the real        & test = overfitting
-   the training data"      pattern"                "Memorized noise"
-```
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": ["Very Simple", "", "Simple", "", "Moderate", "", "Complex", "", "Very Complex"],
-    "datasets": [
-      {
-        "label": "Training Error",
-        "data": [0.45, 0.35, 0.25, 0.18, 0.12, 0.07, 0.04, 0.02, 0.005],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "backgroundColor": "rgba(99, 102, 241, 0.05)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 3
-      },
-      {
-        "label": "Validation Error",
-        "data": [0.47, 0.36, 0.24, 0.19, 0.16, 0.17, 0.22, 0.30, 0.42],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "backgroundColor": "rgba(239, 68, 68, 0.05)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 3
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "The Classic U-Curve — Validation Error Has a Sweet Spot" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Error" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "Model Complexity →" } }
-    }
-  }
-}
-```
-
-### The Bias-Variance Tradeoff
-
-> **Bias** is the error introduced by approximating a complex real-world problem with a simpler model. **Variance** is the error introduced by the model's sensitivity to fluctuations in the training data. The total expected error decomposes as: $\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Irreducible Noise}$.
-
-**High bias** means the model consistently misses the target in the same direction — it's systematically wrong because it's too simple. A linear model trying to fit a quadratic relationship will always be biased.
-
-**High variance** means the model's predictions change wildly depending on which training data you happened to use. A very deep decision tree trained on 100 examples will produce a completely different tree if you swap out 5 examples.
-
-```
-  ┌─────────────────────────────────────────────────────┐
-  │               BIAS-VARIANCE TRADEOFF                │
-  │                                                     │
-  │  HIGH BIAS          │         HIGH VARIANCE         │
-  │  LOW VARIANCE       │         LOW BIAS              │
-  │  ┌───────┐          │         ┌───────┐             │
-  │  │ ·  ·  │          │         │·      │             │
-  │  │  ·  · │  Target: │         │  ·    │  Target:    │
-  │  │ ·  ·  │    ⊕     │         │    ⊕  │    ⊕       │
-  │  │  ·  · │          │         │·    · │             │
-  │  └───────┘          │         └───────┘             │
-  │  All shots cluster  │  Shots scatter around         │
-  │  together but MISS  │  the target but are           │
-  │  the bullseye       │  SPREAD OUT                   │
-  │                     │                               │
-  │  Fix: more complex  │  Fix: simpler model,          │
-  │  model, more        │  more data, or                │
-  │  features           │  regularization               │
-  └─────────────────────┴───────────────────────────────┘
-```
-
-### Diagnosing and Fixing Overfitting vs Underfitting
-
-```mermaid
-flowchart TD
-    A[Train your model] --> B{Training error<br/>acceptable?}
-    B -->|No — High training error| C[UNDERFITTING]
-    C --> C1[Try a more complex model]
-    C --> C2[Add more / better features]
-    C --> C3[Reduce regularization]
-    C --> C4[Train longer]
-    B -->|Yes — Low training error| D{Validation error<br/>close to training?}
-    D -->|No — Big gap| E[OVERFITTING]
-    E --> E1[Get more training data]
-    E --> E2[Add regularization L1/L2/dropout]
-    E --> E3[Simplify the model]
-    E --> E4[Early stopping]
-    E --> E5[Data augmentation]
-    D -->|Yes — Small gap| F[GOOD FIT ✓]
-    F --> G[Evaluate on test set once]
-```
+### Quick Diagnosis Table (Supervised-Learning Reference)
 
 | Symptom | Diagnosis | Fixes |
 |---|---|---|
 | High train error, high val error | Underfitting (high bias) | More complex model, better features, less regularization |
 | Low train error, high val error | Overfitting (high variance) | More data, regularization, simpler model, early stopping |
-| Low train error, low val error | Good fit | Ship it (after confirming on test set) |
-| High train error, low val error | Bug in your code | Check for data leakage or evaluation bugs |
+| Low train error, low val error | Good fit | Evaluate on test set once and ship |
+| High train error, low val error | Evaluation bug or data leakage | Check splits, verify no leakage |
 
-### Regularization: The Overfitting Antidote
+### Algorithm-Specific Regularization
 
-Regularization adds a penalty to the loss function that discourages overly complex models. It's like saying to the model: "Find the simplest explanation that still fits the data well."
+While the general mechanisms (L1/L2/early stopping) are covered in §7.13, each algorithm family exposes them differently:
 
-```
-  UNREGULARIZED LOSS:     L(ŷ, y)            → fit training data perfectly
-  REGULARIZED LOSS:       L(ŷ, y) + λR(w)    → fit data AND keep weights small
-
-  λ = regularization strength
-  λ = 0:     no penalty → may overfit
-  λ = large: heavy penalty → may underfit
-  λ = right: balanced → generalizes well
-```
-
-We'll see specific regularization techniques (Ridge, Lasso) in Section 6.9.
+- **Linear/Logistic Regression:**  in sklearn is the inverse of λ (C = 1/λ). Ridge = L2 penalty; Lasso = L1 penalty; Elastic Net = both.
+- **Decision Trees / Random Forest:** , ,  — structural constraints that act as implicit regularization.
+- **Gradient Boosting (XGBoost/LightGBM):** , ,  (L1),  (L2), and crucially  ×  interplay — small learning rate with early stopping is the dominant regularization strategy.
+- **Neural Networks:** Dropout rate and L2 weight decay ( in PyTorch's AdamW).
 
 ---
 
@@ -1895,6 +1641,264 @@ For any new supervised learning problem, follow this sequence:
 
 ---
 
+
+## 6.13 Case Study: Churn Model for YouTube Premium ★★★
+
+End-to-end worked example walking the full ML pipeline that a Google interviewer expects.
+
+---
+
+### Step 1 — Problem Framing and Business Metric
+
+**Business question:** Which subscribers are likely to cancel YouTube Premium in the next 30 days, so we can target them with a retention offer (e.g., discounted renewal)?
+
+**Why this matters:** Acquiring a new subscriber costs ~5–7x more than retaining one. A $2 retention offer for a subscriber generating $15/month in expected future revenue is large positive-NPV.
+
+**Model framing:** Binary classification (churn = 1 / retained = 0). Output P(churn) per subscriber; business teams select a threshold based on offer economics.
+
+**North-star business metric:** Incremental retention rate among model-targeted users, measured via A/B test. PR-AUC is the ML proxy metric — validate it against the actual business lift.
+
+---
+
+### Step 2 — Label Definition
+
+**What is "churn"?** A subscriber is labeled churned (y = 1) if their subscription lapses within 30 days of the observation date AND they do not re-subscribe within 7 days (to exclude brief accidental lapses).
+
+**Observation window vs outcome window:**
+
+```
+  TIME AXIS
+  ──────────────────────────────────────────────────────
+  [── Observation window ──] [── Outcome window ──]
+       (features computed)      (label determined)
+
+  |--- 90 days history ----| 30-day forward label |
+
+  Example:
+    Observation date: Jan 1
+    Features:         user behavior Oct–Dec 31
+    Label:            did user churn Jan 1–Jan 31?
+```
+
+**Censoring:** Subscribers with tenure < 30 days have incomplete history. For a first model: exclude them. For production: use tenure-conditioned features or survival labels.
+
+---
+
+### Step 3 — Data Sources and Feature Engineering
+
+#### Behavioral (most predictive)
+
+| Feature | Computation | Leakage risk? |
+|---|---|---|
+| `watch_hours_30d` | Sum of watch time past 30 days | No |
+| `watch_trend` | `watch_7d / (watch_30d/4)` — is engagement falling? | No |
+| `days_since_last_watch` | Days since last session | No |
+| `downloads_30d` | Offline downloads (Premium-only feature) | No |
+| `music_streams_30d` | YouTube Music streams | No |
+| `premium_feature_breadth` | # distinct Premium-only features used | No |
+
+#### Billing and Account
+
+| Feature | Notes |
+|---|---|
+| `tenure_days` | Days since subscription start |
+| `price_paid` | Discounted vs full price? |
+| `failed_payment_count` | Historical failed charges |
+| `plan_type` | Individual / Family / Student |
+
+**Critical leakage checks:**
+
+```
+  WRONG: Include watch_hours from inside the 30-day outcome window
+  RIGHT: Use only behavior before the observation cutoff
+
+  WRONG: billing_status='cancelled' recorded at feature time
+  RIGHT: Features computed strictly before the label window opens
+
+  WRONG: mean_encode(country) using all labels including val/test
+  RIGHT: Fit encoder only on training fold; apply to val/test
+
+  GOLDEN RULE: Every feature must be observable on the
+  observation date in a live production scoring run.
+```
+
+---
+
+### Step 4 — Time-Based Train / Val / Test Split
+
+For temporal data, never use random splits.
+
+```
+  TIMELINE
+  ──────────────────────────────────────────────────────────────────
+  |──────── Train ─────────────|── Val ──|── Test ──|
+  |  Jan 2023 – Sep 2023       | Oct 2023| Nov 2023 |
+  |                            |         |          |
+  |  Learn historical patterns | Tune HP | Final    |
+  |                            | pick    | eval     |
+  ──────────────────────────────────────────────────────────────────
+
+  WHY NOT RANDOM SPLIT?
+  A random split leaks future patterns into training: a user's
+  November behavior informs predictions on their October label.
+  All metrics inflate; the model fails in production.
+
+  Also include a gap between train end and val start (e.g., 2
+  weeks) when features use rolling windows, to prevent the window
+  from spanning both sets.
+```
+
+---
+
+### Step 5 — Baseline → Logistic Regression → Gradient Boosted Trees
+
+**Naive baseline:** Predict P(churn) = population base rate (~3%). Sets the floor.
+
+**Logistic Regression:** Fast, interpretable, well-calibrated. Good for establishing the linear ceiling and for stakeholder communication (coefficients are directly interpretable).
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+lr = Pipeline([
+    ('scaler', StandardScaler()),
+    ('clf', LogisticRegression(C=0.1, class_weight='balanced', max_iter=500))
+])
+lr.fit(X_train, y_train)
+```
+
+**LightGBM (primary model):** Captures non-linear interactions (e.g., low watch time is a churn signal only if tenure > 6 months) without explicit feature engineering.
+
+```python
+import lightgbm as lgb
+
+lgb_model = lgb.LGBMClassifier(
+    n_estimators=1000,
+    learning_rate=0.05,
+    num_leaves=63,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    scale_pos_weight=30,   # ~97/3 ratio -> upweight minority ~30x
+    random_state=42
+)
+lgb_model.fit(
+    X_train, y_train,
+    eval_set=[(X_val, y_val)],
+    callbacks=[lgb.early_stopping(50), lgb.log_evaluation(100)]
+)
+```
+
+---
+
+### Step 6 — Class Imbalance Handling
+
+At ~3% monthly churn, a naive model achieves 97% accuracy by predicting "no churn" everywhere — completely useless.
+
+**Do not use accuracy.** Strategies:
+
+1. **`scale_pos_weight=30`** (LightGBM) or `class_weight='balanced'` (sklearn) — easiest, usually sufficient.
+2. **Threshold adjustment** — train with class weights, then lower the decision threshold below 0.5 (see Step 8).
+3. **SMOTE** — only useful if the positive class count is very small (<500 examples).
+
+---
+
+### Step 7 — Evaluation: PR-AUC and Calibration
+
+```
+  Dataset: 97% retained, 3% churned
+
+  Naive "always no churn":  Accuracy = 97%  -> useless
+  Good churn model:         Accuracy = 95%  (below naive!)
+                            Recall   = 70%  (catches 7 in 10)
+                            Precision= 40%  (of flagged, 4 in 10 churn)
+  -> The real model is far more useful despite lower accuracy.
+```
+
+**Primary metrics:**
+
+| Metric | Why for churn |
+|---|---|
+| **PR-AUC** | Best summary for imbalanced data; ROC-AUC is optimistic when negatives dominate |
+| **Recall at top-K%** | "Of the top 5% by P(churn), what fraction actually churned?" — maps to offer budget |
+| **Calibration** | P(churn)=0.30 should mean 30% actually churn — needed for cost-benefit thresholds |
+
+---
+
+### Step 8 — Threshold Selection Tied to Offer Economics
+
+The optimal threshold is not 0.5 — derive it from business costs.
+
+```
+  THRESHOLD SELECTION
+  ──────────────────────────────────────────────────────────────
+  Given:
+    offer_cost      = $2 per user flagged
+    incremental_LTV = $12 per successfully retained subscriber
+    retention_lift  = 25% of churners who receive offer stay
+
+  For each threshold t on the PR curve:
+    Revenue = TP x retention_lift x incremental_LTV
+    Cost    = (TP + FP) x offer_cost
+    Profit  = Revenue - Cost
+
+  Pick t that maximizes Profit subject to ops capacity.
+  ──────────────────────────────────────────────────────────────
+
+  Rule of thumb for low-cost offers: lower threshold to 0.1–0.2
+  to maximize recall. For expensive interventions ($20+ credit):
+  raise threshold to 0.4+ to preserve precision.
+```
+
+---
+
+### Step 9 — Deployment, Monitoring, and Retraining
+
+**Deployment:** Daily batch scoring pipeline reads from the feature store, applies saved transformers, outputs P(churn) per subscriber to the CRM. Marketing triggers the offer for users above threshold who are not on a suppression list (to prevent offer fatigue).
+
+**Monitoring:**
+
+| Signal | Threshold | Action |
+|---|---|---|
+| Feature PSI | PSI > 0.2 | Investigate; likely retrain |
+| Score distribution shift | Mean P(churn) drifts > 20% relative | Check pipeline + feature bugs |
+| PR-AUC on rolling holdout | Drop > 5 pp from baseline | Trigger retraining |
+| Actual churn rate diverges | Large gap vs predicted | Recalibrate probabilities |
+
+PSI (Population Stability Index): PSI < 0.1 = stable; 0.1–0.2 = mild drift; > 0.2 = significant.
+
+**Retraining:** Monthly scheduled retraining is the practical default at YouTube scale — data volume makes retraining cheap and user behavior evolves rapidly.
+
+---
+
+### Full Pipeline Summary
+
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  FRAMING:  Binary clf — P(churn in 30d) -> retention offer     │
+  │  KPI:      Incremental retention (A/B test), not accuracy      │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  LABEL:    Observation date -> 30d outcome window              │
+  │            Exclude <30d tenured users (censoring)              │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  FEATURES: watch_trend, tenure, payment history, breadth       │
+  │            All computed before observation date                │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  SPLIT:    Time-based (train Jan–Sep / val Oct / test Nov)     │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  MODELS:   Naive base rate -> LogReg -> LightGBM + early stop  │
+  │  IMBALANCE: scale_pos_weight; evaluate PR-AUC, not accuracy   │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  THRESHOLD: derive from offer cost vs incremental LTV          │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  DEPLOY:   Daily batch scoring -> CRM -> suppression list      │
+  │  MONITOR:  PSI for feature drift; PR-AUC on rolling holdout   │
+  │  RETRAIN:  Monthly or triggered (PSI > 0.2 or AUC drop > 5pp) │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Key Takeaways
 
 ```
@@ -2018,4 +2022,4 @@ SHAP — because it explains individual predictions, not just global trends. A s
 
 ---
 
-**Previous:** [Chapter 5 — Data Preprocessing](08_data_preprocessing.md) | **Next:** [Chapter 7 — Unsupervised Learning](10_unsupervised_learning.md)
+**Previous:** [Chapter 8 — Data Preprocessing](08_data_preprocessing.md) | **Next:** [Chapter 10 — Unsupervised Learning](10_unsupervised_learning.md)

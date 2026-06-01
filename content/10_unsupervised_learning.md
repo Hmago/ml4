@@ -7,11 +7,11 @@
 After this chapter you will be able to:
 - Distinguish unsupervised from supervised learning and name core task families
 - Explain why high-dimensional data breaks distance-based methods
-- Select among K-Means, Hierarchical, DBSCAN, and GMM for a given problem
+- Select among K-Means, Hierarchical, DBSCAN, HDBSCAN, Spectral Clustering, and GMM for a given problem
 - Evaluate clusters with Silhouette, Elbow, and Davies-Bouldin metrics
-- Apply PCA, t-SNE, UMAP, and autoencoders for dimensionality reduction
+- Apply PCA, Kernel PCA, t-SNE, UMAP, and autoencoders for dimensionality reduction
 - Detect anomalies with Isolation Forest
-- Mine association rules with Apriori
+- Mine association rules with Apriori and FP-Growth
 - Describe self-supervised learning and its role in modern AI
 
 ---
@@ -368,6 +368,130 @@ K-Means forces you to choose K and assumes round clusters. DBSCAN says: "cluster
 
 **Real-world use case:** geographic clustering of delivery addresses into zones. Addresses form arbitrary shapes around cities — DBSCAN naturally captures this while labeling remote rural addresses as noise.
 
+### 7.6.1 HDBSCAN
+
+> **HDBSCAN (Hierarchical DBSCAN)** extends DBSCAN by replacing the single global density threshold ε with a variable-density framework. It transforms pairwise distances into **mutual reachability distances**, builds a **minimum spanning tree** over those distances, extracts a full cluster hierarchy (a dendrogram over density levels), converts it to a **condensed tree**, and selects clusters that are most stable across the density range. The result: clusters of differing density are found correctly, and no single ε needs to be tuned.
+
+DBSCAN's main weakness is its single global ε. If some clusters are dense and others are sparse, no single ε works for both — tight ε misses sparse clusters, loose ε merges dense ones. HDBSCAN solves this by asking "at what density level does each cluster fall apart?" and keeping only clusters that persist across a meaningful density range.
+
+**Mutual reachability distance** between points $a$ and $b$:
+
+$$d_{\text{mreach}}(a, b) = \max\bigl(\text{core-dist}_k(a),\; \text{core-dist}_k(b),\; d(a,b)\bigr)$$
+
+where $\text{core-dist}_k(p)$ is the distance from $p$ to its $k$-th nearest neighbor. This effectively inflates distances in sparse regions, making the MST topology reflect true density variation rather than raw distance.
+
+**Algorithm pipeline:**
+
+```
+  1. Compute mutual reachability distances for all pairs
+     (parameter: min_cluster_size replaces ε)
+
+  2. Build Minimum Spanning Tree (MST) over those distances
+     ┌──────────────────────────────────────────────────────────┐
+     │  ●─────●─────●    ●─────●    ← two dense subgraphs      │
+     │  │     │     │    │     │       connected by a long edge │
+     │  ●─────●     ●────────●         ← that long edge = low   │
+     │                                    density boundary      │
+     └──────────────────────────────────────────────────────────┘
+
+  3. Convert MST into a hierarchy (dendrogram) by removing edges
+     in increasing order of mutual reachability distance
+
+  4. Condense hierarchy: collapse splits that produce clusters
+     smaller than min_cluster_size into noise points
+
+  5. Extract stable clusters: for each branch, compute a
+     stability score = sum of (1/λ_death − 1/λ_birth) over
+     member points. Keep branches that maximize total stability.
+     Remaining points → noise.
+```
+
+**DBSCAN vs HDBSCAN:**
+
+| Property | DBSCAN | HDBSCAN |
+|---|---|---|
+| Density threshold | Single global ε | Variable (per-cluster density) |
+| Parameters | ε, minPts | min_cluster_size (+ optional min_samples) |
+| Cluster hierarchy | None | Full condensed tree |
+| Handles varying density | No — struggles | Yes — core strength |
+| Noise handling | Yes | Yes |
+| Determinism | Yes (border pts may vary) | Yes |
+| Complexity | $O(n \log n)$ with index | $O(n \log n)$ typical |
+| Best when | Clusters have uniform density | Clusters differ in density |
+
+**When to prefer HDBSCAN:** datasets with clusters at multiple scales (e.g., a few tight urban clusters plus broader suburban groups), or when DBSCAN consistently splits one cluster or merges two depending on ε.
+
+### 7.6.2 Spectral Clustering
+
+> **Spectral Clustering** maps data into a low-dimensional Euclidean embedding derived from the eigenvectors of a graph Laplacian, then applies k-means (or another partitioner) in that embedding space. It finds clusters defined by connectivity structure rather than Euclidean proximity, enabling it to separate non-convex, manifold-shaped clusters that k-means and sometimes DBSCAN cannot handle.
+
+The core insight: if you build a similarity graph over the data and look at how that graph is connected, clusters correspond to weakly connected components or near-disconnected subgraphs. The graph Laplacian's eigenvectors expose this connectivity structure.
+
+**Algorithm:**
+
+```
+  1. Build an n×n similarity (affinity) matrix W
+     Common choice: Gaussian kernel
+     W_{ij} = exp(−||x_i − x_j||² / 2σ²)
+
+  2. Compute degree matrix D (diagonal):
+     D_{ii} = Σ_j W_{ij}   (sum of row i in W)
+
+  3. Form the graph Laplacian:
+     Unnormalized:   L = D − W
+     Normalized:     L_sym = D^{-1/2} L D^{-1/2}
+                     L_rw  = D^{-1} L   (random-walk variant)
+
+  4. Compute the k smallest non-zero eigenvectors of L
+     These form an n×k embedding matrix U
+
+  5. Each row of U is a k-dim representation of the data point
+     Run k-means on the rows of U to get cluster assignments
+```
+
+**Why the eigenvectors work — interlocking moons example:**
+
+```
+  Original space (k-means fails):        Spectral embedding (k-means works):
+
+  Feature 2                              Eigenvector 2
+    │  ○○○○○                               │     ○ ○ ○ ○ ○
+    │ ○      ○                             │
+    │  ●●●●●●●                             │
+    │○        ○                            │ ●●●●●●●●●●●●
+    │  ○○○○○                               │
+    └──────────── Feature 1                └──────────────── Eigenvector 1
+
+  The two crescents are                   In spectral space, the two
+  interleaved — no linear or              classes are linearly separable.
+  convex boundary separates them.         k-means succeeds here.
+```
+
+In the similarity graph, points within each crescent are densely connected to their neighbors; cross-crescent connections are weak (large Euclidean distance → near-zero W). The Laplacian captures this — its eigenvectors encode "which group does this node belong to?" structurally.
+
+**Computational cost and practical notes:**
+
+```
+  Similarity matrix W:    O(n²) storage
+  Eigendecomposition:     O(n³) naive (dominant cost)
+                          O(n·k²) with sparse approx. (e.g., k nearest neighbors graph)
+  k-means on embedding:   O(n·k·iterations)
+
+  Practical limit: ~10,000 points with dense W;
+                   ~100,000 points with sparse k-NN graph + ARPACK
+```
+
+| Property | K-Means | DBSCAN | Spectral Clustering |
+|---|---|---|---|
+| Cluster shape | Spherical/convex | Arbitrary (density-connected) | Any (graph-connected) |
+| Requires K | Yes | No | Yes |
+| Handles noise | No | Yes | No (all points assigned) |
+| Non-convex manifolds | No | Partially | Yes |
+| Computational cost | $O(nKI)$ — fast | $O(n \log n)$ | $O(n^3)$ naive — slow |
+| Best for | Large, globular clusters | Arbitrary shape, noise | Manifold-shaped, small-medium data |
+
+**When to use:** image segmentation (pixel similarity graphs), social-network community detection, and any setting where clusters are defined by topology rather than proximity — particularly two-moon / interlocking-ring datasets. Avoid on large $n$ unless using a sparse affinity matrix.
+
 ---
 
 ## 7.7 Gaussian Mixture Models
@@ -656,6 +780,60 @@ Common rules for choosing $k$:
 
 **Real-world use:** Image compression. A 256x256 face image (65,536 features) can be reconstructed with high fidelity from ~100 principal components — a 650x compression ratio.
 
+### 7.10.1 Kernel PCA
+
+> **Kernel PCA** applies the kernel trick to PCA: instead of computing principal components in the original feature space, it implicitly maps data to a high-dimensional (possibly infinite-dimensional) feature space $\phi: \mathbb{R}^d \to \mathcal{H}$ via a kernel function $k(x_i, x_j) = \langle \phi(x_i), \phi(x_j) \rangle$, then performs standard PCA in $\mathcal{H}$. The result is a nonlinear dimensionality reduction — the low-dimensional embedding can capture curved manifolds and nonlinear structure that linear PCA misses entirely.
+
+Standard PCA finds directions of maximum **linear** variance. If the meaningful structure in your data lies on a curved surface — a sphere, a spiral, a manifold — those directions are useless. Kernel PCA maps the data to a space where that curved structure becomes linear, then extracts principal components there.
+
+**The kernel trick in brief:**
+
+You never need to compute $\phi(x)$ explicitly. All computations reduce to evaluating the kernel:
+
+$$k(x_i, x_j) = \begin{cases} \exp\!\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right) & \text{RBF / Gaussian} \\ (x_i \cdot x_j + c)^p & \text{polynomial} \\ \tanh(\alpha\, x_i \cdot x_j + c) & \text{sigmoid} \end{cases}$$
+
+**Algorithm:**
+
+```
+  1. Compute the n×n kernel matrix K,  K_{ij} = k(x_i, x_j)
+
+  2. Center K in feature space:
+     K_c = K − 1_n K − K 1_n + 1_n K 1_n
+     (where 1_n is the n×n matrix with all entries 1/n)
+
+  3. Eigendecompose K_c:  K_c α = λ α
+     Sort eigenvalues descending; normalize eigenvectors.
+
+  4. Project a point x onto the d-th principal component:
+     z_d(x) = Σ_i α_i^(d) · k(x_i, x)
+```
+
+No explicit $\phi(x)$ is ever computed. The entire method operates on the $n \times n$ kernel matrix.
+
+**Comparison — Linear PCA vs Kernel PCA vs Autoencoders:**
+
+```
+  LINEAR PCA               KERNEL PCA               AUTOENCODER
+  ─────────────────        ─────────────────────     ────────────────────
+  Linear projection        Nonlinear (via kernel)    Nonlinear (via NN)
+  Closed-form solution     Closed-form (eig of K)    Gradient descent
+  No hyperparams (vs k)    σ or p must be tuned      Architecture + lr
+  O(d·n²) or O(d³)        O(n³) + O(n²) storage     O(epochs · n · arch)
+  Always global optimum    Always global optimum      Local optima possible
+  Interpretable PCs        PCs live in feature space  Latent code opaque
+  Linear manifolds only    Nonlinear manifolds        Nonlinear manifolds
+  Best: linear structure   Best: small n, known       Best: large n, images,
+  or preprocessing step    kernel fits geometry       sequences
+```
+
+**When to use Kernel PCA:**
+- Data lies on a known nonlinear manifold (circles, spirals, Swiss roll)
+- Dataset is small-to-medium ($n \lesssim 10{,}000$) — the $O(n^2)$ kernel matrix is feasible
+- You have a domain-motivated kernel (e.g., string kernels for sequences, graph kernels for molecules)
+- Linear PCA loses structure (residuals are large) but an autoencoder is overkill
+
+**When not to use it:** large $n$ (kernel matrix becomes expensive to store and eigendecompose), or when you lack intuition for the right kernel — a badly chosen kernel performs worse than linear PCA.
+
 ---
 
 ## 7.11 t-SNE
@@ -901,6 +1079,90 @@ The challenge: with $n$ items, there are $2^n$ possible itemsets. Brute-force en
 }
 ```
 
+### 7.15.1 FP-Growth
+
+> **FP-Growth (Frequent Pattern Growth)** mines frequent itemsets without candidate generation by compressing the transaction database into an **FP-tree** — a compact prefix-tree structure — and then recursively mining **conditional FP-trees** for each frequent item. It requires only two passes over the database and avoids the candidate explosion that makes Apriori slow on dense or long-itemset datasets.
+
+**Why Apriori is slow at scale:**
+
+Apriori scans the entire database once per itemset length level ($L$ levels = $L$ full scans). At each level it generates candidate itemsets from frequent smaller itemsets and checks them all. With $k$-item frequent patterns, it may generate and test $O(2^k)$ candidates. For large transaction databases (millions of transactions, thousands of items), this is prohibitive.
+
+FP-Growth fixes both problems: two database scans total, zero candidate generation.
+
+**Building the FP-tree:**
+
+```
+  Transactions (min_support = 3/5 = 0.6, threshold = 3):
+  T1: {Bread, Milk, Butter}
+  T2: {Bread, Diapers, Beer}
+  T3: {Milk, Diapers, Beer, Butter}
+  T4: {Bread, Milk, Diapers, Beer}
+  T5: {Bread, Milk, Butter}
+
+  Scan 1: count item frequencies
+    Bread:4  Milk:4  Beer:3  Diapers:3  Butter:3
+    (all ≥ 3 → all frequent; discard items below threshold)
+
+  Order items by frequency (descending) within each transaction:
+    T1: Bread, Milk, Butter
+    T2: Bread, Diapers, Beer
+    T3: Milk, Beer, Diapers, Butter
+    T4: Bread, Milk, Diapers, Beer
+    T5: Bread, Milk, Butter
+
+  Scan 2: insert ordered transactions into prefix tree
+
+         root
+          │
+      Bread:4 ────────── Milk:1
+       /     \                \
+    Milk:3  Diapers:1        Beer:1
+    /    \       \               \
+ Butter:2 Diapers:1 Beer:1      Diapers:1
+              \                      \
+              Beer:1                Butter:1
+```
+
+Each path from root → leaf represents a set of transactions that share that prefix. The counts on nodes give support directly.
+
+**Mining via conditional FP-trees:**
+
+```
+  To find all frequent itemsets containing Butter (support=3):
+
+  1. Trace all paths ending at Butter nodes:
+       Bread→Milk→Butter (count 2)
+       Milk→Beer→Diapers→Butter (count 1)
+
+  2. Build conditional FP-tree for Butter:
+     (only items in those paths, with their conditional counts)
+       Bread:2, Milk:3 (meets threshold)
+       Beer:1, Diapers:1 (below threshold in conditional tree)
+
+  3. Frequent itemsets containing Butter:
+       {Butter} support=3
+       {Milk, Butter} support=3
+       {Bread, Butter} support=2  ← below threshold, discard
+       → Mine recursively until no frequent items remain
+```
+
+**Why FP-Growth scales better than Apriori:**
+
+| Property | Apriori | FP-Growth |
+|---|---|---|
+| Database scans | $L$ scans (one per itemset length) | 2 scans (build tree + mine) |
+| Candidate generation | Explicit — exponential blowup | None |
+| Memory model | Candidate list + database | Compressed FP-tree |
+| Dense datasets (long patterns) | Very slow | Handles well |
+| Sparse datasets (few frequent items) | Reasonable | Also fast |
+| Typical speedup | Baseline | 10-100x faster on large data |
+
+**When to use FP-Growth vs Apriori:**
+- Use **FP-Growth** as the default for any production-scale frequent-itemset task (millions of transactions or hundreds of items).
+- Use **Apriori** when the dataset is small and interpretability of each pruning step matters, or when an FP-tree would exceed available memory (extremely wide transactions can produce large trees).
+
+The rule evaluation step (support / confidence / lift) is identical for both algorithms — only the itemset discovery mechanism differs.
+
 ---
 
 ## 7.16 Self-Supervised Learning
@@ -1002,12 +1264,16 @@ graph TD
 | K-Means | Clustering | Yes | No | Spherical | Excellent |
 | Hierarchical | Clustering | No (cut tree) | No | Depends on linkage | Poor (>10K) |
 | DBSCAN | Clustering | No | Yes | Arbitrary | Good |
+| HDBSCAN | Clustering | No | Yes | Arbitrary, multi-density | Good |
+| Spectral Clustering | Clustering | Yes | No | Graph-connected / manifold | Poor (>10K dense) |
 | GMM | Clustering | Yes | No | Elliptical | Moderate |
 | PCA | Dim. reduction | Choose # PCs | N/A | Linear only | Excellent |
+| Kernel PCA | Dim. reduction | Choose # PCs | N/A | Nonlinear (kernel-defined) | Poor (>10K) |
 | t-SNE | Visualization | N/A | N/A | Nonlinear | Poor (>50K) |
 | UMAP | Dim. red. / viz | N/A | N/A | Nonlinear | Good |
 | Isolation Forest | Anomaly det. | N/A | Detects them | N/A | Excellent |
 | Apriori | Assoc. rules | N/A | N/A | N/A | Moderate |
+| FP-Growth | Assoc. rules | N/A | N/A | N/A | Good |
 
 ```chart
 {
@@ -1059,19 +1325,28 @@ graph TD
 ║  3. K-Means: fast, simple, spherical clusters, must pick K.         ║
 ║  4. Hierarchical: builds a merge tree, cut anywhere for any K.      ║
 ║  5. DBSCAN: density-based, arbitrary shapes, flags noise.           ║
-║  6. GMM: soft probabilistic assignments, elliptical clusters.       ║
-║  7. Evaluate clusters with Silhouette + Elbow + Davies-Bouldin.     ║
-║  8. PCA: linear, fast, captures max variance. Scale features first. ║
-║  9. t-SNE: visualization only; local structure only; never as feats.║
-║  10. UMAP: faster than t-SNE, preserves global structure, usable    ║
+║  6. HDBSCAN: extends DBSCAN via mutual reachability + condensed     ║
+║     tree; handles clusters of differing density; no global ε.       ║
+║  7. Spectral Clustering: graph Laplacian eigenvectors as embedding, ║
+║     then k-means; handles manifold/non-convex shapes; O(n³) naive.  ║
+║  8. GMM: soft probabilistic assignments, elliptical clusters.       ║
+║  9. Evaluate clusters with Silhouette + Elbow + Davies-Bouldin.     ║
+║  10. PCA: linear, fast, captures max variance. Scale features first.║
+║  11. Kernel PCA: kernel trick on PCA captures nonlinear manifolds;  ║
+║      O(n³) — use on small-to-medium datasets.                       ║
+║  12. t-SNE: visualization only; local structure only; never as feats║
+║  13. UMAP: faster than t-SNE, preserves global structure, usable    ║
 ║      as features.                                                   ║
-║  11. Autoencoders: nonlinear compression via neural nets. VAE       ║
+║  14. Autoencoders: nonlinear compression via neural nets. VAE       ║
 ║      variant enables generation.                                    ║
-║  12. Isolation Forest: anomalies are isolated in fewer random       ║
+║  15. Isolation Forest: anomalies are isolated in fewer random       ║
 ║      splits — fast, effective, few assumptions.                     ║
-║  13. Apriori: finds frequent itemsets + association rules.           ║
+║  16. Apriori: finds frequent itemsets via downward-closure pruning. ║
 ║      Support × Confidence × Lift to evaluate rules.                 ║
-║  14. Self-supervised learning creates labels from data itself —      ║
+║  17. FP-Growth: mines frequent itemsets via a compressed FP-tree    ║
+║      with only 2 DB scans and no candidate generation; 10-100x      ║
+║      faster than Apriori on large datasets.                         ║
+║  18. Self-supervised learning creates labels from data itself —     ║
 ║      the paradigm behind GPT, BERT, CLIP.                           ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
@@ -1162,4 +1437,4 @@ Use **PCA** or **UMAP** — never t-SNE. t-SNE distorts distances non-uniformly,
 
 ---
 
-**Previous:** [Chapter 6 — Supervised Learning](09_supervised_learning.md) | **Next:** [Chapter 8 — Reinforcement Learning](11_reinforcement_learning.md)
+**Previous:** [Chapter 9 — Supervised Learning](09_supervised_learning.md) | **Next:** [Chapter 11 — Reinforcement Learning](11_reinforcement_learning.md)
