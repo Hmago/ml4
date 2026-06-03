@@ -89,7 +89,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 24 | Building Semantic Search (Text, Images, Metadata) | ★★ | [24_semantic_search.md](content/24_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
 | 25 | GPUs, TPUs & AI Infrastructure | ★★ | [25_gpus_tpus_infrastructure.md](content/25_gpus_tpus_infrastructure.md) | ~2.75 hrs | Intermediate-Advanced |
 | 26 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [26_google_ml_ecosystem.md](content/26_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
-| | **Practical & Infra Total** | | | **~11 hrs** | |
+| 33 | Data & Infra Engineering Tools (Kafka, Redis, Spark, K8s...) | ★★ | [33_engineering_tools.md](content/33_engineering_tools.md) | ~2 hrs | Intermediate |
+| | **Practical & Infra Total** | | | **~13 hrs** | |
 
 ### DSA & Coding
 
@@ -249,6 +250,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 25 + Ch 26 (GPUs / TPUs / Google Ecosystem) ← read before interviews
   Ch 23 (Practical ML) ← hands-on project experience
   Ch 24 (Semantic Search) ← classic system to know
+  Ch 33 (Data & Infra Tools) ← Kafka/Redis/Spark/K8s for system design
 ```
 
 ### Six Learning Tracks

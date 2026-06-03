@@ -647,6 +647,7 @@ function showDashboard() {
     'content/22_modern_system_design.md': 160,
     'content/31_google_top10_ml_interview.md': 495,
     'content/32_quick_reference_cheat_sheet.md': 180,
+    'content/33_engineering_tools.md': 120,
   };
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
   realCh.forEach(c => { const m = chapterMinutes[c.file] || 30; totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
@@ -975,41 +976,45 @@ function showDashboard() {
         </div>
       </div>
 
-      <!-- ─── Chapter List (main focus) ─── -->
+      <!-- ─── Chapter List (main focus, tabular) ─── -->
       <div class="db-section">
         <h3 class="db-section-title">${ico.book} Chapter Details</h3>
         <div class="ch-detail-list">
         ${(() => {
-          const icoSm = {
-            clock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-            cal:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
-            check: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-            book:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
-          };
+          const tableHead = '<table class="ch-table">' +
+            '<thead><tr>' +
+              '<th class="ch-th-num">#</th>' +
+              '<th class="ch-th-title">Chapter</th>' +
+              '<th class="ch-th-time">Time</th>' +
+              '<th class="ch-th-progress">Progress</th>' +
+              '<th class="ch-th-date">Started</th>' +
+              '<th class="ch-th-date">Completed</th>' +
+              '<th class="ch-th-quiz">Quiz</th>' +
+              '<th class="ch-th-actions">Actions</th>' +
+            '</tr></thead><tbody>';
           let html = '';
           let curSection = '';
           let chIdx = 0;
           let sectionOpen = false;
           for (const item of chapters) {
             if (item.section) {
-              if (sectionOpen) html += '</div></details>';
+              if (sectionOpen) html += '</tbody></table></div></details>';
               curSection = item.section;
-              // Count done/total for this section
               let secTotal = 0, secDone = 0;
               for (let si = chapters.indexOf(item) + 1; si < chapters.length && !chapters[si].section; si++) {
                 if (chapters[si].ref) continue;
                 secTotal++;
                 if (readChapters[chapters[si].file]) secDone++;
               }
-              const secPct = secTotal > 0 ? Math.round(secDone / secTotal * 100) : 0;
               const secComplete = secDone === secTotal && secTotal > 0;
-              html += '<details class="ch-section-collapse">' +
+              html += '<details class="ch-section-collapse" open>' +
                 '<summary class="ch-section-row">' +
                   '<span class="ch-section-caret">▼</span>' +
                   '<span class="ch-section-name">' + curSection + '</span>' +
                   '<span class="ch-section-badge' + (secComplete ? ' ch-section-badge-done' : '') + '">' + secDone + '/' + secTotal + '</span>' +
                 '</summary>' +
-                '<div class="ch-section-body">';
+                '<div class="ch-section-body">' +
+                tableHead;
               sectionOpen = true;
               continue;
             }
@@ -1030,34 +1035,35 @@ function showDashboard() {
             const compD = ct.completedDate ? new Date(ct.completedDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
             const quizScore = qh ? qh.bestScore : -1;
             const quizScoreColor = quizScore >= 90 ? 'var(--success)' : quizScore >= 70 ? 'var(--accent)' : quizScore >= 0 ? '#f59e0b' : '';
+            const fileEsc = c.file.replace(/'/g,"\\'");
+            const titleEsc = c.title.replace(/'/g,"\\'");
+            const showProgress = spentMin > 0 || isRead;
+            const progPct = isRead ? 100 : timePct;
 
-            html += '<div class="ch-row' + (isRead ? ' ch-row-done' : '') + '">' +
-              '<div class="ch-row-left">' +
-                '<div class="ch-row-status">' + (isRead ? '<span class="ch-check done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' : '<span class="ch-check">' + chIdx + '</span>') + '</div>' +
-                '<div class="ch-row-info">' +
-                  '<div class="ch-row-title"><a href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + c.title + '</a></div>' +
-                  '<div class="ch-row-meta">' +
-                    '<span class="ch-meta-tag" title="Estimated study time">' + icoSm.clock + ' ' + estStr + '</span>' +
-                    (startD ? '<span class="ch-meta-tag" title="Started">' + icoSm.cal + ' ' + startD + '</span>' : '') +
-                    (compD ? '<span class="ch-meta-tag ch-meta-done" title="Completed">' + icoSm.check + ' ' + compD + '</span>' : '') +
-                    (spentStr ? '<span class="ch-meta-tag" title="Time spent">' + icoSm.book + ' ' + spentStr + '</span>' : '') +
-                  '</div>' +
-                  (spentMin > 0 || isRead ? '<div class="ch-row-progress"><div class="ch-row-progress-fill' + (isRead ? ' complete' : '') + '" style="width:' + (isRead ? 100 : timePct) + '%"></div></div>' : '') +
-                '</div>' +
-              '</div>' +
-              '<div class="ch-row-right">' +
-                (quizScore >= 0
-                  ? '<div class="ch-quiz-score" style="color:' + quizScoreColor + ';" title="Best quiz score: ' + quizScore + '% (' + qh.attempts + ' attempt' + (qh.attempts > 1 ? 's' : '') + ')">' + quizScore + '%</div>'
-                  : '') +
-                '<div class="ch-row-actions">' +
-                  (qh ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + c.file.replace(/'/g,"\\'") + '\')" title="Retake quiz">↺ Quiz</button>' : '') +
-                  '<button class="ch-btn" onclick="exportChapterPDFByIndex(' + idx + ')" title="Export as PDF">' + ico.download + '</button>' +
-                  ((isRead || qh || ct.seconds) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + c.file.replace(/'/g,"\\'") + '\', \'' + c.title.replace(/'/g,"\\'") + '\')" title="Reset progress">↺</button>' : '') +
-                '</div>' +
-              '</div>' +
-            '</div>';
+            html += '<tr class="ch-tr' + (isRead ? ' ch-tr-done' : '') + '">' +
+              '<td class="ch-td-num">' + (isRead
+                  ? '<span class="ch-check done" title="Read"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+                  : '<span class="ch-check">' + chIdx + '</span>') + '</td>' +
+              '<td class="ch-td-title"><a href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + c.title + '</a>' +
+                (spentStr ? ' <span class="ch-td-spent" title="Time spent">· ' + spentStr + '</span>' : '') +
+              '</td>' +
+              '<td class="ch-td-time">' + estStr + '</td>' +
+              '<td class="ch-td-progress">' + (showProgress
+                  ? '<div class="ch-bar"><div class="ch-bar-fill' + (isRead ? ' complete' : '') + '" style="width:' + progPct + '%"></div></div><span class="ch-bar-pct">' + progPct + '%</span>'
+                  : '<span class="ch-td-empty">—</span>') + '</td>' +
+              '<td class="ch-td-date">' + (startD || '<span class="ch-td-empty">—</span>') + '</td>' +
+              '<td class="ch-td-date">' + (compD ? '<span class="ch-td-done-date">' + compD + '</span>' : '<span class="ch-td-empty">—</span>') + '</td>' +
+              '<td class="ch-td-quiz">' + (quizScore >= 0
+                  ? '<span class="ch-quiz-score" style="color:' + quizScoreColor + ';" title="Best ' + quizScore + '% · ' + qh.attempts + ' attempt' + (qh.attempts > 1 ? 's' : '') + '">' + quizScore + '%</span>'
+                  : '<span class="ch-td-empty">—</span>') + '</td>' +
+              '<td class="ch-td-actions">' +
+                (qh ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="Retake quiz">↺ Quiz</button>' : '') +
+                '<button class="ch-btn" onclick="exportChapterPDFByIndex(' + idx + ')" title="Export as PDF">' + ico.download + '</button>' +
+                ((isRead || qh || ct.seconds) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress">↺</button>' : '') +
+              '</td>' +
+            '</tr>';
           }
-          if (sectionOpen) html += '</div></details>';
+          if (sectionOpen) html += '</tbody></table></div></details>';
           return html;
         })()}
         </div>
