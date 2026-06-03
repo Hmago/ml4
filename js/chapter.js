@@ -45,7 +45,7 @@ const chapters = [
   { section: 'System Design' },
   { id: '20', file: 'content/20_design_fundamentals.md', title: 'Design Fundamentals (Java)' },
   { id: '21', file: 'content/21_ml_system_design.md', title: 'ML System Design (Google)' },
-  { id: '22', file: 'content/22_modern_system_design.md', title: 'Modern System Design (Grokking)' },
+  { id: '34', file: 'content/34_system_design_fundamentals_deep_dive.md', title: 'System Design Fundamentals — Deep Dive' },
 
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },

@@ -190,7 +190,7 @@ These are the 15 topics Google interviewers ask about most frequently, ranked by
 | Rank | Topic | Chapter Reference | What They Ask |
 |------|-------|------------------|---------------|
 | 1 | Transformer / Self-Attention | Ch 31 T6+T11, Ch 15 | Derive scaled dot-product attention. Why sqrt(d_k)? Multi-head purpose. |
-| 2 | ML System Design | Ch 21, Ch 22 | Design an end-to-end recommendation/ranking/fraud system at Google scale |
+| 2 | ML System Design | Ch 21, Ch 34 | Design an end-to-end recommendation/ranking/fraud system at Google scale |
 | 3 | RLHF / DPO / Alignment | Ch 16, Ch 19, Ch 31 T12 | Compare RLHF vs DPO. What is reward hacking? Why is DPO more stable? |
 | 4 | Recommendation Systems | Ch 21 (YouTube, Ads) | Two-tower retrieval, multi-stage ranking, Wide & Deep |
 | 5 | Distributed Training | Ch 25, Ch 31 T13 | Data vs tensor vs pipeline parallelism. ZeRO. 3D parallelism. |

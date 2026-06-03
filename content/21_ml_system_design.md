@@ -2094,4 +2094,4 @@ Traditional ML evaluation compares predictions against known ground-truth labels
 
 ---
 
-**Previous:** [Chapter 20 — Design Fundamentals](20_design_fundamentals.md) | **Next:** [Chapter 22 — Modern System Design](22_modern_system_design.md)
+**Previous:** [Chapter 20 — Design Fundamentals](20_design_fundamentals.md) | **Next:** [Chapter 23 — Practical ML](23_practical_ml.md)
