@@ -59,7 +59,6 @@ Most problems are **cheap, mechanical fixes with high payoff**. The highest-leve
 | 19 | `19_2026_landscape.md` | The 2026 AI Landscape | A |
 | 20 | `20_design_fundamentals.md` | Design Fundamentals (SWE) | A− |
 | 21 | `21_ml_system_design.md` | ML System Design (Google) | A |
-| 22 | `22_modern_system_design.md` | Modern System Design (Grokking) | C+ |
 | 23 | `23_practical_ml.md` | Practical ML — Zero to Production | B |
 | 24 | `24_semantic_search.md` | Building Semantic Search | A− |
 | 25 | `25_gpus_tpus_infrastructure.md` | GPUs, TPUs & AI Infrastructure | A− |
@@ -71,7 +70,7 @@ Most problems are **cheap, mechanical fixes with high payoff**. The highest-leve
 | 31 | `31_google_top10_ml_interview.md` | Google's Top 10 ML Topics | A− |
 | 32 | `32_quick_reference_cheat_sheet.md` | Quick Reference Cheat Sheet | A− |
 
-**Distribution:** A/A− ×23 · B+ ×5 · B ×4 · C+ ×1
+**Distribution:** A/A− ×23 · B+ ×5 · B ×4
 
 ---
 

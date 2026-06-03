@@ -644,10 +644,10 @@ function showDashboard() {
     'README.md': 40,
     'content/27_dsa_coding.md': 475,
     'content/26_google_ml_ecosystem.md': 160,
-    'content/22_modern_system_design.md': 160,
     'content/31_google_top10_ml_interview.md': 495,
     'content/32_quick_reference_cheat_sheet.md': 180,
     'content/33_engineering_tools.md': 120,
+    'content/34_system_design_fundamentals_deep_dive.md': 390,
   };
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
   realCh.forEach(c => { const m = chapterMinutes[c.file] || 30; totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });

@@ -78,8 +78,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 20 | Design Fundamentals (Senior SWE, Java) | ★★ | [20_design_fundamentals.md](content/20_design_fundamentals.md) | ~5.5 hrs | Intermediate-Advanced |
 | 21 | ML System Design (Google) | ★★★ | [21_ml_system_design.md](content/21_ml_system_design.md) | ~5.75 hrs | Intermediate-Advanced |
-| 22 | Modern System Design (Grokking) | ★★ | [22_modern_system_design.md](content/22_modern_system_design.md) | ~2.75 hrs | Intermediate-Advanced |
-| | **System Design Total** | | | **~14 hrs** | |
+| 34 | System Design Fundamentals — Deep Dive (CDN, LB, CAP, caching, queues, sharding, security, observability, multi-region, FinOps, anti-patterns, Instagram case-study) | ★★★ | [34_system_design_fundamentals_deep_dive.md](content/34_system_design_fundamentals_deep_dive.md) | ~6.5 hrs | Intermediate-Advanced |
+| | **System Design Total** | | | **~17.75 hrs** | |
 
 ### Practical & Infrastructure
 
