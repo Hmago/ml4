@@ -54,6 +54,7 @@ const chapters = [
   { id: '24', file: 'content/24_semantic_search.md', title: 'Building Semantic Search' },
   { id: '25', file: 'content/25_gpus_tpus_infrastructure.md', title: 'GPUs, TPUs & AI Infrastructure' },
   { id: '26', file: 'content/26_google_ml_ecosystem.md', title: 'Google ML Ecosystem (TPUs, JAX, Vertex AI)' },
+  { id: '33', file: 'content/33_engineering_tools.md', title: 'Data & Infra Engineering Tools' },
 
   // ── DSA / CODING ──
   { section: 'DSA / Coding' },
