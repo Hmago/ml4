@@ -1,0 +1,92 @@
+{
+  "name": "ml-study-notes-desktop",
+  "version": "1.0.0",
+  "description": "Win32 desktop app for the ML Study Notes learning platform.",
+  "main": "main.js",
+  "author": "ML Notes",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icon": "node scripts/make-icon.js",
+    "prebuild": "node scripts/make-icon.js",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable --x64",
+    "build:installer": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5"
+  },
+  "build": {
+    "appId": "com.mlnotes.desktop",
+    "productName": "ML Study Notes",
+    "copyright": "Copyright © 2025 ML Notes",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../",
+        "to": "app",
+        "filter": [
+          "index.html",
+          "styles.css",
+          "manifest.json",
+          "icon-192.svg",
+          "icon-512.svg",
+          "js/**/*",
+          "content/**/*",
+          "!desktop/**",
+          "!node_modules/**",
+          "!.git/**",
+          "!.github/**",
+          "!archive/**",
+          "!tools/**",
+          "!**/*.bat",
+          "!**/*.sh"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ML Study Notes",
+      "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
+    }
+  }
+}
