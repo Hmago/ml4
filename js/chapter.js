@@ -130,10 +130,13 @@ async function loadChapter(index) {
 
     var mathProtected = protectMath(md);
     contentEl.innerHTML = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
-    contentEl.innerHTML += renderNavButtons();
+    // insertAdjacentHTML appends without re-serializing/re-parsing the chapter
+    // we just rendered (which `innerHTML +=` would force).
+    contentEl.insertAdjacentHTML('beforeend', renderNavButtons());
 
-    // Render LaTeX math formulas with KaTeX
-    if (window.renderMathInElement) {
+    // Render LaTeX math with KaTeX — skip the full-tree walk when the chapter
+    // contains no '$' delimiter at all (most non-math chapters).
+    if (window.renderMathInElement && contentEl.textContent.indexOf('$') !== -1) {
       renderMathInElement(contentEl, {
         delimiters: [
           { left: '$$', right: '$$', display: true },
@@ -572,7 +575,10 @@ function getSearchLines(file, md) {
   let entry = searchIndex[file];
   if (!entry) {
     const lines = md.split('\n');
-    entry = { lines, lowerLines: lines.map(l => l.toLowerCase()) };
+    const lowerLines = lines.map(l => l.toLowerCase());
+    // lowerConcat lets us reject an entire chapter with one includes() check
+    // before scanning its lines.
+    entry = { lines, lowerLines, lowerConcat: lowerLines.join('\n') };
     searchIndex[file] = entry;
   }
   return entry;
@@ -609,10 +615,15 @@ document.getElementById('search').addEventListener('input', function(e) {
     await Promise.all(searchable.map(fetchSearchContent));
 
     const results = [];
+    // Build the highlight regex once instead of recompiling it per matched line.
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const highlightRe = new RegExp('(' + escapedQuery + ')', 'gi');
     for (const ch of searchable) {
       const md = cachedContent[ch.file];
       if (!md) continue;
-      const { lines, lowerLines } = getSearchLines(ch.file, md);
+      const { lines, lowerLines, lowerConcat } = getSearchLines(ch.file, md);
+      // Skip the whole chapter in one check if the query appears nowhere in it.
+      if (!lowerConcat.includes(query)) continue;
       for (let i = 0; i < lowerLines.length; i++) {
         if (lowerLines[i].includes(query)) {
           const line = lines[i].replace(/[#*`|]/g, '').trim();
@@ -621,7 +632,7 @@ document.getElementById('search').addEventListener('input', function(e) {
           const start = Math.max(0, idx - 30);
           const end = Math.min(line.length, idx + query.length + 30);
           let snippet = (start > 0 ? '...' : '') + line.slice(start, end) + (end < line.length ? '...' : '');
-          snippet = snippet.replace(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>');
+          snippet = snippet.replace(highlightRe, '<mark>$1</mark>');
           results.push({ chapter: ch, index: chapters.indexOf(ch), snippet, lineNum: i });
           if (results.length >= 30) break;
         }
@@ -702,15 +713,25 @@ document.addEventListener('keydown', (e) => {
 
 
 // ─── Scroll Progress Bar ───
+let _scrollProgressBound = false;
 function setupScrollProgress() {
   const wrapper = document.getElementById('contentWrapper');
   const bar = document.getElementById('scrollProgress');
+  if (_scrollProgressBound) return;   // bind once for the app's lifetime
+  _scrollProgressBound = true;
+  let ticking = false;
+  // Throttle to one layout read+write per frame; passive lets the browser
+  // keep scrolling without waiting on the handler.
   wrapper.addEventListener('scroll', () => {
-    const scrollTop = wrapper.scrollTop;
-    const scrollHeight = wrapper.scrollHeight - wrapper.clientHeight;
-    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-    bar.style.width = progress + '%';
-  });
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrollHeight = wrapper.scrollHeight - wrapper.clientHeight;
+      const progress = scrollHeight > 0 ? (wrapper.scrollTop / scrollHeight) * 100 : 0;
+      bar.style.width = progress + '%';
+      ticking = false;
+    });
+  }, { passive: true });
 }
 
 // ─── Enhanced Content ───
@@ -794,16 +815,19 @@ function enhanceContent() {
   // 4. Scroll spy for TOC
   setupScrollSpy();
 
-  // 5. Mermaid diagrams
-  if (window.mermaid) {
-    contentEl.querySelectorAll('code.language-mermaid').forEach(block => {
-      const pre = block.parentElement;
-      const div = document.createElement('div');
-      div.className = 'mermaid';
-      div.textContent = block.textContent;
-      pre.replaceWith(div);
-    });
-    mermaid.init(undefined, '.mermaid');
+  // 5. Mermaid diagrams — lazy-load the (large) library only if this chapter
+  // actually has a mermaid block.
+  if (contentEl.querySelector('code.language-mermaid')) {
+    ensureMermaid().then(() => {
+      contentEl.querySelectorAll('code.language-mermaid').forEach(block => {
+        const pre = block.parentElement;
+        const div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = block.textContent;
+        pre.replaceWith(div);
+      });
+      mermaid.init(undefined, contentEl.querySelectorAll('.mermaid'));
+    }).catch(() => {});
   }
 
   // 5b. Chart.js charts
@@ -852,43 +876,78 @@ document.addEventListener('fullscreenchange', () => {
   }
 });
 
+let _scrollSpyHandler = null;
 function setupScrollSpy() {
   const wrapper = document.getElementById('contentWrapper');
   const tocLinks = document.querySelectorAll('#tocLinks a');
+  // Remove the previous chapter's handler so scroll listeners don't accumulate
+  // across navigations (each one swept every heading with getBoundingClientRect
+  // on every scroll event — a compounding leak).
+  if (_scrollSpyHandler) {
+    wrapper.removeEventListener('scroll', _scrollSpyHandler);
+    _scrollSpyHandler = null;
+  }
   if (!tocLinks.length) return;
-  wrapper.addEventListener('scroll', () => {
-    let current = '';
-    document.querySelectorAll('#content h2, #content h3').forEach(h => {
-      if (h.getBoundingClientRect().top < 150) current = h.id;
+  let ticking = false;
+  _scrollSpyHandler = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      let current = '';
+      document.querySelectorAll('#content h2, #content h3').forEach(h => {
+        if (h.getBoundingClientRect().top < 150) current = h.id;
+      });
+      tocLinks.forEach(a => a.classList.toggle('spy-active', a.getAttribute('href') === '#' + current));
+      ticking = false;
     });
-    tocLinks.forEach(a => a.classList.toggle('spy-active', a.getAttribute('href') === '#' + current));
-  });
+  };
+  wrapper.addEventListener('scroll', _scrollSpyHandler, { passive: true });
 }
 
 
 // ─── Quiz System ───
 let quizState = { questions: [], current: 0, score: 0, answered: false };
 
+// Quiz data (225KB) is lazy-loaded the first time a quiz is opened, mirroring
+// the DSA starter-code lazy-load pattern.
+let _quizDataPromise = null;
+function ensureQuizData() {
+  if (window.__quizDataLoaded || typeof QUIZ_DATA !== 'undefined') return Promise.resolve();
+  if (_quizDataPromise) return _quizDataPromise;
+  _quizDataPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'js/data/quizzes.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _quizDataPromise = null; reject(new Error('Quiz data failed to load')); };
+    document.head.appendChild(s);
+  });
+  return _quizDataPromise;
+}
+
 function startQuiz(file) {
-  const key = file.replace(/^content\//, '');
-  const questions = (typeof QUIZ_DATA !== 'undefined' && (QUIZ_DATA[key] || QUIZ_DATA[file])) || [];
-  if (!questions.length) {
-    showToast('📝 No quiz yet', 'Quiz coming soon for this chapter', '📚');
-    return;
-  }
-  quizState = {
-    questions: [...questions],
-    current: 0,
-    score: 0,
-    answered: false,
-    startTime: Date.now(), // used to detect "rushed" (< 1s/question) attempts
-  };
-  // Shuffle questions
-  for (let i = quizState.questions.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [quizState.questions[i], quizState.questions[j]] = [quizState.questions[j], quizState.questions[i]];
-  }
-  renderQuizQuestion();
+  ensureQuizData().then(() => {
+    const key = file.replace(/^content\//, '');
+    const questions = (typeof QUIZ_DATA !== 'undefined' && (QUIZ_DATA[key] || QUIZ_DATA[file])) || [];
+    if (!questions.length) {
+      showToast('📝 No quiz yet', 'Quiz coming soon for this chapter', '📚');
+      return;
+    }
+    quizState = {
+      questions: [...questions],
+      current: 0,
+      score: 0,
+      answered: false,
+      startTime: Date.now(), // used to detect "rushed" (< 1s/question) attempts
+    };
+    // Shuffle questions
+    for (let i = quizState.questions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [quizState.questions[i], quizState.questions[j]] = [quizState.questions[j], quizState.questions[i]];
+    }
+    renderQuizQuestion();
+  }).catch(() => {
+    showToast('❌ Error', 'Quiz data failed to load', '📝');
+  });
 }
 
 function renderQuizQuestion() {
@@ -1117,22 +1176,38 @@ loadChapter = async function(index) {
   }
 };
 
-// ─── Init Mermaid ───
-if (window.mermaid) {
-  mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+// ─── Lazy diagram / chart libraries ───
+// mermaid (~2.7MB) and chart.js (~200KB) are loaded on demand — only the
+// handful of chapters that embed a ```mermaid or ```chart block pay the cost.
+let _mermaidReady = null;
+function ensureMermaid() {
+  if (window.mermaid) return Promise.resolve();
+  if (_mermaidReady) return _mermaidReady;
+  _mermaidReady = loadExternalScript(
+    'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js',
+    'sha384-6F4Ibv/ylL12O35KFWTeGTHuBKDz5L6yjKsgv3QHQ8s4NTqlDXq7kMlYXGs7MHFc'
+  ).then(() => {
+    mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+  });
+  return _mermaidReady;
+}
+let _chartReady = null;
+function ensureChart() {
+  if (window.Chart) return Promise.resolve();
+  if (_chartReady) return _chartReady;
+  _chartReady = loadExternalScript(
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
+    'sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC'
+  );
+  return _chartReady;
 }
 
 // ─── Render Chart.js charts ───
 function renderCharts(root) {
-  console.log('[renderCharts] called, Chart available:', !!window.Chart);
-  if (!window.Chart) return;
   const blocks = root.querySelectorAll('code.language-chart');
-  console.log('[renderCharts] found blocks:', blocks.length);
-  if (blocks.length === 0) {
-    // Try alternate selectors
-    const allCode = root.querySelectorAll('code[class]');
-    console.log('[renderCharts] all code elements with class:', Array.from(allCode).map(c => c.className));
-  }
+  if (blocks.length === 0) return;
+  // Lazy-load chart.js only for chapters that actually embed a chart.
+  ensureChart().then(() => {
   blocks.forEach(block => {
     const pre = block.parentElement;
     const wrapper = pre.parentElement?.classList.contains('code-wrapper') ? pre.parentElement : pre;
@@ -1169,6 +1244,7 @@ function renderCharts(root) {
       console.warn('Chart.js parse error:', e);
     }
   });
+  }).catch(() => {});
 }
 
 

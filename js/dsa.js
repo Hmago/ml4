@@ -19,7 +19,27 @@ function saveCustomDSAProblems(list) {
   localStorage.setItem('ml4-dsa-custom', JSON.stringify(list));
 }
 function getAllDSAProblems() {
-  return [...DSA_PROBLEMS, ...getCustomDSAProblems()];
+  const base = (typeof DSA_PROBLEMS !== 'undefined') ? DSA_PROBLEMS : [];
+  return [...base, ...getCustomDSAProblems()];
+}
+
+// Lazy-loader for the DSA metadata index (dsa_problems_index.js, ~420KB).
+// Deferred off the initial app load and fetched the first time DSA stats are
+// needed (welcome page) or the practice page is opened. Starter code
+// (dsa_problems_full.js) is a separate, even-lazier load gated behind this one.
+let _dsaIndexLoadPromise = null;
+function ensureDsaIndex() {
+  if (typeof window !== 'undefined' && window.__dsaIndexLoaded) return Promise.resolve();
+  if (typeof DSA_PROBLEMS !== 'undefined') return Promise.resolve();
+  if (_dsaIndexLoadPromise) return _dsaIndexLoadPromise;
+  _dsaIndexLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'js/data/dsa_problems_index.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _dsaIndexLoadPromise = null; reject(new Error('Failed to load DSA problem index')); };
+    document.head.appendChild(s);
+  });
+  return _dsaIndexLoadPromise;
 }
 
 // Lazy-loader for DSA starter code. The practice list renders from metadata
@@ -480,7 +500,8 @@ function dsaPickContinueProblem() {
   return null;
 }
 
-function dsaContinue() {
+async function dsaContinue() {
+  try { await ensureDsaIndex(); } catch (e) { return; }
   const next = dsaPickContinueProblem();
   if (!next) {
     if (typeof showToast === 'function') showToast('All clear', 'No problems left to continue', '🎉');
@@ -489,7 +510,7 @@ function dsaContinue() {
   showDSAProblem(next.problem.id);
 }
 
-function showDSAPractice() {
+async function showDSAPractice() {
   exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
@@ -505,6 +526,17 @@ function showDSAPractice() {
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
+
+  // The 420KB problem index is lazy-loaded — show a spinner while it arrives.
+  if (!(typeof window !== 'undefined' && window.__dsaIndexLoaded) && typeof DSA_PROBLEMS === 'undefined') {
+    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading problems…</div>';
+    try {
+      await ensureDsaIndex();
+    } catch (e) {
+      contentEl.innerHTML = '<div class="loading" style="color:red;">Failed to load DSA problems. Check your connection and try again.</div>';
+      return;
+    }
+  }
 
   const progress = getDSAProgress();
   const allProblems = getAllDSAProblems();
@@ -639,8 +671,14 @@ function showDSAPractice() {
         </span>
       </div>
 
-      <div id="dsaListContainer">${dsaBuildGroupsHTML(filtered, progress)}</div>
+      <div id="dsaListContainer"></div>
     </div>`;
+  // Defer the (up to ~385-row) list build one frame so the page chrome paints
+  // first; content-visibility:auto then keeps offscreen rows cheap.
+  requestAnimationFrame(() => {
+    const _list = document.getElementById('dsaListContainer');
+    if (_list) _list.innerHTML = dsaBuildGroupsHTML(filtered, progress);
+  });
   document.getElementById('contentWrapper').scrollTop = 0;
 }
 
@@ -857,8 +895,9 @@ function dsaSyncLineScroll() {
 
 async function showDSAProblem(id) {
   // Custom (user-authored) problems carry their own starterCode so we only need
-  // the shared lookup for built-in problems. Attempt to load; if it fails for a
-  // custom problem we still proceed.
+  // the shared lookup for built-in problems. The metadata index must load before
+  // the starter-code file (which augments DSA_PROBLEMS).
+  try { await ensureDsaIndex(); } catch (e) { console.warn(e); }
   try { await ensureDsaFullData(); } catch (e) { console.warn(e); }
 
   const allProblems = getAllDSAProblems();

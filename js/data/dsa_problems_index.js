@@ -5969,3 +5969,7 @@ const DSA_CATEGORIES = [
   { name: 'Greedy',              icon: '💰', color: '#eab308' },
   { name: 'Heap',                icon: '⛰️', color: '#84cc16' },
 ];
+
+
+// Signal lazy-load completion (see dsa.js ensureDsaIndex).
+if (typeof window !== "undefined") { window.__dsaIndexLoaded = true; window.dispatchEvent(new Event("dsa-index-loaded")); }

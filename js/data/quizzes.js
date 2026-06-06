@@ -553,3 +553,7 @@ const QUIZ_DATA = {
 ],
 
 };
+
+
+// Signal lazy-load completion (see chapter.js ensureQuizData).
+if (typeof window !== "undefined") { window.__quizDataLoaded = true; window.dispatchEvent(new Event("quiz-data-loaded")); }

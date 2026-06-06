@@ -213,6 +213,14 @@ function renderWelcome() {
         Created by <strong>Harshit Mago</strong> &middot; <a href="mailto:hmago18@gmail.com">hmago18@gmail.com</a>
       </div>
     </div>`;
+
+  // The DSA index (420KB) is lazy-loaded. The stat guards above render 0s
+  // safely until it arrives; once it does, re-render the welcome page so the
+  // DSA numbers fill in. The post-load guard prevents an infinite loop.
+  if (typeof ensureDsaIndex === 'function' && typeof DSA_PROBLEMS === 'undefined' &&
+      !(typeof window !== 'undefined' && window.__dsaIndexLoaded)) {
+    ensureDsaIndex().then(() => { if (currentPage === 'welcome') renderWelcome(); }).catch(() => {});
+  }
 }
 
 
