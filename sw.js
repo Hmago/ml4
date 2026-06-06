@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v195';
+const CACHE_NAME = 'ml-notes-v196';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -114,32 +114,42 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For navigation requests (HTML): network-first with cache fallback,
-  // so users get the latest index.html when online but still work offline.
+  // For navigation requests (HTML): stale-while-revalidate. Serve the cached
+  // app shell instantly on repeat visits, then refresh the cache in the
+  // background so the next load is up to date. A version bump (CACHE_NAME)
+  // still forces fresh content via the install/activate precache.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => caches.match(event.request).then(c => c || caches.match(BASE + 'index.html')))
+      caches.match(event.request).then(cached => {
+        const fetchPromise = fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached || caches.match(BASE + 'index.html'));
+        return cached || fetchPromise;
+      })
     );
     return;
   }
 
-  // For .md and .js files: network-first so content updates are seen immediately.
-  // Falls back to cache when offline.
+  // For .md / .js / .css: stale-while-revalidate. Cached copy is served
+  // immediately (instant chapter opens and shell scripts), and the network
+  // copy refreshes the cache for next time. Content edits surface on the load
+  // after they're fetched; a CACHE_NAME bump makes them appear immediately.
   if (url.pathname.endsWith('.md') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(
-      fetch(event.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => caches.match(event.request))
+      caches.match(event.request).then(cached => {
+        const fetchPromise = fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
     );
     return;
   }

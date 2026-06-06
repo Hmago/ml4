@@ -116,3 +116,23 @@ if ('serviceWorker' in navigator) {
     }).catch(() => {});
   });
 }
+
+// ─── Warm caches during idle ───
+// Pull the DSA index and all chapter markdown into memory while the user is
+// idle (served from the service-worker cache after first visit), so the first
+// search and the first DSA open have nothing left to download.
+(function warmCachesWhenIdle() {
+  const warm = () => {
+    if (typeof ensureDsaIndex === 'function') ensureDsaIndex().catch(() => {});
+    if (typeof chapters !== 'undefined' && typeof cachedContent !== 'undefined') {
+      chapters.filter(ch => !ch.section && ch.file && !ch.notebook).forEach(ch => {
+        if (cachedContent[ch.file]) return;
+        fetch(ch.file).then(r => (r.ok ? r.text() : null)).then(md => {
+          if (md) cachedContent[ch.file] = md;
+        }).catch(() => {});
+      });
+    }
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 8000 });
+  else setTimeout(warm, 3000);
+})();

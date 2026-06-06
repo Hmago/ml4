@@ -176,6 +176,26 @@ function restoreMath(html, store) {
   });
 }
 
+// ─── Lazy external-script loader ───
+// Injects a CDN <script> on demand (deduped by URL) so heavy libraries that
+// only a few pages need — mermaid (~2.7MB), chart.js — stay off the initial
+// load path and are fetched the first time a page actually uses them.
+const _extScriptPromises = {};
+function loadExternalScript(url, integrity) {
+  if (_extScriptPromises[url]) return _extScriptPromises[url];
+  _extScriptPromises[url] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = url;
+    if (integrity) s.integrity = integrity;
+    s.crossOrigin = 'anonymous';
+    s.referrerPolicy = 'no-referrer';
+    s.onload = () => resolve();
+    s.onerror = () => { delete _extScriptPromises[url]; reject(new Error('Failed to load ' + url)); };
+    document.head.appendChild(s);
+  });
+  return _extScriptPromises[url];
+}
+
 // ─── Theme ───
 function initTheme() {
   const saved = localStorage.getItem('ml4-theme');
@@ -190,12 +210,18 @@ function initTheme() {
 }
 
 function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  const root = document.documentElement;
+  // Suppress the transition storm: flipping CSS variables would otherwise make
+  // every element with a transition animate its color at once. Disable
+  // transitions for the swap, then re-enable on the next frame.
+  root.classList.add('theme-switching');
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  root.setAttribute('data-theme', isDark ? '' : 'dark');
   document.getElementById('hljs-theme').href = isDark
     ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css'
     : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css';
   localStorage.setItem('ml4-theme', isDark ? 'light' : 'dark');
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-switching')));
 }
 
 // ─── Font Size ───

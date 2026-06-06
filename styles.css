@@ -1,3 +1,8 @@
+/* While toggling the theme, suppress all transitions so flipping the CSS
+   variables doesn't animate every element's color at once (a repaint storm).
+   toggleTheme() adds this class, then removes it on the next frame. */
+html.theme-switching * { transition: none !important; }
+
 :root {
   --bg: #ffffff;
   --bg-secondary: #f6f8fa;
@@ -1632,7 +1637,7 @@ body.sidebar-collapsed .content {
 [data-theme="dark"] .dsa-diff-badge.hard { background:#7f1d1d; color:#fca5a5; }
 
 .dsa-problem-list { display:flex; flex-direction:column; gap:8px; }
-.dsa-problem-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s; background:var(--bg); }
+.dsa-problem-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s; background:var(--bg); content-visibility:auto; contain-intrinsic-size:auto 64px; }
 .dsa-problem-row:hover { border-color:var(--accent); background:var(--accent-light); transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.04); }
 .dsa-problem-row.solved { background:linear-gradient(90deg, rgba(34,197,94,0.05) 0%, transparent 30%); }
 .dsa-problem-row .seq { font-size:11px; font-weight:700; color:var(--text-secondary); min-width:32px; text-align:right; opacity:0.55; font-variant-numeric:tabular-nums; }
@@ -3243,6 +3248,7 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
   position: relative; overflow: hidden;
   background: var(--bg-secondary); opacity: 0.5; filter: grayscale(0.8);
+  content-visibility: auto; contain-intrinsic-size: auto 92px;
 }
 .ach-item:hover { transform: translateY(-2px); }
 
@@ -3252,7 +3258,8 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 }
 .ach-item.unlocked:hover { transform: translateY(-4px) scale(1.03); }
 
-/* Shimmer sweep on unlocked cards */
+/* Shimmer sweep on unlocked cards. Animate transform (GPU-composited) instead
+   of `left`, which forced a layout reflow every frame on every unlocked card. */
 .ach-item.unlocked::after {
   content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
   background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
@@ -3260,8 +3267,8 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   pointer-events: none;
 }
 @keyframes achShimmer {
-  0%, 100% { left: -100%; }
-  50% { left: 150%; }
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(420%); }
 }
 
 /* ── Category gradients ── */
