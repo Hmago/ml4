@@ -705,11 +705,16 @@ body.sidebar-collapsed .content {
 .search-results {
   display: none;
   padding: 8px 0;
-  max-height: 300px;
   overflow-y: auto;
 }
 
-.search-results.visible { display: block; }
+/* When visible, fill the space the (hidden) chapter list vacates instead of
+   capping at a fixed height that leaves the lower half of the sidebar empty. */
+.search-results.visible {
+  display: block;
+  flex: 1;
+  min-height: 0;
+}
 
 .search-result-item {
   padding: 8px 20px;
