@@ -565,6 +565,32 @@ function toggleReadStatus() {
 
 // ─── Search ───
 let searchTimeout;
+// Per-file index of lowercased lines, so repeat searches don't re-split/re-lowercase
+// the whole corpus on every keystroke. Built lazily, keyed by file path.
+const searchIndex = {};
+function getSearchLines(file, md) {
+  let entry = searchIndex[file];
+  if (!entry) {
+    const lines = md.split('\n');
+    entry = { lines, lowerLines: lines.map(l => l.toLowerCase()) };
+    searchIndex[file] = entry;
+  }
+  return entry;
+}
+// Fetch one chapter's markdown (from cache when available); returns null on failure.
+async function fetchSearchContent(ch) {
+  if (cachedContent[ch.file]) return cachedContent[ch.file];
+  try {
+    const res = await fetch(ch.file);
+    if (res.ok) {
+      const md = await res.text();
+      cachedContent[ch.file] = md;
+      return md;
+    }
+  } catch {}
+  return null;
+}
+
 document.getElementById('search').addEventListener('input', function(e) {
   clearTimeout(searchTimeout);
   const query = e.target.value.trim().toLowerCase();
@@ -577,23 +603,18 @@ document.getElementById('search').addEventListener('input', function(e) {
   }
 
   searchTimeout = setTimeout(async () => {
+    const searchable = chapters.filter(ch => !ch.section);   // skip section dividers
+    // Fetch any uncached chapters in parallel — turns ~30 serial round-trips
+    // (the main first-search cost) into a single concurrent batch.
+    await Promise.all(searchable.map(fetchSearchContent));
+
     const results = [];
-    for (const ch of chapters) {
-      if (ch.section) continue;   // skip section dividers
-      let md = cachedContent[ch.file];
-      if (!md) {
-        try {
-          const res = await fetch(ch.file);
-          if (res.ok) {
-            md = await res.text();
-            cachedContent[ch.file] = md;
-          }
-        } catch {}
-      }
+    for (const ch of searchable) {
+      const md = cachedContent[ch.file];
       if (!md) continue;
-      const lines = md.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].toLowerCase().includes(query)) {
+      const { lines, lowerLines } = getSearchLines(ch.file, md);
+      for (let i = 0; i < lowerLines.length; i++) {
+        if (lowerLines[i].includes(query)) {
           const line = lines[i].replace(/[#*`|]/g, '').trim();
           if (!line) continue;
           const idx = line.toLowerCase().indexOf(query);
