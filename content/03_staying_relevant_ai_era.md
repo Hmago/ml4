@@ -666,9 +666,9 @@ This is the section nobody wants to talk about, but the data is clear.
   AI/ML LITERACY (this repo):
   ────────────────────────────
   □ Ch 12: LLMs — understand how the tools work under the hood
-  □ Ch 13: LLM Interview Questions — the concepts that matter
-  □ Ch 8 + Ch 11: Neural networks + Deep learning foundations
-  □ Ch 2: Math fundamentals (rewritten for easy understanding)
+  □ Ch 14: LLM Interview Questions — the concepts that matter
+  □ Ch 14 + Ch 16: Neural networks + Deep learning foundations
+  □ Ch 6: Math fundamentals (rewritten for easy understanding)
 
   STAY CURRENT:
   ─────────────

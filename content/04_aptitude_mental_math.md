@@ -1,4 +1,4 @@
-# Chapter 03 — Aptitude & Mental Math for Engineers
+# Chapter 4 — Aptitude & Mental Math for Engineers
 
 > "The ability to estimate quickly and reason logically under pressure separates good engineers from great ones."
 
@@ -3170,4 +3170,4 @@ latency_budget(200, {
 
 ---
 
-**Previous:** [Chapter 02 — Staying Relevant in AI Era](02_staying_relevant_ai_era.md) &middot; **Next:** [Chapter 04 — Brain Training](04_brain_training.md) &middot; **See also:** [Ch 31 Top 10 ML Topics](31_google_top10_ml_interview.md) &middot; [Ch 32 Cheat Sheet](32_quick_reference_cheat_sheet.md)
+**Previous:** [Chapter 03 — Staying Relevant in AI Era](03_staying_relevant_ai_era.md) &middot; **Next:** [Chapter 05 — Brain Training](05_brain_training.md) &middot; **See also:** [Ch 34 Top 10 ML Topics](34_google_top10_ml_interview.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)

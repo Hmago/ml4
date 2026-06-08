@@ -1,16 +1,16 @@
-# Chapter 36 — System Design — Part 3: Operations & Case Studies
+# Chapter 25 — System Design — Part 3: Operations & Case Studies
 
 > "Hope is not a strategy." — Google SRE Book
 
 **What this chapter covers:**
 The production reality of system design — reliability and fault tolerance (redundancy, retries, chaos engineering, circuit breakers, error budgets, hedged requests), security (AuthN/AuthZ, OAuth 2.0 + OIDC, JWT, encryption at rest / in transit / end‑to‑end, OWASP Top 10, mTLS, threat modelling with STRIDE), observability (logs/metrics/traces, SLI/SLO/SLA, OpenTelemetry, golden signals, exemplars), deployment (containers, K8s, service mesh, CI/CD, GitOps, progressive delivery), search and supporting building blocks (inverted index, geo‑indexes, ID generation, autocomplete, webhooks, feature flags), multi‑region architecture, cost & capacity engineering (FinOps), the recurring anti‑patterns to spot in a design discussion, and a full end‑to‑end Instagram worked example.
 
-This is **Part 3** of the three‑chapter System Design series, picking up from **[Chapter 35 — Data & Distributed Systems](35_system_design_data_distributed.md)**. If you skipped **[Chapter 34 — Foundations & Protocols](34_system_design_fundamentals_deep_dive.md)**, some references to load balancers, caching, and HTTP/TLS will assume that context.
+This is **Part 3** of the three‑chapter System Design series, picking up from **[Chapter 24 — Data & Distributed Systems](24_system_design_data_distributed.md)**. If you skipped **[Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md)**, some references to load balancers, caching, and HTTP/TLS will assume that context.
 
 **How to read it:**
 Same shape as the previous two chapters — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* ~3 hours cover‑to‑cover. The final three Parts (20–22) are case‑study material that ties everything together — read after at least skimming Parts 13–19 of this chapter and the two preceding chapters.
 
-The §X.Y numbering is continuous with Ch 34 and Ch 35 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 34, §4.8" or "Ch 35, §9.20").
+The §X.Y numbering is continuous with Ch 23 and Ch 24 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §4.8" or "Ch 24, §9.20").
 
 ---
 
@@ -116,11 +116,11 @@ Built into AWS SDK retries, Envoy, and the Netflix `concurrency-limits` library.
 ```
 
 Defences:
-- **Circuit breakers** (Ch 34, §4.8) — fail fast when downstream is unhealthy.
+- **Circuit breakers** (Ch 23, §4.8) — fail fast when downstream is unhealthy.
 - **Timeouts everywhere** — never an "infinite" call.
 - **Retry budgets** — limit retries to e.g. 10 % of normal RPS.
 - **Load shedding** — return 503 to *some* requests to save the rest.
-- **Bulkheads** (Ch 34, §4.9) — isolate so one bad tenant can't drown the pool.
+- **Bulkheads** (Ch 23, §4.9) — isolate so one bad tenant can't drown the pool.
 - **Backpressure** — push back upstream when overwhelmed.
 
 > **Google SRE rule:** "A retry is the same as a new request." Every retry must obey the same rate limit.
@@ -784,7 +784,7 @@ How does Elasticsearch decide "doc A is more relevant than doc B" for a query?
 
 **BM25** is the modern default (Lucene since 6.0). It dampens TF growth (a 100× repeated word isn't 100× more relevant) and normalizes for document length. Most search systems use it under the hood.
 
-Modern search adds a *second stage*: neural ranking with embeddings (RAG-style semantic search) on top of BM25 candidates. See Ch 24.
+Modern search adds a *second stage*: neural ranking with embeddings (RAG-style semantic search) on top of BM25 candidates. See Ch 28.
 
 ## 17.10 Geohash — the precision table
 
@@ -1082,7 +1082,7 @@ Every HTTP/gRPC call without an explicit timeout is a future production outage. 
 
 ## 20.10 Read-after-write surprises
 
-Writing to a DB then immediately reading from a replica that hasn't caught up. User pays, sees old balance, panics. Fix with Ch 35, §8.6 strategies — don't ignore it.
+Writing to a DB then immediately reading from a replica that hasn't caught up. User pays, sees old balance, panics. Fix with Ch 24, §8.6 strategies — don't ignore it.
 
 ## 20.11 Retry storms
 
@@ -1250,7 +1250,7 @@ Feed cache: Redis sorted set per user, scored by `created_at + ranking_signal`.
 | Concern | Mitigation |
 |---------|------------|
 | Hot celebrities | Hybrid feed; separate "big-account" cache shard |
-| Hot photo (viral) | CDN absorbs reads; like counter sharded via Ch 35, §9.20 PN-Counter |
+| Hot photo (viral) | CDN absorbs reads; like counter sharded via Ch 24, §9.20 PN-Counter |
 | Spam / abuse | Rate-limit uploads per user (token bucket); ML moderation queue |
 | Search at scale | Elasticsearch with hashtag-sharded indices |
 | Multi-region | Photo + follow stored in user's home region; cross-region reads via CDN |
@@ -1380,9 +1380,9 @@ Multiply users × actions × size → storage. Divide by 86,400 → RPS.
 
 ## 22.6 Where to go next in this repo
 
-- **Ch 20** — Design Fundamentals (SOLID, patterns, Java specifics)
-- **Ch 21** — ML System Design (recsys, ranking, feature stores)
-- **Ch 33** — Engineering Tools (Kafka, Redis, Spark, K8s in depth)
+- **Ch 21** — Design Fundamentals (SOLID, patterns, Java specifics)
+- **Ch 26** — ML System Design (recsys, ranking, feature stores)
+- **Ch 22** — Engineering Tools (Kafka, Redis, Spark, K8s in depth)
 
 This chapter is the **map**; those three are the **terrain**.
 
@@ -1413,8 +1413,8 @@ This chapter is the **map**; those three are the **terrain**.
 
 > **End of the three‑chapter System Design series.** Continue your study with:
 >
-> - **[Chapter 20 — Design Fundamentals](20_design_fundamentals.md)** — SOLID, design patterns, Java specifics.
-> - **[Chapter 21 — ML System Design](21_ml_system_design.md)** — recsys, ranking, feature stores.
-> - **[Chapter 33 — Engineering Tools](33_engineering_tools.md)** — Kafka, Redis, Spark, K8s in depth.
+> - **[Chapter 21 — Design Fundamentals](21_design_fundamentals.md)** — SOLID, design patterns, Java specifics.
+> - **[Chapter 26 — ML System Design](26_ml_system_design.md)** — recsys, ranking, feature stores.
+> - **[Chapter 22 — Engineering Tools](22_engineering_tools.md)** — Kafka, Redis, Spark, K8s in depth.
 >
 > The three System Design chapters are the **map**; those three are the **terrain**.

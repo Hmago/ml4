@@ -1,4 +1,4 @@
-# Chapter 14 — Model Evaluation & Tuning
+# Chapter 13 — Model Evaluation & Tuning
 
 > "A model is only as good as the evidence you have that it works on data it has never seen."
 
@@ -1042,4 +1042,4 @@ Deploy **Model A** (91% ± 1.0%). Although Model B has a higher mean (92%), its 
 
 ---
 
-**Previous:** [Chapter 13 — Neural Networks](13_neural_networks.md) | **Next:** [Chapter 15 — Deep Learning Reference](15_deep_learning.md)
+**Previous:** [Chapter 12 — Key Algorithms Deep Dive](12_key_algorithms.md) | **Next:** [Chapter 14 — Neural Networks](14_neural_networks.md)

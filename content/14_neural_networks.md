@@ -1,4 +1,4 @@
-# Chapter 13 — Neural Networks & Deep Learning
+# Chapter 14 — Neural Networks & Deep Learning
 
 ---
 
@@ -605,7 +605,7 @@ Practical guidance: for most modern NLP, use a Transformer instead. RNNs/LSTMs r
 
 > The **Transformer** (Vaswani et al., 2017) processes sequences using **self-attention** — a mechanism that lets each token compute a weighted combination of all other tokens' representations in parallel, without recurrence. It has replaced RNNs as the dominant architecture for NLP, and increasingly for vision and audio.
 
-For a thorough treatment, see Chapter 13 (LLMs & Transformers). Here we cover the core mechanics.
+For a thorough treatment, see Chapter 14 (LLMs & Transformers). Here we cover the core mechanics.
 
 ### Self-Attention: Q, K, V
 
@@ -1019,4 +1019,4 @@ This is mode collapse. The generator found a single output that reliably fools t
 
 ---
 
-**Previous:** [Chapter 12 — Key Algorithms Deep Dive](12_key_algorithms.md) | **Next:** [Chapter 14 — Model Evaluation & Tuning](14_model_evaluation.md)
+**Previous:** [Chapter 13 — Model Evaluation & Tuning](13_model_evaluation.md) | **Next:** [Chapter 15 — Reinforcement Learning](15_reinforcement_learning.md)

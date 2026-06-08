@@ -1,5 +1,13 @@
 # Content Review — ML Study Platform
 
+> **Note (2026-06-15 update):** This audit was performed against the **prior**
+> chapter numbering (Ch 01–32 plus 15p). The repo has since been resequenced
+> so that Quick Reference items (00, 00p) sit at the top, RL moved to Ch 15,
+> System Design grouped as Ch 21–26, etc. The chapter numbers and filenames
+> below describe the pre-resequencing state; use this document as historical
+> commentary on per-chapter quality, not as a navigation reference. See
+> `README.md` for current chapter numbering.
+
 > **Scope:** All 33 content files (`content/*.md`, ~330,000 words / ~108 hrs).
 > **Date:** 2026-06-01
 > **Method:** Parallel deep-read of every chapter against four lenses — technical accuracy, completeness/gaps, currency (mid-2026), and Google AI Engineer interview relevance.

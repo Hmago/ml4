@@ -1,4 +1,4 @@
-# Chapter 07 — Core Concepts & Terminology
+# Chapter 8 — Core Concepts & Terminology
 
 > "A language that doesn't affect the way you think about programming is not worth knowing."
 > — Alan Perlis. The same is true of ML vocabulary: these concepts shape how you *think*.
@@ -2236,5 +2236,5 @@ Good default for practitioners who want a schedule without specifying the total 
 
 ---
 
-**Previous:** [Chapter 3 — Introduction](06_introduction.md)
-**Next:** [Chapter 5 — Data Preprocessing](08_data_preprocessing.md)
+**Previous:** [Chapter 7 — Introduction](07_introduction.md)
+**Next:** [Chapter 9 — Data Preprocessing](09_data_preprocessing.md)

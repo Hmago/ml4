@@ -1,4 +1,4 @@
-# Chapter 29 — ML Interview Questions
+# Chapter 32 — ML Interview Questions
 
 > Covering Data Science & AI Engineer positions at the world's top AI companies.
 

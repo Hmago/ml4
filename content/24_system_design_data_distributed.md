@@ -1,16 +1,16 @@
-# Chapter 35 — System Design — Part 2: Data & Distributed Systems
+# Chapter 24 — System Design — Part 2: Data & Distributed Systems
 
 > "Show me your flowcharts and conceal your tables, and I shall continue to be mystified. Show me your tables, and I won't usually need your flowcharts; they'll be obvious." — Fred Brooks, *The Mythical Man‑Month*
 
 **What this chapter covers:**
 The data plane of system design — databases (SQL vs NoSQL, internals, indexing, MVCC/WAL, LSM, schema migrations, specialised stores, backups, DB security), scaling them out (vertical, replication, pooling, partitioning vs sharding, CQRS, online resharding, multi‑region DB architectures, DR), the distributed‑systems theory that holds it all together (CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, CRDTs, Bloom filters), messaging & streaming (Kafka, delivery guarantees, outbox + CDC), storage systems (block/file/object, lakes vs warehouses, erasure coding), and data processing (batch vs stream, MapReduce, Lambda & Kappa, exactly‑once).
 
-This is **Part 2** of the three‑chapter System Design series. Read **[Chapter 34 — Foundations & Protocols](34_system_design_fundamentals_deep_dive.md)** first if you haven't covered the network/edge stack (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) — many sections below assume those primitives. **[Chapter 36 — Operations & Case Studies](36_system_design_operations_case_studies.md)** builds on this chapter.
+This is **Part 2** of the three‑chapter System Design series. Read **[Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md)** first if you haven't covered the network/edge stack (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) — many sections below assume those primitives. **[Chapter 25 — Operations & Case Studies](25_system_design_operations_case_studies.md)** builds on this chapter.
 
 **How to read it:**
 Each topic follows the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* You can read it cover‑to‑cover (~4 hours) or jump to specific building blocks.
 
-The §X.Y numbering is continuous with Ch 34 and Ch 36 (this chapter contains §7.1 … §12.x). Cross‑chapter pointers are prefixed (e.g. "Ch 34, §3.21" or "Ch 36, §17.9").
+The §X.Y numbering is continuous with Ch 23 and Ch 25 (this chapter contains §7.1 … §12.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §3.21" or "Ch 25, §17.9").
 
 ---
 
@@ -743,7 +743,7 @@ Optimised for `INSERT` by timestamp, range queries, and aggregations over time w
 
 ### Search engines (Elasticsearch, OpenSearch, Solr, Meilisearch)
 
-Inverted index, tokenisation, BM25 relevance scoring (Ch 36, §17.9), faceted aggregations, typo tolerance, geo, highlighting. Use them for **search** and **log analytics**; *don't* use them as a primary source of truth — they have eventual consistency, no transactions, and reindex cycles are expensive.
+Inverted index, tokenisation, BM25 relevance scoring (Ch 25, §17.9), faceted aggregations, typo tolerance, geo, highlighting. Use them for **search** and **log analytics**; *don't* use them as a primary source of truth — they have eventual consistency, no transactions, and reindex cycles are expensive.
 
 ### Vector databases (pgvector, Qdrant, Pinecone, Weaviate, Milvus, Chroma)
 
@@ -1216,7 +1216,7 @@ For multi-tenant apps with geo-tied users (GDPR, data residency):
    tenant=APAC rows ──▶ APAC region (sole owner)
 ```
 
-Each row has **one home**; writes are always local; cross-region reads are explicit and rare. Spanner, CockroachDB, and YugabyteDB all support this natively. Often the simplest answer to data sovereignty (Ch 36, §18.6).
+Each row has **one home**; writes are always local; cross-region reads are explicit and rare. Spanner, CockroachDB, and YugabyteDB all support this natively. Often the simplest answer to data sovereignty (Ch 25, §18.6).
 
 ## 8.17 Polyglot persistence — the right DB for each job
 
@@ -1335,7 +1335,7 @@ This captures the *daily* trade-off, not just the rare partition. Most apps live
 
 Two generals on opposite hills must coordinate an attack. Only way to communicate is messengers through enemy territory (who may be captured). **Impossible** to guarantee both agree to attack.
 
-**Implication:** With an unreliable network, you can never *guarantee* a message was received and the sender knows it was received. This is why **exactly-once delivery is impossible** — only "at-least-once + idempotency" (Ch 34, §3.21) or "at-most-once + accepted loss."
+**Implication:** With an unreliable network, you can never *guarantee* a message was received and the sender knows it was received. This is why **exactly-once delivery is impossible** — only "at-least-once + idempotency" (Ch 23, §3.21) or "at-most-once + accepted loss."
 
 ### Byzantine Generals
 
@@ -1619,7 +1619,7 @@ Even with leases, a GC pause can cause this:
 
 ### Redlock controversy
 
-Redis's "Redlock" tries to do distributed locking on top of 5 independent Redis nodes. Martin Kleppmann famously argued it's unsafe under clock drift and network delays; antirez (Redis author) pushed back. Net advice: **don't use Redis-based locks for correctness-critical operations**. Use them for performance optimisation (avoid duplicate work) where a rare double-execution is tolerable, paired with idempotency (Ch 34, §3.21).
+Redis's "Redlock" tries to do distributed locking on top of 5 independent Redis nodes. Martin Kleppmann famously argued it's unsafe under clock drift and network delays; antirez (Redis author) pushed back. Net advice: **don't use Redis-based locks for correctness-critical operations**. Use them for performance optimisation (avoid duplicate work) where a rare double-execution is tolerable, paired with idempotency (Ch 23, §3.21).
 
 ### What to use instead
 
@@ -1853,7 +1853,7 @@ The takeaway: every consensus protocol you'll use chooses **safety over liveness
    └─────────────────────────────────────────────────────────────┘
 ```
 
-> **Idempotency tokens** in distributed flows are essential glue here — see Ch 34, §3.21 for the implementation pattern (cross-referenced to avoid duplicating).
+> **Idempotency tokens** in distributed flows are essential glue here — see Ch 23, §3.21 for the implementation pattern (cross-referenced to avoid duplicating).
 
 ---
 
@@ -2222,6 +2222,6 @@ The killer feature of "Kafka-as-log + Flink" is **replayability**: bug in the lo
 
 ---
 
-> **Continued in [Chapter 36 — System Design — Part 3: Operations & Case Studies](36_system_design_operations_case_studies.md).** Part 3 picks up at §13.1 and covers reliability and chaos engineering, security (AuthN/AuthZ, OAuth/OIDC, JWT, crypto, OWASP, mTLS, STRIDE), observability (logs/metrics/traces, SLI/SLO, OpenTelemetry, golden signals), deployment (containers, K8s, GitOps, progressive delivery), search and supporting building blocks, multi‑region architecture, FinOps, the anti‑patterns to spot in design discussions, and a full Instagram worked example.
+> **Continued in [Chapter 25 — System Design — Part 3: Operations & Case Studies](25_system_design_operations_case_studies.md).** Part 3 picks up at §13.1 and covers reliability and chaos engineering, security (AuthN/AuthZ, OAuth/OIDC, JWT, crypto, OWASP, mTLS, STRIDE), observability (logs/metrics/traces, SLI/SLO, OpenTelemetry, golden signals), deployment (containers, K8s, GitOps, progressive delivery), search and supporting building blocks, multi‑region architecture, FinOps, the anti‑patterns to spot in design discussions, and a full Instagram worked example.
 >
-> **Coming from Part 1?** Return to [Chapter 34 — Foundations & Protocols](34_system_design_fundamentals_deep_dive.md) for the network/edge stack referenced throughout this chapter.
+> **Coming from Part 1?** Return to [Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md) for the network/edge stack referenced throughout this chapter.

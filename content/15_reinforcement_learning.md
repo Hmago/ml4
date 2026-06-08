@@ -1,4 +1,4 @@
-# Chapter 11 — Reinforcement Learning
+# Chapter 15 — Reinforcement Learning
 
 ---
 
@@ -980,4 +980,4 @@ Model-free (e.g., DQN, PPO): learns directly from experience without modelling e
 
 ---
 
-**Previous:** [Chapter 10 — Unsupervised Learning](10_unsupervised_learning.md) | **Next:** [Chapter 12 — Key Algorithms Deep Dive](12_key_algorithms.md)
+**Previous:** [Chapter 14 — Neural Networks](14_neural_networks.md) | **Next:** [Chapter 16 — Deep Learning Reference](16_deep_learning.md)

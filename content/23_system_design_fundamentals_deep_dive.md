@@ -1,19 +1,19 @@
-# Chapter 34 — System Design — Part 1: Foundations & Protocols
+# Chapter 23 — System Design — Part 1: Foundations & Protocols
 
 > "All architecture is design, but not all design is architecture. Architecture represents the significant design decisions that shape a system, where 'significant' is measured by cost of change." — Grady Booch
 
 **What this chapter covers:**
-The first of three System Design chapters. This part lays the foundations and the network/edge stack: how to think about scalability and availability, the protocol stack (HTTP/TCP/UDP/DNS/TLS/gRPC/WebSockets/GraphQL), load balancing and traffic management, caching, and CDN. The data‑plane and operations chapters that follow (Ch 35, Ch 36) build directly on these primitives.
+The first of three System Design chapters. This part lays the foundations and the network/edge stack: how to think about scalability and availability, the protocol stack (HTTP/TCP/UDP/DNS/TLS/gRPC/WebSockets/GraphQL), load balancing and traffic management, caching, and CDN. The data‑plane and operations chapters that follow (Ch 24, Ch 25) build directly on these primitives.
 
 **How to read it:**
 Each topic follows the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* You can read it cover‑to‑cover (~3 hours) or jump to a specific building block.
 
 This is **Part 1** of the three‑chapter series:
-- **Chapter 34** (this chapter) — Foundations & Protocols
-- **Chapter 35** — Data & Distributed Systems (databases, scaling, CAP/consensus, messaging, storage, data processing)
-- **Chapter 36** — Operations & Case Studies (reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, Instagram walk‑through)
+- **Chapter 23** (this chapter) — Foundations & Protocols
+- **Chapter 24** — Data & Distributed Systems (databases, scaling, CAP/consensus, messaging, storage, data processing)
+- **Chapter 25** — Operations & Case Studies (reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, Instagram walk‑through)
 
-The §X.Y numbering is continuous across the three chapters, so a reference like "§9.9" is in Ch 35 and "§17.7" is in Ch 36. Cross‑chapter pointers are prefixed (e.g. "Ch 35, §9.9").
+The §X.Y numbering is continuous across the three chapters, so a reference like "§9.9" is in Ch 24 and "§17.7" is in Ch 25. Cross‑chapter pointers are prefixed (e.g. "Ch 24, §9.9").
 
 ---
 
@@ -212,7 +212,7 @@ If a request fans out to N backends in parallel and you wait for *all* of them, 
    100 backends in parallel      → user p99 ≈ p9999 of one backend
 ```
 
-A 1-in-100 slow backend becomes a 1-in-1 slow user experience at fan-out 100. This is why Google obsesses over tail latency and uses **hedged requests** (Ch 36, §13.7).
+A 1-in-100 slow backend becomes a 1-in-1 slow user experience at fan-out 100. This is why Google obsesses over tail latency and uses **hedged requests** (Ch 25, §13.7).
 
 ## 2.8 The CAP/PACELC mental shortcut for any product
 
@@ -698,7 +698,7 @@ The server sends leaf + intermediates. The client walks up to a trusted root and
 - **Session ID** (TLS 1.2) — server keeps state, client sends ID to skip negotiation.
 - **Session ticket** (TLS 1.2/1.3) — server encrypts state, hands it to client; stateless servers can resume.
 
-> **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in Ch 36, §14.10.
+> **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in Ch 25, §14.10.
 
 ## 3.11 Connection management — pooling, keep-alive, HOL blocking, TFO
 
@@ -815,7 +815,7 @@ If `SO_SNDBUF` or `SO_RCVBUF` is smaller, **you can't fill the pipe** no matter 
 - **Resources, not actions.** `POST /payments` (a *payment* resource), not `POST /makePayment`.
 - **Verbs match semantics.** `PUT` is idempotent — use it for "set the state to this." `POST` for "create something new" or non-idempotent actions.
 - **Status codes do the talking.** Don't return `200 {"error": "..."}` — use the real status (see §3.23).
-- **Pagination is cursor-based, not offset.** (See Ch 36, §17.7 — offset pagination breaks on writes.)
+- **Pagination is cursor-based, not offset.** (See Ch 25, §17.7 — offset pagination breaks on writes.)
 - **Filtering and sorting are query parameters.** `GET /orders?status=paid&sort=-created_at`.
 - **Hypermedia (HATEOAS)** is the original REST ideal — responses link to next actions. *Almost no one does this in practice.* Don't sweat it.
 - **Errors are structured.** Return RFC 7807 (`application/problem+json`) with `type`, `title`, `status`, `detail`, `instance`.
@@ -897,7 +897,7 @@ One round-trip, exactly the fields the client wants, nested traversal. Mobile te
 ### Schema, resolvers, and the N+1 trap
 
 - **Schema** — types, queries, mutations, subscriptions.
-- **Resolvers** — one function per field. Naive resolvers fan out: `user.posts` runs *one DB query per user*. Solution: **DataLoader** batches and dedupes within a request tick. (See Ch 35, §7.10 for the general N+1 problem.)
+- **Resolvers** — one function per field. Naive resolvers fan out: `user.posts` runs *one DB query per user*. Solution: **DataLoader** batches and dedupes within a request tick. (See Ch 24, §7.10 for the general N+1 problem.)
 
 ### Subscriptions
 
@@ -1354,7 +1354,7 @@ Like a ship's watertight compartments — isolate resources so one tenant or fea
 
 Naive `hash(key) % N` re-routes most traffic when servers come and go — disastrous when each server holds a warm cache or stateful connection.
 
-- **Consistent hashing** (Ch 35, §9.9) — adding/removing one server reshuffles only `1/N` of keys.
+- **Consistent hashing** (Ch 24, §9.9) — adding/removing one server reshuffles only `1/N` of keys.
 - **Maglev** (Google) — builds a fixed-size lookup table where each backend gets nearly equal slots, and adding/removing a backend changes a *minimum* number of slots. O(1) per lookup, even at millions of QPS. Used in Google's L4 LB and inspired Facebook's Katran.
 - **Rendezvous / HRW hashing** — for each key, hash with every server and pick the highest. Naturally balanced, no ring data structure to maintain.
 
@@ -1535,7 +1535,7 @@ Often confused; they have very different fixes.
 
 | Problem | What happens | Defence |
 |---------|--------------|---------|
-| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (Ch 35, §9.17) to reject impossible keys before the cache |
+| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (Ch 24, §9.17) to reject impossible keys before the cache |
 | **Breakdown / Stampede** | A *single hot key* expires; thousands of concurrent readers all miss simultaneously | Single-flight (mutex), probabilistic early expiry, never-expire + background refresh |
 | **Avalanche** | *Many keys* expire around the same time (or the cache cluster restarts cold) | Randomize TTLs (±20 %), pre-warm cache on startup, tiered caches |
 
@@ -1696,6 +1696,6 @@ Anycast is the secret sauce that lets Cloudflare absorb 100 Tbps DDoS attacks �
 
 ---
 
-> **Continued in [Chapter 35 — System Design — Part 2: Data & Distributed Systems](35_system_design_data_distributed.md).** Part 2 picks up the §X.Y numbering at §7.1 and covers databases (SQL/NoSQL internals, indexing, MVCC/WAL, LSM), scaling them out (replication, sharding, multi‑region), the distributed‑systems theory that holds it together (CAP, consensus, time, locks, CRDTs), messaging & streaming (Kafka, outbox + CDC), storage systems, and data processing.
+> **Continued in [Chapter 24 — System Design — Part 2: Data & Distributed Systems](24_system_design_data_distributed.md).** Part 2 picks up the §X.Y numbering at §7.1 and covers databases (SQL/NoSQL internals, indexing, MVCC/WAL, LSM), scaling them out (replication, sharding, multi‑region), the distributed‑systems theory that holds it together (CAP, consensus, time, locks, CRDTs), messaging & streaming (Kafka, outbox + CDC), storage systems, and data processing.
 >
-> **After that:** [Chapter 36 — System Design — Part 3: Operations & Case Studies](36_system_design_operations_case_studies.md) covers reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, and a full Instagram worked example.
+> **After that:** [Chapter 25 — System Design — Part 3: Operations & Case Studies](25_system_design_operations_case_studies.md) covers reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, and a full Instagram worked example.

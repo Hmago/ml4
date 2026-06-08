@@ -111,6 +111,68 @@
   localStorage.setItem('ml4-migration-rename-v2', 'done');
 })();
 
+// ─── Migration v3: chapter resequencing (Quick Ref promoted, SD grouped, RL last) ───
+// Files were renamed wholesale to give cleaner monotonic numbering and to
+// group related sections. Walks the same fileKeyedStores and rewrites
+// affected keys so per-user progress survives the renumbering.
+(function migrateChapterPathsV3() {
+  if (localStorage.getItem('ml4-migration-resequence-v3') === 'done') return;
+  var remap = {
+    'content/15p_dl_llm_playbook.md': 'content/00p_dl_llm_playbook.md',
+    'content/32_quick_reference_cheat_sheet.md': 'content/00_quick_reference_cheat_sheet.md',
+    'content/28_behavioral_interview.md': 'content/02_behavioral_interview.md',
+    'content/02_staying_relevant_ai_era.md': 'content/03_staying_relevant_ai_era.md',
+    'content/03_aptitude_mental_math.md': 'content/04_aptitude_mental_math.md',
+    'content/04_brain_training.md': 'content/05_brain_training.md',
+    'content/05_math_fundamentals.md': 'content/06_math_fundamentals.md',
+    'content/06_introduction.md': 'content/07_introduction.md',
+    'content/07_core_concepts.md': 'content/08_core_concepts.md',
+    'content/08_data_preprocessing.md': 'content/09_data_preprocessing.md',
+    'content/09_supervised_learning.md': 'content/10_supervised_learning.md',
+    'content/10_unsupervised_learning.md': 'content/11_unsupervised_learning.md',
+    'content/14_model_evaluation.md': 'content/13_model_evaluation.md',
+    'content/13_neural_networks.md': 'content/14_neural_networks.md',
+    'content/11_reinforcement_learning.md': 'content/15_reinforcement_learning.md',
+    'content/15_deep_learning.md': 'content/16_deep_learning.md',
+    'content/16_llm.md': 'content/17_llm.md',
+    'content/17_ai_agents.md': 'content/18_ai_agents.md',
+    'content/18_ai_frameworks.md': 'content/19_ai_frameworks.md',
+    'content/19_2026_landscape.md': 'content/20_2026_landscape.md',
+    'content/20_design_fundamentals.md': 'content/21_design_fundamentals.md',
+    'content/33_engineering_tools.md': 'content/22_engineering_tools.md',
+    'content/34_system_design_fundamentals_deep_dive.md': 'content/23_system_design_fundamentals_deep_dive.md',
+    'content/35_system_design_data_distributed.md': 'content/24_system_design_data_distributed.md',
+    'content/36_system_design_operations_case_studies.md': 'content/25_system_design_operations_case_studies.md',
+    'content/21_ml_system_design.md': 'content/26_ml_system_design.md',
+    'content/23_practical_ml.md': 'content/27_practical_ml.md',
+    'content/23_practical_ml.ipynb': 'content/27_practical_ml.ipynb',
+    'content/24_semantic_search.md': 'content/28_semantic_search.md',
+    'content/25_gpus_tpus_infrastructure.md': 'content/29_gpus_tpus_infrastructure.md',
+    'content/26_google_ml_ecosystem.md': 'content/30_google_ml_ecosystem.md',
+    'content/27_dsa_coding.md': 'content/31_dsa_coding.md',
+    'content/29_interview_questions.md': 'content/32_interview_questions.md',
+    'content/30_llm_interview_questions.md': 'content/33_llm_interview_questions.md',
+    'content/31_google_top10_ml_interview.md': 'content/34_google_top10_ml_interview.md',
+  };
+  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights'];
+  storeKeys.forEach(function(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      var obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+      var changed = false;
+      var out = {};
+      Object.keys(obj).forEach(function(k) {
+        if (remap[k] && !obj[remap[k]]) { out[remap[k]] = obj[k]; changed = true; }
+        else { out[k] = obj[k]; }
+      });
+      if (changed) localStorage.setItem(key, JSON.stringify(out));
+    } catch(e) {}
+  });
+  localStorage.setItem('ml4-migration-resequence-v3', 'done');
+})();
+
 // ─── State ───
 let currentIndex = -1;
 let readChapters = JSON.parse(localStorage.getItem('ml4-read') || '{}');
