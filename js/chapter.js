@@ -45,7 +45,9 @@ const chapters = [
   { section: 'System Design' },
   { id: '20', file: 'content/20_design_fundamentals.md', title: 'Design Fundamentals (Java)' },
   { id: '21', file: 'content/21_ml_system_design.md', title: 'ML System Design (Google)' },
-  { id: '34', file: 'content/34_system_design_fundamentals_deep_dive.md', title: 'System Design Fundamentals — Deep Dive' },
+  { id: '34', file: 'content/34_system_design_fundamentals_deep_dive.md', title: 'System Design — Pt 1: Foundations & Protocols' },
+  { id: '35', file: 'content/35_system_design_data_distributed.md', title: 'System Design — Pt 2: Data & Distributed Systems' },
+  { id: '36', file: 'content/36_system_design_operations_case_studies.md', title: 'System Design — Pt 3: Operations & Case Studies' },
 
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },
