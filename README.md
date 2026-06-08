@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  32 chapters · ~110.5 hours of content · 400+ DSA problems │
+  │  34 chapters · ~111.5 hours of content · 400+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA · Export to PDF    │
   └─────────────────────────────────────────────────────────┘
@@ -78,8 +78,10 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 20 | Design Fundamentals (Senior SWE, Java) | ★★ | [20_design_fundamentals.md](content/20_design_fundamentals.md) | ~5.5 hrs | Intermediate-Advanced |
 | 21 | ML System Design (Google) | ★★★ | [21_ml_system_design.md](content/21_ml_system_design.md) | ~5.75 hrs | Intermediate-Advanced |
-| 34 | System Design Fundamentals — Deep Dive (CDN, LB, CAP, caching, queues, sharding, security, observability, multi-region, FinOps, anti-patterns, Instagram case-study) | ★★★ | [34_system_design_fundamentals_deep_dive.md](content/34_system_design_fundamentals_deep_dive.md) | ~9 hrs | Intermediate-Advanced |
-| | **System Design Total** | | | **~20.25 hrs** | |
+| 34 | System Design — Part 1: Foundations & Protocols (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) | ★★★ | [34_system_design_fundamentals_deep_dive.md](content/34_system_design_fundamentals_deep_dive.md) | ~3 hrs | Intermediate-Advanced |
+| 35 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage, data processing) | ★★★ | [35_system_design_data_distributed.md](content/35_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |
+| 36 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, anti-patterns, Instagram) | ★★★ | [36_system_design_operations_case_studies.md](content/36_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
+| | **System Design Total** | | | **~21.25 hrs** | |
 
 ### Practical & Infrastructure
 
