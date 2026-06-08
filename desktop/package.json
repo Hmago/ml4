@@ -1,6 +1,6 @@
 {
   "name": "ml-study-notes-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Win32 desktop app for the ML Study Notes learning platform.",
   "main": "main.js",
   "author": "ML Notes",

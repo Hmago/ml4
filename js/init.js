@@ -118,19 +118,33 @@ if ('serviceWorker' in navigator) {
 }
 
 // ─── Warm caches during idle ───
-// Pull the DSA index and all chapter markdown into memory while the user is
-// idle (served from the service-worker cache after first visit), so the first
-// search and the first DSA open have nothing left to download.
+// Prime the service-worker cache for the DSA index and every chapter so the
+// first search and the first DSA open have nothing left to download.
+// Important: we deliberately do NOT keep the chapter markdown in JS memory
+// (`cachedContent`) here. Pre-populating ~3MB of strings across 30+ chapters
+// was contributing to memory pressure on iOS PWAs (per-process RAM is tight)
+// and a contributing factor to "Loading…" hangs on the biggest chapters.
+// The SW cache persists across sessions, so the first open of any chapter
+// is still instant on repeat visits — we just don't pay a JS-heap cost for
+// chapters the user never opens this session.
 (function warmCachesWhenIdle() {
   const warm = () => {
     if (typeof ensureDsaIndex === 'function') ensureDsaIndex().catch(() => {});
-    if (typeof chapters !== 'undefined' && typeof cachedContent !== 'undefined') {
-      chapters.filter(ch => !ch.section && ch.file && !ch.notebook).forEach(ch => {
-        if (cachedContent[ch.file]) return;
-        fetch(ch.file).then(r => (r.ok ? r.text() : null)).then(md => {
-          if (md) cachedContent[ch.file] = md;
-        }).catch(() => {});
-      });
+    if (typeof chapters !== 'undefined') {
+      // Stagger fetches in small batches so we don't open 30+ parallel
+      // connections (iOS in particular limits concurrent fetches per origin).
+      const targets = chapters.filter(ch => !ch.section && ch.file && !ch.notebook).map(ch => ch.file);
+      const BATCH = 4;
+      let idx = 0;
+      const next = () => {
+        if (idx >= targets.length) return;
+        const slice = targets.slice(idx, idx + BATCH);
+        idx += BATCH;
+        Promise.allSettled(
+          slice.map(f => fetch(f).then(r => (r.ok ? r.blob() : null)).catch(() => null))
+        ).then(next);
+      };
+      next();
     }
   };
   if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 8000 });
