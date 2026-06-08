@@ -46,6 +46,12 @@ body {
   line-height: 1.6;
   display: flex;
   height: 100vh;
+  /* iOS standalone PWA uses `apple-mobile-web-app-status-bar-style: black-translucent`
+     (see index.html), which makes the WebView extend behind the status bar and
+     home indicator. `dvh` accounts for the dynamic viewport so 100% really is
+     the visible height, not the visible-plus-hidden-bars height. Falls back
+     to 100vh on browsers without dvh support. */
+  height: 100dvh;
   overflow: hidden;
   transition: background 0.2s, color 0.2s;
 }
@@ -813,6 +819,17 @@ body.sidebar-collapsed .content {
 }
 
 @media (max-width: 768px) {
+  /* iOS standalone PWA: pad the chrome around the notch / Dynamic Island and
+     the home-indicator. With `apple-mobile-web-app-status-bar-style:
+     black-translucent` + `viewport-fit=cover`, the WebView extends behind
+     these safe-area regions; without these paddings the topbar buttons sit
+     under the status bar (untappable) and the bottom of the chapter scrolls
+     behind the home indicator. `max()` keeps the desktop padding when the
+     env() value is 0 (non-iOS, non-standalone). */
+  .topbar { padding-top: max(8px, env(safe-area-inset-top)); }
+  .sidebar { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  .content-wrapper { padding-bottom: env(safe-area-inset-bottom); }
+
   .sidebar {
     position: fixed;
     left: 0; top: 0; bottom: 0;
@@ -830,6 +847,15 @@ body.sidebar-collapsed .content {
   .content table { font-size: 12px; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
   .content blockquote { margin-left: 0; padding-left: 12px; }
   .content img { max-width: 100%; height: auto; }
+
+  /* Defer rendering of off-screen large blocks. Each `<pre>` / `<table>`
+     gets `content-visibility: auto`, so iOS WebKit (and Chrome) skips
+     layout + paint until the element is near the viewport — a big initial-
+     render win on long chapters (the kind that previously hung iOS PWAs
+     on "Loading…"). `contain-intrinsic-size` reserves an estimated height
+     so scrollbar position and anchor links stay stable. */
+  .content pre,
+  .content table { content-visibility: auto; contain-intrinsic-size: auto 400px; }
 
   /* ── Topbar ── */
   .topbar { padding: 8px 12px; gap: 6px; }

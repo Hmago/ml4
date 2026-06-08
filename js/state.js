@@ -122,38 +122,115 @@ let fontSize = parseInt(localStorage.getItem('ml4-fontsize') || '0');
 var _javaTypes = 'String|Integer|Long|Double|Float|Boolean|Character|Byte|Short|Object|Number|Math|System|Arrays|Collections|Map|HashMap|TreeMap|LinkedHashMap|Set|HashSet|TreeSet|LinkedHashSet|List|ArrayList|LinkedList|Queue|Deque|ArrayDeque|PriorityQueue|Stack|Vector|StringBuilder|StringBuffer|Optional|Stream|Collectors|Iterator|Comparator|Comparable|Iterable|Map\\.Entry|Random|Scanner|BufferedReader|InputStreamReader|PrintWriter|File|Path|Paths|Files|Pattern|Matcher|Thread|Runnable|Future|CompletableFuture|ExecutorService|Executors|AtomicInteger|ConcurrentHashMap|CountDownLatch|Exception|RuntimeException|IOException|NullPointerException|IllegalArgumentException|IndexOutOfBoundsException|TreeNode|ListNode|Node';
 var _javaTypeRe = new RegExp('(^|[^\\w.])(' + _javaTypes + ')(?=[^\\w]|$)', 'g');
 
+// Inline `highlight` callback only does the FAST path (explicit lang that
+// hljs has registered). The expensive `highlightAuto` (O(n × languages))
+// used to run synchronously here for every untagged code block during
+// `marked.parse()`, which blocked the main thread for many seconds on big
+// chapters — on iOS PWAs the OS watchdog would then kill the renderer and
+// leave the chapter stuck on "Loading…". Auto-detection now happens after
+// first paint in chunked `requestIdleCallback` passes via
+// `lazyHighlightCodeBlocks` (see chapter.js loadChapter).
+function _applyJavaTypeColor(html) {
+  html = html.replace(/>([^<]+)</g, function(match, text) {
+    return '>' + text.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + '<';
+  });
+  if (html.charAt(0) !== '<') {
+    var firstTag = html.indexOf('<');
+    if (firstTag === -1) firstTag = html.length;
+    var prefix = html.substring(0, firstTag);
+    html = prefix.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + html.substring(firstTag);
+  }
+  return html;
+}
+
 marked.setOptions({
   highlight: function(code, lang) {
     if (lang === 'chart' || lang === 'mermaid') return code;
-    var html;
-    if (lang && hljs.getLanguage(lang)) {
-      html = hljs.highlight(code, { language: lang }).value;
-    } else {
-      var asciiIndicators = /[┌┐└┘├┤─│═║╔╗╚╝╠╣╦╩┬┴▼▲►◄●○★☆✓✗→←↑↓]/;
-      var dashHeavy = (code.match(/[-─═|│┌┐└┘├┤]/g) || []).length > code.length * 0.08;
-      if (asciiIndicators.test(code) || dashHeavy) return code;
-      var result = hljs.highlightAuto(code);
-      if (result.relevance < 5) return code;
-      html = result.value;
+    if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
+      var html = hljs.highlight(code, { language: lang }).value;
+      if (lang === 'java') html = _applyJavaTypeColor(html);
+      return html;
     }
-    // Post-process: colorize Java standard library types that hljs misses.
-    // Only replace bare text nodes (not inside existing <span> tags).
-    if (lang === 'java' || (!lang && html.indexOf('hljs-keyword') !== -1)) {
-      html = html.replace(/>([^<]+)</g, function(match, text) {
-        return '>' + text.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + '<';
-      });
-      if (html.charAt(0) !== '<') {
-        var firstTag = html.indexOf('<');
-        if (firstTag === -1) firstTag = html.length;
-        var prefix = html.substring(0, firstTag);
-        html = prefix.replace(_javaTypeRe, '$1<span class="hljs-type">$2</span>') + html.substring(firstTag);
-      }
-    }
-    return html;
+    // Unknown / unlabeled language: return null so marked uses its default
+    // escape (safe HTML), and let `lazyHighlightCodeBlocks` colorize it
+    // asynchronously after first paint.
+    return null;
   },
   breaks: false,
   gfm: true,
 });
+
+// ─── Post-render syntax highlighting (chunked, async) ───
+// Walks `pre code` blocks that marked left un-highlighted (unknown/unlabeled
+// language) and applies `hljs.highlightAuto` in small time-budgeted batches
+// so the main thread can stay responsive. This is the iOS-PWA-friendly
+// replacement for doing all the work inside `marked.parse()`.
+var _asciiIndicators = /[┌┐└┘├┤─│═║╔╗╚╝╠╣╦╩┬┴▼▲►◄●○★☆✓✗→←↑↓]/;
+function _highlightOneBlock(codeEl) {
+  if (codeEl.dataset.hl === '1' || codeEl.classList.contains('hljs')) return;
+  codeEl.dataset.hl = '1';
+  if (typeof hljs === 'undefined') return;
+  var cls = codeEl.className.match(/language-(\w+)/);
+  var lang = cls ? cls[1] : null;
+  if (lang === 'chart' || lang === 'mermaid') return;
+  // If the marked inline `highlight` already produced colored output we'd
+  // hit the `hljs` class check above; reaching here means it returned null
+  // (unknown lang) — so this is the auto-detect branch.
+  var code = codeEl.textContent;
+  // Skip ASCII-art / box-drawing diagrams — hljs would mangle them.
+  var dashHeavy = (code.match(/[-─═|│┌┐└┘├┤]/g) || []).length > code.length * 0.08;
+  if (_asciiIndicators.test(code) || dashHeavy) return;
+  // Very long blocks are rare in practice but extremely expensive to
+  // highlightAuto; cap to protect against the worst cases.
+  if (code.length > 20000) return;
+  var html;
+  try {
+    if (lang && hljs.getLanguage(lang)) {
+      html = hljs.highlight(code, { language: lang }).value;
+    } else {
+      var result = hljs.highlightAuto(code);
+      if (result.relevance < 5) return;
+      html = result.value;
+    }
+  } catch (e) { return; }
+  if (lang === 'java' || (!lang && html.indexOf('hljs-keyword') !== -1)) {
+    html = _applyJavaTypeColor(html);
+  }
+  codeEl.innerHTML = html;
+  codeEl.classList.add('hljs');
+}
+
+function lazyHighlightCodeBlocks(rootEl) {
+  if (!rootEl) return;
+  var blocks = rootEl.querySelectorAll('pre code');
+  if (!blocks.length) return;
+  var i = 0;
+  function tick(deadline) {
+    var hasTime = function() {
+      return deadline && typeof deadline.timeRemaining === 'function'
+        ? deadline.timeRemaining() > 4
+        : true;
+    };
+    var endBy = performance.now() + 20;
+    while (i < blocks.length && (hasTime() || performance.now() < endBy)) {
+      _highlightOneBlock(blocks[i]);
+      i++;
+      if (!deadline && performance.now() >= endBy) break;
+    }
+    if (i < blocks.length) {
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(tick, { timeout: 500 });
+      } else {
+        setTimeout(function() { tick(null); }, 0);
+      }
+    }
+  }
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(tick, { timeout: 500 });
+  } else {
+    setTimeout(function() { tick(null); }, 0);
+  }
+}
 
 // ─── Math Protection: extract LaTeX before marked.js can corrupt it ───
 function protectMath(md) {

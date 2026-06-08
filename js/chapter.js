@@ -124,7 +124,17 @@ async function loadChapter(index) {
     if (cachedContent[ch.file]) {
       md = cachedContent[ch.file];
     } else {
-      const res = await fetch(ch.file);
+      // 20s timeout — iOS PWA fetches occasionally hang on flaky networks or
+      // when the service worker can't reach the network. Without a timeout
+      // the UI sits on "Loading…" forever.
+      const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      const timer = setTimeout(() => { if (ctrl) ctrl.abort(); }, 20000);
+      let res;
+      try {
+        res = await fetch(ch.file, ctrl ? { signal: ctrl.signal } : undefined);
+      } finally {
+        clearTimeout(timer);
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       md = await res.text();
       cachedContent[ch.file] = md;
@@ -158,11 +168,27 @@ async function loadChapter(index) {
     // Update read button
     document.getElementById('readBtn').classList.toggle('active', !!readChapters[ch.file]);
 
+    // Defer syntax highlighting of unlabeled/unknown-language code blocks
+    // until after first paint. Chunked via requestIdleCallback so the iOS
+    // PWA main thread stays responsive on huge chapters (previously this
+    // ran synchronously inside marked.parse() and blocked rendering long
+    // enough that iOS WebKit would kill the page renderer).
+    if (typeof lazyHighlightCodeBlocks === 'function') {
+      lazyHighlightCodeBlocks(contentEl);
+    }
+
   } catch (err) {
-    contentEl.innerHTML = `<div class="loading" style="color:red;">
-      Failed to load ${ch.file}: ${err.message}<br><br>
-      <small>Make sure you're running a local server:<br>
-      <code>python -m http.server 8000</code></small>
+    const isAbort = err && (err.name === 'AbortError' || /aborted/i.test(err.message || ''));
+    const msg = isAbort ? 'Request timed out (20s).' : `Failed to load ${ch.file}: ${err.message}`;
+    contentEl.innerHTML = `<div class="loading" style="color:#b91c1c;flex-direction:column;gap:14px;text-align:center;">
+      <div>${msg}</div>
+      <button onclick="loadChapter(${index})"
+              style="background:var(--accent);color:white;border:none;border-radius:8px;padding:10px 22px;font-size:14px;cursor:pointer;font-weight:600;">
+        &#8635; Retry
+      </button>
+      <small style="color:var(--text-secondary);max-width:360px;">
+        If this keeps happening on iOS, try closing the app fully (swipe up from the app switcher) and reopening it &mdash; iOS sometimes serves stale or partial cached responses for large chapters.
+      </small>
     </div>`;
   }
 }
