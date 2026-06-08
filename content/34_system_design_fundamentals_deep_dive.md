@@ -6,7 +6,7 @@
 A single, comprehensive map of every fundamental building block you need to design real systems — CDN, load balancers, caching, sharding, CAP theorem, consensus, queues, observability, security, and more. Written in plain English first, then deep enough for senior interviews.
 
 **How to read it:**
-Each topic follows the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade-offs → Interview takeaway.* You can read it cover-to-cover (~6–7 hours) or jump straight to any building block. The final three parts (20–22) are case-study material that ties everything together — read those after at least skimming Parts 1–19.
+Each topic follows the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade-offs → Interview takeaway.* You can read it cover-to-cover (~9–10 hours) or jump straight to any building block. The final three parts (20–22) are case-study material that ties everything together — read those after at least skimming Parts 1–19.
 
 ---
 
@@ -242,173 +242,844 @@ Naming this trade-off in the first 60 seconds of a design discussion immediately
 
 # PART 3: NETWORKING & COMMUNICATION
 
-## 3.1 The protocol stack (just enough)
+> **The goal of this part:** give you enough networking intuition to (a) reason about end-to-end latency, (b) pick the right protocol for the job, and (c) recognise the classic failure modes that turn a healthy system into a brownout. Every later part (load balancing, caching, CDN, observability) sits on top of these ideas.
+
+## 3.1 The protocol stack — OSI, TCP/IP, and what your packet actually looks like
+
+Networking is taught two ways:
+
+- The **OSI 7-layer model** — academic, useful for vocabulary.
+- The **TCP/IP 4-layer model** — what actually ships in your kernel.
 
 ```
-   ┌──────────────────────────────────────┐
-   │ Application: HTTP, gRPC, WebSocket   │ ← what your code speaks
-   ├──────────────────────────────────────┤
-   │ Transport:   TCP (reliable) / UDP    │ ← reliability vs speed
-   ├──────────────────────────────────────┤
-   │ Network:     IP                      │ ← addressing & routing
-   ├──────────────────────────────────────┤
-   │ Link:        Ethernet, Wi-Fi         │ ← the wire
-   └──────────────────────────────────────┘
+   OSI                          TCP/IP                Example
+   ────────────────────────────────────────────────────────────────
+   7. Application                                     HTTP, gRPC, DNS
+   6. Presentation              Application           TLS, MIME, JSON
+   5. Session                                         (cookies, sessions)
+   4. Transport                 Transport             TCP, UDP, QUIC
+   3. Network                   Internet              IP (v4 / v6), ICMP
+   2. Data Link                 Link                  Ethernet, Wi-Fi
+   1. Physical                                        copper, fibre, radio
 ```
 
-### TCP vs UDP — when each wins
+You'll hear engineers say "**L4 load balancer**" (transport-layer, sees IP + port) or "**L7 load balancer**" (application-layer, sees URL and headers). That vocabulary comes from this stack.
+
+### Encapsulation — what's actually on the wire
+
+Every layer wraps the layer above it with its own header. By the time your `GET /` reaches the wire, it looks like:
+
+```
+   ┌──────────┬──────────┬──────────┬─────────────────┬──────┐
+   │ Ethernet │   IP     │   TCP    │   HTTP request  │ FCS  │
+   │ header   │ header   │ header   │  GET / HTTP/1.1 │      │
+   │ (14 B)   │ (20 B)   │ (20+ B)  │      ...        │ (4 B)│
+   └──────────┴──────────┴──────────┴─────────────────┴──────┘
+   │◀────────────  one Ethernet frame  ────────────────▶│
+```
+
+Each receiving layer peels off its header and hands the rest up. **The user's bytes are the smallest part of the packet.**
+
+### MTU, MSS, and fragmentation
+
+- **MTU** (Maximum Transmission Unit) — biggest frame the link can carry. Ethernet default: **1500 bytes**.
+- **MSS** (Maximum Segment Size) — biggest TCP payload that fits inside one IP packet that fits inside one MTU: typically `1500 − 20 (IP) − 20 (TCP) = 1460 bytes`.
+- Packets bigger than MTU get **fragmented** by IP — every hop must re-assemble. Modern stacks use **Path MTU Discovery** (PMTUD) to learn the smallest MTU on the path and avoid fragmentation.
+
+> **Why you care:** a misconfigured tunnel/VPN with a smaller MTU silently drops "DF" (don't-fragment) packets. Symptom: SSH works, large file downloads stall. Remember MTU when debugging "weird" connection issues.
+
+### Sockets — the API your code actually uses
+
+A **socket** is identified by the 5-tuple `(protocol, src IP, src port, dst IP, dst port)`. Two sockets cannot share the same 5-tuple. This is why a single client behind NAT can only open **~64K outbound connections to one (dst IP, dst port)** — once the ephemeral port range is exhausted, `EADDRNOTAVAIL`.
+
+### TCP vs UDP — the headline comparison
 
 | Property | TCP | UDP |
 |----------|-----|-----|
-| Connection | Yes (3-way handshake) | No |
-| Reliability | Guaranteed delivery + order | None — fire & forget |
-| Speed | Slower (overhead) | Faster |
-| Use case | HTTP, SSH, databases | DNS, video calls, gaming, QUIC |
+| Header size | 20+ bytes | 8 bytes |
+| Connection | 3-way handshake | None |
+| Reliability | Acknowledged, retransmitted | Fire & forget |
+| Ordering | Guaranteed | None |
+| Flow control | Sliding window | None |
+| Congestion control | Yes (Reno / Cubic / BBR) | App-level if you want it |
+| Multicast | No | Yes |
+| Use case | HTTP, SSH, databases | DNS, video calls, gaming, QUIC, telemetry |
 
-**Rule of thumb:** if losing a packet would ruin the meaning, use TCP. If losing a packet just means a missed frame (video, telemetry), UDP is fine.
+**Rule of thumb:** if losing a packet would ruin meaning, use TCP. If losing a packet just means a missed frame (video, telemetry), UDP wins on latency.
 
-## 3.2 HTTP/1.1, HTTP/2, HTTP/3
+## 3.2 TCP deep dive — handshakes, windows, and congestion control
 
-```
-   HTTP/1.1    one request per TCP conn (head-of-line blocking)
-                 ─▶─▶─▶─▶─▶
-   HTTP/2      multiplexed streams over one TCP conn
-                 ━━╋━╋━╋━━
-   HTTP/3      HTTP/2 features but over QUIC (UDP-based)
-                 ◇◇◇◇◇  — no TCP head-of-line block, faster handshake
-```
-
-Modern CDNs and Google services default to HTTP/3 (QUIC). Know that HTTP/3 ≈ "HTTP/2 features without TCP's pain."
-
-## 3.3 DNS — the phone book of the internet
-
-> **Simple Explanation:** You typed `google.com`; DNS turned it into `142.250.190.78`. Without DNS, you'd have to memorize IPs.
+### The 3-way handshake — opening a connection
 
 ```
-   Browser                Resolver        Root → TLD → Authoritative
-     │                       │                    │
-     │ google.com? ────────▶ │ ──── recursive ──▶ │
-     │                       │ ◀── 142.250.x.x ───│
-     │ ◀── 142.250.x.x ──────│
-     │                       │
-     └─ caches answer for TTL seconds
+   Client                                    Server
+     │                                          │
+     │ ── SYN (seq=x) ─────────────────────────▶│
+     │                                          │
+     │ ◀───────────── SYN-ACK (seq=y, ack=x+1) ─│
+     │                                          │
+     │ ── ACK (ack=y+1) ───────────────────────▶│
+     │                                          │
+     │            connection ESTABLISHED        │
 ```
 
-Key concepts:
+That's **1 round-trip** before you can send any data. Over a 150 ms WAN link, that's a 150 ms cost on every new connection — which is why connection pooling and keep-alive matter so much.
 
-- **TTL** — how long a DNS answer is cached. Low TTL = fast failover, more lookups. High TTL = less load, slower failover.
-- **A / AAAA records** — IPv4 / IPv6 addresses.
-- **CNAME** — alias to another DNS name.
-- **GeoDNS** — return a different IP based on the user's location (basis of CDNs).
-- **Anycast** — one IP, many physical locations; the network routes you to the nearest one.
+### The 4-way teardown — and why TIME_WAIT exists
 
-## 3.4 Synchronous vs. Asynchronous communication
+```
+   Active closer                           Passive closer
+     │ ── FIN ───────────────────────────────▶│
+     │ ◀── ACK ──────────────────────────────│
+     │                                        │
+     │ ◀── FIN ──────────────────────────────│
+     │ ── ACK ──────────────────────────────▶│
+     │                                        │
+     │  TIME_WAIT (2 × MSL ≈ 60 s)            │
+     │  socket can't be reused yet            │
+```
+
+After closing, the active closer keeps the 5-tuple "reserved" for **2 × Maximum Segment Lifetime** (≈ 60 s) to absorb any straggler packets. On a high-throughput client this exhausts ephemeral ports — symptom: "Cannot assign requested address." Mitigations: connection pooling, `SO_REUSEADDR`, server-initiated close instead of client-initiated.
+
+### Sequence numbers, sliding window, and flow control
+
+Every byte gets a sequence number. The receiver advertises a **window** — how many unacknowledged bytes it can buffer. Sender stops when window is full. That's **flow control**: protecting the receiver from drowning.
+
+### Congestion control — protecting the network
+
+Flow control protects the receiver. **Congestion control** protects the network from collapse when many flows share a link.
+
+```
+   cwnd
+    │              ╱╲              ╱╲
+    │            ╱   ╲           ╱
+    │   slow   ╱     ╲ AIMD    ╱
+    │   start ╱       ╲       ╱  ← packet loss = halve cwnd
+    │       ╱          ╲     ╱
+    │     ╱             ╲___╱
+    └──────────────────────────────▶ time
+```
+
+- **Slow start** — start with a tiny cwnd (~10 MSS), double per RTT. Aggressive ramp.
+- **Congestion avoidance** — once at threshold, grow by 1 MSS per RTT (additive increase).
+- **Packet loss** — halve cwnd (multiplicative decrease). This is **AIMD** (Additive Increase, Multiplicative Decrease).
+- **Modern algorithms** — Cubic (Linux default, fairer growth at high BDP) and **BBR** (Google, models bottleneck bandwidth + RTT instead of reacting to loss; massively better on lossy wireless).
+
+> **Why you care:** every new TCP connection starts in slow start. A burst of 100 short-lived connections each sending 50 KB pays the slow-start tax 100 times. One persistent pooled connection sending 5 MB does not. This alone justifies HTTP keep-alive and gRPC.
+
+### Other TCP gotchas you'll meet in production
+
+- **Nagle's algorithm** — coalesces small writes to avoid the "tinygram" problem. Combined with **delayed ACK** it can add up to 200 ms latency on chatty request/response. Fix: `TCP_NODELAY` for interactive protocols.
+- **SACK** (Selective ACK) — receiver can ACK non-contiguous ranges, so one lost packet doesn't force retransmission of everything that followed.
+- **TCP keep-alive** — kernel sends a probe every 2 hours by default to detect dead peers. **Way too long** for service-to-service; tune to seconds.
+- **Head-of-line (HOL) blocking** — TCP delivers in order, so one lost packet stalls everything behind it. This is why HTTP/3 moved to QUIC over UDP.
+
+## 3.3 UDP deep dive — when stateless wins
+
+UDP is "IP + ports + a checksum." That's it. **8-byte header**, no connection, no retransmit, no ordering, no congestion control.
+
+```
+   ┌──────────────┬──────────────┬──────────┬──────────┐
+   │ src port (2) │ dst port (2) │ len (2)  │ csum (2) │
+   └──────────────┴──────────────┴──────────┴──────────┘
+   │                       payload                      │
+```
+
+**When UDP wins:**
+
+- **DNS** — single request/response, retransmit is cheap, handshake would double latency.
+- **Video / voice** — late packets are useless; better to skip and play the next frame.
+- **Gaming** — same reason: stale position updates are worthless.
+- **QUIC / HTTP/3** — uses UDP as a thin transport and builds reliability + congestion control in user space.
+- **Telemetry** (statsd, syslog) — occasional loss is acceptable; servers can't afford TCP connections from millions of agents.
+- **Multicast / broadcast** — TCP can't do these (unicast only); UDP can.
+
+**Cost:** if you need reliability or ordering, you build it yourself in the app layer (QUIC, DTLS, RTP/RTCP, custom protocols). That's a lot of complexity to get right.
+
+## 3.4 HTTP/1.0, HTTP/1.1, HTTP/2, HTTP/3 — what changed and why
+
+```
+   HTTP/0.9 (1991)  one-line GET, no headers, no status codes — historical
+   HTTP/1.0 (1996)  headers, status codes, but one request per TCP conn
+   HTTP/1.1 (1997)  persistent connections (keep-alive), pipelining, Host:
+   HTTP/2   (2015)  binary framing, multiplexed streams, HPACK compression
+   HTTP/3   (2022)  HTTP/2 semantics over QUIC (UDP) — no HOL, faster handshake
+```
+
+### HTTP/1.1 — the 25-year workhorse
+
+- **Persistent connections (keep-alive)** — many sequential requests on one TCP conn.
+- **Pipelining** — send multiple requests without waiting for responses. *In practice, browsers disabled it* because intermediaries broke it and HOL blocking still applied.
+- **`Host:` header** — required; enabled virtual hosting (many sites per IP).
+- **Chunked transfer encoding** — server streams body without knowing total length up front.
+- **Limitation:** one in-flight request per connection. Browsers compensate by opening **~6 parallel connections per origin**, which is why "domain sharding" was a thing.
+
+### HTTP/2 — binary, multiplexed, compressed
+
+- **Binary framing layer** — frames of types DATA, HEADERS, SETTINGS, RST_STREAM, PING, GOAWAY, …
+- **Streams** — concurrent virtual channels over one TCP connection. Each stream has an ID and a priority.
+- **HPACK header compression** — index of repeated headers (cookies, user-agent) shrinks per-request bytes 10–20×.
+- **Server push** — server sends resources the client hasn't asked for yet. *Deprecated in 2022* (caches couldn't tell what the client already had).
+- **Single TCP connection** — fixes the 6-conn-per-origin hack.
+- **Limitation:** one lost TCP packet stalls **every** stream because TCP delivers in order. That's TCP-layer HOL blocking, which HTTP/3 fixes.
+
+### HTTP/3 — HTTP semantics over QUIC
+
+- **QUIC** = TLS 1.3 + reliable streams, all running over UDP, all in user space.
+- **Independent streams** — packet loss on stream A doesn't block stream B (no TCP-layer HOL).
+- **0-RTT resumption** — repeat client can send data with the first packet.
+- **Connection migration** — same connection survives a network change (Wi-Fi → 5G) because the connection ID isn't the 5-tuple.
+- **Wide adoption** — YouTube, Facebook, Cloudflare, AWS CloudFront default to HTTP/3 where available.
+
+Cheat sheet: HTTP/3 ≈ "HTTP/2 features minus TCP's pain."
+
+## 3.5 HTTP request/response anatomy
+
+```
+   REQUEST                                  RESPONSE
+   ────────────────────────────────         ─────────────────────────────
+   GET /api/users/42 HTTP/1.1               HTTP/1.1 200 OK
+   Host: api.example.com                    Content-Type: application/json
+   Accept: application/json                 Cache-Control: max-age=60
+   Authorization: Bearer eyJhbGc…           ETag: "v17"
+   User-Agent: curl/8.4                     Content-Length: 38
+
+                                            {"id":42,"name":"Ada"}
+```
+
+### HTTP methods — semantics matter
+
+| Method | Safe? | Idempotent? | Cacheable? | Typical use |
+|--------|-------|-------------|------------|-------------|
+| GET | yes | yes | yes | read |
+| HEAD | yes | yes | yes | metadata only (no body) |
+| OPTIONS | yes | yes | no | CORS preflight, capability discovery |
+| POST | no | no | rarely | create / non-idempotent action |
+| PUT | no | yes | no | full replace |
+| PATCH | no | no (usually) | no | partial update |
+| DELETE | no | yes | no | remove |
+
+- **Safe** — should not change server state.
+- **Idempotent** — N identical calls have the same effect as one.
+- **Cacheable** — response can be stored and reused.
+
+### Useful headers you'll meet daily
+
+- **`Authorization`** — bearer tokens, Basic auth, etc.
+- **`Accept` / `Content-Type`** — content negotiation (JSON vs Protobuf vs MsgPack).
+- **`Accept-Encoding` / `Content-Encoding`** — compression negotiation (gzip, br, zstd).
+- **`Range` / `Content-Range`** — partial downloads for video seek, resumable uploads.
+- **`X-Forwarded-For` / `Forwarded`** — original client IP when behind a proxy/LB.
+- **`X-Request-Id` / `traceparent`** — correlation across services.
+
+## 3.6 HTTP caching — `Cache-Control`, `ETag`, and friends
+
+Two questions: **(1) Can I reuse the cached copy without asking?** (freshness) **(2) If not, can I cheaply confirm it's still good?** (validation).
+
+### Freshness — `Cache-Control`
+
+```
+   Cache-Control: public, max-age=3600, stale-while-revalidate=60
+```
+
+- `public` / `private` — share across users vs per-user.
+- `max-age=N` — fresh for N seconds.
+- `s-maxage=N` — same but only for shared caches (CDNs).
+- `no-cache` — must revalidate every time (you can still store).
+- `no-store` — don't store at all (sensitive data).
+- `immutable` — never check again (perfect for content-addressed `app.abc123.js`).
+- `stale-while-revalidate=N` — serve stale up to N seconds while refetching in background.
+- `stale-if-error=N` — serve stale on origin error.
+
+### Validation — `ETag` and `Last-Modified`
+
+When the cached copy goes stale, the client revalidates instead of re-downloading:
+
+```
+   GET /avatar.png
+   If-None-Match: "v17"
+   ────────────────────▶
+                              ◀─── 304 Not Modified   (no body, ~150 bytes)
+```
+
+- **`ETag`** — opaque version identifier (often a content hash). Strong (`"abc"`) vs weak (`W/"abc"`).
+- **`Last-Modified` + `If-Modified-Since`** — date-based; coarser than ETag.
+
+### `Vary` — caches are per-representation
+
+```
+   Vary: Accept-Encoding, Accept-Language
+```
+
+Tells caches "store a separate copy per value of these headers" — otherwise you'll serve a Korean visitor the cached English copy. Be sparing: each value multiplies cache fragments.
+
+## 3.7 Cookies, sessions, and CORS
+
+### Cookie attributes you must set in 2026
+
+```
+   Set-Cookie: sid=abc123;
+               HttpOnly;        ← JS can't read it (XSS protection)
+               Secure;          ← only over HTTPS
+               SameSite=Lax;    ← block most CSRF; None requires Secure
+               Path=/;
+               Max-Age=3600;
+               Domain=example.com
+```
+
+- **`SameSite=Strict`** — never sent on cross-site requests. Logs you out when you click an inbound link.
+- **`SameSite=Lax`** — sent on top-level GET navigations. Sensible default.
+- **`SameSite=None`** — sent always. **Must** also set `Secure` (Chrome enforces).
+
+### CORS — Cross-Origin Resource Sharing
+
+Browsers enforce the **same-origin policy** (scheme + host + port). Any cross-origin `fetch` from JS is blocked unless the server opts in via CORS headers.
+
+```
+   1. Browser sends preflight (for non-simple requests)
+        OPTIONS /api
+        Origin: https://app.example.com
+        Access-Control-Request-Method: PUT
+        Access-Control-Request-Headers: Authorization
+
+   2. Server replies
+        Access-Control-Allow-Origin: https://app.example.com
+        Access-Control-Allow-Methods: GET, PUT
+        Access-Control-Allow-Headers: Authorization
+        Access-Control-Allow-Credentials: true
+        Access-Control-Max-Age: 600       ← cache preflight result
+
+   3. Browser sends the real request
+```
+
+Common mistakes:
+
+- `Access-Control-Allow-Origin: *` with `Allow-Credentials: true` — **invalid combination**, browsers reject.
+- Echoing the `Origin` header without a whitelist — opens you to *any* origin.
+- Forgetting to handle `OPTIONS` in your routing — preflight 404s.
+
+> **Reminder:** CORS protects the **browser user**, not your server. A curl/server-to-server call ignores CORS entirely. Don't use it as auth.
+
+## 3.8 Content compression — gzip, brotli, zstd
+
+```
+   Accept-Encoding: br, gzip, zstd
+   ───────────────────────────────▶
+                                       ◀─── Content-Encoding: br
+```
+
+| Algorithm | Ratio (vs gzip) | CPU cost | Notes |
+|-----------|-----------------|----------|-------|
+| **gzip** | baseline | low | universally supported, default for HTTP/1.x |
+| **brotli** | 15–25 % smaller | slightly higher | static assets shine; precompute at build time |
+| **zstd** | gzip-class size, ~3× faster decode | low | great for APIs, Kafka payloads, logs |
+
+**Compress text** (HTML, JSON, JS, CSS, SVG; Protobuf is already binary and only marginally helped). **Don't compress** images, video, audio, or anything already compressed — you waste CPU for ~0 % gain.
+
+**Security note:** compressing responses that mix attacker-controlled and secret content over TLS enables **CRIME / BREACH** attacks. Mitigation: don't reflect user input alongside secrets, or disable compression on those endpoints.
+
+## 3.9 DNS — the phone book of the internet
+
+> **Simple Explanation:** You typed `google.com`; DNS turned it into `142.250.190.78`. Without DNS, you'd memorise IPs.
+
+### The hierarchy
+
+```
+                                  .  (root, 13 server clusters)
+                                ╱   ╲
+                             com     org   ← TLD (Top-Level Domain)
+                              │
+                          example.com      ← Authoritative name servers
+                            ╱      ╲
+                       www         api     ← A / AAAA records
+```
+
+### Recursive resolution (what your laptop actually does)
+
+```
+   Your laptop          Recursive resolver     Root → TLD → Authoritative
+       │                       │
+       │ google.com? ────────▶ │ ── . where's com? ─────▶  root
+       │                       │ ◀─ go ask com
+       │                       │ ── google.com? ───────▶  com TLD
+       │                       │ ◀─ ask ns.google.com
+       │                       │ ── google.com? ───────▶  authoritative
+       │                       │ ◀─ 142.250.x.x
+       │ ◀─ 142.250.x.x ───────│
+       │  cache for TTL s      │  cache for TTL s
+```
+
+Your laptop only does the first hop (recursive query). The resolver does all the iterative work.
+
+### Record types you'll actually meet
+
+| Type | Maps name to | Example |
+|------|--------------|---------|
+| **A** | IPv4 address | `142.250.190.78` |
+| **AAAA** | IPv6 address | `2607:f8b0::200e` |
+| **CNAME** | Another name (alias) | `www → example.com` |
+| **MX** | Mail server | `10 mail.example.com` |
+| **TXT** | Free text (SPF, DKIM, domain ownership) | `v=spf1 include:_spf.google.com -all` |
+| **NS** | Authoritative name server | `ns1.example.com` |
+| **SOA** | Zone metadata (serial, refresh) | one per zone |
+| **SRV** | Service location + port | `_sip._tcp.example.com 10 5 5060 sip.example.com` |
+| **PTR** | Reverse (IP → name) | `78.190.250.142.in-addr.arpa → mail.google.com` |
+| **CAA** | Which CAs may issue certs for this domain | `0 issue "letsencrypt.org"` |
+| **ALIAS / ANAME** | CNAME-like at the apex (provider-specific) | `example.com → CDN hostname` |
+
+### Caching layers (latency hides here)
+
+```
+   Browser cache   →   OS resolver cache   →   ISP/resolver cache   →   Authoritative
+   (seconds)            (seconds–minutes)        (TTL)                   (truth)
+```
+
+A "DNS propagation delay" is just **caches honouring TTLs they already pulled** — you can't force the world to forget.
+
+### TTL strategy
+
+- **Low TTL (30–60 s)** — fast failover, painful resolver load. Use for things that move (load balancers, blue/green).
+- **High TTL (1 h–1 day)** — efficient, slow to change. Use for stable infrastructure (root domain pointing to your CDN).
+- **Pre-lower the TTL** before a planned migration, so the world is ready to forget.
+
+### Modern DNS — privacy and integrity
+
+- **DoH** (DNS over HTTPS, RFC 8484) and **DoT** (DNS over TLS, RFC 7858) encrypt the query so your ISP can't see/sell it.
+- **DNSSEC** signs records so resolvers can verify they weren't tampered with (defends against cache poisoning). Doesn't encrypt — just authenticates.
+- **EDNS Client Subnet (ECS)** — resolver passes a portion of the client's subnet to authoritative servers so CDN GeoDNS can pick a nearby POP.
+- **Split-horizon DNS** — same name resolves differently inside vs outside your network (internal services vs public site).
+- **Anycast** — one IP advertised from many locations; routers steer you to the nearest. The 13 root server clusters use this; CDNs do too.
+
+## 3.10 The TLS handshake — and why HTTP/3 wins on the wire
+
+### TLS 1.2 vs 1.3 round-trips
+
+```
+   TLS 1.2 (2 RTT before first app data):
+     1. ClientHello                       ──▶
+                                          ◀── ServerHello + cert
+     2. KeyExchange + Finished            ──▶
+                                          ◀── Finished
+     3. HTTP request                      ──▶
+
+   TLS 1.3 (1 RTT; 0-RTT on resumption):
+     1. ClientHello + key share           ──▶
+                                          ◀── ServerHello + cert + Finished
+     2. HTTP request                      ──▶
+
+   QUIC (HTTP/3): TLS baked into transport, 1-RTT cold, 0-RTT resumed
+```
+
+For a user 150 ms RTT away, dropping one round-trip is a 150 ms latency win on every fresh connection. Multiply by billions of users — meaningful cost savings, perceptibly snappier apps.
+
+### A cipher suite, dissected
+
+```
+   TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+       │       │        │              │
+       │       │        │              └─ MAC / PRF: SHA-384
+       │       │        └──────────────── bulk cipher: AES-256-GCM (AEAD)
+       │       └───────────────────────── auth: RSA (cert signature)
+       └───────────────────────────────── key exchange: ECDHE (forward-secret)
+```
+
+**Forward secrecy** (ECDHE) means: even if the server's private key leaks tomorrow, today's recorded traffic stays encrypted. TLS 1.3 mandates it.
+
+### Certificate chain validation
+
+```
+   Root CA   (in OS / browser trust store)
+       │ signs
+   Intermediate CA
+       │ signs
+   Your server cert   (presented in handshake)
+```
+
+The server sends leaf + intermediates. The client walks up to a trusted root and checks: signature valid, not expired, hostname matches (SAN), not revoked.
+
+### SNI, ALPN, OCSP — three acronyms you'll see
+
+- **SNI** (Server Name Indication) — client sends the hostname *in the ClientHello* so a server with many sites on one IP can pick the right cert. **Without SNI you'd need one IP per cert.**
+- **ALPN** (Application-Layer Protocol Negotiation) — client lists `["h2", "http/1.1"]`, server picks. This is how HTTP/2 gets negotiated transparently.
+- **OCSP stapling** — server periodically fetches a CA-signed "still valid" assertion and *staples* it to the handshake, so the client doesn't have to make a separate revocation check (which would leak browsing to the CA).
+
+### Session resumption — the cost of "first hello" amortised
+
+- **Session ID** (TLS 1.2) — server keeps state, client sends ID to skip negotiation.
+- **Session ticket** (TLS 1.2/1.3) — server encrypts state, hands it to client; stateless servers can resume.
+
+> **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in §14.10.
+
+## 3.11 Connection management — pooling, keep-alive, HOL blocking, TFO
+
+```
+   ┌────────────────────────────────────────────────────────────────┐
+   │ HTTP/1.1 + keep-alive: one TCP conn = many sequential requests │
+   │   pro: skip TCP+TLS handshake on each request                  │
+   │   con: head-of-line blocking — a slow response stalls all next │
+   │                                                                │
+   │ HTTP/2: one TCP conn, many concurrent streams                  │
+   │   pro: no HOL blocking at app layer                            │
+   │   con: HOL blocking at TCP layer (one lost packet stalls all)  │
+   │                                                                │
+   │ HTTP/3 (QUIC): each stream independent on UDP                  │
+   │   pro: no HOL blocking anywhere                                │
+   └────────────────────────────────────────────────────────────────┘
+```
+
+### TCP Fast Open (TFO)
+
+Modern Linux + supported clients can send application data **inside the SYN** of a resumed connection (via a server-issued cookie), shaving another RTT off the cold-cache case.
+
+### Sizing a connection pool
+
+A back-of-envelope formula from Little's Law (§2.5):
+
+```
+   pool_size  ≈  expected RPS × average request seconds
+```
+
+If your backend handles **200 RPS** with **50 ms** average latency, you need **~10** concurrent connections. Add headroom for variance (×2). Way more than that just **moves contention** into the kernel and burns server-side sockets.
+
+### TIME_WAIT and ephemeral-port exhaustion
+
+A client opening 5K connections per second to one backend on one (dst IP, dst port) will hit `EADDRNOTAVAIL` within a minute (TIME_WAIT × 60 s × open rate > 28K ephemeral ports). Mitigations:
+
+- **Reuse pooled connections.** This is the *only* real fix at scale.
+- Bind a wider source IP range.
+- Have the **server** initiate close (TIME_WAIT then lives on the server, where there are many more 5-tuples).
+- `net.ipv4.tcp_tw_reuse = 1` on Linux — safe with TCP timestamps.
+
+### Socket buffer sizing — Bandwidth-Delay Product (BDP)
+
+To saturate a 1 Gbps link with 30 ms RTT, your in-flight window needs:
+
+```
+   BDP = 1 Gbps × 0.030 s = 30 Mbit = 3.75 MB
+```
+
+If `SO_SNDBUF` or `SO_RCVBUF` is smaller, **you can't fill the pipe** no matter how fast the disk is. Modern Linux auto-tunes, but cloud images and tunnels often cap it.
+
+## 3.12 Synchronous vs. Asynchronous communication
 
 ```
    SYNCHRONOUS (request/response)        ASYNCHRONOUS (fire-and-forget)
    ─────────────────────────────         ─────────────────────────────
-   A ──── do it now ────▶ B               A ──── push event ──▶ Queue ──▶ B
-   A ◀──── result ────── B                A keeps going immediately
+   A ──── do it now ────▶ B              A ──── push event ──▶ Queue ──▶ B
+   A ◀──── result ────── B               A keeps going immediately
 
-   Simpler reasoning, tight coupling      Decoupled, resilient,
-   A waits for B (latency adds up)        but harder to reason about
-   B's outage = A's outage                B's outage is invisible to A
+   Simpler reasoning, tight coupling     Decoupled, resilient,
+   A waits for B (latency adds up)       but harder to reason about
+   B's outage = A's outage               B's outage is invisible to A
 ```
 
-**Rule:** use sync for queries that need an immediate answer; use async for commands that can be processed later (notifications, billing, analytics).
+### Patterns you'll meet
 
-## 3.5 API styles — REST vs gRPC vs GraphQL vs RPC
+| Pattern | When to use | Trade-off |
+|---------|-------------|-----------|
+| **Request/response (sync)** | UI needs an answer now | A inherits B's tail latency |
+| **Fire-and-forget (async)** | Notifications, analytics, audit | Lose the reply; need separate observation |
+| **Request/reply over messaging** | Async transport, sync semantics | Correlation IDs, reply queue per requester |
+| **Event-driven (pub/sub)** | Many consumers care | No coupling, hard to trace |
+| **Choreography** | Each service reacts to events | No central truth; emergent behaviour |
+| **Orchestration** | A workflow engine drives steps | Central point of failure & coupling, easy to reason about |
+
+**Rule:** use sync for queries that need an immediate answer; use async for commands that can be processed later (notifications, billing, analytics, search indexing). When you find yourself orchestrating *six* sync calls in a row, that's a signal to switch to async.
+
+## 3.13 API styles — REST vs gRPC vs GraphQL vs WebSockets
 
 | Style | Wire format | Best for | Weakness |
 |-------|-------------|----------|----------|
-| **REST** (HTTP+JSON) | Human-readable | Public APIs, browsers | Over-fetching, chatty, weak typing |
-| **gRPC** (HTTP/2+Protobuf) | Binary, schema'd | Internal microservices | Browsers need a proxy, not human-readable |
-| **GraphQL** | JSON | UIs that need flexible queries | Server complexity, hard to cache |
+| **REST** (HTTP+JSON) | Human-readable | Public APIs, browsers, edge caches | Over-fetching, chatty, weak typing |
+| **gRPC** (HTTP/2+Protobuf) | Binary, schema'd | Internal microservices, polyglot | Browsers need a proxy, not human-readable |
+| **GraphQL** | JSON over HTTP | UIs that need flexible queries | Server complexity, hard to cache |
 | **WebSocket** | Bidirectional, persistent | Chat, live dashboards | Stateful conns are harder to scale |
 | **Server-Sent Events** | One-way streaming over HTTP | Notifications, ticker feeds | Server → client only |
-| **Long polling** | HTTP, kept open until data arrives | Compatibility fallback | Doesn't scale to millions |
+| **Long polling** | HTTP, kept open until data | Fallback, low-volume push | Doesn't scale to millions |
+| **Webhooks** | HTTP POST from server | Async integrations across orgs | Receiver must be public; security burden |
 
 ### Quick decision tree
 
 ```
-   Need real-time bidirectional? ─── yes ──▶ WebSockets
+   Need real-time bidirectional?     ── yes ──▶ WebSockets
               │
               no
               ▼
-   Need server-push only? ─── yes ──▶ SSE
+   Need server-push only?            ── yes ──▶ SSE
               │
               no
               ▼
-   Internal service-to-service? ─── yes ──▶ gRPC
+   Internal service-to-service?      ── yes ──▶ gRPC
               │
               no
               ▼
-   UI needs flexible queries? ─── yes ──▶ GraphQL
+   UI needs flexible queries?        ── yes ──▶ GraphQL
               │
               no
               ▼
-                                          REST
+                                                REST
 ```
 
-## 3.6 Idempotency
+## 3.14 REST done right
 
-> **Simple Explanation:** An idempotent operation produces the same result whether you call it once or a hundred times. `DELETE /user/42` is idempotent. `POST /charge $10` is not (unless you add an idempotency key).
+- **Resources, not actions.** `POST /payments` (a *payment* resource), not `POST /makePayment`.
+- **Verbs match semantics.** `PUT` is idempotent — use it for "set the state to this." `POST` for "create something new" or non-idempotent actions.
+- **Status codes do the talking.** Don't return `200 {"error": "..."}` — use the real status (see §3.23).
+- **Pagination is cursor-based, not offset.** (See §17.7 — offset pagination breaks on writes.)
+- **Filtering and sorting are query parameters.** `GET /orders?status=paid&sort=-created_at`.
+- **Hypermedia (HATEOAS)** is the original REST ideal — responses link to next actions. *Almost no one does this in practice.* Don't sweat it.
+- **Errors are structured.** Return RFC 7807 (`application/problem+json`) with `type`, `title`, `status`, `detail`, `instance`.
 
-In distributed systems, **clients retry**. Without idempotency, retries cause duplicate charges, double emails, etc. Always design POST endpoints to accept an `Idempotency-Key` header.
+## 3.15 gRPC deep dive — Protobuf, deadlines, metadata, errors
 
-## 3.7 The TLS handshake — why HTTP/3 wins on the wire
+### Protobuf in one screen
 
-```
-   TLS 1.2 (2 round-trips before first app data):
-     1. ClientHello                        ──▶
-                                           ◀── ServerHello + cert
-     2. KeyExchange + Finished             ──▶
-                                           ◀── Finished
-     3. HTTP request                       ──▶
+```protobuf
+syntax = "proto3";
 
-   TLS 1.3 (1 round-trip; 0-RTT on resumed sessions):
-     1. ClientHello + key share            ──▶
-                                           ◀── ServerHello + cert + Finished
-     2. HTTP request                       ──▶
+message User {
+  int64  id    = 1;
+  string name  = 2;
+  string email = 3;
+}
 
-   HTTP/3 (QUIC): TLS baked into transport, 0-RTT on resumption
-```
-
-For a global user 150 ms RTT away, dropping one round-trip is a 150 ms latency win on every fresh connection. Multiply by billions of users — meaningful cost savings, perceptibly snappier apps.
-
-## 3.8 Connection management — pooling, keep-alive, and HOL blocking
-
-```
-   ┌────────────────────────────────────────────────────────────────┐
-   │ HTTP/1.1 + keep-alive: one TCP conn = many sequential requests   │
-   │   pro: skip TCP+TLS handshake on each request                     │
-   │   con: head-of-line blocking — a slow response stalls all next    │
-   │                                                                   │
-   │ HTTP/2: one TCP conn, many concurrent streams                     │
-   │   pro: no HOL blocking at app layer                               │
-   │   con: HOL blocking at TCP layer (one lost packet stalls streams) │
-   │                                                                   │
-   │ HTTP/3 (QUIC): each stream independent on UDP                     │
-   │   pro: no HOL blocking anywhere                                   │
-   └────────────────────────────────────────────────────────────────┘
+service UserService {
+  rpc GetUser   (GetUserRequest)   returns (User);
+  rpc ListUsers (ListUsersRequest) returns (stream User);
+}
 ```
 
-**Connection pooling** for outbound calls: reuse N idle connections instead of opening fresh ones every request. Size with Little's Law (§2.5). Too small → contention; too large → server-side socket exhaustion.
+- **Field numbers are forever.** Adding a field is backwards-compatible; **reusing a number is a breaking change**.
+- **Default values vanish on the wire.** A `string` defaulting to `""` is encoded as zero bytes — efficient, but means "missing" and "empty" look the same. Use `optional` if you need to tell them apart.
+- **Binary wire format** is ~5–10× smaller than JSON for typical RPCs.
 
-## 3.9 gRPC streaming modes
+### Deadlines, not timeouts
+
+In gRPC the **client sets a deadline** (absolute time) and the deadline **propagates** to downstream calls. If A calls B with a 200 ms deadline and B calls C, C is given the *remaining* budget, not a fresh 200 ms. This is how you stop cascading "everyone retries for 30 s" outages.
+
+### Metadata — headers, basically
+
+```
+   authorization: Bearer eyJ…
+   x-request-id: 7b3c…
+   user-agent:   my-service/1.4.2
+```
+
+### Canonical status codes (the 16)
+
+`OK`, `CANCELLED`, `UNKNOWN`, `INVALID_ARGUMENT`, `DEADLINE_EXCEEDED`, `NOT_FOUND`, `ALREADY_EXISTS`, `PERMISSION_DENIED`, `RESOURCE_EXHAUSTED`, `FAILED_PRECONDITION`, `ABORTED`, `OUT_OF_RANGE`, `UNIMPLEMENTED`, `INTERNAL`, `UNAVAILABLE` (the only one safe to auto-retry without idempotency), `DATA_LOSS`, `UNAUTHENTICATED`.
+
+### Interceptors
+
+Cross-cutting concerns (auth, logging, metrics, retries, tracing) plug in as **interceptors** (similar to HTTP middleware). One place to add OpenTelemetry tracing for every RPC.
+
+### gRPC-Web and reflection
+
+- **gRPC-Web** — browsers can't speak raw HTTP/2 trailers, so a tiny proxy (Envoy plugin, grpcweb-proxy) translates. Plan for this in any browser-first architecture.
+- **Reflection** — service describes itself at runtime; tools like `grpcurl` can talk to any service without `.proto` files. Enable in dev, disable in prod.
+
+## 3.16 gRPC streaming modes
 
 gRPC isn't just request/response. It has four modes built on HTTP/2:
 
-| Mode | Client sends | Server sends |
-|------|--------------|--------------|
-| Unary | 1 message | 1 message |
-| Server streaming | 1 message | many messages |
-| Client streaming | many messages | 1 message |
-| Bidirectional | many messages | many messages |
+| Mode | Client sends | Server sends | Example |
+|------|--------------|--------------|---------|
+| Unary | 1 message | 1 message | `GetUser` |
+| Server streaming | 1 message | many messages | Tail logs, large list pagination |
+| Client streaming | many messages | 1 message | Upload chunks |
+| Bidirectional | many messages | many messages | Chat, telemetry, live dashboards |
 
 Bidirectional streaming powers chat, telemetry uploads, and live dashboards — all without WebSockets.
 
-## 3.10 BFF — Backend For Frontend
+## 3.17 GraphQL deep dive — power and pain
+
+```
+   query {
+     user(id: 42) {
+       name
+       posts(last: 3) { title likes }
+     }
+   }
+```
+
+One round-trip, exactly the fields the client wants, nested traversal. Mobile teams love this.
+
+### Schema, resolvers, and the N+1 trap
+
+- **Schema** — types, queries, mutations, subscriptions.
+- **Resolvers** — one function per field. Naive resolvers fan out: `user.posts` runs *one DB query per user*. Solution: **DataLoader** batches and dedupes within a request tick. (See §7.8 for the general N+1 problem.)
+
+### Subscriptions
+
+Real-time updates via WebSocket (or SSE). Same schema, push-style.
+
+### Caching is the hard part
+
+REST caches at the URL. GraphQL POSTs the query — same URL, different bodies. Strategies:
+
+- **Persisted queries** — server stores the query, client sends a hash. URL becomes cacheable.
+- **Client cache** (Apollo, Relay) — normalise by entity ID.
+- **Edge GraphQL caches** (Apollo, Hasura) — typed cache keys.
+
+### Federation (Apollo Federation)
+
+Split the GraphQL schema across services. A gateway composes them at query time. Lets multiple teams own slices of one graph without a monolithic resolver layer.
+
+### When *not* to use GraphQL
+
+- Public APIs that need easy caching → REST.
+- Internal east-west, strict contracts → gRPC.
+- Tiny apps with one client → REST is fine; GraphQL is overhead.
+
+## 3.18 WebSockets deep dive
+
+### The handshake — HTTP upgrade
+
+```
+   GET /chat HTTP/1.1
+   Host: example.com
+   Upgrade: websocket
+   Connection: Upgrade
+   Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+   Sec-WebSocket-Version: 13
+   ─────────────────────────────────────────────▶
+                                                   ◀── 101 Switching Protocols
+                                                       Upgrade: websocket
+                                                       Connection: Upgrade
+                                                       Sec-WebSocket-Accept: …
+```
+
+After 101, the TCP connection is no longer HTTP — it carries WebSocket frames.
+
+### Frame format (high level)
+
+| Field | Notes |
+|-------|-------|
+| **opcode** | text (0x1), binary (0x2), close (0x8), ping (0x9), pong (0xA) |
+| **mask bit + key** | client → server frames *must* be masked (anti-cache-poisoning) |
+| **payload length** | 7-bit (≤125), 16-bit (≤64K), or 64-bit |
+| **payload** | the data |
+
+### Heartbeats — detecting dead peers
+
+Browsers send `pong` automatically in response to a server `ping`. Servers should ping every **15–30 s** to detect dead clients (NAT timeouts, sleeping laptops). Without this, your "active" connection count is a lie.
+
+### Scaling WebSockets
+
+```
+   Browser ──▶ Sticky LB ──▶ App box #1 ──┐
+   Browser ──▶ Sticky LB ──▶ App box #2 ──┼──▶ Redis pub/sub ──▶ deliver to all boxes
+   Browser ──▶ Sticky LB ──▶ App box #3 ──┘
+```
+
+- **Sticky sessions** — each WebSocket lives on one box.
+- **Backplane** — Redis pub/sub or Kafka so a message published by box #1 reaches a user connected to box #3.
+- **~50K–250K connections per box** is achievable on modern Linux with tuned file descriptors and `epoll`.
+- **`permessage-deflate`** — optional compression; great for chatty JSON, expensive on CPU.
+- **Reconnection** — clients must back off (1 s → 2 s → 4 s, capped) and resume from last seen message ID.
+
+## 3.19 Server-Sent Events & long polling
+
+### SSE — server push without WebSockets
+
+```
+   GET /events HTTP/1.1
+   Accept: text/event-stream
+   ─────────────────────────▶
+                                ◀── HTTP/1.1 200 OK
+                                    Content-Type: text/event-stream
+
+                                    event: price
+                                    id: 17
+                                    data: {"sym":"AAPL","px":189.4}
+
+                                    event: price
+                                    id: 18
+                                    data: {"sym":"AAPL","px":189.5}
+```
+
+- Browser exposes via `EventSource`; **auto-reconnects** using `Last-Event-Id` for replay.
+- One-way only (server → client). Use REST/gRPC for the inbound side.
+- Works over plain HTTP — no upgrade, no special LB config.
+
+### Long polling — the lowest-common-denominator push
+
+Client sends a request; server holds it open until data is available *or* timeout fires; client immediately reopens.
+
+```
+   Client ── GET /updates ──▶ Server (hold…)
+                              ◀── 200 {"messages":[...]}   when data arrives
+   Client ── GET /updates ──▶ Server (hold…)
+```
+
+Use only when SSE/WebSockets aren't an option. Doesn't scale to millions; the held connections still cost a TCP socket and a thread.
+
+### Which to pick
+
+```
+   bidirectional, low latency           → WebSocket
+   server → client, simple, HTTP-only   → SSE
+   client → server only                 → REST / gRPC
+   compatibility fallback               → long polling
+```
+
+## 3.20 API versioning
+
+You will break a contract one day. Plan how.
+
+| Strategy | Where the version lives | Pros | Cons |
+|----------|-------------------------|------|------|
+| **URI** | `/v1/users` | Visible, easy to route | Two URIs per resource forever |
+| **Header** | `Accept: application/vnd.acme.v2+json` | Clean URLs | Hidden from logs, harder to debug |
+| **Query parameter** | `/users?v=2` | Trivial | Caches duplicate; mixes config with data |
+
+### Compatibility rules that age well
+
+- **Never remove a field.** Mark it deprecated; remove in the next major.
+- **Never change a field's type.** Add a new field; deprecate the old.
+- **Never reuse a JSON key or Protobuf field number.**
+- **Add optional fields freely.** Default values keep old clients working.
+- **Communicate retirement.** Use the `Sunset` HTTP header and `Deprecation` header (RFC 8594).
+
+## 3.21 Idempotency
+
+> **Simple Explanation:** An idempotent operation produces the same result whether you call it once or a hundred times. `DELETE /user/42` is idempotent. `POST /charge $10` is not (unless you add an idempotency key).
+
+In distributed systems, **clients retry**. Without idempotency, retries cause duplicate charges, double emails, etc.
+
+### The standard pattern — `Idempotency-Key`
+
+```
+   POST /charges
+   Idempotency-Key: 8a1f-…-c923
+   Content-Type: application/json
+   {"amount": 1000, "currency": "USD"}
+```
+
+Server logic:
+
+1. Look up the key in a dedup store (Redis, DB table).
+2. **Not seen?** Process the request, store `(key → response body, status)`, **then** return.
+3. **Seen with a final response?** Return the stored response (don't re-execute).
+4. **Seen, still in-flight?** Either block briefly or return `409 Conflict` so the client backs off.
+
+### Implementation details that matter
+
+- **Window** — Stripe uses 24 hours. Long enough for any retry, short enough to bound storage.
+- **Scope** — key is per-account, per-endpoint. `(account_id, endpoint, key)` is the dedup tuple.
+- **Hash the request body** alongside the key; if a client reuses a key for a *different* body, reject with `422`.
+- **Atomicity** — the "store response + commit DB change" step must be in one transaction, or you'll execute twice on crash.
+
+### HTTP method idempotency cheat-sheet
+
+| Method | Idempotent? | Notes |
+|--------|-------------|-------|
+| GET, HEAD, OPTIONS | yes | safe also |
+| PUT, DELETE | yes | per HTTP spec |
+| POST | **no** by default — add a key |
+| PATCH | depends; usually not |
+
+## 3.22 BFF — Backend For Frontend
 
 ```
    Mobile UI ──▶ Mobile BFF ──┐
@@ -418,31 +1089,155 @@ Bidirectional streaming powers chat, telemetry uploads, and live dashboards — 
 
 One backend tailored per client (mobile / web / partner). It aggregates, transforms, and slims the response for that specific client. Pioneered by SoundCloud and Netflix. Avoids the "one God API trying to please everyone" trap.
 
-## 3.11 Common HTTP status codes you should *never* misuse
+### When BFF helps
+
+- Mobile clients on slow networks need small, pre-joined payloads.
+- Different surfaces (web, iOS, watchOS, partner API) genuinely diverge.
+- You can't change the upstream services fast enough.
+
+### When BFF hurts
+
+- One team, one client — BFF is just an extra hop.
+- Each BFF re-implements the same auth/logging/validation — pay the cost in a shared library or a service mesh instead.
+- BFF becomes a dumping ground for business logic (it shouldn't; it's a *shape adapter*).
+
+### Adjacent patterns
+
+- **Anti-Corruption Layer** — wrap a legacy/3rd-party API so the rest of the system doesn't see its warts.
+- **API composition** — gateway joins data from several services for a single response.
+- **GraphQL federation** — the GraphQL-native answer to "aggregate many services for one client."
+
+## 3.23 HTTP status codes you should *never* misuse
 
 ```
-   200 OK             — success with body
-   201 Created        — POST that created a new resource (Location header)
-   202 Accepted       — async work queued; no result yet
-   204 No Content     — success, body intentionally empty
-   301 / 308          — permanent redirect (308 preserves method)
-   302 / 307          — temporary redirect (307 preserves method)
-   304 Not Modified   — cache validator matched; reuse local copy
-   400 Bad Request    — your client did wrong
-   401 Unauthorized   — actually means *unauthenticated*
-   403 Forbidden      — authenticated but not allowed
-   404 Not Found      — resource doesn't exist
-   409 Conflict       — version mismatch / optimistic lock failure
-   422 Unprocessable  — body parsed but semantically invalid
-   429 Too Many       — rate-limited
-   499 Client Closed  — nginx-ism; client gave up before response
-   500 Internal Error — you broke
-   502 Bad Gateway    — upstream returned garbage
-   503 Service Unavail— you're overloaded / shedding load
-   504 Gateway Timeout— upstream took too long
+   1xx INFORMATIONAL
+   100 Continue              — "go ahead, send the body"
+   101 Switching Protocols   — WebSocket upgrade
+
+   2xx SUCCESS
+   200 OK                    — success with body
+   201 Created               — POST that created a new resource (use Location)
+   202 Accepted              — async work queued; no result yet
+   204 No Content            — success, body intentionally empty
+   206 Partial Content       — Range request answered
+
+   3xx REDIRECTION
+   301 Moved Permanently     — permanent (cache forever)
+   302 Found                 — temporary; old clients may swap method to GET
+   304 Not Modified          — cache validator matched; reuse local copy
+   307 Temporary Redirect    — like 302 but preserves method/body
+   308 Permanent Redirect    — like 301 but preserves method/body
+
+   4xx CLIENT ERROR
+   400 Bad Request           — your client did wrong (malformed)
+   401 Unauthorized          — actually means *unauthenticated*
+   403 Forbidden             — authenticated but not allowed
+   404 Not Found             — resource doesn't exist (or shouldn't be revealed)
+   405 Method Not Allowed    — wrong verb; respond with Allow: header
+   409 Conflict              — version mismatch / optimistic lock failure
+   410 Gone                  — used to exist, intentionally removed
+   415 Unsupported Media     — wrong Content-Type
+   422 Unprocessable         — body parsed but semantically invalid
+   428 Precondition Required — need If-Match / If-None-Match
+   429 Too Many Requests     — rate-limited (return Retry-After)
+   499 Client Closed         — nginx-ism; client gave up before response
+
+   5xx SERVER ERROR
+   500 Internal Error        — you broke
+   501 Not Implemented       — method/feature not supported (router-level)
+   502 Bad Gateway           — upstream returned garbage
+   503 Service Unavailable   — overloaded / shedding (return Retry-After)
+   504 Gateway Timeout       — upstream took too long
 ```
 
-Returning `200` on errors with `{"error": "..."}` in the body is a junior anti-pattern. Use the right status; clients (and load balancers!) reason about them.
+Returning `200` on errors with `{"error": "..."}` in the body is a junior anti-pattern. Use the right status; clients (and load balancers, retry libraries, browser caches) reason about them.
+
+### Retry semantics — what's safe to retry automatically
+
+| Status | Retry? | How |
+|--------|--------|-----|
+| 408, 425, 429, 500, 502, 503, 504 | yes | exponential backoff + jitter |
+| 4xx other than the above | no | client must change something |
+| Network error (no response) | yes, **only if idempotent** | use Idempotency-Key for POSTs |
+
+## 3.24 Network performance fundamentals
+
+You can't fix what you can't decompose. Latency is a *budget* that gets spent at every hop.
+
+### Bandwidth vs latency vs throughput
+
+- **Bandwidth** — capacity of the pipe (bits/sec). You can buy more.
+- **Latency** — time for one bit to traverse (seconds). Set by the speed of light. You **cannot** buy less.
+- **Throughput** — actual achieved rate. Limited by `min(bandwidth, window_size / RTT)`.
+
+> Speed-of-light floor: London ↔ New York ≈ **28 ms one-way** in glass; you'll see ~70 ms RTT in practice. NA ↔ India ≈ ~230 ms RTT. **Put compute near the user, or move bytes asynchronously.**
+
+### Bandwidth-Delay Product (the pipe size)
+
+```
+   BDP = bandwidth × RTT
+       = 1 Gbps × 30 ms
+       = 3.75 MB
+
+   You must have ≥3.75 MB of unacknowledged data in flight to fill the pipe.
+```
+
+If `cwnd` (TCP) or your app-level window is smaller, you're under-using the link.
+
+### Jitter and packet loss
+
+- **Jitter** — variance in latency. Kills voice/video far more than absolute latency. Jitter buffers trade latency for smoothness.
+- **Packet loss** — TCP retransmits (latency spike); UDP apps must handle (or hide) it. **1 % loss can cut TCP throughput by 50 %+** on a high-BDP link because cwnd keeps halving.
+
+### TCP throughput approximation (Mathis)
+
+```
+   Throughput  ≈  MSS / (RTT × √loss_rate)
+```
+
+A 1 % loss on a 100 ms RTT link with 1460 MSS caps you at roughly **1.2 Mbps per flow**. Multiple flows can fill the pipe — which is why parallel HTTP/1.1 connections sometimes beat one HTTP/2 connection on lossy links.
+
+## 3.25 NAT, IPs, and firewalls
+
+### Address spaces
+
+- **Public IPs** — globally routable, scarce on IPv4.
+- **Private IPs (RFC 1918)** — `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`. Not routable on the open internet.
+- **CGNAT (`100.64.0.0/10`)** — ISP-internal NAT pool.
+
+### NAT — how your laptop reaches the internet
+
+```
+   Laptop (192.168.1.42:51000)  ──▶  Home router  ──▶  Internet
+                                      rewrites src to
+                                      (203.0.113.5:51000)
+                                      and remembers the mapping
+```
+
+Inbound traffic to the laptop only works if there's an entry in the NAT table (created by an outbound packet). This is why **P2P apps need STUN / TURN / ICE** (WebRTC) to punch through.
+
+### Stateful vs stateless firewalls
+
+- **Stateless** (packet filter) — allow/deny per packet. Fast, dumb. Used at the network edge.
+- **Stateful** — tracks connections, knows "this packet belongs to a flow you allowed." More flexible. The norm for security groups in clouds.
+
+### IPv4 vs IPv6 (the 30-second version)
+
+- IPv4 — 32 bits, ~4 B addresses, exhausted, propped up by NAT.
+- IPv6 — 128 bits, "more addresses than atoms in your office building." No NAT needed; each device is reachable. Dual-stack is the migration reality; **Happy Eyeballs** (RFC 8305) is how clients race v6 and v4 to avoid v6 blackholes.
+
+## 3.26 Networking anti-patterns to outgrow
+
+- **No timeouts on outbound calls** — the most common cause of cascading failure. Always set both **connect** and **read** timeouts.
+- **Retries without idempotency** — turns a transient blip into a duplicate-charge bug.
+- **Retries without jitter** — synchronised retries become a **thundering herd**. Always add randomness.
+- **Forgetting keep-alive** — slow start tax on every request. Free 10–30 % latency win to enable it.
+- **Catching `503` and retrying forever** — if the upstream is shedding load, you're making it worse. Honour `Retry-After`; circuit-break.
+- **TTL too high on a record you might need to move fast** — pre-lower the TTL days before any planned cutover.
+- **Compressing already-compressed payloads** — wastes CPU and sometimes makes them *bigger*.
+- **Trusting the client's clock** — for tokens, signatures, rate limits. Use server time.
+- **Ignoring SNI/ALPN** — your "HTTPS is fine" might be quietly negotiating HTTP/1.1 and you're missing HTTP/2 throughput.
+- **Treating CORS as security** — it's a browser-side rule. Anyone with curl is unaffected. Auth your endpoints.
 
 ---
 
@@ -569,7 +1364,7 @@ Like a ship's watertight compartments — isolate resources so one tenant or fea
 
 Naive `hash(key) % N` re-routes most traffic when servers come and go — disastrous when each server holds a warm cache or stateful connection.
 
-- **Consistent hashing** (§9.5) — adding/removing one server reshuffles only `1/N` of keys.
+- **Consistent hashing** (§9.9) — adding/removing one server reshuffles only `1/N` of keys.
 - **Maglev** (Google) — builds a fixed-size lookup table where each backend gets nearly equal slots, and adding/removing a backend changes a *minimum* number of slots. O(1) per lookup, even at millions of QPS. Used in Google's L4 LB and inspired Facebook's Katran.
 - **Rendezvous / HRW hashing** — for each key, hash with every server and pick the highest. Naturally balanced, no ring data structure to maintain.
 
@@ -750,7 +1545,7 @@ Often confused; they have very different fixes.
 
 | Problem | What happens | Defence |
 |---------|--------------|---------|
-| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (§9.6) to reject impossible keys before the cache |
+| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (§9.17) to reject impossible keys before the cache |
 | **Breakdown / Stampede** | A *single hot key* expires; thousands of concurrent readers all miss simultaneously | Single-flight (mutex), probabilistic early expiry, never-expire + background refresh |
 | **Avalanche** | *Many keys* expire around the same time (or the cache cluster restarts cold) | Randomize TTLs (±20 %), pre-warm cache on startup, tiered caches |
 
@@ -913,6 +1708,8 @@ Anycast is the secret sauce that lets Cloudflare absorb 100 Tbps DDoS attacks �
 
 # PART 7: DATABASES
 
+> **The goal of this part:** give you the intuition (and the mechanics) to pick the right database, write queries that *plan* the way you expect, and know what's actually happening between `COMMIT` and disk. Every later scaling and reliability story in this chapter sits on top of these ideas.
+
 ## 7.1 SQL vs NoSQL — the eternal question
 
 > **Simple Explanation:** SQL is a *filing cabinet with strict rules* — every folder has the same fields. NoSQL is a *box of sticky notes* — every note can look different, but you give up some safety.
@@ -923,21 +1720,38 @@ Anycast is the secret sauce that lets Cloudflare absorb 100 Tbps DDoS attacks �
 | Query language | SQL, joins, group-by | Per-DB API; joins discouraged |
 | Transactions | ACID (multi-row, multi-table) | Often single-document only |
 | Scaling | Hard to shard (joins!) | Designed to scale out |
+| Consistency default | Strong | Eventual (tunable) |
 | When right | Money, inventory, anything relational | Massive scale, varied data, write-heavy |
 | Examples | PostgreSQL, MySQL, Oracle, Spanner | MongoDB, Cassandra, DynamoDB, Redis |
 
-**Modern truth:** the dichotomy is dying. Postgres has JSON; CockroachDB scales SQL; DynamoDB has transactions. Pick by *access pattern*, not the label.
+**Modern truth:** the dichotomy is dying. Postgres has JSON, full-text, vectors, time-series; CockroachDB / Spanner / Yugabyte scale SQL horizontally; DynamoDB has transactions. Pick by *access pattern*, not the label.
 
-## 7.2 The NoSQL family tree
+### When SQL is actually wrong
+
+- Multi-petabyte append-only telemetry — relational locking and B-tree updates can't keep up.
+- Schemas that genuinely change per row (sparse, polymorphic).
+- Single-key reads at millions of RPS with sub-ms tail latency (use a KV store).
+
+### When NoSQL is sold but you actually want SQL
+
+- "We need flexibility" — usually means *you didn't model your data*. A document store with 20 nested optional fields is worse than 3 normalized tables.
+- "Joins don't scale" — most apps never push joins past what a healthy Postgres on one box can do (10 K+ QPS easily).
+- "We'll add transactions later" — you won't, and the data-correctness bugs will be expensive.
+
+### NewSQL — the middle ground
+
+**Spanner, CockroachDB, YugabyteDB, TiDB, FaunaDB** — SQL interfaces with distributed storage and consensus underneath. Higher write latency than single-box Postgres, but horizontal scale + global consistency. Use when you'll outgrow one box *and* you need real transactions.
+
+## 7.2 The NoSQL family tree — choose by access pattern
 
 ```
    ┌──────────────────────────────────────────────────────────┐
    │ KEY-VALUE     — { key → value }                          │
-   │   Redis, DynamoDB, Memcached                             │
-   │   ► Sessions, caches, simple lookups                     │
+   │   Redis, DynamoDB, Memcached, RocksDB, Aerospike         │
+   │   ► Sessions, caches, simple lookups, feature flags      │
    ├──────────────────────────────────────────────────────────┤
    │ DOCUMENT      — JSON blobs, queryable                    │
-   │   MongoDB, Couchbase, Firestore                          │
+   │   MongoDB, Couchbase, Firestore, DocumentDB              │
    │   ► User profiles, content, schemaless data              │
    ├──────────────────────────────────────────────────────────┤
    │ COLUMN-FAMILY — rows with sparse, wide columns           │
@@ -945,50 +1759,83 @@ Anycast is the secret sauce that lets Cloudflare absorb 100 Tbps DDoS attacks �
    │   ► Time-series, write-heavy, geo-replicated workloads   │
    ├──────────────────────────────────────────────────────────┤
    │ GRAPH         — nodes + edges with relationships         │
-   │   Neo4j, Amazon Neptune, ArangoDB                        │
+   │   Neo4j, Amazon Neptune, ArangoDB, DGraph, JanusGraph    │
    │   ► Social networks, fraud detection, knowledge graphs   │
    ├──────────────────────────────────────────────────────────┤
    │ TIME-SERIES   — timestamp + metrics                      │
-   │   InfluxDB, TimescaleDB, Prometheus                      │
-   │   ► Metrics, IoT, monitoring                             │
+   │   InfluxDB, TimescaleDB, Prometheus, ClickHouse, Druid   │
+   │   ► Metrics, IoT, monitoring, financial ticks            │
    ├──────────────────────────────────────────────────────────┤
    │ SEARCH        — inverted-index full-text                 │
-   │   Elasticsearch, OpenSearch, Solr                        │
+   │   Elasticsearch, OpenSearch, Solr, Meilisearch, Tantivy  │
    │   ► Log search, product search, autocomplete             │
    ├──────────────────────────────────────────────────────────┤
    │ VECTOR        — embedding similarity                     │
-   │   pgvector, Qdrant, Pinecone, Weaviate                   │
+   │   pgvector, Qdrant, Pinecone, Weaviate, Milvus, Chroma   │
    │   ► RAG, semantic search, recommendation                 │
+   ├──────────────────────────────────────────────────────────┤
+   │ WIDE-COLUMN OLAP — columnar analytical                   │
+   │   BigQuery, Snowflake, Redshift, ClickHouse, Druid       │
+   │   ► Analytics, dashboards, ad-hoc SQL on big data        │
    └──────────────────────────────────────────────────────────┘
 ```
 
-## 7.3 ACID
+### Per-family "actually pick this when…" rule
+
+- **Key-value** — your only access pattern is `get(key)` / `put(key, value)` and you need single-digit ms tail at huge QPS.
+- **Document** — natural unit is a self-contained aggregate (user profile, order with line items) and you mostly read/write whole documents.
+- **Column-family** — you have known query patterns and need linear-write throughput; willing to model "tables per query."
+- **Graph** — your dominant query is "k hops away," not "show me all rows where …."
+- **Time-series** — append-only by timestamp, queries are time-windowed aggregates.
+- **Search** — full-text relevance, fuzzy match, faceted filters.
+- **Vector** — nearest-neighbour search in embedding space.
+- **OLAP column store** — analytics with `SELECT … GROUP BY` over billions of rows; columns scanned in isolation.
+
+## 7.3 ACID — what each letter really means
 
 > **Simple Explanation:** ACID is the four-part promise an RDBMS makes about transactions.
 
-- **Atomicity** — all of it commits or none of it does (no half-transfers).
-- **Consistency** — DB ends in a valid state (constraints honoured).
-- **Isolation** — concurrent transactions look like they ran one-at-a-time.
-- **Durability** — once committed, it survives crashes.
+- **Atomicity** — all of it commits or none of it does (no half-transfers). Implemented by the WAL + undo log.
+- **Consistency** — DB ends in a *valid* state (constraints, FKs, triggers honoured). The most misunderstood letter — it's *application-level* invariants, not "data is up to date everywhere."
+- **Isolation** — concurrent transactions look like they ran one-at-a-time. Implemented by locks (pessimistic) or MVCC (optimistic).
+- **Durability** — once committed, it survives crashes. Implemented by `fsync` on the WAL before ack.
 
-### Isolation levels (a 30-second tour)
+### Isolation levels — what each prevents
 
 ```
    Read Uncommitted ─── can see other txns' uncommitted writes (dirty reads)
    Read Committed    ─── only sees committed data (Postgres default)
-   Repeatable Read   ─── same query gives same result inside one txn (MySQL default)
+   Repeatable Read   ─── same query gives same result inside one txn (MySQL default; Postgres = Snapshot Isolation)
    Serializable      ─── as if every txn ran alone — strongest, slowest
 ```
 
-Each step prevents more anomalies (dirty/non-repeatable/phantom reads) at the cost of more locking or aborts.
+| Phenomenon | Plain English | Prevented by |
+|------------|---------------|--------------|
+| **Dirty read** | Read another txn's uncommitted write | Read Committed and above |
+| **Non-repeatable read** | Same row, different value re-read in same txn | Repeatable Read and above |
+| **Phantom read** | New rows appear in a re-run range query | Serializable (or gap locks in MySQL RR) |
+| **Lost update** | Two txns read-modify-write; one's update vanishes | Repeatable Read + row lock, or SSI |
+| **Write skew** | Two txns each read state, write without overlap, but together violate a constraint | Serializable / SSI |
+
+### Snapshot Isolation vs Serializable Snapshot Isolation
+
+- **Snapshot Isolation (SI)** — each txn sees a consistent snapshot from its start time. Prevents dirty/non-repeatable/phantoms. Allows **write skew** (the classic "on-call doctor" anomaly).
+- **Serializable Snapshot Isolation (SSI)** — Postgres's `SERIALIZABLE` mode. Tracks read/write dependencies, aborts a txn that *would* violate serializability. Safer than SI, but expects retries on conflict.
+
+### ACID in distributed databases — what changes
+
+- **Atomicity** across shards needs 2PC, Calvin-style determinism, or Spanner's TrueTime-backed commit.
+- **Consistency** is the same (it's about invariants), but **linearizability** (a stronger external guarantee) needs consensus.
+- **Isolation** at planet scale costs RTTs — Spanner does "external consistency" by waiting out clock uncertainty.
+- **Durability** = synchronous replication to a quorum, not just local `fsync`.
 
 ## 7.4 BASE — the NoSQL counter-philosophy
 
-- **Basically Available** — the system answers, even with stale data
-- **Soft state** — state can change without input (replication catches up)
-- **Eventual consistency** — given enough time, replicas converge
+- **Basically Available** — the system answers, even with stale data.
+- **Soft state** — state can change without input (replication catches up).
+- **Eventual consistency** — given enough time and no new writes, replicas converge.
 
-BASE is the trade you make to scale horizontally past what ACID can comfortably do.
+BASE is the trade you make to scale horizontally past what ACID can comfortably do. **BASE ≠ "anything goes":** a well-designed BASE system bounds staleness ("≤ 5s p99"), guarantees monotonicity ("you'll never see a write disappear"), and isolates blast radius.
 
 ## 7.5 Indexing — the difference between 1ms and 10s
 
@@ -1001,22 +1848,72 @@ BASE is the trade you make to scale horizontally past what ACID can comfortably 
    O(N)                           O(log N)
 ```
 
-Common index structures:
+### Common index structures
 
 | Structure | Best for | Used by |
 |-----------|----------|---------|
-| **B-tree** | Range queries, equality, sorting | Almost every RDBMS |
+| **B-tree / B+tree** | Range queries, equality, sorting | Almost every RDBMS |
 | **Hash** | Pure equality | Postgres hash, Redis |
-| **Inverted index** | Full-text search | Elasticsearch, Lucene |
+| **Inverted index** | Full-text search | Elasticsearch, Lucene, PG GIN |
 | **LSM-tree** | Write-heavy workloads | Cassandra, RocksDB, LevelDB |
 | **Bitmap** | Low-cardinality columns (gender, status) | Oracle, ClickHouse |
-| **Geo-spatial** (R-tree, Geohash, Quadtree) | Location queries | PostGIS, Mongo, Redis GEO |
+| **BRIN** | Huge tables, naturally ordered (time-series) | Postgres (block-range index) |
+| **GiST / SP-GiST** | Geo, ranges, irregular data | Postgres, PostGIS |
+| **R-tree / Quadtree / Geohash** | Bounding-box / nearest-point | PostGIS, Mongo, Redis GEO |
+| **HNSW / IVF** | Approximate vector search | pgvector, Qdrant, Pinecone |
 
-### Gotchas
+### B-tree vs B+tree
 
-- Every index speeds reads but **slows writes** (DB must maintain the index).
-- **Covering index** — includes all columns the query needs, avoiding a table lookup.
-- **Composite index `(a, b, c)`** only helps queries that filter on `a` (or `a,b`, or `a,b,c` in order). It does *not* help `WHERE b = 5`.
+```
+   B-tree:  values stored in internal nodes AND leaves
+   B+tree:  values only in leaves; leaves form a linked list
+            ──▶ range scans are sequential and fast
+```
+
+Almost every modern RDBMS uses **B+tree**. The leaf chain makes `WHERE id BETWEEN 100 AND 200` a sequential walk — no re-traversal.
+
+### Clustered vs secondary indexes
+
+- **Clustered index** — table rows are physically stored in the order of this index (one per table). InnoDB and SQL Server cluster by primary key by default.
+- **Secondary index** — separate B-tree pointing back to the row. In InnoDB it stores the PK as the pointer, so secondary lookups cost two traversals.
+
+### Composite index ordering matters (the "leftmost prefix" rule)
+
+```
+   INDEX idx_user_time (user_id, created_at)
+
+   helps:  WHERE user_id = ?                       ✔
+           WHERE user_id = ? AND created_at > ?    ✔
+           ORDER BY user_id, created_at            ✔
+
+   does NOT help:
+           WHERE created_at > ?                    ✘  (no user_id filter)
+           WHERE user_id = ? ORDER BY name         ✘  (wrong order column)
+```
+
+### Covering indexes & index-only scans
+
+If the index contains *every column* the query needs, the DB can answer without touching the table heap:
+
+```sql
+CREATE INDEX idx ON orders (user_id) INCLUDE (status, total);
+SELECT status, total FROM orders WHERE user_id = 42;
+-- Index-only scan; no heap read.
+```
+
+### Specialty index features worth knowing
+
+- **Partial / filtered index** — `WHERE deleted_at IS NULL`. Smaller, faster, perfect for soft-deleted tables.
+- **Functional / expression index** — `CREATE INDEX ON users (lower(email))` enables case-insensitive lookups.
+- **Unique partial index** — enforce "one active subscription per user" without uniqueness on cancelled rows.
+- **GIN/GIST on JSONB** — index a single field inside a JSON blob.
+
+### Costs and gotchas
+
+- **Every index slows writes** (DB must maintain it on each insert/update/delete).
+- **Index bloat** — Postgres B-trees fragment over time; `REINDEX CONCURRENTLY` rebuilds them.
+- **Wrong index ≠ no improvement** — picking an unselective column (gender, country) wastes IO walking many matches.
+- **Indexes that are never used** — the worst kind. Drop them; check `pg_stat_user_indexes`.
 
 ## 7.6 Normalization vs Denormalization
 
@@ -1029,9 +1926,123 @@ Common index structures:
    No duplication.                      Faster reads (no join), painful updates.
 ```
 
-OLTP systems (banking, e-commerce) lean normalized (3NF). Analytics warehouses, NoSQL document stores, and read-heavy systems lean denormalized.
+### Normal forms in 30 seconds each
 
-## 7.7 Transactions across services — Saga pattern
+- **1NF** — atomic columns (no comma-separated lists in a cell).
+- **2NF** — every non-key column depends on the *whole* primary key (not just part of a composite).
+- **3NF** — non-key columns don't depend on other non-key columns ("no transitive dependencies").
+- **BCNF** — stricter 3NF: every determinant is a candidate key. Handles edge cases 3NF misses.
+
+OLTP (banking, e-commerce) lean **normalized** (3NF). Analytics warehouses lean **denormalized**.
+
+### Star schema (warehouses)
+
+```
+                  ┌──────────────┐
+                  │  dim_user    │
+                  └─────┬────────┘
+   ┌──────────────┐    │     ┌──────────────┐
+   │ dim_product  │────┼─────│ dim_date     │
+   └──────────────┘    │     └──────────────┘
+                       ▼
+                 ┌────────────┐
+                 │  fact_sales│   ← narrow keys + numeric measures
+                 └────────────┘
+```
+
+A central **fact table** (events, sales) with foreign keys to several **dimension tables**. Optimised for `GROUP BY` aggregations across dimensions. **Snowflake schema** further normalises the dimensions (rarely worth it).
+
+## 7.7 Query planner & EXPLAIN — reading what the DB is doing
+
+> **The most underused tool in the average backend engineer's belt.** If you can read an `EXPLAIN ANALYZE`, you can usually fix the query in minutes.
+
+```
+   SQL ─▶ Parser ─▶ Rewriter ─▶ Planner ─▶ Executor
+                                   │
+                                   └── picks join order, access paths,
+                                      based on row estimates from
+                                      column statistics
+```
+
+### Common plan node shapes
+
+| Plan node | What it means | Smell if you see it |
+|-----------|---------------|---------------------|
+| **Seq Scan** | Read every row | OK on small tables; bad on big ones with selective filters |
+| **Index Scan** | Walk an index, fetch from table | Healthy |
+| **Index-Only Scan** | Answer from the index alone | Best case |
+| **Bitmap Index Scan + Bitmap Heap Scan** | Build a bitmap of matching rows, then read pages once | Good for multi-condition queries |
+| **Nested Loop** | For each outer row, look up matches in inner | Great for tiny outer + indexed inner; disastrous for big outer |
+| **Hash Join** | Build hash of one side, probe with the other | Good for medium-sized joins; needs RAM |
+| **Merge Join** | Both sides sorted, walk in lockstep | Good for huge sorted inputs |
+| **Sort** | Order rows | Bad if it spills to disk (huge memory needed) |
+| **Hash Aggregate** | Group by hashing | Fast if it fits in `work_mem` |
+
+### Statistics drive everything
+
+The planner picks based on **estimated row counts** from column statistics. If stats are stale, the plan is wrong. Symptoms:
+
+- Plan estimates 100 rows; actually returns 1 M → nested loop blows up.
+- Estimates 1 M; actually 10 → unnecessary hash join.
+
+Fix: `ANALYZE table_name;` (or `VACUUM ANALYZE;`). Schedule it; don't trust autovacuum alone after bulk loads.
+
+### Reading `EXPLAIN ANALYZE`
+
+```
+   Seq Scan on orders  (cost=0.00..18.50 rows=1 width=72)
+                       (actual time=0.025..0.150 rows=42000 loops=1)
+```
+
+- `cost=0.00..18.50` — planner's estimate (start..total).
+- `rows=1` vs `actual rows=42000` — **stale stats**, fix immediately.
+- `loops=1` — how many times this node ran (high in nested loops).
+
+## 7.8 Buffer pool, page cache, and how disk I/O actually works
+
+Databases don't read rows; they read **pages** (typically 8 KB in Postgres, 16 KB in InnoDB). The page is the unit of caching, locking, and I/O.
+
+```
+   Query ─▶ Buffer Pool (RAM)   ─── hit ──▶ done
+              │
+              │ miss
+              ▼
+           OS Page Cache (RAM)  ─── hit ──▶ load into buffer pool
+              │
+              │ miss
+              ▼
+           Disk (SSD/NVMe)      ─── ~100 µs ──▶ load
+```
+
+### Buffer pool — the DB's own cache
+
+- Sized by `shared_buffers` (Postgres) or `innodb_buffer_pool_size` (MySQL).
+- Eviction: usually **CLOCK-sweep** (an LRU approximation that's cheap on multi-core).
+- Postgres deliberately stays smaller than RAM and lets the OS page cache do double-buffering; MySQL recommends 70–80 % of RAM.
+- Hit ratio target: **> 99 %** for OLTP. Anything under 95 % means undersized buffer pool or queries scanning too much.
+
+### fsync, group commit, and the durability cost
+
+Every committed transaction must reach **non-volatile** storage before the client gets an ack:
+
+```
+   COMMIT ─▶ write WAL record to OS ─▶ fsync(WAL) ─▶ ack client
+                                        ▲
+                                        │ slowest step:
+                                        │   SSD: ~50–200 µs
+                                        │   HDD: ~5–10 ms
+                                        │   network EBS: 1–5 ms
+```
+
+**Group commit** — multiple concurrent txns share one `fsync`. Modern DBs do this automatically; throughput scales nearly linearly with concurrency until the disk is saturated.
+
+**`synchronous_commit = off` (Postgres)** — don't `fsync` on commit. Throughput rockets; you can lose the last second of writes on a crash. Acceptable for non-critical writes (analytics events); never for money.
+
+### Page cache + buffer pool double-buffering
+
+On Linux, files go through the OS page cache. Postgres reads land in *both* the buffer pool and the page cache. Wasteful in RAM but means a buffer-pool miss is usually still a RAM hit. MySQL InnoDB does **direct I/O** to avoid the duplication.
+
+## 7.9 Transactions across services — Saga pattern
 
 In microservices, a logical transaction spans multiple databases. ACID across them is hard (2PC is slow and fragile). **Saga** breaks the transaction into local steps with compensating actions.
 
@@ -1040,12 +2051,44 @@ In microservices, a logical transaction spans multiple databases. ACID across th
      1. reserve inventory   ←─ compensate: release inventory
      2. charge card         ←─ compensate: refund
      3. create shipment     ←─ compensate: cancel shipment
-   If step 3 fails, run compensations 2,1 in reverse.
+   If step 3 fails, run compensations 2, 1 in reverse.
 ```
 
-Two flavours: **choreography** (each service publishes events) and **orchestration** (a central coordinator calls each service).
+### Choreography vs orchestration
 
-## 7.8 N+1 query problem
+```
+   CHOREOGRAPHY                          ORCHESTRATION
+   ────────────                           ─────────────
+   Each service publishes events;        A central orchestrator
+   others react.                         (e.g., Temporal, Cadence,
+                                        AWS Step Functions, Camunda)
+   No central truth.                     calls each service explicitly.
+
+   Pros: loose coupling.                 Pros: visible flow, retries,
+   Cons: emergent behaviour,             timeouts, state machine.
+         hard to debug "who ran what?".  Cons: orchestrator is a
+                                              coupling point.
+```
+
+### Saga state machine
+
+```
+   PENDING ─▶ INVENTORY_RESERVED ─▶ PAYMENT_DONE ─▶ SHIPPED ─▶ DONE
+                       │                  │              │
+                       │                  │              └─▶ COMPENSATING_SHIP
+                       │                  └─▶ COMPENSATING_PAY
+                       └─▶ COMPENSATING_INV
+```
+
+Persist this state machine in a DB (or a workflow engine). On crash, recover and continue from the last known step.
+
+### Hard rules
+
+- **Compensations must be idempotent.** You'll retry them; double-cancellations must be no-ops.
+- **Compensation isn't always possible** (you can't "un-send" an email). Either avoid the step until you're sure, or add an explicit follow-up ("oops" email).
+- **No assumption of order** — the orchestrator may receive events out of order on retries.
+
+## 7.10 N+1 query problem
 
 ```
    bad:                              good:
@@ -1056,9 +2099,21 @@ Two flavours: **choreography** (each service publishes events) and **orchestrati
    1 + N queries — kills latency.    1 query.
 ```
 
-Spot it in any code review with an ORM (ActiveRecord, Hibernate, Django ORM).
+Spot it in any code review with an ORM (ActiveRecord, Hibernate, Django ORM, Prisma).
 
-## 7.9 MVCC and the Write-Ahead Log (WAL)
+### Three solid fixes
+
+1. **JOIN** in the query — best when you actually need the related data on every row.
+2. **`WHERE id IN (…)` batch** — fetch one query of related rows, group by FK in memory.
+3. **DataLoader pattern** — defer all `getUser(id)` calls in a request tick, then issue one batched query. Standard in GraphQL.
+
+### Detection
+
+- ORM logs in dev (`ActiveRecord::LogSubscriber`, Django `connection.queries`).
+- Tools like `pg_stat_statements` showing many identical, fast queries.
+- APM (Datadog, New Relic) flame graphs.
+
+## 7.11 MVCC and the Write-Ahead Log (WAL)
 
 **MVCC (Multi-Version Concurrency Control)** is how modern RDBMS (Postgres, MySQL InnoDB, Oracle) let readers and writers coexist without locking each other.
 
@@ -1070,13 +2125,43 @@ Spot it in any code review with an ORM (ActiveRecord, Hibernate, Django ORM).
              (txn 115) name="Alice T"
 ```
 
-**WAL (Write-Ahead Log):** before mutating data pages on disk, append the change to a sequential log first. Two wins:
+### Postgres VACUUM and the dead-tuple problem
+
+Each update writes a *new* row; the old row becomes a "dead tuple." `VACUUM` reclaims their space; **autovacuum** runs it in the background. Skip it and:
+
+- Table grows even when row count is stable (bloat).
+- Queries scan dead tuples → slower.
+- Eventually transaction-ID wraparound forces an emergency shutdown ("VACUUM to prevent wraparound").
+
+**Hot updates (HOT)** — Postgres optimisation: if an update doesn't touch any indexed column *and* the new tuple fits on the same page, no new index entries are written. Massive write-amplification win for high-churn tables.
+
+### WAL — durability + performance
+
+Before mutating data pages on disk, append the change to a sequential log first. Two wins:
+
 1. **Durability** — crash recovery replays the WAL.
-2. **Performance** — sequential writes are ~100× faster than random page writes; pages can be flushed in batches.
+2. **Performance** — sequential writes are ~100× faster than random page writes; data pages can be flushed in batches.
+
+```
+   COMMIT ─▶ append WAL record ─▶ fsync(WAL) ─▶ ack client
+                                                   │
+                                                   │ later (async)
+                                                   ▼
+                                             checkpoint flushes
+                                             dirty pages
+```
+
+### Checkpoints
+
+A **checkpoint** writes all dirty pages to disk so the WAL can be truncated. Too frequent → write storms; too rare → long crash recovery. Tunables: `checkpoint_timeout`, `max_wal_size`.
+
+### WAL archiving and Point-in-Time Recovery (PITR)
+
+Ship WAL segments to S3 / blob storage continuously. To restore: take the last base backup + replay WAL up to a target time. RPO can be seconds; RTO depends on replay speed.
 
 This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and SQLite journal mode. **Append-only logs are the universal building block.**
 
-## 7.10 LSM-tree internals (Cassandra, RocksDB, LevelDB)
+## 7.12 LSM-tree internals (Cassandra, RocksDB, LevelDB)
 
 ```
    write ──▶ memtable (in-RAM sorted map) + WAL
@@ -1090,8 +2175,8 @@ This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and 
                        SSTable L1, L2, ... (merged & deduplicated)
 ```
 
-| Aspect | LSM (Cassandra) | B-tree (Postgres) |
-|--------|-----------------|-------------------|
+| Aspect | LSM (Cassandra/RocksDB) | B-tree (Postgres/InnoDB) |
+|--------|-------------------------|--------------------------|
 | Write | Append → very fast | Update-in-place → slower |
 | Read | May scan multiple SSTables → slower | One path down the tree → fast |
 | Write amplification | High (compaction rewrites) | Low |
@@ -1099,9 +2184,21 @@ This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and 
 | Space amplification | High during compaction | Low |
 | Best for | Write-heavy, time-series | Read-heavy, OLTP |
 
-**Bloom filters** are essential here — each SSTable has one so reads can skip files that definitely don't contain the key.
+### Compaction strategies
 
-## 7.11 Locking strategies — optimistic vs pessimistic
+- **Size-Tiered (STCS)** — merge SSTables of similar size. Write-amp low, space-amp high. Cassandra default.
+- **Leveled (LCS)** — each level is ~10× the previous; keys don't overlap within a level. Read-amp low, write-amp high. Used by LevelDB, RocksDB, Cassandra read-heavy tables.
+- **Time-Window (TWCS)** — bucket by time window; never compact across windows. Perfect for time-series with TTL.
+
+### Tombstones
+
+Deletes write a "tombstone" marker; the row really disappears at compaction. Excessive tombstones (deleting whole partitions) tank read performance. Symptom: Cassandra "WARN: Read X tombstones".
+
+### Bloom filters keep reads fast
+
+Each SSTable has a Bloom filter so reads can skip files that definitely don't contain the key. Without them, every read would touch every SSTable. See §9.17 for the math.
+
+## 7.13 Locking strategies — optimistic vs pessimistic
 
 ```
    PESSIMISTIC                            OPTIMISTIC
@@ -1109,7 +2206,7 @@ This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and 
    BEGIN; SELECT ... FOR UPDATE;          read row + version
    ...do work...                          ...do work...
    UPDATE ...; COMMIT;                    UPDATE ... WHERE version = ?;
-                                          if 0 rows affected → retry
+                                         if 0 rows affected → retry
    Holds lock during work — blocks         No lock — but write may fail
    concurrent writers. Good for high       and need retry. Good for low
    contention.                             contention.
@@ -1117,7 +2214,40 @@ This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and 
 
 Optimistic concurrency is the default in DynamoDB, Spanner, and most NoSQL systems. Pessimistic is still right for hot rows (inventory counters) or money transfers within one DB.
 
-## 7.12 Database internals you should be able to draw
+### Lock granularity
+
+- **Row-level** — fine, concurrent-friendly, normal in InnoDB & Postgres.
+- **Page-level** — coarser; less metadata; older SQL Server defaults.
+- **Table-level** — DDL, certain MyISAM ops; kills concurrency.
+
+### Lock modes
+
+| Mode | Conflicts with | Use |
+|------|----------------|-----|
+| **S** (shared) | X | `SELECT … FOR SHARE` |
+| **X** (exclusive) | S, X | `SELECT … FOR UPDATE`, normal write |
+| **IS / IX** (intent) | conflicting table-level | DB internals |
+
+### Deadlocks
+
+Two txns each hold a lock the other wants:
+
+```
+   T1: lock A → wants B
+   T2: lock B → wants A      ← deadlock
+```
+
+The DB detects this with a wait-for graph and aborts one txn. Application **must** handle the abort and retry. Prevent by:
+
+- Always acquiring locks in a consistent order (lowest-id first).
+- Keeping transactions short.
+- Avoiding `SELECT FOR UPDATE` when an optimistic version check would do.
+
+### Advisory locks
+
+Application-defined locks the DB enforces but doesn't tie to any row. `pg_advisory_lock(key)` is perfect for "one worker runs this cron at a time."
+
+## 7.14 Database internals you should be able to draw
 
 ```
    ┌─────────────────────────────────────────────────┐
@@ -1134,53 +2264,285 @@ Optimistic concurrency is the default in DynamoDB, Spanner, and most NoSQL syste
    └─────────────────────────────────────────────────┘
 ```
 
-Knowing this stack lets you reason about *why* `EXPLAIN ANALYZE` shows what it shows — and what to fix (missing index? bad plan? buffer cache cold?).
+A query's life:
 
-## 7.13 The four isolation phenomena (and which level prevents them)
+1. **Parse** — SQL text → AST. Reject syntax errors.
+2. **Rewrite** — apply views, rules.
+3. **Plan** — try plans, pick the lowest estimated cost.
+4. **Execute** — open access methods, walk indexes, fetch pages from the buffer pool.
+5. **Commit** — write WAL, fsync, release locks, ack.
 
-| Phenomenon | Plain English | Prevented by |
-|------------|---------------|--------------|
-| **Dirty read** | Read another txn's uncommitted write | Read Committed and above |
-| **Non-repeatable read** | Same row, different value in same txn | Repeatable Read and above |
-| **Phantom read** | New rows appear in a re-run range query | Serializable |
-| **Write skew** | Two txns each read state and write without overlap, but together violate a constraint | Serializable (or explicit row locks) |
+Knowing this stack lets you reason about *why* `EXPLAIN ANALYZE` shows what it shows — and what to fix (missing index? bad plan? buffer cache cold? `fsync` slow?).
 
-Postgres defaults to **Read Committed**. MySQL InnoDB defaults to **Repeatable Read** (and uses gap locks to also prevent phantoms). Serializable is the slowest but bulletproof; use it for financial logic.
-
-## 7.14 Connection pool sizing — a real formula
+## 7.15 Connection pool sizing — a real formula
 
 ```
    pool_size = ((core_count × 2) + effective_spindle_count)
-                                         (HikariCP guidance)
+                                        (HikariCP guidance)
 
    OR via Little's Law:
    pool_size = QPS_per_db × avg_query_time_s × safety
 ```
 
-The classic mistake: setting pool size to thousands "just in case." A pool too large causes thread contention inside the database server. Most prod systems land between 10 and 50 connections per app instance.
+The classic mistake: setting pool size to thousands "just in case." A pool too large causes thread contention inside the database server. Most prod systems land between **10 and 50** connections per app instance.
+
+### pgbouncer / ProxySQL — the external pooler
+
+When you have hundreds of app pods × tens of connections each, you reach Postgres's `max_connections` quickly. Solution: a **shared pooler** between app and DB.
+
+| pgbouncer mode | What's pooled | Trade-off |
+|----------------|---------------|-----------|
+| **Session** | one client → one DB conn for session lifetime | Safe; little pooling benefit |
+| **Transaction** | DB conn returned to pool at COMMIT | Sweet spot; breaks server-side state (`SET`, prepared statements) |
+| **Statement** | DB conn returned after each statement | Maximum pooling; no multi-statement txns |
+
+**Transaction pooling** is the standard. Just don't expect session-scoped state to persist.
+
+### Connection storms
+
+App restarts → all pods reconnect → DB CPU spikes on auth + planning. Mitigations: connection warming, staggered rolling deploys, pooler in front.
+
+## 7.16 Schema migrations at scale — the expand-contract pattern
+
+For a small app, `ALTER TABLE` and restart. For an app with 24/7 traffic and millions of rows, *any blocking DDL is an outage.*
+
+### The expand-contract dance
+
+```
+   Goal: rename column `email` → `email_address`
+
+   1. EXPAND   add new column, dual-write from app
+   2. BACKFILL copy old → new in batches
+   3. MIGRATE  flip reads to new column
+   4. CONTRACT drop old column
+```
+
+Each step is independently deployable, reversible, and non-blocking.
+
+### Safe vs unsafe DDL (Postgres)
+
+| Operation | Safe in prod? |
+|-----------|---------------|
+| `ADD COLUMN` (nullable, no default) | ✔ instant metadata change |
+| `ADD COLUMN … NOT NULL DEFAULT …` (PG 11+) | ✔ instant; older PG rewrites the table — outage |
+| `DROP COLUMN` | ✔ metadata change |
+| `CREATE INDEX CONCURRENTLY` | ✔ no table lock |
+| `CREATE INDEX` (without `CONCURRENTLY`) | ✘ table lock for the duration |
+| `ALTER COLUMN … TYPE …` | usually ✘ table rewrite |
+| `ADD CONSTRAINT NOT NULL` | ✘ scans whole table; use `NOT VALID` + `VALIDATE` |
+| Rename | ✔ metadata; but breaks apps that still reference old name |
+
+### Online schema-change tools
+
+- **pt-online-schema-change** (Percona) — creates a shadow table, triggers copy writes, swaps. MySQL world standard.
+- **gh-ost** (GitHub) — same idea but uses the binlog instead of triggers; lower load.
+- **Postgres** has built-in `CREATE INDEX CONCURRENTLY`, `ALTER ... ADD CONSTRAINT NOT VALID`, partitioning — fewer external tools needed.
+
+### Adding a `NOT NULL` column safely
+
+```
+   1. ALTER TABLE t ADD COLUMN status TEXT;              -- nullable, instant
+   2. App writes both old + new with default 'active'
+   3. Backfill old rows: UPDATE t SET status='active' WHERE status IS NULL
+                         in batches of 10 K
+   4. ALTER TABLE t ALTER COLUMN status SET NOT NULL;    -- now fast
+```
+
+## 7.17 Soft delete, audit, and temporal data
+
+### Soft delete
+
+```sql
+ALTER TABLE users ADD COLUMN deleted_at TIMESTAMPTZ;
+-- queries always: WHERE deleted_at IS NULL
+-- "delete" = UPDATE users SET deleted_at = now()
+```
+
+Pros: reversible, audit-friendly, no broken foreign keys.
+Cons: every query needs the filter (use a view), partial unique indexes for re-using identifiers, GDPR "right to be forgotten" requires actual deletion.
+
+### Audit tables
+
+Capture every change for compliance:
+
+```sql
+CREATE TABLE users_audit (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  action TEXT NOT NULL,         -- 'insert' | 'update' | 'delete'
+  changed_at TIMESTAMPTZ DEFAULT now(),
+  changed_by TEXT,
+  before JSONB,
+  after JSONB
+);
+```
+
+Triggered by row triggers, or done in the app, or via CDC (Debezium).
+
+### Temporal / system-versioned tables
+
+ANSI SQL:2011 feature. The DB itself versions rows; you query "as of" a time:
+
+```sql
+SELECT * FROM accounts FOR SYSTEM_TIME AS OF '2024-01-01';
+```
+
+Supported by SQL Server, MariaDB, DB2. Excellent for compliance and "show me yesterday's state."
+
+### Event sourcing
+
+Store *every change* as an immutable event; derive current state by replaying. Powerful for audit + time travel + rebuildable read models, but heavier upfront design. Pairs naturally with CQRS (§8.6).
+
+## 7.18 Materialized views — pre-computed answers
+
+A regular **view** runs its query every time. A **materialized view** stores the result on disk and updates it on refresh.
+
+```sql
+CREATE MATERIALIZED VIEW daily_sales AS
+  SELECT date_trunc('day', created_at) AS d, sum(amount)
+  FROM orders GROUP BY 1;
+
+REFRESH MATERIALIZED VIEW daily_sales;            -- full
+REFRESH MATERIALIZED VIEW CONCURRENTLY daily_sales; -- no read block, needs UNIQUE INDEX
+```
+
+### Refresh strategies
+
+- **Full refresh** — recompute everything on a schedule.
+- **Incremental** — recompute only what changed (Snowflake, Materialize, ClickHouse `AggregatingMergeTree`).
+- **Triggered** — refresh on event; risky for hot tables.
+
+**Use cases:** dashboard aggregates, leaderboards, geospatial heatmaps, fraud-feature stores.
+
+## 7.19 Specialised databases — when generic SQL isn't enough
+
+### Time-series (TimescaleDB, InfluxDB, ClickHouse, Druid, Prometheus)
+
+Optimised for `INSERT` by timestamp, range queries, and aggregations over time windows. Features: automatic partitioning by time chunk, retention policies, continuous aggregates, compression of older chunks (often 20–30×).
+
+### Search engines (Elasticsearch, OpenSearch, Solr, Meilisearch)
+
+Inverted index, tokenisation, BM25 relevance scoring (§17.9), faceted aggregations, typo tolerance, geo, highlighting. Use them for **search** and **log analytics**; *don't* use them as a primary source of truth — they have eventual consistency, no transactions, and reindex cycles are expensive.
+
+### Vector databases (pgvector, Qdrant, Pinecone, Weaviate, Milvus, Chroma)
+
+Indexes for **approximate nearest-neighbour** search on high-dimensional embeddings.
+
+- **HNSW (Hierarchical Navigable Small World)** — graph index, very fast queries, large memory.
+- **IVF (Inverted File)** — clusters, then searches the closest clusters.
+- **PQ (Product Quantization)** — compresses vectors to fit billions in RAM.
+
+`pgvector` is the easy on-ramp (a Postgres extension); Pinecone / Qdrant / Weaviate scale further with their own infrastructure. Powers RAG, recommendation, semantic search.
+
+### Graph databases (Neo4j, Neptune, DGraph, JanusGraph)
+
+Native storage of nodes + edges; queries traverse instead of join. Cypher / Gremlin / SPARQL query languages. Win when your dominant query is "k hops away" (fraud rings, social graphs, knowledge graphs). For small graph queries, Postgres with recursive CTEs is fine.
+
+### OLAP / columnar (BigQuery, Snowflake, Redshift, ClickHouse, Druid)
+
+Store data **column-by-column** instead of row-by-row. Reading `SUM(amount)` over 1 B rows touches only the `amount` column. Add aggressive compression (10–30× on real data), massive parallelism, and vectorised execution — billions of rows aggregated in seconds. *Wrong* for OLTP (single-row writes are slow).
+
+## 7.20 Backups, PITR, and database disaster recovery
+
+### Backup types
+
+| Type | What it captures | Restore granularity |
+|------|------------------|---------------------|
+| **Logical** (`pg_dump`, `mysqldump`) | SQL or per-row dump | Per-DB or per-table |
+| **Physical** (`pg_basebackup`, snapshots) | On-disk files | Full instance |
+| **Snapshot** (EBS, RDS, ZFS) | Block-level copy | Full volume |
+| **Continuous** (WAL archive) | Every change since base | Any second since base |
+
+### Point-in-Time Recovery (PITR)
+
+```
+   t0 ─── base backup ─── WAL_1 ─── WAL_2 ─── WAL_3 ─── now
+                                                 │
+                                                 └──▶ restore to "5 minutes ago"
+                                                      = base + WAL_1..WAL_3 replayed
+                                                        up to that LSN
+```
+
+### RPO and RTO
+
+- **RPO** (Recovery Point Objective) — how much data you're willing to lose. Sync replica: 0. WAL archived every minute: 1 min.
+- **RTO** (Recovery Time Objective) — how long restore takes. Snapshot restore: ~minutes. Logical dump for a 10 TB DB: hours.
+
+### Rules of operationally-good backups
+
+1. **3-2-1** — 3 copies, 2 media, 1 offsite (or one cross-region).
+2. **Restore drills** — a backup you've never restored is hope, not a backup. Quarterly is the minimum.
+3. **Logical + physical** — physical for fast full restore; logical for "we accidentally dropped one table" surgery.
+4. **Air-gapped copies** — defends against ransomware that encrypts mounted backups too.
+5. **Test the WAL gap window** — what happens if archiver is down for 30 minutes?
+
+## 7.21 Database security essentials
+
+- **Encryption at rest (TDE)** — managed by the DB engine or the storage layer (EBS, KMS). Defends against stolen disks.
+- **Encryption in transit** — mTLS between app and DB. Don't rely on "we're in the same VPC."
+- **Auth** — prefer **IAM/OIDC** over static passwords (AWS RDS IAM auth, GCP Cloud SQL IAM, k8s service-account → cert). Rotate what you must keep.
+- **Row-Level Security (Postgres RLS)** — enforce "users only see their tenant's rows" *inside the DB*, so a broken WHERE clause in app code doesn't leak data.
+- **Column-level encryption** — wrap SSNs, card numbers in app-layer envelope encryption with a KMS-managed key. The DB never sees plaintext.
+- **Least-privilege roles** — app role can `SELECT/INSERT/UPDATE/DELETE`, not `DROP TABLE`. Migrations run as a separate role.
+- **Audit logging** — `pgaudit`, MySQL audit plugin, cloud-managed logs streamed to a SIEM.
+- **Network isolation** — DBs in a private subnet, ingress only from app SG. No public endpoint.
+- **Backup encryption** — same KMS key boundary as the live DB.
+
+## 7.22 Connection management & operational sins to avoid
+
+- **Long-lived transactions** — block VACUUM and pile up locks. Kill anything > 30 s in OLTP.
+- **`SELECT *`** in hot code paths — wastes IO, breaks index-only scans, breaks projections.
+- **No statement timeout** — one runaway query holds connections and degrades the whole DB. Set `statement_timeout` per role.
+- **No `idle_in_transaction_session_timeout`** — a stuck client with an open txn ages WAL and tombstones.
+- **DDL during peak hours** — schedule windows or use online tools.
+- **Ignoring the slow query log** — most production wins come from the top 10 queries by `total_time`. Read `pg_stat_statements` weekly.
 
 ---
 
 # PART 8: DATABASE SCALING
 
+> **The goal of this part:** climb the scaling ladder one step at a time, knowing the costs of every step. The biggest mistake at this layer is **skipping rungs** — going straight to sharding when a cache and a read replica would have bought you two more years.
+
 ## 8.1 The escape ladder
 
 ```
-   Stage 1  one server                      ──▶ scale vertically
-   Stage 2  add read replicas               ──▶ scale reads
-   Stage 3  add a cache (Redis)             ──▶ offload hot reads
-   Stage 4  partition by feature (federate) ──▶ smaller DBs per service
-   Stage 5  shard by key                    ──▶ scale writes
-   Stage 6  multi-region, multi-master      ──▶ scale geography
+   Stage 1  one server                       ──▶ scale vertically
+   Stage 2  add read replicas                ──▶ scale reads
+   Stage 3  add a cache (Redis)              ──▶ offload hot reads
+   Stage 4  partition by feature (federate)  ──▶ smaller DBs per service
+   Stage 5  shard by key                     ──▶ scale writes
+   Stage 6  multi-region, multi-master       ──▶ scale geography
 ```
 
-Climb only as high as you need. Each step doubles operational complexity.
+**Climb only as high as you need.** Each step doubles operational complexity. Most apps live happily forever at Stage 2 or 3.
 
-## 8.2 Replication
+## 8.2 Vertical scaling — what you can actually buy
+
+Before you shard, see how far one box gets you. Modern hardware is *embarrassingly* capable:
+
+| Resource | Today's sweet spot | Top of the menu |
+|----------|--------------------|-----------------|
+| vCPU | 32–64 cores | 192 cores (Graviton4, EPYC Bergamo) |
+| RAM | 256–512 GB | 24 TB (SAP HANA boxes) |
+| Local NVMe | 4–8 TB | 60 TB+ |
+| Network | 25–50 Gbps | 200 Gbps |
+
+A well-tuned Postgres on a `m7i.16xlarge` (64 vCPU, 256 GB RAM, gp3 SSD) routinely sustains **50–100 K TPS** for OLTP workloads. **Most "we need to shard" claims dissolve once someone fixes a missing index and bumps `shared_buffers`.**
+
+### Where vertical scaling tops out
+
+- Single-writer ceiling — only one process commits to a partition.
+- Memory copy fan-out — Postgres' MVCC visibility check has per-core cost.
+- Backup / restore time — a 10 TB box takes a long time to restore.
+- Blast radius — a single instance failing is the *entire* DB.
+
+When you hit any of these, climb to Stage 2.
+
+## 8.3 Replication — copies for reads and survival
 
 > **Simple Explanation:** Copy the data to multiple servers so reads scale and you survive failures.
 
-### Primary–replica (a.k.a. master–slave)
+### Primary–replica (master–replica)
 
 ```
                 ┌───────────┐    async/sync log shipping
@@ -1195,17 +2557,85 @@ Climb only as high as you need. Each step doubles operational complexity.
                                                    └───────────┘
 ```
 
-- **Sync** replication — write returns only after replicas ack. Strong consistency, slower.
-- **Async** replication — primary acks immediately, replicas catch up. Fast, but reads can be stale, and a primary crash loses recent writes (RPO > 0).
+### Sync vs async vs semi-sync
 
-### Multi-primary / multi-master
+| Mode | Commit waits for | RPO | Throughput | Used by |
+|------|------------------|-----|------------|---------|
+| **Async** | Local WAL only | seconds of loss possible | Highest | Postgres default, RDS read replicas |
+| **Semi-sync** | At least one replica's ack | small loss window | High | MySQL Group Replication, Postgres `synchronous_standby_names` with `synchronous_commit=remote_write` |
+| **Sync** | Replica fsync ack | 0 (zero RPO) | Lower (RTT cost) | Postgres `synchronous_commit=on` with sync standby, Spanner, CockroachDB |
 
-Every node accepts writes. Conflict resolution (last-write-wins, CRDTs, vector clocks) is required. Used by Cassandra, DynamoDB Global Tables, Riak.
+> **The trap:** "sync replication" between two AZs adds ~1 ms to every commit. Across regions it's 30–100 ms — usually unacceptable for OLTP. Use sync within an AZ for HA, async across regions for DR.
 
-## 8.3 Partitioning vs Sharding (often conflated)
+### Physical vs logical replication
 
-- **Partitioning** — splitting a table within one database. *Vertical* = move columns to separate tables; *horizontal* = split rows by range or hash.
-- **Sharding** — putting partitions on *different machines*.
+- **Physical** — ship raw WAL bytes; replica is a byte-for-byte copy. Fast, simple, but replicas can't accept writes and must run the same major version.
+- **Logical** — decode WAL into row-level events and replay. Selective (per-table), cross-version, cross-DB. Foundation of CDC (§10.10), zero-downtime upgrades, and zero-downtime sharding.
+
+### Replication topology patterns
+
+```
+   Cascading replicas       Multi-source       Bidirectional (multi-master)
+   ──────────────────       ────────────       ────────────────────────────
+   P ─▶ R1 ─▶ R2 ─▶ R3      P1 ─▶ R                P1 ◀──▶ P2
+                            P2 ─▶ R                conflict resolution
+                            P3 ─▶ R                required
+```
+
+### Promotion, failover, and split-brain
+
+A primary dies. You promote a replica. If the old primary comes back online before you fence it off, both think they're the leader — **split-brain** — and you get diverging writes that won't reconcile cleanly.
+
+Defences:
+
+- **STONITH** ("Shoot The Other Node In The Head") — power-off / network-isolate the old primary before promoting.
+- **Fencing tokens** — every write carries a monotonically increasing token; the storage layer rejects writes with stale tokens (§9.12).
+- **Quorum-based leader election** — etcd / ZooKeeper / Patroni / Stolon decide who is primary; clients trust the registry.
+- **Connection re-routing** — apps don't hardcode primary IP; they ask the registry / use a VIP.
+
+### Replica lag monitoring
+
+```
+   lag_bytes  = primary_LSN - replica_LSN          (Postgres)
+   lag_seconds = age(now(), pg_last_xact_replay_timestamp())
+```
+
+Alert on lag > threshold *and* on the replica falling so far behind that WAL retention can't recover it (forcing a base backup re-clone).
+
+## 8.4 Connection pooling at scale — the pgbouncer story
+
+A typical Postgres box dies at **~500 active connections**. You have 200 app pods × 30-conn pool = 6 000 — boom. The fix is a shared pooler between app and DB.
+
+```
+   200 app pods ── 6000 conns ──▶ PgBouncer ── 100 conns ──▶ Postgres
+                  (cheap on pool)             (real conns)
+```
+
+### Pooling modes
+
+| Mode | Pool unit | Trade-off |
+|------|-----------|-----------|
+| **Session** | one client → one DB conn for session lifetime | Safe; almost no pooling benefit |
+| **Transaction** | DB conn returned at COMMIT/ROLLBACK | Default sweet spot; breaks `SET`, server-side prepared statements, advisory locks |
+| **Statement** | DB conn returned after each statement | Maximum pooling; no multi-statement txns |
+
+**Transaction mode** is the standard. The app code should not rely on session-scoped state.
+
+### Real-world tooling
+
+- **PgBouncer** — the classic, ultra-lightweight Postgres pooler.
+- **Odyssey** (Yandex) — newer, multi-threaded, transaction mode at scale.
+- **AWS RDS Proxy** — managed, IAM-integrated, transparent failover.
+- **ProxySQL** — the MySQL equivalent; also does query routing, mirroring.
+
+### Connection storms
+
+App restarts → all pods reconnect → DB CPU spikes on auth + plan caching. Mitigations: connection warming, staggered rolling deploys, pooler in front, `max_prepared_transactions=0` if you don't need 2PC.
+
+## 8.5 Partitioning vs Sharding (often conflated)
+
+- **Partitioning** — splitting a table within one database. *Vertical* = move columns to separate tables; *horizontal* = split rows by range or hash. **Same machine.**
+- **Sharding** — putting partitions on *different machines*. **Different machines.**
 
 ```
    Sharding by hash(user_id) → 4 shards
@@ -1216,36 +2646,63 @@ Every node accepts writes. Conflict resolution (last-write-wins, CRDTs, vector c
    └─────────┘ └─────────┘ └─────────┘ └─────────┘
 ```
 
-### Sharding strategies
+### Sharding strategies — what each gives you
 
 | Strategy | How it routes | Pros | Cons |
 |----------|---------------|------|------|
-| **Range** | by key range (a–f, g–m, n–z) | Good for range scans | Hotspots if data is skewed |
-| **Hash** | `hash(key) % N` | Even distribution | Range queries hit all shards |
+| **Range** | by key range (a–f, g–m, n–z) | Good for range scans | Hotspots if data is skewed (recent timestamps!) |
+| **Hash** | `hash(key) % N` | Even distribution | Range queries hit *all* shards |
 | **Geo** | by region | Locality, GDPR | Imbalanced regions |
-| **Directory** | lookup service maps key→shard | Most flexible | Lookup is a SPOF |
+| **Tenant** | by tenant / customer | Strong isolation, easy backups per tenant | Skew (one huge tenant) |
+| **Composite** | `hash(tenant) → shard, then range within` | Best of both worlds | Most complex routing |
+| **Directory** | lookup service maps key → shard | Most flexible, supports re-shard | Lookup is a SPOF + cache layer needed |
 
 ### Sharding's hidden costs
 
-- **No cross-shard joins** (or they're slow).
-- **No global secondary indexes** without extra work.
-- **Re-sharding** when you outgrow N is painful — see consistent hashing (§9.5).
-- **Distributed transactions** across shards require 2PC or sagas.
+- **No cross-shard joins** (or they're slow scatter-gather).
+- **No global secondary indexes** without extra plumbing (Spanner does it; most DBs don't).
+- **No global uniqueness** — UUIDs / Snowflake IDs only.
+- **Re-sharding** when you outgrow N is painful — see consistent hashing (§9.9).
+- **Distributed transactions** across shards require 2PC, sagas, or a NewSQL engine.
+- **Schema migrations** must run per-shard, with backward-compatible deploys (§8.13).
 
-## 8.4 Read replicas — a quick win
+## 8.6 Read replicas — quick wins and the gotchas
 
-Add 1–N replicas, route writes to primary, route reads to replicas. Watch out for **replication lag** — a user who just wrote may read stale data from a replica ("read your own writes" violation). Fixes: pin recently-writing users to the primary for X seconds, or use a replica only when staleness ≤ Y ms.
+Add 1–N replicas, route writes to primary, route reads to replicas. Best ROI step on the ladder — *until* you hit replica lag bugs.
 
-## 8.5 Federation — split by feature
+### Read-your-writes pitfall
+
+```
+   user POSTs new comment ──▶ PRIMARY  (commit)
+   user GETs feed       ──▶ REPLICA  (still lagging — comment missing!)
+```
+
+User refreshes, sees nothing, posts again → duplicate. Five common fixes (full list in §8.8):
+
+1. **Sticky window** — for X seconds after a write, route this user's reads to the primary.
+2. **Session pinning** — user → region → primary stays consistent.
+3. **Read-after-write tokens** — write returns LSN; reads block until replica catches up.
+4. **Sync replication for critical paths only.**
+5. **Client-side optimistic UI** — show the user their own writes locally.
+
+### Routing read traffic
+
+- **Application-level** — code chooses primary vs replica per query. Explicit but invasive.
+- **Proxy-level** — ProxySQL / RDS Proxy / Vitess routes based on parsed SQL (writes → primary).
+- **DNS / load balancer split** — two connection strings, two pools.
+
+## 8.7 Federation — split by feature, not by key
 
 ```
    user_db          orders_db         catalog_db
    (auth team)      (orders team)     (search team)
 ```
 
-Smaller, owned by independent teams. Joins now happen in the app — accept it. Most microservice architectures end up here.
+Smaller, owned by independent teams. Joins now happen in the app — accept it. Most microservice architectures end up here long before they reach sharding.
 
-## 8.6 CQRS — separate read and write models
+**Trap:** "every microservice has its own DB" sometimes degenerates into a **distributed monolith** where every endpoint calls 6 services. Don't federate boundaries that don't match your domain.
+
+## 8.8 CQRS — separate read and write models
 
 **Command Query Responsibility Segregation.** Writes go to one model (normalized, transactional). Reads come from a different model (denormalized, fast). The two are kept in sync via events.
 
@@ -1254,35 +2711,133 @@ Smaller, owned by independent teams. Joins now happen in the app — accept it. 
    client ◀──reads── read model (Elasticsearch) ◀──── events
 ```
 
-Great for systems where reads vastly outnumber writes and need different shapes.
+Great for systems where reads vastly outnumber writes and need different shapes (search, dashboards, leaderboards, activity feeds).
 
-## 8.7 Read-your-writes consistency strategies
-
-If you use replicas, a user who just wrote may read stale data. Five common fixes:
+### Read-your-writes consistency strategies (revisited)
 
 1. **Read-from-primary for X seconds after a write** (sticky-window).
 2. **Pin sessions to a region** — user's reads + writes go to the same primary.
 3. **Monotonic-read tokens** — write returns a version; reads pass it; replica blocks until caught up.
 4. **Synchronous replication for critical paths only** (e.g., account balance) and async for the rest.
 5. **Client-side cache of own writes** — show the optimistic UI value until next refresh.
+6. **Causal-consistency middleware** — store the last LSN the client saw in a cookie; route to a replica that has caught up to it.
 
-## 8.8 Online resharding — the hardest distributed chore
+## 8.9 Materialised read paths and pre-aggregation
+
+For read-heavy aggregations (counts, top-N, leaderboards), don't compute on read:
+
+- **Materialised views** (§7.18) — DB-managed refresh.
+- **Streaming aggregators** — Kafka Streams / Flink / Materialize update aggregates incrementally as events arrive.
+- **App-maintained denormalised counters** — `INCR likes:post:42` in Redis on every like event; periodically reconciled with the source.
+
+The cost is **eventual consistency** of the read model. The win is *constant-time* reads at any scale.
+
+## 8.10 Online resharding — the hardest distributed chore
 
 When N shards become too few, you must split without downtime. Standard playbook:
 
 ```
    1. Add new (empty) shard servers
    2. Dual-write to old and new for the migrating keys
-   3. Backfill historical data from old → new
-   4. Verify (checksums, row counts)
+   3. Backfill historical data from old → new (in batches)
+   4. Verify (checksums, row counts, sample queries)
    5. Switch reads to new
    6. Stop writes to old
    7. Decommission old shard
 ```
 
-Vitess (YouTube), Slack, and Stripe have all written extensively about this dance. **Consistent hashing + virtual nodes** minimize the data that has to move.
+Vitess (YouTube → Slack, Etsy, Shopify), Stripe, and Discord have all written extensively about this dance. **Consistent hashing + virtual nodes** minimise the data that has to move (see §9.9).
 
-## 8.9 Spanner & TrueTime — strong consistency at planetary scale
+### Case study: Vitess (YouTube → CNCF)
+
+```
+   ┌──────────────────────────────────────────────────────────┐
+   │  VTGate     ── parses + routes SQL                       │
+   │     │                                                    │
+   │     ▼                                                    │
+   │  VTTablet   ── one per MySQL shard; failover, backups    │
+   │     │                                                    │
+   │     ▼                                                    │
+   │  MySQL      ── unmodified                                │
+   │     │                                                    │
+   │  Topology   ── etcd / ZooKeeper holds metadata           │
+   └──────────────────────────────────────────────────────────┘
+```
+
+Adds **VReplication** (logical replication built on MySQL row-based binlogs) so resharding is a guided workflow: spin up the new shards, replicate, cutover, drain.
+
+### Case study: Citus / Hydra (Postgres)
+
+Distributes Postgres tables across worker nodes by a distribution column. The coordinator parses, plans, and pushes down. Reshard online by `master_copy_shard_placement`.
+
+## 8.11 Hot key / hot shard mitigation
+
+Even with hash sharding, the world is uneven: one celebrity, one viral post, one Black-Friday SKU.
+
+```
+   reads on key=42 ─▶ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ◀── shard 2 melts
+                     ░               ░
+                     ░   shard 0     ░  shard 1  ░  shard 3
+```
+
+### Mitigations
+
+- **Cache the hot key** — a CDN edge / Redis layer in front; even a 1-second TTL collapses 100 K RPS into 1 RPS at the DB.
+- **Read replicas for the hot shard** — scale reads.
+- **Salt the key** — split the hot row into `key#1`, `key#2`, … `key#N`; writers pick at random; readers fan-out. Used by Twitter for celebrity timelines.
+- **Sequential-ID problem** — `now()`-prefixed keys make every write land on the newest shard. Use **hash-then-time** keys (UUIDv7 reverses this thoughtfully) or a leading random byte.
+- **Adaptive routing** — load balancer detects hot shards and re-routes the next request to a replica.
+
+## 8.12 Choosing a shard key — the decision that's hard to undo
+
+Three properties of a good shard key:
+
+1. **High cardinality** — millions of unique values, so load spreads.
+2. **Even access pattern** — no single key should attract a hotspot.
+3. **Co-locality** — values that need to be read together should land on the same shard (avoid cross-shard joins).
+
+Bad shard keys: `status`, `country`, `created_date` (range scans turn into hotspots). Good: `user_id`, `tenant_id`, `hash(user_id) + bucket`.
+
+> **You almost never get to change a shard key without a multi-month migration.** Spend a week deciding.
+
+### A two-test checklist before committing
+
+- **Skew test** — run last month's access log against the candidate key; is any single shard > 2× the average?
+- **Co-locality test** — does your hottest join (orders ⨝ line_items) split across shards? If yes, pick a compound key like `(user_id, order_id)`.
+
+## 8.13 Schema migrations across shards
+
+Schema migrations are scary on one DB. On 64 shards they're a deployment plan:
+
+```
+   1. Roll out app version V2 — knows both old and new schema
+   2. For each shard in parallel batches (e.g., 8 at a time):
+         a. Apply DDL (online tool: gh-ost / Vitess workflow)
+         b. Verify
+         c. Move on
+   3. Roll out app version V3 — assumes new schema only
+   4. Drop the deprecated parts (V4)
+```
+
+This is the **expand-contract** pattern (§7.16) applied across shards. **App must be tolerant of mixed schema state for the duration.**
+
+### Per-shard rolling upgrades
+
+- Always keep one replica per shard untouched, so you can fail back.
+- Cap the number of in-flight migrations (resource pressure on the coordinator).
+- Monitor replication lag *per shard*; a single slow shard can block the wave.
+
+## 8.14 Distributed transactions without 2PC
+
+- **Percolator** (Google, original BigTable transactions) — optimistic 2PC over Bigtable; powered the original web index.
+- **Calvin** — pre-determine an order, then apply deterministically on all replicas (FaunaDB).
+- **Sagas** (§7.9) — give up atomicity, embrace compensation.
+- **Outbox + CDC** (§10.10) — local atomic write to DB + outbox table; CDC publishes to other systems eventually.
+- **Spanner / CockroachDB** — TrueTime or hybrid logical clocks + Raft per range. SQL transactions across continents at the cost of commit latency.
+
+For most production systems, **sagas + outbox** is the modern, scalable answer.
+
+## 8.15 Spanner & TrueTime — strong consistency at planetary scale
 
 Google's Spanner (a "CP" system) is the canonical answer to "can we have ACID transactions across continents?"
 
@@ -1294,18 +2849,55 @@ Google's Spanner (a "CP" system) is the canonical answer to "can we have ACID tr
      • External consistency (linearizability) over the whole planet
 ```
 
-Implications: writes are slow-ish (commit wait), but reads (especially snapshot reads) are very fast and globally consistent. This is the trade-off Google made — and why **most** apps don't need it.
+### Architecture in one screen
 
-## 8.10 Distributed transactions without 2PC
+```
+   Client ──▶ Spanserver (manages tablets, runs Paxos groups)
+                   │
+                   ▼
+              Colossus (distributed file system)
 
-- **Percolator** (Google, original BigTable transactions) — optimistic 2PC over Bigtable; powered the original web index.
-- **Calvin** — pre-determine an order, then apply deterministically on all replicas (FaunaDB).
-- **Sagas** (§7.7) — give up atomicity, embrace compensation.
-- **Outbox + CDC** (§10.10) — local atomic write to DB + outbox table; CDC publishes to other systems eventually.
+   Per "Paxos group": 1 leader + 4 followers across zones
+   Cross-group txns: 2PC, with each group's leader as a participant
+```
 
-For most production systems, **sagas + outbox** is the modern, scalable answer.
+Implications: writes are slow-ish (commit wait), but reads (especially snapshot reads at a specific timestamp) are very fast and globally consistent. This is the trade-off Google made — and why **most** apps don't need it.
 
-## 8.11 Polyglot persistence — the right DB for each job
+### Spanner-like open alternatives
+
+- **CockroachDB** — Postgres wire protocol, Raft per range, hybrid logical clocks (no atomic clocks needed).
+- **YugabyteDB** — Postgres compatibility on top of a Spanner-style storage layer.
+- **TiDB** — MySQL compatibility on top of TiKV (Raft-backed KV store).
+
+## 8.16 Multi-region database architectures
+
+| Pattern | Writes from | Read latency | Write latency | Conflict resolution |
+|---------|-------------|--------------|---------------|---------------------|
+| **Active-passive** | Primary region only | Local only in primary; remote elsewhere | Local in primary, slow elsewhere | None (single writer) |
+| **Active-active (per-region writes)** | Local in each region | Local everywhere | Local everywhere | LWW, CRDT, or app-level |
+| **Geo-partitioned** | Local; each row pinned to a region | Local for owned data | Local for owned data | None (only one region owns each row) |
+| **Strong-globally (Spanner)** | Anywhere | Local snapshot reads | Cross-region quorum | None (linearizable) |
+
+### Concrete examples
+
+- **DynamoDB Global Tables** — multi-master, async replication, LWW conflict resolution. Read-your-writes only within a region.
+- **Spanner / CockroachDB / YugabyteDB** — strong consistency globally; writes pay cross-region latency.
+- **Aurora Global Database** — async cross-region replication for DR + read-locality (under 1 s lag typical); writes still go to one region.
+- **Cassandra DC-aware replication** — per-DC quorums (`LOCAL_QUORUM`) for low-latency local consistency; cross-DC is eventual.
+
+### Geo-partitioning — the underrated pattern
+
+For multi-tenant apps with geo-tied users (GDPR, data residency):
+
+```
+   tenant=EU rows   ──▶ EU region (sole owner)
+   tenant=US rows   ──▶ US region (sole owner)
+   tenant=APAC rows ──▶ APAC region (sole owner)
+```
+
+Each row has **one home**; writes are always local; cross-region reads are explicit and rare. Spanner, CockroachDB, and YugabyteDB all support this natively. Often the simplest answer to data sovereignty (§18.6).
+
+## 8.17 Polyglot persistence — the right DB for each job
 
 ```
    ┌─────────────────────────────────────────────────────────┐
@@ -1314,32 +2906,65 @@ For most production systems, **sagas + outbox** is the modern, scalable answer.
    │ Product catalog      → Elasticsearch (search) + Postgres │
    │ Activity feed        → Cassandra (write-heavy timeline)  │
    │ Recommendations      → Neo4j (graph) or vector DB        │
-   │ Analytics            → BigQuery / Snowflake              │
+   │ Analytics            → BigQuery / Snowflake / ClickHouse │
    │ Logs                 → Loki / Elasticsearch              │
    │ Metrics              → Prometheus / TSDB                 │
    │ Blob (images/video)  → S3                                │
+   │ Embeddings / RAG     → pgvector / Qdrant / Pinecone      │
    └─────────────────────────────────────────────────────────┘
 ```
 
 This is the real-world architecture of almost every web-scale company. Each store is chosen for its access pattern, not by ideology.
 
-## 8.12 Choosing a shard key — the decision that's hard to undo
+**Cost:** more systems to learn, monitor, back up, and secure. Don't introduce a new datastore for less than ~1 strong technical reason.
 
-Three properties of a good shard key:
+## 8.18 Disaster recovery for databases
 
-1. **High cardinality** — millions of unique values, so load spreads.
-2. **Even access pattern** — no single key should attract a hotspot.
-3. **Co-locality** — values that need to be read together should land on the same shard (avoid cross-shard joins).
+| Strategy | RPO | RTO | Cost |
+|----------|-----|-----|------|
+| **Daily snapshot to same region** | 24 h | 1–4 h | $ |
+| **Daily snapshot to another region** | 24 h | 1–4 h | $$ |
+| **PITR with WAL archive** | seconds–minutes | 10 min – hours | $$ |
+| **Cross-region async replica** | seconds (lag) | minutes (promote) | $$$ |
+| **Cross-region sync replica** | 0 | minutes | $$$$ (write latency) |
 
-Bad shard keys: `status`, `country`, `created_date` (range scans turn into hotspots). Good: `user_id`, `tenant_id`, `hash(user_id) + bucket`. **You almost never get to change a shard key without a multi-month migration** — pick carefully.
+### The DR runbook elements no one prepares until it's too late
+
+- **Connection string switch** — DNS update, runtime config flag, app restart? Pre-write the playbook.
+- **App reconfiguration** — schema versions, region-local secrets, feature flags.
+- **Verification** — what query proves the new primary is healthy?
+- **Replica re-pointing** — old replicas now follow the new primary?
+- **Communication** — who tells customers, SRE, support?
+- **Failback** — how do you migrate back when the original region is healthy?
+
+### Drills, not docs
+
+A DR runbook you've never executed is fiction. Quarterly game-days with real failover (in staging at minimum, in prod ideally) are the only thing that turns the runbook into a muscle.
 
 ---
 
 # PART 9: DISTRIBUTED SYSTEMS THEORY
 
-## 9.1 CAP Theorem
+> **Why theory matters here:** every painful distributed-systems bug has a theoretical name. Once you can name the failure mode — split-brain, clock skew, partial failure, head-of-line blocking, write skew, hot key — you can search for the cure other people already published. This part is the vocabulary you need to talk about, debug, and design distributed systems.
 
-> **Official Definition (Brewer):** In a distributed data store, you can guarantee at most two of *Consistency, Availability, Partition tolerance.*
+## 9.1 The 8 Fallacies of Distributed Computing
+
+Before any theorem, the lived experience. Peter Deutsch's classic list (1994) — every distributed-systems bug ultimately traces to assuming one of these is true:
+
+1. The network is reliable.
+2. Latency is zero.
+3. Bandwidth is infinite.
+4. The network is secure.
+5. Topology doesn't change.
+6. There is one administrator.
+7. Transport cost is zero.
+8. The network is homogeneous.
+
+If you catch yourself writing code that *would only work* if one of these were true (e.g., "we'll just synchronously call service X — it's always up, right?"), step back.
+
+## 9.2 CAP Theorem
+
+> **Official Definition (Brewer, 2000; proved by Gilbert & Lynch, 2002):** In a distributed data store, you can guarantee at most two of *Consistency, Availability, Partition tolerance.*
 
 In practice the network *will* partition, so the real choice is **CP vs AP** when a partition happens.
 
@@ -1358,21 +2983,46 @@ In practice the network *will* partition, so the real choice is **CP vs AP** whe
           than be wrong"                  reconcile later"
 ```
 
-**Common misconception:** "I pick CA." There is no CA system in a real network — if you don't tolerate partitions, you don't have a distributed system.
+**Common misconception:** "I pick CA." There is no CA system in a real network — if you don't tolerate partitions, you don't have a distributed system, you have a single computer.
 
-## 9.2 PACELC — the more honest version
+### Sloppy uses of CAP to avoid
 
-> **PACELC (Abadi):** If there's a Partition, choose A or C; *Else* (normal operation) choose between Latency and Consistency.
+- "Postgres is CA." → No. A single-node Postgres isn't a distributed system. A Postgres + sync replica *is* CP.
+- "Cassandra is AP." → True only at its default consistency level (`ONE`). At `ALL` it's CP. CAP is **per operation**, not per database.
+- "MongoDB is AP." → It's CP at `majority` write concern (the modern default); AP at `unacknowledged`.
+
+The theorem is about behaviour *during a partition*. It says nothing about latency, throughput, or normal operation — for that, see PACELC.
+
+## 9.3 PACELC — the more honest version
+
+> **PACELC (Abadi, 2010):** If there's a Partition, choose A or C; *Else* (normal operation) choose between Latency and Consistency.
 
 ```
-   PA/EL   Cassandra, DynamoDB    — favours availability and low latency
-   PC/EC   Spanner, traditional   — favours consistency always
-            RDBMS w/ sync replicas
+   PA/EL   Cassandra, DynamoDB, Riak      — favours availability and low latency
+   PC/EC   Spanner, traditional RDBMS     — favours consistency always
+            with sync replicas
+   PA/EC   MongoDB (default config)        — chooses A in partition, C otherwise
+   PC/EL   rare; some systems with         — strict consistency in partition,
+            tunable consistency             low latency in normal ops
 ```
 
-This captures the *daily* trade-off, not just the rare partition.
+This captures the *daily* trade-off, not just the rare partition. Most apps live 99.9 % of their lives in the "E" branch — so the EL/EC choice often matters more than the PA/PC choice.
 
-## 9.3 Consistency models — the spectrum
+## 9.4 The Two Generals & Byzantine Generals problems
+
+### Two Generals (a.k.a. Coordinated Attack)
+
+Two generals on opposite hills must coordinate an attack. Only way to communicate is messengers through enemy territory (who may be captured). **Impossible** to guarantee both agree to attack.
+
+**Implication:** With an unreliable network, you can never *guarantee* a message was received and the sender knows it was received. This is why **exactly-once delivery is impossible** — only "at-least-once + idempotency" (§3.21) or "at-most-once + accepted loss."
+
+### Byzantine Generals
+
+Same setup, but now some generals may be traitors who lie. Lamport proved: you need **3f+1 nodes** to tolerate `f` Byzantine (malicious) failures.
+
+**Implication:** Public blockchains (Bitcoin, Ethereum) and Tendermint-style chains assume Byzantine nodes and pay 3× the cost. Inside a trusted datacenter you only need to tolerate *crash* failures, and Raft/Paxos suffice with **2f+1 nodes**.
+
+## 9.5 Consistency models — the spectrum
 
 ```
    Strongest                                                Weakest
@@ -1380,31 +3030,122 @@ This captures the *daily* trade-off, not just the rare partition.
    Linearizable  Sequential  Causal  Read-your-writes  Eventual
 ```
 
-| Model | Plain English |
-|-------|---------------|
-| **Linearizable** | Every op appears atomic at a single global instant |
-| **Sequential** | Same order on every node, but not real-time |
-| **Causal** | If A happens before B, every node sees A first |
-| **Read-your-writes** | You always see your own writes (others may lag) |
-| **Eventual** | Given enough time and no new writes, replicas converge |
+| Model | Plain English | Example |
+|-------|---------------|---------|
+| **Strict serializable** | Linearizable + serializable txns | Spanner, FaunaDB |
+| **Linearizable** | Every op appears atomic at a single global instant | etcd, ZooKeeper, single-node Postgres |
+| **Sequential** | Same order on every node, but not real-time | Single-master replication |
+| **Causal** | If A happens-before B, every node sees A first | CRDTs, Bayou |
+| **Read-your-writes** | You always see your own writes (others may lag) | Sticky-session systems |
+| **Monotonic reads** | Once you've seen value v, you never see an older value | Many session-pinned systems |
+| **Eventual** | Given no new writes, replicas converge | DynamoDB default, Cassandra `ONE` |
 
 Higher consistency = more coordination = higher latency. Pick the weakest one your product can tolerate.
 
-## 9.4 Consensus algorithms
+### Transaction isolation levels (the cousin spectrum)
+
+Don't confuse the consistency spectrum (about replicas) with the isolation spectrum (about transactions):
+
+| Level | Prevents | Allows |
+|-------|----------|--------|
+| **Read uncommitted** | Nothing | Dirty reads, etc. |
+| **Read committed** | Dirty reads | Non-repeatable reads, phantoms, write skew |
+| **Repeatable read / Snapshot** | Non-repeatable reads | Phantoms (sometimes), write skew |
+| **Serializable** | Everything | (Real serial order) |
+
+PostgreSQL's `serializable` = SSI (§7.4). MySQL's `repeatable read` ≈ snapshot. Beware: snapshot isolation does *not* prevent **write skew** (the canonical example: two on-call doctors both ticking "off" because the system showed both as on, ending up with zero coverage).
+
+## 9.6 Time, clocks, and ordering — the deep dive
+
+Distributed systems don't share a clock. Every "what happened first?" question is non-trivial.
+
+### Clock kinds
+
+- **Wall clock (NTP-synced)** — drifts; jumps backward when re-synced; resolution ~ms; subject to leap seconds. **Never use for ordering or as a primary key.**
+- **Monotonic clock** — never goes backward; resets per process. Use for measuring durations. **Never compare across machines.**
+- **NTP** — keeps clocks within ~10–100 ms, sometimes seconds in cloud VMs. Has been the source of many catastrophic outages.
+- **PTP** — datacenter-grade; sub-microsecond when configured (Meta uses it for its TSC stack).
+- **TrueTime (Google Spanner)** — atomic clocks + GPS, exposes bounded uncertainty `[earliest, latest]` (~7 ms). Enables external consistency by **commit-wait**: txn waits out the uncertainty window before committing.
+
+### Lamport timestamps
+
+Each node has a counter `L`. Rules:
+
+```
+   On local event:        L := L + 1
+   On send:               attach L to message
+   On receive(msg, L_m):  L := max(L, L_m) + 1
+```
+
+Gives a **total order** consistent with causality, but you can't tell "concurrent" from "ordered."
+
+```
+   Process A:  ●1───────●2───────●3
+                              \
+                               \send
+                                ▼
+   Process B:                 ●4───●5
+   (B receives at L=max(0,3)+1 = 4)
+```
+
+### Vector clocks
+
+Each node maintains a counter **per node**. Send the whole vector. Compare component-wise:
+
+```
+   V1 < V2   iff every component of V1 ≤ V2 and at least one is strictly less
+   Otherwise → concurrent (true conflict)
+```
+
+```
+   A=[1,0,0] → A=[2,0,0] → send to B
+                                  ↓
+   B=[0,1,0] → B=[2,2,0]            ← merge: max per slot + own++
+```
+
+Lets you detect *real* concurrent updates (used by DynamoDB and Riak to flag conflicts for the application to resolve).
+
+### Hybrid Logical Clocks (HLC)
+
+Best of both worlds. Each timestamp = `(physical_time, logical_counter)`. Stays close to wall-clock time (good for human debugging) while preserving causality. Used in CockroachDB, YugabyteDB, MongoDB ≥ 3.6.
+
+## 9.7 Consensus algorithms
 
 > **Problem:** N nodes need to agree on one value even if some crash.
 
 | Algorithm | Notable property | Used in |
 |-----------|------------------|---------|
-| **Paxos** | The classic; correct but hard to implement | Google Chubby, Spanner |
-| **Multi-Paxos** | Paxos optimized for a stream of decisions | Many internal Google systems |
-| **Raft** | Designed to be *understandable* | etcd, Consul, CockroachDB, TiKV |
-| **Zab** | Atomic broadcast | Zookeeper |
-| **PBFT / Tendermint** | Tolerates *Byzantine* (malicious) nodes | Blockchains |
+| **Paxos (1989)** | The classic; correct but hard to implement | Google Chubby, Spanner |
+| **Multi-Paxos** | Paxos optimised for a stream of decisions | Many internal Google systems |
+| **Raft (2014)** | Designed to be *understandable* | etcd, Consul, CockroachDB, TiKV, MongoDB replica sets |
+| **Zab** | Atomic broadcast, primary-backup | ZooKeeper |
+| **EPaxos** | Leaderless; tolerates leader skew | Experimental, research |
+| **PBFT / Tendermint / HotStuff** | Tolerates *Byzantine* (malicious) nodes | Blockchains, Diem |
+
+### Paxos in one page (the part that confuses everyone)
+
+```
+   Three roles per process: Proposer, Acceptor, Learner
+   Two phases: Prepare/Promise then Accept/Accepted
+
+   Phase 1 (Prepare):
+     Proposer picks a unique ballot number n; sends Prepare(n) to acceptors.
+     Acceptor: if n > any seen, reply Promise(n, prev_accepted_value); else reject.
+
+   Phase 2 (Accept):
+     If proposer has promises from a majority, picks v =
+        (highest-ballot prev_accepted_value among promises, else proposer's choice)
+     Sends Accept(n, v).
+     Acceptor: if n is still the highest seen, store and reply Accepted.
+
+   Once a majority has Accepted(n,v) → v is chosen forever.
+```
+
+Two proposers with overlapping ballots can ping-pong (livelock). Real systems use a **leader** (Multi-Paxos / Raft) to avoid the race.
 
 ### Raft in one paragraph
 
-A leader is elected by majority vote. The leader sequences all writes into a log and replicates to followers. A write commits once a majority have it. If the leader dies, a new election (with randomized timeouts) picks another. That's it.
+A leader is elected by majority vote. The leader sequences all writes into a log and replicates to followers. A write commits once a majority have it. If the leader dies, a new election (with randomised timeouts) picks another. That's it.
 
 ```
                        LEADER
@@ -1416,7 +3157,37 @@ A leader is elected by majority vote. The leader sequences all writes into a log
                       commit ─── replicate commit ────┘
 ```
 
-## 9.5 Consistent Hashing
+### Why not 3PC?
+
+Three-phase commit adds a "pre-commit" phase to avoid 2PC's blocking. **But** it assumes no network partitions and bounded message delays — both of which are wrong in real networks. So in practice nobody uses 3PC. Modern systems use Raft/Paxos or sagas instead.
+
+## 9.8 Raft — the algorithm in 6 rules
+
+```
+   1. There's at most one leader per term.
+   2. Leader handles all writes; replicates entries to followers.
+   3. An entry is "committed" once a majority of followers have it.
+   4. A leader never overwrites or deletes entries in its log.
+   5. If a follower's log is missing the leader's entry, it gets backfilled.
+   6. Only nodes with up-to-date logs can win elections.
+```
+
+Two RPCs implement the whole protocol: `RequestVote` and `AppendEntries`. Used in etcd, Consul, TiKV, CockroachDB, MongoDB (replica set), Kafka KRaft, and many more.
+
+### Sizing the cluster
+
+```
+   Tolerate f failures → need 2f + 1 nodes (crash failures only)
+   Tolerate f Byzantine failures → need 3f + 1 nodes
+
+   3 nodes  → tolerates 1 failure   (typical)
+   5 nodes  → tolerates 2 failures  (sweet spot for prod etcd / ZK)
+   7 nodes  → tolerates 3 failures  (rare; latency grows)
+```
+
+Even numbers gain nothing (4 nodes tolerate the same `f=1` as 3 but require *3* for quorum — strictly worse for write latency).
+
+## 9.9 Consistent Hashing
 
 > **Problem:** If you shard by `hash(key) % N` and N changes, almost every key moves. Disaster for caches.
 
@@ -1436,11 +3207,189 @@ A leader is elected by majority vote. The leader sequences all writes into a log
    Add S5: only the arc between S4 and the next CW server is reassigned.
 ```
 
-**Virtual nodes:** to avoid imbalance, each physical server is placed on the ring many times (e.g., 100 virtual positions). This smooths load and lets you give beefier servers more virtual nodes.
+**Virtual nodes (vnodes):** to avoid imbalance, each physical server is placed on the ring many times (e.g., 100 virtual positions). This smooths load and lets you give beefier servers more virtual nodes.
 
-Used in: Memcached client libs, Cassandra, DynamoDB, Riak, Akamai CDN.
+### Variants worth knowing
 
-## 9.6 Bloom filter
+- **Jump consistent hash (Lamping & Veach, 2014)** — no ring at all, no memory; given `key` and `N`, returns the bucket directly. Minimal movement when N grows. Used in Google.
+- **Rendezvous (HRW) hashing** — for each key, compute `hash(key, server)` for every server; pick the highest. Beautifully simple, slower for large N.
+- **Maglev hashing (Google)** — table-based; lookup is O(1); used in their L4 load balancer.
+
+Used in: Memcached client libs, Cassandra, DynamoDB, Riak, Akamai CDN, every CDN-like sharded cache layer ever shipped.
+
+## 9.10 Quorum math — N, W, R
+
+Dynamo-style systems give you knobs:
+
+- **N** = total replicas of a key
+- **W** = writes that must ack
+- **R** = reads that must respond
+
+> **Rule of consistency:** if **W + R > N**, every read sees the latest write (strong consistency for reads).
+> **Rule of durability:** **W ≥ ⌈(N+1)/2⌉** to tolerate one minority failure without losing the write.
+
+```
+   N=3, W=2, R=2  →  W+R=4 > 3   strongly consistent (default Dynamo "quorum")
+   N=3, W=1, R=1  →  W+R=2 ≤ 3   eventually consistent (fast, may be stale)
+   N=3, W=3, R=1  →  fast reads, slow & fragile writes
+   N=3, W=1, R=3  →  slow reads, fast writes
+```
+
+Tunable consistency per request — pick the trade-off that matches the operation (a tweet can be eventually consistent; a money transfer cannot).
+
+### Sloppy quorum & hinted handoff
+
+When some replicas are unreachable, **sloppy quorum** lets a write succeed on temporary "stand-in" nodes outside the preference list. The stand-in keeps a **hinted handoff** record and replays the write to the rightful owner when it returns. Improves write availability — but a *strict* `W+R>N` guarantee no longer holds.
+
+## 9.11 Two-phase commit (2PC) and why it hurts
+
+```
+   Phase 1: Coordinator asks all participants "can you commit?" — they vote
+   Phase 2: If all yes → commit; else → abort
+```
+
+**Failure modes:**
+
+- Coordinator crashes mid-phase-2 → participants hold locks forever (blocking).
+- A participant times out → ambiguous outcome until coordinator recovers.
+- The protocol is *not* partition-tolerant: a network partition during phase 2 produces inconsistent state.
+
+Modern systems prefer **sagas** (§7.9) or **consensus-backed transactions** (Spanner, Calvin) — both replace the coordinator's "single point of failure" with a Raft/Paxos group.
+
+When 2PC *is* OK: short-lived, intra-datacenter, low-volume transactions where downtime on the coordinator is rare and recoverable (e.g., XA across two RDBMSs that both you and your DBA control). For internet-scale, choose another tool.
+
+## 9.12 Distributed locks — the biggest "looks easy" trap
+
+Use case: "only one worker may process job X at a time." Sounds trivial. Isn't.
+
+### The three properties a lock must give you
+
+1. **Mutual exclusion** — at most one holder.
+2. **Deadlock-free** — if a holder dies, the lock eventually frees.
+3. **Fault tolerance** — survives a node failure.
+
+### Lease-based locks (the only correct pattern)
+
+```
+   1. Client asks lock manager for lock on key X with TTL.
+   2. Lock manager returns (held=true, fencing_token=42, lease_until=t+30s).
+   3. Client does work, periodically heartbeats to extend the lease.
+   4. When done, client releases (or lease expires naturally).
+```
+
+### Fencing tokens — the missing piece
+
+Even with leases, a GC pause can cause this:
+
+```
+   t=0   Client A acquires lock (token 14)
+   t=1   Client A's JVM stops the world (long GC)
+   t=35  Lease expires; Client B acquires (token 15) and writes
+   t=40  Client A wakes up — thinks it still owns the lock — writes
+   t=41  Two writers! Storage corruption.
+```
+
+**Fix:** the *storage* (not the lock manager) rejects writes with stale tokens.
+
+```
+   Storage tracks "highest token ever seen for key X"
+   Client A's write with token 14 → rejected (highest seen is 15)
+```
+
+### Redlock controversy
+
+Redis's "Redlock" tries to do distributed locking on top of 5 independent Redis nodes. Martin Kleppmann famously argued it's unsafe under clock drift and network delays; antirez (Redis author) pushed back. Net advice: **don't use Redis-based locks for correctness-critical operations**. Use them for performance optimisation (avoid duplicate work) where a rare double-execution is tolerable, paired with idempotency (§3.21).
+
+### What to use instead
+
+| Use case | Tool |
+|----------|------|
+| Strong correctness (only-one-writer to storage) | etcd, ZooKeeper, Consul, Postgres advisory locks, DynamoDB conditional writes |
+| Best-effort dedup of background jobs | Redis SETNX with TTL + idempotency in the job |
+| Cluster-wide leader election | etcd lease, ZooKeeper ephemeral node, Kubernetes Lease API |
+
+## 9.13 Leader election & leases
+
+Variations on locking, for picking one "primary" out of N candidates.
+
+### How a leader election works (etcd-style)
+
+```
+   1. Each candidate writes a key /leader with a lease (TTL=10s).
+   2. First writer wins (compare-and-swap on key absence).
+   3. Winner heartbeats to renew lease.
+   4. If winner dies, lease expires, key disappears, others race again.
+```
+
+### Why fencing tokens matter here too
+
+Same problem as locks: the dethroned leader may not yet know. Every write the leader does should carry a monotonically increasing epoch / term number, and the storage layer rejects writes from stale epochs. **This is what Raft's `currentTerm` does built-in.**
+
+### Pre-vote optimization
+
+Naive election: if a network blip makes a follower think the leader is dead, it starts an election and bumps the term, forcing the real leader to step down. **Pre-vote** (Raft extension): candidate first asks "would you vote for me?" without bumping the term. Used by etcd and many production Raft impls to reduce churn.
+
+## 9.14 Gossip, heartbeats, failure detection
+
+How do nodes know who's alive in a cluster of thousands?
+
+- **Heartbeat** — every node pings a known set every N ms. O(N²) at scale.
+- **Gossip protocol** — each node periodically tells a random other node what it knows. Information spreads epidemically in O(log N) rounds. Used by Cassandra, Consul, Akka Cluster, HashiCorp Serf.
+- **SWIM** — Scalable Weakly-consistent Infection-style Process group Membership. Faster failure detection by combining direct + indirect probes. Used by Consul / Serf.
+- **Phi accrual failure detector** — outputs a *suspicion level* `φ` instead of binary up/down (more robust to flaky networks). Used by Cassandra, Akka.
+
+### The detection latency / false-positive trade-off
+
+```
+   Short timeout → fast detection, more false positives ("flapping")
+   Long timeout  → fewer false positives, slow detection
+```
+
+Phi accrual lets the *consumer* of the failure signal choose its tolerance (`φ_threshold`) without changing the detector.
+
+## 9.15 Anti-entropy & Merkle trees
+
+When replicas drift (network blips, dropped writes, hinted handoffs replayed), you need a way to find and repair the differences — without sending the whole dataset over the wire.
+
+### Merkle trees to the rescue
+
+```
+                  root_hash
+                /          \
+            H(L)            H(R)
+           /    \          /    \
+         H1     H2       H3     H4
+         |      |        |      |
+        data1  data2   data3  data4
+```
+
+Two replicas compare root hashes. If equal → done. If different → descend into the differing subtree. **Only mismatched leaves are sent.**
+
+Used in: Cassandra (`nodetool repair`), DynamoDB, Riak, Git (every commit is a Merkle DAG), Bitcoin/Ethereum (Merkle Patricia tries), every BitTorrent client.
+
+### Read repair
+
+Cheaper alternative: when a quorum read sees disagreeing replicas, write the latest value back to the stale ones in the background. Doesn't catch unread keys — pair with periodic full anti-entropy.
+
+## 9.16 Chandy–Lamport distributed snapshots
+
+> **Problem:** Capture a consistent global state of a running distributed system *without* stopping it.
+
+### Algorithm in one paragraph
+
+1. Initiator records its own state and sends a **marker** on every outgoing channel.
+2. On receiving a marker on channel C, a process: records its state (if not already), records C as empty, and starts recording all *other* incoming channels.
+3. A process stops recording channel C' when a marker arrives on C'.
+
+The result: a consistent cut of the system — every message recorded was either fully delivered or fully in-flight, never "half-applied."
+
+### Where you see this in production
+
+- **Apache Flink savepoints** — exactly-once stream processing relies on Chandy-Lamport variants.
+- **Distributed debugging** — capture a snapshot to reproduce bugs.
+- **DB consistent backups** — many distributed DBs use snapshot algorithms for online backups.
+
+## 9.17 Bloom filter
 
 > **Simple Explanation:** A *probabilistic* "is this key in the set?" answer. Tiny memory. May say "yes" when the answer is no (false positive). *Never* says "no" when the answer is yes.
 
@@ -1458,58 +3407,9 @@ Used to:
 - Skip checking if a username is taken before hitting the DB.
 - Filter URLs already crawled.
 
-Variants: **Counting Bloom** (supports delete), **Cuckoo filter** (better space), **Quotient filter**.
+Variants: **Counting Bloom** (supports delete), **Cuckoo filter** (better space, supports delete), **Quotient filter**, **XOR filter** (faster lookups, immutable).
 
-## 9.7 Other probabilistic structures
-
-- **HyperLogLog** — count distinct elements in ~12 KB with ~2% error (Redis `PFCOUNT`, BigQuery `APPROX_COUNT_DISTINCT`).
-- **Count-Min Sketch** — frequency estimation in sublinear memory.
-- **t-digest / DDSketch** — approximate quantiles (p99 latency).
-
-## 9.8 Vector clocks & Lamport timestamps
-
-In a distributed system without a global clock, how do you say "A happened before B"?
-
-- **Lamport timestamp** — each node has a counter; on receive, take `max(local, msg) + 1`. Total ordering, but doesn't capture concurrency.
-- **Vector clock** — each node maintains a counter *per node*. Compare component-wise to detect "happened-before" vs "concurrent." Used by Dynamo, Riak.
-
-## 9.9 Two-phase commit (2PC) and why it hurts
-
-```
-   Phase 1: Coordinator asks all participants "can you commit?" — they vote
-   Phase 2: If all yes → commit; else → abort
-```
-
-Blocking: if the coordinator dies mid-phase-2, participants are stuck holding locks. That's why modern systems prefer **sagas** or consensus-backed transactions (Spanner, Calvin).
-
-## 9.10 Gossip, heartbeats, failure detection
-
-How do nodes know who's alive in a cluster of thousands?
-
-- **Heartbeat** — every node pings a known set every N ms.
-- **Gossip protocol** — each node periodically tells a random other node what it knows. Information spreads epidemically. Used by Cassandra, Consul, Akka.
-- **Phi accrual failure detector** — outputs a *suspicion level* instead of binary up/down (more robust to flaky networks).
-
-## 9.11 Quorum math — N, W, R
-
-Dynamo-style systems give you knobs:
-
-- **N** = total replicas of a key
-- **W** = writes that must ack
-- **R** = reads that must respond
-
-> **Rule of consistency:** if **W + R > N**, every read sees the latest write.
-
-```
-   N=3, W=2, R=2  →  W+R=4 > 3   strongly consistent (default Dynamo "quorum")
-   N=3, W=1, R=1  →  W+R=2 ≤ 3   eventually consistent (fast, may be stale)
-   N=3, W=3, R=1  →  fast reads, slow & fragile writes
-   N=3, W=1, R=3  →  slow reads, fast writes
-```
-
-Tunable consistency per request — pick the trade-off that matches the operation (a tweet can be eventually consistent; a money transfer cannot).
-
-## 9.12 Bloom filter math — sizing it for your workload
+### Bloom filter sizing math
 
 For a Bloom filter with `n` elements and target false-positive rate `p`:
 
@@ -1524,7 +3424,44 @@ For a Bloom filter with `n` elements and target false-positive rate `p`:
 
 **Sweet spot:** ~10 bits/element for 1 % FPR. If you can't afford that, accept a higher FPR (rarely a problem — false positives just trigger an extra real lookup).
 
-## 9.13 CRDTs — data types that merge themselves
+## 9.18 Other probabilistic structures
+
+- **HyperLogLog** — count distinct elements in ~12 KB with ~2% error (Redis `PFCOUNT`, BigQuery `APPROX_COUNT_DISTINCT`, Presto). Combine sketches via `PFMERGE` for distributed cardinality.
+- **Count-Min Sketch** — frequency estimation in sublinear memory. "Heavy hitters" detection.
+- **t-digest / DDSketch** — approximate quantiles (p99 latency) with bounded error. The defaults in Datadog, OpenTelemetry.
+- **Top-K (Redis `TOPK`)** — track top N most-frequent items in a stream.
+- **Reservoir sampling** — uniform random sample of an unbounded stream in O(k) memory.
+
+These are the toolbox for "I need approximate answers fast" — a recurring system design need.
+
+## 9.19 Vector clocks & Lamport timestamps (recap with examples)
+
+Already covered in §9.6, but the worked examples are worth seeing once for memory.
+
+### Lamport: pinned to "happens-before" but flattens concurrency
+
+```
+   A:  e1(L=1) ─▶ e2(L=2) ───────┐
+                                 │ send msg(L=2)
+   B:  e3(L=1) ─▶ e4(L=2) ─▶ e5(L=max(2,2)+1=3)
+```
+
+`L(e2) < L(e5)` truthfully tells us e2 happened-before e5. But `L(e2) > L(e3)` lies — they're concurrent.
+
+### Vector clock: detects concurrency
+
+```
+   A:  V=[1,0] ─▶ V=[2,0] ─send─▶
+                                 ▼
+   B:  V=[0,1] ─▶ V=[2,2] (merged: max per slot + own++)
+
+   Compare [1,0] vs [0,1]: neither dominates → concurrent
+   Compare [2,0] vs [2,2]: [2,0] < [2,2]    → A's e2 happened-before B's e4
+```
+
+Cost: O(N) per timestamp for N nodes. Real systems prune old vectors or use HLC (§9.6) instead.
+
+## 9.20 CRDTs — data types that merge themselves
 
 > **Problem:** Concurrent updates on replicas without coordination → conflicts.
 > **CRDT idea:** Use data structures whose merge function is associative, commutative, and idempotent. Apply ops in *any order* on *any replica* and they all converge.
@@ -1535,12 +3472,36 @@ For a Bloom filter with `n` elements and target false-positive rate `p`:
 | **PN-Counter** | Two G-Counters: +1s and −1s | Likes / dislikes |
 | **LWW-Register** | Value + timestamp; latest wins | Simple K/V with last-write-wins |
 | **OR-Set** | Observed-remove set with unique tags | Shopping cart |
-| **RGA / WOOT** | Sequence with positions | Collaborative text editing |
+| **RGA / WOOT / Yjs** | Sequence with positions | Collaborative text editing |
 | **MV-Register** | Multi-value register | Dynamo conflict resolution |
 
-CRDTs power Redis Enterprise multi-master, Riak, Automerge (Google Docs-style real-time editing), and parts of Apple iCloud.
+### Two families
 
-## 9.14 FLP impossibility — and what it means in practice
+- **State-based (CvRDT)** — replicas exchange full state; merge is a join in a lattice. Simple but heavy.
+- **Operation-based (CmRDT)** — replicas exchange operations; ops must commute. Lighter but requires a reliable broadcast.
+
+CRDTs power Redis Enterprise multi-master, Riak, Automerge / Yjs (Google Docs-style real-time editing), Figma's multiplayer, and parts of Apple iCloud and Phoenix LiveView Presence.
+
+## 9.21 Network-partition pathologies (Jepsen-style)
+
+Kyle Kingsbury's **Jepsen** test suite has found correctness bugs in nearly every distributed database he's tested. The patterns recur:
+
+### Common pathologies caught by Jepsen
+
+- **Lost updates** under repeated network partitions when "last write wins" loses concurrent writes.
+- **Stale reads** at consistency levels advertised as "strong" but defined loosely.
+- **Split-brain** during leader elections — two leaders both accepting writes.
+- **Linearizability violations** in supposedly-linearizable systems under specific GC + clock + partition patterns.
+- **Read skew / G-anomalies** under snapshot isolation marketed as serializable.
+
+### Defensive practice
+
+- Read the Jepsen report for any DB you depend on (jepsen.io).
+- Add chaos tests (Gremlin, Chaos Monkey) that inject partitions and verify invariants.
+- Track invariants in production: idempotency counts, fencing-token rejections, replication lag, monotonicity checks.
+- Default to *more* conservative settings (sync replicas, majority quorums) — relax only with measured need.
+
+## 9.22 FLP impossibility — and what it means in practice
 
 > **FLP theorem (Fischer, Lynch, Paterson, 1985):** In an asynchronous system with even *one* faulty process, no deterministic consensus protocol can guarantee termination.
 
@@ -1549,24 +3510,11 @@ In English: you can't have a consensus protocol that's *always* fast, *always* s
 How real systems escape it:
 - **Use timeouts** (assume "synchrony in practice") — Raft, Paxos.
 - **Sacrifice liveness occasionally** — system pauses (rare leader election) rather than answering wrong.
-- **Add randomization** — randomized election timeouts in Raft break ties.
+- **Add randomization** — randomised election timeouts in Raft break ties.
 
 The takeaway: every consensus protocol you'll use chooses **safety over liveness** when the network is partitioned. Reads/writes pause; they don't lie.
 
-## 9.15 Raft — the algorithm in 6 rules
-
-```
-   1. There's at most one leader per term.
-   2. Leader handles all writes; replicates entries to followers.
-   3. An entry is "committed" once a majority of followers have it.
-   4. A leader never overwrites or deletes entries in its log.
-   5. If a follower's log is missing the leader's entry, it gets backfilled.
-   6. Only nodes with up-to-date logs can win elections.
-```
-
-Two RPCs implement the whole protocol: `RequestVote` and `AppendEntries`. Used in etcd, Consul, TiKV, CockroachDB, MongoDB (replica set), and many more.
-
-## 9.16 CAP in a nutshell — the decision table
+## 9.23 CAP in a nutshell — the decision table
 
 ```
    ┌─────────────────────────────────────────────────────────────┐
@@ -1584,18 +3532,7 @@ Two RPCs implement the whole protocol: `RequestVote` and `AppendEntries`. Used i
    └─────────────────────────────────────────────────────────────┘
 ```
 
-## 9.17 Idempotency tokens in distributed flows
-
-```
-   Request:  POST /charge   Idempotency-Key: 9f4a-...
-             body: {amount: 1000, customer: 42}
-
-   Server:  - check token in DB; if seen → return original response
-            - else: process → record (token, response) → return
-            - keep tokens for 24h (Stripe convention)
-```
-
-Combined with retry-after on 5xx and exponential backoff on the client, this turns flaky networks into a non-issue. Built into Stripe, AWS, and most modern payment systems.
+> **Idempotency tokens** in distributed flows are essential glue here — see §3.21 for the implementation pattern (cross-referenced to avoid duplicating).
 
 ---
 
@@ -3183,7 +5120,7 @@ Feed cache: Redis sorted set per user, scored by `created_at + ranking_signal`.
 | Concern | Mitigation |
 |---------|------------|
 | Hot celebrities | Hybrid feed; separate "big-account" cache shard |
-| Hot photo (viral) | CDN absorbs reads; like counter sharded via §9.13 PN-Counter |
+| Hot photo (viral) | CDN absorbs reads; like counter sharded via §9.20 PN-Counter |
 | Spam / abuse | Rate-limit uploads per user (token bucket); ML moderation queue |
 | Search at scale | Elasticsearch with hashtag-sharded indices |
 | Multi-region | Photo + follow stored in user's home region; cross-region reads via CDN |
