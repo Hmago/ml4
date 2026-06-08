@@ -13,6 +13,8 @@ An [Electron](https://www.electronjs.org/) wrapper around the ML Study Notes web
 - [Uninstalling](#uninstalling)
 - [Project layout](#project-layout)
 - [How it works](#how-it-works)
+- [Auto-update](#auto-update)
+- [Releasing a new version](#releasing-a-new-version)
 - [Common npm scripts](#common-npm-scripts)
 - [Troubleshooting](#troubleshooting)
 - [Code signing (optional)](#code-signing-optional)
@@ -127,8 +129,8 @@ For inspection / debugging without installing:
 
 ```
 desktop/
-├── main.js               # Electron main process — window, menu, app:// protocol handler
-├── preload.js            # Sandboxed preload (currently a no-op)
+├── main.js               # Electron main process — window, menu, app:// protocol handler, auto-updater
+├── preload.js            # Sandboxed preload — exposes `window.mlnotes` API to the renderer
 ├── package.json          # Dependencies + electron-builder config
 ├── scripts/
 │   └── make-icon.js      # Rasterizes ../icon-512.svg → build/icon.ico
@@ -150,6 +152,81 @@ The repo root supplies the actual app content (`index.html`, `styles.css`, `js/`
 
 ---
 
+## Auto-update
+
+The desktop app ships with **[electron-updater](https://www.electron.build/auto-update)** wired against **GitHub Releases**. Updates are *opt-in download* — users always click before any data is pulled.
+
+**What users see:**
+
+1. On every launch the app silently checks GitHub Releases ~5 s after startup. No notification if nothing's new.
+2. The **Dashboard** has an **App Updates** card showing the current version, status, and a *Check for Updates* button.
+3. The menu bar exposes the same flow under **Help → Check for Updates…**.
+4. When a new version is found:
+   - Status flips to *"Update available: vX.Y.Z"* and the button becomes **Download vX.Y.Z**.
+   - Clicking *Download* streams the installer in the background (live progress bar — never blocks the UI).
+   - When the download completes, the button becomes **Restart & Install**. Clicking it relaunches the app on the new version.
+5. Errors and *"You are on the latest version"* messages render in-place; no modal dialogs interrupt reading.
+
+**How it's wired** (developer reference):
+
+| Piece                                    | Role                                                                                              |
+|------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `desktop/main.js` → `setupAutoUpdater()` | Lazy-loads `electron-updater`, registers IPC handlers, forwards all 6 updater events to renderer. |
+| `desktop/preload.js`                     | Exposes `window.mlnotes.updater` via `contextBridge` (no raw IPC reaches the page).               |
+| `js/pages.js` → `renderDesktopUpdaterCard()` / `setupDesktopUpdater()` | Renders the Dashboard panel and subscribes to status pushes. |
+| `desktop/package.json` → `build.publish` | Tells electron-builder to publish to `https://github.com/Hmago/ml4/releases`.                     |
+
+**Dev-mode behaviour:** `npm start` runs unpackaged, where electron-updater refuses to operate. The IPC handlers return `{ ok: false, error: '…disabled in dev mode' }` so the renderer can grey-out the button instead of crashing.
+
+> **First-time setup caveat.** Builds before **v1.0.2** do *not* include the updater. To start the auto-update chain, users must install **v1.0.2** manually from the [GitHub Releases page](https://github.com/Hmago/ml4/releases) — every release after that is delivered in-app.
+
+---
+
+## Releasing a new version
+
+Releases are automated by **`.github/workflows/release-desktop.yml`**. Pushing a tag named `desktop-vX.Y.Z` triggers a Windows runner that builds the installer + portable exe and uploads them — along with `latest.yml` (the metadata electron-updater reads) — to a new GitHub Release.
+
+**Full release flow** (5-step recipe):
+
+```powershell
+# 1. Bump the version in desktop/package.json
+#    (e.g. "version": "1.0.3")
+cd desktop
+npm version 1.0.3 --no-git-tag-version
+
+# 2. Commit the bump on main
+cd ..
+git add desktop/package.json desktop/package-lock.json
+git commit -m "Desktop v1.0.3"
+git push origin main
+
+# 3. Tag the release and push the tag — this is what fires the workflow
+git tag desktop-v1.0.3
+git push origin desktop-v1.0.3
+```
+
+4. Watch the run at <https://github.com/Hmago/ml4/actions/workflows/release-desktop.yml>. It takes ~5–8 min on a fresh runner.
+
+5. Confirm the new Release at <https://github.com/Hmago/ml4/releases>. You should see:
+   - `ML Study Notes-1.0.3-x64-Setup.exe`
+   - `ML Study Notes-1.0.3-x64-Portable.exe`
+   - `latest.yml` ← critical — electron-updater fetches this first
+   - `*.blockmap` files (used for delta downloads)
+
+Existing v1.0.2+ users see the new version within ~5 s of next launch.
+
+**Manual / local publish.** To publish from your own machine (e.g. for code-signed builds), set `GH_TOKEN` to a Personal Access Token with `repo` scope and run:
+
+```powershell
+cd desktop
+$env:GH_TOKEN = "ghp_…"
+npm run release
+```
+
+**Re-running a failed release.** The workflow also accepts `workflow_dispatch` — open the Actions page → *Build & publish desktop app* → *Run workflow* and pick the tag. electron-builder is idempotent: if the release already exists, it adds missing artifacts; it never overwrites existing ones.
+
+---
+
 ## Common npm scripts
 
 | Script                    | What it does                                                                       |
@@ -160,6 +237,7 @@ The repo root supplies the actual app content (`index.html`, `styles.css`, `js/`
 | `npm run build`           | Full Windows build: NSIS installer **and** portable exe (x64).                     |
 | `npm run build:installer` | NSIS installer only.                                                               |
 | `npm run build:portable`  | Portable single-exe only.                                                          |
+| `npm run release`         | Build + publish to GitHub Releases (needs `GH_TOKEN`). Used by the CI workflow.    |
 
 ---
 
