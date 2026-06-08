@@ -1,6 +1,6 @@
 {
   "name": "ml-study-notes-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Win32 desktop app for the ML Study Notes learning platform.",
   "main": "main.js",
   "author": "ML Notes",
@@ -13,7 +13,11 @@
     "prebuild": "node scripts/make-icon.js",
     "build": "electron-builder --win --x64",
     "build:portable": "electron-builder --win portable --x64",
-    "build:installer": "electron-builder --win nsis --x64"
+    "build:installer": "electron-builder --win nsis --x64",
+    "release": "electron-builder --win --x64 --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -56,6 +60,14 @@
           "!**/*.bat",
           "!**/*.sh"
         ]
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Hmago",
+        "repo": "ml4",
+        "releaseType": "release"
       }
     ],
     "win": {

@@ -1182,6 +1182,8 @@ function showDashboard() {
         </div>
       </details>
 
+      ${renderDesktopUpdaterCard()}
+
       <!-- ─── Danger Zone (collapsed) ─── -->
       <details class="db-collapse db-collapse--danger">
         <summary class="db-collapse-summary db-collapse-summary--danger">${ico.trash} Danger Zone</summary>
@@ -1206,6 +1208,186 @@ function showDashboard() {
     const xpFill = document.getElementById('dashXpFill');
     if (xpFill) xpFill.style.width = _xpProg + '%';
   }, 100);
+  // Desktop-only: wire up the updater card's buttons and subscribe to push
+  // events from electron-updater. Safe no-op when running in a browser.
+  if (typeof setupDesktopUpdater === 'function') setupDesktopUpdater();
+}
+
+// ─── Desktop auto-updater UI (Electron only) ───
+// The web app uses `window.mlnotes.updater` (exposed via desktop/preload.js)
+// to drive electron-updater. In the browser this object doesn't exist, so
+// every helper here either renders nothing or no-ops — perfectly safe.
+
+function _isDesktopApp() {
+  return typeof window !== 'undefined' && window.mlnotes && window.mlnotes.isDesktop === true;
+}
+
+function renderDesktopUpdaterCard() {
+  if (!_isDesktopApp()) return '';
+  // Initial state — current version is filled in by setupDesktopUpdater after
+  // it gets the value back from the main process.
+  return `
+    <details class="db-collapse" id="dbUpdaterDetails" open>
+      <summary class="db-collapse-summary">&#x21bb; App Updates</summary>
+      <div class="db-collapse-body">
+        <p class="db-collapse-desc">
+          Get the latest desktop build with new content + fixes. Updates are
+          fetched from the project's GitHub Releases and installed with one
+          click — your progress and notes are preserved.
+        </p>
+        <div class="db-action-row" style="align-items:center;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Current version</span>
+            <span id="dbUpdaterVersion" style="font-size:16px;font-weight:600;">…</span>
+          </div>
+          <div id="dbUpdaterStatus" style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px;">
+            <span style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Status</span>
+            <span id="dbUpdaterStatusText" style="font-size:14px;">Idle</span>
+            <div id="dbUpdaterProgress" style="display:none;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+              <div id="dbUpdaterProgressFill" style="height:100%;width:0%;background:var(--accent);transition:width 0.2s linear;"></div>
+            </div>
+          </div>
+          <div id="dbUpdaterButtons" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="db-btn db-btn--accent" id="dbUpdaterCheckBtn" onclick="updaterCheck()">&#x21bb; Check for Updates</button>
+          </div>
+        </div>
+      </div>
+    </details>`;
+}
+
+// Cached references — populated by setupDesktopUpdater() so we don't
+// re-querySelector every status push.
+var _updaterRefs = null;
+var _updaterUnsubStatus = null;
+var _updaterUnsubMenu = null;
+
+function setupDesktopUpdater() {
+  if (!_isDesktopApp()) return;
+
+  _updaterRefs = {
+    version:    document.getElementById('dbUpdaterVersion'),
+    statusText: document.getElementById('dbUpdaterStatusText'),
+    progress:   document.getElementById('dbUpdaterProgress'),
+    progressFill: document.getElementById('dbUpdaterProgressFill'),
+    buttons:    document.getElementById('dbUpdaterButtons'),
+    details:    document.getElementById('dbUpdaterDetails'),
+  };
+  if (!_updaterRefs.version) return; // card didn't render — bail
+
+  // Fill in the running version.
+  window.mlnotes.updater.getVersion().then(v => {
+    if (_updaterRefs.version) _updaterRefs.version.textContent = 'v' + v;
+  }).catch(() => {});
+
+  // If we already have a status (e.g. dashboard re-rendered after a check),
+  // restore it so the user doesn't see "Idle" flicker.
+  window.mlnotes.updater.getStatus().then(st => {
+    if (st && st.state && st.state !== 'idle') _renderUpdaterStatus(st);
+  }).catch(() => {});
+
+  // In dev mode, the main process returns a friendly error; show it and grey
+  // out the buttons so it's clear why nothing happens.
+  window.mlnotes.updater.isPackaged().then(packaged => {
+    if (!packaged) {
+      _renderUpdaterStatus({ state: 'error', message: 'Auto-update is disabled in dev mode (npm start). Try a packaged build.' });
+      var btn = document.getElementById('dbUpdaterCheckBtn');
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
+    }
+  }).catch(() => {});
+
+  // Tear down any previous subscription (dashboard can re-render) and
+  // subscribe fresh.
+  if (_updaterUnsubStatus) try { _updaterUnsubStatus(); } catch (e) {}
+  _updaterUnsubStatus = window.mlnotes.updater.onStatus(_renderUpdaterStatus);
+
+  if (_updaterUnsubMenu) try { _updaterUnsubMenu(); } catch (e) {}
+  _updaterUnsubMenu = window.mlnotes.updater.onMenuCheck(() => {
+    // Help → Check for Updates… menu click. Open the details, scroll into
+    // view, and fire a check.
+    if (_updaterRefs.details) _updaterRefs.details.setAttribute('open', '');
+    if (_updaterRefs.statusText) _updaterRefs.statusText.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    updaterCheck();
+  });
+}
+
+function _renderUpdaterStatus(st) {
+  if (!_updaterRefs || !_updaterRefs.statusText) return;
+  if (!st || !st.state) return;
+  var s = _updaterRefs;
+  var msg = '';
+  var btnsHtml = '<button class="db-btn db-btn--accent" id="dbUpdaterCheckBtn" onclick="updaterCheck()">&#x21bb; Check for Updates</button>';
+  var showProgress = false;
+  var pct = 0;
+
+  switch (st.state) {
+    case 'checking':
+      msg = 'Checking GitHub for updates…';
+      btnsHtml = '<button class="db-btn" disabled style="opacity:0.5;cursor:not-allowed;">Checking…</button>';
+      break;
+    case 'available':
+      msg = 'Update available: v' + (st.version || '?');
+      btnsHtml = '<button class="db-btn db-btn--accent" onclick="updaterDownload()">&#x2913; Download v' + (st.version || '') + '</button>' +
+                 '<button class="db-btn" onclick="updaterCheck()">&#x21bb; Recheck</button>';
+      break;
+    case 'not-available':
+      msg = '\u2713 You are on the latest version.';
+      // Keep default Check button.
+      break;
+    case 'downloading':
+      pct = (st.percent != null) ? st.percent : 0;
+      msg = 'Downloading update… ' + pct + '%';
+      showProgress = true;
+      btnsHtml = '<button class="db-btn" disabled style="opacity:0.5;cursor:not-allowed;">Downloading…</button>';
+      break;
+    case 'downloaded':
+      msg = 'Update v' + (st.version || '') + ' ready &mdash; restart to install.';
+      btnsHtml = '<button class="db-btn db-btn--accent" onclick="updaterInstall()" style="background:#16a34a;border-color:#16a34a;">&#x2713; Restart &amp; Install</button>';
+      break;
+    case 'error':
+      msg = '\u26a0 ' + (st.message || 'Update check failed.');
+      // Keep default Check button so the user can retry.
+      break;
+    default:
+      msg = 'Idle';
+  }
+
+  s.statusText.innerHTML = msg;
+  if (s.buttons) s.buttons.innerHTML = btnsHtml;
+  if (s.progress) {
+    s.progress.style.display = showProgress ? 'block' : 'none';
+    if (s.progressFill) s.progressFill.style.width = pct + '%';
+  }
+}
+
+function updaterCheck() {
+  if (!_isDesktopApp()) return;
+  window.mlnotes.updater.check().then(r => {
+    if (!r || !r.ok) {
+      _renderUpdaterStatus({ state: 'error', message: (r && r.error) || 'Check failed.' });
+    }
+    // Other state transitions arrive via the onStatus subscription.
+  }).catch(e => {
+    _renderUpdaterStatus({ state: 'error', message: (e && e.message) || String(e) });
+  });
+}
+
+function updaterDownload() {
+  if (!_isDesktopApp()) return;
+  window.mlnotes.updater.download().then(r => {
+    if (!r || !r.ok) {
+      _renderUpdaterStatus({ state: 'error', message: (r && r.error) || 'Download failed.' });
+    }
+  }).catch(e => {
+    _renderUpdaterStatus({ state: 'error', message: (e && e.message) || String(e) });
+  });
+}
+
+function updaterInstall() {
+  if (!_isDesktopApp()) return;
+  if (!confirm('Restart the app now to install the update?\n\nYour progress and notes are saved automatically.')) return;
+  window.mlnotes.updater.install().catch(e => {
+    _renderUpdaterStatus({ state: 'error', message: (e && e.message) || String(e) });
+  });
 }
 
 // ─── Backup & Restore: export / import all user data as JSON ───
