@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="40" fill="#6366f1"/>
-  <text x="96" y="125" text-anchor="middle" font-family="system-ui,sans-serif" font-size="110" font-weight="800" fill="white">ML</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  <path d="M 256 430 L 256 220" stroke="white" stroke-width="22" stroke-linecap="round" fill="none"/>
+  <path d="M 256 280 Q 140 250 130 340 Q 210 340 256 290 Z" fill="white"/>
+  <path d="M 256 230 Q 372 200 382 290 Q 302 290 256 240 Z" fill="white"/>
 </svg>
