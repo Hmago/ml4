@@ -1,4 +1,4 @@
-# Chapter 30 — LLM Interview Questions
+# Chapter 33 — LLM Interview Questions
 
 > The most frequently asked interview questions on Large Language Models — for AI/ML Engineer,
 > Data Scientist, and NLP positions at top tech companies.

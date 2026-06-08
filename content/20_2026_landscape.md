@@ -1,8 +1,8 @@
-# Chapter 19 — The 2026 AI Landscape
+# Chapter 20 — The 2026 AI Landscape
 
 > A field map of where AI is in May 2026 — frontier models, the open-weight race, coding agents, multimodal generation, computer-use, regulation, and the trends a Google AI Engineer interviewer expects you to know.
 
-The state of AI in May 2026 is unrecognisable from late 2022. GPT-3.5 just answered questions; today's frontier models reason for minutes, navigate browsers, write production code, and generate minute-long video with synchronised audio. This chapter is the bird's-eye view: what's new, what changed, what saturated, and what interviewers now ask. Use it to ground every other chapter — the techniques in Ch 6–18 are tools; this chapter is the world they operate in.
+The state of AI in May 2026 is unrecognisable from late 2022. GPT-3.5 just answered questions; today's frontier models reason for minutes, navigate browsers, write production code, and generate minute-long video with synchronised audio. This chapter is the bird's-eye view: what's new, what changed, what saturated, and what interviewers now ask. Use it to ground every other chapter — the techniques in Ch 7–19 are tools; this chapter is the world they operate in.
 
 ---
 
@@ -392,7 +392,7 @@ Context windows scaled fast: **8K (GPT-3.5, 2022) → 32K (GPT-4) → 200K (Clau
 - **Tokens ≠ words.** ~4 chars/token in English; code and non-English tokenize worse.
 - **Everything counts.** System prompt + history + retrieved docs + tool outputs + the response being generated all share one budget.
 - **Going over fails.** Providers either silently drop earlier tokens or error.
-- **Prompt caching** (Ch 18) makes the long prefix cheap on subsequent calls — biggest cost lever after model choice.
+- **Prompt caching** (Ch 19) makes the long prefix cheap on subsequent calls — biggest cost lever after model choice.
 
 ### When to use long context vs RAG
 
@@ -534,7 +534,7 @@ At **Cloud Next 2026** Google rebranded **Vertex AI** as the **Gemini Enterprise
 | **Model Garden** | Curated catalogue (Gemini, Llama, Mistral, Anthropic, etc.) |
 | **Genkit** | Lighter open-source GenAI framework |
 
-(Hello world for ADK is in Ch 18 §18.12.)
+(Hello world for ADK is in Ch 19 §18.12.)
 
 ### Infrastructure — TPU v7 "Ironwood"
 
@@ -743,4 +743,4 @@ Use for legacy software with no API, one-off cross-app automation, QA of flaky i
 
 ---
 
-**Previous:** [Chapter 18 — AI Frameworks & Engineering](18_ai_frameworks.md) | **Next:** [Chapter 20 — Design Fundamentals](20_design_fundamentals.md)
+**Previous:** [Chapter 19 — AI Frameworks & Engineering](19_ai_frameworks.md) | **Next:** [Chapter 21 — Design Fundamentals](21_design_fundamentals.md)

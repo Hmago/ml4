@@ -1,4 +1,4 @@
-# Chapter 17 — AI Agents & Tool Use
+# Chapter 18 — AI Agents & Tool Use
 
 > AI shifted from chatbots to agents in 2024-2025. By 2026, agents are the default way to build AI products. This chapter covers how agents work: the agent loop, tool use, function calling, MCP, multi-agent systems, computer use, memory, and what goes wrong in production.
 
@@ -1694,4 +1694,4 @@ When an agent node calls `interrupt(payload)`, LangGraph immediately serializes 
 
 ---
 
-**Previous:** [Chapter 16 — Large Language Models](16_llm.md) | **Next:** [Chapter 18 — AI Frameworks & Engineering](18_ai_frameworks.md)
+**Previous:** [Chapter 17 — Large Language Models](17_llm.md) | **Next:** [Chapter 19 — AI Frameworks & Engineering](19_ai_frameworks.md)

@@ -5,73 +5,73 @@
 
 // ─── Chapter Data (with section dividers) ───
 const chapters = [
+  // ── QUICK REFERENCE (always at hand) ──
+  { section: 'Quick Reference' },
+  { id: '★',   file: 'content/00p_dl_llm_playbook.md', title: 'DL & LLMs — Playbook', ref: true },
+  { id: '00',  file: 'content/00_quick_reference_cheat_sheet.md', title: 'Cheat Sheet — All Topics', ref: true },
+
   // ── STRATEGY & PLANNING ──
   { section: 'Strategy & Planning' },
   { id: '01', file: 'content/01_google_ai_engineer_strategy.md', title: 'Google AI Engineer Strategy' },
   { id: '⌂', file: 'README.md', title: 'Learning Roadmap' },
-  { id: '02', file: 'content/02_staying_relevant_ai_era.md', title: 'Staying Relevant in AI Era' },
+  { id: '02', file: 'content/02_behavioral_interview.md', title: 'Behavioral Interview (Google)' },
+  { id: '03', file: 'content/03_staying_relevant_ai_era.md', title: 'Staying Relevant in AI Era' },
 
   // ── APTITUDE & BRAIN TRAINING ──
   { section: 'Aptitude & Brain Training' },
-  { id: '03', file: 'content/03_aptitude_mental_math.md', title: 'Aptitude & Mental Math' },
-  { id: '04', file: 'content/04_brain_training.md', title: 'Brain Training & Memory' },
+  { id: '04', file: 'content/04_aptitude_mental_math.md', title: 'Aptitude & Mental Math' },
+  { id: '05', file: 'content/05_brain_training.md', title: 'Brain Training & Memory' },
 
   // ── MATH FOUNDATIONS ──
   { section: 'Math Foundations' },
-  { id: '05', file: 'content/05_math_fundamentals.md', title: 'Math for ML & AI' },
+  { id: '06', file: 'content/06_math_fundamentals.md', title: 'Math for ML & AI' },
 
   // ── ML CURRICULUM ──
   { section: 'ML Curriculum' },
-  { id: '06', file: 'content/06_introduction.md', title: 'Introduction to ML' },
-  { id: '07', file: 'content/07_core_concepts.md', title: 'Core Concepts & Terminology' },
-  { id: '08', file: 'content/08_data_preprocessing.md', title: 'Data Preprocessing' },
-  { id: '09', file: 'content/09_supervised_learning.md', title: 'Supervised Learning' },
-  { id: '10', file: 'content/10_unsupervised_learning.md', title: 'Unsupervised Learning' },
-  { id: '11', file: 'content/11_reinforcement_learning.md', title: 'Reinforcement Learning' },
+  { id: '07', file: 'content/07_introduction.md', title: 'Introduction to ML' },
+  { id: '08', file: 'content/08_core_concepts.md', title: 'Core Concepts & Terminology' },
+  { id: '09', file: 'content/09_data_preprocessing.md', title: 'Data Preprocessing' },
+  { id: '10', file: 'content/10_supervised_learning.md', title: 'Supervised Learning' },
+  { id: '11', file: 'content/11_unsupervised_learning.md', title: 'Unsupervised Learning' },
   { id: '12', file: 'content/12_key_algorithms.md', title: 'Key Algorithms Deep Dive' },
-  { id: '13', file: 'content/13_neural_networks.md', title: 'Neural Networks' },
-  { id: '14', file: 'content/14_model_evaluation.md', title: 'Model Evaluation & Tuning' },
+  { id: '13', file: 'content/13_model_evaluation.md', title: 'Model Evaluation & Tuning' },
+  { id: '14', file: 'content/14_neural_networks.md', title: 'Neural Networks' },
+  { id: '15', file: 'content/15_reinforcement_learning.md', title: 'Reinforcement Learning' },
 
   // ── DEEP LEARNING & LLMs ──
   { section: 'Deep Learning & LLMs' },
-  { id: '★', file: 'content/15p_dl_llm_playbook.md', title: 'DL & LLMs — Playbook', ref: true },
-  { id: '15', file: 'content/15_deep_learning.md', title: 'Deep Learning Reference' },
-  { id: '16', file: 'content/16_llm.md', title: 'Large Language Models' },
-  { id: '17', file: 'content/17_ai_agents.md', title: 'AI Agents & Tool Use' },
-  { id: '18', file: 'content/18_ai_frameworks.md', title: 'AI Frameworks & Engineering' },
-  { id: '19', file: 'content/19_2026_landscape.md', title: 'The 2026 AI Landscape' },
+  { id: '16', file: 'content/16_deep_learning.md', title: 'Deep Learning Reference' },
+  { id: '17', file: 'content/17_llm.md', title: 'Large Language Models' },
+  { id: '18', file: 'content/18_ai_agents.md', title: 'AI Agents & Tool Use' },
+  { id: '19', file: 'content/19_ai_frameworks.md', title: 'AI Frameworks & Engineering' },
+  { id: '20', file: 'content/20_2026_landscape.md', title: 'The 2026 AI Landscape' },
 
   // ── SYSTEM DESIGN ──
   { section: 'System Design' },
-  { id: '20', file: 'content/20_design_fundamentals.md', title: 'Design Fundamentals (Java)' },
-  { id: '21', file: 'content/21_ml_system_design.md', title: 'ML System Design (Google)' },
-  { id: '34', file: 'content/34_system_design_fundamentals_deep_dive.md', title: 'System Design — Pt 1: Foundations & Protocols' },
-  { id: '35', file: 'content/35_system_design_data_distributed.md', title: 'System Design — Pt 2: Data & Distributed Systems' },
-  { id: '36', file: 'content/36_system_design_operations_case_studies.md', title: 'System Design — Pt 3: Operations & Case Studies' },
+  { id: '21', file: 'content/21_design_fundamentals.md', title: 'OO Design & SOLID (Java)' },
+  { id: '22', file: 'content/22_engineering_tools.md', title: 'Engineering Tools (Kafka/Redis/Spark/K8s)' },
+  { id: '23', file: 'content/23_system_design_fundamentals_deep_dive.md', title: 'Sys Design Pt 1: Foundations & Protocols' },
+  { id: '24', file: 'content/24_system_design_data_distributed.md', title: 'Sys Design Pt 2: Data & Distributed Systems' },
+  { id: '25', file: 'content/25_system_design_operations_case_studies.md', title: 'Sys Design Pt 3: Operations & Case Studies' },
+  { id: '26', file: 'content/26_ml_system_design.md', title: 'ML System Design (Google)' },
 
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },
-  { id: '23', file: 'content/23_practical_ml.md', title: 'Practical ML: Zero to Production' },
-  { id: '23b', file: 'content/23_practical_ml.ipynb', title: 'Practical ML Notebook', notebook: true },
-  { id: '24', file: 'content/24_semantic_search.md', title: 'Building Semantic Search' },
-  { id: '25', file: 'content/25_gpus_tpus_infrastructure.md', title: 'GPUs, TPUs & AI Infrastructure' },
-  { id: '26', file: 'content/26_google_ml_ecosystem.md', title: 'Google ML Ecosystem (TPUs, JAX, Vertex AI)' },
-  { id: '33', file: 'content/33_engineering_tools.md', title: 'Data & Infra Engineering Tools' },
+  { id: '27',  file: 'content/27_practical_ml.md', title: 'Practical ML: Zero to Production' },
+  { id: '27b', file: 'content/27_practical_ml.ipynb', title: 'Practical ML Notebook', notebook: true },
+  { id: '28',  file: 'content/28_semantic_search.md', title: 'Building Semantic Search' },
+  { id: '29',  file: 'content/29_gpus_tpus_infrastructure.md', title: 'GPUs, TPUs & AI Infrastructure' },
+  { id: '30',  file: 'content/30_google_ml_ecosystem.md', title: 'Google ML Ecosystem (TPUs, JAX, Vertex AI)' },
 
   // ── DSA / CODING ──
   { section: 'DSA / Coding' },
-  { id: '27', file: 'content/27_dsa_coding.md', title: 'DSA & ML Coding (Java)' },
+  { id: '31', file: 'content/31_dsa_coding.md', title: 'DSA & ML Coding (Java)' },
 
   // ── INTERVIEW PREP ──
   { section: 'Interview Prep' },
-  { id: '28', file: 'content/28_behavioral_interview.md', title: 'Behavioral Interview (Google)' },
-  { id: '29', file: 'content/29_interview_questions.md', title: 'ML Interview Questions' },
-  { id: '30', file: 'content/30_llm_interview_questions.md', title: 'LLM Interview Questions' },
-  { id: '31', file: 'content/31_google_top10_ml_interview.md', title: "Google's Top 10 ML Interview Topics" },
-
-  // ── QUICK REFERENCE ──
-  { section: 'Quick Reference' },
-  { id: '32', file: 'content/32_quick_reference_cheat_sheet.md', title: 'Cheat Sheet — All Topics', ref: true },
+  { id: '32', file: 'content/32_interview_questions.md', title: 'ML Interview Questions' },
+  { id: '33', file: 'content/33_llm_interview_questions.md', title: 'LLM Interview Questions' },
+  { id: '34', file: 'content/34_google_top10_ml_interview.md', title: "Google's Top 10 ML Interview Topics" },
 ];
 
 // ─── Sidebar ───

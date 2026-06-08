@@ -1,4 +1,4 @@
-# Chapter 06 — Introduction to Machine Learning
+# Chapter 7 — Introduction to Machine Learning
 
 ---
 
@@ -729,4 +729,4 @@ Try to answer these without scrolling up. Then check your answers.
 
 ---
 
-**Next:** [Chapter 7 — Core Concepts & Terminology](07_core_concepts.md)
+**Next:** [Chapter 8 — Core Concepts & Terminology](08_core_concepts.md)

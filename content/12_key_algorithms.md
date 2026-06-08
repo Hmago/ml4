@@ -51,12 +51,12 @@ graph TD
 
 | Topic | Where |
 |---|---|
-| Introduction to these algorithms | [Chapter 6 — Supervised Learning](09_supervised_learning.md) |
-| Unsupervised methods (K-Means, DBSCAN) | [Chapter 7 — Unsupervised Learning](10_unsupervised_learning.md) |
-| Neural networks and deep learning | [Chapter 10 — Neural Networks](13_neural_networks.md) |
-| Model evaluation (ROC, AUC, cross-val) | [Chapter 11 — Model Evaluation](14_model_evaluation.md) |
+| Introduction to these algorithms | [Chapter 10 — Supervised Learning](10_supervised_learning.md) |
+| Unsupervised methods (K-Means, DBSCAN) | [Chapter 11 — Unsupervised Learning](11_unsupervised_learning.md) |
+| Neural networks and deep learning | [Chapter 11 — Neural Networks](14_neural_networks.md) |
+| Model evaluation (ROC, AUC, cross-val) | [Chapter 15 — Model Evaluation](13_model_evaluation.md) |
 
-Chapter 6 gave you the "what." This chapter gives you the "how" and "why" — the math, the implementation details, the hyperparameter knobs, and the practical failure modes.
+Chapter 10 gave you the "what." This chapter gives you the "how" and "why" — the math, the implementation details, the hyperparameter knobs, and the practical failure modes.
 
 ---
 
@@ -329,7 +329,7 @@ The default threshold of 0.5 is rarely optimal. Adjust it based on the cost of e
 
   Use the ROC curve or Precision-Recall curve to pick the
   threshold that matches your business objective.
-  (See Chapter 11 for details on these curves.)
+  (See Chapter 15 for details on these curves.)
 ```
 
 ```chart
@@ -1348,7 +1348,7 @@ graph TD
     CLS_SIZE -->|"> 100K rows"| LARGE_CLS{"Data Type?"}
 
     LARGE_CLS -->|Tabular| LARGE_TAB["LightGBM<br/>Linear Models"]
-    LARGE_CLS -->|"Image/Text/Audio"| LARGE_UNSTRUCT["Neural Networks<br/>(see Chapter 10)"]
+    LARGE_CLS -->|"Image/Text/Audio"| LARGE_UNSTRUCT["Neural Networks<br/>(see Chapter 11)"]
 
     REG_SIZE -->|"< 10K rows"| SMALL_REG["Linear Regression (baseline)<br/>Ridge/Lasso<br/>Random Forest"]
     REG_SIZE -->|"> 10K rows"| LARGE_REG["LightGBM / XGBoost<br/>Ridge (if linear)"]
@@ -1741,4 +1741,4 @@ Use LightGBM — it trains fast on large datasets (histogram-based, leaf-wise gr
 
 ---
 
-**Previous:** [Chapter 11 — Reinforcement Learning](11_reinforcement_learning.md) | **Next:** [Chapter 13 — Neural Networks](13_neural_networks.md)
+**Previous:** [Chapter 11 — Unsupervised Learning](11_unsupervised_learning.md) | **Next:** [Chapter 13 — Model Evaluation & Tuning](13_model_evaluation.md)

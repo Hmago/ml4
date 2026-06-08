@@ -1,4 +1,4 @@
-# Chapter 16 — Large Language Models (LLMs)
+# Chapter 17 — Large Language Models (LLMs)
 
 > "A language model is a system that reads text and predicts what comes next.
 > Scale it up enough and something extraordinary happens — it starts to understand."
@@ -5344,7 +5344,7 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
 ---
 
-**Next:** Explore further with [Chapter 29 — ML Interview Questions](29_interview_questions.md) for common ML/AI interview topics including LLM-specific questions.
+**Next:** Explore further with [Chapter 32 — ML Interview Questions](32_interview_questions.md) for common ML/AI interview topics including LLM-specific questions.
 
 ---
 
@@ -5374,4 +5374,4 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
 ---
 
-**Previous:** [Chapter 15 — Deep Learning](15_deep_learning.md) | **Next:** [Chapter 17 — AI Agents & Tool Use](17_ai_agents.md)
+**Previous:** [Chapter 16 — Deep Learning](16_deep_learning.md) | **Next:** [Chapter 18 — AI Agents & Tool Use](18_ai_agents.md)

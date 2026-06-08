@@ -1,4 +1,4 @@
-# Chapter 33 — Data & Infra Engineering Tools Every Senior Engineer Should Know
+# Chapter 22 — Data & Infra Engineering Tools Every Senior Engineer Should Know
 
 Every senior engineer eventually hits the same wall: the code is fine, but the *system around the code* is what makes or breaks the product. Hadoop, Kafka, Redis, Cassandra, Spark, Kubernetes — these are not buzzwords on a résumé. They are the load-bearing walls of every large system you will ever touch. This chapter explains each one in plain language, shows you *when* (and when **not**) to use it, and ranks them by how much they matter in **2025–2026**.
 
@@ -961,7 +961,7 @@ CREATE TABLE messages (
 
 - **Use it when:** Full-text/relevance search, log analytics (the "E" in the ELK stack), or fast aggregations over semi-structured data.
 - **Avoid when:** It's your only datastore — it's a search index, not a system of record. Keep the source of truth in a real database and index *into* Elasticsearch.
-- **Senior gotcha:** For modern **semantic/vector** search (AI embeddings), Elasticsearch now supports vectors, but dedicated vector DBs (pgvector, Pinecone, Milvus) or hybrid search are often considered (see Ch 24).
+- **Senior gotcha:** For modern **semantic/vector** search (AI embeddings), Elasticsearch now supports vectors, but dedicated vector DBs (pgvector, Pinecone, Milvus) or hybrid search are often considered (see Ch 28).
 
 **Going deeper — why search is fast and how to think about it:**
 
@@ -1035,7 +1035,7 @@ query { user(id: 42) { name, orders { total } } }
 
 > **Official Definition:** A vector database stores high-dimensional embedding vectors and provides Approximate Nearest Neighbor (ANN) search — retrieving the K most semantically similar vectors to a query vector in milliseconds, even over billions of embeddings.
 
-This is the storage layer for **semantic search, RAG (Retrieval-Augmented Generation), recommendation systems, and image similarity**. See Chapter 24 (Semantic Search) for ANN index details (HNSW, IVF). This section covers the landscape.
+This is the storage layer for **semantic search, RAG (Retrieval-Augmented Generation), recommendation systems, and image similarity**. See Chapter 28 (Semantic Search) for ANN index details (HNSW, IVF). This section covers the landscape.
 
 **How ANN search works (brief):** Embeddings from a model (e.g., text-embedding-3-small) are stored as float vectors. Query = embed the input → find K closest stored vectors by cosine similarity or dot product. Exact search is O(N×d) — too slow at scale. ANN indexes (HNSW, IVF) trade tiny accuracy loss for orders-of-magnitude speed.
 
@@ -1207,7 +1207,7 @@ You do not learn these all at once. A sensible path for a senior engineer:
 When a system-design interviewer hears you casually and *correctly* place these tools, your seniority reads instantly. Strong signals:
 
 - **Justify, don't name-drop.** "I'd put Kafka here to decouple ingestion from processing and allow replay" beats "I'd use Kafka."
-- **Start simple.** Propose Postgres + a cache before reaching for Cassandra or a Spark cluster. Over-engineering is a red flag (see Ch 21).
+- **Start simple.** Propose Postgres + a cache before reaching for Cassandra or a Spark cluster. Over-engineering is a red flag (see Ch 26).
 - **Know the tradeoffs.** Every choice costs something: Kafka adds operational weight; caching adds invalidation bugs; Kubernetes adds complexity; Cassandra trades consistency for availability.
 - **Be current.** Mention that the field moved from Hadoop/HDFS to **lakehouse** (S3 + Iceberg/Delta + Spark/Flink), and that Kafka + Flink is the modern streaming pair. This signals you track the industry, not a 2015 textbook.
 

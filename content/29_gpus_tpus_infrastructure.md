@@ -1,4 +1,4 @@
-# Chapter 25 — GPUs, TPUs & AI Infrastructure
+# Chapter 29 — GPUs, TPUs & AI Infrastructure
 
 This chapter covers the hardware and infrastructure that makes modern AI possible. You can write the most elegant model architecture in the world — if you do not understand the hardware running it, you will waste money, time, and sanity. GPUs, TPUs, distributed training, and inference optimization are not optional knowledge for an AI engineer. They are the difference between a model that trains in 3 hours and one that takes 3 weeks.
 
@@ -1316,4 +1316,4 @@ In practice: unstructured pruning is useful for reducing model storage/transmiss
 
 ---
 
-**Previous:** [Chapter 24 — Building Semantic Search](24_semantic_search.md) | **Next:** [Chapter 26 — Google ML Ecosystem](26_google_ml_ecosystem.md)
+**Previous:** [Chapter 28 — Building Semantic Search](28_semantic_search.md) | **Next:** [Chapter 30 — Google ML Ecosystem](30_google_ml_ecosystem.md)

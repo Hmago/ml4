@@ -1,4 +1,4 @@
-# Chapter 18 — AI Frameworks & Engineering
+# Chapter 19 — AI Frameworks & Engineering
 
 > The toolkit a 2026 AI engineer reaches for: agent frameworks, RAG stacks, vector DBs, evaluation tools, inference servers, and the MLOps glue around them.
 
@@ -1005,4 +1005,4 @@ LLM responses constrained to a JSON Schema at decode time. Eliminates parser fai
 
 ---
 
-**Previous:** [Chapter 17 — AI Agents & Tool Use](17_ai_agents.md) | **Next:** [Chapter 19 — The 2026 AI Landscape](19_2026_landscape.md)
+**Previous:** [Chapter 18 — AI Agents & Tool Use](18_ai_agents.md) | **Next:** [Chapter 20 — The 2026 AI Landscape](20_2026_landscape.md)

@@ -1,4 +1,4 @@
-# Chapter 04 — Brain Training: Memory, Focus & Effective Learning
+# Chapter 5 — Brain Training: Memory, Focus & Effective Learning
 
 > Only strategies supported by peer-reviewed cognitive science and neuroscience research. No pseudoscience, no gimmicks. Every claim cites a primary source you can verify.
 
@@ -1190,7 +1190,7 @@ Quality > quantity. 2–4 hours of deep, deliberate practice with breaks beats 8
 You can use AI for explanation, problem generation, and Socratic dialogue. You cannot outsource the **retrieval practice** itself — your brain still has to do the work of remembering. AI is a multiplier on good study habits and a substitute for none.
 
 **Q: I'm preparing for a Google ML interview specifically. What's the minimum stack?**
-Sleep (7–9 hrs, consistent). Anki + FSRS (10 min/day). Active recall on every chapter. Interleaved problem practice on LeetCode (Ch 27). One Socratic AI session per week to find your blind spots. Skip everything else if you have to.
+Sleep (7–9 hrs, consistent). Anki + FSRS (10 min/day). Active recall on every chapter. Interleaved problem practice on LeetCode (Ch 31). One Socratic AI session per week to find your blind spots. Skip everything else if you have to.
 
 ---
 
@@ -1390,4 +1390,4 @@ open("anki_import.txt", "w").write(resp.content[0].text)
 
 ---
 
-**Previous:** [Chapter 03 — Aptitude & Mental Math](03_aptitude_mental_math.md) &middot; **Next:** [Chapter 05 — Math Fundamentals](05_math_fundamentals.md) &middot; **See also:** [★ DL & LLMs Playbook](15p_dl_llm_playbook.md) &middot; [Ch 32 Cheat Sheet](32_quick_reference_cheat_sheet.md)
+**Previous:** [Chapter 04 — Aptitude & Mental Math](04_aptitude_mental_math.md) &middot; **Next:** [Chapter 06 — Math Fundamentals](06_math_fundamentals.md) &middot; **See also:** [★ DL & LLMs Playbook](00p_dl_llm_playbook.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)

@@ -1,8 +1,8 @@
 # Deep Learning & LLMs — The Playbook
 
-> A decision-oriented quick reference for Ch 13–19. Skim during interview prep; grep during a real on-call. Recipes, defaults, decision trees, diagnostic flowcharts, and the numbers worth memorising.
+> A decision-oriented quick reference for Ch 14–20. Skim during interview prep; grep during a real on-call. Recipes, defaults, decision trees, diagnostic flowcharts, and the numbers worth memorising.
 
-This is **not** a textbook chapter. The why-and-how is in Ch 13 (Neural Networks), Ch 15 (Deep Learning Reference), Ch 16 (LLMs), Ch 17 (AI Agents), Ch 18 (Frameworks), Ch 19 (2026 Landscape). This is the index of decisions you make most often, in the order you make them.
+This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks), Ch 16 (Deep Learning Reference), Ch 17 (LLMs), Ch 18 (AI Agents), Ch 19 (Frameworks), Ch 20 (2026 Landscape). This is the index of decisions you make most often, in the order you make them.
 
 ---
 
@@ -609,4 +609,4 @@ SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (c
 
 ---
 
-**See also:** [Ch 13 Neural Networks](13_neural_networks.md) · [Ch 15 Deep Learning Reference](15_deep_learning.md) · [Ch 16 LLMs](16_llm.md) · [Ch 17 AI Agents](17_ai_agents.md) · [Ch 18 AI Frameworks](18_ai_frameworks.md) · [Ch 19 The 2026 AI Landscape](19_2026_landscape.md) · [Ch 32 Cheat Sheet](32_quick_reference_cheat_sheet.md)
+**See also:** [Ch 14 Neural Networks](14_neural_networks.md) · [Ch 16 Deep Learning Reference](16_deep_learning.md) · [Ch 17 LLMs](17_llm.md) · [Ch 18 AI Agents](18_ai_agents.md) · [Ch 19 AI Frameworks](19_ai_frameworks.md) · [Ch 20 The 2026 AI Landscape](20_2026_landscape.md) · [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)

@@ -1,4 +1,4 @@
-# Chapter 09 — Supervised Learning
+# Chapter 10 — Supervised Learning
 
 > "Supervised learning is the workhorse of machine learning."
 > — Andrew Ng
@@ -66,7 +66,7 @@ Think of it like studying for an exam with the answer key. You see hundreds of p
   New input:  [1500 sqft, 2 beds, suburb]  →  $310,000   ← predicted!
 ```
 
-The word "supervised" comes from the supervisor — the labels. Without labels, you're doing unsupervised learning (Chapter 7). With labels, the model has a teacher checking its work during training.
+The word "supervised" comes from the supervisor — the labels. Without labels, you're doing unsupervised learning (Chapter 11). With labels, the model has a teacher checking its work during training.
 
 ```mermaid
 flowchart LR
@@ -1547,7 +1547,7 @@ flowchart TD
     D -->|Yes| H[Linear Regression<br/>Ridge/Lasso<br/>Decision Tree]
     D -->|No| I{Tabular or<br/>unstructured?}
     I -->|Tabular| J[XGBoost / LightGBM]
-    I -->|Image/Text/Audio| K[Neural Network<br/>see Ch 10-11]
+    I -->|Image/Text/Audio| K[Neural Network<br/>see Ch 14]
 ```
 
 ### Full Algorithm Comparison
@@ -2022,4 +2022,4 @@ SHAP — because it explains individual predictions, not just global trends. A s
 
 ---
 
-**Previous:** [Chapter 8 — Data Preprocessing](08_data_preprocessing.md) | **Next:** [Chapter 10 — Unsupervised Learning](10_unsupervised_learning.md)
+**Previous:** [Chapter 9 — Data Preprocessing](09_data_preprocessing.md) | **Next:** [Chapter 11 — Unsupervised Learning](11_unsupervised_learning.md)

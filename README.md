@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  34 chapters · ~111.5 hours of content · 400+ DSA problems │
+  │  34 chapters · ~122 hours of content · 400+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA · Export to PDF    │
   └─────────────────────────────────────────────────────────┘
@@ -18,87 +18,87 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 > **Google Interview Priority:** ★★★ = Critical (tested every interview) · ★★ = High Priority (frequently tested) · ★ = Good to Know
 
-### Quick Reference
+### Quick Reference (always at hand)
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 32 | Quick Reference Cheat Sheet (all topics) | ★★ | [32_quick_reference_cheat_sheet.md](content/32_quick_reference_cheat_sheet.md) | ~3 hrs | All Levels |
-| ★ | DL & LLMs Playbook (decisions, recipes, soundbites) | ★★★ | [15p_dl_llm_playbook.md](content/15p_dl_llm_playbook.md) | ~25 min | All Levels |
+| ★ | DL & LLMs Playbook (decisions, recipes, soundbites) | ★★★ | [00p_dl_llm_playbook.md](content/00p_dl_llm_playbook.md) | ~25 min | All Levels |
+| 00 | Quick Reference Cheat Sheet (all topics) | ★★ | [00_quick_reference_cheat_sheet.md](content/00_quick_reference_cheat_sheet.md) | ~3 hrs | All Levels |
 
 ### Strategy & Planning
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 01 | Google AI Engineer — Strategy Guide | ★★★ | [01_google_ai_engineer_strategy.md](content/01_google_ai_engineer_strategy.md) | ~2 hrs | All Levels |
-| 02 | Staying Relevant in the AI Era | ★ | [02_staying_relevant_ai_era.md](content/02_staying_relevant_ai_era.md) | ~1.5 hrs | All Levels |
+| 02 | Behavioral Interview (Googleyness & Leadership) | ★★★ | [02_behavioral_interview.md](content/02_behavioral_interview.md) | ~2.5 hrs | All Levels |
+| 03 | Staying Relevant in the AI Era | ★ | [03_staying_relevant_ai_era.md](content/03_staying_relevant_ai_era.md) | ~1.25 hrs | All Levels |
 
 ### Aptitude & Brain Training
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 03 | Aptitude & Mental Math for Engineers | ★ | [03_aptitude_mental_math.md](content/03_aptitude_mental_math.md) | ~3.5 hrs | All Levels |
-| 04 | Brain Training — Memory, Focus & IQ | | [04_brain_training.md](content/04_brain_training.md) | ~1.5 hrs | All Levels |
+| 04 | Aptitude & Mental Math for Engineers | ★ | [04_aptitude_mental_math.md](content/04_aptitude_mental_math.md) | ~6.25 hrs | All Levels |
+| 05 | Brain Training — Memory, Focus & IQ | | [05_brain_training.md](content/05_brain_training.md) | ~2.25 hrs | All Levels |
 
 ### Math Foundations
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 05 | Math Fundamentals for ML & AI | ★★ | [05_math_fundamentals.md](content/05_math_fundamentals.md) | ~4.5 hrs | Beginner |
+| 06 | Math Fundamentals for ML & AI | ★★ | [06_math_fundamentals.md](content/06_math_fundamentals.md) | ~4.75 hrs | Beginner |
 
 ### Core ML Curriculum
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 06 | Introduction to Machine Learning | ★ | [06_introduction.md](content/06_introduction.md) | ~1.5 hrs | Beginner |
-| 07 | Core Concepts & Terminology | ★★★ | [07_core_concepts.md](content/07_core_concepts.md) | ~3.5 hrs | Beginner |
-| 08 | Data Preprocessing | ★★ | [08_data_preprocessing.md](content/08_data_preprocessing.md) | ~1 hr | Beginner-Intermediate |
-| 09 | Supervised Learning | ★★★ | [09_supervised_learning.md](content/09_supervised_learning.md) | ~3.5 hrs | Intermediate |
-| 10 | Unsupervised Learning | ★★ | [10_unsupervised_learning.md](content/10_unsupervised_learning.md) | ~2.5 hrs | Intermediate |
-| 11 | Reinforcement Learning | ★ | [11_reinforcement_learning.md](content/11_reinforcement_learning.md) | ~1.75 hrs | Intermediate |
+| 07 | Introduction to Machine Learning | ★ | [07_introduction.md](content/07_introduction.md) | ~1.5 hrs | Beginner |
+| 08 | Core Concepts & Terminology | ★★★ | [08_core_concepts.md](content/08_core_concepts.md) | ~3.5 hrs | Beginner |
+| 09 | Data Preprocessing | ★★ | [09_data_preprocessing.md](content/09_data_preprocessing.md) | ~1 hr | Beginner-Intermediate |
+| 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~3.75 hrs | Intermediate |
+| 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~2.25 hrs | Intermediate |
 | 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~3 hrs | Intermediate |
-| 13 | Neural Networks | ★★★ | [13_neural_networks.md](content/13_neural_networks.md) | ~2 hrs | Intermediate-Advanced |
-| 14 | Model Evaluation & Tuning | ★★★ | [14_model_evaluation.md](content/14_model_evaluation.md) | ~2 hrs | Intermediate |
+| 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~2 hrs | Intermediate |
+| 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~2 hrs | Intermediate-Advanced |
+| 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1.75 hrs | Intermediate |
 | | **Core ML Total** | | | **~21 hrs** | |
 
 ### Deep Learning & LLMs
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| ★ | DL & LLMs — Playbook (recipes, decisions, defaults) | ★★★ | [15p_dl_llm_playbook.md](content/15p_dl_llm_playbook.md) | ~25 min | All Levels |
-| 15 | Deep Learning — Complete Reference | ★★★ | [15_deep_learning.md](content/15_deep_learning.md) | ~3.5 hrs | Advanced |
-| 16 | Large Language Models (LLMs) | ★★★ | [16_llm.md](content/16_llm.md) | ~9 hrs | Intermediate-Advanced |
-| 17 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [17_ai_agents.md](content/17_ai_agents.md) | ~1.75 hrs | Intermediate-Advanced |
-| 18 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [18_ai_frameworks.md](content/18_ai_frameworks.md) | ~1.5 hrs | Intermediate-Advanced |
-| 19 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [19_2026_landscape.md](content/19_2026_landscape.md) | ~1 hr | Intermediate |
+| 16 | Deep Learning — Complete Reference | ★★★ | [16_deep_learning.md](content/16_deep_learning.md) | ~3.5 hrs | Advanced |
+| 17 | Large Language Models (LLMs) | ★★★ | [17_llm.md](content/17_llm.md) | ~9 hrs | Intermediate-Advanced |
+| 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~1.75 hrs | Intermediate-Advanced |
+| 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~1.5 hrs | Intermediate-Advanced |
+| 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~1 hr | Intermediate |
 | | **Deep Learning & LLMs Total** | | | **~17 hrs** | |
 
 ### System Design
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 20 | Design Fundamentals (Senior SWE, Java) | ★★ | [20_design_fundamentals.md](content/20_design_fundamentals.md) | ~5.5 hrs | Intermediate-Advanced |
-| 21 | ML System Design (Google) | ★★★ | [21_ml_system_design.md](content/21_ml_system_design.md) | ~5.75 hrs | Intermediate-Advanced |
-| 34 | System Design — Part 1: Foundations & Protocols (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) | ★★★ | [34_system_design_fundamentals_deep_dive.md](content/34_system_design_fundamentals_deep_dive.md) | ~3 hrs | Intermediate-Advanced |
-| 35 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage, data processing) | ★★★ | [35_system_design_data_distributed.md](content/35_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |
-| 36 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, anti-patterns, Instagram) | ★★★ | [36_system_design_operations_case_studies.md](content/36_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
-| | **System Design Total** | | | **~21.25 hrs** | |
+| 21 | OO Design Fundamentals & SOLID (Senior SWE, Java) | ★★ | [21_design_fundamentals.md](content/21_design_fundamentals.md) | ~5.5 hrs | Intermediate-Advanced |
+| 22 | Data & Infra Engineering Tools (Kafka, Redis, Spark, K8s…) | ★★ | [22_engineering_tools.md](content/22_engineering_tools.md) | ~2 hrs | Intermediate |
+| 23 | System Design — Part 1: Foundations & Protocols (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) | ★★★ | [23_system_design_fundamentals_deep_dive.md](content/23_system_design_fundamentals_deep_dive.md) | ~3 hrs | Intermediate-Advanced |
+| 24 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage) | ★★★ | [24_system_design_data_distributed.md](content/24_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |
+| 25 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, Instagram) | ★★★ | [25_system_design_operations_case_studies.md](content/25_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
+| 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~5.75 hrs | Intermediate-Advanced |
+| | **System Design Total** | | | **~23.25 hrs** | |
 
 ### Practical & Infrastructure
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 23 | Practical ML — From Zero to Production | ★★ | [23_practical_ml.md](content/23_practical_ml.md) | ~3.25 hrs | Beginner-Advanced |
-| 24 | Building Semantic Search (Text, Images, Metadata) | ★★ | [24_semantic_search.md](content/24_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
-| 25 | GPUs, TPUs & AI Infrastructure | ★★ | [25_gpus_tpus_infrastructure.md](content/25_gpus_tpus_infrastructure.md) | ~2.75 hrs | Intermediate-Advanced |
-| 26 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [26_google_ml_ecosystem.md](content/26_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
-| 33 | Data & Infra Engineering Tools (Kafka, Redis, Spark, K8s...) | ★★ | [33_engineering_tools.md](content/33_engineering_tools.md) | ~2 hrs | Intermediate |
-| | **Practical & Infra Total** | | | **~13 hrs** | |
+| 27 | Practical ML — From Zero to Production | ★★ | [27_practical_ml.md](content/27_practical_ml.md) | ~3.25 hrs | Beginner-Advanced |
+| 28 | Building Semantic Search (Text, Images, Metadata) | ★★ | [28_semantic_search.md](content/28_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
+| 29 | GPUs, TPUs & AI Infrastructure | ★★ | [29_gpus_tpus_infrastructure.md](content/29_gpus_tpus_infrastructure.md) | ~2.75 hrs | Intermediate-Advanced |
+| 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
+| | **Practical & Infra Total** | | | **~11 hrs** | |
 
 ### DSA & Coding
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 27 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [27_dsa_coding.md](content/27_dsa_coding.md) | ~8 hrs | Intermediate-Advanced |
+| 31 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [31_dsa_coding.md](content/31_dsa_coding.md) | ~8 hrs | Intermediate-Advanced |
 | -- | DSA Practice (400+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
 | | **DSA Total** | | | **~8 hrs + practice** | |
 
@@ -106,17 +106,16 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 28 | Behavioral Interview (Googleyness & Leadership) | ★★★ | [28_behavioral_interview.md](content/28_behavioral_interview.md) | ~2.5 hrs | All Levels |
-| 29 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [29_interview_questions.md](content/29_interview_questions.md) | ~3.75 hrs | Intermediate-Advanced |
-| 30 | LLM Interview Questions | ★★★ | [30_llm_interview_questions.md](content/30_llm_interview_questions.md) | ~7.5 hrs | Intermediate-Advanced |
-| 31 | Google's Top 10 ML Interview Topics | ★★★ | [31_google_top10_ml_interview.md](content/31_google_top10_ml_interview.md) | ~8.25 hrs | Intermediate-Advanced |
-| | **Interview Prep Total** | | | **~22 hrs** | |
+| 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~3.75 hrs | Intermediate-Advanced |
+| 33 | LLM Interview Questions | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~7.5 hrs | Intermediate-Advanced |
+| 34 | Google's Top 10 ML Interview Topics | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~8.25 hrs | Intermediate-Advanced |
+| | **Interview Prep Total** | | | **~19.5 hrs** | |
 
 ### Grand Total
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~108 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~122 hrs reading + DSA practice** | |
 
 ---
 
@@ -200,59 +199,61 @@ ication   sion            ing       sionality      Learning Learning
   Ch 01 (Strategy) ← read first if targeting Google
     │
     ▼
-  Ch 06 (Intro to ML)
+  Ch 07 (Intro to ML)
     │
-    ├── Ch 05 (Math) ← reference as needed, don't read cover-to-cover
+    ├── Ch 06 (Math) ← reference as needed, don't read cover-to-cover
     ▼
-  Ch 07 (Core Concepts) ← most important foundation chapter
+  Ch 08 (Core Concepts) ← most important foundation chapter
     │
     ▼
-  Ch 08 (Data Preprocessing)
+  Ch 09 (Data Preprocessing)
 
   PHASE 2: THE THREE PILLARS
   ──────────────────────────
-  Ch 07 unlocks all three:
+  Ch 08 unlocks all three:
 
-  Ch 09 (Supervised)    Ch 10 (Unsupervised)    Ch 11 (RL)
+  Ch 10 (Supervised)    Ch 11 (Unsupervised)    Ch 15 (RL)
        │                     │                       │
        ▼                     │                       │
   Ch 12 (Algorithms)         │                       │
        │                     │                       │
        ▼                     │                       │
-  Ch 14 (Evaluation)         │                       │
+  Ch 13 (Evaluation)         │                       │
        │                     │                       │
        └─────────────────────┴───────────────────────┘
                              │
   PHASE 3: DEEP LEARNING & LLMs
   ─────────────────────────────
-  Ch 13 (Neural Networks) ← needs Ch 09 + Ch 12 + Ch 14
+  Ch 14 (Neural Networks) ← needs Ch 10 + Ch 12 + Ch 13
        │
        ▼
-  Ch 15 (Deep Learning Reference)
+  Ch 16 (Deep Learning Reference)
        │
        ▼
-  Ch 16 (LLMs) ← the big one: 9 hours
+  Ch 17 (LLMs) ← the big one: 9 hours
        │
        ▼
-  Ch 17 (Agents & Tool Use)  →  Ch 18 (Frameworks)  →  Ch 19 (2026 Landscape)
+  Ch 18 (Agents & Tool Use)  →  Ch 19 (Frameworks)  →  Ch 20 (2026 Landscape)
        │
        └── ★ DL & LLMs Playbook (use throughout this phase)
 
   PHASE 4: SYSTEM DESIGN
   ──────────────────────
-  Ch 20 (Design Fundamentals) → Ch 21 (ML System Design) → Ch 22 (Modern System Design)
+  Ch 21 (OO Design & SOLID) → Ch 22 (Engineering Tools) →
+  Ch 23 → Ch 24 → Ch 25 (Generic System Design — 3 parts) →
+  Ch 26 (ML System Design capstone)
 
   PHASE 5: INTERVIEW PREP
   ───────────────────────
-  Ch 28 (Behavioral) + Ch 29 (ML Qs) + Ch 30 (LLM Qs) + Ch 31 (Top 10)
+  Ch 02 (Behavioral) + Ch 32 (ML Qs) + Ch 33 (LLM Qs) + Ch 34 (Top 10)
 
   PARALLEL TRACKS (start any time, practice daily):
   ─────────────────────────────────────────────────
-  Ch 27 (DSA) + DSA Practice (400+ problems)
-  Ch 25 + Ch 26 (GPUs / TPUs / Google Ecosystem) ← read before interviews
-  Ch 23 (Practical ML) ← hands-on project experience
-  Ch 24 (Semantic Search) ← classic system to know
-  Ch 33 (Data & Infra Tools) ← Kafka/Redis/Spark/K8s for system design
+  Ch 31 (DSA) + DSA Practice (400+ problems)
+  Ch 29 + Ch 30 (GPUs / TPUs / Google Ecosystem) ← read before interviews
+  Ch 27 (Practical ML) ← hands-on project experience
+  Ch 28 (Semantic Search) ← classic system to know
+  Ch 22 (Data & Infra Tools) ← Kafka/Redis/Spark/K8s for system design
 ```
 
 ### Six Learning Tracks
@@ -260,50 +261,54 @@ ication   sion            ing       sionality      Learning Learning
 ```
   TRACK 1: Beginner Fast Track (~14 hours)
   ──────────────────────────────────────────
-  Ch 06 (Intro) → Ch 07 (Core Concepts) → Ch 08 (Data) →
-  Ch 09 (Supervised) → Ch 12 (Algorithms) → Ch 14 (Evaluation)
+  Ch 07 (Intro) → Ch 08 (Core Concepts) → Ch 09 (Data) →
+  Ch 10 (Supervised) → Ch 12 (Algorithms) → Ch 13 (Evaluation)
   Solid foundations. Enough for junior ML roles.
 
   TRACK 2: Full ML Engineer (~40 hours)
   ──────────────────────────────────────────
-  Track 1 → Ch 10 (Unsupervised) → Ch 11 (RL) →
-  Ch 13 (Neural Nets) → Ch 15 (Deep Learning) →
-  Ch 16 (LLMs) → Ch 17 (Agents) → Ch 18 (Frameworks)
+  Track 1 → Ch 11 (Unsupervised) → Ch 14 (Neural Nets) →
+  Ch 15 (RL) → Ch 16 (Deep Learning) →
+  Ch 17 (LLMs) → Ch 18 (Agents) → Ch 19 (Frameworks)
   Complete core curriculum. Strong enough for mid-level roles.
 
   TRACK 3: LLM & Modern AI Focus (~26 hours)
   ──────────────────────────────────────────
-  Ch 06 → Ch 07 → Ch 09 (Supervised — need loss functions) →
-  Ch 13 (Neural Nets) → Ch 14 (Evaluation — need metrics) →
-  Ch 15 (Deep Learning) → Ch 16 (LLMs) →
-  Ch 17 (Agents) → Ch 18 (Frameworks) → Ch 19 (Landscape) →
-  Ch 30 (LLM Interview Qs)  +  ★ Playbook
+  Ch 07 → Ch 08 → Ch 10 (Supervised — need loss functions) →
+  Ch 14 (Neural Nets) → Ch 13 (Evaluation — need metrics) →
+  Ch 16 (Deep Learning) → Ch 17 (LLMs) →
+  Ch 18 (Agents) → Ch 19 (Frameworks) → Ch 20 (Landscape) →
+  Ch 33 (LLM Interview Qs)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
   TRACK 4: Google AI Engineer (~95 hours — full prep)
   ──────────────────────────────────────────
   Ch 01 (Strategy — read first!) →
+  Ch 02 (Behavioral — start STAR stories early) →
   Track 2 (full core curriculum) →
-  Ch 19 (2026 Landscape) →
-  Ch 20 (Design Fundamentals — do BEFORE system design) →
-  Ch 21 (ML System Design) → Ch 22 (Modern System Design) →
-  Ch 28 (Behavioral) → Ch 29 + Ch 30 + Ch 31 (Interview Qs) →
-  Ch 26 (Google Ecosystem) → Ch 25 (GPUs / TPUs) →
-  Ch 27 (DSA) → DSA Practice (aim for 200+ problems) →
-  Ch 23 (Practical ML)  +  ★ Playbook (always at hand)
+  Ch 20 (2026 Landscape) →
+  Ch 21 (OO Design — do BEFORE system design) →
+  Ch 22 (Engineering Tools) →
+  Ch 23 → Ch 24 → Ch 25 (Generic System Design, 3 parts) →
+  Ch 26 (ML System Design capstone) →
+  Ch 32 + Ch 33 + Ch 34 (Interview Qs) →
+  Ch 29 (GPUs/TPUs) → Ch 30 (Google Ecosystem) →
+  Ch 31 (DSA) → DSA Practice (aim for 200+ problems) →
+  Ch 27 (Practical ML)  +  ★ Playbook (always at hand)
   The complete path. Plan 12-16 weeks.
 
-  TRACK 5: System Design Focus (~14 hours)
+  TRACK 5: System Design Focus (~24 hours)
   ──────────────────────────────────────────
-  Ch 20 (Design Fundamentals — SOLID, patterns, DBs, caching) →
-  Ch 21 (ML System Design — 7 full designs) →
-  Ch 22 (Modern System Design)
+  Ch 21 (OO Design — SOLID, patterns) →
+  Ch 22 (Engineering Tools — Kafka/Redis/K8s) →
+  Ch 23 → Ch 24 → Ch 25 (Generic System Design, 3 parts) →
+  Ch 26 (ML System Design — 7 full designs)
   For experienced engineers focusing on design rounds.
   Prerequisite: ML fundamentals (Track 1 or equivalent).
 
   TRACK 6: DSA Grind (~8 hours reading + practice)
   ──────────────────────────────────────────
-  Ch 27 (DSA theory — all 27 sections, Big-O through DP) →
+  Ch 31 (DSA theory — all 27 sections, Big-O through DP) →
   DSA Practice (start with Easy, progress to Medium/Hard)
   Target: 2 problems/day for 12 weeks = 168 problems.
   Focus order: Arrays → Trees → Graphs → DP → Sliding Window.
@@ -369,38 +374,38 @@ ication   sion            ing       sionality      Learning Learning
 
 ```
   THREAD 1: Loss Functions
-  Ch 07 (defined) → Ch 09 (MSE, cross-entropy) → Ch 13 (backprop) →
-  Ch 14 (evaluation metrics) → Ch 31 (Top 10 metrics deep dive)
+  Ch 08 (defined) → Ch 10 (MSE, cross-entropy) → Ch 14 (backprop) →
+  Ch 13 (evaluation metrics) → Ch 34 (Top 10 metrics deep dive)
 
   THREAD 2: Gradient Descent & Optimization
-  Ch 07 (the idea) → Ch 12 (training algorithms) → Ch 13 (backprop) →
-  Ch 15 (optimizers: Adam, SGD) → Ch 31 (full optimization deep dive)
+  Ch 08 (the idea) → Ch 12 (training algorithms) → Ch 14 (backprop) →
+  Ch 16 (optimizers: Adam, SGD) → Ch 34 (full optimization deep dive)
 
   THREAD 3: Overfitting / Bias-Variance / Regularization
-  Ch 07 (defined) → Ch 09 (ensembles fix it) → Ch 13 (dropout) →
-  Ch 14 (how to detect) → Ch 31 (deep dives)
+  Ch 08 (defined) → Ch 10 (ensembles fix it) → Ch 14 (dropout) →
+  Ch 13 (how to detect) → Ch 34 (deep dives)
 
   THREAD 4: Features and Data Quality
-  Ch 07 (what features are) → Ch 08 (preprocessing) → Ch 09 (importance) →
-  Ch 10 (dim. reduction) → Ch 31 (PCA, feature engineering)
+  Ch 08 (what features are) → Ch 09 (preprocessing) → Ch 10 (importance) →
+  Ch 11 (dim. reduction) → Ch 34 (PCA, feature engineering)
 
   THREAD 5: From Neural Nets to LLMs to Agents
-  Ch 13 (neurons, layers) → Ch 15 (CNNs, Transformers) →
-  Ch 16 (LLMs, RLHF, RAG) → Ch 17 (agents, MCP, skills) →
-  Ch 18 (frameworks, vLLM) → Ch 19 (2026 landscape) →
-  Ch 30 (LLM interview Qs) → Ch 31 (Transformers & Attention deep dive)
+  Ch 14 (neurons, layers) → Ch 16 (CNNs, Transformers) →
+  Ch 17 (LLMs, RLHF, RAG) → Ch 18 (agents, MCP, skills) →
+  Ch 19 (frameworks, vLLM) → Ch 20 (2026 landscape) →
+  Ch 33 (LLM interview Qs) → Ch 34 (Transformers & Attention deep dive)
   + use ★ Playbook throughout
 
   THREAD 6: Trees & Ensembles → System Design
-  Ch 09 (decision trees) → Ch 12 (RF, XGBoost) →
-  Ch 31 (ensemble deep dive) → Ch 21 (ML system design) →
-  Ch 20 (design fundamentals at scale)
+  Ch 10 (decision trees) → Ch 12 (RF, XGBoost) →
+  Ch 34 (ensemble deep dive) → Ch 26 (ML system design) →
+  Ch 21 → Ch 23 → Ch 24 → Ch 25 (design fundamentals at scale)
 
   THREAD 7: DSA & Coding → Interview Readiness
-  Ch 27 (DSA theory & patterns) → DSA Practice (400+ problems) →
-  Ch 29 (ML interview Qs) → Ch 21 (system design Qs)
+  Ch 31 (DSA theory & patterns) → DSA Practice (400+ problems) →
+  Ch 32 (ML interview Qs) → Ch 26 (system design Qs)
 
   THREAD 8: Google-Specific Preparation
-  Ch 01 (strategy) → Ch 26 (Google ecosystem) → Ch 31 (Top 10 topics) →
-  Ch 28 (Behavioral) → Ch 21 (ML system design)
+  Ch 01 (strategy) → Ch 30 (Google ecosystem) → Ch 34 (Top 10 topics) →
+  Ch 02 (Behavioral) → Ch 26 (ML system design)
 ```
