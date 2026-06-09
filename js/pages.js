@@ -32,8 +32,14 @@ function renderWelcome() {
   const dsaPct = dsaTotalProblems > 0 ? Math.round((dsaSolved / dsaTotalProblems) * 100) : 0;
   const level = getLevel(data.xp);
   const levelXp = getLevelXP(data.xp);
-  const study = (typeof getStudyData === 'function') ? getStudyData() : { totalMinutes: 0, sessions: 0 };
-  const studyHrs = Math.round((study.totalMinutes || 0) / 60 * 10) / 10;
+  const study = getStudyData();
+  // Time Studied = manual timer + auto-tracked per-chapter reading time.
+  // (Manual timer only updates when the user explicitly clicks Start/Stop,
+  // so on its own the tile often reads "0.0h" even after hours of reading.)
+  const chTrackForHero = (typeof getChapterTrack === 'function') ? getChapterTrack() : JSON.parse(localStorage.getItem('ml4-chapter-track') || '{}');
+  const trackedSecsForHero = Object.values(chTrackForHero).reduce((s, t) => s + ((t && t.seconds) || 0), 0);
+  const totalStudyMinsHero = (study.totalMinutes || 0) + Math.floor(trackedSecsForHero / 60);
+  const studyHrs = Math.round(totalStudyMinsHero / 60 * 10) / 10;
   // Next chapter to read: lowest-indexed unread. Falls back to null if all done.
   const nextUnreadIdx = chapters.findIndex(c => !c.section && !c.ref && !readChapters[c.file]);
   const nextUnread = nextUnreadIdx >= 0 ? chapters[nextUnreadIdx] : null;
@@ -676,7 +682,13 @@ function showDashboard() {
   const chTrack = getChapterTrack();
   const totalAttempts = Object.values(quizHist).reduce((s,h) => s + (h.attempts||0), 0);
   const study = getStudyData();
-  const studyHrs = (study.totalMinutes / 60).toFixed(1);
+  // Combine the manual study timer with the auto-tracked per-chapter
+  // reading time so "Time Studied" reflects real usage, not just the
+  // (rarely used) start/stop timer button.
+  const trackedSecs = Object.values(chTrack).reduce((s, t) => s + ((t && t.seconds) || 0), 0);
+  const trackedMins = Math.floor(trackedSecs / 60);
+  const totalStudyMins = (study.totalMinutes || 0) + trackedMins;
+  const studyHrs = (totalStudyMins / 60).toFixed(1);
   const startDate = study.startDate ? new Date(study.startDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : 'Not started';
   const completionDate = study.completionDate ? new Date(study.completionDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : (pct === 100 ? 'Today' : 'In progress');
   const bestQuiz = Object.values(scores).length > 0 ? Math.max(...Object.values(scores)) : 0;
@@ -1012,9 +1024,11 @@ function showDashboard() {
               curSection = item.section;
               let secTotal = 0, secDone = 0;
               for (let si = chapters.indexOf(item) + 1; si < chapters.length && !chapters[si].section; si++) {
-                if (chapters[si].ref) continue;
                 secTotal++;
-                if (readChapters[chapters[si].file]) secDone++;
+                // Ref chapters are reference material (always available) — count them
+                // as done so the section badge isn't perpetually 0/N for the
+                // Quick Reference section, where the "mark read" button is hidden.
+                if (chapters[si].ref || readChapters[chapters[si].file]) secDone++;
               }
               const secComplete = secDone === secTotal && secTotal > 0;
               html += '<details class="ch-section-collapse" open>' +
@@ -1028,11 +1042,11 @@ function showDashboard() {
               sectionOpen = true;
               continue;
             }
-            if (item.ref) continue;
-            chIdx++;
+            const isRef = !!item.ref;
+            if (!isRef) chIdx++;
             const c = item;
             const idx = chapters.indexOf(c);
-            const isRead = !!readChapters[c.file];
+            const isRead = isRef ? true : !!readChapters[c.file];
             const qh = quizHist[c.file];
             const ct = chTrack[c.file] || {};
             const estMin = chapterMinutes[c.file] || 30;
@@ -1050,17 +1064,21 @@ function showDashboard() {
             const showProgress = spentMin > 0 || isRead;
             const progPct = isRead ? 100 : timePct;
 
-            html += '<tr class="ch-tr' + (isRead ? ' ch-tr-done' : '') + '">' +
-              '<td class="ch-td-num">' + (isRead
-                  ? '<span class="ch-check done" title="Read"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
-                  : '<span class="ch-check">' + chIdx + '</span>') + '</td>' +
+            html += '<tr class="ch-tr' + (isRead ? ' ch-tr-done' : '') + (isRef ? ' ch-tr-ref' : '') + '">' +
+              '<td class="ch-td-num">' + (isRef
+                  ? '<span class="ch-check" title="Reference material" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:10px;font-weight:700;">REF</span>'
+                  : (isRead
+                      ? '<span class="ch-check done" title="Read"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+                      : '<span class="ch-check">' + chIdx + '</span>')) + '</td>' +
               '<td class="ch-td-title"><a href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + c.title + '</a>' +
                 (spentStr ? ' <span class="ch-td-spent" title="Time spent">· ' + spentStr + '</span>' : '') +
               '</td>' +
               '<td class="ch-td-time">' + estStr + '</td>' +
-              '<td class="ch-td-progress">' + (showProgress
-                  ? '<div class="ch-bar"><div class="ch-bar-fill' + (isRead ? ' complete' : '') + '" style="width:' + progPct + '%"></div></div><span class="ch-bar-pct">' + progPct + '%</span>'
-                  : '<span class="ch-td-empty">—</span>') + '</td>' +
+              '<td class="ch-td-progress">' + (isRef
+                  ? '<span class="ch-td-empty" title="Reference — always available">always</span>'
+                  : (showProgress
+                      ? '<div class="ch-bar"><div class="ch-bar-fill' + (isRead ? ' complete' : '') + '" style="width:' + progPct + '%"></div></div><span class="ch-bar-pct">' + progPct + '%</span>'
+                      : '<span class="ch-td-empty">—</span>')) + '</td>' +
               '<td class="ch-td-date">' + (startD || '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-date">' + (compD ? '<span class="ch-td-done-date">' + compD + '</span>' : '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-quiz">' + (quizScore >= 0
@@ -1069,7 +1087,7 @@ function showDashboard() {
               '<td class="ch-td-actions">' +
                 (qh ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="Retake quiz">↺ Quiz</button>' : '') +
                 '<button class="ch-btn" onclick="exportChapterPDFByIndex(' + idx + ')" title="Export as PDF">' + ico.download + '</button>' +
-                ((isRead || qh || ct.seconds) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress">↺</button>' : '') +
+                ((!isRef && (isRead || qh || ct.seconds)) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress">↺</button>' : '') +
               '</td>' +
             '</tr>';
           }
@@ -1194,6 +1212,10 @@ function showDashboard() {
             <button class="db-danger-btn" style="background:#06b6d4;" onclick="resetQuizData()">${ico.target} Reset Quizzes</button>
             <button class="db-danger-btn" style="background:#8b5cf6;" onclick="deleteAllComments()">${ico.pen} Delete Notes</button>
             <button class="db-danger-btn" style="background:#f59e0b;color:#1a1a2e;" onclick="deleteAllHighlights()">${ico.palette} Delete Highlights</button>
+          </div>
+          <p class="db-collapse-desc" style="margin-top:18px;color:#dc2626;font-weight:600;">⚠ Nuclear option — erases <em>everything</em> below.</p>
+          <div class="db-action-row">
+            <button class="db-danger-btn" style="background:#dc2626;color:#fff;font-weight:700;border:2px solid #b91c1c;" onclick="deleteEverything()">${ico.trash} Delete ALL Data</button>
           </div>
         </div>
       </details>
@@ -1496,6 +1518,29 @@ function resetAppData() {
     document.getElementById('studyTimer').classList.remove('running');
   }
   showToast('🗑️ Data Reset', 'All progress has been cleared', '⚠️');
+  renderSidebar();
+  showDashboard();
+}
+
+// Nuclear delete — wipes EVERY ml4-* key including notes, highlights, DSA
+// solutions, custom problems, goals, theme, etc. Asks for two confirmations
+// because there's no recovery path.
+function deleteEverything() {
+  const confirmed = confirm('💣 DELETE EVERYTHING?\n\nThis wipes ALL data, including:\n• Reading progress & chapter time\n• Quiz scores & attempt history\n• XP, level, streak, achievements\n• ALL notes & comments\n• ALL highlights & pins\n• DSA progress & custom problems\n• Goals & study timetable\n• Theme, font, sidebar, and other preferences\n\nNothing can be recovered.\n\nContinue?');
+  if (!confirmed) return;
+  const doubleConfirm = confirm('LAST CHANCE.\n\nAre you ABSOLUTELY sure you want to permanently erase everything?');
+  if (!doubleConfirm) return;
+  Object.keys(localStorage).filter(k => k.startsWith('ml4-')).forEach(k => localStorage.removeItem(k));
+  readChapters = {};
+  if (typeof timerRunning !== 'undefined' && timerRunning) {
+    clearInterval(timerInterval); timerRunning = false; timerSeconds = 0;
+    const td = document.getElementById('timerDisplay'); if (td) td.textContent = '▶ Start';
+    const st = document.getElementById('studyTimer'); if (st) st.classList.remove('running');
+  }
+  // Reset comment filter so a stale module-level value doesn't hide newly
+  // added comments after the user starts fresh.
+  if (typeof commentFilter !== 'undefined') { try { commentFilter = 'all'; } catch (e) {} }
+  showToast('💣 Everything Deleted', 'Starting fresh', '🔥');
   renderSidebar();
   showDashboard();
 }

@@ -844,7 +844,9 @@ function enhanceContent() {
   setupScrollSpy();
 
   // 5. Mermaid diagrams — lazy-load the (large) library only if this chapter
-  // actually has a mermaid block.
+  // actually has a mermaid block. We render in small batches so the main
+  // thread stays responsive on chapters with many diagrams (e.g. Ch 34 has 80+,
+  // which would otherwise freeze the page for ~20 seconds).
   if (contentEl.querySelector('code.language-mermaid')) {
     ensureMermaid().then(() => {
       contentEl.querySelectorAll('code.language-mermaid').forEach(block => {
@@ -852,9 +854,26 @@ function enhanceContent() {
         const div = document.createElement('div');
         div.className = 'mermaid';
         div.textContent = block.textContent;
+        // Lightweight placeholder so the user sees something immediately
+        // while batches further down the page are still pending.
+        div.dataset.pendingRender = '1';
         pre.replaceWith(div);
       });
-      mermaid.init(undefined, contentEl.querySelectorAll('.mermaid'));
+      const divs = Array.from(contentEl.querySelectorAll('.mermaid'));
+      const BATCH = 4;
+      const schedule = window.requestIdleCallback
+        ? (fn) => requestIdleCallback(fn, { timeout: 250 })
+        : (fn) => setTimeout(fn, 50);
+      let i = 0;
+      (function renderBatch() {
+        const batch = divs.slice(i, i + BATCH);
+        if (batch.length) {
+          try { mermaid.init(undefined, batch); } catch (e) {}
+          batch.forEach(d => { delete d.dataset.pendingRender; });
+        }
+        i += BATCH;
+        if (i < divs.length) schedule(renderBatch);
+      })();
     }).catch(() => {});
   }
 
@@ -1871,6 +1890,9 @@ function setCommentFilter(filter, file) {
 }
 
 function injectComments(file) {
+  // Reset the filter on every chapter open so a stale "resolved/open" filter
+  // from a previous chapter doesn't hide newly-added comments here.
+  commentFilter = 'all';
   const contentEl = document.getElementById('content');
   // Remove existing comments section if any
   document.getElementById('commentsSection')?.remove();
@@ -1947,6 +1969,9 @@ function deleteAllComments() {
   if (!confirm('Delete ALL comments and notes from ALL chapters?\n\nThis cannot be undone.')) return;
   if (!confirm('Are you REALLY sure? All your notes will be permanently deleted.')) return;
   localStorage.removeItem('ml4-comments');
+  // Reset filter so the user can immediately add new comments without an
+  // "open/resolved" filter accidentally hiding them.
+  commentFilter = 'all';
   showToast('🗑️ Comments Deleted', 'All notes and comments cleared', '⚠️');
   showDashboard();
 }

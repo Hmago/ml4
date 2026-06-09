@@ -270,19 +270,19 @@ Every layer wraps the layer above it with its own header. By the time your `GET 
 
 Each receiving layer peels off its header and hands the rest up. **The user's bytes are the smallest part of the packet.**
 
-### MTU, MSS, and fragmentation
-
-- **MTU** (Maximum Transmission Unit) — biggest frame the link can carry. Ethernet default: **1500 bytes**.
-- **MSS** (Maximum Segment Size) — biggest TCP payload that fits inside one IP packet that fits inside one MTU: typically `1500 − 20 (IP) − 20 (TCP) = 1460 bytes`.
-- Packets bigger than MTU get **fragmented** by IP — every hop must re-assemble. Modern stacks use **Path MTU Discovery** (PMTUD) to learn the smallest MTU on the path and avoid fragmentation.
-
-> **Why you care:** a misconfigured tunnel/VPN with a smaller MTU silently drops "DF" (don't-fragment) packets. Symptom: SSH works, large file downloads stall. Remember MTU when debugging "weird" connection issues.
-
 ### Sockets — the API your code actually uses
 
 A **socket** is identified by the 5-tuple `(protocol, src IP, src port, dst IP, dst port)`. Two sockets cannot share the same 5-tuple. This is why a single client behind NAT can only open **~64K outbound connections to one (dst IP, dst port)** — once the ephemeral port range is exhausted, `EADDRNOTAVAIL`.
 
 ### TCP vs UDP — the headline comparison
+
+Almost everything on the internet rides on one of two transport protocols. They solve the same problem (moving bytes between two programs across a network) with very different trade-offs, so it helps to understand each one on its own before comparing them.
+
+**TCP — Transmission Control Protocol.** Think of TCP as a **phone call**. Before you can talk, both sides have to pick up and say "hello" (the handshake). Once connected, the protocol guarantees that every word you say arrives at the other end **in the right order, with nothing missing**. If the line drops a syllable, TCP automatically asks for it again behind the scenes. You don't see the retransmits — your application just sees a clean, ordered stream of bytes. This safety costs setup time (a round-trip before any data) and per-packet bookkeeping (sequence numbers, acknowledgements, windows). Use TCP whenever **losing or reordering bytes would break meaning** — loading a web page, querying a database, transferring a file, an SSH session.
+
+**UDP — User Datagram Protocol.** Think of UDP as **shouting postcards into a crowd**. You write the destination on each one, fling it, and hope it arrives. There's no handshake, no retransmission, no ordering — if a postcard goes missing or arrives late, that's the application's problem. The header is tiny (8 bytes vs TCP's 20+) and there's **zero round-trip setup**, so the first message can carry real data. Use UDP when **a missing or late packet is cheaper than waiting for it** — a DNS lookup (just ask again), a live video frame (the next one is already on the way), a voice call, an online game, real-time telemetry, or anything multicast.
+
+Here they are side by side:
 
 | Property | TCP | UDP |
 |----------|-----|-----|
@@ -317,45 +317,40 @@ That's **1 round-trip** before you can send any data. Over a 150 ms WAN link, th
 
 ### The 4-way teardown — and why TIME_WAIT exists
 
-```
-   Active closer                           Passive closer
-     │ ── FIN ───────────────────────────────▶│
-     │ ◀── ACK ──────────────────────────────│
-     │                                        │
-     │ ◀── FIN ──────────────────────────────│
-     │ ── ACK ──────────────────────────────▶│
-     │                                        │
-     │  TIME_WAIT (2 × MSL ≈ 60 s)            │
-     │  socket can't be reused yet            │
-```
+Closing a TCP connection takes **four packets** (FIN/ACK from each side) because either end can finish sending independently. The side that closes first then sits in a **TIME_WAIT** state for roughly 60 seconds, holding onto its source/destination port pair so any straggler packets from the dead connection don't get misdelivered into a brand-new connection that happens to reuse the same ports.
 
-After closing, the active closer keeps the 5-tuple "reserved" for **2 × Maximum Segment Lifetime** (≈ 60 s) to absorb any straggler packets. On a high-throughput client this exhausts ephemeral ports — symptom: "Cannot assign requested address." Mitigations: connection pooling, `SO_REUSEADDR`, server-initiated close instead of client-initiated.
+> **Why you care:** a client that opens thousands of fresh connections per second will run out of ephemeral source ports and start failing with `EADDRNOTAVAIL`. The cure is to **reuse pooled connections** instead of closing and reopening them.
 
 ### Sequence numbers, sliding window, and flow control
 
-Every byte gets a sequence number. The receiver advertises a **window** — how many unacknowledged bytes it can buffer. Sender stops when window is full. That's **flow control**: protecting the receiver from drowning.
+TCP numbers every byte it sends, and the receiver advertises a **window** — "I have room for N more bytes before my buffer is full." The sender keeps that many bytes in flight, then pauses until incoming ACKs free up window space again. This is **flow control**, and its only job is to stop a fast sender from drowning a slow receiver.
 
 ### Congestion control — protecting the network
 
-Flow control protects the receiver. **Congestion control** protects the network from collapse when many flows share a link.
+Flow control stops the **sender** from overwhelming the **receiver**. **Congestion control** stops senders from overwhelming the **network in between** — the shared routers and links where everyone's traffic meets.
+
+The mental picture: every TCP sender keeps a budget called the **congestion window (cwnd)** — "how many bytes am I allowed to have in flight right now?" If packets get through cleanly, the sender slowly increases the budget. If a packet is lost (a sign that some router's queue overflowed), the sender slashes the budget. Every TCP flow on the internet is constantly probing and backing off in this way; together they self-regulate so no single flow hogs the link.
+
+There are three phases:
+
+1. **Slow start (the cold open).** A brand-new connection begins with a tiny budget — about **10 packets** in flight. After every successful round-trip, the budget **doubles**. Despite the name, this is *exponential* growth, so the sender quickly discovers the link's real capacity instead of crawling.
+2. **Congestion avoidance (the cruise).** Once the budget approaches a previously-seen "danger zone," growth flattens to roughly **+1 packet per round-trip** — careful probing for more bandwidth.
+3. **Loss → back off.** As soon as a packet is dropped, the sender **halves** its budget and goes back to careful growth. This pattern (gentle build-up, sharp cut on loss) is called **AIMD** — Additive Increase, Multiplicative Decrease.
 
 ```
-   cwnd
+   cwnd (bytes in flight)
     │              ╱╲              ╱╲
-    │            ╱   ╲           ╱
-    │   slow   ╱     ╲ AIMD    ╱
-    │   start ╱       ╲       ╱  ← packet loss = halve cwnd
-    │       ╱          ╲     ╱
-    │     ╱             ╲___╱
+    │  exponential╱  ╲   linear   ╱
+    │  slow      ╱    ╲  cruise  ╱
+    │  start    ╱      ╲        ╱  ← loss = halve budget, restart cruise
+    │         ╱         ╲      ╱
+    │       ╱            ╲____╱
     └──────────────────────────────▶ time
 ```
 
-- **Slow start** — start with a tiny cwnd (~10 MSS), double per RTT. Aggressive ramp.
-- **Congestion avoidance** — once at threshold, grow by 1 MSS per RTT (additive increase).
-- **Packet loss** — halve cwnd (multiplicative decrease). This is **AIMD** (Additive Increase, Multiplicative Decrease).
-- **Modern algorithms** — Cubic (Linux default, fairer growth at high BDP) and **BBR** (Google, models bottleneck bandwidth + RTT instead of reacting to loss; massively better on lossy wireless).
+Modern data centres and mobile networks use smarter algorithms — **CUBIC** (Linux default) ramps back up faster after a loss, and **BBR** (Google) ignores packet loss entirely and instead measures the actual bottleneck bandwidth and round-trip time. BBR is dramatically better on Wi-Fi and cellular, where losses are usually radio noise, not congestion.
 
-> **Why you care:** every new TCP connection starts in slow start. A burst of 100 short-lived connections each sending 50 KB pays the slow-start tax 100 times. One persistent pooled connection sending 5 MB does not. This alone justifies HTTP keep-alive and gRPC.
+> **Why you care as a system designer:** every brand-new TCP connection starts in slow start with a tiny budget. A burst of 100 short-lived connections each sending 50 KB pays the slow-start tax **100 times** — most of those bytes go out at a small fraction of the link's real speed. One persistent, pooled connection sending 5 MB pays the tax **once** and then runs at full speed for the rest of its life. This single fact is the reason HTTP keep-alive, connection pooling, and gRPC's long-lived channels exist.
 
 ### Other TCP gotchas you'll meet in production
 
@@ -415,13 +410,18 @@ UDP is "IP + ports + a checksum." That's it. **8-byte header**, no connection, n
 
 ### HTTP/3 — HTTP semantics over QUIC
 
-- **QUIC** = TLS 1.3 + reliable streams, all running over UDP, all in user space.
-- **Independent streams** — packet loss on stream A doesn't block stream B (no TCP-layer HOL).
-- **0-RTT resumption** — repeat client can send data with the first packet.
-- **Connection migration** — same connection survives a network change (Wi-Fi → 5G) because the connection ID isn't the 5-tuple.
-- **Wide adoption** — YouTube, Facebook, Cloudflare, AWS CloudFront default to HTTP/3 where available.
+HTTP/3 keeps everything HTTP/2 added (binary frames, header compression, concurrent streams on one connection) but **rips out TCP** and replaces it with a new transport called **QUIC**, which runs on top of UDP. The reason is a stubborn problem in HTTP/2: even though many requests share one TCP connection, TCP itself delivers bytes in strict order — so a **single dropped packet stalls every request** on that connection until it's retransmitted. That's TCP-layer head-of-line (HOL) blocking, and HTTP/2 can't fix it because the blockage lives one layer below.
 
-Cheat sheet: HTTP/3 ≈ "HTTP/2 features minus TCP's pain."
+QUIC was built to make each request stream genuinely independent. Here's what HTTP/3 actually buys you:
+
+- **No more TCP-layer head-of-line blocking.** QUIC tracks each request's packets separately. If one packet for request A is lost, requests B, C, D keep flowing. On a flaky Wi-Fi or 4G link this is a noticeable speedup.
+- **One handshake for transport *and* encryption.** With HTTPS over TCP today, the browser first does a TCP handshake (1 round-trip) and *then* a TLS handshake (1 more) before sending the actual HTTP request — 2 round-trips of pure waiting before any data. QUIC fuses them into **1 round-trip** for a fresh connection, and **0 round-trips** for a resumed one (it can send the first HTTP request inside the very first packet).
+- **Connection survives network changes.** A normal connection is identified by your IP and port — switch from Wi-Fi to 5G and the IP changes, killing the connection. QUIC identifies connections by a random ID instead, so the same session keeps streaming a video as your phone hops networks.
+- **Lives in user space, not the kernel.** QUIC ships inside the browser or server library, not the operating system. New congestion-control algorithms and security fixes roll out by updating the app, instead of waiting years for OS kernels everywhere to upgrade.
+
+Adopted by YouTube, Facebook, Cloudflare, and AWS CloudFront by default when the client supports it.
+
+**Mental shortcut:** HTTP/3 = HTTP/2's good ideas, minus TCP's baggage, plus a faster handshake.
 
 ## 3.5 HTTP request/response anatomy
 
@@ -644,23 +644,31 @@ A "DNS propagation delay" is just **caches honouring TTLs they already pulled** 
 
 ### TLS 1.2 vs 1.3 round-trips
 
+A **round-trip (RTT)** is one full there-and-back message between client and server. For a user 150 ms away from your server, **each RTT is 150 ms of pure waiting** before any useful work happens. The whole story from TLS 1.2 → TLS 1.3 → QUIC is that we keep removing round-trips from the handshake.
+
+**TLS 1.2 — 2 round-trips before the first HTTP byte.** The client says hello, the server replies with its certificate. Then both sides have to swap key material in a *second* round-trip before either knows the encryption key. Only then can the actual HTTP request go out.
+
 ```
-   TLS 1.2 (2 RTT before first app data):
-     1. ClientHello                       ──▶
+   TLS 1.2 (2 RTT before any app data):
+     RTT 1:  ClientHello                  ──▶
                                           ◀── ServerHello + cert
-     2. KeyExchange + Finished            ──▶
+     RTT 2:  KeyExchange + Finished       ──▶
                                           ◀── Finished
-     3. HTTP request                      ──▶
-
-   TLS 1.3 (1 RTT; 0-RTT on resumption):
-     1. ClientHello + key share           ──▶
-                                          ◀── ServerHello + cert + Finished
-     2. HTTP request                      ──▶
-
-   QUIC (HTTP/3): TLS baked into transport, 1-RTT cold, 0-RTT resumed
+     RTT 3:  HTTP request                 ──▶   (finally — real data)
 ```
 
-For a user 150 ms RTT away, dropping one round-trip is a 150 ms latency win on every fresh connection. Multiply by billions of users — meaningful cost savings, perceptibly snappier apps.
+**TLS 1.3 — 1 round-trip, sometimes 0.** TLS 1.3 was redesigned so the client sends its key material *inside the very first hello*. The server can compute the shared key immediately and respond with everything (its certificate, its finished message) in one shot. That cuts the handshake from 2 RTTs to **1 RTT**. On a *resumed* connection (the client has talked to this server before and still has a ticket), it can reuse the previous session and start sending HTTP data in the **very first packet** — known as **0-RTT** resumption.
+
+```
+   TLS 1.3 (1 RTT cold, 0-RTT on resumption):
+     RTT 1:  ClientHello + key share      ──▶
+                                          ◀── ServerHello + cert + Finished
+     RTT 2:  HTTP request                 ──▶
+```
+
+**QUIC (HTTP/3) — handshake fused into the transport.** With HTTPS over TCP you pay one RTT for the TCP handshake *plus* the TLS handshake on top. QUIC combines them, so a cold start is **1 RTT total** (vs 2–3 for TCP+TLS) and a resumed connection is **0 RTT**.
+
+**Why this matters at scale.** For a single user 150 ms from the server, removing one RTT shaves **150 ms off every fresh page load** — perceptibly snappier in the eye. Multiply by the billions of TLS handshakes a large site does per day and you also save a measurable amount of server CPU and network time.
 
 ### A cipher suite, dissected
 
@@ -687,12 +695,6 @@ For a user 150 ms RTT away, dropping one round-trip is a 150 ms latency win on e
 
 The server sends leaf + intermediates. The client walks up to a trusted root and checks: signature valid, not expired, hostname matches (SAN), not revoked.
 
-### SNI, ALPN, OCSP — three acronyms you'll see
-
-- **SNI** (Server Name Indication) — client sends the hostname *in the ClientHello* so a server with many sites on one IP can pick the right cert. **Without SNI you'd need one IP per cert.**
-- **ALPN** (Application-Layer Protocol Negotiation) — client lists `["h2", "http/1.1"]`, server picks. This is how HTTP/2 gets negotiated transparently.
-- **OCSP stapling** — server periodically fetches a CA-signed "still valid" assertion and *staples* it to the handshake, so the client doesn't have to make a separate revocation check (which would leak browsing to the CA).
-
 ### Session resumption — the cost of "first hello" amortised
 
 - **Session ID** (TLS 1.2) — server keeps state, client sends ID to skip negotiation.
@@ -700,7 +702,7 @@ The server sends leaf + intermediates. The client walks up to a trusted root and
 
 > **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in Ch 25, §14.10.
 
-## 3.11 Connection management — pooling, keep-alive, HOL blocking, TFO
+## 3.11 Connection management — pooling, keep-alive, and HOL blocking
 
 ```
    ┌────────────────────────────────────────────────────────────────┐
@@ -716,39 +718,6 @@ The server sends leaf + intermediates. The client walks up to a trusted root and
    │   pro: no HOL blocking anywhere                                │
    └────────────────────────────────────────────────────────────────┘
 ```
-
-### TCP Fast Open (TFO)
-
-Modern Linux + supported clients can send application data **inside the SYN** of a resumed connection (via a server-issued cookie), shaving another RTT off the cold-cache case.
-
-### Sizing a connection pool
-
-A back-of-envelope formula from Little's Law (§2.5):
-
-```
-   pool_size  ≈  expected RPS × average request seconds
-```
-
-If your backend handles **200 RPS** with **50 ms** average latency, you need **~10** concurrent connections. Add headroom for variance (×2). Way more than that just **moves contention** into the kernel and burns server-side sockets.
-
-### TIME_WAIT and ephemeral-port exhaustion
-
-A client opening 5K connections per second to one backend on one (dst IP, dst port) will hit `EADDRNOTAVAIL` within a minute (TIME_WAIT × 60 s × open rate > 28K ephemeral ports). Mitigations:
-
-- **Reuse pooled connections.** This is the *only* real fix at scale.
-- Bind a wider source IP range.
-- Have the **server** initiate close (TIME_WAIT then lives on the server, where there are many more 5-tuples).
-- `net.ipv4.tcp_tw_reuse = 1` on Linux — safe with TCP timestamps.
-
-### Socket buffer sizing — Bandwidth-Delay Product (BDP)
-
-To saturate a 1 Gbps link with 30 ms RTT, your in-flight window needs:
-
-```
-   BDP = 1 Gbps × 0.030 s = 30 Mbit = 3.75 MB
-```
-
-If `SO_SNDBUF` or `SO_RCVBUF` is smaller, **you can't fill the pipe** no matter how fast the disk is. Modern Linux auto-tunes, but cloud images and tunnels often cap it.
 
 ## 3.12 Synchronous vs. Asynchronous communication
 
