@@ -10,7 +10,7 @@ This is **Part 3** of the three‑chapter System Design series, picking up from 
 **How to read it:**
 Same shape as the previous two chapters — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* ~3 hours cover‑to‑cover. The final three Parts (20–22) are case‑study material that ties everything together — read after at least skimming Parts 13–19 of this chapter and the two preceding chapters.
 
-The §X.Y numbering is continuous with Ch 23 and Ch 24 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §4.8" or "Ch 24, §9.20").
+The §X.Y numbering is continuous with Ch 23 and Ch 24 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §4.8" or "Ch 24, §9.18").
 
 ---
 
@@ -96,15 +96,7 @@ Deliberately break things in production to verify your system *actually* survive
 
 Result: p99 collapses toward p50 at the cost of ~5 % extra requests. Used everywhere inside Google, BigTable, and Spanner clients.
 
-## 13.8 Adaptive concurrency limits
-
-> **Problem:** Static thread pools either over-provision (waste) or under-provision (queue collapse) under traffic spikes.
-
-Netflix's **Vegas / Gradient2 algorithms** use TCP-inspired AIMD (additive-increase, multiplicative-decrease) on the concurrency limit: increase while latency is healthy, shrink on detected congestion. Result: graceful degradation rather than queue meltdown.
-
-Built into AWS SDK retries, Envoy, and the Netflix `concurrency-limits` library.
-
-## 13.9 Cascading failures and how systems die
+## 13.8 Cascading failures and how systems die
 
 ```
    1. Downstream service slows down
@@ -125,17 +117,17 @@ Defences:
 
 > **Google SRE rule:** "A retry is the same as a new request." Every retry must obey the same rate limit.
 
-## 13.10 Runbooks and game days
+## 13.9 Runbooks and game days
 
 A **runbook** is a step-by-step doc for an oncall to follow when an alert fires: *symptom → diagnostic queries → mitigation → escalation.* Every alert without one is a half-built alert.
 
 **Game days** (chaos drills) periodically test the runbook — and the team — under realistic incident pressure. Without practice, written DR plans rot silently.
 
-## 13.11 Postmortems — the blameless culture
+## 13.10 Postmortems — the blameless culture
 
 After every incident, write a **blameless postmortem**: timeline, contributing factors, action items. The goal is *learning*, not blame. Google's SRE book is the canonical reference.
 
-## 13.12 Error budgets and freeze policies
+## 13.11 Error budgets and freeze policies
 
 ```
    SLO    = 99.9 % over 30 days
@@ -197,11 +189,7 @@ OAuth 2.0 is **delegated authorization**: "let app X access my data on Y without
 
 **Use** for service-to-service or SPA APIs. **Avoid** if you need easy revocation (use server-side sessions or opaque tokens).
 
-## 14.4 SAML
-
-XML-based federation, common in enterprise SSO (Okta, AD FS). Heavier than OIDC, still everywhere in B2B.
-
-## 14.5 Encryption — at rest vs in transit
+## 14.4 Encryption — at rest vs in transit
 
 - **In transit** — TLS 1.2+ (1.3 preferred). HTTPS, gRPC-TLS, encrypted database connections.
 - **At rest** — disk-level (AWS EBS encryption), application-level (envelope encryption with KMS), column-level (encrypt PII fields).
@@ -216,7 +204,7 @@ XML-based federation, common in enterprise SSO (Okta, AD FS). Heavier than OIDC,
 
 Never store raw passwords. Use **bcrypt / scrypt / Argon2** (slow on purpose) with a per-user salt.
 
-## 14.6 OWASP Top 10 (web vulnerabilities)
+## 14.5 OWASP Top 10 (web vulnerabilities)
 
 1. **Broken access control** — users accessing what they shouldn't.
 2. **Cryptographic failures** — weak crypto, missing TLS.
@@ -240,19 +228,19 @@ Never store raw passwords. Use **bcrypt / scrypt / Argon2** (slow on purpose) wi
    Rate-limit ────── per IP + per user + per endpoint
 ```
 
-## 14.7 Zero-trust architecture
+## 14.6 Zero-trust architecture
 
 > "Never trust, always verify." No implicit trust just because a service is "inside the network." Every request is authenticated, authorized, and encrypted, even between internal services. Google's BeyondCorp pioneered this.
 
-## 14.8 DDoS protection
+## 14.7 DDoS protection
 
 Layers: **edge scrubbing** (Cloudflare, AWS Shield), **rate limiting**, **anycast** (absorb traffic across many POPs), **CAPTCHA challenges**, **WAF rules**. Critical: design for *graceful overload* — return 503s quickly rather than collapse.
 
-## 14.9 Secrets management
+## 14.8 Secrets management
 
 Don't bake secrets into images, configs, or git. Use **Vault, AWS Secrets Manager, GCP Secret Manager** — fetch at runtime, rotate regularly, audit access.
 
-## 14.10 mTLS — mutual TLS in detail
+## 14.9 mTLS — mutual TLS in detail
 
 > **Regular TLS:** server proves identity (cert), client trusts it.
 > **mTLS:** *both* sides prove identity with certificates.
@@ -264,7 +252,7 @@ Standard pattern inside zero-trust architectures:
 
 This is how Google's internal services authenticate each other. Network position is *not* identity.
 
-## 14.11 Cryptography primer for engineers
+## 14.10 Cryptography primer for engineers
 
 | Primitive | What it does | Common algos | Use |
 |-----------|--------------|--------------|-----|
@@ -278,7 +266,7 @@ This is how Google's internal services authenticate each other. Network position
 
 **Two iron rules:** never invent your own crypto, and never store passwords in anything other than bcrypt / scrypt / Argon2.
 
-## 14.12 OAuth 2.0 Authorization Code + PKCE — step by step
+## 14.11 OAuth 2.0 Authorization Code + PKCE — step by step
 
 PKCE (Proof Key for Code Exchange) protects public clients (mobile, SPA) where there's no client secret.
 
@@ -300,7 +288,7 @@ PKCE (Proof Key for Code Exchange) protects public clients (mobile, SPA) where t
 
 A stolen auth code is useless without the original verifier. **Always use PKCE for SPAs and mobile apps.**
 
-## 14.13 Key rotation and secret hygiene
+## 14.12 Key rotation and secret hygiene
 
 - **Rotate** signing / encryption keys regularly (90 days is a common cadence; some Google services daily).
 - Use **key IDs** in JWTs (`kid`) so multiple keys can validate during rotation windows.
@@ -308,7 +296,7 @@ A stolen auth code is useless without the original verifier. **Always use PKCE f
 - **Never log secrets.** Scrub logs of headers like `Authorization`, `Cookie`.
 - Use short-lived tokens (minutes/hours), with refresh tokens stored securely.
 
-## 14.14 Defence in depth
+## 14.13 Defence in depth
 
 ```
    ┌─────────────────────────────────────────────────────────┐
@@ -323,7 +311,7 @@ A stolen auth code is useless without the original verifier. **Always use PKCE f
 
 If any one layer fails, the others still buy you time. "Trust nothing, verify everything."
 
-## 14.15 Common attack patterns (and the line of code that stops each)
+## 14.14 Common attack patterns (and the line of code that stops each)
 
 | Attack | One-line defence |
 |--------|------------------|
@@ -336,7 +324,7 @@ If any one layer fails, the others still buy you time. "Trust nothing, verify ev
 | Mass assignment | Explicit field allowlist on input — never `Model.update(request.body)` |
 | Open redirect | Validate the redirect URL is in an allowlist of paths |
 
-## 14.16 Threat modelling (STRIDE)
+## 14.15 Threat modelling (STRIDE)
 
 Before you ship anything sensitive, walk through STRIDE:
 
@@ -491,23 +479,6 @@ For every user-facing service, dashboard the four:
 4. **Saturation** — how "full" the service is (CPU, memory, queues).
 
 If you measure only four things, measure these.
-
-## 15.13 Trace context propagation (W3C `traceparent`)
-
-```
-   traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
-                │  │                               │                 │
-                │  trace-id (16 bytes hex)         span-id (8 bytes) flags
-                version
-```
-
-Every service must propagate this header on outbound calls (HTTP, gRPC, Kafka). Without it, the trace breaks at the first hop. Modern SDKs (OTel) do it automatically — but if you have a homegrown HTTP client, you must inject it manually.
-
-## 15.14 Exemplars — the bridge between metrics and traces
-
-A histogram bucket records "1,247 requests took 500–600 ms." An *exemplar* attaches a sample `trace_id` to that bucket — so when you see a latency spike on the dashboard, you click and jump straight to a trace of one of the slow requests.
-
-Supported by Prometheus, Grafana, and OTel. The single best feature for fast incident triage.
 
 ---
 
@@ -741,34 +712,63 @@ How does service A find an instance of service B in a cluster where pods come an
 ## 17.6 Webhooks
 
 The inverse of polling: the server calls *you* when something happens. Tips:
-- **Sign** the payload (HMAC) so receivers can verify origin.
+- **Sign** the payload (HMAC) so receivers can verify origin (see §17.11).
 - **Retry** with backoff on non-2xx.
 - **Idempotency** keys so receivers can dedupe.
 - **Allow-list** outgoing destinations to avoid SSRF.
+
+### Webhook vs server push — what's the difference?
+
+Both are "server-initiated," but they push to *different* receivers:
+
+- **Webhook** — *server-to-server*. Your backend sends an HTTP `POST` to *another system's* public URL when an event happens (e.g. Stripe → your `/stripe-events` endpoint). There's no persistent connection; the receiver just has to be a reachable HTTP endpoint. Best for cross-system, asynchronous integrations.
+- **Server push** (SSE / WebSocket, Ch 23 §3.18–3.19) — *server-to-connected-client*. Your server pushes data down an *already-open* connection to a browser or app the user has live right now (e.g. a live score ticker). It needs a long-lived connection that you maintain.
+
+Rule of thumb: a **webhook** delivers an event *between systems*; **server push** delivers an update *to a user who is online at this moment*.
 
 ## 17.7 Pagination — the right way
 
 ```
    Offset-based  ?page=42&size=20   simple, slow for big offsets,
-                                    unstable when items are inserted
+                                     unstable when items are inserted
    Cursor-based  ?cursor=opaque     fast (uses index), stable, opaque to client
    Keyset        ?after_id=12345    fast, requires sortable key
 ```
 
 For infinite scroll / API consumers, **cursor or keyset**, not offset.
 
+**How a cursor actually works:** the cursor is an opaque token — usually a base64-encoded copy of the last row's sort key, e.g. `(created_at, id)`. The next page runs `WHERE (created_at, id) < (:last_created, :last_id) ORDER BY created_at DESC, id DESC LIMIT 20`, which is an **indexed seek**. So it stays **O(log N + page)** no matter how deep you scroll, while offset is **O(offset)** — the database must count and throw away every earlier row. A cursor is also *stable*: rows inserted while you page don't shift results or create duplicates. The trade-off: you can only move next/previous, not jump straight to "page 500."
+
 ## 17.8 Big-O for the system designer
+
+A rough ladder of scale — at each tier the bottleneck (and the fix) changes:
 
 ```
    1 user            anything works
    1k users          a single server + DB is fine
    100k users        add a cache and a CDN
-   1M users          replicas + maybe one shard, queue for async
+   1M users          replicas + maybe one shard, queue for async work
    100M users        sharding, multi-region, fan-out
    1B users          dedicated infra, custom protocols, regional autonomy
 ```
 
-Order of magnitude thinking saves you from over-engineering.
+### The complexities that actually bite at scale
+
+Big-O isn't just for the coding round — it decides whether a design survives growth. The cost of one operation, multiplied by your traffic, is your bill:
+
+| Operation | Complexity | What it means for the design |
+|-----------|------------|------------------------------|
+| Hash / cache lookup | O(1) | The target for hot paths (Redis `GET`, hash partition) |
+| B-tree index seek | O(log N) | A healthy indexed database read |
+| Full table scan | O(N) | Fine on 1k rows, fatal on 1B — the classic missing-index bug |
+| Fan-out on write | O(followers) | One celebrity post → millions of writes (§21.7) |
+| N+1 / nested loop | O(N × M) | "One query per row" — batch it instead (Ch 24, §7.10) |
+| Sort / join without index | O(N log N) | Watch memory; it spills to disk when N is huge |
+| Cross join / cartesian | O(N²) | Breaks past ~10⁴ items on a single machine |
+
+**The one-second rule:** a single CPU core does roughly **10⁸ simple operations per second**. So an O(N²) algorithm stays interactive only up to about N ≈ 10⁴; beyond that you need a better algorithm, an index, or more machines. The habit to build: for every hot path, ask *"what's the Big-O per request, and what does it cost when N grows 100×?"*
+
+Order-of-magnitude thinking like this is what saves you from both over-engineering and nasty surprises.
 
 ## 17.9 Search relevance — TF-IDF and BM25
 
@@ -811,7 +811,9 @@ A geohash string represents a rectangle on Earth. Each character refines the rec
                                           dedupe by request id (idempotency)
 ```
 
-GitHub, Stripe, Slack — all webhook providers — sign payloads this way. Always **constant-time** comparison to avoid timing attacks, and always check the timestamp.
+**What is HMAC?** HMAC (Hash-based Message Authentication Code) is a fingerprint of a message that *also* proves who sent it. You feed two things into a hash function (like SHA-256): the message **body** and a **shared secret** that only the two parties know — roughly `HMAC = hash(secret + body)`. Anyone can hash the body, but only someone who holds the secret can produce the *correct* HMAC. So a matching value proves two things at once: (1) the body wasn't tampered with in transit, and (2) it really came from someone who has the secret. HMAC is *symmetric* (both sides share the same secret) and very fast — that's the difference from a digital signature, which uses a private/public key pair instead.
+
+GitHub, Stripe, and Slack — all webhook providers — sign payloads this way. Always use a **constant-time** comparison to avoid timing attacks, and always check the timestamp to block replays.
 
 ## 17.12 Notification systems — the building blocks
 
@@ -1169,60 +1171,63 @@ All write endpoints take `Idempotency-Key`. Reads use cursor pagination.
 
 ## 21.5 Step 5 — High-level architecture
 
+Read it top-to-bottom as four layers: **edge → services → data → events.**
+
 ```
-   ┌─────────────────────────────────────────────────────────────────┐
-   │                            CDN (CloudFront / Cloudflare)         │
-   └───────┬─────────────────────────────────────────────────────────┘
-           │
-   ┌───────▼─────────┐
-   │  API Gateway    │  (auth, rate limit, routing)
-   └───────┬─────────┘
-           │
-   ┌───────▼───────────────────────────────────────────────────────┐
-   │ L7 LB (Envoy)                                                  │
-   └─┬───┬───┬───┬───┬────────────────────────────────────────────┘
-     │   │   │   │   │
-     ▼   ▼   ▼   ▼   ▼
-   Upload Feed Like Cmnt Search ─── microservices (auto-scaled)
-     │   │   │   │   │
-     │   ▼   ▼   ▼   ▼
-     │ Redis (feed cache, hot photos, sessions)
-     │   │
-     │   ▼
-     │ Cassandra (photos, follows, likes, comments — write-optimized)
-     │   │
-     │   ▼
-     │ Postgres (users, billing, anything ACID)
-     │
-     ├─▶ S3 (raw + transcoded media) ──▶ CDN
-     │
-     └─▶ Kafka (events: photo uploaded, like, follow)
-            │
-            ├─▶ Fan-out workers (push feed updates to Redis)
-            ├─▶ Search indexer (push to Elasticsearch)
-            ├─▶ Analytics pipeline (Flink → warehouse)
-            └─▶ Notification service
+   LAYER 1 — EDGE
+     Client → CDN (CloudFront) → API Gateway (auth, rate-limit) → L7 LB (Envoy)
+
+   LAYER 2 — SERVICES   (stateless, auto-scaled microservices)
+     Upload  ·  Feed  ·  Like  ·  Comment  ·  Search
+
+   LAYER 3 — DATA   (each service uses the store that fits its job)
+     S3 ............ raw + resized photos/videos   → served back via the CDN
+     Redis ......... feed cache, hot photos, sessions
+     Cassandra ..... photos, follows, likes, comments   (write-heavy)
+     Postgres ...... users, billing, anything that needs ACID
+     Elasticsearch . the search index
+
+   LAYER 4 — EVENTS   (every write drops an event; workers react in the background)
+     Kafka ─▶ Fan-out workers      → push new posts into followers' Redis feeds
+           ─▶ Transcoder           → thumbnail / medium / large → S3 → CDN
+           ─▶ Search indexer       → Elasticsearch
+           ─▶ Analytics (Flink)    → data warehouse
+           ─▶ Notification service → "X posted a new photo"
 ```
+
+**The flow in words:** a request comes in through the CDN and gateway, gets routed to a microservice, which reads or writes the data store that fits the job — media in S3, hot feeds in Redis, write-heavy social data in Cassandra, money in Postgres. Crucially, **every write also drops an event onto Kafka**, and background workers react to it: building feeds, indexing for search, resizing images, and sending notifications. That separation is what lets the user's request return in milliseconds while the slow work happens asynchronously.
 
 ## 21.6 Step 6 — Photo upload flow
 
+The key trick: the client uploads the photo **directly to S3**, not through your servers — which offloads a huge amount of bandwidth. Your API only hands out a temporary permission slip (a *presigned URL*) and records the metadata.
+
 ```
-   1. Client → POST /photos (presigned URL request)
-   2. API returns S3 presigned URL → client uploads directly to S3
-      (offloads bandwidth from your servers)
-   3. Client → POST /photos/commit (with S3 key)
-   4. Photo service:
-        a. Writes metadata to Cassandra
-        b. Emits "photo.uploaded" to Kafka
-        c. Returns 201 Created with photoId
-   5. Async consumers:
-        a. Transcoder (multiple sizes) → S3 → invalidate CDN
-        b. Feed fan-out (§21.7)
-        c. Search indexer
-        d. Notification worker
+   1. Client → POST /photos/upload-url      "I want to upload a photo"
+        API checks auth + rate limit, then generates a short-lived S3
+        presigned URL (write-only, expires in ~5 min) and returns it.
+
+   2. Client → PUT <presigned-url>          uploads the raw bytes straight to S3
+        Your servers never touch the file → no bandwidth cost, no proxying.
+
+   3. Client → POST /photos/commit          { s3Key, caption, location }
+        Photo service:
+          a. Validates the S3 object exists and is a real image
+          b. Writes metadata to Cassandra (photoId, userId, s3Key, caption…)
+          c. Emits "photo.uploaded" to Kafka
+          d. Returns 201 Created { photoId }   ← the user sees success right away
+
+   4. Async consumers react to "photo.uploaded":
+          • Transcoder     → thumbnail / medium / large → S3 → invalidate CDN
+          • Feed fan-out   → push photoId into followers' feeds (§21.7)
+          • Search indexer → add caption + tags to Elasticsearch
+          • Notification   → "X posted a new photo"
 ```
 
-Idempotency-Key on `/commit` prevents duplicates on retry.
+**Why split it into `upload-url` + `commit`?** The slow, big upload and the fast, small metadata write are separated, so a connection dropped mid-upload never leaves a half-written row in your database. The photo only "exists" once the client commits.
+
+**Idempotency:** send an `Idempotency-Key` on `/commit` so a retry after a flaky response doesn't create a duplicate post.
+
+**Hand-off to feed generation:** the `photo.uploaded` event is the bridge to feed generation (§21.7). The upload path returns immediately, and the expensive **fan-out runs in the background** — so the poster is never blocked while the post is pushed into millions of followers' feeds.
 
 ## 21.7 Step 7 — Feed generation (the heart of the system)
 
@@ -1250,7 +1255,7 @@ Feed cache: Redis sorted set per user, scored by `created_at + ranking_signal`.
 | Concern | Mitigation |
 |---------|------------|
 | Hot celebrities | Hybrid feed; separate "big-account" cache shard |
-| Hot photo (viral) | CDN absorbs reads; like counter sharded via Ch 24, §9.20 PN-Counter |
+| Hot photo (viral) | CDN absorbs reads; like counter sharded via Ch 24, §9.18 PN-Counter |
 | Spam / abuse | Rate-limit uploads per user (token bucket); ML moderation queue |
 | Search at scale | Elasticsearch with hashtag-sharded indices |
 | Multi-region | Photo + follow stored in user's home region; cross-region reads via CDN |

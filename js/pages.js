@@ -1085,7 +1085,7 @@ function showDashboard() {
                   ? '<span class="ch-quiz-score" style="color:' + quizScoreColor + ';" title="Best ' + quizScore + '% · ' + qh.attempts + ' attempt' + (qh.attempts > 1 ? 's' : '') + '">' + quizScore + '%</span>'
                   : '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-actions">' +
-                (qh ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="Retake quiz">↺ Quiz</button>' : '') +
+                '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="' + (qh ? 'Retake quiz' : 'Take quiz') + '">↺ Quiz</button>' +
                 '<button class="ch-btn" onclick="exportChapterPDFByIndex(' + idx + ')" title="Export as PDF">' + ico.download + '</button>' +
                 ((!isRef && (isRead || qh || ct.seconds)) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress">↺</button>' : '') +
               '</td>' +
