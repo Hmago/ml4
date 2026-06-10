@@ -3729,6 +3729,80 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 .sel-popup .sp-copy { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); }
 .sel-popup button:hover { transform: scale(1.05); }
 
+/* ─── In-chapter Find (Ctrl+F) ─── */
+.find-bar {
+  position: fixed;
+  top: 62px;
+  right: 28px;
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px var(--shadow), 0 2px 8px var(--shadow);
+}
+.find-bar.visible { display: flex; }
+.find-bar input {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  width: 200px;
+  outline: none;
+  padding: 3px 2px;
+}
+.find-bar input::placeholder { color: var(--text-secondary); }
+.find-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.find-count.none { color: #ef4444; }
+.find-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.find-bar .find-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.find-bar .find-btn:hover { background: var(--bg-secondary); color: var(--text); }
+
+/* Match highlights injected into chapter content */
+mark.find-match {
+  background: #ffe98a;
+  color: #1a1a2e;
+  border-radius: 2px;
+  padding: 0 1px;
+  scroll-margin-top: 90px;
+  scroll-margin-bottom: 90px;
+}
+mark.find-match.find-current {
+  background: #ff9a3c;
+  color: #1a1a2e;
+  box-shadow: 0 0 0 2px rgba(255,154,60,0.55);
+}
+[data-theme="dark"] mark.find-match { background: #6b5d1e; color: #fef9c3; }
+[data-theme="dark"] mark.find-match.find-current { background: #c2620c; color: #fff; }
+
+@media (max-width: 768px) {
+  .find-bar { top: 56px; right: 10px; left: 10px; }
+  .find-bar input { width: auto; flex: 1; }
+}
+
 /* User highlights in content */
 mark.user-hl {
   background: #fef08a; color: #1a1a2e; border-radius: 3px; padding: 1px 3px;

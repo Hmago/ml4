@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Notes — Logo Concepts</title>
+<style>
+  :root { --bg:#eef1f5; --card:#ffffff; --text:#1f2328; --muted:#656d76; --border:#d8dee4; }
+  body.dark { --bg:#0d1117; --card:#161b22; --text:#e6edf3; --muted:#8b949e; --border:#30363d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:ui-sans-serif,system-ui,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+         background:var(--bg); color:var(--text); transition:background .2s,color .2s; }
+  header { padding:32px 28px 8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  h1 { font-size:22px; margin:0; font-weight:800; letter-spacing:-0.02em; }
+  .sub { color:var(--muted); font-size:14px; margin:4px 28px 0; max-width:760px; line-height:1.5; }
+  .toggle { background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:10px;
+            padding:9px 16px; font-size:14px; font-weight:600; cursor:pointer; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; padding:24px 28px 60px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:22px 20px 18px;
+          display:flex; gap:18px; align-items:center; }
+  .card .icons { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .card svg.big { width:104px; height:104px; border-radius:24px; display:block;
+                  box-shadow:0 6px 20px rgba(0,0,0,.18); }
+  .card svg.mini { width:28px; height:28px; border-radius:7px; display:block; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+  .meta h3 { margin:0 0 6px; font-size:16px; font-weight:700; }
+  .meta p { margin:0; font-size:13px; color:var(--muted); line-height:1.5; }
+  .tag { display:inline-block; margin-top:9px; font-size:11px; font-weight:600; color:var(--muted);
+         border:1px solid var(--border); border-radius:999px; padding:2px 9px; }
+  .note { font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ML Notes — Logo Concepts</h1>
+  </div>
+  <button class="toggle" onclick="document.body.classList.toggle('dark')">Toggle dark / light</button>
+</header>
+<p class="sub">Eight directions for the app icon, each as a scalable SVG. Big = 104px (app/desktop), small = 28px (favicon legibility check). Most use the indigo <code>#6366f1</code> from your <code>manifest.json</code> theme so the icon and chrome match. Tell me a number (or a remix) and I'll drop it into <code>icon-192.svg</code> / <code>icon-512.svg</code> and regenerate the desktop <code>.ico</code>.</p>
+
+<div class="grid" id="grid"></div>
+
+<script>
+// Each concept returns the INNER markup of a 512x512 SVG (minus the <svg> tag),
+// so we can render it at any size. Gradient ids are unique per concept.
+const ROUND = 'rx="112"';
+
+const concepts = [
+  {
+    name: '1 · Neural Network',
+    desc: 'The universal "machine learning" glyph — a 2-3-2 layered net. Instantly readable, scales down cleanly.',
+    tag: 'indigo · most on-theme',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#4338ca"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <g stroke="#fff" stroke-width="5" stroke-opacity="0.45">
+        <line x1="150" y1="190" x2="256" y2="140"/><line x1="150" y1="190" x2="256" y2="256"/><line x1="150" y1="190" x2="256" y2="372"/>
+        <line x1="150" y1="322" x2="256" y2="140"/><line x1="150" y1="322" x2="256" y2="256"/><line x1="150" y1="322" x2="256" y2="372"/>
+        <line x1="256" y1="140" x2="362" y2="190"/><line x1="256" y1="140" x2="362" y2="322"/>
+        <line x1="256" y1="256" x2="362" y2="190"/><line x1="256" y1="256" x2="362" y2="322"/>
+        <line x1="256" y1="372" x2="362" y2="190"/><line x1="256" y1="372" x2="362" y2="322"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="150" cy="190" r="20"/><circle cx="150" cy="322" r="20"/>
+        <circle cx="256" cy="140" r="24"/><circle cx="256" cy="256" r="24"/><circle cx="256" cy="372" r="24"/>
+        <circle cx="362" cy="190" r="20"/><circle cx="362" cy="322" r="20"/>
+      </g>`
+  },
+  {
+    name: '2 · AI Chip',
+    desc: 'A processor die with pins and a node cluster inside — "ML + hardware/TPU". Nods to your Google-infra chapters.',
+    tag: 'Google blue',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#4285F4"/><stop offset="1" stop-color="#1a56db"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <g fill="#fff">
+        <rect x="187" y="120" width="18" height="30" rx="6"/><rect x="247" y="120" width="18" height="30" rx="6"/><rect x="307" y="120" width="18" height="30" rx="6"/>
+        <rect x="187" y="362" width="18" height="30" rx="6"/><rect x="247" y="362" width="18" height="30" rx="6"/><rect x="307" y="362" width="18" height="30" rx="6"/>
+        <rect x="120" y="187" width="30" height="18" rx="6"/><rect x="120" y="247" width="30" height="18" rx="6"/><rect x="120" y="307" width="30" height="18" rx="6"/>
+        <rect x="362" y="187" width="30" height="18" rx="6"/><rect x="362" y="247" width="30" height="18" rx="6"/><rect x="362" y="307" width="30" height="18" rx="6"/>
+      </g>
+      <rect x="150" y="150" width="212" height="212" rx="34" fill="#fff"/>
+      <g stroke="#1a56db" stroke-width="9"><line x1="214" y1="224" x2="298" y2="224"/><line x1="214" y1="224" x2="256" y2="300"/><line x1="298" y1="224" x2="256" y2="300"/></g>
+      <g fill="#1a56db"><circle cx="214" cy="224" r="18"/><circle cx="298" cy="224" r="18"/><circle cx="256" cy="300" r="18"/></g>`
+  },
+  {
+    name: '3 · Graduation Cap',
+    desc: 'Study / exam-prep front and center. Friendliest, most "course" feeling; least ML-specific of the set.',
+    tag: 'violet · study vibe',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#6d28d9"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <path d="M210 250 L302 250 L292 312 Q256 332 220 312 Z" fill="#fff" fill-opacity="0.85"/>
+      <path d="M256 150 L388 212 L256 274 L124 212 Z" fill="#fff"/>
+      <path d="M256 212 L348 212 L348 300" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="348" cy="312" r="14" fill="#fff"/>`
+  },
+  {
+    name: '4 · "ML" Monogram',
+    desc: 'Pure wordmark. Cleanest at tiny sizes, most generic. Strong if paired with a distinct color.',
+    tag: 'indigo · typographic',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <text x="256" y="340" text-anchor="middle" font-family="ui-sans-serif,system-ui,'Segoe UI',Roboto,Arial"
+            font-size="208" font-weight="800" fill="#fff" letter-spacing="-6">ML</text>`
+  },
+  {
+    name: '5 · Synapse',
+    desc: 'A neuron with dendrites — organic "intelligence / connected knowledge". Abstract and distinctive.',
+    tag: 'indigo',
+    svg: (id) => `
+      <defs><radialGradient id="${id}" cx="0.35" cy="0.3" r="0.9">
+        <stop offset="0" stop-color="#818cf8"/><stop offset="1" stop-color="#4338ca"/></radialGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <g stroke="#fff" stroke-width="5" stroke-opacity="0.5">
+        <line x1="256" y1="256" x2="146" y2="166"/><line x1="256" y1="256" x2="374" y2="150"/>
+        <line x1="256" y1="256" x2="398" y2="292"/><line x1="256" y1="256" x2="300" y2="396"/>
+        <line x1="256" y1="256" x2="150" y2="358"/>
+        <line x1="146" y1="166" x2="374" y2="150" stroke-opacity="0.22"/>
+        <line x1="398" y1="292" x2="300" y2="396" stroke-opacity="0.22"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="146" cy="166" r="16"/><circle cx="374" cy="150" r="14"/><circle cx="398" cy="292" r="16"/>
+        <circle cx="300" cy="396" r="14"/><circle cx="150" cy="358" r="15"/>
+      </g>
+      <circle cx="256" cy="256" r="32" fill="#fff"/>`
+  },
+  {
+    name: '6 · Open Book + Net',
+    desc: 'Notes (the book) meeting ML (nodes rising from the page). Most literal match to "ML Study Notes".',
+    tag: 'teal · keeps brand color',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <g stroke="#fff" stroke-width="5" stroke-opacity="0.55"><line x1="210" y1="206" x2="256" y2="178"/><line x1="302" y1="206" x2="256" y2="178"/><line x1="256" y1="178" x2="256" y2="300"/></g>
+      <g fill="#fff"><circle cx="210" cy="206" r="15"/><circle cx="302" cy="206" r="15"/><circle cx="256" cy="170" r="17"/></g>
+      <path d="M256 300 C214 280 178 278 150 286 L150 366 C178 358 214 360 256 380 Z" fill="#fff"/>
+      <path d="M256 300 C298 280 334 278 362 286 L362 366 C334 358 298 360 256 380 Z" fill="#fff"/>
+      <line x1="256" y1="300" x2="256" y2="380" stroke="#0d9488" stroke-width="4" stroke-opacity="0.5"/>`
+  },
+  {
+    name: '7 · Sprout (refined)',
+    desc: 'Your current growth metaphor, tidied and recolored to the indigo theme so icon + chrome match.',
+    tag: 'indigo · closest to current',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <path d="M256 430 L256 224" stroke="#fff" stroke-width="22" stroke-linecap="round" fill="none"/>
+      <path d="M250 300 Q140 268 126 350 Q210 350 256 296 Z" fill="#fff"/>
+      <path d="M262 244 Q372 212 386 294 Q302 294 256 240 Z" fill="#fff"/>`
+  },
+  {
+    name: '8 · Node "M"',
+    desc: 'The letter M drawn as a connected graph — wordmark + network in one. Playful, memorable.',
+    tag: 'indigo',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#4338ca"/></linearGradient></defs>
+      <rect width="512" height="512" ${ROUND} fill="url(#${id})"/>
+      <polyline points="150,362 150,176 256,286 362,176 362,362" fill="none" stroke="#fff"
+                stroke-width="16" stroke-linejoin="round" stroke-linecap="round" stroke-opacity="0.55"/>
+      <g fill="#fff"><circle cx="150" cy="362" r="22"/><circle cx="150" cy="176" r="22"/>
+        <circle cx="256" cy="286" r="22"/><circle cx="362" cy="176" r="22"/><circle cx="362" cy="362" r="22"/></g>`
+  },
+  {
+    name: '✓ Current',
+    desc: 'What ships today: teal gradient, white sprout. Here for side-by-side comparison.',
+    tag: 'teal · in production',
+    svg: (id) => `
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+      <rect width="512" height="512" rx="100" fill="url(#${id})"/>
+      <path d="M256 430 L256 220" stroke="#fff" stroke-width="22" stroke-linecap="round" fill="none"/>
+      <path d="M256 280 Q140 250 130 340 Q210 340 256 290 Z" fill="#fff"/>
+      <path d="M256 230 Q372 200 382 290 Q302 290 256 240 Z" fill="#fff"/>`
+  },
+];
+
+const grid = document.getElementById('grid');
+concepts.forEach((c, i) => {
+  const big = `<svg class="big" viewBox="0 0 512 512">${c.svg('gb'+i)}</svg>`;
+  const mini = `<svg class="mini" viewBox="0 0 512 512">${c.svg('gm'+i)}</svg>`;
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="icons">${big}${mini}<span class="note">104 / 28 px</span></div>
+    <div class="meta"><h3>${c.name}</h3><p>${c.desc}</p><span class="tag">${c.tag}</span></div>`;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>

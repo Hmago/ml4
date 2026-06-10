@@ -13,7 +13,7 @@ function renderWelcome() {
   document.getElementById('breadcrumb').textContent = '';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
 
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
@@ -612,7 +612,7 @@ function showDashboard() {
   document.getElementById('breadcrumb').textContent = 'Dashboard';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view');
@@ -1703,7 +1703,7 @@ function showMotivation() {
   document.getElementById('breadcrumb').textContent = '💪 Daily Motivation';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   motiIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
   renderMotivation();
@@ -1814,7 +1814,7 @@ function showGoals() {
   document.getElementById('breadcrumb').textContent = '🎯 Goals & Timetable';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   pushHash('goals');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   renderGoalsPage();
