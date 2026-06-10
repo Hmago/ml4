@@ -700,7 +700,7 @@ The server sends leaf + intermediates. The client walks up to a trusted root and
 - **Session ID** (TLS 1.2) — server keeps state, client sends ID to skip negotiation.
 - **Session ticket** (TLS 1.2/1.3) — server encrypts state, hands it to client; stateless servers can resume.
 
-> **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in Ch 25, §14.10.
+> **mTLS** (mutual TLS) — both sides present certs. Foundation of service-mesh auth (Istio, Linkerd) and zero-trust networking. Deep dive in Ch 25, §14.9.
 
 ## 3.11 Connection management — pooling, keep-alive, and HOL blocking
 
@@ -791,51 +791,94 @@ The server sends leaf + intermediates. The client walks up to a trusted root and
 
 ## 3.15 gRPC deep dive — Protobuf, deadlines, metadata, errors
 
-### Protobuf in one screen
+> **Simple Explanation:** gRPC lets you *call a function on another server as if it were local*. You describe the function once in a `.proto` file; gRPC generates the client and server code for you — in any language.
+
+**Why gRPC for internal services:** binary Protobuf payloads (~5–10× smaller than JSON), HTTP/2 multiplexing (many calls share one connection), a strict typed contract across languages, and built-in deadlines, streaming, and cancellation.
+
+### Hello World — the three pieces
+
+Everything starts from one schema file: **(1)** define the service, **(2)** implement the server, **(3)** call it from a client.
+
+**1. The contract — `greeter.proto`**
 
 ```protobuf
 syntax = "proto3";
+package hello;
 
-message User {
-  int64  id    = 1;
-  string name  = 2;
-  string email = 3;
+// One service with one method: takes a HelloRequest, returns a HelloReply.
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply);
 }
 
-service UserService {
-  rpc GetUser   (GetUserRequest)   returns (User);
-  rpc ListUsers (ListUsersRequest) returns (stream User);
-}
+message HelloRequest { string name = 1; }
+message HelloReply   { string message = 1; }
 ```
 
+Run the code generator (`protoc`) to turn this `.proto` into client + server stubs for your language.
+
+**2. The server (Python)**
+
+```python
+import grpc
+from concurrent import futures
+import greeter_pb2, greeter_pb2_grpc          # generated from greeter.proto
+
+class Greeter(greeter_pb2_grpc.GreeterServicer):
+    def SayHello(self, request, context):
+        return greeter_pb2.HelloReply(message=f"Hello, {request.name}!")
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+greeter_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
+server.add_insecure_port("[::]:50051")
+server.start()
+server.wait_for_termination()
+```
+
+**3. The client (Python)**
+
+```python
+import grpc
+import greeter_pb2, greeter_pb2_grpc
+
+with grpc.insecure_channel("localhost:50051") as channel:
+    stub = greeter_pb2_grpc.GreeterStub(channel)
+    reply = stub.SayHello(greeter_pb2.HelloRequest(name="Ada"))
+    print(reply.message)                       # → "Hello, Ada!"
+```
+
+That's the whole loop: one schema, generated stubs, and a call that *looks* local but crosses the network over HTTP/2.
+
+### Protobuf rules that bite you
+
 - **Field numbers are forever.** Adding a field is backwards-compatible; **reusing a number is a breaking change**.
-- **Default values vanish on the wire.** A `string` defaulting to `""` is encoded as zero bytes — efficient, but means "missing" and "empty" look the same. Use `optional` if you need to tell them apart.
+- **Defaults vanish on the wire.** A `string` defaulting to `""` encodes as zero bytes, so "missing" and "empty" look identical. Use `optional` when you must tell them apart.
 - **Binary wire format** is ~5–10× smaller than JSON for typical RPCs.
 
 ### Deadlines, not timeouts
 
-In gRPC the **client sets a deadline** (absolute time) and the deadline **propagates** to downstream calls. If A calls B with a 200 ms deadline and B calls C, C is given the *remaining* budget, not a fresh 200 ms. This is how you stop cascading "everyone retries for 30 s" outages.
+The **client sets a deadline** (an absolute time), and it **propagates downstream**. If A calls B with 200 ms left and B calls C, C inherits the *remaining* budget — not a fresh 200 ms. This is how you stop "everyone retries for 30 s" cascading outages.
 
 ### Metadata — headers, basically
 
+Key/value pairs sent alongside the call (auth tokens, request IDs, tracing):
+
 ```
-   authorization: Bearer eyJ…
-   x-request-id: 7b3c…
-   user-agent:   my-service/1.4.2
+authorization: Bearer eyJ…
+x-request-id:  7b3c…
 ```
 
-### Canonical status codes (the 16)
+### Errors — the canonical status codes
 
-`OK`, `CANCELLED`, `UNKNOWN`, `INVALID_ARGUMENT`, `DEADLINE_EXCEEDED`, `NOT_FOUND`, `ALREADY_EXISTS`, `PERMISSION_DENIED`, `RESOURCE_EXHAUSTED`, `FAILED_PRECONDITION`, `ABORTED`, `OUT_OF_RANGE`, `UNIMPLEMENTED`, `INTERNAL`, `UNAVAILABLE` (the only one safe to auto-retry without idempotency), `DATA_LOSS`, `UNAUTHENTICATED`.
+gRPC uses **16 status codes** (not HTTP codes): `OK`, `INVALID_ARGUMENT`, `NOT_FOUND`, `ALREADY_EXISTS`, `PERMISSION_DENIED`, `DEADLINE_EXCEEDED`, `RESOURCE_EXHAUSTED`, `UNAVAILABLE` (the only one safe to auto-retry without idempotency), `UNAUTHENTICATED`, `INTERNAL`, and more.
 
 ### Interceptors
 
-Cross-cutting concerns (auth, logging, metrics, retries, tracing) plug in as **interceptors** (similar to HTTP middleware). One place to add OpenTelemetry tracing for every RPC.
+Cross-cutting concerns (auth, logging, metrics, retries, tracing) plug in as **interceptors** — like HTTP middleware. One place to add OpenTelemetry tracing to every RPC.
 
 ### gRPC-Web and reflection
 
-- **gRPC-Web** — browsers can't speak raw HTTP/2 trailers, so a tiny proxy (Envoy plugin, grpcweb-proxy) translates. Plan for this in any browser-first architecture.
-- **Reflection** — service describes itself at runtime; tools like `grpcurl` can talk to any service without `.proto` files. Enable in dev, disable in prod.
+- **gRPC-Web** — browsers can't speak raw HTTP/2 trailers, so a small proxy (Envoy) translates. Plan for it in any browser-facing design.
+- **Reflection** — a service can describe itself at runtime, so tools like `grpcurl` call it without the `.proto`. Enable in dev, disable in prod.
 
 ## 3.16 gRPC streaming modes
 
@@ -852,43 +895,81 @@ Bidirectional streaming powers chat, telemetry uploads, and live dashboards — 
 
 ## 3.17 GraphQL deep dive — power and pain
 
-```
-   query {
-     user(id: 42) {
-       name
-       posts(last: 3) { title likes }
-     }
-   }
+> **Simple Explanation:** GraphQL lets the *client* ask for exactly the fields it wants, in one request — no more, no less. The server publishes a typed **schema**; the client sends a **query** shaped like the data it wants back.
+
+**The core idea:** REST gives you fixed endpoints with fixed shapes, so you often over-fetch or make many round-trips. GraphQL gives you *one* endpoint where each screen asks for precisely what it needs.
+
+### Hello World — schema, resolver, query
+
+**1. The schema — what the server offers**
+
+```graphql
+type Query {
+  hello(name: String!): String!
+}
 ```
 
-One round-trip, exactly the fields the client wants, nested traversal. Mobile teams love this.
+**2. The resolver — how each field gets filled in (Node.js)**
+
+```javascript
+const resolvers = {
+  Query: {
+    hello: (_parent, args) => `Hello, ${args.name}!`,
+  },
+};
+```
+
+**3. The query — what the client sends**
+
+```graphql
+query {
+  hello(name: "Ada")
+}
+```
+
+**The response** — JSON shaped exactly like the query:
+
+```json
+{ "data": { "hello": "Hello, Ada!" } }
+```
+
+A real query nests and fetches several things in **one** round-trip:
+
+```graphql
+query {
+  user(id: 42) {
+    name
+    posts(last: 3) { title likes }
+  }
+}
+```
 
 ### Schema, resolvers, and the N+1 trap
 
-- **Schema** — types, queries, mutations, subscriptions.
-- **Resolvers** — one function per field. Naive resolvers fan out: `user.posts` runs *one DB query per user*. Solution: **DataLoader** batches and dedupes within a request tick. (See Ch 24, §7.10 for the general N+1 problem.)
+- **Schema** — the typed menu: `type`s, plus `Query` (reads), `Mutation` (writes), and `Subscription` (live updates).
+- **Resolvers** — one function per field. A naive `user.posts` resolver runs *one DB query per user* — the **N+1 problem**. Fix it with **DataLoader**, which batches and dedupes all the little lookups within a single request. (General N+1 problem: Ch 24, §7.10.)
 
-### Subscriptions
+### Subscriptions — real-time
 
-Real-time updates via WebSocket (or SSE). Same schema, push-style.
+Live updates pushed over WebSocket (or SSE), using the same schema. Good for chat, live scores, and notifications.
 
 ### Caching is the hard part
 
-REST caches at the URL. GraphQL POSTs the query — same URL, different bodies. Strategies:
+REST caches by URL. GraphQL POSTs the query to one URL, so edge caches can't tell requests apart. Fixes:
 
-- **Persisted queries** — server stores the query, client sends a hash. URL becomes cacheable.
-- **Client cache** (Apollo, Relay) — normalise by entity ID.
-- **Edge GraphQL caches** (Apollo, Hasura) — typed cache keys.
+- **Persisted queries** — the client sends a hash of a pre-registered query, turning it back into a cacheable GET.
+- **Client cache** (Apollo, Relay) — normalize results by entity ID.
 
-### Federation (Apollo Federation)
+### Federation
 
-Split the GraphQL schema across services. A gateway composes them at query time. Lets multiple teams own slices of one graph without a monolithic resolver layer.
+Split one big graph across teams. Each service owns part of the schema, and a **gateway** stitches them together at query time — no monolithic resolver layer.
 
 ### When *not* to use GraphQL
 
-- Public APIs that need easy caching → REST.
-- Internal east-west, strict contracts → gRPC.
-- Tiny apps with one client → REST is fine; GraphQL is overhead.
+- **Public, cache-heavy APIs** → REST (caching is built in).
+- **Internal service-to-service, strict contracts** → gRPC.
+- **A tiny app with one client** → REST is simpler; GraphQL is overhead.
+- **Watch out:** clients can send hugely expensive nested queries — enforce **query depth and cost limits** in production.
 
 ## 3.18 WebSockets deep dive
 
@@ -1222,14 +1303,38 @@ It gives you: **scale-out**, **fault tolerance** (route around dead servers), **
 
 ## 4.2 L4 vs L7 — the most asked LB question
 
-| | **L4 (transport-layer)** | **L7 (application-layer)** |
-|---|---|---|
-| Inspects | TCP/UDP packets (IP + port) | HTTP headers, URL, cookies |
-| Speed | Very fast | Slower (does more work) |
-| Routing rules | "round-robin to backend pool" | "if URL starts with /api → cluster A" |
-| Examples | AWS NLB, HAProxy in TCP mode | AWS ALB, nginx, Envoy, Cloudflare |
+> **Simple Explanation:** An **L4** load balancer is like a mail sorter who routes envelopes by the address on the outside (IP + port) without opening them. An **L7** balancer opens the envelope and routes by what's *inside* (the URL, headers, cookies).
 
-**Senior insight:** L7 enables canary routing, A/B testing, WAF, and per-tenant rate limits. Most modern systems use L4 in front of L7.
+"L4/L7" names the OSI layer the balancer understands (§3.1): **Layer 4 = transport (TCP/UDP)**, **Layer 7 = application (HTTP)**.
+
+| | **L4 (transport)** | **L7 (application)** |
+|---|---|---|
+| Looks at | IP + port only | URL, headers, cookies, method, body |
+| Connection | Forwards the raw TCP/UDP stream | Terminates the client's connection, opens its own to the backend |
+| Speed / cost | Very fast, tiny CPU, millions of QPS | Slower — must parse HTTP and often do TLS |
+| Routing it can do | "spread across this server pool" | "/api → cluster A, /img → cluster B", route by header or cookie |
+| TLS | Usually passes the encrypted bytes through | Terminates TLS; can inspect, then re-encrypt to the backend |
+| Smart features | None (it can't read HTTP) | Canary / A-B routing, WAF, rate limits, header rewrite, retries, sticky sessions |
+| Examples | AWS NLB, HAProxy (TCP mode), IPVS, Maglev | AWS ALB, nginx, Envoy, Traefik, Cloudflare |
+
+### How each actually moves a packet
+
+```
+   L4:  client ──TCP──▶ [ LB rewrites dest IP/port ] ──▶ backend
+        The LB never reads the HTTP request — one connection, NAT-style.
+
+   L7:  client ──TCP+TLS──▶ [ LB terminates, reads HTTP, decides ] ──new TCP──▶ backend
+        Two separate connections; the LB is a full middleman.
+```
+
+### When to use which
+
+- **L4** — non-HTTP traffic (databases, game servers, raw gRPC passthrough), extreme throughput, or when the backend needs to see the raw connection. It *cannot* do content-based routing.
+- **L7** — anything HTTP where you want smart routing: path/host routing, canary releases, per-tenant rate limits, a Web Application Firewall, or auth at the edge.
+
+**Senior insight:** real systems use **both, layered** — a fast L4 balancer (often on an Anycast IP) spreads traffic across a fleet of L7 proxies, which do the smart per-request work. That's exactly Google's Maglev (L4) sitting in front of application proxies (§4.10).
+
+> **Gotcha:** when an L7 LB terminates the connection, the backend sees the *LB's* IP, not the user's. Forward the real client IP in `X-Forwarded-For` (for L7) or use the PROXY protocol (for L4), or your logs, geo-IP, and rate limits will all be wrong.
 
 ## 4.3 Load-balancing algorithms
 
@@ -1261,43 +1366,79 @@ Pin a client to the same backend (via cookie or IP hash) so in-memory session st
 
 ## 4.6 Reverse proxy vs API gateway vs Load balancer
 
+> **Simple Explanation:** All three sit in front of your servers, but they answer different questions. A **reverse proxy** asks "how do I serve this request efficiently?" A **load balancer** asks "which server should handle it?" An **API gateway** asks "is this request allowed, and where does it go?"
+
+They overlap heavily — one piece of software (nginx, Envoy) often plays all three roles — but the *jobs* are distinct:
+
+| | **Reverse proxy** | **Load balancer** | **API gateway** |
+|---|---|---|---|
+| Main job | Front a backend: TLS, caching, compression | Spread traffic across identical replicas | The single "front door" for many APIs |
+| Knows about | One (or a few) backends | A pool of identical servers | All your services + their policies |
+| Typical features | TLS termination, gzip/brotli, static cache, header rewrite | Health checks, algorithms (§4.3), failover | Auth, rate limiting (§4.7), routing, request/response transformation, API keys, quotas |
+| OSI layer | L7 (usually) | L4 or L7 | L7 |
+| Examples | nginx, Varnish | AWS NLB/ALB, HAProxy | Kong, AWS API Gateway, Apigee, Envoy |
+
 ```
-   ┌─────────────────────────────────────────────────────────┐
-   │ All three sit between client and backend, but:           │
-   ├─────────────────────────────────────────────────────────┤
-   │ Reverse Proxy — TLS termination, caching, compression    │
-   │ Load Balancer — distributes traffic across replicas      │
-   │ API Gateway   — auth, rate limit, routing, transformation│
-   │                 (= reverse proxy + LB + policy engine)   │
-   └─────────────────────────────────────────────────────────┘
+   client ──▶ API Gateway ──▶ Load Balancer ──▶ [ replicas of one service ]
+              (auth, rate        (pick a healthy
+               limit, route)      replica)
 ```
 
-In modern systems (nginx, Envoy, Kong, AWS API Gateway) one box often plays all three roles.
+**How to keep them straight:**
+
+- A **load balancer** answers *"which of these identical boxes?"* — it's about scale and failover.
+- A **reverse proxy** answers *"let me handle TLS, caching, and compression so the backend doesn't have to."* (Every LB and gateway is also a reverse proxy.)
+- An **API gateway** is a reverse proxy + load balancer **plus a policy engine** — it centralizes cross-cutting concerns (auth, rate limits, quotas, request shaping) so each service doesn't reinvent them.
+
+> **Don't confuse it with a service mesh:** a gateway handles **north–south** traffic (clients → your system); a service mesh (Istio, Linkerd) handles **east–west** traffic (service → service *inside* your system). The BFF pattern (§3.22) is a specialized gateway — one per frontend.
 
 ## 4.7 Rate limiting
 
-> **Simple Explanation:** A bouncer at the door. "You can come in 100 times per minute; the 101st gets a 429 Too Many Requests."
+> **Simple Explanation:** A bouncer at the door. "You can come in 100 times per minute; the 101st gets a `429 Too Many Requests`." It protects you from abuse, runaway clients, and accidental self-DDoS.
 
-### Four classical algorithms
+**Why you need it:** stop abuse and scrapers, share capacity fairly between tenants, protect fragile downstreams, and control cost. It's a core API-gateway feature (§4.6).
+
+### What to limit by (the "key")
+
+You count requests against some identity — pick it based on the threat:
+
+- **Per API key / user** — fair usage and billing tiers (the most common).
+- **Per IP** — block anonymous abuse (but NATs share one IP across many users, so be careful).
+- **Per endpoint** — protect one expensive route (e.g. `/search`) more tightly than the rest.
+
+### The four classical algorithms
 
 ```
-   TOKEN BUCKET            LEAKY BUCKET           FIXED WINDOW         SLIDING WINDOW
-   ─────────────           ─────────────           ─────────────         ──────────────
-   Bucket fills with       Bucket leaks at        Reset counter         Like fixed, but
-   N tokens / sec.         constant rate.         every minute.         smooths the
-   Request takes 1.        Bursts buffered,       Easy. Edge-of-        boundary problem
-   Allows bursts up        not allowed past       window bursts can     by counting the
-   to bucket size.         the leak rate.         double the limit.     last 60s rolling.
+   TOKEN BUCKET           LEAKY BUCKET          FIXED WINDOW          SLIDING WINDOW
+   ────────────           ────────────          ────────────          ──────────────
+   Refills N tokens/sec;  Drains at a constant  One counter, reset    Counts the last
+   each request spends    rate; smooths bursts  every minute. Easy,   60s on a rolling
+   one. Allows bursts     into a steady flow.   but allows a 2× burst basis. Fixes the
+   up to the bucket size.                       at the boundary.      edge-burst bug.
 ```
 
-| Algorithm | Allows bursts? | Implementation | Used by |
-|-----------|---------------|----------------|---------|
-| Token bucket | Yes (up to bucket) | Counter + timestamp | AWS, Stripe |
-| Leaky bucket | No (smooths) | Queue with constant drain | nginx |
-| Fixed window | Yes (edge bursts) | One counter per window | Naive APIs |
-| Sliding window | Yes (controlled) | Weighted counter | Cloudflare, Redis |
+| Algorithm | Bursts? | How it works | Used by |
+|-----------|---------|--------------|---------|
+| **Token bucket** | Yes, up to bucket size | Counter + last-refill timestamp | AWS, Stripe |
+| **Leaky bucket** | No — smooths to a steady rate | A queue drained at a fixed rate | nginx |
+| **Fixed window** | Yes — can 2× at the boundary | One counter per time window | Naive APIs |
+| **Sliding window** | Yes, but controlled | Rolling/weighted count of recent requests | Cloudflare |
 
-**Distributed rate limiting** is hard — coordinating one counter across N gateways usually means a shared Redis with `INCR + EXPIRE` and sometimes Lua scripts for atomicity.
+**The fixed-window boundary bug:** with a 100/min limit, a client can send 100 requests at 11:00:59 and 100 more at 11:01:00 — that's 200 in two seconds. Sliding window fixes this by always looking at the *last* 60 seconds.
+
+**Token bucket is the usual default** — it allows natural short bursts while capping the long-run average, which matches how real traffic behaves.
+
+### Telling the client (the HTTP part)
+
+Return **`429 Too Many Requests`** with a **`Retry-After`** header so well-behaved clients back off. Many APIs also send `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` headers so clients can pace themselves.
+
+### Distributed rate limiting is the hard part
+
+One counter is trivial on a single box. Across N gateways you need a *shared* counter — usually in **Redis** (`INCR` + `EXPIRE`, kept atomic with a tiny Lua script). The trade-off:
+
+- A **central store** is accurate but adds latency and a dependency on every request.
+- **Local + periodic sync** (each node limits locally, reconciles occasionally) is faster but approximate.
+- Choose based on whether a little over-admitting is acceptable for your use case.
 
 ## 4.8 Circuit breaker
 
@@ -1349,36 +1490,6 @@ The simplest, dumbest LB: return multiple A records and let the client pick. Var
 - **Latency-based** (AWS Route 53) — return the IP with the lowest measured latency.
 
 **Caveat:** DNS is cached for the TTL. Failover is *slow*. Critical systems combine DNS-LB (region selection) with in-region L4/L7 LBs (fast failover).
-
-## 4.13 The Power of Two Choices (P2C)
-
-Surprisingly simple, surprisingly powerful: instead of picking the least-loaded backend (requires global state), pick **two at random** and route to whichever is less loaded.
-
-```
-   Random:      poor balance (Poisson tail of overloaded servers)
-   Least-loaded: requires per-request synchronized state
-   Power of two: 99 % of optimal balance with O(1) decision time
-```
-
-Used by Netflix, Google, Envoy, and Nginx Plus. It's mathematically magical — *two* probes give nearly the benefit of *all* probes.
-
-## 4.14 Sliding-window rate limiter in Redis
-
-A production-grade snippet you'll see in interviews:
-
-```lua
--- KEYS[1] = bucket key, ARGV[1] = max requests, ARGV[2] = window seconds
-local current = redis.call("INCR", KEYS[1])
-if current == 1 then
-    redis.call("EXPIRE", KEYS[1], ARGV[2])
-end
-if current > tonumber(ARGV[1]) then
-    return 0
-end
-return 1
-```
-
-Atomic via Lua → no race. For *true* sliding windows (not fixed), use a sorted set and `ZRANGEBYSCORE` to count recent requests.
 
 ---
 

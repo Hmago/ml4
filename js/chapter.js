@@ -825,6 +825,7 @@ function enhanceContent() {
   // 3. Reading time — study pace (~55 words/min for technical content with diagrams)
   const words = (contentEl.textContent || '').trim().split(/\s+/).length;
   const minutes = Math.ceil(words / 55);
+  window.__chapterReadMinutes = minutes;   // remembered so the completion reward can scale with length
   let badge = document.getElementById('readingTime');
   if (!badge) {
     badge = document.createElement('span');
@@ -1007,25 +1008,17 @@ function renderQuizQuestion() {
     const emoji = pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '📖';
     const msg = pct >= 80 ? 'Excellent! You know this well!' : pct >= 50 ? 'Good job! Review the ones you missed.' : 'Keep studying — you\'ll get there!';
 
-    // XP calculation with penalties:
-    // • base:           0–30 XP proportional to score %
-    // • per wrong:      −1 XP per missed question
-    // • low-score:      −20 XP if final score < 30%
-    // • rushed (anti-spam): 0 XP if less than 1 second per question elapsed
-    const baseXp = Math.round(pct / 100 * 30);
-    const wrongCount = questions.length - score;
-    const wrongPenalty = wrongCount; // 1 XP per wrong
-    const lowScorePenalty = pct < 30 ? 20 : 0;
+    // XP: 5 XP per correct answer, +50 bonus for a perfect score.
+    // Anti-spam: 0 XP if rushed (less than 1 second per question elapsed).
+    const perfect = questions.length > 0 && score === questions.length;
     const elapsedSec = (Date.now() - (quizState.startTime || Date.now())) / 1000;
     const rushed = questions.length > 0 && (elapsedSec / questions.length) < 1;
-    let xpEarned = rushed ? 0 : baseXp;
-    const totalPenalty = rushed ? 0 : (wrongPenalty + lowScorePenalty);
-    const netXp = xpEarned - totalPenalty;
+    const netXp = rushed ? 0 : (score * 5 + (perfect ? 50 : 0));
     const reasonParts = [`Quiz ${pct}% (${score}/${questions.length})`];
     if (rushed) reasonParts.push('rushed — no XP');
     else {
-      if (wrongPenalty) reasonParts.push(`−${wrongPenalty} wrong`);
-      if (lowScorePenalty) reasonParts.push('−20 low score');
+      reasonParts.push(`+${score * 5} for ${score} correct`);
+      if (perfect) reasonParts.push('+50 perfect bonus');
     }
     if (netXp !== 0) addXP(netXp, reasonParts.join(', '));
 
@@ -1063,7 +1056,7 @@ function renderQuizQuestion() {
           <div class="quiz-score-label">${score} of ${questions.length} correct</div>
           <div class="quiz-score-bar"><div class="quiz-score-fill ${grade}" style="width:0%"></div></div>
           <p style="margin:16px 0;color:var(--text-secondary)">${msg}</p>
-          <p style="font-size:13px;color:${netXp < 0 ? '#ef4444' : 'var(--accent)'};font-weight:600;">${netXp >= 0 ? '+' : ''}${netXp} XP${rushed ? ' (rushed — no XP)' : (totalPenalty > 0 ? ` (${xpEarned} − ${totalPenalty} penalty)` : '')}</p>
+          <p style="font-size:13px;color:${netXp > 0 ? 'var(--accent)' : 'var(--text-secondary)'};font-weight:600;">${netXp >= 0 ? '+' : ''}${netXp} XP${rushed ? ' (rushed — no XP)' : (perfect ? ' · incl. +50 perfect bonus 🎉' : '')}</p>
           <button class="quiz-next-btn" onclick="closeQuiz()">Close</button>
           <button class="quiz-next-btn" onclick="quizState.current=0;quizState.score=0;renderQuizQuestion();" style="margin-top:8px;background:var(--bg-secondary);color:var(--text);border:1px solid var(--border);">🔄 Retake Quiz</button>
         </div>
@@ -1177,7 +1170,9 @@ toggleReadStatus = function() {
   if (!wasRead && currentIndex >= 0 && readChapters[chapters[currentIndex]?.file]) {
     const file = chapters[currentIndex].file;
     trackChapterComplete(file);
-    addXP(25, 'Completed: ' + (chapters[currentIndex]?.title || 'chapter'));
+    const _readMins = window.__chapterReadMinutes || 60;
+    const _readXp = Math.max(10, Math.round(25 * _readMins / 60));   // 25 XP per hour of reading length
+    addXP(_readXp, 'Completed: ' + (chapters[currentIndex]?.title || 'chapter'));
     fireConfetti();
     // Launch quiz after a brief delay
     setTimeout(() => startQuiz(file), 800);
