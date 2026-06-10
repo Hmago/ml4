@@ -521,7 +521,7 @@ async function showDSAPractice() {
   document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
 
-  document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
@@ -911,6 +911,7 @@ async function showDSAProblem(id) {
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
   document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('findBtn').style.display = 'none'; closeFind();
 
   pushHash('dsa-problem-' + id);
 

@@ -109,6 +109,7 @@ async function loadChapter(index) {
 
   document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
   document.getElementById('readBtn').style.display = ch.ref ? 'none' : '';
+  document.getElementById('findBtn').style.display = '';
   document.getElementById('focusBtn').style.display = '';
   document.getElementById('ttsBtn').style.display = '';
   ttsStop();
@@ -681,6 +682,197 @@ document.getElementById('search').addEventListener('input', function(e) {
   }, 200);
 });
 
+// ─── In-chapter Find (Ctrl+F) ───
+// A browser-style "find in page" scoped to the open chapter: highlights every
+// match in #content, shows "n/total", and steps through with Enter / Shift+Enter
+// (or the ↑ ↓ buttons). Matching is per-text-node and case-insensitive — a phrase
+// split across inline elements (e.g. **bold**) won't match, the same limitation
+// the saved-highlight feature has.
+let findMatches = [];
+let findCurrent = -1;
+let findDebounce = null;
+let findCapped = false;
+const FIND_MAX = 2000;   // cap DOM wrapping so a 1-char query on a huge chapter stays responsive
+
+function openFind() {
+  if (currentPage !== 'chapter') return;
+  const bar = document.getElementById('findBar');
+  const input = document.getElementById('findInput');
+  if (!bar || !input) return;
+  bar.classList.add('visible');
+  // Seed from the current text selection, like the browser does.
+  const sel = (window.getSelection && window.getSelection().toString().trim()) || '';
+  if (sel && sel.length <= 80 && sel.indexOf('\n') === -1) input.value = sel;
+  input.focus();
+  input.select();
+  if (input.value.trim()) runFind(input.value);
+  else updateFindCount();
+}
+
+function closeFind() {
+  const bar = document.getElementById('findBar');
+  if (bar) bar.classList.remove('visible');
+  clearFindHighlights();
+  updateFindCount();
+}
+
+// Drop highlights + state without re-normalizing the DOM — used when a new
+// chapter's innerHTML replaces the old content out from under us.
+function resetFind() {
+  const bar = document.getElementById('findBar');
+  if (bar) bar.classList.remove('visible');
+  findMatches = [];
+  findCurrent = -1;
+  findCapped = false;
+}
+
+function clearFindHighlights() {
+  const content = document.getElementById('content');
+  if (content) {
+    const parents = new Set();
+    content.querySelectorAll('mark.find-match').forEach(m => {
+      const parent = m.parentNode;
+      if (!parent) return;
+      parent.replaceChild(document.createTextNode(m.textContent), m);
+      parents.add(parent);
+    });
+    parents.forEach(p => p.normalize());   // merge the split text nodes back together
+  }
+  findMatches = [];
+  findCurrent = -1;
+  findCapped = false;
+}
+
+function runFind(query) {
+  clearFindHighlights();
+  const q = (query || '');
+  if (!q.trim()) { updateFindCount(); return; }
+  const content = document.getElementById('content');
+  if (!content) return;
+  const lowerQ = q.toLowerCase();
+
+  // Collect candidate text nodes first, then mutate — replacing nodes mid-walk
+  // would invalidate the TreeWalker.
+  const nodes = [];
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const v = node.nodeValue;
+      if (!v || !v.trim()) return NodeFilter.FILTER_REJECT;
+      if (v.toLowerCase().indexOf(lowerQ) === -1) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      // Skip KaTeX internals (mathml duplicates the text), app chrome, the find
+      // bar itself, and editable areas (notebook code cells).
+      if (p.closest('script, style, .katex, .find-bar, .comments-section, .nav-buttons, .code-lang-badge, .copy-btn, [contenteditable]')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  findCapped = false;
+  for (const node of nodes) {
+    const text = node.nodeValue;
+    const lower = text.toLowerCase();
+    let idx = lower.indexOf(lowerQ);
+    if (idx === -1) continue;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    while (idx !== -1) {
+      if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
+      const mark = document.createElement('mark');
+      mark.className = 'find-match';
+      mark.textContent = text.slice(idx, idx + q.length);
+      frag.appendChild(mark);
+      findMatches.push(mark);
+      last = idx + q.length;
+      if (findMatches.length >= FIND_MAX) { findCapped = true; break; }
+      idx = lower.indexOf(lowerQ, last);
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+    if (findCapped) break;
+  }
+
+  if (findMatches.length) {
+    setFindCurrent(pickInitialMatch(), true);
+  } else {
+    findCurrent = -1;
+    updateFindCount();
+  }
+}
+
+// Start from the first match at or below the current scroll position, so opening
+// find doesn't yank the reader back to the top of the chapter.
+function pickInitialMatch() {
+  const wrapper = document.getElementById('contentWrapper');
+  const top = wrapper ? wrapper.getBoundingClientRect().top : 0;
+  for (let i = 0; i < findMatches.length; i++) {
+    if (findMatches[i].getBoundingClientRect().top >= top - 1) return i;
+  }
+  return 0;
+}
+
+function setFindCurrent(i, scroll) {
+  if (!findMatches.length) { updateFindCount(); return; }
+  if (findCurrent >= 0 && findMatches[findCurrent]) {
+    findMatches[findCurrent].classList.remove('find-current');
+  }
+  findCurrent = ((i % findMatches.length) + findMatches.length) % findMatches.length;
+  const m = findMatches[findCurrent];
+  if (m) {
+    m.classList.add('find-current');
+    // Reveal scroll-reveal ancestors (opacity:0 until the IntersectionObserver
+    // fires) so the match isn't invisible when we jump to it.
+    const reveal = m.closest('h1,h2,h3,p,pre,.code-wrapper,table,ul,ol,blockquote,.katex-display,li');
+    if (reveal) reveal.classList.add('vis');
+    if (scroll) m.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  updateFindCount();
+}
+
+function findNavigate(dir) {
+  if (!findMatches.length) return;
+  setFindCurrent(findCurrent + (dir < 0 ? -1 : 1), true);
+}
+
+function updateFindCount() {
+  const el = document.getElementById('findCount');
+  if (!el) return;
+  const input = document.getElementById('findInput');
+  const hasQuery = !!(input && input.value.trim());
+  if (!findMatches.length) {
+    el.textContent = hasQuery ? 'No results' : '0/0';
+    el.classList.toggle('none', hasQuery);
+  } else {
+    el.textContent = (findCurrent + 1) + '/' + findMatches.length + (findCapped ? '+' : '');
+    el.classList.remove('none');
+  }
+}
+
+// Wire up the find bar's own input (top-level, like the sidebar search). chapter.js
+// is deferred, so #findInput already exists in the parsed shell when this runs.
+(function setupFindBar() {
+  const input = document.getElementById('findInput');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    clearTimeout(findDebounce);
+    findDebounce = setTimeout(() => runFind(input.value), 120);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (findMatches.length) findNavigate(e.shiftKey ? -1 : 1);
+      else runFind(input.value);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();   // don't also trigger the global Escape handler
+      closeFind();
+    }
+  });
+})();
+
 // ─── Mobile Sidebar ───
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
@@ -712,8 +904,15 @@ document.addEventListener('keydown', (e) => {
       document.getElementById('overlay').classList.add('visible');
     }
   }
-  // Escape — exit focus mode first, then close search / sidebar
+  // Ctrl+F — in-chapter find. Override the browser's native find only while a
+  // chapter is open; elsewhere let the native find work.
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+    if (currentPage === 'chapter') { e.preventDefault(); openFind(); return; }
+  }
+  // Escape — close the find bar first, then exit focus mode, then search / sidebar
   if (e.key === 'Escape') {
+    const fb = document.getElementById('findBar');
+    if (fb && fb.classList.contains('visible')) { closeFind(); return; }
     if (focusModeActive) { toggleFocusMode(); return; }
     document.getElementById('search').value = '';
     document.getElementById('search').blur();
@@ -1182,6 +1381,8 @@ toggleReadStatus = function() {
 // ─── Hook into loadChapter to add interactive enhancements ───
 const _origLoadChapter = loadChapter;
 loadChapter = async function(index) {
+  // Tear down any open find bar — the chapter's DOM is about to be replaced.
+  resetFind();
   // Check if this is a notebook file
   if (index >= 0 && index < chapters.length && chapters[index].notebook) {
     if (chapters[index].section) return;
@@ -1191,6 +1392,7 @@ loadChapter = async function(index) {
     trackChapterOpen(ch.file);
     document.getElementById('breadcrumb').textContent = `${ch.id} — ${ch.title}`;
     document.getElementById('readBtn').style.display = '';
+    document.getElementById('findBtn').style.display = '';
     document.getElementById('tocPanel').classList.remove('visible');
     renderSidebar();
     closeSidebar();
