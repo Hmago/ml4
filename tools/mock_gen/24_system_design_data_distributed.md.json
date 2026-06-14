@@ -1,0 +1,662 @@
+[
+  {
+    "q": "In a BASE system, 'Basically Available' means the system:",
+    "options": [
+      "Returns some response even if replicas are out of sync, potentially serving stale data rather than an error",
+      "Guarantees all replicas hold identical data before acknowledging any write from any client globally, blocking requests until complete synchronization is confirmed across every replica node",
+      "Routes reads to a fallback ACID store when the primary BASE node falls below a health threshold",
+      "Keeps availability by synchronously replicating every write to a quorum before acknowledgment"
+    ],
+    "answer": 0,
+    "explanation": "Basically Available means the system always answers — even during partial failures — possibly with stale data rather than refusing. A CP system takes the opposite stance: it refuses requests on the minority side during a partition rather than returning uncertain data."
+  },
+  {
+    "q": "NewSQL databases (Spanner, CockroachDB, YugabyteDB, TiDB) are specifically designed to provide:",
+    "options": [
+      "SQL interface with horizontal scaling and strong ACID transactions for workloads that outgrow a single server",
+      "NoSQL data models wrapped in a thin SQL-compatible query layer for engineering teams that prefer relational query syntax over proprietary APIs",
+      "In-memory row stores exposing SQL syntax for sub-millisecond OLTP latency at millions of queries per second on a single database node instance",
+      "Cloud-managed database services that automatically add read replicas when write load exceeds configured thresholds using provider autoscaling APIs"
+    ],
+    "answer": 0,
+    "explanation": "NewSQL gives you horizontal scale AND full SQL semantics AND strong transactions — the combination traditional RDBMS can't do at web scale and plain NoSQL sacrifices. Higher write latency than single-box Postgres is the trade-off. Pick NewSQL when you will outgrow one machine AND need real transactions."
+  },
+  {
+    "q": "A composite index on (user_id, created_at) will NOT help a query filtering only on created_at because:",
+    "options": [
+      "The index sorts rows by user_id first, so rows matching any given created_at are scattered across all user_id blocks — a full scan is cheaper",
+      "NoSQL data models combined with an SQL-compatible query layer for development teams that prefer relational syntax but need document flexibility",
+      "In-memory row stores with an SQL query interface for single-digit-millisecond OLTP latency at millions of queries per second on each database node",
+      "Cloud-managed auto-scaling database services that add and remove read replicas dynamically using the cloud provider provisioning APIs"
+    ],
+    "answer": 0,
+    "explanation": "The leftmost-prefix rule: the index is sorted by user_id first, so matching created_at values are smeared across every user_id block. Without a user_id predicate, a full index scan is no better than a heap scan. Like looking up first names in a phone book sorted by last name — you must read everything."
+  },
+  {
+    "q": "A BRIN (Block Range Index) in Postgres is most effective when:",
+    "options": [
+      "Rows are physically stored in roughly the same order as the indexed column, such as a time-series table appended chronologically",
+      "Postgres requires both composite key columns to appear in the SELECT column list before it will consider the composite index for WHERE clause filtering",
+      "Composite indexes apply exclusively to ORDER BY clauses and range scans, not to WHERE predicates that filter on any individual indexed column alone",
+      "The trailing column must be declared with INCLUDE rather than as a full key column before Postgres will use it in any range filtering predicate"
+    ],
+    "answer": 0,
+    "explanation": "BRIN stores min/max per range of disk pages — it only helps when physical row order correlates with logical column order. A monotonically growing timestamp (append-only table) makes BRIN tiny and very cheap. A randomly-inserted UUID primary key destroys any correlation and makes BRIN useless."
+  },
+  {
+    "q": "During a Kafka consumer group rebalance, the modern strategy to minimize processing pauses is:",
+    "options": [
+      "Setting partition.assignment.strategy=CooperativeStickyAssignor so only changed partitions are revoked, not all of them",
+      "Increasing max.poll.interval.ms so slow consumers have more time to complete processing before the broker declares them dead and triggers rebalance",
+      "Reducing the total number of topic partitions so that each rebalance event shifts fewer partitions between available consumer group members",
+      "Committing consumer offsets synchronously before each poll call to preserve the last committed position safely across any rebalance event"
+    ],
+    "answer": 0,
+    "explanation": "Eager (old default) rebalancing revokes ALL partitions from ALL consumers before reassigning — a full stop-the-world. CooperativeStickyAssignor revokes only partitions that actually need to move, letting the rest continue uninterrupted. Always set this for new deployments; it collapses rebalance latency from seconds to milliseconds."
+  },
+  {
+    "q": "The Chandy-Lamport distributed snapshot algorithm is designed to:",
+    "options": [
+      "Capture a globally consistent state of a running distributed system without pausing any node or global coordination",
+      "Verify that all in-transit messages have been delivered before taking any snapshot of local node state, regardless of",
+      "Compare checksums across all replicas to detect divergence and trigger an anti-entropy repair cycle",
+      "Does not acquire a table-level exclusive lock so reads and writes continue uninterrupted for the full build"
+    ],
+    "answer": 0,
+    "explanation": "Chandy-Lamport injects markers on outgoing channels; a process records its own state on first receiving a marker, then records each incoming channel until that channel's marker arrives. No global stop, no centralized coordinator. Apache Flink savepoints and distributed DB online backups use this idea."
+  },
+  {
+    "q": "Postgres VACUUM's two primary responsibilities are:",
+    "options": [
+      "Reclaiming space from dead MVCC tuples and freezing old transaction IDs to prevent wraparound shutdown",
+      "Flushing dirty buffer-pool pages to disk and truncating WAL segments to keep disk usage bounded",
+      "Rebuilding fragmented B-tree index pages and refreshing column statistics for the query planner",
+      "Resolving lock contention among long-running transactions and canceling those that hold locks too long"
+    ],
+    "answer": 0,
+    "explanation": "Every UPDATE/DELETE leaves a dead tuple (MVCC never overwrites in place). VACUUM reclaims that space and 'freezes' old row versions so the 32-bit transaction ID counter can safely wrap around. Without timely autovacuum, tables bloat, queries slow, and eventually Postgres halts all writes to protect data integrity."
+  },
+  {
+    "q": "The 'key salting' technique for hot-shard mitigation works by:",
+    "options": [
+      "Splitting a hot key into N sub-keys (key#1 … key#N) so writers distribute randomly and readers fan-out and merge",
+      "Encrypts the shard key with a per-shard secret so hashed values land evenly across all storage buckets",
+      "Appending the current timestamp to the key so sequential writes never collide on the same shard",
+      "Maintaining a secondary index mapping the hot key to multiple shards for automatic read-load balancing, regardless"
+    ],
+    "answer": 0,
+    "explanation": "Twitter uses this for celebrity timelines: key#1 through key#N spread across N shards; fan-out reads are merged at the application. Even a 1-second Redis TTL often collapses 100K RPS to 1 RPS at the DB, making salting a last-resort structural fix for keys that overwhelm a single shard."
+  },
+  {
+    "q": "The phi accrual failure detector (used by Cassandra and Akka) improves on binary up/down detection by:",
+    "options": [
+      "Outputting a continuous suspicion value φ so each consumer independently chooses its own fault-detection threshold",
+      "Aggregates heartbeat signals from all cluster peers before committing to any failure verdict for a suspect node",
+      "Requiring explicit ACK messages rather than inferring liveness from timeout expiry for higher accuracy, regardless o",
+      "Synchronizing detection decisions via a Raft consensus round for each suspected failure in the cluster"
+    ],
+    "answer": 0,
+    "explanation": "A binary detector forces one fixed timeout for every consumer. Phi accrual exposes a rising suspicion level: a consumer needing fast detection sets a low phi_threshold; a more tolerant consumer sets a higher one. No need to change the detector itself — each subscriber tunes independently to its own latency tolerance."
+  },
+  {
+    "q": "In the Bigtable/HBase wide-column family, the row-key pattern userId#reverseTimestamp is popular for 'recent activity per user' because:",
+    "options": [
+      "It clusters all rows for one user together and orders them newest-first for efficient range scans within that cluster",
+      "A global secondary index on timestamp would otherwise be required, adding cross-region read latency on every query, reg",
+      "Reverse timestamps are required to prevent the clock-skew insertion anomaly when rows arrive at different region servers out of order",
+      "Hashing userId combined with a reverse timestamp ensures even distribution across all region server buckets"
+    ],
+    "answer": 0,
+    "explanation": "Wide-column stores sort by row key — that is the only efficiently queryable axis. Prefixing with userId clusters that user's rows together; reversing the timestamp (MAX_LONG minus ts) puts newest rows first, so a prefix scan from userId-start yields recent events immediately without a costly full-table scan."
+  },
+  {
+    "q": "ELT (Extract-Load-Transform) differs from ETL in that ELT:",
+    "options": [
+      "Loads raw data into the warehouse first, then transforms it inside the warehouse with tools like dbt on Snowflake or BigQuery",
+      "A global secondary index on the timestamp column would be required without this pattern, adding significant cross-region read latency on every query",
+      "Reverse timestamps prevent the clock-skew insertion anomaly that occurs when rows arrive at different region servers in non-chronological physical order",
+      "Hashing the userId combined with a reversed timestamp guarantees perfectly even distribution across all region server buckets without any hotspots"
+    ],
+    "answer": 0,
+    "explanation": "ELT became dominant as warehouses (Snowflake, BigQuery, Redshift) gained massive parallelism cheap enough to run transformations inside them. Raw data lands in a staging area; dbt or SQL-based tools transform it in place. ETL was necessary when warehouses were expensive (Teradata) and compute had to happen on separate infrastructure."
+  },
+  {
+    "q": "In stream processing, declaring a watermark at time T means:",
+    "options": [
+      "Events with event-time older than T are now considered late and excluded from regular window computation",
+      "The producer rate has exceeded T events per second, triggering automatic backpressure upstream in the pipeline",
+      "All partitions have caught up to offset T, making the stream safe for exactly-once state snapshots",
+      "The pipeline has been running for T milliseconds since the last checkpoint was committed to durable storage"
+    ],
+    "answer": 0,
+    "explanation": "Watermarks are heuristic assertions: 'all events before T have now arrived.' A tumbling window [10:00, 10:05) is finalized once the watermark passes 10:05. Late events that arrive after the watermark go to a configurable side output rather than silently corrupting a finalized window's results."
+  },
+  {
+    "q": "Raft uses randomized election timeouts (rather than fixed ones) primarily to:",
+    "options": [
+      "Prevent simultaneous elections where multiple candidates split the vote and the cluster makes no progress",
+      "Align the timeout with the measured network RTT between leader and each follower for optimal responsiveness",
+      "Allow followers to detect clock drift and recalibrate their local clocks using the leader as a reference",
+      "Rate-limit elections so a flapping network does not trigger more than one election per time window"
+    ],
+    "answer": 0,
+    "explanation": "With random timeouts (e.g., 150–300 ms), one follower typically times out first, starts an election, and wins before others even begin. Fixed timeouts cause simultaneous elections that split votes — a livelock similar to Paxos's dueling-proposers problem. Randomization is the simple fix Raft's designers chose for understandability."
+  },
+  {
+    "q": "Anti-entropy using Merkle trees between two replicas is bandwidth-efficient because:",
+    "options": [
+      "Root hashes are compared first; only subtrees with differing hashes are examined, so only mismatched leaf data is transferred",
+      "Each leaf is hashed independently on both replicas and compared directly without traversing any tree structure",
+      "Merkle trees compress the full dataset before sending it to the peer replica so the bytes transmitted over the network are fewer than transmitting an uncompressed raw row-by-row diff",
+      "Hashes are cached permanently once computed, so only recently modified leaves are ever re-hashed and compared"
+    ],
+    "answer": 0,
+    "explanation": "If root hashes match, zero data is exchanged. If they differ, compare left and right subtrees and recurse only into the mismatching branch — O(differences × log N) instead of O(N). Used by Cassandra nodetool repair, DynamoDB, Riak, and Git (every commit is a Merkle DAG over the tree of objects)."
+  },
+  {
+    "q": "Leaving a transaction open for 30+ seconds in a Postgres OLTP database is dangerous primarily because:",
+    "options": [
+      "It pins a snapshot, blocking autovacuum from reclaiming dead tuples on any table the transaction has touched, causing bloat",
+      "Postgres forces a checkpoint after 30 seconds of idle transaction time, pausing all cluster writes until complete, regardless",
+      "Long transactions prevent other sessions from acquiring new database connections until the transaction finally commits",
+      "Postgres rolls back any transaction open longer than max_transaction_age by default to protect disk space"
+    ],
+    "answer": 0,
+    "explanation": "An open transaction holds a snapshot; VACUUM cannot reclaim any tuple visible to that snapshot. Hours of this causes severe table bloat and can block the full-table vacuum needed to prevent XID wraparound. The idle_in_transaction_session_timeout setting (§7.22) exists specifically to kill these stuck clients automatically."
+  },
+  {
+    "q": "BASE's 'Soft state' means stored data can change even without new writes arriving because:",
+    "options": [
+      "The database automatically expires all rows after a configurable TTL to prevent unbounded storage growth",
+      "Background replication is still propagating earlier writes between nodes, so the data is in flux until it converges",
+      "The system relaxes all integrity constraints permanently once it detects it cannot maintain strong consistency globally",
+      "An uncommitted write buffer may be silently discarded if no reader acknowledges it within a timeout window"
+    ],
+    "answer": 1,
+    "explanation": "Soft state reflects replication propagation delay: after a write to node A, nodes B and C have stale values that will change on their own as A's write propagates. This contrasts with ACID 'hard' state where a committed value is final and never changes without an explicit new write from the application."
+  },
+  {
+    "q": "Cassandra uses Size-Tiered Compaction (STCS) as its default strategy rather than Leveled (LCS) because:",
+    "options": [
+      "STCS produces zero key overlap within each SSTable level so every point lookup touches exactly one file and avoids any multi-file merge reads at query time",
+      "Cassandra workloads are predominantly write-heavy, and STCS has lower write amplification than LCS at the cost of higher read amplification",
+      "LCS is incompatible with multi-datacenter replication topology and therefore cannot be deployed across geo-distributed Cassandra clusters at all",
+      "STCS is the required strategy when TTL expiration is used heavily because LCS cannot process partitions with high tombstone density without performance collapse"
+    ],
+    "answer": 1,
+    "explanation": "STCS merges SSTables of similar size, rewriting data far fewer times than LCS — lower write amplification suits ingest-heavy workloads. The trade-off is higher read amplification (more overlapping files per lookup) and more transient space during large merges. LCS is preferred for Cassandra tables serving heavy reads."
+  },
+  {
+    "q": "HyperLogLog is the correct data structure when you need:",
+    "options": [
+      "An exact count of all distinct values in a large dataset with guaranteed zero error in the reported result",
+      "Approximate cardinality of a set (distinct-element count) using roughly 12 KB of memory regardless of set size",
+      "Fast membership queries answering whether a specific element has been seen before in a stream",
+      "A ranked list of the top-K most frequent elements in a stream with bounded frequency estimation error, regardles"
+    ],
+    "answer": 1,
+    "explanation": "HyperLogLog estimates distinct counts with ~2% error in fixed memory (~12 KB for Redis PFCOUNT, used in BigQuery APPROX_COUNT_DISTINCT). Bloom filter answers the membership query; Count-Min Sketch tracks frequencies; top-K handles heavy hitters. Each is a separate probabilistic tool for a distinct problem."
+  },
+  {
+    "q": "During online resharding, 'dual-write' to both old and new shards during migration ensures:",
+    "options": [
+      "Each shard maintains a replica so backfill reads continue if the source shard becomes temporarily unavailable",
+      "New writes land on both old and new shards so no write is lost while historical data is being backfilled",
+      "Two independent migration workers run in parallel, each responsible for half of the keyspace being moved",
+      "Write latency is halved because both shards process the request in parallel and the faster one acknowledges"
+    ],
+    "answer": 1,
+    "explanation": "Without dual-write, data written during the backfill window exists only on the old shard, leaving permanent gaps on the new shard even after backfill completes. Dual-writing during migration keeps both shards live so the new shard never falls behind new writes — the standard step 2 in every resharding playbook."
+  },
+  {
+    "q": "In MapReduce, the shuffle phase is responsible for:",
+    "options": [
+      "Reading the raw input splits from HDFS blocks and distributing each split to an available mapper task in the cluster",
+      "Collecting all map output key-value pairs, grouping them by key, and routing each group to the correct reducer",
+      "Writing the final reducer output back to HDFS after merging all partial results from individual reducers",
+      "Detecting data skew across mapper outputs and rebalancing partition assignments before reduction starts"
+    ],
+    "answer": 1,
+    "explanation": "The shuffle is the expensive, network-intensive phase: mapper outputs are partitioned by key, sorted, and transferred to the reducer that owns each key. In the word-count example, (the, 1) tuples emitted by different mappers on different machines are all routed to the same reducer so they can be summed together."
+  },
+  {
+    "q": "Vitess (used by YouTube, Slack, Etsy, Shopify) adds value on top of unmodified MySQL primarily through:",
+    "options": [
+      "A replacement storage engine with built-in sharding support and distributed ACID transaction coordination",
+      "A query routing layer (VTGate), per-shard lifecycle management (VTTablet), and VReplication for live resharding",
+      "A vectorized query execution engine compiled from MySQL queries for significant analytical GROUP BY throughput improvement",
+      "An embedded Raft consensus module in each MySQL instance that eliminates the need for an external coordinator, re"
+    ],
+    "answer": 1,
+    "explanation": "Vitess leaves MySQL completely unmodified. VTGate parses SQL and routes it to the correct shard(s); VTTablet manages failover, backups, and query throttling per shard; VReplication (built on MySQL row-based binlogs) enables live resharding via a guided dual-write + backfill + cutover workflow without downtime."
+  },
+  {
+    "q": "CockroachDB achieves distributed transactions without Google Spanner's atomic clocks and GPS receivers by using:",
+    "options": [
+      "A globally elected coordinator node that timestamps all transactions before distributing them to individual shards",
+      "Hybrid Logical Clocks combining a physical timestamp with a logical counter to preserve causality across distributed nodes without specialized hardware",
+      "A pessimistic locking protocol that serializes all cross-shard write transactions through a single centralized lock manager, creating a global bottleneck that degrades transaction throughput",
+      "Client-side read-your-writes tokens that allow clients to detect and self-resolve causality violations independently"
+    ],
+    "answer": 1,
+    "explanation": "TrueTime requires GPS receivers and atomic clocks in every datacenter — expensive proprietary infrastructure only Google has at scale. HLC (physical_time, logical_counter) stays close to wall-clock time (human-readable) while preserving happens-before causality cheaply. YugabyteDB and MongoDB ≥3.6 also use HLC variants."
+  },
+  {
+    "q": "In Postgres 11+, `ALTER TABLE t ADD COLUMN status TEXT NOT NULL DEFAULT 'active'` is a metadata-only operation because:",
+    "options": [
+      "Postgres defers NOT NULL enforcement to the next autovacuum pass so existing rows are never touched or rewritten immediately",
+      "Postgres stores the column default in the system catalog and generates it on read for pre-existing rows, leaving all heap pages completely untouched",
+      "Postgres converts the column to nullable internally and uses a CHECK constraint to simulate NOT NULL semantics",
+      "Postgres copies the table to a new file in the background and swaps atomically, making the operation appear instant, regardless of specific workload c"
+    ],
+    "answer": 1,
+    "explanation": "Before Postgres 11, adding a NOT NULL column with a default rewrote every row — a table-lock outage on large tables. Postgres 11 stores the default in pg_attrdef and generates it on read for rows predating the column, so the heap is untouched. Older Postgres versions still need the 'add nullable, backfill, set not null' three-step dance."
+  },
+  {
+    "q": "Kafka log compaction differs from time-based retention in that log compaction:",
+    "options": [
+      "Deletes all messages older than the configured retention period to reclaim disk space on broker volumes",
+      "Retains only the latest message per key, making the compacted log a durable key-value state store",
+      "Merges multiple small partition segment files into larger files for better sequential read performance",
+      "Compresses message bytes in-place using LZ4 or Snappy to reduce disk footprint without changing message count"
+    ],
+    "answer": 1,
+    "explanation": "Log compaction is for change-log topics (user settings, entity state). The compacted log holds the current value for every key — like a table snapshot checkpointed into Kafka. Combined with KTable (Kafka Streams), it enables stateful stream processing without a separate external database for serving current state."
+  },
+  {
+    "q": "Database federation (user_db, orders_db, catalog_db) differs from horizontal sharding because:",
+    "options": [
+      "Federation partitions rows of a single shared table across many machines by hashing the primary key value",
+      "Federation splits databases along domain or service boundaries so each database owns distinct entities rather than a slice of one shared table",
+      "Federation uses consensus protocols between database instances to maintain cross-domain transaction ordering, regardless of specific workload ch",
+      "Federation reduces write latency by routing each tenant to a dedicated database instance based on tenant ID"
+    ],
+    "answer": 1,
+    "explanation": "Sharding splits ONE table's rows across machines by key. Federation splits DIFFERENT entities into different databases (the microservices data-ownership pattern). Federation is usually reached before sharding — you split users from orders before you shard users across 64 machines. Cross-domain joins move to the application layer."
+  },
+  {
+    "q": "The Dead-Letter Queue (DLQ) pattern routes failing messages to a separate queue after N failed processing attempts in order to:",
+    "options": [
+      "Replay those messages to a different consumer group that has higher available processing capacity",
+      "Isolate persistently failing messages for human inspection without blocking the main processing pipeline",
+      "Trigger an automatic retry with exponential backoff after a configurable hold-off period has elapsed",
+      "Compress and archive the failed messages to cold storage for compliance retention without reprocessing, re"
+    ],
+    "answer": 1,
+    "explanation": "Without a DLQ, a 'poison pill' message that always fails would spin the queue in retry loops forever or block consumption entirely. The DLQ quarantines it — SREs can inspect the payload, identify the bug, fix the consumer, and optionally replay. SQS, RabbitMQ, and Kafka all support DLQ semantics natively."
+  },
+  {
+    "q": "The SWIM protocol (Consul, HashiCorp Serf) improves failure detection over simple O(N²) heartbeating by:",
+    "options": [
+      "Broadcasting failure announcements on a global pub/sub channel so every cluster node receives the same notification simultaneously through a single broadcast with O(1) message overhead",
+      "Combining direct probes with indirect probes via random peer selection, reducing false positives from transient network blips",
+      "Using hardware NIC watchdog interrupts instead of software timeouts for sub-millisecond failure detection",
+      "Electing a zone-level health monitor node that aggregates all heartbeats into a single summarized stream"
+    ],
+    "answer": 1,
+    "explanation": "If a direct probe to node X fails, SWIM asks k random peers to probe X indirectly. Only if those also fail is X declared dead — a single-path blip doesn't trigger a false alarm. SWIM also piggybacks membership updates on probe messages (gossip), propagating membership changes in O(log N) rounds rather than O(N²) messages."
+  },
+  {
+    "q": "Cassandra's LOCAL_QUORUM consistency level is preferred over QUORUM in multi-datacenter deployments because:",
+    "options": [
+      "LOCAL_QUORUM routes all reads and writes exclusively to a single arbiter node within the local datacenter to minimize cross-datacenter coordination and network round-trip overhead",
+      "LOCAL_QUORUM counts a quorum among replicas in the local datacenter only, giving consistent operations without cross-DC RTT",
+      "LOCAL_QUORUM automatically fails over to a remote datacenter if the local quorum cannot be reached within a timeout",
+      "LOCAL_QUORUM satisfies GDPR data-residency rules by preventing any data from leaving the local datacenter for reads"
+    ],
+    "answer": 1,
+    "explanation": "QUORUM counts a majority across ALL datacenters — cross-DC round-trips on every operation. LOCAL_QUORUM restricts the quorum count to the local DC, giving per-DC strong consistency at local latency while cross-DC replication stays asynchronous. Using LOCAL_QUORUM symmetrically on both DCs provides independently consistent regions."
+  },
+  {
+    "q": "Postgres `CREATE INDEX CONCURRENTLY` is safer for production tables than plain `CREATE INDEX` because:",
+    "options": [
+      "It uses multiple parallel workers to complete the index build faster, shortening the total disruption window",
+      "It does not take a table-level exclusive lock, so reads and writes continue uninterrupted for the entire build duration",
+      "It automatically selects the optimal INCLUDE columns to produce a covering index for the most common queries on that table",
+      "It rebuilds an existing stale index in place rather than creating a new one, preserving existing cached query plans"
+    ],
+    "answer": 1,
+    "explanation": "Plain CREATE INDEX takes ACCESS EXCLUSIVE — all queries block until the index is built. On a large table that can be minutes of downtime. CONCURRENTLY builds in three passes with weaker locks so the table stays live, at the cost of taking longer and not being usable inside an explicit transaction block."
+  },
+  {
+    "q": "The multi-region database pattern that avoids conflict resolution entirely (no LWW or CRDT required) is:",
+    "options": [
+      "Active-active with last-write-wins, since the newest timestamp always wins without application-level merge logic",
+      "Geo-partitioning, where each row has exactly one home region and writes are always routed locally to that owner",
+      "Cassandra DC-aware replication with LOCAL_QUORUM, which prevents cross-DC conflicting writes by design",
+      "Active-passive with a read-only standby, since only the primary region accepts any writes at any time"
+    ],
+    "answer": 1,
+    "explanation": "Geo-partitioning (supported natively in Spanner, CockroachDB, YugabyteDB) pins each row to one region — that region is the sole writer, so concurrent writes from different regions on the same row are structurally impossible. Often the simplest answer to data residency compliance and conflict avoidance for multi-tenant global applications."
+  },
+  {
+    "q": "Postgres `pg_stat_statements` is most valuable for operational database tuning because it enables:",
+    "options": [
+      "Viewing all active locks held across sessions and identifying which transactions are blocking which others right now",
+      "Monitoring real-time replication lag between the primary and all active standby replicas in bytes or seconds",
+      "Identifying top queries by total execution time so optimization effort is directed where it has the highest ROI",
+      "Listing every index definition on a table alongside its current on-disk size and last-used timestamp"
+    ],
+    "answer": 2,
+    "explanation": "pg_stat_statements aggregates query statistics (total_time, calls, rows, cache hit ratios) normalized by query shape. Sort by total_time DESC to find the ten queries burning the most CPU and I/O — optimizing those produces far more ROI than random query tuning. It is the single most useful performance diagnostic view in Postgres."
+  },
+  {
+    "q": "Adding a constraint in Postgres with `ADD CONSTRAINT ... NOT VALID` is safe for large production tables because:",
+    "options": [
+      "It skips constraint enforcement permanently, acting only as schema documentation in the catalog",
+      "It enforces the constraint only on INSERT statements, never on UPDATE, reducing write overhead for hot tables",
+      "It adds the constraint without scanning existing rows to avoid a long table lock; new rows are validated immediately and a later VALIDATE CONSTRAINT scans old rows with a weak lock",
+      "It defers all constraint validation to transaction commit time so the row scan runs once per batch rather than once per row, reducing total overhead for large bulk INSERT operations"
+    ],
+    "answer": 2,
+    "explanation": "On a billion-row table, scanning all rows to validate a new constraint would block writes for minutes. NOT VALID adds the constraint immediately (new rows are validated) without the historical scan. A later `VALIDATE CONSTRAINT` only takes a SHARE UPDATE EXCLUSIVE lock — reads and writes continue during the background scan."
+  },
+  {
+    "q": "Soft delete (marking rows with a `deleted_at` timestamp rather than hard-deleting) creates a GDPR complication because:",
+    "options": [
+      "A 'right to be forgotten' request only needs to set the deleted_at timestamp; physical data retention is legally required",
+      "GDPR requires deleted records to be retained for at least 7 years for audit, which conflicts with eventual erasure, regardle",
+      "A 'right to be forgotten' request requires actual removal of personal data, but soft delete leaves it on disk indefinitely",
+      "GDPR mandates that all data access be logged, and soft delete bypasses audit triggers on the deleted_at column"
+    ],
+    "answer": 2,
+    "explanation": "Soft delete is reversible and audit-friendly, but GDPR's right to erasure requires that personal data be permanently removed on request. A soft-deleted row still stores name, email, and other PII. Partial solution: hard-delete the row or null-out all PII columns instead of keeping the record with just a timestamp set."
+  },
+  {
+    "q": "Postgres's HOT (Heap-Only Tuple) update optimization skips rewriting index entries when:",
+    "options": [
+      "The UPDATE modifies a foreign key column AND the new row version lands on the same heap page as the old tuple, keeping all referencing index pointers physically intact after the change",
+      "The UPDATE modifies only non-indexed columns AND the new row version can fit on the same heap page as the old one",
+      "The UPDATE is executed inside a SERIALIZABLE transaction so MVCC does not create an additional row version",
+      "The UPDATE changes one column in a table that has at least three B-tree indexes on other unrelated columns"
+    ],
+    "answer": 1,
+    "explanation": "HOT avoids rewriting all indexes when an update doesn't touch any indexed column AND the new version fits on the same page (a page-level chain links old to new). If an indexed column changes, indexes must be updated and HOT doesn't apply. Tables with frequent non-indexed column updates (e.g., counters, status flags) benefit significantly."
+  },
+  {
+    "q": "Using Kafka `acks=1` (leader-only) instead of `acks=all` means:",
+    "options": [
+      "The producer waits for acknowledgment from all replicas in the ISR before the write is considered durable on the cluster",
+      "Exactly-once semantics are automatically enabled since no follower can receive a duplicate of an unacknowledged message",
+      "A leader crash between receiving the write and replicating it to any follower results in permanent message loss",
+      "Kafka routes the write to the follower with the lowest replication lag rather than the leader for lower latency"
+    ],
+    "answer": 2,
+    "explanation": "acks=1 is 'fast but fragile': if the leader crashes after acknowledging but before replicating to any follower, that message is gone. acks=all + min.insync.replicas=2 ensures the write survives losing one broker. Most production event pipelines use acks=all for durability over the marginal latency improvement of acks=1."
+  },
+  {
+    "q": "A 'sloppy quorum' in Dynamo-style systems (DynamoDB, Riak) means:",
+    "options": [
+      "The quorum threshold W is dynamically lowered during peak load so writes never time out under high-traffic conditions",
+      "The quorum weights faster replicas more heavily to minimize average write response latency across the cluster, regardless o",
+      "A write can succeed on stand-in nodes outside the preferred replica list, breaking the strict W+R>N consistency guarantee",
+      "Writes are lazily acknowledged after local logging only, without waiting for any remote replica confirmation"
+    ],
+    "answer": 2,
+    "explanation": "Sloppy quorum lets a write land on 'stand-in' nodes when preferred replicas are unreachable. The stand-in keeps a hinted handoff and replays the write to the rightful owner when it recovers. This improves write availability at a cost: W+R>N no longer guarantees reading the latest value — a reader may hit preferred replicas that haven't received the hinted write yet."
+  },
+  {
+    "q": "When reading `EXPLAIN ANALYZE` output to diagnose a slow query, the most actionable signal is:",
+    "options": [
+      "A high cost= estimate indicating the planner believes the query will consume many abstract planner cost units",
+      "A low `width=` value showing that output rows are narrow and per-row I/O is smaller than expected",
+      "A large gap between `rows=` (planner estimate) and `actual rows=` (observed), pointing to stale column statistics",
+      "A long `Planning Time:` showing the query optimizer spent too long evaluating alternative execution plans, regardle"
+    ],
+    "answer": 2,
+    "explanation": "A 1000× row-count mismatch (estimate 100, actual 100,000) means the planner chose the wrong join type or skipped a better index. Fix: run ANALYZE, increase default_statistics_target for that column, or add expression statistics. The estimate-vs-actual gap is always the first thing to look at — the other metrics are secondary."
+  },
+  {
+    "q": "In a star schema data warehouse, the fact table holds:",
+    "options": [
+      "Descriptive dimension attributes such as country, product name, and date parts are denormalized for fast GROUP BY joins",
+      "A normalized lookup of all dimension foreign-key combinations with one row per unique combination for deduplication, rega",
+      "Numeric measures and event records (sale amount, clicks, impressions) with foreign keys to surrounding dimension tables",
+      "Pre-aggregated summary rows refreshed on a schedule to power dashboard queries without scanning raw events"
+    ],
+    "answer": 2,
+    "explanation": "The fact table is narrow — it holds quantitative measures (amounts, counts, durations) and foreign keys to dimension tables (who, what, when, where). Keeping facts narrow makes aggregation scans cheap in columnar storage. Dimension tables hold the descriptive attributes used for filtering and grouping in GROUP BY clauses."
+  },
+  {
+    "q": "Point-in-Time Recovery (PITR) for Postgres requires, in addition to a base backup:",
+    "options": [
+      "A set of full logical dumps covering every DDL change applied to the schema since the base backup was taken, regard",
+      "A synchronized standby replica that was running continuously from the moment the base backup was originally captured",
+      "A continuous archive of WAL segments covering every transaction from the base backup to the desired restore point",
+      "Periodic checkpoint export files generated by pg_dumpall at regular intervals since the base backup"
+    ],
+    "answer": 2,
+    "explanation": "PITR = base backup + WAL replay. The base backup is a consistent snapshot; the WAL archive is an ordered log of every subsequent change. To restore to 'five minutes ago', replay WAL from the base backup up to that LSN. RPO can be seconds with continuous WAL archiving to S3. RTO depends on how much WAL must be replayed."
+  },
+  {
+    "q": "In Paxos Phase 1 (Prepare/Promise), an Acceptor sends a Promise back to the Proposer only when:",
+    "options": [
+      "The Proposer's value matches the value most recently accepted by the Acceptor in any prior round",
+      "Number of OS threads the database server can schedule simultaneously, with one thread allocated per open connection",
+      "The Proposer's ballot number n is strictly greater than any ballot number the Acceptor has previously seen",
+      "A majority of other Acceptors have already sent their own Promise messages for that same ballot number"
+    ],
+    "answer": 2,
+    "explanation": "An Acceptor tracks the highest ballot it has ever seen. If the Prepare's ballot n is higher, it promises not to accept anything with a lower ballot — and also reports the highest-ballot value it may have already accepted. This ensures any value chosen in a prior round is 'inherited' by the new proposal rather than silently overwritten."
+  },
+  {
+    "q": "The HikariCP connection pool sizing formula `(core_count × 2) + effective_spindle_count` is designed to balance:",
+    "options": [
+      "Number of idle connections pre-allocated so new queries never have to wait for a connection slot to become free",
+      "Number of OS threads the database server can schedule simultaneously, one thread per open connection",
+      "CPU-bound query processing time and I/O-bound disk waits so connections stay active rather than idle or thrashing",
+      "Memory consumption from each connection's per-process overhead against the available RAM on the database host, rega"
+    ],
+    "answer": 2,
+    "explanation": "Each connection is an OS process in Postgres. Too few connections means cores sit idle waiting for I/O; too many means the OS thrashes N processes across fewer cores than N. The formula targets the sweet spot. Via Little's Law: 2000 QPS at 5 ms each needs ~10 connections on average — so 20-30 with headroom, not 500."
+  },
+  {
+    "q": "The Kappa architecture's practical requirement for reprocessing historical data is that:",
+    "options": [
+      "Every stream consumer must maintain a full in-memory copy of the entire event log for replay at any time",
+      "A parallel batch pipeline must always run alongside the streaming pipeline to handle historical backfills",
+      "The event log must be durable and retained long enough to replay and reprocess the full history when logic changes",
+      "Stream operators must be stateless and produce identical output for identical input so that replayed events from an earlier offset never require any externally managed processing state"
+    ],
+    "answer": 2,
+    "explanation": "Kappa drops the Lambda batch layer and relies on streaming only. When you fix a bug in the pipeline logic, you roll back the consumer offset in Kafka and replay history through the corrected code. This only works if the log is durable and retained long enough. Kafka is the canonical choice; log retention period = your replay window."
+  },
+  {
+    "q": "Postgres's `idle_in_transaction_session_timeout` setting is specifically designed to prevent:",
+    "options": [
+      "Long-running SELECT queries from blocking autovacuum on tables with frequent writes and dead-tuple accumulation",
+      "Application code from forgetting to close connections after all queries in a request cycle complete",
+      "A stuck client with an open transaction that ages the WAL, accumulates locks, and indefinitely blocks VACUUM",
+      "Background jobs running during peak hours from competing with OLTP queries for available connection slots"
+    ],
+    "answer": 2,
+    "explanation": "A connection that starts a transaction and then hangs (e.g., app crashed mid-request, developer forgot to COMMIT) pins an MVCC snapshot, preventing VACUUM from reclaiming dead tuples, holds row locks, and ages WAL segments. This setting kills the stuck session after the configured idle-in-transaction threshold, protecting the rest of the cluster."
+  },
+  {
+    "q": "'External consistency,' as provided by Google Spanner, means that if transaction T2 starts after T1 commits in real time:",
+    "options": [
+      "All replicas within the same datacenter agree on commit order before T1 returns its acknowledgment to the caller",
+      "Transactions T1 and T2 are serializable within a single region, but cross-region reads may still return T1's pre-image",
+      "T2 is guaranteed to observe all of T1's effects everywhere, even across different continents and datacenters",
+      "Client-perceived commit latency for T2 is hidden by asynchronously replaying T1's commits in the background"
+    ],
+    "answer": 2,
+    "explanation": "External consistency = linearizability across the planet. TrueTime returns [earliest, latest] (~7 ms uncertainty); Spanner picks a commit timestamp for T1 and then waits (commit-wait) until 'now' is provably after it. Any T2 that starts after T1's commit is assigned a later timestamp and will therefore always see T1's changes."
+  },
+  {
+    "q": "Excessive tombstones in an LSM-tree database like Cassandra are operationally dangerous because:",
+    "options": [
+      "Tombstones accumulate in the memtable faster than flush can write them to SSTable L0, stalling new writes",
+      "A Bloom filter may incorrectly report a tombstone as absent, causing phantom reads that return deleted row values",
+      "Before compaction purges them, tombstones must be scanned at read time, severely increasing read amplification",
+      "Tombstones from a deleted key are overwritten by a new write before compaction purges the old entry cleanly"
+    ],
+    "answer": 2,
+    "explanation": "Each read must scan tombstones at every SSTable level to determine if a key is truly deleted. Deleting entire partitions can produce thousands of tombstones per key in L0 — Cassandra logs 'WARN: Read X tombstones,' and X can be hundreds of thousands. Fix: use TTL instead of explicit deletes, or choose a compaction strategy that clears them faster."
+  },
+  {
+    "q": "Postgres `pg_advisory_lock(key)` is the correct tool when you need:",
+    "options": [
+      "Preventing two database transactions from acquiring a row-level exclusive lock on the same table row simultaneously",
+      "Implementing column-level security so only authorized roles can read specific columns in a table",
+      "Coordinating schema migrations across multiple replica nodes simultaneously without incurring any downtime",
+      "Ensuring only one process runs a particular background job at a time, using an application-defined integer key"
+    ],
+    "answer": 3,
+    "explanation": "Advisory locks are application-managed — the DB enforces them but they aren't tied to any row. `pg_advisory_lock(42)` gives you 'only one worker may run cron job 42 at a time' without needing a dedicated lock table. Standard use: singleton workers, rate-limited migrations, cross-pod task deduplication. Released explicitly or on session end."
+  },
+  {
+    "q": "The 3-2-1 backup rule for databases means:",
+    "options": [
+      "Three daily backups, two weekly backups, and one monthly backup per database instance at all times",
+      "Three full backups, two incremental, and one differential taken at defined intervals throughout the week, re",
+      "Three backup tiers — hot, warm, and cold — each retaining two weeks of history with one tier stored offsite",
+      "Three total copies of the data, stored on at least two different media types, with one copy stored offsite"
+    ],
+    "answer": 3,
+    "explanation": "3-2-1 is a storage-agnostic rule: 3 copies (live + 2 backups) so any single disk failure doesn't end you; 2 media (e.g., disk + tape or disk + object store) so a media-type failure doesn't hit all copies; 1 offsite so a site disaster doesn't destroy everything. Add an air-gapped copy to defend against ransomware."
+  },
+  {
+    "q": "Redis `PFMERGE dest key1 key2` combines two HyperLogLog structures in order to:",
+    "options": [
+      "Merge two sorted sets into a single set with all scores summed for each key that appears in both sets",
+      "Compact multiple HyperLogLog sketches by rebalancing their internal hash-register distribution for accuracy",
+      "Reset a HyperLogLog counter and pre-populate it with the cardinality estimate from another sketch",
+      "Produce a new HyperLogLog sketch that estimates the cardinality of the union of the two input sets"
+    ],
+    "answer": 3,
+    "explanation": "HyperLogLog sketches are additive under union (they use max-register merging). PFMERGE lets you compute 'total unique visitors across region A AND region B' by merging two sketches that were collected independently — without needing a centralized store or a Cartesian join of the raw data."
+  },
+  {
+    "q": "The Raft 'pre-vote' extension (used by etcd and others) prevents:",
+    "options": [
+      "A newly elected leader from immediately overwriting uncommitted log entries that were replicated by the previous leader before it crashed",
+      "Followers from casting a vote twice in the same election term upon receiving duplicate RequestVote RPC messages from the same candidate",
+      "A two-phase commit protocol participant from blocking indefinitely when a Raft group coordinator node crashes mid-transaction",
+      "A temporarily disconnected follower from bumping the cluster term and forcing the live leader to step down unnecessarily"
+    ],
+    "answer": 3,
+    "explanation": "Without pre-vote, a follower behind a network partition increments its term and sends RequestVote. When the partition heals, the real leader sees a higher term and steps down even though it was doing fine. Pre-vote has candidates first ask 'would you vote for me?' without incrementing the term — only if they'd win do they start a real election."
+  },
+  {
+    "q": "Count-Min Sketch is the right probabilistic data structure when you need:",
+    "options": [
+      "An approximate count of the total number of distinct elements observed in a large data stream, with a small configurable error margin",
+      "A p95 or p99 latency quantile from a stream of measured duration values with mathematically bounded relative error guarantees",
+      "A probabilistic membership query answering whether a specific element key has ever been inserted into the seen-elements data structure",
+      "An estimate of the frequency of individual elements (heavy hitters detection) in a stream using sub-linear memory"
+    ],
+    "answer": 3,
+    "explanation": "Count-Min Sketch maintains a 2D array of counters, hashing each arriving element into one cell per row. Querying returns the minimum across rows — a frequency estimate with bounded overcount error. Used for 'top-N most-frequent URLs,' 'most-common IP addresses,' and similar heavy-hitter detection at stream scale."
+  },
+  {
+    "q": "Amazon Aurora Global Database differs from Google Spanner's cross-region model in that:",
+    "options": [
+      "Aurora uses synchronous Raft-based consensus across all configured regions while Spanner relies on atomic clocks and GPS receivers for its global ordering guarantee",
+      "Spanner exposes no cross-region read replicas, while Aurora replicates every committed write to all configured regions for low-latency local reads everywhere",
+      "Aurora enforces synchronous cross-region replication with mandatory write quorum from at least two geographic regions before returning commit acknowledgment to clients",
+      "Aurora writes to one primary region with async cross-region replication; Spanner gives strong global consistency at higher cross-region write latency"
+    ],
+    "answer": 3,
+    "explanation": "Aurora Global Database uses asynchronous storage-layer replication (<1 s lag typically) for DR and read-locality; all writes still go to one primary region. Spanner commits synchronously across multiple regions using Paxos + TrueTime commit-wait, giving linearizability at the cost of 30–100 ms write latency for any cross-region transaction."
+  },
+  {
+    "q": "HDFS (Hadoop Distributed File System) is optimized for workloads that primarily:",
+    "options": [
+      "Many small random-access record inserts with sub-millisecond point-lookup latency requirements per operation",
+      "Run complex multi-table ACID transactions across many nodes simultaneously for OLTP applications, regardless of specific workload characteristics under nor",
+      "Update individual rows in place with low write amplification across distributed storage shards",
+      "Perform large sequential reads over big blocks for high-throughput batch processing, favoring streaming throughput over low-latency random I/O operations"
+    ],
+    "answer": 3,
+    "explanation": "HDFS uses large blocks (128 MB+), write-once semantics, and streaming reads — the exact profile of MapReduce, Hive, and Spark batch jobs. It is the wrong tool for random small reads/writes; use HBase (built on HDFS) for random access. The architecture reflects the original GFS design: optimize for sequential scan throughput over metadata overhead."
+  },
+  {
+    "q": "MongoDB's `writeConcern: {w: 'majority'}` ensures that a write is:",
+    "options": [
+      "Acknowledged only after a quorum of arbiter nodes confirms the write, with data nodes applying it asynchronously",
+      "Applied to every secondary replica before the primary can acknowledge it to the calling application",
+      "Immediately acknowledged by the primary and asynchronously propagated to secondaries in the background",
+      "Acknowledged only after a majority of voting replica-set members have durably applied it to their own storage"
+    ],
+    "answer": 3,
+    "explanation": "majority write concern is MongoDB's CP-mode default since version 5+. The primary waits until a quorum of voting members (not just arbiters) have the write in their journal before returning success. This prevents rollback on primary failover and is the setting that makes MongoDB PC/EC in PACELC terms."
+  },
+  {
+    "q": "Redlock (Redis-based distributed locking across 5 independent nodes) is considered unsafe for correctness-critical operations because:",
+    "options": [
+      "Redis's single-threaded event loop cannot sustain the lock acquisition throughput required for high-contention workloads without experiencing significant latency spikes under concurrent client access",
+      "The 5-node quorum requirement makes lock acquisition far too slow for any latency-sensitive service",
+      "Redis MULTI/EXEC transactions cannot span multiple keys, which breaks the atomicity of the lock acquisition",
+      "A JVM GC pause longer than the lease TTL can let a second client acquire the lock while the first still believes it holds the lease, producing two concurrent holders"
+    ],
+    "answer": 3,
+    "explanation": "Martin Kleppmann's analysis showed: JVM GC pause stops the world for > lease TTL, lease expires, Client B acquires lock, Client A resumes thinking it still owns it — two concurrent holders. The storage must reject stale-token writes (fencing tokens) to be safe. Use etcd, ZooKeeper, or Postgres advisory locks for correctness-critical distributed locks."
+  },
+  {
+    "q": "Flink stateful operators (joins, aggregations) use embedded RocksDB rather than JVM heap storage because:",
+    "options": [
+      "RocksDB provides full ACID transactions for operator state so Flink achieves exactly-once guarantees natively without needing any external coordination service or distributed lock manager",
+      "RocksDB automatically replicates operator state to other task managers for high availability without checkpointing",
+      "RocksDB supports SQL-style queries against operator state for interactive debugging and ad-hoc analysis",
+      "RocksDB persists state durably to disk so state larger than JVM heap is supported and recovery from failures is possible"
+    ],
+    "answer": 3,
+    "explanation": "A stateful join over billions of events would OOM the JVM immediately. RocksDB (an LSM-backed embedded KV store) spills state to local NVMe, supporting terabytes of operator state per task manager. On failure, Flink restores the RocksDB snapshot from the last checkpoint in durable storage (S3/HDFS) and replays from the matching Kafka offsets."
+  },
+  {
+    "q": "Postgres Row-Level Security (RLS) is preferable to application-layer WHERE clauses for tenant isolation because:",
+    "options": [
+      "RLS policies execute faster than equivalent application-level WHERE clauses because the query engine has dedicated optimization pathways for row-level policy enforcement across all table scans",
+      "RLS policies are applied at SQL parse time, before the query optimizer constructs any execution plan for the query",
+      "Application WHERE clauses are automatically validated against RLS policies by the planner as a cross-check",
+      "A broken or missing application WHERE clause cannot bypass RLS because the database engine enforces the policy unconditionally, regardless of how the SQL was written"
+    ],
+    "answer": 3,
+    "explanation": "Application WHERE clauses depend on every developer always remembering to add them — one missed clause leaks all tenants' data. RLS policies are enforced by the database itself: even a raw psql session or a miscoded query cannot see rows outside the policy. Defense-in-depth: apply both, but RLS is the guarantee."
+  },
+  {
+    "q": "In Flink's exactly-once stream processing, the 'barrier' injected by the JobManager into the stream:",
+    "options": [
+      "Pauses the entire data pipeline globally until every operator in every parallel execution chain has acknowledged that its running state has been written to durable checkpoint storage",
+      "Resets each operator's running state to zero to guarantee idempotent replay from the beginning on failure",
+      "Tags a message as a duplicate so downstream operators can deduplicate it before any state updates occur",
+      "Marks epoch boundaries in the stream; each operator snapshots its state when the barrier passes, enabling recovery to the last consistent checkpoint without global pausing"
+    ],
+    "answer": 3,
+    "explanation": "Barriers flow downstream with the data — no global pause. Each operator saves its state snapshot when the barrier passes through it and forwards the barrier. Once all operators across all parallel subtasks have acknowledged the same barrier, the checkpoint is complete. On failure, restore all operators to their saved states and replay from the stored Kafka offsets."
+  },
+  {
+    "q": "Kafka's `min.insync.replicas=2` combined with `acks=all` means:",
+    "options": [
+      "Kafka accepts the write when only one ISR member remains and asynchronously replicates to lagging replicas as they catch up, with no durability guarantee covering that replication window",
+      "Two consumer group members must independently confirm receipt of a message before it is committed to the log",
+      "The producer waits for acknowledgment from two brokers selected by round-robin across the cluster",
+      "Writes are rejected if fewer than 2 ISRs are available, ensuring every committed message is durably stored on at least 2 replicas before acknowledgment"
+    ],
+    "answer": 3,
+    "explanation": "min.insync.replicas is a durability gate. With 3 replicas and min.insync.replicas=2, one broker can fail and writes still proceed; a second failure causes the broker to refuse writes rather than risk losing data. Combined with acks=all, this is the standard production durability config: tolerate 1 broker loss with zero message loss."
+  },
+  {
+    "q": "In InnoDB, a lookup on a secondary index (e.g., `SELECT * FROM users WHERE email = 'x@y.com'`) requires two B-tree traversals because:",
+    "options": [
+      "InnoDB scans the secondary index forward to locate matching key entries, then traverses backward to check for duplicates that may have been skipped, requiring two complete passes through the index per lookup",
+      "InnoDB validates the secondary index lookup against the table CHECK constraints in a dedicated second pass before returning results",
+      "InnoDB records per-entry access metadata in the secondary index leaf on every read to maintain the buffer pool LRU ordering accurately",
+      "The secondary index stores the primary key as its pointer (not a physical disk address), so the engine walks the secondary B-tree, then the clustered PK B-tree to fetch the full row"
+    ],
+    "answer": 3,
+    "explanation": "InnoDB stores the PK as the secondary index leaf pointer to keep the clustered tree appendable. Two consequences: (1) a covering index that includes all needed columns avoids the second traversal; (2) a random UUID PK means each second traversal jumps to a random page in the clustered tree, causing cache misses on every secondary lookup."
+  },
+  {
+    "q": "Event sourcing differs from standard CRUD storage in that:",
+    "options": [
+      "It compresses all historical records using LZ4 encoding and retains only the latest materialized snapshot as the live query target, discarding older event versions from active storage",
+      "It discards intermediate states and stores only the current snapshot of each entity for fast reads",
+      "It requires all writes to pass through a consensus round before being appended to ensure global ordering",
+      "Every change is appended as an immutable event; current entity state is derived by replaying the log, giving a full audit trail and any-point-in-time reconstruction"
+    ],
+    "answer": 3,
+    "explanation": "CRUD stores current state and loses history. Event sourcing appends every change (OrderPlaced, ItemShipped) and rebuilds current state by replaying events. Benefits: complete audit trail, temporal queries, and rebuilding read models from scratch. Pairs naturally with CQRS. Trade-off: more complex reads and a potentially long replay on startup."
+  }
+]

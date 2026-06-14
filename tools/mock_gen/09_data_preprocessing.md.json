@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A sensor-glitch example where random form fields are skipped accidentally is classified as which type of missing data?",
+    "options": [
+      "MAR, because missingness depends on a recorded attribute",
+      "MNAR, because missingness itself carries hidden meaning",
+      "MCAR, because the missing entries are completely random",
+      "Forward-fill missingness, because it occurs in sequence data"
+    ],
+    "answer": 2,
+    "explanation": "MCAR means Missing Completely At Random, such as a sensor glitch or accidental skipped fields. MAR and MNAR imply the missingness depends on other variables or on the missing value itself."
+  },
+  {
+    "q": "In a loan dataset, missing income may indicate that an applicant is trying to hide something. Which preprocessing choice best preserves that signal?",
+    "options": [
+      "Add a binary income-was-missing indicator before filling the income value",
+      "Drop every row with a missing income value to avoid model bias",
+      "Replace missing income with the maximum observed income in training",
+      "Convert the income column to one-hot categories before imputation"
+    ],
+    "answer": 0,
+    "explanation": "The chapter notes that missingness can be informative, so a binary indicator can preserve that signal. Dropping rows would discard potentially useful information and shrink the dataset."
+  },
+  {
+    "q": "A numeric feature is roughly bell-shaped with a few missing entries and no serious outliers. Which simple imputation strategy matches the chapter's guidance?",
+    "options": [
+      "Fill with the mode, because numeric features should use the most common value",
+      "Fill with the mean, because symmetric numerical data is appropriate for mean imputation",
+      "Drop the entire column, because any missingness makes numeric features unreliable",
+      "Hash the missing values into bins, because hashing is for numerical missingness"
+    ],
+    "answer": 1,
+    "explanation": "Mean imputation is recommended for symmetric numerical data. Median is preferred when outliers are present, while mode is for categorical values."
+  },
+  {
+    "q": "A column has more than 30% missing values. What is the most chapter-aligned first consideration?",
+    "options": [
+      "Always fill it with the median to keep the feature count unchanged",
+      "Always delete only the missing rows because the column is still useful",
+      "Always encode missingness with one-hot columns and skip imputation",
+      "Consider dropping the column, especially if it is not very predictive"
+    ],
+    "answer": 3,
+    "explanation": "The missing-value flow suggests considering dropping a column when many rows are missing, especially above about 30%. If missingness is informative, an indicator or model-based approach may still be better."
+  },
+  {
+    "q": "For a categorical City field with values [NY, missing, London, NY, missing], which basic fill strategy is shown?",
+    "options": [
+      "Fill missing City values with the mode, such as NY",
+      "Fill missing City values with the mean city code",
+      "Fill missing City values with the median city code",
+      "Fill missing City values with the upper IQR bound"
+    ],
+    "answer": 0,
+    "explanation": "Categorical missing values are filled with the mode, the most common category. Mean and median are numerical summaries, not natural category replacements."
+  },
+  {
+    "q": "A dataset has 3% of rows missing in a noncritical feature, and the missingness appears random. What does the chapter's decision flow suggest?",
+    "options": [
+      "Drop the whole feature because any missing data is unsafe",
+      "Apply target encoding to the missing values before splitting",
+      "Delete those few rows if the missing fraction is small",
+      "Treat the feature as MNAR and add a target-derived column"
+    ],
+    "answer": 2,
+    "explanation": "For few missing rows, shown as less than about 5%, deleting those rows is presented as a reasonable option. This differs from large-scale missingness, where dropping a column or advanced imputation may be considered."
+  },
+  {
+    "q": "Which statement best distinguishes MAR from MNAR using the chapter's examples?",
+    "options": [
+      "MAR is caused by duplicate rows, while MNAR is caused only by scaling errors",
+      "MAR occurs after one-hot encoding, while MNAR occurs before encoding",
+      "MAR is always harmless, while MNAR can always be fixed by mean imputation",
+      "MAR depends on other observed data, while MNAR is missing for a reason tied to the missingness itself"
+    ],
+    "answer": 3,
+    "explanation": "MAR is illustrated by older people being less likely to share income, so missingness depends on other data. MNAR is illustrated by the sickest patients leaving a study, meaning the missingness is tied to the underlying value or reason."
+  },
+  {
+    "q": "Using Q1 = 18, Q3 = 27, and IQR = 9, why is the value 100 flagged by the IQR rule?",
+    "options": [
+      "It is greater than Q3 plus 3 times the IQR",
+      "It is greater than the mean plus 1.5 times the standard deviation",
+      "It is less than Q1 minus 1.5 times the IQR",
+      "It is greater than Q3 plus 1.5 times the IQR, which is 40.5"
+    ],
+    "answer": 3,
+    "explanation": "The upper IQR bound is Q3 + 1.5 × IQR = 27 + 13.5 = 40.5. Since 100 is above 40.5, it is flagged as an outlier."
+  },
+  {
+    "q": "A feature has mean 50, standard deviation 10, and an observed value of 95. Which conclusion follows from the chapter's Z-score rule?",
+    "options": [
+      "It is normal because the value is less than mean plus five standard deviations",
+      "It is an outlier because its Z-score is 4.5, exceeding an absolute value of 3",
+      "It is normal because Z-score scaling always puts values between 0 and 1",
+      "It is an outlier only if the IQR lower bound is also exceeded"
+    ],
+    "answer": 1,
+    "explanation": "The Z-score is (95 - 50) / 10 = 4.5, and the chapter flags |Z| > 3 as likely outliers. Min-max scaling, not Z-score scaling, is the technique associated with a bounded 0 to 1 range."
+  },
+  {
+    "q": "A height value of 300 cm appears in a dataset of fifth graders. What is the chapter's primary interpretation of this example?",
+    "options": [
+      "It is likely an outlier and may be a typo or data error",
+      "It is an ordinal category that should be label encoded",
+      "It is a missing-value marker that should be mode-filled",
+      "It is high-cardinality data that should be hashed"
+    ],
+    "answer": 0,
+    "explanation": "The chapter uses an extreme height among fifth graders as a simple outlier example, likely a typo. Encoding and high-cardinality methods address categorical variables, not implausible numeric measurements."
+  },
+  {
+    "q": "Which pair of formulas correctly matches the IQR outlier bounds in the chapter?",
+    "options": [
+      "Lower = Q1 - 3 × std, Upper = Q3 + 3 × std",
+      "Lower = mean - 1.5 × IQR, Upper = mean + 1.5 × IQR",
+      "Lower = min - Q1, Upper = max + Q3",
+      "Lower = Q1 - 1.5 × IQR, Upper = Q3 + 1.5 × IQR"
+    ],
+    "answer": 3,
+    "explanation": "The IQR rule uses Q1 - 1.5 × IQR and Q3 + 1.5 × IQR. Standard deviation belongs to Z-score reasoning, not the IQR bounds."
+  },
+  {
+    "q": "Which preprocessing action is listed in the full workflow for outliers after they are detected?",
+    "options": [
+      "Cap, remove, or transform them",
+      "One-hot encode them into sparse indicators",
+      "Replace them only with the feature mean",
+      "Drop the target column before scaling"
+    ],
+    "answer": 0,
+    "explanation": "The workflow summary says to check for outliers and then cap, remove, or transform. The chapter does not say outliers must always be mean-imputed or encoded."
+  },
+  {
+    "q": "Which situation is a poor fit for label encoding according to the chapter?",
+    "options": [
+      "T-shirt size values ordered as Small, Medium, and Large",
+      "A rating scale where higher values mean stronger agreement",
+      "Color names such as red, blue, and green with no natural order",
+      "An ordered size scale where XLarge is larger than Large"
+    ],
+    "answer": 2,
+    "explanation": "Label encoding nominal colors can create a fake numeric ordering, such as making one color appear greater than another. Ordered sizes are a better fit for ordinal-style encoding."
+  },
+  {
+    "q": "What is the key warning about one-hot encoding a City column with 100 unique cities?",
+    "options": [
+      "It will incorrectly force cities into a small-to-large order",
+      "It will leak target values unless the test set is scaled first",
+      "It will convert numeric ranges into Z-scores by default",
+      "It can create 100 new columns and make the dataset wide"
+    ],
+    "answer": 3,
+    "explanation": "One-hot encoding creates one binary column per category, so 100 cities can become 100 columns. The fake-ordering problem is associated with label encoding nominal categories."
+  },
+  {
+    "q": "A Size feature has values Small, Medium, Large, and XLarge. Which encoding preserves the intended relationship?",
+    "options": [
+      "Frequency encoding, because size values should be replaced by counts",
+      "Hashing, because ordered categories require fixed random bins",
+      "Ordinal encoding, because the categories have a natural order",
+      "Target encoding, because size values must use the target mean"
+    ],
+    "answer": 2,
+    "explanation": "Ordinal encoding is appropriate when categories have a natural order, such as Small < Medium < Large < XLarge. Frequency and target encoding are alternatives mainly discussed for high-cardinality categories."
+  },
+  {
+    "q": "Which high-cardinality alternative replaces each category with the mean target value for that category?",
+    "options": [
+      "Hashing",
+      "Target encoding",
+      "Frequency encoding",
+      "Ordinal encoding"
+    ],
+    "answer": 1,
+    "explanation": "Target encoding replaces a category with the mean of the target, such as city becoming average house price in that city. Frequency encoding instead uses how often a category appears."
+  },
+  {
+    "q": "Which high-cardinality alternative replaces a category with how often it appears?",
+    "options": [
+      "One-hot encoding",
+      "Ordinal encoding",
+      "Feature scaling",
+      "Frequency encoding"
+    ],
+    "answer": 3,
+    "explanation": "Frequency encoding maps categories to their occurrence frequency. One-hot encoding creates binary columns and can become large when many unique categories exist."
+  },
+  {
+    "q": "Which high-cardinality method hashes categories into a fixed number of bins?",
+    "options": [
+      "Hashing",
+      "Min-max normalization",
+      "Median imputation",
+      "Z-score scaling"
+    ],
+    "answer": 0,
+    "explanation": "Hashing is listed as mapping categories into a fixed number of bins. Scaling and imputation operate on numerical values rather than high-cardinality category names."
+  },
+  {
+    "q": "Which option describes the embedding alternative listed for many unique categories?",
+    "options": [
+      "Replace a category with the number of times it appears",
+      "Let a neural network learn a dense representation",
+      "Convert every category into one separate binary column",
+      "Sort categories alphabetically and assign increasing integers"
+    ],
+    "answer": 1,
+    "explanation": "The chapter describes embeddings as letting a neural network learn a dense representation. This differs from one-hot encoding's sparse binary columns."
+  },
+  {
+    "q": "What does one-hot encoding produce for nominal categories like red, blue, and green?",
+    "options": [
+      "A single integer column where larger numbers mean stronger categories",
+      "A standardized column centered at zero with unit variance",
+      "Separate binary columns such as Color_red, Color_blue, and Color_green",
+      "A target mean column learned from the test-set labels"
+    ],
+    "answer": 2,
+    "explanation": "One-hot encoding converts each category into its own binary indicator column. It avoids imposing a false order on nominal categories."
+  },
+  {
+    "q": "Why is label encoding nominal city names a common mistake?",
+    "options": [
+      "It creates too many new columns for small-cardinality variables",
+      "It prevents neural networks from receiving numerical inputs",
+      "It guarantees the feature will have zero variance",
+      "It makes the model interpret arbitrary numeric codes as an order"
+    ],
+    "answer": 3,
+    "explanation": "The chapter warns that label encoding nominal data makes the model think codes have an order, such as blue < green < red. One-hot encoding is recommended for nominal categories."
+  },
+  {
+    "q": "Which preprocessing step converts words such as red or small into numbers the model can use?",
+    "options": [
+      "Categorical encoding",
+      "Outlier capping",
+      "Train/test splitting",
+      "Low-variance removal"
+    ],
+    "answer": 0,
+    "explanation": "Encoding categorical features converts text categories into numerical representations. Outlier capping and feature selection solve different preprocessing problems."
+  },
+  {
+    "q": "In the chapter's before-scaling example, why does Feature B dominate when its values are 1000, 2000, 3000, and 4000?",
+    "options": [
+      "It contains missing values that force the model to ignore Feature A",
+      "Its larger numeric scale can overwhelm smaller-scale features",
+      "It has fewer categories than Feature A after one-hot encoding",
+      "Its values are already centered at zero with unit variance"
+    ],
+    "answer": 1,
+    "explanation": "Without scaling, features with much larger numeric ranges can dominate learning or distance calculations. Scaling brings features to comparable ranges."
+  },
+  {
+    "q": "For ages [20, 30, 40, 50, 60], what does min-max normalization map age 50 to?",
+    "options": [
+      "0.50",
+      "0.63",
+      "0.75",
+      "1.27"
+    ],
+    "answer": 2,
+    "explanation": "Min-max scaling gives (50 - 20) / (60 - 20) = 30 / 40 = 0.75. The values around 0.63 and 1.27 come from the separate standardization example."
+  },
+  {
+    "q": "For scores [60, 70, 80, 90, 100] with mean 80 and standard deviation 15.8, what is the standardized value of 80?",
+    "options": [
+      "-1.27",
+      "0.50",
+      "1.00",
+      "0.00"
+    ],
+    "answer": 3,
+    "explanation": "Standardization uses (x - mean) / standard deviation, so (80 - 80) / 15.8 = 0. A value equal to the mean becomes zero after Z-score scaling."
+  },
+  {
+    "q": "Which scaling method uses the formula (X - X_min) / (X_max - X_min)?",
+    "options": [
+      "Min-max normalization",
+      "Standardization",
+      "Target encoding",
+      "Mode imputation"
+    ],
+    "answer": 0,
+    "explanation": "Min-max normalization maps values using the feature minimum and maximum, typically into 0 to 1. Standardization uses the mean and standard deviation instead."
+  },
+  {
+    "q": "Which scaling method centers values around zero and gives them standard deviation one?",
+    "options": [
+      "Min-max normalization",
+      "Ordinal encoding",
+      "Feature hashing",
+      "Standardization"
+    ],
+    "answer": 3,
+    "explanation": "Standardization, also called Z-score scaling, uses (X - mean) / standard deviation. Min-max normalization instead maps values into a bounded range such as 0 to 1."
+  },
+  {
+    "q": "When the chapter says to fit a scaler on training data only, what should happen to the test data?",
+    "options": [
+      "It should be used to recompute the scaler's mean and maximum",
+      "It should be transformed using the statistics learned from training data",
+      "It should be dropped because scaled test data always leaks",
+      "It should be scaled before the train/test split is created"
+    ],
+    "answer": 1,
+    "explanation": "The correct workflow is fit on X_train only, then transform both X_train and X_test. Recomputing statistics on test data leaks information."
+  },
+  {
+    "q": "Why is scaler.fit(all data) before splitting described as wrong?",
+    "options": [
+      "It removes categorical variables before encoding can happen",
+      "It prevents the model from seeing training examples",
+      "It lets test-set statistics leak into training",
+      "It forces every feature into an ordinal representation"
+    ],
+    "answer": 2,
+    "explanation": "Fitting on all data uses test-set mean, min, or max while preparing training features. That leakage makes performance look artificially good."
+  },
+  {
+    "q": "Which model family is listed as a use case for min-max normalization?",
+    "options": [
+      "Linear models only",
+      "Decision trees only",
+      "Naive Bayes only",
+      "KNN and K-means"
+    ],
+    "answer": 3,
+    "explanation": "The chapter lists KNN and K-means under min-max normalization use cases. It lists linear models and SVM under standardization."
+  },
+  {
+    "q": "Which scaling choice is described as the most common default and useful for approximately normal data?",
+    "options": [
+      "Target encoding",
+      "Standardization",
+      "One-hot encoding",
+      "Mode imputation"
+    ],
+    "answer": 1,
+    "explanation": "The chapter presents standardization as the most common choice, especially for approximately normal data and linear models or SVM. Target and one-hot encoding are categorical encoding methods."
+  },
+  {
+    "q": "Which situation is most aligned with choosing min-max normalization over standardization?",
+    "options": [
+      "A model requires values bounded in the [0, 1] range",
+      "A feature has severe outliers that should not set the endpoints",
+      "A column is categorical and has no natural ordering",
+      "A missing value pattern is MNAR and target-related"
+    ],
+    "answer": 0,
+    "explanation": "Min-max normalization is recommended when values need to be in [0, 1], such as for images or some neural network inputs. Standardization is preferred when outliers are a concern."
+  },
+  {
+    "q": "Which algorithm group is listed under standardization use cases?",
+    "options": [
+      "KNN and K-means",
+      "Neural networks for images",
+      "Linear models and SVM",
+      "Frequency encoders and hashers"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists linear models and SVM as standardization use cases. KNN, K-means, and images are listed under min-max normalization."
+  },
+  {
+    "q": "Feature engineering turns Date = 2024-01-15 into several features. Which set matches the chapter's examples?",
+    "options": [
+      "City, Country, and PostalCode",
+      "Mean, Median, and Mode",
+      "Q1, Q3, and IQR",
+      "Year, Month, DayOfWeek, and IsWeekend"
+    ],
+    "answer": 3,
+    "explanation": "The chapter shows a date being decomposed into Year, Month, DayOfWeek, and IsWeekend. Q1 and IQR are used for outlier detection, not date feature engineering."
+  },
+  {
+    "q": "Which engineered feature is shown for skewed price data?",
+    "options": [
+      "LogPrice",
+      "Country=USA",
+      "Height_inches",
+      "Color_red"
+    ],
+    "answer": 0,
+    "explanation": "The examples include Price becoming LogPrice to handle skewed data. Color_red is an encoding output, not the price-skew transformation."
+  },
+  {
+    "q": "Latitude and longitude are transformed into which type of engineered feature in the chapter?",
+    "options": [
+      "A binary missing-value indicator",
+      "DistanceToCityCenter",
+      "A one-hot city vector",
+      "A standardized target label"
+    ],
+    "answer": 1,
+    "explanation": "The feature engineering examples turn latitude and longitude into DistanceToCityCenter. This creates a more useful geographic feature from raw coordinates."
+  },
+  {
+    "q": "Which engineered features are shown for a name such as John Smith?",
+    "options": [
+      "Age and AgeGroup",
+      "Month and IsWeekend",
+      "HasMiddleName and NameLength",
+      "LogPrice and PriceBin"
+    ],
+    "answer": 2,
+    "explanation": "The chapter shows Name producing HasMiddleName and NameLength. Age features come from birth year, and LogPrice comes from price."
+  },
+  {
+    "q": "A Birth Year of 1990 with current year 2024 is used to create which feature pair in the examples?",
+    "options": [
+      "Year and Month",
+      "DistanceToCityCenter and PostalCode",
+      "NameLength and HasMiddleName",
+      "Age and AgeGroup"
+    ],
+    "answer": 3,
+    "explanation": "The chapter shows birth year and current year being transformed into Age and AgeGroup. Date decomposition is a separate feature engineering example."
+  },
+  {
+    "q": "Which reason for removing a feature is illustrated by Country=USA when 99% of rows are USA?",
+    "options": [
+      "Low variance",
+      "High target leakage",
+      "High cardinality",
+      "Outlier sensitivity"
+    ],
+    "answer": 0,
+    "explanation": "A feature that is almost always the same has low variance and contributes little information. The chapter uses Country=USA for 99% of rows as the example."
+  },
+  {
+    "q": "Why might height_cm and height_inches not both be kept?",
+    "options": [
+      "They are nominal categories that require one-hot encoding",
+      "They are highly correlated and say the same thing",
+      "They are missing completely at random",
+      "They must be transformed into target means"
+    ],
+    "answer": 1,
+    "explanation": "The feature selection section says highly correlated features can be removed because they say the same thing. Height in centimeters and inches is the given example."
+  },
+  {
+    "q": "Why would a customer's favorite color be removed when predicting house price?",
+    "options": [
+      "It is always a numerical feature with extreme Z-score",
+      "It creates duplicate rows during preprocessing",
+      "It has nothing to do with the target in the example",
+      "It must be standardized before train/test splitting"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists not being correlated with the target as a reason to remove a feature. Favorite color for house price is used as the irrelevant-feature example."
+  },
+  {
+    "q": "Which statement best matches the feature selection chart's treatment of height_cm and height_inches?",
+    "options": [
+      "Drop both because useful correlated features are always harmful",
+      "Keep both because duplicate measures double the target signal",
+      "Convert both to missingness indicators before scaling",
+      "Keep one of them because they are duplicate measurements with similar importance"
+    ],
+    "answer": 3,
+    "explanation": "The chart labels correlated features as duplicates and says to keep one of the yellow features. Keeping both may add redundancy rather than new information."
+  },
+  {
+    "q": "Which pair is shown as useful high-importance features in the feature selection chart?",
+    "options": [
+      "Age and Income",
+      "UserID and Favorite Color",
+      "Country and UserID",
+      "NameLength and HasMiddleName"
+    ],
+    "answer": 0,
+    "explanation": "The chart shows Age and Income with relatively high importance and keeps them. UserID, favorite color, and nearly constant country are shown as low-importance examples."
+  },
+  {
+    "q": "Which action belongs to feature engineering rather than feature scaling?",
+    "options": [
+      "Mapping ages from [20,60] to [0,1]",
+      "Centering scores around zero using the mean",
+      "Creating IsWeekend from a raw date",
+      "Learning min and max only from training data"
+    ],
+    "answer": 2,
+    "explanation": "Creating IsWeekend from a date is feature engineering because it creates a new useful feature. Mapping values to [0,1] and centering around zero are scaling operations."
+  },
+  {
+    "q": "What is the first major step shown in the data preprocessing pipeline after raw data?",
+    "options": [
+      "Feature engineering",
+      "Scaling and normalization",
+      "Handling missing values",
+      "Encoding categorical variables"
+    ],
+    "answer": 2,
+    "explanation": "The pipeline begins with handling missing values before duplicate removal, outliers, encoding, scaling, and feature engineering. The full workflow summary also checks missing values early."
+  },
+  {
+    "q": "Which sequence best reflects the pipeline diagram's later steps after outlier handling?",
+    "options": [
+      "Scale features, then encode categories, then remove duplicates",
+      "Encode categorical features, then scale or normalize, then engineer features",
+      "Engineer features, then raw data collection, then missing-value filling",
+      "Fit the scaler on test data, then one-hot encode the target"
+    ],
+    "answer": 1,
+    "explanation": "The diagram orders later steps as encode categorical features, scale or normalize features, then feature engineering. It does not recommend using test data to fit preprocessing."
+  },
+  {
+    "q": "Which item is explicitly included in the pipeline's duplicate-removal step?",
+    "options": [
+      "Remove duplicate rows and irrelevant columns",
+      "Replace categories with average target values",
+      "Center numerical columns around zero",
+      "Predict missing values using a model"
+    ],
+    "answer": 0,
+    "explanation": "The pipeline's duplicate step says to get rid of duplicate rows and irrelevant columns. Target encoding, scaling, and model-based imputation are separate operations."
+  },
+  {
+    "q": "What is the main lesson of the chart comparing raw messy data and clean preprocessed data?",
+    "options": [
+      "Preprocessing lowers accuracy but reduces memory usage",
+      "Preprocessed data can improve accuracy and reduce training time",
+      "Raw data is preferable when feature scales are different",
+      "Training time is unrelated to data cleaning decisions"
+    ],
+    "answer": 1,
+    "explanation": "The chart shows clean preprocessed data with higher model accuracy and lower relative training time. It supports the chapter's claim that preprocessing helps models learn properly."
+  },
+  {
+    "q": "In the raw-to-clean example, values such as yes, 1, Y, and True in Has_Pet are converted into what cleaned representation?",
+    "options": [
+      "Missing-value markers",
+      "Separate city columns",
+      "A consistent binary value of 1",
+      "Standardized Z-scores"
+    ],
+    "answer": 2,
+    "explanation": "The example normalizes different positive representations of Has_Pet into 1. This is about consistent cleaning, not Z-score scaling."
+  },
+  {
+    "q": "Which row best matches the chapter's raw-to-clean City example?",
+    "options": [
+      "NY, new york, and nyc are standardized to new_york",
+      "NY, new york, and nyc are converted to Z-scores",
+      "NY, new york, and nyc are dropped as outliers",
+      "NY, new york, and nyc are replaced with age medians"
+    ],
+    "answer": 0,
+    "explanation": "The raw-to-clean example standardizes inconsistent city names into a consistent city value. It is a data cleaning example rather than scaling or outlier removal."
+  },
+  {
+    "q": "Which common mistake is tied to artificially good results and later production failure?",
+    "options": [
+      "Using median imputation for skewed numerical data",
+      "Scaling before splitting into train and test sets",
+      "Removing an irrelevant UserID feature",
+      "Using one-hot encoding for a small nominal color feature"
+    ],
+    "answer": 1,
+    "explanation": "The mistakes table says scaling before splitting leaks test statistics into training, producing artificially good results and production failure. The other choices are reasonable in the right context."
+  },
+  {
+    "q": "Why is dropping every row with missing values listed as a mistake?",
+    "options": [
+      "It always makes one-hot encoding impossible",
+      "It converts MCAR data into high-cardinality data",
+      "It can lose informative missingness and unnecessarily reduce dataset size",
+      "It guarantees that outliers dominate min-max scaling"
+    ],
+    "answer": 2,
+    "explanation": "The chapter warns that missingness itself can be a signal, and dropping rows also reduces the available data. A missingness indicator plus imputation may preserve more information."
+  },
+  {
+    "q": "A categorical feature has 1000 unique values. Which common mistake and remedy are paired in the chapter?",
+    "options": [
+      "Using standardization; remedy with Z-score scaling",
+      "Using median imputation; remedy with mean imputation",
+      "Using IQR bounds; remedy with label encoding",
+      "Using one-hot encoding; remedy with target or frequency encoding"
+    ],
+    "answer": 3,
+    "explanation": "The mistakes table warns that one-hot encoding 1000 categories creates 1000 columns and slows the model. It recommends target or frequency encoding as alternatives."
+  },
+  {
+    "q": "Which mistake creates fake ordering such as blue(1) < green(2) < red(3)?",
+    "options": [
+      "Label encoding nominal data",
+      "Scaling after train/test splitting",
+      "Using median imputation for outlier-prone data",
+      "Removing a duplicate measurement feature"
+    ],
+    "answer": 0,
+    "explanation": "The common-mistakes table specifically warns against label encoding nominal data like colors or cities. The model may treat arbitrary numbers as meaningful order."
+  },
+  {
+    "q": "Which improvement sequence is shown in the final accuracy chart?",
+    "options": [
+      "No preprocessing, then scale only, then remove all features",
+      "No preprocessing, handle missing, remove outliers, encode plus scale, then feature engineering",
+      "Feature engineering first, then raw data, then drop every missing row",
+      "One-hot encode first, then create duplicates, then skip scaling"
+    ],
+    "answer": 1,
+    "explanation": "The chart shows accuracy rising as steps are added: handle missing, remove outliers, encode plus scale, and feature engineering. It reinforces the cumulative value of preprocessing."
+  },
+  {
+    "q": "Which key takeaway correctly lists two methods for outlier removal or detection from the cheat sheet?",
+    "options": [
+      "Mode fill and target encoding",
+      "One-hot encoding and label encoding",
+      "IQR rule and Z-score",
+      "Hashing and embeddings"
+    ],
+    "answer": 2,
+    "explanation": "The cheat sheet says to remove outliers using the IQR rule or Z-score. Encoding methods address categorical features, not outlier detection."
+  },
+  {
+    "q": "The chapter quotes that data preparation accounts for about what share of data scientists' work?",
+    "options": [
+      "20%",
+      "50%",
+      "65%",
+      "80%"
+    ],
+    "answer": 3,
+    "explanation": "The opening quote and key takeaways state that data preparation can account for about 80% of a data scientist's time. This motivates the chapter's focus on preprocessing."
+  },
+  {
+    "q": "Which cleaned Age transformation best matches the raw-data example?",
+    "options": [
+      "Replace values like ?, 99, -3, and \"twenty\" with plausible numeric ages",
+      "Convert all ages into city names to remove numerical bias",
+      "Leave invalid ages untouched because models handle raw strings",
+      "Encode ages as separate one-hot columns for every possible value"
+    ],
+    "answer": 0,
+    "explanation": "The raw-to-clean example turns messy ages such as missing, implausible, negative, or text values into plausible numeric ages. It illustrates cleaning before modeling."
+  },
+  {
+    "q": "Which situation calls for median rather than mean imputation according to the chapter?",
+    "options": [
+      "A categorical feature has a most common city value",
+      "A numerical feature contains outliers",
+      "A nominal feature has too many unique labels",
+      "A date feature can be split into year and month"
+    ],
+    "answer": 1,
+    "explanation": "The missing-value section says to use the median when numerical data has outliers. The mean is more appropriate when the data is symmetric."
+  },
+  {
+    "q": "Which action is described as an advanced missing-value strategy?",
+    "options": [
+      "Always delete the target column",
+      "Predict missing values using a model",
+      "Treat every missing value as an outlier",
+      "Apply one-hot encoding to numerical ranges"
+    ],
+    "answer": 1,
+    "explanation": "The chapter lists predicting missing values using a model as an advanced approach. Simpler methods include mean, median, or mode imputation."
+  }
+]

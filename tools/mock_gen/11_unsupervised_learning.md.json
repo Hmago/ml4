@@ -1,0 +1,662 @@
+[
+  {
+    "q": "The K-Means objective function $J$ that the algorithm minimizes is:",
+    "options": [
+      "The sum of squared distances from each point to its assigned cluster centroid",
+      "The sum of squared distances between every pair of cluster centroids",
+      "The negative log-likelihood of data under the fitted Gaussian mixture model",
+      "The total pairwise distance between all data points divided by the cluster count"
+    ],
+    "answer": 0,
+    "explanation": "K-Means minimizes $J = \\sum_k \\sum_{x_i \\in C_k} \\|x_i - \\mu_k\\|^2$ — within-cluster sum of squares. Pairwise centroid distances belong to other objectives; log-likelihood is GMM's objective."
+  },
+  {
+    "q": "In DBSCAN, a point $p$ qualifies as a core point when:",
+    "options": [
+      "Its $\\varepsilon$-neighborhood contains at least minPts other points",
+      "It lies within distance $\\varepsilon$ of at least one already-identified core point",
+      "It is the geometric centroid of all density-reachable cluster members",
+      "Its average distance to all dataset points is less than the global mean distance"
+    ],
+    "answer": 0,
+    "explanation": "A core point has at least minPts neighbors within radius $\\varepsilon$ — it forms the backbone of a cluster. A point within $\\varepsilon$ of a core point but lacking sufficient own neighbors is a border point, not a core point."
+  },
+  {
+    "q": "Ward's linkage merges the cluster pair that:",
+    "options": [
+      "Minimizes the total increase in within-cluster variance after the merge",
+      "Contains the two individual points with the globally shortest pairwise distance",
+      "Minimizes the maximum pairwise distance between members across both clusters",
+      "Maximizes the average pairwise similarity across all cross-cluster member pairs"
+    ],
+    "answer": 0,
+    "explanation": "Ward's criterion selects the merge that causes the smallest jump in total intra-cluster variance — producing compact, roughly equal-sized clusters. Option 1 describes single linkage and option 2 describes complete linkage."
+  },
+  {
+    "q": "Geometrically, PCA's principal components are:",
+    "options": [
+      "Orthogonal directions in feature space sorted by descending explained variance",
+      "Sparse linear combinations of features chosen by L1 regularization on loadings",
+      "Non-negative matrix factors that represent interpretable parts of the data",
+      "Kernel-transformed axes aligned with the class-separating hyperplanes in feature space"
+    ],
+    "answer": 0,
+    "explanation": "PCs are eigenvectors of the covariance matrix — mutually orthogonal and sorted by eigenvalue (variance explained). Sparse loading vectors describe Sparse PCA; non-negative factors describe NMF."
+  },
+  {
+    "q": "The Silhouette score $s(i)$ for a data point depends on:",
+    "options": [
+      "Mean intra-cluster distance $a(i)$ and mean distance to the nearest other cluster $b(i)$",
+      "Distance to the cluster centroid and variance of all points in the same cluster",
+      "Log-likelihood under the assigned Gaussian and the marginal data log-likelihood",
+      "Reconstruction error from a fitted autoencoder benchmarked against the mean training-set reconstruction error"
+    ],
+    "answer": 0,
+    "explanation": "$s(i) = (b(i) - a(i)) / \\max(a(i), b(i))$. $a(i)$ measures compactness; $b(i)$ measures separation from the nearest other cluster. Centroid distance is not part of the standard silhouette formula."
+  },
+  {
+    "q": "HDBSCAN's mutual reachability distance between points $a$ and $b$ is defined as:",
+    "options": [
+      "$\\max(\\text{core-dist}_k(a),\\; \\text{core-dist}_k(b),\\; d(a,b))$",
+      "$(\\text{core-dist}_k(a) + \\text{core-dist}_k(b) + d(a,b)) / 3$",
+      "$\\min(\\text{core-dist}_k(a),\\; \\text{core-dist}_k(b),\\; d(a,b))$",
+      "$d(a,b) \\cdot (\\text{core-dist}_k(a) + \\text{core-dist}_k(b)) / 2$"
+    ],
+    "answer": 0,
+    "explanation": "Taking the maximum inflates distances in sparse regions, making the MST reflect true density variation. A minimum or average would not correctly enforce the core-point density constraint that anchors the HDBSCAN hierarchy."
+  },
+  {
+    "q": "The Apriori principle used to prune the itemset search space states that:",
+    "options": [
+      "Every superset of an infrequent itemset is also infrequent",
+      "The support of any itemset is always at least as large as its confidence",
+      "Rules with lift below 1.0 can be discarded without evaluating their supersets",
+      "Length-$k$ candidates can be generated only from length-$(k-2)$ frequent sets"
+    ],
+    "answer": 0,
+    "explanation": "If {A,B} is infrequent, {A,B,C} cannot be frequent — downward closure. This prunes entire branches of the search tree. Options 1 and 2 confuse support/confidence relationships and are not the Apriori pruning principle."
+  },
+  {
+    "q": "The bottleneck layer in a standard autoencoder serves primarily to:",
+    "options": [
+      "Force the network to compress input into a compact low-dimensional latent code",
+      "Block gradient flow to the encoder so only the decoder weights are updated",
+      "Introduce stochastic sampling that enables generative capabilities like a VAE",
+      "Apply batch normalization to stabilize training across encoder and decoder halves"
+    ],
+    "answer": 0,
+    "explanation": "By making the bottleneck narrower than the input, the network must retain only the most informative structure. Stochastic sampling (from a distribution) is a VAE-specific addition — standard autoencoders have deterministic bottlenecks."
+  },
+  {
+    "q": "The Davies-Bouldin Index evaluates clustering quality as:",
+    "options": [
+      "The average across clusters of the maximum ratio of intra-cluster scatter to centroid separation",
+      "The minimum inter-centroid distance normalized by the mean within-cluster standard deviation",
+      "A probability-weighted sum of pairwise cluster overlap integrals computed from the fitted Gaussian components",
+      "The difference between the best and worst silhouette scores averaged across all K values tested"
+    ],
+    "answer": 0,
+    "explanation": "$DB = \\frac{1}{K}\\sum_i \\max_{j\\neq i}\\frac{s_i+s_j}{d_{ij}}$. Lower is better — it penalizes wide clusters that are close together. The pairwise max comparison is essential to the index and is not captured by the other options."
+  },
+  {
+    "q": "Spectral Clustering separates non-convex clusters by:",
+    "options": [
+      "Embedding data via graph Laplacian eigenvectors then running k-means in that space",
+      "Tracing high-density regions with kernel density estimates to define cluster boundaries",
+      "Fitting a GMM to transformed data and assigning hard labels via maximum responsibility",
+      "Iteratively splitting clusters along axes of maximum variance until the target K is reached"
+    ],
+    "answer": 0,
+    "explanation": "The Laplacian eigenvectors expose graph-connectivity structure; k-means in that embedding separates clusters that are non-convex in the original space. Density tracing describes DBSCAN's approach, not spectral clustering."
+  },
+  {
+    "q": "In SimCLR contrastive learning, a positive pair consists of:",
+    "options": [
+      "Two differently augmented views of the same image passed through the same encoder",
+      "An image and its human-annotated caption drawn from a paired image-text dataset",
+      "An image and its nearest neighbor in the current learned embedding space",
+      "Two images belonging to the same class label as verified by a separately pre-trained classifier"
+    ],
+    "answer": 0,
+    "explanation": "SimCLR creates positive pairs purely through augmentation (crop, flip, color jitter) of the same image — no human labels needed. CLIP uses image-caption pairs across modalities, which is a separate contrastive approach."
+  },
+  {
+    "q": "Kaiser's rule for selecting the number of PCA components recommends:",
+    "options": [
+      "Retaining components whose eigenvalue exceeds 1 when using the correlation matrix",
+      "Keeping components until the cumulative explained variance reaches exactly 90%",
+      "Selecting a component count equal to the square root of the original feature count",
+      "Choosing components that each individually explain more than twice the per-component average"
+    ],
+    "answer": 0,
+    "explanation": "Kaiser's rule: on a standardized (correlation-based) covariance matrix, eigenvalue > 1 means that component explains more variance than a single original variable — a natural cutoff. The 90–95% cumulative variance rule is a separate practical guideline."
+  },
+  {
+    "q": "K-Means++ selects each subsequent initial centroid with probability proportional to:",
+    "options": [
+      "The squared distance from the candidate to its nearest already-chosen centroid",
+      "The uniform probability $1/n$ across all points regardless of existing centroids",
+      "The inverse squared distance, biasing selection toward densely populated regions",
+      "The product of distances to every centroid already chosen so far"
+    ],
+    "answer": 0,
+    "explanation": "$D(x)^2$-proportional selection spreads centroids across the data, yielding better initialization and faster convergence than random init. Uniform selection is standard random init; inverse distance would concentrate centroids in dense regions."
+  },
+  {
+    "q": "FP-Growth requires how many passes over the full transaction database?",
+    "options": [
+      "Two passes — one to count item frequencies and one to build the FP-tree",
+      "One pass that simultaneously tallies frequencies and constructs the tree",
+      "One pass per itemset-length level, matching Apriori's candidate-generation rounds",
+      "Three passes — frequency counting, tree construction, and rule confidence scoring"
+    ],
+    "answer": 0,
+    "explanation": "FP-Growth's two-scan design contrasts with Apriori's $L$ scans (one per itemset length). The first scan counts frequent items; the second inserts ordered transactions into the compressed prefix tree."
+  },
+  {
+    "q": "For GMM model selection (choosing the number of components $K$), the standard approach is:",
+    "options": [
+      "Use BIC or AIC, which balance log-likelihood fit against the number of model parameters",
+      "Apply the elbow method by plotting inertia against $K$ and identifying where the rate of decrease sharpest bends",
+      "Choose the $K$ that maximizes the Silhouette Score computed from hard cluster labels",
+      "Select $K$ using the Davies-Bouldin Index, preferring the value that minimizes it"
+    ],
+    "answer": 0,
+    "explanation": "GMM is a probabilistic model — BIC/AIC penalize log-likelihood by parameter count and are the natural selection criteria. The Elbow method and Silhouette Score are designed around K-Means inertia, not GMM's likelihood objective."
+  },
+  {
+    "q": "Which of the following concepts exists in HDBSCAN but has no direct equivalent in standard DBSCAN?",
+    "options": [
+      "A single global density threshold $\\varepsilon$ applied uniformly across the whole dataset",
+      "A condensed tree encoding cluster stability across a continuous range of density levels",
+      "Classifying low-density points as noise rather than assigning them to any cluster",
+      "Requiring a minimum neighborhood size (minPts) to qualify a point as a core point"
+    ],
+    "answer": 1,
+    "explanation": "The condensed tree and per-cluster stability scores are HDBSCAN-specific. DBSCAN also labels noise and uses minPts; the fundamental difference is HDBSCAN's variable-density framework replaces the single global $\\varepsilon$."
+  },
+  {
+    "q": "The time and memory complexity of naive agglomerative hierarchical clustering are respectively:",
+    "options": [
+      "$O(n \\log n)$ time and $O(n)$ memory, achieved via efficient sorting-based nearest-neighbor chaining algorithms",
+      "$O(n^3)$ time and $O(n^2)$ memory, from maintaining and updating the pairwise distance matrix",
+      "$O(nKI)$ time and $O(nK)$ memory, where $K$ is target clusters and $I$ is iterations",
+      "$O(n^2 \\log n)$ time and $O(n^2)$ memory, due to sorting required at each merge step"
+    ],
+    "answer": 1,
+    "explanation": "Naive hierarchical clustering stores the full $n \\times n$ distance matrix ($O(n^2)$ space) and rebuilds it over $n-1$ merges ($O(n^2)$ per step in the worst case), for $O(n^3)$ total time — impractical beyond ~10K points."
+  },
+  {
+    "q": "A Variational Autoencoder (VAE) differs from a standard autoencoder primarily because:",
+    "options": [
+      "The VAE uses convolutional layers throughout the encoder while the AE uses dense layers",
+      "The VAE bottleneck encodes a mean and variance; latent codes are sampled from that distribution",
+      "The VAE employs an adversarial discriminator to push decoder outputs onto the data manifold",
+      "The VAE substitutes KL divergence between input and output probability distributions for squared pixel-wise reconstruction error"
+    ],
+    "answer": 1,
+    "explanation": "By encoding $\\mu$ and $\\sigma$ and sampling $z \\sim \\mathcal{N}(\\mu, \\sigma^2)$, the VAE creates a smooth, continuous latent space enabling generative sampling. Standard autoencoders map each input to a single deterministic code with no generative mechanism."
+  },
+  {
+    "q": "A Silhouette score of approximately 0.0 for a specific data point indicates that:",
+    "options": [
+      "The point sits firmly near the geometric center of its assigned cluster, well separated from all neighboring clusters",
+      "The point lies on the boundary — its intra-cluster and nearest-cluster distances are roughly equal",
+      "The point is likely misassigned and would fit better in a neighboring cluster",
+      "The point was flagged as noise and excluded from cluster assignment entirely"
+    ],
+    "answer": 1,
+    "explanation": "$s(i) \\approx 0$ means $a(i) \\approx b(i)$ — equidistant from its own cluster and the next closest one. A score below 0 (not zero) signals likely misassignment. Scores near +1 indicate confident, well-separated membership."
+  },
+  {
+    "q": "In DBSCAN, a border point is distinguished from a core point by:",
+    "options": [
+      "Having exactly minPts neighbors within $\\varepsilon$, making it a marginal core point candidate",
+      "Having fewer than minPts neighbors in its $\\varepsilon$-neighborhood but lying within $\\varepsilon$ of a core point",
+      "Having no neighbors within radius $\\varepsilon$ and thus being labeled as isolated noise",
+      "Being the farthest point from the cluster centroid and defining the cluster's outer boundary"
+    ],
+    "answer": 1,
+    "explanation": "A border point lacks the density to be a core point (fewer than minPts neighbors within $\\varepsilon$) but is reachable from one. This distinguishes it from noise, which has no core point within $\\varepsilon$ at all."
+  },
+  {
+    "q": "PCA is sensitive to feature scaling because:",
+    "options": [
+      "The eigendecomposition algorithm requires unit-variance inputs to converge numerically",
+      "Features with large numerical ranges dominate the covariance matrix regardless of true informativeness",
+      "Scaling transforms the covariance matrix into an orthogonal matrix needed for eigenvector decomposition",
+      "Without standardization, PCA identifies directions that minimize rather than maximize variance"
+    ],
+    "answer": 1,
+    "explanation": "PCA maximizes variance along each PC. A feature in thousands (e.g., income) dominates one in single digits (e.g., age) due to scale alone. Standardization (zero mean, unit variance) removes this scale-induced bias before eigendecomposition."
+  },
+  {
+    "q": "An Isolation Forest anomaly score close to 1.0 signals that the point:",
+    "options": [
+      "Has a long average path length, indicating it resides deep inside a dense cluster region",
+      "Was isolated in very few random tree splits, occupying a sparse anomalous region",
+      "Has a reconstruction error exceeding the training mean by more than two standard deviations",
+      "Falls outside the minimum-enclosing hypersphere learned by the one-class SVM boundary"
+    ],
+    "answer": 1,
+    "explanation": "$s \\approx 1$ means the average path length $E[h(x)]$ is very short — the point was separated from all others with just a few random splits. Score near 0.5 is normal (many splits needed). Long path → normal; short path → anomaly."
+  },
+  {
+    "q": "In association rule mining, a Lift value exactly equal to 1 means:",
+    "options": [
+      "The rule has 100% confidence — every single transaction that contains item A also contains item B",
+      "Items A and B are statistically independent — A's presence carries no information about B",
+      "The rule's confidence exactly equals its support, making it borderline for inclusion",
+      "The joint support of {A, B} equals the arithmetic sum of their individual supports"
+    ],
+    "answer": 1,
+    "explanation": "Lift = Confidence / Support(B). If Lift = 1, then $P(B|A) = P(B)$ — knowing A provides no additional information about B. Lift > 1 is a positive association; Lift < 1 means A and B appear together less than chance would predict."
+  },
+  {
+    "q": "The recommended rule of thumb for choosing DBSCAN's minPts given data dimensionality $d$ is:",
+    "options": [
+      "minPts $= d$ (set exactly equal to the total number of input features in the dataset)",
+      "minPts $= 2d$ (twice the number of dimensions, e.g., 4 for 2D data)",
+      "minPts $= d^2$ (the square of the number of features)",
+      "minPts $= \\ln(n)$ (natural log of the number of data points)"
+    ],
+    "answer": 1,
+    "explanation": "The standard heuristic is minPts = 2d. For 2D data this gives 4, a widely used default. Using just $d$ understates the required neighborhood density; $d^2$ grows too fast and marks most points as noise."
+  },
+  {
+    "q": "CLIP achieves zero-shot image classification by:",
+    "options": [
+      "Pre-training on labeled ImageNet and adapting class names to new categories via prompt templates",
+      "Jointly training image and text encoders so matching (image, caption) pairs share similar embeddings",
+      "Masking 75% of image patches and training a transformer to reconstruct them from text descriptions",
+      "Clustering web-scraped images with K-Means and assigning category names from nearby captions"
+    ],
+    "answer": 1,
+    "explanation": "CLIP learns a shared embedding space where an image and its matching caption are close together. At inference, category names are embedded as text and compared to image embeddings — no task-specific fine-tuning is required."
+  },
+  {
+    "q": "In spectral clustering's affinity graph, the degree matrix $D$ is defined as:",
+    "options": [
+      "The matrix of pairwise Euclidean distances between all data points in the original feature space",
+      "A diagonal matrix where each entry $D_{ii}$ equals the sum of all similarity weights from point $i$",
+      "The matrix of top-$k$ eigenvectors used to form the spectral embedding for k-means",
+      "A binary adjacency matrix indicating whether each pair of points is connected in the $k$-NN graph"
+    ],
+    "answer": 1,
+    "explanation": "$D_{ii} = \\sum_j W_{ij}$ — the row sum of the affinity matrix $W$. $D$ is diagonal and is needed to form the graph Laplacian $L = D - W$ and its normalizations. It is not a pairwise distance or eigenvector matrix."
+  },
+  {
+    "q": "Why is t-SNE output unsuitable as input features for a downstream supervised classifier?",
+    "options": [
+      "t-SNE axes lack physical units, causing numerical instability in gradient-based optimizers",
+      "Inter-cluster distances and cluster sizes are distorted — only local structure is preserved faithfully",
+      "t-SNE expands rather than reduces the effective dimensionality, making downstream model training more costly and less reliable",
+      "The algorithm optimizes reconstruction fidelity rather than class-discriminative structure"
+    ],
+    "answer": 1,
+    "explanation": "t-SNE deliberately distorts global distances to reveal local neighborhoods. A large gap between clusters in a t-SNE plot may be meaningless or exaggerated — downstream models trained on these features encode noise as signal."
+  },
+  {
+    "q": "A denoising autoencoder is trained by:",
+    "options": [
+      "Minimizing reconstruction error from a bottleneck while penalizing activation magnitudes with L1",
+      "Reconstructing the original clean input when given a corrupted or noise-injected version as input",
+      "Sampling from a latent Gaussian and maximizing the evidence lower bound (ELBO) objective",
+      "Contrastively pulling clean-noisy pairs together while pushing apart pairs from different inputs"
+    ],
+    "answer": 1,
+    "explanation": "Denoising AEs inject corruption (Gaussian noise, masking, dropout) into the input and train to recover the clean original. This forces the encoder to learn robust, noise-invariant representations rather than a trivial identity mapping."
+  },
+  {
+    "q": "Which association rule metric specifically measures whether the co-occurrence is stronger than chance?",
+    "options": [
+      "Support — the fraction of all transactions containing both antecedent and consequent",
+      "Lift — the ratio of observed confidence to the baseline frequency of the consequent",
+      "Confidence — the conditional probability that the consequent appears given the antecedent",
+      "Coverage — the fraction of transactions containing the antecedent regardless of consequent"
+    ],
+    "answer": 1,
+    "explanation": "Lift = Confidence(A→B) / Support(B). Lift = 1 means independence; > 1 is positive association. Support and confidence do not control for B's base rate, so they can be high even when there is no genuine association."
+  },
+  {
+    "q": "In the EM algorithm for GMMs, the M-step (Maximization) performs which update?",
+    "options": [
+      "Computes the posterior responsibility of each Gaussian for each data point using Bayes' rule",
+      "Updates each component's mean, covariance, and mixing weight to maximize expected log-likelihood given current responsibilities",
+      "Merges Gaussian components whose centroids fall within a proximity threshold $\\varepsilon$",
+      "Applies the kernel trick to transform all non-spherical cluster shapes into equivalent spherical Gaussians needed for the following E-step iteration"
+    ],
+    "answer": 1,
+    "explanation": "E-step computes responsibilities (soft assignments via Bayes' rule); M-step uses those responsibilities as weights to re-estimate $\\mu_k$, $\\Sigma_k$, and $\\pi_k$. The number of components $K$ is fixed — EM does not modify $K$ internally."
+  },
+  {
+    "q": "Which hierarchical clustering linkage is most susceptible to the 'chaining effect'?",
+    "options": [
+      "Ward's linkage, which merges based on minimum incremental variance at each step",
+      "Complete linkage, which measures the maximum pairwise distance between cluster members",
+      "Single linkage, which merges based on the minimum pairwise distance between any two cluster members",
+      "Average linkage, which averages all pairwise distances across both merging clusters"
+    ],
+    "answer": 2,
+    "explanation": "Single linkage uses the minimum inter-cluster distance, so a single bridge point between two natural clusters can cause premature merging, creating elongated chain-like clusters. Ward's and complete linkage produce more compact structures."
+  },
+  {
+    "q": "In K-Means, an outlier far from any natural cluster will most likely:",
+    "options": [
+      "Be automatically excluded from all assignments and flagged as a noise point",
+      "Form its own singleton cluster, consuming one of the $K$ available cluster slots",
+      "Pull the nearest centroid significantly toward it, distorting that cluster for nearby points",
+      "Cause the algorithm to fail to converge due to oscillating centroid assignments"
+    ],
+    "answer": 2,
+    "explanation": "K-Means assigns every point to its nearest centroid. An outlier is absorbed by the nearest cluster and pulls that centroid toward itself, degrading cluster quality for normal points. K-Means has no noise-exclusion mechanism like DBSCAN."
+  },
+  {
+    "q": "PCA identifies principal components by solving for:",
+    "options": [
+      "Sparse linear combinations of features that minimize L1 reconstruction error jointly",
+      "The rotation matrix that aligns feature axes with directions of minimum pairwise correlation",
+      "The eigenvectors of the data covariance matrix, sorted by their corresponding eigenvalues",
+      "Projection directions that maximize between-class scatter relative to within-class scatter"
+    ],
+    "answer": 2,
+    "explanation": "PCA eigendecomposes $C = \\frac{1}{n-1}X^T X$; eigenvectors are the PC directions and eigenvalues quantify variance explained per component. LDA (not PCA) optimizes between-class vs. within-class scatter — it is supervised."
+  },
+  {
+    "q": "UMAP's `min_dist` parameter controls:",
+    "options": [
+      "The number of nearest neighbors used when constructing the weighted high-dimensional topological graph structure",
+      "The trade-off between local accuracy and global topology preservation in optimization",
+      "How tightly points are allowed to cluster together in the low-dimensional output space",
+      "The minimum density threshold below which points are excluded from graph construction"
+    ],
+    "answer": 2,
+    "explanation": "`min_dist` sets minimum spacing between embedded points. Smaller values allow tighter, more compact clusters; larger values spread them more uniformly. `n_neighbors` (not `min_dist`) controls the local-vs-global structure balance."
+  },
+  {
+    "q": "The E-step (Expectation step) in EM for a GMM computes:",
+    "options": [
+      "Updated component means as responsibility-weighted averages of all data points",
+      "The optimal number of Gaussian components by evaluating marginal likelihoods for each $K$",
+      "Responsibilities $r_{ik}$ — the posterior probability that point $x_i$ belongs to component $k$",
+      "Updated covariance matrices by maximizing the expected complete-data log-likelihood"
+    ],
+    "answer": 2,
+    "explanation": "$r_{ik} \\propto \\pi_k \\mathcal{N}(x_i | \\mu_k, \\Sigma_k)$ — these soft assignments are then used in the M-step to update parameters. Updating means and covariances is the M-step, not E-step. $K$ is fixed throughout."
+  },
+  {
+    "q": "Kernel PCA differs from standard linear PCA primarily in that it:",
+    "options": [
+      "Uses the sample correlation matrix instead of the covariance matrix for eigendecomposition",
+      "Selects a sparse informative subset of features before performing eigendecomposition",
+      "Implicitly projects data into a high-dimensional space via a kernel, enabling nonlinear reduction",
+      "Enforces sparsity on the principal component loading vectors through L1 regularization penalties to improve overall interpretability"
+    ],
+    "answer": 2,
+    "explanation": "Kernel PCA eigendecomposes the $n \\times n$ kernel matrix $K_{ij} = k(x_i, x_j)$ instead of the $d \\times d$ covariance matrix. This implicitly applies $\\phi(x)$ without computing it, capturing nonlinear manifold structure that linear PCA misses entirely."
+  },
+  {
+    "q": "An autoencoder trained on normal credit-card transactions flags fraud by:",
+    "options": [
+      "Checking whether the transaction's feature vector falls outside the training data's convex hull",
+      "Comparing the transaction's latent code to a Gaussian distribution fit on training codes",
+      "Measuring reconstruction error — fraudulent patterns reconstruct poorly since the model never learned them",
+      "Computing the Euclidean distance from the transaction to its nearest training-set neighbor"
+    ],
+    "answer": 2,
+    "explanation": "The autoencoder learns to reconstruct normal transactions with low error. Anomalous (fraudulent) transactions produce high reconstruction error because the model has never learned their pattern. This error is the anomaly score."
+  },
+  {
+    "q": "In the k-distance plot used to select $\\varepsilon$ for DBSCAN, the recommended value of $\\varepsilon$ is:",
+    "options": [
+      "The K where the plot begins to flatten, indicating stable cluster-count estimates",
+      "The global median k-distance, since the median is robust to extreme outlier distances",
+      "The distance at the 'elbow' — the sharp transition from dense-cluster to sparse-noise distances",
+      "The minimum k-distance across all points, capturing the densest part of the dataset"
+    ],
+    "answer": 2,
+    "explanation": "Sorting each point's $k$-th nearest-neighbor distance produces an elbow where dense-cluster points transition to sparse noise-region points. Setting $\\varepsilon$ at this elbow correctly classifies the majority of dense points as cluster members."
+  },
+  {
+    "q": "BERT's primary self-supervised pretext task is:",
+    "options": [
+      "Next-sentence prediction — determining whether two given sentences are consecutive in the corpus",
+      "Next-token generation — autoregressively predicting each token from all prior context tokens",
+      "Masked language modeling — predicting randomly masked tokens from surrounding context",
+      "Contrastive sentence matching — aligning augmented views of the same passage with NCE loss"
+    ],
+    "answer": 2,
+    "explanation": "BERT masks ~15% of input tokens at random and trains the model to predict them — the original tokens serve as free supervision from unlabeled text. Next-token prediction is GPT's objective; contrastive learning is SimCLR/CLIP."
+  },
+  {
+    "q": "Spectral Clustering is most appropriate compared to K-Means when:",
+    "options": [
+      "The dataset is very large (millions of points) and the $O(n^3)$ eigendecomposition is affordable",
+      "All features are standardized and clusters are known to be spherical and well-separated",
+      "Clusters are defined by connectivity or manifold structure rather than Euclidean proximity",
+      "The number of clusters $K$ is unknown and must be discovered automatically without input"
+    ],
+    "answer": 2,
+    "explanation": "Spectral clustering shines on manifold-shaped or non-convex clusters — two moons, interlocking rings — where Euclidean distance fails. It is expensive ($O(n^3)$ naive) and still requires $K$ to be specified upfront."
+  },
+  {
+    "q": "A dataset yields Silhouette Scores of 0.72 at $K=4$ and 0.61 at $K=5$. The most appropriate conclusion is:",
+    "options": [
+      "$K=5$ is preferred because more clusters always capture finer-grained structure in the data",
+      "Both values exceed 0.5 and indicate overfitting; too many clusters inflate the silhouette score",
+      "$K=4$ exhibits stronger cluster structure — both cohesion and separation are better at that value",
+      "The difference is negligible; both should be evaluated further with domain knowledge alone"
+    ],
+    "answer": 2,
+    "explanation": "Higher silhouette = tighter clusters farther from each other. $K=4$ (0.72) has meaningfully better structure than $K=5$ (0.61). Adding a superfluous cluster splits a natural one, reducing the score — more clusters do not automatically improve silhouette."
+  },
+  {
+    "q": "In an FP-tree, the count stored at each node represents:",
+    "options": [
+      "The global frequency of that item across all transactions before min-support filtering",
+      "The confidence of the partial rule formed by the root-to-node path in the prefix tree",
+      "The number of transactions that follow the exact root-to-node path in the database",
+      "The lift of all itemsets ending at that node relative to their individual item supports"
+    ],
+    "answer": 2,
+    "explanation": "FP-tree node counts are conditional supports — the number of transactions that share the exact prefix path from root to that node. Mining via conditional FP-trees uses these counts to extract frequent itemsets without rescanning the database."
+  },
+  {
+    "q": "The 'crowding problem' that motivated t-SNE's use of a Student-t distribution in 2D is:",
+    "options": [
+      "Visual clutter from too many data points mapping to nearly identical 2D coordinates",
+      "The tendency for high perplexity to merge all nearby clusters into a single central blob",
+      "The inability to represent moderate high-D distances at adequate 2D separation using a Gaussian",
+      "The $O(n^2)$ bottleneck from computing all pairwise distances in the original space"
+    ],
+    "answer": 2,
+    "explanation": "In high-D, many pairs are at 'moderate' distances. A Gaussian in 2D cannot spread them adequately without collapsing nearby points — the crowding problem. Student-t's heavier tails map moderate high-D distances to larger 2D gaps, resolving the issue."
+  },
+  {
+    "q": "Which statement about PCA principal components is correct?",
+    "options": [
+      "The first PC always points in the direction of steepest gradient of the model's training loss",
+      "Principal components are mutually correlated but each is orthogonal to the original feature axes",
+      "All PCs are mutually orthogonal; data projected onto them consists of uncorrelated dimensions",
+      "The number of retained PCs must equal the number of training samples for lossless reconstruction"
+    ],
+    "answer": 2,
+    "explanation": "Eigenvectors of a symmetric positive semi-definite matrix (the covariance matrix) are always mutually orthogonal. The projected data dimensions are therefore uncorrelated — a useful property for downstream linear models."
+  },
+  {
+    "q": "FP-Growth avoids the combinatorial candidate explosion of Apriori by:",
+    "options": [
+      "Pruning all candidate itemsets below min-support in the first database scan",
+      "Using hash-based counting to eliminate duplicate candidates before frequency testing",
+      "Mining frequent itemsets directly from a compressed prefix tree without generating candidates",
+      "Restricting maximum itemset length to $\\log_2(n)$ to keep the search space manageable"
+    ],
+    "answer": 2,
+    "explanation": "FP-Growth compresses all transactions into a prefix tree and mines conditional FP-trees recursively — no candidate itemsets are ever generated or tested. Apriori's explicit candidate enumeration is exponential in pattern length."
+  },
+  {
+    "q": "The mathematically precise consequence of the curse of dimensionality on distance metrics is:",
+    "options": [
+      "The mean pairwise distance grows linearly with dimensionality while its variance stays effectively constant regardless of how large $d$ grows",
+      "Data requirements for distance-based methods grow only logarithmically with dimensionality",
+      "Distance-based classifiers improve in high dimensions because more features add discriminative signal",
+      "The ratio $(\\text{dist}_{\\max} - \\text{dist}_{\\min}) / \\text{dist}_{\\min}$ converges to 0 as $d \\to \\infty$"
+    ],
+    "answer": 3,
+    "explanation": "As $d \\to \\infty$, all pairwise distances become nearly equal — the max-to-min ratio collapses to 0. The 'nearest' neighbor is barely closer than the farthest one, which destroys the discriminative power of KNN and K-Means."
+  },
+  {
+    "q": "Local Outlier Factor (LOF) detects anomalies by:",
+    "options": [
+      "Building an ensemble of random trees and using short average path length as the anomaly score",
+      "Training a one-class SVM to enclose normal data within a minimum-volume hypersphere",
+      "Fitting a Gaussian to training data and flagging points whose z-score exceeds a threshold",
+      "Comparing each point's local density to its $k$-nearest neighbors' densities — low relative density flags anomalies"
+    ],
+    "answer": 3,
+    "explanation": "LOF computes a local reachability density for each point and compares it to those of its neighbors. A point in a sparse neighborhood surrounded by dense neighborhoods gets a high LOF score. Isolation Forest uses path length — a fundamentally different mechanism."
+  },
+  {
+    "q": "Applying K-Means with $K=2$ to a dataset of two concentric rings will most likely:",
+    "options": [
+      "Correctly separate the inner and outer rings since their density profiles are distinct",
+      "Fail to converge because the two ring-shaped configurations create symmetric oscillation",
+      "Merge both rings into one cluster since the rings share the same geometric center",
+      "Split the data along a diameter, grouping half of each ring into each cluster"
+    ],
+    "answer": 3,
+    "explanation": "K-Means generates Voronoi cells — convex regions. It cannot separate a ring from its enclosing ring; instead it cuts linearly through the data. DBSCAN or spectral clustering handle ring-shaped clusters correctly."
+  },
+  {
+    "q": "If all GMM covariance matrices are constrained to $\\sigma^2 I$ and hard (argmax) assignments are used, the EM algorithm reduces to:",
+    "options": [
+      "Agglomerative hierarchical clustering with Ward's linkage applied sequentially",
+      "DBSCAN with radius $\\varepsilon$ derived from the Gaussian scale parameter $\\sigma$",
+      "Kernel PCA using an RBF kernel parameterized by bandwidth $\\sigma^2$",
+      "K-Means — spherical equal-variance GMM with hard assignments is equivalent to Lloyd's algorithm"
+    ],
+    "answer": 3,
+    "explanation": "With spherical covariances, each Gaussian's log-likelihood reduces to negative squared Euclidean distance to its mean. Hard assignment is then the nearest-centroid rule. This is precisely K-Means (Lloyd's algorithm)."
+  },
+  {
+    "q": "Ward's linkage is often the preferred default for agglomerative clustering because it:",
+    "options": [
+      "Operates on raw pairwise distances without any normalization or transformation",
+      "Excels at recovering elongated filament-shaped clusters that other methods miss",
+      "Minimizes the maximum cluster diameter at each merge, preventing oversized clusters",
+      "Produces compact, roughly equal-sized clusters by minimizing total variance increase per merge"
+    ],
+    "answer": 3,
+    "explanation": "Ward's objective — minimize within-cluster variance increase — produces spherical, balanced clusters similar to K-Means. Single linkage creates elongated chains; complete linkage controls maximum diameter (not minimum variance increase per merge)."
+  },
+  {
+    "q": "Kernel PCA requires $O(n^2)$ memory even on low-dimensional data because:",
+    "options": [
+      "It stores both the $n \\times d$ data matrix and an $n \\times d$ Jacobian of the kernel gradient",
+      "The $k$ retained eigenvectors each have $n$ components, and $k \\cdot n$ grows quadratically",
+      "The $n$ data points are replicated $k$ times to form the feature-space PC loading matrix",
+      "It must compute and store the full $n \\times n$ kernel matrix $K_{ij} = k(x_i, x_j)$ for all pairs"
+    ],
+    "answer": 3,
+    "explanation": "Kernel PCA eigenvectors live in the $n$-dimensional dual space (not $d$-dimensional), and the kernel matrix $K$ stores $n^2$ entries. For $n = 10{,}000$ this is $10^8$ floats — roughly 400 MB at float32 — making it impractical for large datasets."
+  },
+  {
+    "q": "t-SNE uses a Student-t distribution in the low-dimensional space (instead of Gaussian) in order to:",
+    "options": [
+      "Guarantee the KL divergence optimization landscape is convex with a unique global minimum",
+      "Prevent far-apart clusters from collapsing toward the center due to probability normalization",
+      "Match the heavy-tailed distance distribution that naturally arises in high-dimensional spaces",
+      "Map moderate high-D distances to larger 2D separations, directly resolving the crowding problem"
+    ],
+    "answer": 3,
+    "explanation": "Student-t's heavier tails mean that moderate high-D distances are represented as larger gaps in 2D — points are pushed apart rather than crowded together near the center. This is the explicit solution to the crowding problem described by the original t-SNE paper."
+  },
+  {
+    "q": "FP-Growth outperforms Apriori on dense datasets with long frequent patterns because:",
+    "options": [
+      "FP-Growth applies hash-based counting to deduplicate candidates before frequency checks",
+      "FP-Growth discards infrequent items after the first scan and progressively shrinks the effective database at each subsequent level",
+      "FP-Growth avoids the k-distance computation that Apriori requires to set the support threshold",
+      "FP-Growth's prefix tree shares common transaction prefixes, enabling mining with only two total database scans"
+    ],
+    "answer": 3,
+    "explanation": "The FP-tree compresses all transactions by sharing prefix paths. Mining proceeds via recursive conditional FP-trees without rescanning the original database. Apriori requires $L$ full database scans (one per itemset length $L$) — expensive for long patterns."
+  },
+  {
+    "q": "Which scenario best justifies choosing HDBSCAN over standard DBSCAN?",
+    "options": [
+      "A dataset with uniformly distributed, identically dense clusters where one global $\\varepsilon$ fits all",
+      "A 2D synthetic dataset with well-separated, spherical clusters of equal size and density",
+      "A streaming dataset requiring real-time assignment of new points as they arrive one by one",
+      "A dataset with tight urban clusters and diffuse suburban clusters at very different local densities"
+    ],
+    "answer": 3,
+    "explanation": "HDBSCAN's core strength is handling datasets where different clusters have different densities. A single DBSCAN $\\varepsilon$ either splits dense clusters or merges sparse ones. HDBSCAN's variable-density framework handles both simultaneously."
+  },
+  {
+    "q": "PCA must center the data (subtract feature means) before eigendecomposition because:",
+    "options": [
+      "Centering is required so that gradient descent on the eigenvalue objective converges stably",
+      "Centering converts the covariance matrix from a positive semi-definite to a strictly positive definite structure required for reliable eigendecomposition",
+      "Centering ensures the eigendecomposition produces non-negative eigenvalues as required",
+      "Variance is defined relative to the mean — centering aligns the origin with the data so PCA captures true spread"
+    ],
+    "answer": 3,
+    "explanation": "The covariance formula $C = \\frac{1}{n-1}X^T X$ assumes zero-mean data. Without centering, the covariance matrix mixes mean-offset effects with true spread, biasing PCs toward the data's mean direction rather than its axes of variation."
+  },
+  {
+    "q": "Which comparison between Isolation Forest and Local Outlier Factor (LOF) is correct?",
+    "options": [
+      "Isolation Forest uses kernel density estimation while LOF uses random tree partitioning",
+      "LOF is generally faster than Isolation Forest on high-dimensional data because it avoids building an ensemble of random tree structures",
+      "Isolation Forest cannot detect local anomalies in datasets with clusters of varying density",
+      "LOF flags local anomalies by comparing point densities to neighbor densities; Isolation Forest uses average path length in random trees"
+    ],
+    "answer": 3,
+    "explanation": "LOF is a density ratio method: a point surrounded by denser neighbors gets a high LOF score. Isolation Forest uses average path length in random trees — an entirely different geometric principle. LOF is typically slower than Isolation Forest on high-D data."
+  },
+  {
+    "q": "The Masked Autoencoder (MAE) vision pretext task uses a masking rate of approximately:",
+    "options": [
+      "25% — a light fraction preserving most context for straightforward reconstruction",
+      "50% — balancing reconstruction difficulty with sufficient visible patches for prediction",
+      "60% — matching BERT's empirical token masking rate adapted from NLP pre-training",
+      "75% — a high fraction that forces learning rich contextual representations from sparse patches"
+    ],
+    "answer": 3,
+    "explanation": "MAE masks 75% of image patches — far more aggressive than BERT's ~15% token masking. This high rate forces the model to build strong semantic understanding to fill in large missing regions, yielding powerful transferable representations."
+  },
+  {
+    "q": "A rule {Bread} $\\Rightarrow$ {Butter} has confidence = 0.60 and Support(Butter) = 0.30. Its lift equals:",
+    "options": [
+      "0.18, computed as confidence multiplied by support(Butter)",
+      "0.50, the ratio of support(Butter) to the rule's confidence",
+      "1.80, computed by adding confidence and support then dividing by the antecedent support",
+      "2.00, because lift = confidence / support(Butter) = 0.60 / 0.30"
+    ],
+    "answer": 3,
+    "explanation": "Lift = Confidence(A→B) / Support(B) = 0.60 / 0.30 = 2.00. Lift > 1 confirms a genuine positive association — buying Bread makes Butter twice as likely as its baseline. Multiplying confidence by support would give joint support (0.18), not lift."
+  },
+  {
+    "q": "A practitioner finds that DBSCAN merges two visually distinct clusters into one. The most likely cause is:",
+    "options": [
+      "minPts is too high, so too few points qualify as core points and clusters cannot form",
+      "minPts is too low, generating too many core points that aggressively expand and merge clusters",
+      "$\\varepsilon$ is too small, causing most points to be labeled as noise rather than cluster members",
+      "$\\varepsilon$ is too large, connecting the two clusters via density-reachable chains of border points"
+    ],
+    "answer": 3,
+    "explanation": "Merging of distinct clusters is a symptom of $\\varepsilon$ being too large — neighborhoods near the boundary between clusters overlap, making them density-reachable from each other. Too-small $\\varepsilon$ produces isolated noise, not merging."
+  },
+  {
+    "q": "UMAP can serve as a feature extraction step for downstream classifiers whereas t-SNE cannot, primarily because UMAP:",
+    "options": [
+      "Applies a linear projection as its final step, giving output features interpretable magnitudes",
+      "Normalizes output dimensions to zero mean and unit variance for model compatibility",
+      "Is fully deterministic and produces identical embeddings on every run with the same data",
+      "Supports out-of-sample projection — new points can be embedded using the learned mapping without retraining"
+    ],
+    "answer": 3,
+    "explanation": "UMAP learns a parametric mapping that can project new, unseen data points into the embedding space — essential for a train/test split workflow. t-SNE fits each dataset from scratch with no learned function applicable to new points."
+  }
+]

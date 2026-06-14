@@ -1,0 +1,662 @@
+[
+  {
+    "q": "In the chapter's backpropagation worked example, hidden neuron h₂ receives more blame than h₁ when the error signal flows backward. What determines this difference in gradient magnitude?",
+    "options": [
+      "Output weight v₂=0.8 > v₁=0.6, so the gradient ∂L/∂hᵢ = upstream × vᵢ is proportionally larger for h₂",
+      "h₂ has a higher activation value (0.30 vs 0.26), making it a stronger contributor to the output signal",
+      "The ReLU at z₂ passes a larger share of the upstream gradient than the ReLU at z₁ in this pass",
+      "h₂ is evaluated before h₁ in the backward pass and therefore accumulates the full upstream gradient first"
+    ],
+    "answer": 0,
+    "explanation": "The chapter explicitly states: ∂L/∂hᵢ = (upstream gradient) × vᵢ. Because v₂=0.8 > v₁=0.6, h₂ carries a proportionally larger gradient signal. Both ReLU activations pass the gradient unchanged since both pre-activations were positive."
+  },
+  {
+    "q": "AdamW is the standard optimizer for Transformers and LLMs, while plain Adam+L2 is considered incorrect for these models. What specific flaw in Adam+L2 does AdamW correct?",
+    "options": [
+      "L2 gradients conflict with the momentum buffer in Adam, causing weight updates to oscillate and diverge, particularly in the first few epochs when gradients are at their largest",
+      "Adam's learning-rate warmup schedule interferes with L2 terms, applying decay only during the warmup phase",
+      "The Adam gradient norm clipping interacts with L2 to zero out decay on parameters with very small updates",
+      "Adam's per-weight adaptive scaling reduces the effective L2 penalty on frequently-updated weights, leaving them under-regularized"
+    ],
+    "answer": 3,
+    "explanation": "In Adam+L2, the weight-decay gradient is divided by Adam's adaptive denominator √v̂. Heavily-updated weights have large v̂, so the denominator shrinks their L2 term — the very weights most needing regularization get the least. AdamW applies decay separately outside the adaptive scaling."
+  },
+  {
+    "q": "Modern LLM pre-training on NVIDIA A100 and H100 GPUs predominantly uses BF16 rather than FP16. Which hardware property makes BF16 safer for large-scale training?",
+    "options": [
+      "BF16 provides higher mantissa precision than FP16, making it more accurate for weight accumulation steps",
+      "BF16 shares the same 8-bit exponent range as FP32, eliminating the overflow risk that causes NaN in FP16 training",
+      "BF16 allows both forward and backward passes to run at half the memory of FP16 without any loss in accuracy",
+      "BF16 has a built-in loss-scaling mechanism that prevents tiny gradients from rounding to zero automatically"
+    ],
+    "answer": 1,
+    "explanation": "FP16 has only 5 exponent bits, limiting its range to ~65,504 — large activations overflow to NaN. BF16 allocates 8 exponent bits (same as FP32), giving the same dynamic range at half the memory. The tradeoff is less mantissa precision, which rarely matters for training gradient updates."
+  },
+  {
+    "q": "VGG replaces each 5×5 convolutional layer with two stacked 3×3 layers. Which advantage does this substitution NOT provide compared to a single 5×5 layer?",
+    "options": [
+      "Two ReLU non-linearities instead of one, adding expressive power within the same receptive field",
+      "Fewer total parameters (2×3×3×C² vs 5×5×C² per input channel) for equivalent spatial coverage",
+      "A larger effective receptive field than a single 5×5 layer, enabling wider context in early stages",
+      "A uniform architecture using only 3×3 filters that is easy to deepen by stacking more block groups"
+    ],
+    "answer": 2,
+    "explanation": "Two stacked 3×3 layers have the same 5×5 effective receptive field — not a larger one. The genuine gains are more non-linearity (two ReLUs), fewer parameters, and a cleaner, uniform modular design. The receptive field is equivalent, not expanded."
+  },
+  {
+    "q": "Adam initializes its first moment m = 0 and second moment v = 0. At step t=1 with β₁=0.9, the bias-corrected estimate is m̂ = m/(1−0.9). What is the approximate effect of this correction?",
+    "options": [
+      "It reduces the update by 90% to account for the unusually large gradient magnitude seen in the first step",
+      "It inflates the estimate by a factor of ~10, compensating for the zero-initialization that would otherwise make early updates too small",
+      "It sets the effective learning rate to exactly 0.001 regardless of the gradient magnitude at step 1",
+      "It constrains the update magnitude to stay within one standard deviation of the initial random weight values, preventing over-correction on the very first optimizer step"
+    ],
+    "answer": 1,
+    "explanation": "At t=1, 1−β₁^t = 1−0.9 = 0.1, so m̂ = m/0.1 = 10×m. Without bias correction the near-zero initial m would make the first update far too small. The correction inflates the estimate to its true expected magnitude and naturally fades to negligible effect after ~1000 steps."
+  },
+  {
+    "q": "Norm-based gradient clipping scales the entire gradient vector when ‖g‖ > max_norm, while element-wise clipping clips each component independently. What key property does norm-based clipping preserve that element-wise clipping does not?",
+    "options": [
+      "The gradient direction is unchanged; only the vector's length is reduced to at most max_norm",
+      "All gradient elements are clamped symmetrically so the update has zero net effect on the loss surface",
+      "The clipping threshold adapts to each layer's gradient magnitude automatically during the backward pass",
+      "The Hessian curvature information is retained in the clipped update, helping the optimizer avoid saddle points"
+    ],
+    "answer": 0,
+    "explanation": "Norm clipping multiplies the entire g by max_norm/‖g‖, leaving relative magnitudes unchanged — the descent direction is identical, just shorter. Element-wise clipping truncates each component independently: some elements shrink while others do not, distorting the direction the optimizer actually steps in."
+  },
+  {
+    "q": "A ResNet block computes H(x) = F(x) + x, where F is the learned residual. If the true optimal transformation at a certain layer is the identity mapping, what should F(x) ideally learn to output?",
+    "options": [
+      "F(x) ≈ 2x, so that adding the shortcut x gives H(x) = 3x, providing triple amplification for the signal",
+      "F(x) ≈ tanh(x), replacing the skip-connection signal with a bounded non-linear alternative to the identity",
+      "F(x) ≈ Wx for an orthogonal matrix W, rotating the representation without changing its norm",
+      "F(x) ≈ 0, since the shortcut already provides x unchanged and no correction is necessary"
+    ],
+    "answer": 3,
+    "explanation": "If the identity is optimal, H(x)=x means F(x)=0. Learning to output approximately zero is far easier than learning a precise identity mapping from random initialization. This reformulation lets deep networks bypass useless layers, which is why ResNet-152 trained successfully when plain 56-layer networks degraded."
+  },
+  {
+    "q": "Vision Transformer (ViT) requires far more training data than CNNs of similar capacity to reach comparable accuracy. Which architectural property causes this data hunger?",
+    "options": [
+      "ViT's learned positional embeddings have significantly more parameters than CNN pooling operations and require substantially more labeled examples to converge to useful representations",
+      "ViT applies attention globally from the very first layer, creating quadratic memory that limits useful batch sizes",
+      "ViT lacks the translation equivariance and local connectivity priors that CNNs encode, so it must learn spatial relationships entirely from data",
+      "ViT's patch projection discards within-patch spatial structure that CNNs preserve through overlapping convolutions"
+    ],
+    "answer": 2,
+    "explanation": "CNNs hardcode translation equivariance (same filter everywhere) and local connectivity (nearby pixels matter more). These priors mean even a few hundred examples convey spatial structure. ViT has no such inductive bias — it must discover from data alone that adjacent patches are related, requiring orders of magnitude more examples."
+  },
+  {
+    "q": "Focal Loss is defined as FL = −(1−pₜ)^γ × log(pₜ). What happens to Focal Loss when the focusing parameter γ is set to exactly 0?",
+    "options": [
+      "The loss becomes mean squared error because the (1−pₜ) factor evaluates to pₜ, replacing log with a quadratic",
+      "The loss becomes undefined because dividing by (1−pₜ)^0 = 1 leaves no mechanism to down-weight easy examples",
+      "The loss reduces to standard cross-entropy because (1−pₜ)⁰ = 1, removing the example-weighting factor entirely",
+      "The loss converges to the Huber loss for probabilities because the γ→0 limit smooths the log discontinuity"
+    ],
+    "answer": 2,
+    "explanation": "Any real number raised to the power 0 equals 1, so (1−pₜ)⁰ = 1 for all pₜ. FL = −1 × log(pₜ) = standard cross-entropy. Focal Loss is thus a strict generalization: γ=0 gives normal cross-entropy, while γ>0 progressively down-weights easy (high-confidence correct) examples to focus on hard or misclassified ones."
+  },
+  {
+    "q": "After YOLO performs a single forward pass, multiple grid cells near the same object each produce high-confidence bounding boxes. Which step in post-processing resolves these duplicates?",
+    "options": [
+      "The softmax output layer suppresses all detections below a 0.5 confidence threshold before returning results",
+      "Non-Maximum Suppression keeps the highest-confidence box and discards all other boxes whose IoU with it exceeds 0.5",
+      "Bounding boxes from adjacent grid cells are averaged by their objectness scores to produce one consensus box",
+      "The 7×7 grid enforces one object per cell, so duplicate detections cannot occur by architectural design"
+    ],
+    "answer": 1,
+    "explanation": "NMS iteratively selects the highest-confidence detection, then removes all remaining boxes whose IoU with it exceeds the threshold (usually 0.5 — meaning they likely cover the same object). Each physical object ends up with exactly one detection — the most confident one — while spatial duplicates are eliminated."
+  },
+  {
+    "q": "EfficientNet introduces compound scaling controlled by a coefficient φ. Which three network dimensions does φ simultaneously adjust?",
+    "options": [
+      "Network depth (layers), width (channels), and input image resolution",
+      "Attention head count, sequence length, and key-query embedding dimension",
+      "Learning rate, batch size, and number of training epochs at each scale",
+      "Filter size, stride length, and padding in every convolutional layer of the network"
+    ],
+    "answer": 0,
+    "explanation": "EfficientNet scales depth ∝ 1.2^φ, width ∝ 1.1^φ, and resolution ∝ 1.15^φ simultaneously. Earlier work scaled only one dimension at a time, hitting diminishing returns. The key finding was that balanced, proportional scaling of all three dimensions achieves far better accuracy-efficiency tradeoffs."
+  },
+  {
+    "q": "In U-Net's encoder-decoder design, horizontal skip connections run between matching encoder and decoder levels. What specific information do these bridges relay that the bottleneck path cannot?",
+    "options": [
+      "Skip connections provide an alternate gradient path to prevent vanishing gradients in the encoder's early layers",
+      "They relay the encoder's learned weight matrices so the decoder can share parameters without duplication",
+      "They pass a global context vector summarizing the entire image to every decoder level simultaneously",
+      "They carry high-resolution spatial detail lost during pooling, allowing the decoder to localize predictions precisely"
+    ],
+    "answer": 3,
+    "explanation": "Encoder pooling compresses spatial resolution to learn semantic features but discards fine-grained position information. The decoder must recover pixel-level precision. U-Net's skip connections pass the uncompressed encoder feature maps directly to each corresponding decoder level, restoring the spatial detail needed for accurate per-pixel labeling."
+  },
+  {
+    "q": "The self-attention formula computes softmax(QKᵀ/√dₖ)·V. Why is dividing by √dₖ necessary rather than leaving QKᵀ unscaled?",
+    "options": [
+      "It normalizes query and key vectors toward unit length before the dot product, preventing any single embedding dimension from dominating the computed similarity scores",
+      "It reduces the output dimensionality from dₖ to 1, making the attention weight a scalar rather than a vector",
+      "It cancels the ReLU non-linearity applied inside the query projection, keeping gradients linear throughout",
+      "Without scaling, dot products grow proportionally to dₖ and push softmax into saturation, producing near-zero gradients for the optimizer"
+    ],
+    "answer": 3,
+    "explanation": "For random q, k vectors each of dimension dₖ, the dot product q·k has variance ~dₖ. Large dₖ (e.g., 64) means large dot products, which push softmax toward one-hot outputs where ∂softmax/∂input ≈ 0. Dividing by √dₖ reduces variance to ~1.0, keeping softmax in a region with informative, non-vanishing gradients."
+  },
+  {
+    "q": "Bahdanau Attention (2015) was a breakthrough over earlier encoder-decoder seq2seq models. What specific architectural limitation did it overcome?",
+    "options": [
+      "It removed the need for an encoder by letting the decoder attend directly to the embedded input tokens",
+      "It introduced bidirectional encoder processing, giving each hidden state context from both sides of the input",
+      "It kept every encoder hidden state available and let the decoder query them dynamically at each generation step",
+      "It replaced sequential RNN computation with parallelizable convolutional filters applied to the input sequence"
+    ],
+    "answer": 2,
+    "explanation": "Earlier seq2seq models compressed the full source sequence into a single fixed-size vector — a bottleneck that lost information for long sentences. Bahdanau attention retained all T encoder hidden states {h₁,…,hₜ} and computed a context vector as a learned weighted sum at each decoder step, allowing the model to focus on relevant source positions."
+  },
+  {
+    "q": "The original Transformer uses fixed sinusoidal positional encodings. What mathematical advantage does the sin/cos formulation provide over a simple integer index encoding?",
+    "options": [
+      "Sinusoidal vectors have unit norm, ensuring positional encodings do not change the magnitude of token embeddings when added",
+      "Relative positions can be expressed as a linear combination of absolute position vectors, letting the model generalize to unseen lengths",
+      "The encoding values are bounded between −1 and +1, matching the typical scale of trained token embeddings naturally",
+      "Sinusoidal encodings use fewer parameters than a learned embedding table, reducing the total model size significantly"
+    ],
+    "answer": 1,
+    "explanation": "Because PE(pos+k) = T·PE(pos) for a fixed linear transform T depending only on k, the model can learn to recover relative distance from the encoding vectors. This is why the original Transformer generalizes to longer sequences at inference than those seen during training — relative relationships remain meaningful beyond the training range."
+  },
+  {
+    "q": "In an LSTM, the cell state Cₜ is called the 'gradient highway.' When the forget gate fₜ ≈ 1 over many consecutive time steps, what is the effect on gradients during backpropagation through time?",
+    "options": [
+      "Gradients traverse many time steps with near-unit multiplicative factors, largely avoiding the vanishing gradient problem",
+      "The input gate is forced open, so the cell state grows unboundedly and gradients explode over time",
+      "The output gate blocks gradients from entering the cell state, effectively cutting the gradient highway in that direction",
+      "Gradients accumulate additively in the cell state, causing them to grow exponentially across the sequence"
+    ],
+    "answer": 0,
+    "explanation": "The cell state update is Cₜ = fₜ ⊙ Cₜ₋₁ + iₜ ⊙ C̃ₜ. The gradient of L with respect to Cₜ₋₁ is multiplied by fₜ. When fₜ ≈ 1 for many steps, this product is close to 1^T ≈ 1 rather than decaying exponentially — the LSTM's key mechanism for preserving long-range dependencies that plain RNNs cannot."
+  },
+  {
+    "q": "BERT's Masked Language Modeling selects 15% of tokens for prediction. Of those selected tokens, only 80% are replaced with [MASK]. What happens to the remaining 20%?",
+    "options": [
+      "They are replaced with [PAD] and excluded from the prediction loss so the model is not confused by them",
+      "They are duplicated at a new position so the model can contrast the masked and unmasked versions",
+      "They are moved to random positions to test BERT's ability to reconstruct the original word order",
+      "Half (10%) are replaced with a random vocabulary token, and the other half (10%) are left completely unchanged"
+    ],
+    "answer": 3,
+    "explanation": "The 80/10/10 split is deliberate: 80% [MASK] teaches prediction from context; 10% random tokens prevent the model from assuming all [MASK] tokens are the only ones worth attending to; 10% unchanged forces the model to also produce good representations for normally visible tokens, not just masked positions."
+  },
+  {
+    "q": "RoPE (Rotary Position Embedding) encodes position by applying an operation to query and key vectors before the Q·Kᵀ dot product. What is that operation?",
+    "options": [
+      "Adding a sinusoidal position vector to each query and key before the attention score computation",
+      "Multiplying query and key magnitudes by a position-dependent decay factor that decreases with distance",
+      "Rotating query and key vectors by a position-dependent angle in 2D subspaces of the embedding dimension",
+      "Projecting query vectors onto a position-orthogonal subspace so distant positions contribute less to scores"
+    ],
+    "answer": 2,
+    "explanation": "RoPE applies a rotation matrix R(mθᵢ) to each (q₂ᵢ, q₂ᵢ₊₁) pair at position m, and similarly to k. Because q·k = R(mθ)q̃ · R(nθ)k̃ = q̃ · R((m−n)θ)k̃, the dot product depends only on the relative distance m−n, not the absolute positions. This relative nature enables better length generalization."
+  },
+  {
+    "q": "Compared to LSTM, a GRU achieves a ~33% reduction in per-unit parameters. Which architectural change is directly responsible for this reduction?",
+    "options": [
+      "GRU ties the input and hidden weight matrices together using a shared projection, halving those parameter matrices",
+      "GRU merges the forget and input gates into a single update gate and eliminates the dedicated cell state, leaving only two gates",
+      "GRU replaces the tanh activation in the candidate computation with a linear mapping, removing one weight matrix entirely",
+      "GRU applies weight sharing across the forward and backward directions in its built-in bidirectional processing"
+    ],
+    "answer": 1,
+    "explanation": "LSTM maintains three gating computations (forget fₜ, input iₜ, output oₜ) plus a separate cell state Cₜ — requiring four weight matrices per layer. GRU collapses fₜ and iₜ into one update gate zₜ, adds a reset gate rₜ, and discards the separate cell state — requiring only three weight matrices, reducing parameters by ~33%."
+  },
+  {
+    "q": "In multi-head attention, the output projection W^O is applied after concatenating all h head outputs. What would be lost if W^O were removed from the architecture?",
+    "options": [
+      "Without W^O the concatenated output is h×dᵥ-dimensional, not d_model, and heads cannot combine information — downstream layers receive the wrong shape",
+      "Gradient flow through the multi-head block would be blocked during backpropagation because tensor concatenation across attention heads is not differentiable without a learned linear projection",
+      "The key-query dot products would become unscaled, causing softmax saturation in every head simultaneously",
+      "Attention weights from different heads would sum to more than 1.0, violating the probability normalization constraint"
+    ],
+    "answer": 0,
+    "explanation": "Each head produces a dᵥ-dimensional output; concatenating h heads gives h×dᵥ. W^O ∈ ℝ^(h·dᵥ × d_model) projects this back to d_model and, crucially, allows the model to learn how to mix and integrate signals from all heads into a coherent representation. Without it, the output tensor has the wrong dimension for all subsequent operations."
+  },
+  {
+    "q": "Byte Pair Encoding (BPE) constructs a vocabulary for language models through an iterative process. Which description correctly characterizes that process?",
+    "options": [
+      "BPE splits text at Unicode codepoint boundaries and retains only codepoints that appear in at least N documents",
+      "BPE counts all adjacent symbol pairs in the corpus and repeatedly merges the most frequent pair into a new token",
+      "BPE applies mutual information ranking to select the character n-grams that best predict the following word",
+      "BPE trains a small neural LM on characters and promotes subsequences with high log-probability to vocabulary tokens"
+    ],
+    "answer": 1,
+    "explanation": "BPE starts with individual characters (or bytes) as the vocabulary. At each step, it counts every adjacent pair of symbols in the corpus, merges the most frequent pair into a single new symbol, and repeats until the vocabulary reaches the target size. Common words become single tokens; rare or novel words are represented as sequences of subword pieces."
+  },
+  {
+    "q": "GPT's causal (autoregressive) self-attention mask sets certain attention logits to −∞ before the softmax operation. What is the resulting effect on the attention weights of those masked positions?",
+    "options": [
+      "After softmax, masked positions have exactly zero weight, so each token aggregates only past (and current) token values",
+      "Masked positions receive a small uniform weight of 1/T that prevents zero-division in the softmax denominator",
+      "The −∞ mask is applied only during training; during inference all positions can attend to all other positions freely",
+      "Masked positions reduce to the embedding mean, producing a background context signal rather than a zero contribution"
+    ],
+    "answer": 0,
+    "explanation": "e^(−∞) = 0, so any position that receives −∞ before softmax contributes zero weight in the weighted sum over values. This makes GPT strictly causal: when generating token at position t, the output is computed only from tokens at positions 1 through t, enabling left-to-right autoregressive generation without future information leakage."
+  },
+  {
+    "q": "The 'dead ReLU' problem in deep networks, mentioned when discussing ReLU's gradient behavior in backpropagation, refers to which failure mode?",
+    "options": [
+      "A ReLU unit that oscillates between its maximum value and zero on alternate training steps, producing unstable gradient estimates throughout",
+      "A ReLU unit whose bias grows so large that its pre-activation is always above zero, causing gradients to saturate to a constant fixed value",
+      "A ReLU unit whose weights grow unboundedly due to the unbounded positive gradient region, eventually crashing training with NaN values",
+      "A ReLU unit whose pre-activation is always negative, so it always outputs 0 and its gradient is always 0 — the weight is permanently frozen"
+    ],
+    "answer": 3,
+    "explanation": "ReLU outputs max(0, z): if z ≤ 0, output = 0 and the gradient ∂ReLU/∂z = 0. If a neuron's weights evolve so that z is always negative for every training example, it never fires, never receives a gradient, and its weights never update — it is 'dead.' The chapter notes this happens when negative gradients permanently push z into negative territory."
+  },
+  {
+    "q": "In LoRA fine-tuning, the weight update is ΔW = B×A where W₀ ∈ ℝ^(4096×4096), B ∈ ℝ^(4096×8), and A ∈ ℝ^(8×4096). How many trainable parameters does one such LoRA module contain?",
+    "options": [
+      "16,777,216 — matching the full matrix, because B and A together must span the same capacity as W₀",
+      "32,768 — only B is trained; A is fixed at its random initialization and contributes no trainable parameters",
+      "65,536 — both A and B are trained, contributing 4096×8 + 8×4096 parameters in total",
+      "64 — only the r×r bottleneck product BA occupies trainable memory at the rank-8 intersection"
+    ],
+    "answer": 2,
+    "explanation": "Both matrices are trained: A has r×d = 8×4096 = 32,768 parameters, and B has d×r = 4096×8 = 32,768 parameters, totaling 65,536 — 256× fewer than the 16.8M in W₀. At inference, B×A is precomputed and added to W₀, yielding a standard weight matrix with zero runtime overhead."
+  },
+  {
+    "q": "In RLHF's PPO fine-tuning stage, the reward signal is R_total = R_reward_model − β × D_KL(π ‖ π_SFT). What specific failure does the KL penalty term prevent?",
+    "options": [
+      "It prevents the policy from collapsing to output only the single highest-reward response for every prompt",
+      "It stops the policy from generating outputs that score highly on the reward model through reward hacking while being useless to humans",
+      "It ensures the reward model and policy model share gradient updates, maintaining their quality proportionally",
+      "It blocks the policy from memorizing the SFT training examples verbatim to avoid overfitting to demonstration data"
+    ],
+    "answer": 1,
+    "explanation": "Without the KL term, the policy is free to exploit the reward model — generating gibberish or adversarially crafted text that gets high scores from the imperfect reward model without being genuinely helpful. The KL penalty keeps the policy close to the SFT baseline, ensuring outputs remain human-comprehensible even as they improve."
+  },
+  {
+    "q": "The VAE encoder outputs a distribution (μ, σ) rather than a point z. Training requires gradients to flow back through the sampling step. The reparameterization trick achieves this by:",
+    "options": [
+      "Replacing the continuous sample with the closest discrete vocabulary token so gradients can propagate through embeddings",
+      "Averaging multiple z samples at each step and backpropagating through the mean, which is differentiable",
+      "Rewriting z = μ + σ × ε where ε ~ N(0,1) is fixed external noise, making z a deterministic function of the trainable μ and σ",
+      "Using a straight-through estimator that passes gradients unchanged through the non-differentiable sampling operator"
+    ],
+    "answer": 2,
+    "explanation": "You cannot backpropagate through a random node in the computation graph. By writing z = μ + σ × ε and treating ε as external noise (not part of the graph), z becomes a deterministic differentiable function of μ and σ. Gradients flow through z back to μ and σ normally, allowing the encoder to learn the optimal posterior distribution."
+  },
+  {
+    "q": "In RLHF Stage 2, the reward model is trained on human preference rankings using the loss L = −log(σ(s_win − s_lose)). What behavior does this loss function drive?",
+    "options": [
+      "The winning response score is pushed strictly above the losing response score on every preference pair",
+      "The reward model outputs probability distributions over all candidate responses summing to exactly 1.0",
+      "Score differences greater than 5 are clipped to prevent the reward model from over-penalizing poor responses",
+      "The losing response score is driven toward −∞ to make the reward model a hard binary classifier"
+    ],
+    "answer": 0,
+    "explanation": "σ(s_win − s_lose) is the probability that the reward model correctly ranks the winning response higher. Minimizing −log of this probability is equivalent to maximizing that probability — which means pushing s_win above s_lose. Unlike a hard binary classifier, the sigmoid keeps gradients smooth and bounded even for large score gaps."
+  },
+  {
+    "q": "The VAE training objective is ELBO = L_reconstruction − D_KL(q(z|x) ‖ p(z)). What role does the KL divergence term specifically play in shaping the learned latent space?",
+    "options": [
+      "It forces the reconstruction loss to zero by making the decoder's output distribution match the input exactly pixel by pixel",
+      "It prevents the encoder from overfitting by penalizing latent codes that are far from zero in the training set",
+      "It limits the information capacity of z to r bits per dimension, acting as a bottleneck similar to PCA",
+      "It forces the encoder's posterior q(z|x) toward the standard normal prior, creating a smooth, continuous, gap-free latent space"
+    ],
+    "answer": 3,
+    "explanation": "Without KL regularization, the encoder maps each input to an arbitrary isolated point — creating a scattered latent space with gaps where the decoder produces garbage. The KL term penalizes any distribution that deviates from N(0,I), pulling all posteriors toward the origin and making the latent space continuous and navigable for generation."
+  },
+  {
+    "q": "Mode collapse is described in the chapter as the most common GAN failure mode. Which outcome most accurately characterizes a mode-collapsed generator?",
+    "options": [
+      "The generator produces outputs that are identical to training examples, plagiarizing the real data distribution",
+      "The generator's loss rises to NaN because a discriminator that becomes too accurate provides near-zero gradient to the generator, effectively halting its training entirely",
+      "The generator generates extremely high-resolution outputs but fails on low-resolution inputs due to scale mismatch",
+      "The generator repeatedly produces a narrow variety of outputs that fool the discriminator, ignoring most of the real data distribution"
+    ],
+    "answer": 3,
+    "explanation": "Mode collapse means the generator finds one or a few outputs that reliably score well with the current discriminator and exploits them — ignoring the diversity of the real data distribution. Output diversity collapses to near-zero. The FID score is high because generated samples fail to cover real data modes, even if individual samples look realistic."
+  },
+  {
+    "q": "Diffusion models use the expression xₜ = √ᾱₜ · x₀ + √(1−ᾱₜ) · ε during training. Why is this closed-form expression valuable?",
+    "options": [
+      "It allows any target noise level t to be sampled in one step during training without simulating all intermediate forward steps",
+      "It enables the denoising network to predict both the clean image x₀ and the noise ε in a single forward pass",
+      "It guarantees that all 1000 intermediate noisy images are generated deterministically from a single random seed",
+      "It computes the gradient of the diffusion loss in closed form, eliminating the need to backpropagate through the UNet"
+    ],
+    "answer": 0,
+    "explanation": "This expression is a direct closed form: given x₀ and any time step t, you can sample xₜ in one operation by mixing the clean image with Gaussian noise in the ratio (√ᾱₜ, √(1−ᾱₜ)). During training this means each example can be corrupted to any noise level t without running 1,000 forward Markov chain steps — making training efficient and parallelizable across all time steps simultaneously."
+  },
+  {
+    "q": "Compared to GANs, diffusion models have a significant practical disadvantage for real-time applications. What is it?",
+    "options": [
+      "Diffusion models require a labeled dataset for conditioning, making them unsuitable for purely generative tasks",
+      "Generating a sample requires 50–1000 sequential UNet forward passes, making inference far slower than a GAN's single pass",
+      "Diffusion models must retain all 1000 intermediate noisy images in GPU memory simultaneously during generation",
+      "The text encoder must be re-run for every denoising step, creating linear latency growth with the number of steps"
+    ],
+    "answer": 1,
+    "explanation": "GANs generate in a single generator forward pass — milliseconds on modern hardware. Diffusion models must iteratively denoise from pure Gaussian noise through 50–1000 sequential steps, each requiring a full UNet evaluation. This latency gap explains ongoing research into DDIM, consistency models, and distillation methods to accelerate diffusion inference."
+  },
+  {
+    "q": "Standard GAN training is equivalent to minimizing Jensen-Shannon (JS) divergence between pdata and pG. Why does this cause training instability early in training?",
+    "options": [
+      "JS divergence is bounded between 0 and log 2 in all cases, meaning once the generator collapses to a single mode it receives no further gradient signal and training permanently stalls",
+      "JS divergence requires differentiating through the discriminator's log outputs, which produces numerically unstable NaN gradients",
+      "When the two distributions have disjoint support (common early in training), JS divergence is constant at log 2 — giving the generator near-zero gradient",
+      "JS divergence is asymmetric, so gradients flow only toward the discriminator, starving the generator of learning signal"
+    ],
+    "answer": 2,
+    "explanation": "Early in training pdata and pG overlap very little. JS divergence between two distributions with disjoint support is exactly log 2 — constant regardless of how far apart they are, yielding zero gradient for the generator. WGAN replaces JS with Wasserstein-1 distance, which remains smooth and informative even when distributions are far apart."
+  },
+  {
+    "q": "SimCLR achieves better learned representations with larger batch sizes, all else being equal. What is the direct mechanism responsible for this improvement?",
+    "options": [
+      "More images per batch provide more negative examples for the NT-Xent contrastive loss, making the pretext task harder and the features more discriminative",
+      "Larger batch sizes improve the running statistics computed inside the projection head's batch normalization layers, yielding more accurate normalization and more stable gradient update magnitudes throughout training",
+      "A bigger batch contains more distinct augmentation views per image, increasing the number of positive pairs the model learns to align",
+      "Larger batches enable a cosine LR schedule that helps the encoder escape early local minima in the contrastive loss landscape"
+    ],
+    "answer": 0,
+    "explanation": "NT-Xent loss pushes each view's embedding toward its paired positive view while pushing away all 2(N−1) other images in the batch as negatives. More images per batch means more negatives — a harder, richer training signal. SimCLR used 4096–8192 batch sizes for this reason; the chapter calls batch size one of its key findings."
+  },
+  {
+    "q": "WGAN-GP adds a gradient penalty to the critic loss to enforce the Lipschitz constraint. What mathematical property does this penalty specifically require the critic to satisfy?",
+    "options": [
+      "The critic outputs a bounded probability in [0,1] so it remains a valid discriminator throughout training",
+      "The critic gradient norm at real data points matches its gradient norm at fake data points for training balance",
+      "The critic function f is approximately 1-Lipschitz, ensuring ‖∇f‖₂ ≈ 1 at interpolated samples between real and fake",
+      "The critic parameters lie within a unit ball in parameter space so the Wasserstein distance remains well-defined"
+    ],
+    "answer": 2,
+    "explanation": "Wasserstein distance is only valid when computed over 1-Lipschitz functions. The gradient penalty λ·E[(‖∇D(x̂)‖₂−1)²] directly penalizes the critic whenever its gradient norm deviates from 1 at interpolated points x̂. This is more flexible than weight clipping (which restricts capacity) and empirically leads to more stable training and better sample quality."
+  },
+  {
+    "q": "CLIP trains image and text encoders jointly on 400M (image, caption) pairs. Which property enables CLIP to classify images into novel categories without any task-specific labeled training data?",
+    "options": [
+      "CLIP's image encoder is first pre-trained on supervised ImageNet-21K labels, which cover the vast majority of real-world visual concepts needed for zero-shot classification benchmarks",
+      "After pre-training, image and text embeddings share the same vector space, so class descriptions can be compared to image embeddings by cosine similarity",
+      "CLIP generates synthetic training labels at inference time by retrieving the most similar captions from its training corpus",
+      "CLIP uses retrieval-augmented generation to find the closest training image to the test image and return its label"
+    ],
+    "answer": 1,
+    "explanation": "CLIP learns a shared embedding space where matched image-text pairs are pulled close and mismatched pairs are pushed apart. For zero-shot classification, 'a photo of a [class]' is embedded by the text encoder; the class whose text embedding is most similar (highest cosine similarity) to the image embedding wins. No task-specific labels or fine-tuning are needed."
+  },
+  {
+    "q": "A Graph Neural Network runs K=2 message-passing rounds. What is the maximum neighborhood extent that each node's final embedding has summarized?",
+    "options": [
+      "Only the node's own features — message passing aggregates neighbors but the receiving node cancels them out via normalization",
+      "One hop (direct neighbors only) — two rounds are needed to establish connectivity but only the first round aggregates features",
+      "The entire graph — message passing with any K≥2 produces global pooling due to exponential receptive field growth",
+      "Two hops — round 1 pulls in direct-neighbor features; round 2 aggregates those enriched representations, reaching neighbors' neighbors"
+    ],
+    "answer": 3,
+    "explanation": "After K rounds, each node knows about its K-hop neighborhood. Round 1: each node aggregates its direct neighbors → each node has 1-hop information. Round 2: each node aggregates those updated neighbors → each node now has 2-hop information (neighbors' neighbors). This is analogous to increasing the receptive field in CNNs with each layer."
+  },
+  {
+    "q": "Before running the first training step, what cross-entropy loss value should a correctly implemented 10-class classifier produce with randomly-initialized weights?",
+    "options": [
+      "0.1, because with 10 equal-probability classes the model is 10% correct and the loss equals that probability directly",
+      "2.303, matching −log(0.1), the expected loss when each class receives equal probability 1/10 at random initialization",
+      "10.0, because the number of classes is the natural baseline entropy for a uniform categorical distribution",
+      "0.693, the binary cross-entropy baseline that appears whenever the model has a single sigmoid output unit"
+    ],
+    "answer": 1,
+    "explanation": "A random model spreads probability uniformly: each class gets 0.1. For the true class, −log(0.1) = 2.303. The chapter uses this as a mandatory sanity check — if your initial loss differs significantly from this expected value, there is a bug in the loss function, model output layer, or data pipeline before any training has occurred."
+  },
+  {
+    "q": "Mixture of Experts (MoE) architectures add an auxiliary load balancing loss alongside the main training loss. What failure mode does this auxiliary term prevent?",
+    "options": [
+      "All tokens routing to the same 1–2 experts while others remain untrained, creating a catastrophic expert imbalance",
+      "Individual experts growing disproportionately large relative to the shared attention layers over training time",
+      "The router learning position-invariant policies so that all tokens at the same sequence position choose the same expert",
+      "Expert outputs summing to values outside the residual stream's operating range, destabilizing layer normalization"
+    ],
+    "answer": 0,
+    "explanation": "Early in training, some experts are marginally better by random chance. The router sends more tokens there; those experts receive more gradient and improve further — a positive feedback loop that starves all other experts of training signal. The load balancing loss penalizes routing imbalance, forcing each expert to receive roughly 1/E of all tokens."
+  },
+  {
+    "q": "You have 500 labeled medical images and want to fine-tune pre-trained ResNet-50. Given the small dataset, which strategy best balances effective transfer and overfitting risk?",
+    "options": [
+      "Train all 25M parameters from random initialization at a standard learning rate, arguing that medical image textures differ too much from natural images for ImageNet weights to transfer usefully",
+      "Full fine-tune all weights with a 10× reduced learning rate and strong data augmentation on every layer",
+      "Freeze the entire backbone, add a two-layer MLP head, and train only the head from random initialization",
+      "Freeze early layers that learn general low-level features, and fine-tune later layers plus the classification head with a small learning rate"
+    ],
+    "answer": 3,
+    "explanation": "Early ResNet layers capture universal low-level features (edges, textures, gradients) that transfer across domains — these should stay frozen. Later layers capture higher-level semantics that may need adaptation. Fine-tuning only the later layers and head reduces trainable parameters, minimizing overfitting risk on a 500-example dataset while leveraging ImageNet pre-training effectively."
+  },
+  {
+    "q": "Triplet Loss has the form L = max(0, d(A,P) − d(A,N) + margin). What does the max(0,…) operation specifically enforce during training?",
+    "options": [
+      "The loss is always positive, preventing negative contributions that could destabilize the embedding space",
+      "The loss grows at most linearly with the distance gap, preventing overly aggressive embedding rearrangements",
+      "No gradient update is computed when the positive is already closer to the anchor than the negative by at least the margin",
+      "The distance d(A,P) is capped at the margin to prevent the anchor-positive pair from collapsing to identical vectors"
+    ],
+    "answer": 2,
+    "explanation": "When d(A,P) − d(A,N) + margin ≤ 0, the positive is already sufficiently closer to the anchor than the negative (margin already satisfied). max(0,…) = 0 means zero loss and zero gradient — the model is not updated on easy, already-satisfied triplets. Training focuses entirely on hard triplets where the constraint is violated, which is computationally efficient and empirically effective."
+  },
+  {
+    "q": "AdaGrad accumulates squared gradients in G ← G + (∇w)². After thousands of training steps on a weight with consistent non-zero gradient, what happens to its effective learning rate α/√G?",
+    "options": [
+      "The learning rate approaches zero monotonically because G only ever grows, eventually halting all learning on that weight",
+      "The learning rate stabilizes at a fixed value once G > 1, because the square root function asymptotically flattens",
+      "The learning rate oscillates as G alternately grows and is reset at each epoch boundary to its initial value",
+      "The learning rate inverts sign once G exceeds a threshold, causing the weight to update in the wrong direction"
+    ],
+    "answer": 0,
+    "explanation": "G is a cumulative running sum — it never decreases. For a weight updated at every step, G → ∞ and α/√G → 0. This is AdaGrad's documented failure mode for long-horizon training: weights that receive frequent gradient signal eventually stop learning entirely. RMSProp fixes this by replacing the cumulative sum with a decaying exponential average."
+  },
+  {
+    "q": "In prompt tuning, 'soft prompt' tokens are prepended to the input and only these tokens are trained. How do soft prompt tokens fundamentally differ from regular vocabulary tokens?",
+    "options": [
+      "Soft prompt tokens are drawn from a fixed set of instruction keywords that the frozen model was explicitly taught to interpret",
+      "Soft prompt tokens must include a [SOFT] delimiter token that the model's attention mechanism uses to separate prompt from input",
+      "Soft prompt tokens are continuous learned embedding vectors not tied to any vocabulary entry, optimized directly by gradient descent",
+      "Soft prompt tokens are hard-coded copies of the most similar few-shot examples retrieved from the training set"
+    ],
+    "answer": 2,
+    "explanation": "Unlike real tokens, soft prompt embeddings are not constrained to correspond to any vocabulary word. They are free-floating vectors in ℝ^d, initialized randomly (or from real word embeddings) and updated via gradient descent while the entire language model remains frozen. Tuning ~100–1000 such parameters can match adapter-layer performance at large model scales."
+  },
+  {
+    "q": "The Huber loss switches from MSE behavior for small errors to MAE behavior for large errors (those exceeding threshold δ). What is the main practical motivation for applying MAE to large errors rather than MSE?",
+    "options": [
+      "MSE is not differentiable at the minimum, requiring a smooth MAE transition to ensure stable gradient-based optimization",
+      "MAE limits the gradient to ±1 for large errors, preventing outliers from dominating the update and destabilizing training",
+      "MSE converges faster than MAE for small errors near the minimum, so switching to MAE at large errors accelerates convergence",
+      "MAE enforces median regression while MSE enforces mean regression, and Huber combines both targets in a single loss"
+    ],
+    "answer": 1,
+    "explanation": "MSE gradient for an error of size e is 2e — an outlier with e=100 produces a gradient of 200, overwhelming updates from normal examples. MAE gradient is a constant ±1 regardless of error size. By switching to MAE for large errors, Huber loss prevents a few extreme outliers from dominating the gradient signal while still being smooth (MSE) near the minimum."
+  },
+  {
+    "q": "RMSProp improves upon AdaGrad by using an exponential moving average of squared gradients: E[g²] ← 0.99·E[g²] + 0.01·(∇w)². What failure mode of AdaGrad does this directly prevent?",
+    "options": [
+      "Gradients oscillating due to conflicting directions on consecutive steps, which AdaGrad amplifies through cumulative memory",
+      "Infrequent features receiving updates that are too small, because AdaGrad favors high-frequency parameters over rare ones",
+      "The learning rate growing too large during sparse gradient phases, causing the weight to diverge when a gradient finally arrives",
+      "The learning rate decaying to near-zero on weights with sustained gradient signals, preventing continued learning during long training"
+    ],
+    "answer": 3,
+    "explanation": "AdaGrad's G = Σ(∇w)² grows without bound. RMSProp's EMA 'forgets' old gradient history through the 0.99 decay factor, keeping E[g²] from growing unboundedly. This prevents α/√(E[g²]) from collapsing to zero, allowing the effective learning rate to remain non-negligible for as long as training proceeds — the chapter's stated advantage over AdaGrad."
+  },
+  {
+    "q": "For a product team that needs to update an LLM's knowledge with new documents every week, RAG is preferred over weekly fine-tuning. What is the decisive practical advantage?",
+    "options": [
+      "RAG constrains outputs to exact phrasings from retrieved documents, preventing the model from hallucinating paraphrases",
+      "RAG eliminates inference latency by pre-computing all possible responses and caching them in the vector database",
+      "RAG requires only 10–100 labeled examples per update cycle, far fewer than fine-tuning needs for reliable performance",
+      "Documents can be added, updated, or removed in the vector store without any retraining or weight updates to the LLM"
+    ],
+    "answer": 3,
+    "explanation": "Fine-tuning bakes knowledge into model weights — updating it requires a new training run. RAG externalizes knowledge to a retrieval database that can be modified instantly. The LLM's weights never change; only the retrieved context changes at query time. This makes RAG the natural choice for time-sensitive or frequently-updated information, with the added benefit of being able to cite sources."
+  },
+  {
+    "q": "After LoRA fine-tuning, the chapter describes deploying the adapted model with 'zero extra compute' compared to the base model. How is this achieved?",
+    "options": [
+      "The A matrix is discarded after training completes since it is always initialized to zero and does not hold any learned adaptation signal that would improve the deployed model's forward pass",
+      "B×A is precomputed offline and merged directly into W₀ before deployment, yielding a standard dense layer identical in structure to the original",
+      "LoRA adapters are quantized to 4-bit integers at deployment time, reducing their memory footprint to near-zero compared to activations",
+      "The LoRA adapters are cached in the key-value cache during autoregressive generation, so they add cost only at the first token"
+    ],
+    "answer": 1,
+    "explanation": "Because W₀, B, and A are all constants at deployment time, the product B×A is a fixed matrix that can be computed once and added directly to W₀. The deployed model is W_eff = W₀ + B×A — structurally identical to the original base model, with no adapter modules present at inference time and no extra computation per forward pass."
+  },
+  {
+    "q": "Dropout was first applied in a major vision model in AlexNet (2012). In which phase is dropout active, and in which phase is it disabled?",
+    "options": [
+      "Active only during the forward pass of training; disabled at inference so predictions are consistent and deterministic",
+      "Active during both training and inference to maintain the same expected activation magnitude across all phases",
+      "Active only during the backward pass to prevent gradient co-adaptation; the forward pass is never modified",
+      "Active only at inference to create diverse predictions for an implicit ensemble; training uses the full network"
+    ],
+    "answer": 0,
+    "explanation": "Dropout randomly zeros neuron outputs during training to force the network to learn redundant, independent features rather than relying on specific co-adapted combinations. At inference, calling model.eval() disables dropout so every neuron fires — the chapter warns this is one of the most common bugs: forgetting model.eval() makes test results unreliable."
+  },
+  {
+    "q": "RoPE encodes positions by rotating Q and K vectors before the attention dot product. Why does this property generalize better to longer sequences than absolute learned positional embeddings?",
+    "options": [
+      "RoPE vectors are fixed (not trained), so they cannot overfit to the limited position indices present in training sequences",
+      "RoPE applies position-dependent scaling to value vectors, leaving Q and K clean for length-independent attention",
+      "The Q·K dot product after rotation depends only on the relative offset (m−n), not the individual absolute positions m and n",
+      "RoPE uses the same set of frequencies as sinusoidal encoding but applies them multiplicatively, which avoids frequency aliasing at long range"
+    ],
+    "answer": 2,
+    "explanation": "After rotating qₘ and kₙ by angles mθᵢ and nθᵢ respectively, their dot product becomes a function of (m−n)θᵢ only. The model never needs to reason about absolute positions it has not seen — only relative distances, which repeat naturally at any length. This property is why RoPE (used in LLaMA, Gemini, Mistral) extrapolates better than learned absolute embeddings."
+  },
+  {
+    "q": "BERT reads text bidirectionally while GPT reads only left to right (causally). Which application scenario directly benefits from BERT's bidirectional attention?",
+    "options": [
+      "Sentiment classification, where the full sentence context on both sides of every token is available and improves understanding",
+      "Open-ended text completion and autoregressive generation, where producing each new token requires attending only to tokens written so far in the sequence",
+      "Real-time speech transcription, where future audio frames are unavailable when the current one is decoded",
+      "Autoregressive code generation, where each line must depend only on the preceding code context to be coherent"
+    ],
+    "answer": 0,
+    "explanation": "BERT's architecture allows every token to attend to all other tokens simultaneously — both left and right context. For classification tasks like sentiment analysis or NER, the full sentence is available at inference, and using bidirectional context yields richer representations. GPT's causal mask is designed for generation tasks where future tokens are unavailable."
+  },
+  {
+    "q": "A model's training loss drops steadily to near zero while validation loss increases after epoch 10. Which intervention most directly addresses this specific pattern?",
+    "options": [
+      "Increase the learning rate by 10× to push the model out of the training-set local minimum it has found",
+      "Add more layers and neurons to increase model capacity so it can better capture the validation distribution",
+      "Apply L2 weight decay or dropout to limit the model's ability to memorize training examples without generalizing",
+      "Switch from SGD to AdamW, as the adaptive learning rate prevents over-reliance on specific training examples"
+    ],
+    "answer": 2,
+    "explanation": "Training loss → 0 with rising validation loss is textbook overfitting: the model has memorized the training set. L2 weight decay penalizes large weights (limiting memorization capacity), and dropout prevents co-adaptation (forcing redundant feature learning). Adding data augmentation or collecting more training data also directly addresses overfitting."
+  },
+  {
+    "q": "ALiBi (Attention with Linear Biases) handles positional information differently from sinusoidal, learned, and RoPE encodings. What is the distinctive mechanism ALiBi uses?",
+    "options": [
+      "ALiBi adds a learned per-head bias to the key projection matrix, encoding absolute position without modifying token embeddings",
+      "ALiBi encodes relative position by adding sinusoidal vectors to the attention output rather than to the input embeddings",
+      "ALiBi applies a position-proportional dropout mask to attention weights, zeroing out attention to tokens beyond a learned radius",
+      "ALiBi subtracts a fixed linear penalty m×|i−j| from attention logits based on token distance, requiring no positional embedding vectors"
+    ],
+    "answer": 3,
+    "explanation": "ALiBi adds −m×|i−j| directly to each attention score before softmax, where m is a head-specific scalar slope. No positional vectors are added to token embeddings or projection matrices — positions are encoded entirely through this negative linear bias on attention logits. The simplicity gives ALiBi strong length extrapolation (used in BLOOM, MPT), generalizing well beyond training sequence length."
+  },
+  {
+    "q": "Forgetting to call model.eval() before running inference in PyTorch causes two specific operations to behave incorrectly. Which pair of operations is affected?",
+    "options": [
+      "L2 weight regularization stays active during inference, shrinking weights on each forward pass and degrading accuracy",
+      "The optimizer's accumulated momentum buffer from the last training step is incorrectly applied to forward-pass activations rather than gradients, silently corrupting all intermediate layer computations",
+      "Gradient checkpointing reverts to full activation storage, causing out-of-memory errors for long-sequence inference",
+      "Dropout randomly zeroes neurons during inference (producing inconsistent outputs) and BatchNorm uses batch statistics instead of stored running statistics"
+    ],
+    "answer": 3,
+    "explanation": "model.train() mode keeps dropout active (randomly zeroing activations per call — different output on every run) and makes BatchNorm use the current mini-batch's mean/variance (which varies by batch composition) rather than the stable running statistics accumulated during training. Both hurt test reliability. The chapter lists this as one of the most common deep learning bugs."
+  },
+  {
+    "q": "Element-wise (value-based) gradient clipping clips each gradient component to [−c, +c] independently. The chapter warns to avoid this in favor of norm-based clipping. What is the specific problem with element-wise clipping?",
+    "options": [
+      "It distorts the gradient direction because components above c are truncated while others remain unchanged, changing where the optimizer steps",
+      "It requires computing the full gradient norm as a preliminary step, making it computationally equivalent to norm clipping but less principled",
+      "It permanently zeros out small gradient components below a lower bound, effectively killing those parameters for the rest of training",
+      "It cannot be implemented in automatic differentiation frameworks without custom backward passes for each clipped layer"
+    ],
+    "answer": 0,
+    "explanation": "Norm clipping scales the entire gradient vector uniformly by a single factor: direction is preserved, only magnitude shrinks. Element-wise clipping truncates each component independently: a large component at +5 is reduced to +c, but a small component at +0.01 is unchanged. The resulting direction differs from the true gradient direction, potentially pointing the optimizer in an unhelpful direction."
+  },
+  {
+    "q": "Mixtral-8x7B uses MoE with 8 total experts and top-2 routing, giving it ~46B total parameters. Approximately how many parameters are active during a single token's forward pass?",
+    "options": [
+      "~46B — all expert parameters are evaluated because their outputs are needed for the router's scoring function",
+      "~12B — only 2 of 8 experts process each token; the non-expert attention and norm parameters are always active",
+      "~6B — MoE architectures are tuned to activate exactly 1/8 of total parameters regardless of the routing count",
+      "~3B — top-2 routing with gradient checkpointing only keeps the two expert activations in memory at once"
+    ],
+    "answer": 1,
+    "explanation": "With 8 experts and 2 activated per token, 2/8 = 25% of expert-layer parameters are active. The attention, layer norm, and embedding parameters (non-expert layers) are always active. Combined, this gives ~12B active parameters per token — providing the compute cost of a 12B model while the model has the representational capacity of a ~46B model."
+  },
+  {
+    "q": "The first neural network debugging step described in the chapter is to overfit a single training batch (~32 examples). If the loss fails to approach zero after 100+ steps, what does this indicate?",
+    "options": [
+      "The learning rate is too high, causing the optimizer to overshoot the minimum on this batch and must be reduced",
+      "The model architecture lacks sufficient capacity to memorize even 32 examples and must be made larger",
+      "There is a fundamental bug in the architecture, loss function, or data pipeline preventing the model from learning at all",
+      "Data augmentation is too aggressive, transforming the 32 examples into patterns the model cannot consistently memorize"
+    ],
+    "answer": 2,
+    "explanation": "Any sufficiently deep model should be able to drive its loss to near-zero on 32 examples if the code is correct. Failure to do so signals a structural problem — mismatched input/output shapes, wrong loss function, incorrect label indexing, or a data pipeline that shuffles labels away from their inputs. The chapter calls this the single most important first debugging step."
+  },
+  {
+    "q": "LeNet-5 (1998) is historically significant as one of the earliest successful deep learning systems. What was its primary achievement that justified the attention it received from the research community?",
+    "options": [
+      "It demonstrated that CNNs with learnable convolutional filters could accurately classify handwritten digits, providing proof of concept for the entire CNN paradigm",
+      "It introduced ReLU activations that were crucial for enabling AlexNet and successor models to train significantly deeper networks without the vanishing gradient problem limiting earlier architectures",
+      "It proved that training very deep networks (20+ layers) was possible with weight initialization tricks not available in earlier work",
+      "It showed that GPU-accelerated training with dropout could generalize from millions of labeled examples to unseen test images"
+    ],
+    "answer": 0,
+    "explanation": "LeNet-5 proved that a CNN architecture — shared convolutional filters followed by pooling and fully connected layers — could successfully learn to classify handwritten digits on MNIST. With only 60K parameters it validated the core CNN design. The chapter frames it as the Wright Brothers' plane: it flew, and that was revolutionary enough."
+  },
+  {
+    "q": "AlexNet (2012) replaced sigmoid and tanh activations with ReLU in its convolutional layers. What training benefit did this substitution directly deliver?",
+    "options": [
+      "ReLU outputs values in [0, ∞), enabling direct use of cross-entropy loss without a softmax normalization layer in the final layer",
+      "ReLU avoids the saturation zones of sigmoid and tanh for positive inputs, preventing gradient vanishing and enabling ~6× faster training convergence",
+      "ReLU produces exactly binary (0 or 1) outputs, making it directly compatible with the binary cross-entropy loss used in AlexNet",
+      "ReLU's non-saturating positive region means every neuron always receives a gradient, eliminating the dead neuron problem completely"
+    ],
+    "answer": 1,
+    "explanation": "Sigmoid and tanh saturate at their extremes (gradient ≈ 0 for large |z|). ReLU's gradient is exactly 1 for all positive z — no saturation on the active side. The chapter explicitly states this allowed AlexNet to train 6× faster than an equivalent sigmoid network. The tradeoff is the dead ReLU problem (gradient = 0 when z < 0) on the other side."
+  },
+  {
+    "q": "Convolutional layers differ fundamentally from fully connected layers for image processing. Which property of convolutional layers is directly responsible for their much smaller parameter count and translation equivariance?",
+    "options": [
+      "Each spatial position in a conv layer uses an independent set of learned weights applied only at that location in the feature map",
+      "A single learned filter bank is shared across all spatial positions in the input, detecting the same pattern anywhere in the image",
+      "Conv layers apply different non-linearities at each spatial position, adapting to local image statistics automatically",
+      "Conv layers skip the bias term at most positions, saving parameters compared to fully connected layers of equivalent width"
+    ],
+    "answer": 1,
+    "explanation": "A convolutional filter (e.g., 3×3×C) has the same weights at every spatial location in the feature map — this weight sharing is the key architectural constraint. If a cat-ear detector at position (10,10) has weights W, those same weights detect cat ears at (50,50). This translation equivariance and weight reuse are why a 3×3 conv layer has vastly fewer parameters than an equivalent fully connected layer."
+  },
+  {
+    "q": "GPT-3 (175B parameters) demonstrated capabilities — arithmetic, multi-step reasoning, code generation — not observed in smaller GPT models trained on the same style of objective. What term describes this phenomenon?",
+    "options": [
+      "Curriculum transfer — GPT-3's larger dataset implicitly contains harder examples that smaller models cannot access",
+      "Regularization collapse — the implicit regularization effect of larger networks enables qualitatively sharper generalization",
+      "Emergent behavior — qualitatively new capabilities appear at scale without being explicitly encoded in the training objective",
+      "Pre-training breadth — GPT-3's web-scale corpus explicitly contains labeled arithmetic, code, and reasoning data in sufficient quantity"
+    ],
+    "answer": 2,
+    "explanation": "Emergent capabilities appear discontinuously as model scale crosses certain thresholds — smaller models that share the same architecture and training objective simply do not exhibit them. The chapter notes GPT-3 could do few-shot learning, chain-of-thought reasoning, and code generation without any task-specific supervision. These were not anticipated from next-token prediction training alone."
+  },
+  {
+    "q": "According to the chapter's optimizer recommendation table, RMSProp is specifically matched to a particular model family. Which is it?",
+    "options": [
+      "Large convolutional image classifiers trained with large batch sizes where per-feature adaptive rates stabilize convergence",
+      "Transformer LLMs where the AdamW weight decay must be decoupled from gradient scaling to avoid under-regularizing common tokens",
+      "Shallow networks on tabular data where sparse categorical features need larger updates to correct their infrequent gradient signals",
+      "Recurrent neural networks and non-stationary optimization problems where gradient statistics shift as hidden states evolve"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's optimizer cheat sheet explicitly lists 'RNNs' and 'non-stationary problems' as RMSProp's best-fit use case. Its decaying exponential average of squared gradients adapts efficiently to changing gradient distributions across time steps — ideal for RNNs where the hidden state evolves and gradient magnitudes shift dynamically throughout a sequence."
+  }
+]

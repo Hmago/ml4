@@ -76,7 +76,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 21 | OO Design Fundamentals & SOLID (Senior SWE, Java) | ★★ | [21_design_fundamentals.md](content/21_design_fundamentals.md) | ~5.5 hrs | Intermediate-Advanced |
+| 21 | OO Design, SOLID & Design Patterns (Java) | ★★ | [21_design_fundamentals.md](content/21_design_fundamentals.md) | ~2.5 hrs | Intermediate-Advanced |
 | 22 | Data & Infra Engineering Tools (Kafka, Redis, Spark, K8s…) | ★★ | [22_engineering_tools.md](content/22_engineering_tools.md) | ~2 hrs | Intermediate |
 | 23 | System Design — Part 1: Foundations & Protocols (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) | ★★★ | [23_system_design_fundamentals_deep_dive.md](content/23_system_design_fundamentals_deep_dive.md) | ~3 hrs | Intermediate-Advanced |
 | 24 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage) | ★★★ | [24_system_design_data_distributed.md](content/24_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |

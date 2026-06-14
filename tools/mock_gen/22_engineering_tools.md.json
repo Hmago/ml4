@@ -1,0 +1,662 @@
+[
+  {
+    "q": "What distinguishes KEDA from the Kubernetes Horizontal Pod Autoscaler (HPA)?",
+    "options": [
+      "KEDA scales pods on external signals like Kafka consumer lag or queue depth; HPA scales on internal metrics like CPU and memory",
+      "HPA is the newer replacement for KEDA and handles both internal and external metric sources in a single bundled Kubernetes controller",
+      "KEDA requires a paid commercial license for external metric sources while HPA CPU/memory scaling ships free with every Kubernetes distribution",
+      "KEDA replaces the entire Kubernetes scheduler with an event-driven dispatcher while HPA only adjusts replica counts without touching pod placement"
+    ],
+    "answer": 0,
+    "explanation": "KEDA scales pods on external signalsâ€”Kafka lag, SQS depth, custom metricsâ€”ideal for ML inference and event-driven workloads. HPA focuses on internal CPU/memory metrics. Both operate at the pod level, not the node level."
+  },
+  {
+    "q": "Why are Docker containers NOT appropriate for workloads requiring VM-level security isolation?",
+    "options": [
+      "Docker containers share the host OS kernel, so a kernel-level exploit can potentially escape container boundaries unlike a VM where a full hypervisor separates guest from host",
+      "Docker images cannot be cryptographically signed or verified, making container supply-chain attacks far more likely than attacks on cryptographically sealed and signature-enforced VM images",
+      "Docker containers are limited to a hard 2 GB memory ceiling enforced by the OCI container runtime, preventing large in-memory ML workloads from running in multi-tenant configurations",
+      "Docker only supports Linux kernel namespaces and cannot isolate Windows workloads, creating an inherent privilege-escalation surface in any mixed-OS production environment"
+    ],
+    "answer": 0,
+    "explanation": "Containers share the host kernel; a kernel exploit can escape container boundaries. VMs have a full hypervisor boundary. For strict multi-tenant isolation, VMs or sandbox runtimes like gVisor are required."
+  },
+  {
+    "q": "Which Kafka configuration provides the strongest write-durability guarantee?",
+    "options": [
+      "acks=all with min.insync.replicas=2: leader plus at least one ISR follower must confirm before success",
+      "acks=0 (fire-and-forget) with the highest available replication factor so sheer redundancy compensates for the missing acknowledgment at the producer level",
+      "acks=1 (leader only) combined with min.insync.replicas=1, which matches the default factory configuration and is sufficient for most production deployments",
+      "acks=all combined with a replication factor of exactly 1, so the single broker must fully commit the record before returning a response to the producer"
+    ],
+    "answer": 0,
+    "explanation": "acks=all requires every In-Sync Replica to acknowledge. min.insync.replicas=2 ensures at least one follower confirms, surviving a leader failure without data loss. acks=all with RF=1 is meaninglessâ€”there is only one copy to acknowledge."
+  },
+  {
+    "q": "What does PostgreSQL logical replication enable that physical streaming replication does not?",
+    "options": [
+      "Logical replication decodes WAL into row-level changes and can replicate selected tables to a different major Postgres version or a heterogeneous downstream consumer",
+      "Physical streaming replication transfers WAL in batches every minute; logical replication achieves true real-time sub-second replication lag that physical replication structurally cannot match",
+      "Physical replication requires the primary and standby to share the same filesystem type; logical replication can target any storage backend regardless of filesystem compatibility",
+      "Logical replication enables simultaneous multi-master writes across all replicas, while physical replication restricts all writes to the single designated primary server"
+    ],
+    "answer": 0,
+    "explanation": "Physical replication copies raw WAL bytes and requires identical Postgres versions, replicating the whole instance. Logical replication decodes WAL into row-level changes, enabling selective table replication across major versions or to heterogeneous consumers."
+  },
+  {
+    "q": "Why does Parquet deliver dramatically less data scanned than CSV for analytics queries in S3?",
+    "options": [
+      "Parquet stores data column-by-column; a query reading 2 of 50 columns touches only those 2 columns on disk often 10-100x less I/O than scanning all rows in a row-oriented CSV file",
+      "S3 natively indexes Parquet column statistics and routes partial-column queries to the correct byte range without invoking any external query engine, eliminating compute cost for column-filtered queries",
+      "Parquet applies AES-256 encryption to each column block and the decryption overhead filters irrelevant columns before they reach the compute layer, achieving implicit column pruning",
+      "Parquet converts all data types to 32-bit integers for on-disk storage, reducing byte width per value and achieving a consistent 4x size reduction compared to variable-length text-encoded CSV columns"
+    ],
+    "answer": 0,
+    "explanation": "CSV is row-orientedâ€”reading any column requires scanning all bytes in each row. Parquet is columnar: a query touching 2 of 50 columns reads ~4% of the data. This is why warehouses and lakes standardize on Parquet as their on-disk format."
+  },
+  {
+    "q": "Why are Spark transformations like filter() and select() described as lazy?",
+    "options": [
+      "They build a logical query plan without executing computation until an action like count(), write(), or collect() triggers execution; Catalyst then optimizes the full plan before running",
+      "They execute immediately but cache intermediate results in driver memory in a background thread, making future actions on the same DataFrame instantaneously fast without re-reading source data",
+      "They defer execution to the next Spark scheduler heartbeat which fires on a configurable 5-second default interval, to batch multiple transformations into a single optimized pipeline stage",
+      "They apply only to partitions that have been explicitly marked hot by a preceding .persist() call, leaving cold partitions unprocessed until a manual eviction cycle is triggered"
+    ],
+    "answer": 0,
+    "explanation": "Spark lazy evaluation separates plan-building (transformations) from execution (actions). No data moves until an action fires. This lets Catalyst see the entire computation graph and optimize itâ€”push filters down, eliminate shufflesâ€”before any work begins."
+  },
+  {
+    "q": "In Apache Iceberg, when is merge-on-read (MoR) preferred over copy-on-write (CoW)?",
+    "options": [
+      "When updates are frequent and small such as CDC upserts or GDPR deletes MoR appends small change files at write time and merges at read time, avoiding full data file rewrites",
+      "When the table is accessed exclusively by Spark batch jobs and never by Flink streaming, because CoW is incompatible with Flink checkpoint mechanism under high write throughput",
+      "When data files are compressed with Zstandard because CoW cannot decompress Zstandard blocks in-place during a rewrite operation and requires MoR to avoid decompression pipeline errors",
+      "When the table has more than 1000 partitions because CoW must hold all partition metadata in the writer JVM heap simultaneously, causing out-of-memory errors at large partition counts"
+    ],
+    "answer": 0,
+    "explanation": "CoW rewrites entire data files on every updateâ€”fast reads but high write amplification. MoR appends small change files and merges at read timeâ€”fast writes, slower reads. MoR suits CDC, GDPR deletes, and high-frequency small updates. CoW suits read-heavy analytical tables."
+  },
+  {
+    "q": "Which Flink window type groups events by gaps in user activity rather than fixed time boundaries?",
+    "options": [
+      "Session windows open on the first event arrival and close after a configurable inactivity gap, naturally modeling variable-length user activity bursts without a fixed window size",
+      "Tumbling windows split the event stream into equal-length non-overlapping time buckets, emitting exactly one result per bucket on a deterministic schedule regardless of per-user activity",
+      "Sliding windows produce overlapping intervals so a single event contributes to multiple consecutive windows, effectively computing a rolling aggregate over the preceding N time units",
+      "Global windows accumulate all stream events into one indefinite window that only emits when a custom trigger function explicitly signals the window is ready to close and produce output"
+    ],
+    "answer": 0,
+    "explanation": "Session windows are activity-driven: they open on the first event and close after a gap timeout with no new events. This models user sessions naturally with variable duration. Tumbling are fixed-size; sliding overlap; global require manual triggers."
+  },
+  {
+    "q": "Why was OpenTofu created, and what is its relationship to Terraform?",
+    "options": [
+      "HashiCorp relicensed Terraform from MPL to BSL in version 1.6, making it non-open-source; OpenTofu is the Linux Foundation MPL-licensed community fork and a drop-in replacement",
+      "OpenTofu is a commercial HashiCorp product adding enterprise RBAC, audit logs, and SSO to the open-source Terraform base, sold via an annual HashiCorp Cloud Platform subscription",
+      "OpenTofu was created to extend Terraform HCL with Python and TypeScript SDKs that the core Terraform team declined to merge, enabling multi-language infrastructure definitions",
+      "OpenTofu was forked to add Kubernetes-native resource provisioning that HashiCorp refused to support, enabling direct kubectl-equivalent resource management within standard HCL config files"
+    ],
+    "answer": 0,
+    "explanation": "Terraform 1.6+ moved from MPL to BSLâ€”no longer OSI-approved open source. OpenTofu is the Linux Foundation community fork under MPL, maintaining API and configuration compatibility with Terraform and the provider ecosystem."
+  },
+  {
+    "q": "What does the PromQL function rate(http_requests_total[5m]) compute?",
+    "options": [
+      "The per-second average rate of increase of the counter over the last 5 minutes, handling counter resets from process restarts automatically and correctly",
+      "The absolute cumulative count of all HTTP requests that arrived during the most recent 5-minute wall-clock window summed across all series matching the metric selector",
+      "The maximum single-second burst in request volume observed during any 1-second sub-interval within the preceding 5-minute range vector fed to the function",
+      "The 5-minute exponential weighted moving average of the metric value smoothing out request volume spikes to produce cleaner visualization in Grafana dashboards"
+    ],
+    "answer": 0,
+    "explanation": "rate() computes the per-second rate of increase of a counter over the specified window, automatically handling counter resets (process restarts). It is the standard way to derive requests per second from a monotonically increasing counter metric."
+  },
+  {
+    "q": "What are the two fundamental primitives in Ray Core that all higher-level Ray libraries build on?",
+    "options": [
+      "Remote functions (stateless tasks parallelized with @ray.remote) and actors (stateful objects on remote processes, callable multiple times)",
+      "Futures and promises, semantically identical to JavaScript async/await but transparently distributed across a multi-node Ray cluster without requiring any code changes",
+      "Ray datasets and Ray transformers, analogous to Spark DataFrames and Spark Transformers providing a DataFrame-style distributed data processing abstraction",
+      "Shared-memory objects and immutable snapshots used for zero-copy Arrow-format data transfer between colocated Ray workers sharing the same physical host machine"
+    ],
+    "answer": 0,
+    "explanation": "Ray Core provides: (1) remote functions (stateless tasks via @ray.remote) and (2) actors (stateful objects on a remote process, callable repeatedly). Ray Train, Tune, Serve, and Data all build on these two primitives."
+  },
+  {
+    "q": "Why is it impossible to change an Elasticsearch index primary shard count after creation?",
+    "options": [
+      "The routing formula shard=hash(doc_id) mod num_primary_shards fixes routing at creation; changing shard count misroutes existing documents, requiring a full reindex into a correctly configured new index",
+      "Elasticsearch allocates a fixed block of JVM heap equal to shard_count x 512 MB at creation; the JVM cannot resize while the node is running making shard count changes impossible without downtime",
+      "The Lucene segment file format ties internal segment identifiers to the primary shard count set at index creation, making in-place resharding physically impossible without corrupting stored segment metadata files",
+      "Elasticsearch stores the primary shard count in an immutable cluster metadata snapshot committed to all master-eligible nodes, preventing post-creation changes without a full cluster restart"
+    ],
+    "answer": 0,
+    "explanation": "Elasticsearch routes documents via shard=hash(doc_id)%num_primary_shards. If shard count changes, existing documents hash to different shards and become unfindable. The only fix is reindexing into a new index with the correct shard count."
+  },
+  {
+    "q": "What concrete latency cost does Raft consensus add to writes in distributed SQL like CockroachDB?",
+    "options": [
+      "Every commit requires quorum acknowledgment, adding roughly 1-5 ms locally and full network round-trip latency for cross-region transactions potentially tens to hundreds of milliseconds",
+      "Raft limits maximum transaction payload to 64 KB so the quorum message fits in one MTU-size network packet, requiring chunking and reassembly overhead for any larger transaction payload",
+      "Raft applies consensus to reads as well as writes, effectively doubling observed read latency compared to a single-node Postgres read replica for all standard query types",
+      "Raft requires every cluster node to execute every query regardless of shard ownership, causing CPU load to increase linearly with node count on each individual query execution"
+    ],
+    "answer": 0,
+    "explanation": "Raft requires a quorum of replicas to agree before a commit is acknowledged. Locally ~1-5 ms; for cross-region transactions full network round-trip (tens to hundreds of ms) is unavoidableâ€”the fundamental cost of distributed SQL vs. single-primary Postgres."
+  },
+  {
+    "q": "What does Airflow backfill do, and why is task idempotency essential for it?",
+    "options": [
+      "Backfill re-runs a DAG for past execution dates; idempotency ensures each task produces the same result whether run once or multiple times so retries and backfills do not corrupt data by double-appending rows",
+      "Backfill pre-runs the next 7 scheduled intervals to populate downstream caches before peak traffic reducing real-time warehouse compute burden during business hours for analytical dashboards",
+      "Backfill pauses the current production DAG run until a catch-up job completes enforcing strict temporal ordering across all pipeline executions for a given logical date range",
+      "Backfill copies a DAG definition and all historical task-instance metadata from one Airflow deployment to another enabling disaster-recovery migration of pipeline configuration and state"
+    ],
+    "answer": 0,
+    "explanation": "Backfill re-executes historical pipeline runsâ€”essential for fixing data bugs or adding new transformations retroactively. If tasks are not idempotent (e.g. they append instead of overwrite a date partition), re-running produces duplicate data. Idempotencyâ€”overwrite not appendâ€”is the Airflow golden rule."
+  },
+  {
+    "q": "A team needs Kafka-compatible streaming with near-zero infrastructure cost and can tolerate 10+ second latency. Which alternative fits best?",
+    "options": [
+      "WarpStream stores all data directly in object storage with zero local broker disk, achieving near-zero infrastructure cost while remaining Kafka-API compatible at the cost of 10+ second latency",
+      "Redpanda eliminates the JVM and runs in C++ to achieve the lowest end-to-end message latency in the industry while also providing substantial cost savings over standard Kafka broker deployments",
+      "Apache Pulsar uses BookKeeper for tiered storage and provides the most cost-efficient tier among Kafka alternatives, especially for multi-tenant SaaS event-streaming deployments at scale",
+      "NATS JetStream is sub-millisecond and eliminates broker disk through in-memory-only storage making it optimal for any latency-sensitive streaming workload at any production scale"
+    ],
+    "answer": 0,
+    "explanation": "WarpStream (Confluent 2024) eliminates local broker diskâ€”all data goes to S3â€”slashing infrastructure cost while staying Kafka-API compatible. The trade-off is 10+ second latency. Redpanda takes the opposite approach: lowest latency via C++ and no JVM."
+  },
+  {
+    "q": "What practical constraint does the etcd state store impose on Kubernetes cluster scale?",
+    "options": [
+      "etcd limits each pod to a maximum of 250 MB of memory allocation, preventing memory-intensive ML inference pods from running on standard clusters without special node overrides",
+      "etcd has a practical size cap of roughly 8 GB, limiting total cluster objects; the tested ceiling is approximately 5000 nodes and 110 pods per node before control-plane strain increases",
+      "etcd supports at most 100 concurrent API server connections before its Raft consensus performance degrades requiring horizontal API server scaling to compensate for large workloads",
+      "etcd cannot replicate metadata across AZs due to Raft single-leader constraints preventing Kubernetes from running active-active control planes across multiple availability zones"
+    ],
+    "answer": 1,
+    "explanation": "The etcd store has a practical ~8 GB capacity cap, constraining total Kubernetes objects. Tested limits are ~5000 nodes and ~110 pods per node before control-plane strain increases. This is a hard architectural boundary that cannot be tuned away without replacing etcd."
+  },
+  {
+    "q": "How does Kafka log compaction differ from standard time-based retention?",
+    "options": [
+      "Log compaction deletes all messages once a partition crosses a configurable size threshold regardless of key or timestamp functioning as a circular buffer for disk space management",
+      "Time-based retention deletes messages after a configured period regardless of consumption; log compaction retains only the latest value per message key, suitable for current-state topics",
+      "Log compaction is a consumer-side setting in consumer.properties that deduplicates messages locally; time-based retention is configured exclusively on the broker in server.properties",
+      "Time-based retention is applied per-partition during replication; log compaction runs only during broker leader elections to minimize consumer downtime impact during partition reassignment"
+    ],
+    "answer": 1,
+    "explanation": "Standard retention deletes messages after a time/size window regardless of readsâ€”enabling replay. Log compaction keeps only the latest value per message keyâ€”suitable for current-state topics like changelogs. Both features are independent of whether messages were consumed."
+  },
+  {
+    "q": "How many hash slots does Redis Cluster use, and how is a key routed to its owning node?",
+    "options": [
+      "Redis Cluster uses 65536 hash slots divided by the replication factor to determine how many slots each physical node is responsible for managing at any given time",
+      "Redis Cluster uses exactly 16384 slots; a key maps to a slot via CRC16(key) mod 16384, and each node owns a contiguous range, with MOVED redirects for cross-node routing",
+      "Redis Cluster uses 1024 virtual slots that expand dynamically when nodes are added rebalancing slot ownership automatically without any manual data migration or configuration changes",
+      "Redis Cluster uses an unlimited number of slots computed as a function of the registered node count in the topology reassigned automatically when any node joins or leaves the cluster"
+    ],
+    "answer": 1,
+    "explanation": "Redis Cluster uses exactly 16384 hash slots. CRC16(key) mod 16384 determines the slot; each node owns a contiguous range. If a client contacts the wrong node it receives a MOVED redirect. This fixed topology means slot count cannot change after cluster initialization."
+  },
+  {
+    "q": "What operational cost does PostgreSQL MVCC introduce, and how is it managed?",
+    "options": [
+      "MVCC serializes all writes through a single background worker to maintain a consistent version chain, limiting write throughput to roughly one core regardless of the server available CPU count",
+      "MVCC retains old row versions (dead tuples) alongside live data, causing table and index bloat that VACUUM must periodically reclaim to maintain query performance and prevent runaway growth",
+      "MVCC stores each historical row version in a dedicated overflow tablespace that must be manually purged during a maintenance window as autovacuum cannot access the overflow tablespace",
+      "MVCC requires exclusive table-level locks during reads to ensure the reader always sees a consistent snapshot causing heavy read-write contention under high-concurrency workloads"
+    ],
+    "answer": 1,
+    "explanation": "MVCC keeps multiple row versions so readers never block writers. The cost is accumulating dead tuples that bloat tables and indexes. VACUUM (run automatically by autovacuum) reclaims that space. Without it query performance degrades and table sizes grow unboundedly."
+  },
+  {
+    "q": "At what object size does S3 multipart upload become mandatory, and what is the minimum part size?",
+    "options": [
+      "Objects larger than 1 GB require multipart upload; each part must be at least 50 MB so S3 can maintain efficient parallel transfer across its internal transfer acceleration infrastructure",
+      "Objects larger than 5 GB must use multipart upload (single PUT is capped at 5 GB); intermediate parts must be at least 5 MB enabling parallel uploads and per-part retries on failure",
+      "Objects larger than 500 MB require multipart upload; each part must be at least 10 MB to avoid per-request overhead dominating total upload throughput at moderate file sizes",
+      "Objects larger than 10 GB require multipart upload; parts must be at least 1 MB so the assembly manifest fits within a single S3 API response payload without requiring pagination"
+    ],
+    "answer": 1,
+    "explanation": "S3 single PUT is limited to 5 GB; multipart is mandatory above that. Recommended threshold is 100 MB. Minimum part size is 5 MB (except the last part), enabling parallel uploads and per-part retries assembled server-side with CompleteMultipartUpload."
+  },
+  {
+    "q": "Spark Adaptive Query Execution (AQE) adds which three runtime re-optimization capabilities?",
+    "options": [
+      "AQE pre-warms partitions on executor SSDs before the job starts, reduces cold-read latency by caching Parquet column groups, and compresses shuffle files asynchronously in the background",
+      "AQE dynamically coalesces post-shuffle partitions, automatically detects and splits skewed join partitions, and switches join strategies based on actual runtime row counts from completed stages",
+      "AQE enables asynchronous shuffle writes overlapping with subsequent stages, predicts partition counts using a trained ML model, and applies adaptive block-level compression at runtime",
+      "AQE replaces the Catalyst optimizer entirely with a learned cost model trained on historical execution data eliminating static analysis in favor of fully runtime-driven plan selection"
+    ],
+    "answer": 1,
+    "explanation": "AQE (default since Spark 3.2) re-optimizes at runtime: (1) coalesces many small post-shuffle partitions, (2) splits oversized skewed join partitions automatically, (3) upgrades/downgrades join strategy (sort-merge to broadcast) based on actual observed row counts from prior stages."
+  },
+  {
+    "q": "What is Apache Polaris in the Iceberg table ecosystem?",
+    "options": [
+      "Polaris is a columnar file format that compresses Iceberg metadata blocks more efficiently than standard Parquet reducing catalog scan time at million-file scale in large lakehouses",
+      "Polaris is a vendor-neutral open-source Iceberg REST catalog that graduated CNCF incubation in 2026, enabling Spark, Flink, Trino, DuckDB and others to discover tables via a standard protocol",
+      "Polaris is a distributed transaction coordinator that serializes concurrent Iceberg table writes from multiple Spark clusters by managing optimistic concurrency locks over S3 object metadata",
+      "Polaris is a GPU-accelerated Spark plugin that speeds up Iceberg metadata traversal by parallelizing manifest list reads across CUDA cores for billion-file-scale catalog operations"
+    ],
+    "answer": 1,
+    "explanation": "Apache Polaris (CNCF graduation 2026) is the open vendor-neutral Iceberg REST catalog backed by major cloud vendors. It lets Spark, Flink, Trino, DuckDB and others discover and query the same Iceberg tables through a standardized REST wire protocol, replacing proprietary catalogs."
+  },
+  {
+    "q": "Why does dbt incremental materialization provide major cost savings over table materialization?",
+    "options": [
+      "Incremental models run in the dbt CLI process on the analyst machine rather than in the warehouse bypassing per-query compute billing for transformations that touch existing rows",
+      "Incremental models process only new or changed rows since the last run instead of rebuilding the entire table critical at billions of rows where a full daily rebuild would be wasteful and expensive",
+      "Incremental models skip SQL parsing inside the warehouse halving query planning overhead for transformations that reference more than five upstream models in their dependency graph",
+      "Incremental models automatically archive previous partitions to compressed Parquet in a cheaper S3 storage class before processing the new incoming batch reducing active storage costs continuously"
+    ],
+    "answer": 1,
+    "explanation": "A table materialization drops and rebuilds the whole table every runâ€”expensive for large datasets. An incremental model filters to only new/changed rows (typically via a max-timestamp watermark), processing a fraction of the data and dramatically reducing compute cost at billion-row scale."
+  },
+  {
+    "q": "A team labels all Prometheus HTTP metrics with a user_id field. What problem occurs?",
+    "options": [
+      "Prometheus rejects the metrics because user_id is a reserved internal label name that conflicts with the built-in target identification label used by the scrape service discovery mechanism",
+      "Each unique user_id creates a separate in-memory time series causing a cardinality explosion that exhausts Prometheus memory and degrades query and storage performance across the entire instance",
+      "Queries filtering on user_id return stale results due to hash collisions in the inverted label index when more than 10000 unique user identifiers are present in the active time window",
+      "Prometheus automatically aggregates all user_id values into a single synthetic series named user_id_total at ingestion time silently discarding per-user granularity from stored metric data"
+    ],
+    "answer": 1,
+    "explanation": "Each unique label-value combination creates a separate time series in memory. user_id can have millions of unique values creating millions of seriesâ€”a cardinality explosion that can OOM Prometheus. Labels must have bounded cardinality: status codes, regions, endpointsâ€”never user IDs."
+  },
+  {
+    "q": "What is DuckDB practical upper bound for single-node analytics, and what replaces it at larger scale?",
+    "options": [
+      "DuckDB handles up to 50 GB reliably; beyond that threshold ClickHouse is always the correct architectural replacement regardless of whether the workload is interactive or batch-oriented",
+      "DuckDB handles datasets up to roughly 500 GB-1 TB on a single large machine; beyond that distributed engines like Apache Spark are needed because DuckDB has no cluster mode",
+      "DuckDB handles up to 1 TB on any machine by default; only beyond 1 TB should the team consider migrating to a managed cloud warehouse like Snowflake or Databricks",
+      "DuckDB handles up to 100 GB before performance degrades; above that the team should rewrite all pipelines in pandas on a high-memory VM instance with enough RAM to hold the full dataset"
+    ],
+    "answer": 1,
+    "explanation": "DuckDB is single-node with no cluster modeâ€”its ceiling is one machine memory and disk (practical limit ~500 GB-1 TB). For multi-terabyte distributed workloads Spark is appropriate. ClickHouse is better for sub-second interactive queries at billions of rows across multiple nodes."
+  },
+  {
+    "q": "In Cassandra, why is the choice of partition key the most critical data modeling decision?",
+    "options": [
+      "The partition key determines on-disk sort order of rows within a partition so a poor choice results in slow range scans requiring full partition reads instead of efficient index seeks",
+      "The partition key is hashed to route data to its owning node; a low-cardinality key like status creates hotspot nodes receiving a disproportionate share of reads and writes while others sit idle",
+      "The partition key is used for TTL-based automatic row deletion so an inappropriate column causes entire partitions to expire prematurely or never expire at all over the table lifetime",
+      "The partition key maps to a secondary index on every node enabling ad-hoc filtering on any column without requiring a full cluster-wide partition scan on every query execution"
+    ],
+    "answer": 1,
+    "explanation": "The partition key is hashed to route data to the owning node. A low-cardinality key like status creates massive hot partitions on a few nodes. A high-cardinality key like user_id distributes load evenly. The clustering key (separate) controls sort order within a partition."
+  },
+  {
+    "q": "What is the key advantage of Protocol Buffers (Protobuf) in gRPC over JSON in REST?",
+    "options": [
+      "Protobuf messages are human-readable XML making network debugging with curl or browser DevTools far easier than inspecting binary-encoded gRPC payloads captured in transit",
+      "Protobuf binary encoding is more compact and faster to serialize/deserialize than JSON; the .proto schema enforces strong typing at compile time and auto-generates client and server stubs",
+      "Protobuf supports unlimited nesting depth in message definitions while JSON parsers in most languages enforce a maximum nesting depth before throwing stack overflow exceptions",
+      "Protobuf messages can be indexed by full-text search engines without a transformation step enabling direct search over gRPC message content without any additional ETL infrastructure"
+    ],
+    "answer": 1,
+    "explanation": "Protobuf binary is compact (smaller wire size) and fast to encode/decode. The .proto contract generates type-safe client/server stubs in all major languagesâ€”both sides stay in sync by design. The downside: binary is not human-readable and requires tooling like grpcurl to inspect in flight."
+  },
+  {
+    "q": "What is Google Spanner TrueTime and why does it enable external consistency?",
+    "options": [
+      "TrueTime is Spanner MVCC implementation that bounds the number of row versions retained in active memory automatically purging stale versions once the bounded uncertainty window closes",
+      "TrueTime uses GPS and atomic clocks in every Google datacenter providing bounded clock uncertainty below 7 ms allowing transactions to be timestamped with real wall-clock time and globally ordered",
+      "TrueTime is Spanner Raft consensus protocol name using monotonic logical timestamps rather than wall-clock time to deterministically order events across geographically distributed nodes",
+      "TrueTime is a Spanner consistency level that replicates writes to three regions before returning acknowledgment guaranteeing durability across regional failures through synchronous multi-region replication"
+    ],
+    "answer": 1,
+    "explanation": "TrueTime uses GPS and atomic clocks in every Google DC providing a <7 ms clock uncertainty interval. Spanner timestamps commits with real time and uses commit-wait to ensure transactions across the globe are totally orderedâ€”external consistency without distributed locking."
+  },
+  {
+    "q": "What distinguishes the Kubernetes Executor from the Local Executor in Apache Airflow?",
+    "options": [
+      "The Local Executor stores all task logs in etcd alongside cluster state; the Kubernetes Executor writes task logs only to the local filesystem of the scheduler host machine for persistence",
+      "The Kubernetes Executor launches each task in a fresh isolated pod with configurable CPU and memory that is deleted after completion; the Local Executor runs tasks as subprocesses sharing the scheduler resources",
+      "The Local Executor supports full parallel task execution; the Kubernetes Executor enforces strictly sequential task submission to prevent resource contention across concurrent pipeline runs",
+      "The Kubernetes Executor connects to existing running pods to inject task scripts; the Local Executor forks new processes that each establish a separate direct connection to the metadata database"
+    ],
+    "answer": 1,
+    "explanation": "With the Kubernetes Executor, each task gets its own isolated pod with independently configured CPU/memoryâ€”ideal for heterogeneous workloads. The Local Executor runs tasks as subprocesses sharing the scheduler resources, simpler but unsuitable for large concurrent workloads with diverse resource needs."
+  },
+  {
+    "q": "What is the approximate throughput penalty of enabling Kafka exactly-once semantics (EOS)?",
+    "options": [
+      "50-80% throughput reduction making EOS feasible only for very low-volume financial pipelines below a few hundred events per second in real production environments",
+      "Approximately 10-20% throughput reduction due to idempotent producer sequencing, transaction coordination, and consumers using isolation.level=read_committed to read only committed data",
+      "No measurable throughput penalty; EOS coordination is entirely asynchronous and off the critical write path adding only sub-microsecond overhead per message batch",
+      "A 2-5x throughput reduction making EOS impractical for any production pipeline that must sustain more than a few thousand events per second at normal operating conditions"
+    ],
+    "answer": 1,
+    "explanation": "Kafka EOS combines idempotent producers, transactions, and read_committed isolationâ€”totaling ~10-20% throughput reduction. This makes EOS right for financial/billing pipelines but unnecessary overhead for high-volume telemetry or analytics event streams."
+  },
+  {
+    "q": "What is GitOps, and which tool is the leading Kubernetes-native implementation?",
+    "options": [
+      "GitOps means all infrastructure code lives in the same Git branch as application code; Terraform Cloud is the leading tool that reads the combined Git repo and applies both infra and app changes",
+      "GitOps enforces all database schema migrations be declared in Git and reviewed via pull-request before any warehouse table can be modified; dbt is the canonical GitOps tool for data schema changes",
+      "GitOps treats the Git repository as the single source of truth for desired cluster state; Argo CD continuously reconciles the live Kubernetes cluster to match the manifests committed to Git",
+      "GitOps is a GitHub Actions workflow convention that generates Kubernetes manifests during CI and automatically merges them into the main branch with no human approval for routine deployments"
+    ],
+    "answer": 2,
+    "explanation": "GitOps: Git is the source of truth; the cluster must match what is committed. Argo CD watches Git, detects drift, and reconcilesâ€”enabling audit trail, rollback, and PR-based change management. Flux is an alternative; Argo CD is the most widely adopted."
+  },
+  {
+    "q": "What major infrastructure change did Kafka 4.0 deliver?",
+    "options": [
+      "Kafka 4.0 replaced its Scala-based broker with a new Rust implementation halving memory use per partition and enabling consumer group partition assignment in under 1 millisecond",
+      "Kafka 4.0 introduced a pluggable storage API allowing brokers to offload log segments to any block-storage provider replacing the fixed local-disk assumption of earlier Kafka broker design",
+      "Kafka 4.0 removed ZooKeeper by completing the KRaft (Kafka Raft metadata) protocol migration, allowing brokers to manage metadata internally without any external coordination service",
+      "Kafka 4.0 replaced the consumer group protocol with a push-based delivery model eliminating consumer group coordination overhead and the need for a group coordinator broker role"
+    ],
+    "answer": 2,
+    "explanation": "Kafka 4.0 removed the ZooKeeper dependency that had been present since Kafka 0.x. KRaft lets brokers manage metadata internally via Raft consensusâ€”simplifying deployment, improving startup time, and eliminating the separate ZooKeeper cluster operational burden."
+  },
+  {
+    "q": "Why did the Redis license change in 2024 lead to the creation of Valkey?",
+    "options": [
+      "Redis Inc raised per-core licensing fees to $500/core causing Google and Alibaba to fork Valkey as a cost-competitive drop-in replacement under the original Apache 2.0 license terms",
+      "Redis Inc retired the Python and Go client libraries forcing the community to fork Valkey specifically to restore first-class multi-language client support under a neutral governance model",
+      "Redis changed from BSD to the SSPL license (non-open-source), prompting the community to fork Valkey under BSD license hosted by the Linux Foundation as the open-source continuation",
+      "Redis Inc discontinued the free tier of Redis Cloud requiring self-hosted users to pay commercial license fees causing mass adoption of Valkey as a no-cost cloud-hosted alternative"
+    ],
+    "answer": 2,
+    "explanation": "Redis changed from BSD to Server Side Public License (SSPL) in March 2024, which is not OSI-approved open source. Major cloud providers and the community forked Valkey under the BSD license with Linux Foundation governance as the open-source continuation."
+  },
+  {
+    "q": "A PostgreSQL table on a single machine is slow. Listing the optimization steps in correct escalation order, what comes first?",
+    "options": [
+      "Immediately add a PgBouncer connection pooler in front of Postgres because connection overhead is the most common and easy-to-fix cause of poor performance before exploring any index or schema changes",
+      "Immediately horizontally shard the table across multiple machines using Citus because single-node PostgreSQL cannot scale beyond 100 GB datasets regardless of available hardware specifications",
+      "First add or tune indexes, then scale up hardware, then add read replicas; only after those are exhausted should connection pooling, partitioning, or sharding be considered",
+      "First migrate to a purpose-built distributed SQL like CockroachDB immediately because PostgreSQL inherently cannot scale further and trying intermediate steps wastes engineering effort"
+    ],
+    "answer": 2,
+    "explanation": "The chapter describes the PostgreSQL scaling ladder: (1) indexes â†’ (2) vertical scale-up â†’ (3) read replicas for read-heavy workloads â†’ (4) PgBouncer for connection overhead â†’ (5) partitioning â†’ (6) sharding (Citus or distributed SQL). Jumping straight to sharding wastes engineering effort."
+  },
+  {
+    "q": "Why does a Spark sort-merge join on a 500 GB table get very slow without tuning?",
+    "options": [
+      "A sort-merge join requires data to be sorted by join key across all partitions first, requiring a full shuffle of up to 500 GB across network, which is the most expensive Spark operation",
+      "A sort-merge join performs a full outer merge of every pair of partitions in the two tables regardless of join key equality doubling the partitions processed compared to a hash join strategy",
+      "Spark sort-merge joins always disable the Catalyst optimizer for the join stage disabling predicate pushdown causing upstream filter transformations to run after rather than before the join",
+      "A sort-merge join internally converts to a Cartesian product for non-equality join predicates causing exponential data expansion when applied to tables larger than the available executor memory"
+    ],
+    "answer": 2,
+    "explanation": "Sort-merge join shuffles the entire left and right tables across the network by join keyâ€”a full data movement across the cluster. At 500 GB this is extremely expensive. Solution: broadcast the small side if it fits in memory, or use AQE to detect the actual size and switch strategies."
+  },
+  {
+    "q": "What is Iceberg hidden partitioning and why is it better than Hive-style partitioning?",
+    "options": [
+      "Iceberg hidden partitioning hashes partition columns with MD5 instead of using raw values so that query plans cannot infer data layout from partition predicates, improving security by obfuscating table structure from query optimizers",
+      "Iceberg hidden partitioning stores the partition column data only in the metadata layer and removes it from the data files themselves, reducing Parquet column count and file sizes by up to 30 percent for date and category columns",
+      "With Iceberg hidden partitioning the engine automatically derives partition values from columns via transforms like year(ts) without requiring the physical column in the query predicate, avoiding the Hive pattern where queries must include the partition column explicitly",
+      "Iceberg hidden partitioning creates a separate hidden index file per partition containing row-group statistics enabling block-level pruning that Hive-style metadata structures cannot represent at file-granularity for nested schemas"
+    ],
+    "answer": 2,
+    "explanation": "Hive requires queries to include the partition column explicitly, coupling application code to physical layout. Iceberg hidden partitioning applies transforms (year(), month(), bucket(), truncate()) transparentlyâ€”queries filter on ts and the engine prunes partitions automatically without changing SQL."
+  },
+  {
+    "q": "Snowflake Time Travel is most accurately described as:",
+    "options": [
+      "A CDC feature that continuously streams all DML changes to an external Kafka topic, enabling downstream consumers to replay the full table history on any external system at any point in time",
+      "A feature that retains daily Parquet snapshots of table data in S3 and exposes them via a read-only virtual schema that analysts query using standard SQL SELECT statements",
+      "The ability to query a table as it existed at a prior timestamp or before a specific statement, using AT CLAUSE or BEFORE CLAUSE, with configurable retention up to 90 days on Enterprise tier",
+      "A zero-copy clone feature that creates an independent writable copy of a table at a prior snapshot without duplicating the underlying data across cloud object storage partitions"
+    ],
+    "answer": 2,
+    "explanation": "Snowflake Time Travel lets you query historical table state via AT (TIMESTAMP=>...) or BEFORE (STATEMENT=>...) clausesâ€”useful for debugging bad loads, recovering dropped data, or auditing. Retention is configurable (up to 90 days on Enterprise). Zero-copy clones are a related but separate feature."
+  },
+  {
+    "q": "What is the small-files problem in a data lake and why does it hurt?",
+    "options": [
+      "Each Parquet file stores its statistics in a separate metadata sidecar; having many small files multiplies the number of sidecar reads, slowing query planning before any data is actually scanned",
+      "Small Parquet files cannot be split across multiple Spark executors; therefore a large number of small files creates an artificial partition bound causing massive executor imbalance and unutilized CPU during jobs",
+      "Millions of small files cause excessive S3 LIST and metadata operations at query startup, slow partition pruning across many files, and poor columnar compression ratios because compressors need large inputs to be effective",
+      "Small Parquet files compress all columns into a single row group eliminating the per-column statistics that query planners depend on for predicate pushdown, causing full file scans even with tight filter predicates"
+    ],
+    "answer": 2,
+    "explanation": "The small-files problem: many tiny files force S3 LIST operations at scale (slow), create massive Iceberg/Hive metadata overhead, produce poor compression (compressors need large input buffers), and can exhaust task parallelism via excessive scheduling overhead. Compaction jobs (OPTIMIZE) merge small files into larger ones."
+  },
+  {
+    "q": "Which Prometheus metric type should you use to track the total number of API requests served since service start?",
+    "options": [
+      "A Gauge with a reset_on_restart=false label, because the metric value needs to persist across service restarts and must be manually incremented rather than automatically reset at boot time",
+      "A Summary with a count field used as a side-effect of latency tracking, enabling a single metric type to simultaneously capture both request rate and latency percentile distributions with one instrument",
+      "A Counter is correctâ€”it is a monotonically increasing value that only goes up; rate() and increase() compute rates and totals from it while Prometheus handles counter resets on restart automatically",
+      "A Histogram with zero buckets configured to disable latency tracking so only the count and sum fields are populated turning the Histogram into an accurate monotonic request counter"
+    ],
+    "answer": 2,
+    "explanation": "Counters are monotonically increasing valuesâ€”they only go up (or reset on process restart, which Prometheus handles). Counters are the correct type for total requests, bytes sent, errors. Gauges are for values that go up and down (queue depth, memory). Use rate(counter[5m]) to get requests/second."
+  },
+  {
+    "q": "Which best describes the key performance advantage Spark has over Hadoop MapReduce?",
+    "options": [
+      "Spark uses a native SQL engine for all workloads automatically rewriting Python and Scala UDFs as optimized SQL statements that execute in the database kernel rather than the JVM process",
+      "Spark places all operations in a single monolithic JVM process eliminating inter-process communication entirely whereas MapReduce spawns a new JVM for each individual map and reduce function call",
+      "Spark keeps intermediate data in memory between stages and pipelines transformations into a DAG avoiding the MapReduce pattern of writing every intermediate shuffle result to HDFS between stages",
+      "Spark replaces the Hadoop YARN resource manager with its own standalone scheduler bypassing resource negotiation latency and allowing near-instant task launch without waiting for YARN containers"
+    ],
+    "answer": 2,
+    "explanation": "MapReduce writes every intermediate result to HDFS between map and reduce phasesâ€”expensive disk I/O. Spark keeps intermediate data in memory (falling back to disk only when needed) and chains stages into a DAG eliminating redundant disk writes. This is why Spark is reported as 10-100x faster for iterative algorithms."
+  },
+  {
+    "q": "What is Dagster primary conceptual innovation versus Airflow?",
+    "options": [
+      "Dagster replaces Python task functions with SQL dbt models enabling non-engineers to define data pipelines in pure SQL without needing Python or any programming language knowledge",
+      "Dagster introduced real-time streaming pipeline execution with sub-second scheduling allowing event-driven pipeline triggers whereas Airflow only supports cron-based scheduling",
+      "Dagster is asset-centric: pipelines are defined in terms of data assets (tables, files, models) they produce rather than in terms of execution tasks, enabling data lineage tracking and observability by default",
+      "Dagster integrates directly with GitHub Actions enforcing that every pipeline run must be triggered by a Git push event and approved via pull-request review before execution can begin"
+    ],
+    "answer": 2,
+    "explanation": "Airflow is task-centricâ€”a DAG is a sequence of tasks. Dagster is asset-centricâ€”a pipeline declares what data assets it produces and consumes. This enables catalog-level lineage, impact analysis (what breaks if this table changes?), and built-in observability without external metadata tooling."
+  },
+  {
+    "q": "What is the default maximum message size in Kafka, and what configuration raises it?",
+    "options": [
+      "The default maximum Kafka message size is 64 KB, configured with message.max.bytes; raising it above 1 MB is not recommended because it causes excessive broker memory pressure during batching",
+      "The default maximum Kafka message size is 10 MB, set by max.request.size; any message larger than this is silently dropped by the Kafka broker without returning an error to the producer",
+      "The default Kafka message size limit is about 1 MB (message.max.bytes on broker, max.request.size on producer); for large payloads store the object in S3 and publish only a reference pointer in Kafka",
+      "The default maximum Kafka message size is 100 MB set by producer.max.bytes; it can be raised up to 2 GB by changing the broker heap allocation and increasing the socket receive buffer size"
+    ],
+    "answer": 2,
+    "explanation": "Kafka default message size is ~1 MB. For ML artifacts or large binary payloads, the standard pattern is to store the payload in S3 and publish only a reference (S3 key, bucket) in the Kafka messageâ€”keeping Kafka fast and bounded while using S3 for large object storage."
+  },
+  {
+    "q": "Why does gRPC not work directly in web browsers without additional infrastructure?",
+    "options": [
+      "HTTP/2 is disabled in all major browsers for gRPC traffic because the WebSocket Secure standard conflicts with HTTP/2 multiplexed stream prioritization at the TCP layer",
+      "Browsers prohibit binary Content-Type headers required by Protobuf payloads enforcing that all XHR and fetch requests use text/plain or application/json for cross-origin request compatibility",
+      "Browsers cannot access raw HTTP/2 framing that gRPC requires; a grpc-web proxy (e.g., Envoy) translates between browser HTTP/1.1 and the gRPC HTTP/2 wire protocol at the network boundary",
+      "gRPC requires mutual TLS certificate authentication for all connections but browsers only support server-side TLS making the required client certificate handshake impossible in any browser context"
+    ],
+    "answer": 2,
+    "explanation": "gRPC depends on direct access to HTTP/2 frames and trailers that browsers cannot expose via standard fetch/XHR APIs. The solution is a grpc-web proxy (typically Envoy) that runs at the network edge and translates browser HTTP requests into proper gRPC HTTP/2 calls on the backend side."
+  },
+  {
+    "q": "What is DuckLake and how does it differ from Iceberg?",
+    "options": [
+      "DuckLake is a DuckDB-specific in-memory table format that stores row groups in columnar heap memory instead of on-disk Parquet files achieving zero-latency access for hot analytical workloads",
+      "DuckLake is a commercial paid extension of DuckDB that adds distributed query execution across multiple machines while keeping the familiar single-binary local DuckDB development experience",
+      "DuckLake (2025) stores Iceberg-compatible table metadata in a SQL database (DuckDB or Postgres) rather than as JSON/Avro files in object storage, achieving sub-millisecond metadata reads at scale",
+      "DuckLake replaces Parquet as the underlying column storage format for Iceberg tables using a custom binary format optimized for DuckDB vectorized execution engine internals and CPU cache line size"
+    ],
+    "answer": 2,
+    "explanation": "Iceberg stores metadata as JSON and Avro files in S3â€”reads can take seconds at scale (thousands of LIST calls). DuckLake (2025) stores the same logical metadata in a SQL database, making metadata operations sub-millisecond. Data still lives in Parquet in S3; only the catalog layer changes."
+  },
+  {
+    "q": "Why do ClickHouse UPDATE and DELETE operations behave differently from standard SQL databases?",
+    "options": [
+      "ClickHouse processes every UPDATE and DELETE synchronously on the primary replica before propagating changes asynchronously to replicas causing a brief read-your-writes inconsistency window",
+      "ClickHouse disables UPDATE and DELETE on tables with more than 1 billion rows returning an error; only INSERT and SELECT operations are supported on large ClickHouse tables for performance reasons",
+      "ClickHouse mutations (ALTER TABLE UPDATE/DELETE) are asynchronous background operations that rewrite affected parts on disk rather than performing in-place updates enabling high-throughput INSERT without blocking",
+      "ClickHouse translates UPDATE and DELETE statements into standard Merge-Tree compaction operations that execute during off-peak hours configured via a maintenance window cron schedule"
+    ],
+    "answer": 2,
+    "explanation": "ClickHouse is optimized for high-throughput inserts and analytical reads. UPDATEs and DELETEs are mutationsâ€”they schedule a background part-rewrite rather than in-place row modification. This means they complete eventually, not immediately. For CDC-heavy use cases, Iceberg or a transactional DBMS is more appropriate."
+  },
+  {
+    "q": "What property makes Kubernetes StatefulSets the correct choice for databases versus Deployments?",
+    "options": [
+      "StatefulSets enforce a hard limit of one replica at a time preventing accidental multi-writer scenarios that would corrupt database state through split-brain concurrent writes to the same storage volume",
+      "StatefulSets automatically schedule all pods on a dedicated node group tagged with storage=fast ensuring NVMe SSD allocation for every stateful workload without any additional node affinity rules",
+      "StatefulSets allow pods to use Persistent Volume Claims while Deployments cannot; any pod scheduled by a Deployment loses all local disk data immediately when the pod is evicted or rescheduled",
+      "StatefulSets provide stable persistent pod identities (pod-0, pod-1) and per-pod PersistentVolumeClaims that survive pod rescheduling, enabling leader election, replication configuration, and stable DNS names required by clustered databases"
+    ],
+    "answer": 3,
+    "explanation": "StatefulSets give each pod a stable ordinal name (e.g., mysql-0) and a dedicated PVC that reattaches on rescheduleâ€”no data loss. Deployments have ephemeral pod names and shared or no persistent volumes. Databases need stable identity for leader election and replication membership, which only StatefulSets provide."
+  },
+  {
+    "q": "How does WarpStream achieve near-zero infrastructure cost compared to traditional Kafka?",
+    "options": [
+      "WarpStream uses a shared broker architecture where a single global broker serves all tenants simultaneously eliminating per-tenant broker resource allocation while maintaining full Kafka API compatibility",
+      "WarpStream compresses all messages with Zstandard at a 20:1 ratio before writing to disk reducing the physical broker disk footprint to approximately 5 percent of uncompressed Kafka storage requirements",
+      "WarpStream replaces leader election with a deterministic hash ring so brokers never need to communicate with each other eliminating the inter-broker bandwidth cost that dominates Kafka cloud bills",
+      "WarpStream has zero local broker diskâ€”all log data is written directly to object storage (S3) eliminating the expensive NVMe SSDs that make Kafka brokers costly in cloud environments"
+    ],
+    "answer": 3,
+    "explanation": "Traditional Kafka brokers need high-IOPS NVMe SSDs (expensive in cloud). WarpStream writes all data directly to S3â€”zero local disk per broker. This dramatically cuts infrastructure cost at the trade-off of 10+ second end-to-end latency due to S3 write visibility time."
+  },
+  {
+    "q": "PgBouncer reduces PostgreSQL connection overhead primarily by:",
+    "options": [
+      "Compressing all queries in transit between application and Postgres using LZ4 reducing network bandwidth consumed by high-frequency short queries in connection-heavy microservice architectures",
+      "Caching query results for read-only SELECT statements in a built-in in-memory LRU cache that is shared across all pooled connections and automatically invalidated on any DML operation",
+      "Rewriting N+1 query patterns from ORM frameworks into batched bulk SELECT statements before forwarding to Postgres eliminating the most common cause of excessive connection creation overhead",
+      "Multiplexing thousands of application connections onto a small pool of actual Postgres backend connections; each Postgres connection uses 5-10 MB server RAM so reducing live connections from thousands to tens conserves memory"
+    ],
+    "answer": 3,
+    "explanation": "PostgreSQL spawns a new backend process for each connection consuming ~5-10 MB RAM. PgBouncer keeps a small pool of real Postgres connections and queues application requestsâ€”100s of app connections map to 20-30 Postgres backends. Essential at scale where thousands of application connections would exhaust server RAM."
+  },
+  {
+    "q": "What is S3 Express One Zone and its primary trade-off?",
+    "options": [
+      "S3 Express One Zone is a multi-region replication feature that writes objects to three availability zones simultaneously achieving six-nines durability at roughly standard S3 Standard pricing levels",
+      "S3 Express One Zone is an archival storage class optimized for infrequently accessed objects with retrieval times under 12 hours at 80 percent lower cost than S3 Standard for cold data",
+      "S3 Express One Zone auto-classifies objects by access frequency into tiered storage within a single AZ using ML-driven heuristics to reduce storage cost without changing the application API",
+      "S3 Express One Zone provides roughly 10x lower first-byte latency and 50% lower per-request pricing than standard S3, but data is stored in a single availability zone making it unsuitable for data that cannot tolerate AZ-level loss"
+    ],
+    "answer": 3,
+    "explanation": "S3 Express One Zone uses directory buckets colocated with compute in one AZâ€”~10x lower latency (single-digit milliseconds) and ~50% lower request costs. The trade-off: single AZ means no cross-AZ durability. Ideal for ML training data staging, shuffle spill, or cache layersâ€”not for irreplaceable primary data."
+  },
+  {
+    "q": "When would you choose Apache Flink over Spark Structured Streaming?",
+    "options": [
+      "When the team has extensive Python and Pandas expertise, because Flink natively embeds a Python runtime that executes Pandas user-defined functions without any JVM overhead or serialization cost",
+      "When the dataset fits entirely in executor memory, because Flink avoids disk spill entirely while Structured Streaming always writes shuffle data to disk regardless of available executor memory capacity",
+      "When the workload requires fast batch processing of very large historical datasets, because Flink uses a vectorized columnar execution engine that outperforms Spark for terabyte-scale batch ETL jobs",
+      "When true event-at-a-time processing is needed with fine-grained event-time windowing and low-latency; Spark Structured Streaming is micro-batch with configurable trigger interval rather than true streaming"
+    ],
+    "answer": 3,
+    "explanation": "Flink processes each event individually with true event-time semantics. Spark Structured Streaming batches micro-batches at configurable intervals (100ms-1s typical). For low-latency anomaly detection, complex event processing, or sub-second windowed aggregations, Flink is the correct choice. Spark Structured Streaming is simpler and sufficient for most pipeline-style streaming."
+  },
+  {
+    "q": "What is the purpose of watermarks in Apache Flink?",
+    "options": [
+      "Watermarks are in-memory checkpoint markers that Flink injects into the event stream at fixed intervals to trigger periodic RocksDB state compaction and reduce operator memory pressure over time",
+      "Watermarks are Protobuf-encoded metadata fields attached to each event by the Kafka producer that Flink operators use to route events to the correct task manager based on event source topology",
+      "Watermarks are authentication tokens embedded in event timestamps by Flink task managers to prevent unauthorized injection of backdated events that could corrupt window state during recovery",
+      "Watermarks are monotonically increasing event-time timestamps that Flink propagates through the stream to signal how far event-time has progressed, allowing windows to close and emit results even when late events may still arrive"
+    ],
+    "answer": 3,
+    "explanation": "Watermarks tell Flink: all events with timestamp â‰¤ watermark have arrived. This lets time-based windows close and emit results despite out-of-order delivery. Without watermarks, Flink cannot know when a time window is complete. Late events arriving after the watermark can be handled separately via allowed lateness."
+  },
+  {
+    "q": "What is the most dangerous operational mistake with Terraform remote state?",
+    "options": [
+      "Storing .terraform.lock.hcl in version control causes provider version pinning conflicts when multiple engineers work on the same module from different workstation environments simultaneously",
+      "Running terraform plan before terraform apply causes double-evaluation of provider plugins creating phantom drift reports showing resources as changed when no actual infrastructure changes exist",
+      "Using terraform output to extract sensitive variables from state exposes them in CI logs; the safe approach is to retrieve sensitive values from a secrets manager instead of Terraform outputs",
+      "Deleting or corrupting the remote state file makes Terraform lose track of all managed resources; applying with a blank state treats all existing cloud infrastructure as new, potentially creating duplicates"
+    ],
+    "answer": 3,
+    "explanation": "The Terraform state file IS the source of truth about what Terraform manages. Deleting it causes Terraform to treat all existing infrastructure as non-existentâ€”running apply duplicates or conflicts with live resources. Always use remote state with locking (S3+DynamoDB, Terraform Cloud) and never delete it manually."
+  },
+  {
+    "q": "What is the OpenTelemetry Collector and why does it matter for observability infrastructure?",
+    "options": [
+      "The OTel Collector is a Kubernetes sidecar that intercepts TCP packets between microservices and automatically generates distributed traces without requiring any instrumentation in application code",
+      "The OTel Collector is a Prometheus data source plugin that converts OTLP metric payloads into PromQL-compatible time series enabling OTel metrics to be queried natively in Grafana without format conversion",
+      "The OTel Collector is a feature of Jaeger that aggregates distributed traces from all services in a cluster and stores them in a local SQLite database enabling offline trace analysis without internet connectivity",
+      "The OTel Collector is a vendor-neutral agent that receives telemetry via OTLP and routes it to any backend (Prometheus, Jaeger, Datadog, Tempo) so teams can switch backends without re-instrumenting application code"
+    ],
+    "answer": 3,
+    "explanation": "The OTel Collector decouples telemetry generation from backend storage. Apps emit OTLP; the Collector fans out to Prometheus, Jaeger, Datadogâ€”or any combination. The CNCF graduation (2026) means it is the de-facto standard. Changing observability backend only requires reconfiguring the Collector, not re-instrumenting all services."
+  },
+  {
+    "q": "What happens during a ClickHouse background merge, and why does it matter for query performance?",
+    "options": [
+      "ClickHouse merges aggregate multiple SELECT query result sets from concurrent readers into a unified sorted result buffer improving query parallelism and eliminating redundant disk reads for the same column ranges",
+      "ClickHouse merges rebalance data across shards redistributing rows to ensure every shard holds an equal row count improving JOIN symmetry and preventing storage hotspots on individual cluster nodes",
+      "ClickHouse merges compress newly inserted column blocks in the background combining them with older data files and rebuilding skip indexes enabling faster future reads without blocking active write throughput",
+      "ClickHouse merges smaller part files written by INSERT batches into larger sorted parts in the background, maintaining the MergeTree sorted order and compressing data into fewer files for efficient range scans"
+    ],
+    "answer": 3,
+    "explanation": "ClickHouse MergeTree INSERTs create small part files immediately. Background merges combine them into larger sorted parts (LSM-like), maintaining sort order and reducing file count. Without merges, query planners face too many small files and poor column compression ratios. Merges are what keep ClickHouse fast over time."
+  },
+  {
+    "q": "How does Elasticsearch full-text search work at its core?",
+    "options": [
+      "Elasticsearch stores each document as a dense vector representation generated by a built-in BERT model and retrieves documents using approximate nearest-neighbor cosine similarity at query time",
+      "Elasticsearch serializes all indexed documents to a single sorted B-tree keyed by a SHA-256 hash of the document content enabling binary search retrieval in O(log n) time per document lookup",
+      "Elasticsearch scans each document sequentially comparing query terms to raw document text using a rolling-hash Rabin-Karp algorithm optimized for cache-friendly sequential memory access patterns",
+      "Elasticsearch builds an inverted index mapping each analyzed term to the list of documents containing it; BM25 (a TF-IDF refinement) scores matches by term frequency and inverse document frequency for ranking"
+    ],
+    "answer": 3,
+    "explanation": "An inverted index maps terms â†’ document lists. During query time, Elasticsearch looks up the query terms in the index, retrieves matching document IDs, and ranks them using BM25 scoring (TF-IDF with length normalization). This is why full-text search is fast: no sequential scan needed."
+  },
+  {
+    "q": "Vector databases like pgvector have a practical limit of roughly 10 million vectors. What should teams do when exceeding it?",
+    "options": [
+      "Teams should compress all vectors to 8-bit integers to reduce memory footprint by 75 percent allowing pgvector to scale to 80 million vectors on the same hardware without migrating to a new database system",
+      "Teams should partition the vector table manually across multiple Postgres instances and implement client-side fan-out queries that search each shard in parallel and merge the ANN results client-side",
+      "Teams should switch from HNSW indexing to flat brute-force IVF indexing inside pgvector since IVF scales linearly with dataset size unlike HNSW which degrades quadratically beyond 10 million entries",
+      "Teams should migrate to purpose-built vector databases like Qdrant, Pinecone, Milvus, or Weaviate that are designed for hundreds of millions of vectors with distributed indexing and query routing"
+    ],
+    "answer": 3,
+    "explanation": "pgvector is excellent for starting (<10M vectors) because it co-locates vectors with relational data. Beyond ~10M, query latency and index build times degrade significantly. Purpose-built vector DBs (Qdrant, Pinecone, Milvus, Weaviate) are designed for distributed ANN at hundreds of millions of vectors."
+  },
+  {
+    "q": "What was the Hadoop NameNode single point of failure, and how was it eventually addressed?",
+    "options": [
+      "The NameNode stored block locations only in memory and not on disk; a process crash lost all block location metadata permanently requiring a full cluster reformat to rebuild the HDFS filesystem",
+      "The NameNode ran on a fixed TCP port 8020 that could only accept one client connection at a time causing write throughput to degrade linearly as cluster size grew beyond 100 DataNodes",
+      "The NameNode used Java serialization for its fsimage checkpoint file; large clusters with billions of files produced checkpoint files too large to deserialize within the JVM startup timeout window",
+      "HDFS NameNode held all filesystem metadata in RAM on a single machine; early clusters had no hot standby and a NameNode crash could take the entire cluster offline until the node was manually recovered"
+    ],
+    "answer": 3,
+    "explanation": "Early Hadoop NameNode kept all metadata (file names, block locations) in RAM on one machine with no automatic failover. A crash meant the entire HDFS cluster was inaccessible. High-availability NameNode (active/standby via ZooKeeper fencing) was added later but remains complex to operate vs. object storage."
+  },
+  {
+    "q": "Why do Cassandra writes go through a MemTable and SSTable pipeline rather than updating rows in place?",
+    "options": [
+      "In-place updates require a read before each write to locate the existing row in the B-tree; Cassandra avoids this read-before-write by appending all writes sequentially to in-memory structures first",
+      "Cassandra compresses each row individually using GZIP when writing to disk; decompressing rows in place for updates would be computationally prohibitive so mutations are accumulated in MemTable until flush",
+      "Cassandra replicates writes to multiple nodes before acknowledging; in-place updates across replicas would require distributed locking that violates the AP design goals of the Cassandra architecture",
+      "Cassandra appends all writes to an in-memory MemTable which flushes to immutable SSTables on disk; a log-structured merge-tree (LSM-tree) design optimizes write throughput by converting random writes into sequential ones"
+    ],
+    "answer": 3,
+    "explanation": "LSM-tree design: writes go to in-memory MemTable (very fast sequential), flushed to immutable SSTable files on disk. No in-place updatesâ€”all mutations are new writes. Compaction merges SSTables over time. This converts random writes (expensive) into sequential writes (fast), making Cassandra excellent for write-heavy workloads."
+  },
+  {
+    "q": "What does the Redis allkeys-lru eviction policy do when maxmemory is reached?",
+    "options": [
+      "When memory is full, allkeys-lru rejects all new writes until the operator explicitly deletes at least 10 percent of existing keys via a manual SCAN and DEL command sequence to reclaim space",
+      "When memory is full, allkeys-lru evicts only keys that have an explicit TTL set, leaving keys without expiry untouched regardless of recency of access or memory pressure severity level",
+      "When memory is full, allkeys-lru evicts the most recently accessed keys first reasoning that recently accessed data is likely already warm in application-level caches and therefore safe to evict from Redis",
+      "When memory is full, allkeys-lru evicts the least recently used key from the entire keyspace regardless of whether a TTL was set, allowing Redis to act as a bounded in-memory cache for any workload"
+    ],
+    "answer": 3,
+    "explanation": "allkeys-lru evicts the least recently used key from all keys (not just TTL-bearing ones). This makes Redis behave like a true LRU cache regardless of whether keys have expiry timesâ€”ideal for general-purpose caching. The alternative volatile-lru only evicts from keys with TTLs set."
+  },
+  {
+    "q": "The RED method for microservice monitoring tracks which three signals?",
+    "options": [
+      "Resources, Errors, and Dependenciesâ€”measuring CPU/memory utilization, service error counts, and downstream service call latency as the three pillars of microservice health observability",
+      "Reliability, Efficiency, and Durabilityâ€”measuring uptime SLA compliance, per-query CPU efficiency in cycles-per-row, and data retention policy adherence as the core operational health signals",
+      "Requests, Errors, and Datapointsâ€”measuring total incoming requests, error response counts, and the number of distinct metric series scraped per scrape interval for capacity planning purposes",
+      "Rate (requests per second), Errors (error rate), and Duration (latency distribution)â€”the three golden signals for any user-facing service providing a concise and actionable service health dashboard"
+    ],
+    "answer": 3,
+    "explanation": "RED method: Rate (how many requests/sec), Errors (what fraction fail), Duration (how long do they take). Introduced by Tom Wilkie for microservices. USE method (Utilization, Saturation, Errors) applies to infrastructure resources like CPU and disks. RED focuses on user-visible service behavior."
+  }
+]

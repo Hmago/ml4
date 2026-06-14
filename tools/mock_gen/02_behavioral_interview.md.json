@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A candidate describes an ML recommendation project with vague executive direction. Which first action best demonstrates comfort with ambiguity as described for Googleyness?",
+    "options": [
+      "Identify the biggest unknowns, ask focused clarifying questions, make reasonable assumptions, and start learning quickly.",
+      "Wait for the product manager to produce a complete PRD before selecting any modeling approach. in the interview scenario described",
+      "Build the most advanced model available so the solution remains impressive despite unclear requirements.",
+      "Escalate the ambiguity immediately and avoid committing to metrics until leadership decides every detail."
+    ],
+    "answer": 0,
+    "explanation": "Comfort with ambiguity means not freezing: clarify, make reasonable assumptions, and move. Waiting for perfect specs is explicitly presented as the wrong signal."
+  },
+  {
+    "q": "In a behavioral answer about a teammate's idea becoming a successful design, which wording best aligns with the chapter's collaboration guidance?",
+    "options": [
+      "I took over the idea because I had the technical depth needed to make it production-ready.",
+      "The idea came from another teammate; I helped shape it into a proposal and shared credit for the outcome.",
+      "The team did not understand the technical path, so I implemented the design independently to protect the schedule.",
+      "I convinced the teammate to let me present the idea because senior stakeholders expected one clear owner."
+    ],
+    "answer": 1,
+    "explanation": "Googleyness values helping others succeed and giving credit where due. Claiming ownership or bypassing teammates weakens the collaboration signal."
+  },
+  {
+    "q": "Which statement best captures why generic behavioral stories are weak for Google's hiring committee?",
+    "options": [
+      "They leave interviewers without specific details to write down and use when advocating for the candidate.",
+      "They make the candidate sound too rehearsed, which prevents the interviewer from asking technical follow-ups.",
+      "They usually overemphasize Googleyness signals and underemphasize role-related knowledge.",
+      "They force the committee to ignore the story because only numerical answers are accepted in the packet."
+    ],
+    "answer": 0,
+    "explanation": "The committee reads written feedback from interviewers, so specific stories give advocates evidence. Vague stories leave little compelling material."
+  },
+  {
+    "q": "A candidate says, \"I noticed our deployment pipeline was slow, so I raised it in a meeting and we created a ticket.\" What is missing for the Bias to Action trait?",
+    "options": [
+      "A clearer explanation of why the pipeline mattered to senior leadership. while keeping the original constraints unchanged",
+      "A comparison between the pipeline issue and other possible productivity problems.",
+      "A formal assignment from a manager proving the candidate owned that component.",
+      "A concrete action the candidate personally took to try, learn, or iterate on a fix."
+    ],
+    "answer": 3,
+    "explanation": "Raising an issue can be useful, but Bias to Action asks what the candidate did about it. The chapter contrasts creating a ticket with personally acting."
+  },
+  {
+    "q": "For Google's version of leadership, which scenario is the strongest example of emergent leadership?",
+    "options": [
+      "An engineer without a formal title organizes a confused project, aligns people, and drives the work when their skills are needed.",
+      "A manager assigns responsibilities to direct reports and checks that each deliverable is completed on schedule.",
+      "A senior engineer makes the final technical decision because they are the most experienced person in the room.",
+      "A project lead avoids disagreement by choosing the safest option proposed by the highest-ranking stakeholder. when framed for the hiring committee notes"
+    ],
+    "answer": 0,
+    "explanation": "Emergent leadership comes from stepping up when the situation needs it, not from a title. Formal authority alone is not the point."
+  },
+  {
+    "q": "A team debates a complex microservice design for a feature with only 100 daily users. Which response best shows influence without authority?",
+    "options": [
+      "Implement the monolith quietly first so the team can see that the simpler design works. without first resolving the underlying tradeoff",
+      "Present data comparing complexity, reliability, and schedule, then persuade the tech lead to choose the simpler option.",
+      "Ask the manager to overrule the architecture proposal because the feature is too small for microservices.",
+      "Agree to the microservice plan to preserve team harmony and revisit simplification after launch."
+    ],
+    "answer": 1,
+    "explanation": "Influence without authority means changing direction through evidence rather than hierarchy. Quietly bypassing or escalating misses that signal."
+  },
+  {
+    "q": "Which response to a technical disagreement most closely matches the chapter's ideal for navigating disagreement?",
+    "options": [
+      "Hold your position until the other person accepts the evidence, because correctness matters most.",
+      "Defer to the senior person immediately, because productive disagreement should not slow delivery.",
+      "Split the difference between the two proposals even if the compromise is technically weaker.",
+      "Listen, share data, and search for an outcome better than either person's original proposal."
+    ],
+    "answer": 3,
+    "explanation": "The chapter emphasizes disagreement without ego, with data, and with focus on the best outcome. Winning the argument is not the goal."
+  },
+  {
+    "q": "In a latency-versus-accuracy story for a real-time ML use case, what makes the tradeoff signal strong?",
+    "options": [
+      "Choosing the most accurate model because model quality is the primary ML success measure. as the main signal in this behavioral answer",
+      "Choosing the fastest model automatically because production latency always beats accuracy.",
+      "Running experiments, quantifying the tradeoff, and choosing the option that best fits the user context.",
+      "Letting stakeholders choose the metric so the engineer is not responsible for an imperfect decision."
+    ],
+    "answer": 2,
+    "explanation": "Making hard tradeoffs requires quantifying pros and cons and choosing deliberately for the situation. The chapter's example chooses lower accuracy because latency mattered more for that use case."
+  },
+  {
+    "q": "Which mentoring example best reflects the \"Growing Others\" leadership signal?",
+    "options": [
+      "Replace a junior engineer's PR changes quickly so the module ships, then explain the fixes after release.",
+      "Route the junior engineer's work to easier tasks until they become more comfortable with the codebase.",
+      "Tell the manager the junior engineer needs more training and ask for a formal onboarding plan. before any stakeholder follow-up is needed",
+      "Hold recurring review sessions that teach design patterns and improve the engineer's independent PR success."
+    ],
+    "answer": 3,
+    "explanation": "Growing others means helping someone succeed and gain independence. Simply fixing their work or lowering expectations does not show the same development impact."
+  },
+  {
+    "q": "After a failed model deployment, which ending best demonstrates the leadership signal of learning from failure?",
+    "options": [
+      "The team reverted the model, and I explained that offline validation had looked correct before launch.",
+      "I rolled back, found the missing edge-case coverage, added tests and a canary step, and prevented repeats.",
+      "I documented that the incident was caused by data drift outside my component and moved to a new project.",
+      "I apologized to leadership and promised to spend more time testing future deployments manually. while preserving the team relationship throughout"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's failure signal is: fail, own it, and make sure it does not happen again. Systemic changes such as tests and canaries are stronger than apologies or explanations."
+  },
+  {
+    "q": "Which Project Oxygen behavior is shown by giving people freedom in how they solve problems while removing blockers for them?",
+    "options": [
+      "Empowers the team and does not micromanage.",
+      "Has a clear vision and strategy for the team.",
+      "Collaborates across Google and breaks down silos.",
+      "Has key technical skills to advise the team."
+    ],
+    "answer": 0,
+    "explanation": "Project Oxygen describes empowerment as giving autonomy, providing resources, and removing blockers. Vision and technical skill are separate behaviors."
+  },
+  {
+    "q": "A story shows that an intern felt safe raising a concern that changed the team's launch plan. Which Project Aristotle factor is most directly demonstrated?",
+    "options": [
+      "Dependability, because the team delivered quality work on time.",
+      "Meaning, because the work mattered personally to each member. even when the user-impact evidence points elsewhere",
+      "Psychological safety, because someone could take an interpersonal risk without being punished.",
+      "Impact, because the final product created visible change for users."
+    ],
+    "answer": 2,
+    "explanation": "Psychological safety is about feeling safe to take risks and be vulnerable, including asking questions or raising concerns. It is identified as the most important factor."
+  },
+  {
+    "q": "Which behavior best signals GCA in a behavioral answer about a messy production issue?",
+    "options": [
+      "Breaking the issue into sub-problems, using metrics, acknowledging tradeoffs, and revising the hypothesis when data changes.",
+      "Quickly naming the most likely root cause based on prior experience and moving directly to a fix. as the safest default response under pressure",
+      "Explaining every technical detail of the system so the interviewer can verify the candidate's expertise.",
+      "Delegating investigation to specialists because GCA is evaluated mostly through coding and design rounds."
+    ],
+    "answer": 0,
+    "explanation": "GCA is shown by structured problem solving, data use, tradeoff reasoning, learning quickly, and zooming between levels. It appears in every round, including behavioral."
+  },
+  {
+    "q": "Which phrase is the strongest GCA signal when answering an ambiguous behavioral prompt?",
+    "options": [
+      "I knew from experience that this was the only practical solution.",
+      "I worked hard until the team agreed the approach was feasible. without changing the candidate's original approach",
+      "Let me structure my thinking here and start with the main constraints.",
+      "I prefer to avoid assumptions until every requirement is confirmed."
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists structuring thinking and understanding constraints as GCA power phrases. Avoiding assumptions entirely can look like freezing under ambiguity."
+  },
+  {
+    "q": "In the STAR timing guidance, why should the Action section take the largest share of the answer?",
+    "options": [
+      "It lets the candidate include enough technical architecture to prove role-related knowledge.",
+      "It gives the interviewer time to interrupt with follow-up questions before the result. in the interview scenario described",
+      "It prevents the candidate from sounding rehearsed by reducing the need for a clean ending.",
+      "It is where the interviewer learns what the candidate personally did, rather than just the context."
+    ],
+    "answer": 3,
+    "explanation": "The Action section is the main evaluation area because it reveals the candidate's behavior. Situation and Task are mostly context."
+  },
+  {
+    "q": "A candidate's STAR answer spends two minutes explaining organizational history before describing one quick action. What correction best follows the chapter's timing rule?",
+    "options": [
+      "Add more background so the interviewer fully understands why the project was difficult.",
+      "Compress Situation and Task, spend about half the time on Action, and stop after a concise result.",
+      "Skip the Result if the action already shows strong judgment and collaboration. while keeping the original constraints unchanged",
+      "Use multiple examples in the same answer so no single story carries too much weight."
+    ],
+    "answer": 1,
+    "explanation": "The timing rule flips the common mistake: keep context short and devote about 50% to Action. A concise Result with numbers still matters."
+  },
+  {
+    "q": "In the unclear-requirements recommendation example, why did asking the VP to choose among three definitions of \"personalized\" work well?",
+    "options": [
+      "It transferred responsibility for technical design from the engineer to the executive sponsor.",
+      "It avoided using ML until the product team had completed a full requirements document.",
+      "It converted a vague goal into a concrete direction that could guide data audit, metrics, and modeling.",
+      "It proved that demographic trending was the most scalable option for the homepage. when framed for the hiring committee notes"
+    ],
+    "answer": 2,
+    "explanation": "The example narrows ambiguity by clarifying what the business goal means. It does not avoid ownership or prove one option before investigation."
+  },
+  {
+    "q": "Why did the recommendation example use click-through rate as a primary metric and revenue per session as a guardrail?",
+    "options": [
+      "It tied the ML prototype to user behavior while checking that engagement did not harm business value.",
+      "It replaced the need for an A/B test because two metrics were enough to validate the model offline.",
+      "It ensured the collaborative filtering model optimized revenue directly during training.",
+      "It focused only on the VP's preference and avoided adding user-facing measures. without first resolving the underlying tradeoff"
+    ],
+    "answer": 0,
+    "explanation": "The example aligns on measurable impact: CTR for recommendations and revenue per session as a guardrail. It still used A/B testing before rollout."
+  },
+  {
+    "q": "Which pair of story-selection criteria is explicitly recommended for the behavioral story bank?",
+    "options": [
+      "Choose recent stories where you were central, and include measurable results with numbers.",
+      "Prefer older stories with complex politics, and avoid stories where metrics are hard to explain.",
+      "Use only stories from formal leadership roles, and keep technical ML stories for separate rounds.",
+      "Prepare one unique story for every listed question, and avoid reusing a story across themes."
+    ],
+    "answer": 0,
+    "explanation": "The chapter recommends recent stories, central involvement, measurable results, and at least four ML/technical stories for ML roles. It also says one good story can answer several questions."
+  },
+  {
+    "q": "Which story mapping is most consistent with the recommended eight-story bank?",
+    "options": [
+      "A process-improvement story mainly covers compensation questions and recruiter-screen topics.",
+      "A mentoring story mainly covers algorithm selection, model monitoring, and technical depth.",
+      "An ambiguity story mainly covers salary negotiation, benefits, and relocation preferences.",
+      "A tough-tradeoff story can cover decision-making, GCA, and tradeoff reasoning."
+    ],
+    "answer": 3,
+    "explanation": "The story bank maps tough tradeoffs to decision-making, GCA, and tradeoff reasoning. Compensation and benefits are not behavioral story themes."
+  },
+  {
+    "q": "A candidate answering \"biggest failure\" chooses a minor issue framed as a success. Why is that weak according to the guide?",
+    "options": [
+      "Failure answers should focus almost entirely on technical root-cause analysis. as the main signal in this behavioral answer",
+      "The question tests self-awareness, so minimizing the failure or using a humble-brag is the wrong instinct.",
+      "The best failure story must involve a manager's mistake rather than a candidate's own decision.",
+      "Google prefers candidates to avoid failure examples unless the interviewer asks twice."
+    ],
+    "answer": 1,
+    "explanation": "The guide says to pick a real failure because the interviewer is testing self-awareness. A humble-brag or minimized example sends a weak signal."
+  },
+  {
+    "q": "In a strong failure answer, where should most of the emphasis fall?",
+    "options": [
+      "On what happened after the failure: ownership, fixes, learning, and systemic prevention.",
+      "On explaining why the original decision was reasonable given the information available.",
+      "On describing how other contributors created the conditions for the failure.",
+      "On the severity of the failure so the interviewer sees the stakes clearly. before any stakeholder follow-up is needed"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says to end on the lesson and spend about 70% on what happened after the failure. Owning your part matters more than justifying it."
+  },
+  {
+    "q": "In the model-deployment failure example, what was the root cause of the offline metrics looking good while production failed?",
+    "options": [
+      "The model had not been optimized for GPU inference latency before launch. while preserving the team relationship throughout",
+      "The test set over-represented popular queries and under-represented long-tail queries.",
+      "The canary experiment was too small to detect ranking-quality regressions.",
+      "The relevance metric was replaced by user-reported errors during evaluation."
+    ],
+    "answer": 1,
+    "explanation": "The example identifies an unrepresentative test set: popular queries were over-represented and long-tail queries under-represented. The fix included a stratified test set and canary rollout."
+  },
+  {
+    "q": "When disagreeing with a manager about model choice, which response best follows the chapter's golden rule?",
+    "options": [
+      "Privately build the simpler model and ship it if the results are close enough.",
+      "Avoid disagreement because criticizing a manager's technical judgment is a behavioral red flag.",
+      "Argue for the cheaper model until the manager accepts that infrastructure cost matters.",
+      "Propose a data-driven comparison, present tradeoffs, and respect the final decision."
+    ],
+    "answer": 3,
+    "explanation": "The guide says to disagree respectfully, use data, and respect the final decision. It avoids both blind agreement and combative argument."
+  },
+  {
+    "q": "Why did the BERT-versus-logistic-regression example still ship BERT after the simpler model trained much faster?",
+    "options": [
+      "Because the manager ignored the comparison and chose the more modern architecture.",
+      "Because the compliance context made the extra accuracy more important than training cost.",
+      "Because logistic regression could not be explained to non-technical stakeholders. even when the user-impact evidence points elsewhere",
+      "Because Google interviews reward choosing the most advanced model when accuracy differs."
+    ],
+    "answer": 1,
+    "explanation": "The example's lesson is that context determines what better means. In a compliance use case, a small accuracy gain can outweigh cost and complexity."
+  },
+  {
+    "q": "Which answer to \"How do you stay up to date with ML/AI research?\" gives the strongest signal?",
+    "options": [
+      "I follow arXiv, social media, and conference announcements so I know what is trending. as the safest default response under pressure",
+      "I read papers when a project needs them and rely on teammates for areas outside my focus.",
+      "I keep a structured weekly reading habit, implement relevant ideas, and share learning through groups or prototypes.",
+      "I prioritize production skills over research because most papers are not directly applicable."
+    ],
+    "answer": 2,
+    "explanation": "The strong answer shows a system and turns learning into action. Passive consumption such as reading lists or social feeds is explicitly called weak."
+  },
+  {
+    "q": "What distinguishes hypothetical behavioral questions from STAR questions in this guide?",
+    "options": [
+      "Hypotheticals require exact company-policy knowledge, while STAR questions are about judgment. without changing the candidate's original approach",
+      "Hypotheticals are scored only for Googleyness, while STAR questions are scored only for Leadership.",
+      "Hypotheticals should be answered without asking clarifying questions so the candidate appears decisive.",
+      "Hypotheticals ask what you would do in a new scenario, testing on-the-spot structure, values, and judgment."
+    ],
+    "answer": 3,
+    "explanation": "Hypotheticals are future-facing scenarios used to test thinking, structure, values, and decision-making. Clarifying questions are part of the recommended approach."
+  },
+  {
+    "q": "A teammate is consistently missing deadlines but has not said they are struggling. Which first step best matches the hypothetical guidance?",
+    "options": [
+      "Start with a private, empathetic conversation to understand the root cause before offering help or escalating.",
+      "Raise the missed deadlines in the next team meeting so the team can rebalance work transparently.",
+      "Document the missed dates and ask the manager to intervene before the pattern affects delivery.",
+      "Take over their tasks quietly to protect the deadline and preserve their reputation. in the interview scenario described"
+    ],
+    "answer": 0,
+    "explanation": "The recommended approach starts with empathy in a private 1:1, then root-cause understanding and help. Escalation comes only if the conversation does not help."
+  },
+  {
+    "q": "Two weeks before a deadline, you realize the current technical approach will not work. Which plan best matches the guide?",
+    "options": [
+      "Keep pushing until the deadline because switching approaches creates stakeholder anxiety. while keeping the original constraints unchanged",
+      "Assess what can realistically ship, communicate transparently, and propose reduced scope or a revised timeline with tradeoffs.",
+      "Ask for an extension first, then investigate alternatives after stakeholders accept the delay.",
+      "Stop development and run a full redesign so the eventual solution is technically correct."
+    ],
+    "answer": 1,
+    "explanation": "The guide recommends immediate assessment, transparent communication, and a tradeoff-aware plan. Silent persistence or redesign without alignment is weaker."
+  },
+  {
+    "q": "A senior leader asks you to rush a model into production without proper testing. What response best reflects the guide's values?",
+    "options": [
+      "Refuse to launch under any circumstances because testing requirements should never be compromised.",
+      "Launch as requested because senior leaders own business risk and speed is often the priority. when framed for the hiring committee notes",
+      "Explain the risk with data, propose a compromise such as canary or sanity checks, and document the risk if overruled.",
+      "Ask the quality team to approve the launch so responsibility is transferred to the right function."
+    ],
+    "answer": 2,
+    "explanation": "The guide emphasizes data before opinion and pragmatic compromise, such as canaries or limited rollout. If overruled, documenting risk is appropriate."
+  },
+  {
+    "q": "Your model works well in English but poorly for other languages, and the team wants to launch. Which action is most aligned with the chapter?",
+    "options": [
+      "Launch because the model works for the primary language and can be improved after gathering more data.",
+      "Delay the entire launch until all languages reach identical performance across every metric. without first resolving the underlying tradeoff",
+      "Remove non-English users from the evaluation so the first launch reflects the intended target market.",
+      "Quantify affected users, propose mitigations such as fallbacks, and advocate for equitable user experience."
+    ],
+    "answer": 3,
+    "explanation": "The hypothetical guidance says to quantify impact, propose mitigations, and advocate for equitable user experience. Ignoring or hiding the disparity conflicts with user focus and ethics."
+  },
+  {
+    "q": "A coworker repeatedly takes credit for your ideas. Which sequence best matches the recommended response?",
+    "options": [
+      "Confront them publicly so the team understands the pattern and future credit is accurate. as the main signal in this behavioral answer",
+      "Start with a direct private conversation assuming positive intent, then involve a manager with documented examples if it continues.",
+      "Stop sharing ideas with that coworker and route suggestions only through written design documents.",
+      "Ask your manager to correct the record immediately because credit issues affect promotion evidence."
+    ],
+    "answer": 1,
+    "explanation": "The guide recommends a private first conversation, positive intent initially, and escalation only with specific examples if the behavior continues. Public confrontation is not the first step."
+  },
+  {
+    "q": "Which sequence is the recommended framework for answering hypotheticals?",
+    "options": [
+      "Clarify, structure, show values, and acknowledge tradeoffs.",
+      "Summarize, choose, justify, and close with a metric.",
+      "Situation, task, action, and result. before any stakeholder follow-up is needed",
+      "Empathize, escalate, decide, and document."
+    ],
+    "answer": 0,
+    "explanation": "The hypothetical framework is Clarify, Structure, Show Values, and Acknowledge Tradeoffs. STAR is for past-experience questions."
+  },
+  {
+    "q": "Why is \"I did everything myself\" a dangerous behavioral signal?",
+    "options": [
+      "It implies the candidate prefers small projects over large-scale Google systems.",
+      "It makes the story sound too technical for a culture-focused behavioral round.",
+      "It suggests inability to work in teams, and important work at Google is not done alone.",
+      "It shows the candidate cannot estimate how many people a project requires. while preserving the team relationship throughout"
+    ],
+    "answer": 2,
+    "explanation": "The chapter explicitly flags \"I did everything myself\" because it undermines teamwork. Google values collaboration even in leadership stories."
+  },
+  {
+    "q": "Which result statement best avoids the \"no numbers\" red flag?",
+    "options": [
+      "The launch went well, and leadership was happy with the team's progress. even when the user-impact evidence points elsewhere",
+      "The new process made the pipeline much faster and helped engineers trust it again.",
+      "Users liked the improved recommendations, and the team decided to invest more.",
+      "The change reduced latency by 40%, and the runbook cut repeat incidents for the next 18 months."
+    ],
+    "answer": 3,
+    "explanation": "Concrete numbers such as 40% and 18 months give the interviewer evidence. Vague phrases like \"went well\" do not tell a story."
+  },
+  {
+    "q": "A candidate says a failed project happened because \"the PM gave bad requirements and QA missed the bug.\" What core issue does this create?",
+    "options": [
+      "It lacks ownership because the candidate does not own their part even if others contributed.",
+      "It overuses specific details that may distract the interviewer from the result.",
+      "It shows too much collaboration because the story includes many people. as the safest default response under pressure",
+      "It focuses on product and quality teams instead of ML modeling decisions."
+    ],
+    "answer": 0,
+    "explanation": "Blaming others is a red flag; ownership means owning your part even when others also made mistakes. Factual context is fine, but blame is not."
+  },
+  {
+    "q": "Why does trashing past employers damage a Google behavioral interview?",
+    "options": [
+      "It suggests the candidate may reveal confidential company information. without changing the candidate's original approach",
+      "It prevents the interviewer from evaluating technical competence objectively.",
+      "It signals the candidate may treat Google the same way later; the guide says to stay factual and neutral.",
+      "It shows the candidate has changed jobs too often for a long-term role."
+    ],
+    "answer": 2,
+    "explanation": "The red-flag table warns that trashing old companies suggests the candidate may trash Google someday. The recommended approach is factual and neutral."
+  },
+  {
+    "q": "What is the best reason to stop after a concise 2.5-minute behavioral answer?",
+    "options": [
+      "Interviewers score only the first answer and ignore follow-up questions. in the interview scenario described",
+      "Stopping prevents rambling and lets the interviewer ask targeted follow-ups.",
+      "Short answers make weak results less noticeable to the hiring committee.",
+      "Google prefers behavioral answers to contain only one action and one result."
+    ],
+    "answer": 1,
+    "explanation": "The STAR guidance says to stop after the structured answer and let the interviewer follow up. Rambling beyond four minutes is a red flag."
+  },
+  {
+    "q": "During the final five minutes, which question is most appropriate to ask the interviewer?",
+    "options": [
+      "Can you tell me whether I did well enough to pass this round?",
+      "What salary range and WFH policy should I expect if I reach offer stage?",
+      "How does your team balance research exploration with production delivery?",
+      "Is the promotion process faster for candidates with prior ML leadership experience?"
+    ],
+    "answer": 2,
+    "explanation": "The guide lists team-focused questions such as balancing research and production as strong. Salary, WFH, and \"did I do well\" are specifically discouraged."
+  },
+  {
+    "q": "Which question topic should be saved for the recruiter rather than asked in the behavioral interview wrap-up?",
+    "options": [
+      "A recent challenge the team faced.",
+      "How the team handles technical disagreements.",
+      "What success looks like in the role's first year.",
+      "Salary, benefits, WFH policy, or PTO."
+    ],
+    "answer": 3,
+    "explanation": "The chapter says to avoid compensation, benefits, WFH policy, and PTO in interviewer questions. Those are recruiter topics."
+  },
+  {
+    "q": "In Week 1 of the preparation plan, what should happen before selecting the final eight stories?",
+    "options": [
+      "Brain dump every significant project, challenge, conflict, failure, and achievement from the last three years.",
+      "Schedule two mock interviews so feedback can determine which stories are strongest.",
+      "Memorize the model answers for the ten hardest questions and adapt them to personal experience.",
+      "Prepare questions for the interviewer so the wrap-up feels polished. while keeping the original constraints unchanged"
+    ],
+    "answer": 0,
+    "explanation": "Week 1 starts with a broad brain dump on days 1-2, then selecting the eight best stories on days 3-4. Mock interviews and interviewer questions come later."
+  },
+  {
+    "q": "Which Week 2 practice activity is specifically recommended for checking rambling, vagueness, and missing results?",
+    "options": [
+      "Rewrite weak stories based on final mock feedback. when framed for the hiring committee notes",
+      "Answer five random questions out loud, record or listen back, and time each response.",
+      "Map every question in the bank to at least one prepared story.",
+      "Rest and lightly review the eight stories without adding new preparation."
+    ],
+    "answer": 1,
+    "explanation": "Week 2 solo practice includes answering five random questions out loud, timing them, and listening back for rambling, vagueness, and missing results. Rewriting weak stories is a Week 3 activity."
+  },
+  {
+    "q": "What is the purpose of having someone throw random questions at you in Week 3?",
+    "options": [
+      "To replace the original eight-story bank with more spontaneous examples. without first resolving the underlying tradeoff",
+      "To test whether memorized answers can be recited under interview pressure.",
+      "To practice adapting prepared stories on the fly rather than depending on exact prompts.",
+      "To identify which interviewer questions should be asked during the final five minutes."
+    ],
+    "answer": 2,
+    "explanation": "Week 3 includes random question practice so the candidate can adapt stories dynamically. The goal is flexibility, not discarding preparation."
+  },
+  {
+    "q": "Which combination appears in the quick reference as Googleyness?",
+    "options": [
+      "Ownership, influence without authority, navigating disagreement, and tradeoffs.",
+      "Coding fluency, role-related knowledge, structured debugging, and system design.",
+      "Humility, ambiguity, action, collaboration, user focus, ethics, and growth mindset.",
+      "Vision, strategy, micromanagement, performance ratings, and manager reviews. as the main signal in this behavioral answer"
+    ],
+    "answer": 2,
+    "explanation": "The cheat sheet defines Googleyness as humility, ambiguity, action, collaboration, user focus, ethics, and growth mindset. Ownership and tradeoffs are listed under leadership."
+  },
+  {
+    "q": "Which statement about Google's scoring system is correct according to the guide?",
+    "options": [
+      "A 3.0 is a clear hire, while 3.5 is reserved for exceptional candidates only. before any stakeholder follow-up is needed",
+      "Only the behavioral interviewer scores Googleyness, so other rounds cannot affect it.",
+      "Coding and ML scores replace behavioral scores if they are both strong enough.",
+      "A 3.5 is a hire-level score, and candidates need roughly a 3.5+ average across dimensions."
+    ],
+    "answer": 3,
+    "explanation": "The guide maps 3.5 to Hire and says the hiring committee looks for an average of 3.5+ across dimensions. Strong technical scores do not erase weak behavioral signals."
+  },
+  {
+    "q": "Which score description corresponds to 4.0 in the guide's scoring table?",
+    "options": [
+      "Strong Hire, meaning the interviewer would fight to hire the person.",
+      "Hire, meaning the candidate is clearly above the bar.",
+      "Borderline, meaning the packet could go either way. while preserving the team relationship throughout",
+      "Strong No Hire, meaning the candidate is clearly not ready."
+    ],
+    "answer": 0,
+    "explanation": "The scoring table labels 4.0 as Strong Hire, described as \"I'd fight to hire this person.\" A 3.5 is Hire."
+  },
+  {
+    "q": "Why can a weak Googleyness score sink an otherwise strong technical candidate?",
+    "options": [
+      "Googleyness is weighted more heavily than every other hiring attribute combined. even when the user-impact evidence points elsewhere",
+      "A 2.5 behavioral signal can pull the average below the needed 3.5+ across dimensions.",
+      "Technical rounds are only used to verify resume claims after behavioral scores pass.",
+      "The hiring committee ignores coding scores if the behavioral round lacks numbers."
+    ],
+    "answer": 1,
+    "explanation": "The chapter says even 4.0 coding and ML scores can be dragged down by a 2.5 on Googleyness. Behavioral feeds Leadership and Googleyness, half the evaluation."
+  },
+  {
+    "q": "Which packet detail does the hiring committee specifically inspect across interviewers?",
+    "options": [
+      "Whether each interviewer asked exactly the same behavioral questions. as the safest default response under pressure",
+      "Whether the candidate's resume contains enough keywords from the role description.",
+      "Consistency in feedback, such as whether one interviewer saw arrogance while others saw collaboration.",
+      "Whether every interviewer gave a separate score for each STAR component."
+    ],
+    "answer": 2,
+    "explanation": "The committee looks for consistency across interviewer notes and investigates conflicting signals. STAR components are not described as separate packet scores."
+  },
+  {
+    "q": "Which statement best reflects the guide's meaning of intellectual humility?",
+    "options": [
+      "Avoid giving strong opinions unless a senior engineer asks for them. without changing the candidate's original approach",
+      "Know what you do not know, accept being wrong, and change approach when evidence warrants it.",
+      "Present decisions as team choices so no one can accuse you of arrogance.",
+      "Prefer junior engineers' opinions because humility means deferring to others."
+    ],
+    "answer": 1,
+    "explanation": "Intellectual humility means knowing what you do not know and being willing to change when data or others' expertise proves you wrong. It is not passive deference."
+  },
+  {
+    "q": "Which answer best demonstrates user focus rather than technical elegance?",
+    "options": [
+      "I chose the architecture because it used a framework I wanted to learn. in the interview scenario described",
+      "I added features that made the demo more impressive to technical reviewers.",
+      "I focused on faster load times after user testing showed that was what users wanted most.",
+      "I optimized the model architecture because it made the codebase cleaner for engineers."
+    ],
+    "answer": 2,
+    "explanation": "User focus means decisions circle back to what helps the person using the product. The chapter contrasts this with choosing what is interesting to build."
+  },
+  {
+    "q": "A candidate identifies a demographic bias in a model before launch. Which action best matches conscientiousness and doing the right thing?",
+    "options": [
+      "Proceed with launch because the issue can be measured after real traffic arrives.",
+      "Raise the concern and add fairness metrics before launch.",
+      "Remove the demographic feature so the model no longer explicitly sees it.",
+      "Mention the issue only if stakeholders ask about fairness risks."
+    ],
+    "answer": 1,
+    "explanation": "The chapter's example for conscientiousness is noticing bias, raising it, and adding fairness metrics before launch. Quietly hiding or postponing the issue is weaker."
+  },
+  {
+    "q": "Which response to critical feedback best shows growth mindset as defined in the guide?",
+    "options": [
+      "Explain the context so the manager understands why the behavior happened. while keeping the original constraints unchanged",
+      "Thank the person, then continue the same process because consistency matters.",
+      "Ask for feedback only during formal reviews to avoid overreacting to one opinion.",
+      "Act on the feedback with a concrete behavior change, such as sending proactive weekly updates."
+    ],
+    "answer": 3,
+    "explanation": "Growth mindset is seeking feedback and acting on it. The guide's example changes stakeholder perception by starting weekly updates."
+  },
+  {
+    "q": "Which Project Oxygen behavior is most directly reflected by explaining where the team is going and why?",
+    "options": [
+      "Has a clear vision and strategy for the team.",
+      "Is a good coach. when framed for the hiring committee notes",
+      "Collaborates across Google.",
+      "Is productive and results-oriented."
+    ],
+    "answer": 0,
+    "explanation": "A clear vision and strategy means explaining where the team is going and why. Coaching is about feedback, while collaboration is about breaking silos."
+  },
+  {
+    "q": "Which Project Aristotle factor means team members deliver quality work on time and can count on one another?",
+    "options": [
+      "Structure and clarity.",
+      "Meaning.",
+      "Dependability.",
+      "Impact."
+    ],
+    "answer": 2,
+    "explanation": "Dependability is defined as delivering quality work on time and being count-on-able. Structure and clarity refers to roles, plans, and goals."
+  },
+  {
+    "q": "Which Project Aristotle factor is shown when a team writes a plan with clear ownership for each person?",
+    "options": [
+      "Psychological safety.",
+      "Impact. without first resolving the underlying tradeoff",
+      "Meaning.",
+      "Structure and clarity."
+    ],
+    "answer": 3,
+    "explanation": "Structure and clarity means clear roles, plans, and goals. The guide explicitly gives clear ownership in a project plan as an example."
+  },
+  {
+    "q": "For ML roles, what extra story-bank guidance does the chapter provide?",
+    "options": [
+      "Make at least four stories ML or technical while still showing collaboration.",
+      "Use only model-building stories because system and process stories are less relevant.",
+      "Avoid technical detail in behavioral rounds so Googleyness remains the central signal.",
+      "Prepare one story each for supervised learning, unsupervised learning, and reinforcement learning."
+    ],
+    "answer": 0,
+    "explanation": "The guide recommends at least four ML/technical stories for ML roles and says every story should show collaboration. It does not require algorithm-category coverage."
+  },
+  {
+    "q": "Which answer best follows the cheat sheet's rule for pronouns in team stories?",
+    "options": [
+      "Use \"I\" for team outcomes and \"we\" for personal actions so you do not sound arrogant.",
+      "Use \"we\" throughout the answer to emphasize collaboration and avoid claiming too much credit.",
+      "Use \"I\" throughout the answer so the interviewer can evaluate your individual impact.",
+      "Use \"we\" for team outcomes and \"I\" for your specific actions."
+    ],
+    "answer": 3,
+    "explanation": "The cheat sheet says \"We\" for team outcomes and \"I\" for specific actions. This balances collaboration with personal accountability."
+  },
+  {
+    "q": "Which answer to \"Tell me about a conflict\" would best match what Google evaluates?",
+    "options": [
+      "I used data to show why my design was best and eventually the team accepted it. as the main signal in this behavioral answer",
+      "I listened to the other view, used evidence to discuss tradeoffs, and helped the team align on a better outcome.",
+      "I escalated the disagreement early because conflicts between engineers should not consume delivery time.",
+      "I avoided pushing my preference so the relationship stayed positive even though the decision was weaker."
+    ],
+    "answer": 1,
+    "explanation": "The cheat sheet maps conflict to collaboration, influence, and empathy. The strongest answer combines listening, evidence, tradeoffs, and alignment."
+  },
+  {
+    "q": "Which answer to an \"above and beyond\" prompt most clearly hits the intended evaluation themes?",
+    "options": [
+      "I worked late for several weeks so the project could hit the original scope. before any stakeholder follow-up is needed",
+      "I built a more advanced architecture than requested because it was technically interesting.",
+      "I found a user-impacting gap outside my assigned work, took initiative, and improved the outcome measurably.",
+      "I took on extra tasks from teammates so they could focus on their own priorities."
+    ],
+    "answer": 2,
+    "explanation": "The quick reference maps above-and-beyond questions to passion, user focus, and initiative. Extra hours alone are less meaningful than user-impacting initiative."
+  },
+  {
+    "q": "What does the guide say a \"complex ML project\" behavioral question evaluates?",
+    "options": [
+      "Only whether the candidate knows advanced algorithms deeply enough. while preserving the team relationship throughout",
+      "Whether the candidate can list architecture decisions in chronological order.",
+      "Only whether the candidate has deployed a model at Google-like scale.",
+      "Technical depth combined with communication about decisions and behavior around ML work."
+    ],
+    "answer": 3,
+    "explanation": "The ML-specific section says these questions blend behavioral and technical evaluation, focusing on behavior around ML work. The cheat sheet maps complex ML project to technical depth plus communication."
+  }
+]

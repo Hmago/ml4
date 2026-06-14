@@ -1,0 +1,362 @@
+[
+  {
+    "q": "As of May 2026, which model leads the SWE-bench Verified leaderboard?",
+    "options": ["GPT-5.5 at 88.7%", "Claude Opus 4.7 at 87.6%", "DeepSeek V4-Pro at 83.7%", "Gemini 3.1 Pro at 80.6%"],
+    "answer": 0,
+    "explanation": "GPT-5.5 (with Codex CLI scaffold) scores 88.7% on SWE-bench Verified as of May 2026. Claude Opus 4.7 is second at 87.6%; DeepSeek V4-Pro leads the open-weight side at 83.7%. Gemini 3.1 Pro is at 80.6%."
+  },
+  {
+    "q": "Which frontier model's headline API pricing is $2 in / $12 out per million tokens?",
+    "options": ["GPT-5.5 (OpenAI)", "Gemini 3.1 Pro (Google)", "Claude Opus 4.7 (Anthropic)", "DeepSeek V4-Pro (self-hosted)"],
+    "answer": 1,
+    "explanation": "The chapter lists Gemini 3.1 Pro at $2/$12 per million tokens, making it the cheapest closed-weight flagship. GPT-5.5 and Claude Opus 4.7 are both described as 'premium'; DeepSeek V4-Pro is self-hosted with no per-token API charge."
+  },
+  {
+    "q": "What is Claude Opus 4.7's primary competitive advantage in the May 2026 frontier?",
+    "options": ["Having the largest closed-weight context window at 2M tokens", "Being the cheapest flagship model by input token price", "Leading on software engineering tasks (87.6% SWE-bench) and tool orchestration", "Being the only closed-weight model supporting computer-use agents"],
+    "answer": 2,
+    "explanation": "Claude Opus 4.7 is the chapter's SWE-bench leader at 87.6% and is highlighted for tool orchestration. Gemini 3.1 Pro has 2M context; both Claude and OpenAI support computer-use; Gemini 3.1 Pro is the cheapest flagship."
+  },
+  {
+    "q": "Which open-weight model holds the largest context window of any model listed in the May 2026 landscape?",
+    "options": ["DeepSeek V4-Pro (1M tokens)", "Qwen 3.5 (1M tokens)", "Mistral Large 3 (1M tokens)", "Llama 4 Scout (10M tokens)"],
+    "answer": 3,
+    "explanation": "Llama 4 Scout has a 10M token context window, described as 'industry-largest.' All other major open-weight models (DeepSeek V4-Pro, Qwen 3.5, Mistral Large 3) support 1M tokens."
+  },
+  {
+    "q": "How does the OpenAI API expose thinking budget control in o-series and GPT-5.5 reasoning models?",
+    "options": ["Via a `reasoning_effort` parameter accepting `low`, `medium`, or `high`", "Via a `thinking_tokens_max` integer field in the request body", "Via a separate `/reasoning` API endpoint that wraps standard completions", "Via the `temperature` parameter — values below 0.3 activate chain-of-thought mode"],
+    "answer": 0,
+    "explanation": "OpenAI exposes `reasoning_effort` (low/medium/high) for o-series and GPT-5.5. Anthropic uses a `thinking` block with `budget_tokens`; Google uses `thinking_config` on Gemini 3 Pro. There is no separate endpoint or temperature-based trigger."
+  },
+  {
+    "q": "What does the chapter say about doubling the thinking budget versus doubling model parameters on hard tasks?",
+    "options": ["Doubling parameters always wins on math and code tasks regardless of thinking budget", "Doubling the thinking budget often beats doubling parameters on math, code, and multi-step planning — but only on those tasks", "Doubling thinking budget improves creative writing quality more than parameter scaling does", "Doubling thinking budget provides no measurable benefit beyond what top-p sampling already achieves"],
+    "answer": 1,
+    "explanation": "The chapter states: 'Doubling the thinking budget often beats doubling parameters on math, code, and multi-step planning — but only on those tasks.' On simple lookups or creative writing, reasoning models just overthink and waste tokens."
+  },
+  {
+    "q": "Which open-weight model released under the MIT license leads open-weight raw benchmarks?",
+    "options": ["Llama 4 Scout (Meta custom license with 700M MAU clause)", "Qwen 3.5 (Apache 2.0 license)", "DeepSeek V4-Pro (MIT license)", "Mistral Large 3 (Apache 2.0 license)"],
+    "answer": 2,
+    "explanation": "DeepSeek V4-Pro uses the MIT license — the most permissive option in the lineup. Qwen 3.5 and Mistral Large 3 use Apache 2.0. Llama 4 models use Meta's custom license with a 700M MAU restriction."
+  },
+  {
+    "q": "Which sparse MoE model has approximately 1.6T total parameters with 49B active per token?",
+    "options": ["Qwen 3.5 (397B / 17B active)", "Mistral Large 3 (675B / 41B active)", "Llama 4 Maverick (400B / 17B active)", "DeepSeek V4-Pro (1.6T / 49B active)"],
+    "answer": 3,
+    "explanation": "DeepSeek V4-Pro uses a sparse MoE design with 1.6T total parameters but only 49B activated per token. Qwen 3.5 is 397B/17B, Mistral Large 3 is 675B/41B, and Llama 4 Maverick is 400B/17B."
+  },
+  {
+    "q": "What context window does Llama 4 Maverick support?",
+    "options": ["1M tokens", "512K tokens", "10M tokens", "2M tokens"],
+    "answer": 0,
+    "explanation": "Llama 4 Maverick supports a 1M token context window and is positioned for 'general-purpose, multilingual' use. Its sibling Llama 4 Scout has the 10M context window optimised for long-context RAG."
+  },
+  {
+    "q": "Qwen 3.5's standout benchmark result mentioned in the chapter is what score on which benchmark?",
+    "options": ["87.6% on SWE-bench Verified (matching Claude Opus 4.7)", "88.4% on GPQA Diamond", "83.7% on SWE-bench Verified (matching DeepSeek V4-Pro)", "82.7% on Terminal-Bench 2.0"],
+    "answer": 1,
+    "explanation": "The chapter lists Qwen 3.5 at 88.4% on GPQA Diamond, putting it near closed-weight models on graduate-level science. Its SWE-bench score is described only as 'mid.' 87.6% is Claude Opus 4.7's SWE score; 83.7% is DeepSeek's."
+  },
+  {
+    "q": "What was the approximate SWE-bench Verified score for the best coding agents in late 2023?",
+    "options": ["approximately 35%", "approximately 50%", "approximately 13%", "approximately 67%"],
+    "answer": 2,
+    "explanation": "The chapter states the frontier was 'roughly 13%' on SWE-bench Verified in late 2023, then rose to approximately 88.7% by May 2026 — a jump of about 75 points in 18 months driven by better base models, test-time compute, scaffolding, and RL on agentic traces."
+  },
+  {
+    "q": "Which coding agent tool is described as a 'forked VS Code IDE' best suited for inline edits and rapid prototyping?",
+    "options": ["Claude Code (terminal agent)", "GitHub Copilot (editor sidebar)", "Windsurf (multi-file Cascade IDE)", "Cursor (forked VS Code)"],
+    "answer": 3,
+    "explanation": "Cursor is the 'forked VS Code IDE' in the chapter, positioned for 'inline edits, codebase-aware chat, rapid prototyping.' Claude Code is a terminal agent; GitHub Copilot is a sidebar plugin; Windsurf is a separate IDE using Cascade flow for multi-file edits."
+  },
+  {
+    "q": "Claude Code is best characterised as which type of development tool?",
+    "options": ["A terminal agent installed in your repo, suited for long-running multi-file refactors and agentic loops", "A browser-based cloud agent for asynchronous ticket delegation with low human oversight", "A forked VS Code IDE with codebase-aware chat and inline editing", "An OpenAI Mac desktop agent for computer-use automation workflows"],
+    "answer": 0,
+    "explanation": "Claude Code (Anthropic CLI) runs as a terminal agent inside your repository. It's positioned for long-running multi-file refactors and agentic loops. Devin 2.0 is the async cloud agent; Cursor is the forked IDE; Codex desktop is OpenAI's Mac agent."
+  },
+  {
+    "q": "The 'scaffold gap' in coding agent performance is best illustrated by which pair of results?",
+    "options": ["GPT-5.5 at 88.7% vs Claude Opus 4.7 at 87.6% — both on the same scaffold", "Augment Code at 72% using Opus 4.6 vs Cursor at 65.7% using Sonnet 4.6", "DeepSeek V4-Pro at 83.7% vs the late-2023 baseline of approximately 13%", "Claude Opus 4.7 at 87.6% vs Devin 2.0 at 45.8% — both autonomous agents"],
+    "answer": 1,
+    "explanation": "Augment Code (Opus 4.6) scores 72% while Cursor (Sonnet 4.6) scores 65.7%. Since Opus 4.6 > Sonnet 4.6, the gap also shows the harness matters — same base model with a better scaffold beats a weaker base model. Agent quality = base model × harness."
+  },
+  {
+    "q": "Which 2026 video generation model is specifically noted for adding synchronised audio — dialogue, ambient sound, and SFX?",
+    "options": ["Sora 2 (OpenAI) with physics-realistic motion", "Kling 2.0 (Kuaishou) optimised for human motion", "Veo 3.1 (Google DeepMind) with native synchronised audio", "Runway Gen-4 with editor-friendly camera and character control"],
+    "answer": 2,
+    "explanation": "Veo 3.1 is specifically called out for 'synchronised audio (dialogue + SFX),' described as 'a major leap that bypasses the post-production sound step.' Sora 2 is noted for physics realism up to 60-second clips, but not native audio generation."
+  },
+  {
+    "q": "According to the chapter, Sora 2 can generate video clips of up to what maximum length?",
+    "options": ["up to 10 seconds", "up to 30 seconds", "up to 2 minutes", "up to 60 seconds"],
+    "answer": 3,
+    "explanation": "The chapter describes Sora 2 as generating 'up to 60-second clips, physics-realistic, in ChatGPT/Sora app.' Veo 3.1 generates 'up to 1-minute' clips. Earlier video generation models were limited to shorter and often physically unrealistic sequences."
+  },
+  {
+    "q": "Which image generation model is described as the 'aesthetic leader' in the 2026 landscape?",
+    "options": ["Midjourney v7 (web + Discord)", "DALL-E 3 / GPT-Image-1 (OpenAI)", "Imagen 4 (Google DeepMind)", "FLUX 1.1 Pro (Black Forest Labs)"],
+    "answer": 0,
+    "explanation": "Midjourney v7 is specifically labelled 'aesthetic leader' in the chapter's image generation table. DALL-E 3 is noted for strong text rendering; Imagen 4 for high photorealism; FLUX 1.1 Pro for speed and open-weight availability."
+  },
+  {
+    "q": "For self-hosted image generation requiring LoRA fine-tuning and ControlNet support, which models are recommended?",
+    "options": ["DALL-E 3 and Imagen 4 via their hosted APIs", "FLUX dev and Stable Diffusion, both open-weight options", "Midjourney v7 downloaded from the Discord bot interface", "GPT-Image-1 with the local inference deployment flag"],
+    "answer": 1,
+    "explanation": "The chapter's production rule of thumb: 'hosted APIs for quality, FLUX/SD for self-host and customisation (LoRA, ControlNet).' DALL-E 3 and Imagen 4 are API-only; Midjourney has no local download; GPT-Image-1 has no local inference option."
+  },
+  {
+    "q": "What approximate end-to-end latency does the chapter report for GPT-4o voice / Realtime API?",
+    "options": ["approximately 50 ms", "approximately 100 ms", "approximately 300 ms", "approximately 1,000 ms"],
+    "answer": 2,
+    "explanation": "The chapter states GPT-4o voice achieves '~300 ms latency' and notes 2026 voice models 'respond in ~300 ms,' enabling natural interruptions. This is a key improvement over 2024 STT → LLM → TTS pipelines, which had higher latency and lost vocal prosody."
+  },
+  {
+    "q": "What was the fundamental architectural limitation of 2024-era voice assistants that 2026 end-to-end models solved?",
+    "options": ["Voice models required dedicated CNN encoders that could not be jointly trained with text transformers", "Audio input was chunked to 15-second windows, causing context loss across longer utterances", "WebSocket transport added 500ms of frame-buffering overhead compared to HTTP polling", "Multi-stage STT → LLM → TTS pipelines produced high latency and discarded prosody, tone, and natural interruption cues"],
+    "answer": 3,
+    "explanation": "The chapter contrasts 2024 voice (STT → LLM → TTS, 'high latency, lost prosody') with 2026 voice ('one model end-to-end — it hears tone, interrupts naturally, and responds in ~300 ms'). This end-to-end shift is what makes phone-based AI agents viable."
+  },
+  {
+    "q": "What score did Claude Computer Use achieve on OSWorld in 2026, after starting from roughly 14%?",
+    "options": ["approximately 44%", "approximately 14% (unchanged)", "approximately 62%", "approximately 78%"],
+    "answer": 0,
+    "explanation": "The chapter states: 'Claude Computer Use jumped from 14% to 44% on OSWorld in 18 months.' This makes OSWorld an 'active' benchmark — meaningful but far from solved. GPT-5.5 leads autonomous agents but OSWorld is still well below human performance."
+  },
+  {
+    "q": "What is the name of OpenAI's browser-based computer-use agent product?",
+    "options": ["Project Mariner", "Operator", "Codex Desktop", "Devin 2.0"],
+    "answer": 1,
+    "explanation": "OpenAI's 'Operator' runs cloud-hosted browsers to complete web tasks. Project Mariner is Google's browser agent. Codex Desktop is OpenAI's Mac desktop control agent. Devin 2.0 (Cognition) is an async cloud coding agent, not a browser agent."
+  },
+  {
+    "q": "The chapter estimates a 30-step computer-use workflow costs approximately how much and takes how long?",
+    "options": ["$0.01–$0.05 and 5–10 seconds (fast enough for high-QPS)", "$1.00–$5.00 and 5–10 minutes (suitable for batch overnight jobs)", "$0.10–$0.50 and 60–120 seconds (human-paced workflows)", "$5.00–$20.00 and 10–30 minutes (enterprise budget required)"],
+    "answer": 2,
+    "explanation": "The chapter states: 'A 30-step flow easily takes 60–120 seconds and costs $0.10–$0.50.' Each step is a screenshot plus an LLM call. This makes computer-use viable for 10×/day human-paced workflows but prohibitive for machine-paced production traffic."
+  },
+  {
+    "q": "Project Mariner is described in the chapter as what type of agent?",
+    "options": ["OpenAI's autonomous ticket-handling and code-writing cloud agent", "Apple's on-device intelligent assistant for iOS 19 and macOS", "Microsoft's Copilot+ browser integration for Edge-based automation", "Google's browser agent for web tasks and computer use"],
+    "answer": 3,
+    "explanation": "Project Mariner is Google's browser agent, listed alongside OpenAI's Operator and Codex Desktop as a computer-use product. OpenAI's Operator and Codex desktop are the OpenAI equivalents; Devin is Cognition's coding agent."
+  },
+  {
+    "q": "According to the chapter, Apple Intelligence runs on-device inference on which platforms?",
+    "options": ["iOS and macOS (iPhone, iPad, Mac)", "Android and ChromeOS (Pixel and ChromeOS devices)", "Windows PCs running Copilot+ with an NPU", "Pixel phones and Android tablets via Gemini Nano"],
+    "answer": 0,
+    "explanation": "Apple Intelligence is listed as the on-device offering for 'iOS/macOS' covering 'writing tools, image clean-up, Siri context.' Gemini Nano serves Pixel/Android; Phi-4 Mini serves Copilot+ PCs (Microsoft/Windows)."
+  },
+  {
+    "q": "Which quantization framework is specifically designed for CPU and edge inference and uses the GGUF file format?",
+    "options": ["bitsandbytes — used primarily during training for QLoRA", "llama.cpp + GGUF — designed for CPU/edge deployment", "MLC and Apple MLX — targeting Apple silicon and mobile GPUs", "MediaPipe — Google's framework for on-device mobile inference"],
+    "answer": 1,
+    "explanation": "llama.cpp with GGUF files is the go-to for CPU and edge deployment. bitsandbytes is training-side (QLoRA). MLC and MLX target Apple silicon and GPUs. MediaPipe is Google's mobile framework. The chapter lists all four but singles out llama.cpp + GGUF for CPU/edge."
+  },
+  {
+    "q": "What is the approximate memory footprint of a 7B-parameter model quantized to INT8?",
+    "options": ["28 GB (FP32 equivalent)", "14 GB (FP16 equivalent)", "7 GB", "3.5 GB (INT4 level)"],
+    "answer": 2,
+    "explanation": "The chapter shows the quantization table: FP32 = 28 GB, FP16/BF16 = 14 GB, INT8 = 7 GB, INT4 = 3.5 GB for a 7B-parameter model. INT8 halves FP16 memory; INT4 halves INT8 and is what fits on a phone."
+  },
+  {
+    "q": "For what hardware is Apple's MLX inference framework specifically designed?",
+    "options": ["NVIDIA CUDA GPUs (A100/H100 data-center cards)", "Intel x86-64 CPUs using AVX-512 SIMD extensions", "Qualcomm Snapdragon NPUs in Android devices", "Apple silicon (M-series and A-series chips)"],
+    "answer": 3,
+    "explanation": "Apple's MLX is the framework listed in the chapter alongside MLC for 'Apple silicon' inference. llama.cpp targets CPU/edge broadly; bitsandbytes targets NVIDIA CUDA; MediaPipe targets mobile across platforms."
+  },
+  {
+    "q": "By how much did token prices fall between late 2022 and May 2026 for equivalent model quality?",
+    "options": ["approximately 150–1000× cheaper across the quality spectrum", "approximately 10–20× cheaper, mostly from hardware improvements", "approximately 2–5× cheaper, largely due to distillation", "approximately 5000× cheaper, driven by the shift to open-weight models"],
+    "answer": 0,
+    "explanation": "The chapter's cost chart shows roughly 1000× fall in 4.5 years: from $60/M tokens (GPT-3 tier) to $0.06/M tokens (Gemini Flash tier) for equivalent quality. This is cited as the 'single most under-appreciated fact of 2026.'"
+  },
+  {
+    "q": "Why did enterprise AI spending increase despite token prices falling dramatically?",
+    "options": ["GPU hardware costs rose faster than software efficiency gains, netting out the savings", "Total token consumption grew faster than per-token prices fell — agents make 10–100 LLM calls per task", "Enterprise contracts locked in 2022-era pricing across multi-year agreements", "Frontier model prices remained flat while only cheaper tiers fell"],
+    "answer": 1,
+    "explanation": "The chapter explicitly resolves this: 'Per-token prices fell, but total token consumption grew faster — long context, reasoning models burning thinking tokens, agents making 10–100 calls per task.' AI is the fastest-growing IT line item at most enterprises."
+  },
+  {
+    "q": "What context window did the original GPT-3.5 support, marking the start of the context-scaling arc?",
+    "options": ["32K tokens", "200K tokens", "8K tokens", "128K tokens"],
+    "answer": 2,
+    "explanation": "The chapter traces the scaling arc: '8K (GPT-3.5, 2022) → 32K (GPT-4) → 200K (Claude 3) → 1M (Gemini 1.5 / Claude 4) → 10M (Llama 4 Scout, 2025).' GPT-3.5 started at 8K."
+  },
+  {
+    "q": "The 'lost-in-the-middle' phenomenon refers to what failure mode in long-context models?",
+    "options": ["Models silently drop the system prompt when conversation history fills the window", "Retrieved documents lose their source metadata when injected into very long contexts", "Token-budget truncation removes early turns without surfacing an error to the caller", "Attention degrades on tokens buried in the middle of long contexts, reducing recall for central content"],
+    "answer": 3,
+    "explanation": "The chapter warns: 'A 2M-token window is a canvas, not an invitation to paint every pixel.' Attention mechanisms degrade on middle-of-context tokens, so stuffing all available content into a huge window can actually hurt retrieval of key facts."
+  },
+  {
+    "q": "After model choice, which technique is described as the single largest cost lever in an LLM deployment?",
+    "options": ["Prompt caching — making repeat long-prefix tokens roughly 90% cheaper on subsequent calls", "Switching from HTTPS to WebSocket streaming to reduce connection overhead", "Quantizing deployed models from FP16 to INT8 post-training in production", "Compressing system prompts with semantic shortening below 500 tokens"],
+    "answer": 0,
+    "explanation": "The chapter explicitly calls out 'Prompt caching (Ch 19) makes the long prefix cheap on subsequent calls — biggest cost lever after model choice.' The ~90% saving on cached tokens is called out again in the context-engineering techniques table."
+  },
+  {
+    "q": "When does using a long-context window beat using RAG for document question answering?",
+    "options": ["When querying a knowledge base of thousands of frequently-updated documents across multiple users", "For one-shot analysis of a single large document such as a contract or research paper", "When per-user data is sensitive and requires access-control lists (ACLs)", "When the retrieval system already achieves more than 90% recall on test queries"],
+    "answer": 1,
+    "explanation": "The chapter's long-context-vs-RAG table: long-context wins for 'one-shot analysis of a single big document (a contract, a paper).' RAG wins for 'querying a knowledge base of thousands of docs,' freshness-sensitive content, and per-user ACL data."
+  },
+  {
+    "q": "In the context stack described in the chapter, which layer is labelled as 'static, dev-set'?",
+    "options": ["Retrieved documents (RAG) injected dynamically per query", "Conversation history, which grows incrementally per turn", "System prompt containing persona, rules, and tool specifications", "Structured memory holding compressed user preferences and summaries"],
+    "answer": 2,
+    "explanation": "The context stack diagram marks the system prompt as 'static, dev-set' — written by developers and unchanged at inference time. Retrieved docs and tool results are 'dynamic, per-query'; conversation history is 'growing, per-turn'; structured memory is 'persistent, compressed.'"
+  },
+  {
+    "q": "Which context engineering technique uses XML or JSON tags (like `<document>...`) to improve model recall over retrieved content?",
+    "options": ["Attention anchoring — placing the most critical instruction immediately before the generation point", "Memory systems — injecting persistent user-specific facts at session start", "Conversation summarisation — compressing old turns before they leave effective attention range", "Structured layout — wrapping retrieved content in explicit tags that beat flat prose for recall"],
+    "answer": 3,
+    "explanation": "The chapter's context engineering table lists 'Structured layout: XML/JSON tags (`<document>...`) beat flat prose for recall.' Attention anchoring is about instruction placement, not tagging. Structured layout is about how content is formatted in the context window."
+  },
+  {
+    "q": "The 'attention anchoring' context engineering technique prescribes placing the most critical instruction where?",
+    "options": ["Just before the generation point — at the end of the context, immediately before the model responds", "At the very start of the system prompt before any persona or tool definitions", "Evenly distributed at multiple intervals throughout the full context window", "Embedded in the first user message rather than in the system prompt"],
+    "answer": 0,
+    "explanation": "The chapter states: 'Attention anchoring — put the most critical instruction just before the generation point.' This exploits recency bias in attention. Placing instructions only at the start can cause degradation in very long contexts due to lost-in-the-middle effects."
+  },
+  {
+    "q": "Prompt caching is described in the context engineering table as making cached tokens approximately how much cheaper?",
+    "options": ["approximately 50% cheaper on cached tokens", "approximately 90% cheaper on cached tokens", "approximately 30% cheaper on cached tokens", "approximately 99% cheaper — essentially free for repeated prefixes"],
+    "answer": 1,
+    "explanation": "The chapter's context engineering techniques table reads: 'Context caching — ~90% cheaper repeat tokens — biggest cost lever.' This applies to repeated long prefixes (system prompts, RAG documents) on subsequent calls and is the main reason to design modular, cacheable contexts."
+  },
+  {
+    "q": "When do full EU AI Act enforcement powers and GPAI penalties go live?",
+    "options": ["February 2, 2025 (prohibited AI bans)", "August 2, 2025 (GPAI provider obligations)", "August 2, 2026 (enforcement powers and GPAI penalties)", "August 2, 2027 (high-risk regulated products)"],
+    "answer": 2,
+    "explanation": "The chapter's EU AI Act timeline: Feb 2025 = prohibited-AI bans; Aug 2025 = GPAI obligations apply; Aug 2, 2026 = enforcement powers and GPAI penalties go live; Aug 2027 = high-risk regulated products fully covered. Aug 2, 2026 is the date 'interviewers test you on.'"
+  },
+  {
+    "q": "What are the maximum financial penalties for violating the EU AI Act?",
+    "options": ["€10M or 2% of global annual revenue", "€50M or 10% of global annual revenue", "€20M or 4% of global annual revenue", "€35M or 7% of global annual revenue"],
+    "answer": 3,
+    "explanation": "The chapter states: 'Penalties top out at €35M or 7% of global revenue.' This applies to GPAI providers and general AI rule violations. For prohibited AI (banned outright), the ceiling is even higher. The 2%/4%/10% figures are modelled on GDPR-style penalty tiers but are not what the AI Act uses."
+  },
+  {
+    "q": "Constitutional AI differs from RLHF primarily because it does what?",
+    "options": ["Uses model self-critique against written principles rather than per-example human preference labels", "Ranks human-written outputs against AI outputs to train a preference model", "Replaces human feedback with AI-generated feedback for scale (RLAIF)", "Directly fine-tunes the LLM on (chosen, rejected) pairs without a reward model (DPO)"],
+    "answer": 0,
+    "explanation": "Constitutional AI has the model self-critique its own outputs against a written set of principles, removing per-example human labelling. RLAIF replaces human feedback with AI feedback (different). DPO removes the reward model but still uses human preference pairs."
+  },
+  {
+    "q": "Which regulatory body must approve generative AI services in China before they are deployed publicly?",
+    "options": ["MIIT (Ministry of Industry and Information Technology)", "CAC (Cyberspace Administration of China)", "SAMR (State Administration for Market Regulation)", "CSRC (China Securities Regulatory Commission)"],
+    "answer": 1,
+    "explanation": "The chapter states: 'China: generative AI services must register with the CAC; approved-content models only.' The CAC is China's internet and cyberspace regulator. MIIT handles telecom hardware; SAMR handles market competition; CSRC covers securities."
+  },
+  {
+    "q": "At Cloud Next 2026, Google rebranded which product as the Gemini Enterprise Agent Platform?",
+    "options": ["Google AI Platform was rebranded as Gemini Cloud Studio", "Google TensorFlow Hub was merged into the Gemini Developer Portal", "Vertex AI (merged with Agentspace) was rebranded as the Gemini Enterprise Agent Platform", "Google Colab was folded into the Agent Development Kit console"],
+    "answer": 2,
+    "explanation": "The chapter says: 'At Cloud Next 2026 Google rebranded Vertex AI as the Gemini Enterprise Agent Platform and merged it with Agentspace.' This is a key naming fact for Google AI Engineer interviews. TensorFlow Hub, Colab, and AI Platform are separate products."
+  },
+  {
+    "q": "How much HBM memory does each TPU v7 Ironwood chip provide?",
+    "options": ["48 GB per chip (same as the prior Trillium generation)", "80 GB per chip (equivalent to one H100 SXM card)", "128 GB per chip (matching A100 SXM4)", "192 GB per chip (6× Trillium)"],
+    "answer": 3,
+    "explanation": "The chapter lists TPU v7 Ironwood at '192 GB per chip (6× Trillium).' The 6× multiplier relative to Trillium (TPU v6e) and the 7.37 TB/s bandwidth are the headline specs that enable inference for very large MoE models within a single chip."
+  },
+  {
+    "q": "In Google's 2026 AI stack, ADK stands for what and serves which role?",
+    "options": ["Agent Development Kit — an open-source code-first agent framework in Python, Go, Java, and TypeScript", "Automated Deployment Kernel — the managed runtime that handles scaling and sessions", "Adaptive Decision Kit — a rule-based routing layer in Vertex Pipelines", "Agentic Data Knowledge framework — a schema for structuring memory and retrieval"],
+    "answer": 0,
+    "explanation": "ADK (Agent Development Kit) is described as Google's 'open-source code-first agent framework (Python, Go, Java, TS).' Agent Engine is the managed runtime; Agent Builder is the low-code console; Vertex Pipelines manages Kubeflow pipelines."
+  },
+  {
+    "q": "What is the peak compute of a single TPU v7 Ironwood chip?",
+    "options": ["approximately 1,000 FP8 TFLOPS per chip", "4,614 FP8 TFLOPS per chip", "approximately 10,000 FP8 TFLOPS per chip", "420 FP8 TFLOPS per chip (H100 SXM5 equivalent)"],
+    "answer": 1,
+    "explanation": "The chapter specifies TPU v7 Ironwood at '4,614 FP8 TFLOPS per chip,' roughly 10× the peak of TPU v5p and 4× per-chip vs TPU v6e Trillium. A full pod of 9,216 chips reaches approximately 42.5 exaFLOPS."
+  },
+  {
+    "q": "SWE-bench Verified is specifically designed to measure what?",
+    "options": ["Python function synthesis evaluated against hand-crafted unit tests", "CLI agent performance on terminal-based navigation and scripting tasks", "Agents' ability to fix real GitHub bug reports, scored against the project's own test suite", "Long-horizon web navigation tasks requiring multi-step browser interactions"],
+    "answer": 2,
+    "explanation": "The chapter defines SWE-bench Verified as 'real GitHub bug-fix tasks, scored by whether the patch passes the project's test suite.' HumanEval tests Python function synthesis; Terminal-Bench 2.0 tests CLI agents; WebArena/VisualWebArena tests web navigation."
+  },
+  {
+    "q": "At what approximate score do frontier models saturate MMLU, making it a weak signal in 2026?",
+    "options": ["approximately 60%+ makes it a weak differentiator", "approximately 70%+ makes it a weak differentiator", "approximately 80%+ makes it a weak differentiator", "approximately 90%+ makes it a saturated metric"],
+    "answer": 3,
+    "explanation": "The chapter says MMLU is 'Saturated (~90%+ frontier).' When every frontier model clears 90%, the benchmark stops discriminating between them. It recommends citing live differentiators (SWE-bench, GPQA Diamond, OSWorld, ARC-AGI-2, FrontierMath) instead."
+  },
+  {
+    "q": "ARC-AGI-2 (the active 2026 benchmark) primarily tests which capability?",
+    "options": ["Abstract reasoning on novel visual and symbolic patterns where frontier models still lag humans", "Multi-step API tool-use and function-calling accuracy across diverse APIs", "Graduate-level science question answering covering chemistry, physics, and biology", "Autonomous web navigation and multi-step browser task completion at scale"],
+    "answer": 0,
+    "explanation": "ARC-AGI-2 tests abstract reasoning, and the chapter notes frontier models are 'still well behind humans' on it, making it an active rather than saturated benchmark. GPQA Diamond tests graduate science; τ-bench tests tool-use; WebArena tests web navigation."
+  },
+  {
+    "q": "What is the frontier score on FrontierMath (research-level mathematics) as of May 2026?",
+    "options": ["approximately 70% — near human expert level", "approximately 30% — still well below human expert level", "approximately 50% — threshold performance on harder subsets", "approximately 10% — nearly unsolved across all frontier models"],
+    "answer": 1,
+    "explanation": "The chapter lists FrontierMath at '~30%' for frontier models, marking it 'Active' and difficult. It contrasts with saturated benchmarks like MMLU (~90%+) and HumanEval (~95%+). Research-level math remains a genuine frontier challenge."
+  },
+  {
+    "q": "For click-through-rate prediction at massive web scale, what classical ML approach does the chapter say still wins?",
+    "options": ["Two-tower neural retrieval with approximate nearest-neighbour indexing", "Fine-tuned transformer classifier trained on user interaction logs", "Gradient-boosted trees (XGBoost or LightGBM) with feature engineering", "LambdaMART with neural rerankers for pairwise ranking"],
+    "answer": 2,
+    "explanation": "The chapter's 'classical ML still wins' table explicitly lists gradient-boosted trees (XGBoost / LightGBM) as the winner for 'click-through-rate prediction at web scale.' Two-tower is for recommender retrieval; LambdaMART is for search ranking."
+  },
+  {
+    "q": "What classical architecture does the chapter recommend for recommender system candidate generation?",
+    "options": ["Frequency-based collaborative filtering with matrix factorisation (SVD)", "XGBoost with hand-engineered item-to-item similarity features", "A lightweight RNN trained end-to-end on user session sequences", "Two-tower retrieval model with approximate nearest-neighbour (ANN) indexing"],
+    "answer": 3,
+    "explanation": "The chapter lists 'recommender candidate generation' as a case where the classical winner is 'two-tower retrieval + ANN.' XGBoost is the winner for tabular fraud detection; gradient-boosted trees for CTR; LambdaMART + neural rerankers for search ranking."
+  },
+  {
+    "q": "For real-time mobile autocomplete where latency and privacy are paramount, which model class is recommended?",
+    "options": ["Gemini Nano or Apple Foundation Model running on-device", "Gemini 3.1 Pro via streaming API with low-latency routing", "GPT-5 mini with `reasoning_effort=low` to minimise response time", "DeepSeek V4-Pro quantized to INT4 and served from a regional cloud edge node"],
+    "answer": 0,
+    "explanation": "The decision tree in the chapter routes 'real-time mobile autocomplete' to 'Gemini Nano / Apple Foundation (on-device).' On-device inference avoids network round-trips and keeps data private. Cloud APIs, even with streaming, add network latency unsuitable for real-time autocomplete."
+  },
+  {
+    "q": "For generating video content with synchronised dialogue and sound effects, what does the decision tree recommend?",
+    "options": ["Sora 2, which offers the most physics-realistic motion among video generators", "Veo 3.1, the only listed model with native synchronised audio support", "Runway Gen-4, which offers audio attachment through its editor-friendly control interface", "Seedance 2 from ByteDance, optimised for rapid low-cost audio-video pairing"],
+    "answer": 1,
+    "explanation": "The decision tree maps 'Video with sync audio → Veo 3.1.' Veo 3.1 is the only model in the chapter described as having native synchronised audio (dialogue + SFX). Sora 2 is praised for physics realism but lacks native audio generation."
+  },
+  {
+    "q": "Which common pitfall involves relying on large context windows as a substitute for a proper retrieval system?",
+    "options": ["Using open-weight models for privacy-sensitive workloads without network isolation", "Citing SWE-bench Verified scores older than 60 days during a technical interview", "Treating long context as a substitute for retrieval, ignoring lost-in-the-middle attention degradation", "Running reasoning models on straightforward production tasks, burning unnecessary thinking tokens"],
+    "answer": 2,
+    "explanation": "Pitfall 4 in the chapter: 'Treating long context as a substitute for retrieval. Lost-in-the-middle is real; selective retrieval + rerank usually wins.' A 2026 best practice combines both: top-50 retrieved with hybrid search, then dumped into a 1M window for final reasoning."
+  },
+  {
+    "q": "For privacy-critical or bulk-inference workloads where per-token API cost dominates, what does the chapter recommend?",
+    "options": ["Use a premium closed-weight API with aggressive prompt caching to reduce repeat-token costs", "Use a smaller closed-weight model such as GPT-5 mini to keep per-token expenses low", "Apply RAG to shorten prompts and reduce the total number of API calls per request", "Self-host open-weight models (DeepSeek V4-Pro, Llama 4, or Qwen 3.5)"],
+    "answer": 3,
+    "explanation": "The chapter lists open-weight self-hosting for 'privacy-critical workloads' and 'bulk inference where token cost dominates.' Self-hosting DeepSeek V4-Pro or Llama 4 eliminates per-token charges and keeps data within your infrastructure, at the cost of operational overhead."
+  },
+  {
+    "q": "What is the primary architectural difference between Llama 4 Scout and Llama 4 Maverick?",
+    "options": ["Scout supports a 10M token context window; Maverick supports a 1M token context window", "Scout uses an Apache 2.0 license; Maverick carries Meta's 700M MAU restriction", "Scout has 109B total parameters; Maverick uses 17B active parameters per token", "Scout is a dense model; Maverick activates only 17B of 400B sparse MoE parameters"],
+    "answer": 0,
+    "explanation": "The chapter's open-weight table shows Llama 4 Scout at 10M context ('Long-context RAG') and Llama 4 Maverick at 1M context ('General-purpose, multilingual'). Both use Meta's custom license; both are MoE with 17B active params — the context window is the key differentiator."
+  },
+  {
+    "q": "A coding agent using Opus 4.6 scores 72% on SWE-bench while one using Sonnet 4.6 scores 65.7%. What does this gap demonstrate about agent system design?",
+    "options": ["Agents should always be built around the latest model regardless of infrastructure complexity", "The harness/scaffold (file I/O tools, test runner, diff review) materially multiplies base model capability", "The 6-point gap is too small to draw meaningful conclusions about scaffold quality", "Sonnet 4.6 was bottlenecked by context length rather than raw reasoning capability"],
+    "answer": 1,
+    "explanation": "The chapter uses this pair to illustrate the 'scaffold gap': 'agent quality is base model + harness.' Augment Code (Opus 4.6) at 72% vs Cursor (Sonnet 4.6) at 65.7% shows a stronger model with a good harness wins over a weaker model — and implies harness investment is a first-class lever."
+  },
+  {
+    "q": "Why is Gemini 3 Flash usually a better production choice than Gemini 3.1 Pro for classification at scale?",
+    "options": ["Flash achieves higher accuracy than Pro on classification benchmarks because it is fine-tuned for classification", "Flash supports longer context windows than Pro, enabling larger batch inputs per request", "Flash is the high-throughput, cost-efficient workhorse tier; Pro is reserved for complex reasoning where the premium is justified", "Flash runs INT4-quantized weights while Pro runs FP16, giving Flash an 8× latency advantage at equivalent accuracy"],
+    "answer": 2,
+    "explanation": "The chapter's model tiers: 'Gemini 3 Flash — high-throughput production workhorse' vs 'Gemini 3.1 Pro — flagship reasoning, coding, complex multimodal.' Pro is not INT4; Flash does not have a longer context than Pro. The core trade-off is cost and throughput, not raw accuracy."
+  },
+  {
+    "q": "Which Google research paper, cited in the chapter as interview-relevant, introduced the Transformer architecture?",
+    "options": ["\"BERT: Pre-training of Deep Bidirectional Transformers\" (2018)", "\"Scaling Laws for Neural Language Models\" (2020)", "\"PaLM: Scaling Language Modeling with Pathways\" (2022)", "\"Attention Is All You Need\" (2017)"],
+    "answer": 3,
+    "explanation": "\"Attention Is All You Need\" (Vaswani et al., 2017, Google Brain) introduced the Transformer. The chapter lists it first among 'key papers from Google (interview-relevant).' BERT came in 2018 and introduced bidirectional pretraining on top of the Transformer."
+  }
+]

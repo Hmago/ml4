@@ -1,0 +1,662 @@
+[
+  {
+    "q": "LCEL (LangChain Expression Language) composes components into a pipeline using which operator?",
+    "options": [
+      "The pipe operator `|` — designed to look like Unix pipes; each component's output feeds the next",
+      "The `>>` shift operator inherited from Python's `__rshift__` method on all Runnable objects",
+      "The `.then()` chaining method available on every LangChain Runnable instance",
+      "The `+` concatenation operator applied sequentially across prompt, model, and parser"
+    ],
+    "answer": 0,
+    "explanation": "LCEL is described as 'looking Unix-y on purpose' — you compose `prompt | model | output_parser`. The `>>` and `.then()` operators are not part of the LCEL API; `+` is for string/list concatenation, not pipeline composition."
+  },
+  {
+    "q": "A workflow involves a research→draft→review→possibly-revise loop with crash-recovery. Which tool is the correct fit?",
+    "options": [
+      "LangChain's `create_agent` — it natively supports looping state graphs and durable checkpoints",
+      "LangGraph — purpose-built for cycles, branching, durable state, and human-in-the-loop pauses",
+      "DSPy — its compile-and-optimize loop implicitly models cycles across pipeline stages",
+      "CrewAI — `kickoff()` automatically re-runs tasks until all agents reach consensus"
+    ],
+    "answer": 1,
+    "explanation": "LangGraph 1.0's headline features are durable state (picks up after crashes), built-in persistence, and first-class human-in-the-loop pauses. LangChain's `create_agent` is for the simpler single-agent loop without cycles or crash recovery."
+  },
+  {
+    "q": "To enable automatic LangSmith tracing for every LangChain chain and agent run, which environment variable must be set?",
+    "options": [
+      "LANGCHAIN_DEBUG=true alongside LANGCHAIN_API_KEY",
+      "OPENTELEMETRY_ENDPOINT set to the LangSmith collector URL",
+      "LANGSMITH_TRACING=true alongside LANGSMITH_API_KEY",
+      "LANGCHAIN_VERBOSE=true which streams each step to the LangSmith backend"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's exact two-line setup is `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY`. `LANGCHAIN_DEBUG` enables console logging, not LangSmith cloud tracing. There is no `OPENTELEMETRY_ENDPOINT` env var for LangSmith."
+  },
+  {
+    "q": "LlamaIndex Workflows 1.0 is described as 'event-driven, async-first.' Which Python concurrency primitive does it build on?",
+    "options": [
+      "Python `threading.Thread` — each workflow step runs in its own OS thread",
+      "Python `multiprocessing.Pool` enabling true parallelism for fan-out steps",
+      "Python `concurrent.futures.ThreadPoolExecutor` for managed thread lifecycles",
+      "Python `asyncio` — each `@step` is an async coroutine awaited in the event loop"
+    ],
+    "answer": 3,
+    "explanation": "The chapter explicitly states Workflows 1.0 is 'event-driven, async-first, built on top of Python asyncio.' Each `@step` is an async function; workflow steps run as coroutines, not threads or processes."
+  },
+  {
+    "q": "Calling `SimpleDirectoryReader('./data').load_data()` in LlamaIndex automatically parses which file types?",
+    "options": [
+      "PDF, DOCX, Markdown, and HTML — a broad set of common formats without any configuration",
+      "Only plain text (.txt) and Markdown (.md) files by default",
+      "JSON and YAML configuration files using structured ingestion",
+      "Only files with explicitly registered parsers added to the reader's config at init time"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's hello-world comment states 'auto-parses PDF, docx, md, html.' LlamaIndex's default DirectoryReader handles many formats out of the box — this broad format support is a key advantage over LangChain's basic document loaders."
+  },
+  {
+    "q": "In DSPy, a `Signature` class serves what purpose?",
+    "options": [
+      "It provides a cryptographic signature to authenticate API calls to OpenAI or Anthropic",
+      "It declares typed input and output fields so DSPy can generate and optimize a prompt for that task",
+      "It acts as a mixin for Python classes to add prompt-versioning and rollback capability",
+      "It specifies the maximum token budget, sampling temperature, and termination conditions that govern a single model generation invocation"
+    ],
+    "answer": 1,
+    "explanation": "A DSPy Signature is a typed 'what goes in and what comes out' — e.g., `email: str = dspy.InputField()` and `intent: str = dspy.OutputField(...)`. DSPy uses this schema to generate and later optimize the actual prompt under the hood."
+  },
+  {
+    "q": "Which DSPy optimizer jointly searches over both prompt instructions and demonstration examples to maximize a user-supplied metric?",
+    "options": [
+      "BootstrapFewShot — selects labeled demonstrations but does not search over prompt instructions",
+      "COPRO — optimizes instructions only, leaving demonstration selection to the user",
+      "MIPROv2 — searches instruction and demonstration combinations together against the metric",
+      "BEACON — fine-tunes the LLM weights directly instead of searching the prompt space"
+    ],
+    "answer": 2,
+    "explanation": "MIPROv2 (Multiprompt Instruction Proposal Researcher v2) jointly optimizes instructions and few-shot demonstrations. BootstrapFewShot bootstraps examples only. COPRO tunes instructions only. 'BEACON' is not a real DSPy optimizer."
+  },
+  {
+    "q": "Pydantic AI's `Agent` automatically re-prompts the model when its output fails validation. This eliminates which production bug class?",
+    "options": [
+      "Infinite reasoning loops where the model enters a self-reinforcing cycle and never terminates",
+      "Token budget overruns caused by verbose model responses in large context windows",
+      "Latency spikes caused by slow model providers that occasionally time out under load",
+      "Malformed JSON, incorrect field types, or missing required fields in the LLM response"
+    ],
+    "answer": 3,
+    "explanation": "If the model returns invalid JSON or the wrong shape, Pydantic AI re-prompts with the validation error. This removes the 'model sometimes returns a string instead of an integer' and similar schema-mismatch bugs that cause silent production failures."
+  },
+  {
+    "q": "The `Instructor` library occupies which niche compared to the full Pydantic AI agent framework?",
+    "options": [
+      "A thin wrapper around any OpenAI-compatible client that returns Pydantic models with retry-on-validation-error, without a full agent framework",
+      "A replacement for Pydantic AI that adds a faster inference backend via a local response cache",
+      "A code-generation tool that automatically writes Pydantic model definitions from JSON examples, including validators and field descriptions",
+      "A benchmarking framework that validates Pydantic AI agent outputs against a curated structured-output test suite with scoring metrics"
+    ],
+    "answer": 0,
+    "explanation": "The chapter: 'Instructor is the cousin library if you don't need a full agent framework — it just wraps any OpenAI-compatible client to return Pydantic models with retry-on-validation-error.' It's lighter than Pydantic AI for simple structured-output extraction."
+  },
+  {
+    "q": "In the CrewAI hello-world from the chapter, which two agent roles are assigned in the Crew?",
+    "options": [
+      "Researcher and Writer — one finds facts on a topic, the other writes a tight summary using them as context",
+      "Orchestrator and Executor — one agent decomposes the task into ordered steps, the other executes each tool call in the required sequence",
+      "Critic and Generator — one drafts an output, the other evaluates it against a quality rubric",
+      "Retriever and Synthesiser — one fetches documents, the other merges them into a single response"
+    ],
+    "answer": 0,
+    "explanation": "The CrewAI hello-world creates `researcher` (role='Researcher', goal='Find facts on a topic') and `writer` (role='Writer', goal='Write a tight summary'). Task t2 passes `context=[t1]` so the writer receives the researcher's output."
+  },
+  {
+    "q": "In AutoGen's GroupChat, what happens to the conversation history each time any agent generates a turn?",
+    "options": [
+      "Only the most recent two messages are forwarded to keep each agent's context concise",
+      "A rolling summary of the prior turns is generated and forwarded instead of the raw messages",
+      "The full conversation history is re-sent to each model on every single turn",
+      "Each agent receives only its own prior contributions, not the other agents' messages"
+    ],
+    "answer": 2,
+    "explanation": "The chapter warns: 'every agent turn in a GroupChat re-sends the full history. A 4-agent debate over 5 rounds = 20+ LLM calls.' Context grows linearly and every agent pays the full accumulated token cost on every turn."
+  },
+  {
+    "q": "Which HuggingFace library provides `SFTTrainer` and covers DPO, GRPO, and RLHF training recipes?",
+    "options": [
+      "`peft` — Parameter-Efficient Fine-Tuning with LoRA, QLoRA, and prompt tuning adapters",
+      "`accelerate` — multi-GPU and multi-node training launch abstraction for any hardware",
+      "`datasets` — the data loading library that also formats instruction-tuning datasets",
+      "`trl` — Transformer Reinforcement Learning covering SFT, DPO, GRPO, and RLHF trainers"
+    ],
+    "answer": 3,
+    "explanation": "TRL (Transformer Reinforcement Learning) provides `SFTTrainer`, `SFTConfig`, and alignment trainers for DPO, GRPO, RLHF. PEFT provides LoRA/QLoRA adapters. Accelerate handles multi-device launch. Datasets handles data loading and formatting."
+  },
+  {
+    "q": "In the chapter's LoRA fine-tuning code, which attention projection layers are specified as `target_modules`?",
+    "options": [
+      "`q_proj` and `v_proj` — the query and value projection matrices in each attention head",
+      "`k_proj` and `o_proj` — the key and output projection matrices for broader coverage",
+      "`mlp.gate_proj` and `mlp.up_proj` — feed-forward sublayer projections",
+      "`embed_tokens` and `lm_head` — the input embedding and output logit layers"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's `LoraConfig` sets `target_modules=[\"q_proj\", \"v_proj\"]` — query and value projections. These are the most common effective targets. Key and output projections can also be included but the minimal default targets q+v."
+  },
+  {
+    "q": "QLoRA extends standard LoRA by loading the base model in 4-bit precision. What is the practical effect?",
+    "options": [
+      "The 4-bit quantized base model retrains all original parameters directly on the compressed representation, with no separate low-rank adapters attached",
+      "A 7B-parameter model can be fine-tuned on a single 24 GB GPU — 4-bit shrinks the frozen base from ~28 GB to ~3.5 GB",
+      "4-bit quantization improves accuracy over FP16 because it reduces overfitting via weight rounding",
+      "QLoRA only runs on NVIDIA A100 GPUs due to hardware requirements for NF4 arithmetic"
+    ],
+    "answer": 1,
+    "explanation": "QLoRA loads the frozen base model in 4-bit (NF4) and trains LoRA adapters in higher precision. The chapter: 'enough to fine-tune a 7B model on a single 24 GB GPU.' FP32 7B needs ~28 GB; 4-bit needs ~3.5 GB plus small adapter overhead."
+  },
+  {
+    "q": "Chain-of-Thought prompting is least necessary in 2026 when you use which class of model?",
+    "options": [
+      "Fine-tuned models specifically trained on chain-of-thought reasoning examples",
+      "Models with an extended context window of 128K tokens or more, which retain working memory across an entire document without summarization",
+      "Reasoning models such as o3, Claude Opus 4.7, or Gemini 3 Thinking — CoT is built in at the model level",
+      "Models accessed through a structured output API that enforces a schema before generation"
+    ],
+    "answer": 2,
+    "explanation": "The chapter: 'With 2026 reasoning models (o3, Claude Opus 4.7, Gemini 3 Thinking) CoT is often built in — you don't need to ask.' These models generate internal reasoning traces by default. For non-reasoning models, explicit CoT prompting still helps on multi-step tasks."
+  },
+  {
+    "q": "One of the 'big four prompt sins' is burying critical instructions in the middle of a long prompt. Where does the chapter say to put them instead?",
+    "options": [
+      "At the very beginning of the system prompt before any context or examples",
+      "Repeated at regular intervals to reinforce importance across the entire prompt",
+      "In a separate dedicated system message isolated from the main context window",
+      "At the bottom of the prompt — models attend more strongly to ends than to the middle"
+    ],
+    "answer": 3,
+    "explanation": "The chapter explicitly: 'models attend to ends — put critical instructions at the bottom.' This references the 'lost-in-the-middle' phenomenon. Both beginning and end outperform the middle, and the chapter specifically recommends the bottom."
+  },
+  {
+    "q": "Which vector database is described as 'the right default for most teams' when the team already runs Postgres and has fewer than 10M vectors?",
+    "options": [
+      "pgvector — runs inside Postgres as an extension, one less system to operate",
+      "Chroma — in-process Python library with no server or Docker container needed",
+      "Pinecone — fully managed with zero operational overhead and usage-based pricing",
+      "Qdrant — Rust-based with the fastest open-source p99 even at smaller vector counts"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's picking decision tree explicitly routes '<10M vectors + already on Postgres → pgvector' and calls it 'right default for most teams; one less system to run.' Chroma is for local dev/notebooks. Pinecone and Qdrant add new infrastructure."
+  },
+  {
+    "q": "Qdrant's key distinguishing characteristic among open-source vector databases is:",
+    "options": [
+      "It extends PostgreSQL with a vector column type, inheriting full ACID transaction guarantees and the complete SQL ecosystem for joins and filtering",
+      "It is Rust-based with the fastest open-source p99 latency (~12 ms at 10M vectors) and native hybrid search",
+      "It is the only open-source vector DB that exposes a GraphQL query interface natively",
+      "It runs in-process like SQLite, requiring no server, Docker container, or external process"
+    ],
+    "answer": 1,
+    "explanation": "The chapter describes Qdrant as 'Rust-based — fastest open-source p99 (~12 ms at 10M)' and lists it under native hybrid search. pgvector lives inside Postgres; Chroma runs in-process; there is no production vector DB with a native GraphQL API."
+  },
+  {
+    "q": "For local development and notebook prototyping with vector search, which database runs fully in-process?",
+    "options": [
+      "Weaviate with its built-in `--in-memory` flag for local development mode",
+      "Pinecone Local — an official emulator of the managed Pinecone service",
+      "Chroma — in-process Python library requiring no server or network connection",
+      "pgvector — any local Postgres connection string works without extra configuration"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists Chroma under 'Local dev, prototyping — In-process; great for notebooks.' Weaviate always needs a server (Docker). Pinecone has no official local emulator. pgvector still requires a running Postgres instance."
+  },
+  {
+    "q": "HyDE (Hypothetical Document Embeddings) addresses which specific failure mode in vanilla RAG?",
+    "options": [
+      "The retrieved chunk is too short to be understood without its surrounding document context",
+      "The question has multiple parts, causing the retriever to return unrelated documents",
+      "Top-k by cosine similarity consistently misses chunks that are semantically most relevant",
+      "The user's question and the relevant document use entirely different vocabulary for the same concept"
+    ],
+    "answer": 3,
+    "explanation": "HyDE generates a hypothetical answer to the query, embeds *that* answer, and retrieves against it. Because the hypothetical answer uses vocabulary close to the real document's, it bridges word-choice gaps that the raw query's embedding misses."
+  },
+  {
+    "q": "Contextual chunking prepends a document summary to each chunk. Which vanilla RAG failure does this specifically fix?",
+    "options": [
+      "Chunks that are meaningless in isolation because they lack surrounding document context",
+      "Questions using different wording than the retrieved document — a vocabulary mismatch",
+      "Top-k cosine-similar chunks turning out irrelevant once the LLM reasons over them",
+      "Large documents whose chunks collectively exceed the LLM's maximum context window"
+    ],
+    "answer": 0,
+    "explanation": "The chapter maps 'chunk is meaningless on its own → contextual chunking — prepend doc summary to each chunk.' Without context, a sentence like 'This increased by 23%' has no referent. Prepending the parent document summary restores the chunk's meaning."
+  },
+  {
+    "q": "In Agentic RAG, how does the retrieval step differ from standard RAG?",
+    "options": [
+      "Retrieval is parallelized across multiple vector stores and merged with reciprocal rank fusion",
+      "The LLM itself decides whether to retrieve, what query to use, and when to stop — as a tool call decision",
+      "Retrieval is replaced by a live web search API so the knowledge base stays continuously fresh",
+      "The agent rewrites the query in five variants and aggregates results to reduce retrieval variance"
+    ],
+    "answer": 1,
+    "explanation": "The chapter defines Agentic RAG: 'LLM decides whether and what to retrieve, as a tool call.' In standard RAG retrieval is always triggered and uses the raw user query. Agentic RAG lets the model skip retrieval for known facts or break queries into targeted sub-queries."
+  },
+  {
+    "q": "Which Ragas metric specifically measures whether the retrieved chunks are precisely relevant to the question — not just related to the topic?",
+    "options": [
+      "answer_relevancy — measures how directly the generated answer addresses the user's question",
+      "faithfulness — measures whether the answer is factually grounded in the provided context",
+      "context_precision — measures what fraction of the retrieved context is actually relevant",
+      "context_recall — measures what fraction of the ground-truth answer can be attributed to retrieved context"
+    ],
+    "answer": 2,
+    "explanation": "Context precision checks that the retriever isn't returning noisy, tangentially-related chunks alongside the useful ones. Faithfulness checks if the answer contradicts the context. Answer relevancy checks if the answer addresses the question."
+  },
+  {
+    "q": "DeepEval describes itself as 'Pytest-style LLM unit tests.' What CLI command runs its test files?",
+    "options": [
+      "`pytest deepeval/` — DeepEval tests are discovered and run by standard pytest tooling",
+      "`deepeval assert test_app.py` — the assert subcommand validates each test case in sequence",
+      "`python -m deepeval run test_app.py` — direct module invocation similar to unittest",
+      "`deepeval test run test_app.py` — the dedicated CLI that mirrors pytest's interface and output"
+    ],
+    "answer": 3,
+    "explanation": "The chapter shows `deepeval test run test_app.py` — 'same workflow as pytest.' While DeepEval test functions look like pytest and can integrate with it, the primary runner is `deepeval test run`, not raw `pytest`."
+  },
+  {
+    "q": "MLflow 3.0's June 2025 pivot unified which two previously separate tooling areas?",
+    "options": [
+      "Classical ML experiment tracking and the GenAI lifecycle — prompt registry, 50+ LLM metrics, OpenTelemetry tracing",
+      "Model training pipeline management and multi-cloud deployment orchestration spanning AWS, Azure, and GCP platforms simultaneously",
+      "Data versioning (like DVC) and experiment tracking combined into a single unified platform",
+      "Hyperparameter optimization and neural architecture search with a shared experiment dashboard"
+    ],
+    "answer": 0,
+    "explanation": "MLflow 3.0 unified classical ML tracking (params, metrics, artifacts) with a full GenAI suite: prompt registry, 50+ GenAI metrics, OpenTelemetry-native tracing, and AI Gateway. It now competes with W&B Weave and LangSmith on the GenAI side."
+  },
+  {
+    "q": "SWE-bench Verified measures an AI system's ability to do what?",
+    "options": [
+      "Solve competitive programming problems from platforms like Codeforces, judged by hidden test cases and ranked by algorithmic difficulty tier",
+      "Autonomously resolve real GitHub bug reports in Python repos — patches are checked by the repo's CI suite",
+      "Pass software engineering certification exams by answering multiple-choice questions correctly",
+      "Review and annotate pull requests across a standardized set of 500 open-source repositories"
+    ],
+    "answer": 1,
+    "explanation": "SWE-bench Verified presents the agent with real GitHub issues and asks it to produce a working patch, which is validated by the repository's existing CI tests. As of April 2026, Claude Opus 4.7 leads at ~87.6% and GPT-5 Codex at ~85%."
+  },
+  {
+    "q": "The GAIA benchmark is designed primarily to evaluate which capability of AI systems?",
+    "options": [
+      "Multi-step code generation and automated debugging executed in isolated sandbox environments with automated test case validation",
+      "Factual knowledge retrieval accuracy across a curated question-answering dataset",
+      "General assistant tasks requiring web browsing, tool use, and multi-step reasoning combined",
+      "Visual question answering over complex scientific charts and technical diagrams"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists GAIA as measuring 'General assistant tasks (browser + tools)' with frontier models scoring in the low-40s%. It is notably scaffolding-sensitive — how the agent is set up affects scores as much as the underlying model."
+  },
+  {
+    "q": "vLLM's PagedAttention solves a GPU memory problem by analogy to OS virtual memory. Which problem does it address?",
+    "options": [
+      "It splits model weights across multiple GPUs so each device holds a smaller fraction of parameters",
+      "It pre-allocates a fixed-size KV cache per request at session start to avoid mid-request reallocations",
+      "It compresses KV cache values to INT8 so twice as many concurrent sequences fit in VRAM",
+      "It partitions the KV cache into fixed-size blocks that concurrent requests share without fragmentation"
+    ],
+    "answer": 3,
+    "explanation": "PagedAttention is inspired by OS virtual memory paging. The KV cache is divided into fixed pages; requests use non-contiguous pages from a shared pool. This eliminates the fragmentation from reserving maximum KV size per request upfront, enabling 2–10× more concurrent users."
+  },
+  {
+    "q": "In the Red Hat benchmark comparing inference servers on identical hardware, vLLM's peak throughput versus Ollama was:",
+    "options": [
+      "vLLM 793 tok/s vs Ollama 41 tok/s — roughly 19× higher throughput for vLLM",
+      "vLLM 793 tok/s vs Ollama 396 tok/s — roughly 2× higher throughput for vLLM",
+      "vLLM 400 tok/s vs Ollama 41 tok/s — roughly 10× higher throughput for vLLM",
+      "vLLM 200 tok/s vs Ollama 41 tok/s — roughly 5× higher throughput for vLLM"
+    ],
+    "answer": 0,
+    "explanation": "The chapter states: 'vLLM peaked at 793 tokens/sec vs Ollama's 41; p99 time-to-first-token 80 ms vs 673 ms.' This is ~19× throughput and ~8× better TTFT — the quantitative reason vLLM is the production default and Ollama is reserved for local dev."
+  },
+  {
+    "q": "SGLang is listed alongside vLLM as a production inference server. For which specific workloads does it provide advantages?",
+    "options": [
+      "CPU-only inference where no GPU is available — SGLang is optimized for AVX-512 SIMD kernels",
+      "Structured output and agent workloads — SGLang is faster when output format is constrained",
+      "Multi-modal image generation — SGLang optimizes diffusion model serving with batched denoising",
+      "Long-document summarization — SGLang uses chunked prefill for 200K-token input sequences"
+    ],
+    "answer": 1,
+    "explanation": "The chapter lists SGLang as 'fast for structured/agent workloads.' When output is constrained (JSON schema, tool calls, grammar-constrained generation), SGLang's radix attention and constrained decoding give it an advantage over vLLM for those specific patterns."
+  },
+  {
+    "q": "Ollama primarily runs models using `llama.cpp` under the hood. Which model weight format does `llama.cpp` use?",
+    "options": [
+      "SafeTensors — HuggingFace's safe serialization format designed to prevent arbitrary code execution",
+      "ONNX — Open Neural Network Exchange format enabling cross-framework model deployment",
+      "GGUF — a quantized, CPU-friendly container format supporting mixed-precision weight storage",
+      "PT/BIN — PyTorch's native checkpoint format used by all default HuggingFace model uploads"
+    ],
+    "answer": 2,
+    "explanation": "The chapter describes llama.cpp as 'CPU-friendly, GGUF.' GGUF (GPT-Generated Unified Format) packs quantized weights into a single portable file readable on CPU and GPU. SafeTensors is HuggingFace's safe serialization; ONNX is for cross-framework export."
+  },
+  {
+    "q": "At Google Cloud Next 2026, Vertex AI was rebranded as what new platform name, and merged with which product?",
+    "options": [
+      "Google DeepMind Cloud Platform, merged with the AlphaCode automated coding service",
+      "Google AI Studio Enterprise, merged with NotebookLM for enterprise research workflows",
+      "Gemini API Platform, merged with the Bard conversational assistant product",
+      "Gemini Enterprise Agent Platform, merged with Agentspace for enterprise search and agents"
+    ],
+    "answer": 3,
+    "explanation": "The chapter: 'At Google Cloud Next 2026, Google rebranded Vertex AI to Gemini Enterprise Agent Platform and merged it with Agentspace.' The underlying components (ADK, Agent Engine, Agent Builder, etc.) remained the same; the branding and product integration changed."
+  },
+  {
+    "q": "The command `adk deploy agent_engine --project=my-gcp --region=us-central1` deploys an ADK agent to which managed runtime?",
+    "options": [
+      "Agent Engine — Vertex AI's managed runtime handling deployment, scaling, sessions, and agent memory",
+      "Cloud Run — Google's serverless container platform for stateless request-response workloads",
+      "GKE Autopilot — Google Kubernetes Engine with automatically managed node pools",
+      "Cloud Functions — Google's FaaS platform for lightweight event-triggered invocations"
+    ],
+    "answer": 0,
+    "explanation": "Agent Engine is the Vertex AI managed runtime that handles the operational complexity (deployment, scaling, session management, memory) for ADK agents. Cloud Run, GKE, and Cloud Functions all require manual container or function management without agent-specific tooling."
+  },
+  {
+    "q": "How does Genkit differ from ADK when both are used for GenAI development on Google Cloud?",
+    "options": [
+      "Genkit only supports Gemini models; ADK integrates with any model provider including OpenAI and Anthropic",
+      "Genkit is lighter and simpler — designed for single agents and pipelines; ADK is code-first and multi-agent native",
+      "Genkit requires Vertex AI to run; ADK is a portable framework that works on any cloud or on-premise",
+      "Genkit exposes a visual drag-and-drop workflow editor; ADK requires all orchestration logic in Python code"
+    ],
+    "answer": 1,
+    "explanation": "The chapter: 'Genkit — single agents or pipelines, broad model support, minimal ceremony. ADK — multi-agent, enterprise compliance, deploying on Google Cloud.' Genkit is the lighter option when multi-agent orchestration is not needed."
+  },
+  {
+    "q": "DVC (Data Version Control) serves what specific role in the MLOps toolkit?",
+    "options": [
+      "Feature versioning — it snapshots feature store values alongside each model training run",
+      "Model registry — it stores and versions trained model artifacts with their associated evaluation metrics",
+      "Data versioning — it tracks dataset versions and links them to experiments via Git-like commands",
+      "Pipeline orchestration — it defines and executes DAGs for multi-step ML training workflows"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists DVC under 'Data versioning' alongside LakeFS. DVC is Git-like version control for large data files and model binaries stored in remote storage. MLflow handles model registry; Kubeflow/Airflow handle pipeline orchestration; Feast handles feature serving."
+  },
+  {
+    "q": "For online and offline feature serving in the MLOps pipeline, the chapter lists which purpose-built tools?",
+    "options": [
+      "Apache Kafka and Apache Flink — stream processing platforms for real-time feature computation",
+      "Pinecone and Weaviate — vector stores that double as an online feature serving layer",
+      "MLflow and W&B — experiment tracking tools that cache feature snapshots per training run",
+      "Feast, Tecton, and Vertex AI Feature Store — purpose-built online/offline feature serving platforms"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's MLOps toolkit table lists 'Feature store: Feast, Tecton, Vertex AI Feature Store' explicitly. Kafka/Flink handle stream processing. MLflow and W&B track experiments. Pinecone/Weaviate are vector databases, not traditional feature stores."
+  },
+  {
+    "q": "In the chapter's CI/CD for ML stage, CML refers to which tool?",
+    "options": [
+      "Continuous Machine Learning by Iterative.ai — integrates ML training and evaluation into GitHub Actions and GitLab CI",
+      "Certified ML Lifecycle — a Google Cloud compliance badge for production-grade ML pipelines",
+      "Cloud Machine Learning Engine — Vertex AI's training service originally known as Cloud ML Engine",
+      "Continuous Model Learning — an online learning paradigm where models continuously fine-tune their weights in response to live production traffic"
+    ],
+    "answer": 0,
+    "explanation": "CML (Continuous Machine Learning) by Iterative.ai publishes training reports as pull request comments and integrates model evaluation into standard CI/CD pipelines. It's listed alongside GitHub Actions and Jenkins under 'CI/CD for ML' in the chapter's toolkit table."
+  },
+  {
+    "q": "Evidently AI, Whylabs, and Arize are grouped under which MLOps lifecycle stage?",
+    "options": [
+      "Experiment tracking — for comparing model versions and hyperparameter configurations across runs",
+      "Monitoring — for detecting data drift, feature drift, and prediction drift in production systems",
+      "Model registry — for storing, versioning, and staging trained ML model artifacts",
+      "Data versioning — for tracking changes to training and evaluation datasets over time"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's toolkit table places Evidently AI, Whylabs, and Arize under 'Monitoring.' They detect data drift (input distribution shifts), concept drift (relationship changes), and prediction drift (output distribution changes) in production deployments."
+  },
+  {
+    "q": "Prompt caching, listed as the highest-impact cost lever, provides what typical savings on repeated prefixes?",
+    "options": [
+      "10–20% — a modest discount applied when the cache prefix exceeds a minimum token count",
+      "20–40% — significant savings primarily on long system prompts above 1,000 tokens",
+      "50–90% — providers charge far less for tokens hitting a cached prefix; supported by all major providers",
+      "Up to 10× cost reduction but only for requests with an identical full context including user messages"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists prompt caching as '50–90% on repeated prefixes' and interview Q8 specifically names a 2,000-token system prompt as the example. Anthropic, OpenAI, and Gemini all support it, making it the single highest-impact cost lever after model selection."
+  },
+  {
+    "q": "Batch APIs from Anthropic and OpenAI reduce costs by approximately how much?",
+    "options": [
+      "10% — a modest volume discount for sending requests in bundles rather than individually",
+      "25% — the standard enterprise volume commitment pricing for high-throughput customers",
+      "75% — batch mode accesses deeply discounted spare GPU capacity at off-peak times",
+      "50% — asynchronous offline processing lets providers use off-peak compute and pass on the savings"
+    ],
+    "answer": 3,
+    "explanation": "The chapter lists 'Batch APIs: 50% savings — Async batches on Anthropic / OpenAI.' Requests are processed asynchronously (within ~24 hours), allowing providers to use off-peak capacity. The 50% figure matches both providers' published batch pricing."
+  },
+  {
+    "q": "An agent calls a payment tool that charges a customer's card. The tool fails mid-request and the agent retries. Which pattern prevents the customer being charged twice?",
+    "options": [
+      "Idempotency keys passed with every tool call so the payment processor deduplicates retried requests",
+      "Structured outputs ensuring the tool-call JSON schema is valid before the request is submitted",
+      "A fallback cascade routing to a backup payment processor if the primary one times out",
+      "Per-step timeout budgets that abort any individual tool call exceeding a time limit"
+    ],
+    "answer": 0,
+    "explanation": "The chapter explicitly lists 'idempotency keys — on tools that cost money (don't double-charge a card if the agent retries)' as a reliability pattern. Structured outputs prevent malformed requests. Fallback handles provider failures. Timeouts prevent hangs but don't prevent duplicate charges."
+  },
+  {
+    "q": "NeMo Guardrails, Llama Guard, and Claude's built-in safety filters are all examples of which production reliability pattern?",
+    "options": [
+      "Guardrails — input/output filters that detect and block unsafe, off-policy, or harmful content",
+      "Fallback cascade — secondary LLM providers handling requests the primary model declines or fails",
+      "Structured outputs — runtime enforcement ensuring all model responses conform to a defined JSON schema",
+      "Timeout budgets — hard per-step time limits preventing models from deliberating indefinitely"
+    ],
+    "answer": 0,
+    "explanation": "The chapter groups NeMo Guardrails, Llama Guard, and 'Claude built-ins' under the 'Guardrails' reliability pattern. Fallback cascade is a separate availability pattern for provider failures. Structured outputs constrain format, not safety or policy compliance."
+  },
+  {
+    "q": "Pitfall #3 in the chapter is 'treating prompts as throwaway strings.' What does the chapter recommend instead?",
+    "options": [
+      "Embedding prompts directly in application code so they evolve in lockstep with the codebase",
+      "Storing prompts in environment variables for easy reconfiguration across deployment environments",
+      "Versioning prompts like code and storing them in a registry such as MLflow Prompt Registry or LangSmith",
+      "Hard-coding prompts as typed constants in a shared Python module with full documentation strings"
+    ],
+    "answer": 2,
+    "explanation": "The chapter: 'Version them like code. MLflow 3 and LangSmith both have prompt registries.' Prompts drift, regress, and need to be audited — treating them as disposable strings means you can't track what changed when quality drops in production."
+  },
+  {
+    "q": "In a Google ML system design interview, the chapter calls which single thing the biggest red flag in a candidate's answer?",
+    "options": [
+      "Choosing a managed cloud service over self-hosted infrastructure without explicit cost justification",
+      "Using a framework like LangChain for a task that needs only 50 lines of raw SDK code",
+      "Deploying to multiple regions without traffic routing or latency-based load balancing",
+      "'Deploy and forget' — presenting a system that has no monitoring or retraining plan after launch"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's exact quote: ''Deploy and forget' is the single biggest red flag in a system design interview' (pitfall #7, also mentioned in interview tip at §18.13). Any system design answer must include monitoring (drift detection) and a retraining trigger strategy."
+  },
+  {
+    "q": "LangChain 1.0, released October 2025, uses which API as its centerpiece for building a standard single-agent loop with tools?",
+    "options": [
+      "`create_agent(model, tools, prompt)` — the new standard entry point for a tool-using single agent",
+      "`AgentExecutor(agent, tools, verbose=True)` — the legacy but still dominant agent runner",
+      "`initialize_agent(tools, llm, agent='zero-shot-react')` — the original chain-based agent constructor",
+      "`RunnableAgent.from_tools(tools).bind_chat_model(llm)` — LCEL-native agent construction pattern"
+    ],
+    "answer": 0,
+    "explanation": "The chapter: 'LangChain 1.0's centerpiece is `create_agent`, the standard way to build a single agent.' `AgentExecutor` and `initialize_agent` are pre-1.0 legacy APIs. The fabricated LCEL-based option is not part of the actual API."
+  },
+  {
+    "q": "In LangGraph's `add_conditional_edges(source, routing_fn, path_map)`, what value does `routing_fn` return?",
+    "options": [
+      "A boolean True or False — the graph takes the 'yes' branch or the 'no' branch based on this",
+      "A string key that maps to the next node name via the path_map — enabling conditional dispatch from state",
+      "The next node's Python callable directly — a reference to the step function handler that bypasses the path map dictionary look-up entirely",
+      "An updated copy of the full state dict — LangGraph routes based on which keys changed"
+    ],
+    "answer": 1,
+    "explanation": "In the chapter's hello-world, `lambda s: 'done' if s['approved'] else 'draft'` returns the string key 'done' or 'draft', which are looked up in `{'done': END, 'draft': 'draft'}`. The routing function returns a string key, not a boolean or a direct node reference."
+  },
+  {
+    "q": "What does wrapping a DSPy Signature in `dspy.ChainOfThought(...)` add compared to `dspy.Predict(...)`?",
+    "options": [
+      "It compiles the signature into a fixed few-shot prompt using the provided training set examples",
+      "It converts the typed output field into a free-text scratchpad that the optimizer searches over",
+      "It adds a chain-of-thought reasoning instruction to the generated prompt to elicit intermediate steps",
+      "It registers the module so MIPROv2 can apply gradient descent to the prompt instructions directly"
+    ],
+    "answer": 2,
+    "explanation": "`dspy.ChainOfThought` is a prompting strategy module that automatically adds a 'reason step by step' instruction to the generated prompt. `dspy.Predict` is the simpler direct-answer version. Compilation and optimization happen later via `optimizer.compile()`, not at module definition."
+  },
+  {
+    "q": "When is DSPy the *wrong* tool for a task?",
+    "options": [
+      "When you need multi-provider compatibility — DSPy is tightly coupled to a single model's prompt format",
+      "When the task is novel or domain-specific — DSPy only improves prompts on standard NLP benchmarks",
+      "When structured JSON output is needed — DSPy's typed OutputFields are incompatible with Pydantic schemas",
+      "When you have no eval set — the optimizer needs a metric to score candidate prompts against"
+    ],
+    "answer": 3,
+    "explanation": "The chapter is explicit: 'Skip DSPy when you don't have evals — there's nothing for the optimizer to optimise against.' DSPy's entire value proposition is searching the prompt space to maximize a measurable metric. Without a metric, you're just running ChainOfThought without any optimization."
+  },
+  {
+    "q": "For new production multi-agent work in 2026, the chapter explicitly recommends which framework(s) over AutoGen?",
+    "options": [
+      "LangGraph for durable/branching workflows, or CrewAI for role-based pipeline patterns",
+      "Pydantic AI — typed agents with dependency injection as the production-grade multi-agent replacement",
+      "The OpenAI Assistants API — a fully managed multi-agent runtime without open-source complexity",
+      "AutoGen AG2 — the community fork that resumed active development after Microsoft's pivot"
+    ],
+    "answer": 0,
+    "explanation": "The chapter: 'for new production multi-agent work, prefer LangGraph (durable, branching) or CrewAI (role-based, easier learning curve).' AutoGen/AG2 is 'maintenance mode — research, code-gen experiments.' Pydantic AI is for typed single agents, not multi-agent orchestration."
+  },
+  {
+    "q": "A 4-agent AutoGen GroupChat conducts a debate over 5 rounds. At minimum, how many LLM calls does this generate?",
+    "options": [
+      "5 calls — one per round with a single orchestrator managing the complete conversation",
+      "20+ calls — each of the 4 agents speaks each round, and every call receives the full accumulated history",
+      "4 calls — each agent speaks exactly once and receives only its immediate predecessor's message",
+      "40 calls — each agent both sends and receives a separate message every round, doubling the count"
+    ],
+    "answer": 1,
+    "explanation": "The chapter: '4 agents × 5 rounds = 20+ LLM calls' with the plus because system prompts and tool specs also count. Each call receives the entire growing history. This is the core cost pathology of GroupChat that the chapter warns about before adopting multi-agent."
+  },
+  {
+    "q": "The `accelerate` library from HuggingFace is specifically responsible for which function?",
+    "options": [
+      "Quantizing model weights to INT4 or INT8 for faster inference at serving time",
+      "Implementing LoRA and QLoRA low-rank adapter modules for fine-tuning large models",
+      "Multi-GPU and multi-node training launch — abstracting hardware differences from training code",
+      "Managing the HuggingFace Hub model download cache, repository auth tokens, and local symlink structure for cached model checkpoints"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists `accelerate` as 'Multi-GPU / multi-node launch glue.' It lets training code run unchanged on 1 GPU, 8 GPUs, or a multi-node cluster. `peft` handles LoRA adapters; `bitsandbytes` handles quantization; `huggingface_hub` manages cache and auth."
+  },
+  {
+    "q": "The `peft` library is specifically designed to implement which category of fine-tuning strategies?",
+    "options": [
+      "SFT and RLHF — full-parameter fine-tuning recipes with supervised and reinforcement learning",
+      "Knowledge distillation and model pruning — compressing large models into smaller efficient ones",
+      "Speculative decoding and draft-model acceleration — inference-time speed optimization techniques",
+      "LoRA, QLoRA, and prompt tuning — parameter-efficient methods that freeze the base model weights"
+    ],
+    "answer": 3,
+    "explanation": "PEFT (Parameter-Efficient Fine-Tuning) implements adapters that train only a small fraction of parameters: LoRA, QLoRA, prefix tuning, prompt tuning, and similar methods. SFT/RLHF trainers are in TRL. Distillation/pruning are not PEFT methods."
+  },
+  {
+    "q": "The chapter calls few-shot prompting 'the single biggest quality lever after model choice.' For which type of task is it most valuable?",
+    "options": [
+      "Tasks with a non-obvious classification taxonomy — examples anchor the label vocabulary and output format",
+      "Chain-of-thought reasoning tasks — examples clarify intermediate reasoning steps for the model",
+      "Tasks where token cost is paramount — few-shot prompts are cheaper than zero-shot on recent models",
+      "Tasks requiring real-time external data — examples encode live context without a retrieval step"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's few-shot example is email classification into refund/complaint/question/other. 'Almost always worth trying' — it anchors the model to the exact label vocabulary and output format, especially when the taxonomy isn't obvious from the task description alone."
+  },
+  {
+    "q": "A RAG pipeline retrieves top-20 candidates with a fast bi-encoder, then uses Cohere Rerank to select the best 3. This two-stage pattern is called:",
+    "options": [
+      "Contextual retrieval — each candidate chunk is enriched with document context before scoring",
+      "Reranking — a cross-encoder rescores the bi-encoder's top-k to identify the most relevant subset",
+      "Query expansion — the original query is broadened to capture a larger and more diverse candidate set",
+      "Reciprocal Rank Fusion — scores from multiple distinct retrieval systems are merged harmonically"
+    ],
+    "answer": 1,
+    "explanation": "Retrieve 20 with a fast bi-encoder, rerank to 3 with a slow cross-encoder — this is reranking. Bi-encoders are fast but approximate; cross-encoders (Cohere Rerank, BGE reranker) jointly attend to query+document. The chapter calls this 'single biggest quality win after switching to a stronger embedder.'"
+  },
+  {
+    "q": "Which evaluation layer involves sampling live production traffic and scoring those responses using an LLM as a judge?",
+    "options": [
+      "Offline evals — a curated benchmark test set run before each release to gate deployments",
+      "Tracing — capturing every prompt, retrieval event, and tool call for post-hoc investigation",
+      "Online evals — LLM-as-judge scoring of live traffic to detect regressions in production",
+      "Red-teaming — adversarial probing of the system for safety vulnerabilities and jailbreaks"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's three evaluation layers: offline evals (curated test set, run every release), online evals (LLM-as-judge sampling live traffic), and tracing (see every step). Red-teaming is a security practice using promptfoo, not one of these three eval layers."
+  },
+  {
+    "q": "What does a single call to `mlflow.openai.autolog()` accomplish for subsequent OpenAI API requests in the same process?",
+    "options": [
+      "It replaces the OpenAI client with a local cached version to reduce API costs during development",
+      "It adds automatic retry logic with exponential backoff to all OpenAI SDK calls",
+      "It routes all OpenAI calls through MLflow's AI Gateway for provider failover capability",
+      "It automatically logs every call with its trace, prompt, response, latency, and estimated cost to MLflow"
+    ],
+    "answer": 3,
+    "explanation": "The chapter shows `mlflow.openai.autolog()` as a 'one line, traces every call' setup. Within a `mlflow.start_run()` context, 'Trace, prompt, response, latency, cost — all logged automatically.' No caching, retry logic, or gateway routing is involved."
+  },
+  {
+    "q": "Vespa is described in the chapter as best suited for which use case?",
+    "options": [
+      "Search + ranking + ML combined in one system — originally built by Yahoo; handles vector, BM25, and custom ML ranking in a single query",
+      "Simple local prototyping — runs in-process as a Python package with zero external dependencies",
+      "Zero-ops managed simplicity — fully serverless with automatic scaling, sharding, and built-in replication requiring zero infrastructure knowledge",
+      "Distributed horizontal scaling for billions of vectors with strong consistency guarantees"
+    ],
+    "answer": 0,
+    "explanation": "The chapter: 'Vespa — Search + ranking + ML in one — What Yahoo built; complex but powerful.' It uniquely handles full-text search, dense vector search, and custom ML ranking models in one query. Chroma fits 'simple prototyping'; Pinecone fits 'zero-ops managed'; Milvus fits '>1B distributed.'"
+  },
+  {
+    "q": "For self-hosted vector search at the scale of billions of vectors, the chapter recommends which databases?",
+    "options": [
+      "pgvector — scales horizontally with the Citus extension to handle arbitrary vector counts",
+      "Milvus or Vespa — distributed architectures specifically designed for deployments beyond a single node",
+      "Qdrant — its Rust cluster mode handles petabyte-scale with automatic resharding",
+      "Weaviate — the default across all scale tiers due to its multi-tenancy and hybrid search support"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's scale decision tree routes '>1B vectors, self-host → Milvus/Vespa.' Qdrant is recommended at the 10M–1B tier. pgvector is for <10M on existing Postgres. Weaviate fits the 10M–1B range but is not called out as the >1B default."
+  },
+  {
+    "q": "Prompt sin #3 in the chapter is placing critical instructions mid-prompt. Why does this degrade performance?",
+    "options": [
+      "Mid-prompt tokens have elevated positional IDs, causing attention scores to be numerically saturated",
+      "Tokenizers fragment mid-prompt boundaries where common subword boundaries coincide with key phrases",
+      "The 'lost-in-the-middle' phenomenon — models attend more strongly to context ends, so middle content receives less weight",
+      "Instruction-following RLHF fine-tuning predominantly reinforces tokens at the opening of each instruction block, leaving middle tokens under-trained"
+    ],
+    "answer": 2,
+    "explanation": "The chapter: 'models attend to ends — put critical instructions at the bottom.' This is a direct reference to the 'lost-in-the-middle' research finding. Both beginning and end of context are processed more reliably; middle content is systematically under-attended in long contexts."
+  },
+  {
+    "q": "The chapter's vector DB decision tree applies the pgvector recommendation below which vector count threshold?",
+    "options": [
+      "100,000 vectors — pgvector's approximate index planning becomes slow above this count",
+      "1 million vectors — the ceiling for PostgreSQL's native B-tree-based vector lookup",
+      "5 million vectors — above which Qdrant's HNSW clustering advantage becomes significant",
+      "10 million vectors — the chapter's explicit '<10M' threshold for the pgvector recommendation"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's picking flowchart branches at '<10M' vectors leading to pgvector (if already on Postgres). The 10M–1B range routes to Qdrant/Weaviate/Milvus self-hosted, or Pinecone managed. The 100K, 1M, and 5M thresholds are not from the chapter."
+  }
+]

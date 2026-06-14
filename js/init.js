@@ -71,6 +71,8 @@ function routeFromHash() {
       showGoals();
     } else if (hash === 'dsa-practice') {
       showDSAPractice();
+    } else if (hash === 'mock-test') {
+      showMockTest();
     } else if (hash.startsWith('dsa-problem-')) {
       showDSAProblem(hash.replace('dsa-problem-', ''));
     } else if (hash) {

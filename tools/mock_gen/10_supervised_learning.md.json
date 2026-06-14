@@ -1,0 +1,662 @@
+[
+  {
+    "q": "In multi-class logistic regression, the softmax function ensures which property that independent sigmoid activations per class do not guarantee?",
+    "options": [
+      "All class probabilities are positive and sum to exactly 1, making the classes mutually exclusive",
+      "The model can assign each sample to multiple classes simultaneously with independent thresholds",
+      "Each class probability is bounded to (0, 1) separately using the logistic function applied per output",
+      "Gradient descent converges faster because the cross-entropy loss surface becomes strictly convex"
+    ],
+    "answer": 0,
+    "explanation": "Softmax outputs $e^{z_k} / \\sum_j e^{z_j}$ for each class, so all probabilities are positive and sum to 1. Independent sigmoids treat each class as a separate binary decision — they do not enforce mutual exclusivity or a sum-to-one constraint."
+  },
+  {
+    "q": "When using KNN for binary classification, why is it best practice to choose an odd value for K?",
+    "options": [
+      "Odd K reduces computation time because only half the neighbors need full distance calculations",
+      "Odd K prevents majority-vote ties between the two classes, ensuring a clear winning label",
+      "Even K causes the decision boundary to become discontinuous very close to training examples",
+      "Choosing K odd ensures each cross-validation fold contains an integer number of neighbor groups"
+    ],
+    "answer": 1,
+    "explanation": "With binary classes, an even K can result in exactly K/2 neighbors per class — a tie with no majority. An odd K guarantees at least one class receives strictly more votes, avoiding ambiguous predictions."
+  },
+  {
+    "q": "In sklearn's SVM and LogisticRegression, the parameter C equals $1/\\lambda$, where $\\lambda$ is regularization strength. Increasing C has which effect on the model?",
+    "options": [
+      "Stronger regularization pushes the margin wider and drives weights closer to zero",
+      "The RBF kernel bandwidth $\\gamma$ increases proportionally, narrowing each support vector's influence zone",
+      "Regularization is weakened, producing a smaller margin that fits the training data more tightly",
+      "The decision boundary becomes smoother regardless of kernel choice as high C dampens non-linear terms"
+    ],
+    "answer": 2,
+    "explanation": "C = 1/λ, so larger C means smaller regularization. The model is less constrained, fits training data more tightly, and may overfit. Sklearn's C is sometimes called 'inverse regularization strength' for this reason."
+  },
+  {
+    "q": "What is the key tree-growth strategy difference between LightGBM and XGBoost?",
+    "options": [
+      "XGBoost grows leaf-wise, always splitting whichever leaf has the largest loss reduction first",
+      "LightGBM grows level-wise (breadth-first), building balanced trees at every depth level",
+      "XGBoost uses symmetric trees where every leaf at the same depth receives an identical split threshold",
+      "LightGBM grows leaf-wise, expanding whichever single leaf has the greatest loss reduction per round"
+    ],
+    "answer": 3,
+    "explanation": "LightGBM uses leaf-wise growth: it selects the single leaf with the biggest gain and splits it, creating deep, potentially unbalanced trees. XGBoost uses level-wise growth: it splits all nodes at one depth before moving deeper, producing more balanced trees."
+  },
+  {
+    "q": "Naive Bayes assigns $P(\\text{spam}) \\propto 0$ when an email contains a word never seen in spam during training. What technique corrects this zero-frequency problem?",
+    "options": [
+      "Laplace smoothing, which adds a small constant to every word count so no frequency remains zero",
+      "Feature hashing, which maps unseen words to existing vocabulary bucket indices at inference time",
+      "L2 regularization on the word-weight vector to prevent any log-probability from reaching $-\\infty$",
+      "Raising the class prior $P(\\text{spam})$ to shift probability mass toward the underrepresented class"
+    ],
+    "answer": 0,
+    "explanation": "Laplace (additive) smoothing adds 1 (or small $\\alpha$) to every word count before computing likelihoods. Without it, a single unseen word drives the entire class likelihood to zero — the model can never predict spam for emails with new vocabulary."
+  },
+  {
+    "q": "Which statement accurately describes the role of support vectors in a trained SVM?",
+    "options": [
+      "All training points contribute equally to placing the decision hyperplane, with each point weighted proportionally by its Lagrange multiplier in the dual optimization problem",
+      "Only the examples lying on the margin boundaries define the hyperplane; removing any other training point leaves the solution unchanged",
+      "Support vectors are the points closest to class centroids, acting as representative prototypes of each class",
+      "The number of support vectors grows linearly with training-set size for both linear and RBF kernels"
+    ],
+    "answer": 1,
+    "explanation": "SVMs are memory-efficient because once trained, only the support vectors matter. All other training examples can be discarded without affecting the decision boundary, since the optimal hyperplane is fully determined by the margin-boundary points."
+  },
+  {
+    "q": "In which situation would Manhattan distance be preferred over Euclidean distance for a KNN classifier?",
+    "options": [
+      "When all features share the same numerical scale and the dataset has low overall dimensionality",
+      "When measuring similarity between text documents of variable length using word-overlap statistics",
+      "In high-dimensional or sparse feature spaces where Manhattan is less dominated by a few large-variance dimensions",
+      "When the prediction task requires strict Euclidean nearest-neighbor guarantees for regression outputs"
+    ],
+    "answer": 2,
+    "explanation": "In high dimensions, Euclidean distance is controlled by the few highest-variance dimensions. Manhattan distance spreads contribution more evenly across all dimensions, making it more robust and interpretable in sparse or high-dimensional settings like text data."
+  },
+  {
+    "q": "A regression model evaluated on the test set achieves $R^2 = -0.12$. What does this score mean?",
+    "options": [
+      "The model explains 12% of variance — weak but still better than a random baseline predictor",
+      "The model has systematic negative bias, consistently underpredicting the target by about 12%",
+      "The predicted values are negatively correlated with actual values, implying reversed feature coefficient signs",
+      "The model performs worse than simply predicting the mean of the target values for every new example"
+    ],
+    "answer": 3,
+    "explanation": "$R^2 = 1 - SS_{res}/SS_{tot}$. When $R^2 < 0$, the model's residuals exceed the naive mean-predictor's variance. The model is literally worse than always guessing the average — a sign of severe model failure or data mismatch."
+  },
+  {
+    "q": "Stratified K-fold cross-validation differs from standard K-fold in which specific way?",
+    "options": [
+      "Each fold preserves approximately the same class-proportion distribution as the full dataset",
+      "Different algorithm families are trained in each fold to enable automatic algorithm selection",
+      "The splits respect temporal ordering so future observations never appear in training folds",
+      "The test set contributes one of the K folds to produce an unbiased final performance estimate"
+    ],
+    "answer": 0,
+    "explanation": "Standard K-fold splits data randomly, potentially concentrating rare classes in only a few folds. Stratified K-fold ensures each fold mirrors the overall class ratio — essential for imbalanced datasets such as fraud detection or medical diagnosis."
+  },
+  {
+    "q": "A binary decision tree node contains 70% class A and 30% class B. Using $H = -\\sum p_i \\log_2 p_i$, what is the node's entropy?",
+    "options": [
+      "0.42 — the Gini impurity of this 70/30 split: $1 - (0.7^2 + 0.3^2)$",
+      "0.88 bits — computed as $-(0.7 \\log_2 0.7 + 0.3 \\log_2 0.3)$",
+      "0.50 bits — the entropy value for a perfectly pure node containing only one class",
+      "1.00 bit — the maximum entropy value reached only at an exact 50/50 class balance"
+    ],
+    "answer": 1,
+    "explanation": "Entropy of a 70/30 node: $-(0.7 \\times (-0.515) + 0.3 \\times (-1.737)) \\approx 0.361 + 0.521 = 0.88$ bits. Option A is the Gini impurity ($1 - 0.58 = 0.42$), which is a common confusion between the two impurity measures."
+  },
+  {
+    "q": "Why is permutation importance considered more reliable than tree-based impurity importance (MDI) for evaluating feature relevance?",
+    "options": [
+      "Permutation importance measures features on the training set, giving a direct view of what the model learned",
+      "MDI weights splits at shallow tree levels more heavily than splits deep in the tree, systematically overstating the importance of features that happen to appear near the root",
+      "MDI is biased toward high-cardinality features with many unique values; permutation importance measures actual impact on held-out performance",
+      "Permutation importance is computationally faster than MDI because it never requires retraining the underlying model"
+    ],
+    "answer": 2,
+    "explanation": "A random ID column with thousands of unique values scores very high on MDI (many split points), but shuffling it causes zero accuracy drop. Permutation importance correctly assigns near-zero importance by directly measuring performance degradation on validation data."
+  },
+  {
+    "q": "When combining SMOTE with Tomek links (SMOTE-Tomek), what does each component contribute to the resampled dataset?",
+    "options": [
+      "SMOTE removes borderline majority-class examples while Tomek creates synthetic minority-class samples",
+      "Tomek generates synthetic oversamples and SMOTE removes noisy duplicates from the expanded minority set",
+      "SMOTE adjusts the minority-class weight inside the loss function while Tomek post-processes both training and test distributions to achieve a perfectly balanced class ratio",
+      "SMOTE synthesizes new minority-class examples by interpolation; Tomek removes borderline majority-minority pairs to clean the decision boundary"
+    ],
+    "answer": 3,
+    "explanation": "SMOTE addresses class imbalance by generating synthetic minority examples between existing ones. Tomek links identify and remove borderline majority-minority pairs, cleaning the decision boundary region so the model learns clearer class separation."
+  },
+  {
+    "q": "High-degree polynomial regression introduces a specific risk that simple linear regression avoids. What is that risk?",
+    "options": [
+      "Extreme oscillation and extrapolation failure outside the training range, where high-degree terms grow rapidly",
+      "Underfitting the training data because polynomial curves cannot represent the true curvature of the relationship",
+      "Causing gradient descent to diverge because polynomial features violate the convexity assumption of MSE",
+      "Preventing regularization via Ridge or Lasso because polynomial features violate the linearity requirement"
+    ],
+    "answer": 0,
+    "explanation": "High-degree polynomials fit training data well but oscillate wildly beyond the training range (Runge's phenomenon). Within the training region they appear accurate; outside it, polynomial terms grow explosively, making predictions unreliable."
+  },
+  {
+    "q": "What is the entropy of a decision tree node containing only examples of a single class — a perfectly pure node?",
+    "options": [
+      "1.0 bit — entropy is maximum when all information is concentrated in exactly one outcome",
+      "0.0 bits — entropy is zero when all examples share the same label and there is no uncertainty",
+      "0.5 bits — the midpoint on the entropy scale between a pure node and a fully mixed node",
+      "$\\log_2(C)$ bits — proportional to the total number of distinct classes $C$ in the full dataset"
+    ],
+    "answer": 1,
+    "explanation": "Entropy $= -1.0 \\times \\log_2(1.0) = 0$ bits. A pure node has zero uncertainty about the class label — no bits are needed to encode it. Driving child nodes toward zero entropy is precisely the objective of decision tree split selection."
+  },
+  {
+    "q": "In which scenario does Elastic Net outperform both pure Ridge and pure Lasso regularization?",
+    "options": [
+      "When the dataset is extremely large and training speed is the primary constraint on model selection",
+      "When all features are fully independent of each other and the relationship with the target is strongly non-linear",
+      "When features are correlated with each other AND only a subset of them are truly predictive of the target",
+      "When every feature contributes meaningful signal and none of them should be zeroed out of the final model"
+    ],
+    "answer": 2,
+    "explanation": "Lasso struggles with correlated features (picks one arbitrarily, drops others). Ridge handles correlations but cannot zero out irrelevant features. Elastic Net combines both: the L2 component stabilizes correlated groups while L1 still drives truly irrelevant weights to zero."
+  },
+  {
+    "q": "When training a stacking ensemble, why must the base learners' predictions fed to the meta-learner come from cross-validation rather than from their own training set?",
+    "options": [
+      "Cross-validation predictions are numerically smoother because they are averaged over K independent fold estimates",
+      "Base learners produce more diverse and better-calibrated probability distributions on out-of-fold examples than on the training set because they have not memorized those examples",
+      "Stacking requires inputs spanning the full range of base-learner confidence scores to avoid feature collapse",
+      "Training-set predictions from base learners reflect their memorized examples, letting the meta-learner exploit overfit scores and causing severe overfitting"
+    ],
+    "answer": 3,
+    "explanation": "A base learner often memorizes its training set, producing overconfident scores on those examples. If used directly, the meta-learner learns from inflated confidence that doesn't generalize — using out-of-fold (cross-validation) predictions avoids this and forces the meta-learner to learn from realistic base-model behavior."
+  },
+  {
+    "q": "In a regression decision tree, what value is stored in a leaf node and returned as the prediction for inputs reaching it?",
+    "options": [
+      "The mean of all training-set target values that fell into that leaf region during training",
+      "The median of the leaf's training targets, chosen to reduce sensitivity to outlier target values",
+      "The mode of the training-set targets, linearly interpolated to produce a continuous output value",
+      "The target value of the single nearest training example found via Euclidean distance at prediction time"
+    ],
+    "answer": 0,
+    "explanation": "Regression trees partition the feature space into rectangular regions; each leaf predicts the mean of training targets within that region. For classification trees the leaf predicts the majority class — in both cases predictions are constant within each leaf region."
+  },
+  {
+    "q": "Why do SVMs with the RBF kernel become impractical on very large training datasets?",
+    "options": [
+      "The RBF kernel implicitly maps data to infinite-dimensional space, requiring unlimited memory per support vector",
+      "SVM training complexity is $O(n^2)$ to $O(n^3)$ in the number of training examples, making it prohibitive at scale",
+      "The kernel trick cannot be combined with gradient descent, forcing reliance on even slower quadratic programming",
+      "Support vectors must be fully recomputed from scratch whenever a single new training example is appended"
+    ],
+    "answer": 1,
+    "explanation": "SVM training requires solving a quadratic programming problem whose cost scales roughly as $O(n^2)$ to $O(n^3)$. With millions of examples this is computationally infeasible — in contrast, gradient boosting and logistic regression scale near-linearly with data size."
+  },
+  {
+    "q": "Why is a random train/test split dangerous when building a sales forecasting model from historical transaction data?",
+    "options": [
+      "Random splits preserve temporal autocorrelation, causing the model to overfit to seasonal patterns in training",
+      "Splitting randomly removes correlated rows, which underestimates the true prediction variance of the model",
+      "Future data points can leak into the training set, allowing the model to learn from information unavailable in production",
+      "Transaction data has high class imbalance that only temporal splits can address through built-in stratification"
+    ],
+    "answer": 2,
+    "explanation": "A random split places, for example, a November observation in training and an October one in testing — the model learns from future behavior to predict the past. Time-based splits enforce temporal order: train strictly on the past, evaluate on the true future, as required in production."
+  },
+  {
+    "q": "On a 10-example dataset (parent entropy = 0.971), four candidate features yield Information Gains: Outlook = 0.404, Wind = 0.322, Humidity = 0.151, Temperature = 0.029. Which feature does the decision tree algorithm select for the root split?",
+    "options": [
+      "Wind (IG = 0.322), as second-ranked features tend to produce more balanced child-node sizes",
+      "Temperature (IG = 0.029), preserving high-IG features for deeper and more discriminative splits later",
+      "Humidity (IG = 0.151), because the middle-ranked feature minimizes variance across child-node entropies",
+      "Outlook (IG = 0.404), because the algorithm greedily selects the feature that maximizes information gain at each node"
+    ],
+    "answer": 3,
+    "explanation": "Decision trees use a greedy strategy: at every node they pick the feature yielding the highest information gain (or largest impurity reduction). Outlook's IG of 0.404 exceeds all other candidates, so it becomes the root split."
+  },
+  {
+    "q": "A cancer screening model uses logistic regression with a default threshold of 0.5, resulting in very low recall. What adjustment should be made, and why?",
+    "options": [
+      "Lower the threshold (e.g., to 0.1), flagging more patients as positive to increase recall at the cost of more false alarms",
+      "Raise the threshold (e.g., to 0.9), predicting cancer only with very high confidence to reduce patient anxiety",
+      "Set the threshold to exactly 0.3, which by definition balances false-positive and false-negative rates equally",
+      "Remove the threshold entirely and flag all patients with any non-zero predicted cancer probability for follow-up"
+    ],
+    "answer": 0,
+    "explanation": "In medical screening, a false negative (missed cancer) is far more costly than a false positive. Lowering the threshold classifies more outputs as positive, increasing recall. The chapter notes thresholds of 0.1–0.2 are typical for high-recall clinical applications."
+  },
+  {
+    "q": "For a Random Forest trained on a dataset with 20 features, approximately how many features does the algorithm consider at each individual split by default for classification?",
+    "options": [
+      "All 20 features — the 'random' aspect applies only to bootstrap row sampling, not to feature selection per split",
+      "Approximately $\\sqrt{20} \\approx 4$ randomly selected features per split, to decorrelate the individual trees",
+      "Approximately $20/3 \\approx 7$ features, the same formula applied for both classification and regression tasks",
+      "1 randomly selected feature per split, maximizing tree diversity at the expense of high individual-tree error"
+    ],
+    "answer": 1,
+    "explanation": "Random Forest uses $\\sqrt{p}$ features per split for classification and $p/3$ for regression (where $p$ is total features). Limiting features at each split forces different trees to rely on different features, decorrelating their errors so the ensemble average benefits more."
+  },
+  {
+    "q": "Research cited in the chapter shows that Gini impurity and entropy produce different tree structures in what fraction of splits?",
+    "options": [
+      "About 25% of splits, especially on balanced datasets with near-equal class proportions between splits",
+      "Nearly every split, since the logarithmic entropy function and squared Gini rank features fundamentally differently",
+      "Fewer than 2% of splits, making the practical choice between the two split criteria largely inconsequential",
+      "Roughly 10% of splits, mainly on features with fewer than five distinct candidate threshold values"
+    ],
+    "answer": 2,
+    "explanation": "Breiman's analysis found Gini and entropy agree on the chosen split in over 98% of cases. The primary practical difference is computational: Gini avoids a logarithm calculation, so scikit-learn defaults to it. The resulting trees are nearly identical."
+  },
+  {
+    "q": "Why is boosting more sensitive to noisy (mislabeled) training examples than bagging?",
+    "options": [
+      "Boosting uses out-of-bag validation samples, so mislabeled examples corrupt both training and evaluation signals",
+      "Bagging randomly shuffles labels within each bootstrap sample, naturally smoothing mislabeled examples over rounds",
+      "Boosting enforces increasing tree depth each round, causing it to fit mislabeled examples more precisely over time",
+      "Boosting upweights misclassified examples each round, causing mislabeled points to be amplified rather than smoothed out"
+    ],
+    "answer": 3,
+    "explanation": "Each boosting round increases the weight of misclassified examples. A mislabeled point is consistently misclassified (its true label conflicts with its features), so it accumulates very high weight, eventually dominating the training signal and fitting pure noise."
+  },
+  {
+    "q": "A linear regression model produces errors that grow proportionally with the predicted value — larger houses have much larger prediction errors. Which linear regression assumption is violated?",
+    "options": [
+      "Homoscedasticity — the assumption that residual variance is constant across all values of the predictors",
+      "Independence — the assumption that consecutive observations are not correlated with one another over time",
+      "Normality — the assumption that residuals follow a Gaussian distribution with mean zero and fixed variance",
+      "Linearity — the assumption that the true relationship between each feature and the target is strictly additive"
+    ],
+    "answer": 0,
+    "explanation": "Homoscedasticity requires $\\text{Var}(\\epsilon | X)$ to be constant. When errors grow proportionally with the predicted value, this is violated (heteroscedasticity). Common fixes include log-transforming the target variable or using weighted least squares."
+  },
+  {
+    "q": "For a fraud detection problem with a 0.5% positive rate, why is AUC-PR preferred over AUC-ROC as the primary evaluation metric?",
+    "options": [
+      "AUC-PR produces negative values for severely imbalanced datasets, making it a strictly harsher metric than ROC-AUC",
+      "ROC-AUC can remain high even when precision on the minority class is very low, giving an overly optimistic picture of fraud detection",
+      "AUC-PR normalizes for the large number of true negatives by averaging precision across all thresholds on the recall axis",
+      "ROC-AUC cannot be reliably computed when the positive-class rate falls below 1% due to numerical instability"
+    ],
+    "answer": 1,
+    "explanation": "ROC-AUC measures discrimination across both classes. With 99.5% negatives, even a weak model accumulates true negatives easily, keeping ROC-AUC high. AUC-PR focuses on precision and recall of the rare positive class, directly exposing poor fraud-detection capability."
+  },
+  {
+    "q": "Polynomial regression models curved relationships but is still considered a special case of linear regression. Why?",
+    "options": [
+      "Polynomial terms are Taylor-series approximations that converge to a linear function as the polynomial degree increases",
+      "The polynomial coefficients can be recovered from a standard linear model after log-transforming the output variable",
+      "In high-dimensional spaces, polynomial curves converge to hyperplanes due to the curse of dimensionality",
+      "Polynomial terms such as $x^2$ and $x^3$ are added as new input columns, and the model is then linear in those engineered features"
+    ],
+    "answer": 3,
+    "explanation": "Adding $x^2, x^3$ creates new columns. The resulting model $y = w_0 + w_1 x + w_2 x^2 + w_3 x^3$ is non-linear in $x$ but linear in the weights $w_i$ — it can be fit by ordinary least squares, just like standard linear regression."
+  },
+  {
+    "q": "In the Naive Bayes spam example, the term $P(\\text{spam}) = 0.3$ before any email words are observed represents which component of Bayes' theorem?",
+    "options": [
+      "The class prior — the base-rate probability of spam independent of any observed features",
+      "The likelihood — how probable the observed word sequence is given that the email is spam",
+      "The posterior — the updated spam probability after all word features have been incorporated",
+      "The normalizing constant — the denominator ensuring all class probabilities sum to exactly 1"
+    ],
+    "answer": 0,
+    "explanation": "$P(\\text{spam})$ is the prior: our belief about spam prevalence before seeing any email content. It is multiplied by the likelihood $P(\\text{words}|\\text{spam})$ to give the un-normalized posterior; normalization then yields $P(\\text{spam}|\\text{words})$."
+  },
+  {
+    "q": "In an SVM with RBF kernel, increasing the hyperparameter $\\gamma$ has which effect on the decision boundary?",
+    "options": [
+      "A smoother, more linear boundary emerges as each support vector's Gaussian influence spreads further across the space",
+      "The boundary becomes more localized and wiggly because each support vector's influence radius shrinks, risking overfitting",
+      "Regularization increases because larger $\\gamma$ widens the margin, reducing the magnitude of dual coefficients",
+      "Training accelerates because fewer support vectors are required when influence zones are narrow and non-overlapping"
+    ],
+    "answer": 1,
+    "explanation": "RBF kernel: $K(x,y) = e^{-\\gamma\\|x-y\\|^2}$. Large $\\gamma$ narrows the Gaussian — each support vector only influences very nearby points, creating a complex, wiggly boundary prone to overfitting. Small $\\gamma$ spreads influence widely, producing a smoother, more regularized boundary."
+  },
+  {
+    "q": "MAPE (Mean Absolute Percentage Error) is undefined when $y_i = 0$. In which regression domain is this a serious practical limitation?",
+    "options": [
+      "House price prediction, where $y = 0$ implies a worthless property with no effect on the error formula",
+      "Star-rating prediction (1–5 scale), where the minimum rating of 1 naturally prevents division by zero",
+      "Demand forecasting with zero-sales periods, where many target values are exactly 0, causing division-by-zero errors",
+      "Time-to-failure prediction for machinery, because machines with zero failures produce a single infinite percentage error"
+    ],
+    "answer": 2,
+    "explanation": "Demand forecasting routinely has zero-sales periods (stockouts, holidays), making many $y_i = 0$. MAPE's formula $|y_i - \\hat{y}_i| / |y_i|$ divides by zero for those rows, making it inapplicable. RMSE or MASE are preferred for this reason."
+  },
+  {
+    "q": "The Population Stability Index (PSI) is used to monitor deployed models for distribution shift. What do the thresholds PSI < 0.1, 0.1–0.2, and > 0.2 indicate respectively?",
+    "options": [
+      "Model underfitting with persistently high bias, approaching the optimal bias-variance tradeoff, and clear overfitting with high variance causing generalization to fail",
+      "Increasingly frequent distribution-change events: rare isolated shifts, moderate recurring seasonal drift, and chronic population instability that requires model replacement",
+      "Precision degradation, recall degradation, and combined F1 score degradation respectively",
+      "Stable distribution (no action), mild drift warranting investigation, and significant drift requiring retraining or action"
+    ],
+    "answer": 3,
+    "explanation": "PSI < 0.1 means the feature or score distribution is stable — the production population still resembles training. PSI 0.1–0.2 is a warning zone requiring investigation. PSI > 0.2 signals significant population shift and should trigger model retraining or pipeline debugging."
+  },
+  {
+    "q": "A neural network for movie genre prediction outputs probabilities [Action: 0.9, Comedy: 0.7, Horror: 0.2] that are independent and do not sum to 1. Which output-layer design produces this behavior?",
+    "options": [
+      "A sigmoid activation applied independently to each output neuron, with binary cross-entropy per genre label",
+      "A softmax activation across all output neurons, normalized so the top-probability genre dominates",
+      "A linear activation followed by temperature-scaled normalization to bound all outputs between 0 and 1",
+      "A ReLU output layer that clamps negative logits to zero but does not normalize across genre outputs"
+    ],
+    "answer": 0,
+    "explanation": "Multi-label classification uses one sigmoid per label — each output is independently a probability in (0, 1) and they need not sum to 1. Softmax would enforce a sum-to-one constraint (multi-class), preventing the model from predicting multiple genres simultaneously."
+  },
+  {
+    "q": "Following the recommended supervised learning workflow, which step immediately precedes trying gradient boosting on a new tabular problem?",
+    "options": [
+      "Fitting a logistic or linear regression to establish an interpretable and competitive linear baseline",
+      "Training a neural network first to establish the upper-bound on model expressiveness for the task",
+      "Applying SMOTE to balance class distributions before committing to any specific model family",
+      "Running K-fold cross-validation simultaneously on several algorithms to auto-select the best one"
+    ],
+    "answer": 0,
+    "explanation": "The recommended sequence is: (1) naive baseline, (2) logistic/linear regression, (3) gradient boosting, (4) neural network if needed, (5) stacking. The linear step provides an interpretable benchmark and is often competitive enough that gradient boosting is unnecessary."
+  },
+  {
+    "q": "When linear regression errors show heteroscedasticity — variance growing with predicted value — which fix does the chapter recommend?",
+    "options": [
+      "Adding polynomial features of the predictors to capture the non-linear variance relationship across the range",
+      "Log-transforming the target variable $y$, which stabilizes variance that is proportional to the output scale",
+      "Increasing regularization strength $\\lambda$ to compress weight magnitudes and indirectly reduce error dispersion",
+      "Switching the loss function from MSE to MAE, which is less sensitive to high-error regions by design"
+    ],
+    "answer": 1,
+    "explanation": "Log-transforming $y$ converts multiplicative error (variance proportional to $y$) to roughly additive, homoscedastic error. This satisfies the constant-variance assumption and is one of the chapter's listed fixes alongside weighted least squares."
+  },
+  {
+    "q": "In the fraud detection confusion matrix from the chapter (threshold = 0.1, precision ≈ 22%, recall = 85%), if the threshold is lowered further to 0.05, what happens to precision and recall?",
+    "options": [
+      "Both precision and recall increase, as the model gains confidence in its positive-class predictions",
+      "Precision increases and recall decreases, because the model becomes more selective about flagging fraud",
+      "Precision decreases and recall increases further, flagging more transactions while accumulating more false alarms",
+      "Both metrics remain unchanged, since the confusion matrix values depend only on true labels, not the threshold"
+    ],
+    "answer": 2,
+    "explanation": "Lowering the threshold flags more examples as positive. More true frauds are caught (recall rises), but more legitimate transactions are also flagged (false positives rise, precision falls). The precision-recall tradeoff is a fundamental property of any probabilistic classifier."
+  },
+  {
+    "q": "In the LightGBM churn model with `scale_pos_weight=30` at a ~97%/3% class ratio, this parameter instructs the model to:",
+    "options": [
+      "Apply a learning rate decay of 30 per round, protecting the minority class from rapid convergence",
+      "Weight each positive (churn) example approximately 30 times more than each negative in the gradient computation",
+      "Limit each tree to 30 leaves, preventing over-specialization on minority-class training patterns",
+      "Apply L2 regularization of strength 30 specifically to leaf predictions belonging to the positive class"
+    ],
+    "answer": 1,
+    "explanation": "With a 97/3 class ratio there are roughly 32 negatives per positive. Setting scale_pos_weight ≈ 30 tells LightGBM that each positive example should have 30× the gradient contribution of each negative, effectively compensating for the minority class rarity."
+  },
+  {
+    "q": "A dataset has a diagonal class boundary (class A above $y = x$, class B below). How does a single decision tree handle this boundary?",
+    "options": [
+      "A single diagonal split is created, because trees evaluate joint thresholds across two features simultaneously",
+      "A smooth curve approximating the diagonal is learned through kernel-transformed features at each depth level",
+      "Many alternating horizontal and vertical axis-aligned splits create a staircase approximation of the diagonal",
+      "The tree fails to separate the classes and defaults to predicting the majority class for all inputs"
+    ],
+    "answer": 2,
+    "explanation": "Decision trees produce only axis-aligned splits ($x_1 > t$ or $x_2 > t$). A diagonal boundary therefore requires many stacked horizontal and vertical cuts, producing an inefficient staircase approximation — a key limitation compared to SVMs or neural networks."
+  },
+  {
+    "q": "Naive Bayes produces poorly calibrated probabilities — a 97% spam score rarely corresponds to 97% truly being spam. The primary cause is:",
+    "options": [
+      "Naive Bayes converts probabilities to labels using a fixed threshold, discarding calibration information at decision time",
+      "The binary cross-entropy training loss penalizes miscalibration errors less heavily than accuracy-based objectives",
+      "The classifier rounds probability outputs to the nearest integer class, removing continuous probability information",
+      "The independence assumption forces products of many likelihood terms toward extreme values near 0 or 1, making outputs overconfident"
+    ],
+    "answer": 3,
+    "explanation": "Multiplying many conditional probabilities $\\prod_i P(x_i|y)$ compounds: small values compound toward 0 and large ones toward 1. Even when individual word probabilities are moderate, the product pushes the posterior to extreme values — making Naive Bayes outputs consistently overconfident despite good ranking."
+  },
+  {
+    "q": "Among impurity-based importance, permutation importance, and SHAP values, which uniquely provides both local (per-prediction) and global (dataset-wide) feature explanations?",
+    "options": [
+      "SHAP — per-prediction feature attributions can be aggregated into a global mean absolute importance ranking",
+      "Permutation importance — shuffling one feature at a time naturally captures both local and global effects simultaneously",
+      "Impurity-based importance — it aggregates reductions both per-leaf and across the ensemble for dual-scope reporting",
+      "A combination of permutation importance plus MDI, whose product yields a local-global composite importance score"
+    ],
+    "answer": 0,
+    "explanation": "SHAP values are computed per prediction and per feature: $f(x) = \\phi_0 + \\sum_i \\phi_i$. Averaging $|\\phi_i|$ across all predictions gives a global ranking. Impurity-based and permutation importance are global only — they cannot explain why any individual prediction was made."
+  },
+  {
+    "q": "When interpreting a logistic regression spam model, weights $w_{\\text{MONEY}} = +1.2$ and $w_{\\text{known\\_sender}} = -0.5$ indicate:",
+    "options": [
+      "MONEY increases the log-odds of spam by 1.2; known_sender decreases the log-odds of spam by 0.5",
+      "$P(\\text{spam} | \\text{MONEY present}) = 1.2$ scaled by the sigmoid; known_sender reduces the final probability by a factor of 0.5",
+      "The model multiplies the spam probability by 1.2 when MONEY appears and divides by 0.5 for known senders",
+      "MONEY appears 1.2 times more often in spam than ham; known_sender appears 0.5 times as often in spam as in ham"
+    ],
+    "answer": 0,
+    "explanation": "Logistic regression weights act on the linear combination $z = \\sum w_i x_i$, which is the log-odds of the positive class. Each weight equals the change in log-odds per unit increase in the feature — directly interpretable as evidence for or against a class."
+  },
+  {
+    "q": "Despite its unrealistic independence assumption, Naive Bayes is often the first-choice algorithm for text classification with 100,000-word vocabularies. Which property best explains this preference?",
+    "options": [
+      "Text bag-of-words features are empirically near-independent, making the independence assumption roughly satisfied",
+      "Naive Bayes handles high-dimensional sparse feature vectors gracefully and trains in a single pass, scaling to massive vocabularies",
+      "Bag-of-words discards word order, eliminating correlated bigrams that would otherwise violate the independence assumption",
+      "It outputs well-calibrated probabilities, enabling reliable confidence thresholds for downstream content decisions"
+    ],
+    "answer": 1,
+    "explanation": "Text data has 10K–100K features (words), almost all zero per document (highly sparse). Naive Bayes estimation uses simple frequency counts — it trains in a single pass and scales linearly with vocabulary size, unlike SVM or neural networks that iterate over the dense feature matrix."
+  },
+  {
+    "q": "KNN degrades in very high-dimensional feature spaces due to the 'curse of dimensionality.' Which specific geometric phenomenon causes this failure?",
+    "options": [
+      "Distance computation requires $O(d)$ time per neighbor, making per-query cost infeasible when $d > 1000$",
+      "All pairwise distances tend toward zero in high dimensions, creating widespread ties in neighbor ranking",
+      "All pairwise distances tend to become approximately equal, rendering the concept of 'nearest neighbor' meaningless",
+      "The number of training examples needed for reliable coverage grows exponentially with the number of dimensions"
+    ],
+    "answer": 2,
+    "explanation": "In high dimensions, the ratio of nearest-neighbor distance to farthest-neighbor distance approaches 1 — all points become roughly equidistant. When 'nearest' and 'farthest' are almost the same distance, selecting K neighbors by distance is essentially random, breaking KNN's core assumption."
+  },
+  {
+    "q": "For a fraud dataset with 9,900 legitimate and 100 fraudulent examples, what weight does sklearn assign to the fraud class when `class_weight='balanced'` is used?",
+    "options": [
+      "1.0 — balanced assigns equal weight to both classes regardless of their prevalence in the dataset",
+      "99.0 — computed directly as the ratio of majority class count to minority class count",
+      "9.9 — the ratio of majority class count to total dataset size used as a simple scaling factor",
+      "50.0 — computed as $n\\_samples / (n\\_classes \\times n_{fraud}) = 10000 / (2 \\times 100)$"
+    ],
+    "answer": 3,
+    "explanation": "Sklearn's balanced-weight formula is $w_k = n\\_samples / (n\\_classes \\times n_k)$. For fraud: $10000 / (2 \\times 100) = 50$. This makes the cost of missing one fraud equivalent to misclassifying about 50 legitimate transactions, forcing the model to attend to the minority class."
+  },
+  {
+    "q": "The geometric reason Lasso (L1) can drive weights to exactly zero while Ridge (L2) cannot is that:",
+    "options": [
+      "The L1 constraint region is diamond-shaped with corners on the axes; the loss surface often touches the constraint at a corner where weights equal zero",
+      "L1 applies a quadratic penalty that flattens the objective at the origin, creating a global minimum at all-zero weights",
+      "Ridge's circular constraint forces symmetric shrinkage while L1's gradient is undefined at zero, trapping the optimizer there",
+      "L1 penalty gradient magnitude is a constant $\\\\pm 1$ for all nonzero weights, making the origin the unique fixed point that remains stable under any gradient-based optimization algorithm"
+    ],
+    "answer": 0,
+    "explanation": "In 2D, the L1 constraint is a diamond with corners on the coordinate axes; the L2 constraint is a circle. An elliptical loss surface far more often touches the diamond at a corner — where one or more weights equal exactly zero — than it touches the circle precisely on an axis."
+  },
+  {
+    "q": "Which symptom most strongly indicates that multicollinearity is degrading a linear regression model's reliability?",
+    "options": [
+      "Training error consistently exceeds validation error, suggesting the model underfits all correlated feature groups",
+      "Small changes in the training data produce large, unstable changes in the estimated feature coefficients",
+      "Gradient descent oscillates widely around the minimum because the loss surface becomes non-convex",
+      "The model achieves strong training accuracy but poor test accuracy because correlated features duplicate predictive signal"
+    ],
+    "answer": 1,
+    "explanation": "Multicollinearity makes the feature matrix near-singular, creating a flat loss surface where many coefficient combinations yield similar training loss. A small perturbation in the data dramatically shifts which minimum the optimizer finds — coefficient instability is the diagnostic signature of multicollinearity."
+  },
+  {
+    "q": "A KNN loan-default model uses annual income ($10K–$200K) and number of credit cards (0–10) as raw unscaled features. What problem does this cause?",
+    "options": [
+      "The model always predicts default because the large income variance dominates and inflates positive-class distances",
+      "Credit-card count is ignored entirely because zero-variance features contribute nothing to nearest-neighbor ranking",
+      "Distance is dominated by income (range ~190K) while credit-card count (range 10) contributes almost nothing to neighbor selection",
+      "KNN only needs normalized features when K > 5; for small K the scale difference is negligible in practice"
+    ],
+    "answer": 2,
+    "explanation": "Euclidean distance treats a 1-unit difference in income the same as a 1-unit difference in credit cards. Since income varies ~190,000× more, it completely dominates the distance. A neighbor identical in credit cards but slightly different in income may be treated as farther than one with very different credit cards but similar income."
+  },
+  {
+    "q": "A production spam filter blocks emails when P(spam) > 0.5, but the customer service team reports too many legitimate emails being blocked. Which adjustment best addresses this complaint?",
+    "options": [
+      "Lower the threshold to 0.2 to flag more emails as spam, increasing recall of spam and catching borderline cases",
+      "Keep the threshold at 0.5 because it is the mathematically neutral point, and any change degrades overall accuracy",
+      "Raise the threshold to 0.8, requiring higher confidence before blocking, which reduces false positives on legitimate mail",
+      "Remove the threshold and route all emails with any non-zero spam probability to a human review queue"
+    ],
+    "answer": 2,
+    "explanation": "The complaint is too many false positives (legitimate mail blocked). Raising the threshold requires higher confidence before marking spam, reducing false positives and increasing precision — at the cost of missing some borderline spam. The chapter notes 0.8+ is typical for precision-critical applications like spam filters."
+  },
+  {
+    "q": "Why is an SVM considered more memory-efficient at inference time than a model that stores all training examples?",
+    "options": [
+      "SVMs apply quantization to training examples, reducing their storage footprint by a factor of $n/C$ at training end",
+      "The SVM algorithm explicitly prunes and removes redundant training examples before fitting the final hyperplane",
+      "SVMs convert training examples into a compact $n \\times n$ kernel matrix, reducing storage from $O(nd)$ to $O(n)$",
+      "After training, only the support vectors (examples on the margin) need to be retained; all other training examples can be discarded"
+    ],
+    "answer": 3,
+    "explanation": "The SVM decision function depends only on dot products with support vectors: $f(x) = \\sum_{s \\in SV} \\alpha_s y_s K(x_s, x) + b$. All non-support-vector training examples are irrelevant after training and can be freed — unlike KNN, which stores the entire training set."
+  },
+  {
+    "q": "In the YouTube Premium churn case study, using a subscriber's watch hours from inside the 30-day outcome window as a feature would cause which problem?",
+    "options": [
+      "Data leakage — the feature uses information that would not be available at scoring time in production",
+      "Feature engineering error — aggregate watch-hour features are not predictive of future subscription behavior",
+      "Label drift — the label definition shifts when features computed from the outcome window are included",
+      "Distribution shift — post-observation features cause systematic train-test distribution mismatch at evaluation"
+    ],
+    "answer": 0,
+    "explanation": "The golden rule from the chapter: every feature must be observable at the observation date in a live production scoring run. Watch hours during the outcome window are future data — unavailable at prediction time — so including them is classic data leakage that inflates offline metrics without real-world benefit."
+  },
+  {
+    "q": "A Random Forest reports 'user_id' as its most important feature for churn prediction. What is the most likely explanation?",
+    "options": [
+      "user_id is strongly correlated with the churn label across all training examples, providing genuine predictive signal",
+      "Impurity-based importance is biased toward features with many unique values, as they offer the most candidate split thresholds",
+      "The model used permutation importance, which always ranks unique identifiers highest due to their diverse values",
+      "The tree was trained at very shallow depth, causing it to rely on the first available column for each split"
+    ],
+    "answer": 1,
+    "explanation": "Impurity-based (MDI) importance is biased toward high-cardinality features. user_id has a unique value per row, giving the tree thousands of candidate thresholds — inflating its apparent importance. Permutation importance would correctly reveal near-zero impact when user_id is shuffled."
+  },
+  {
+    "q": "When two input features are highly correlated, how does Ridge regression handle their coefficient assignment compared to Lasso?",
+    "options": [
+      "Ridge and Lasso both assign equal weights to correlated features due to the symmetry of their penalty geometries",
+      "Lasso spreads weight equally across all correlated features to minimize the total absolute sum of coefficients",
+      "Ridge distributes weight roughly evenly across correlated features; Lasso arbitrarily retains one and zeros out the others",
+      "Ridge zeros out one of the correlated features to minimize the squared penalty; Lasso shrinks both toward equal values"
+    ],
+    "answer": 2,
+    "explanation": "Ridge's L2 penalty prefers spreading weight evenly among equivalent correlated features. Lasso's L1 geometry makes multiple solutions equally optimal, so it picks one feature arbitrarily and drops the rest — this is both a strength (sparsity) and a weakness (instability with correlated features)."
+  },
+  {
+    "q": "In gradient boosting with MSE loss $\\mathcal{L} = \\frac{1}{2}(y - \\hat{y})^2$, the negative gradient of the loss with respect to $\\hat{y}$ simplifies to:",
+    "options": [
+      "The squared prediction error $(y_i - \\hat{y}_i)^2$, which shrinks each round as predictions improve",
+      "The predicted value $\\hat{y}_i$ itself, scaled by the learning rate for the next residual step",
+      "The sign of the prediction error $\\text{sign}(y_i - \\hat{y}_i)$, giving direction only without magnitude",
+      "The residual $(y_i - \\hat{y}_i)$, which represents the remaining error the next tree must correct"
+    ],
+    "answer": 3,
+    "explanation": "$\\partial \\mathcal{L} / \\partial \\hat{y} = -(y - \\hat{y}) = \\hat{y} - y$. The negative gradient is $(y - \\hat{y})$ — the residual. This is why gradient boosting on MSE loss is equivalent to sequentially fitting trees to residuals, with each new tree correcting the remaining gap."
+  },
+  {
+    "q": "A decision tree's greedy split algorithm does not guarantee finding the globally optimal tree structure. Why?",
+    "options": [
+      "The greedy algorithm skips alternating depth levels, missing feature interactions at even-numbered depths",
+      "It only considers the top-K features ranked by variance, ignoring features with low individual correlation to the target",
+      "The algorithm requires pre-sorting all features at each node, preventing evaluation of continuous threshold splits",
+      "At each node it commits to the locally best split without evaluating how that choice constrains all downstream splits"
+    ],
+    "answer": 3,
+    "explanation": "A locally optimal split may produce a pure child now but leave the remaining region much harder to partition later. The globally optimal tree might accept a slightly worse immediate split in exchange for dramatically better splits two or three levels down — greedy search has no lookahead and cannot discover this."
+  },
+  {
+    "q": "A data scientist computes country-level target mean encodings on the entire dataset before splitting into train, validation, and test sets. What form of data leakage does this introduce?",
+    "options": [
+      "Label drift — the label distribution changes over time when country statistics include future observations",
+      "Train-test correlation — examples from the same country in train and test receive identical encoded feature values",
+      "Test-label leakage — the mean encoding incorporates the test set's true labels, making features implicitly aware of test targets",
+      "Duplicate leakage — rows with the same country code appear in both train and test, violating the independence assumption"
+    ],
+    "answer": 2,
+    "explanation": "Mean encoding computed on the full dataset uses target values from both train and test — the encoded country feature for a test example subtly encodes its own label. This is exactly the pattern the chapter warns against: 'mean_encoding using all labels → test labels leaked.' Encodings must be computed on the training fold only."
+  },
+  {
+    "q": "In the YouTube Premium churn model, the optimal classification threshold is derived from offer economics rather than set to 0.5. If the per-user offer cost increases substantially while incremental LTV stays constant, how should the threshold be adjusted?",
+    "options": [
+      "Lower the threshold to flag substantially more churners and maximize recall volume, potentially offsetting the higher per-unit offer cost through a larger absolute number of successful retentions",
+      "Fix the threshold at 0.5 as the mathematically neutral breakeven point between precision and recall",
+      "Remove the threshold and use top-K% ranking to allocate a fixed offer budget regardless of cost changes",
+      "Raise the threshold to require higher predicted churn probability before sending an offer, preserving precision and reducing wasted spend"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's profit formula is Revenue = TP × retention_lift × LTV minus Cost = (TP + FP) × offer_cost. When offer_cost rises, false positives become more expensive — the model must be more precise. Raising the threshold reduces FP (at the cost of some TP), improving the net profit per offer sent."
+  },
+  {
+    "q": "A handwritten digit recognizer must classify inputs into one of ten digit classes (0–9). Which output activation and loss function combination is correct for this task?",
+    "options": [
+      "Sigmoid per digit with binary cross-entropy per digit label, treating each digit as an independent binary classifier",
+      "Softmax across all 10 digit outputs with categorical cross-entropy loss, enforcing mutually exclusive class predictions",
+      "Linear activation with MSE loss, treating digit labels as continuous values on a scale from 0 to 9",
+      "Sigmoid activation with hinge loss, training ten one-vs-rest binary SVMs sharing the same feature representation"
+    ],
+    "answer": 1,
+    "explanation": "Digit recognition is multi-class (each image belongs to exactly one digit). Softmax ensures probabilities are positive and sum to 1; categorical cross-entropy penalizes the log-probability of the true class. The chapter explicitly lists this combination for multi-class classification."
+  },
+  {
+    "q": "A data scientist computes impurity-based feature importance on a Random Forest and finds that 'zip_code' (with 40,000 unique values) ranks as the single most important feature. Which interpretation is most appropriate?",
+    "options": [
+      "zip_code is likely genuinely the most important feature, because more unique values provide finer-grained geographical signal",
+      "The ranking is reliable only if zip_code's importance exceeds the second-ranked feature by more than one standard deviation",
+      "The importance score is almost certainly inflated by MDI bias; permutation importance or SHAP should be used to verify",
+      "zip_code's importance score is conservative because the tree splits on it only when other features are uninformative"
+    ],
+    "answer": 2,
+    "explanation": "Impurity-based importance is biased toward high-cardinality features: 40,000 unique zip codes offer the tree a huge number of candidate splits, inflating the score even if zip_code has no real predictive value. The chapter explicitly warns against trusting MDI for high-cardinality features and recommends permutation importance or SHAP."
+  },
+  {
+    "q": "CatBoost's primary differentiating advantage among the three major gradient boosting libraries (XGBoost, LightGBM, CatBoost) is:",
+    "options": [
+      "Native handling of categorical features using ordered target statistics, avoiding the need for manual one-hot or label encoding",
+      "Leaf-wise tree growth that selects the node with the largest loss reduction, enabling the fastest training on large datasets",
+      "Level-wise tree growth with GPU acceleration, making it the fastest option for datasets exceeding 10 million rows",
+      "Regularized objective function with built-in L1 and L2 penalties on leaf weights, reducing the need for explicit tuning"
+    ],
+    "answer": 0,
+    "explanation": "The chapter lists CatBoost's 'Key Advantage' as 'Best native categorical feature handling' and 'Best For' as 'Data with many categorical features.' Unlike XGBoost and LightGBM, which require manual encoding, CatBoost applies ordered target statistics internally, reducing leakage and preprocessing effort."
+  },
+  {
+    "q": "Which symptom most clearly indicates that a linear regression model is suffering from multicollinearity?",
+    "options": [
+      "Training error consistently exceeds validation error, suggesting the model underfits because collinear features cancel out",
+      "Small changes in the training data cause large, unstable swings in the estimated feature coefficients",
+      "Gradient descent fails to converge and oscillates indefinitely because collinear features create a non-convex loss",
+      "Test accuracy is much lower than training accuracy because collinear features memorize training-set noise"
+    ],
+    "answer": 1,
+    "explanation": "Multicollinearity makes the feature matrix near-singular, creating a nearly flat loss surface where many coefficient combinations give similar training loss. Small data perturbations shift which minimum is found, causing dramatic coefficient instability — the diagnostic hallmark of multicollinearity, listed explicitly in the chapter."
+  },
+  {
+    "q": "In K-fold cross-validation, which property makes it preferable to a single train/validation split when the training dataset is small?",
+    "options": [
+      "The K trained models are averaged at the end to produce the deployment model, improving production accuracy",
+      "Each training example is seen at most once during training, preventing any possibility of overfitting to the data",
+      "K-fold eliminates the need for a held-out test set because the fold-averaged score provides an unbiased final estimate",
+      "Every example is used for both training and validation across different folds, yielding a more statistically robust performance estimate"
+    ],
+    "answer": 3,
+    "explanation": "With K-fold, each example appears in exactly one validation fold and K-1 training folds. The performance estimate averages K different train/val splits, reducing variance compared to any single split. A separate test set is still required for final reporting — K-fold does not replace it."
+  }
+]

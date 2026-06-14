@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Arthur Samuel's 1959 definition emphasizes that machine learning gives computers which ability?",
+    "options": [
+      "To optimize programs through hand-written expert systems",
+      "To learn without being explicitly programmed",
+      "To reason symbolically using formal logic rules",
+      "To store labeled examples without changing behavior"
+    ],
+    "answer": 1,
+    "explanation": "Samuel described ML as giving computers the ability to learn without explicit programming. The point is learning behavior from examples rather than encoding every rule by hand."
+  },
+  {
+    "q": "Which trio best explains why machine learning became so powerful recently?",
+    "options": [
+      "Data, compute, and algorithms converged at the same time",
+      "Compilers, databases, and operating systems became simpler",
+      "Manual labeling, symbolic rules, and smaller models improved",
+      "Tax software, GPS routing, and chess rules became data-driven"
+    ],
+    "answer": 0,
+    "explanation": "The chapter names data, compute, and algorithms as the three converging forces. GPUs/TPUs and modern algorithms made large-scale training practical."
+  },
+  {
+    "q": "Rule-based AI tends to work best when the problem has what property?",
+    "options": [
+      "The inputs are messy photographs or natural language sentences",
+      "The model needs to learn millions of hidden parameters from data",
+      "The desired output is creative text, images, code, or audio",
+      "The rules are knowable, precise, and can be written down"
+    ],
+    "answer": 3,
+    "explanation": "Rule-based AI works well for domains such as tax code, chess legal moves, or route planning where rules are explicit. It breaks down on messy real-world inputs whose rules are hard to verbalize."
+  },
+  {
+    "q": "After training, what does a machine learning algorithm usually produce?",
+    "options": [
+      "A rulebook written in natural language for humans to inspect",
+      "A fixed dataset containing every future example it will classify",
+      "A model file containing learned parameters that encode the rules",
+      "A deterministic formula guaranteed to be correct for every input"
+    ],
+    "answer": 2,
+    "explanation": "The trained model is often a file with millions of parameters, described as internal numbers or dials. Those numbers are the learned rules, even if they are not human-readable."
+  },
+  {
+    "q": "Classical ML is limited by feature engineering because performance is capped by what?",
+    "options": [
+      "The quality of features a human expert can design",
+      "The number of layers the neural network can stack",
+      "The amount of reward collected by an exploring agent",
+      "The size of the final generated prompt artifact"
+    ],
+    "answer": 0,
+    "explanation": "Classical ML relies on hand-designed features such as word counts or image measurements. Deep learning reduces this bottleneck by learning features automatically from raw data."
+  },
+  {
+    "q": "In the cat-photo deep learning example, what do early layers tend to learn before later layers form whole-object concepts?",
+    "options": [
+      "Policy rewards and cumulative value estimates",
+      "Edges, colors, and light/dark patterns",
+      "One-hot zip codes and normalized lot sizes",
+      "Final labels such as spam, tumor, or cat"
+    ],
+    "answer": 1,
+    "explanation": "The lower layers learn low-level features such as edges, colors, and light/dark patterns. Higher layers build toward abstract features such as eyes, ears, whiskers, and a whole-cat concept."
+  },
+  {
+    "q": "In deep learning, the word \"deep\" primarily refers to what?",
+    "options": [
+      "Models trained only on billions of internet documents",
+      "Systems that produce brand-new media from prompts",
+      "Algorithms that can explain every decision they make",
+      "Neural networks with many stacked layers"
+    ],
+    "answer": 3,
+    "explanation": "The chapter says \"deep\" is not marketing; it means many layers, often 50 to 1,000. These layers learn increasingly abstract representations."
+  },
+  {
+    "q": "Why did deep learning enable breakthroughs such as ImageNet, AlphaGo, Face ID, and LLMs?",
+    "options": [
+      "It removed the need for training data by using fixed symbolic rules",
+      "It replaced validation sets with final test-set tuning",
+      "It automatically learned useful features from raw data",
+      "It guaranteed transparent decisions in regulated domains"
+    ],
+    "answer": 2,
+    "explanation": "Automatic feature learning is described as the single idea behind modern breakthroughs. The models discover features instead of relying on hand-crafted inputs."
+  },
+  {
+    "q": "Before generative AI became prominent, most useful ML was described as discriminative because it usually did what?",
+    "options": [
+      "Mapped a large input into a small label or prediction",
+      "Expanded a short prompt into a long creative artifact",
+      "Learned only by trial-and-error rewards in an environment",
+      "Required zero data because rules were hand-coded"
+    ],
+    "answer": 0,
+    "explanation": "Discriminative ML is described as many bits in and few bits out, such as photo to \"cat\" or email to \"spam.\" Generative AI reverses that direction by producing rich outputs from prompts."
+  },
+  {
+    "q": "What two strengths of transformers help explain their role in modern generative AI?",
+    "options": [
+      "They require no parameters and avoid self-supervised data",
+      "They make rule-based AI robust to messy inputs",
+      "They handle long sequences and scale predictably",
+      "They force every model decision to be fully explainable"
+    ],
+    "answer": 2,
+    "explanation": "Transformers are highlighted as good at handling long sequences and scaling predictably with more data and parameters. The chapter notes they were invented at Google in 2017."
+  },
+  {
+    "q": "In the comparison table, what is listed as Generative AI's source of rules?",
+    "options": [
+      "Hand-coded symbolic logic written by domain experts",
+      "Self-supervised pre-training on internet data",
+      "Manual labels supplied for every training output",
+      "Rewards from a physical environment only"
+    ],
+    "answer": 1,
+    "explanation": "The table states that Generative AI gets its rules through self-supervised pre-training on internet data. That distinguishes it from hand-coded rule-based AI."
+  },
+  {
+    "q": "Which limitation is specifically listed for Generative AI in the comparison table?",
+    "options": [
+      "It cannot produce code, text, images, or audio",
+      "It only works on small-to-medium tabular rows",
+      "It requires humans to design every visual feature",
+      "It hallucinates and raises cost and ethics concerns"
+    ],
+    "answer": 3,
+    "explanation": "The Generative AI limitation cell lists hallucination, expense, and ethics concerns. These are not limitations unique to classical tabular algorithms."
+  },
+  {
+    "q": "Which dataset split should be used to tune hyperparameters during model development?",
+    "options": [
+      "Validation set",
+      "Test set",
+      "Production log",
+      "Final report set"
+    ],
+    "answer": 0,
+    "explanation": "The validation set is held out for tuning the model and hyperparameters. The test set is reserved for the final score after tuning is complete."
+  },
+  {
+    "q": "In the vocabulary diagram, what train/validation/test split is shown?",
+    "options": [
+      "60% train, 20% validation, 20% test",
+      "80% train, 10% validation, 10% test",
+      "70% train, 15% validation, 15% test",
+      "90% train, 5% validation, 5% test"
+    ],
+    "answer": 1,
+    "explanation": "The diagram shows train at 80%, validation at 10%, and test at 10%. The house-price example later uses the same split."
+  },
+  {
+    "q": "What are parameters in the chapter's core vocabulary?",
+    "options": [
+      "Final held-out examples used to report results",
+      "Business metrics selected before data collection",
+      "Internal dials the model tunes during training",
+      "Input columns such as bedrooms or house age"
+    ],
+    "answer": 2,
+    "explanation": "Parameters are the model's internal dials tuned during training. They differ from features, which are the input variables supplied to the model."
+  },
+  {
+    "q": "A model's loss is best described as what?",
+    "options": [
+      "The number of examples removed during data cleaning",
+      "The amount of compute needed to train the model",
+      "The final business value created after deployment",
+      "A number measuring how wrong the model is"
+    ],
+    "answer": 3,
+    "explanation": "Loss measures prediction error: how wrong the model is. Training tries to make this number smaller."
+  },
+  {
+    "q": "In the core vocabulary, a model is the trained object that does what?",
+    "options": [
+      "Stores only the validation rows for hyperparameter search",
+      "Makes predictions after learning from data",
+      "Defines the initial business metric before collection",
+      "Labels raw internet documents by human annotation"
+    ],
+    "answer": 1,
+    "explanation": "The model is the trained \"thing\" that makes predictions. It is produced by the algorithm after learning from the training data."
+  },
+  {
+    "q": "Inference means which activity in a machine learning system?",
+    "options": [
+      "Using a trained model to make a new prediction",
+      "Splitting the dataset before any feature engineering",
+      "Writing every decision rule as explicit program logic",
+      "Selecting a business metric such as revenue or latency"
+    ],
+    "answer": 0,
+    "explanation": "Inference is using a trained model on new data to make a prediction. It happens after training has produced the model."
+  },
+  {
+    "q": "The four major types of ML are grouped mainly by what kind of information?",
+    "options": [
+      "The hardware accelerator used during training",
+      "The programming language used for implementation",
+      "The feedback signal the model learns from",
+      "The file size of the trained model artifact"
+    ],
+    "answer": 2,
+    "explanation": "The chapter says ML algorithms are grouped by what kind of feedback they learn from. Labels, no labels, self-created labels, and rewards lead to different learning types."
+  },
+  {
+    "q": "Which statement about classification and regression is incorrect?",
+    "options": [
+      "Classification can predict labels such as spam or not spam",
+      "Regression can predict values such as tomorrow's temperature",
+      "Classification and regression are sub-flavors of supervised learning",
+      "Classification predicts numbers while regression predicts categories"
+    ],
+    "answer": 3,
+    "explanation": "The incorrect statement reverses the two terms. Classification predicts categories, while regression predicts numbers."
+  },
+  {
+    "q": "For unlabeled data, which set of unsupervised sub-flavors is listed?",
+    "options": [
+      "Classification, regression, and policy gradients",
+      "Clustering, dimensionality reduction, and anomaly detection",
+      "Next-token prediction, masked language modeling, and RLHF",
+      "Feature engineering, deployment, and monitoring"
+    ],
+    "answer": 1,
+    "explanation": "Unsupervised learning includes clustering, dimensionality reduction, and anomaly detection. These find structure without predefined correct answers."
+  },
+  {
+    "q": "Dimensionality reduction is described as doing what to a dataset?",
+    "options": [
+      "Turning reward signals into policy updates",
+      "Predicting a category from labeled examples",
+      "Compressing many features into a smaller set",
+      "Expanding short prompts into generated artifacts"
+    ],
+    "answer": 2,
+    "explanation": "Dimensionality reduction compresses many features into a few, with PCA and t-SNE given as examples. It is an unsupervised sub-flavor."
+  },
+  {
+    "q": "Credit-card fraud appears under unsupervised learning as an example of which sub-flavor?",
+    "options": [
+      "Regression",
+      "Feature scaling",
+      "Masked prediction",
+      "Anomaly detection"
+    ],
+    "answer": 3,
+    "explanation": "Anomaly detection spots unusual points, and credit-card fraud is listed as its example. Regression would require labeled numeric targets."
+  },
+  {
+    "q": "Spotify discovering a group of users who listen to \"lo-fi beats at 2am\" illustrates what idea?",
+    "options": [
+      "A transformer scaling law for long text sequences",
+      "Unsupervised clustering of similar users",
+      "A test-set metric for final model reporting",
+      "A reward-maximizing policy in robotics"
+    ],
+    "answer": 1,
+    "explanation": "The Spotify example illustrates unsupervised learning finding clusters in unlabeled behavior. The cluster can then support an auto-generated playlist."
+  },
+  {
+    "q": "In the classic self-supervised pretext task, how is the training signal created?",
+    "options": [
+      "Hide part of the input and ask the model to predict it",
+      "Manually label every sentence with a human-written category",
+      "Cluster examples first and treat clusters as final test labels",
+      "Reward the model only after it acts in a physical environment"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's example hides a word in a sentence and has the model predict the missing word. The label comes from the input itself."
+  },
+  {
+    "q": "Semi-supervised learning is best described as what combination?",
+    "options": [
+      "A fixed formula plus a deterministic business rule",
+      "A chess engine plus a hand-coded route planner",
+      "A reward signal plus no observations from an environment",
+      "A small labeled set plus a huge unlabeled set"
+    ],
+    "answer": 3,
+    "explanation": "Semi-supervised learning is a hybrid of a small labeled dataset and a much larger unlabeled one. The chapter gives 1,000 labeled images with 1,000,000 unlabeled images as the example."
+  },
+  {
+    "q": "Why does self-supervised learning matter for modern foundation models?",
+    "options": [
+      "Labels are expensive while raw data is effectively free",
+      "It removes the need for parameters in large models",
+      "It guarantees common sense understanding in predictions",
+      "It makes final test-set evaluation unnecessary"
+    ],
+    "answer": 0,
+    "explanation": "Self-supervision exploits the imbalance that human labels are costly but raw data is abundant. That is why it powers LLMs, Stable Diffusion, and many foundation models."
+  },
+  {
+    "q": "In reinforcement learning, why is there no pre-collected training dataset in the usual setup?",
+    "options": [
+      "The model receives labels from every input row in advance",
+      "The agent generates experience through trial and error",
+      "The validation set replaces environment interaction",
+      "The task is always a deterministic formula"
+    ],
+    "answer": 1,
+    "explanation": "An RL agent creates its own experience by acting in an environment and receiving rewards. It learns through interaction rather than a fixed labeled dataset."
+  },
+  {
+    "q": "What does a policy mean in reinforcement learning?",
+    "options": [
+      "A final held-out test split used for reporting results",
+      "A set of one-hot columns created from categorical variables",
+      "A strategy for choosing actions to earn reward over time",
+      "A hand-written rulebook for tax or chess applications"
+    ],
+    "answer": 2,
+    "explanation": "The chapter defines a policy as the strategy an agent learns. The goal is to choose actions that maximize cumulative reward."
+  },
+  {
+    "q": "ChatGPT's RLHF is described as learning from which kind of feedback?",
+    "options": [
+      "One-hot encoded zip codes in house-price data",
+      "Masked words from unlabeled internet documents",
+      "Clusters discovered in raw customer purchases",
+      "Human thumbs up/down preference signals"
+    ],
+    "answer": 3,
+    "explanation": "RLHF is listed as ChatGPT learning human preferences from thumbs up/down feedback. This connects reinforcement learning to reward-style preference signals."
+  },
+  {
+    "q": "Why is the machine learning workflow described as a loop rather than a straight line?",
+    "options": [
+      "Evaluation can send the team back to improve earlier steps",
+      "Training always alternates exactly once with deployment",
+      "The test set must be reused repeatedly for tuning",
+      "Models cannot be deployed until every rule is explicit"
+    ],
+    "answer": 0,
+    "explanation": "The workflow loops back if evaluation shows the model is not good enough. Monitoring after deployment can also trigger retraining as conditions change."
+  },
+  {
+    "q": "During the \"Define Problem\" step, what should the team clarify?",
+    "options": [
+      "Only the model family, ignoring success metrics until deployment",
+      "The problem and success metric such as accuracy, revenue, or latency",
+      "The final test score after hyperparameter tuning is complete",
+      "The exact API endpoint wrapper for the finished model"
+    ],
+    "answer": 1,
+    "explanation": "The first workflow step asks what problem is being solved and what metric defines success. Examples include accuracy, revenue, and latency."
+  },
+  {
+    "q": "Which activity belongs most directly to the \"Explore & Clean\" workflow step?",
+    "options": [
+      "Wrapping the trained model in a production API",
+      "Predicting missing words across billions of pages",
+      "Choosing AlphaGo's action from a reward policy",
+      "Plotting distributions, spotting outliers, and fixing missing values"
+    ],
+    "answer": 3,
+    "explanation": "Explore & Clean includes EDA, plotting distributions, spotting outliers, fixing missing values, and removing duplicates. API wrapping belongs to deployment."
+  },
+  {
+    "q": "Feature engineering in the workflow turns raw data into what kind of model inputs?",
+    "options": [
+      "Reward-only signals with no state observations",
+      "Final reports that should be published once",
+      "Numeric features by normalizing, encoding, extracting, or combining data",
+      "Manual rulebooks for deterministic programs"
+    ],
+    "answer": 2,
+    "explanation": "Feature engineering transforms raw data into usable numeric features. The workflow examples include normalization, categorical encoding, extraction, and combination."
+  },
+  {
+    "q": "What question is central to the \"Evaluate\" step of the workflow?",
+    "options": [
+      "Can raw data labels be avoided entirely?",
+      "Is the test-set performance good enough for production?",
+      "Which categorical columns can be one-hot encoded?",
+      "How many web documents should self-supervision use?"
+    ],
+    "answer": 1,
+    "explanation": "Evaluate measures performance on the test set and asks whether it is good enough for production. If not, the workflow loops back."
+  },
+  {
+    "q": "According to the 80% rule, about how much time is spent actually picking and training the model?",
+    "options": [
+      "About 10%",
+      "About 30%",
+      "About 50%",
+      "About 80%"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says only about 10% is spent picking and training the model. Most time goes to collection, cleaning, and feature engineering."
+  },
+  {
+    "q": "In the house-price example, how many past home sales are pulled for training data?",
+    "options": [
+      "10,000",
+      "50,000",
+      "100,000",
+      "1,000,000"
+    ],
+    "answer": 2,
+    "explanation": "The worked example collects 100,000 past home sales. Each row includes attributes such as size, bedrooms, age, zip code, school rating, lot size, and sale price."
+  },
+  {
+    "q": "During house-price data cleaning, what happens to rows with missing prices?",
+    "options": [
+      "They are converted into one-hot encoded columns",
+      "They are used as validation examples only",
+      "They are assigned the median sale price by zip code",
+      "120 rows with missing prices are dropped"
+    ],
+    "answer": 3,
+    "explanation": "The worked example specifically drops 120 rows with missing prices. Missing target labels cannot directly train a supervised price predictor."
+  },
+  {
+    "q": "Why is the $50M listing capped in the house-price example?",
+    "options": [
+      "It is treated as an obvious outlier, a mansion rather than signal",
+      "It is the validation example used to tune tree depth",
+      "It represents the average price of all homes in the dataset",
+      "It is converted into the model's final prediction endpoint"
+    ],
+    "answer": 0,
+    "explanation": "The example caps obvious outliers, noting that a $50M listing is a mansion and not useful signal for typical homes. This is part of cleaning the data."
+  },
+  {
+    "q": "What does plotting price versus size reveal in the house-price example?",
+    "options": [
+      "A perfectly deterministic formula with no error",
+      "A completely random relationship with no visible pattern",
+      "A roughly linear but noisy relationship",
+      "A reward curve for an exploring agent"
+    ],
+    "answer": 2,
+    "explanation": "The EDA step says price versus size is roughly linear but noisy. That supports modeling while reminding us the relationship is not exact."
+  },
+  {
+    "q": "How is the categorical zip code feature handled in the house-price feature engineering step?",
+    "options": [
+      "It is dropped because categories cannot be used in ML",
+      "It is converted into one-hot columns or an embedding",
+      "It becomes the final held-out test-set metric",
+      "It is used only as the model's deployment URL"
+    ],
+    "answer": 1,
+    "explanation": "The example converts zip, a categorical feature, into one-hot columns or an embedding. Models generally need categorical values encoded into usable numeric representations."
+  },
+  {
+    "q": "Which new engineered feature is explicitly created for the house-price model?",
+    "options": [
+      "next_word_probability_for_zip",
+      "cumulative_reward_per_bedroom",
+      "hidden_layer_count_in_neighborhood",
+      "median_price_per_sqft_in_zip"
+    ],
+    "answer": 3,
+    "explanation": "The worked example creates median_price_per_sqft_in_zip. It is a domain-informed feature derived from location and price patterns."
+  },
+  {
+    "q": "Which sequence of models is tried in the house-price training step?",
+    "options": [
+      "Linear Regression, then Random Forest, then Gradient Boosting",
+      "K-Means, then DBSCAN, then PCA",
+      "Q-Learning, then PPO, then Actor-Critic",
+      "BERT, then GPT, then CLIP"
+    ],
+    "answer": 0,
+    "explanation": "The example tries Linear Regression, Random Forest, and Gradient Boosting. These are supervised models appropriate for predicting a numeric house price."
+  },
+  {
+    "q": "In the house-price workflow, which set is used to tune tree depth and learning rate?",
+    "options": [
+      "Training set",
+      "Validation set",
+      "Test set",
+      "Production log"
+    ],
+    "answer": 1,
+    "explanation": "The validation set is used to tune hyperparameters such as tree depth and learning rate. The test set is reserved for final evaluation."
+  },
+  {
+    "q": "Which model achieves the best reported house-price result in the worked example?",
+    "options": [
+      "Linear Regression with MAE around $650K",
+      "Random Forest with no held-out test score",
+      "Gradient Boosting with MAE around $65K",
+      "A transformer with zero prediction error"
+    ],
+    "answer": 2,
+    "explanation": "The best model is Gradient Boosting with MAE of about $65K on the held-out test set. The chapter frames this as likely good enough."
+  },
+  {
+    "q": "For homes averaging $1.5M, what does a $65K MAE correspond to approximately?",
+    "options": [
+      "0.4% error",
+      "14% error",
+      "40% error",
+      "4% error"
+    ],
+    "answer": 3,
+    "explanation": "The chapter states that $65K error on $1.5M homes is about 4%. That context helps decide whether the model is production-worthy."
+  },
+  {
+    "q": "After deploying the house-price model, what should be logged for monitoring?",
+    "options": [
+      "Only the one-hot encoded zip-code dictionary",
+      "Each prediction plus the actual sale price when available",
+      "Only the original 120 rows with missing prices",
+      "Every hidden word used during language pre-training"
+    ],
+    "answer": 1,
+    "explanation": "The deployment step logs every prediction and the actual sale price when it comes in. This lets the team monitor performance in production."
+  },
+  {
+    "q": "How often does the house-price example retrain the model as the market shifts?",
+    "options": [
+      "Monthly",
+      "Hourly",
+      "Every decade",
+      "Only before the first deployment"
+    ],
+    "answer": 0,
+    "explanation": "The worked example says to retrain monthly as the market shifts. This reflects the need to monitor and update models after deployment."
+  },
+  {
+    "q": "Which condition supports choosing ML for a problem?",
+    "options": [
+      "A simple if-statement already solves it perfectly",
+      "A wrong answer would be catastrophic and intolerable",
+      "Rules are too complex to hand-code and enough data exists",
+      "The answer is produced by a known deterministic formula"
+    ],
+    "answer": 2,
+    "explanation": "Use ML when rules are too complex, data is plentiful, and some error is tolerable. Simple deterministic rules are usually better when available."
+  },
+  {
+    "q": "Which requirement is listed as a reason not to use ML in high-stakes domains?",
+    "options": [
+      "The pattern evolves over time",
+      "Humans can do the task intuitively",
+      "There is plenty of relevant data",
+      "Every decision must be fully explainable"
+    ],
+    "answer": 3,
+    "explanation": "The chapter warns against ML when every decision must be fully explained, with law and medicine as examples. Opaque learned models may be inappropriate there."
+  },
+  {
+    "q": "Spam, prices, and fashion are examples supporting ML because they share what property?",
+    "options": [
+      "Their patterns evolve over time",
+      "They are solved by fixed formulas",
+      "They require no data to model",
+      "Their decisions are always catastrophic"
+    ],
+    "answer": 0,
+    "explanation": "The chapter lists evolving patterns such as spam, prices, and fashion as cases where ML can be useful. Static hand-written rules would become stale."
+  },
+  {
+    "q": "Image and speech recognition are cited as good ML candidates because humans can do them how?",
+    "options": [
+      "By applying a short deterministic tax formula",
+      "Intuitively, even when they cannot explain exact rules",
+      "Only after receiving cumulative numeric rewards",
+      "By checking a fixed test set exactly once"
+    ],
+    "answer": 1,
+    "explanation": "Humans recognize images and speech intuitively but struggle to write exact rules for them. That makes them good candidates for learning from examples."
+  },
+  {
+    "q": "Classical ML is recommended over deep learning when the dataset is roughly what size?",
+    "options": [
+      "Billions of documents",
+      "Millions of images",
+      "Every scanned book on the internet",
+      "Small-to-medium, under about 100K rows"
+    ],
+    "answer": 3,
+    "explanation": "The comparison recommends classical ML for small-to-medium datasets, specifically under 100K rows. Deep learning is aimed at huge datasets."
+  },
+  {
+    "q": "Deep learning is the better default when the data is primarily what type?",
+    "options": [
+      "A small spreadsheet with regulated decisions",
+      "A deterministic formula such as price times tax rate",
+      "Unstructured images, audio, text, or video",
+      "A few rows of manually labeled tabular features"
+    ],
+    "answer": 2,
+    "explanation": "The chapter recommends deep learning for unstructured data such as images, audio, text, and video. Classical ML remains strong for tabular rows."
+  },
+  {
+    "q": "Which resource availability makes deep learning more appropriate than classical ML?",
+    "options": [
+      "Only a CPU and strict interpretability constraints",
+      "GPUs or TPUs available for training large models",
+      "A complete hand-written rule set for every input",
+      "Very little relevant data and no labels"
+    ],
+    "answer": 1,
+    "explanation": "Deep learning is recommended when GPUs or TPUs are available. The chapter contrasts this with classical ML when compute is limited."
+  },
+  {
+    "q": "What surprising fact does the chapter state about tabular Kaggle-style data?",
+    "options": [
+      "Gradient Boosting often still beats deep learning on tabular competitions",
+      "Transformers always dominate spreadsheets regardless of data size",
+      "Rule-based expert systems usually win image and language benchmarks",
+      "Diffusion models are the standard tool for regulated tables"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says Gradient Boosting methods such as XGBoost and LightGBM still win most tabular Kaggle competitions. Deep learning dominates vision and language more than spreadsheets."
+  },
+  {
+    "q": "The misconception \"More data always wins\" is corrected with which idea?",
+    "options": [
+      "More parameters always matter more than data relevance",
+      "Less data always improves interpretability and accuracy",
+      "More good, relevant data wins; garbage in leads to garbage out",
+      "Data quantity is irrelevant once a model is deployed"
+    ],
+    "answer": 2,
+    "explanation": "The chapter corrects the myth by emphasizing good, relevant data. Poor-quality data can harm a model even when there is a lot of it."
+  },
+  {
+    "q": "Which timeline event is paired with 2022?",
+    "options": [
+      "Alan Turing proposes the Turing Test",
+      "AlexNet wins ImageNet by a huge margin",
+      "The Transformer architecture is invented at Google",
+      "ChatGPT launches and LLMs go mainstream"
+    ],
+    "answer": 3,
+    "explanation": "The timeline lists 2022 as ChatGPT launching and LLMs going mainstream. The Transformer architecture is listed earlier, in 2017."
+  },
+  {
+    "q": "Which timeline event is associated with 1957?",
+    "options": [
+      "Frank Rosenblatt invents the Perceptron, the first simple neural network",
+      "IBM Deep Blue beats chess champion Garry Kasparov",
+      "AlphaGo defeats the world Go champion using RL and deep learning",
+      "The Transformer architecture is introduced in Attention Is All You Need"
+    ],
+    "answer": 0,
+    "explanation": "The history section lists 1957 as Frank Rosenblatt inventing the Perceptron. Deep Blue, AlphaGo, and Transformers are later milestones."
+  },
+  {
+    "q": "Which milestone does the timeline place in 1997?",
+    "options": [
+      "Backpropagation is discovered and neural networks get popular",
+      "AlexNet wins ImageNet and proves deep learning on images",
+      "IBM Deep Blue beats chess champion Garry Kasparov",
+      "Multimodal AI and AI agents begin the next era"
+    ],
+    "answer": 2,
+    "explanation": "The timeline marks 1997 as IBM Deep Blue beating Kasparov. AlexNet is listed in 2012, much later."
+  }
+]

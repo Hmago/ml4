@@ -1,0 +1,662 @@
+[
+  {
+    "q": "What is the primary architectural feature of a TPU that makes it especially efficient at the matrix multiplications central to neural-network training?",
+    "options": [
+      "Systolic array: a grid of PEs where data flows rhythmically so every PE multiply-accumulates simultaneously without extra memory round-trips",
+      "High Bandwidth Memory: memory dies stacked on the same package as compute to eliminate off-chip data transfers",
+      "BF16 number format: halving bits per operand doubles the arithmetic operations per clock cycle on fixed hardware without any architectural changes to the processing array",
+      "Inter-Chip Interconnect: a 3D torus fabric that lets all chips in a pod share matrix operands at interconnect speed"
+    ],
+    "answer": 0,
+    "explanation": "Systolic arrays are the defining TPU innovation: data flows through a 128x128 grid of 16,384 PEs every cycle with no HBM round-trips between multiply-accumulate steps. HBM, BF16, and ICI are also important TPU features but none defines the core matrix-multiply engine."
+  },
+  {
+    "q": "BF16 uses the same number of bits for which field as FP32, making it the preferred low-precision training format on TPUs?",
+    "options": [
+      "Mantissa bits: preserved mantissa range avoids gradient underflow in large-scale training",
+      "Exponent bits: the 8-bit exponent matches FP32 dynamic range so no explicit loss scaling is needed",
+      "Sign bit: the shared sign convention keeps positive and negative arithmetic compatible across precisions",
+      "Total bit width: BF16 and FP32 differ only in how they split their bits not in total count"
+    ],
+    "answer": 1,
+    "explanation": "BF16 has 1 sign + 8 exponent + 7 mantissa bits. The 8-bit exponent matches FP32 giving a range of about +/-3.4e38. FP16 has a 5-bit exponent requiring loss scaling to avoid underflow; BF16 avoids this entirely."
+  },
+  {
+    "q": "In a TPU v4 pod, which physical topology connects the chips and how many ICI links does each chip have?",
+    "options": [
+      "2D torus with wraparound in both planar dimensions; each chip has 4 neighbors",
+      "Fat-tree topology via leaf and spine switches; chips have no fixed neighbor count",
+      "3D torus with wraparound in all three dimensions; each chip has exactly 6 neighbors",
+      "3D mesh without wraparound; interior chips have 6 neighbors but edge chips have fewer"
+    ],
+    "answer": 2,
+    "explanation": "TPU pods use a 3D torus: the end chips in each dimension wrap around so every chip has exactly 6 ICI links (two per dimension). A mesh leaves edge chips with fewer links, a 2D torus gives 4 per chip, and fat-tree uses switches with no fixed chip-to-chip count."
+  },
+  {
+    "q": "A team wants the highest HBM capacity and bandwidth per chip in the documented TPU lineup. Which version should they select?",
+    "options": [
+      "TPU v3: the first Google TPU generation to use HBM offering 32 GB of memory at 900 GB/s bandwidth per chip, making it suitable for training models in the tens of billions of parameters",
+      "TPU v4: upgraded to HBM2e providing 32 GB at 1.2 TB/s per chip",
+      "TPU v5e: optimized for inference with 16 GB at 1.6 TB/s per chip",
+      "TPU v5p: delivers 95 GB per chip at 4.8 TB/s the highest in the chapter table"
+    ],
+    "answer": 3,
+    "explanation": "TPU v5p leads all documented versions with 95 GB HBM and 4.8 TB/s per chip. v4 has 32 GB HBM2e at 1.2 TB/s, v5e has 16 GB at 1.6 TB/s traded for cost efficiency, and v3 has 32 GB at 900 GB/s."
+  },
+  {
+    "q": "Which JAX transformation JIT-compiles a Python function so subsequent calls reuse the compiled XLA program rather than re-interpreting Python bytecode?",
+    "options": [
+      "jax.jit: wraps a function and compiles it on the first call; subsequent calls skip Python interpretation entirely",
+      "jax.vmap: vectorizes a function over a batch axis though compilation is a side effect not the primary purpose",
+      "jax.pmap: distributes computation across multiple devices using SPMD but does not compile for a single device",
+      "jax.grad: differentiates a scalar function and returns a new function; speed comes from XLA not from caching"
+    ],
+    "answer": 0,
+    "explanation": "jax.jit is specifically the compilation transformation. It traces the function with abstract values and compiles the result with XLA on the first call, then caches the compiled program for all subsequent calls with the same shape and dtype. The other transforms handle batching, multi-device, and autodiff."
+  },
+  {
+    "q": "A recommendation system needs to look up thousands of user feature vectors during online serving within a 10 ms latency budget. Which Vertex AI component is specifically designed for this?",
+    "options": [
+      "Vertex AI Pipelines: orchestrates multi-step ML workflows including feature fetching steps",
+      "Vertex AI Feature Store online serving: provides low-latency feature lookup at under 10 ms for real-time inference",
+      "Vertex AI Endpoints: hosts trained models and handles prediction requests but does not store raw feature vectors",
+      "Vertex AI Workbench: a managed JupyterLab for feature exploration not designed for production serving"
+    ],
+    "answer": 1,
+    "explanation": "Vertex AI Feature Store has two paths: batch export for training and an online serving store built for sub-10 ms feature lookups during inference. Endpoints host models not raw features, Pipelines run training jobs, and Workbench is an interactive notebook environment."
+  },
+  {
+    "q": "XLA (Accelerated Linear Algebra) plays what role in the JAX and TensorFlow ecosystems?",
+    "options": [
+      "A hardware specification defining the instruction set used by all Google TPU generations since v2",
+      "A Python library for expressing neural network layers in a functional style compiled ahead-of-time during import",
+      "A domain-specific compiler that takes computation graphs and generates optimized machine code for CPUs, GPUs, and TPUs",
+      "A gradient-checkpointing library that reduces memory by recomputing forward activations during the backward pass"
+    ],
+    "answer": 2,
+    "explanation": "XLA is a compiler. It takes computation graphs from JAX or TF and applies optimizations such as operator fusion, memory layout selection, and loop tiling to generate hardware-specific machine code. It is not a hardware spec, not a Python NN library, and not a checkpointing tool."
+  },
+  {
+    "q": "BERT introduced the Masked Language Model pre-training objective. Which description correctly captures this objective?",
+    "options": [
+      "The model predicts the next token in left-to-right order enabling fast auto-regressive text generation",
+      "The model encodes a full sentence with a bidirectional Transformer encoder and decodes it into a compressed summary using an auto-regressive decoder, learning semantic representations useful for downstream fine-tuning",
+      "The model predicts whether two input sentences are consecutive in the original document only",
+      "A random 15% of input tokens are replaced with [MASK] and the model predicts the original token using bidirectional context"
+    ],
+    "answer": 3,
+    "explanation": "BERT masks 15% of tokens and trains the model to reconstruct them using both left and right context simultaneously giving truly bidirectional representations. Next-token prediction is causal LM. Sentence order prediction is a separate BERT objective not the MLM. Option B describes seq2seq summarization."
+  },
+  {
+    "q": "The paper Attention Is All You Need was published in 2017. Which team produced it and what was the most architecturally novel contribution?",
+    "options": [
+      "Google Brain and Google Research; they replaced recurrence entirely with multi-head self-attention enabling full sequence parallelism during training",
+      "OpenAI; they added gating mechanisms to recurrent networks to achieve attention-like behavior without sequential limitations",
+      "DeepMind; they extended CNNs with attention heads between convolutional layers to handle variable-length sequences",
+      "Stanford NLP Group; they built Transformer by adding cross-attention on top of a pre-existing seq2seq LSTM encoder-decoder and demonstrated state-of-the-art translation results on WMT benchmarks"
+    ],
+    "answer": 0,
+    "explanation": "The Transformer was produced by a Google Brain and Research team. The key contribution was eliminating recurrence and convolution in favor of multi-head self-attention, allowing every position to attend to every other in one pass and enabling fully parallel training across time steps."
+  },
+  {
+    "q": "T5 reframes every NLP task as text-in text-out. What does this text-to-text formulation enable that earlier task-specific model designs do not?",
+    "options": [
+      "The model can process images and audio by converting them to textual token sequences before the Transformer encoder",
+      "A single model and cross-entropy loss can be applied uniformly to translation, summarization, question answering, and classification",
+      "The decoder generates variable-length outputs auto-regressively preventing the model from being used for fixed-length classification",
+      "Span-masking of input documents forces the model to reconstruct longer passages improving factual memorization"
+    ],
+    "answer": 1,
+    "explanation": "T5 unifies all NLP tasks: classification becomes predicting a label string, translation and summarization produce text directly, so a single model with a single cross-entropy objective handles all tasks without task-specific output heads."
+  },
+  {
+    "q": "PaLM was trained on a specific number of TPU v4 chips described in the chapter as spanning two full TPU v4 pods. What is that chip count?",
+    "options": [
+      "2,048 chips: a quarter-pod configuration sufficient for 540B-parameter model-parallel sharding",
+      "4,096 chips: exactly one full TPU v4 pod, the standard single-pod configuration",
+      "6,144 chips: a multi-pod configuration enabling the pipeline and model parallelism required for 540B parameters",
+      "8,192 chips: exactly two full TPU v4 pods of 4,096 chips each connected via Google datacenter fabric and coordinated by a single distributed training scheduler managing pipeline parallelism"
+    ],
+    "answer": 2,
+    "explanation": "PaLM was trained on 6,144 TPU v4 chips across two TPU v4 pods. This multi-pod configuration enabled the model-parallel and pipeline-parallel sharding strategies required for a 540-billion-parameter model."
+  },
+  {
+    "q": "When jax.jit traces a Python function it uses abstract values to build the computation graph. What are these abstract values?",
+    "options": [
+      "Floating-point approximations with reduced precision substituted for scalar inputs so JAX can evaluate outputs numerically during tracing and detect which conditional branches are actually reached",
+      "Hash values of the function arguments used to detect when to re-trace after an input shape or type change",
+      "JAX DeviceArrays stored on CPU that replace GPU/TPU arrays to allow tracing without device allocation",
+      "Shape and dtype descriptors without concrete numerical data; the compiled program is valid for any input matching that descriptor"
+    ],
+    "answer": 3,
+    "explanation": "During jit tracing JAX passes abstract shape/dtype tracers not real numbers through the function, recording operations into a computation graph. The compiled XLA program is reused for any concrete input with the same abstract shape and dtype, which is why shape changes trigger re-tracing."
+  },
+  {
+    "q": "The Chinchilla paper revised compute-optimal scaling for large language models. What was the key finding?",
+    "options": [
+      "A compute-optimal model trains on roughly 20 tokens per model parameter so a 70B model needs about 1.4 trillion training tokens",
+      "Optimal scaling doubles model size while holding dataset size constant confirming the Kaplan et al. power-law exponent",
+      "Models should be trained until validation loss plateaus regardless of parameter count or total compute budget",
+      "At least 100 tokens per parameter are needed to avoid underfitting pushing the optimal token count above 7 trillion for 70B models"
+    ],
+    "answer": 0,
+    "explanation": "Chinchilla showed that prior large models including Gopher at 280B were significantly undertrained. The compute-optimal rule is approximately 20 tokens per parameter: 70B x 20 = 1.4T tokens. Kaplan et al. had suggested scaling parameters faster than data which Chinchilla overturned."
+  },
+  {
+    "q": "Gemini was designed differently from most prior large language models in terms of multimodal capability. What does the chapter identify as its key architectural distinction?",
+    "options": [
+      "Gemini uses a separate vision encoder that projects image patches into the text token space before the main Transformer",
+      "Gemini was natively multimodal from the start, trained jointly on text, images, audio, video, and code in a single architecture",
+      "Gemini processes multimodal inputs by converting all modalities to BF16 tensors and applying a shared cross-attention layer",
+      "Gemini uses mixture-of-experts routing to direct each modality to a specialized sub-network trained only on that modality"
+    ],
+    "answer": 1,
+    "explanation": "Gemini was built multimodal from scratch rather than adding a vision encoder to a text-trained LLM. It was trained jointly across text, images, audio, video, and code in a single architecture, distinguishing it from CLIP-based fusion, generic cross-attention, or per-modality MoE routing."
+  },
+  {
+    "q": "A data science team needs to chain a data validation step, a training step, and an evaluation step into a reproducible workflow that can be scheduled. Which Vertex AI product is designed for this?",
+    "options": [
+      "Vertex AI Feature Store: stores and serves features but does not provide step-dependency orchestration",
+      "Vertex AI Workbench: a JupyterLab environment for interactive development not for scheduled multi-step pipelines",
+      "Vertex AI Pipelines: orchestrates multi-step ML workflows as DAGs with artifact tracking and scheduling support",
+      "Vertex AI Endpoints: handles serving traffic for deployed models but does not support training orchestration"
+    ],
+    "answer": 2,
+    "explanation": "Vertex AI Pipelines built on KFP or TFX is the workflow orchestration product. It models steps as DAG nodes, passes typed artifacts between them, supports step caching and scheduling, and integrates with ML Metadata. Feature Store, Workbench, and Endpoints serve distinct non-orchestration purposes."
+  },
+  {
+    "q": "A researcher calls jax.pmap(jax.jit(jax.vmap(jax.grad(f)))). Reading from innermost transform outward, what sequence of operations is applied?",
+    "options": [
+      "Parallelizes across devices, then compiles with XLA, then vectorizes the function over a batch axis, then differentiates the scalar function - following the top-down printed nesting order of the calls",
+      "Differentiates, then compiles, then vectorizes, then parallelizes following the printed call order from outermost to innermost",
+      "Vectorizes over a batch axis first, then differentiates the vectorized function, then compiles, then parallelizes across devices",
+      "Differentiates the scalar function, then vectorizes the gradient over a batch axis, then JIT-compiles the batch gradient, then distributes across devices"
+    ],
+    "answer": 3,
+    "explanation": "JAX transforms compose reading inside-out: grad differentiates f, vmap vectorizes the gradient over a batch axis producing per-example gradients, jit compiles the vectorized gradient function, and pmap distributes execution across devices. This is the idiomatic JAX pattern for per-device batched gradients."
+  },
+  {
+    "q": "Wide and Deep learning was applied to Google Play app recommendations. What improvement in app acquisition rate does the chapter report compared to a wide-only model?",
+    "options": [
+      "3.9% improvement in app acquisition rate demonstrating the benefit of combining memorization and generalization",
+      "10.2% improvement in click-through rate attributed to the deep network learning cross-feature interactions",
+      "7.6% reduction in serving latency because the wide component handles the majority of inference load",
+      "1.5% improvement over a deep-only model confirming that memorization of popular items remains valuable"
+    ],
+    "answer": 0,
+    "explanation": "The chapter reports a 3.9% improvement in app acquisition rate on Google Play when using Wide and Deep versus a wide-only logistic regression baseline. The comparison is specifically wide-only vs. wide+deep not deep-only vs. wide+deep."
+  },
+  {
+    "q": "The YouTube Deep Neural Network recommendation paper describes a two-stage architecture. What is the function of the first stage?",
+    "options": [
+      "Ranking: scoring each candidate video with a high-capacity deep neural network that uses rich video metadata and user-video interaction history to produce a precisely ordered list for the user",
+      "Candidate generation: reducing millions of videos to hundreds of plausible candidates using a lighter model with recall as the primary metric",
+      "Feature extraction: computing pre-trained video embeddings from raw frames before passing them to either stage",
+      "Exploration: applying Thompson sampling to surface underexplored videos and counteract popularity bias"
+    ],
+    "answer": 1,
+    "explanation": "The first stage candidate generation uses watch history, search history, demographics, and context to narrow millions of videos to hundreds. Recall is prioritized over precision. The second stage ranking then scores those hundreds with a richer feature set to produce the final list."
+  },
+  {
+    "q": "Which JAX transformation allows a function written for a single example to be applied to an entire batch without writing explicit loop logic?",
+    "options": [
+      "jax.jit: compiles a function to run faster but does not change how it processes single examples versus batches",
+      "jax.pmap: maps a function across multiple physical devices not across elements of a single batch on one device",
+      "jax.vmap: vectorizes a function along a specified input axis turning a per-example function into a batched function automatically",
+      "jax.grad: computes the derivative of a scalar function; batch handling is handled separately by vmap or explicit loops"
+    ],
+    "answer": 2,
+    "explanation": "jax.vmap vectorizing map takes a function that operates on a single example and generates a batched version by vectorizing over the specified axis. It produces the same result as an explicit for loop but with the efficiency of vectorized hardware operations. jit is for speed, pmap is for multi-device, grad is for differentiation."
+  },
+  {
+    "q": "The Orbax library in the JAX ecosystem handles which specific task in large-scale model training?",
+    "options": [
+      "Gradient accumulation across micro-batches before applying an optimizer update enabling large effective batch sizes",
+      "Dynamic batching of variable-length sequences into fixed-size tensor blocks for TPU efficiency",
+      "Automatic mixed-precision management switching between BF16 and FP32 across forward and backward passes",
+      "Checkpoint saving and restoring including distributed checkpointing for model states sharded across many devices"
+    ],
+    "answer": 3,
+    "explanation": "Orbax is the checkpointing library in the JAX ecosystem. It saves and loads training state including parameters, optimizer state, and step count, with support for sharded checkpoints across many TPUs. Gradient accumulation is a training loop concern, sequence batching is a data pipeline concern, and mixed precision is handled by JAX and Flax directly."
+  },
+  {
+    "q": "T5 was pre-trained on a dataset derived from Common Crawl. What is the name of this dataset and what does the abbreviation stand for?",
+    "options": [
+      "C4: Colossal Clean Crawled Corpus created by aggressively filtering Common Crawl web text for quality",
+      "C3: Curated Crawled Corpus a refined subset used specifically for multilingual T5 pre-training",
+      "WebText2: an updated version of the WebText dataset filtered with Common Crawl quality heuristics",
+      "RedPajama: a reproduction combining C4, GitHub, and Wikipedia sources used for open LLM pre-training"
+    ],
+    "answer": 0,
+    "explanation": "T5 was trained on C4 (Colossal Clean Crawled Corpus) which Google created by running multiple quality filters on Common Crawl text: removing low-quality pages, deduplicating, and filtering to English. C3, WebText2, and RedPajama are separate datasets not used for T5."
+  },
+  {
+    "q": "TPU pod ICI (Inter-Chip Interconnect) is far faster than PCIe for gradient all-reduce operations. What bandwidth advantage does the chapter attribute to ICI over PCIe?",
+    "options": [
+      "5 to 10 times faster sufficient to reduce gradient synchronization overhead at batch sizes below 2,048",
+      "Roughly 100 to 1,000 times faster than PCIe making gradient all-reduce across thousands of chips feasible",
+      "2 to 3 times faster a modest gain that primarily benefits attention computation rather than gradient synchronization",
+      "Comparable to NVLink speeds but roughly 10 to 20 times faster than standard PCIe Gen 4"
+    ],
+    "answer": 1,
+    "explanation": "The chapter describes ICI as providing roughly 100 to 1,000 times higher bandwidth than PCIe. This massive advantage makes it practical to synchronize gradients across thousands of TPU chips in a pod; gradient communication that would dominate training time over PCIe becomes negligible relative to compute."
+  },
+  {
+    "q": "A team with limited ML expertise needs to build an image classification model without writing model architecture code. Which Vertex AI offering addresses this?",
+    "options": [
+      "Vertex AI Custom Training: allows full control over training code using pre-built containers or custom Docker images",
+      "Vertex AI Pipelines: automates MLOps workflows but still requires the user to supply training code as pipeline steps",
+      "Vertex AI AutoML: trains a production-quality model from labeled data without requiring users to write model code",
+      "Vertex AI Workbench: provides a notebook environment where users write model code with reduced boilerplate"
+    ],
+    "answer": 2,
+    "explanation": "Vertex AI AutoML enables no-code model training: users supply labeled data and AutoML handles architecture search, hyperparameter tuning, and training automatically. Custom Training, Pipelines, and Workbench all require the user to write or supply training code."
+  },
+  {
+    "q": "Flax has two main APIs for defining neural network modules. What is the fundamental difference between Flax Linen and Flax NNX?",
+    "options": [
+      "Linen is specifically designed for recurrent LSTM and GRU architectures where hidden state must be threaded through each time step as an explicit argument, while NNX targets feedforward and attention-based architectures",
+      "NNX compiles modules to XLA at import time while Linen defers compilation until the first forward pass",
+      "Linen supports multi-device parameter sharding via pmap while NNX is restricted to single-device training",
+      "Linen uses a functional style where weights are returned from init and passed explicitly; NNX uses a stateful PyTorch-like object model where modules store their own weights"
+    ],
+    "answer": 3,
+    "explanation": "Flax Linen follows JAX pure-functional conventions: parameters are returned from model.init() and passed explicitly to model.apply(). Flax NNX is a newer API designed to feel more like PyTorch where modules store parameters as attributes and mutation is supported. Both target the same JAX/XLA stack."
+  },
+  {
+    "q": "Kaplan et al. (2020) introduced neural scaling laws. What was the primary empirical finding that guided subsequent large-model development?",
+    "options": [
+      "Model loss follows a smooth power law as a function of compute, parameters, and data independently; larger models trained longer reliably improve at a predictable rate",
+      "Model performance saturates at roughly 10B parameters after which additional scale provides diminishing returns that do not justify the compute cost",
+      "Scaling laws hold only for language modeling; image, audio, and code tasks require task-specific scaling exponents",
+      "Data scaling is approximately 3 times more compute-efficient than parameter scaling, so the optimal training strategy holds the model architecture fixed and directs the entire additional compute budget toward larger datasets"
+    ],
+    "answer": 0,
+    "explanation": "Kaplan et al. showed that cross-entropy loss decreases as a smooth power law with compute, model size, and data size independently. This justified the larger-is-better scaling strategy used by GPT-3 and successors. Chinchilla later revised the relative parameter-to-data ratio but did not disprove the power-law relationship."
+  },
+  {
+    "q": "The Vertex AI Model Registry serves what function in a production ML workflow?",
+    "options": [
+      "Hosts model endpoints that receive prediction traffic and auto-scale based on incoming request volume",
+      "Provides a centralized store for versioned model artifacts with metadata, lineage, and promotion controls across environments",
+      "Runs hyperparameter tuning sweeps and stores each trial as a candidate model for subsequent comparison",
+      "Monitors deployed models for data drift and logs predictions for offline evaluation against ground-truth labels"
+    ],
+    "answer": 1,
+    "explanation": "The Model Registry is a versioned repository for trained model artifacts. It stores each version with metadata including training metrics and lineage to datasets and pipelines, and provides promotion controls to move a model from experimentation through staging to production. Endpoints serve traffic, Vizier runs HPO, and Model Monitoring handles drift."
+  },
+  {
+    "q": "A researcher needs to train a large model on a full TPU v4 pod via Vertex AI. Through which product pathway is this done?",
+    "options": [
+      "Vertex AI AutoML: automatically selects TPU pod configurations when the training dataset exceeds a certain size threshold",
+      "Vertex AI Feature Store: distributes feature computation across the pod during the pre-training phase",
+      "Vertex AI Custom Training: users specify a TPU v4 pod runtime and submit their training code as a managed job",
+      "Vertex AI Pipelines: assigns one pod chip per pipeline component step to distribute the single training run"
+    ],
+    "answer": 2,
+    "explanation": "Full TPU pod training on Vertex AI uses Custom Training jobs where the user specifies a TPU runtime and provides training code in a container. AutoML does not expose raw pod selection, Feature Store handles feature serving not compute, and Pipelines orchestrate multi-step workflows rather than distributing a single training run across pod chips."
+  },
+  {
+    "q": "Which statement correctly describes how jax.grad handles functions that take multiple arguments?",
+    "options": [
+      "jax.grad automatically differentiates with respect to all float-typed arguments returning a tuple of gradients in order",
+      "jax.grad only works on single-argument functions; for multi-argument functions the user must use jax.jacrev instead",
+      "jax.grad differentiates with respect to the last argument by default so that loss functions with an inputs-params signature work naturally",
+      "By default jax.grad differentiates with respect to argument 0; the argnums parameter selects which argument or arguments to differentiate"
+    ],
+    "answer": 3,
+    "explanation": "jax.grad defaults to differentiating with respect to the first argument (argnums=0). To target other arguments or multiple arguments simultaneously pass argnums as a single integer or tuple of integers. This is a common source of bugs when a loss function has params-data vs. data-params as its argument order."
+  },
+  {
+    "q": "TensorFlow SavedModel format stores more than just network weights. What additional components does it include?",
+    "options": [
+      "The computation graph as concrete functions, the variable values, and metadata such as input and output signatures making the model self-contained for deployment",
+      "The Python training script including all preprocessing logic, model architecture definitions, and optimizer hyperparameter configurations, enabling full re-training or fine-tuning runs with a different configuration later",
+      "Raw training data samples that inform the deployment runtime about the expected input distribution at serving time",
+      "Profiler traces from the training run used by TF Serving to optimize batching and memory allocation decisions"
+    ],
+    "answer": 0,
+    "explanation": "SavedModel bundles the serialized computation graph (tf.function concrete functions), trained variable values, and input/output signatures. This makes it self-contained so TF Serving or another runtime can load and run it without the original Python source code. Training scripts, raw data, and profiler traces are not included."
+  },
+  {
+    "q": "In Wide and Deep learning the wide component learns which type of interaction using what architecture?",
+    "options": [
+      "Deep cross-feature interactions via a stack of fully connected layers with ReLU activations, layer normalization, and dropout regularization that learns latent representations from dense feature embeddings",
+      "Memorization of co-occurrence patterns between specific feature pairs using a generalized linear model with cross-product feature transforms",
+      "Time-series trends in user session data using a sequence of 1D convolutions applied along the interaction history",
+      "Embedding-space proximity between items using a dot-product similarity layer without any cross-feature transformation"
+    ],
+    "answer": 1,
+    "explanation": "The wide part is a generalized linear model that applies learned cross-product transformations to sparse feature pairs. It memorizes specific high-weight combinations seen frequently in training data. The deep component generalizes through dense embedding layers that transfer to unseen feature combinations."
+  },
+  {
+    "q": "Vertex AI Explainability supports specific explanation methods for tabular and image models. Which set is documented for the Vertex AI stack?",
+    "options": [
+      "Only SHAP with kernel estimation; gradient-based methods are reserved for Vertex custom training jobs",
+      "Only Integrated Gradients and attention visualization; SHAP is unsupported because it requires model-agnostic black-box access",
+      "Integrated Gradients, XRAI for images, and Sampled Shapley for tabular data available for both AutoML and custom models",
+      "LIME exclusively as it is the only method compatible with both tabular and image modalities in a single API"
+    ],
+    "answer": 2,
+    "explanation": "Vertex AI Explainability supports Integrated Gradients for neural networks, XRAI for image models, and Sampled Shapley for tabular data. These are available for both AutoML and custom models deployed on Vertex Endpoints. LIME and kernel SHAP are not the documented Vertex AI Explainability methods."
+  },
+  {
+    "q": "BERT uses a specific masking strategy for the 15% of tokens chosen for the MLM objective. What happens to those chosen tokens?",
+    "options": [
+      "All 15% are unconditionally replaced by [MASK]; the model predicts each original token using bidirectional context",
+      "Half are replaced by [MASK] and the other half by random tokens; no original tokens remain in the chosen positions",
+      "Each chosen token is duplicated: one copy is masked and one is kept giving the model both signals simultaneously",
+      "80% of chosen tokens become [MASK], 10% are replaced with a random token, and 10% are kept as the original token"
+    ],
+    "answer": 3,
+    "explanation": "BERT does not replace all 15% with [MASK]. Of the chosen tokens: 80% become [MASK], 10% become a random token preventing the model from ignoring non-[MASK] positions, and 10% are left unchanged preventing over-reliance on [MASK] specifically. This 80/10/10 split is a key BERT implementation detail."
+  },
+  {
+    "q": "The chapter discusses Gemini Ultra, Gemini Pro, and Gemini Nano. What distinguishes Nano from the other two variants?",
+    "options": [
+      "Gemini Nano is optimized for on-device deployment on mobile hardware with tight memory constraints while Ultra and Pro are cloud-hosted",
+      "Gemini Nano is the untuned research checkpoint while Ultra and Pro are RLHF-tuned production models",
+      "Gemini Nano handles only text modalities using a compact Transformer architecture, while Ultra and Pro are the natively multimodal variants that process images, audio, video, and code in a single joint architecture",
+      "Gemini Nano processes much longer context windows to support document-level understanding on cloud infrastructure"
+    ],
+    "answer": 0,
+    "explanation": "Gemini Nano is designed to run directly on Pixel smartphones and other edge devices with constrained memory and compute budgets. Gemini Pro runs in the cloud for general use cases and Gemini Ultra is the largest cloud-hosted model. All three variants are natively multimodal; Nano is not text-only."
+  },
+  {
+    "q": "T5 was pre-trained with a span-corruption objective rather than BERT token-level MLM. What is the span-corruption objective?",
+    "options": [
+      "The model decodes the entire input document auto-regressively, learning to predict each next token given all previous tokens and no masking applied to the original input sequence at any point during pre-training",
+      "Contiguous spans of tokens are masked and replaced by a single sentinel token; the decoder must regenerate all masked spans in sequence",
+      "Individual tokens are randomly masked with [MASK] and the encoder predicts them using surrounding bidirectional context",
+      "Pairs of sentences are swapped and the model must reconstruct their original order learning paragraph-level coherence"
+    ],
+    "answer": 1,
+    "explanation": "T5 uses span corruption: contiguous spans averaging 3 tokens are masked and each span is replaced with a single sentinel such as extra_id_0. The seq2seq decoder is trained to reproduce all masked spans back-to-back. This differs from BERT token-level MLM and from causal auto-regressive LM."
+  },
+  {
+    "q": "A production ML system needs to serve predictions from a trained model with automatic scaling, traffic splitting, and a REST interface. Which Vertex AI component provides this?",
+    "options": [
+      "Vertex AI Pipelines: runs training and evaluation steps in a DAG but does not serve live prediction traffic",
+      "Vertex AI Feature Store online serving: provides fast feature lookups but does not run model inference",
+      "Vertex AI Endpoints: deploys trained models as auto-scaling REST prediction services with traffic splitting and versioning",
+      "Vertex AI Workbench: provides a managed JupyterLab environment for development not for production serving"
+    ],
+    "answer": 2,
+    "explanation": "Vertex AI Endpoints are the serving component. A model from the Model Registry is deployed to an Endpoint creating a managed REST API that auto-scales, supports traffic splitting between model versions, and logs predictions. Pipelines run training workflows, Feature Store serves features, and Workbench is for development."
+  },
+  {
+    "q": "JAX requires functions to be pure for jit and grad to work correctly. Which operation would violate this purity requirement?",
+    "options": [
+      "Computing the dot product of two parameter matrices inside a jit-compiled forward pass",
+      "Applying a ReLU activation to a hidden layer output within a jitted forward pass",
+      "Using jax.lax.cond for control flow that depends on a traced JAX array value inside jit",
+      "Mutating a Python list that is captured in the function closure during a jitted call"
+    ],
+    "answer": 3,
+    "explanation": "Mutating captured Python objects violates JAX purity because jit traces the function once and caches the compiled code; subsequent calls reuse the compilation without re-executing Python side effects. The mutation appears to happen on the first trace but is silently skipped on reuse. Dot products, activations, and jax.lax.cond are all pure JAX operations compatible with jit."
+  },
+  {
+    "q": "The YouTube DNN candidate generation model uses two neural network components for different input types. What are they and how are they combined?",
+    "options": [
+      "A user tower encoding watch history and demographic features, and a video tower encoding video attributes; their dot product gives the match score",
+      "A query tower that processes search text with a learned Transformer encoder, and a content tower that encodes video transcript and metadata, with cross-attention between the query and content representations for relevance scoring",
+      "A short-term tower encoding the last 5 watched videos and a long-term tower encoding all-time history combined by learned weights",
+      "An engagement tower trained on clicks and a satisfaction tower trained on watch time combined through a gating network"
+    ],
+    "answer": 0,
+    "explanation": "The YouTube candidate generation model uses a user tower (watch history, search history, demographics, context) and a video tower (video features). At inference the user embedding is computed once and the top-K videos are found by nearest-neighbor search in the video embedding space via dot product matching."
+  },
+  {
+    "q": "TPU v5e and TPU v5p are designed for different primary workloads. According to the chapter how do they differ?",
+    "options": [
+      "v5p targets inference with reduced latency; v5e targets training with higher sustained throughput and more HBM",
+      "v5e is an inference-optimized cost-efficient chip with 16 GB HBM; v5p is the high-memory training variant with 95 GB HBM",
+      "v5p supports only BF16 arithmetic while v5e adds INT8 support for quantized inference at the edge",
+      "v5e and v5p are architecturally identical and differ only in which Google Cloud region they are available in"
+    ],
+    "answer": 1,
+    "explanation": "TPU v5e (e for efficient) has 16 GB HBM and is positioned as a cost-efficient option for inference and smaller training runs. TPU v5p (p for performance) has 95 GB HBM at 4.8 TB/s and targets the largest training workloads. The distinction is HBM capacity and workload type not just regional availability."
+  },
+  {
+    "q": "The Optax library fills which role in the JAX ML ecosystem?",
+    "options": [
+      "Provides distributed training utilities including gradient aggregation across pmap replicas and loss scaling for BF16 training",
+      "Implements neural network layer primitives such as Dense, Conv, and Attention as composable Flax-compatible modules",
+      "Supplies optimizer implementations such as Adam, SGD, and Adafactor as composable gradient transformations that operate on pytrees",
+      "Handles serialization and deserialization of JAX model checkpoints including sharded checkpoints for multi-device models"
+    ],
+    "answer": 2,
+    "explanation": "Optax is the optimizer library. It implements gradient transformations including clipping, scaling, momentum, Adam, and Adafactor as composable functions that take gradient pytrees and produce parameter updates. Flax provides neural network layers, Orbax handles checkpoints, and pmap plus jax.lax handle distributed gradient aggregation."
+  },
+  {
+    "q": "The YouTube DNN paper uses a specific strategy for incorporating video age as a training feature. What is this strategy and why is it used?",
+    "options": [
+      "Video age is excluded from features to prevent the model from overfitting to recency bias and ignoring older high-quality content",
+      "Video age is embedded with sinusoidal positional encoding to capture cyclic patterns of content popularity over time",
+      "Video age is log-transformed before use as a scalar feature so the model operates on a compressed time representation",
+      "Example age is included as a training feature and set to zero at serving time explicitly training the model to calibrate for recency effects"
+    ],
+    "answer": 3,
+    "explanation": "The YouTube DNN includes example age (how old the training example is) as a feature during training to teach the model that users prefer newer videos. At serving time this feature is set to zero representing a freshly deployed video. This calibration corrects the training distribution bias toward older frequently-watched videos."
+  },
+  {
+    "q": "TFLite enables deployment on mobile and embedded devices. What is the primary size and speed optimization in the TFLite workflow?",
+    "options": [
+      "Post-training quantization: converting FP32 weights to INT8 or INT16 reducing model size up to 4x and enabling faster integer arithmetic on device",
+      "Knowledge distillation: replacing the original large model with a compact student network trained on soft probability distributions from the teacher, reducing model size by 2 to 4 times with minimal accuracy loss",
+      "Layer pruning: removing entire layers with small parameter norms during export shrinking network depth for faster inference",
+      "BF16 conversion: rewriting all FP32 computations as BF16 halving the arithmetic width for faster mobile CPU execution"
+    ],
+    "answer": 0,
+    "explanation": "TFLite primary optimization is post-training quantization: weights and optionally activations are converted from FP32 to INT8 reducing size up to 4x and enabling fast integer math on mobile CPUs and NPUs. Knowledge distillation and pruning require additional training, and BF16 is a server-side training format not used in TFLite mobile deployment."
+  },
+  {
+    "q": "Which Vertex AI product provides a managed JupyterLab notebook environment pre-configured with popular ML libraries and attachable to GPU or TPU backends?",
+    "options": [
+      "Vertex AI Pipelines: a workflow orchestration tool that displays visual pipeline graphs but does not provide interactive notebooks",
+      "Vertex AI Workbench: a managed JupyterLab environment with pre-installed frameworks and selectable compute backends including GPU and TPU",
+      "Vertex AI Experiments: tracks training runs with hyperparameter metadata but provides dashboards not notebook environments",
+      "Vertex AI Model Registry: stores versioned model artifacts and lineage but does not expose a compute environment for interactive development"
+    ],
+    "answer": 1,
+    "explanation": "Vertex AI Workbench is the managed notebook offering. It provisions a JupyterLab instance with TF, PyTorch, and other frameworks pre-installed and lets users attach GPU or TPU VMs as the compute backend. Pipelines orchestrate multi-step workflows, Experiments track metrics, and Model Registry manages versioned artifacts."
+  },
+  {
+    "q": "T5X is a codebase built on top of JAX and Flax. What specific role does it play in the JAX ML ecosystem?",
+    "options": [
+      "T5X is the distributed checkpointing library that saves model state sharded across TPU devices during training",
+      "T5X is a fork of TensorFlow that adds JAX-style functional transforms to TF computation graphs",
+      "T5X is a configurable framework for training and evaluating sequence-to-sequence models with built-in support for T5, mT5, and similar architectures",
+      "T5X is the Google-internal equivalent of Hugging Face Hub providing a centralized model registry, dataset hosting, and one-click fine-tuning service specifically designed for JAX-based research models and pre-trained checkpoints"
+    ],
+    "answer": 2,
+    "explanation": "T5X is a training framework specifically designed for large seq2seq models on JAX and Flax. It provides reusable training loops, evaluation harnesses, and partitioning strategies for models like T5, mT5, and UL2. Orbax handles checkpointing, T5X is not a TF fork, and it is not a model hosting service."
+  },
+  {
+    "q": "Wide and Deep is described as combining memorization and generalization. What does memorization specifically refer to in this context?",
+    "options": [
+      "The model memorizing the training set verbatim leading to overfitting that is acceptable in production recommendation systems",
+      "The deep component remembering rare app-query combinations by encoding them in dense embedding layer activations",
+      "A caching layer that stores the top-N recommendations for each user to avoid re-running the model at serving time",
+      "The wide component learning strong weights for specific feature co-occurrence patterns seen frequently in historical data"
+    ],
+    "answer": 3,
+    "explanation": "In Wide and Deep memorization is the ability of the wide linear component to assign high weight to specific feature combinations seen often in training data. The wide model memorizes these correlations directly. The deep component generalizes by learning dense embeddings that transfer to unseen feature combinations."
+  },
+  {
+    "q": "Multi-head self-attention in the Transformer has a computational complexity with respect to sequence length n. What is that complexity and why does it matter?",
+    "options": [
+      "O(n^2) in both time and memory per layer because every token attends to every other token making Transformers expensive for very long sequences",
+      "O(n log n) due to a Fast Fourier Transform used in position encoding making standard attention sub-quadratic",
+      "O(n) because scaled dot-product attention uses a sparse local-window operation in the original Transformer",
+      "O(n^3) because computing Q, K, and V projections for each head requires a cubic tensor contraction over sequence and head dimensions"
+    ],
+    "answer": 0,
+    "explanation": "Standard self-attention computes scaled dot products between all pairs of positions yielding an n-by-n attention matrix per head. Both time and memory scale as O(n^2) per layer. For sequences of thousands or millions of tokens this quadratic cost becomes the primary bottleneck motivating FlashAttention and other approximate attention methods."
+  },
+  {
+    "q": "Vertex AI Matching Engine provides approximate nearest neighbor search at scale. In which use case is it most directly applicable?",
+    "options": [
+      "Training a ranking model that scores candidate items by comparing embeddings to a query embedding using exact cosine similarity",
+      "Retrieving the top-K most similar items from a database of billions of embeddings in milliseconds at query time for recommendation or search",
+      "Monitoring embedding drift by comparing the distribution of embedding vectors across model versions for deployed endpoint traffic",
+      "Generating embeddings from raw input text by running a pre-trained encoder model in a managed batch prediction job"
+    ],
+    "answer": 1,
+    "explanation": "Matching Engine (now Vertex AI Vector Search) provides ANN lookup: given a query embedding it finds the top-K closest database embeddings at very low latency even across billions of candidates. This is ideal for the retrieval stage of recommendation systems and semantic search. Training rankers, drift monitoring, and batch embedding generation are separate concerns."
+  },
+  {
+    "q": "When jax.jit traces a function what happens to Python if-else control flow that branches on a traced JAX array value?",
+    "options": [
+      "JAX evaluates the traced array numerically during tracing to determine which branch to take and compiles only that branch",
+      "JAX silently ignores the condition and always takes the true branch during tracing then re-evaluates the condition at runtime",
+      "Python if-else on traced array values raises a ConcretizationTypeError at trace time; such branches must be replaced with jax.lax.cond or jax.lax.switch",
+      "JAX automatically compiles both the true and false branches into the XLA computation graph and uses a hardware-level conditional select operation to choose between them at runtime without requiring any user changes to the Python code"
+    ],
+    "answer": 2,
+    "explanation": "When jit traces a function Python if-else that depends on traced array values raises a ConcretizationTypeError because JAX cannot evaluate the boolean with only abstract shape and dtype information. The solution is jax.lax.cond which is differentiable and compiles both branches, or jax.lax.switch. Control flow on Python-level static values is fine."
+  },
+  {
+    "q": "Applying the Chinchilla compute-optimal scaling rule approximately how many training tokens are needed to optimally train a 70B-parameter model?",
+    "options": [
+      "700 billion tokens: a 10:1 token-to-parameter ratio based on the Kaplan et al. scaling recommendation",
+      "350 billion tokens: a 5:1 token-to-parameter ratio used as a practical compromise between cost and compute",
+      "7 trillion tokens: a 100:1 token-to-parameter ratio needed to achieve Chinchilla-optimal performance with safety margins",
+      "1.4 trillion tokens: the 20:1 token-to-parameter ratio identified by Chinchilla as compute-optimal for a fixed compute budget"
+    ],
+    "answer": 3,
+    "explanation": "Chinchilla found that the compute-optimal ratio is approximately 20 training tokens per model parameter. For a 70B-parameter model: 70B x 20 = 1.4T tokens. Llama 2 70B was trained on 2T tokens (slightly over-trained versus Chinchilla) for improved inference performance. Options A, B, and C apply incorrect multipliers."
+  },
+  {
+    "q": "Google Brain and Google DeepMind are both involved in the research described in the chapter. How does the chapter characterize the organizational relationship between them?",
+    "options": [
+      "Google Brain and Google DeepMind were merged in 2023 to form Google DeepMind combining their research teams under one organization",
+      "Google Brain is a product team focused on Vertex AI and TensorFlow while Google DeepMind remains a pure research organization",
+      "Google DeepMind is a separate Alphabet subsidiary while Google Brain is an internal Google research division with no cross-collaboration",
+      "The two organizations collaborate on joint papers but maintain completely independent compute infrastructure and model pipelines"
+    ],
+    "answer": 0,
+    "explanation": "In April 2023 Google merged Google Brain which was part of Google Research with DeepMind to form a single organization called Google DeepMind. This consolidated AI research and product development under one leadership. Prior to the merger they were distinct organizations with different research cultures."
+  },
+  {
+    "q": "tf.data is TensorFlow data pipeline API. Which technique does tf.data provide to overlap data preprocessing with model computation on the accelerator?",
+    "options": [
+      "Caching: stores the entire preprocessed dataset in memory after the first epoch to eliminate repeated disk reads",
+      "Prefetching: asynchronously prepares the next batch of data on the CPU while the current batch is being processed on the GPU or TPU",
+      "Sharding: splits the dataset across multiple workers that independently preprocess and send batches to the accelerator",
+      "Interleaving: reads multiple files in parallel and merges their elements increasing disk throughput for large datasets"
+    ],
+    "answer": 1,
+    "explanation": "tf.data prefetch overlaps preprocessing with training by running the input pipeline asynchronously and buffering upcoming batches so the GPU or TPU is never idle waiting for data. Caching eliminates repeated preprocessing but does not overlap it with training. Sharding and interleaving improve throughput but are not the mechanism for CPU-accelerator overlap."
+  },
+  {
+    "q": "A Vertex AI Pipeline component declares typed inputs and outputs. How does Vertex AI Pipelines pass artifacts between components?",
+    "options": [
+      "Components write outputs to shared GCS bucket paths using standardized naming conventions; each component reads from the previous output path by convention",
+      "Components communicate through Pub/Sub messages where each output is serialized and published; downstream components subscribe and deserialize on startup",
+      "Components declare typed input and output specifications and the Pipelines service materializes artifacts and passes GCS URIs with metadata between them automatically",
+      "Components share state through a Cloud Spanner database with each component reading and writing rows identified by the pipeline run ID"
+    ],
+    "answer": 2,
+    "explanation": "In Vertex AI Pipelines each component declares typed output artifacts such as Dataset, Model, and Metrics. The Pipelines service provides GCS paths for outputs, stores artifact metadata in ML Metadata, and injects those paths as inputs to downstream components automatically. Users do not manage bucket paths or Pub/Sub manually."
+  },
+  {
+    "q": "MaxText is a codebase in the JAX ecosystem. What workload is it specifically optimized for and how does it differ from T5X?",
+    "options": [
+      "MaxText is designed for small-scale ML experiments and rapid prototyping on a single TPU chip, offering a minimal training loop with auto-configured mixed precision, while T5X targets large-scale multi-host production training runs",
+      "MaxText implements convolutional vision architectures on JAX and TPU while T5X implements seq2seq language models",
+      "MaxText is a serving and inference framework for large JAX models while T5X is a training framework",
+      "MaxText is optimized for training very large language models of 100B or more parameters on TPU pods while T5X targets smaller seq2seq architectures such as T5"
+    ],
+    "answer": 3,
+    "explanation": "MaxText is a high-performance training codebase for large LLMs on TPU pods implementing tensor and pipeline parallelism for 100B+ parameter models. T5X is designed for the T5 family of seq2seq models at more moderate scale. MaxText covers PaLM and Gemini-scale pretraining while T5X focuses on models of the T5 and mT5 class."
+  },
+  {
+    "q": "High Bandwidth Memory (HBM) in TPUs is physically stacked on the same package as the compute die. What training bottleneck does this design primarily address?",
+    "options": [
+      "Memory bandwidth bottleneck: many neural network operations are memory-bandwidth-bound and on-package stacking eliminates the PCIe bottleneck enabling TB/s access",
+      "Thermal management: on-package memory stacking dissipates heat more efficiently by allowing the package heatspreader to cover both the compute die and the memory stack simultaneously, improving sustained power delivery under load",
+      "Fault tolerance: on-package HBM allows ECC correction at finer granularity than off-package DRAM improving reliability during week-long training runs",
+      "Precision support: HBM natively stores BF16 tensors without alignment overhead whereas off-package DRAM requires 32-bit aligned accesses"
+    ],
+    "answer": 0,
+    "explanation": "The primary motivation for HBM is memory bandwidth. Weights, activations, and gradients of large models must move between memory and compute every step. Conventional off-package DRAM provides about 50 to 100 GB/s whereas HBM stacked on the same package via silicon interposer reaches 1 to 5 TB/s eliminating the bandwidth bottleneck for memory-bound operations."
+  },
+  {
+    "q": "The Pax framework in the JAX ecosystem was specifically developed to train which class of model?",
+    "options": [
+      "Vision transformer models including ViT and CoCa with optimized image patch tokenization and 2D positional encoding",
+      "Very large language models such as PaLM and other models in the Google LLM research pipeline with production-scale partitioning strategies",
+      "Reinforcement learning agents using policy gradient methods designed to scale RLHF fine-tuning of language models",
+      "Audio and speech models including Whisper-style architectures with mel spectrogram feature extraction pipelines"
+    ],
+    "answer": 1,
+    "explanation": "Pax was the primary framework used by Google Brain to train PaLM and other large language models in the research pipeline. It provides sophisticated model partitioning strategies for TPU pod-scale training. T5X also targets LLMs but at the T5 scale; neither Pax nor MaxText focuses on vision, RL, or audio as primary use cases."
+  },
+  {
+    "q": "The YouTube DNN ranking model uses a non-obvious technique for encoding watch time in training data. What is this technique?",
+    "options": [
+      "Watch time is log-transformed and normalized to the range 0 to 1 to prevent the long tail of long watch times from dominating gradients",
+      "Watch time is discretized into three buckets encoded as one-hot categorical features for the ranking model",
+      "Weighted logistic regression is used where positive training examples are weighted by actual watch time rather than treating all positive clicks equally",
+      "Watch time is modeled as a Poisson-distributed count variable and the model is trained with a negative log-likelihood Poisson loss"
+    ],
+    "answer": 2,
+    "explanation": "The YouTube ranking model uses weighted logistic regression where each positive training example is weighted by the observed watch time. A clicked video watched for 10 minutes counts 10 times more than one watched for 1 minute making the model implicitly estimate expected watch time rather than simple click probability."
+  },
+  {
+    "q": "BERT uses WordPiece tokenization. Which statement correctly describes how WordPiece handles out-of-vocabulary words?",
+    "options": [
+      "OOV words are replaced by a single [UNK] token; no subword decomposition is attempted for words not in the fixed vocabulary",
+      "OOV words are character-tokenized into individual Unicode code points each mapped to a corresponding character token in the vocabulary",
+      "OOV words trigger a vocabulary expansion step at inference time temporarily adding the new token to the embedding table",
+      "OOV words are split into known subword pieces from the vocabulary such as unhappiness becoming un then ##happy then ##ness with [UNK] only as a last resort"
+    ],
+    "answer": 3,
+    "explanation": "WordPiece decomposes unknown words into subword units that exist in the vocabulary. The ## prefix marks continuation pieces. This allows BERT to handle most words including rare morphological variants without using [UNK]. The [UNK] token is a fallback only for characters not representable by any subword in the vocabulary."
+  },
+  {
+    "q": "A research team wants to train a custom PyTorch model on Vertex AI with full control over the training loop, hardware, and hyperparameter tuning. Which product pathway is correct?",
+    "options": [
+      "Vertex AI Custom Training with a pre-built PyTorch container or custom Docker image combined with Vertex AI Vizier for hyperparameter tuning",
+      "Vertex AI AutoML with a custom_module parameter that allows injecting PyTorch code into the AutoML training pipeline",
+      "Vertex AI Feature Store combined with Vertex AI Pipelines where each pipeline step runs a separate PyTorch training script",
+      "Vertex AI Workbench alone running the entire training job directly in the notebook on its attached compute backend"
+    ],
+    "answer": 0,
+    "explanation": "Custom Training is the correct product for bring-your-own-code ML. Users package their training code in a pre-built or custom container and submit it as a training job specifying hardware such as GPU, TPU, or CPU. Vertex AI Vizier handles HPO trials. AutoML does not accept arbitrary training code and running large training jobs in Workbench is not a managed training service."
+  },
+  {
+    "q": "When XLA compiles a computation graph what does operation fusion optimize?",
+    "options": [
+      "It fuses all layers of a neural network into a single kernel eliminating all intermediate layer outputs and storing only the final output",
+      "It merges multiple adjacent element-wise operations into a single kernel call reducing memory round-trips between operations",
+      "It combines the forward and backward pass into one hardware kernel halving the number of kernel launches per training step",
+      "It fuses the optimizer update step into the gradient computation kernel so parameter updates happen before gradients are written to HBM"
+    ],
+    "answer": 1,
+    "explanation": "XLA operator fusion identifies adjacent element-wise operations such as ReLU, add, and scale and merges them into a single kernel. Instead of writing each intermediate tensor to HBM the fused kernel keeps intermediate values in registers or fast local memory. Fusing all layers or fusing forward and backward would break gradient computation and are not standard XLA fusions."
+  },
+  {
+    "q": "The Kaplan et al. (2020) scaling laws paper examined how neural language model loss depends on three variables. Which three?",
+    "options": [
+      "Learning rate, batch size, and number of training steps: the hyperparameters most directly affecting gradient descent convergence speed",
+      "Number of attention heads, number of layers, and hidden dimension: the three structural axes of Transformer scale",
+      "Number of model parameters, dataset size in tokens, and training compute in FLOPs each studied independently while holding the others large",
+      "Training precision, optimizer type, and model depth: the architectural choices with the largest effect on final validation loss"
+    ],
+    "answer": 2,
+    "explanation": "Kaplan et al. studied how validation loss scales with N (non-embedding parameters), D (dataset size in tokens), and C (compute in FLOPs). Each follows a separate power law when the others are not a bottleneck. These three variables define the scaling laws regime and guided decisions on model size versus training duration for GPT-3 and successors."
+  },
+  {
+    "q": "When a JAX computation produces a DeviceArray on a TPU what is the recommended way to convert it to a NumPy array for use in non-JAX code?",
+    "options": [
+      "Cast the DeviceArray to a Python list with list(arr) then call np.array on the result to create a NumPy array",
+      "Use jax.device_put to move the array to the CPU device then call arr.to_numpy() which only works after the device transfer",
+      "Wrap the DeviceArray in a Python float call for scalar values or a bytes call for arrays before converting to NumPy",
+      "Call np.array(arr) or arr.to_py() which copies data from device memory to a standard NumPy array on the host"
+    ],
+    "answer": 3,
+    "explanation": "To convert a JAX DeviceArray to NumPy the standard methods are np.array(arr) which triggers a device-to-host copy or arr.to_py() which also copies to host as NumPy. Calling list() is inefficient and loses shape information for multi-dimensional arrays. device_put does not have a to_numpy() method and Python bytes() does not work on multi-dimensional arrays."
+  }
+]

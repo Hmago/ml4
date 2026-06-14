@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Which 'tell' in a class description most clearly signals a Single Responsibility Principle violation?",
+    "options": [
+      "The class is more than 500 lines of code",
+      "The class has a public constructor with more than three parameters",
+      "Describing what the class does requires the word 'AND'",
+      "The class implements more than one interface"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's litmus test: if you need 'AND' to describe the class purpose, it has multiple responsibilities. Line count and parameter count are symptoms but not the primary diagnostic."
+  },
+  {
+    "q": "In the Open/Closed Principle, 'closed for modification' means that:",
+    "options": [
+      "Already-tested code should not need to change to accommodate new behavior",
+      "Private fields must be immutable and declared final at all times",
+      "No method should have more than ten lines of implementation code",
+      "Subclasses should not be allowed to override any public methods"
+    ],
+    "answer": 0,
+    "explanation": "OCP extends behavior by writing new code (new classes, implementations) rather than editing existing, already-tested code. 'Closed' refers to the stability of existing logic, not field immutability or method length."
+  },
+  {
+    "q": "In the Square-extends-Rectangle example, testArea() asserts area == 20 after setWidth(5) and setHeight(4). When a Square is substituted, the actual result is:",
+    "options": [
+      "20, because Square inherits the area() method from Rectangle unchanged",
+      "16, because Square's setHeight forces both dimensions to 4",
+      "0, because Square's overridden setters conflict with each other",
+      "An exception, because Square's constructor rejects non-equal dimensions"
+    ],
+    "answer": 1,
+    "explanation": "Square's setHeight(4) also sets width = 4, overwriting the earlier setWidth(5). So area() returns 4*4 = 16, not 20 — breaking the Rectangle contract that callers relied on."
+  },
+  {
+    "q": "The most reliable sign that an interface violates the Interface Segregation Principle is:",
+    "options": [
+      "The interface declares more than five methods total",
+      "The interface is implemented by only one class in the codebase",
+      "The interface extends another interface that already has many methods",
+      "Implementing classes leave some methods empty or throw 'operation not supported'"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's rule of thumb: if a class must implement interface methods it doesn't need — leaving them empty or throwing exceptions — the interface is too fat and should be split."
+  },
+  {
+    "q": "After the DIP-compliant refactoring, when OrderService accepts Database and Mailer via constructor, the dependency direction becomes:",
+    "options": [
+      "OrderService depends on MySQLDatabase, which implements Database",
+      "Database interface depends on OrderService through its constructor parameter",
+      "Both OrderService and MySQLDatabase depend on the Database abstraction",
+      "MySQLDatabase depends on OrderService, which depends on Database"
+    ],
+    "answer": 2,
+    "explanation": "DIP flips the direction: the high-level module (OrderService) and the low-level module (MySQLDatabase) both point to the abstraction (Database interface). Neither concrete class knows about the other."
+  },
+  {
+    "q": "The chapter warns: 'Two methods that look similar but represent different business rules should NOT be merged.' This caution clarifies that DRY is about:",
+    "options": [
+      "Shared knowledge, not just eliminating coincidentally similar code",
+      "Reducing method count so each class has a single public entry point",
+      "Preventing modification of any method that might diverge in future releases",
+      "Avoiding premature abstractions until requirements fully stabilize"
+    ],
+    "answer": 0,
+    "explanation": "DRY's definition is 'every piece of knowledge must have a single representation.' Two similar-looking methods that encode separate business concepts must not be merged — they will diverge when business rules change independently."
+  },
+  {
+    "q": "The KISS principle's verdict on the isEven implementation using IntStream, toBinaryString, and XOR is:",
+    "options": [
+      "Use IntStream because functional style produces more maintainable code",
+      "Use n % 2 == 0 — the simplest solution that works is the best solution",
+      "The XOR approach handles edge cases like Integer.MIN_VALUE more reliably",
+      "Delegate to a MathUtils helper class to avoid duplicating this logic"
+    ],
+    "answer": 1,
+    "explanation": "KISS says the simplest correct solution wins. Both implementations are functionally equivalent. The chapter calls the binary-XOR version 'a riddle' — n % 2 == 0 is self-documenting and maintenance-free."
+  },
+  {
+    "q": "A team building a user registration form adds OAuth, SAML, biometric auth, and an admin dashboard before any customer requests them. Which principle does this most directly violate?",
+    "options": [
+      "SRP — adding unrelated responsibilities to the registration module",
+      "OCP — modifying the core registration flow instead of extending it",
+      "DRY — duplicating authentication logic across multiple auth methods",
+      "YAGNI — building features that no customer has yet requested"
+    ],
+    "answer": 3,
+    "explanation": "This is the chapter's exact YAGNI scenario. The customer needed email + password. Three months of speculative work produced 90% unused code that still must be maintained going forward."
+  },
+  {
+    "q": "Penguin cannot fly, yet a Bird → Penguin hierarchy implies Penguin IS-A Bird. The chapter's preferred solution is:",
+    "options": [
+      "Override fly() in Penguin to throw UnsupportedOperationException",
+      "Make Penguin extend a separate NonFlyingBird subclass of Bird",
+      "Use Flyable and Swimmable interfaces; Penguin implements only Swimmable",
+      "Add a boolean canFly field to the Bird base class defaulting to false"
+    ],
+    "answer": 2,
+    "explanation": "Composition over inheritance: define capability interfaces (Flyable, Swimmable), then let each class implement only what it actually does. This avoids both LSP violations and boolean-flag workarounds."
+  },
+  {
+    "q": "The Law of Demeter permits a method to call methods on its own object, objects passed as parameters, objects it creates, and:",
+    "options": [
+      "Its direct fields",
+      "Return values from any method call up to two hops deep",
+      "Static utility class methods from the standard library",
+      "Objects retrieved via getter chains as long as null checks guard each step"
+    ],
+    "answer": 0,
+    "explanation": "The four allowed targets are: (1) this, (2) parameters, (3) objects the method creates, (4) direct fields. Return values from calling getters on other objects are 'strangers' — the violation called a 'train wreck.'"
+  },
+  {
+    "q": "According to the chapter's summary, the overall design quality goal is expressed as:",
+    "options": [
+      "Low cohesion plus high coupling equals simplified architecture",
+      "High cohesion plus low coupling equals great design",
+      "High coupling plus high cohesion equals maximum reuse",
+      "Low coupling plus low cohesion equals a flexible, loosely-bound system"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's goal box states: HIGH COHESION (each module does one thing well) + LOW COUPLING (modules are independent) = GREAT DESIGN — easy to understand, change, test, and reuse."
+  },
+  {
+    "q": "In a Separation of Concerns layered web architecture, switching databases should require changes only to:",
+    "options": [
+      "The presentation layer, because it initiates all data requests",
+      "The business logic layer, because it orchestrates all data operations",
+      "Both the business logic and data access layers for consistency",
+      "The data access layer only"
+    ],
+    "answer": 3,
+    "explanation": "SoC's key benefit is independent changeability. The data access layer is the only one that knows how data is stored, so swapping databases touches only that layer."
+  },
+  {
+    "q": "In double-checked locking, the `volatile` keyword on `instance` is required to:",
+    "options": [
+      "Prevent the garbage collector from reclaiming the singleton reference prematurely",
+      "Force the JVM to allocate the instance on the heap rather than the stack frame",
+      "Prevent CPU caches from exposing a partially constructed object to other threads",
+      "Ensure the private constructor cannot be bypassed via reflection at runtime"
+    ],
+    "answer": 2,
+    "explanation": "Without volatile the JVM may reorder instructions so instance becomes non-null before all fields are initialized. volatile establishes a happens-before relationship, guaranteeing the object is fully constructed before the reference is visible."
+  },
+  {
+    "q": "The chapter calls the enum-based Singleton 'Josh Bloch's recommended approach' because:",
+    "options": [
+      "It handles serialization, reflection attacks, and thread safety automatically — all guaranteed by the JVM for free",
+      "Enum constants are initialized lazily on first use, giving the best possible startup performance",
+      "Enum values cannot have fields or methods, so no state can accidentally be duplicated",
+      "The JVM enforces unique enum instances per ClassLoader, preventing cross-loader duplication"
+    ],
+    "answer": 0,
+    "explanation": "Enum Singletons are thread-safe (JVM guarantees single initialization), resistant to reflection-based constructor access, and automatically serializable — all without any explicit synchronization code."
+  },
+  {
+    "q": "The difference between the chapter's map-based NotificationFactory (Simple Factory) and the GoF Factory Method pattern is:",
+    "options": [
+      "Simple Factory uses a static map; Factory Method requires a dependency injection framework",
+      "Factory Method uses subclass overriding of create() to choose the concrete type; Simple Factory uses a centralized registry",
+      "Simple Factory creates only one type of object; Factory Method can create entire families of related objects",
+      "Factory Method is deprecated in modern Java; Simple Factory is the preferred Java 8+ replacement"
+    ],
+    "answer": 1,
+    "explanation": "The chapter explicitly notes: GoF Factory Method declares a create() method that subclasses override (e.g., DialogWindows and DialogWeb each return their own Button). Simple Factory uses a map/registry in one place."
+  },
+  {
+    "q": "The Builder pattern solves the 'telescoping constructor' problem. In the chapter's User example, what makes the telescoping version problematic?",
+    "options": [
+      "It prevents the User object from being immutable after construction",
+      "It requires subclasses to repeat all constructor parameters in their own constructors",
+      "It forces callers to know the internal order of fields in the database schema",
+      "Positional boolean and null arguments make the call site unreadable and error-prone"
+    ],
+    "answer": 3,
+    "explanation": "`new User(\"Alice\",\"alice@email.com\",25,\"NYC\",\"Engineer\",true,false,\"en\",null,\"UTC\")` — the reader can't tell what true, false, or null mean. Builder replaces positional guesswork with named steps like .isActive(true)."
+  },
+  {
+    "q": "In the chapter's Builder example, what responsibility does .build() have that the individual setter methods in Builder do NOT?",
+    "options": [
+      "It copies the Builder's state into a defensive snapshot for thread safety",
+      "It registers the new User with the dependency injection container automatically",
+      "It validates required fields and returns an immutable User object",
+      "It converts Builder field types to match the underlying database column schema"
+    ],
+    "answer": 2,
+    "explanation": "The chapter shows .build() calling Objects.requireNonNull(name,...) and requireNonNull(email,...) before constructing the User. Setter methods only set fields; .build() is the validation and construction gate."
+  },
+  {
+    "q": "In the StripeAdapter example, which conversion does the adapter perform before delegating to stripe.createCharge()?",
+    "options": [
+      "It converts the double dollar amount to integer cents and uppercases the currency code",
+      "It converts the String currency to a CurrencyCode enum and rounds the amount to two decimal places",
+      "It converts the synchronous charge call to an async Future for the non-blocking API",
+      "It converts the customer identifier from long to String for the StripeAPI compatibility"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's code shows `int cents = (int)(amount * 100)` and `currency.toUpperCase()`. The Adapter bridges the semantic gap between PaymentGateway's (double, String) and StripeAPI's (int cents, uppercase String)."
+  },
+  {
+    "q": "Which of the following is NOT a benefit attributed to the Facade pattern in the chapter?",
+    "options": [
+      "Clients can use the subsystem via a single, simple method call",
+      "The Facade prevents clients from ever accessing the underlying subsystem components directly",
+      "The complex initialization order of subsystem components is hidden behind a clean method",
+      "Swapping subsystem internals does not require changes to clients using the Facade"
+    ],
+    "answer": 1,
+    "explanation": "Facade provides a simpler entry point; it does not enforce encapsulation or block access to the underlying objects. Clients can still go directly to DVDPlayer or Amplifier if they need fine-grained control."
+  },
+  {
+    "q": "Why does the chapter say Decorator avoids the 'class explosion' that subclassing would cause for coffee add-ons?",
+    "options": [
+      "Decorators use generics to represent all combinations as a single parameterized type",
+      "Decorators share state via a singleton so no additional class file is needed per combination",
+      "Each decorator delegates to the same base class so the JVM merges them at compile time",
+      "Subclassing requires one class per combination (2^N classes); Decorators compose N classes arbitrarily at runtime"
+    ],
+    "answer": 3,
+    "explanation": "N add-ons would require exponentially many subclasses. Decorators are stacked at runtime — new MilkDecorator(new SugarDecorator(new SimpleCoffee())) — needing only N decorator classes for N add-ons."
+  },
+  {
+    "q": "A Virtual Proxy is specifically designed to:",
+    "options": [
+      "Add an authorization check before delegating calls to the real object",
+      "Represent an object located in a different process or JVM instance",
+      "Delay the creation of an expensive object until it is first actually accessed",
+      "Return cached results instead of calling the real object on repeated requests"
+    ],
+    "answer": 2,
+    "explanation": "Virtual Proxy = lazy initialization. The heavy object is not instantiated until someone calls a method on the proxy. Caching is a Caching Proxy; authorization is a Protection Proxy; remote access is a Remote Proxy."
+  },
+  {
+    "q": "In the chapter's EventBus implementation, CopyOnWriteArrayList is used for the subscriber list because:",
+    "options": [
+      "It allows safe iteration while new subscribers are added concurrently from other threads",
+      "It provides O(1) append and prevents duplicate subscriber registrations automatically",
+      "It serializes subscriber callbacks and delivers them in strict FIFO order",
+      "It uses object equality so subscribing twice with the same lambda is a no-op"
+    ],
+    "answer": 0,
+    "explanation": "CopyOnWriteArrayList makes a fresh copy of the underlying array on every write, so iterators in publish() see a stable snapshot even if subscribe() is called concurrently from another thread."
+  },
+  {
+    "q": "The chapter notes that PricingStrategy is a 'functional interface' in Java 8+. This primarily means:",
+    "options": [
+      "It must declare exactly four default method implementations alongside the abstract one",
+      "A lambda expression can be passed wherever an explicit implementing class is expected",
+      "The interface is automatically serializable and can be transmitted across JVM boundaries",
+      "Implementing classes inherit automatic equals/hashCode based on the function body"
+    ],
+    "answer": 1,
+    "explanation": "A @FunctionalInterface has exactly one abstract method. Java 8 lets you pass a lambda (e.g., price -> price * 0.85) anywhere that interface is expected, as shown in the ShoppingCart example."
+  },
+  {
+    "q": "The chapter's CommandHistory uses a Deque<Command> with push() for execute and pop() for undo. What data-structure semantics does this implement?",
+    "options": [
+      "FIFO queue — the first command executed is the first to be undone",
+      "Priority queue — higher-priority commands are undone before lower-priority ones",
+      "Circular buffer — old commands are evicted once history capacity is exceeded",
+      "LIFO stack — the most recently executed command is the first to be undone"
+    ],
+    "answer": 3,
+    "explanation": "push() adds to the head and pop() removes from the head of the Deque, giving LIFO (stack) order. This is correct for undo: the last action performed is the first to be reversed."
+  },
+  {
+    "q": "In the State pattern, how is adding a new document state (e.g., 'Archived') handled without modifying existing code?",
+    "options": [
+      "Add a new case to the if/else chain inside Document.publish()",
+      "Modify the DocumentState interface to include an archive() method",
+      "Create a new ArchivedState class implementing DocumentState",
+      "Override the setState() method in Document to handle the new state"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's key insight: 'Add a new state? Just add a new class. No existing code changes.' ArchivedState implements DocumentState and defines its own transitions — a direct application of OCP."
+  },
+  {
+    "q": "In the Template Method pattern, the generate() method in ReportGenerator is marked `final`. Why?",
+    "options": [
+      "To prevent subclasses from overriding the algorithm skeleton and breaking the fixed sequence of steps",
+      "To allow the JVM to inline the method call for improved runtime performance",
+      "To ensure the method can be called safely on a null reference without a NullPointerException",
+      "To comply with Java's requirement that template methods in abstract classes be non-overridable"
+    ],
+    "answer": 0,
+    "explanation": "Template Method's contract is that the algorithm structure is fixed: prepare → process → format → send. Making generate() final prevents a subclass from reordering or skipping steps, preserving the invariant."
+  },
+  {
+    "q": "The Proxy pattern belongs to which design pattern category?",
+    "options": [
+      "Creational — it controls how objects are instantiated and configured",
+      "Structural — it provides a surrogate to compose and control access to another object",
+      "Behavioral — it encapsulates a request as a first-class object",
+      "Concurrency — it manages thread-safe access to shared mutable resources"
+    ],
+    "answer": 1,
+    "explanation": "Structural patterns deal with how classes and objects are composed. Proxy provides a placeholder for another object to control access, add caching, or enable remote calls — all structural concerns."
+  },
+  {
+    "q": "Why is `count++` not thread-safe, as the chapter explains?",
+    "options": [
+      "The ++ operator is not defined for boxed Integer types, causing an implicit cast bug",
+      "JVM hotspot compilation optimizes count++ into a no-op when no other thread reads it",
+      "The JVM promotes int fields to long on 64-bit CPUs, causing a size mismatch",
+      "It is a read-modify-write operation of three non-atomic steps where another thread can interleave"
+    ],
+    "answer": 3,
+    "explanation": "count++ decompiles to: read count, add 1, write count. Another thread can read the same stale value between the read and write, so both compute count+1 and one increment is silently lost."
+  },
+  {
+    "q": "AtomicInteger.incrementAndGet() avoids race conditions through:",
+    "options": [
+      "A synchronized block that exclusively locks the AtomicInteger object monitor",
+      "A volatile field that flushes all pending CPU writes before the increment executes",
+      "A compare-and-swap (CAS) operation that retries if the value has changed since reading",
+      "A memory barrier that pauses all other threads for the duration of the increment"
+    ],
+    "answer": 2,
+    "explanation": "CAS reads the current value, computes the new value, and writes it only if the current still matches the expected. If another thread changed it first, CAS retries. No lock is held — this is lock-free."
+  },
+  {
+    "q": "The chapter recommends `ConcurrentHashMap.merge(key, 1, Integer::sum)` for per-key atomic counting because:",
+    "options": [
+      "merge() atomically reads, computes, and writes the value for a given key as a single operation",
+      "merge() acquires the global map lock, preventing any other thread from reading during the update",
+      "merge() uses a separate CAS for each bucket so the operation requires no coordination across keys",
+      "merge() internally copies the entire map on each write, similar to CopyOnWriteArrayList"
+    ],
+    "answer": 0,
+    "explanation": "ConcurrentHashMap.merge(key, 1, Integer::sum) is an atomic read-compute-write for a single key entry, eliminating the race condition that a naive get()/put() sequence would have."
+  },
+  {
+    "q": "When a producer calls `queue.put(task)` on a full LinkedBlockingQueue(100), what happens?",
+    "options": [
+      "put() throws an IllegalStateException and the task is silently discarded",
+      "The calling thread blocks until another thread removes an element from the queue",
+      "put() returns false and the producer must retry with exponential backoff",
+      "The queue automatically doubles its capacity and the task is inserted immediately"
+    ],
+    "answer": 1,
+    "explanation": "put() is the blocking form of insertion. If the queue is at capacity, the producer thread sleeps until a consumer takes an element, then the insertion proceeds automatically."
+  },
+  {
+    "q": "The chapter warns against Executors.newCachedThreadPool() specifically because:",
+    "options": [
+      "It uses a single background thread for all tasks, creating a processing bottleneck",
+      "It does not support Future return values, preventing callers from tracking task completion",
+      "It requires tasks to be submitted as Runnable rather than Callable, losing return values",
+      "It creates new threads unboundedly, which can exhaust JVM memory under high burst load"
+    ],
+    "answer": 3,
+    "explanation": "newCachedThreadPool() spawns a new thread for each task with no upper bound. Under burst load, thousands of threads can be created, crashing the JVM. Google best practice: always use newFixedThreadPool() with explicit sizes."
+  },
+  {
+    "q": "In the CompletableFuture chain, .thenCompose() is used for the second call instead of .thenApply() because:",
+    "options": [
+      "thenCompose executes on the calling thread while thenApply uses the common fork-join pool",
+      "thenApply ignores the previous result; thenCompose passes it as a function parameter",
+      "thenApply wraps a non-Future function (T → U); thenCompose is for functions that return CompletableFuture<U>",
+      "thenCompose allows inline error handling while thenApply propagates exceptions to the caller"
+    ],
+    "answer": 2,
+    "explanation": "thenApply(f) transforms T → U (like map). thenCompose(f) handles f: T → CompletableFuture<U> (like flatMap), preventing a nested CompletableFuture<CompletableFuture<U>> from being returned."
+  },
+  {
+    "q": "The ReentrantReadWriteLock in the chapter allows:",
+    "options": [
+      "Multiple threads to hold the read lock simultaneously, but only one to hold the write lock",
+      "One thread to hold both read and write locks at the same time for atomic upgrade operations",
+      "Any number of threads to hold either the read or write lock without restriction",
+      "Write lock acquisition to skip the queue and preempt waiting read lock holders"
+    ],
+    "answer": 0,
+    "explanation": "ReadWriteLock semantics: many concurrent readers OR exactly one writer. A writer blocks all readers and vice versa. This optimizes read-heavy workloads where exclusive locking on reads would be wasteful."
+  },
+  {
+    "q": "A deadlock is precisely defined as:",
+    "options": [
+      "A thread spinning in a busy-wait loop consuming 100% CPU without making progress",
+      "Two or more threads each holding a resource the other needs, creating a permanent wait cycle",
+      "A low-priority thread that never receives CPU time because higher-priority threads starve it",
+      "Two threads that keep yielding to each other but never successfully complete their work"
+    ],
+    "answer": 1,
+    "explanation": "Deadlock requires a circular dependency of held resources. Thread A holds Lock 1 waiting for Lock 2; Thread B holds Lock 2 waiting for Lock 1. Both wait forever. Spinning is busy-wait; never getting the lock due to priority is starvation; mutual yielding is livelock."
+  },
+  {
+    "q": "Livelock differs from deadlock in that:",
+    "options": [
+      "In livelock threads are blocked waiting for locks; in deadlock they continue executing",
+      "Livelock involves exactly two threads; deadlock can involve arbitrarily many threads",
+      "Livelock is caused by priority inversion; deadlock is caused by circular lock dependency",
+      "In livelock threads keep responding to each other but make no useful progress; in deadlock they are fully blocked"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's analogy: two people in a hallway each stepping aside to the same side — active but stuck. In deadlock, threads are suspended waiting on locks. In livelock, threads are running but trapped in a non-productive response loop."
+  },
+  {
+    "q": "False sharing is a performance problem where:",
+    "options": [
+      "Two threads share the same object reference and overwrite each other's fields",
+      "A thread reads a stale value because a write to a volatile field was not yet flushed to RAM",
+      "Two threads modify different variables that share the same CPU cache line, causing needless cache invalidation",
+      "A thread acquires a lock that another thread released before completing its critical section"
+    ],
+    "answer": 2,
+    "explanation": "CPUs transfer memory in cache-line chunks (typically 64 bytes). If Thread A and Thread B write to different fields on the same cache line, every write invalidates the other CPU's cached copy — causing cache-coherence traffic even though they never share the same variable."
+  },
+  {
+    "q": "The chapter's official SRP definition states a 'reason to change corresponds to a single actor or stakeholder.' This means SRP is primarily about:",
+    "options": [
+      "Organizational boundaries — a class should serve one stakeholder's needs, not multiple departments",
+      "Minimizing public method count to reduce the surface area exposed to external callers",
+      "Ensuring each method body is no longer than five lines for readability and testability",
+      "Limiting runtime dependencies to one collaborator per class to reduce tight coupling"
+    ],
+    "answer": 0,
+    "explanation": "Uncle Bob's definition ties SRP to stakeholders: if the CTO and CFO both cause a class to change, it has two reasons to change. The key question is 'for whom does this class change,' not line count or method count."
+  },
+  {
+    "q": "In the chapter's AreaCalculator OCP example, adding a Triangle type in the 'GOOD' version requires:",
+    "options": [
+      "Adding a new case to the existing if/else chain in AreaCalculator.calculate()",
+      "Writing a new Triangle class implementing Shape; AreaCalculator is not modified",
+      "Subclassing AreaCalculator into TriangleAwareCalculator that overrides calculate()",
+      "Registering Triangle with a factory so the calculator can instantiate it at runtime"
+    ],
+    "answer": 1,
+    "explanation": "The good version's AreaCalculator delegates to shape.area(), so adding a new shape only requires writing a new Shape implementation. The calculate() method never changes — closed for modification, open for extension."
+  },
+  {
+    "q": "The LSP checklist includes: 'Does the subclass strengthen preconditions?' This is BAD because:",
+    "options": [
+      "Stronger preconditions make the subclass harder to instantiate than the parent",
+      "Preconditions are defined in the parent interface and cannot be changed by subclasses at all",
+      "Strengthening preconditions causes the parent's tests to pass but the subclass's tests to fail",
+      "Code expecting the parent type may pass values valid for the parent but rejected by the subclass"
+    ],
+    "answer": 3,
+    "explanation": "If a parent method accepts any non-null String, but the subclass requires the String to be non-empty, then code written against the parent contract will break when given an empty String. Subclasses must accept at least what the parent accepts."
+  },
+  {
+    "q": "According to the chapter, when should you split an interface into smaller ones?",
+    "options": [
+      "When the interface has more than three methods, regardless of how they are used",
+      "When all implementing classes use all methods but the interface is used in many packages",
+      "When implementing classes leave some methods empty or throw UnsupportedOperationException",
+      "When the interface is implemented by more than five distinct classes in the codebase"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's rule of thumb: empty implementations or 'not supported' exceptions are the symptom. The cure is splitting the fat interface into smaller, role-specific interfaces that each class can adopt selectively."
+  },
+  {
+    "q": "In the DIP-compliant OrderService example, dependencies are provided via:",
+    "options": [
+      "Constructor injection — Database and Mailer are passed as constructor parameters",
+      "Setter injection — setDatabase() and setMailer() must be called before placeOrder()",
+      "Field injection — @Inject annotations on private fields resolved by a DI framework",
+      "Service locator — the class calls a registry to look up its dependencies at runtime"
+    ],
+    "answer": 0,
+    "explanation": "The chapter explicitly shows `public OrderService(Database db, Mailer mailer)` — classic constructor injection. This makes dependencies explicit, immutable after construction, and easy to replace with mocks in tests."
+  },
+  {
+    "q": "The chapter's DRY caution about not merging similar-looking methods applies specifically when:",
+    "options": [
+      "Both methods perform identical mathematical computations on the same data types",
+      "The methods represent different business rules that will likely change for different reasons",
+      "The methods are called from the same caller but accept different parameter names",
+      "Both methods use the same constant value declared in a shared utility class"
+    ],
+    "answer": 1,
+    "explanation": "DRY is about shared knowledge, not surface-level code similarity. If two nearly-identical methods encode separate business concepts, merging them creates a maintenance trap — changing one rule silently alters the other."
+  },
+  {
+    "q": "In the KISS section, the chapter's verdict on the complex isEven using XOR of binary digits is:",
+    "options": [
+      "It is correct and efficient but should be documented with a comment explaining the algorithm",
+      "It is functionally equivalent but uses too many imports, increasing compile-time overhead",
+      "It is correct for non-negative integers but fails for negative numbers, unlike n % 2 == 0",
+      "Both implementations are correct, but the XOR version is a riddle while n % 2 == 0 is maintainable"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's exact words: 'Both correct. One is maintainable. One is a riddle.' KISS is not about correctness — both work. It's about choosing the solution a colleague can understand and maintain without explanation."
+  },
+  {
+    "q": "The Composition over Inheritance example uses Flyable and Swimmable as interfaces. FlyingFish can implement both because:",
+    "options": [
+      "Java allows multiple inheritance of classes, so FlyingFish extends both Fish and Bird",
+      "Abstract classes cannot represent orthogonal capabilities, so only interfaces are usable here",
+      "Java permits implementing multiple interfaces, letting FlyingFish compose capabilities freely",
+      "FlyingFish overrides the fly() and swim() methods inherited from a single Creature base class"
+    ],
+    "answer": 2,
+    "explanation": "Java's multiple-interface implementation is the key mechanism. A class can implement any combination of capability interfaces (Flyable, Swimmable) without forcing an awkward single-inheritance hierarchy."
+  },
+  {
+    "q": "The Law of Demeter calls `customer.getWallet().getCreditCard().charge(100)` a 'train wreck' because:",
+    "options": [
+      "It couples the caller to three layers of internal structure that may all change independently",
+      "It breaks encapsulation by accessing private fields indirectly through public getter methods",
+      "It violates SRP because a single statement performs three distinct business operations",
+      "It creates a null pointer risk at each chained call that requires defensive null checks"
+    ],
+    "answer": 0,
+    "explanation": "Each level in the chain exposes an implementation detail. If Wallet removes CreditCard, or charge() moves elsewhere, the caller breaks. `customer.charge(100)` hides those details behind Customer's own interface."
+  },
+  {
+    "q": "`coffee = new SugarDecorator(new MilkDecorator(new SimpleCoffee()))` costs $2.70. What is the cost if the wrapping order is reversed: `new MilkDecorator(new SugarDecorator(new SimpleCoffee()))`?",
+    "options": [
+      "$2.60, because MilkDecorator applied first reduces the subsequent sugar cost",
+      "$2.70, because each decorator adds a fixed amount regardless of wrapping order",
+      "$2.50, because the outer MilkDecorator overrides the inner SugarDecorator's addition",
+      "It depends on runtime state since decorator costs are computed lazily on each call"
+    ],
+    "answer": 1,
+    "explanation": "Each Decorator adds a fixed increment (Milk: +$0.50, Sugar: +$0.20). Since both wrap the same SimpleCoffee ($2.00), the total is always $2.70 regardless of wrapping order — addition is commutative."
+  },
+  {
+    "q": "A Remote Proxy represents an object in a different process. Its canonical real-world example given in the chapter is:",
+    "options": [
+      "CachingWeatherProxy that returns forecasts from an in-memory ConcurrentHashMap",
+      "HomeTheaterFacade that coordinates DVD, amplifier, and projector subsystems",
+      "StripeAdapter that wraps StripeAPI to match the PaymentGateway interface",
+      "RPC or gRPC stubs that make remote service calls look like local method calls"
+    ],
+    "answer": 3,
+    "explanation": "The chapter lists Remote Proxy as representing an object in a different process, with RPC/gRPC stubs as the example. CachingWeatherProxy is a Caching Proxy; StripeAdapter is an Adapter; HomeTheater is a Facade."
+  },
+  {
+    "q": "The chapter lists which real-world technology as an example of the Observer pattern?",
+    "options": [
+      "Protocol Buffers — used in Google's Pub/Sub for serialized event messages",
+      "CompletableFuture — chains async callbacks that react to completed computations",
+      "Kafka and RabbitMQ — message brokers that deliver events to multiple subscribers",
+      "ConcurrentHashMap — notifies threads waiting on key updates via wait/notify"
+    ],
+    "answer": 2,
+    "explanation": "The chapter explicitly lists 'message brokers (Kafka, RabbitMQ)' as Observer real-world examples, alongside DOM event listeners, React state management, and webhooks."
+  },
+  {
+    "q": "In the Strategy pattern ShoppingCart, what makes the design 'clean and extensible' compared to an if/else chain?",
+    "options": [
+      "A new pricing rule requires only a new class or lambda; ShoppingCart is never modified",
+      "ShoppingCart can hold multiple active strategies and apply them sequentially per item",
+      "Strategy implementations are automatically discovered and registered via classpath scanning",
+      "The constructor validates that the strategy is non-null, preventing a NullPointerException"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's conclusion: 'No if/else chains! Clean, extensible.' Adding VIPPricing means writing one new class (or lambda) and passing it in. ShoppingCart.checkout() never changes — OCP in action."
+  },
+  {
+    "q": "Which benefit of the Command pattern is explicitly stated in the chapter but is NOT available when directly invoking `editor.bold_text`?",
+    "options": [
+      "Ability to define the editor method as a pure function for easier unit testing",
+      "Commands can be queued, undone, logged, and replayed as first-class objects",
+      "Command objects reduce memory allocation compared to direct method invocation",
+      "Commands automatically notify registered observers when the editor state changes"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's motivation: 'Encapsulate a request as an object' enables queuing, undo/redo, logging, and macro replay. A bare method call runs and is gone — none of these capabilities are available."
+  },
+  {
+    "q": "When a Document object is first created in the State pattern example, its initial state is:",
+    "options": [
+      "ReviewState, because newly created documents enter the review pipeline immediately",
+      "PublishedState, because creation implies the content is ready for publication",
+      "A null state that is set lazily when the first publish() or reject() call is made",
+      "DraftState — the field `private DocumentState state = new DraftState()` initializes it"
+    ],
+    "answer": 3,
+    "explanation": "The chapter explicitly shows `private DocumentState state = new DraftState();` in the Document field declaration. New documents start in Draft and must transition through Review before reaching Published."
+  },
+  {
+    "q": "In the Template Method ReportGenerator, which methods MUST subclasses like PDFReport implement?",
+    "options": [
+      "generate() and sendReport() — the entry point and the final delivery step",
+      "prepareHeader() and sendReport() — the shared bookend steps of the algorithm",
+      "processData() and formatOutput() — both declared protected abstract in the base class",
+      "generate() and formatOutput() — only the external API and the format-specific step"
+    ],
+    "answer": 2,
+    "explanation": "The chapter marks prepareHeader() and sendReport() as private (shared and fixed for all subclasses), and processData() and formatOutput() as protected abstract. Subclasses must override only the abstract pair."
+  },
+  {
+    "q": "The chapter warns that Singletons are essentially 'global state.' This makes them harder to test primarily because:",
+    "options": [
+      "A test cannot easily replace the singleton with a mock or stub for isolation",
+      "Singleton constructors are private, preventing reflection-based test setup tools",
+      "Thread-safe Singletons require synchronization that interferes with test parallelism",
+      "Singletons hold references to test fixtures, causing memory leaks across test runs"
+    ],
+    "answer": 0,
+    "explanation": "Global state means every test shares the same instance. You can't inject a MockDatabase or MockConfig per-test. The chapter recommends DI (Guice/Dagger) so dependencies are mockable per test case."
+  },
+  {
+    "q": "The map-based NotificationFactory stores factories as Map<String, Supplier<Notifier>>. What does this avoid that the if/else chain cannot?",
+    "options": [
+      "The null-check required when a channel string is not found in the registry",
+      "Modifying the factory class when a new channel type like Slack is added",
+      "The unchecked cast from Object to Notifier that the if/else version requires",
+      "Thread-safety issues when two threads request different notifier types simultaneously"
+    ],
+    "answer": 1,
+    "explanation": "Adding Slack requires only one new entry: `\"slack\", SlackNotifier::new`. The factory class itself is not modified. The if/else chain requires editing and re-testing the factory on every new type — violating OCP."
+  },
+  {
+    "q": "Protocol Buffers (Google's standard) and Guava ImmutableList.builder() are given in the chapter as real-world examples of which pattern?",
+    "options": [
+      "Factory Method — they encapsulate object creation behind a static factory call",
+      "Adapter — they bridge between Google's internal format and external serialization standards",
+      "Facade — they present a simple API surface over a complex serialization subsystem",
+      "Builder — they construct complex objects step by step with named, readable chained methods"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's Builder section ends: 'REAL-WORLD: Protocol Buffers (Google's standard), Guava ImmutableList.builder(), HTTP request builders, SQL query builders.' All use the method-chaining Builder idiom."
+  },
+  {
+    "q": "The chapter's coupling/cohesion summary box credits one principle with improving BOTH cohesion AND coupling simultaneously. Which is it?",
+    "options": [
+      "OCP — reduces coupling to future changes while focusing each extension on one concern",
+      "ISP — splits interfaces to reduce coupling and makes each interface highly cohesive",
+      "SoC — separating concerns into independent layers improves both cohesion and coupling",
+      "LSP — substitutable subtypes reduce coupling to concrete types and focus each class"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's goal box explicitly states: 'SRP → improves cohesion · DIP → reduces coupling · SoC → improves both · OCP → reduces coupling to future changes.' SoC is the only one credited with improving both metrics."
+  },
+  {
+    "q": "The DIP official definition's second clause states 'abstractions should not depend on details; details should depend on abstractions.' This means:",
+    "options": [
+      "The Database interface should not reference MySQLDatabase; MySQLDatabase should reference Database",
+      "Abstract classes should extend concrete classes to gain access to their implementation details",
+      "High-level policy classes must be abstract so concrete details can inherit their behavior",
+      "Interface methods must use Object return types to avoid depending on any concrete class"
+    ],
+    "answer": 0,
+    "explanation": "If the Database interface imported or referenced MySQLDatabase, it would depend on a detail. Correctly, MySQLDatabase implements Database — the concrete class knows about the abstraction, not the reverse."
+  },
+  {
+    "q": "Law of Demeter rule 4 permits calling methods on direct fields. Given class Order with field `private final Customer customer`, Order's methods are allowed to call:",
+    "options": [
+      "customer.getAddress().getCity() — two levels of field traversal are always safe per LoD",
+      "customer.getEmail() — a method directly on the field customer",
+      "OrderService.getInstance().findByCustomer(customer) — via a static service locator",
+      "customerRepository.findById(customer.getId()) — using the customer's ID as a lookup key"
+    ],
+    "answer": 1,
+    "explanation": "Rule 4 allows calling methods on direct fields. `customer` is a direct field of Order, so `customer.getEmail()` is allowed. `customer.getAddress().getCity()` violates rule 4 because Address is a return value, not a direct field of Order."
+  },
+  {
+    "q": "The `volatile DatabasePool instance` in double-checked locking ensures that after `instance = new DatabasePool()` completes in Thread A, Thread B will:",
+    "options": [
+      "Acquire the synchronized lock before reading instance to guarantee memory visibility",
+      "Sleep for one CPU cycle before reading instance to allow cache-line invalidation to propagate",
+      "Re-execute the constructor to verify that instance was fully initialized correctly",
+      "See the fully initialized DatabasePool object and not a partially constructed one"
+    ],
+    "answer": 3,
+    "explanation": "Without volatile the JVM can reorder instructions so instance becomes non-null before all fields are initialized. volatile prevents this reordering: the write to instance is guaranteed to occur after all constructor writes, ensuring Thread B always sees a complete object."
+  }
+]

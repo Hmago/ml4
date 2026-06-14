@@ -1,0 +1,662 @@
+[
+  {
+    "q": "What property uniquely distinguishes L1 (Lasso) regularization from L2 (Ridge)?",
+    "options": [
+      "L1 drives some weights to exactly zero, enabling automatic feature selection",
+      "L1 penalizes the squared weights while L2 penalizes the absolute weight values",
+      "L1 applies only to logistic regression; L2 can be used with any differentiable model",
+      "L1 prevents overfitting by distributing penalty equally; L2 concentrates it on large weights"
+    ],
+    "answer": 0,
+    "explanation": "L1 uses a penalty of sum|wi|, whose diamond-shaped constraint creates exact-zero weights for built-in feature selection. L2 uses sum(wi^2) which shrinks weights toward zero but rarely to exactly zero."
+  },
+  {
+    "q": "What typically happens when the learning rate alpha in gradient descent is set too high?",
+    "options": [
+      "Convergence slows because large steps explore too far from the current parameter position",
+      "The optimization may overshoot the minimum, causing divergence or unstable oscillation",
+      "All gradients become zero as parameter updates cancel each other across successive steps",
+      "The model underfits because each update reverses the direction of the previous learning step"
+    ],
+    "answer": 1,
+    "explanation": "A too-large learning rate causes the update step to overshoot the loss minimum, potentially bouncing back and forth or diverging entirely. The loss curve becomes erratic rather than descending smoothly."
+  },
+  {
+    "q": "In 5-fold cross-validation, what fraction of the data serves as the validation set per fold?",
+    "options": [
+      "5% of the data, since five separate validation subsets are each drawn independently from the training pool",
+      "50% of the data, because the dataset is split into two equal halves per fold",
+      "20% of the data, since the dataset is divided into five equal non-overlapping parts",
+      "80% of the data, matching the common 80/20 train-test split convention"
+    ],
+    "answer": 2,
+    "explanation": "With k=5 the dataset is partitioned into 5 equal folds; in each iteration one fold (1/5=20%) is held out for validation while the remaining 4 folds (80%) train the model. Scores are averaged across all 5 iterations."
+  },
+  {
+    "q": "Which statement correctly describes the key difference between bagging and boosting?",
+    "options": [
+      "Bagging trains trees sequentially to correct each prior tree errors; boosting trains them in parallel",
+      "Bagging uses all features at every split; boosting restricts splits to random feature subsets",
+      "Bagging primarily reduces bias by combining diverse base models trained on different random subsets; boosting primarily reduces variance by majority voting",
+      "Bagging trains trees in parallel on bootstrap samples then averages; boosting trains sequentially where each corrects prior errors"
+    ],
+    "answer": 3,
+    "explanation": "Bagging (e.g. Random Forest) trains multiple trees independently on bootstrap samples in parallel and aggregates via voting/averaging to reduce variance. Boosting (e.g. XGBoost) trains trees sequentially, each modeling the residuals of the current ensemble to reduce bias."
+  },
+  {
+    "q": "In a binary classification confusion matrix, what does a False Negative (FN) represent?",
+    "options": [
+      "The model predicted the negative class for an example whose true label is positive",
+      "The model predicted the positive class for an example whose true label is negative",
+      "The model correctly identified a negative example and labeled it as negative",
+      "The model correctly identified a positive example and labeled it as positive"
+    ],
+    "answer": 0,
+    "explanation": "A False Negative means the model missed a true positive: it predicted negative when the label was actually positive (e.g. a missed cancer diagnosis). FN is a Type II error and is what recall (TP/(TP+FN)) penalizes."
+  },
+  {
+    "q": "A classifier achieves AUC-ROC = 0.5 on the test set. What does this most likely indicate?",
+    "options": [
+      "The model has perfectly separated the two classes at some optimal decision threshold",
+      "The model has no discriminative ability, performing equivalently to random guessing",
+      "Model predictions are inversely correlated with true labels; flipping them would improve performance",
+      "The model is severely overfitting, perfectly memorizing only the training distribution"
+    ],
+    "answer": 1,
+    "explanation": "AUC=0.5 corresponds to the diagonal line on the ROC curve meaning the model is no better than randomly assigning class labels. AUC<0.5 suggests anticorrelation while AUC=1.0 is perfect separation. AUC=0.5 is the random baseline any useful model must beat."
+  },
+  {
+    "q": "In Bayes theorem P(A|B) = P(B|A)*P(A)/P(B), which term is called the posterior?",
+    "options": [
+      "P(A) - the belief about A before observing any evidence from the data",
+      "P(B|A) - the probability of observing evidence B given that hypothesis A is true",
+      "P(A|B) - the updated belief about A after observing evidence B",
+      "P(B) - the marginal probability of observing evidence B under all hypotheses"
+    ],
+    "answer": 2,
+    "explanation": "P(A|B) is the posterior: your updated belief about A after seeing evidence B. P(A) is the prior, P(B|A) is the likelihood, and P(B) is the normalizing marginal likelihood. The posterior combines prior knowledge with new evidence."
+  },
+  {
+    "q": "Why does the sigmoid activation function contribute to vanishing gradients in deep networks?",
+    "options": [
+      "Its output is always positive, causing gradients to saturate in one direction across all layers",
+      "Its derivative requires computing exponentials that become numerically unstable in very deep networks",
+      "Sigmoid outputs near 0.5 amplify gradients and cause oscillating updates that effectively cancel out",
+      "Its derivative sigma(z)*(1-sigma(z)) is bounded above by 0.25, so gradients shrink exponentially with each layer"
+    ],
+    "answer": 3,
+    "explanation": "The sigmoid derivative peaks at 0.25. Through backpropagation the chain rule multiplies this factor at every layer: for 10 layers that is 0.25^10 ~ 10^-6, making early-layer gradients nearly zero. ReLU avoids this since its derivative is 1 for positive inputs."
+  },
+  {
+    "q": "Which technique specifically and directly addresses the exploding gradient problem in deep networks?",
+    "options": [
+      "Gradient clipping - rescaling the gradient vector when its L2 norm exceeds a fixed threshold",
+      "ReLU activation - replacing sigmoid to eliminate gradient compression through deep layer stacks",
+      "Xavier initialization - setting initial weights proportional to layer fan-in and fan-out",
+      "Residual connections - adding skip connections that allow gradients to bypass certain layers"
+    ],
+    "answer": 0,
+    "explanation": "Gradient clipping directly caps gradient magnitude: if ||grad|| > threshold, rescale the gradient to that threshold. This is the standard fix for exploding gradients common in RNNs. ReLU and residual connections address vanishing gradients; Xavier initialization prevents large initial weights but not exploding gradients during training."
+  },
+  {
+    "q": "In the RLHF training pipeline, what is the correct order of the three main stages?",
+    "options": [
+      "Reward Model Training then SFT then PPO optimization",
+      "Supervised Fine-Tuning (SFT) then Reward Model Training then PPO Fine-Tuning with KL penalty",
+      "PPO Fine-Tuning then Reward Model Training then Supervised Fine-Tuning on demonstrations",
+      "Supervised Fine-Tuning then PPO Fine-Tuning then Reward Model Training to validate alignment"
+    ],
+    "answer": 1,
+    "explanation": "RLHF proceeds in three stages: (1) SFT on human demonstrations creates a quality baseline; (2) a Reward Model is trained on human preference pairs; (3) PPO optimizes the LLM to maximize reward while a KL-divergence penalty against the SFT baseline prevents degenerate outputs."
+  },
+  {
+    "q": "The Chinchilla scaling law (2022) revealed what key finding about GPT-3 (175B params, 300B tokens)?",
+    "options": [
+      "GPT-3 was overparameterized - the same compute could yield better results with a smaller model",
+      "GPT-3 was optimally trained - its parameter count and token count were well-matched for the compute",
+      "GPT-3 was undertrained on data - the compute-optimal strategy requires proportionally more training tokens",
+      "GPT-3 used too many attention heads - reducing them would have improved downstream performance"
+    ],
+    "answer": 2,
+    "explanation": "Chinchilla showed that for a fixed compute budget, parameters and tokens should scale equally. GPT-3 was data-starved. Chinchilla achieved equal or better performance with 70B params trained on 1.4T tokens using the same compute, showing that more training data was the key bottleneck."
+  },
+  {
+    "q": "When applying feature scaling to prevent data leakage, which approach is correct?",
+    "options": [
+      "Fit the scaler on combined train and test data then apply it separately to each subset",
+      "Compute scaling statistics on the test set to match the inference-time distribution",
+      "Fit a separate scaler per cross-validation fold but use a global scaler for the holdout test",
+      "Fit the scaler on training data only then apply those saved parameters to transform both train and test"
+    ],
+    "answer": 3,
+    "explanation": "Fitting a scaler on any data including test samples leaks test statistics into training and inflates performance estimates. Correct approach: call fit_transform on X_train only, then call transform on X_test using the training mean and variance. This simulates real deployment conditions."
+  },
+  {
+    "q": "In the DCG formula, the log2(i+1) discount applied to the item at rank i serves to:",
+    "options": [
+      "Give less credit to relevant items ranked lower in the list, reflecting user attention decay with position",
+      "Convert graded relevance scores into binary 0/1 labels to make DCG comparable to Precision-at-k",
+      "Normalize the metric to always fall in [0,1] regardless of how many relevant items exist per query",
+      "Make DCG additive across queries by eliminating the effect of ranked list length on the score"
+    ],
+    "answer": 0,
+    "explanation": "The log discount is the core of DCG: a relevant document at rank 1 contributes 1/log2(2)=1.0, while the same document at rank 4 contributes only 1/log2(5)~0.43. This models user attention decay and rewards surfacing relevant results near the top where users actually look."
+  },
+  {
+    "q": "Amazon uses item-to-item collaborative filtering rather than user-to-user similarity. What is the PRIMARY technical reason?",
+    "options": [
+      "Item embeddings capture richer semantic signals than user embeddings for personalization tasks",
+      "Item-item similarity tables can be precomputed offline; comparing hundreds of millions of users at query time is infeasible",
+      "User preferences shift so rapidly that user-user similarity becomes stale within minutes",
+      "Item-item models require far less training data than user-user models for comparable quality"
+    ],
+    "answer": 1,
+    "explanation": "With hundreds of millions of users, computing user-user similarity at query time is O(N) per request and computationally prohibitive. Item counts are smaller and more stable, so item-item similarity is precomputed offline and looked up in O(1) time."
+  },
+  {
+    "q": "In Random Forest, why are random feature subsets evaluated at each split in addition to bootstrap sampling?",
+    "options": [
+      "To reduce training time by limiting candidate split features evaluated per node",
+      "To apply implicit L1 regularization by eliminating features at the split level of each tree",
+      "To decorrelate individual trees so that averaging their predictions provides meaningful variance reduction",
+      "To ensure every feature appears at the root of at least one tree for complete coverage"
+    ],
+    "answer": 2,
+    "explanation": "Without feature subsets, all trees would split on the same dominant features producing highly correlated trees - averaging correlated trees gives little variance reduction. Random feature subsets force diverse split patterns so the ensemble average genuinely cancels individual model noise."
+  },
+  {
+    "q": "The bias-variance tradeoff states that total expected prediction error decomposes as:",
+    "options": [
+      "Training Error + Validation Error + Noise, motivating regularization and early stopping",
+      "Model Complexity times Learning Rate + Irreducible Noise from label uncertainty",
+      "Bias + Variance + Covariance between individual model predictions across repeated samples",
+      "Bias-squared + Variance + Irreducible Noise, where reducing one component typically increases the other"
+    ],
+    "answer": 3,
+    "explanation": "The canonical decomposition is MSE = Bias^2 + Variance + Irreducible Noise. Bias is error from an overly simple model (underfitting). Variance is sensitivity to training data fluctuations (overfitting). Irreducible noise is inherent randomness in labels that no model can remove."
+  },
+  {
+    "q": "Mini-batch gradient descent is the standard approach in deep learning. What is the typical batch size range?",
+    "options": [
+      "32 to 256 examples per update, balancing GPU parallelism with stable gradient estimation",
+      "1 to 4 examples per update, approximating pure stochastic gradient descent",
+      "1000 to 10000 examples per update, ensuring smooth loss curves on large datasets",
+      "The full training dataset in every single update step, which is the strict definition of batch gradient descent"
+    ],
+    "answer": 0,
+    "explanation": "Batch sizes of 32, 64, 128, or 256 are standard in practice. They are large enough to exploit GPU vectorization efficiently and compute stable gradient estimates, yet small enough to fit in GPU memory and maintain stochasticity that helps escape sharp local minima."
+  },
+  {
+    "q": "In word2vec, which training objective does the Skip-gram model use?",
+    "options": [
+      "Given surrounding context words in a window, predict the center target word",
+      "Given a single center word, predict all surrounding context words within the window",
+      "Given a full sentence, classify whether two selected words appear in the same context",
+      "Given a word, retrieve its top-k nearest neighbors from the vocabulary embedding matrix"
+    ],
+    "answer": 1,
+    "explanation": "Skip-gram takes a single center word and predicts its surrounding context words. This is the inverse of CBOW, which uses context words to predict the center. Skip-gram generates more training examples per rare word occurrence, making it better at learning representations for low-frequency vocabulary."
+  },
+  {
+    "q": "During model inference, batch normalization behaves differently from training because:",
+    "options": [
+      "Single-sample inference cannot form a mini-batch so batch size must be at least 2",
+      "Inference substitutes layer normalization for batch normalization to handle variable batch sizes",
+      "Inference uses running mean and variance accumulated during training, not current input statistics",
+      "Inference disables the learned scale gamma and shift beta parameters to reduce test-time overfitting"
+    ],
+    "answer": 2,
+    "explanation": "During training BN normalizes using current mini-batch statistics. At inference those are unavailable for single samples. Instead BN uses exponential moving averages of batch statistics accumulated during training as fixed constants, enabling consistent single-sample prediction."
+  },
+  {
+    "q": "What data is used to train the reward model in the RLHF pipeline?",
+    "options": [
+      "Pairs of (prompt, reference answer) labeled by domain experts from academic benchmarks",
+      "RL rollouts where the language model generates exploratory response sequences during self-play",
+      "Supervised cross-entropy loss on high-quality instruction-following examples from the SFT phase",
+      "Human preference comparisons where annotators choose which of two model responses is better"
+    ],
+    "answer": 3,
+    "explanation": "The RLHF reward model is trained on pairwise preference data: annotators see (prompt, response A, response B) and pick which is better. The reward model learns to assign higher scalar scores to preferred responses, and this signal is then used by PPO to fine-tune the LLM."
+  },
+  {
+    "q": "A frequentist 95% confidence interval is often misinterpreted. Which statement is CORRECT?",
+    "options": [
+      "If the experiment were repeated many times, about 95% of the resulting intervals would contain the true parameter",
+      "There is a 95% probability that the true parameter falls within this specific computed interval",
+      "The probability that the null hypothesis is false given this observed data is exactly 95%",
+      "The observed effect size is within the interval with 95% certainty under any reasonable prior"
+    ],
+    "answer": 0,
+    "explanation": "In frequentist statistics, the parameter is fixed (not random) and the interval varies. The 95% refers to the long-run coverage of the procedure, not the probability for any specific interval. Saying the parameter is 95% likely to be in this specific interval is the Bayesian credible interval interpretation."
+  },
+  {
+    "q": "In self-attention, dot products Q*K^T are divided by sqrt(d_k) before softmax. What is the primary purpose?",
+    "options": [
+      "To normalize the output attention weights so they always sum exactly to the key dimension d_k rather than to 1",
+      "To prevent large dot products from pushing softmax into saturation regions where gradients vanish",
+      "To reduce the computational complexity of attention from O(n^2*d_k) to O(n^2*sqrt(d_k))",
+      "To ensure query and key matrices are dimensionally compatible for the matrix multiplication"
+    ],
+    "answer": 1,
+    "explanation": "With d_k dimensions, random Q and K vectors produce dot products with variance d_k, making values grow large and softmax outputs near one-hot (near-zero gradients everywhere). Dividing by sqrt(d_k) normalizes variance to 1, keeping softmax in a regime with meaningful gradients."
+  },
+  {
+    "q": "Training a neural network classifier with cross-entropy loss is equivalent to which statistical principle?",
+    "options": [
+      "Maximum A Posteriori estimation with a uniform Gaussian prior placed over model weights",
+      "Minimum variance unbiased estimation of the class-conditional probability distributions",
+      "Maximum Likelihood Estimation under a categorical or Bernoulli distribution assumption",
+      "Bayesian marginalization over all plausible parameter settings weighted by posterior probability"
+    ],
+    "answer": 2,
+    "explanation": "Cross-entropy loss = -log P(y|x; theta), and minimizing it maximizes log-likelihood under categorical (softmax) or Bernoulli (sigmoid) models - this is exactly MLE. Adding L2 weight decay converts it to MAP with a Gaussian prior, but plain cross-entropy is pure maximum likelihood estimation."
+  },
+  {
+    "q": "The word2vec property King - Man + Woman = Queen demonstrates that:",
+    "options": [
+      "The training corpus contained explicit analogy sentences the model memorized verbatim",
+      "Frequent word co-occurrences create discrete semantic clusters with sharp boundaries",
+      "Syntactic structure alone (part-of-speech tags) is sufficient to derive semantic analogies",
+      "Semantic relationships such as gender and royalty are encoded as consistent linear offsets in embedding space"
+    ],
+    "answer": 3,
+    "explanation": "Word2vec embeddings encode semantic relationships as linear vector offsets. The royalty relationship (King-Man) is nearly the same vector offset as (Queen-Woman), meaning the embedding space captures structured analogies as directional vectors. This linear structure is key to why embeddings transfer well to downstream tasks."
+  },
+  {
+    "q": "What fundamentally distinguishes Google PageRank from naive inbound link counting?",
+    "options": [
+      "PageRank weights each inbound link by the rank of the linking page so high-rank pages carry more authority",
+      "PageRank counts only outbound links to measure how much a page endorses other pages",
+      "PageRank actively penalizes pages with unusually high inbound link counts as a clear heuristic signal of link-farm manipulation",
+      "PageRank uses semantic text similarity between pages to weight link authority beyond raw hyperlinks"
+    ],
+    "answer": 0,
+    "explanation": "PageRank formula PR(A) = (1-d)/N + d*sum[PR(T)/C(T)] weights each link by the source page rank divided by its out-degree. A link from Wikipedia is worth far more than one from an obscure blog. Naive link counting treats all inbound links equally, which ignores source authority and is easily gamed."
+  },
+  {
+    "q": "A forecasting system outputs 80 to 120 units with 80% probability rather than a single number. This is called:",
+    "options": [
+      "Confidence interval forecasting, quantifying uncertainty from model parameter estimation error",
+      "Probabilistic (distributional) forecasting, providing a full predictive distribution over outcomes",
+      "Ensemble uncertainty estimation, aggregating prediction variance across independently trained models",
+      "Bayesian credible interval regression, applying a conjugate prior over the forecast quantity"
+    ],
+    "answer": 1,
+    "explanation": "Probabilistic forecasting outputs a full predictive distribution rather than a point estimate. Knowing 80% chance of selling 80-120 units allows inventory optimization at a chosen service level. Amazon DeepAR uses this approach. A point estimate of 100 ignores uncertainty and leads to either stockouts or wasted inventory."
+  },
+  {
+    "q": "YouTube DNN recommendation optimizes expected watch time rather than binary click labels. What bias does this mitigate?",
+    "options": [
+      "Cold start bias - new videos accumulate watch-time signals faster than click signals early on",
+      "Popularity bias - popular videos receive higher click-through rates relative to actual content quality",
+      "Clickbait incentive - maximizing raw clicks rewards misleading thumbnails regardless of satisfaction",
+      "Exposure bias - rarely shown videos are systematically undervalued because they receive few impressions"
+    ],
+    "answer": 2,
+    "explanation": "Maximizing click probability alone would reward sensational thumbnails that bait users regardless of satisfaction. Optimizing watch time aligns the signal with actual user value: a user who clicks and immediately leaves contributes zero watch time, penalizing misleading clickbait content."
+  },
+  {
+    "q": "What is the primary motivation for using multiple attention heads in the Transformer architecture?",
+    "options": [
+      "Multiple heads reduce the O(n^2) memory cost of attention by partitioning the sequence across heads",
+      "Averaging results from multiple heads produces smoother attention weights and more stable and consistent gradient flow during backprop",
+      "Multiple heads allow attending to positions beyond the context window through indirect pathways",
+      "Each head can independently learn to attend to different relationship types such as syntax and coreference"
+    ],
+    "answer": 3,
+    "explanation": "Multi-head attention runs h attention operations in parallel with reduced dimension d_k = d_model/h. Empirically different heads specialize: some track syntactic dependencies, others coreference, others semantic similarity. Total compute is roughly equal to single-head but with much richer representational capacity."
+  },
+  {
+    "q": "In large-scale model training, gradient checkpointing reduces GPU memory usage by:",
+    "options": [
+      "Recomputing intermediate activations during the backward pass instead of storing all forward-pass activations",
+      "Clipping gradient norms to a maximum threshold to prevent out-of-memory crashes caused by runaway gradient magnitudes during backprop",
+      "Writing model weight snapshots periodically to disk to free device memory during long training runs",
+      "Synchronizing gradient updates across GPU workers using ring-allreduce after each backward pass"
+    ],
+    "answer": 0,
+    "explanation": "Storing all intermediate activations for backpropagation requires O(L) device memory for L layers. Gradient checkpointing stores only a subset and recomputes the rest during backprop, trading about 33% extra compute for dramatically reduced memory. Critical for training very deep models that would otherwise exceed GPU memory limits."
+  },
+  {
+    "q": "The Central Limit Theorem explains why ensemble averaging reduces prediction error. Which explanation is most accurate?",
+    "options": [
+      "Ensembles force each model to have lower bias by training on unique data subsets with different distributions",
+      "Averaging predictions of independent noisy learners reduces variance while preserving expected signal, just as sample means concentrate around the true mean",
+      "The CLT guarantees ensemble predictions are normally distributed, enabling valid confidence intervals",
+      "Combining predictions eliminates irreducible noise through cancellation across sufficiently diverse learners"
+    ],
+    "answer": 1,
+    "explanation": "The CLT shows the mean of n independent random variables has variance sigma^2/n - shrinking with n. Averaging n independent model predictions reduces variance by ~1/n while keeping bias fixed, directly explaining why Random Forest consistently outperforms individual decision trees in terms of variance reduction."
+  },
+  {
+    "q": "An A/B test returns a p-value of 0.03. Which interpretation is CORRECT?",
+    "options": [
+      "There is a 3% probability that the null hypothesis is true given the observed data",
+      "The treatment group has a 97% probability of outperforming control in production deployment",
+      "If the null hypothesis were true, results this extreme or more extreme occur only 3% of the time by chance",
+      "The observed effect in the treatment group is 3% larger than the baseline control metric value"
+    ],
+    "answer": 2,
+    "explanation": "A p-value is P(data|H0) - the probability of observing data this extreme IF the null hypothesis is true. It is not P(H0|data) - the probability that the null is true. Confusing these two is one of the most common errors in applied statistics and A/B test analysis."
+  },
+  {
+    "q": "Out-of-Bag (OOB) error provides a free validation estimate. Why is approximately 37% of data left out-of-bag per tree?",
+    "options": [
+      "The algorithm explicitly reserves the bottom 37% of training samples for validation by design",
+      "37% is the empirically optimal validation fraction for ensemble methods on tabular datasets",
+      "Random feature selection at each split excludes approximately 37% of features, correlating with data exclusion",
+      "Bootstrap sampling from N examples with replacement leaves (1-1/N)^N approaching 1/e ~ 36.8% unique samples undrawn"
+    ],
+    "answer": 3,
+    "explanation": "For a bootstrap sample of N drawn with replacement from N examples, each specific sample is not drawn with probability (1-1/N) per draw. Over N draws the probability of never being selected is (1-1/N)^N which converges to 1/e ~ 0.368. This ~37% OOB subset provides a free validation set without any explicit holdout."
+  },
+  {
+    "q": "MRR (Mean Reciprocal Rank) is best suited for which category of retrieval task?",
+    "options": [
+      "Single-answer question answering and navigational queries where only the first relevant result rank matters",
+      "Document retrieval where every relevant document must be found and missed items are heavily penalized",
+      "Ad ranking or web search where graded relevance distinguishes highly from partially relevant results",
+      "Recommendation systems where a full ranked list of multiple relevant items is evaluated per user session"
+    ],
+    "answer": 0,
+    "explanation": "MRR = (1/|Q|)*sum(1/r_q) where r_q is the rank of the first relevant result for query q. It focuses entirely on how quickly the system surfaces the first relevant result - ideal for fact-lookup QA, navigational search, or autocomplete where there is essentially one right answer and its position is all that matters."
+  },
+  {
+    "q": "Which statement correctly distinguishes data parallelism from model parallelism in distributed deep learning?",
+    "options": [
+      "Data parallelism places different layers on different GPUs; model parallelism replicates the full model on each GPU",
+      "Data parallelism replicates the full model on each GPU with different batches requiring gradient sync; model parallelism splits layers across GPUs passing activations between them",
+      "Data parallelism and model parallelism are computationally identical differing only in memory layout",
+      "Data parallelism is infeasible for models fitting on a single GPU; model parallelism has no such memory restriction"
+    ],
+    "answer": 1,
+    "explanation": "In data parallelism every GPU holds a full model copy, processes different mini-batches, and gradients are averaged via all-reduce after each backward pass. Model parallelism splits the model: GPU1 holds layers 1-4, GPU2 holds 5-8 - activations flow forward and gradients flow backward between GPUs sequentially."
+  },
+  {
+    "q": "The Bonferroni correction divides significance threshold alpha by the number of simultaneous tests. Which problem does it address?",
+    "options": [
+      "Network effects - when treatment users influence control users violating the independence assumption",
+      "The novelty effect - when users engage more with any change simply because it is new and unfamiliar",
+      "The multiple comparisons problem - with many parallel tests some will reach significance purely by chance",
+      "Long-term effect bias - running short experiments systematically overestimates the permanent benefit of the treatment feature"
+    ],
+    "answer": 2,
+    "explanation": "Running k tests at alpha=0.05 each gives a family-wise error rate of 1-(0.95)^k, well above 5% for large k. Bonferroni sets each test threshold to alpha/k, controlling the overall false-positive rate. This is critical at companies like Amazon that run thousands of simultaneous A/B tests."
+  },
+  {
+    "q": "In MAP (Mean Average Precision), Average Precision averages Precision-at-k at relevant item ranks. What is the DENOMINATOR?",
+    "options": [
+      "The total number of documents retrieved by the system at the chosen rank cutoff k",
+      "The number of document positions evaluated up to the rank of the last relevant item returned",
+      "The total number of queries in the evaluation set used to compute the overall MAP score",
+      "The total number of relevant documents that exist in the collection for that specific query"
+    ],
+    "answer": 3,
+    "explanation": "AP = (1/R)*sum of P@k at each position k where a relevant document appears, where R is the total count of relevant documents for that query. This means AP penalizes both poor ordering AND failing to retrieve all relevant documents."
+  },
+  {
+    "q": "In a production A/B test, a Type I error has which practical consequence for the product team?",
+    "options": [
+      "Shipping a feature that provides no real benefit, wasting engineering effort and potentially harming users",
+      "Failing to detect a genuinely beneficial feature and missing an opportunity to improve the product",
+      "Running the experiment longer than required because the calculated sample size was underestimated",
+      "Violating user independence assumption due to network effects between treatment and control groups"
+    ],
+    "answer": 0,
+    "explanation": "A Type I error (false positive) means concluding the treatment works when it actually does not. In A/B testing this leads to shipping a useless or harmful feature - wasting engineering resources and potentially degrading user experience. Type II error is the opposite: concluding the test failed when it genuinely won."
+  },
+  {
+    "q": "In ML model deployment, canary release differs from shadow mode deployment in which way?",
+    "options": [
+      "Canary release runs the new model in parallel for silent logging only; shadow mode routes live traffic to it",
+      "Canary release routes a small live traffic fraction to the new model; shadow mode runs it silently without affecting any users",
+      "Canary release is used for rollback scenarios; shadow mode is used only for initial offline model validation",
+      "Canary release evaluates only offline holdout metrics; shadow mode collects live user interaction signals"
+    ],
+    "answer": 1,
+    "explanation": "Shadow mode runs the new model alongside the old one but never surfaces predictions to users - safe for correctness validation. Canary release routes a small fraction (e.g. 5%) of real traffic to the new model so it genuinely affects a small user group and provides real-world business metric signals."
+  },
+  {
+    "q": "A classifier has 95% accuracy but very low recall on the positive class. Which intervention most directly increases recall?",
+    "options": [
+      "Apply SMOTE to oversample the minority class in training data to correct the class imbalance",
+      "Switch the primary training objective from cross-entropy to weighted F1 score to directly balance precision and recall",
+      "Lower the decision threshold from 0.5 to a smaller value so more examples are classified as positive",
+      "Add hidden layers to increase model capacity for capturing complex positive class patterns"
+    ],
+    "answer": 2,
+    "explanation": "Lowering the threshold from 0.5 to e.g. 0.2 immediately reclassifies borderline examples as positive - directly boosting recall (catching more true positives) at the cost of lower precision (accepting more false positives). This requires no retraining and the optimal threshold is found from the precision-recall curve."
+  },
+  {
+    "q": "In production ML monitoring, concept drift is distinct from data drift in which way?",
+    "options": [
+      "Data drift refers to model performance degradation over time; concept drift is the change in input distributions",
+      "Concept drift is detectable from input feature statistics alone without labels; data drift requires ground truth",
+      "Data drift causes silent failures even when logged input statistics appear unchanged from training",
+      "Concept drift means P(Y|X) changes over time; data drift means the input feature distribution P(X) shifts"
+    ],
+    "answer": 3,
+    "explanation": "Data drift (covariate shift) means P(X) changes - input feature distributions evolve. Concept drift means P(Y|X) changes - the same features now map to different labels, e.g. user behavior patterns change so a previously predictive feature no longer is. Concept drift requires labeled monitoring data to detect reliably."
+  },
+  {
+    "q": "In transfer learning, feature extraction differs from fine-tuning in which fundamental way?",
+    "options": [
+      "Feature extraction freezes all pre-trained weights and only trains a new task-specific head on top",
+      "Feature extraction updates all pre-trained weights with a small learning rate to preserve representations",
+      "Feature extraction generates synthetic features from the pre-trained model intermediate weight matrices",
+      "Feature extraction removes the pre-trained backbone entirely and trains only on engineered task-specific inputs"
+    ],
+    "answer": 0,
+    "explanation": "Feature extraction treats the pre-trained network as a frozen feature extractor - weights are locked and only a new classification head (one or two dense layers) is trained on the target task. Fine-tuning unfreezes some or all pre-trained layers and updates them end-to-end with a very small learning rate for deeper adaptation."
+  },
+  {
+    "q": "Comparing Skip-gram and CBOW in word2vec, which statement about their relative strengths is correct?",
+    "options": [
+      "CBOW is better for rare words; Skip-gram is faster and performs equally at all word frequencies",
+      "Skip-gram is better for rare words; CBOW trains faster but averaging context loses signal for infrequent tokens",
+      "Skip-gram and CBOW perform identically on rare words and differ only in vocabulary coverage breadth",
+      "CBOW always outperforms Skip-gram once the training corpus exceeds one billion tokens"
+    ],
+    "answer": 1,
+    "explanation": "Skip-gram generates multiple (center, context) training pairs per rare word occurrence, preserving weak signal for infrequent vocabulary. CBOW averages context vectors - for rare center words with few examples this smooths away the signal. CBOW is faster to train due to fewer gradient updates per token seen."
+  },
+  {
+    "q": "Why is NDCG preferred over MAP for ranking systems like Google Search and YouTube recommendation?",
+    "options": [
+      "NDCG is computationally cheaper to evaluate and requires fewer relevance judgments per query",
+      "MAP cannot be normalized across queries with different numbers of relevant documents; NDCG always handles this normalization",
+      "NDCG supports graded relevance scores, capturing meaningful quality differences among returned results",
+      "NDCG focuses only on the first relevant result rank while MAP averages precision across the full list"
+    ],
+    "answer": 2,
+    "explanation": "MAP uses binary relevance (relevant or not). Real-world search and recommendation have graded relevance - a perfect result is far more valuable than a mediocre one. NDCG graded scores (0,1,2,3) capture this distinction, making it the dominant industry metric. Google Search uses NDCG@10 as its primary offline metric."
+  },
+  {
+    "q": "The cold start problem in recommendation systems describes difficulty generating recommendations for:",
+    "options": [
+      "Items whose popularity has declined until collaborative filtering interaction signals become too sparse",
+      "Users who interact with many diverse items such that their preference profile becomes too broad to model",
+      "Recommendation models whose training data has grown stale and no longer reflects current preferences",
+      "New users or new items that lack the interaction history needed for collaborative filtering to function"
+    ],
+    "answer": 3,
+    "explanation": "Collaborative filtering relies on historical interactions. New users have no history and new items have no interactions - making CF impossible. Common mitigations include content-based features using item metadata, asking for explicit preferences at sign-up, and using demographic signals as proxies."
+  },
+  {
+    "q": "During inference, a model trained with dropout rate p=0.5 differs from its training behavior because:",
+    "options": [
+      "All neurons remain active at inference and weights are effectively scaled by (1-p) to compensate",
+      "Dropout is retained at inference to generate Monte Carlo uncertainty estimates via multiple stochastic passes",
+      "The dropout rate is halved to p=0.25 at inference to maintain correct expected activation magnitudes",
+      "Only the output layer neurons remain active at inference while hidden-layer neurons are still randomly masked"
+    ],
+    "answer": 0,
+    "explanation": "During training p fraction of neurons are zeroed so expected activation is (1-p) times actual. At inference all neurons are used so outputs are scaled by (1-p) to maintain consistent expected values. Inverted dropout (scaling during training) achieves the same result and is more common in modern frameworks like PyTorch."
+  },
+  {
+    "q": "When should Elastic Net regularization be preferred over pure L1 (Lasso)?",
+    "options": [
+      "When all features are informative and zero weights would be harmful to model performance",
+      "When correlated feature groups exist and you want group-level selection with L2 stability for collinear features",
+      "When the dataset is small enough that the L2 component alone provides sufficient regularization",
+      "When computational speed is the primary concern since Elastic Net converges faster than pure L1"
+    ],
+    "answer": 1,
+    "explanation": "Lasso arbitrarily selects one variable from a correlated group and zeros the rest. Elastic Net L1+L2 combination tends to include or exclude correlated features together (group effect) while L2 stabilizes the solution. More robust when highly correlated predictor groups exist, common in genomics and text data."
+  },
+  {
+    "q": "Compared to batch gradient descent, mini-batch gradient descent is preferred in deep learning primarily because:",
+    "options": [
+      "Mini-batch GD produces smoother loss curves and guarantees convergence to the global minimum",
+      "Mini-batch GD uses less total computation since each update processes fewer examples than full-batch",
+      "Mini-batch GD is GPU-vectorizable and memory-efficient, achieving both throughput and reasonable gradient quality",
+      "Mini-batch GD noise always prevents overfitting without requiring any additional explicit regularization"
+    ],
+    "answer": 2,
+    "explanation": "Full-batch GD cannot scale to modern datasets due to memory constraints and misses GPU vectorization benefits. Pure SGD is too noisy. Mini-batch is the sweet spot: it fits in GPU memory, vectorizes efficiently, produces stable enough gradient estimates, and allows optimizers like Adam to function well."
+  },
+  {
+    "q": "XGBoost incorporates L1 and L2 regularization on tree leaf weights. What is the PRIMARY purpose?",
+    "options": [
+      "It replaces random feature subsets used by Random Forest, serving the tree decorrelation function",
+      "It dynamically reduces the learning rate in later boosting rounds to prevent late-stage overfitting",
+      "It forces all leaf values toward zero over successive rounds, gradually pruning the weakest trees",
+      "It penalizes tree complexity via leaf count and weight magnitudes to directly reduce overfitting per added tree"
+    ],
+    "answer": 3,
+    "explanation": "XGBoost objective includes Omega(f) = gamma*T + (1/2)*lambda*sum(wj^2) where T is leaf count and wj are leaf weights. The gamma term penalizes tree depth and lambda penalizes large leaf weights. This explicit complexity penalty is a key reason XGBoost outperforms plain gradient boosting and the original GBM implementation."
+  },
+  {
+    "q": "What is the most accurate description of in-context learning (ICL) in large language models?",
+    "options": [
+      "The model adapts to new tasks from prompt examples at inference time without any gradient-based weight updates",
+      "The model is fine-tuned on a small task-specific dataset during deployment using gradients from the examples",
+      "The model retrieves relevant context from an external vector database before generating its response",
+      "The model uses chain-of-thought prompting to simulate parameter updates through structured reasoning steps"
+    ],
+    "answer": 0,
+    "explanation": "In-context learning is an emergent property of large LLMs: prepending a few (prompt, completion) examples to the input adapts model behavior for that task with zero parameter updates. This is fundamentally different from fine-tuning which updates weights via gradient descent. ICL operates entirely at inference time through pattern matching."
+  },
+  {
+    "q": "On an ROC curve, the diagonal line from (0,0) to (1,1) with AUC=0.5 represents a classifier that:",
+    "options": [
+      "Always predicts the majority class, achieving perfect true negative rate at the cost of zero recall",
+      "Assigns class probabilities randomly with no discriminative ability based on the input features",
+      "Achieves perfect precision at every threshold while maintaining exactly zero recall throughout",
+      "Produces the minimum possible F1 score achievable given the class imbalance ratio of the dataset"
+    ],
+    "answer": 1,
+    "explanation": "A model on the ROC diagonal produces class scores statistically independent of true labels - it is no better than randomly assigning a score to each example. At any threshold TPR equals FPR. Note: a majority-class predictor would be a single point on the ROC curve, not the diagonal line."
+  },
+  {
+    "q": "The maximum likelihood estimate for the mean mu of a Gaussian distribution given observations x1 to xn equals:",
+    "options": [
+      "The sample median, which minimizes L1 loss and is more robust under heavy-tailed conditions",
+      "The mode of the posterior over mu assuming a flat uniform prior on all parameter values",
+      "The sample mean x_bar = (1/n)*sum(xi), which maximizes the Gaussian likelihood over observed data",
+      "The shrinkage estimate x_bar*(1 - sigma^2/n), which reduces estimator variance at the cost of bias"
+    ],
+    "answer": 2,
+    "explanation": "Setting the derivative of the Gaussian log-likelihood to zero gives the sample mean as the MLE for mu. This connects to MSE training loss: minimizing squared error finds parameters maximizing Gaussian likelihood, which is why MSE is the natural regression loss under Gaussian noise assumptions."
+  },
+  {
+    "q": "In RLHF/PPO fine-tuning, a KL-divergence penalty is applied between the RL policy and the SFT baseline. What does this prevent?",
+    "options": [
+      "Reward model overfitting - keeping reward predictions close to the SFT model output distribution",
+      "Policy gradient variance - constraining the action distribution reduces variance of gradient estimates",
+      "Preference distribution mismatch - aligning policy output with the reward model training distribution",
+      "Reward hacking - preventing the policy from generating degenerate text that exploits reward model weaknesses"
+    ],
+    "answer": 3,
+    "explanation": "Without a KL penalty, PPO finds outputs that maximize reward model scores through unintended means such as repetitive or incoherent text. The KL divergence term keeps the policy within a neighborhood of the SFT model, ensuring outputs remain natural language that the reward model can meaningfully evaluate."
+  },
+  {
+    "q": "An AI agent trained to maximize user engagement time learns that inflammatory content increases session length. This is an example of:",
+    "options": [
+      "Reward hacking - the agent found an unintended way to maximize the metric conflicting with the true goal",
+      "Goal misgeneralization - the agent learned correct behavior in training but pursues a different goal at deployment",
+      "Sycophancy - the model generates responses users emotionally endorse even when factually incorrect",
+      "Distributional shift - training environment reward signals do not match those in the deployment environment"
+    ],
+    "answer": 0,
+    "explanation": "Reward hacking occurs when an agent maximizes the specified metric through unintended means that do not achieve the true goal. Engagement time is technically maximized by inflammatory content but this violates the actual goal of providing user value. This illustrates why metric specification and alignment are core challenges in AI safety."
+  },
+  {
+    "q": "Pipeline parallelism improves upon naive model parallelism in distributed training by:",
+    "options": [
+      "Eliminating inter-GPU communication by replicating gradient buffers at each pipeline stage boundary",
+      "Overlapping computation across micro-batches so GPUs at different pipeline stages are rarely idle simultaneously",
+      "Allowing all GPUs to process the same data batch simultaneously using fine-grained tensor-level splitting",
+      "Replacing sequential layer execution with fully parallel layer computation within each individual GPU"
+    ],
+    "answer": 1,
+    "explanation": "Naive model parallelism creates GPU bubbles: only one GPU is active at a time as data flows sequentially through pipeline stages. Pipeline parallelism splits each mini-batch into micro-batches so while GPU2 processes micro-batch 1 in its layers, GPU1 starts micro-batch 2, dramatically improving GPU utilization and training throughput."
+  },
+  {
+    "q": "Dropout prevents co-adaptation in neural networks. Which explanation best captures WHY it reduces overfitting?",
+    "options": [
+      "It introduces weight noise functionally equivalent to L2 regularization, shrinking all weight magnitudes",
+      "It removes the lowest-activation neurons each pass, forcing the network to use only the most useful features",
+      "It prevents co-adaptation by forcing each neuron to learn independently, unable to rely on specific co-activating partners",
+      "It trains exponentially many sub-network configurations that are implicitly averaged at inference time"
+    ],
+    "answer": 2,
+    "explanation": "Co-adaptation occurs when neurons become overly reliant on specific partner neurons to fix their errors. Since either neuron may be dropped at any training pass, each must develop useful representations independently. This distributes learned features more broadly across the network and prevents over-specialization in tightly coupled neuron groups."
+  },
+  {
+    "q": "Which pairing correctly classifies these models as generative versus discriminative?",
+    "options": [
+      "Naive Bayes = discriminative; Logistic Regression = generative (models the full class distribution)",
+      "Support Vector Machine = generative (learns P(X,Y)); Random Forest = discriminative (learns P(Y|X))",
+      "Neural network for classification = generative; Generative Adversarial Network = discriminative",
+      "Naive Bayes = generative (models P(X|Y) and P(Y)); Logistic Regression = discriminative (models P(Y|X) directly)"
+    ],
+    "answer": 3,
+    "explanation": "Naive Bayes explicitly models class-conditional densities P(X|Y) and prior P(Y), using Bayes theorem to classify - it is generative and can generate new samples. Logistic Regression directly parameterizes P(Y|X) via sigmoid of a linear combination, learning only the decision boundary without modeling the data distribution."
+  },
+  {
+    "q": "After training is complete, which model type requires retaining the entire training dataset for future predictions?",
+    "options": [
+      "K-Nearest Neighbors - a non-parametric model that retrieves the k closest training examples at prediction time",
+      "Linear Regression - because learned coefficients are derived as a weighted average of the training samples",
+      "Logistic Regression - because the decision boundary is defined relative to the training data coordinate system",
+      "Feedforward Neural Network - because model weights alone are insufficient to reconstruct the learned function"
+    ],
+    "answer": 0,
+    "explanation": "KNN is a lazy learner with no parameter compression: it stores all N training examples and at inference queries the k nearest neighbors in feature space. Linear regression, logistic regression, and neural networks distill training data into compact weight vectors and can safely discard the original training set after training is complete."
+  },
+  {
+    "q": "Perplexity evaluates language models on held-out text. What does a LOWER perplexity score indicate?",
+    "options": [
+      "The model is overfit to training data, assigning overly high probabilities to training sequences",
+      "The model assigns higher probability to the held-out text, meaning it is less surprised by the token sequences",
+      "The model requires more parameters to achieve comparable accuracy on open-ended generation tasks",
+      "The output distribution is more uniform, reducing the dominance of high-frequency common tokens"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity = exp(-1/N*sum(log P(xi))) so lower perplexity means higher average log-probability assigned to held-out tokens - the model is less surprised. A perplexity of 10 means the model is as uncertain as if choosing uniformly among 10 options at each step. Lower is better as a language modeling performance metric."
+  },
+  {
+    "q": "SMOTE (Synthetic Minority Over-sampling Technique) addresses class imbalance by:",
+    "options": [
+      "Randomly removing majority class examples from training until both classes reach equal representation",
+      "Assigning higher loss weights to minority class misclassifications in the training objective, penalizing false negatives more heavily",
+      "Creating synthetic minority class examples by interpolating between existing minority class nearest neighbors",
+      "Training a dedicated binary classifier to detect and remove ambiguous boundary examples from training"
+    ],
+    "answer": 2,
+    "explanation": "SMOTE selects a minority class example, finds its k nearest minority-class neighbors, and creates synthetic examples by linearly interpolating along the connecting segments. Unlike plain oversampling which duplicates examples, SMOTE creates novel examples that improve decision boundary learning in the minority class region."
+  },
+  {
+    "q": "Lowering the binary classification decision threshold from 0.5 to 0.3 in a trained model will typically:",
+    "options": [
+      "Increase both precision and recall simultaneously, improving quality across all evaluation metrics",
+      "Decrease recall while increasing precision, as fewer examples now meet the higher effective positive classification bar",
+      "Increase precision while keeping recall constant, since borderline cases are reclassified as positive",
+      "Increase recall while decreasing precision, since more examples are classified positive including more false positives"
+    ],
+    "answer": 3,
+    "explanation": "Lowering the threshold reclassifies more borderline examples as positive - catching more true positives (recall up) but also accepting more false positives (precision down). This is the fundamental precision-recall tradeoff, especially important in cancer screening or fraud detection where missing true positives is far costlier than false alarms."
+  }
+]

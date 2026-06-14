@@ -1,0 +1,662 @@
+[
+  {
+    "q": "The OLS Normal Equation $\\mathbf{w}^* = (X^\\top X)^{-1} X^\\top \\mathbf{y}$ fails to produce a solution when:",
+    "options": [
+      "$X^\\top X$ is singular due to multicollinear or perfectly redundant features",
+      "the learning rate $\\eta$ is set too small, causing prohibitively slow convergence",
+      "the number of training samples $n$ is greater than the number of features $p$",
+      "the loss surface contains saddle points that prevent gradient-based optimization"
+    ],
+    "answer": 0,
+    "explanation": "$(X^\\top X)^{-1}$ cannot be computed when $X^\\top X$ is singular, which happens with perfectly collinear features or when $p > n$. Gradient descent is the recommended alternative since it never requires matrix inversion."
+  },
+  {
+    "q": "Which regularization method drives some model weights to exactly zero, performing built-in feature selection?",
+    "options": [
+      "Lasso (L1 penalty), which adds $\\lambda\\sum|w_j|$ and geometrically favors sparse solutions",
+      "Ridge (L2 penalty), which adds $\\lambda\\sum w_j^2$ and uniformly shrinks all coefficients toward zero",
+      "Elastic Net, which combines L1 and L2 and selects features through its ridge component",
+      "Weight decay, which multiplies each weight by a factor less than 1 at every gradient step"
+    ],
+    "answer": 0,
+    "explanation": "Lasso's L1 penalty creates a diamond-shaped constraint region whose corners lie on coordinate axes, forcing some weights to exactly zero. Ridge's circular L2 constraint rarely produces exact zeros — it shrinks all weights but keeps all features."
+  },
+  {
+    "q": "In linear regression residual analysis, a curved (non-random) pattern in the residuals vs. fitted values plot most likely indicates:",
+    "options": [
+      "non-linearity — the linear model is misspecified and needs polynomial features or a non-linear model",
+      "homoscedasticity — residuals have constant variance confirming the fit is correctly specified",
+      "multicollinearity — correlated predictors are producing systematic and recurring patterns in prediction errors",
+      "normally distributed errors — the curvature reflects the bell shape of a Gaussian distribution"
+    ],
+    "answer": 0,
+    "explanation": "Random scatter around zero is the desired pattern; a systematic curve means the linear assumption is violated. The fix is to add polynomial features or use a non-linear algorithm. Homoscedasticity describes constant variance (random horizontal scatter), which is the desired outcome."
+  },
+  {
+    "q": "In logistic regression's One-vs-Rest (OvR) strategy for a $K$-class problem, the training procedure involves:",
+    "options": [
+      "$K$ binary classifiers, each trained to distinguish one class from all remaining classes combined",
+      "one multinomial classifier sharing weights across all $K$ outputs through a softmax layer",
+      "$K(K-1)/2$ binary classifiers, one per class pair, combined by majority vote at the final prediction step",
+      "a hierarchical tree of binary classifiers partitioning classes from the root downward"
+    ],
+    "answer": 0,
+    "explanation": "OvR trains $K$ binary classifiers, each asking 'is it class $k$ or not?' The class producing the highest probability wins. The $K(K-1)/2$ scheme describes One-vs-One (OvO), which uses more classifiers but trains each on a smaller subset of data."
+  },
+  {
+    "q": "Which of the following supervised algorithms does NOT require feature scaling to produce correct results?",
+    "options": [
+      "Decision Tree (CART) — threshold-based splits are invariant to monotonic feature transformations",
+      "K-Nearest Neighbors — class assignment depends on relative Euclidean distances between points",
+      "Support Vector Machine — margin maximization depends on the scale of the weight vector",
+      "Logistic Regression — gradient convergence speed and regularization strength are scale-sensitive"
+    ],
+    "answer": 0,
+    "explanation": "Decision trees compare each sample's feature value against a threshold; rescaling never changes which side of the threshold a sample falls on. SVM, KNN, and Logistic Regression all rely on distance or dot-product computations that are distorted by unscaled features."
+  },
+  {
+    "q": "In a Support Vector Machine, the 'support vectors' are the training points that:",
+    "options": [
+      "lie exactly on the margin boundaries and uniquely determine the separating hyperplane",
+      "are misclassified by the current hyperplane and receive non-zero slack variables $\\xi_i > 1$",
+      "have the highest predicted class probability under the SVM discriminant function",
+      "represent the centroids of each class cluster computed during dual optimization"
+    ],
+    "answer": 0,
+    "explanation": "Support vectors are the points closest to the decision boundary — those sitting on the margin edges. The optimal hyperplane is defined entirely by these points; removing any non-support-vector training example leaves the solution unchanged."
+  },
+  {
+    "q": "What is the time complexity per prediction for brute-force K-Nearest Neighbors on a training set of $n$ samples and $p$ features?",
+    "options": [
+      "$O(np)$ — distance to every training point must be computed before selecting the $K$ nearest",
+      "$O(K \\cdot p)$ — only distances to the final $K$ neighbors need to be evaluated",
+      "$O(p \\log n)$ — a balanced tree structure is maintained internally for efficient lookup",
+      "$O(n + p)$ — feature indices are hashed so each individual distance computation runs in approximately constant time"
+    ],
+    "answer": 0,
+    "explanation": "Brute-force KNN computes the $p$-dimensional distance to all $n$ training samples, costing $O(np)$ per prediction. This makes KNN expensive at inference time. KD-Trees reduce average query time to $O(p \\log n)$ but degrade toward $O(np)$ for high-dimensional data."
+  },
+  {
+    "q": "In gradient boosting, each new tree $h_m$ at iteration $m$ is trained to predict:",
+    "options": [
+      "the pseudo-residuals $r_i = -\\partial L(y_i, F_{m-1}(x_i))/\\partial F_{m-1}(x_i)$, the negative gradient of the loss",
+      "the original labels $y_i$ with exponentially re-weighted sample importance from the prior round",
+      "the absolute errors $|y_i - F_{m-1}(x_i)|$ to construct a robust mean-absolute-error chain",
+      "a stochastically sampled 60% of residuals to introduce diversity across boosting rounds"
+    ],
+    "answer": 0,
+    "explanation": "Gradient boosting fits each tree to the negative gradient of the loss function. For MSE loss these equal ordinary residuals $y_i - F_{m-1}(x_i)$, but for other losses (log-loss, Huber) the pseudo-residuals differ. Exponential sample re-weighting describes AdaBoost, not gradient boosting."
+  },
+  {
+    "q": "The training time complexity of a kernel SVM with the RBF kernel on $n$ training samples scales approximately as:",
+    "options": [
+      "$O(n^2)$ to $O(n^3)$, making it impractical for datasets with more than ~50,000 samples",
+      "$O(n \\log n)$, comparable to a decision tree and suitable for moderately large datasets",
+      "$O(n \\cdot p^2)$, dominated by computing pairwise feature interactions in kernel space",
+      "$O(n \\cdot p)$, the same as logistic regression since both find a linear discriminant"
+    ],
+    "answer": 0,
+    "explanation": "SVM training requires computing the $n \\times n$ kernel (Gram) matrix and solving a quadratic program — roughly $O(n^2)$ to $O(n^3)$ time and $O(n^2)$ memory. For $n = 50K$ the Gram matrix alone has 2.5 billion entries. Use LinearSVC or LightGBM for large datasets."
+  },
+  {
+    "q": "Gaussian Naive Bayes models the feature likelihood $P(x_j \\mid \\text{class}=k)$ as:",
+    "options": [
+      "a Gaussian distribution with class-specific mean $\\mu_{jk}$ and variance $\\sigma_{jk}^2$ per feature",
+      "a multinomial distribution over discretized histogram bins of the continuous feature values",
+      "a uniform distribution within the observed min–max range of feature $j$ in class $k$",
+      "a kernel density estimate using a Gaussian kernel to avoid imposing any fixed parametric distributional form"
+    ],
+    "answer": 0,
+    "explanation": "GaussianNB estimates $\\mathcal{N}(\\mu_{jk}, \\sigma_{jk}^2)$ for each feature–class pair during training — a single-pass computation of means and variances. MultinomialNB uses count data (e.g., word frequencies). KDE avoids the Gaussian assumption, but GaussianNB explicitly requires it."
+  },
+  {
+    "q": "Random Forest reduces variance compared to a single decision tree primarily by combining bootstrap sampling (bagging) with:",
+    "options": [
+      "random feature subsampling at each split, decorrelating the individual trees in the ensemble",
+      "post-pruning every tree to a fixed maximum depth to prevent individual trees from overfitting",
+      "sequential residual fitting so each new tree corrects the errors of the previous tree",
+      "a learned weight per tree based on each tree's out-of-bag validation accuracy"
+    ],
+    "answer": 0,
+    "explanation": "Bagging alone keeps trees correlated if one feature dominates splits. Random feature subsampling (default $\\sqrt{p}$ for classification) forces different trees to use different features, decorrelating their errors. Averaging uncorrelated errors reduces variance without increasing bias."
+  },
+  {
+    "q": "Which supervised learning algorithm has an effective training time of $O(1)$ because it defers all computation to prediction time?",
+    "options": [
+      "K-Nearest Neighbors — it stores the training set directly and performs no model-fitting step",
+      "Naive Bayes — a single forward pass through the data makes its training nearly instantaneous",
+      "Decision Tree — axis-aligned threshold splits require no iterative parameter optimization",
+      "Gradient Boosting — the first tree initializes to a simple constant requiring zero computation"
+    ],
+    "answer": 0,
+    "explanation": "KNN is a lazy learner: 'training' means storing the dataset in memory with no weights, no trees, and no optimization. The full computational cost is paid at prediction time ($O(np)$ per query). Naive Bayes still computes statistics ($O(np)$ training), and a Decision Tree requires at least one full data traversal."
+  },
+  {
+    "q": "Elastic Net regularization is best described as a penalty that:",
+    "options": [
+      "combines L1 and L2 penalties in a proportion controlled by the $l_1\\_ratio$ hyperparameter",
+      "penalizes the maximum absolute weight value, enforcing a hard upper bound on each coefficient",
+      "randomly zeros a fraction of weights each update step, inspired by neural network dropout",
+      "groups correlated features and applies a single shared penalty to each feature cluster"
+    ],
+    "answer": 0,
+    "explanation": "Elastic Net adds $\\lambda[\\rho\\sum|w_j| + (1-\\rho)\\sum w_j^2]$. The $l_1\\_ratio$ $\\rho$ blends Lasso (feature selection via L1) and Ridge (correlated-feature handling via L2). When features are correlated, Lasso arbitrarily drops one; Elastic Net tends to retain the group."
+  },
+  {
+    "q": "A Decision Tree leaf that contains samples exclusively from one class (a pure leaf) has a Gini impurity of:",
+    "options": [
+      "0.0, since $1 - 1^2 = 0$ when all samples belong to a single class",
+      "0.5, the midpoint of the [0, 1] range, representing the highest possible node certainty",
+      "1.0, the maximum Gini value, which decreases as the node becomes progressively purer",
+      "0.25, the value when one class holds exactly three-quarters of the node's samples"
+    ],
+    "answer": 0,
+    "explanation": "Gini impurity $G = 1 - \\sum_k p_k^2$. With one class at probability 1 and all others at 0: $G = 1 - 1 = 0$. A fully mixed binary node (50/50) gives $G = 0.5$. The splitting criterion minimizes the weighted Gini of the two children."
+  },
+  {
+    "q": "CatBoost's 'oblivious trees' differ from standard CART trees in that every node at the same depth level:",
+    "options": [
+      "uses the same split feature and threshold, creating a symmetric table-lookup-friendly structure",
+      "is forbidden from splitting on any feature already used in an ancestor node on that path",
+      "is pruned away if its contribution to loss reduction falls below a minimum threshold",
+      "is grown on a separate random subsample to maximize diversity across depth levels"
+    ],
+    "answer": 0,
+    "explanation": "An oblivious tree applies the identical $(\\text{feature}, \\text{threshold})$ split at every node of a given depth, producing a symmetric balanced structure. Prediction becomes a single table lookup via bit-masking, enabling very fast inference at a small cost in expressiveness per tree."
+  },
+  {
+    "q": "Ridge regression modifies ordinary least squares by adding a penalty term that:",
+    "options": [
+      "adds $\\lambda\\sum|w_j|$ (L1), driving the weights of irrelevant features to exactly zero",
+      "adds $\\lambda\\sum w_j^2$ (L2), shrinking all weights toward zero without eliminating any",
+      "penalizes the largest weight coefficient, enforcing a uniform bound on all model weights",
+      "subtracts a weight-proportional fraction at each step, equivalent to multiplying by $(1-\\lambda)$"
+    ],
+    "answer": 1,
+    "explanation": "Ridge adds $\\lambda\\|\\mathbf{w}\\|_2^2$ to the OLS loss. The L2 geometry penalizes large weights but never forces them exactly to zero — the solution shifts toward the origin but stays off the axes. Lasso (L1) uses absolute values whose geometry does force some weights to exactly zero."
+  },
+  {
+    "q": "Why is binary cross-entropy loss preferred over Mean Squared Error (MSE) for training logistic regression?",
+    "options": [
+      "Cross-entropy has a closed-form solution while MSE requires iterative gradient descent",
+      "Cross-entropy produces a convex loss surface with a global minimum; MSE applied to sigmoid outputs is non-convex",
+      "Cross-entropy asymmetrically penalizes false negatives more than false positives to improve recall",
+      "Cross-entropy gradients remain bounded while MSE gradients explode when predictions near 0 or 1"
+    ],
+    "answer": 1,
+    "explanation": "Applying MSE to sigmoid outputs creates a non-convex loss surface with multiple local minima, making gradient descent unreliable. Binary cross-entropy combined with sigmoid is convex for logistic regression, guaranteeing that gradient descent finds the unique global minimum regardless of initialization."
+  },
+  {
+    "q": "In sklearn, the Decision Tree parameter `ccp_alpha` (cost-complexity pruning alpha) controls:",
+    "options": [
+      "the maximum number of leaf nodes the tree is allowed to grow before splitting stops",
+      "post-pruning intensity — a higher value produces simpler trees by penalizing each additional leaf",
+      "the minimum impurity decrease required at a node to justify evaluating candidate splits",
+      "the random seed used for tie-breaking when two splits produce equal Gini reductions"
+    ],
+    "answer": 1,
+    "explanation": "Cost-complexity pruning minimizes $R_\\alpha(T) = R(T) + \\alpha|T|$ where $|T|$ is the leaf count. Setting `ccp_alpha > 0` prunes branches whose complexity cost exceeds their accuracy benefit. Use `cost_complexity_pruning_path()` to enumerate candidate values and select via cross-validation."
+  },
+  {
+    "q": "Random Forest's out-of-bag (OOB) error estimate is useful primarily because:",
+    "options": [
+      "it measures training error on bootstrap samples, providing a lower bound on generalization error",
+      "each sample is scored only by trees that were not trained on it, providing cross-validation-quality accuracy without a separate validation set",
+      "it averages predictions from all trees, including those that overfit their bootstrap samples",
+      "it uses the OOB samples to automatically tune n_estimators via early stopping"
+    ],
+    "answer": 1,
+    "explanation": "Each bootstrap sample omits ~36.8% of training rows. For each training example, its OOB prediction comes only from trees that never saw it — an unbiased estimate of generalization error comparable to cross-validation but obtained for free during training."
+  },
+  {
+    "q": "In LightGBM, which hyperparameter most directly controls model complexity and should be tuned as the primary depth-like constraint?",
+    "options": [
+      "learning_rate — lower values produce simpler individual trees since each step is smaller",
+      "num_leaves — directly caps the maximum leaves per tree, bounding model complexity",
+      "subsample — the fraction of rows used per tree, which limits overfitting by data reduction",
+      "min_child_samples — requiring sufficient samples per leaf to prevent over-specialization"
+    ],
+    "answer": 1,
+    "explanation": "LightGBM uses leaf-wise growth, so tree depth is not directly constrained. `num_leaves` caps the maximum leaves (roughly $2^{\\text{max\\_depth}}-1$ for a balanced tree). Setting it too high allows very deep asymmetric trees that overfit small datasets — tune this before other structural parameters."
+  },
+  {
+    "q": "In a soft-margin SVM, increasing parameter $C$ from a small value to a large value:",
+    "options": [
+      "widens the margin by allowing more training points to fall inside the soft-margin zone",
+      "narrows the margin and reduces tolerance for misclassifications, increasing the risk of overfitting",
+      "automatically adjusts $\\gamma$ to switch from RBF to linear kernel for faster convergence",
+      "changes the optimization from a quadratic to a linear program, reducing training time"
+    ],
+    "answer": 1,
+    "explanation": "$C$ is the penalty on margin violations: small $C$ accepts a wide margin with some errors (high regularization); large $C$ demands that nearly all points be correctly classified, forcing a narrower margin that can overfit to outliers. Think of $C$ as the model's intolerance for errors."
+  },
+  {
+    "q": "A KD-Tree data structure improves KNN prediction speed by reducing average query time from $O(np)$ (brute-force) to:",
+    "options": [
+      "$O(K \\cdot \\log n)$ — only the $K$ nearest neighbors need to be found along a search path",
+      "$O(p \\log n)$ — the tree partitions space in $p$ dimensions requiring $\\log n$ comparisons on average",
+      "$O(\\sqrt{n} \\cdot p)$ — the binary space partition halves candidates at each tree node",
+      "$O(n \\cdot \\log p)$ — feature dimensionality rather than sample count is the dominant cost"
+    ],
+    "answer": 1,
+    "explanation": "KD-Trees partition feature space axis-aligned and prune branches whose closest possible distance exceeds the current best. Average query time is $O(p \\log n)$. However, this degrades back toward $O(np)$ for $p > 20$ (curse of dimensionality), which is why Ball Trees are preferred in higher dimensions."
+  },
+  {
+    "q": "In Multinomial Naive Bayes, Laplace smoothing (add-$\\alpha$) is applied to word counts primarily to:",
+    "options": [
+      "normalize each class's word frequency distribution so that the probabilities across the full vocabulary sum to 1",
+      "prevent zero probabilities when a word in the test document never appears in training for that class",
+      "reduce the contribution of very frequent words that might dominate the likelihood calculation",
+      "ensure each class is assigned equal prior probability regardless of its training frequency"
+    ],
+    "answer": 1,
+    "explanation": "Without smoothing, a word absent from training spam emails gets $P(\\text{word}|\\text{spam}) = 0$, which zeroes the entire product likelihood regardless of all other words. Laplace smoothing adds $\\alpha$ to every count, ensuring no probability is exactly zero while minimally distorting the distribution."
+  },
+  {
+    "q": "Isotonic regression for probability calibration differs from Platt scaling in that isotonic regression:",
+    "options": [
+      "is parametric and fits only a sigmoid function, making it prone to underfitting on large datasets",
+      "is non-parametric and more flexible, but requires more data to avoid overfitting (typically > 1,000 calibration samples)",
+      "minimizes log-loss directly on the calibration set, while Platt scaling minimizes MSE",
+      "is valid only for tree-based models, while Platt scaling applies to any classifier output"
+    ],
+    "answer": 1,
+    "explanation": "Isotonic regression fits a monotone step function with no parametric form — more flexible than Platt's two-parameter sigmoid but prone to overfitting with small calibration sets. Platt scaling fits only $A$ and $B$ in $\\sigma(Af + B)$ and works reliably with as few as 100 validation samples."
+  },
+  {
+    "q": "In gradient boosting, the approximate rule governing the relationship between learning rate and number of trees states that:",
+    "options": [
+      "they are independent — n_estimators is set by early stopping and learning_rate is a scale factor",
+      "halving the learning rate and doubling n_estimators yields approximately the same model quality",
+      "increasing learning_rate always improves accuracy at the cost of longer training compute time",
+      "n_estimators should be set to $1/\\text{learning\\_rate}^2$ to minimize bias in the final ensemble"
+    ],
+    "answer": 1,
+    "explanation": "There is an inverse tradeoff: small $\\eta$ needs proportionally more trees to reach the same ensemble capacity. Best practice is a small learning rate (0.01–0.05) with many trees and early stopping, which typically generalizes better than fewer, larger-step rounds."
+  },
+  {
+    "q": "The primary reason LightGBM trains 5–10x faster than vanilla gradient boosting on large datasets is:",
+    "options": [
+      "leaf-wise growth, which reaches lower training loss with fewer boosting iterations than level-wise",
+      "histogram-based split evaluation that bins continuous features into ~256 bins, reducing per-feature split cost from $O(n)$ to $O(\\text{bins})$",
+      "exclusive feature bundling that merges mutually exclusive sparse features to reduce effective feature count",
+      "gradient-based one-side sampling that discards data points with small gradients to speed up iterations"
+    ],
+    "answer": 1,
+    "explanation": "Standard gradient boosting evaluates every unique feature value as a potential split point — $O(n)$ per feature. LightGBM first bins features into ~256 buckets, making split evaluation $O(256)$ regardless of dataset size. This single optimization is the dominant speedup on large-$n$ datasets."
+  },
+  {
+    "q": "A data scientist wants to apply an RBF kernel SVM to a dataset with 500,000 samples. The primary practical obstacle is:",
+    "options": [
+      "SVM cannot handle continuous features natively; it requires one-hot or binary feature inputs",
+      "SVM training requires forming and operating on an $n \\times n$ kernel matrix, making both memory and compute prohibitive at that scale",
+      "the RBF kernel's $\\gamma$ parameter becomes numerically unstable when $n > 100,000$",
+      "SVM's prediction time scales linearly with $n$, making real-time serving impossible at 500K samples"
+    ],
+    "answer": 1,
+    "explanation": "The $500K \\times 500K$ kernel matrix alone requires $\\approx 250 \\times 10^{12}$ values — far beyond RAM capacity. Training complexity is $O(n^2)$–$O(n^3)$. For large $n$, use LightGBM or LinearSVC (which avoids the kernel matrix) instead."
+  },
+  {
+    "q": "For binary classification with KNN, it is advisable to choose an odd value of $K$ because:",
+    "options": [
+      "odd values of $K$ produce smoother decision boundaries by averaging over more diverse neighbors",
+      "with an even $K$, tied vote counts cannot be deterministically broken, leading to inconsistent classifications",
+      "odd $K$ values correspond to an unbiased estimator of the Bayes error rate in the asymptotic limit",
+      "sklearn's default Minkowski distance metric requires an odd $K$ for correct normalization"
+    ],
+    "answer": 1,
+    "explanation": "With $K=2$ or $K=4$ (even), each class could receive exactly half the votes, producing a tie. An odd $K$ (3, 5, 7, ...) guarantees one class always has a strict majority in binary classification, making the prediction deterministic without arbitrary tie-breaking rules."
+  },
+  {
+    "q": "When classifying documents by topic using word count features, the standard Naive Bayes variant is:",
+    "options": [
+      "Gaussian NB — it models the distribution of word counts per class as a Gaussian distribution",
+      "Multinomial NB — it models word-count vectors using the multinomial distribution, natural for bag-of-words",
+      "Bernoulli NB — it counts word occurrences and normalizes them into per-document probabilities",
+      "Complement NB — it uses complement class statistics because it better handles class imbalance"
+    ],
+    "answer": 1,
+    "explanation": "Multinomial NB models the probability of a document's word count vector as a product of per-word multinomial probabilities — exactly matching bag-of-words. Bernoulli NB uses binary word presence/absence and loses frequency information. Gaussian NB is intended for continuous features, not discrete counts."
+  },
+  {
+    "q": "CatBoost's 'ordered boosting' prevents target leakage by:",
+    "options": [
+      "grouping correlated categorical features and assigning them a shared target-mean encoding",
+      "encoding each sample's category using only labels from previously seen samples in a random permutation",
+      "applying gradient clipping to the target statistics so that no single high-frequency category dominates the encoding",
+      "replacing low-frequency categories with a global mean before any target encoding is performed"
+    ],
+    "answer": 1,
+    "explanation": "Standard target encoding uses the mean label for a category computed over the full training set, including the current sample — subtly leaking the label. CatBoost processes samples in a random permutation and encodes sample $i$ using only labels from samples $1..i-1$, preventing within-sample leakage."
+  },
+  {
+    "q": "The derivative of the sigmoid function $\\sigma(z) = \\frac{1}{1+e^{-z}}$ with respect to $z$ is:",
+    "options": [
+      "$\\sigma(z) \\cdot e^{-z}$ — from differentiating the exponential term in the denominator directly",
+      "$\\frac{\\sigma(z)}{1 - \\sigma(z)}$ — the log-odds ratio that appears in logistic regression coefficients",
+      "$\\sigma(z)\\cdot(1 - \\sigma(z))$ — an elegant self-referential form used in backpropagation",
+      "$\\frac{1 - \\sigma(z)}{\\sigma(z)}$ — the complement ratio derived from the chain rule on the denominator"
+    ],
+    "answer": 2,
+    "explanation": "By the quotient rule, $\\sigma'(z) = \\sigma(z)(1-\\sigma(z))$. This self-referential form is numerically convenient: once $\\sigma(z)$ is computed during a forward pass, the gradient requires only a subtraction and multiplication — no additional exponential evaluations."
+  },
+  {
+    "q": "For a node with class probabilities $p_1, p_2, \\ldots, p_K$, the Gini impurity formula is:",
+    "options": [
+      "$-\\sum_{k=1}^K p_k \\log_2(p_k)$ — Shannon entropy, penalizing uncertain class distributions",
+      "$\\max_k(p_k) - \\min_k(p_k)$ — the spread between most and least probable class fractions",
+      "$1 - \\sum_{k=1}^K p_k^2$ — the probability of misclassifying a randomly drawn and labeled sample",
+      "$\\frac{1}{K}\\sum_{k=1}^K(p_k - \\bar{p})^2$ — variance of class probabilities around their overall mean value"
+    ],
+    "answer": 2,
+    "explanation": "$G = 1 - \\sum_k p_k^2$ equals the probability that two randomly drawn items from the node belong to different classes. Option A describes entropy (the alternative split criterion). Both reach 0 at pure nodes and peak at uniform distributions — in practice they select nearly identical splits."
+  },
+  {
+    "q": "The default value of `max_features` for a Random Forest used for **regression** in sklearn is:",
+    "options": [
+      "$\\sqrt{p}$ — the square root of total features, identical to the classification default",
+      "$\\log_2(p)$ — a logarithmic reduction for stronger decorrelation in regression trees",
+      "$p/3$ — approximately one-third of all features, the sklearn regression default",
+      "$p$ — all features are considered since regression tasks require higher individual tree accuracy"
+    ],
+    "answer": 2,
+    "explanation": "For regression, sklearn defaults to `max_features = 1.0/3` ($\\approx p/3$); for classification it defaults to `sqrt(p)`. Using fewer features per split forces trees to use different features at each node, decorrelating their predictions and maximizing the variance reduction from averaging."
+  },
+  {
+    "q": "XGBoost's default tree-building strategy is best described as:",
+    "options": [
+      "leaf-wise — it always expands the leaf with the highest loss reduction regardless of tree depth",
+      "depth-first — it fully grows each branch to maximum depth before backtracking to the next",
+      "level-wise — all nodes at the same depth are expanded simultaneously before moving deeper",
+      "best-first — it uses a priority queue sorted by weighted impurity to process nodes greedily"
+    ],
+    "answer": 2,
+    "explanation": "XGBoost uses level-wise (breadth-first) growth by default: all nodes at depth $d$ are processed before any at depth $d+1$. This produces balanced, predictable trees. LightGBM uses leaf-wise growth, which can achieve lower loss faster but may overfit on small data if num_leaves is unconstrained."
+  },
+  {
+    "q": "In a hard-margin SVM, the geometric width of the margin between the two supporting hyperplanes equals:",
+    "options": [
+      "$\\|\\mathbf{w}\\|$ — the norm of the weight vector, which the optimizer maximizes directly",
+      "$\\frac{1}{\\|\\mathbf{w}\\|}$ — the distance from the origin to the nearest supporting hyperplane",
+      "$\\frac{2}{\\|\\mathbf{w}\\|}$ — derived from the constraint $y_i(\\mathbf{w}^\\top\\mathbf{x}_i + b) \\geq 1$",
+      "$\\frac{2}{\\|\\mathbf{w}\\|^2}$ — the result of normalizing the margin by the squared weight norm in the Lagrangian"
+    ],
+    "answer": 2,
+    "explanation": "The two margin hyperplanes are at $\\mathbf{w}^\\top\\mathbf{x} + b = +1$ and $-1$. Their perpendicular distance is $\\frac{2}{\\|\\mathbf{w}\\|}$. Minimizing $\\frac{1}{2}\\|\\mathbf{w}\\|^2$ (the SVM objective) is equivalent to maximizing this margin width."
+  },
+  {
+    "q": "The Minkowski distance with parameter $q = 1$ between two points in $p$ dimensions is equivalent to:",
+    "options": [
+      "the Euclidean distance $\\sqrt{\\sum_j (a_j - b_j)^2}$ — the straight-line geometric distance",
+      "the Chebyshev distance $\\max_j |a_j - b_j|$ — the maximum single-dimension absolute difference",
+      "the Manhattan distance $\\sum_j |a_j - b_j|$ — the sum of absolute differences per dimension",
+      "the cosine distance $1 - \\frac{A \\cdot B}{\\|A\\|\\|B\\|}$ — measuring angular separation between vectors"
+    ],
+    "answer": 2,
+    "explanation": "Minkowski: $(\\sum_j |a_j - b_j|^q)^{1/q}$. With $q=1$: $\\sum_j|a_j-b_j|$ = Manhattan (city-block). With $q=2$: Euclidean (straight-line). As $q \\to \\infty$: Chebyshev (max absolute difference). Choosing the right metric can meaningfully affect KNN performance."
+  },
+  {
+    "q": "Bernoulli Naive Bayes is the appropriate variant when:",
+    "options": [
+      "features are continuous and normally distributed within each class, such as sensor measurements",
+      "features are word counts or term frequencies in a bag-of-words document representation",
+      "each feature is binary (0 or 1), such as word presence or absence in a document",
+      "features are high-cardinality categorical variables with many possible values per attribute"
+    ],
+    "answer": 2,
+    "explanation": "Bernoulli NB models each feature as a Bernoulli random variable: $P(x_j=1|\\text{class})=\\theta_{jk}$. It explicitly penalizes absent words, unlike Multinomial NB which only considers present words. Bernoulli NB is preferred when binary occurrence matters more than frequency."
+  },
+  {
+    "q": "In an SVM with RBF kernel, setting $\\gamma$ to a very high value results in:",
+    "options": [
+      "a smooth, well-generalizing boundary since each training point exerts broad influence on the margin",
+      "a linear decision boundary since the Gaussian kernel degenerates to a simple dot product",
+      "a complex, wiggly boundary where each point has a tiny influence radius, risking memorization",
+      "faster training since the Gram matrix becomes sparser and the quadratic program is easier to solve"
+    ],
+    "answer": 2,
+    "explanation": "$\\gamma$ controls each training point's influence radius: $K(x_i, x_j) = \\exp(-\\gamma\\|x_i-x_j\\|^2)$. High $\\gamma$ means only points extremely close to a training sample have non-negligible weight — the model memorizes each point, creating a spiky boundary. Low $\\gamma$ spreads influence broadly for smoother generalization."
+  },
+  {
+    "q": "When increasing `n_estimators` in a Random Forest, model accuracy:",
+    "options": [
+      "increases without bound — more trees always help, so n_estimators should be maximized",
+      "can decrease due to variance amplification when too many correlated trees are averaged together in the ensemble",
+      "improves up to roughly 200 trees and then yields diminishing returns with negligible further gain",
+      "depends entirely on max_depth, with n_estimators having no measurable effect beyond 10 trees"
+    ],
+    "answer": 2,
+    "explanation": "Adding trees reduces variance (more averaging), but reaches a plateau — typically around 100–200 trees. Beyond this, accuracy is essentially flat. Critically, unlike boosting, adding more trees to a Random Forest cannot overfit; it merely wastes compute beyond the plateau."
+  },
+  {
+    "q": "The computational complexity of computing the OLS solution via the Normal Equation for $n$ samples and $p$ features is:",
+    "options": [
+      "$O(np \\cdot \\text{iterations})$ — the same cost as gradient descent since both process all data",
+      "$O(n^2 p)$ — dominated by the outer product of $n$ gradient vectors across all samples",
+      "$O(np^2 + p^3)$ — computing $X^\\top X$ costs $O(np^2)$; inverting the $p \\times p$ matrix costs $O(p^3)$",
+      "$O(np \\log p)$ — a divide-and-conquer approach reduces the inversion to log-linear complexity"
+    ],
+    "answer": 2,
+    "explanation": "Computing $X^\\top X$ is an $(n \\times p)^\\top(n \\times p)$ product costing $O(np^2)$. Inverting the resulting $p \\times p$ matrix costs $O(p^3)$. With $p = 10{,}000$ features, $p^3 = 10^{12}$ operations — completely impractical; gradient descent is the correct choice."
+  },
+  {
+    "q": "Among Decision Tree hyperparameters, which one has the single biggest impact on controlling the bias-variance tradeoff and should be tuned first?",
+    "options": [
+      "`criterion` — switching between Gini and Entropy changes which splits are selected at each node",
+      "`min_samples_split` — raising from 2 to 20 prevents splitting on very small intermediate nodes",
+      "`max_depth` — limiting tree depth is the most direct control over model complexity",
+      "`splitter` — switching from 'best' to 'random' introduces stochasticity that acts as regularization"
+    ],
+    "answer": 2,
+    "explanation": "Tree depth is the primary capacity control: an unrestricted tree grows until every leaf is pure (100% training accuracy). `max_depth=5` allows at most 32 leaves; `max_depth=20` allows over a million. In practice `criterion` makes almost no difference — Gini and Entropy select the same splits nearly always."
+  },
+  {
+    "q": "Which statement correctly explains why gradient boosting training cannot be fully parallelized across trees?",
+    "options": [
+      "Each tree processes all training samples in order, while Random Forest trees can be built across separate machines",
+      "The loss function requires synchronized weight updates across all trees simultaneously each round",
+      "Each new tree is fit to the residuals of the current ensemble, so tree $m$ depends on trees $1..m-1$",
+      "Second-order gradient statistics require multiple passes over the full dataset before each split"
+    ],
+    "answer": 2,
+    "explanation": "Tree $m$ fits the pseudo-residuals of $F_{m-1}$ — the ensemble of all previous trees. This sequential dependency makes it impossible to build tree $m$ until tree $m-1$ is complete. Random Forest has no such dependency; each tree is independently trained on its bootstrap sample and all trees can be built in parallel."
+  },
+  {
+    "q": "The 'curse of dimensionality' in KNN refers to the phenomenon that as the number of features $p$ increases:",
+    "options": [
+      "the model requires exponentially more memory since each feature adds a new dimension to stored data",
+      "training time grows as $O(p^3)$ due to covariance matrix computation, making fitting impractical",
+      "distances between all points converge — nearest and farthest neighbors become nearly equidistant",
+      "the Euclidean metric violates the triangle inequality, causing KD-Tree search to return wrong neighbors"
+    ],
+    "answer": 2,
+    "explanation": "In high dimensions all pairwise distances concentrate around the same value. The relative contrast $(d_{\\max}-d_{\\min})/d_{\\min} \\to 0$ as $p \\to \\infty$, so 'nearest' is indistinguishable from 'farthest'. The practical rule of thumb: KNN is reliable for $p < 20$ meaningful features."
+  },
+  {
+    "q": "For a supervised classification task with fewer than 1,000 labeled samples and 15 features, which algorithms are recommended as first attempts?",
+    "options": [
+      "LightGBM and XGBoost — gradient boosting is robust to small datasets and requires no feature scaling",
+      "Deep neural networks — they generalize well from small data when pre-trained on a related domain",
+      "Logistic Regression, Naive Bayes, or KNN ($p < 20$) — low-variance models suited to small-$n$ regimes",
+      "Polynomial-kernel SVM of degree 5 — small datasets benefit from rich non-linear feature transformations"
+    ],
+    "answer": 2,
+    "explanation": "High-capacity models (deep nets, unpruned trees) easily overfit when $n < 1000$. Logistic regression, Naive Bayes, and KNN (with few features) have limited model complexity, making them naturally resistant to overfitting. GBMs can work but require careful regularization and are harder to tune on small data."
+  },
+  {
+    "q": "A calibration method that fits a non-parametric monotonically increasing step function from model scores to probabilities is:",
+    "options": [
+      "Platt scaling — a parametric method fitting a two-parameter sigmoid requiring large calibration sets",
+      "Beta calibration — uses the Beta distribution CDF to map scores to probabilities for any classifier",
+      "Isotonic regression — a non-parametric method, more flexible than Platt but prone to overfitting with fewer than ~1,000 calibration samples",
+      "Reliability binning — directly bins predictions and replaces each bin's score with its observed frequency"
+    ],
+    "answer": 2,
+    "explanation": "Isotonic regression fits any monotone step function with no parametric assumption — more flexible but needs a large calibration set. Platt scaling fits only two parameters ($A$, $B$) in $\\sigma(Af+B)$ and works reliably with as few as 100 samples. Choose isotonic when you have > 1,000 calibration examples."
+  },
+  {
+    "q": "The decision boundary of a logistic regression model in $p$-dimensional feature space is always:",
+    "options": [
+      "a non-linear curve defined by $\\sigma(\\mathbf{w}^\\top\\mathbf{x}) = 0.5$ incorporating feature interactions",
+      "a piecewise linear boundary formed by connecting class centroids through the perpendicular bisector",
+      "a quadratic surface because the sigmoid function introduces a second-order non-linearity",
+      "a $(p-1)$-dimensional hyperplane defined by $\\mathbf{w}^\\top\\mathbf{x} + b = 0$"
+    ],
+    "answer": 3,
+    "explanation": "The boundary is where $P(y=1)=0.5$, i.e., where $\\mathbf{w}^\\top\\mathbf{x}+b=0$ — always a flat hyperplane. The sigmoid adds non-linearity to the output probability but not to the boundary itself. To capture non-linear boundaries with logistic regression, you must add polynomial features manually."
+  },
+  {
+    "q": "When the number of features $p$ is very large (e.g., $p = 100{,}000$), the preferred optimization method for linear regression is:",
+    "options": [
+      "the Normal Equation — it remains tractable because it only needs to invert a single $p \\times p$ matrix",
+      "Cholesky decomposition — it reduces the inversion cost from $O(p^3)$ to $O(p^2)$ asymptotically",
+      "stochastic eigendecomposition — it approximates the top eigenvectors of $X^\\top X$ efficiently",
+      "gradient descent — it avoids matrix inversion entirely and scales as $O(np \\cdot \\text{iterations})$"
+    ],
+    "answer": 3,
+    "explanation": "For $p=100K$ features, inverting $X^\\top X$ costs $O(p^3) = 10^{15}$ operations — completely impractical. Gradient descent processes one mini-batch per iteration at $O(np)$ each and converges in manageable iterations. Cholesky is faster than naive inversion but still $O(p^3)$ in big-O."
+  },
+  {
+    "q": "The entropy splitting criterion for Decision Trees measures node impurity as:",
+    "options": [
+      "$1 - \\sum_k p_k^2$ — the Gini impurity, equivalent to misclassification probability under random labeling",
+      "$\\sum_k p_k(1-p_k)$ — a smooth approximation to classification error avoiding logarithms",
+      "$\\max_k p_k - \\min_k p_k$ — the range of class probabilities indicating distribution spread",
+      "$-\\sum_k p_k \\log_2(p_k)$ — Shannon entropy, reaching 0 at pure nodes and $\\log_2 K$ at uniform distribution"
+    ],
+    "answer": 3,
+    "explanation": "Shannon entropy $H = -\\sum_k p_k\\log_2(p_k)$ is 0 for a pure node and maximized at $\\log_2 K$ for a uniform class distribution. Option A describes Gini impurity (the alternative criterion). In practice, the two criteria select nearly identical splits; Gini is slightly faster since it avoids logarithm computation."
+  },
+  {
+    "q": "Mean Decrease in Impurity (MDI) feature importance in Random Forest is known to be biased because it:",
+    "options": [
+      "overestimates the importance of features that are highly correlated with the class label",
+      "systematically underestimates categorical features that appear in few splitting conditions",
+      "ignores feature interactions and only captures individual marginal contributions",
+      "favors features with many unique values (high cardinality) since more candidate splits create more apparent impurity reduction"
+    ],
+    "answer": 3,
+    "explanation": "MDI sums impurity reductions across all splits using a feature, but a continuous or high-cardinality feature has far more possible thresholds to 'choose' — giving it more opportunities to appear important even if its true predictive value is modest. Permutation importance and SHAP are unbiased alternatives."
+  },
+  {
+    "q": "The computational efficiency of the kernel trick in SVM stems from the fact that:",
+    "options": [
+      "it eliminates support vectors inside the margin, dramatically reducing the problem size",
+      "it transforms the quadratic program to a linear program, removing the need for iterative solvers",
+      "it pre-computes all pairwise feature interactions during training so prediction is a lookup",
+      "it evaluates dot products in a high-dimensional (possibly infinite-dimensional) space without explicitly computing the feature mapping $\\phi(\\mathbf{x})$"
+    ],
+    "answer": 3,
+    "explanation": "Instead of computing $\\phi(\\mathbf{x})$ explicitly (which may be infinite-dimensional for RBF), the kernel $K(\\mathbf{x}_i, \\mathbf{x}_j) = \\phi(\\mathbf{x}_i)^\\top\\phi(\\mathbf{x}_j)$ is evaluated directly from original features in $O(p)$. This makes non-linear SVM computationally feasible even when the explicit feature space is intractable."
+  },
+  {
+    "q": "When using `weights='distance'` in sklearn's KNeighborsClassifier, each neighbor's contribution to the final vote is:",
+    "options": [
+      "equal for all $K$ neighbors, identical to `weights='uniform'` when all distances are non-zero",
+      "proportional to rank among the $K$ neighbors: rank-1 gets weight $K$, rank-$K$ gets weight 1",
+      "proportional to the neighbor's estimated class probability on the training set",
+      "inversely proportional to its distance: weight $= 1/d(\\mathbf{x}_{\\text{new}}, \\mathbf{x}_i)$, giving closer neighbors more influence"
+    ],
+    "answer": 3,
+    "explanation": "Distance weighting assigns each neighbor a weight inversely proportional to its distance, so a very close neighbor from the correct class can outweigh several slightly farther neighbors from the wrong class. This is particularly useful when the decision boundary runs close to a training point."
+  },
+  {
+    "q": "Despite violating the conditional independence assumption in practice, Naive Bayes still achieves good classification accuracy because:",
+    "options": [
+      "the independence assumption acts as implicit regularization, reducing overfitting on training data",
+      "modern feature engineering pre-transforms features to make them approximately independent",
+      "multiplying many small probabilities amplifies the signal for the correct class over wrong classes",
+      "classification only needs $\\arg\\max_k P(k|\\mathbf{x})$ — the correct ranking, not exact probability values"
+    ],
+    "answer": 3,
+    "explanation": "The decision rule picks whichever class has the highest posterior. Even if all posteriors are miscalibrated due to the independence assumption, Naive Bayes works as long as the correct class still scores highest. The low model complexity also reduces variance, compensating for the bias from the naive assumption."
+  },
+  {
+    "q": "LightGBM's leaf-wise growth strategy selects the next node to split based on:",
+    "options": [
+      "depth — it processes all leaves at the current depth before any leaf at the next depth level",
+      "arrival order — it expands nodes in the order they were created during the current round",
+      "MDI from previous rounds — it prioritizes features with the highest accumulated impurity reduction",
+      "maximum loss reduction — it always expands whichever leaf would reduce training loss the most"
+    ],
+    "answer": 3,
+    "explanation": "Leaf-wise growth greedily expands the single leaf with the highest predicted loss reduction — an asymmetric strategy that reaches lower training loss faster than level-wise (which expands all nodes at a given depth). The downside: deep, unbalanced trees can overfit small datasets, controlled via `num_leaves`."
+  },
+  {
+    "q": "The homoscedasticity assumption in linear regression states that:",
+    "options": [
+      "all feature variables are normally distributed with zero mean and unit variance in the training data",
+      "each regression coefficient is bounded so that no single feature dominates the prediction output",
+      "the pairwise correlation between all feature pairs must be below a threshold to prevent collinearity",
+      "the variance of the residuals is approximately constant across all predicted values (no fan shape)"
+    ],
+    "answer": 3,
+    "explanation": "Homoscedasticity means 'equal scatter': residual spread should not systematically increase or decrease with the fitted value. When violated (heteroscedasticity), OLS standard errors become unreliable, invalidating confidence intervals and p-values — use weighted least squares or transform the target."
+  },
+  {
+    "q": "Permutation feature importance estimates a feature's relevance by:",
+    "options": [
+      "summing the Gini reduction from all splits using that feature across all trees in the ensemble",
+      "retraining the model with the feature excluded and measuring the difference in test accuracy",
+      "computing SHAP values and taking their mean absolute contribution across all training samples",
+      "randomly shuffling that feature's values in the validation set and measuring the resulting accuracy drop"
+    ],
+    "answer": 3,
+    "explanation": "Permutation importance shuffles one feature's column (breaking its relationship with the target) while leaving all others intact. The drop in validation accuracy estimates that feature's importance for the model. This works for any model and avoids MDI's high-cardinality bias, though correlated features share credit."
+  },
+  {
+    "q": "After training, the prediction time for a kernel SVM classifier on a new test sample scales with:",
+    "options": [
+      "the total number of training samples $n$, since the full kernel matrix must be consulted each time",
+      "only the number of features $p$, since the decision function simplifies to a linear dot product",
+      "number of trees $K$ times tree depth $d$, identical to the complexity of a Random Forest predict",
+      "the number of support vectors $SV$ times features $p$: evaluating $\\sum_{i \\in SV}\\alpha_i K(\\mathbf{x}_i, \\mathbf{x}_{\\text{new}})$"
+    ],
+    "answer": 3,
+    "explanation": "SVM prediction evaluates the kernel function against each support vector: $f(\\mathbf{x}) = \\sum_{i \\in SV}\\alpha_i y_i K(\\mathbf{x}_i, \\mathbf{x}) + b$. With a clear margin (large $C$) there are few support vectors and prediction is fast. With a complex boundary (small $C$, many SVs), prediction cost grows as $O(SV \\cdot p)$."
+  },
+  {
+    "q": "CatBoost's ordered target statistics encode a categorical feature for sample $i$ using only labels from samples $1..i-1$ in a random permutation in order to:",
+    "options": [
+      "reduce computational cost, since using all $n$ samples for encoding is $O(n^2)$",
+      "mirror online learning where future samples are never available when encoding past examples",
+      "ensure encoding is computed on a validation set rather than the training set for each sample",
+      "prevent sample $i$'s own label from influencing its categorical encoding, eliminating within-sample target leakage"
+    ],
+    "answer": 3,
+    "explanation": "Standard target encoding computes the mean label for a category using all training data including the current sample — subtly leaking the label. Using only previous samples in the permutation ensures sample $i$'s encoding is based on held-out labels, eliminating this leakage without requiring a separate validation set."
+  },
+  {
+    "q": "In sklearn's cost-complexity pruning for Decision Trees, increasing `ccp_alpha` results in:",
+    "options": [
+      "a deeper tree with more leaves, as the penalty encourages exploring additional branch splits",
+      "no change in tree structure — `ccp_alpha` only affects the learning rate for leaf value updates",
+      "a narrower tree where additional features are excluded from consideration at each candidate split",
+      "a simpler tree with fewer leaves, as more branches are pruned to minimize $R_\\alpha(T) = R(T) + \\alpha|T|$"
+    ],
+    "answer": 3,
+    "explanation": "Higher $\\alpha$ penalizes complexity more heavily, causing more branches to be pruned from the fully grown tree. Select $\\alpha$ via `cost_complexity_pruning_path()` then choose the value maximizing validation accuracy via cross-validation. The fully grown tree ($\\alpha=0$) and a single-node stump are the two extremes."
+  },
+  {
+    "q": "The gradient descent weight update $w_j \\leftarrow w_j - \\frac{2\\eta}{n}\\sum_{i=1}^n(\\hat{y}_i - y_i)x_{ij}$ minimizes which loss function?",
+    "options": [
+      "binary cross-entropy $-\\frac{1}{n}\\sum[y_i\\log\\hat{p}_i + (1-y_i)\\log(1-\\hat{p}_i)]$",
+      "mean absolute error $\\frac{1}{n}\\sum|y_i - \\hat{y}_i|$, which uses sign rather than linear gradient",
+      "hinge loss $\\frac{1}{n}\\sum\\max(0, 1 - y_i\\hat{y}_i) + \\lambda\\|\\mathbf{w}\\|^2$, used in SVM training",
+      "mean squared error $\\frac{1}{n}\\sum_{i=1}^n(y_i - \\hat{y}_i)^2$, whose gradient is $\\frac{2}{n}\\sum(\\hat{y}_i - y_i)x_{ij}$"
+    ],
+    "answer": 3,
+    "explanation": "Taking $\\partial/\\partial w_j$ of MSE $= \\frac{1}{n}\\sum(\\hat{y}_i-y_i)^2$ yields exactly $\\frac{2}{n}\\sum(\\hat{y}_i-y_i)x_{ij}$, matching the update rule. MAE produces a sign-based subgradient; cross-entropy is used for logistic regression; hinge loss is the SVM objective."
+  },
+  {
+    "q": "A model is considered 'well-calibrated' if, among all test predictions with assigned probability 0.7:",
+    "options": [
+      "at least 70% of predictions rank in the top third of the predicted probability range",
+      "the model's AUC-ROC score is at least 0.70 when evaluated on those specific samples",
+      "predicted probabilities strictly increase as the true positive rate increases on the ROC curve",
+      "approximately 70% of those samples are actual positives in the ground truth labels"
+    ],
+    "answer": 3,
+    "explanation": "Calibration means predicted probabilities match empirical frequencies: if a model assigns 0.7 to 1,000 examples, ~700 should be true positives. A reliability diagram plots this relationship — the diagonal line is perfect calibration. Well-calibrated probabilities are essential for cost-sensitive decisions (medical risk, ad bidding)."
+  }
+]
