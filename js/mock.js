@@ -1,0 +1,515 @@
+// ═══════════════════════════════════════════════════════════
+// ═══  mock.js — Mock Test (exam mode): pull N random       ═══
+// ═══  questions from a fresh bank across COMPLETED chapters ═══
+// ═══════════════════════════════════════════════════════════
+
+// Mock questions are a SEPARATE bank from the per-chapter quizzes (QUIZ_DATA).
+// The file (js/data/mock_questions.js, ~large) is lazy-loaded the first time the
+// Mock Test page is opened, mirroring the quizzes.js / DSA-index lazy-load pattern.
+let _mockDataPromise = null;
+function ensureMockData() {
+  if (typeof MOCK_DATA !== 'undefined') return Promise.resolve();
+  if (_mockDataPromise) return _mockDataPromise;
+  _mockDataPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'js/data/mock_questions.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _mockDataPromise = null; reject(new Error('Mock question bank failed to load')); };
+    document.head.appendChild(s);
+  });
+  return _mockDataPromise;
+}
+
+// Minimum questions in the pool before a full mock test is "unlocked".
+const MOCK_MIN_POOL = 10;
+const MOCK_DEFAULT_COUNT = 20;
+
+let mockState = null;
+
+// ─── Sourcing helpers ───
+function mockChaptersWithBank() {
+  // All non-divider chapters that have a mock-question bank entry.
+  if (typeof MOCK_DATA === 'undefined') return [];
+  return chapters.filter(ch => ch.file && !ch.section).map(ch => {
+    const key = ch.file.replace(/^content\//, '');
+    const qs = MOCK_DATA[key] || MOCK_DATA[ch.file] || [];
+    return { file: ch.file, title: ch.title, id: ch.id, ref: !!ch.ref, total: qs.length };
+  }).filter(c => c.total > 0);
+}
+
+function mockEligibleChapters() {
+  // Chapters the user has marked as read AND that have a mock-question bank.
+  return mockChaptersWithBank().filter(c => readChapters[c.file]);
+}
+
+function mockPoolSize() {
+  return mockEligibleChapters().reduce((s, c) => s + c.total, 0);
+}
+
+// Shuffle a question's options and remap the correct-answer index so the
+// displayed order is randomized even if the source data has a positional bias.
+function mockPrepareQuestion(q, source, sourceFile) {
+  const idx = q.options.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [idx[i], idx[j]] = [idx[j], idx[i]];
+  }
+  return {
+    q: q.q,
+    options: idx.map(i => q.options[i]),
+    answer: idx.indexOf(q.answer),
+    explanation: q.explanation || '',
+    source: source,
+    sourceFile: sourceFile,
+  };
+}
+
+function mockBuildPool(count) {
+  const all = [];
+  mockEligibleChapters().forEach(ch => {
+    const key = ch.file.replace(/^content\//, '');
+    const qs = MOCK_DATA[key] || MOCK_DATA[ch.file] || [];
+    qs.forEach(q => {
+      if (q && Array.isArray(q.options) && q.options.length >= 2 && typeof q.answer === 'number') {
+        all.push(mockPrepareQuestion(q, ch.title, ch.file));
+      }
+    });
+  });
+  // Fisher–Yates shuffle the combined pool, then take the first `count`.
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  return all.slice(0, count);
+}
+
+// ─── History ───
+function getMockHistory() { return JSON.parse(localStorage.getItem('ml4-mock-history') || '[]'); }
+function saveMockHistory(h) { safeSetItem('ml4-mock-history', JSON.stringify(h)); }
+
+// ─── Page entry ───
+async function showMockTest() {
+  exitFocusMode();
+  trackChapterClose();
+  if (mockState && mockState.timerId) { clearInterval(mockState.timerId); mockState.timerId = null; }
+  currentIndex = -1;
+  currentPage = 'mock';
+  renderSidebar();
+  closeSidebar();
+  document.getElementById('tocPanel').classList.remove('visible');
+  document.getElementById('breadcrumb').textContent = '📝 Mock Test';
+  document.getElementById('readBtn').style.display = 'none';
+  document.getElementById('findBtn').style.display = 'none'; closeFind();
+  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
+  pushHash('mock-test');
+  const rt = document.getElementById('readingTime'); if (rt) rt.remove();
+  const contentEl = document.getElementById('content');
+  contentEl.classList.remove('chapter-view');
+
+  if (typeof MOCK_DATA === 'undefined') {
+    contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading question bank…</div>';
+    try { await ensureMockData(); }
+    catch (e) {
+      contentEl.innerHTML = '<div class="loading" style="color:var(--danger,#cf222e);">Failed to load the mock question bank. Check your connection and try again.</div>';
+      return;
+    }
+  }
+  mockState = null;
+  renderMockLanding();
+}
+
+function renderMockLanding() {
+  const contentEl = document.getElementById('content');
+  const eligible = mockEligibleChapters();
+  const withBank = mockChaptersWithBank();
+  const pool = mockPoolSize();
+  const hist = getMockHistory();
+  const best = hist.length ? Math.max(...hist.map(h => h.pct)) : 0;
+  const lastFive = hist.slice(-5).reverse();
+
+  // Locked state: not enough completed-chapter questions yet.
+  if (pool < MOCK_MIN_POOL) {
+    const readCount = eligible.length;
+    contentEl.innerHTML = `
+      <div class="mock-wrap">
+        <div class="mock-hero">
+          <div class="mock-hero-icon">📝</div>
+          <h1>Mock Test</h1>
+          <p class="mock-hero-sub">Exam mode — random questions drawn from every chapter you've completed.</p>
+        </div>
+        <div class="mock-locked">
+          <div style="font-size:34px;margin-bottom:8px;">🔒</div>
+          <h2>Not enough completed chapters yet</h2>
+          <p>The mock test pulls fresh questions from chapters you've <strong>marked as read</strong>.
+          You currently have <strong>${pool}</strong> question${pool === 1 ? '' : 's'} available
+          from <strong>${readCount}</strong> completed chapter${readCount === 1 ? '' : 's'}.</p>
+          <p>Read and mark at least a couple of chapters (need ${MOCK_MIN_POOL}+ questions) to unlock a full mock test.</p>
+          <button class="mock-btn-primary" onclick="renderWelcome()">Browse chapters</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const counts = [10, 20, 30, 50].filter(c => c <= pool);
+  if (!counts.length) counts.push(pool);
+  const defaultCount = counts.includes(MOCK_DEFAULT_COUNT) ? MOCK_DEFAULT_COUNT : counts[counts.length - 1];
+
+  contentEl.innerHTML = `
+    <div class="mock-wrap">
+      <div class="mock-hero">
+        <div class="mock-hero-icon">📝</div>
+        <h1>Mock Test</h1>
+        <p class="mock-hero-sub">Exam mode — random questions drawn from every chapter you've completed. No hints until you submit.</p>
+      </div>
+
+      <div class="mock-stats">
+        <div class="mock-stat"><div class="mock-stat-num">${pool}</div><div class="mock-stat-label">Questions available</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${eligible.length}</div><div class="mock-stat-label">Completed chapters</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${hist.length}</div><div class="mock-stat-label">Tests taken</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${best ? best + '%' : '—'}</div><div class="mock-stat-label">Best score</div></div>
+      </div>
+
+      <div class="mock-config">
+        <div class="mock-config-row">
+          <label>Number of questions</label>
+          <div class="mock-seg" id="mockCountSeg">
+            ${counts.map(c => `<button class="mock-seg-btn ${c === defaultCount ? 'active' : ''}" data-count="${c}" onclick="mockSelectCount(${c}, this)">${c}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mock-config-row">
+          <label>Timed exam</label>
+          <label class="mock-switch">
+            <input type="checkbox" id="mockTimerToggle">
+            <span class="mock-switch-slider"></span>
+          </label>
+          <span class="mock-config-hint" id="mockTimerHint">Off · ~1 min/question when on</span>
+        </div>
+        <button class="mock-btn-primary mock-start" onclick="mockStartFromUI()">Start mock test →</button>
+        <p class="mock-config-note">Questions and answer order are randomized. Each question is tagged to its chapter so your results show which topics need work.</p>
+      </div>
+
+      ${lastFive.length ? `
+      <div class="mock-history">
+        <h3>Recent attempts</h3>
+        <div class="mock-history-list">
+          ${lastFive.map(h => {
+            const d = new Date(h.date);
+            const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const grade = h.pct >= 80 ? 'great' : h.pct >= 60 ? 'good' : 'needs-work';
+            return `<div class="mock-history-item">
+              <span class="mock-history-pct ${grade}">${h.pct}%</span>
+              <span class="mock-history-meta">${h.score}/${h.total} correct · ${when}</span>
+              <span class="mock-history-time">${h.durationSec ? mockFmtDuration(h.durationSec) : ''}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
+      <div class="mock-coverage">
+        <h3>Coverage</h3>
+        <p class="mock-coverage-sub">${eligible.length} of ${withBank.length} chapters with a question bank are unlocked (completed).</p>
+        <div class="mock-coverage-grid">
+          ${withBank.map(c => {
+            const done = !!readChapters[c.file];
+            return `<div class="mock-cov-item ${done ? 'done' : 'locked'}" title="${done ? 'Completed' : 'Not completed yet'}">
+              <span class="mock-cov-icon">${done ? '✓' : '🔒'}</span>
+              <span class="mock-cov-title">${c.title}</span>
+              <span class="mock-cov-count">${c.total}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  mockState = { selectedCount: defaultCount };
+  const toggle = document.getElementById('mockTimerToggle');
+  if (toggle) toggle.addEventListener('change', () => {
+    const hint = document.getElementById('mockTimerHint');
+    if (hint) hint.textContent = toggle.checked
+      ? `On · ${mockState.selectedCount} min (~1 min/question)`
+      : 'Off · ~1 min/question when on';
+  });
+}
+
+function mockSelectCount(c, btn) {
+  if (mockState) mockState.selectedCount = c;
+  document.querySelectorAll('#mockCountSeg .mock-seg-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const toggle = document.getElementById('mockTimerToggle');
+  const hint = document.getElementById('mockTimerHint');
+  if (toggle && toggle.checked && hint) hint.textContent = `On · ${c} min (~1 min/question)`;
+}
+
+function mockStartFromUI() {
+  const count = (mockState && mockState.selectedCount) || MOCK_DEFAULT_COUNT;
+  const timed = !!(document.getElementById('mockTimerToggle') && document.getElementById('mockTimerToggle').checked);
+  startMockTest(count, timed);
+}
+
+// ─── Exam ───
+function startMockTest(count, timed) {
+  const questions = mockBuildPool(count);
+  if (!questions.length) {
+    showToast('📝 No questions', 'Complete a few chapters first', '📚');
+    return;
+  }
+  mockState = {
+    questions: questions,
+    answers: new Array(questions.length).fill(-1),
+    flags: {},
+    current: 0,
+    startTime: Date.now(),
+    timed: !!timed,
+    timerTotal: timed ? questions.length * 60 : 0,
+    timerLeft: timed ? questions.length * 60 : 0,
+    timerId: null,
+    submitted: false,
+  };
+  if (timed) {
+    mockState.timerId = setInterval(mockTick, 1000);
+  }
+  renderMockQuestion();
+}
+
+function mockTick() {
+  if (!mockState || mockState.submitted) return;
+  // If the user navigated away from the Mock Test page, stop the timer so it
+  // can't auto-submit over another page's content.
+  if (typeof currentPage !== 'undefined' && currentPage !== 'mock') {
+    clearInterval(mockState.timerId); mockState.timerId = null; return;
+  }
+  mockState.timerLeft--;
+  const el = document.getElementById('mockTimer');
+  if (el) {
+    el.textContent = '⏱ ' + mockFmtDuration(mockState.timerLeft);
+    el.classList.toggle('mock-timer-low', mockState.timerLeft <= 30);
+  }
+  if (mockState.timerLeft <= 0) {
+    clearInterval(mockState.timerId);
+    mockState.timerId = null;
+    showToast('⏱ Time up', 'Submitting your mock test', '📝');
+    submitMockTest(true);
+  }
+}
+
+function renderMockQuestion() {
+  const st = mockState;
+  const contentEl = document.getElementById('content');
+  const q = st.questions[st.current];
+  const answered = st.answers.filter(a => a >= 0).length;
+
+  contentEl.innerHTML = `
+    <div class="mock-wrap mock-exam">
+      <div class="mock-exam-top">
+        <div class="mock-exam-meta">
+          <span class="mock-q-counter">Question ${st.current + 1} <span style="opacity:.6">/ ${st.questions.length}</span></span>
+          <span class="mock-q-source">${q.source ? '📖 ' + q.source : ''}</span>
+        </div>
+        ${st.timed ? `<span class="mock-timer ${st.timerLeft <= 30 ? 'mock-timer-low' : ''}" id="mockTimer">⏱ ${mockFmtDuration(st.timerLeft)}</span>` : ''}
+      </div>
+      <div class="quiz-progress-bar" style="margin-bottom:18px;"><div class="quiz-progress-fill" style="width:${(answered / st.questions.length) * 100}%"></div></div>
+
+      <div class="mock-question">${st.current + 1}. ${marked.parseInline(q.q)}</div>
+      <div class="mock-options">
+        ${q.options.map((opt, i) => `
+          <button class="quiz-option ${st.answers[st.current] === i ? 'selected' : ''}" onclick="mockSelectOption(${i})">
+            <span class="mock-opt-letter">${String.fromCharCode(65 + i)}</span>${marked.parseInline(opt)}
+          </button>`).join('')}
+      </div>
+
+      <div class="mock-controls">
+        <button class="mock-btn-ghost" onclick="mockPrev()" ${st.current === 0 ? 'disabled' : ''}>← Prev</button>
+        <button class="mock-btn-ghost ${st.flags[st.current] ? 'mock-flagged' : ''}" onclick="mockToggleFlag()">${st.flags[st.current] ? '🚩 Flagged' : '⚑ Flag'}</button>
+        ${st.current < st.questions.length - 1
+          ? `<button class="mock-btn-primary mock-btn-next" onclick="mockNext()">Next →</button>`
+          : `<button class="mock-btn-primary mock-btn-next" onclick="submitMockTest(false)">Submit ✓</button>`}
+      </div>
+
+      <div class="mock-nav">
+        <div class="mock-nav-head">
+          <span>Question navigator</span>
+          <span class="mock-nav-legend"><i class="dot answered"></i> answered &nbsp; <i class="dot flagged"></i> flagged &nbsp; <i class="dot"></i> unanswered</span>
+        </div>
+        <div class="mock-nav-grid">
+          ${st.questions.map((_, i) => {
+            const cls = [
+              i === st.current ? 'current' : '',
+              st.answers[i] >= 0 ? 'answered' : '',
+              st.flags[i] ? 'flagged' : '',
+            ].filter(Boolean).join(' ');
+            return `<button class="mock-nav-cell ${cls}" onclick="mockGoto(${i})">${i + 1}</button>`;
+          }).join('')}
+        </div>
+        <div class="mock-nav-footer">
+          <span>${answered} of ${st.questions.length} answered</span>
+          <button class="mock-btn-submit" onclick="submitMockTest(false)">Submit test</button>
+        </div>
+      </div>
+    </div>`;
+
+  if (window.renderMathInElement) {
+    renderMathInElement(contentEl, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function mockSelectOption(i) {
+  if (!mockState || mockState.submitted) return;
+  mockState.answers[mockState.current] = i;
+  // Light update: just toggle option highlight + navigator + progress.
+  document.querySelectorAll('.mock-options .quiz-option').forEach((btn, idx) => {
+    btn.classList.toggle('selected', idx === i);
+  });
+  const cell = document.querySelectorAll('.mock-nav-cell')[mockState.current];
+  if (cell) cell.classList.add('answered');
+  const answered = mockState.answers.filter(a => a >= 0).length;
+  const fill = document.querySelector('.quiz-progress-fill');
+  if (fill) fill.style.width = (answered / mockState.questions.length) * 100 + '%';
+  const footer = document.querySelector('.mock-nav-footer span');
+  if (footer) footer.textContent = `${answered} of ${mockState.questions.length} answered`;
+}
+
+function mockToggleFlag() {
+  if (!mockState) return;
+  mockState.flags[mockState.current] = !mockState.flags[mockState.current];
+  renderMockQuestion();
+}
+
+function mockNext() { if (mockState && mockState.current < mockState.questions.length - 1) { mockState.current++; renderMockQuestion(); } }
+function mockPrev() { if (mockState && mockState.current > 0) { mockState.current--; renderMockQuestion(); } }
+function mockGoto(i) { if (mockState && i >= 0 && i < mockState.questions.length) { mockState.current = i; renderMockQuestion(); } }
+
+function submitMockTest(auto) {
+  const st = mockState;
+  if (!st || st.submitted) return;
+  const unanswered = st.answers.filter(a => a < 0).length;
+  if (!auto && unanswered > 0) {
+    if (!confirm(`You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}.\nUnanswered questions are marked wrong.\n\nSubmit anyway?`)) return;
+  }
+  st.submitted = true;
+  if (st.timerId) { clearInterval(st.timerId); st.timerId = null; }
+
+  let score = 0;
+  const byChapter = {};
+  st.questions.forEach((q, i) => {
+    const correct = st.answers[i] === q.answer;
+    if (correct) score++;
+    const key = q.sourceFile || q.source || 'Unknown';
+    if (!byChapter[key]) byChapter[key] = { title: q.source || 'Unknown', correct: 0, total: 0 };
+    byChapter[key].total++;
+    if (correct) byChapter[key].correct++;
+  });
+  const total = st.questions.length;
+  const pct = Math.round((score / total) * 100);
+  const durationSec = Math.round((Date.now() - st.startTime) / 1000);
+
+  // XP: 8 per correct, +100 for >=90%, +50 for >=70%. Anti-rush: <2s/question → 0.
+  const rushed = (durationSec / total) < 2;
+  const bonus = pct >= 90 ? 100 : pct >= 70 ? 50 : 0;
+  const netXp = rushed ? 0 : (score * 8 + bonus);
+  const reason = rushed
+    ? `Mock test ${pct}% (rushed — no XP)`
+    : `Mock test ${pct}% (${score}/${total})` + (bonus ? ` · +${bonus} bonus` : '');
+  if (netXp > 0) addXP(netXp, reason);
+
+  // Persist history (cap at last 30).
+  const hist = getMockHistory();
+  hist.push({ date: new Date().toISOString(), score, total, pct, durationSec, byChapter });
+  if (hist.length > 30) hist.splice(0, hist.length - 30);
+  saveMockHistory(hist);
+
+  renderMockResults(score, total, pct, durationSec, byChapter, netXp, rushed);
+  if (pct >= 80) fireConfetti();
+}
+
+function renderMockResults(score, total, pct, durationSec, byChapter, netXp, rushed) {
+  const contentEl = document.getElementById('content');
+  const st = mockState;
+  const pass = pct >= 70;
+  const grade = pct >= 80 ? 'great' : pct >= 60 ? 'good' : 'needs-work';
+  const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📖';
+  const msg = pct >= 80 ? 'Excellent — you know this material well.' : pct >= 60 ? 'Solid. Review the topics you missed below.' : 'Keep going — focus on the weak chapters below.';
+
+  const chapterRows = Object.keys(byChapter).map(k => {
+    const c = byChapter[k];
+    const cp = Math.round((c.correct / c.total) * 100);
+    const g = cp >= 80 ? 'great' : cp >= 60 ? 'good' : 'needs-work';
+    return { ...c, file: k, pct: cp, grade: g };
+  }).sort((a, b) => a.pct - b.pct);
+
+  const review = st.questions.map((q, i) => {
+    const sel = st.answers[i];
+    const correct = sel === q.answer;
+    return `
+      <div class="mock-review-item ${correct ? 'correct' : 'wrong'}">
+        <div class="mock-review-q">
+          <span class="mock-review-badge">${correct ? '✓' : '✗'}</span>
+          <span>${i + 1}. ${marked.parseInline(q.q)}</span>
+        </div>
+        <div class="mock-review-src">${q.source ? '📖 ' + q.source : ''}</div>
+        <div class="mock-review-options">
+          ${q.options.map((opt, oi) => {
+            let cls = '';
+            if (oi === q.answer) cls = 'correct';
+            else if (oi === sel) cls = 'wrong';
+            const tag = oi === q.answer ? '<span class="mock-tag tag-correct">correct</span>'
+              : (oi === sel ? '<span class="mock-tag tag-yours">your answer</span>' : '');
+            return `<div class="mock-review-opt ${cls}"><span class="mock-opt-letter">${String.fromCharCode(65 + oi)}</span>${marked.parseInline(opt)}${tag}</div>`;
+          }).join('')}
+          ${sel < 0 ? '<div class="mock-review-skipped">You skipped this question.</div>' : ''}
+        </div>
+        ${q.explanation ? `<div class="quiz-explanation">${marked.parseInline(q.explanation)}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  contentEl.innerHTML = `
+    <div class="mock-wrap">
+      <div class="mock-results-head">
+        <div class="mock-results-emoji">${emoji}</div>
+        <div class="mock-results-score ${grade}">${pct}%</div>
+        <div class="mock-results-badge ${pass ? 'pass' : 'fail'}">${pass ? 'PASS' : 'KEEP STUDYING'}</div>
+        <div class="mock-results-sub">${score} of ${total} correct · ${mockFmtDuration(durationSec)}${st.timed ? ' · timed' : ''}</div>
+        <p class="mock-results-msg">${msg}</p>
+        <p class="mock-results-xp">${rushed ? 'No XP (rushed — under 2s/question)' : (netXp > 0 ? `+${netXp} XP earned` : '')}</p>
+        <div class="mock-results-actions">
+          <button class="mock-btn-primary" onclick="renderMockLanding()">New mock test</button>
+          <button class="mock-btn-ghost" onclick="showDashboard()">Dashboard</button>
+        </div>
+      </div>
+
+      <div class="mock-breakdown">
+        <h3>By chapter</h3>
+        <div class="mock-breakdown-list">
+          ${chapterRows.map(c => `
+            <div class="mock-bd-row">
+              <span class="mock-bd-title">${c.title}</span>
+              <div class="mock-bd-bar"><div class="mock-bd-fill ${c.grade}" style="width:${c.pct}%"></div></div>
+              <span class="mock-bd-val">${c.correct}/${c.total}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="mock-review">
+        <h3>Review all ${total} question${total === 1 ? '' : 's'}</h3>
+        ${review}
+      </div>
+
+      <div class="mock-results-actions" style="margin-top:24px;">
+        <button class="mock-btn-primary" onclick="renderMockLanding()">New mock test</button>
+        <button class="mock-btn-ghost" onclick="showDashboard()">Back to Dashboard</button>
+      </div>
+    </div>`;
+
+  if (window.renderMathInElement) {
+    renderMathInElement(contentEl, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false });
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function mockFmtDuration(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}

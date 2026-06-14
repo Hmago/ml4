@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A fraud-detection dataset has 10,000 transactions, of which 20 are fraudulent (0.2%). A model that always predicts 'Not Fraud' achieves what accuracy?",
+    "options": [
+      "99.8%",
+      "99.2%",
+      "98.0%",
+      "99.0%"
+    ],
+    "answer": 0,
+    "explanation": "9,980 correct predictions out of 10,000 = 99.8%. This is the accuracy trap: high accuracy coexists with zero fraud detection on imbalanced data. Precision-based or recall-based metrics are needed instead."
+  },
+  {
+    "q": "Which of the following correctly describes a False Negative (FN) in a binary confusion matrix?",
+    "options": [
+      "Model predicts positive and the actual label is also positive",
+      "Model predicts negative but the actual label is positive",
+      "Model predicts positive but the actual label is negative",
+      "Model predicts negative and the actual label is also negative"
+    ],
+    "answer": 1,
+    "explanation": "FN is a missed detection — the model said 'no' when the truth was 'yes'. This is the Type II error. The opposite (Type I) is a false positive: saying 'yes' when the truth is 'no'."
+  },
+  {
+    "q": "In a cancer screening study with TP=90, FP=15, FN=10, TN=885, how many patients received a false alarm (unnecessary follow-up)?",
+    "options": [
+      "90",
+      "10",
+      "15",
+      "885"
+    ],
+    "answer": 2,
+    "explanation": "False alarms are False Positives — the model predicted cancer in 15 patients who did not have it. TP=90 are correct detections, and FN=10 are the dangerous missed cancers."
+  },
+  {
+    "q": "The formula for Specificity (True Negative Rate) is:",
+    "options": [
+      "$\\frac{TP}{TP+FP}$",
+      "$\\frac{TP}{TP+FN}$",
+      "$\\frac{TP+TN}{TP+TN+FP+FN}$",
+      "$\\frac{TN}{TN+FP}$"
+    ],
+    "answer": 3,
+    "explanation": "Specificity = TN / (TN + FP). Precision is TP/(TP+FP) and Recall is TP/(TP+FN). Specificity measures how well the model identifies true negatives, and its complement (1 − Specificity) is the False Positive Rate used in the ROC curve."
+  },
+  {
+    "q": "When $\\beta > 1$ in the $F_\\beta$ score formula, the metric:",
+    "options": [
+      "Weights recall more heavily than precision",
+      "Weights precision more heavily than recall",
+      "Treats precision and recall with exactly equal weight",
+      "Removes recall from the computation entirely"
+    ],
+    "answer": 0,
+    "explanation": "$F_2$ (β=2) weights recall twice as much as precision, suitable for cancer detection where missing cases is catastrophic. When β < 1 (e.g., $F_{0.5}$), precision is weighted more, suitable for spam filtering."
+  },
+  {
+    "q": "The False Positive Rate (x-axis of a standard ROC curve) is equal to:",
+    "options": [
+      "Specificity",
+      "1 minus Specificity",
+      "1 minus Recall",
+      "1 minus Precision (PPV)"
+    ],
+    "answer": 1,
+    "explanation": "FPR = FP / (FP + TN) = 1 − TN/(TN+FP) = 1 − Specificity. The ROC plots TPR (Recall) on the y-axis against FPR (1 − Specificity) on the x-axis."
+  },
+  {
+    "q": "For the cancer screening example (TP=90, FP=15, FN=10, TN=885), precision is closest to:",
+    "options": [
+      "85.0%",
+      "90.0%",
+      "85.7%",
+      "90.5%"
+    ],
+    "answer": 2,
+    "explanation": "Precision = TP / (TP + FP) = 90 / 105 ≈ 85.7%. Recall is 90/100 = 90.0%, which is the most common mix-up. The denominator for precision is all predicted positives (105), not all actual positives (100)."
+  },
+  {
+    "q": "A classifier scores AUC = 0.40 on a binary task. The most precise interpretation is:",
+    "options": [
+      "The model is at random-guessing level, roughly equivalent to AUC = 0.5",
+      "The model perfectly separates the two classes but applies its labels in reversed order",
+      "The model is well-calibrated but its decision threshold is set too low",
+      "Inverting the model's predicted scores yields AUC = 0.60 on the same problem"
+    ],
+    "answer": 3,
+    "explanation": "AUC = 0.4 means the model ranks the positive below the negative 60% of the time. Flipping its outputs gives AUC = 1 − 0.4 = 0.6. AUC = 0.5 (not 0.4) is the random baseline; AUC = 0.4 is actively worse than random."
+  },
+  {
+    "q": "On a Precision-Recall curve for a fraud dataset with a 0.2% positive rate, the random-model baseline appears as:",
+    "options": [
+      "A flat horizontal line at precision = 0.002",
+      "The diagonal line running from (0, 1) to (1, 0)",
+      "A flat horizontal line at precision = 0.5",
+      "A diagonal line running from (0, 0) to (1, 1)"
+    ],
+    "answer": 0,
+    "explanation": "A random classifier matches class prevalence: precision = 0.2% = 0.002 regardless of recall. This contrasts with the ROC diagonal. The extremely low baseline makes AUC-PR much more informative than AUC-ROC for rare-event datasets."
+  },
+  {
+    "q": "On a Precision-Recall curve, a perfect classifier:",
+    "options": [
+      "Appears as the main diagonal line running from the origin (0, 0) to the point (1, 1)",
+      "Achieves precision = 1 and recall = 1, hugging the top-right corner",
+      "Appears as a vertical line at recall = 1 with precision decreasing",
+      "Shows constant precision = 1 at all recall values from 0 to 1"
+    ],
+    "answer": 1,
+    "explanation": "A perfect model correctly identifies all positives with zero false alarms: P = R = 1. 'Precision = 1 at all recalls' is impossible in practice because the denominator shifts as recall increases."
+  },
+  {
+    "q": "ROC-AUC can give an overly optimistic picture of a model's quality when:",
+    "options": [
+      "The classification threshold has been set too high for the specific application domain",
+      "The two classes have very different feature-space variances",
+      "The dataset has severe class imbalance with very few positive examples",
+      "The model's predicted probabilities are poorly calibrated"
+    ],
+    "answer": 2,
+    "explanation": "With many negatives, even a large number of false positives barely moves the FPR axis, making the ROC curve look great. AUC-PR focuses exclusively on the positive class and is more informative for imbalanced data."
+  },
+  {
+    "q": "Given prediction errors of −20K, +10K, +30K, −20K, +50K on five houses, the MAE is:",
+    "options": [
+      "$10,000",
+      "$18,000",
+      "$24,000",
+      "$26,000"
+    ],
+    "answer": 3,
+    "explanation": "MAE = mean of absolute errors = (20 + 10 + 30 + 20 + 50) / 5 = 130 / 5 = $26,000. MAE uses absolute values so −$20K and +$20K both contribute $20K equally."
+  },
+  {
+    "q": "Which property of MSE makes it penalize large individual prediction errors more heavily than MAE?",
+    "options": [
+      "Squaring each error magnifies larger errors disproportionately",
+      "Averaging across all samples reduces the influence of small errors",
+      "Using n − 1 in the denominator amplifies the error variance",
+      "Taking the square root as the final step reverses the scaling effect"
+    ],
+    "answer": 0,
+    "explanation": "A $50K error contributes 2,500 to MSE; a $10K error contributes 100 — a 25× difference despite being only 5× larger. MAE treats a $50K error as exactly 5× worse than a $10K error."
+  },
+  {
+    "q": "When RMSE is substantially larger than MAE for the same regression model, this indicates:",
+    "options": [
+      "The model systematically underestimates the target variable",
+      "A small number of predictions have unusually large errors",
+      "The model is overfitting with training error much lower than test error",
+      "The target variable has a heavy-tailed or skewed marginal distribution"
+    ],
+    "answer": 1,
+    "explanation": "RMSE ≥ MAE always. A large gap means a few high-error predictions inflate the squared average but not the absolute average. MAE is more robust to such outlier errors."
+  },
+  {
+    "q": "A regression model achieves $R^2 = 0$ on a validation set. This means:",
+    "options": [
+      "The model makes zero prediction errors on the training data",
+      "The predictions are essentially random noise and carry no structural information",
+      "The model does no better than predicting the target mean for every input",
+      "The model explains exactly 50% of the variance in the target variable"
+    ],
+    "answer": 2,
+    "explanation": "$R^2 = 1 - SS_{res}/SS_{tot}$. When $SS_{res} = SS_{tot}$, $R^2 = 0$: the model explains zero variance beyond the trivial mean baseline. A negative $R^2$ means the model is worse than that baseline."
+  },
+  {
+    "q": "MAPE (Mean Absolute Percentage Error) is unreliable or undefined when:",
+    "options": [
+      "Predictions contain large positive errors that dominate the average",
+      "The distribution of predicted values is multimodal or asymmetric",
+      "The training and test datasets are drawn from different numerical scales",
+      "Some actual target values are zero or extremely close to zero"
+    ],
+    "answer": 3,
+    "explanation": "MAPE divides by the actual value $y_i$. When $y_i \\approx 0$, the percentage error explodes or is undefined. This is a known failure mode; MAPE is reliable only when all target values are well above zero."
+  },
+  {
+    "q": "Leave-One-Out Cross-Validation (LOOCV) is most appropriate when:",
+    "options": [
+      "The dataset has fewer than 100 samples and maximum data usage per training run is critical",
+      "Computational resources are unlimited and training speed is irrelevant",
+      "Data is time-ordered and temporal information leakage must be prevented",
+      "The class distribution is severely imbalanced and each fold must carefully preserve class ratios"
+    ],
+    "answer": 0,
+    "explanation": "LOOCV trains on N − 1 samples per fold, maximizing data usage for tiny datasets (< 100 samples). On larger datasets, N separate training runs become prohibitively expensive; use 5-fold or 10-fold CV instead."
+  },
+  {
+    "q": "Compared to standard 5-fold CV, Leave-One-Out Cross-Validation (LOOCV) tends to produce:",
+    "options": [
+      "Lower variance in the performance estimate because every sample appears in a test set exactly once",
+      "Lower bias in the performance estimate, since each model trains on almost all available data",
+      "Faster total computation, since each fold involves exactly one test example",
+      "Better handling of class imbalance without any need for stratification"
+    ],
+    "answer": 1,
+    "explanation": "Training on N − 1 samples closely approximates training on the full dataset, so each fold's estimate is nearly unbiased. The downsides are high variance across N estimates and N-fold computational cost."
+  },
+  {
+    "q": "With 5 hyperparameters each having 4 possible values, grid search evaluates how many combinations?",
+    "options": [
+      "20",
+      "625",
+      "1024",
+      "3125"
+    ],
+    "answer": 2,
+    "explanation": "$4^5 = 1{,}024$ combinations. Grid search tries every value combination: 4 × 4 × 4 × 4 × 4. With 5-fold CV this becomes 5,120 model fits. Using 5 values per parameter instead gives $5^5 = 3{,}125$ combinations."
+  },
+  {
+    "q": "In Bayesian hyperparameter optimization, which model is typically used as the probabilistic surrogate?",
+    "options": [
+      "Logistic regression",
+      "Random forest ensemble",
+      "Support vector machine with RBF kernel",
+      "Gaussian process"
+    ],
+    "answer": 3,
+    "explanation": "Gaussian Processes provide both a predicted mean and a confidence interval for the objective function at each point, enabling the acquisition function to balance exploration and exploitation. Libraries like Optuna may also use tree-based surrogates."
+  },
+  {
+    "q": "On a learning curve, which pattern most clearly indicates high variance (overfitting)?",
+    "options": [
+      "Very high training score with much lower validation score, the gap staying wide as data grows",
+      "Both training and validation scores plateau near 0.70 with a small persistent gap",
+      "Validation rises steeply then levels off while training gradually converges toward it",
+      "Training score decreases gradually as data volume increases while validation score remains essentially flat"
+    ],
+    "answer": 0,
+    "explanation": "A persistent large gap — train ≈ 0.97, val ≈ 0.68 — is the hallmark of overfitting (high variance). Adding more training data gradually closes this gap. When both curves are low with a small gap, that is high bias."
+  },
+  {
+    "q": "A model's training accuracy converges to 72% and validation accuracy to 70% — both low, with a small gap. The best fix is:",
+    "options": [
+      "Add L2 regularization to constrain the model's weight magnitudes",
+      "Use a more expressive model architecture or add more informative features",
+      "Collect substantially more training data to help the model generalize better",
+      "Lower the classification threshold to improve recall on the harder examples"
+    ],
+    "answer": 1,
+    "explanation": "Small gap + both low = high bias (underfitting). The model lacks the capacity to capture the pattern. Adding more data helps overfitting, not underfitting; the model needs more complexity or richer inputs."
+  },
+  {
+    "q": "Which scenario introduces data leakage into a cross-validation pipeline?",
+    "options": [
+      "Using the same random seed for all training runs within the experiment",
+      "Reporting only the mean CV accuracy without the standard deviation",
+      "Computing feature-scaling statistics (mean, std) on all data before the train-test split",
+      "Choosing a different regularization strength and model configuration for each fold of cross-validation"
+    ],
+    "answer": 2,
+    "explanation": "Normalizing before splitting lets test-fold information influence training preprocessing. The correct approach: compute mean/std on training folds only, then apply those statistics to scale the test fold."
+  },
+  {
+    "q": "In a correct train / validation / test split, the test set should:",
+    "options": [
+      "Be used iteratively to select the best model architecture from the candidates",
+      "Be merged back into the validation set once hyperparameter tuning is finished and the model is fully locked",
+      "Be queried repeatedly to confirm that hyperparameter choices are converging",
+      "Be touched exactly once — after all tuning decisions are finalized — for a single unbiased estimate"
+    ],
+    "answer": 3,
+    "explanation": "Any decision made based on test set results transforms it into a second validation set, producing an optimistic bias. The test set must be held back strictly until the very end."
+  },
+  {
+    "q": "Lowering the classification threshold from 0.7 to 0.3 will typically:",
+    "options": [
+      "Increase recall while decreasing precision",
+      "Increase precision while decreasing recall",
+      "Increase both precision and recall simultaneously",
+      "Decrease both precision and recall simultaneously"
+    ],
+    "answer": 0,
+    "explanation": "A lower threshold flags more examples as positive — catching more true positives (higher recall) while also flagging more false positives (lower precision). Raising the threshold does the opposite."
+  },
+  {
+    "q": "In binary classification, a Type I error corresponds to:",
+    "options": [
+      "A false negative — the model misses a positive case (Type II)",
+      "A false positive -- the model labels a negative example as positive (Type I)",
+      "A true positive — the model correctly detects an actual positive case",
+      "A true negative — the model correctly rejects an actual negative case"
+    ],
+    "answer": 1,
+    "explanation": "Type I error = rejecting a true null hypothesis = false positive (model says 'positive', truth is 'negative'). Type II = failing to reject a false null = false negative. In medicine: Type I is a false alarm, Type II is a missed diagnosis."
+  },
+  {
+    "q": "ROC-AUC is more informative than AUC-PR primarily when:",
+    "options": [
+      "The dataset has severe class imbalance with very few positive examples",
+      "You need to know the model's precision at each specific recall threshold",
+      "Class sizes are roughly balanced and threshold-independent ranking quality is the goal",
+      "The positive class is so rare that false positive cases overwhelm and dominate the entire evaluation"
+    ],
+    "answer": 2,
+    "explanation": "ROC-AUC measures overall discriminative ability and is appropriate when both classes contribute equally. For imbalanced data, AUC-PR's focus on the positive class reveals true performance on rare events that ROC-AUC can mask."
+  },
+  {
+    "q": "The $F_{0.5}$ score (β = 0.5) is the most appropriate metric when:",
+    "options": [
+      "Minimizing false negatives is critical, as in rare disease detection",
+      "Both precision and recall are equally important and neither can be deprioritized in this situation",
+      "The dataset is highly imbalanced making standard metrics unreliable",
+      "False positives are costlier than false negatives, such as in spam filtering"
+    ],
+    "answer": 3,
+    "explanation": "$F_{0.5}$ weights precision twice as much as recall. In spam filtering, a false positive (real email blocked) is worse than a false negative (spam delivered). For cancer detection the reverse applies — use $F_2$."
+  },
+  {
+    "q": "A regression model on a new dataset produces $R^2 = -0.15$. This means:",
+    "options": [
+      "The model performs worse than simply predicting the target mean for every input",
+      "The model fails to explain 15% of variance and needs additional feature engineering",
+      "The model has over-regularized its weights and is underfitting the new data",
+      "The model's predictions carry a systematic negative offset requiring recalibration"
+    ],
+    "answer": 0,
+    "explanation": "$R^2 = 1 - SS_{res}/SS_{tot}$. Negative $R^2$ means $SS_{res} > SS_{tot}$: the model's errors exceed those of the trivial mean-prediction baseline. The further below zero, the more catastrophically wrong the model is."
+  },
+  {
+    "q": "For a spam-detection system where false positives (real emails blocked) are the costlier error, the primary metric is:",
+    "options": [
+      "Recall",
+      "Precision",
+      "AUC-PR",
+      "F2 score (beta=2)"
+    ],
+    "answer": 1,
+    "explanation": "Precision = TP / (TP + FP) directly measures how often the spam label is correct. Optimizing precision minimizes false positives. Recall optimizes for catching all spam but at the cost of more false alarms."
+  },
+  {
+    "q": "The main practical disadvantage of Leave-One-Out CV compared to 5-fold CV is:",
+    "options": [
+      "It cannot be applied to binary or multi-class classification tasks",
+      "Each fold has an inconsistent number of training examples",
+      "It requires N separate model training runs, making it computationally very expensive",
+      "It produces higher-bias estimates because each individual test set contains only one sample"
+    ],
+    "answer": 2,
+    "explanation": "LOOCV with N = 10,000 samples requires 10,000 complete model fits versus just 5 for 5-fold CV. The chapter explicitly lists this as LOOCV's main drawback. Its bias is actually lower than K-fold (not higher)."
+  },
+  {
+    "q": "Bergstra & Bengio (2012) showed random search often outperforms grid search because:",
+    "options": [
+      "Grid search is more susceptible to local optima in the hyperparameter space",
+      "Random search implicitly regularizes the model during its selection process",
+      "Random search concentrates samples near the best-known region of the space",
+      "Random search samples more unique values of each important hyperparameter"
+    ],
+    "answer": 3,
+    "explanation": "Grid search tests only a few distinct values of each important hyperparameter (e.g., 3 of them). Random search uses a fresh combination each trial, covering far more unique values of the crucial parameters in the same number of evaluations."
+  },
+  {
+    "q": "Why must two competing models be evaluated on the exact same test data?",
+    "options": [
+      "Performance differences due to data variation, not model quality, cannot otherwise be ruled out",
+      "Using different test sets violates the i.i.d. assumption of classical cross-validation theory",
+      "A single shared split is always smaller, making both evaluations more computationally efficient",
+      "Different test sets use different random seeds, which statistically biases the comparison"
+    ],
+    "answer": 0,
+    "explanation": "If Model A performs better on its test set, you need to know it is the model, not a favorable data split. Evaluating on identical data controls for all data-related variation and isolates the model's contribution."
+  },
+  {
+    "q": "In time series cross-validation, the fundamental constraint is that:",
+    "options": [
+      "The test set must be randomly sampled from across the full timeline to maximize diversity",
+      "Training data must always come from time periods before the corresponding test period",
+      "Each fold must contain an equal number of time steps in both the training and test windows",
+      "Data must be shuffled before each split to make the folds statistically independent"
+    ],
+    "answer": 1,
+    "explanation": "Using future data to train and then test on the past leaks information. The expanding-window strategy ensures training always precedes testing chronologically, matching how the model will actually be used in production."
+  },
+  {
+    "q": "In the cancer screening example (TP=90, FP=15, FN=10, TN=885), what is the specificity?",
+    "options": [
+      "90.0%",
+      "85.7%",
+      "98.3%",
+      "97.5%"
+    ],
+    "answer": 2,
+    "explanation": "Specificity = TN / (TN + FP) = 885 / 900 ≈ 98.3%. Recall (90.0%) and Precision (85.7%) use the TP row instead; Accuracy (97.5%) uses the full table diagonal."
+  },
+  {
+    "q": "For the cancer screening example (TP=90, FP=15, FN=10, TN=885), the overall accuracy is:",
+    "options": [
+      "90.0%",
+      "85.7%",
+      "98.3%",
+      "97.5%"
+    ],
+    "answer": 3,
+    "explanation": "Accuracy = (TP + TN) / Total = (90 + 885) / 1,000 = 97.5%. This looks excellent yet the model still misses 10 of 100 cancer cases — illustrating why accuracy alone is an incomplete metric."
+  },
+  {
+    "q": "If precision = 1.0 and recall = 0.01, the F1 score is approximately:",
+    "options": [
+      "0.020",
+      "0.505",
+      "0.302",
+      "0.100"
+    ],
+    "answer": 0,
+    "explanation": "F1 = 2 × P × R / (P + R) = 2 × 1.0 × 0.01 / 1.01 ≈ 0.0198 ≈ 0.020. The arithmetic mean would give 0.505 (option B), appearing acceptable. The harmonic mean correctly exposes the near-zero recall as a disaster."
+  },
+  {
+    "q": "The mean Average Precision (mAP) metric is primarily used to evaluate:",
+    "options": [
+      "Probabilistic classifiers for rare-event imbalanced binary detection",
+      "Object detection systems that require both correct localization and correct class labels",
+      "Multi-class text classifiers summarized across all category labels",
+      "Recommender systems where ranking quality of the top-N suggested item lists must be measured accurately"
+    ],
+    "answer": 1,
+    "explanation": "mAP combines localization accuracy (IoU threshold) with classification accuracy and is the standard benchmark metric in object detection (e.g., COCO). AUC-PR is used for imbalanced binary classification; NDCG is used for recommendation ranking."
+  },
+  {
+    "q": "For a highly imbalanced classification dataset (3% positive rate), which cross-validation method is most appropriate?",
+    "options": [
+      "Leave-One-Out CV to maximize training data usage in each fold",
+      "Standard K-Fold without any modification to the splitting procedure",
+      "Stratified K-Fold, preserving the 3% class ratio in every individual fold",
+      "TimeSeriesSplit to prevent temporal information from leaking across folds"
+    ],
+    "answer": 2,
+    "explanation": "Regular K-Fold can produce folds with 0% positive examples in the test set, making evaluation meaningless. Stratified K-Fold guarantees every fold's test set mirrors the full 3% class ratio."
+  },
+  {
+    "q": "Which of the following is a library specifically designed for Bayesian hyperparameter optimization?",
+    "options": [
+      "GridSearchCV",
+      "RandomizedSearchCV",
+      "StratifiedKFold",
+      "Optuna"
+    ],
+    "answer": 3,
+    "explanation": "Optuna is an open-source Bayesian/TPE optimization framework. Hyperopt, scikit-optimize, and Ray Tune are also in this category. GridSearchCV and RandomizedSearchCV are scikit-learn tools; StratifiedKFold is a CV splitter."
+  },
+  {
+    "q": "Nested cross-validation (outer evaluation loop, inner hyperparameter-tuning loop) is used to:",
+    "options": [
+      "Produce an unbiased test estimate when model selection and evaluation share the same dataset",
+      "Speed up grid search by parallelizing the inner and outer cross-validation loops on multiple cores",
+      "Eliminate the need for any held-out test set once the model is fully tuned and selected",
+      "Reduce overfitting by averaging predictions from multiple trained model instances"
+    ],
+    "answer": 0,
+    "explanation": "Without nesting, using the same data for tuning and evaluation produces an optimistic bias. The outer loop provides unbiased performance estimation; the inner loop independently selects hyperparameters for each outer fold."
+  },
+  {
+    "q": "A model evaluated by 5-fold CV achieves 88% ± 6.0% accuracy. The most likely explanation for the wide interval is:",
+    "options": [
+      "The model is overfitting — its training accuracy is much higher than its validation accuracy",
+      "The dataset is small or the model is highly sensitive to which samples fall in each fold",
+      "The CV pipeline was not stratified, causing class imbalance to vary across folds",
+      "The model's hyperparameters were tuned using the same folds used to compute the estimate"
+    ],
+    "answer": 1,
+    "explanation": "Wide variance in fold scores (±6%) typically signals a small dataset or a model sensitive to training-set composition. More data or a more stable architecture reduces this variance."
+  },
+  {
+    "q": "Given prediction errors of −20K, +10K, +30K, −20K, +50K on five houses, the MSE is:",
+    "options": [
+      "400 K²",
+      "676 K²",
+      "860 K²",
+      "930 K²"
+    ],
+    "answer": 2,
+    "explanation": "MSE = (20² + 10² + 30² + 20² + 50²) / 5 = (400 + 100 + 900 + 400 + 2500) / 5 = 4300 / 5 = 860 K². House 5's $50K error alone contributes 2,500 — more than Houses 1–4 combined (1,800)."
+  },
+  {
+    "q": "A hospital wants to minimize missed diagnoses of a rare condition (false negatives are catastrophic). The primary metric should be:",
+    "options": [
+      "Accuracy across the full patient population",
+      "$F_{0.5}$ score, which weights precision over recall",
+      "$F_1$ score, which balances precision and recall equally",
+      "F2 score, which emphasizes recall over precision"
+    ],
+    "answer": 3,
+    "explanation": "$F_2$ (β=2) penalizes false negatives more severely, making it ideal when missing a true case is far costlier than raising a false alarm. $F_{0.5}$ does the opposite — it favors precision, which would be wrong here."
+  },
+  {
+    "q": "In the standard model selection table for evaluation problems, the KS (Kolmogorov-Smirnov) statistic is cited as a secondary metric for which domain?",
+    "options": [
+      "Credit scoring",
+      "Fraud detection",
+      "Object detection",
+      "Cancer screening"
+    ],
+    "answer": 0,
+    "explanation": "The table lists: Credit scoring → primary AUC-ROC, secondary KS statistic. The KS statistic measures maximum separation between the positive and negative score distributions, widely used in credit risk modeling."
+  },
+  {
+    "q": "A practitioner has 8 hyperparameters each with 3 possible values. Grid search with 5-fold CV requires how many total model fits?",
+    "options": [
+      "120",
+      "32805",
+      "6561",
+      "15000"
+    ],
+    "answer": 1,
+    "explanation": "Grid combinations: $3^8 = 6{,}561$. With 5-fold CV: $6{,}561 \\times 5 = 32{,}805$ model fits. This illustrates why grid search is impractical for many hyperparameters; random or Bayesian search is strongly preferred."
+  },
+  {
+    "q": "Given MSE = 860 K² from the house-price prediction example, RMSE equals approximately:",
+    "options": [
+      "$26,000",
+      "$28,000",
+      "$29,300",
+      "$31,000"
+    ],
+    "answer": 2,
+    "explanation": "RMSE = $\\sqrt{860} \\approx 29.3$ K = $29,300. MAE for the same data is $26,000 (option A). RMSE ≥ MAE always; the $3,300 gap here signals that a few houses have notably large prediction errors."
+  },
+  {
+    "q": "A model has training accuracy 72% and validation accuracy 70%, both converging at a low plateau with a small gap. The most effective remedy is:",
+    "options": [
+      "Adding a dropout layer to prevent neuron co-adaptation during training",
+      "Increasing the validation set size to get a more reliable performance estimate",
+      "Collecting substantially more training data since the model needs more examples",
+      "Switching to a more expressive model or engineering more informative features"
+    ],
+    "answer": 3,
+    "explanation": "Small gap + both low = high bias (underfitting). The model lacks capacity to capture the signal. More data rarely helps underfitting; a deeper/wider model, richer features, or less regularization are the correct fixes."
+  },
+  {
+    "q": "A binary classifier for a rare condition (0.5% prevalence) achieves 99.2% accuracy. The most critical concern about this result is:",
+    "options": [
+      "A model predicting 'no condition' for every patient also achieves ~99.5%, detecting zero cases",
+      "The model's precision is likely inflated and the threshold should be reduced",
+      "The test set is disproportionately large relative to the overall dataset size, artificially inflating accuracy",
+      "Stratification was likely missing from the split, biasing accuracy upward"
+    ],
+    "answer": 0,
+    "explanation": "With 0.5% prevalence, always predicting 'negative' gives 99.5% accuracy while catching zero real cases. High accuracy on imbalanced data is meaningless — use recall, AUC-PR, or $F_2$ as the primary metric instead."
+  },
+  {
+    "q": "On a standard ROC curve, which quantities are plotted on the y-axis and x-axis respectively?",
+    "options": [
+      "Precision on y-axis; Recall on x-axis",
+      "True Positive Rate on y-axis; False Positive Rate on x-axis",
+      "Recall on y-axis; Precision on x-axis",
+      "Sensitivity on the y-axis and Specificity (not 1 minus Specificity) on the x-axis"
+    ],
+    "answer": 1,
+    "explanation": "ROC plots TPR (= Recall = Sensitivity) on y vs FPR (= 1 − Specificity) on x. Option A/C describe the Precision-Recall curve. Option D is almost correct but uses Specificity directly instead of 1 − Specificity."
+  },
+  {
+    "q": "In time series cross-validation using an 'expanding window' strategy:",
+    "options": [
+      "The training window has a fixed size and slides forward with each successive split",
+      "Each fold's test window grows larger, eventually covering the entire timeline",
+      "The training window expands with each split, always preceding the test period",
+      "Both the training and test windows slide forward while maintaining equal sizes"
+    ],
+    "answer": 2,
+    "explanation": "An expanding window keeps the start fixed while growing the training set forward in time, so Split 3 trains on more history than Split 1. The test window is always immediately after the training period."
+  },
+  {
+    "q": "In Bayesian optimization, the acquisition function is responsible for:",
+    "options": [
+      "Directly evaluating the actual model performance at each newly proposed hyperparameter configuration",
+      "Fitting the surrogate probabilistic model to the observed experimental results",
+      "Pruning search-space regions where the surrogate predicts low performance",
+      "Balancing exploration of high-uncertainty regions with exploitation of high-performing ones"
+    ],
+    "answer": 3,
+    "explanation": "The acquisition function (e.g., Expected Improvement) reads the surrogate's predicted mean and uncertainty to suggest the next trial point. It deliberately trades off exploring unknown regions vs. refining already-promising areas."
+  },
+  {
+    "q": "Two models have 5-fold CV results: Model A: 91% ± 1.0%; Model B: 93% ± 5.5%. For production deployment, which is preferable?",
+    "options": [
+      "Model A, because stable performance makes it more predictable and reliable in deployment",
+      "Model B, because its higher mean accuracy will outweigh the variance uncertainty in most deployment settings",
+      "Model A only if its training time is shorter than Model B's training time",
+      "Model B only if its AUC-ROC is also higher than Model A's on the same held-out folds"
+    ],
+    "answer": 0,
+    "explanation": "Model B's ±5.5% variance means it could score as low as 87.5% on some data. Model A's ±1.0% ensures consistent behavior. In production, reliability often matters more than squeezing out an extra two percentage points of mean accuracy."
+  },
+  {
+    "q": "In the context of the confusion matrix, 'Sensitivity' refers to the same quantity as:",
+    "options": [
+      "Specificity (True Negative Rate)",
+      "Recall (True Positive Rate)",
+      "Precision (Positive Predictive Value)",
+      "Accuracy (overall fraction of correct predictions)"
+    ],
+    "answer": 1,
+    "explanation": "Sensitivity = Recall = TPR = TP / (TP + FN). These terms originate from medical testing and signal detection theory. Specificity is the True Negative Rate, which is a different and complementary concept."
+  },
+  {
+    "q": "AUC-ROC = 0.85 means: if you randomly pick one positive and one negative example, the model assigns:",
+    "options": [
+      "The correct class label to the positive example 85% of the time when evaluated at a fixed threshold of 0.5",
+      "The same predicted probability to both examples only 15% of the time",
+      "A higher predicted score to the positive example than to the negative example 85% of the time",
+      "A score above 0.85 to the positive and below 0.85 to the negative example"
+    ],
+    "answer": 2,
+    "explanation": "AUC equals the probability that the model ranks a random positive above a random negative. It measures ranking quality across all thresholds simultaneously — not accuracy at a fixed threshold, which option A incorrectly implies."
+  },
+  {
+    "q": "A practitioner repeatedly adjusts the model threshold and hyperparameters based on observed test set scores. The consequence is:",
+    "options": [
+      "The model generalizes better since the threshold is optimized on representative data",
+      "Test accuracy is unaffected because model weights were never trained on the test set",
+      "Only the threshold selection is biased by this practice; prior cross-validation metrics remain valid estimates",
+      "The test set effectively becomes a validation set and the reported performance is an overestimate"
+    ],
+    "answer": 3,
+    "explanation": "Any modeling decision made using test set feedback — including threshold selection — invalidates its role as an independent estimator. The chapter calls this 'tuning on the test set'; the fix is a three-way train/val/test split."
+  },
+  {
+    "q": "RMSE is recommended as the primary metric for demand forecasting. The core reason is:",
+    "options": [
+      "RMSE penalizes large prediction errors more heavily, so stockout-causing misses are very costly",
+      "RMSE is unitless and scale-independent, enabling comparisons across product categories",
+      "RMSE is always numerically smaller than MAE, making forecast accuracy appear more favorable in business reports",
+      "RMSE is robust to outlier demand spikes, providing a stable optimization target"
+    ],
+    "answer": 0,
+    "explanation": "RMSE squares errors, so a 500-unit miss contributes 25× more than a 100-unit miss, versus 5× for MAE. When large demand misses cause stockouts or over-inventory, this extra penalty aligns the metric with business cost."
+  },
+  {
+    "q": "For a credit-scoring system whose primary purpose is to rank applicants by default risk, the recommended primary metric is:",
+    "options": [
+      "F1 score evaluated at a fixed decision threshold of 0.5",
+      "AUC-ROC, which directly measures ranking quality across all thresholds",
+      "Recall at a fixed threshold, prioritizing detection of all likely defaulters",
+      "Mean Absolute Error comparing predicted and actual default rates"
+    ],
+    "answer": 1,
+    "explanation": "Credit scoring is fundamentally a ranking problem: lenders need to order applicants by risk, not just classify them. AUC-ROC directly measures ranking quality across all thresholds, making it the natural primary metric."
+  },
+  {
+    "q": "A classifier has precision = 0.80 and recall = 0.60. Its F1 score is:",
+    "options": [
+      "0.700",
+      "0.690",
+      "0.686",
+      "0.720"
+    ],
+    "answer": 2,
+    "explanation": "F1 = 2 × P × R / (P + R) = 2 × 0.80 × 0.60 / 1.40 = 0.96 / 1.40 ≈ 0.686. The arithmetic mean would give (0.80 + 0.60) / 2 = 0.700 (option A). The harmonic mean correctly penalizes the gap between the two values."
+  },
+  {
+    "q": "In the house-price prediction example, House 5 has a prediction error of $50K and House 1 has an error of $20K. House 5's contribution to MSE is how many times House 1's?",
+    "options": [
+      "2.50 times",
+      "3.00 times",
+      "5.00 times",
+      "6.25 times"
+    ],
+    "answer": 3,
+    "explanation": "MSE squares errors: House 5 contributes $50^2 = 2{,}500$; House 1 contributes $20^2 = 400$. Ratio: 2500 / 400 = 6.25. Despite being only 2.5× larger in raw error, squaring amplifies the relative penalty to 6.25×."
+  }
+]

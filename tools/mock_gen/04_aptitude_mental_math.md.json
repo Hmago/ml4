@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Use the $25 \\times N = N/4 \\times 100$ shortcut. What is $25 \\times 136$?",
+    "options": [
+      "3100",
+      "3260",
+      "3600",
+      "3400"
+    ],
+    "answer": 3,
+    "explanation": "Divide 136 by 4 to get 34, then multiply by 100. So $25 \\times 136 = 3400$."
+  },
+  {
+    "q": "Using the multiply-by-11 carry trick, compute $11 \\times 94$.",
+    "options": [
+      "934",
+      "1044",
+      "1034",
+      "1134"
+    ],
+    "answer": 2,
+    "explanation": "For 94, the digit sum is 13: write 4, carry 1 to the 9, giving 10. The result is $1034$."
+  },
+  {
+    "q": "Which estimate matches $2^{32}$ from the powers-of-2 table?",
+    "options": [
+      "~4 million",
+      "~4 billion",
+      "~1 trillion",
+      "~65 thousand"
+    ],
+    "answer": 1,
+    "explanation": "The chapter lists $2^{30} \\approx 1$ billion, so multiplying by 4 gives $2^{32} \\approx 4$ billion."
+  },
+  {
+    "q": "Compute $999 \\times 72$ mentally using $1000N - N$.",
+    "options": [
+      "72072",
+      "71280",
+      "71856",
+      "71928"
+    ],
+    "answer": 3,
+    "explanation": "$999 \\times 72 = 72000 - 72 = 71928$. A common slip is subtracting from 72072 or forgetting the final borrow."
+  },
+  {
+    "q": "What is $17.5%$ of 960 using $10%+5%+2.5%$?",
+    "options": [
+      "168",
+      "156",
+      "172",
+      "180"
+    ],
+    "answer": 0,
+    "explanation": "$10%=96$, $5%=48$, and $2.5%=24$. Adding gives $96+48+24=168$."
+  },
+  {
+    "q": "A product price rises by 30% and then falls by 30%. What is the net change?",
+    "options": [
+      "0%",
+      "9% decrease",
+      "15% decrease",
+      "6% increase"
+    ],
+    "answer": 1,
+    "explanation": "Successive changes multiply: $1.3 \\times 0.7 = 0.91$. The final price is 91% of original, a 9% decrease."
+  },
+  {
+    "q": "A service receives 2.5 billion requests per day. Using $86,400 \\approx 10^5$ seconds/day, what is average QPS?",
+    "options": [
+      "2,500 QPS",
+      "250,000 QPS",
+      "250 QPS",
+      "25,000 QPS"
+    ],
+    "answer": 3,
+    "explanation": "$2.5 \\times 10^9 / 10^5 = 2.5 \\times 10^4$. That is about 25,000 QPS average."
+  },
+  {
+    "q": "A 70B-parameter model is stored in INT4. About how much memory do weights need?",
+    "options": [
+      "140 GB",
+      "70 GB",
+      "35 GB",
+      "7 GB"
+    ],
+    "answer": 2,
+    "explanation": "INT4 is 0.5 bytes per parameter. $70B \\times 0.5$ bytes = 35 GB for weights."
+  },
+  {
+    "q": "By the Rule of 72, a user base growing at 18% annually doubles in about how long?",
+    "options": [
+      "4 years",
+      "6 years",
+      "9 years",
+      "12 years"
+    ],
+    "answer": 0,
+    "explanation": "Doubling time is approximately $72/18 = 4$ years. This is the chapter's shortcut for exponential growth."
+  },
+  {
+    "q": "Convert $3/8$ into a percentage using the memorized fraction table.",
+    "options": [
+      "33.3%",
+      "62.5%",
+      "37.5%",
+      "12.5%"
+    ],
+    "answer": 2,
+    "explanation": "$1/8 = 12.5%$, so $3/8 = 3 \\times 12.5% = 37.5%$."
+  },
+  {
+    "q": "Find the next term: 4, 9, 16, 25, 36, ?",
+    "options": [
+      "42",
+      "45",
+      "48",
+      "49"
+    ],
+    "answer": 3,
+    "explanation": "These are consecutive squares from $2^2$ to $6^2$. The next is $7^2 = 49$."
+  },
+  {
+    "q": "Find the next term: 6, 10, 18, 34, 66, ?",
+    "options": [
+      "130",
+      "124",
+      "132",
+      "128"
+    ],
+    "answer": 0,
+    "explanation": "Differences are 4, 8, 16, 32, so the next difference is 64. Thus $66+64=130$."
+  },
+  {
+    "q": "An AP has first term 5 and common difference 7. What is the 20th term?",
+    "options": [
+      "131",
+      "145",
+      "152",
+      "138"
+    ],
+    "answer": 3,
+    "explanation": "Use $a_n=a+(n-1)d$: $5+19\\times7=5+133=138$."
+  },
+  {
+    "q": "Sum the first 40 terms of the AP 2, 5, 8, 11, ...",
+    "options": [
+      "2240",
+      "2420",
+      "2360",
+      "2480"
+    ],
+    "answer": 1,
+    "explanation": "$S_n=n/2[2a+(n-1)d]=20[4+39\\times3]=20\\times121=2420$."
+  },
+  {
+    "q": "What is the sum of the first 6 terms of the GP 5, 10, 20, ...?",
+    "options": [
+      "315",
+      "310",
+      "325",
+      "300"
+    ],
+    "answer": 0,
+    "explanation": "This GP has $a=5$, $r=2$, $n=6$. Sum is $5(2^6-1)/(2-1)=5\\times63=315$."
+  },
+  {
+    "q": "A jacket marked $500 is sold after successive discounts of 20% and 15%. What is the selling price?",
+    "options": [
+      "$340",
+      "$325",
+      "$350",
+      "$365"
+    ],
+    "answer": 0,
+    "explanation": "Apply discounts multiplicatively: $500\\times0.8\\times0.85 = 500\\times0.68 = 340$. The selling price is $340."
+  },
+  {
+    "q": "If A is 25% more than B, then B is what percent less than A?",
+    "options": [
+      "25%",
+      "20%",
+      "16.7%",
+      "12.5%"
+    ],
+    "answer": 1,
+    "explanation": "Let $A=1.25B$. The gap as a fraction of A is $0.25B/1.25B=0.2$, so B is 20% less."
+  },
+  {
+    "q": "A shop gives 800 g while charging for 1 kg at cost price. What is the effective profit percentage?",
+    "options": [
+      "20%",
+      "22.5%",
+      "25%",
+      "12.5%"
+    ],
+    "answer": 2,
+    "explanation": "He sells 800 g at the price of 1000 g, so profit is 200 g on 800 g. Profit percent is $200/800=25%$."
+  },
+  {
+    "q": "Rice at $24/kg and $36/kg is mixed to make $30/kg rice. What ratio of cheaper to dearer is needed?",
+    "options": [
+      "1:2",
+      "2:1",
+      "3:2",
+      "1:1"
+    ],
+    "answer": 3,
+    "explanation": "Alligation gives $(36-30):(30-24)=6:6=1:1$. Equal distances from the mean imply equal parts."
+  },
+  {
+    "q": "A score improves from 72% accuracy to 78%. What is the relative percentage increase?",
+    "options": [
+      "6%",
+      "8.33%",
+      "10%",
+      "12%"
+    ],
+    "answer": 1,
+    "explanation": "The absolute increase is 6 percentage points, but the relative lift is $6/72=1/12=8.33%$."
+  },
+  {
+    "q": "A price rises by 25%. By what percent must it fall to return to the original price?",
+    "options": [
+      "20%",
+      "25%",
+      "30%",
+      "16.7%"
+    ],
+    "answer": 0,
+    "explanation": "After the rise the price is $1.25x$. The required decrease is $0.25x/1.25x=20%$."
+  },
+  {
+    "q": "A train 180 m long crosses a 420 m bridge in 30 seconds. What is its speed in km/h?",
+    "options": [
+      "60 km/h",
+      "66 km/h",
+      "70 km/h",
+      "72 km/h"
+    ],
+    "answer": 3,
+    "explanation": "Total distance is $180+420=600$ m, so speed is $600/30=20$ m/s. Convert by multiplying by 3.6 to get 72 km/h."
+  },
+  {
+    "q": "Convert 54 km/h to m/s using the $5/18$ shortcut.",
+    "options": [
+      "12 m/s",
+      "18 m/s",
+      "20 m/s",
+      "15 m/s"
+    ],
+    "answer": 3,
+    "explanation": "$54 \\times 5/18 = 3 \\times 5 = 15$ m/s. Dividing by 18 first makes it mental."
+  },
+  {
+    "q": "A car covers equal distances at 40 km/h and 80 km/h. What is the average speed?",
+    "options": [
+      "60 km/h",
+      "53.3 km/h",
+      "56 km/h",
+      "50 km/h"
+    ],
+    "answer": 1,
+    "explanation": "For equal distances use the harmonic mean: $2ab/(a+b)=2\\times40\\times80/120=53.3$ km/h."
+  },
+  {
+    "q": "A boat goes 36 km downstream in 3 h and 36 km upstream in 6 h. What is the stream speed?",
+    "options": [
+      "3 km/h",
+      "4 km/h",
+      "5 km/h",
+      "6 km/h"
+    ],
+    "answer": 0,
+    "explanation": "Downstream speed is 12 km/h and upstream is 6 km/h. Stream speed is $(12-6)/2=3$ km/h."
+  },
+  {
+    "q": "Two trains of lengths 120 m and 180 m move opposite ways at 36 km/h and 54 km/h. How long do they take to cross?",
+    "options": [
+      "10 s",
+      "15 s",
+      "12 s",
+      "18 s"
+    ],
+    "answer": 2,
+    "explanation": "Relative speed is $90$ km/h = 25 m/s. Combined length is 300 m, so time is $300/25=12$ s."
+  },
+  {
+    "q": "A thief has a 300 m lead and runs at 9 km/h. A guard runs at 12 km/h. When is the thief caught?",
+    "options": [
+      "4 min",
+      "5 min",
+      "8 min",
+      "6 min"
+    ],
+    "answer": 3,
+    "explanation": "Relative speed is 3 km/h = 3000 m/h. Time is $300/3000=0.1$ h = 6 minutes."
+  },
+  {
+    "q": "A can finish work in 16 days and B in 24 days. How long together?",
+    "options": [
+      "12.0 days",
+      "9.6 days",
+      "10.0 days",
+      "8.0 days"
+    ],
+    "answer": 1,
+    "explanation": "Use $AB/(A+B)=16\\times24/(16+24)=384/40=9.6$ days."
+  },
+  {
+    "q": "A pipe fills a tank in 10 h and a drain empties it in 15 h. Both are open. How long to fill?",
+    "options": [
+      "30 h",
+      "25 h",
+      "20 h",
+      "18 h"
+    ],
+    "answer": 0,
+    "explanation": "Net rate is $1/10-1/15=1/30$ tank per hour. The tank fills in 30 hours."
+  },
+  {
+    "q": "A and B together finish in 9 days. A alone takes 18 days. How long does B alone take?",
+    "options": [
+      "9 days",
+      "12 days",
+      "18 days",
+      "27 days"
+    ],
+    "answer": 2,
+    "explanation": "B's rate is $1/9-1/18=1/18$. Therefore B alone takes 18 days."
+  },
+  {
+    "q": "A worker does full rate one day and one-third rate the next, alternating. If full-rate time is 12 days, how many days are needed?",
+    "options": [
+      "16 days",
+      "17 days",
+      "18 days",
+      "15 days"
+    ],
+    "answer": 2,
+    "explanation": "A 2-day cycle completes $1/12+1/36=1/9$ of the job. After 8 cycles, $8/9$ is done; day 17 leaves $1/36$, and day 18 at one-third rate finishes it."
+  },
+  {
+    "q": "A fair die is rolled 4 times. Approximate probability of at least one 6?",
+    "options": [
+      "48.2%",
+      "66.7%",
+      "51.8%",
+      "33.3%"
+    ],
+    "answer": 2,
+    "explanation": "Use complement: $1-(5/6)^4=1-625/1296\\approx1-0.482=0.518$, or 51.8%."
+  },
+  {
+    "q": "A bag has 5 red and 7 blue balls. Two are drawn without replacement. What is P(both red)?",
+    "options": [
+      "5/22",
+      "25/144",
+      "5/33",
+      "1/6"
+    ],
+    "answer": 2,
+    "explanation": "Without replacement, $P=5/12\\times4/11=20/132=5/33$."
+  },
+  {
+    "q": "A model flags fraud with 90% sensitivity and 95% specificity. Fraud prevalence is 2%. Given a flag, approximate precision.",
+    "options": [
+      "~15%",
+      "~25%",
+      "~27%",
+      "~90%"
+    ],
+    "answer": 2,
+    "explanation": "Out of 10,000: 200 fraud cases give 180 true positives; 9,800 non-fraud cases at 5% false positive give 490 false positives. Precision is $180/(180+490)\\approx27%$."
+  },
+  {
+    "q": "Three independent classifiers have accuracies 0.6, 0.7, and 0.8. Majority vote is correct with what probability?",
+    "options": [
+      "0.656",
+      "0.720",
+      "0.746",
+      "0.788"
+    ],
+    "answer": 3,
+    "explanation": "Correct means all three correct or exactly two correct: $0.336+(0.6cdot0.7cdot0.2+0.6cdot0.3cdot0.8+0.4cdot0.7cdot0.8)=0.788$."
+  },
+  {
+    "q": "How many ways are there to choose 4 features from 10 candidate features?",
+    "options": [
+      "210",
+      "5040",
+      "120",
+      "720"
+    ],
+    "answer": 0,
+    "explanation": "Order does not matter, so use combinations: $C(10,4)=10\\times9\\times8\\times7/24=210$."
+  },
+  {
+    "q": "How many 4-character codes can be made from digits 0-9 without repetition if the first digit cannot be 0?",
+    "options": [
+      "5040",
+      "5000",
+      "4096",
+      "4536"
+    ],
+    "answer": 3,
+    "explanation": "The first digit has 9 choices, then 9, 8, and 7 choices remain. Total $9\\times9\\times8\\times7=4536$."
+  },
+  {
+    "q": "How many nonnegative integer solutions are there to $x+y+z=12$?",
+    "options": [
+      "78",
+      "66",
+      "91",
+      "72"
+    ],
+    "answer": 2,
+    "explanation": "Stars and bars gives $C(12+3-1,3-1)=C(14,2)=91$."
+  },
+  {
+    "q": "How many distinct arrangements of the letters in BANANA are possible?",
+    "options": [
+      "30",
+      "60",
+      "90",
+      "120"
+    ],
+    "answer": 1,
+    "explanation": "BANANA has 6 letters with A repeated 3 times and N repeated 2 times. The count is $6!/(3!2!)=60$."
+  },
+  {
+    "q": "A clock shows 5:20. What is the smaller angle between the hands?",
+    "options": [
+      "40°",
+      "35°",
+      "45°",
+      "50°"
+    ],
+    "answer": 0,
+    "explanation": "Use $|30h-5.5m|=|150-110|=40°$. Since it is below 180°, the smaller angle is 40°."
+  },
+  {
+    "q": "Today is Sunday. What day will it be 250 days from now?",
+    "options": [
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "answer": 3,
+    "explanation": "$250 \bmod 7 = 5$. Sunday plus 5 days is Friday."
+  },
+  {
+    "q": "Which year is a leap year under the century rule?",
+    "options": [
+      "1900",
+      "2000",
+      "2100",
+      "2200"
+    ],
+    "answer": 1,
+    "explanation": "Centuries are leap years only if divisible by 400. 2000 is divisible by 400, while 1900, 2100, and 2200 are not."
+  },
+  {
+    "q": "Between 6 and 7, about when do the clock hands overlap?",
+    "options": [
+      "6:27:16",
+      "6:32:44",
+      "6:35:00",
+      "6:54:33"
+    ],
+    "answer": 1,
+    "explanation": "At 6:00 the hour hand is 180° ahead. Catch-up time is $180/5.5=32.727$ min, so overlap is about 6:32:44."
+  },
+  {
+    "q": "A $50K contract pays $20K/year for 3 years. At 10% discount rate, approximate NPV?",
+    "options": [
+      "$45K",
+      "$50K",
+      "$55K",
+      "$60K"
+    ],
+    "answer": 1,
+    "explanation": "NPV is $20/1.1+20/1.21+20/1.331 \\approx 18.2+16.5+15.0 = 49.7K$, about $50K$."
+  },
+  {
+    "q": "A perpetuity pays $75K each year forever. At a 15% discount rate, what is its present value?",
+    "options": [
+      "$450K",
+      "$600K",
+      "$750K",
+      "$500K"
+    ],
+    "answer": 3,
+    "explanation": "Perpetuity PV is $C/r = 75K/0.15 = 500K$."
+  },
+  {
+    "q": "An API costs $0.20/M tokens and drops 20% per year for 3 years. Approximate new cost?",
+    "options": [
+      "$0.102/M",
+      "$0.120/M",
+      "$0.128/M",
+      "$0.160/M"
+    ],
+    "answer": 0,
+    "explanation": "Compound the remaining 80%: $0.20\\times0.8^3=0.20\\times0.512=0.1024$ per million tokens."
+  },
+  {
+    "q": "How many digits does $2^{50}$ have using $\\log_{10}2 \\approx 0.301$?",
+    "options": [
+      "14",
+      "15",
+      "16",
+      "17"
+    ],
+    "answer": 2,
+    "explanation": "$50\\times0.301=15.05$. The digit count is the integer part plus 1, so the answer is 16 digits."
+  },
+  {
+    "q": "How many bits are needed to index about 1 trillion items?",
+    "options": [
+      "30 bits",
+      "40 bits",
+      "50 bits",
+      "60 bits"
+    ],
+    "answer": 1,
+    "explanation": "$1$ trillion is $10^{12}$, and $\\log_2(10)\\approx3.32$. So $12\\times3.32\\approx40$ bits."
+  },
+  {
+    "q": "A model has perplexity 64. What is cross-entropy in bits per token?",
+    "options": [
+      "4 bits",
+      "5 bits",
+      "6 bits",
+      "8 bits"
+    ],
+    "answer": 2,
+    "explanation": "Cross-entropy in bits is $\\log_2$ perplexity. Since $64=2^6$, the answer is 6 bits/token."
+  },
+  {
+    "q": "Approximate $\\ln(20)$ using $\\ln(10)\\approx2.303$ and $\\ln(2)\\approx0.693$.",
+    "options": [
+      "2.996",
+      "3.401",
+      "2.610",
+      "4.606"
+    ],
+    "answer": 0,
+    "explanation": "$\\ln(20)=\\ln(2)+\\ln(10)\\approx0.693+2.303=2.996$."
+  },
+  {
+    "q": "Data values 10, 12, 14, 16, 18 have what mean and median?",
+    "options": [
+      "Mean 14, median 14",
+      "Mean 15, median 14",
+      "Mean 14, median 15",
+      "Mean 13, median 14"
+    ],
+    "answer": 0,
+    "explanation": "The sum is 70 over 5 values, so mean is 14. The middle sorted value is also 14."
+  },
+  {
+    "q": "Group A has mean 90 with n=5; group B has mean 70 with n=15. What is the combined mean?",
+    "options": [
+      "75",
+      "80",
+      "82.5",
+      "85"
+    ],
+    "answer": 0,
+    "explanation": "Weighted mean is $(5\\times90+15\\times70)/20=(450+1050)/20=75$."
+  },
+  {
+    "q": "A latency metric has mean 180 ms and median 80 ms. What is the best interpretation?",
+    "options": [
+      "Left-skewed data",
+      "Uniform latency",
+      "No outliers",
+      "Right-skewed with tail"
+    ],
+    "answer": 3,
+    "explanation": "Mean much greater than median indicates a right-skewed distribution with slow tail outliers. Latency SLOs should use median and p95/p99, not only mean."
+  },
+  {
+    "q": "100 users: 55 use feature A, 45 use feature B, and 20 use both. How many use at least one?",
+    "options": [
+      "70",
+      "75",
+      "80",
+      "85"
+    ],
+    "answer": 2,
+    "explanation": "Inclusion-exclusion gives $55+45-20=80$ users using at least one feature."
+  },
+  {
+    "q": "A 32-bit hash has roughly what 50% collision threshold?",
+    "options": [
+      "~65K-77K inputs",
+      "~1M inputs",
+      "~4B inputs",
+      "~2^32 inputs"
+    ],
+    "answer": 0,
+    "explanation": "Birthday threshold is about $1.18\\sqrt{K}$. For $K=2^{32}$, $\\sqrt{K}=2^{16}=65,536$, so the threshold is roughly 77K."
+  },
+  {
+    "q": "A 1M-bucket hash table has about what 50% collision threshold by the birthday shortcut?",
+    "options": [
+      "~100 entries",
+      "~1,180 entries",
+      "~10,000 entries",
+      "~100,000 entries"
+    ],
+    "answer": 1,
+    "explanation": "The threshold is $1.18\\sqrt{1,000,000}\\approx1,180$ entries. The plain $\\sqrt{K}$ shortcut gives about 1,000."
+  },
+  {
+    "q": "A Bloom filter has 2M bits, 100K items, and 4 hashes. Approximate fraction of bits set?",
+    "options": [
+      "~9%",
+      "~18%",
+      "~33%",
+      "~55%"
+    ],
+    "answer": 1,
+    "explanation": "Inserted hash marks are $100K\\times4=400K$ over $2M$, so use $1-e^{-0.2}\\approx18%$."
+  },
+  {
+    "q": "A 300K-character text has entropy 1.2 bits/char. What is the theoretical compressed size?",
+    "options": [
+      "~30 KB",
+      "~45 KB",
+      "~60 KB",
+      "~360 KB"
+    ],
+    "answer": 1,
+    "explanation": "Total bits are $300K\\times1.2=360K$ bits. Divide by 8 to get 45K bytes, about 45 KB."
+  },
+  {
+    "q": "For 200 ms p99 budget, serial components are 25 ms, 40 ms, 60 ms, 30 ms, and 20 ms. How much p99 budget remains?",
+    "options": [
+      "15 ms",
+      "20 ms",
+      "30 ms",
+      "25 ms"
+    ],
+    "answer": 3,
+    "explanation": "Serial p99s are summed: $25+40+60+30+20=175$ ms. Remaining budget is $200-175=25$ ms."
+  },
+  {
+    "q": "On one core at $10^8$ ops/sec, about how long does $O(N^2)$ take for $N=30,000$?",
+    "options": [
+      "0.09 s",
+      "0.9 s",
+      "9 s",
+      "90 s"
+    ],
+    "answer": 2,
+    "explanation": "$N^2=9\\times10^8$ operations. At $10^8$ ops/sec, time is about 9 seconds."
+  }
+]

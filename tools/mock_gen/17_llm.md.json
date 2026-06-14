@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Under the chain rule used in autoregressive LLMs, the probability of the sequence 'The cat sat' is computed as:",
+    "options": [
+      "P(The) × P(cat|The) × P(sat|The, cat)",
+      "P(The) + P(cat|The) + P(sat|The, cat)",
+      "P(The) × P(cat) × P(sat) assuming each word is conditionally independent of the others",
+      "P(sat|The, cat) divided by the joint probability P(The) × P(cat)"
+    ],
+    "answer": 0,
+    "explanation": "The chain rule states P(w1,w2,w3) = P(w1)·P(w2|w1)·P(w3|w1,w2) — each word's probability is conditioned on all preceding words. Option C incorrectly assumes independence; addition (B) is never used for joint probability."
+  },
+  {
+    "q": "KL divergence D_KL(P||Q) has which of the following properties?",
+    "options": [
+      "It is always symmetric, so D_KL(P||Q) always equals D_KL(Q||P) regardless of distribution shape",
+      "It equals zero if and only if P and Q are identical distributions",
+      "It can take negative values when Q assigns higher probabilities than P across all outcomes",
+      "It equals the squared Euclidean distance between the two probability vectors in feature space"
+    ],
+    "answer": 1,
+    "explanation": "KL divergence equals 0 exactly when P = Q and is always non-negative. It is NOT symmetric — D_KL(P||Q) ≠ D_KL(Q||P) in general — and it is not a Euclidean distance metric."
+  },
+  {
+    "q": "Which tokenization algorithm iteratively merges the most frequent adjacent pair of symbols to build a subword vocabulary from individual characters?",
+    "options": [
+      "WordPiece (used by BERT), which merges pairs that maximally increase corpus log-likelihood",
+      "SentencePiece (used by LLaMA), which tokenizes raw text without any whitespace pre-splitting step",
+      "Byte Pair Encoding (BPE, used by GPT), which merges the highest-frequency adjacent pair each round",
+      "Unigram Language Model (used by T5), which prunes the vocabulary by dropping low-probability tokens"
+    ],
+    "answer": 2,
+    "explanation": "BPE starts with individual characters and greedily merges the most frequent adjacent pair at each step. WordPiece uses a likelihood criterion; SentencePiece works on raw bytes; Unigram LM starts with a large vocabulary and prunes."
+  },
+  {
+    "q": "In the scaled dot-product attention formula, the dot products are divided by sqrt(d_k). What is the primary purpose of this scaling factor?",
+    "options": [
+      "To normalize the output vectors so that each token's attended representation has unit L2 norm",
+      "To reduce the attention computation from quadratic O(n^2) to linearithmic O(n log n) time per layer",
+      "To constrain Q and K projection matrices to remain equal in magnitude throughout training",
+      "To prevent very large dot products from pushing softmax into saturation with near-zero gradients"
+    ],
+    "answer": 3,
+    "explanation": "When d_k is large, dot products grow in magnitude and push softmax into flat saturation regions where gradients vanish. Dividing by sqrt(d_k) keeps scale manageable. The sum-to-1 property of softmax is intrinsic to softmax, not this scaling."
+  },
+  {
+    "q": "A developer wants a decoding strategy that automatically samples from fewer tokens when the model is confident and more tokens when uncertain. Which strategy achieves this?",
+    "options": [
+      "Top-P (nucleus) sampling, which dynamically adjusts the candidate set to the smallest token set summing to probability P",
+      "Top-K sampling, which always considers exactly K candidate tokens regardless of how peaked the distribution is",
+      "Beam search with width B, which systematically tracks B complete-sequence candidates at every generation step",
+      "Greedy decoding with temperature annealing, which reduces temperature gradually during the generation"
+    ],
+    "answer": 0,
+    "explanation": "Top-P adapts the candidate set — when the model is confident (one token dominates), fewer tokens reach the P threshold; when uncertain, more are included. Top-K always considers exactly K tokens regardless of the distribution shape, which is the key difference."
+  },
+  {
+    "q": "A language model achieves a cross-entropy loss of 3.0 bits on a test set. What is its perplexity?",
+    "options": [
+      "3.0, since perplexity is defined as the cross-entropy loss itself on standard benchmarks",
+      "8, since perplexity = 2^loss when loss is measured in bits (2^3 = 8)",
+      "20.1, since perplexity = e^loss where e is Euler's number regardless of the log base",
+      "9.0, since perplexity is the cross-entropy loss raised to the power of the vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity = 2^(cross-entropy loss in bits) = 2^3.0 = 8. The chapter confirms: 'Loss of 3.0 → Perplexity of 8.' If loss were in nats (natural log), perplexity would equal e^3 ≈ 20.1."
+  },
+  {
+    "q": "A LoRA adapter with rank r=16 is applied to a weight matrix of shape [4096 × 4096]. Approximately what percentage of the original matrix's parameters does the adapter introduce?",
+    "options": [
+      "16%, since the rank value directly equals the percentage of parameters added by the adapter",
+      "1.6%, since the adapter adds two matrices each with 4096×16 elements divided by total original size",
+      "0.78%, since LoRA adds A:[4096×16] and B:[16×4096] totaling 131K vs 16.7M original parameters",
+      "0.016%, since only the diagonal elements of the low-rank update matrices require gradient tracking"
+    ],
+    "answer": 2,
+    "explanation": "LoRA adds A:[4096×16] and B:[16×4096], totaling 2×4096×16 = 131,072 parameters. Original: 4096×4096 = 16,777,216. Ratio: 131,072 / 16,777,216 ≈ 0.78%. Options A and B both overestimate by an order of magnitude or more."
+  },
+  {
+    "q": "Compared to RLHF with PPO, Direct Preference Optimization (DPO) primarily differs in which way?",
+    "options": [
+      "DPO requires ten times more labeled preference pairs to match RLHF training data efficiency",
+      "DPO uses a smaller auxiliary reward model trained on hard binary labels instead of human pairwise rankings",
+      "DPO trains only the final output projection layer while keeping all Transformer blocks completely frozen",
+      "DPO directly fine-tunes the LLM from preference pairs without training a separate reward model at all"
+    ],
+    "answer": 3,
+    "explanation": "DPO eliminates the separate reward model and RL (PPO) stage. It uses a single fine-tuning step with a loss that directly increases preferred-response probability and decreases rejected-response probability. RLHF requires three separate training stages."
+  },
+  {
+    "q": "According to the Chinchilla scaling laws (Hoffmann et al., 2022), what is the approximately optimal number of training tokens per model parameter?",
+    "options": [
+      "Approximately 20 training tokens per parameter, so a 7B model should train on roughly 140B tokens",
+      "Approximately 1 training token per parameter, so a 175B model trains on about 175B tokens total",
+      "Approximately 200 tokens per parameter, meaning larger models need proportionally longer training runs",
+      "Approximately 5 tokens per parameter, balancing training speed with final model quality at any scale"
+    ],
+    "answer": 0,
+    "explanation": "Chinchilla showed the optimal ratio is ~20 tokens per parameter for a fixed compute budget. GPT-3 (175B params, 300B tokens ≈ 1.7 tokens/param) was significantly undertrained. LLaMA-13B at 1.4T tokens (~108/param) outperformed it partly because of this."
+  },
+  {
+    "q": "LLaMA and Mistral use Rotary Position Embedding (RoPE) rather than fixed sinusoidal positional encoding. What is RoPE's main practical advantage?",
+    "options": [
+      "RoPE requires no learnable parameters, making model size smaller than absolute positional embeddings",
+      "RoPE encodes relative position via vector rotation, enabling better generalization to longer sequences than training length",
+      "RoPE eliminates the need for causal attention masking, since rotation inherently enforces left-to-right generation order",
+      "RoPE produces strictly lower perplexity than sinusoidal encoding at the specific sequence lengths used during training"
+    ],
+    "answer": 1,
+    "explanation": "RoPE rotates Q and K vectors by position-dependent angles, so Q·K naturally reflects relative token distance. This enables length extrapolation with techniques like NTK-aware scaling or YaRN. Fixed sinusoidal PE provides absolute position signals that do not extrapolate as well to unseen lengths."
+  },
+  {
+    "q": "In Mixtral 8x7B, which statement correctly describes how tokens are routed to experts during inference?",
+    "options": [
+      "All 8 experts process every token and their weighted outputs are summed using learned attention coefficients",
+      "The router selects the 2 highest-scoring experts per token, activating only those 2 experts for that specific token",
+      "Experts are selected once per batch and remain fixed for all tokens within that batch to reduce routing overhead",
+      "The router assigns each layer of the Transformer to a single expert based on the overall prompt topic category"
+    ],
+    "answer": 1,
+    "explanation": "Mixtral uses a per-token top-2 routing: for each token, the router selects 2 of 8 experts and only those 2 compute the output. This yields ~13B active parameters per token while total parameters are ~47B, giving efficiency similar to a 13B dense model with larger capacity."
+  },
+  {
+    "q": "BERT uses bidirectional attention while GPT uses causal (masked) attention. What can BERT do that a decoder-only GPT fundamentally cannot?",
+    "options": [
+      "Generate open-ended text continuations from a given prompt using autoregressive token prediction",
+      "Perform in-context few-shot learning by conditioning on task examples provided in the prompt",
+      "Classify sentence sentiment by appending a linear head to the [CLS] token representation",
+      "Use tokens from future positions to inform the contextual representation of earlier tokens"
+    ],
+    "answer": 3,
+    "explanation": "Bidirectional attention lets each token attend to all positions including future ones (j > i), yielding richer representations for understanding. GPT's causal mask blocks future tokens — token i can only see tokens 0 through i. Both models can do classification, but they differ in how representations incorporate context."
+  },
+  {
+    "q": "Flash Attention reduces the memory complexity of computing the attention matrix during the forward pass to which complexity class?",
+    "options": [
+      "O(N), by tiling attention computation into blocks and using online softmax without storing the full N×N matrix",
+      "O(N log N), by hierarchically grouping tokens into attention clusters and merging results recursively",
+      "O(sqrt(N)), by applying low-rank approximation to the N×N attention score matrix before softmax",
+      "O(N^1.5), by processing attention in fixed overlapping windows that each span a constant fraction of the sequence"
+    ],
+    "answer": 0,
+    "explanation": "Flash Attention processes attention in tiles and computes softmax incrementally (online softmax), never materializing the full N×N matrix. GPU memory drops from O(N²) to O(N). This enables very long context windows and 2-4× faster attention on modern hardware."
+  },
+  {
+    "q": "An LLM confidently generates fabricated paper citations with plausible author names and journal titles. Which mechanism most directly explains this hallucination?",
+    "options": [
+      "The output temperature was set too high, injecting excessive randomness into token selection at citation positions",
+      "The model generates statistically plausible tokens based on learned patterns without any internal fact-verification step",
+      "The context window was exceeded, causing retrieval of unrelated cached activations from earlier in the sequence",
+      "The knowledge cutoff erased all citation metadata, forcing the model to interpolate from adjacent facts"
+    ],
+    "answer": 1,
+    "explanation": "LLMs have no internal truth checker — they predict plausible next tokens. For obscure queries, pattern matching produces statistically believable but fabricated content. High temperature or cutoff may worsen this, but the root cause is that generation and fact-checking are entirely separate processes."
+  },
+  {
+    "q": "For a 70B-parameter model serving 32 concurrent users each with 4K context, which resource does the KV cache most critically strain?",
+    "options": [
+      "Forward-pass computation time per token, since caching makes each generation step linear in accumulated sequence length",
+      "Model weight integrity, since cached K/V tensors can accumulate quantization drift over long generation sessions",
+      "GPU memory, since each concurrent request requires its own KV cache allocation (~10 GB for LLaMA-2-70B at 4K context)",
+      "Gradient accumulation buffers during online fine-tuning, requiring special memory-efficient optimizer configurations"
+    ],
+    "answer": 2,
+    "explanation": "LLaMA-2-70B with 4K context requires ~10.7 GB of KV cache per request. Serving 32 users simultaneously needs ~342 GB just for KV caches — independent of model weights. This GPU memory pressure, not computation time, is the dominant bottleneck in production inference."
+  },
+  {
+    "q": "Which example best illustrates BLEU score's most fundamental limitation as a text evaluation metric?",
+    "options": [
+      "BLEU assigns zero to multilingual outputs because it requires reference and hypothesis to share the same script",
+      "BLEU aggressively penalizes any output longer than the reference through an unbounded length penalty term",
+      "BLEU requires multiple reference translations to be statistically valid, making single-reference evaluation unreliable",
+      "A word-scrambled sentence like 'the mat on sat cat the' scores highly on BLEU-1 despite being semantically incorrect"
+    ],
+    "answer": 3,
+    "explanation": "BLEU counts n-gram overlap but does not assess word order or meaning beyond n-gram matching. A scrambled sentence with the same unigrams as the reference would score perfectly on BLEU-1, exposing the core flaw: high overlap does not imply correct meaning or grammar."
+  },
+  {
+    "q": "A legal document review tool needs maximally deterministic and reproducible summaries. Which temperature setting is most appropriate?",
+    "options": [
+      "Temperature = 0, which forces greedy decoding by always selecting the single highest-probability next token",
+      "Temperature = 0.7, which provides a practical balance between determinism and natural linguistic variation",
+      "Temperature = 1.0, which samples directly from the model's native learned probability distribution at each step",
+      "Temperature = 1.5, which flattens the distribution to avoid repetitive phrasing in longer summaries"
+    ],
+    "answer": 0,
+    "explanation": "Temperature = 0 performs greedy decoding — always selecting the most probable next token — producing identical output for identical input. For legal review where accuracy and reproducibility outweigh creativity, this is the correct setting. Higher temperatures add randomness that degrades factual reliability."
+  },
+  {
+    "q": "For machine translation (source language → target language), which Transformer architecture is most naturally suited?",
+    "options": [
+      "Decoder-only, since autoregressive causal generation naturally produces target tokens one by one from source context",
+      "Encoder-decoder, since the encoder builds a rich bidirectional source representation and the decoder generates targets via cross-attention",
+      "Encoder-only, since bidirectional attention over the source is sufficient for producing the final translation",
+      "MoE decoder-only, since routing different experts to source and target domain tokens improves cross-lingual alignment"
+    ],
+    "answer": 1,
+    "explanation": "Encoder-decoder models like T5 and BART use a bidirectional encoder to fully understand the source, then a decoder that attends to the encoder (cross-attention) to generate the target. While decoder-only models can translate, encoder-decoder is architecturally optimal for seq-to-seq tasks."
+  },
+  {
+    "q": "Supervised Fine-Tuning (SFT) is necessary after pre-training even with hundreds of billions of tokens. What specific behavior does SFT instill?",
+    "options": [
+      "SFT expands the tokenizer vocabulary to include domain-specific terms not found in the pre-training corpus",
+      "SFT reduces the model's perplexity on held-out pre-training data by continuing training with a decayed learning rate",
+      "SFT trains the model to produce helpful responses to instructions rather than completing text verbatim as a next-token predictor",
+      "SFT applies quantization-aware training so that the model produces reliable outputs when later converted to INT8"
+    ],
+    "answer": 2,
+    "explanation": "A pre-trained model predicts plausible text continuations: given a question, it may generate another question rather than an answer. SFT on (prompt, ideal response) pairs teaches the model to behave as a helpful assistant. RLHF then further refines alignment with human preferences."
+  },
+  {
+    "q": "In RLHF, the reward signal is reward = preference_score − β × D_KL(new_model || reference_model). What does the KL penalty prevent?",
+    "options": [
+      "It prevents the fine-tuned model from generating responses longer than the reference model's average output length",
+      "It prevents the reward model itself from overfitting to the pairwise training preferences during its own training",
+      "It prevents the policy model from assigning near-zero probability to any token, keeping distributions well-spread",
+      "It prevents reward hacking by stopping the policy from drifting so far from the reference that it finds adversarial exploits"
+    ],
+    "answer": 3,
+    "explanation": "Without the KL penalty, the policy can find responses that score high on the reward model but are incoherent outside its training distribution — 'reward hacking.' The KL term constrains the policy to stay near the reference model's behavior, preventing catastrophic divergence while allowing alignment improvements."
+  },
+  {
+    "q": "The 'Attention Is All You Need' paper (Vaswani et al., 2017) represented a paradigm shift. What was its central architectural innovation?",
+    "options": [
+      "Replacing attention mechanisms with convolutional filters for efficient position-wise processing across all sequence lengths",
+      "Replacing recurrent networks (RNNs, LSTMs) with self-attention, enabling full parallelization across all sequence positions",
+      "Introducing the decoder-only causal architecture that is now used by all major large language models",
+      "Introducing learnable positional embeddings as a complete replacement for all prior position representations"
+    ],
+    "answer": 1,
+    "explanation": "RNNs/LSTMs processed tokens sequentially, preventing parallelization and causing vanishing gradients. Transformers replace recurrence entirely with self-attention, processing all positions in parallel. The paper introduced an encoder-decoder architecture; the decoder-only simplification came later with GPT."
+  },
+  {
+    "q": "In a decoder-only Transformer's causal attention mask, which pattern is applied to the pre-softmax attention score matrix?",
+    "options": [
+      "A band-diagonal mask that allows each token to attend only to the two tokens immediately preceding it in the sequence",
+      "A checkerboard pattern that alternates between allowing and blocking attention between odd and even positions",
+      "A lower-triangular mask where position i can attend to positions 0 through i, and positions j > i are set to negative infinity",
+      "A uniform scaling factor applied across all attention scores to prevent the model from over-attending to any single position"
+    ],
+    "answer": 2,
+    "explanation": "Causal masking uses a lower-triangular mask: token 0 sees only itself, token 1 sees tokens 0-1, etc. Future positions (j > i) are set to -∞ before softmax, producing zero attention weights. This prevents the model from 'seeing' tokens that have not yet been generated."
+  },
+  {
+    "q": "LLM pre-training maximizes the likelihood of training data. Which mathematically equivalent operation is actually performed during gradient descent?",
+    "options": [
+      "Maximizing the product of all token probabilities across the training corpus in a single combined objective",
+      "Maximizing the raw log-probability of each correct next token individually at each sequence position",
+      "Minimizing the average negative log-probability (cross-entropy loss) over mini-batches of training sequences",
+      "Minimizing KL divergence between the model's output distribution and a Gaussian prior over model weights"
+    ],
+    "answer": 2,
+    "explanation": "MLE maximization equals minimizing negative log-likelihood. In practice, cross-entropy loss = −mean(log P(correct token)) is minimized via gradient descent. Directly multiplying probabilities causes floating-point underflow — logarithms convert products into sums, making computation tractable."
+  },
+  {
+    "q": "Grouped-Query Attention (GQA) was introduced to address which specific inference bottleneck in transformer models?",
+    "options": [
+      "The O(n^2) attention computation cost during prefill of very long prompts causing slow time-to-first-token",
+      "The inability of standard multi-head attention to generalize to sequences longer than seen during training",
+      "The poor per-parameter efficiency of dense feedforward layers compared to their attention counterparts",
+      "The GPU memory cost of per-head Key/Value tensors in the KV cache during autoregressive token generation"
+    ],
+    "answer": 3,
+    "explanation": "Standard MHA stores separate K,V tensors for every attention head in the KV cache. GQA has groups of query heads share one K,V pair, directly reducing KV cache memory (e.g., 8 groups instead of 32 heads = 4× less cache). Flash Attention, not GQA, addresses quadratic prefill cost."
+  },
+  {
+    "q": "A developer wants to improve an LLM's accuracy on a multi-step word problem without any external tool access. Which prompting approach is most effective?",
+    "options": [
+      "Asking the model to 'think step by step' before stating the final answer, exposing intermediate reasoning in the output",
+      "Providing the expected final answer first and asking the model to verify and explain it backward",
+      "Setting temperature to zero to force deterministic token selection at each generation step",
+      "Using a shorter prompt to ensure all problem tokens fit within the first quarter of the context window"
+    ],
+    "answer": 0,
+    "explanation": "Chain-of-thought prompting ('think step by step') dramatically improves multi-step reasoning because each generated intermediate step conditions subsequent tokens, allowing the model to perform explicit computation. Temperature and prompt length affect other properties but do not fundamentally improve reasoning accuracy."
+  },
+  {
+    "q": "A 7B-parameter model in FP16 (~14 GB) is quantized to INT4 for QLoRA fine-tuning. What is the approximate memory used by the quantized base model weights?",
+    "options": [
+      "7 GB, since INT4 quantization halves the memory compared to FP16's two bytes per parameter",
+      "14 GB, since quantization only affects computation speed but does not reduce memory at the parameter storage level",
+      "3.5 GB, since INT4 uses 0.5 bytes per parameter giving 7B × 0.5 = 3.5 GB for the base model weights",
+      "1.75 GB, since INT4 quantization rounds down to effectively one bit of useful information per parameter"
+    ],
+    "answer": 2,
+    "explanation": "INT4 uses 4 bits = 0.5 bytes per parameter. 7B × 0.5 bytes = 3.5 GB. FP16 uses 2 bytes: 7B × 2 = 14 GB. INT4 is 4× smaller than FP16, so 14/4 = 3.5 GB. This is why QLoRA enables fine-tuning large models on consumer-grade hardware with limited VRAM."
+  },
+  {
+    "q": "GPT stands for Generative Pre-trained Transformer, and the GPT family uses which architectural variant of the Transformer?",
+    "options": [
+      "Encoder-only (bidirectional), giving each token full visibility into the entire input and output sequence simultaneously",
+      "Encoder-decoder (seq-to-seq), using a separate encoder for understanding and a decoder for text generation tasks",
+      "MoE encoder-only, routing each token to specialized experts for language understanding classification tasks",
+      "Decoder-only (causal), processing tokens left-to-right with each position attending only to prior positions"
+    ],
+    "answer": 3,
+    "explanation": "GPT, LLaMA, Claude, Mistral, and all major generative LLMs use the decoder-only architecture with causal (left-to-right) attention. BERT uses encoder-only bidirectional attention. T5 and BART use encoder-decoder. Decoder-only won because it scales well and handles both understanding and generation in one stack."
+  },
+  {
+    "q": "Emergent abilities in LLMs differ from typical smooth scaling-law improvements in what key way?",
+    "options": [
+      "Emergent abilities improve gradually from small model sizes, just at a steeper rate than other capability types",
+      "Emergent abilities require task-specific fine-tuning data to unlock even at scales where they are theoretically possible",
+      "Emergent abilities only appear when training corpora include sufficient diversity of multilingual and code examples",
+      "Emergent abilities are absent or near-absent in smaller models and appear abruptly above certain parameter thresholds"
+    ],
+    "answer": 3,
+    "explanation": "Emergent abilities exhibit phase-transition behavior — essentially absent below a threshold (e.g., chain-of-thought reasoning near-zero below ~60B parameters) and suddenly appearing above it. Unlike smooth scaling-law improvements, this makes them unpredictable from small-scale experiments."
+  },
+  {
+    "q": "Beam search is preferred for machine translation but rarely for open-ended creative writing. What property explains this trade-off?",
+    "options": [
+      "Beam search keeps B candidate sequences and selects the highest-probability complete sequence, improving structure but reducing diversity",
+      "Beam search applies a per-beam temperature that lowers over time, making it more deterministic for factual tasks than creative ones",
+      "Beam search penalizes repeated n-grams across all beams, preventing repetition that would otherwise dominate factual outputs",
+      "Beam search uses random sampling between beams at each step, introducing the randomness that creative writing requires"
+    ],
+    "answer": 0,
+    "explanation": "Beam search maintains B candidates and selects the globally highest-probability complete sequence. This finds better-structured outputs (ideal for translation) but gravitates toward common, safe, generic text — the highest-probability sequences are the most expected ones, not the most creative."
+  },
+  {
+    "q": "A developer needs to implement semantic search over 10 million customer support tickets by converting each ticket to a vector. Which model type is most appropriate?",
+    "options": [
+      "A generative LLM such as GPT-4o, because it produces the richest contextual representation for each document",
+      "A dedicated embedding model such as text-embedding-3 or BGE-large, because it outputs fixed-size semantic vectors efficiently",
+      "A BERT model fine-tuned with next-sentence prediction, because its [CLS] token captures full cross-sentence context",
+      "A decoder-only LLM at temperature=0, since greedy decoding yields deterministic last-layer hidden states for each ticket"
+    ],
+    "answer": 1,
+    "explanation": "Embedding models produce fixed-size semantic vectors in a single fast forward pass and are purpose-built for similarity search. Generative models output text, not vectors. Dedicated embedding models outperform repurposed generative model hidden states for retrieval tasks at far lower cost and latency."
+  },
+  {
+    "q": "A Transformer uses 32 attention heads rather than one large head with the same total dimension. What is the primary benefit of this multi-head design?",
+    "options": [
+      "Multiple heads reduce the O(n^2) attention complexity to O(n × h) where h is the number of heads, improving speed",
+      "Multiple heads allow separate GPU threads to process different positions in the sequence in true parallel execution",
+      "Multiple heads allow the model to capture different relationship types (syntactic, semantic, coreference) simultaneously",
+      "Multiple heads provide independent gradient pathways that specifically prevent vanishing gradients in very deep networks"
+    ],
+    "answer": 2,
+    "explanation": "Each head learns to specialize in a different type of relationship — head 1 might track subject-verb agreement, head 2 coreference, head 3 semantic similarity. Combining these perspectives gives richer representations than a single large head. Multi-head does not reduce the O(n²) complexity."
+  },
+  {
+    "q": "Constitutional AI (CAI) used to train Claude differs from standard RLHF in which way?",
+    "options": [
+      "CAI replaces all human labelers with automated A/B testing using fixed benchmark criteria for each response pair",
+      "CAI uses a separate frozen language model as the reward model instead of any form of human preference ratings",
+      "CAI removes the SFT stage entirely, jumping directly from pre-training to the RL alignment phase",
+      "CAI has the AI critique and revise its own outputs against written principles, reducing human exposure to harmful content"
+    ],
+    "answer": 3,
+    "explanation": "CAI trains the model to evaluate its outputs against a 'constitution' of written principles, generating its own feedback on harmful content. This reduces the need for human raters to directly evaluate dangerous outputs. A separate AI feedback step replaces much of the human labeling in the RLHF pipeline."
+  },
+  {
+    "q": "Knowledge distillation allows a small student model to learn more than from hard labels alone. What extra information from the teacher provides richer signal?",
+    "options": [
+      "The teacher's full probability distribution (soft labels) over all classes, encoding similarity relationships between outputs",
+      "The teacher's weight matrices, which the student copies layer-by-layer to initialize a more task-adapted parameter space",
+      "The teacher's gradient directions, which guide the student's optimization along a more favorable loss landscape trajectory",
+      "The teacher's attention patterns, which are directly transplanted into corresponding student attention heads at each layer"
+    ],
+    "answer": 0,
+    "explanation": "Soft labels encode relational information — if the teacher assigns P(cat)=0.7 and P(dog)=0.2, the student learns that cats and dogs are more similar than cats and birds. Hard labels (just 'cat') discard this similarity structure. DistilBERT achieves 97% of BERT's quality with 40% fewer parameters using this approach."
+  },
+  {
+    "q": "The InstructGPT paper (Ouyang et al., 2022) reported a counterintuitive finding about model size versus alignment. What was it?",
+    "options": [
+      "Larger RLHF models consistently outperformed smaller ones by margins exceeding standard scaling law predictions",
+      "Human raters preferred GPT-3 (175B, unaligned) over InstructGPT (1.3B) for factual accuracy on knowledge questions",
+      "Fine-tuning on human demonstrations alone, without any RL stage, matched the performance of full RLHF training",
+      "Human raters preferred InstructGPT (1.3B, RLHF-aligned) over GPT-3 (175B, unaligned) for instruction-following helpfulness"
+    ],
+    "answer": 3,
+    "explanation": "InstructGPT's key finding was that a 1.3B RLHF-aligned model was preferred by human evaluators over the raw 175B GPT-3 for instruction-following. Alignment can outweigh raw scale — a well-aligned smaller model can beat a larger unaligned one in real-world usefulness."
+  },
+  {
+    "q": "When a developer uses tool calling in an LLM API, who is responsible for actually executing the tool function and returning results to the model?",
+    "options": [
+      "The LLM provider's API infrastructure, which automatically detects and executes any tool calls in the model's response",
+      "The developer's application code, which must call the function and send the result back in a follow-up API message",
+      "The model itself, since it executes the tool call internally during its forward pass before producing the final text response",
+      "A dedicated tool-execution microservice that the API provider attaches automatically to any request containing tool definitions"
+    ],
+    "answer": 1,
+    "explanation": "The LLM outputs a structured tool call specification (function name and arguments in JSON). The developer's own code must execute that function, collect the result, and send it back to the model in a follow-up message. The LLM cannot execute external code — it only generates structured instructions to do so."
+  },
+  {
+    "q": "The Model Context Protocol (MCP), created by Anthropic, solves which specific problem in AI agent development?",
+    "options": [
+      "Standardizing system prompt formats across different LLM providers so agent behavior is consistent regardless of model used",
+      "Defining a common agent memory schema so multi-agent systems can share long-term memory across different framework implementations",
+      "Specifying a universal agent benchmark format for comparing agent performance fairly across different architectures",
+      "Providing a standard protocol for LLMs to connect to external tools and data sources, eliminating per-provider custom integrations"
+    ],
+    "answer": 3,
+    "explanation": "MCP is described as 'USB for AI tools' — before MCP, every tool needed a custom integration for every LLM provider. With MCP, a tool exposes a standard server interface that any MCP-compatible LLM can use. This dramatically reduces integration fragmentation in multi-tool agent applications."
+  },
+  {
+    "q": "An LLM confidently states a factual answer based on patterns in training data. This behavior is called a hallucination. According to RLHF research, which training incentive contributes to hallucinations?",
+    "options": [
+      "Human raters during RLHF training often rated confident-sounding responses higher than 'I don't know,' inadvertently rewarding confident hallucination",
+      "High learning rates during pre-training cause the model to overfit specific facts while degrading on novel factual combinations",
+      "The beam search decoding strategy inherently selects the highest-probability response, which is often a confident fabrication",
+      "Backpropagation through the full attention stack causes factual information to leak from late layers back to early layers"
+    ],
+    "answer": 0,
+    "explanation": "The chapter identifies that during RLHF, human raters often preferred confident-sounding answers over uncertain ones, inadvertently training the model to sound certain even when guessing. Combined with compression (facts stored diffusely across weights), this creates systematic confident hallucination."
+  },
+  {
+    "q": "LLMs often fail the 'how many r's are in strawberry' question. Which technical reason from the chapter best explains this?",
+    "options": [
+      "The model's training corpus underrepresents letter-counting tasks, making this an out-of-distribution query",
+      "The model's attention mechanism prioritizes semantic tokens over individual characters during generation",
+      "The word 'strawberry' may be a single token in the vocabulary, meaning the model never 'sees' individual letters",
+      "Counting requires persistent working memory that exceeds the model's ability to track state across generation steps"
+    ],
+    "answer": 2,
+    "explanation": "Tokenization is the root cause — 'strawberry' may be tokenized as a single token or a small number of subword pieces, not individual letters. The model processes token IDs, not characters. Asking it to count letters requires perceiving structure below its unit of representation."
+  },
+  {
+    "q": "The RLHF-aligned model in the InstructGPT paper used PPO (Proximal Policy Optimization) as the RL algorithm. DPO was proposed later as a simpler alternative. Which training stage does DPO eliminate that PPO required?",
+    "options": [
+      "The pre-training stage, since DPO can learn from human preferences without any prior language modeling objective",
+      "The reward model training stage, since DPO derives the reward signal implicitly from the preference data directly in the policy loss",
+      "The SFT stage, since DPO's preference-based loss is sufficient to align a raw pre-trained model to follow instructions",
+      "The data collection stage, since DPO generates its own synthetic preference pairs through self-play between two model copies"
+    ],
+    "answer": 1,
+    "explanation": "RLHF with PPO requires three stages: SFT, reward model training, and RL (PPO). DPO eliminates the reward model training stage by deriving an equivalent training signal directly from preference pairs, collapsing the pipeline to SFT followed by one DPO fine-tuning step."
+  },
+  {
+    "q": "After 'The weather in a desert is typically', the LLM's output distribution is nearly flat over weather words. Compared to 'The capital of France is', what does this imply about the entropy of the two distributions?",
+    "options": [
+      "The desert weather prompt produces higher output entropy because the flat distribution reflects greater uncertainty about the next token",
+      "The France capital prompt produces higher entropy because there are many geographically plausible capital cities in different eras of history",
+      "Both prompts produce identical entropy since both draw from the same vocabulary and context-window length",
+      "The desert weather prompt produces lower entropy because it activates more specific climatological training patterns from arid-region text"
+    ],
+    "answer": 0,
+    "explanation": "Entropy H = -Σ P(x) log P(x) is maximized by uniform distributions and minimized by peaked ones. A near-uniform weather distribution has high entropy. The France capital prompt yields P('Paris') ≈ 0.85 — an extremely peaked distribution with low entropy. Entropy reflects distribution shape, not vocabulary size."
+  },
+  {
+    "q": "A RAG system loses context for clauses that span chunk boundaries. Which chunking approach best addresses this?",
+    "options": [
+      "Reducing chunk size to 100 tokens to ensure each chunk contains exactly one complete clause or sentence",
+      "Adding token overlap between adjacent chunks so boundary context is duplicated in both neighboring chunks",
+      "Increasing chunk size to 5000 tokens to ensure complete contract sections are always within a single chunk",
+      "Using fixed 512-token boundaries strictly with no overlap to minimize storage and embedding computation costs"
+    ],
+    "answer": 1,
+    "explanation": "Adding 50-200 token overlap between adjacent chunks ensures that context spanning a chunk boundary appears in both chunks, making it retrievable from either side. Reducing chunk size increases fragmentation; large chunks hurt retrieval precision; fixed chunks without overlap are the root cause of the original problem."
+  },
+  {
+    "q": "In speculative decoding, what happens when the large target model rejects the third of five draft tokens generated by the small draft model?",
+    "options": [
+      "The entire five-token draft is discarded and the target model regenerates all five tokens sequentially one by one",
+      "Only the rejected token is resampled by the draft model and the remaining two tokens are re-validated immediately",
+      "The target model accepts tokens 1-2, rejects token 3, generates its own replacement for position 3, and continues from position 4",
+      "The target model accepts tokens 1-2, generates a replacement for position 3, then stops and waits for a new full draft"
+    ],
+    "answer": 2,
+    "explanation": "Speculative decoding accepts all correct tokens before the rejection point, generates one new replacement token at the rejection position, and continues from the next position. This preserves the target model's quality guarantee (it has final say on every accepted token) while achieving 2-3× speedup from parallel batch verification."
+  },
+  {
+    "q": "SentencePiece, used by LLaMA and T5, has which characteristic that distinguishes it from BPE used in GPT models?",
+    "options": [
+      "SentencePiece always produces a fixed number of tokens per input sentence regardless of language or text content",
+      "SentencePiece uses purely rule-based segmentation patterns without any learning from a training corpus at all",
+      "SentencePiece is restricted to languages with explicit word-boundary whitespace such as English, French, and Spanish",
+      "SentencePiece treats spaces as regular characters and tokenizes raw text directly without whitespace pre-tokenization"
+    ],
+    "answer": 3,
+    "explanation": "SentencePiece operates on raw text including spaces, making it language-agnostic — it works equally well for Chinese, Japanese, Arabic, and other languages without word-boundary whitespace. BPE assumes whitespace-based pre-tokenization, which limits its applicability to languages that separate words with spaces."
+  },
+  {
+    "q": "Self-consistency prompting improves performance on math and logic questions by which mechanism?",
+    "options": [
+      "Asking the model to re-solve the problem backward from the stated answer to verify the forward solution is correct",
+      "Running the same prompt at temperature=0 multiple times and averaging all generated numerical answer values",
+      "Using a separate verifier model to assign a confidence score to each candidate answer before selection",
+      "Generating multiple independent reasoning chains at non-zero temperature and selecting the most frequent final answer"
+    ],
+    "answer": 3,
+    "explanation": "Self-consistency samples multiple diverse reasoning paths (non-zero temperature) and takes a majority vote over final answers. The correct answer tends to appear across more paths than any specific wrong answer. This is distinct from averaging numerical outputs (inappropriate for reasoning) and from external verifiers."
+  },
+  {
+    "q": "Which formula correctly relates perplexity to cross-entropy loss when loss is measured in bits (log base 2)?",
+    "options": [
+      "Perplexity = 2^(cross-entropy loss in bits), so a loss of 3.0 bits gives a perplexity of exactly 8",
+      "Perplexity = e^(cross-entropy loss) using Euler's number as the base regardless of what log base is used",
+      "Perplexity = 1 / (cross-entropy loss), meaning minimizing loss always maximizes perplexity simultaneously",
+      "Perplexity = (cross-entropy loss)^2, applying a quadratic penalization to the model's prediction errors"
+    ],
+    "answer": 0,
+    "explanation": "Perplexity = 2^loss when loss is measured in bits. The chapter confirms: 'Loss of 3.0 → Perplexity of 8' (2^3 = 8). When using natural log (nats), Perplexity = e^loss. Lower perplexity means the model was less surprised by the evaluation text — it predicted tokens more accurately."
+  },
+  {
+    "q": "Continuous (dynamic) batching in vLLM achieves much higher GPU throughput than static batching. What is the key enabling mechanism?",
+    "options": [
+      "Continuous batching pre-allocates fixed per-user KV cache slots and fills them sequentially as requests arrive in order",
+      "Continuous batching immediately adds new requests to the batch as soon as any existing request finishes generation",
+      "Continuous batching applies speculative decoding to all batch requests simultaneously to reduce per-step latency",
+      "Continuous batching uses tensor parallelism within each individual request to keep all GPU cores saturated"
+    ],
+    "answer": 1,
+    "explanation": "Static batching leaves GPU slots idle when one request finishes before others in the same batch. Continuous batching fills vacated slots immediately with new requests, keeping GPU utilization near 100%. The chapter states this yields 10-20× higher throughput than static batching."
+  },
+  {
+    "q": "In a 'Debate' multi-agent pattern, two agents argue opposing positions and a judge agent picks the winner. What is the primary benefit over a single-agent approach?",
+    "options": [
+      "The debate pattern halves inference cost by distributing computation between two smaller-parameter specialist agents",
+      "The debate pattern enables both agents to perform web searches in parallel, doubling information retrieval throughput",
+      "The debate pattern forces claims to survive adversarial challenge, reducing hallucination through mutual scrutiny",
+      "The debate pattern lets each agent access a separate context window, effectively doubling total available context"
+    ],
+    "answer": 2,
+    "explanation": "The adversarial dynamic forces each agent's claims to be challenged by the other, surfacing weak reasoning and unsupported assertions. Claims that withstand challenge are more likely to be well-grounded. This is especially valuable for complex decisions where a single agent might confidently hallucinate without correction."
+  },
+  {
+    "q": "An autonomous agent runs a 10-step task where each step independently succeeds with 90% probability. What is the approximate probability that all 10 steps succeed?",
+    "options": [
+      "90%, since the first step dominates the overall success probability for the task",
+      "81%, since two independent 90% steps multiply to give 0.9 × 0.9 = 0.81",
+      "35%, since 0.9^10 ≈ 0.349, illustrating how compounding errors accumulate rapidly across many steps",
+      "60%, since agent systems benefit from retry mechanisms that substantially recover from individual step failures"
+    ],
+    "answer": 2,
+    "explanation": "P(all 10 succeed) = 0.9^10 ≈ 35%. This compounding effect is why the chapter warns that even at 95% per-step reliability, a 10-step task has only 0.95^10 ≈ 60% success. At 85% per step, a 10-step task fails almost 80% of the time."
+  },
+  {
+    "q": "The MMLU (Massive Multitask Language Understanding) benchmark evaluates LLMs using which testing format?",
+    "options": [
+      "Open-ended generation tasks graded by a separate GPT-4 judge on helpfulness, accuracy, and fluency dimensions",
+      "Code generation problems evaluated by running the model's output against hidden Python unit test suites",
+      "Retrieval tasks where models locate supporting passages from documents provided in the prompt context",
+      "Multiple-choice questions drawn from 57 academic and professional subjects including law, medicine, history, and mathematics"
+    ],
+    "answer": 3,
+    "explanation": "MMLU uses multiple-choice questions across 57 subjects spanning professional and academic domains. A representative question presents a clinical case and asks for the correct diagnosis from four options. HumanEval uses code generation; MT-Bench uses open-ended multi-turn conversation."
+  },
+  {
+    "q": "A developer embeds a secret string in the system prompt to detect if it has been leaked via prompt injection. What is this defensive technique called?",
+    "options": [
+      "A canary token — if this secret string appears in the model's output, prompt injection may have occurred",
+      "Prompt hardening — explicitly instructing the model never to deviate from its instructions under any circumstances",
+      "Output filtering — scanning every model response for sensitive strings before returning them to the user",
+      "Sandboxing — restricting the model's accessible tools so it cannot relay system prompt contents through API calls"
+    ],
+    "answer": 0,
+    "explanation": "Canary tokens are secret strings embedded in the system prompt. If injection causes the model to reveal system prompt contents, the canary string appears in output and triggers an alert. The chapter notes this is analogous to canary records in databases used to detect unauthorized data access."
+  },
+  {
+    "q": "Tree of Thoughts (ToT) is specifically motivated by which problem characteristic where chain-of-thought (CoT) may fail?",
+    "options": [
+      "Problems where the initial reasoning path may be a dead end requiring backtracking and exploration of multiple alternatives",
+      "Problems requiring precise arithmetic where multiple independent reasoning chains help average out numerical errors",
+      "Problems with ambiguous phrasing where multiple semantic interpretations must be considered and evaluated in parallel",
+      "Problems that exceed the context window where ToT's tree structure compresses reasoning into shorter hierarchical branches"
+    ],
+    "answer": 0,
+    "explanation": "ToT is motivated by combinatorial problems like the '24 game' where a first approach may fail and backtracking is needed. CoT follows a single linear path and gets stuck at dead ends. ToT explores multiple branches, evaluates each, prunes failing ones, and continues promising ones — like a chess player considering moves."
+  },
+  {
+    "q": "Cosine similarity between embedding vectors A and B is defined as their dot product divided by the product of their magnitudes. What does this specifically measure?",
+    "options": [
+      "The L2 (Euclidean) distance between A and B, normalized to the range 0 to 1 for comparison across dimensions",
+      "The cosine of the angle between A and B, ranging from -1 (opposite directions) to +1 (identical direction)",
+      "The element-wise Pearson correlation coefficient between vectors A and B normalized to unit variance",
+      "The ratio of the dot product to the sum of all individual element values across both vectors A and B"
+    ],
+    "answer": 1,
+    "explanation": "Cosine similarity = (A·B) / (||A|| × ||B||) measures the angle between vectors, ranging from -1 to +1. It ignores magnitude differences, making it ideal for semantic search where direction encodes meaning. The chapter confirms it is the most common metric for text embeddings in retrieval tasks."
+  },
+  {
+    "q": "The Feed-Forward Network (FFN) in each Transformer block applies two linear layers with a nonlinearity. What fraction of total model parameters does the FFN typically represent?",
+    "options": [
+      "Roughly 10% of total parameters, with multi-head attention projection matrices dominating the remaining 90%",
+      "Roughly 25% of total parameters, approximately equally split with the combined attention projection matrices",
+      "Roughly two-thirds of total parameters — the FFN is where most of the model's factual knowledge is believed to be stored",
+      "Roughly 40% of total parameters, with cross-attention and self-attention mechanisms accounting for the remaining 60%"
+    ],
+    "answer": 2,
+    "explanation": "The FFN in each Transformer block — two linear projections applied token-wise with a nonlinearity — represents approximately 2/3 of total model parameters. Research suggests FFN layers function as key-value memories, storing factual associations learned during pre-training."
+  },
+  {
+    "q": "WordPiece (used by BERT) selects which token pair to merge based on a different criterion than BPE. Which criterion does WordPiece use?",
+    "options": [
+      "The raw co-occurrence frequency of the adjacent pair in the training corpus, identical to the criterion BPE uses",
+      "The mutual information between the pair computed from a separate co-occurrence count matrix over the entire corpus",
+      "The minimum edit distance from the merged token to the nearest whole word in a reference dictionary",
+      "The merge that maximally increases the log-likelihood of the training corpus under the updated vocabulary"
+    ],
+    "answer": 3,
+    "explanation": "WordPiece selects the merge maximizing corpus log-likelihood — equivalent to choosing pairs where P(merged) / (P(piece1) × P(piece2)) is highest (pairs that almost always appear together). BPE uses raw frequency counts. This makes WordPiece statistically more principled but computationally more expensive to train."
+  },
+  {
+    "q": "Reasoning models (o-series, Claude extended thinking, Gemini Deep Think) differ from standard LLMs in which fundamental way during inference?",
+    "options": [
+      "Reasoning models generate a hidden chain-of-thought token sequence before producing the final answer, spending extra compute to improve accuracy",
+      "Reasoning models retrieve relevant training examples at inference time using a built-in nearest-neighbor lookup over stored training embeddings",
+      "Reasoning models apply beam search with a much larger beam width, exploring far more candidate paths to select the highest-scoring answer",
+      "Reasoning models run multiple self-distillation rounds at inference time, each pass refining and compressing the previous round output quality"
+    ],
+    "answer": 0,
+    "explanation": "Reasoning models generate a private scratchpad ('thinking' tokens) before the final answer. This spends extra inference compute, achieving dramatically better accuracy on hard problems — e.g., o4-mini reached 99.5% on AIME 2025, compared to ~30% for standard LLMs — at the cost of higher latency and token usage."
+  },
+  {
+    "q": "The original LLaMA-13B model outperformed GPT-3 (175B parameters) on most benchmarks despite being 13× smaller. What was the primary explanation?",
+    "options": [
+      "LLaMA-13B used a Mixture-of-Experts architecture activating more effective parameters per token than dense GPT-3",
+      "LLaMA-13B was aligned with RLHF before benchmarking while GPT-3 was evaluated as a raw pre-trained base model",
+      "LLaMA-13B used RoPE positional encodings that provided higher benchmark accuracy than GPT-3's absolute positional encoding",
+      "LLaMA-13B was trained on 1.4 trillion tokens (near Chinchilla-optimal) while GPT-3 was undertrained on only 300 billion tokens"
+    ],
+    "answer": 3,
+    "explanation": "GPT-3 (175B params, 300B tokens ≈ 1.7 tokens/param) was significantly undertrained relative to its size. LLaMA-13B (1.4T tokens ≈ 108 tokens/param) was near Chinchilla-optimal. The benchmark reversal validated that training data quantity matters as much as model size — data-optimal training beats a larger undertrained model."
+  },
+  {
+    "q": "A developer notices the LLM repeatedly uses the word 'however' and wants to reduce repetition proportionally to how often it has already appeared. Which parameter addresses this?",
+    "options": [
+      "Presence penalty, which applies a fixed probability reduction to any token that has appeared at least once in the output",
+      "Temperature, which flattens the entire output distribution equally, making all tokens relatively more likely regardless of history",
+      "Frequency penalty, which reduces a token's logit score proportionally to the number of times it has already appeared",
+      "Top-P, which reduces the candidate token pool at each step and indirectly penalizes tokens that dominate the distribution"
+    ],
+    "answer": 2,
+    "explanation": "Frequency penalty reduces a token's probability by (penalty × number_of_prior_appearances). A word used three times is penalized three times more than one used once. Presence penalty applies the same flat reduction regardless of frequency — appropriate for avoiding any topic re-use rather than repetition of specific words."
+  },
+  {
+    "q": "Perplexity is used to evaluate language model quality on held-out text. A lower perplexity means the model is:",
+    "options": [
+      "Less surprised by the test text, assigning higher average probability to each token, indicating better language modeling",
+      "More conservative in token selection, choosing from fewer candidates at each step due to a more peaked distribution",
+      "Slower at generating text, since lower perplexity requires more attention heads to scan the full context per token",
+      "More likely to hallucinate, since high confidence in familiar patterns can cause the model to ignore novel contexts"
+    ],
+    "answer": 0,
+    "explanation": "Lower perplexity means the model assigned higher probability to the tokens that actually appeared — it was less 'surprised.' Perplexity = 2^(average negative log probability), so lower values mean better predictions. Perplexity has no direct causal relationship to generation speed or hallucination rate."
+  },
+  {
+    "q": "BERT introduced a novel pre-training objective not used by GPT. Which objective does BERT use that GPT does not?",
+    "options": [
+      "Next-token prediction using causal attention, allowing the model to predict each word from left-to-right context only",
+      "Masked Language Modeling (MLM), where random input tokens are replaced with [MASK] and the model predicts them using bidirectional context",
+      "Contrastive pre-training, where positive and negative sentence pairs are used to push similar sentences closer in embedding space",
+      "Autoencoding reconstruction, where the full input is compressed into a bottleneck vector and then decoded back to the original"
+    ],
+    "answer": 1,
+    "explanation": "BERT uses Masked Language Modeling — randomly masking ~15% of tokens and training the model to predict them using context from both directions. This bidirectional objective is why BERT can produce richer representations for understanding tasks. GPT uses unidirectional next-token prediction."
+  },
+  {
+    "q": "Speculative decoding uses a small draft model to generate candidate tokens for a large target model to validate. What is the key speed advantage of this approach?",
+    "options": [
+      "The small draft model replaces the large target model entirely for most tokens, only deferring to the target for uncertain ones",
+      "The target model verifies all K draft tokens in a single parallel forward pass rather than generating each token sequentially",
+      "The draft model caches its KV tensors and transfers them directly to the target model, saving redundant attention computation",
+      "The target model skips attention for tokens already seen in the draft, only computing attention for newly generated tokens"
+    ],
+    "answer": 1,
+    "explanation": "The target model can verify all K draft tokens simultaneously in one forward pass (much cheaper than K sequential generation steps), accepting correct ones and replacing the first wrong one. This parallel verification step is what makes speculative decoding 2-3× faster with no quality loss — the target model still controls every accepted token."
+  }
+]

@@ -623,50 +623,12 @@ function showDashboard() {
   const totalQuizzes = Object.keys(scores).length;
   const avgScore = totalQuizzes > 0 ? Math.round(Object.values(scores).reduce((a,b)=>a+b,0) / totalQuizzes) : 0;
 
-  // Estimate reading time: study-pace ~55 words/min (reading + thinking + diagrams)
-  // Values below are derived from actual word counts in each chapter, rounded to the nearest 5 min.
-  const chapterMinutes = {
-    'content/00_quick_reference_cheat_sheet.md': 180,
-    'content/00p_dl_llm_playbook.md': 25,
-    'content/01_google_ai_engineer_strategy.md': 130,
-    'content/02_behavioral_interview.md': 145,
-    'content/03_staying_relevant_ai_era.md': 75,
-    'content/04_aptitude_mental_math.md': 380,
-    'content/05_brain_training.md': 130,
-    'content/06_math_fundamentals.md': 280,
-    'content/07_introduction.md': 90,
-    'content/08_core_concepts.md': 210,
-    'content/09_data_preprocessing.md': 55,
-    'content/10_supervised_learning.md': 220,
-    'content/11_unsupervised_learning.md': 140,
-    'content/12_key_algorithms.md': 175,
-    'content/13_model_evaluation.md': 120,
-    'content/14_neural_networks.md': 120,
-    'content/15_reinforcement_learning.md': 105,
-    'content/16_deep_learning.md': 200,
-    'content/17_llm.md': 540,
-    'content/18_ai_agents.md': 100,
-    'content/19_ai_frameworks.md': 90,
-    'content/20_2026_landscape.md': 55,
-    'content/21_design_fundamentals.md': 335,
-    'content/22_engineering_tools.md': 120,
-    'content/23_system_design_fundamentals_deep_dive.md': 180,
-    'content/24_system_design_data_distributed.md': 240,
-    'content/25_system_design_operations_case_studies.md': 180,
-    'content/26_ml_system_design.md': 340,
-    'content/27_practical_ml.md': 195,
-    'content/27_practical_ml.ipynb': 195,
-    'content/28_semantic_search.md': 135,
-    'content/29_gpus_tpus_infrastructure.md': 160,
-    'content/30_google_ml_ecosystem.md': 160,
-    'content/31_dsa_coding.md': 475,
-    'content/32_interview_questions.md': 220,
-    'content/33_llm_interview_questions.md': 445,
-    'content/34_google_top10_ml_interview.md': 495,
-    'README.md': 40,
-  };
+  // Reading-time estimates come from chapterEstMinutes() (state.js): the live
+  // measured word count when the chapter has been opened, else the generated
+  // baseline. The Practical-ML notebook is the same content as ch 27 rendered as
+  // runnable cells, so it is skipped here to avoid double-counting the hours.
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
-  realCh.forEach(c => { const m = chapterMinutes[c.file] || 30; totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
+  realCh.forEach(c => { if (c.notebook) return; const m = chapterEstMinutes(c.file); totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
   const totalH = Math.round(totalMinutesAll / 60); const remainH = (remainingHours / 60).toFixed(1);
   const doneH = (completedMinutes / 60).toFixed(1);
 
@@ -700,6 +662,123 @@ function showDashboard() {
   const openComments = Object.values(allComments).reduce((s, arr) => s + arr.filter(c => !c.resolved).length, 0);
   const chaptersWithComments = Object.keys(allComments).filter(k => allComments[k].length > 0).length;
 
+  // ─── Personalized pace & ETA ───
+  const pace = computePaceStats();
+  const fmtHM = (mins) => { const h = Math.floor(mins/60), m = Math.round(mins%60); return h > 0 ? (m ? h+'h '+m+'m' : h+'h') : m+'m'; };
+  const speedLabel = pace.paceFactor
+    ? (pace.paceFactor < 0.97 ? (1/pace.paceFactor).toFixed(1).replace(/\.0$/,'')+'× faster'
+      : pace.paceFactor > 1.03 ? pace.paceFactor.toFixed(1).replace(/\.0$/,'')+'× slower'
+      : 'on estimate')
+    : null;
+  const finishStr = pace.allRead
+    ? 'Complete 🎉'
+    : (pace.projectedFinish
+        ? pace.projectedFinish.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+        : '—');
+  const finishSub = pace.allRead
+    ? 'Every chapter read'
+    : (pace.projectedFinish
+        ? '≈ ' + (pace.daysLeft >= 14 ? Math.round(pace.daysLeft/7)+' weeks' : Math.max(1,Math.round(pace.daysLeft))+' days') + ' to go'
+        : (pace.throughputPerDay > 1 ? 'Nothing left to schedule' : 'Read a few chapters to project'));
+  const paceNote = pace.paceFactor
+    ? 'Personalized from ' + pace.calib + ' chapter' + (pace.calib !== 1 ? 's' : '') + ' you\'ve read · ' +
+      'throughput ≈ ' + fmtHM(pace.throughputPerDay) + '/day over ' + pace.daysSinceStart + ' day' + (pace.daysSinceStart !== 1 ? 's' : '')
+    : 'Read 3+ chapters with the timer running (or while the tab is open) to calibrate your speed and finish date.';
+
+  // ─── Spaced-repetition review queue ───
+  const review = getReviewQueue();
+  const dueCount = review.due.length;
+  const reviewShown = (dueCount ? review.due : review.upcoming).slice(0, 6);
+  const reviewRows = reviewShown.map(it => {
+    const idx = chapters.findIndex(c => c.file === it.file);
+    const overdue = it.dueDate <= Date.now();
+    const whenStr = overdue
+      ? (it.daysUntil <= -1 ? Math.abs(it.daysUntil) + 'd overdue' : 'due today')
+      : (it.daysUntil <= 1 ? 'in 1 day' : 'in ' + it.daysUntil + ' days');
+    const sc = it.lastScore;
+    const scoreBadge = it.tested
+      ? '<span class="db-rev-score" style="color:' + (sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--accent)' : '#f59e0b') + '">' + sc + '%</span>'
+      : '<span class="db-rev-score db-rev-untested">not tested</span>';
+    const fileEsc = it.file.replace(/'/g, "\\'");
+    return '<div class="db-rev-row">' +
+      '<span class="db-rev-when' + (overdue ? ' due' : '') + '">' + whenStr + '</span>' +
+      '<a class="db-rev-title" href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + escapeHTML(it.id + ' · ' + it.title) + '</a>' +
+      scoreBadge +
+      '<button class="db-rev-btn" onclick="retakeQuiz(\'' + fileEsc + '\')">Review &rarr;</button>' +
+    '</div>';
+  }).join('');
+  const reviewBody = review.items.length === 0
+    ? '<p class="db-empty">Read a chapter and take its quiz to start building your spaced-repetition schedule.</p>'
+    : (dueCount === 0
+        ? '<p class="db-rev-caught">✓ All caught up — nothing due right now. Coming up next:</p><div class="db-rev-list">' + reviewRows + '</div>'
+        : '<div class="db-rev-list">' + reviewRows + '</div>');
+
+  // ─── Activity heatmap (last 26 weeks) ───
+  const heatHtml = (() => {
+    const map = getActivityMap();
+    const WEEKS = 26;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const start = new Date(today); start.setDate(today.getDate() - (today.getDay() + (WEEKS - 1) * 7));
+    const level = (minutes, events) => { const s = minutes + events * 10; return s <= 0 ? 0 : s < 15 ? 1 : s < 30 ? 2 : s < 60 ? 3 : 4; };
+    let cells = '', activeDays = 0;
+    const monthLabels = [];
+    let lastMonth = -1;
+    for (let i = 0; i < WEEKS * 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const future = d > today;
+      const key = localDayKey(d);
+      const a = map[key] || { minutes: 0, events: 0 };
+      const lvl = future ? -1 : level(a.minutes, a.events);
+      if (!future && lvl > 0) activeDays++;
+      // First cell of each week (top row) drives the month label strip
+      if (i % 7 === 0) {
+        const wkMonth = d.getMonth();
+        monthLabels.push(d.getDate() <= 7 && wkMonth !== lastMonth
+          ? '<span>' + d.toLocaleDateString('en-US', { month: 'short' }) + '</span>' : '<span></span>');
+        if (d.getDate() <= 7) lastMonth = wkMonth;
+      }
+      const mins = Math.round(a.minutes);
+      const title = future ? '' :
+        (d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+          (lvl > 0 ? ' — ' + (mins > 0 ? mins + ' min' : '') + (mins > 0 && a.events ? ', ' : '') +
+            (a.events ? a.events + ' event' + (a.events > 1 ? 's' : '') : '') : ' — no activity'));
+      cells += '<div class="db-heat-cell" data-level="' + lvl + '"' + (title ? ' title="' + title + '"' : '') + '></div>';
+    }
+    return '<div class="db-heat-months">' + monthLabels.join('') + '</div>' +
+      '<div class="db-heat-grid">' + cells + '</div>' +
+      '<div class="db-heat-foot">' +
+        '<span class="db-heat-summary">' + activeDays + ' active day' + (activeDays !== 1 ? 's' : '') + ' in the last 6 months</span>' +
+        '<span class="db-heat-legend">Less ' +
+          '<i class="db-heat-cell" data-level="0"></i><i class="db-heat-cell" data-level="1"></i>' +
+          '<i class="db-heat-cell" data-level="2"></i><i class="db-heat-cell" data-level="3"></i>' +
+          '<i class="db-heat-cell" data-level="4"></i> More</span>' +
+      '</div>';
+  })();
+
+  // ─── Storage usage ───
+  const storage = getStorageStats();
+  const storagePalette = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#64748b'];
+  const storageBarSegs = storage.groups.map((g, i) =>
+    '<div class="db-stor-seg" style="width:' + (storage.total ? (g.bytes / storage.total * 100) : 0) + '%;background:' + storagePalette[i % storagePalette.length] + '" title="' + g.name + ': ' + formatBytes(g.bytes) + '"></div>'
+  ).join('');
+  const storageRows = storage.groups.map((g, i) =>
+    '<div class="db-stor-row">' +
+      '<span class="db-stor-dot" style="background:' + storagePalette[i % storagePalette.length] + '"></span>' +
+      '<span class="db-stor-name">' + g.name + '</span>' +
+      '<span class="db-stor-bytes">' + formatBytes(g.bytes) + '</span>' +
+    '</div>'
+  ).join('');
+  const storageHtml =
+    '<div class="db-stor-meter">' +
+      '<div class="db-stor-head">' +
+        '<span class="db-stor-total">' + formatBytes(storage.total) + ' <small>used in this browser</small></span>' +
+        '<span class="db-stor-pct">' + storage.pct + '% of ~5 MB</span>' +
+      '</div>' +
+      '<div class="db-stor-bar">' + storageBarSegs + '</div>' +
+      '<div class="db-stor-list">' + storageRows + '</div>' +
+      '<p class="db-stor-note" id="dbStorageEstimate">Approx. localStorage size — your reading progress, notes, quiz history and DSA code.</p>' +
+    '</div>';
+
   // SVG icon helper — inline Lucide-style icons for a modern look
   const ico = {
     book:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
@@ -730,6 +809,7 @@ function showDashboard() {
           <p class="db-subtitle">${readCount === realCh.length ? 'Curriculum complete — review and keep sharp' : readCount === 0 ? 'Your learning journey starts here' : Math.round(pct) + '% through the curriculum — keep going'}</p>
         </div>
         <div class="db-header-actions">
+          <button class="db-btn" onclick="showMockTest()" title="Take a mock test from completed chapters">${ico.pen} Mock Test</button>
           <button class="db-btn" onclick="exportAllChaptersPDF()" title="Export all chapters">${ico.download} Export All PDF</button>
           <div class="mode-toggle ${interactiveMode ? 'active' : ''}" onclick="toggleInteractiveMode();" style="cursor:pointer;">
             <span>Gamify</span>
@@ -831,6 +911,45 @@ function showDashboard() {
         </div>
       </div>
 
+      <!-- ─── Personalized Pace & Projection ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.timer} Your Pace &amp; Projection</h3>
+        <div class="db-pace-grid">
+          <div class="db-pace-card">
+            <div class="db-pace-icon">${ico.zap}</div>
+            <div class="db-pace-val">${speedLabel || '—'}</div>
+            <div class="db-pace-lbl">Reading speed</div>
+            <div class="db-pace-sub">${pace.paceFactor ? 'vs. estimated time' : 'not enough data yet'}</div>
+          </div>
+          <div class="db-pace-card">
+            <div class="db-pace-icon">${ico.clock}</div>
+            <div class="db-pace-val">${pace.allRead ? '0h' : fmtHM(pace.remAtPaceMin)}</div>
+            <div class="db-pace-lbl">Remaining at your pace</div>
+            <div class="db-pace-sub">${pace.paceFactor && !pace.allRead ? fmtHM(pace.remEstMin) + ' at base estimate' : 'time left to study'}</div>
+          </div>
+          <div class="db-pace-card">
+            <div class="db-pace-icon">${ico.timer}</div>
+            <div class="db-pace-val">${fmtHM(pace.throughputPerDay)}<small>/day</small></div>
+            <div class="db-pace-lbl">Study throughput</div>
+            <div class="db-pace-sub">avg over ${pace.daysSinceStart} day${pace.daysSinceStart !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="db-pace-card db-pace-card--finish">
+            <div class="db-pace-icon">${ico.flag}</div>
+            <div class="db-pace-val">${finishStr}</div>
+            <div class="db-pace-lbl">Projected finish</div>
+            <div class="db-pace-sub">${finishSub}</div>
+          </div>
+        </div>
+        <p class="db-pace-note">${paceNote}</p>
+      </div>
+
+      <!-- ─── Spaced-Repetition Review Queue ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.check} Review Queue${dueCount ? ` <span class="db-due-badge">${dueCount} due</span>` : ''}</h3>
+        ${reviewBody}
+        ${review.items.length ? '<p class="db-pace-note">Spaced repetition: chapters resurface for review at growing intervals — sooner if you scored low, later if you aced them.</p>' : ''}
+      </div>
+
       <!-- ─── Two-column stat panels ─── -->
       <div class="db-panels">
         <div class="db-panel">
@@ -883,6 +1002,20 @@ function showDashboard() {
         </div>
       </div>
 
+      <!-- ─── Quiz Score Trend ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.target} Quiz Score Trend</h3>
+        ${totalAttempts >= 2
+          ? '<div class="db-chart-wrap"><canvas id="quizTrendChart"></canvas></div>'
+          : '<p class="db-empty">Take a few quizzes to see how your scores trend over time.</p>'}
+      </div>
+
+      <!-- ─── Activity Heatmap ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.flame} Study Activity</h3>
+        <div class="db-heatmap">${heatHtml}</div>
+      </div>
+
       <!-- ─── Progress Breakdown by Section ─── -->
       <div class="db-section">
         <h3 class="db-section-title">${ico.layers} Progress by Section</h3>
@@ -896,7 +1029,7 @@ function showDashboard() {
               sections.push(cur);
             } else if (cur && !item.ref && !item.notebook) {
               cur.total++;
-              const mins = chapterMinutes[item.file] || 30;
+              const mins = chapterEstMinutes(item.file);
               cur.estMin += mins;
               if (readChapters[item.file]) { cur.done++; cur.doneMin += mins; }
               const qh = quizHist[item.file];
@@ -930,7 +1063,7 @@ function showDashboard() {
         <div class="db-quickref-grid">
         ${chapters.filter(c => c.ref).map(c => {
           const idx = chapters.indexOf(c);
-          const mins = chapterMinutes[c.file] || 30;
+          const mins = chapterEstMinutes(c.file);
           const estH = mins >= 60 ? Math.floor(mins/60) + 'h ' + (mins%60 ? mins%60 + 'm' : '') : mins + 'm';
           const isRead = !!readChapters[c.file];
           return '<button class="db-quickref-card" onclick="loadChapter(' + idx + ')">' +
@@ -1049,7 +1182,7 @@ function showDashboard() {
             const isRead = isRef ? true : !!readChapters[c.file];
             const qh = quizHist[c.file];
             const ct = chTrack[c.file] || {};
-            const estMin = chapterMinutes[c.file] || 30;
+            const estMin = chapterEstMinutes(c.file);
             const estStr = estMin >= 60 ? Math.floor(estMin/60)+'h '+estMin%60+'m' : estMin+'m';
             const spentSec = ct.seconds || 0;
             const spentMin = Math.floor(spentSec / 60);
@@ -1186,11 +1319,12 @@ function showDashboard() {
         </div>
       </details>
 
-      <!-- ─── Backup & Restore (collapsed) ─── -->
+      <!-- ─── Backup, Storage & Restore (collapsed) ─── -->
       <details class="db-collapse">
-        <summary class="db-collapse-summary">${ico.download} Backup & Restore</summary>
+        <summary class="db-collapse-summary">${ico.download} Backup &amp; Storage <span class="db-collapse-badge">${formatBytes(storage.total)}</span></summary>
         <div class="db-collapse-body">
-          <p class="db-collapse-desc">Export your full progress as JSON. Useful for backups or syncing to another device.</p>
+          ${storageHtml}
+          <p class="db-collapse-desc" style="margin-top:18px;">Export your full progress as JSON. Useful for backups or syncing to another device.</p>
           <div class="db-action-row">
             <button class="db-btn db-btn--accent" onclick="exportUserData()">${ico.download} Export Data</button>
             <button class="db-btn" onclick="triggerImportData()">${ico.upload} Import</button>
@@ -1230,9 +1364,87 @@ function showDashboard() {
     const xpFill = document.getElementById('dashXpFill');
     if (xpFill) xpFill.style.width = _xpProg + '%';
   }, 100);
+  // Draw the quiz-score trend chart (lazy-loads Chart.js on demand)
+  if (typeof renderQuizTrendChart === 'function') renderQuizTrendChart();
+  // Augment the storage note with the true origin total (incl. offline cache)
+  if (typeof updateStorageEstimate === 'function') updateStorageEstimate();
   // Desktop-only: wire up the updater card's buttons and subscribe to push
   // events from electron-updater. Safe no-op when running in a browser.
   if (typeof setupDesktopUpdater === 'function') setupDesktopUpdater();
+}
+
+// ─── Total origin storage estimate ───
+// localStorage holds the user's progress; the bulk of on-disk usage is usually
+// the service-worker cache of all chapters for offline use. navigator.storage
+// .estimate() reports the whole origin (cache + localStorage + IndexedDB), so
+// we append it to the storage note when the browser supports it.
+function updateStorageEstimate() {
+  const el = document.getElementById('dbStorageEstimate');
+  if (!el || !navigator.storage || !navigator.storage.estimate) return;
+  navigator.storage.estimate().then(est => {
+    if (!est || !est.usage) return;
+    const used = formatBytes(est.usage);
+    const quota = est.quota ? formatBytes(est.quota) : null;
+    const pct = est.quota ? Math.round(est.usage / est.quota * 1000) / 10 : null;
+    el.innerHTML = 'Total app storage incl. offline chapter cache: <strong>' + used + '</strong>' +
+      (quota ? ' of ' + quota + ' available' + (pct != null ? ' (' + pct + '%)' : '') : '') +
+      '. The breakdown above is your saved progress in localStorage.';
+  }).catch(() => {});
+}
+
+// ─── Quiz score trend chart ───
+// Plots every quiz attempt (across all chapters) in chronological order, with a
+// rolling 5-quiz average to smooth the noise. Reuses the lazy Chart.js loader
+// (ensureChart) already used by in-chapter charts. No-ops if the canvas is
+// absent or there are too few attempts.
+function renderQuizTrendChart() {
+  const canvas = document.getElementById('quizTrendChart');
+  if (!canvas || typeof ensureChart !== 'function') return;
+  const qh = getQuizHistory();
+  const pts = [];
+  Object.entries(qh).forEach(([file, h]) => {
+    const ch = (typeof chapters !== 'undefined') ? chapters.find(c => c.file === file) : null;
+    const title = ch ? (ch.id + ' · ' + ch.title) : file;
+    (h && h.scores || []).forEach(s => { if (s && s.date) pts.push({ t: new Date(s.date).getTime(), pct: s.pct, title }); });
+  });
+  if (pts.length < 2) return;
+  pts.sort((a, b) => a.t - b.t);
+  const labels = pts.map(p => new Date(p.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  const scores = pts.map(p => p.pct);
+  const avg = scores.map((_, i) => {
+    const win = scores.slice(Math.max(0, i - 4), i + 1);
+    return Math.round(win.reduce((s, v) => s + v, 0) / win.length);
+  });
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const txt = isDark ? '#e6edf3' : '#1f2328';
+  const grid = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  ensureChart().then(() => {
+    if (!document.getElementById('quizTrendChart')) return; // navigated away
+    if (canvas._chart) canvas._chart.destroy();
+    canvas._chart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Score', data: scores, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2 },
+          { label: '5-quiz average', data: avg, borderColor: '#f59e0b', borderDash: [5, 4], fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { labels: { color: txt, boxWidth: 12, usePointStyle: true } },
+          tooltip: { callbacks: { afterBody: (items) => { const i = items[0] && items[0].dataIndex; return (i != null && pts[i]) ? pts[i].title : ''; } } },
+        },
+        scales: {
+          y: { min: 0, max: 100, ticks: { color: txt, callback: v => v + '%' }, grid: { color: grid } },
+          x: { ticks: { color: txt, maxTicksLimit: 8, autoSkip: true }, grid: { color: grid } },
+        },
+      },
+    });
+  }).catch(() => {});
 }
 
 // ─── Desktop auto-updater UI (Electron only) ───
@@ -1417,7 +1629,7 @@ function updaterInstall() {
 const ML4_STORAGE_KEYS = [
   'ml4-read', 'ml4-quiz-scores', 'ml4-quiz-history', 'ml4-chapter-track',
   'ml4-xp', 'ml4-study', 'ml4-goals', 'ml4-comments', 'ml4-highlights',
-  'ml4-dsa', 'ml4-dsa-custom',
+  'ml4-dsa', 'ml4-dsa-custom', 'ml4-activity', 'ml4-chapter-words',
   'ml4-theme', 'ml4-fontsize', 'ml4-interactive', 'ml4-sidebar'
 ];
 

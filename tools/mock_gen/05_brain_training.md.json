@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A learner studies an unfamiliar ML derivation and remembers it only briefly. Which stage is the most likely bottleneck before durable storage forms?",
+    "options": [
+      "Working memory, because most information is lost unless actively encoded",
+      "Sensory memory, because it stores unlimited details for several minutes during initial attention",
+      "Long-term memory, because capacity is limited to about four chunks",
+      "Retrieval memory, because it filters ninety percent of inputs instantly"
+    ],
+    "answer": 0,
+    "explanation": "The chapter describes sensory, working, and long-term memory, with most loss occurring in working memory unless active encoding happens. Long-term memory is treated as durable and high-capacity, not the narrow bottleneck."
+  },
+  {
+    "q": "A ten-digit number becomes easier to remember when written as three familiar groups. Which mechanism best explains the improvement?",
+    "options": [
+      "Dual coding turns the digits into a visual channel",
+      "Spaced repetition resets decay after each group",
+      "Chunking compresses items into fewer working-memory units",
+      "Interleaving forces comparison among number patterns inside the same number string"
+    ],
+    "answer": 2,
+    "explanation": "Chunking makes many pieces behave like fewer meaningful units, fitting the roughly 4-chunk working-memory limit. It is not primarily a spacing or interleaving effect."
+  },
+  {
+    "q": "Without review, Ebbinghaus-style retention after about one day is closest to which value in the chapter's chart?",
+    "options": [
+      "About 58 percent, because the steepest drop occurs after a day",
+      "About 34 percent, after falling below the one-hour level",
+      "About 21 percent, because one day matches the month estimate",
+      "About 75 percent, if the material was initially understood"
+    ],
+    "answer": 1,
+    "explanation": "The chart gives approximately 34% retention after one day without review. The 58% figure is for about 20 minutes, not a full day."
+  },
+  {
+    "q": "Why do several well-timed reviews produce near-permanent memory in the forgetting-curve model?",
+    "options": [
+      "They prevent sensory filtering from discarding the original input",
+      "They keep the material in working memory for longer than 30 seconds",
+      "They remove intrinsic cognitive load from the studied material",
+      "They reset the curve and make later forgetting progressively slower"
+    ],
+    "answer": 3,
+    "explanation": "Each review resets the forgetting curve, and the next decay is slower. This is why the chapter says five well-timed reviews can make memory nearly permanent."
+  },
+  {
+    "q": "Which activity is presented as the strongest trigger for adult hippocampal neurogenesis?",
+    "options": [
+      "Listening to classical music while studying",
+      "Aerobic exercise performed consistently",
+      "Passive review immediately before bedtime",
+      "Highlighting notes in multiple colors"
+    ],
+    "answer": 1,
+    "explanation": "The chapter lists aerobic exercise as the number-one trigger for neurogenesis, followed by sleep and novelty. Music and highlighting are not presented as primary triggers."
+  },
+  {
+    "q": "A practice set is producing a 65 percent success rate with careful effort. How would the chapter classify this difficulty level?",
+    "options": [
+      "Optimal learning zone, because it sits near the 60-80 percent sweet spot",
+      "Too easy, because learning requires more than 95 percent success",
+      "Too difficult, because frustration begins above 30 percent success",
+      "Unrelated to learning, because success rate matters only in testing as a learning signal"
+    ],
+    "answer": 0,
+    "explanation": "The Yerkes-Dodson challenge sweet spot is described as roughly 60-80% success. Above 95% is too easy, while below 30% is too hard."
+  },
+  {
+    "q": "During blank-page recall, which sequence most closely matches the recommended method?",
+    "options": [
+      "Highlight key lines, rewrite them neatly, then reread the source",
+      "Read two explanations, summarize both, then choose the clearer one before checking gaps",
+      "Ask an AI for a quiz, read its answer, then save the transcript",
+      "Close materials, write from memory, check gaps, and restudy only gaps"
+    ],
+    "answer": 3,
+    "explanation": "Blank-page active recall requires closing everything, writing what you remember, checking misses, and studying the gaps. Re-reading and highlighting are treated as weaker substitutes."
+  },
+  {
+    "q": "Which flashcard best follows the chapter's guidance for atomic Anki cards?",
+    "options": [
+      "What is ReLU? Answer with max(0, x).",
+      "List every activation function used in deep learning. across several layers",
+      "Why can ReLU reduce vanishing gradients in positive regions?",
+      "Copy the paragraph defining activation functions verbatim."
+    ],
+    "answer": 2,
+    "explanation": "The chapter recommends one idea per card, in your own words, with the why rather than just the what. A bare formula like max(0, x) is given as the weaker style."
+  },
+  {
+    "q": "In the AI-enhanced Feynman workflow, what should the learner ask the model to do?",
+    "options": [
+      "Identify vague spots and ask where a senior interviewer would push back",
+      "Rewrite the explanation into polished notes for passive rereading",
+      "Generate a final answer that can be memorized word for word",
+      "Replace the source material with a shorter model-generated summary for later passive review"
+    ],
+    "answer": 0,
+    "explanation": "The 2026 upgrade asks the AI to act as a Socratic interlocutor and expose vague or hand-wavy parts. The value comes from pushback, not outsourcing the explanation."
+  },
+  {
+    "q": "A student memorizes 'batch normalization stabilizes training' but cannot explain the mechanism. Which technique directly fixes that gap?",
+    "options": [
+      "Method of loci, by placing each phrase along a familiar route",
+      "Pomodoro, by putting the fact inside a 25-minute time box",
+      "Dual n-back, by training sound and position memory together",
+      "Elaborative interrogation, by asking why the fact is true"
+    ],
+    "answer": 3,
+    "explanation": "Elaborative interrogation asks why a fact is true and connects it to mechanisms. The chapter uses batch normalization as the example of this technique."
+  },
+  {
+    "q": "Which goal best satisfies the 'specific goal' ingredient of deliberate practice?",
+    "options": [
+      "Spend more time studying graphs this month",
+      "Solve five medium graph problems this week without solutions",
+      "Become a stronger algorithms candidate before interviews",
+      "Watch a complete graph theory playlist without pausing with written reflections afterward"
+    ],
+    "answer": 1,
+    "explanation": "Deliberate practice requires a specific, measurable target, not a vague desire to improve. The chapter gives a very similar graph-problem example."
+  },
+  {
+    "q": "A learner solves every practice problem instantly and feels fluent. What is the deliberate-practice adjustment?",
+    "options": [
+      "Keep repeating the same set until it feels automatic for another full week",
+      "Switch to passive review so confidence remains high",
+      "Move to harder problems because the current set is too easy",
+      "Stop feedback temporarily to protect motivation"
+    ],
+    "answer": 2,
+    "explanation": "Deliberate practice requires a stretch zone just outside comfort. If success is above about 95%, the chapter says the task is too easy and growth stalls."
+  },
+  {
+    "q": "Which study behavior appears productive during learning but is listed as retaining poorly under desirable difficulties?",
+    "options": [
+      "Generation from memory before checking the source",
+      "Interleaving several problem types in one session while switching among techniques",
+      "Highlighting material because it creates a fluent feeling",
+      "Spaced repetition that makes review feel forgetful"
+    ],
+    "answer": 2,
+    "explanation": "The table says highlighting feels productive but retains poorly. Desirable difficulties often feel worse during study while producing stronger long-term memory."
+  },
+  {
+    "q": "A diagram is on one page and the explanation is several pages later. Which cognitive-load problem is most directly created?",
+    "options": [
+      "Extraneous load from split attention",
+      "Intrinsic load from prerequisite sequencing",
+      "Germane load from schema construction",
+      "Desirable difficulty from interleaving"
+    ],
+    "answer": 0,
+    "explanation": "Split attention is an example of extraneous load: wasted effort caused by presentation. The fix is to put diagrams next to the relevant text."
+  },
+  {
+    "q": "A transformer derivation overwhelms a beginner because too many prerequisites are missing. How should intrinsic load be managed?",
+    "options": [
+      "Add decorative visuals to make the page feel easier",
+      "Use background audio to occupy unused attention",
+      "Skip notation details and rely on intuition alone",
+      "Chunk the topic and sequence prerequisites first"
+    ],
+    "answer": 3,
+    "explanation": "Intrinsic load is inherent difficulty, managed by chunking and sequencing prerequisites. Removing confusing layout helps extraneous load, not missing background knowledge."
+  },
+  {
+    "q": "How does the chapter say experts build useful chunks?",
+    "options": [
+      "Memorize definitions until the exact wording becomes automatic before using them in practice",
+      "See many examples, name the pattern, then apply it to new problems",
+      "Avoid transfer tests until every subskill feels effortless",
+      "Sort notes into many folders before attempting practice"
+    ],
+    "answer": 1,
+    "explanation": "Chunks form by seeing commonalities across examples, naming the pattern, and testing transfer. Folders alone do not create the expert pattern recognition described."
+  },
+  {
+    "q": "Which study action best applies dual coding to a technical concept?",
+    "options": [
+      "Listen to a lecture twice while walking",
+      "Write an acronym for every paragraph heading",
+      "Read only the diagram and skip the formal definition",
+      "Read the prose, then redraw the diagram from memory"
+    ],
+    "answer": 3,
+    "explanation": "Dual coding combines verbal and visual encoding. The chapter specifically recommends reading prose and then sketching the diagram from memory."
+  },
+  {
+    "q": "Which memorization task best fits the method of loci?",
+    "options": [
+      "Understanding why gradient descent converges under a convex loss",
+      "Recalling an ordered list by placing items along a familiar route",
+      "Learning to derive backpropagation without looking at notes through repeated derivation",
+      "Choosing between BFS and DFS in a new graph problem"
+    ],
+    "answer": 1,
+    "explanation": "The method of loci places items at locations along a familiar route and mentally walks it. It is best for ordered or arbitrary lists, not conceptual derivations."
+  },
+  {
+    "q": "When should mnemonics be avoided according to the chapter?",
+    "options": [
+      "When the material must be understood or derived conceptually",
+      "When an arbitrary sequence has no logical structure and must be recalled verbatim",
+      "When a numbered list must be recalled in order",
+      "When route-based memory can support retrieval"
+    ],
+    "answer": 0,
+    "explanation": "The chapter warns against using mnemonics for conceptual material where understanding matters more than tricks. They are more appropriate for arbitrary ordered lists."
+  },
+  {
+    "q": "In Cornell notes, which step most directly turns the notes into active recall practice?",
+    "options": [
+      "Writing every lecture sentence in the main notes area before the cue column is made",
+      "Color-coding the notes before the next study session",
+      "Covering the notes and recalling from cue-column prompts",
+      "Deleting the summary so the page stays less cluttered"
+    ],
+    "answer": 2,
+    "explanation": "The cue column makes self-quizzing easy: cover the detailed notes and recall from cues. The summary also matters, but deleting it would remove a key recall step."
+  },
+  {
+    "q": "What makes a Zettelkasten different from ordinary topic folders?",
+    "options": [
+      "It stores long summaries by chapter in chronological order",
+      "It uses atomic notes linked by ideas, with the graph as structure",
+      "It replaces writing in your own words with clipped quotations instead of creating new notes",
+      "It keeps all related concepts isolated to prevent confusion"
+    ],
+    "answer": 1,
+    "explanation": "Zettelkasten uses one-idea notes connected by links, and the graph becomes the structure. The chapter explicitly says no folders or categories."
+  },
+  {
+    "q": "Which tool combination matches the chapter's 'second brain' stack for an ML candidate?",
+    "options": [
+      "Calendar, spreadsheet, stopwatch, and browser bookmarks",
+      "Brain-training games, music playlists, notes app, and whiteboard",
+      "Flashcard app, video library, habit tracker, and sleep tracker",
+      "Obsidian or Logseq, Anki, NotebookLM, and a markdown blog"
+    ],
+    "answer": 3,
+    "explanation": "The listed stack is Obsidian/Logseq for Zettelkasten, Anki for spaced repetition, NotebookLM for papers, and a markdown blog for public Feynman-style writing."
+  },
+  {
+    "q": "Why is chronic six-hour sleep especially dangerous for learners in the cited sleep data?",
+    "options": [
+      "It only affects physical energy, so learners misattribute poor results",
+      "It prevents caffeine tolerance from developing normally",
+      "It can impair cognition like legal drunkenness while people feel fine",
+      "It mainly disrupts visual memory while sparing working memory"
+    ],
+    "answer": 2,
+    "explanation": "The chapter cites two weeks of six-hour nights as causing impairment equivalent to legal drunkenness, with subjects rating themselves as fine. That miscalibration makes it especially risky."
+  },
+  {
+    "q": "Which sleep rule is emphasized as more important than bedtime consistency?",
+    "options": [
+      "Keep the same wake time every day, including weekends",
+      "Take a 30-60 minute nap after difficult study sessions",
+      "Use caffeine late if it helps maintain evening focus",
+      "Study only in the morning regardless of chronotype"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says same wake time every day matters more than bedtime. It also warns against 30-60 minute naps and recognizes chronotype differences."
+  },
+  {
+    "q": "Which caffeine plan best matches the chapter's recommendations?",
+    "options": [
+      "Wait about 90 minutes after waking and avoid caffeine after early afternoon",
+      "Drink caffeine immediately on waking and again near bedtime",
+      "Use caffeine only during skipped meals to prevent glucose crashes during long study blocks",
+      "Avoid cycling off because tolerance develops only after months"
+    ],
+    "answer": 0,
+    "explanation": "The chapter recommends waiting 90 minutes after waking and avoiding caffeine after early afternoon due to its 5-6 hour half-life. It also notes tolerance can develop in days."
+  },
+  {
+    "q": "A learner wants a nap that supports full memory consolidation rather than just alertness. Which duration is recommended?",
+    "options": [
+      "5 minutes, to avoid entering any sleep stage before a demanding session",
+      "30-60 minutes, to wake during deep sleep",
+      "90 minutes, to complete a full consolidation cycle",
+      "3 hours, to replace the next night's sleep"
+    ],
+    "answer": 2,
+    "explanation": "The chapter distinguishes 20-minute alertness naps from 90-minute full-cycle naps. It advises avoiding 30-60 minutes because waking mid-deep-sleep is likely."
+  },
+  {
+    "q": "What is the chapter's minimum weekly exercise dose for cognitive benefits?",
+    "options": [
+      "Ten minutes of stretching before every study block",
+      "Daily dual n-back plus one long weekend workout",
+      "Only vigorous exercise, because brisk walking is too weak",
+      "150 minutes moderate or 75 minutes vigorous per week"
+    ],
+    "answer": 3,
+    "explanation": "The minimum effective dose is 150 minutes of moderate exercise per week or 75 minutes vigorous. The chapter explicitly says brisk walking counts."
+  },
+  {
+    "q": "When should a learner ideally schedule a hard study block relative to an acute exercise session?",
+    "options": [
+      "Before exercise, because fatigue erases the learning boost",
+      "After exercise, during the 2-3 hour learning boost",
+      "Only the next morning, after the exercise is forgotten",
+      "During exercise, to combine motor and verbal encoding"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says acute exercise boosts learning for 2-3 hours afterward and recommends studying after exercise when possible. This is separate from sleep-based consolidation."
+  },
+  {
+    "q": "Which nutrition detail is specifically linked to cognition under sleep deprivation?",
+    "options": [
+      "Omega-3 DHA as the precursor to acetylcholine",
+      "Magnesium as the primary structural fat in neurons",
+      "Creatine at 5 grams per day has emerging evidence",
+      "Vitamin D as a direct replacement for sleep debt"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists creatine 5g/day as having emerging evidence for cognition under sleep deprivation. DHA is described as a structural fat, while choline is the acetylcholine precursor."
+  },
+  {
+    "q": "Which caffeine combination is described as producing alertness without jitter?",
+    "options": [
+      "100 mg caffeine plus 200 mg L-theanine",
+      "200 mg caffeine plus 100 mg magnesium before an evening study block",
+      "50 mg caffeine plus 500 mg creatine",
+      "300 mg caffeine plus a skipped meal"
+    ],
+    "answer": 0,
+    "explanation": "The chapter gives 100 mg caffeine plus 200 mg L-theanine as the no-jitter alertness combination. Skipping meals is listed as harmful during deep work."
+  },
+  {
+    "q": "After a cardio session, when does BDNF peak according to the aerobic-exercise section?",
+    "options": [
+      "Immediately before the workout begins",
+      "About 30 minutes after stopping",
+      "Only after a full night's sleep",
+      "After one week of complete rest"
+    ],
+    "answer": 1,
+    "explanation": "The aerobic section says BDNF peaks about 30 minutes after you stop. That timing supports studying shortly after exercise."
+  },
+  {
+    "q": "Why are dance, martial arts, and racquet sports included beyond simple cardio?",
+    "options": [
+      "They remove the need for aerobic exercise entirely",
+      "They mainly work by making study sessions feel entertaining",
+      "They replace sleep by rapidly restoring attention",
+      "They train coordination and can improve executive function"
+    ],
+    "answer": 3,
+    "explanation": "The coordination section emphasizes executive-function benefits from choreography, sequence learning, reaction time, and rapid decisions. It does not present them as sleep replacements."
+  },
+  {
+    "q": "Which finding is associated with juggling practice in the chapter?",
+    "options": [
+      "Three months grew grey matter in visual-motor regions",
+      "It delayed dementia onset by four to five years",
+      "It lowered cortisol more than water immersion",
+      "It improved cognition more than 20 minutes of yoga in the cited trial"
+    ],
+    "answer": 0,
+    "explanation": "Juggling is linked to Draganski et al. showing grey-matter growth in visual-motor regions after three months. Dementia delay is tied to bilingualism, not juggling."
+  },
+  {
+    "q": "What is the box-breathing pattern recommended before study?",
+    "options": [
+      "Inhale 8 seconds, exhale 8 seconds, repeat twice",
+      "Inhale 4, hold 4, exhale 4, hold 4 for 4-6 cycles",
+      "Inhale quickly, hold 20 seconds, exhale slowly once",
+      "Breathe normally while counting backward from one hundred"
+    ],
+    "answer": 2,
+    "explanation": "Box breathing uses four-second sides: inhale, hold, exhale, hold. The chapter recommends 4-6 cycles to become calm and focused."
+  },
+  {
+    "q": "How is NSDR or yoga nidra positioned in the chapter?",
+    "options": [
+      "A replacement for nightly sleep after intense studying during exam week crunches",
+      "A 10-20 minute body-scan that restores attention without sleeping",
+      "A dual-task memory game using positions and sounds",
+      "A breathing protocol based on cold exposure"
+    ],
+    "answer": 1,
+    "explanation": "NSDR is described as 10-20 minutes of guided body-scan relaxation that restores attention without actually sleeping. It is not presented as a substitute for real sleep."
+  },
+  {
+    "q": "Why does the cognitive benefit of novelty fade as a skill becomes automatic?",
+    "options": [
+      "Automatic skills increase extraneous load too much",
+      "Habit formation prevents myelination from occurring",
+      "Dopamine and BDNF spikes require repeated caffeine use as the skill becomes effortless",
+      "Novel-skill acquisition drives the spike, so new skills must be added"
+    ],
+    "answer": 3,
+    "explanation": "The chapter says novelty itself creates dopamine and BDNF spikes, but once a skill is automatic the benefit fades. The suggested response is to keep adding new skills."
+  },
+  {
+    "q": "In advanced time blocking, how many true deep blocks per day are realistic for most people?",
+    "options": [
+      "One deep block every two weeks",
+      "Eight to ten deep blocks if motivation is high on every normal weekday",
+      "Two to four named deep blocks with one outcome each",
+      "Unlimited blocks if Pomodoro breaks are short"
+    ],
+    "answer": 2,
+    "explanation": "The chapter says most people overestimate deep work capacity and that 2-4 deep blocks per day is realistic. Each time block should have one named outcome."
+  },
+  {
+    "q": "Which condition is one of the four requirements for flow state?",
+    "options": [
+      "Uninterrupted focus for at least 90-120 minutes",
+      "Background stimulation to keep dopamine high",
+      "A task far below current ability to reduce friction",
+      "Delayed feedback so the brain can explore freely"
+    ],
+    "answer": 0,
+    "explanation": "Flow requires challenge-skill balance, a clear goal, immediate feedback, and uninterrupted focus for 90-120 minutes. Easy tasks and delayed feedback violate those conditions."
+  },
+  {
+    "q": "A learner feels frustration before a session suddenly becomes effortless. Which flow-cycle interpretation fits best?",
+    "options": [
+      "They should quit because frustration means overload",
+      "They skipped the release phase and lost consolidation before focus can emerge",
+      "They are experiencing the recovery phase too early",
+      "They may be passing through struggle, the entry fee to flow"
+    ],
+    "answer": 3,
+    "explanation": "The flow cycle is struggle, release, flow, recovery, and the chapter says most people quit during struggle. Frustration can be part of entering flow, not proof of failure."
+  },
+  {
+    "q": "What is the approximate deep-focus recovery cost after an interruption?",
+    "options": [
+      "About 3 minutes if the phone was silent",
+      "About 23 minutes to fully regain deep focus",
+      "About 60 minutes regardless of interruption type",
+      "No cost if the task was already interesting"
+    ],
+    "answer": 1,
+    "explanation": "The context-switching section cites about 23 minutes to regain deep focus after an interruption. Silent phones still cause problems if visible or checked."
+  },
+  {
+    "q": "Which sequence represents the habit loop in the chapter?",
+    "options": [
+      "Cue, routine, reward, then craving rebuilds",
+      "Goal, identity, schedule, then reward fades",
+      "Motivation, action, result, then discipline appears",
+      "Plan, execute, reflect, then delete the cue"
+    ],
+    "answer": 0,
+    "explanation": "The habit loop is cue -> routine -> reward, with craving rebuilding. The chapter uses that loop both to install and break habits."
+  },
+  {
+    "q": "To break a phone-checking habit during study, which intervention attacks the habit loop correctly?",
+    "options": [
+      "Make the cue brighter and rely on willpower during the routine",
+      "Keep the cue visible but promise a bigger reward later",
+      "Hide the cue, make checking harder, and track wasted time",
+      "Replace every study block with a reward-only break"
+    ],
+    "answer": 2,
+    "explanation": "For bad habits, the chapter recommends making the cue invisible, the routine hard, and the reward unsatisfying. Hiding the phone and tracking wasted time map to those levers."
+  },
+  {
+    "q": "What is the real purpose of the 2-minute rule?",
+    "options": [
+      "Limit important habits to two minutes permanently",
+      "Become the person who shows up by making the start easy",
+      "Measure whether a goal is achievable before scheduling it",
+      "Replace deliberate practice with very short daily tasks"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says the goal is not to do two minutes forever; it is to become the person who shows up. The tiny start reduces friction and supports identity."
+  },
+  {
+    "q": "Why is identity-based motivation described as more durable than outcome-based motivation?",
+    "options": [
+      "It removes the need for process goals or feedback",
+      "It makes every action count only after the final outcome until the goal is complete",
+      "It works only when the learner already feels motivated",
+      "Each action becomes a vote for the learner's chosen identity"
+    ],
+    "answer": 3,
+    "explanation": "The chapter frames each session as a vote for an identity such as disciplined learner. Outcome goals are more fragile because they depend on a distant result."
+  },
+  {
+    "q": "How should SMART goals be combined for strongest follow-through?",
+    "options": [
+      "Use SMART goals only after habits are automatic",
+      "Pair SMART goals with implementation intentions",
+      "Replace time bounds with open-ended identity statements",
+      "Avoid measurable targets to reduce pressure"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says pairing SMART goals with implementation intentions gives the strongest follow-through. SMART supplies the target; the if-then plan supplies the cue and action."
+  },
+  {
+    "q": "In the dopamine section, what rule is recommended before hard study?",
+    "options": [
+      "Do hard work before cheap stimulation",
+      "Use social media first to raise arousal",
+      "Reward yourself with YouTube before starting",
+      "Spend dopamine on easy tasks to warm up"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's rule is not to spend the dopamine budget on cheap stimulation before hard work. Hard work first makes studying the most stimulating available option."
+  },
+  {
+    "q": "Why can TikTok-style stimulation make later studying feel unusually painful?",
+    "options": [
+      "It improves working memory beyond its normal chunk limit",
+      "It removes the need for an immediate reward after studying once cheap rewards are removed",
+      "It prevents sleep pressure by blocking adenosine receptors",
+      "It raises the baseline so real work cannot compete with the peak"
+    ],
+    "answer": 3,
+    "explanation": "Cheap stimulation is described as raising the baseline with high peaks that real work cannot match. This makes studying feel worse by comparison."
+  },
+  {
+    "q": "What outcome does the 5-minute rule expect when motivation is near zero?",
+    "options": [
+      "Five minutes is too short to count as useful action",
+      "Around 80 percent keep going, and 20 percent still did more than zero",
+      "The rule works only after a full Pomodoro has been completed before any attempt begins",
+      "It mainly helps by delaying action until motivation appears"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says about 80% of the time you keep going, and about 20% you still do five minutes more than zero. The point is action first, not waiting for motivation."
+  },
+  {
+    "q": "Why does avoidance become stronger after a learner skips a feared task?",
+    "options": [
+      "The task objectively becomes easier after delay by the next morning",
+      "The learner has entered the recovery stage of flow",
+      "The brain treats anxiety relief as negative reinforcement",
+      "The habit loop loses its cue after one missed session"
+    ],
+    "answer": 2,
+    "explanation": "Avoidance removes anxiety in the short term, so the brain learns 'avoidance = relief' through negative reinforcement. Long term, anxiety grows because the task becomes more threatening."
+  },
+  {
+    "q": "Which dark-day strategy is tied to anchoring circadian rhythm and improving sleep that night?",
+    "options": [
+      "Get 10-15 minutes of outdoor light soon after waking",
+      "Write a perfect gratitude list before opening the book",
+      "Take a 60-minute nap after every low-mood morning",
+      "Use social media briefly to raise dopamine baseline"
+    ],
+    "answer": 0,
+    "explanation": "The chapter recommends sunlight in the first 30 minutes after waking, even when overcast. It anchors circadian rhythm and supports sleep that night."
+  },
+  {
+    "q": "Which practical dark-day intervention is described as uncomfortable but chemically powerful for a few hours?",
+    "options": [
+      "A 30-60 minute nap during deep sleep",
+      "A 1-3 minute cold shower or cold exposure",
+      "Highlighting completed tasks in a planner",
+      "Passive audio learning under a pillow"
+    ],
+    "answer": 1,
+    "explanation": "Cold exposure for 1-3 minutes is described as uncomfortable but effective, increasing dopamine and norepinephrine for 2-3 hours. It is distinct from sleep or passive learning tactics."
+  },
+  {
+    "q": "A learner is bored and zoning out during practice. What does the demotivation table suggest?",
+    "options": [
+      "The material is too easy, so move to harder problems",
+      "The learner needs a full clinical evaluation immediately",
+      "The problem is mostly lack of caffeine before work",
+      "The solution is to reread the same material more smoothly"
+    ],
+    "answer": 0,
+    "explanation": "The table maps boredom and zoning out to material being too easy and recommends harder problems. Clinical escalation is reserved for persistent symptoms such as sadness and loss of interest."
+  },
+  {
+    "q": "A learner feels tired despite sleeping and has been pushing hard for weeks. Which interpretation fits the signal table?",
+    "options": [
+      "The material is too easy and should be made harder",
+      "The learner should add another daily deep block rather than rest",
+      "It may be sleep debt, overtraining, or burnout needing real rest",
+      "The correct fix is to remove every study break"
+    ],
+    "answer": 2,
+    "explanation": "The table lists tired despite sleep as possible sleep debt, overtraining, or burnout, with real rest as the fix. It is not a signal to increase workload."
+  },
+  {
+    "q": "When does the chapter advise getting evaluated by a mental-health professional?",
+    "options": [
+      "After one unproductive afternoon with normal tiredness",
+      "Only after trying every study technique for a full year before asking anyone for help",
+      "When persistent low mood or related symptoms last two or more weeks",
+      "Whenever a learner dislikes a difficult chapter"
+    ],
+    "answer": 2,
+    "explanation": "The chapter recommends evaluation for symptoms lasting 2+ weeks, including persistent low mood, loss of interest, sleep or appetite changes, concentration trouble, guilt, or self-harm thoughts. Ordinary temporary frustration is different."
+  },
+  {
+    "q": "What is NotebookLM specifically recommended for in the 2026 AI learning stack?",
+    "options": [
+      "Replacing retrieval practice with polished generated answers inside the learner's workflow",
+      "Serving as a paid Socratic tutor that refuses direct answers",
+      "Generating dopamine rewards after completed study sessions",
+      "Citation-grounded summaries of your PDFs or notes plus Audio Overviews"
+    ],
+    "answer": 3,
+    "explanation": "NotebookLM is listed for citation-grounded summaries of your own PDFs or notes and Audio Overviews. Khanmigo is the Socratic tutor in the table."
+  },
+  {
+    "q": "In the AI problem-generator workflow, which instruction preserves learning rather than giving answers too soon?",
+    "options": [
+      "Provide the full solution before the learner attempts the problem and reads it aloud immediately",
+      "Give hints only if asked and grade the learner's solution afterward",
+      "Generate only easy problems to maintain a high success rate",
+      "Avoid feedback until the end of the month"
+    ],
+    "answer": 1,
+    "explanation": "The workflow asks the AI to generate medium problems, give a hint only if requested, and grade the solution. That keeps practice active and feedback timely."
+  },
+  {
+    "q": "A learner reads excellent AI explanations but remembers little a month later. Which failure mode and fix match the chapter?",
+    "options": [
+      "Copy-paste completion; fix by using shorter code snippets during code review sessions",
+      "Passive reading; fix by listening to Audio Overviews only",
+      "No spaced repetition; fix by piping key concepts into Anki with FSRS",
+      "Planning fallacy; fix by tripling every time estimate"
+    ],
+    "answer": 2,
+    "explanation": "The AI failure section says AI is poor at ensuring memory next month unless key concepts go into Anki, RemNote, or Mochi with FSRS scheduling. Passive reading also fails, but the month-later retention issue directly points to missing spaced review."
+  },
+  {
+    "q": "In the SM-2-style scheduler shown, what happens after a poor recall quality below 3?",
+    "options": [
+      "Repetitions reset to zero and the interval becomes one day",
+      "The ease factor is raised to reward the difficult card after every poor review",
+      "The interval doubles so the learner gets more spacing",
+      "The card is deleted because it is too difficult"
+    ],
+    "answer": 0,
+    "explanation": "The code sets reps to 0 and interval to 1 when q < 3. Successful recalls increment reps and use longer intervals."
+  },
+  {
+    "q": "How should a beginner counter Dunning-Kruger according to the bias table?",
+    "options": [
+      "Reread until the topic feels familiar and fluent until it feels effortless",
+      "Switch topics whenever an explanation feels hard",
+      "Choose easier examples to preserve confidence",
+      "Test without notes and explain the concept from memory"
+    ],
+    "answer": 3,
+    "explanation": "The Dunning-Kruger fix is to test yourself without notes; if you cannot explain it, you do not understand it. Familiarity from rereading is exactly the trap."
+  },
+  {
+    "q": "What is wrong with the popular Learning Pyramid percentages?",
+    "options": [
+      "They apply only to auditory learners in early education",
+      "They are accurate but only when paired with Pomodoro cycles",
+      "They measure motivation rather than long-term retention",
+      "The numbers were fabricated and not sourced to a study"
+    ],
+    "answer": 3,
+    "explanation": "The myths table says the Learning Pyramid numbers were never sourced to any study and are fabricated. This is different from the legitimate testing and teaching effects discussed elsewhere."
+  }
+]

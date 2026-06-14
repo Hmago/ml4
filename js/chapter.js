@@ -141,6 +141,12 @@ async function loadChapter(index) {
       cachedContent[ch.file] = md;
     }
 
+    // Self-correct the reading-time estimate from the live content: measure the
+    // real word count once per open (cheap; cached & deduped in recordChapterWords).
+    if (typeof recordChapterWords === 'function' && !ch.notebook) {
+      recordChapterWords(ch.file, md.split(/\s+/).filter(Boolean).length);
+    }
+
     var mathProtected = protectMath(md);
     contentEl.innerHTML = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
     // insertAdjacentHTML appends without re-serializing/re-parsing the chapter

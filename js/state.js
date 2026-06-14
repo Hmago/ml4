@@ -414,6 +414,285 @@ function saveStudyData(d) { localStorage.setItem('ml4-study', JSON.stringify(d))
   if (!d.startDate) { d.startDate = new Date().toISOString(); saveStudyData(d); }
 })();
 
+// ─── Reading-time estimates ───
+// Study pace ≈ 55 words/min (reading + working through code, math, and diagrams).
+// CHAPTER_MINUTES is the baseline derived from each file's word count, rounded to
+// the nearest 5 min. It is GENERATED — run `node tools/update-reading-times.js`
+// after substantial content edits to refresh it (keys between the @generated
+// markers are rewritten in place).
+const READING_WPM = 55;
+function wordsToMinutes(words) {
+  return Math.max(5, Math.round(words / READING_WPM / 5) * 5);
+}
+const CHAPTER_MINUTES = { /* @generated-reading-times:start */
+  'content/00_quick_reference_cheat_sheet.md': 180,
+  'content/00p_dl_llm_playbook.md': 70,
+  'content/01_google_ai_engineer_strategy.md': 130,
+  'content/02_behavioral_interview.md': 145,
+  'content/03_staying_relevant_ai_era.md': 75,
+  'content/04_aptitude_mental_math.md': 365,
+  'content/05_brain_training.md': 145,
+  'content/06_math_fundamentals.md': 305,
+  'content/07_introduction.md': 90,
+  'content/08_core_concepts.md': 230,
+  'content/09_data_preprocessing.md': 50,
+  'content/10_supervised_learning.md': 215,
+  'content/11_unsupervised_learning.md': 175,
+  'content/12_key_algorithms.md': 170,
+  'content/13_model_evaluation.md': 115,
+  'content/14_neural_networks.md': 115,
+  'content/15_reinforcement_learning.md': 100,
+  'content/16_deep_learning.md': 230,
+  'content/17_llm.md': 540,
+  'content/18_ai_agents.md': 205,
+  'content/19_ai_frameworks.md': 110,
+  'content/20_2026_landscape.md': 110,
+  'content/21_design_fundamentals.md': 125,
+  'content/22_engineering_tools.md': 290,
+  'content/23_system_design_fundamentals_deep_dive.md': 245,
+  'content/24_system_design_data_distributed.md': 385,
+  'content/25_system_design_operations_case_studies.md': 180,
+  'content/26_ml_system_design.md': 340,
+  'content/27_practical_ml.md': 240,
+  'content/27_practical_ml.ipynb': 240,
+  'content/28_semantic_search.md': 140,
+  'content/29_gpus_tpus_infrastructure.md': 180,
+  'content/30_google_ml_ecosystem.md': 160,
+  'content/31_dsa_coding.md': 515,
+  'content/32_interview_questions.md': 235,
+  'content/33_llm_interview_questions.md': 490,
+  'content/34_google_top10_ml_interview.md': 490,
+  'README.md': 50,
+/* @generated-reading-times:end */ };
+
+// Per-user self-correction: when a chapter is opened we measure its real word
+// count (see trackChapterOpen → recordChapterWords) and cache it here, so
+// estimates track the live content even if the generated baseline above drifts.
+// Keyed by file path → word count. Notebooks (.ipynb) are JSON, not prose, so
+// they are never measured and always fall back to the baseline.
+function getMeasuredWords() {
+  try { return JSON.parse(localStorage.getItem('ml4-chapter-words') || '{}'); }
+  catch (e) { return {}; }
+}
+function recordChapterWords(file, words) {
+  if (!file || !words || /\.ipynb$/.test(file)) return;
+  const m = getMeasuredWords();
+  if (m[file] === words) return; // unchanged — skip the write
+  m[file] = words;
+  safeSetItem('ml4-chapter-words', JSON.stringify(m));
+}
+// Best estimate of study minutes for a chapter: prefer the live measured word
+// count, then the generated baseline, then a 30-min default for unknown files.
+function chapterEstMinutes(file) {
+  const measured = getMeasuredWords()[file];
+  if (measured) return wordsToMinutes(measured);
+  return CHAPTER_MINUTES[file] || 30;
+}
+
+// ─── Personalized pace & ETA ───
+// Derives the reader's real speed from time actually spent (auto-tracked per
+// chapter) vs the estimates, then projects remaining time and a finish date
+// from their study throughput so far. Pure function over localStorage — safe to
+// call repeatedly during a dashboard render.
+function computePaceStats() {
+  const track = getChapterTrack();
+  const study = getStudyData();
+  const realCh = (typeof chapters !== 'undefined' ? chapters : [])
+    .filter(c => !c.section && !c.ref && !c.notebook);
+
+  // 1. Reading-speed calibration. Only count chapters the reader marked read AND
+  //    spent a meaningful in-app stretch on. Each chapter's actual/estimated
+  //    ratio is clamped to 0.25×–4× so a glance-and-mark or a left-open tab
+  //    can't dominate; the factor is estimate-weighted (long chapters matter
+  //    more). Needs ≥3 calibration chapters before we trust it.
+  let weightedActual = 0, estTotal = 0, calib = 0;
+  realCh.forEach(c => {
+    const t = track[c.file];
+    if (!t || !readChapters[c.file]) return;
+    const spent = t.seconds || 0;
+    const estSec = chapterEstMinutes(c.file) * 60;
+    if (spent < 120 || estSec <= 0) return;
+    const ratio = Math.min(4, Math.max(0.25, spent / estSec));
+    weightedActual += ratio * estSec;
+    estTotal += estSec;
+    calib++;
+  });
+  const paceFactor = (calib >= 3 && estTotal > 0) ? weightedActual / estTotal : null;
+
+  // 2. Remaining work — raw estimate and adjusted to the reader's pace.
+  let remEstMin = 0;
+  realCh.forEach(c => { if (!readChapters[c.file]) remEstMin += chapterEstMinutes(c.file); });
+  const remAtPaceMin = Math.round(remEstMin * (paceFactor || 1));
+
+  // 3. Throughput (study minutes per calendar day since starting) and ETA.
+  const trackedMin = Object.values(track).reduce((s, t) => s + ((t && t.seconds) || 0), 0) / 60;
+  const totalStudyMin = (study.totalMinutes || 0) + trackedMin;
+  let daysSinceStart = 0, throughputPerDay = 0;
+  if (study.startDate) {
+    daysSinceStart = Math.max(1, Math.round((Date.now() - new Date(study.startDate).getTime()) / 86400000));
+    throughputPerDay = totalStudyMin / daysSinceStart;
+  }
+  const allRead = realCh.length > 0 && realCh.every(c => readChapters[c.file]);
+  let projectedFinish = null, daysLeft = null;
+  if (!allRead && throughputPerDay > 1 && remAtPaceMin > 0) {
+    daysLeft = remAtPaceMin / throughputPerDay;
+    projectedFinish = new Date(Date.now() + daysLeft * 86400000);
+  }
+  return {
+    paceFactor, calib, remEstMin, remAtPaceMin,
+    throughputPerDay, daysSinceStart, totalStudyMin,
+    projectedFinish, daysLeft, allRead,
+  };
+}
+
+// ─── Daily activity log (for the contribution heatmap) ───
+// Seconds of study credited to each LOCAL calendar day, keyed 'YYYY-MM-DD'.
+// Written as study time accrues (chapter reading + the manual timer). Stored as
+// seconds so sub-minute reads aren't lost to rounding.
+function localDayKey(d) {
+  d = d || new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+function getActivityLog() {
+  try { return JSON.parse(localStorage.getItem('ml4-activity') || '{}'); }
+  catch (e) { return {}; }
+}
+function logActivitySeconds(secs) {
+  if (!secs || secs <= 0) return;
+  const log = getActivityLog();
+  const k = localDayKey();
+  log[k] = (log[k] || 0) + Math.round(secs);
+  safeSetItem('ml4-activity', JSON.stringify(log));
+}
+
+// Merge logged study minutes with derived events (quiz attempts, chapters
+// started/completed) so the heatmap shows historical active days from before
+// per-day logging existed. Returns { 'YYYY-MM-DD': { minutes, events } }.
+function getActivityMap() {
+  const out = {};
+  const add = (key, minutes, events) => {
+    if (!key) return;
+    if (!out[key]) out[key] = { minutes: 0, events: 0 };
+    out[key].minutes += minutes || 0;
+    out[key].events += events || 0;
+  };
+  const log = getActivityLog();
+  Object.keys(log).forEach(k => add(k, (log[k] || 0) / 60, 0));
+  const qh = getQuizHistory();
+  Object.values(qh).forEach(h => {
+    (h && h.scores || []).forEach(s => { if (s && s.date) add(localDayKey(new Date(s.date)), 0, 1); });
+  });
+  const track = getChapterTrack();
+  Object.values(track).forEach(t => {
+    if (t && t.startDate) add(localDayKey(new Date(t.startDate)), 0, 1);
+    if (t && t.completedDate) add(localDayKey(new Date(t.completedDate)), 0, 1);
+  });
+  return out;
+}
+
+// ─── Spaced-repetition review queue ───
+// Derives a "due date" for each read/quizzed chapter from its last quiz (date +
+// score) using an SM-2-lite interval: strong recall pushes the next review
+// further out along a ladder, a fail (<70%) brings it back to tomorrow, and a
+// read-but-never-quizzed chapter is due for a first self-test. Pure function
+// over existing data — no extra storage or migration needed.
+function getReviewQueue() {
+  const qh = getQuizHistory();
+  const track = getChapterTrack();
+  const now = Date.now();
+  const DAY = 86400000;
+  // Good-recall interval ladder (days), indexed by trailing-pass streak.
+  const LADDER = [3, 7, 16, 35, 70, 120];
+  const realCh = (typeof chapters !== 'undefined' ? chapters : [])
+    .filter(c => !c.section && !c.ref && !c.notebook);
+  const items = [];
+  realCh.forEach(c => {
+    const read = !!readChapters[c.file];
+    const h = qh[c.file];
+    const hasScores = h && h.scores && h.scores.length;
+    if (!read && !hasScores) return; // not started — not in the review system yet
+    let lastDate, lastScore, intervalDays, tested;
+    if (hasScores) {
+      const sc = h.scores;
+      const last = sc[sc.length - 1];
+      lastDate = new Date(last.date).getTime();
+      lastScore = (typeof h.lastScore === 'number') ? h.lastScore : last.pct;
+      tested = true;
+      // Count trailing passes (≥70%) for a true consecutive-success streak,
+      // so a string of fails can't inflate the interval.
+      let streak = 0;
+      for (let i = sc.length - 1; i >= 0 && sc[i].pct >= 70; i--) streak++;
+      if (streak === 0) {
+        intervalDays = 1; // last recall failed → review tomorrow
+      } else {
+        const base = LADDER[Math.min(streak, LADDER.length) - 1];
+        const q = lastScore >= 90 ? 1 : lastScore >= 80 ? 0.85 : 0.7;
+        intervalDays = Math.max(1, Math.round(base * q));
+      }
+    } else {
+      // read but never quizzed → nudge a first self-test ~3 days after reading
+      const ct = track[c.file] || {};
+      lastDate = ct.completedDate ? new Date(ct.completedDate).getTime()
+        : ct.startDate ? new Date(ct.startDate).getTime() : now;
+      lastScore = -1;
+      tested = false;
+      intervalDays = 3;
+    }
+    const dueDate = lastDate + intervalDays * DAY;
+    const daysUntil = Math.round((dueDate - now) / DAY);
+    items.push({ file: c.file, title: c.title, id: c.id, lastScore, tested, dueDate, daysUntil, intervalDays });
+  });
+  items.sort((a, b) => a.dueDate - b.dueDate);
+  return {
+    items,
+    due: items.filter(i => i.dueDate <= now),
+    upcoming: items.filter(i => i.dueDate > now),
+  };
+}
+
+// ─── Storage usage ───
+// Sizes localStorage by category. Bytes ≈ (key + value) length × 2 (strings are
+// UTF-16, which is how browsers meter the localStorage quota). The trailing
+// catch-all group must stay last so every key lands somewhere.
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(b < 10240 ? 1 : 0) + ' KB';
+  return (b / (1024 * 1024)).toFixed(2) + ' MB';
+}
+function getStorageStats() {
+  const groups = [
+    { name: 'Notes & highlights', match: k => k === 'ml4-comments' || k === 'ml4-highlights' },
+    { name: 'DSA solutions', match: k => k === 'ml4-dsa' || k === 'ml4-dsa-custom' },
+    { name: 'Quiz history', match: k => k === 'ml4-quiz-scores' || k === 'ml4-quiz-history' },
+    { name: 'Reading & activity', match: k => ['ml4-read', 'ml4-chapter-track', 'ml4-chapter-words', 'ml4-activity'].indexOf(k) !== -1 },
+    { name: 'Progress & goals', match: k => ['ml4-xp', 'ml4-study', 'ml4-goals'].indexOf(k) !== -1 },
+    { name: 'Preferences & other', match: () => true }, // catch-all — keep last
+  ];
+  const result = groups.map(g => ({ name: g.name, bytes: 0 }));
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const v = localStorage.getItem(k) || '';
+      const bytes = (k.length + v.length) * 2;
+      total += bytes;
+      for (let gi = 0; gi < groups.length; gi++) {
+        if (groups[gi].match(k)) { result[gi].bytes += bytes; break; }
+      }
+    }
+  } catch (e) { /* private mode / disabled storage */ }
+  // Nominal per-origin localStorage budget (most browsers allow ~5 MB).
+  const quota = 5 * 1024 * 1024;
+  return {
+    total,
+    quota,
+    pct: Math.min(100, Math.round(total / quota * 1000) / 10),
+    groups: result.filter(g => g.bytes > 0).sort((a, b) => b.bytes - a.bytes),
+  };
+}
+
 // ─── Quiz Tracking (per chapter) ───
 function getQuizHistory() { return JSON.parse(localStorage.getItem('ml4-quiz-history') || '{}'); }
 function saveQuizHistory(h) { localStorage.setItem('ml4-quiz-history', JSON.stringify(h)); }
@@ -444,6 +723,7 @@ function trackChapterClose() {
       if (!t[activeChapterFile]) t[activeChapterFile] = { startDate: null, completedDate: null, seconds: 0 };
       t[activeChapterFile].seconds += elapsed;
       saveChapterTrack(t);
+      logActivitySeconds(elapsed); // credit today's heatmap cell
     }
   }
   activeChapterFile = null;
@@ -740,6 +1020,7 @@ function toggleStudyTimer() {
       d.totalMinutes += Math.floor(timerSeconds / 60);
       d.sessions += 1;
       saveStudyData(d);
+      logActivitySeconds(timerSeconds); // credit today's heatmap cell
       const mins = Math.floor(timerSeconds / 60);
       if (mins >= 1) {
         addXP(Math.min(mins, 30), `Studied for ${mins} min`);
@@ -777,5 +1058,6 @@ window.addEventListener('beforeunload', () => {
     d.totalMinutes += Math.floor(timerSeconds / 60);
     d.sessions += 1;
     saveStudyData(d);
+    logActivitySeconds(timerSeconds);
   }
 });

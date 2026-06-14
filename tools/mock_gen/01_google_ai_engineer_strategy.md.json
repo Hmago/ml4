@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A candidate has three years of ML production experience and is expected to own features end-to-end while mentoring entry-level engineers. Which Google level best matches that profile?",
+    "options": [
+      "L4 SWE III",
+      "L3 SWE II",
+      "L5 Senior SWE",
+      "L6 Staff SWE"
+    ],
+    "answer": 0,
+    "explanation": "L4 is described as 2-5 years, owning features end-to-end and mentoring L3s. L5 adds broader technical direction and cross-team impact."
+  },
+  {
+    "q": "Which team pairing correctly matches a Google AI engineering area with its stated focus?",
+    "options": [
+      "Ads — Gemini Nano compression and TFLite deployment",
+      "Android / On-Device — bid optimization and fraud detection",
+      "Search — content moderation across audio, video, and text",
+      "Cloud AI / Vertex — production ML platform and Gemini API"
+    ],
+    "answer": 3,
+    "explanation": "Cloud AI / Vertex is framed as production ML platform, model serving, AutoML, and Gemini API. Ads owns CTR prediction, bid optimization, and fraud, while Android focuses on on-device compression."
+  },
+  {
+    "q": "In the 2026 differentiators list, what does RLVR emphasize compared with traditional RLHF?",
+    "options": [
+      "Using larger human preference datasets for every reward update",
+      "Replacing alignment training with supervised fine-tuning only",
+      "Using programmatic reward verification for reasoning tasks",
+      "Optimizing latency through retrieval-augmented generation"
+    ],
+    "answer": 2,
+    "explanation": "RLVR is defined as verifiable rewards, replacing human-preference RLHF with programmatic reward verification for reasoning tasks. It is not a serving-latency or pure SFT technique."
+  },
+  {
+    "q": "A strong candidate can explain Transformers and RLHF but lacks agent tool use, on-device ML, multimodal reasoning, and Responsible AI depth. How would the 2026 strategy characterize this candidate?",
+    "options": [
+      "Ahead of the field because those topics remain rare among serious interview candidates",
+      "Well prepared for DeepMind roles but overprepared for Cloud AI roles",
+      "Strong only for behavioral rounds because technical depth is now secondary",
+      "Missing differentiators because Transformers and RLHF are table stakes by 2026"
+    ],
+    "answer": 3,
+    "explanation": "The guide says Transformers and RLHF were differentiators in 2023-2024 but are expected knowledge by 2026. Top candidates stand out through agents, multimodal reasoning, on-device ML, Responsible AI, and RLVR."
+  },
+  {
+    "q": "Which sequence best reflects the Google AI Engineer interview pipeline after the technical phone screen?",
+    "options": [
+      "Virtual/onsite loop → hiring committee → team matching → offer negotiation",
+      "Hiring committee → virtual/onsite loop → recruiter screen → team matching",
+      "Team matching → hiring committee → virtual/onsite loop → offer negotiation",
+      "Virtual/onsite loop → team matching → hiring committee → recruiter screen"
+    ],
+    "answer": 0,
+    "explanation": "After the phone screen, the process proceeds to the onsite loop, committee review, team matching, and then offer negotiation. Team matching happens only after committee approval."
+  },
+  {
+    "q": "During the technical phone screen, which behavior is explicitly called a red flag?",
+    "options": [
+      "Discussing time complexity before implementation",
+      "Asking clarifying questions before writing code",
+      "Talking through the approach before coding",
+      "Silent coding in the shared environment"
+    ],
+    "answer": 3,
+    "explanation": "The phone screen expects candidates to talk through their approach and externalize reasoning. Silence during coding is explicitly described as a red flag."
+  },
+  {
+    "q": "Which onsite configuration is described as possible for some candidates?",
+    "options": [
+      "Only one ML depth round and one behavioral round, with coding skipped for production ML candidates",
+      "Three system-design rounds plus one compensation discussion before committee review",
+      "Four rounds where ML depth is folded into coding, plus system design and behavioral rounds",
+      "Six fixed rounds with two recruiters, two coding rounds, one manager round, and one offer round"
+    ],
+    "answer": 2,
+    "explanation": "Some candidates report four rounds: two coding, one system design, and one behavioral, with ML depth folded into coding. The exact setup depends on level and team."
+  },
+  {
+    "q": "What is the hiring committee's role in the Google AI Engineer process?",
+    "options": [
+      "It conducts the first technical screen and decides whether to schedule virtual onsite interviews",
+      "It negotiates RSUs and signing bonus before team matching begins",
+      "It selects a team by matching candidate preferences with open headcount",
+      "It reviews interviewer scorecards and makes the calibrated hire/no-hire and level decision"
+    ],
+    "answer": 3,
+    "explanation": "The committee of senior engineers reviews detailed scorecards and calibrates level from L3-L6. Individual interviewers submit feedback but do not make the final hiring decision."
+  },
+  {
+    "q": "Which top-topic ranking is correct for the 2026 Google ML interview frequency list?",
+    "options": [
+      "Transformer / Self-Attention ranks above ML System Design",
+      "Recommendation Systems ranks above RLHF / DPO / Alignment",
+      "Distributed Training ranks above Recommendation Systems",
+      "Responsible AI / Safety ranks above Multimodal Models"
+    ],
+    "answer": 0,
+    "explanation": "Transformer / Self-Attention is ranked first at 95%, while ML System Design is second at 90%. The other comparisons reverse the stated ordering."
+  },
+  {
+    "q": "A candidate is asked to compare AUC-ROC, AUC-PR, NDCG, perplexity, and LLM-as-judge. Which high-frequency topic are they being tested on?",
+    "options": [
+      "Embeddings / ANN Search",
+      "Evaluation Metrics",
+      "Responsible AI / Safety",
+      "Feature Engineering at Scale"
+    ],
+    "answer": 1,
+    "explanation": "Those examples are listed under Evaluation Metrics, ranked sixth in the frequency list. ANN search instead covers cosine, dot product, HNSW, FAISS, drift, and hybrid search."
+  },
+  {
+    "q": "Which topic is paired with two-tower retrieval, multi-stage ranking, and Wide & Deep?",
+    "options": [
+      "Distributed Training",
+      "Gemini / MoE Architecture",
+      "Recommendation Systems",
+      "AI Agents & Tool Use"
+    ],
+    "answer": 2,
+    "explanation": "Recommendation Systems include two-tower retrieval, multi-stage ranking, and Wide & Deep. Distributed training instead covers parallelism and ZeRO-style scaling."
+  },
+  {
+    "q": "A prompt asks for the ReAct pattern, MCP, A2A, function calling, and multi-step planning. Which topic label best matches it?",
+    "options": [
+      "Context Engineering",
+      "Frameworks & Inference Servers",
+      "Reasoning Models & Test-time Compute",
+      "AI Agents & Tool Use"
+    ],
+    "answer": 3,
+    "explanation": "AI Agents & Tool Use is mapped to ReAct, MCP, A2A, function calling, and multi-step planning. Context engineering is broader and includes system context, RAG, tools, memory, and history."
+  },
+  {
+    "q": "In the six-step ML system design framework, what comes immediately after defining data, features, labels, quality issues, and pipeline choices?",
+    "options": [
+      "Model Architecture",
+      "Problem Formulation",
+      "Evaluation",
+      "Deployment & Serving"
+    ],
+    "answer": 0,
+    "explanation": "The framework order is problem formulation, data and features, model architecture, evaluation, deployment and serving, then monitoring and iteration. Data choices should precede architecture selection."
+  },
+  {
+    "q": "Which question belongs in the Problem Formulation step rather than the Evaluation step?",
+    "options": [
+      "How will demographic groups be compared for disparate impact?",
+      "What are the users, scale, latency requirements, and success metrics?",
+      "Which ablation studies will isolate feature contributions?",
+      "How will statistical significance be measured in the A/B test?"
+    ],
+    "answer": 1,
+    "explanation": "Problem formulation defines business goal, users, scale, latency, input/output, and success metrics. Fairness checks, ablations, and A/B significance belong to evaluation."
+  },
+  {
+    "q": "A candidate starts a ranking system design with a Transformer before discussing baselines. According to the strategy, what is the best corrective move?",
+    "options": [
+      "Keep the Transformer but add more heads to show depth",
+      "Switch directly to a custom architecture to avoid appearing generic",
+      "Start with a simple baseline and justify each increase in complexity",
+      "Move to deployment topics because model choice is not evaluated"
+    ],
+    "answer": 2,
+    "explanation": "The guide explicitly recommends starting with a simple baseline, such as logistic regression, then progressing to more complex models with justification. Jumping to Transformers is a red flag."
+  },
+  {
+    "q": "Which option best captures the Evaluation step of the system design framework?",
+    "options": [
+      "Choose TF SavedModel, ONNX, or TensorRT and set p99 latency goals",
+      "Discuss scheduled retraining, drift alerts, and rollback strategy",
+      "Estimate horizontal scaling, caching, batching, streaming, guardrails, and rollout safeguards",
+      "Use offline metrics and splits, online A/B tests with guardrails, and fairness checks"
+    ],
+    "answer": 3,
+    "explanation": "Evaluation combines offline splits and metrics, online A/B testing with guardrails and significance, and fairness across groups. Serving formats and drift policies appear in later steps."
+  },
+  {
+    "q": "For YouTube video recommendation practice, which pipeline is described?",
+    "options": [
+      "Two-tower candidate generation, DNN ranking, then re-ranking for diversity, freshness, and policy",
+      "BM25 retrieval, learning-to-rank, then BERT cross-encoder for web pages under tight latency budgets",
+      "High-recall automated classifier, then human review queue for high precision",
+      "LLM backbone, RAG, tool use, MCP, and conversation memory"
+    ],
+    "answer": 0,
+    "explanation": "The YouTube recommendation example uses candidate generation to around 1000 videos, ranking, and re-ranking. BM25/BERT is search, classifier plus review is moderation, and LLM/RAG is the agent example."
+  },
+  {
+    "q": "In the Search Query Ranking practice system, what is the key latency constraint?",
+    "options": [
+      "A nightly batch window under 6 hours",
+      "A fraud decision target under 50 ms",
+      "A streaming-token target under 1 second",
+      "A response target under 200 ms"
+    ],
+    "answer": 3,
+    "explanation": "Search ranking is described as needing to respond in under 200 ms. The example's follow-up asks how to add LLM summaries without blowing that latency budget."
+  },
+  {
+    "q": "Which feature set is associated with the Google Pay fraud detection example?",
+    "options": [
+      "Query-document similarity, page authority, freshness, and user signals",
+      "Frame sampling, audio transcription, metadata, and policy labels",
+      "Amount, velocity, device fingerprint, merchant category, and behavioral patterns",
+      "User satisfaction, watch time, engagement quality, and freshness diversity"
+    ],
+    "answer": 2,
+    "explanation": "The fraud detection system lists transaction amount, velocity, device fingerprint, merchant category, and behavioral patterns. Query features belong to search; multimodal features belong to moderation."
+  },
+  {
+    "q": "Why does the content moderation example use an automated classifier followed by a human review queue?",
+    "options": [
+      "To maximize GPU utilization before sending all examples to batch inference and nightly labeling jobs",
+      "To avoid collecting labels because human review replaces training data",
+      "To turn a ranking problem into a two-tower retrieval problem",
+      "To combine high automated recall with high-precision human judgment for nuanced policy cases"
+    ],
+    "answer": 3,
+    "explanation": "The moderation pipeline is described as automated classifier for high recall followed by human review for high precision. This matters because policies can be context-dependent, such as satire versus hate speech."
+  },
+  {
+    "q": "What is the recommended time allocation for the first five minutes of a 45-minute Google coding interview?",
+    "options": [
+      "Read carefully, ask clarifying questions, and state assumptions",
+      "Write the first clean solution while narrating each line",
+      "Test examples and walk through edge cases",
+      "Discuss optimizations under changed constraints"
+    ],
+    "answer": 0,
+    "explanation": "The 0-5 minute block is for reading, clarifying, and stating assumptions. Coding is recommended after discussing the approach and complexity."
+  },
+  {
+    "q": "Which DSA pattern is ranked highest by Google frequency in the coding strategy table?",
+    "options": [
+      "Dynamic Programming with recurrence design",
+      "Trees and binary search trees with recursive serialization",
+      "Arrays and hashmaps for clean warm-up implementations",
+      "Graphs with BFS, DFS, Dijkstra, and topological sort"
+    ],
+    "answer": 3,
+    "explanation": "Graphs are ranked first with a target of 25 problems and are described as Google's favorite. Dynamic programming is also high but ranked second."
+  },
+  {
+    "q": "A preparation plan has 160 coding problems over 12 weeks. Which difficulty mix matches the strategy?",
+    "options": [
+      "40% Easy, 40% Medium, 20% Hard across all 12 weeks",
+      "20% Easy, 50% Medium, 30% Hard from the beginning",
+      "20% Easy in the first 2 weeks, 60% Medium, and 20% Hard in weeks 8-12",
+      "10% Easy, 70% Medium, 20% Hard with no timing guidance for later weeks"
+    ],
+    "answer": 2,
+    "explanation": "The chapter recommends roughly 160 problems, about two per day, with 20% Easy only in the first two weeks, 60% Medium, and 20% Hard in weeks 8-12."
+  },
+  {
+    "q": "Which ML-specific coding constraint is explicitly recommended for scratch implementations?",
+    "options": [
+      "Use sklearn for models and PyTorch for tensor math to avoid numerical bugs",
+      "Use SQL-only implementations to demonstrate data-pipeline fluency",
+      "Use JavaScript because the study app is browser based",
+      "Use NumPy only, avoiding sklearn and PyTorch"
+    ],
+    "answer": 3,
+    "explanation": "Google may ask ML algorithms from scratch, and the guide says to practice with NumPy only, without sklearn or PyTorch. Java appears only as an example for SWE-ML K-means practice."
+  },
+  {
+    "q": "In the stable softmax example, why is the maximum subtracted from the input before exponentiation?",
+    "options": [
+      "To prevent numerical overflow while preserving the softmax distribution",
+      "To convert probabilities into log-odds before normalization",
+      "To make the result independent of the class dimension",
+      "To enforce sparse probabilities for low-confidence classes"
+    ],
+    "answer": 0,
+    "explanation": "Subtracting the maximum shifts values for numerical stability and prevents exponent overflow. It does not change the final softmax probabilities because softmax is shift-invariant."
+  },
+  {
+    "q": "What is the self-attention forward-pass formula used in the coding example?",
+    "options": [
+      "$QK^T V / d_k$ without a softmax normalization step",
+      "$softmax(QK^T / \\sqrt{d_k})V$ using scaled dot-product attention",
+      "$softmax(QV^T / \\sqrt{d_v})K$ using values as keys",
+      "$KQ^T / \\sqrt{d_k}$ followed by elementwise multiplication with $V$"
+    ],
+    "answer": 1,
+    "explanation": "The example computes scores as $QK^T / \\sqrt{d_k}$, applies softmax to get attention weights, then multiplies by $V$. The scaling uses key dimension, not value dimension."
+  },
+  {
+    "q": "Which algorithm is included in the from-scratch ML coding practice list?",
+    "options": [
+      "Full Transformer pre-training with distributed data parallelism",
+      "Bayesian optimization with Gaussian-process acquisition functions",
+      "Batch normalization forward and backward pass",
+      "Production feature-store synchronization across regions"
+    ],
+    "answer": 2,
+    "explanation": "The full list includes batch normalization forward and backward pass, along with regression, K-means, KNN, a basic decision tree, neural-layer forward pass, attention, softmax, and batching."
+  },
+  {
+    "q": "In the ML depth round, what is the interviewer primarily testing after pushing until the candidate reaches the edge of knowledge?",
+    "options": [
+      "Whether the candidate has memorized every recent paper title",
+      "Whether the candidate can cite Google internal systems accurately",
+      "Whether the candidate can finish coding faster than the onsite bar",
+      "How the candidate reasons when knowledge becomes incomplete"
+    ],
+    "answer": 3,
+    "explanation": "The guide states that interviewers are not looking for omniscience; they want to see reasoning at the edge of knowledge. Confident guessing is discouraged later in the mistakes section."
+  },
+  {
+    "q": "Which sequence best matches the sample deepening path for a Transformer discussion?",
+    "options": [
+      "Self-attention → $\\sqrt{d_k}$ scaling → no-scaling effect → multi-head benefits → head-count tradeoffs",
+      "Define RLHF → derive DPO → explain reward hacking → compare GRPO → discuss RLVR and frontier methods",
+      "Explain BM25 → add learning-to-rank → add cross-encoder → optimize p99 latency → evaluate NDCG",
+      "Describe embeddings → choose HNSW → handle drift → add hybrid search → quantize vectors"
+    ],
+    "answer": 0,
+    "explanation": "The Transformer progression begins broadly with self-attention and drills into scaling, failure mode without scaling, multi-head attention, and computational tradeoffs. The other sequences reflect different topic areas."
+  },
+  {
+    "q": "Which item is listed under Transformers in the ML depth topics rather than under Serving & Inference?",
+    "options": [
+      "KV cache memory math",
+      "Flash Attention at the algorithm level",
+      "Speculative decoding draft-verify trick",
+      "PagedAttention virtual-memory analogy"
+    ],
+    "answer": 1,
+    "explanation": "Flash Attention is included under the Transformer depth bullets along with QKV, RoPE, causal masking, and pre-norm versus post-norm. KV cache, speculative decoding, and PagedAttention are under Serving & Inference."
+  },
+  {
+    "q": "What is DPO's key simplification compared with RLHF in the sample answer structure?",
+    "options": [
+      "It keeps PPO but removes supervised fine-tuning",
+      "It uses more annotators to make reward labels less noisy",
+      "It eliminates the RL loop by making the language model act as its own reward model",
+      "It replaces binary preferences with only programmatically verified rewards for reasoning tasks"
+    ],
+    "answer": 2,
+    "explanation": "The strong answer says DPO reformulates the problem so the language model is its own reward model and eliminates the RL loop. Programmatic rewards are associated with RLVR, not DPO itself."
+  },
+  {
+    "q": "When production model accuracy drops over time, which diagnostic is recommended first?",
+    "options": [
+      "Immediately replace the model with a larger neural architecture",
+      "Check for data drift in feature distribution shift",
+      "Lower the decision threshold until online metrics recover",
+      "Disable A/B testing to avoid exposing users to degraded predictions"
+    ],
+    "answer": 1,
+    "explanation": "The sample answer starts by checking data drift, then concept drift and upstream pipeline issues. Replacing the model before diagnosis risks hiding the root cause."
+  },
+  {
+    "q": "Why is Flash Attention described as $O(n)$ memory rather than $O(n^2)$ memory?",
+    "options": [
+      "It compresses all key and value vectors into product-quantized embeddings",
+      "It replaces attention with a linear recurrence over hidden states",
+      "It tiles attention and avoids storing the full $n \\times n$ attention matrix",
+      "It discards the softmax and uses unnormalized dot products in SRAM"
+    ],
+    "answer": 2,
+    "explanation": "Flash Attention computes tiled partial softmaxes in SRAM and avoids storing the full attention matrix in HBM. The memory saving comes from not materializing the $n \\times n$ matrix."
+  },
+  {
+    "q": "Which statement best reflects the behavioral round's importance?",
+    "options": [
+      "It is optional filler used only when technical feedback is borderline",
+      "It matters only for L6+ candidates with expected leadership scope",
+      "It is ignored by hiring committee if coding and ML depth are strong",
+      "A mixed Googleyness and Leadership signal can sink a strong technical packet"
+    ],
+    "answer": 3,
+    "explanation": "The guide says the behavioral round is not optional filler and is weighed alongside technical scores. A mixed behavioral signal can sink otherwise strong technical performance."
+  },
+  {
+    "q": "Which behavior is part of Googleyness as defined in the strategy?",
+    "options": [
+      "Putting users ahead of personal gain when doing the right thing",
+      "Preferring technically elegant designs even if user impact is unclear",
+      "Avoiding disagreement so the team can maintain consensus",
+      "Relying on managers to resolve unclear requirements before acting"
+    ],
+    "answer": 0,
+    "explanation": "Googleyness includes doing the right thing, ethical decisions, and putting users ahead of personal gain. It also values ambiguity handling and constructive challenge, not avoidance."
+  },
+  {
+    "q": "In the STAR framework, which component should usually be the longest and most specific?",
+    "options": [
+      "Situation, because context proves the story was important",
+      "Action, because Google evaluates what the candidate personally did",
+      "Task, because ownership is established only by the assigned role",
+      "Result, because metrics are the only evaluated signal"
+    ],
+    "answer": 1,
+    "explanation": "The STAR table marks Action as the longest part and emphasizes specific personal actions using I rather than we. Results matter, but Action is what Google evaluates most closely."
+  },
+  {
+    "q": "What total length does the strategy recommend for most STAR behavioral answers?",
+    "options": [
+      "45-60 seconds with minimal setup",
+      "90 seconds exactly with equal parts for S, T, A, and R",
+      "2-3 minutes, with Action taking about 90 seconds",
+      "4-5 minutes to cover technical detail and stakeholder context"
+    ],
+    "answer": 2,
+    "explanation": "The STAR framework totals 2-3 minutes, with Situation about 30 seconds, Task 15 seconds, Action about 90 seconds, and Result about 30 seconds. Overlong answers above three minutes are later listed as a red flag."
+  },
+  {
+    "q": "Which prepared story theme is matched with the signals demonstrated by the strategy table?",
+    "options": [
+      "Mentored someone — ambiguity and status quo challenge",
+      "Failed and recovered — humility and growth mindset",
+      "Resolved a disagreement — user focus and process improvement",
+      "Went above and beyond — coding speed and algorithmic mastery"
+    ],
+    "answer": 1,
+    "explanation": "The eight-story table maps Failed and recovered to humility and growth mindset. Mentoring maps to growing others and empathy, while disagreement maps to collaboration and influence."
+  },
+  {
+    "q": "In the example of leading a technical project end-to-end, what were the two root causes behind the recommendation CTR decline?",
+    "options": [
+      "A dropped high-signal feature and stale feature distributions from missing retraining",
+      "A new Transformer ranker overfit and an A/B test sent all traffic to treatment",
+      "User labels were corrupted by fraud and the serving cache ignored fresh candidates",
+      "The team optimized watch time instead of CTR and the feature store had duplicate rows"
+    ],
+    "answer": 0,
+    "explanation": "The example identifies a silent dropped feature after schema migration and lack of retraining after the migration. The recovery included schema validation, weekly retraining, A/B testing, and drift alerts."
+  },
+  {
+    "q": "What lesson is drawn from the fraud-detection failure story?",
+    "options": [
+      "Always maximize recall first, then optimize latency only after deployment",
+      "Define latency and throughput budgets before model design",
+      "Use ensembles only when compliance thresholds require more than 95% recall",
+      "Prefer neural networks over XGBoost because they can be distilled after launch"
+    ],
+    "answer": 1,
+    "explanation": "The failure was optimizing for recall without profiling latency, producing 800 ms predictions against a 200 ms SLA. The stated lesson is to define serving constraints first and design the model to fit them."
+  },
+  {
+    "q": "Why did the disagreement story use a one-week bake-off between LightGBM and a Transformer?",
+    "options": [
+      "To let the senior engineer retain ownership while the junior candidate avoided implementation",
+      "To select the more novel model because novelty was the agreed success criterion",
+      "To turn an abstract debate into an agreed metric-based experiment",
+      "To prove the senior engineer wrong publicly and document the result for leadership"
+    ],
+    "answer": 2,
+    "explanation": "The bake-off used the same data splits, AUC-PR, p99 latency, and an advance commitment to adopt the winner. The story is framed as collaborative influence, not proving someone wrong."
+  },
+  {
+    "q": "In the ambiguity example, what concrete success metric did the engineer propose for search quality?",
+    "options": [
+      "Increase click-through rate from 8% to 15% within four weeks",
+      "Reduce zero-result rate from 12% to under 5% within eight weeks",
+      "Improve NDCG by 0.3% while reducing p99 latency 12x",
+      "Cut customer support tickets by 40% within three months"
+    ],
+    "answer": 1,
+    "explanation": "The proposed metric was reducing zero-result rate from 12% to under 5% within eight weeks. The actual result reached 3.8% in six weeks and support tickets dropped 40%."
+  },
+  {
+    "q": "Which behavioral answer pattern is listed as a red flag?",
+    "options": [
+      "Using specific numbers and metrics to show impact",
+      "Crediting teammates for their parts in the outcome",
+      "Saying I proposed a data-driven approach adopted by the team",
+      "Claiming never to have had a failure"
+    ],
+    "answer": 3,
+    "explanation": "Saying I have never had a failure signals lack of self-awareness and is listed as a red flag. Specific metrics, crediting teammates, and data-driven influence are green flags."
+  },
+  {
+    "q": "Which answer behavior is identified as a green flag?",
+    "options": [
+      "Using I for personal actions while crediting teammates for their contributions",
+      "Speaking negatively about past jobs when explaining constraints",
+      "Keeping answers longer than three minutes to show completeness",
+      "Saying the team was wrong and the candidate proved it"
+    ],
+    "answer": 0,
+    "explanation": "Green flags include clear ownership with I for personal actions and crediting teammates for their parts. Negative past-job comments, overlong answers, and adversarial framing are red flags."
+  },
+  {
+    "q": "At L5 in the 2026 compensation table, which total compensation breakdown is listed?",
+    "options": [
+      "$160K base, $30K bonus, $110K annual RSU, about $300K total",
+      "$200K base, $50K bonus, $160K annual RSU, about $410K total",
+      "$250K base, $70K bonus, $280K annual RSU, about $600K total",
+      "$300K base, $100K bonus, $540K annual RSU, about $940K total"
+    ],
+    "answer": 1,
+    "explanation": "L5 Senior SWE is listed at about $410K median total compensation: $200K base, $50K bonus, and $160K annual RSU. The other figures correspond to L4, L6, and L7."
+  },
+  {
+    "q": "What is the stated RSU vesting schedule for Google external hires?",
+    "options": [
+      "Three-year annual vesting with a one-year cliff",
+      "Four-year quarterly vesting with no cliff for external hires since 2023",
+      "Two-year monthly vesting with no refresher grants",
+      "Five-year annual vesting with year-four acceleration only"
+    ],
+    "answer": 1,
+    "explanation": "Google is described as using a four-year vesting schedule with quarterly vesting and no cliff for external hires since 2023. The chapter also notes refresher grants may stack annually."
+  },
+  {
+    "q": "Why does the negotiation section emphasize RSUs over base salary?",
+    "options": [
+      "Base salary is paid only after the first vesting anniversary",
+      "RSUs are tax-free while base salary is not",
+      "Base bands are fixed while RSU grants are more flexible and dominate at L5+",
+      "Signing bonuses cannot compensate for unvested equity left behind during job changes"
+    ],
+    "answer": 2,
+    "explanation": "The strategy says base salary bands are relatively fixed, while RSU grants have much more flexibility. It also states RSUs dominate compensation at L5 and above."
+  },
+  {
+    "q": "Which compensation tactic is explicitly recommended for an L5 candidate seeking a stronger package?",
+    "options": [
+      "Avoid competing offers because they slow down Google's process",
+      "Ask first for extra PTO because equity bands are fixed by policy",
+      "Negotiate only base salary because RSU grants are formulaic",
+      "Use competing offers from peer AI labs, big tech, or top startups"
+    ],
+    "answer": 3,
+    "explanation": "The negotiation tips say Google's compensation team responds to competing offers from those companies and top startups. A competing L5 offer can add $50K-$100K+ to the package."
+  },
+  {
+    "q": "Which common mistake is paired with the recommended alternative of asking whether the design works for one billion items?",
+    "options": [
+      "Ignoring scale and reasoning as if millions are enough",
+      "Skipping behavioral preparation because it seems like soft skills",
+      "Treating ML depth as trivia and guessing confidently",
+      "Ignoring data collection, labeling, quality, and bias"
+    ],
+    "answer": 0,
+    "explanation": "The scale mistake is computing similarity between all users without considering Google scale. The recommended alternative is to ask whether the solution works for one billion items."
+  },
+  {
+    "q": "What does the common-mistakes table recommend instead of spending 90% of system design on the model and 10% on data?",
+    "options": [
+      "Spend most of the interview deriving optimizer update rules",
+      "Discuss collection, labeling, quality, bias, and the data pipeline",
+      "Skip data details until after deployment architecture is complete",
+      "Use only synthetic data to avoid privacy and fairness issues"
+    ],
+    "answer": 1,
+    "explanation": "The table says Data > model and recommends discussing collection, labeling, quality, bias, and pipelines. Ignoring data in system design is a common mistake."
+  },
+  {
+    "q": "Which response is recommended when an ML depth question reaches an area you do not know?",
+    "options": [
+      "Guess confidently because hesitation signals weak depth",
+      "Ask to switch topics before the interviewer detects the gap",
+      "Say you are not sure, then reason aloud from what you do know",
+      "Memorize the canonical phrase and avoid explaining the reasoning"
+    ],
+    "answer": 2,
+    "explanation": "The table says ML depth tests reasoning, not trivia. Saying you are not sure but reasoning it through scores better than a confident wrong answer."
+  },
+  {
+    "q": "Which minimum Google-technology knowledge is recommended to avoid the corresponding common mistake?",
+    "options": [
+      "Know Chrome rendering internals, Android UI lifecycle, and Google Ads pricing",
+      "Know what TPU v5 offers, how JAX differs from PyTorch, and what Vertex AI does",
+      "Know Kubernetes source code, Borg internals, and Spanner implementation details",
+      "Know TensorFlow 1.x graph mode, Hadoop MapReduce APIs, and App Engine quotas"
+    ],
+    "answer": 1,
+    "explanation": "The common mistake is knowing nothing about Google tech, with the minimum listed as TPU v5, JAX versus PyTorch, and Vertex AI. Internal systems are not required by that guidance."
+  },
+  {
+    "q": "What does the responsible-AI mistake say candidates should do in every system design?",
+    "options": [
+      "Discuss bias, fairness, and safety rather than designing without those concerns",
+      "Avoid Responsible AI unless the product explicitly involves user-generated content",
+      "Replace A/B testing with red-teaming as the only launch gate",
+      "Focus on EU AI Act compliance only after the offer stage"
+    ],
+    "answer": 0,
+    "explanation": "The mistake is designing without mentioning fairness or safety, and the alternative is to discuss bias, fairness, and safety in every system design. The guide notes Google takes this seriously post-Gemini."
+  },
+  {
+    "q": "Which book is described as the closest thing to a prep book for the ML system design round?",
+    "options": [
+      "Designing Machine Learning Systems by Chip Huyen",
+      "ML System Design Interview by Ali Aminian and Alex Xu",
+      "Deep Learning by Goodfellow, Bengio, and Courville",
+      "Speech and Language Processing by Jurafsky and Martin"
+    ],
+    "answer": 1,
+    "explanation": "ML System Design Interview by Ali Aminian and Alex Xu is labeled the closest prep book for that round. Chip Huyen's book is recommended for production ML mindset."
+  },
+  {
+    "q": "Which online course is Google-specific and free according to the resources table?",
+    "options": [
+      "Stanford CS229 on YouTube and Coursera with theoretical foundations",
+      "Fast.ai Practical Deep Learning",
+      "Google ML Crash Course on developers.google.com/machine-learning",
+      "Made With ML on madewithml.com"
+    ],
+    "answer": 2,
+    "explanation": "The Google ML Crash Course is listed on developers.google.com/machine-learning as Google's own free ML intro. The others are useful but not Google-specific in that table."
+  },
+  {
+    "q": "Which paper-resource pairing is correct?",
+    "options": [
+      "DPO, 2023 — RLHF alternative and likely interview topic",
+      "Flash Attention, 2017 — original Transformer paper",
+      "Wide & Deep Learning, 2020 — Chinchilla-optimal training",
+      "T5, 2016 — two-stage YouTube recommendation architecture"
+    ],
+    "answer": 0,
+    "explanation": "DPO from 2023 is listed as an RLHF alternative and likely interview topic. Flash Attention is 2022, Wide & Deep is 2016, and T5 is 2019."
+  },
+  {
+    "q": "Which mock interview platform is described as free peer mock interviews?",
+    "options": [
+      "interviewing.io",
+      "pramp.com",
+      "Exponent",
+      "Prepfully"
+    ],
+    "answer": 1,
+    "explanation": "pramp.com is listed as offering free peer mock interviews. interviewing.io is paid, Exponent offers ML system design mocks and a question bank, and Prepfully has Google-specific guides."
+  },
+  {
+    "q": "Which Google-specific resource is described as revealing what teams value through role descriptions?",
+    "options": [
+      "Google Research Publications",
+      "Google Cloud Vertex AI docs",
+      "Careers at Google DeepMind",
+      "Google AI Blog"
+    ],
+    "answer": 2,
+    "explanation": "Careers at Google DeepMind is described as a resource where role descriptions reveal what they value. The blogs and publications track current work and research output."
+  },
+  {
+    "q": "Which YouTube resource is described as essential because it builds a Transformer from scratch?",
+    "options": [
+      "The Illustrated Transformer by Jay Alammar",
+      "3Blue1Brown Neural Networks series",
+      "Yannic Kilcher paper reviews",
+      "Andrej Karpathy's Let's build GPT"
+    ],
+    "answer": 3,
+    "explanation": "Andrej Karpathy's Let's build GPT is listed as building a Transformer from scratch and marked essential. Jay Alammar's resource is the visual attention walkthrough."
+  },
+  {
+    "q": "Which level description best matches L6 Staff SWE in Google's leveling overview?",
+    "options": [
+      "Sets team-wide strategy and solves ambiguous problems",
+      "Owns features end-to-end and mentors entry-level engineers",
+      "Implements well-scoped ML tasks while learning quickly",
+      "Defines multi-team roadmaps with industry-level impact"
+    ],
+    "answer": 0,
+    "explanation": "L6 Staff SWE is described as setting team-wide strategy, solving ambiguous problems, and having organization-level impact. Multi-team roadmaps and industry impact belong to L7."
+  }
+]

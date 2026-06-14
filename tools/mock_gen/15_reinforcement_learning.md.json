@@ -1,0 +1,662 @@
+[
+  {
+    "q": "In the Bellman optimality equation $Q^*(s,a) = R(s,a) + \\gamma \\sum_{s'} P(s'|s,a) \\max_{a'} Q^*(s', a')$, the term $\\max_{a'} Q^*(s', a')$ represents:",
+    "options": [
+      "The best expected future value achievable from next state $s'$, bootstrapping the current Q-value",
+      "The expected return under policy $\\pi$ starting from the next state $s'$ and following $\\pi$ onward",
+      "The stochastic expectation of immediate rewards received from all possible transitions out of state $s$",
+      "The discount-weighted average of Q-values across all states reachable from $s$ in one step"
+    ],
+    "answer": 0,
+    "explanation": "$\\max_{a'} Q^*(s',a')$ picks the BEST action in the next state under the optimal policy — it is the value ceiling achievable from $s'$. Option B describes $V^\\pi(s')$ under a specific policy, not the optimality operator. Option D incorrectly averages across states rather than maximising across actions."
+  },
+  {
+    "q": "In multi-armed bandits, Thompson Sampling selects the next arm to pull by:",
+    "options": [
+      "Choosing the arm with the highest upper confidence bound $Q(a) + c\\sqrt{\\ln t / N(a)}$",
+      "Sampling an arm according to its posterior probability of being the optimal arm",
+      "Selecting uniformly at random among arms pulled fewer than $\\sqrt{t}$ times so far",
+      "Always taking the arm with the highest observed average reward across all prior pulls"
+    ],
+    "answer": 1,
+    "explanation": "Thompson Sampling maintains a Bayesian posterior over each arm's reward distribution and samples from it; the arm with the highest sampled estimate is selected. Arms with high uncertainty and high expected reward are naturally explored. Option A describes UCB, not Thompson Sampling."
+  },
+  {
+    "q": "Which statement correctly defines the on-policy versus off-policy distinction in RL?",
+    "options": [
+      "On-policy uses Q-value functions exclusively for updates; off-policy uses state-value functions with importance sampling",
+      "Off-policy relies on model-based environment planning to compute unbiased policy gradient estimates throughout training",
+      "On-policy must train on the current policy's data; off-policy can learn from transitions collected under any policy",
+      "On-policy methods provably converge to the global optimum in any tabular MDP; off-policy only converge locally"
+    ],
+    "answer": 2,
+    "explanation": "Q-learning is off-policy: it learns the optimal greedy policy while collecting data with a different behavior policy (e.g., $\\epsilon$-greedy). REINFORCE is on-policy: it requires trajectories from the current policy for unbiased gradient estimates. Options A and D are false; option B confuses model-based planning with the on/off-policy distinction."
+  },
+  {
+    "q": "In a grid world where state B is one step left of terminal goal G, step cost $-1$, goal reward $+10$, $\\gamma = 0.9$. Applying Bellman, $V^*(B)$ equals:",
+    "options": [
+      "8.1 — computed as $\\gamma \\times R_{\\text{goal}} = 0.9 \\times 10$, then subtracting the discounted step cost",
+      "10 — because the goal reward dominates the one step cost at this proximity",
+      "7.9 — because $V^*(B) = -1 + 0.9 \\times 10 = 8.0$, then discounted once more by $\\gamma$",
+      "9 — because $V^*(B) = (-1 + 10) + 0.9 \\times V^*(G) = 9 + 0.9 \\times 0 = 9$"
+    ],
+    "answer": 3,
+    "explanation": "The net reward for stepping into terminal goal G is the step cost plus goal reward: $-1 + 10 = 9$. The terminal state has $V^*(G)=0$, so $V^*(B) = 9 + 0.9 \\times 0 = 9$. Option A applies double discounting incorrectly. Option C adds an extra $\\gamma$ factor after computing the one-step backup."
+  },
+  {
+    "q": "The primary purpose of the experience replay buffer in DQN is:",
+    "options": [
+      "Breaking temporal correlation between consecutive samples and allowing efficient reuse of past transitions",
+      "Storing multiple reward signals per transition to compute multi-step bootstrapped return estimates during training",
+      "Maintaining frozen target network weights so they can be restored when the online Q-network diverges unexpectedly",
+      "Ensuring the Q-network observes at least one transition per distinct reward magnitude before weight updates begin"
+    ],
+    "answer": 0,
+    "explanation": "Without replay, training on consecutive $(s,a,r,s')$ transitions is highly correlated, destabilizing learning. Random mini-batch sampling breaks correlations and reuses each transition many times. The target network (option C) is a separate mechanism addressing the 'moving target' problem, not the role of the replay buffer."
+  },
+  {
+    "q": "A robot arm with 7 joints must be controlled via continuous torque values. Which algorithm family is most suited?",
+    "options": [
+      "Tabular Q-learning with each joint torque discretized into 10 levels per dimension",
+      "Policy gradient methods such as PPO or SAC that directly parameterize continuous action distributions",
+      "Multi-armed bandit with UCB, treating each torque configuration as a separate arm to pull",
+      "Value iteration applied to a fine-grained discretized grid covering all possible joint angle and torque value combinations"
+    ],
+    "answer": 1,
+    "explanation": "Q-learning requires computing $\\arg\\max_a Q(s,a)$, which is intractable for continuous actions. PPO and SAC directly output Gaussian distributions over continuous action dimensions. Options A and D would require exponentially large discretizations (10 levels × 7 joints = 10 million table entries)."
+  },
+  {
+    "q": "In REINFORCE, the return $G_t$ used to update the policy at timestep $t$ is computed by:",
+    "options": [
+      "Bootstrapping from the critic: $G_t = r_t + \\gamma V(s_{t+1})$ estimated online each step",
+      "Averaging the episode rewards across all training episodes that visited state $s_t$",
+      "Accumulating discounted rewards backward from episode end: $G_t = \\sum_{k=0}^{T-t} \\gamma^k r_{t+k+1}$",
+      "Taking the immediate reward plus the maximum Q-value of the next state under the greedy policy"
+    ],
+    "answer": 2,
+    "explanation": "REINFORCE is a Monte Carlo method: it waits until the episode ends, then iterates backwards: $G \\leftarrow r + \\gamma G$. Option A describes the TD bootstrap used in actor-critic methods. Option D is the Q-learning update target. Both require only one step of look-ahead, unlike REINFORCE's full-episode return."
+  },
+  {
+    "q": "What distinguishes the optimal state-value function $V^*(s)$ from $V^\\pi(s)$?",
+    "options": [
+      "$V^\\pi(s)$ is computed via dynamic programming; $V^*(s)$ is estimated only from sampled transitions",
+      "$V^*(s)$ is defined only for terminal states; $V^\\pi(s)$ covers all non-terminal states in the MDP",
+      "$V^*(s)$ and $V^\\pi(s)$ are numerically identical for any well-specified policy in a properly defined MDP",
+      "$V^*(s) = \\max_\\pi V^\\pi(s)$ is the maximum over ALL policies; $V^\\pi(s)$ is the return under a fixed $\\pi$"
+    ],
+    "answer": 3,
+    "explanation": "$V^*(s)$ is the ceiling — no policy can achieve higher expected return from state $s$. $V^\\pi(s)$ equals $V^*(s)$ only when $\\pi = \\pi^*$. Options A and B describe false properties; option C is incorrect because $V^\\pi(s) < V^*(s)$ for any suboptimal policy $\\pi$."
+  },
+  {
+    "q": "In Q-learning, the expression $r + \\gamma \\max_{a'} Q(s', a') - Q(s, a)$ is called:",
+    "options": [
+      "The temporal difference (TD) error — the gap between the bootstrapped target and the current Q estimate",
+      "The policy gradient estimator used to update the parameterized policy $\\pi_\\theta$ in actor-critic methods",
+      "The advantage function measuring how much better action $a$ is relative to the average at state $s$",
+      "The Bellman residual error, applicable only in model-based planning with a learned dynamics model"
+    ],
+    "answer": 0,
+    "explanation": "The TD error $\\delta = r + \\gamma \\max_{a'} Q(s',a') - Q(s,a)$ drives the Q-value update: $Q(s,a) \\leftarrow Q(s,a) + \\alpha \\delta$. The advantage function (option C) is $Q(s,a) - V(s)$, which subtracts the state baseline. Options B and D describe unrelated quantities."
+  },
+  {
+    "q": "In Boltzmann (softmax) exploration with $P(a) \\propto e^{Q(a)/\\tau}$, what happens as temperature $\\tau \\to 0$?",
+    "options": [
+      "Action probabilities become exactly uniform, treating all actions as equally likely regardless of Q-values",
+      "The policy approaches deterministic greedy, concentrating all probability on the highest-Q action",
+      "The agent cycles through actions in a fixed round-robin order to ensure equal empirical coverage",
+      "The softmax distribution becomes biased toward recently sampled high-reward actions via recency weighting"
+    ],
+    "answer": 1,
+    "explanation": "As $\\tau \\to 0$, the highest Q-value gets exponentially amplified, making the softmax approach a one-hot on $\\arg\\max_a Q(a)$. High $\\tau$ (not low $\\tau$) produces uniform probabilities. The chapter states: 'high $\\tau$ is nearly uniform, low $\\tau$ approaches greedy.' Options C and D describe unrelated mechanisms."
+  },
+  {
+    "q": "An RL agent trains with discount factor $\\gamma = 0$. What is the effect on the agent's learned behavior?",
+    "options": [
+      "The agent maximises the total undiscounted sum of all future rewards over the full episode horizon",
+      "The value function collapses to zero everywhere, preventing any policy from being meaningfully learned",
+      "The agent becomes fully myopic, optimising only for the immediate one-step reward with no future planning",
+      "The agent treats all future rewards as equally important, which is equivalent to setting $\\gamma = 1$"
+    ],
+    "answer": 2,
+    "explanation": "With $\\gamma = 0$, $V(s) = \\mathbb{E}[r_1]$ — only the next reward counts. The agent cannot reason beyond one step. $\\gamma = 1$ and $\\gamma = 0$ are opposite extremes: option A describes $\\gamma = 1$ (undiscounted), and option D states they are equivalent which is false."
+  },
+  {
+    "q": "An agent sets $\\epsilon = 0$ (pure greedy) from the very first training episode. What is the most likely consequence?",
+    "options": [
+      "Faster convergence to the optimal policy, since no episodes are wasted on uninformative random exploration early in training",
+      "Q-values never update because without random actions the agent permanently follows the same initial greedy trajectory",
+      "The agent oscillates between suboptimal policies as each Q-value update shifts the greedy action and destabilizes convergence",
+      "The agent prematurely commits to the first decent strategy found, missing potentially superior alternatives"
+    ],
+    "answer": 3,
+    "explanation": "Without exploration, the agent exploits its poorly-initialized Q-values from the start, never discovering actions that require short-term sacrifice for long-term gain. Option A is the opposite of what actually happens. Option B is wrong because the greedy trajectory still generates TD updates and Q-values do change."
+  },
+  {
+    "q": "AlphaGo's 2016 victory over Lee Sedol integrated three components. Which option correctly identifies all three?",
+    "options": [
+      "Supervised learning on expert human games, self-play RL for policy improvement, and MCTS guided by policy and value networks",
+      "Unsupervised pre-training of board embeddings, value-based Q-learning on game states, and greedy alpha-beta game-tree search",
+      "Rule-based heuristic position evaluation, policy gradient fine-tuning on game outcomes, and DQN experience replay from game databases",
+      "REINFORCE gradients on complete game trajectories, value iteration on the Go position graph, and transformer-based board evaluation"
+    ],
+    "answer": 0,
+    "explanation": "AlphaGo's pipeline: (1) supervised learning from expert human moves to bootstrap a policy network, (2) self-play RL to improve beyond human level, (3) MCTS using both policy (to guide search) and value (to evaluate positions) networks. AlphaZero later removed step 1, using only self-play."
+  },
+  {
+    "q": "In DQN, the target network $\\theta^-$ is updated by:",
+    "options": [
+      "Applying gradient descent to $\\theta^-$ simultaneously with the online network on every training batch",
+      "Periodically copying the online network weights $\\theta$ to $\\theta^-$ every $N$ training steps",
+      "Resetting $\\theta^-$ to random initialization whenever the TD loss exceeds a predefined threshold value",
+      "Continuously blending online weights into the target using an exponential moving average every step"
+    ],
+    "answer": 1,
+    "explanation": "The original DQN paper freezes $\\theta^-$ for $N$ steps then hard-copies the online network. This keeps training targets stationary for a fixed interval, preventing the instability of chasing a constantly-moving target. Exponential moving averages (option D) are used in later methods like DDPG but not in the original DQN."
+  },
+  {
+    "q": "The multi-armed bandit problem is a special case of RL. What is the key simplification that sets it apart?",
+    "options": [
+      "The reward distributions of all arms are known in advance, eliminating the need for exploration entirely",
+      "Actions affect only the immediate reward and have zero influence on any subsequent future states",
+      "There is a single state with $k$ arms; selecting an arm yields a reward but causes no state transition",
+      "The agent is guaranteed polynomial-time convergence, unlike full RL which may require exponential steps"
+    ],
+    "answer": 2,
+    "explanation": "In a bandit problem there are no state transitions — the same $k$ arms are always available and each pull is independent. Full RL adds a dynamic state space where actions alter the state and constrain future possibilities. Option B is partially right but imprecise; the precise difference is the absence of state transitions."
+  },
+  {
+    "q": "According to the chapter, which RL algorithm is used in Stage 3 of the RLHF pipeline to fine-tune language models?",
+    "options": [
+      "REINFORCE, because it directly computes the policy gradient from full-episode returns without needing a critic",
+      "Deep Q-Network (DQN), treating each generated token as a discrete action with its own Q-value estimate",
+      "A3C, leveraging asynchronous parallel workers to generate diverse training prompts at massive scale",
+      "Proximal Policy Optimization (PPO), with a clipped surrogate objective to prevent destructive policy updates"
+    ],
+    "answer": 3,
+    "explanation": "PPO is explicitly named in the chapter as the algorithm behind RLHF in ChatGPT, Claude, and Gemini. DQN (option B) cannot handle the enormous token vocabulary as a Q-value lookup space, nor does it support stochastic sequence generation policies. PPO's stability and simplicity make it the practical workhorse for RLHF."
+  },
+  {
+    "q": "In an autonomous vehicle RL setup, which component IS the policy $\\pi$?",
+    "options": [
+      "The neural network mapping sensor readings (camera, LIDAR, GPS) to driving commands (steering, throttle, brake)",
+      "The full set of sensor readings at time $t$: camera images, LIDAR point clouds, speed, and GPS coordinates",
+      "The scalar feedback signal: $+1$ per safe second, $-1000$ for collision, $+50$ for reaching the destination",
+      "The transition function describing how the road environment evolves in response to each action taken"
+    ],
+    "answer": 0,
+    "explanation": "Policy $\\pi$: state $\\to$ action. The neural network maps sensor inputs (state) to driving commands (actions). Option B is the state, option C is the reward function, and option D is the environment's transition model."
+  },
+  {
+    "q": "The reward model in RLHF Stage 2 is trained on pairwise preference data using which type of objective?",
+    "options": [
+      "Mean squared error between the model's score and a human-assigned numeric quality rating for each response",
+      "A ranking loss $-\\mathbb{E}[\\log \\sigma(r_\\theta(x, y_w) - r_\\theta(x, y_l))]$ where $y_w$ is preferred over $y_l$",
+      "Binary cross-entropy treating each preference comparison as a two-class classification over response pairs",
+      "KL divergence between the reward model's score distribution and the SFT model's output token probabilities"
+    ],
+    "answer": 1,
+    "explanation": "The reward model is trained with a Bradley-Terry pairwise ranking loss that operates on score differences between preferred and rejected responses. This is different from binary cross-entropy (option C) — it models the score margin rather than a binary label. Humans cannot reliably assign absolute numeric scores (option A) but can rank pairs."
+  },
+  {
+    "q": "A team has 500,000 emails labelled as spam or ham and wants to train a filter. Which claim is correct?",
+    "options": [
+      "RL is appropriate here: the filter can treat each email as a state and spam-or-not as the sequential action",
+      "RLHF is ideal since a reward model trained on human labels can guide a PPO loop to improve the classifier",
+      "Supervised learning is more appropriate: this is a single-shot prediction task with abundant labelled data",
+      "Model-based RL is required to model the email distribution before any classifier can be reliably trained"
+    ],
+    "answer": 2,
+    "explanation": "The chapter explicitly lists 'single-shot prediction (use supervised learning)' and 'abundant labelled data' as reasons to avoid RL. Email spam filtering is a static pattern-recognition task with labels — exactly the scenario where supervised learning is faster, simpler, and more reliable."
+  },
+  {
+    "q": "The defining characteristic of a 'model-free' RL algorithm is that it:",
+    "options": [
+      "Does not use any neural network for function approximation — only lookup tables or linear feature vectors",
+      "Does not maintain a replay buffer and trains on each transition exactly once as it is collected online",
+      "Does not have an explicit parameterized policy — it derives actions implicitly from a value function or Q-table",
+      "Does not learn or use a model of the environment's transition dynamics $P(s'|s,a)$ or reward function"
+    ],
+    "answer": 3,
+    "explanation": "Model-free means the agent learns directly from sampled experience without building a predictive model of environment dynamics. DQN and PPO are both model-free despite using neural networks (option A is wrong) and replay buffers (option B is wrong). The policy/value split (option C) is a different axis of taxonomy."
+  },
+  {
+    "q": "In the grid-world reward design, assigning $-0.04$ per timestep in addition to goal and pit rewards serves what purpose?",
+    "options": [
+      "Encouraging the agent to find the shortest path by making every unnecessary step costly",
+      "Penalizing the agent for revisiting already-visited states to promote thorough exploration",
+      "Preventing early convergence by introducing noise into the per-step reward signal each episode",
+      "Offsetting the goal reward so that reaching the goal produces a near-zero net discounted return"
+    ],
+    "answer": 0,
+    "explanation": "A per-step 'living penalty' makes the agent prefer shorter paths to the goal. Without it, a 10-step path and a 100-step path yield equal total discounted reward. Option B is wrong — state-revisit penalties are handled by the value function, not the step cost."
+  },
+  {
+    "q": "In the chapter's grid-world example, $V^*(B) = 9$ and state $A$ is one step left of $B$. With step cost $-1$ and $\\gamma = 0.9$, what is $V^*(A)$?",
+    "options": [
+      "9.0 — because $A$ is adjacent to $B$ and the one-step difference is offset by the discount factor",
+      "7.1 — because $V^*(A) = -1 + 0.9 \\times V^*(B) = -1 + 0.9 \\times 9 = 7.1$",
+      "8.1 — because $V^*(A) = \\gamma^2 \\times 10 = 0.81 \\times 10 = 8.1$, discounting the goal reward twice",
+      "6.39 — because $V^*(A) = 0.9 \\times V^*(B) - 1 = 8.1 - 1.71$ after compounding step costs"
+    ],
+    "answer": 1,
+    "explanation": "By the Bellman equation: $V^*(A) = \\max_a[R + \\gamma V^*(\\text{next})] = -1 + 0.9 \\times 9 = -1 + 8.1 = 7.1$. Option C forgets the step cost and incorrectly applies double discounting. Option D subtracts an incorrect compounded penalty term."
+  },
+  {
+    "q": "In the DQN loss $L(\\theta) = \\mathbb{E}[(r + \\gamma \\max_{a'} Q(s', a'; \\theta^-) - Q(s, a; \\theta))^2]$, what does $\\theta^-$ denote?",
+    "options": [
+      "The negative gradient of the Q-network, computed during backpropagation for the current mini-batch",
+      "An L2 weight-decay regularization term applied to prevent the Q-network from overfitting the buffer",
+      "The frozen target network weights, updated only periodically to provide stable training targets",
+      "The behavior policy parameters, held fixed while the target policy parameters $\\theta$ are updated"
+    ],
+    "answer": 2,
+    "explanation": "$\\theta^-$ is the target network — a periodically-updated frozen copy of the online Q-network $\\theta$. It prevents the 'moving target' problem where both prediction and target shift simultaneously. It is not a gradient (option A), regularization term (option B), or behavior policy (option D)."
+  },
+  {
+    "q": "DQN achieved superhuman Atari performance by feeding which type of raw input to the network?",
+    "options": [
+      "Structured RAM state vectors extracted from the Atari emulator's internal memory addresses",
+      "Pre-extracted feature vectors from a convolutional encoder trained separately via supervised learning",
+      "Game state descriptions serialized as token sequences and encoded by a pre-trained language model",
+      "Raw 210×160 RGB pixel frames from the game screen processed directly by a convolutional neural network"
+    ],
+    "answer": 3,
+    "explanation": "DQN's key contribution was learning to play directly from raw pixel input using a CNN — no hand-crafted features required. This generality across 49 Atari games was the breakthrough. RAM-based input (option A) would have been a much simpler, game-specific approach that does not generalize."
+  },
+  {
+    "q": "REINFORCE's training instability primarily arises from which property of its gradient estimator?",
+    "options": [
+      "The return $G_t$ fluctuates widely between episodes for the same state-action pair, producing high-variance gradients",
+      "The policy is updated after every single step rather than every episode, creating conflicting gradient signals",
+      "REINFORCE applies off-policy importance sampling ratios that grow unboundedly during long training runs",
+      "The algorithm cannot represent stochastic policies and forces deterministic approximations that miss optima"
+    ],
+    "answer": 0,
+    "explanation": "REINFORCE's gradient is $\\nabla \\log \\pi(a|s) \\cdot G_t$. The same action in the same state can yield wildly different $G_t$ values across episodes due to environment stochasticity and different future trajectories. This high variance makes gradients noisy and convergence slow. Actor-critic methods address this by replacing $G_t$ with an advantage estimate."
+  },
+  {
+    "q": "Which equation correctly expresses $V^\\pi(s)$ in terms of $Q^\\pi(s,a)$?",
+    "options": [
+      "$V^\\pi(s) = \\max_a Q^\\pi(s,a)$ — the state value equals the Q-value of the best available action",
+      "$V^\\pi(s) = \\sum_a \\pi(a|s) \\cdot Q^\\pi(s,a)$ — the policy-weighted average of Q-values over actions",
+      "$V^\\pi(s) = Q^\\pi(s,\\pi(s)) + \\mathcal{H}(\\pi(\\cdot|s))$ — greedy Q-value plus policy entropy at $s$",
+      "$V^\\pi(s) = \\frac{1}{|A|} \\sum_a Q^\\pi(s,a)$ — the uniform average Q-value across all actions"
+    ],
+    "answer": 1,
+    "explanation": "$V^\\pi(s)$ is the expected return following $\\pi$, which equals Q-values averaged with the policy's own action probabilities. Option A gives $V^*(s)$ (the optimal case), not $V^\\pi(s)$ under an arbitrary policy. Option D uses uniform weights instead of policy weights."
+  },
+  {
+    "q": "A3C (Asynchronous Advantage Actor-Critic) improves training speed over synchronous A2C primarily by:",
+    "options": [
+      "Adding a replay buffer for off-policy corrections that reduce gradient variance between update cycles",
+      "Using PPO-style clipped objectives to prevent destabilizing policy updates between worker threads",
+      "Running multiple independent agent instances in parallel, asynchronously updating shared network parameters",
+      "Replacing the advantage function with raw episode returns to simplify per-worker gradient computation"
+    ],
+    "answer": 2,
+    "explanation": "A3C launches multiple workers each interacting with a separate environment copy and asynchronously sending gradients to a shared network. This produces decorrelated updates without needing a replay buffer, and reduces wall-clock training time. A2C is the synchronous variant that waits for all workers before each update."
+  },
+  {
+    "q": "In actor-critic methods, what does the 'critic' network produce and how does it help?",
+    "options": [
+      "It outputs $\\pi(a|s)$: the action probability distribution that the agent uses to select its next move",
+      "It computes the TD error $r + \\gamma \\max_{a'} Q(s',a') - Q(s,a)$ and writes transitions to the replay buffer",
+      "It produces the clipped probability ratio $r_t(\\theta)$ needed for the PPO surrogate objective each step",
+      "It estimates $V(s)$, enabling an advantage signal $A = r + \\gamma V(s') - V(s)$ that reduces gradient variance"
+    ],
+    "answer": 3,
+    "explanation": "The critic learns a value function $V(s)$, and its estimate forms the advantage $A = r + \\gamma V(s') - V(s)$. Using this centered signal instead of raw episode returns $G_t$ dramatically reduces gradient variance, enabling faster and more stable training. The actor (not the critic) outputs the policy distribution (option A)."
+  },
+  {
+    "q": "Once $Q^*(s,a)$ has been fully learned, what is the optimal policy $\\pi^*$?",
+    "options": [
+      "$\\pi^*(s) = \\arg\\max_a Q^*(s,a)$ — always select the action with the highest Q-value in each state",
+      "$\\pi^*(s) \\propto e^{Q^*(s,a)/\\tau}$ — sample actions proportionally to exponentiated Q-values",
+      "$\\pi^*(s) = Q^*(s, a) / V^*(s)$ — normalize Q-values by the state value to get action probabilities",
+      "$\\pi^*$ still requires further value iteration on the learned Q-table until Bellman residuals converge"
+    ],
+    "answer": 0,
+    "explanation": "The chapter states explicitly: 'If you know $Q^*$, the optimal policy is trivial: always pick $\\arg\\max_a Q^*(s,a)$.' Options B and C describe softer or incorrect normalizations. Option D would only be needed if $Q^*$ had not yet been learned."
+  },
+  {
+    "q": "In RLHF's PPO stage, the KL penalty $-\\beta \\cdot D_{KL}[\\pi_\\phi \\| \\pi_{SFT}]$ is added to the reward. What does this prevent?",
+    "options": [
+      "The reward model from assigning negative scores to responses that differ from the SFT distribution",
+      "The fine-tuned LLM from drifting too far from the SFT baseline by exploiting reward model weaknesses",
+      "The KL divergence between reward model outputs and human preference rankings from growing too large",
+      "The policy gradient from exploding when advantage estimates are large relative to the clipping threshold"
+    ],
+    "answer": 1,
+    "explanation": "Without the KL penalty, the LLM generates degenerate outputs that score highly on the reward model but are incoherent — known as reward hacking. The KL term keeps the PPO-trained policy close to the SFT model. The chapter states: 'without it, the LLM will find degenerate outputs that hack the reward model.'"
+  },
+  {
+    "q": "In the Q-learning update rule, increasing learning rate $\\alpha$ from $0.1$ to $0.9$ will most likely:",
+    "options": [
+      "Smooth out convergence by reducing the influence of individual noisy transitions on the Q-value direction",
+      "Cause the agent to explore more aggressively because larger Q-value updates shift the greedy action more often",
+      "Make Q-values update more aggressively toward each new target, potentially accelerating convergence but risking oscillation",
+      "Have no measurable effect on convergence since the temporal difference error naturally self-corrects for any $\\alpha$ value"
+    ],
+    "answer": 2,
+    "explanation": "A larger $\\alpha$ means each transition has a bigger influence on the Q-value. This can speed convergence when transitions are consistent but risks oscillation or divergence in noisy environments. Small $\\alpha$ gives slow, stable updates (option A states the opposite). Learning rate has no effect on the $\\epsilon$-greedy exploration rate (option B is wrong)."
+  },
+  {
+    "q": "In naive deep Q-learning without a target network, the 'moving target' problem occurs because:",
+    "options": [
+      "Stale early-training transitions in the buffer shift the effective target distribution away from current behavior",
+      "Epsilon decay changes the data distribution faster than the Q-network weights can follow and adapt",
+      "Convolutional layers inadvertently share weights between the online Q-network and the behavior action decoder",
+      "Both Q-prediction and Bellman target use the same live weights $\\theta$, so improving one immediately shifts the other"
+    ],
+    "answer": 3,
+    "explanation": "When prediction and target both use the same live network $\\theta$, every weight update that improves $Q(s,a;\\theta)$ simultaneously shifts the training target. It is like chasing a moving goalpost. The frozen target network $\\theta^-$ makes the target stationary for $N$ steps, stabilizing learning."
+  },
+  {
+    "q": "The advantage function $A(s,a)$ in actor-critic methods is defined as:",
+    "options": [
+      "$A(s,a) = Q(s,a) - V(s)$: how much better action $a$ is compared to the average return from state $s$",
+      "$A(s,a) = V(s) - Q(s,a)$: the regret of choosing action $a$ relative to acting optimally in state $s$",
+      "$A(s,a) = r + \\gamma V(s') - Q(s,a)$: the TD error of the Q-function at the current transition",
+      "$A(s,a) = \\log \\pi(a|s) + \\gamma V(s') - V(s)$: log-probability adjusted by the critic's value difference"
+    ],
+    "answer": 0,
+    "explanation": "$A(s,a) = Q(s,a) - V(s)$ measures how much better than average action $a$ is in state $s$. Positive advantage: action beats the baseline. Negative: it underperforms. The chapter gives this formula explicitly. Option B reverses the sign (that would be regret/negative advantage)."
+  },
+  {
+    "q": "Model-based RL achieves higher sample efficiency than model-free RL primarily because:",
+    "options": [
+      "It avoids neural network approximation, requiring fewer data points than lookup tables to fit accurately",
+      "It uses the learned transition model to generate synthetic experience, supplementing real environment steps",
+      "It restricts training to deterministic environments where fewer samples are sufficient for convergence",
+      "It eliminates exploration entirely by planning optimal paths forward through the learned world model"
+    ],
+    "answer": 1,
+    "explanation": "A learned model $P(s'|s,a)$ lets the agent simulate rollouts without real environment interactions, drastically cutting real-data requirements. However, the chapter warns: 'when model is wrong — catastrophic — plans based on wrong dynamics.' Options C and D describe impossible or incorrect properties of model-based RL."
+  },
+  {
+    "q": "TD-Gammon (1992) is historically significant in RL because it:",
+    "options": [
+      "Was the first program combining an experience replay buffer with convolutional networks on raw game pixels",
+      "Demonstrated that purely self-play RL with zero human game data can surpass expert human performance",
+      "Showed that temporal difference learning combined with a neural network could achieve near-expert backgammon play",
+      "Introduced Monte Carlo Tree Search as the primary algorithm for look-ahead in large combinatorial game trees"
+    ],
+    "answer": 2,
+    "explanation": "TD-Gammon (Gerald Tesauro, 1992) used TD learning with a neural network to reach near-expert backgammon strength before deep learning was mainstream. Pure self-play mastery (option B) came with AlphaZero in 2017. MCTS (option D) was central to AlphaGo in 2016. Experience replay CNNs (option A) were DQN in 2013."
+  },
+  {
+    "q": "Which statement precisely defines $Q^\\pi(s,a)$?",
+    "options": [
+      "The conditional probability $\\pi(a|s)$ with which policy $\\pi$ selects action $a$ when the current state is $s$",
+      "The expected immediate one-step reward for taking action $a$ in state $s$, averaged over stochastic next-state transitions",
+      "The advantage of action $a$ over the state average under $\\pi$: how much better $a$ performs than the baseline",
+      "The expected total discounted return when taking action $a$ in state $s$ and following policy $\\pi$ for all future steps"
+    ],
+    "answer": 3,
+    "explanation": "$Q^\\pi(s,a) = \\mathbb{E}_\\pi[\\sum_{t=0}^\\infty \\gamma^t r_{t+1} \\mid s_0=s, a_0=a]$. It accounts for all future rewards under $\\pi$, not just the immediate reward (option B). The policy probability $\\pi(a|s)$ (option A) is the policy itself. Option C is the advantage function $Q^\\pi(s,a) - V^\\pi(s)$."
+  },
+  {
+    "q": "The exploration bonus $c\\sqrt{\\ln t / N(a)}$ in UCB action selection has which defining property?",
+    "options": [
+      "It is larger for actions tried fewer times — small $N(a)$ grows the bonus, incentivizing uncertain action exploration",
+      "It decreases uniformly as total timestep $t$ grows, gradually eliminating exploration in favor of exploitation",
+      "It is proportional to the estimated $Q(a)$ value and amplifies selection signal for the most promising known actions",
+      "It equals zero for the highest-Q arm, ensuring the greedy arm always wins all tie-breaking selection decisions"
+    ],
+    "answer": 0,
+    "explanation": "The denominator $N(a)$ shrinks the bonus as action $a$ is tried more. Actions tried rarely have large bonuses; well-explored actions have small bonuses. The chapter: 'Actions tried rarely get a large bonus, driving the agent to explore them.' Option B is wrong — $\\ln t$ in the numerator actually grows slowly with time."
+  },
+  {
+    "q": "MuZero's key innovation over AlphaZero is that MuZero:",
+    "options": [
+      "Replaced self-play training with supervised learning on large human game databases to bootstrap the policy",
+      "Learns the game rules and environment dynamics from experience, planning without being given the rules",
+      "Used a multi-agent league of diverse opponents rather than a single self-play opponent for training",
+      "Applied DQN-style pixel inputs with convolutional feature extraction instead of structured game state representations"
+    ],
+    "answer": 1,
+    "explanation": "AlphaZero was given the game rules so MCTS could simulate exact moves. MuZero learns a latent world model from raw experience, enabling planning in domains where transition dynamics are unknown. AlphaStar (not MuZero) used the multi-agent league approach (option C)."
+  },
+  {
+    "q": "OpenAI Five defeated professional Dota 2 players in 2019 using which RL algorithm at its core?",
+    "options": [
+      "REINFORCE with entropy regularization and distributed advantage normalization across parallel workers",
+      "DQN with prioritized experience replay adapted to Dota 2's large discrete action space and reward shaping",
+      "PPO trained at massive computational scale across thousands of parallel game environments",
+      "AlphaZero-style MCTS guided by a value network for position evaluation in real-time strategy gameplay"
+    ],
+    "answer": 2,
+    "explanation": "OpenAI Five used PPO at massive scale — thousands of game instances running in parallel. Dota 2's hybrid continuous-discrete action space is unsuitable for standard DQN (option B). MCTS (option D) is impractical for real-time strategy games with large branching factors and imperfect information."
+  },
+  {
+    "q": "In Boltzmann (softmax) exploration, as temperature $\\tau \\to \\infty$, the agent's action selection approaches:",
+    "options": [
+      "Deterministic greedy selection: all probability concentrates on the highest Q-value action in the state",
+      "A distribution concentrated on the least-visited actions, mimicking UCB behavior with a softer boundary",
+      "A policy biased toward recently sampled high-reward actions through implicit recency weighting",
+      "Uniform random selection: all actions become equally probable regardless of their Q-value estimates"
+    ],
+    "answer": 3,
+    "explanation": "As $\\tau \\to \\infty$, $Q(a)/\\tau \\to 0$ for all $a$, so all $e^{Q(a)/\\tau} \\approx 1$, and the softmax becomes uniform. The chapter states: 'high $\\tau$ is nearly uniform, low $\\tau$ approaches greedy.' Option A describes $\\tau \\to 0$. Options B and C describe UCB and recency-weighting, neither of which is Boltzmann exploration."
+  },
+  {
+    "q": "Direct Preference Optimization (DPO) simplifies the RLHF pipeline by:",
+    "options": [
+      "Eliminating the explicit reward model stage and optimizing the LLM directly on pairwise preference data",
+      "Replacing the supervised fine-tuning stage with unsupervised pre-training on unlabeled preference pairs",
+      "Substituting PPO with a simpler gradient ascent applied directly to the reward model's raw scalar scores",
+      "Merging the reward model and LLM into a single unified network trained end-to-end on preference labels"
+    ],
+    "answer": 0,
+    "explanation": "DPO reparameterizes the RLHF objective so the LLM optimizes directly on $(y_w, y_l)$ preference pairs, bypassing explicit reward model training and the PPO loop. The chapter describes it as 'simpler to implement (no reward model, no PPO loop)' while noting the ongoing debate about whether well-tuned PPO remains more powerful."
+  },
+  {
+    "q": "TRPO (Trust Region Policy Optimization) achieves stable policy updates by:",
+    "options": [
+      "Clipping the probability ratio $r_t(\\theta)$ to the range $[1-\\epsilon, 1+\\epsilon]$ per training step",
+      "Imposing a hard constraint requiring KL divergence between consecutive policies to stay below threshold $\\delta$",
+      "Requiring each policy update to strictly increase expected return on a held-out validation rollout set",
+      "Using a trust region line search that reduces step size whenever the training loss fails to decrease by 1%"
+    ],
+    "answer": 1,
+    "explanation": "TRPO enforces a strict KL constraint: $D_{KL}(\\pi_{\\text{old}} \\| \\pi_\\theta) \\leq \\delta$. This requires computationally expensive constrained optimization but guarantees monotonic improvement. PPO approximates TRPO's stability with the simpler clipping mechanism described in option A — the key practical difference between the two algorithms."
+  },
+  {
+    "q": "In the RLHF pipeline, Supervised Fine-Tuning (SFT) serves what purpose?",
+    "options": [
+      "It trains the separate reward model to predict which responses human annotators will rank as preferred",
+      "It runs the PPO optimization loop, using the reward model's scores as training signal for the LLM",
+      "It fine-tunes the base pre-trained LLM on expert-written prompt-response pairs as a starting foundation",
+      "It generates multiple candidate responses per prompt so human annotators can rank them by quality"
+    ],
+    "answer": 2,
+    "explanation": "SFT establishes a strong behavioral foundation: the model learns the format and style of helpful responses from high-quality human demonstrations. Without SFT, the base LLM's outputs would be too poor for the reward model to provide meaningful signal. Option D describes data collection for Stage 2, not SFT training."
+  },
+  {
+    "q": "In the policy gradient theorem $\\nabla_\\theta J(\\theta) = \\mathbb{E}[\\nabla_\\theta \\log \\pi_\\theta(a|s) \\cdot G_t]$, multiplying by $G_t$ achieves:",
+    "options": [
+      "Normalizing the gradient to unit variance to stabilize update step sizes across different environments",
+      "Converting the on-policy Monte Carlo return into a lower-variance TD bootstrap estimate for the update",
+      "Applying importance sampling correction for off-policy trajectory data collected in the experience buffer",
+      "Scaling up gradients for actions that produced high returns and scaling down those that produced low returns"
+    ],
+    "answer": 3,
+    "explanation": "When $G_t > 0$ (good trajectory), the update increases $\\log \\pi(a|s)$, making the action more probable. When $G_t < 0$, it decreases it. This implements 'do more of what worked, less of what didn't.' It is not importance sampling (option C), which requires a ratio of old and new policy probabilities."
+  },
+  {
+    "q": "In Q-learning, starting $\\epsilon$ at $1.0$ and decaying it toward $0.05$ over training reflects which design principle?",
+    "options": [
+      "Early training requires broad exploration to discover promising states; later training should exploit learned Q-values",
+      "The learning rate $\\alpha$ and exploration rate $\\epsilon$ must decay together to satisfy convergence guarantees",
+      "Epsilon decay prevents random-action updates from overwriting already-converged high Q-value entries in the table",
+      "A fixed $\\epsilon = 0.05$ from the very start would prevent the agent from ever discovering the goal state"
+    ],
+    "answer": 0,
+    "explanation": "Early on, Q-values are uninformative, so random actions help discover the state space. As Q-values improve, the agent should increasingly exploit them. The chapter explicitly states: '$\\epsilon$ starts high (e.g., 1.0) and decays toward a small value (e.g., 0.05).' Option B incorrectly conflates the learning rate and epsilon schedules."
+  },
+  {
+    "q": "Soft Actor-Critic (SAC) extends standard actor-critic by adding an entropy bonus $\\alpha \\mathcal{H}(\\pi)$. What is the practical effect?",
+    "options": [
+      "Penalizing the agent for revisiting high-value states, encouraging broader state-space coverage over time",
+      "Keeping the policy stochastic and exploratory, preventing premature convergence to a single deterministic strategy",
+      "Replacing the need for a separate critic network by folding value estimation into the entropy objective directly",
+      "Enforcing a minimum policy update magnitude each step, preventing the actor from converging too slowly"
+    ],
+    "answer": 1,
+    "explanation": "Maximising entropy keeps the policy spread across multiple good actions rather than collapsing to one deterministic choice. This automatic exploration makes SAC effective for continuous control in robotics. SAC still requires a separate critic for value estimation (option C is wrong)."
+  },
+  {
+    "q": "DQN stacks 4 consecutive game frames as a single input. What problem does this address?",
+    "options": [
+      "It reduces GPU memory requirements by compressing temporal redundancy across consecutive pixel frames",
+      "It provides explicit temporal position encodings so that convolutional layers can extract and process sequential motion patterns",
+      "A single frame violates the Markov property because velocity and motion direction cannot be inferred from one image",
+      "It resolves the sparse reward problem by encoding more context to help the agent locate the goal faster"
+    ],
+    "answer": 2,
+    "explanation": "Seeing only one frame of a ball game, you cannot tell which direction the ball is moving. With 4 stacked frames, the CNN infers velocity from pixel differences, making the state Markovian. Without stacking, a recurrent network would be needed. Option A is wrong — stacking 4 frames quadruples input size, increasing (not decreasing) memory use."
+  },
+  {
+    "q": "AlphaStar achieved StarCraft II Grandmaster level in 2019 using which distinctive training technique?",
+    "options": [
+      "Supervised pre-training on professional replay data, followed by model-based rollout planning",
+      "DQN with a large action-embedding layer to handle StarCraft II's complex discrete action space",
+      "PPO with intrinsic curiosity rewards to encourage exploration of the partially-observed game map",
+      "A multi-agent league of diverse opponent types to prevent over-specialisation to any single strategy"
+    ],
+    "answer": 3,
+    "explanation": "AlphaStar's league comprised main agents, main exploiters, and league exploiters — a diverse population that forced the agent to build robust strategies against many play styles. This prevented it from finding and exploiting a single fixed opponent, which would have led to brittle, narrow strategies."
+  },
+  {
+    "q": "The PPO clipped objective limits ratio $r_t(\\theta) = \\pi_\\theta(a|s) / \\pi_{\\theta_{\\text{old}}}(a|s)$ to $[1-\\epsilon, 1+\\epsilon]$. What does clipping prevent?",
+    "options": [
+      "Excessively large policy updates that destabilize training by moving the policy too far from the previous version",
+      "Gradient values below $1-\\epsilon$ from contributing to the policy update during backpropagation steps",
+      "The entropy of the policy from collapsing toward zero and eliminating exploration during fine-tuning",
+      "The probability ratio from growing when the advantage is negative, blocking reinforcement of bad actions"
+    ],
+    "answer": 0,
+    "explanation": "When $r_t(\\theta)$ exceeds $1+\\epsilon$ (policy strongly increasing the action probability), clipping removes the gradient signal, preventing destabilizing updates. This gives PPO TRPO-level stability without expensive constrained optimization. Clipping is not an entropy regularizer (option C — that is SAC's mechanism)."
+  },
+  {
+    "q": "DeepMind's RL application to Google's data centre cooling achieved which specific outcome?",
+    "options": [
+      "A 15% increase in server uptime by predicting hardware failures before they caused downtime events",
+      "A 40% reduction in cooling energy usage compared to the human-engineered control baseline",
+      "A 25% decrease in maintenance costs through RL-guided predictive scheduling of cooling equipment",
+      "A 60% improvement in temperature regulation accuracy by replacing PID controllers entirely"
+    ],
+    "answer": 1,
+    "explanation": "The chapter explicitly states: 'DeepMind reduced Google's cooling energy by 40%.' This is one of the most cited real-world RL success stories. The RL agent found non-intuitive cooling configurations that human engineers had not considered, demonstrating RL's ability to discover efficient policies in complex physical systems."
+  },
+  {
+    "q": "What is the fundamental difference between how RL and supervised learning obtain their training data?",
+    "options": [
+      "RL must use only pre-collected offline datasets; supervised learning requires continuous live environment interaction",
+      "RL infers labels automatically from reward functions; supervised learning needs explicit human annotation for every example",
+      "RL agents generate their own training data through environment interaction; supervised learning trains on a fixed pre-collected dataset",
+      "RL strictly requires continuous real-valued observations; supervised learning handles only discrete categorical input features"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's comparison table makes this explicit: supervised learning uses a 'Fixed dataset'; RL agents 'generate their own' data. This is fundamental — in RL the data distribution shifts as the policy improves, creating a non-stationary training problem. In supervised learning the dataset is fixed and independent of model parameters."
+  },
+  {
+    "q": "In a Q-learning update with $Q_{\\text{old}}(s,a) = 0.5$, $r = 0$, $\\gamma = 0.9$, $\\max_{a'} Q(s',a') = 1.5$, $\\alpha = 0.1$, what is $Q_{\\text{new}}(s,a)$?",
+    "options": [
+      "1.35 — because $Q_{\\text{new}}$ is set directly equal to the TD target $r + \\gamma \\max Q(s',a')$",
+      "0.635 — because the TD target is $Q_{\\text{old}} \\times \\gamma = 0.5 \\times 0.9 = 0.45$ giving $0.5 + 0.1 \\times 0.135$",
+      "0.500 — because with $\\alpha = 0.1$ and $r = 0$, the update rounds to the original value exactly",
+      "0.585 — because TD error $= 1.35 - 0.5 = 0.85$, so $Q_{\\text{new}} = 0.5 + 0.1 \\times 0.85 = 0.585$"
+    ],
+    "answer": 3,
+    "explanation": "TD target $= 0 + 0.9 \\times 1.5 = 1.35$; TD error $= 1.35 - 0.5 = 0.85$; $Q_{\\text{new}} = 0.5 + 0.1 \\times 0.85 = 0.585$. This is the exact numerical example in the chapter. Option A requires $\\alpha = 1$ (full replacement). Option B incorrectly applies $\\gamma$ to $Q_{\\text{old}}$ instead of $\\max Q(s')$."
+  },
+  {
+    "q": "Which scenario from the chapter's guidelines MOST strongly argues against using RL?",
+    "options": [
+      "You have 10 million labelled examples and need to predict house prices from structured tabular features",
+      "A robot must learn to grasp novel objects not encountered during any pre-training phase",
+      "An ad recommendation system must balance immediate click-through rate with long-term user engagement",
+      "An autonomous vehicle must navigate complex urban intersections using only onboard sensor readings"
+    ],
+    "answer": 0,
+    "explanation": "The chapter lists 'single-shot prediction (use supervised learning)' and 'abundant labelled data' as reasons to avoid RL. House price prediction is a static regression task with abundant labels. Options B, C, and D describe sequential decision-making or long-term planning scenarios — hallmarks of appropriate RL applications."
+  },
+  {
+    "q": "Q-learning is called 'off-policy' because:",
+    "options": [
+      "It draws random mini-batches of stored transitions from a replay buffer rather than training on freshly collected on-policy episode data",
+      "The behavior policy used during data collection (e.g., $\\epsilon$-greedy) differs from the target (greedy) policy being optimized",
+      "The frozen target network $\\theta^-$ acts as a secondary policy distinct from the online network, creating two policies",
+      "It optimizes target-policy Q-values without ever directly executing that greedy policy in environment interactions"
+    ],
+    "answer": 1,
+    "explanation": "Off-policy means the data generation policy (behavior) differs from the policy being evaluated or improved (target). Q-learning collects data with $\\epsilon$-greedy but uses $\\max_{a'} Q(s',a')$ — the greedy target — in its update. Having a replay buffer (option A) enables off-policy learning but is not the definition of it."
+  },
+  {
+    "q": "In the PPO objective, the probability ratio $r_t(\\theta)$ is defined as:",
+    "options": [
+      "The current learning rate multiplied by the TD error, determining how much the policy shifts per update",
+      "The ratio of new policy entropy to old policy entropy, quantifying how much exploration has changed per step",
+      "$\\pi_\\theta(a_t|s_t) / \\pi_{\\theta_{\\text{old}}}(a_t|s_t)$: probability of the sampled action under new versus old policy",
+      "The KL divergence between the current and reference policies, approximated by clipping as a magnitude constraint"
+    ],
+    "answer": 2,
+    "explanation": "$r_t(\\theta)$ measures how much the new policy has changed from the old one for the specific action $a_t$ taken. If $r_t > 1$, the action is now more probable; if $r_t < 1$, less probable. Clipping prevents $r_t$ from straying beyond $[1-\\epsilon, 1+\\epsilon]$. Option D describes KL divergence, which is what TRPO uses — not PPO."
+  },
+  {
+    "q": "In RLHF's PPO reward $R(x,y) = r_\\theta(x,y) - \\beta \\cdot D_{KL}[\\pi_\\phi \\| \\pi_{SFT}]$, the hyperparameter $\\beta$ controls:",
+    "options": [
+      "The reward model's learning rate, controlling how aggressively its parameters adapt alongside the fine-tuned LLM",
+      "The clipping hyperparameter $\\epsilon$ in the PPO ratio bounds $[1-\\epsilon, 1+\\epsilon]$ per policy update step",
+      "The entropy regularization weight encouraging the LLM to maintain diverse output token distributions",
+      "The KL penalty strength: high $\\beta$ keeps the LLM close to SFT; low $\\beta$ allows larger policy drift"
+    ],
+    "answer": 3,
+    "explanation": "High $\\beta$: the KL penalty dominates, keeping the LLM close to the SFT model (safe but conservative). Low $\\beta$: the reward model score dominates, enabling more aggressive optimization but risking reward hacking. Tuning $\\beta$ is a primary practical challenge in RLHF pipelines."
+  },
+  {
+    "q": "An agent trains for many episodes with $\\epsilon$ fixed at $1.0$ throughout, then is deployed with $\\epsilon = 0$. What performance is expected?",
+    "options": [
+      "Near-random or arbitrary, because Q-values were never shaped by the agent exploiting learned knowledge",
+      "Near-optimal, because exhaustive random exploration guarantees sufficient coverage of all state-action pairs",
+      "Slightly suboptimal, because some Q-values converge in aggregate even with purely random data collection",
+      "Undefined, because Q-learning requires at least some greedy steps during training to produce valid updates"
+    ],
+    "answer": 0,
+    "explanation": "With $\\epsilon = 1.0$ throughout, every action is random. Q-values receive updates from random transitions, but the updates are unguided and noisy. The resulting Q-values rarely identify the best action reliably, so a greedy policy at test time produces poor, near-random behavior. The chapter notes that exploration and exploitation must be balanced."
+  },
+  {
+    "q": "An MDP is defined by the tuple $(S, A, P, R, \\gamma)$. Which component specifically captures the stochasticity of the environment's dynamics?",
+    "options": [
+      "The reward function $R(s,a,s')$, which can include noise to model uncertain feedback from the environment",
+      "The transition probability $P(s'|s,a)$: the probability of reaching state $s'$ after taking action $a$ in state $s$",
+      "The discount factor $\\gamma$, which adjusts expected returns to account for uncertain long-horizon outcomes",
+      "The action set $A$, which may include mixed randomized strategies in multi-agent adversarial game settings"
+    ],
+    "answer": 1,
+    "explanation": "$P(s'|s,a)$ encodes the dynamics: for deterministic environments it is 1 for one $s'$ and 0 for others; for stochastic environments it distributes probability across multiple next states. This is the Markov property: 'given state $s$ and action $a$, what is the probability of landing in $s'$?' That is precisely $P$."
+  },
+  {
+    "q": "In the actor-critic architecture, what does the 'actor' network output?",
+    "options": [
+      "The estimated state value $V(s)$ used to compute advantage signals for policy gradient variance reduction",
+      "The clipped probability ratio $r_t(\\theta)$ required by the PPO surrogate loss function each gradient step",
+      "The policy $\\pi(a|s)$: a probability distribution over available actions for the current state of the environment",
+      "The TD target $r + \\gamma V(s')$ used to supervise the critic's value function estimates each training step"
+    ],
+    "answer": 2,
+    "explanation": "The actor IS the policy — it decides what action to take in each state. In discrete settings it outputs a softmax distribution; in continuous settings, Gaussian parameters. The critic (not the actor) estimates $V(s)$ and provides evaluative feedback. Option D describes the critic's target computation, not the actor's output."
+  },
+  {
+    "q": "Google used RL for TPU chip floorplanning. Why is this a better fit for RL than supervised learning?",
+    "options": [
+      "Chip layouts have continuous reward functions that are inherently easier to model with policy gradients than regression",
+      "Supervised learning cannot process spatial image inputs, precluding its use on pixel-based layout diagrams",
+      "The chip layout problem is stationary and well-understood, allowing offline RL to converge in few iterations",
+      "Floorplanning requires sequential placement decisions, and no pre-labeled optimal layout dataset exists to train on"
+    ],
+    "answer": 3,
+    "explanation": "Chip floorplanning is sequential: each placement decision interacts with all others, and final quality (wire length, timing, power) is only evaluable at the end. There is no pre-existing labeled dataset mapping chip specs to optimal layouts. The chapter lists 'sequential decisions' and 'too complex for hand-coded rules' as RL indicators — both apply here."
+  }
+]

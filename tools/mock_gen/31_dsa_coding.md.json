@@ -1,0 +1,662 @@
+[
+  {
+    "q": "What is the time complexity of inserting an element into a max-heap of size n?",
+    "options": [
+      "$O(\\log n)$",
+      "$O(n)$",
+      "$O(1)$",
+      "$O(n \\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "Heap insertion uses sift-up, traversing at most O(log n) levels. O(1) describes peek (find-min/max), not insert."
+  },
+  {
+    "q": "Which sorting algorithm is BOTH stable and guarantees worst-case $O(n \\log n)$ time?",
+    "options": [
+      "Merge sort -- O(n log n) worst-case and stable",
+      "Quicksort -- O(n log n) average but O(n^2) worst-case",
+      "Heapsort -- O(n log n) worst-case but not stable",
+      "Introsort -- hybrid of quicksort and heapsort"
+    ],
+    "answer": 0,
+    "explanation": "Merge sort is always O(n log n) and stable. Quicksort degrades to O(n^2) worst-case and is typically not stable in standard partitioning."
+  },
+  {
+    "q": "What is the average-case time complexity of Java HashMap.containsKey()?",
+    "options": [
+      "$O(1)$",
+      "$O(\\log n)$",
+      "$O(n)$",
+      "$O(n \\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "HashMap uses hash-based bucket lookup so containsKey is O(1) average. O(n) is the degenerate case with extreme hash collisions."
+  },
+  {
+    "q": "Which operation on a singly-linked list runs in O(1) time given a direct reference to a node?",
+    "options": [
+      "Inserting a new node immediately after the referenced node",
+      "Finding the middle node using slow and fast pointer traversal",
+      "Reversing the entire list by relinking all next-pointers",
+      "Searching for a specific value by scanning from the head node"
+    ],
+    "answer": 0,
+    "explanation": "Inserting after a known node redirects two next-pointers in constant time. Middle-finding, reversal, and search all require O(n) traversal."
+  },
+  {
+    "q": "What is the time complexity of building a Segment Tree from an array of n elements?",
+    "options": [
+      "$O(n)$",
+      "$O(n \\log n)$",
+      "$O(\\log n)$",
+      "$O(n^2)$"
+    ],
+    "answer": 0,
+    "explanation": "Building a segment tree initialises ~4n nodes each in O(1), giving O(n) total. This is faster than querying n ranges individually."
+  },
+  {
+    "q": "In the sliding-window maximum problem using a Monotonic Deque, what is the amortised work per element across all windows?",
+    "options": [
+      "$O(1)$ amortised: each element is enqueued and dequeued at most once",
+      "$O(\\log n)$: the deque performs binary-search comparisons",
+      "O(k) per element where k is the window size, due to rebuilding",
+      "$O(n)$ amortised: the deque may be fully rebuilt each step"
+    ],
+    "answer": 0,
+    "explanation": "Each element enters and leaves the deque exactly once across the entire array, giving amortised O(1) per element and O(n) overall."
+  },
+  {
+    "q": "What is the time complexity of Floyd's tortoise-and-hare cycle-detection algorithm on a linked list of n nodes?",
+    "options": [
+      "$O(n)$",
+      "$O(n \\log n)$",
+      "$O(n^2)$",
+      "$O(\\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "Floyd's algorithm traverses the list at most twice (detect cycle then find entry point), so total work is O(n)."
+  },
+  {
+    "q": "When performing iterative inorder BST traversal with an explicit stack, what action occurs first in each loop iteration?",
+    "options": [
+      "Push all left descendants of current onto the stack before processing any",
+      "Push the root then immediately descend into the right subtree",
+      "Pop and visit the top node before touching any left subtree",
+      "Push right child before left child to mirror post-order"
+    ],
+    "answer": 0,
+    "explanation": "Iterative inorder repeatedly descends left (pushing each node) until reaching null, then pops to visit, then moves to the right child."
+  },
+  {
+    "q": "Which fundamental property distinguishes a max-heap from a BST?",
+    "options": [
+      "A max-heap only guarantees parent >= each child; siblings have no ordering requirement",
+      "A max-heap supports O(log n) search, whereas a BST supports O(1) search",
+      "Max-heap inorder traversal always produces a sorted sequence like BST inorder",
+      "A max-heap requires a complete binary tree; a BST is always a complete binary tree"
+    ],
+    "answer": 0,
+    "explanation": "Heaps enforce only the parent-child relationship. BSTs enforce left-subtree < node < right-subtree at every level, enabling O(log n) search that heaps cannot provide."
+  },
+  {
+    "q": "What is the auxiliary space complexity of DFS on a V-vertex graph using an explicit stack?",
+    "options": [
+      "$O(V)$",
+      "$O(E)$",
+      "$O(V + E)$",
+      "$O(V^2)$"
+    ],
+    "answer": 0,
+    "explanation": "The explicit DFS stack holds at most O(V) vertices in the worst case (a linear chain). The visited set is also O(V). Graph storage is not counted as DFS auxiliary space."
+  },
+  {
+    "q": "In the gradient-descent weight update w = w - lr * grad, what does lr represent?",
+    "options": [
+      "Learning rate: scales the step size in the direction of steepest descent",
+      "L2 regularisation coefficient penalising large weight values",
+      "Momentum term accumulating an exponential moving average of past gradients",
+      "Batch-size normalisation factor adjusting gradient magnitude"
+    ],
+    "answer": 0,
+    "explanation": "lr (alpha) is the learning rate controlling step size. Regularisation, momentum, and batch-size normalisation are separate hyperparameters or techniques."
+  },
+  {
+    "q": "With both path compression and union by rank, what is the amortised cost per Union-Find operation?",
+    "options": [
+      "$O(\\alpha(n))$ where $\\alpha$ is the inverse Ackermann function (near-constant)",
+      "(\\\\log n)$ -- with path compression alone, not union by rank",
+      "(\\\\log \\\\log n)$ -- with union by rank alone, not path compression",
+      "(1)$ strictly -- independent of all inputs and operations"
+    ],
+    "answer": 0,
+    "explanation": "The combination of path compression and union by rank gives amortised O(alpha(n)). alpha(n) is NOT bounded by a constant, so O(1) strictly is incorrect."
+  },
+  {
+    "q": "In a 0/1 Knapsack DP using a single 1-D dp[0..W] array, in which direction must the inner weight loop iterate?",
+    "options": [
+      "Right to left: from W down to item weight",
+      "Left to right: from item weight up to W",
+      "Bidirectional with early termination at W/2",
+      "Either direction; results are identical"
+    ],
+    "answer": 0,
+    "explanation": "Iterating right-to-left ensures each item is counted at most once (0/1 constraint). Left-to-right lets the same item be reused, solving unbounded knapsack instead."
+  },
+  {
+    "q": "What key correctness property does the merge step in merge sort guarantee about its output?",
+    "options": [
+      "The merged subarray is fully sorted and preserves relative order of equal elements (stable)",
+      "The pivot element is placed in its exact final sorted position after partition",
+      "The recursion depth is bounded to O(log n) by splitting at the median",
+      "All duplicate elements are removed and merged before the merge step completes"
+    ],
+    "answer": 0,
+    "explanation": "The merge step combines two sorted halves into one fully sorted array, and equal elements from the left half precede those from the right, making it stable."
+  },
+  {
+    "q": "In Bellman-Ford, how many edge-relaxation passes over all edges guarantee correct shortest paths in a V-vertex graph?",
+    "options": [
+      "V - 1 passes",
+      "V passes",
+      "E passes in total",
+      "log V passes"
+    ],
+    "answer": 0,
+    "explanation": "A shortest path in a V-vertex graph spans at most V-1 edges, so V-1 full relaxation passes suffice. A V-th pass that still relaxes an edge indicates a negative cycle."
+  },
+  {
+    "q": "What is the time complexity of Kahn's topological-sort algorithm on a graph with V vertices and E edges?",
+    "options": [
+      "$O(V^2)$",
+      "$O(V + E)$",
+      "$O(E \\log V)$",
+      "$O(V \\log V)$"
+    ],
+    "answer": 1,
+    "explanation": "Kahn's algorithm processes each vertex and each edge exactly once in BFS order, giving O(V+E) time."
+  },
+  {
+    "q": "In Java, which collection class implements a min-heap with O(log n) offer and poll operations?",
+    "options": [
+      "TreeMap<Integer, Integer>",
+      "PriorityQueue<Integer>",
+      "LinkedList<Integer> with manual ordering",
+      "ArrayDeque<Integer>"
+    ],
+    "answer": 1,
+    "explanation": "Java PriorityQueue is a binary min-heap (by default) with O(log n) offer/poll. TreeMap is a sorted red-black tree; ArrayDeque and LinkedList are not heaps."
+  },
+  {
+    "q": "In Java's LinkedList, which operation has O(n) time complexity?",
+    "options": [
+      "addFirst(E e) - insert at head",
+      "get(int index) - retrieve element by position",
+      "addLast(E e) - insert at tail",
+      "removeFirst() - remove the head element"
+    ],
+    "answer": 1,
+    "explanation": "LinkedList.get(index) traverses from head in O(n). addFirst, addLast, and removeFirst all manipulate head/tail pointers directly and run in O(1)."
+  },
+  {
+    "q": "What correctly detects a cycle in a directed graph during DFS?",
+    "options": [
+      "Reaching a node already in the global visited set",
+      "Reaching a node that is still on the current recursion stack (grey node)",
+      "Encountering a node whose in-degree is zero",
+      "Reaching a node with an empty adjacency list"
+    ],
+    "answer": 1,
+    "explanation": "In directed graphs, a back edge (to a grey node on the current stack) signals a cycle. Reaching a completed (black) node is a forward or cross edge, not a cycle."
+  },
+  {
+    "q": "What is the time complexity of inserting a word of length L into a Trie with a 26-character alphabet?",
+    "options": [
+      "$O(n)$ where n is the total number of words already stored",
+      "$O(L)$",
+      "$O(L \\log n)$",
+      "$O(26 \\cdot n)$"
+    ],
+    "answer": 1,
+    "explanation": "Trie insertion creates or traverses exactly L nodes. The constant branching factor (26) does not affect asymptotic complexity."
+  },
+  {
+    "q": "In a K-Means clustering implementation from scratch, which condition signals convergence?",
+    "options": [
+      "Every cluster contains exactly n/k data points",
+      "Centroids stop moving (change by less than epsilon) between successive iterations",
+      "The total within-cluster variance increases by less than epsilon",
+      "Each data point switches to a different cluster at least once per iteration"
+    ],
+    "answer": 1,
+    "explanation": "K-Means converges when centroid positions are stable. Cluster size uniformity or tracking variance increases are not standard convergence criteria."
+  },
+  {
+    "q": "Which recurrence correctly computes Edit Distance dp[i][j] (Levenshtein)?",
+    "options": [
+      "dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + 1, regardless of whether characters match",
+      "dp[i][j] = dp[i-1][j-1] if s1[i]==s2[j], else 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])",
+      "dp[i][j] = dp[i-1][j-1] + cost where cost = (s1[i]!=s2[j] ? 1 : 0), ignoring delete/insert ops",
+      "dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + 1, maximising over the two adjacent cells"
+    ],
+    "answer": 1,
+    "explanation": "Edit distance considers three operations: delete (dp[i-1][j]+1), insert (dp[i][j-1]+1), and substitute/match (dp[i-1][j-1]+cost). Take the minimum of the three."
+  },
+  {
+    "q": "What is the time complexity of a range-sum query on a Segment Tree with n elements?",
+    "options": [
+      "$O(1)$ with precomputed prefix sums only",
+      "$O(\\log n)$ â€” at most O(log n) nodes are visited",
+      "$O(n)$ â€” the entire tree may need to be traversed",
+      "$O(n \\log n)$ â€” each level of the tree is scanned"
+    ],
+    "answer": 1,
+    "explanation": "A segment tree range query visits O(log n) nodes because at each level the query splits into at most two sub-queries, capping total visited nodes at 4 log n."
+  },
+  {
+    "q": "Which invariant does a Monotonic Decreasing Stack maintain from bottom to top?",
+    "options": [
+      "The global minimum is always at the top",
+      "Elements are in strictly decreasing order from bottom to top",
+      "Elements are in strictly increasing order from bottom to top",
+      "The stack mirrors the original array segment in reverse"
+    ],
+    "answer": 1,
+    "explanation": "A monotonic decreasing stack pops elements smaller than the incoming value before pushing, so the sequence from bottom to top is strictly decreasing."
+  },
+  {
+    "q": "In the variable-size sliding-window pattern, which event triggers moving the right pointer?",
+    "options": [
+      "The window already satisfies the constraint and we seek a smaller valid window",
+      "The current window does not yet satisfy the constraint, so we expand to include more elements",
+      "The left pointer has caught up to the right pointer",
+      "The window contains more than k distinct elements and must shrink"
+    ],
+    "answer": 1,
+    "explanation": "The right pointer expands the window until the constraint is satisfied. Once satisfied, the left pointer contracts to find the optimum (e.g., minimum length window)."
+  },
+  {
+    "q": "What is the time complexity of finding the k-th largest element in a stream of n elements using a min-heap of size k?",
+    "options": [
+      "$O(k \\log k)$ â€” initial heap setup cost",
+      "$O(n \\log k)$ â€” each of n elements may cause a heap operation",
+      "$O(n \\log n)$ â€” equivalent to full sort",
+      "$O(k \\log n)$ â€” only k elements are retained"
+    ],
+    "answer": 1,
+    "explanation": "Each of the n elements is either discarded or triggers an O(log k) heap insert/pop. Total: O(n log k). O(k log k) is only the initial setup."
+  },
+  {
+    "q": "Under which pivot-selection scenario does Quicksort degrade to $O(n^2)$ time?",
+    "options": [
+      "When the array length is not a power of two",
+      "When the pivot always ends up at the minimum or maximum position after partitioning",
+      "When there are more than n/2 duplicate elements in the array",
+      "When the input array is in uniformly random order"
+    ],
+    "answer": 1,
+    "explanation": "Quicksort is O(n^2) when partitioning consistently produces one empty part and one of size n-1, which happens when the pivot is always the extreme element."
+  },
+  {
+    "q": "In a Fenwick Tree (BIT), what operation moves from index i to its next responsible ancestor during an UPDATE traversal?",
+    "options": [
+      "Subtract (i & -i) from i",
+      "Add (i & -i) to i",
+      "Right-shift i by 1 bit",
+      "XOR i with (i & -i)"
+    ],
+    "answer": 1,
+    "explanation": "During BIT update, adding (i & -i) moves to the next index whose range covers position i. Subtracting (i & -i) is used in PREFIX-SUM queries, not updates."
+  },
+  {
+    "q": "Which approach correctly solves the Word Break problem (can string s be segmented into dictionary words)?",
+    "options": [
+      "Greedy: repeatedly match the longest dictionary prefix at each position",
+      "1-D DP: dp[i] = true if any dp[j] is true and s[j..i-1] is in the dictionary",
+      "Two pointers expanding from left and right simultaneously",
+      "Sorting dictionary words by length before scanning"
+    ],
+    "answer": 1,
+    "explanation": "Word Break is a classic DP problem. Greedy fails (e.g., 'catsandog' with {cats,cat,and,sand,dog}). dp[i] encodes whether s[0..i-1] can be segmented."
+  },
+  {
+    "q": "What is the correct House Robber DP recurrence for dp[i] (max money robbing up to and including house i)?",
+    "options": [
+      "dp[i] = max(dp[i-2], dp[i-1] + nums[i])",
+      "dp[i] = max(dp[i-1], dp[i-2] + nums[i])",
+      "dp[i] = dp[i-1] + dp[i-2]",
+      "dp[i] = min(dp[i-1], dp[i-2] + nums[i])"
+    ],
+    "answer": 1,
+    "explanation": "At house i: either skip it (best remains dp[i-1]) or rob it and add to dp[i-2] (the non-adjacent best). Option A swaps these two cases incorrectly."
+  },
+  {
+    "q": "What is the auxiliary space complexity of merge sort when sorting an n-element array?",
+    "options": [
+      "$O(1)$ â€” merge sort sorts in-place",
+      "$O(\\log n)$ â€” only the call stack contributes",
+      "$O(n)$ â€” a temporary merge buffer of size n is required",
+      "$O(n \\log n)$ â€” proportional to total comparisons performed"
+    ],
+    "answer": 2,
+    "explanation": "Merge sort requires a temporary array of size n for the merge step. The call stack adds O(log n) but the merge buffer dominates, giving O(n) auxiliary space."
+  },
+  {
+    "q": "In a balanced BST (e.g., Java TreeSet backed by a red-black tree), what is the time complexity for search, insert, and delete?",
+    "options": [
+      "$O(1)$ amortised for all three operations",
+      "$O(n)$ worst case for all three operations",
+      "$O(\\log n)$ for all three operations",
+      "$O(\\sqrt{n})$ average case for all three operations"
+    ],
+    "answer": 2,
+    "explanation": "A balanced BST maintains height O(log n), so search, insert, and delete each traverse at most O(log n) nodes."
+  },
+  {
+    "q": "What is the O(1)-space approach to checking whether a singly-linked list is a palindrome?",
+    "options": [
+      "Copy all node values to an auxiliary array, then compare with inward two-pointer scan",
+      "Push all values onto a stack, then traverse again comparing each stack pop to the current node",
+      "Use slow/fast pointers to find the midpoint, reverse the second half in-place, then compare",
+      "Count total nodes then recurse with a depth offset to compare symmetrically"
+    ],
+    "answer": 2,
+    "explanation": "Slow/fast pointer finds the middle (O(1) space), in-place reversal of the second half avoids extra storage, and the two-pointer comparison runs in O(n) time and O(1) space."
+  },
+  {
+    "q": "What is the time complexity of the Floyd-Warshall all-pairs shortest-path algorithm?",
+    "options": [
+      "$O(V \\cdot E)$",
+      "$O(V^2 + E)$",
+      "$O(V^3)$",
+      "$O(E \\log V)$"
+    ],
+    "answer": 2,
+    "explanation": "Floyd-Warshall uses three nested loops each ranging over V vertices, giving O(V^3). It computes shortest paths between every pair of vertices including through intermediate nodes."
+  },
+  {
+    "q": "When should you prefer a Fenwick Tree (BIT) over a Segment Tree?",
+    "options": [
+      "When range-maximum or range-minimum queries are the primary operation needed",
+      "When lazy propagation is required for bulk range updates",
+      "When only prefix-sum and point-update are needed, for simpler constant-factor-faster code",
+      "When the array grows dynamically and its size is not known at build time"
+    ],
+    "answer": 2,
+    "explanation": "A Fenwick tree is simpler and faster in practice for point update + prefix sum. Segment trees are required for range max/min or lazy-propagation range update operations."
+  },
+  {
+    "q": "Which data structure supports O(log n) insert, O(log n) delete-by-value, and O(log n) find-minimum simultaneously?",
+    "options": [
+      "Java HashSet (hash-based, O(1) contains but no ordering or min-query)",
+      "Sorted array with binary search",
+      "Java TreeSet (balanced BST / red-black tree)",
+      "Java PriorityQueue (binary heap with O(1) peek but O(n) arbitrary delete)"
+    ],
+    "answer": 2,
+    "explanation": "TreeSet provides O(log n) add, remove(value), and first() (minimum). PriorityQueue has O(1) peek but O(n) arbitrary-value deletion; sorted arrays have O(n) insertion."
+  },
+  {
+    "q": "In the 2-D DP for Longest Common Subsequence, what is dp[i][j] when s1[i] != s2[j]?",
+    "options": [
+      "dp[i][j] = 0 -- reset because characters at i and j do not match",
+      "dp[i][j] = dp[i-1][j-1] -- diagonal cell, same as when characters match",
+      "dp[i][j] = max(dp[i-1][j], dp[i][j-1])",
+      "dp[i][j] = dp[i-1][j] + dp[i][j-1] -- sum of both adjacent LCS values"
+    ],
+    "answer": 2,
+    "explanation": "When characters differ, LCS ignores either s1[i] or s2[j]: max(dp[i-1][j], dp[i][j-1]). Adding them (option D) would double-count common subsequences."
+  },
+  {
+    "q": "What key advantage does an ArrayDeque provide over a regular Queue in the sliding-window maximum problem?",
+    "options": [
+      "ArrayDeque enables O(1) random-access by index to inspect any element currently in the window",
+      "ArrayDeque automatically evicts out-of-window elements when new elements are added to the back",
+      "ArrayDeque allows O(1) removal from BOTH front and back, enabling window-boundary and dominance eviction",
+      "ArrayDeque eliminates index tracking by comparing element values directly, reducing memory per node"
+    ],
+    "answer": 2,
+    "explanation": "The deque removes from the front when elements fall outside the window and from the back when a new larger element makes smaller ones redundant. Both are O(1) only with a deque."
+  },
+  {
+    "q": "Which algorithm correctly detects a negative-weight cycle in a directed weighted graph?",
+    "options": [
+      "Dijkstra with a visited set and re-relaxation check on previously finalised vertices",
+      "DFS tracking the cumulative signed edge weight along each current recursion-stack path",
+      "Bellman-Ford: if any edge can still be relaxed after V-1 full passes, a negative cycle is reachable",
+      "Kahn's topological sort on the condensed strongly-connected components"
+    ],
+    "answer": 2,
+    "explanation": "After V-1 Bellman-Ford passes, a successful V-th relaxation proves a negative cycle exists. Dijkstra cannot handle negative edges at all."
+  },
+  {
+    "q": "What does Integer.bitCount(12) return in Java?",
+    "options": [
+      "4",
+      "3",
+      "2",
+      "1"
+    ],
+    "answer": 2,
+    "explanation": "12 in binary is 1100, which has exactly 2 set bits. Integer.bitCount returns the count of 1-bits in the standard 32-bit integer representation."
+  },
+  {
+    "q": "In an N-Queens backtracking solution, which three constraints must all be free before placing a queen at (row, col)?",
+    "options": [
+      "Only column needs to be free; we place one queen per row so rows are assumed clear",
+      "Column and the main-diagonal direction only; anti-diagonals are verified after backtracking",
+      "Column, main-diagonal (row-col value), and anti-diagonal (row+col value) are all unoccupied",
+      "Column and row are both free; diagonals are checked only after all queens are placed"
+    ],
+    "answer": 2,
+    "explanation": "Three sets track occupied columns, (row-col) values (main diagonals), and (row+col) values (anti-diagonals). All three must be unoccupied for a valid queen placement."
+  },
+  {
+    "q": "In gradient descent for binary logistic regression, what is the gradient of cross-entropy loss with respect to weight w_j (averaged over n samples)?",
+    "options": [
+      "(1/n) * sum_i (y_i - y_hat_i) * x_ij  [label minus prediction]",
+      "(1/n) * sum_i x_ij  [ignores prediction error]",
+      "(1/n) * sum_i (y_hat_i - y_i) * x_ij  [prediction minus label]",
+      "(1/n) * sum_i (y_i^2 - y_hat_i^2) * x_ij"
+    ],
+    "answer": 2,
+    "explanation": "The gradient is (1/n)*sum(prediction - label)*feature. The sign is prediction minus label, so weights are reduced when the model predicts too high."
+  },
+  {
+    "q": "What time complexity does the sliding-window approach achieve for Longest Substring Without Repeating Characters?",
+    "options": [
+      "$O(n^2)$ â€” nested loop checks each window exhaustively",
+      "$O(n \\log n)$ â€” due to balanced-BST character set operations",
+      "$O(n)$ â€” each character is added and removed from the window at most once",
+      "$O(n \\cdot |\\Sigma|)$ where |Sigma| is the alphabet size"
+    ],
+    "answer": 2,
+    "explanation": "Each character enters and leaves the window exactly once, giving O(n) total work. HashMap or array lookups are O(1), not O(log n)."
+  },
+  {
+    "q": "In a KNN implementation from scratch, why is feature normalization essential before computing Euclidean distances?",
+    "options": [
+      "Normalization prevents integer overflow in Java int arithmetic",
+      "Normalization converts categorical features to numerical values automatically",
+      "Without normalization, high-magnitude features dominate the distance, biasing neighbour selection",
+      "Normalization is required for the heap-based top-k selection to produce correct results"
+    ],
+    "answer": 2,
+    "explanation": "Euclidean distance is scale-sensitive. A feature in [0,1000] will overshadow one in [0,1], making the large-scale feature almost solely determine which neighbours are nearest."
+  },
+  {
+    "q": "In a bitmask DP for TSP with n cities, what is the total number of distinct (current-city, visited-mask) states?",
+    "options": [
+      "(n^2)$ -- quadratic, only for all-pairs city comparisons without bitmask",
+      "(2^n)$ -- exponential, counting only the visited-city bitmask, not the current city",
+      "(n \\\\cdot 2^n)$ -- n current-city choices times 2^n bitmask subsets",
+      "(n^n)$ -- super-exponential, far exceeds the actual DP state count"
+    ],
+    "answer": 2,
+    "explanation": "TSP bitmask DP has n choices for current city and 2^n possible visited subsets, giving n*2^n distinct states. With O(n) transitions per state total time is O(n^2 * 2^n)."
+  },
+  {
+    "q": "Which problem CANNOT be solved optimally with a greedy algorithm and requires dynamic programming?",
+    "options": [
+      "Activity selection: maximise non-overlapping intervals by earliest finish time",
+      "Fractional knapsack: maximise value with divisible items",
+      "Minimum spanning tree via Kruskal's edge-weight greedy",
+      "0/1 Knapsack: maximise value where each item is taken or left whole"
+    ],
+    "answer": 3,
+    "explanation": "The 0/1 knapsack fails greedy because locally picking the best value/weight item may block a globally superior combination. The other three have provably greedy-optimal structures."
+  },
+  {
+    "q": "In Java, how do you correctly sort a primitive int[] array in descending order?",
+    "options": [
+      "Arrays.sort(arr, (a,b)->b-a) directly on int[] -- lambda comparator for primitive arrays",
+      "Arrays.sort(arr, Comparator.reverseOrder()) directly on int[] -- reverseOrder with primitive array",
+      "Arrays.sort(arr) then Collections.reverse(arr) -- reverse primitive array in-place",
+      "Convert to Integer[] (box), then Arrays.sort(boxed, (x,y)->y-x) with a lambda comparator"
+    ],
+    "answer": 3,
+    "explanation": "Arrays.sort with a Comparator only works on Object arrays (Integer[]). Collections.reverse needs a List. You must box to Integer[] to use a lambda comparator."
+  },
+  {
+    "q": "What is the relationship between BFS traversal and shortest paths in an unweighted graph?",
+    "options": [
+      "BFS gives shortest paths in undirected graphs only; it fails for directed graphs",
+      "BFS may miss shorter paths if the adjacency list is not sorted by some key",
+      "BFS gives the minimum number of nodes visited, not the minimum number of edges",
+      "BFS yields the shortest path in edge count from the source to every reachable vertex"
+    ],
+    "answer": 3,
+    "explanation": "BFS explores nodes level by level; the first time any vertex is reached is via the fewest edges. This holds for both directed and undirected unweighted graphs."
+  },
+  {
+    "q": "If a stack is implemented with two queues using O(1) push, what is the time complexity of pop?",
+    "options": [
+      "$O(1)$",
+      "$O(\\log n)$",
+      "$O(\\sqrt{n})$",
+      "$O(n)$"
+    ],
+    "answer": 3,
+    "explanation": "With O(1) push (enqueue to active queue), pop must transfer all but the last element to the auxiliary queue to expose the top, costing O(n) per pop operation."
+  },
+  {
+    "q": "Which statement about topological sort is TRUE?",
+    "options": [
+      "Every DAG has exactly one valid topological ordering",
+      "Any directed graph with edges has a valid topological sort",
+      "DFS-based topological sort uses a min-heap to select the next vertex",
+      "Topological sort is only defined for directed acyclic graphs (DAGs)"
+    ],
+    "answer": 3,
+    "explanation": "Topological sort requires a DAG; any cycle makes it impossible. The ordering is generally not unique â€” multiple valid linearisations can exist for a given DAG."
+  },
+  {
+    "q": "Which algorithm achieves $O(n \\log n)$ time for the Longest Increasing Subsequence problem?",
+    "options": [
+      "Two pointers tracking the last two values of the growing LIS, like Fibonacci pair update",
+      "2-D DP table comparing all element pairs, dp[i][j] = LIS ending at i using elements up to j",
+      "Greedy with a HashMap storing the count of each previously seen value",
+      "Patience sort / tails[] array: binary-search each element into tails[], where tails[i] holds the smallest tail of any LIS of length i+1"
+    ],
+    "answer": 3,
+    "explanation": "The O(n log n) LIS maintains tails[i] = smallest ending element of all length-(i+1) LIS. Binary search finds each element's position in O(log n). The 2-D DP is O(n^2)."
+  },
+  {
+    "q": "In linked-list problems, what is the primary purpose of the fast/slow pointer technique beyond cycle detection?",
+    "options": [
+      "Enabling O(1) deletion of the tail node without a tail pointer",
+      "Eliminating the need to reverse the list when checking palindromes",
+      "Detecting cycles in O(log n) steps rather than O(n), since the fast pointer doubles speed",
+      "Finding the middle node in one pass without knowing the total list length in advance"
+    ],
+    "answer": 3,
+    "explanation": "When the fast pointer (2 steps) reaches the end, the slow pointer (1 step) is at the middle. This one-pass middle-finding is the core use; palindrome checking also builds on it."
+  },
+  {
+    "q": "Which loss function is minimised in linear regression trained with gradient descent, as implemented in the chapter Java code?",
+    "options": [
+      "Binary cross-entropy: -sum(y_i * log(y_hat_i) + (1-y_i)*log(1-y_hat_i))",
+      "Hinge loss: max(0, 1 - y_i * y_hat_i)",
+      "Categorical cross-entropy for k output classes",
+      "Mean Squared Error (MSE): (1/n) * sum_i (y_i - y_hat_i)^2"
+    ],
+    "answer": 3,
+    "explanation": "Linear regression minimises MSE. Binary cross-entropy is for logistic regression; hinge loss for SVMs; categorical cross-entropy for multi-class softmax classifiers."
+  },
+  {
+    "q": "Which recurrence correctly implements unbounded coin change (count total ways to make amount A, each coin reusable)?",
+    "options": [
+      "dp[a] = max(dp[a], dp[a-coin]+1) for each coin",
+      "Outer loop over amounts, inner over coins: dp[a] += dp[a-coin] if a >= coin",
+      "dp[a] = dp[a-1] + dp[a-2] (Fibonacci-style with 2 denominations)",
+      "Outer loop over coins, inner over amounts from coin to A: dp[a] += dp[a-coin]"
+    ],
+    "answer": 3,
+    "explanation": "Iterating coins in the outer loop and amounts in the inner loop counts combinations (not permutations). Reversing the loop order counts permutations instead."
+  },
+  {
+    "q": "Which property of a BST ensures that inorder traversal always yields a fully sorted sequence?",
+    "options": [
+      "The tree is always complete with all levels fully filled except possibly the last level",
+      "The left child is strictly smaller than its immediate parent node only, not necessarily grandparents",
+      "The tree height is always O(log n) for n nodes, which automatically forces sorted inorder output",
+      "For every node, ALL keys in its entire left subtree are smaller and ALL keys in its entire right subtree are larger"
+    ],
+    "answer": 3,
+    "explanation": "The full BST invariant applies recursively to the whole subtree, not just the immediate children. This guarantees inorder (left-root-right) visits nodes in strictly ascending order."
+  },
+  {
+    "q": "In a Segment Tree with lazy propagation, what is the purpose of the lazy array?",
+    "options": [
+      "Stores the original input array values for O(1) point queries without any tree traversal",
+      "Caches previously computed query results to avoid redundant computation",
+      "Re-balances the segment tree structure whenever a subtree becomes skewed by many updates",
+      "Defers pending range-update tags to child nodes, applying them only when those children are next accessed"
+    ],
+    "answer": 3,
+    "explanation": "Lazy propagation avoids updating every node in a range immediately. A lazy tag marks a pending update that is pushed down to children when they are queried or updated."
+  },
+  {
+    "q": "In the self-attention formula Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) * V, what is the time complexity with respect to sequence length n?",
+    "options": [
+      "$O(n \\log n)$ from the softmax normalisation across positions",
+      "$O(n \\cdot d_k)$ since only query-key dot products scale with d_k",
+      "$O(d_k^2 / n)$ amortised across multiple attention heads",
+      "$O(n^2 \\cdot d_k)$ from computing all n x n pairwise query-key products"
+    ],
+    "answer": 3,
+    "explanation": "The QK^T computation yields an n x n matrix via n^2 dot products each costing O(d_k), giving O(n^2 * d_k). This quadratic scaling with sequence length is the main bottleneck of standard attention."
+  },
+  {
+    "q": "Which statement about Dijkstra's algorithm is INCORRECT?",
+    "options": [
+      "It requires all edge weights to be non-negative; any negative weight causes incorrect results",
+      "It greedily expands the lowest-cost unvisited vertex via a priority queue",
+      "With a binary heap it achieves O((V+E) log V) time where V is vertices and E is edges",
+      "It correctly finds shortest paths when negative edge weights are present, provided no negative cycle exists"
+    ],
+    "answer": 3,
+    "explanation": "Dijkstra fails on negative edges even without negative cycles: once a vertex is finalised it is not re-examined, so a later negative edge could yield a shorter path. Use Bellman-Ford for negative weights."
+  },
+  {
+    "q": "In a brute-force KNN implementation, what is the time complexity of computing distances from a query point to all n training samples with d features each?",
+    "options": [
+      "$O(d)$ â€” only the query point's features are scanned",
+      "$O(n \\log n)$ â€” distances are sorted to find the k nearest",
+      "$O(n + d)$ â€” linear pass over samples plus feature-dimension overhead",
+      "$O(n \\cdot d)$ â€” each of n distance computations requires d multiplications and additions"
+    ],
+    "answer": 3,
+    "explanation": "Computing one Euclidean distance takes O(d) work; repeating for all n training samples gives O(n*d) total. Sorting to find top-k adds O(n log n) separately."
+  },
+  {
+    "q": "In the chapter Java implementation of logistic regression, which mathematical operation maps the raw linear output to a predicted probability?",
+    "options": [
+      "ReLU: max(0, w^T x + b)",
+      "Softmax applied to a vector of class scores",
+      "Hard threshold: return 1 if w^T x + b > 0.5, else 0",
+      "Sigmoid: 1 / (1 + exp(-(w^T x + b)))"
+    ],
+    "answer": 3,
+    "explanation": "Logistic regression applies sigmoid to squash the linear combination into [0,1] as a probability. ReLU is a neural-net activation; softmax is for multi-class; a hard threshold gives 0/1, not a probability."
+  }
+]

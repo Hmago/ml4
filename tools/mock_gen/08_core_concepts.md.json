@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A table has one row per house sale and columns for square feet, bedrooms, age, and price. In the chapter's terminology, what is each row?",
+    "options": [
+      "One example or observation described by features",
+      "One hyperparameter setting chosen before training",
+      "One model architecture in the hypothesis class",
+      "One learned parameter updated by backpropagation"
+    ],
+    "answer": 0,
+    "explanation": "The chapter defines each row as an example, data point, or observation. Columns such as square feet and bedrooms are features, while price can be the label."
+  },
+  {
+    "q": "A sensor dataset has occasional random measurement errors, duplicated records, and labels typed by humans. Which chapter principle best explains why a simple model may still fail?",
+    "options": [
+      "The optimizer needs a larger momentum coefficient",
+      "Data quality can dominate algorithm choice",
+      "The model needs softmax probabilities first",
+      "The test split should be used during tuning"
+    ],
+    "answer": 1,
+    "explanation": "The chapter emphasizes garbage in, garbage out: missing values, noise, duplicates, imbalance, shift, and label errors can ruin learning. A stronger algorithm cannot reliably compensate for poor data."
+  },
+  {
+    "q": "A timestamp feature stores hour of day as 0 through 23. Why does the chapter recommend treating it carefully?",
+    "options": [
+      "It must be converted to a one-hot label before supervised training",
+      "It should always be removed because temporal features leak labels",
+      "Hours 23 and 0 are close, so cyclical encoding may be needed",
+      "Hours are unstructured text and require embeddings before modeling"
+    ],
+    "answer": 2,
+    "explanation": "Temporal features can be cyclical: 23:00 and 00:00 are adjacent in time, not far apart. Sin/cos encoding can preserve that circular structure better than raw integers."
+  },
+  {
+    "q": "Which pair is correctly classified according to the chapter's feature-type table?",
+    "options": [
+      "City is ordinal; product rating 1-5 is nominal categorical",
+      "Height in centimeters is discrete; page views are continuous",
+      "Email text is binary; month number is an image feature",
+      "Brand name is categorical; size Small/Medium/Large is ordinal"
+    ],
+    "answer": 3,
+    "explanation": "Categorical features name groups with no natural order, such as brand. Ordinal features have a ranking, such as Small/Medium/Large."
+  },
+  {
+    "q": "A team chooses max tree depth, number of trees, and dropout rate before a run, then lets training learn split thresholds and neural weights. What distinction is being applied?",
+    "options": [
+      "Hyperparameters are engineer-chosen settings; parameters are learned from data",
+      "Parameters are validation metrics; hyperparameters are final test metrics",
+      "Hyperparameters change after each mini-batch; parameters remain fixed",
+      "Parameters are input columns; hyperparameters are output labels"
+    ],
+    "answer": 0,
+    "explanation": "The chapter separates settings chosen before training, such as depth or dropout, from learned quantities, such as weights or split thresholds. Hyperparameters stay fixed within a single run."
+  },
+  {
+    "q": "Why does the chapter warn that \"wrong assumptions -> even infinite data won't help\" when discussing models?",
+    "options": [
+      "Because all models must use the same loss function to be comparable",
+      "Because every architecture has an inductive bias about valid patterns",
+      "Because validation data is always smaller than training data",
+      "Because stochastic gradients make every learned parameter noisy"
+    ],
+    "answer": 1,
+    "explanation": "A model's inductive bias is its built-in assumption about solution shape. If that hypothesis class cannot represent the true relationship, adding data cannot fix the mismatch."
+  },
+  {
+    "q": "In the training loop, at which point does the model compute $\\partial L/\\partial W$ using the chain rule?",
+    "options": [
+      "During the forward pass before predictions are made",
+      "During the loss-computation step before labels are compared",
+      "During the backward pass after the scalar loss is known",
+      "During the test evaluation after all epochs are complete"
+    ],
+    "answer": 2,
+    "explanation": "The backward pass uses calculus to compute the gradient of loss with respect to each weight. The forward pass produces predictions, and the loss step compares them to labels."
+  },
+  {
+    "q": "In the chapter's ice-cream example, $w=0$, $b=0$, $temp=25$, and $y=1$. Why does the first update increase $w$?",
+    "options": [
+      "The sigmoid output is already 0.958, so the model reinforces it",
+      "The loss is zero, so any positive step preserves the solution",
+      "The gradient on $w$ is positive, so subtracting it adds to $w$",
+      "The gradient on $w$ is negative, so subtracting it nudges $w$ upward"
+    ],
+    "answer": 3,
+    "explanation": "The chapter computes $\\partial loss/\\partial w=(0.5-1)\\times25=-12.5$. The update $w \\leftarrow w-\\alpha g$ subtracts a negative value, increasing $w$."
+  },
+  {
+    "q": "A dataset has 10,000 examples, batch size 32, and training runs for 50 epochs. Which expression matches the chapter's formula for approximate weight updates?",
+    "options": [
+      "$50 \\times (10{,}000/32)$ updates",
+      "$32 \\times (10{,}000/50)$ updates",
+      "$10{,}000 \\times (32/50)$ updates",
+      "$50 + 10{,}000 + 32$ updates"
+    ],
+    "answer": 0,
+    "explanation": "The chapter gives total weight updates as epochs times dataset_size divided by batch_size. Here that is approximately $50 \\times 312.5$."
+  },
+  {
+    "q": "Which statement best captures the chapter's comparison of batch GD, SGD, and mini-batch GD?",
+    "options": [
+      "Batch GD uses one example and is the noisiest but cheapest per update",
+      "Mini-batch GD balances speed and stability and is commonly used in practice",
+      "SGD uses all examples per update and needs the entire dataset in memory",
+      "Mini-batch GD eliminates batch size as a hyperparameter"
+    ],
+    "answer": 1,
+    "explanation": "The chapter describes mini-batch GD as a good speed/stability trade-off, GPU-friendly, and used in practice. Batch GD is smooth but slow; one-example SGD is fast but jumpy."
+  },
+  {
+    "q": "A loss curve bounces across the valley and never settles. Which diagnosis follows directly from the learning-rate section?",
+    "options": [
+      "The learning rate is probably too small to leave a plateau",
+      "The model has too much L1 regularization and became sparse",
+      "The learning rate is probably too large and overshoots",
+      "The batch size equals the full dataset and removes useful noise"
+    ],
+    "answer": 2,
+    "explanation": "The chapter says a too-large learning rate causes giant leaps that overshoot and may never converge. A too-small learning rate gives slow but not bouncing progress."
+  },
+  {
+    "q": "When would the chapter prefer MAE over MSE for a regression target?",
+    "options": [
+      "When predicted probabilities must sum to one across classes",
+      "When the target is one-hot and confident mistakes need huge penalties",
+      "When real outliers exist and should not dominate the objective",
+      "When the loss must be reported in squared units for interpretability"
+    ],
+    "answer": 2,
+    "explanation": "MAE counts errors proportionally and is robust to outliers. MSE squares errors, making large mistakes disproportionately influential."
+  },
+  {
+    "q": "A model reports MSE in dollars squared for house prices, which stakeholders find meaningless. Which chapter recommendation addresses this?",
+    "options": [
+      "Switch to hinge loss because it ignores confidence beyond the margin",
+      "Use sparse cross-entropy because integer labels save memory",
+      "Use KL divergence because prices are probability distributions",
+      "Report RMSE because it returns the error to the original units"
+    ],
+    "answer": 3,
+    "explanation": "RMSE is the square root of MSE and is reported in the original target units. The chapter notes it is mainly useful for interpretability and model reporting."
+  },
+  {
+    "q": "Which classification setup matches the chapter's recommended pairing?",
+    "options": [
+      "Binary cross-entropy with a softmax over many mutually exclusive classes",
+      "Categorical cross-entropy with a sigmoid output for a single 0/1 label",
+      "Huber loss with a raw SVM score for max-margin classification",
+      "Categorical cross-entropy with a softmax output and one-hot labels"
+    ],
+    "answer": 3,
+    "explanation": "Categorical cross-entropy generalizes negative log-probability to K classes and pairs with softmax. Binary cross-entropy pairs with sigmoid for two-class 0/1 labels."
+  },
+  {
+    "q": "Why can sparse categorical cross-entropy be preferable with many classes?",
+    "options": [
+      "It changes the softmax into independent sigmoid outputs",
+      "It uses integer class labels instead of full one-hot vectors",
+      "It replaces cross-entropy with a margin-based hinge penalty",
+      "It makes KL divergence symmetric across target and prediction"
+    ],
+    "answer": 1,
+    "explanation": "Sparse categorical cross-entropy uses the same math as categorical cross-entropy but passes labels as integers. That saves memory when the number of classes is large."
+  },
+  {
+    "q": "A teacher model outputs soft probabilities over classes, and a student is trained to match that whole distribution. Which loss family from the chapter fits this target best?",
+    "options": [
+      "MSE, because the task is always numeric regression",
+      "Hinge loss, because the student only needs a margin",
+      "KL divergence, because the target is a distribution",
+      "MAE, because outliers should receive linear penalties"
+    ],
+    "answer": 2,
+    "explanation": "The chapter lists teacher-student distillation as a use case for KL divergence. KL measures how one probability distribution diverges from another."
+  },
+  {
+    "q": "A classifier uses labels $y\\in\\{-1,+1\\}$ and raw scores, and its loss becomes zero once $y\\hat{y}\\ge1$. Which loss is being described?",
+    "options": [
+      "Huber loss",
+      "Categorical cross-entropy",
+      "Binary cross-entropy",
+      "Hinge loss"
+    ],
+    "answer": 3,
+    "explanation": "The chapter defines hinge loss as $\\max(0,1-y\\hat{y})$ for max-margin classification. It stops rewarding confidence once the example is beyond the margin."
+  },
+  {
+    "q": "Which claim about Huber loss follows from the chapter?",
+    "options": [
+      "It is quadratic for small errors and linear for large errors",
+      "It is linear for small errors and quadratic for large errors",
+      "It is zero whenever the softmax probability exceeds 0.5",
+      "It is identical to RMSE but expressed in original units"
+    ],
+    "answer": 0,
+    "explanation": "Huber loss behaves like MSE near zero for smooth optimization and like MAE for large errors to reduce outlier dominance. The threshold $\\delta$ controls the switch."
+  },
+  {
+    "q": "In binary cross-entropy with true label 1, why is predicting 0.01 much worse than predicting 0.5?",
+    "options": [
+      "Because the loss becomes $-\\log(\\hat{y})$, heavily punishing confident wrong probabilities",
+      "Because the loss squares the distance between the predicted class index and the label",
+      "Because the sigmoid output must sum with other class probabilities to exactly one",
+      "Because the hinge margin ignores predictions after they cross the decision boundary"
+    ],
+    "answer": 0,
+    "explanation": "For $y=1$, binary cross-entropy reduces to $-\\log(\\hat{y})$. The chapter shows 0.01 gives about 4.6 loss, much larger than 0.693 at 0.5."
+  },
+  {
+    "q": "Which optimizer does the chapter describe as the practical default that combines momentum with adaptive per-parameter learning rates?",
+    "options": [
+      "Plain SGD",
+      "Batch gradient descent",
+      "Hinge optimizer",
+      "Adam"
+    ],
+    "answer": 3,
+    "explanation": "Adam is described as Momentum plus adaptive learning rates per parameter, with $\\alpha=0.001$ as a common default. Plain SGD uses the same learning rate for all weights."
+  },
+  {
+    "q": "In Adam, what is the role of $\\epsilon$ in the update denominator?",
+    "options": [
+      "It sets the number of warmup steps for cosine annealing",
+      "It is a dropout probability used to deactivate neurons",
+      "It is the regularization strength multiplying $\\sum w^2$",
+      "It prevents division by zero in the adaptive update"
+    ],
+    "answer": 3,
+    "explanation": "The chapter lists $\\epsilon=1e-8$ as a tiny constant to prevent division by zero. It appears in Adam's denominator with $\\sqrt{\\hat{v}}$."
+  },
+  {
+    "q": "A practitioner starts with Adam but considers switching after careful tuning to seek the last 1% of performance. Which switch matches the chapter's rule of thumb?",
+    "options": [
+      "Switch to full-batch GD because exact gradients always generalize better",
+      "Switch to KL divergence because optimizers and losses are interchangeable",
+      "Switch to zero initialization because it removes random starting noise",
+      "Switch to SGD with Momentum after Adam gives a strong baseline"
+    ],
+    "answer": 3,
+    "explanation": "The chapter says start with Adam because it rarely fails badly. It suggests SGD+Momentum when you need the last bit of performance and can tune it."
+  },
+  {
+    "q": "On an overfitting learning curve, what pattern does the chapter highlight?",
+    "options": [
+      "Training accuracy keeps rising while validation accuracy falls after a point",
+      "Training and validation accuracy remain low and nearly identical",
+      "Validation accuracy is always higher than training accuracy by a wide gap",
+      "Both curves are flat because gradients vanish before any learning starts"
+    ],
+    "answer": 0,
+    "explanation": "The overfitting curve shows training accuracy continuing upward while validation accuracy peaks and then declines. A large train-validation gap is the telltale sign."
+  },
+  {
+    "q": "A model scores 70% on training data and 68% on validation data after many epochs. Which chapter diagnosis is most appropriate?",
+    "options": [
+      "Overfitting, because validation is slightly lower than training",
+      "Underfitting, because both scores are low and the gap is small",
+      "Good generalization, because the two scores nearly match",
+      "Data leakage, because validation was evaluated during training"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says underfitting has low training and validation performance with a small gap. Overfitting requires a large gap with high training performance."
+  },
+  {
+    "q": "Which intervention is most aligned with fixing overfitting according to the chapter?",
+    "options": [
+      "Increase model capacity because it is missing the pattern",
+      "Train longer because validation loss rising means more epochs are needed",
+      "Add regularization or use a simpler model to reduce memorization",
+      "Evaluate repeatedly on the test set until the metric improves"
+    ],
+    "answer": 2,
+    "explanation": "Overfitting means the model memorized training quirks, so regularization, a simpler model, more data, or early stopping can help. Training longer often worsens the validation gap."
+  },
+  {
+    "q": "A very simple model predicts the same house price for every input. In bias-variance terms, what error source dominates?",
+    "options": [
+      "Variance, because predictions change wildly with each training split",
+      "Irreducible noise, because no model can learn from house features",
+      "Bias, because the model makes a systematically wrong assumption",
+      "Calibration error, because predicted probabilities are overconfident"
+    ],
+    "answer": 2,
+    "explanation": "The chapter's high-bias example predicts a constant price regardless of size. That is systematic error from an overly simple or wrong assumption."
+  },
+  {
+    "q": "A high-complexity curve predicts very different prices for the same 1,500 sqft house when trained on two different samples. Which term describes this behavior?",
+    "options": [
+      "Low bias",
+      "High variance",
+      "Strong calibration",
+      "Large prior"
+    ],
+    "answer": 1,
+    "explanation": "High variance means the model is very sensitive to the particular training set. The chapter contrasts this with a good model that predicts consistently across samples."
+  },
+  {
+    "q": "As model complexity increases in the chapter's bias-variance diagram, what happens before the sweet spot is passed?",
+    "options": [
+      "Bias and variance both decrease monotonically",
+      "Irreducible noise is eliminated by richer models",
+      "Bias tends to fall while variance tends to rise",
+      "Validation loss is guaranteed to equal training loss"
+    ],
+    "answer": 2,
+    "explanation": "The chapter shows bias decreasing with complexity and variance increasing with complexity. Total error is minimized at a middle sweet spot, not at either extreme."
+  },
+  {
+    "q": "Which formula matches the chapter's error decomposition for the bias-variance tradeoff?",
+    "options": [
+      "Total error = precision + recall + calibration",
+      "Total error = training loss - validation loss",
+      "Total error = data loss + $\\lambda$ × penalty",
+      "Total error = Bias² + Variance + Irreducible Noise"
+    ],
+    "answer": 3,
+    "explanation": "The chapter explicitly decomposes expected error into Bias², Variance, and Irreducible Noise. Regularized loss uses the separate data-loss-plus-penalty formula."
+  },
+  {
+    "q": "What does L1 regularization tend to do that L2 usually does not?",
+    "options": [
+      "Force some weights exactly to zero, creating sparsity",
+      "Shrink all weights smoothly without eliminating features",
+      "Randomly disable neurons during each training pass",
+      "Stop training when validation loss begins increasing"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says L1 can force many weights to exactly zero, acting like automatic feature selection. L2 shrinks weights toward zero but rarely makes them zero."
+  },
+  {
+    "q": "A linear model has many weakly useful features, and you want small smooth weights rather than feature elimination. Which chapter technique is most suitable?",
+    "options": [
+      "Dropout with 50% neuron removal during inference",
+      "L1 regularization, because it deletes most correlated features first",
+      "Early stopping, because it changes the loss formula to $\\sum |w|$",
+      "L2 regularization, because it shrinks all weights toward zero"
+    ],
+    "answer": 3,
+    "explanation": "The chapter recommends L2 when all features probably matter a little. It reduces sensitivity by shrinking weights without usually making them exact zeros."
+  },
+  {
+    "q": "During neural-network training, randomly setting 20-50% of neurons to zero but using the full network at inference describes which method?",
+    "options": [
+      "Xavier initialization",
+      "Early stopping",
+      "Dropout",
+      "Step decay"
+    ],
+    "answer": 2,
+    "explanation": "Dropout randomly turns off neurons during training so the network cannot rely on any single path. At inference, the full scaled network is used."
+  },
+  {
+    "q": "In early stopping, why does the chapter save weights at the epoch with lowest validation loss rather than the final epoch?",
+    "options": [
+      "The final epoch always has the smallest training loss and highest test accuracy",
+      "The validation set becomes part of the training set after the final epoch",
+      "Early stopping requires zero initialization after each validation check",
+      "Later epochs may keep lowering training loss while validation loss worsens"
+    ],
+    "answer": 3,
+    "explanation": "The chapter's early-stopping sketch stops where validation loss is lowest, even though training loss continues decreasing. Later epochs can overfit."
+  },
+  {
+    "q": "What does $\\lambda$ control in $\\text{Total Loss}=\\text{Data Loss}+\\lambda\\times\\text{Complexity Penalty}$?",
+    "options": [
+      "The train/validation/test split ratio",
+      "The regularization strength applied to complexity",
+      "The number of examples in each mini-batch",
+      "The softmax normalization across class logits"
+    ],
+    "answer": 1,
+    "explanation": "$\\lambda$ is the regularization strength. The chapter warns that zero gives no regularization risk, while a very large value can cause underfitting."
+  },
+  {
+    "q": "A model reaches 99.9% training accuracy but only 65% test accuracy. In the chapter's generalization section, what is the core problem?",
+    "options": [
+      "It has learned transferable rules but lacks calibration",
+      "It has optimized the validation metric too conservatively",
+      "It memorized training data instead of learning patterns for unseen data",
+      "It is underfitting because test accuracy is below training accuracy"
+    ],
+    "answer": 2,
+    "explanation": "The chapter contrasts a memorizer with a generalizer: high training accuracy and low test accuracy means poor generalization. The goal is performance on unseen data."
+  },
+  {
+    "q": "Which action does the chapter describe as measuring overfitting more accurately rather than directly reducing it?",
+    "options": [
+      "Adding dropout to a deep network",
+      "Using k-fold cross-validation on a small dataset",
+      "Applying stronger L2 weight decay",
+      "Generating label-preserving image crops"
+    ],
+    "answer": 1,
+    "explanation": "Cross-validation evaluates on k held-out splits and averages the scores. The chapter says it does not reduce overfitting by itself, but helps compare candidate models."
+  },
+  {
+    "q": "Why can arbitrary new features hurt generalization, while meaningful engineered features may help?",
+    "options": [
+      "Arbitrary features add parameters that can fit noise; meaningful features can express patterns with lower complexity",
+      "Arbitrary features always cause label leakage; meaningful features are never correlated with labels",
+      "Arbitrary features prevent cross-validation; meaningful features remove the need for validation",
+      "Arbitrary features make softmax invalid; meaningful features make probabilities calibrated"
+    ],
+    "answer": 0,
+    "explanation": "The chapter warns that arbitrary features can worsen overfitting by increasing capacity to fit noise. Domain-derived features can make the true pattern easier to represent."
+  },
+  {
+    "q": "A vision model trained only on daylight photos is deployed on rainy night photos and fails. Which chapter term best describes this issue?",
+    "options": [
+      "Symmetry breaking",
+      "Distribution or covariate shift",
+      "Sparse categorical encoding",
+      "Momentum decay"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's distribution-shift examples include daylight training photos versus night or rain deployment photos. Training data must resemble the real-world data the model will see."
+  },
+  {
+    "q": "A classifier says '80% confident' on many examples but is correct only about 60% of the time. What does the chapter call this?",
+    "options": [
+      "High bias from a too-simple hypothesis class",
+      "High variance from sensitivity to training samples",
+      "Overconfidence or poor calibration",
+      "Irreducible noise in the observed labels"
+    ],
+    "answer": 2,
+    "explanation": "A well-calibrated model is correct about 80% of the time when it predicts 80%. The chapter labels models that predict higher confidence than their actual accuracy as overconfident."
+  },
+  {
+    "q": "Which post-training methods does the chapter name for fixing overconfident probabilities?",
+    "options": [
+      "Batch normalization and dropout scaling",
+      "Xavier and He initialization",
+      "Step decay and exponential decay",
+      "Temperature Scaling and Platt Scaling"
+    ],
+    "answer": 3,
+    "explanation": "The calibration section explicitly lists Temperature Scaling and Platt Scaling as fixes. Initialization and learning-rate schedules address different training issues."
+  },
+  {
+    "q": "In the chapter's Bayes theorem table, what is $P(A\\mid B)$ called?",
+    "options": [
+      "Evidence",
+      "Likelihood",
+      "Prior",
+      "Posterior"
+    ],
+    "answer": 3,
+    "explanation": "The table maps $P(A\\mid B)$ to the posterior: the updated belief after observing B. $P(A)$ is the prior and $P(B)$ is the evidence."
+  },
+  {
+    "q": "A rare disease affects 1% of people, and a 95%-accurate test returns positive. Why is the posterior only about 16% in the chapter's example?",
+    "options": [
+      "The low prior means false positives among healthy people dominate many positive tests",
+      "The likelihood is zero because rare diseases cannot be detected reliably",
+      "The evidence term is ignored whenever the model is well calibrated",
+      "The test specificity exceeds sensitivity, so positives are always unreliable"
+    ],
+    "answer": 0,
+    "explanation": "Because the disease is rare, the healthy population is large enough that its 5% false-positive rate matters a lot. Bayes' theorem combines the prior with likelihood and evidence."
+  },
+  {
+    "q": "What does the chapter's No Free Lunch discussion imply for a new ML project?",
+    "options": [
+      "Neural networks should be chosen first because they make the weakest assumptions",
+      "Averaged over all possible problems, no optimizer or algorithm is universally best",
+      "XGBoost always beats neural networks except on text data",
+      "The best algorithm can be selected without trying baselines"
+    ],
+    "answer": 1,
+    "explanation": "No Free Lunch says algorithms are equivalent when averaged across all possible problems. Good engineers try several approaches for their specific problem."
+  },
+  {
+    "q": "Which baseline hierarchy item from the chapter is appropriate for a regression task before building a fancy model?",
+    "options": [
+      "Always predict the mean target value",
+      "Always predict the majority class",
+      "Initialize every neural weight to zero",
+      "Use the test set to choose the learning rate"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's naive baseline for regression is always predicting the mean. Majority-class prediction is the corresponding naive baseline for classification."
+  },
+  {
+    "q": "Why does the chapter say to compare a fancy model with simple baselines?",
+    "options": [
+      "Baselines are required because validation sets cannot compare architectures",
+      "If a complex model barely beats a simple one, its extra complexity may not be worthwhile",
+      "Baselines remove irreducible noise from labels before training begins",
+      "A fancy model must use the same inductive bias as linear regression"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says if the fancy model barely beats a linear baseline, it may not be worth the complexity. Strong improvement over baselines suggests real signal."
+  },
+  {
+    "q": "Why is initializing every neural-network weight to zero a problem according to the chapter?",
+    "options": [
+      "It makes activations explode because variance doubles each layer",
+      "It forces softmax probabilities to stop summing to one",
+      "It keeps neurons identical because they receive identical gradients",
+      "It turns L2 regularization into L1 regularization"
+    ],
+    "answer": 2,
+    "explanation": "With all weights zero, neurons in a layer compute the same outputs and gradients, then update identically. This symmetry prevents them from learning distinct features."
+  },
+  {
+    "q": "What is the variance-preservation goal behind principled weight initialization?",
+    "options": [
+      "Keep activation variance stable across layers to avoid exploding or vanishing signals",
+      "Maximize variance in the first layer so gradients explore every local minimum",
+      "Reduce all output probabilities to equal values before the first epoch",
+      "Ensure validation variance is lower than training variance during evaluation"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says initialization should keep activation variance stable from layer to layer. Too much growth causes exploding activations; too much shrinkage causes vanishing signals."
+  },
+  {
+    "q": "Which initialization does the chapter recommend for ReLU-family networks, and why?",
+    "options": [
+      "Xavier, because tanh and ReLU both keep every activation nonzero",
+      "He, because it accounts for ReLU zeroing about half its inputs",
+      "Zero initialization, because ReLU breaks symmetry by clipping negatives",
+      "Small constant initialization, because equal neurons improve averaging"
+    ],
+    "answer": 1,
+    "explanation": "He initialization uses variance $2/n_\\text{in}$ to compensate for ReLU killing about half of activations. Xavier is recommended for tanh and sigmoid."
+  },
+  {
+    "q": "For tanh or sigmoid activations, which variance formula does the chapter associate with Xavier/Glorot initialization?",
+    "options": [
+      "$2/(n_\\text{in}+n_\\text{out})$",
+      "$2/n_\\text{in}$",
+      "$1/(1+a^2)n_\\text{in}$",
+      "$\\lambda\\sum |w|$"
+    ],
+    "answer": 0,
+    "explanation": "The chapter gives Xavier/Glorot variance as $2/(n_\\text{in}+n_\\text{out})$. He initialization uses $2/n_\\text{in}$ for ReLU-family activations."
+  },
+  {
+    "q": "Why can a fixed learning rate be suboptimal across an entire training run?",
+    "options": [
+      "Early training benefits from larger steps, while late training needs smaller steps near a minimum",
+      "The validation set changes size after every epoch, so the rate must follow it",
+      "The loss function changes from regression to classification as parameters converge",
+      "Mini-batch gradients become exact full-batch gradients after warmup"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says large early steps help rapid progress, while smaller late steps avoid bouncing around the minimum. LR schedules adapt step size by training phase."
+  },
+  {
+    "q": "Which schedule drops the learning rate by a constant factor every $k$ epochs and can create visible staircase changes in the loss curve?",
+    "options": [
+      "Cosine annealing",
+      "Linear warmup",
+      "ReduceLROnPlateau",
+      "Step decay"
+    ],
+    "answer": 3,
+    "explanation": "Step decay uses $\\eta_t=\\eta_0\\gamma^{\\lfloor t/k\\rfloor}$, commonly dropping by 10x every fixed interval. Those discrete drops create a staircase pattern."
+  },
+  {
+    "q": "What schedule does the chapter call the dominant standard for Transformers and LLMs?",
+    "options": [
+      "Pure exponential decay from the first step to the final step",
+      "Step decay with abrupt 10x drops every 30 epochs",
+      "Linear warmup for 1-5% of training followed by cosine annealing",
+      "A constant learning rate monitored only at the final test set"
+    ],
+    "answer": 2,
+    "explanation": "The chapter identifies warmup + cosine as the LLM/Transformer standard. Warmup stabilizes early updates, and cosine then reduces the rate smoothly."
+  },
+  {
+    "q": "Why is linear warmup especially useful at the beginning of large-batch or Transformer training?",
+    "options": [
+      "It immediately drives the learning rate to zero to prevent any weight change",
+      "It removes the need to initialize weights before the first forward pass",
+      "It turns stochastic gradients into exact gradients by increasing batch size",
+      "It avoids destructively large early updates when random weights create noisy gradients"
+    ],
+    "answer": 3,
+    "explanation": "The chapter says random initialization gives large, noisy early gradients, and a full-sized initial rate can destabilize training. Warmup lets the optimizer settle in gradually."
+  },
+  {
+    "q": "A practitioner does not know the total number of training steps and wants the learning rate to drop when validation loss stops improving. Which schedule matches the chapter?",
+    "options": [
+      "ReduceLROnPlateau",
+      "Cosine annealing with warm restarts",
+      "Step decay with a fixed epoch interval",
+      "Linear warmup without any later decay"
+    ],
+    "answer": 0,
+    "explanation": "ReduceLROnPlateau monitors a validation metric and multiplies the rate after patience epochs without improvement. It is useful when total steps are unknown."
+  },
+  {
+    "q": "Which choice correctly contrasts data augmentation and cross-validation as described in the generalization section?",
+    "options": [
+      "Augmentation measures model selection noise; cross-validation creates label-preserving examples",
+      "Augmentation creates label-preserving training variants; cross-validation evaluates multiple held-out splits",
+      "Augmentation is only for tabular data; cross-validation is only for Transformers",
+      "Augmentation tunes $\\lambda$ directly; cross-validation replaces the test set permanently"
+    ],
+    "answer": 1,
+    "explanation": "Data augmentation expands training data through label-preserving transforms such as image crops or flips. Cross-validation rotates held-out splits to estimate performance more reliably."
+  },
+  {
+    "q": "In the train/validation/test analogy, what makes the test set like the real exam?",
+    "options": [
+      "It is repeatedly used to choose hyperparameters until the model improves",
+      "It is used to fit parameters after the validation set stops improving",
+      "It is held untouched until the end to estimate final unseen performance",
+      "It is the largest split because every model should train on it"
+    ],
+    "answer": 2,
+    "explanation": "The test set is the final exam: use it once after all tuning is finished. Letting test results influence decisions contaminates the estimate."
+  },
+  {
+    "q": "For a dataset with more than one million rows, why does the chapter say a 98/1/1 split can be fine?",
+    "options": [
+      "The validation and test sets are unnecessary once the training set is large",
+      "One percent can still contain about 10,000 examples, enough for evaluation",
+      "Large datasets should always avoid hyperparameter tuning on validation data",
+      "The test data can be reused as training data without contamination"
+    ],
+    "answer": 1,
+    "explanation": "With very large datasets, even 1% can be thousands of examples. The chapter notes that 1% of one million is 10,000 rows, plenty for validation or test."
+  },
+  {
+    "q": "Which option is a label rather than a feature in the supervised examples from the chapter?",
+    "options": [
+      "Email sender domain used to identify spam",
+      "Pixel values fed into an image classifier",
+      "Next week sales in a time-series forecast",
+      "House age used to predict sale price"
+    ],
+    "answer": 2,
+    "explanation": "The label is the target being predicted. In the chapter's examples, daily sales history is input and next week sales is the target."
+  },
+  {
+    "q": "Which statement best describes softmax outputs in the chapter's probability example?",
+    "options": [
+      "They are raw logits that may be negative and need not sum to one",
+      "They are class probabilities that sum to 1.0 across the classes",
+      "They are regression errors measured in the target's original units",
+      "They are gradients used to update weights during the backward pass"
+    ],
+    "answer": 1,
+    "explanation": "The chapter's Cat/Dog/Bird example converts logits through softmax into probabilities such as 0.87, 0.12, and 0.01. These probabilities sum to 1.0."
+  },
+  {
+    "q": "A classification model outputs 51% cat and 49% dog on a blurry photo. What useful information do probabilities provide here?",
+    "options": [
+      "They show the model is basically guessing and may need human review",
+      "They prove the cat class is correct because it is the maximum probability",
+      "They eliminate the need for calibration checks in high-risk domains",
+      "They indicate that training loss must be exactly zero"
+    ],
+    "answer": 0,
+    "explanation": "The chapter emphasizes that probabilities express confidence, not just a hard class. A 51/49 split is uncertain and may justify asking a human to double-check."
+  }
+]

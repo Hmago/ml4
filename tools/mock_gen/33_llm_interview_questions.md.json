@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Standard (non-Flash) self-attention has which complexity profile with respect to sequence length n?",
+    "options": [
+      "O(n^2) compute and O(n^2) memory because all n x n pairwise scores must be computed and stored",
+      "O(n log n) compute and O(n) memory using hierarchical tree-based attention",
+      "O(n) compute and O(n) memory by maintaining a running state across token positions",
+      "O(n^2) compute and O(n) memory after the scores are normalized by softmax"
+    ],
+    "answer": 0,
+    "explanation": "Standard attention materializes the full n x n score matrix, requiring O(n^2) compute and O(n^2) memory. Flash Attention keeps O(n^2) compute but reduces memory to O(n) via tiled processing -- option D describes Flash Attention, not standard attention."
+  },
+  {
+    "q": "In multi-head attention, after H heads each produce a (d_model/H)-dimensional output, a final W_O projection is applied. What is its purpose?",
+    "options": [
+      "To apply independent layer normalization to each head before their outputs are summed together",
+      "To project the concatenated H head outputs back to a single d_model-dimensional representation",
+      "To generate Query, Key, and Value vectors from d_model down to d_model/H before each head",
+      "To inject positional information into the attention output via a learned positional bias"
+    ],
+    "answer": 1,
+    "explanation": "W_O takes the concatenation of all H head outputs (total dimension d_model) and linearly mixes them back to d_model. The W_Q, W_K, W_V projections (option C) happen before each head, not after."
+  },
+  {
+    "q": "RoPE (Rotary Position Embedding), used in LLaMA and Mistral, encodes position information by:",
+    "options": [
+      "Adding a learned position bias vector to each token embedding before the attention layer",
+      "Concatenating sinusoidal position encoding waves at fixed frequencies and directly appending them to each token embedding vector",
+      "Rotating the Query and Key vectors by a position-dependent angle before computing attention scores",
+      "Adding a linear distance penalty to raw attention logits based on token separation"
+    ],
+    "answer": 2,
+    "explanation": "RoPE multiplies Q and K by rotation matrices whose angle scales with position, encoding relative distance directly into the dot product. Option D describes ALiBi; option B describes the original Vaswani sinusoidal encoding."
+  },
+  {
+    "q": "During training, a decoder-only LLM applies causal masking primarily to allow:",
+    "options": [
+      "Gradient isolation so early-layer updates do not overwrite later-layer specialized weights",
+      "Bidirectional context encoding in early layers before switching to unidirectional generation",
+      "Padding tokens to be excluded from the loss computation in variable-length batches",
+      "The cross-entropy loss to be computed at every token position in one forward pass without future-token leakage"
+    ],
+    "answer": 3,
+    "explanation": "Causal masking blocks attention to future positions (scores set to -inf), enabling loss computation across all positions simultaneously (teacher forcing). Excluding padding uses a separate padding mask, not causal masking."
+  },
+  {
+    "q": "Mechanistic interpretability research consistently finds that feed-forward (FFN) layers in a Transformer primarily act as:",
+    "options": [
+      "Key-value memories that store factual knowledge, activated by pattern-matching against token representations",
+      "Positional routers that redistribute attention weight based on syntactic distance between tokens",
+      "Normalization modules that stabilize gradient flow between successive attention layers",
+      "Content-dependent gates that dynamically select which attention heads are most relevant"
+    ],
+    "answer": 0,
+    "explanation": "Research (Geva et al., 2021) shows FFN layers function as key-value memories: first-layer neurons fire for specific input patterns and second-layer neurons supply factual completions. FFNs hold roughly two-thirds of all model parameters."
+  },
+  {
+    "q": "Direct Preference Optimization (DPO) eliminates the separate reward model training step in RLHF by:",
+    "options": [
+      "Using rule-based classifiers instead of neural models to assign binary quality scores to responses",
+      "Re-parameterizing the RLHF objective so the optimal policy is expressed as log-likelihood ratios, making the reward implicit in the loss",
+      "Replacing pairwise preference labels with absolute 1-5 quality ratings and standard cross-entropy loss",
+      "Training the policy and a reward model jointly in a single multi-task learning objective"
+    ],
+    "answer": 1,
+    "explanation": "DPO (Rafailov et al., 2023) proves the KL-constrained RLHF objective has a closed-form solution expressible via log-probability ratios between the policy and a frozen reference model. No separate reward model or PPO loop is needed."
+  },
+  {
+    "q": "In Mixture of Experts (MoE) Transformers, expert collapse describes the failure mode where:",
+    "options": [
+      "Gradient explosion causes individual expert FFN weights to diverge beyond numerical stability",
+      "Experts overfit to specific training domains and fail to generalize to out-of-domain inputs",
+      "The router routes most or all tokens to a small subset of experts, leaving the remaining experts idle and undertrained",
+      "The decoder assigns nearly all attention weight to a single expert output, ignoring others"
+    ],
+    "answer": 2,
+    "explanation": "Expert collapse means the router ignores most experts, wasting model capacity. It is prevented by an auxiliary load-balancing loss added during training that penalizes unequal expert utilization across the batch."
+  },
+  {
+    "q": "In LoRA fine-tuning with rank r applied to a weight matrix W of shape (d x d), the number of trainable parameters added per adapted matrix is:",
+    "options": [
+      "d x r, for a single adapter matrix of the target rank",
+      "d x d minus r x r, representing the frozen complement of the low-rank subspace",
+      "r x r, for the inner square representing the low-rank bottleneck",
+      "2 x d x r, for matrices A of shape (d x r) and B of shape (r x d)"
+    ],
+    "answer": 3,
+    "explanation": "LoRA decomposes the weight update as delta_W = A * B where A is (d x r) and B is (r x d). Total trainable parameters per matrix: d*r + r*d = 2*d*r. For d=4096 with r=16, that is 131K instead of 16.8M parameters."
+  },
+  {
+    "q": "Multi-Query Attention (MQA) reduces KV cache memory compared to Multi-Head Attention (MHA) by sharing one K,V pair across all H query heads. This reduces KV cache size by a factor of:",
+    "options": [
+      "H, since MHA maintains H separate KV pairs but MQA maintains only one pair for all H query heads",
+      "2, since MQA eliminates the Value matrix while keeping one Key matrix per head",
+      "H/2, because MQA uses half the number of heads for Keys and half for Values",
+      "4, because MQA reduces head dimension from d_model/H to d_model/(4H)"
+    ],
+    "answer": 0,
+    "explanation": "MHA stores H key and H value vectors per token; MQA stores 1 key and 1 value shared by all H query heads -- exactly H times fewer KV entries. GQA sits between MHA and MQA by sharing one KV pair per group of G query heads."
+  },
+  {
+    "q": "In knowledge distillation for LLMs, a student model learns from a teachers soft targets rather than hard labels. What are soft targets?",
+    "options": [
+      "Hard one-hot labels smoothed by adding a small uniform noise term across the vocabulary",
+      "The teachers full probability distribution over the entire vocabulary at each token position",
+      "The teachers hidden-state activations at selected intermediate layers used as auxiliary supervision",
+      "Synthetic continuations generated by the teacher labeled with their own perplexity scores"
+    ],
+    "answer": 1,
+    "explanation": "Soft targets are the teachers complete output probability distribution. They carry dark knowledge: relative probabilities between incorrect tokens encode similarity structure that hard labels discard. Temperature scaling (T > 1) softens the distribution further to reveal more structure."
+  },
+  {
+    "q": "GRPO (Group Relative Policy Optimization), used to train DeepSeek-R1, differs from standard PPO primarily because GRPO:",
+    "options": [
+      "Trains without any reward signal by relying solely on language-model likelihood as a quality proxy",
+      "Maintains a faster-updating critic network that converges independently of the policy gradient",
+      "Computes advantage estimates from the average reward across a group of sampled outputs, eliminating the separate value network",
+      "Applies contrastive loss on positive and negative trajectories rather than using clipped policy gradient updates"
+    ],
+    "answer": 2,
+    "explanation": "GRPO replaces the PPO critic by computing the baseline from the mean reward of multiple responses sampled for the same prompt, simplifying training while retaining RLs ability to exploit verifiable reward signals."
+  },
+  {
+    "q": "BF16 (Brain Float 16) is preferred over FP16 for large-scale LLM training primarily because BF16:",
+    "options": [
+      "Provides twice the mantissa precision of FP16, reducing rounding error in gradient accumulation",
+      "Uses hardware tensor cores that execute BF16 matrix multiplications at 2x the throughput of FP16 on all modern GPU generations",
+      "Requires no loss scaling during training, making mixed-precision implementation simpler",
+      "Shares the same exponent range as FP32, preventing the overflow errors that frequently occur with FP16s narrower range"
+    ],
+    "answer": 3,
+    "explanation": "FP16 has only 5 exponent bits (max ~65504) and overflows during large-model training without loss scaling. BF16 has 8 exponent bits matching FP32s range, making overflow very rare. BF16 actually has fewer mantissa bits than FP16 (7 vs 10), so option A is backwards."
+  },
+  {
+    "q": "The InstructGPT paper showed that a 1.3B-parameter RLHF-tuned model was preferred by human raters over raw 175B GPT-3. What does this most directly demonstrate?",
+    "options": [
+      "Human preference alignment can yield a more helpful model despite having 100x fewer parameters than the raw baseline",
+      "Smaller models are inherently less prone to sycophancy and more factually honest regardless of the fine-tuning training method applied",
+      "RLHF amplifies factual accuracy more reliably than additional pre-training parameters do",
+      "The number of human comparison pairs collected is the dominant factor in final model quality"
+    ],
+    "answer": 0,
+    "explanation": "The result shows alignment matters more than raw scale for perceived helpfulness: teaching the model what humans actually want (via RLHF) can outweigh a 100x parameter advantage."
+  },
+  {
+    "q": "Retrieval-Augmented Generation (RAG) is preferred over fine-tuning for keeping model knowledge up to date because RAG:",
+    "options": [
+      "Produces lower perplexity on documents added after the training cutoff by adjusting the model logits at inference",
+      "Allows new information to be incorporated by updating the retrieval index without retraining the model",
+      "Increases the effective context window to millions of tokens by offloading context to an external database",
+      "Automatically resolves conflicts between retrieved documents and model weights via an arbitration layer"
+    ],
+    "answer": 1,
+    "explanation": "The key RAG advantage for freshness: adding or updating documents only requires re-embedding and reinserting them into the vector store. No gradient updates, no retraining. Options A and D describe non-existent mechanisms; option C conflates context window extension with RAG."
+  },
+  {
+    "q": "Why does LoRA fine-tuning inherently mitigate catastrophic forgetting more effectively than full fine-tuning?",
+    "options": [
+      "LoRA uses a smaller learning rate that prevents large parameter changes from occurring",
+      "LoRA adds weight decay to adapter matrices, regularizing updates so general representations are preserved",
+      "The original pre-trained weights are frozen and unchanged; only the small adapter matrices are updated, structurally preserving general knowledge",
+      "LoRA initializes the B matrix to zero so the total weight change starts at zero and stays small throughout"
+    ],
+    "answer": 2,
+    "explanation": "Catastrophic forgetting occurs when gradient updates overwrite weights important for general tasks. In LoRA the pre-trained weights W are frozen -- gradient updates only affect A and B. General knowledge encoded in W is structurally preserved, not just approximately preserved."
+  },
+  {
+    "q": "Flash Attention achieves sub-quadratic HBM memory usage (O(n)) while maintaining O(n^2) FLOPs by:",
+    "options": [
+      "Approximating the softmax with a low-rank polynomial kernel that avoids materializing the full score matrix",
+      "Using random projection to compress Q, K, V to lower dimensionality before computing attention scores",
+      "Tiling Q, K, V into SRAM blocks and computing a streaming online softmax across tiles, never materializing the full n x n attention matrix in HBM",
+      "Applying KV cache compression to token representations in HBM after attention computation is complete"
+    ],
+    "answer": 3,
+    "explanation": "Flash Attention (Dao et al., 2022) keeps the running softmax statistics in fast on-chip SRAM and fuses the attention computation into one kernel, avoiding the round trip to write and read the full HBM attention matrix. HBM reads/writes dominate wall-clock time, so this gives major speedups."
+  },
+  {
+    "q": "The Chinchilla scaling law (Hoffmann et al., 2022) revised earlier Kaplan scaling laws by finding that for compute-optimal training:",
+    "options": [
+      "Training tokens and model parameters should both scale proportionally to the square root of the compute budget",
+      "Increasing model size while holding training data fixed always dominates any other parameter allocation strategy",
+      "Gradient checkpointing eliminates the memory bottleneck that had limited optimal model size",
+      "Training data quality can substitute for model size without loss on downstream reasoning benchmarks"
+    ],
+    "answer": 0,
+    "explanation": "Chinchilla showed N_opt proportional to sqrt(C) and D_opt proportional to sqrt(C): both scale equally with compute. GPT-3 (175B params, 300B tokens) was massively undertrained; LLaMA trained smaller models on far more data and matched or beat GPT-3."
+  },
+  {
+    "q": "HNSW (Hierarchical Navigable Small World) graphs are widely used for approximate nearest-neighbor retrieval in RAG systems because they provide:",
+    "options": [
+      "Exact nearest-neighbor guarantees with worst-case O(n) exhaustive scan triggered when the HNSW graph structure becomes too saturated to navigate",
+      "Sub-linear O(log n) average query time by navigating from coarse to fine graph layers, avoiding exhaustive search",
+      "O(n^2) index construction time that is amortized over millions of queries to yield fast per-query cost",
+      "Lossless compression of embedding vectors that halves memory usage while maintaining exact distances"
+    ],
+    "answer": 1,
+    "explanation": "HNSW builds hierarchical layers: queries start at the sparse top layer and greedily descend to fine layers, giving O(log n) average lookup. This is approximate (not exact), but recall is typically >95% at practical ef values."
+  },
+  {
+    "q": "Sparse Mixture of Experts models like Mixtral 8x7B achieve high effective parameter counts while keeping per-token compute manageable. In production serving, the principal memory challenge is that:",
+    "options": [
+      "Only the router weights must fit in GPU memory, while expert weights can stay on CPU and stream on demand",
+      "Sparse activation means fewer GPU tensor cores are utilized, reducing effective compute throughput",
+      "All 47B+ expert parameters must reside in GPU memory simultaneously, regardless of how many experts are active per token",
+      "Expert selection is non-deterministic at each step, requiring speculative memory pre-loading that effectively doubles the total runtime memory usage"
+    ],
+    "answer": 2,
+    "explanation": "Although only 2 experts are active per token, every expert must be memory-resident so the router can select any pair. You cannot page experts in/out per token without prohibitive latency, so MoE models have large memory footprints despite sparse activation."
+  },
+  {
+    "q": "Few-shot in-context learning allows GPT-class models to adapt to new tasks at inference time without updating any weights. What do few-shot demonstrations primarily convey?",
+    "options": [
+      "Compressed gradient updates that temporarily shift internal attention patterns toward the task distribution",
+      "The exact tokens the model should copy-paste to form a valid structured output",
+      "The desired task format, input-output structure, and output style, from which the model infers the pattern to continue",
+      "Domain-specific factual knowledge that overrides prior-knowledge representations from pre-training"
+    ],
+    "answer": 3,
+    "explanation": "ICL demonstrations show the model the format: what kind of input maps to what kind of output. The model infers the task specification from the pattern and continues it for the query input. No weight update occurs; domain knowledge still comes primarily from pre-training."
+  },
+  {
+    "q": "In-context learning (ICL) is considered an emergent capability because:",
+    "options": [
+      "It only appears in very large models (typically 10B+ parameters) and was not reliably observed in smaller models during the original GPT-2 era scaling studies",
+      "It requires a specially formatted system prompt that small models fail to parse but large models understand",
+      "ICL depends on instruction-tuning data which was only introduced after GPT-3, making it unavailable to earlier models",
+      "Emergent means that ICL requires specific architectural innovations, specifically attention sink mechanisms that activate at scale"
+    ],
+    "answer": 0,
+    "explanation": "Wei et al. (2022) documented emergence: capabilities like few-shot ICL appeared suddenly at scale (circa 100B parameters in GPT-3) and were absent in smaller models. Whether this is truly discontinuous or an artifact of evaluation is debated, but ICL is a paradigmatic example of emergent behavior."
+  },
+  {
+    "q": "PagedAttention (introduced with the vLLM serving system) improves KV cache utilization by:",
+    "options": [
+      "Replacing dynamic KV allocation with a fixed cache that evicts oldest sequences when full",
+      "Storing KV tensors in non-contiguous memory pages similar to OS virtual memory, eliminating pre-allocation waste",
+      "Compressing KV cache entries with quantization to INT8 before writing to GPU memory",
+      "Splitting long sequences into fixed-length independent chunks and processing each chunk separately in parallel without any shared cross-chunk memory"
+    ],
+    "answer": 1,
+    "explanation": "Traditional serving pre-allocates contiguous GPU memory for max sequence length, wasting memory for shorter sequences. PagedAttention uses paged memory: KV blocks are allocated on demand from a pool of fixed-size pages, and pages need not be contiguous, radically reducing fragmentation."
+  },
+  {
+    "q": "The ReAct (Reason + Act) framework for LLM agents structures the agent loop as alternating Thought, Action, and Observation steps. What does the Observation represent?",
+    "options": [
+      "The models self-critique score rating of whether its most recent reasoning step was logically coherent and factually valid",
+      "The users natural language evaluation of the latest model response in the conversation",
+      "The result returned from an external tool call (e.g., search API, code executor, database query)",
+      "The confidence score the model assigns to its planned next action before executing it"
+    ],
+    "answer": 2,
+    "explanation": "In ReAct, after the model emits a Thought (reasoning) and Action (tool call), the external environment executes the action and returns the Observation (raw tool output). The model then reads the Observation and plans its next Thought. This grounds the agent in real tool results."
+  },
+  {
+    "q": "A cross-encoder used in RAG re-ranking differs from a bi-encoder used for first-stage retrieval in that a cross-encoder:",
+    "options": [
+      "Encodes query and document into the same vector space, enabling cosine similarity scoring at query time",
+      "Processes query and document independently, producing embeddings that can be pre-computed and stored in an index",
+      "Jointly processes the concatenated [query, document] pair in the same forward pass, enabling fine-grained interaction signals",
+      "Applies sparse keyword overlap as a primary signal and neural attention as a secondary re-ranking signal"
+    ],
+    "answer": 3,
+    "explanation": "A cross-encoder feeds [CLS] [query] [SEP] [document] as a single input, allowing every query token to attend to every document token, yielding high-quality relevance scores. The cost: no pre-computation of document representations, so it cannot be used for first-stage retrieval over millions of documents."
+  },
+  {
+    "q": "The Model Context Protocol (MCP) improves the LLM agent ecosystem specifically by solving which integration problem?",
+    "options": [
+      "It provides a universal server-client interface so each tool is built once and any MCP-compatible model can use it, replacing the N*M integration problem",
+      "It standardizes the fine-tuning API so any model can be adapted to new tools without modifying training code",
+      "It compresses tool definitions into dense embeddings so thousands of tools can be made available without consuming large amounts of context",
+      "It uses cryptographic signing to verify that external tool outputs are trustworthy before feeding them to the model"
+    ],
+    "answer": 0,
+    "explanation": "Before MCP, integrating M tools with N LLMs required N*M custom connectors. MCP defines a standard protocol: tools expose an MCP server, models use an MCP client. Any MCP client can use any MCP server, reducing the integration burden to N+M implementations."
+  },
+  {
+    "q": "In chain-of-thought (CoT) prompting, the most important property enabling emergent CoT reasoning in large models is that the model was trained to:",
+    "options": [
+      "Predict the next token, which incidentally optimizes for logical coherence as a side effect of grammaticality",
+      "Generate reasoning steps as intermediate tokens, allocating additional compute per token before committing to a final answer",
+      "Use reinforcement learning on human-labeled reasoning traces that provide step-by-step reward signals",
+      "Attend to distant prior tokens via relative position encodings specifically designed to prevent multi-step CoT traces from exceeding the context limit"
+    ],
+    "answer": 1,
+    "explanation": "CoT works because generating reasoning tokens before the final answer gives the model extra compute at inference time. Each intermediate token can carry and refine partial results, turning chain-of-thought into effective serial computation. This emerges from next-token prediction training on reasoning-rich corpora."
+  },
+  {
+    "q": "Contextual Retrieval (Anthropic, 2024) reduces retrieval failures in RAG systems by:",
+    "options": [
+      "Re-ranking retrieved chunks using a cross-encoder immediately before inserting them into the LLM context",
+      "Replacing embedding-based retrieval with BM25 keyword search to avoid embedding models hallucinating chunk meaning",
+      "Prepending a short LLM-generated context summary to each chunk before embedding, making each embedding carry document-level meaning",
+      "Caching frequently retrieved chunks so that common queries bypass the vector index entirely"
+    ],
+    "answer": 2,
+    "explanation": "Without context, a chunk like It increased by 12% is ambiguous. Contextual Retrieval prepends This passage is from Q3 2024 earnings for company X, where revenue increased by 12% before embedding the chunk, dramatically improving semantic retrievability."
+  },
+  {
+    "q": "Tensor parallelism for large model inference requires high inter-GPU bandwidth (NVLink rather than PCIe) primarily because:",
+    "options": [
+      "Tensor parallelism replicates the full model on each GPU, requiring full parameter synchronization after every forward pass",
+      "Weight matrices are sharded across GPUs so every attention/FFN operation requires an all-reduce communication step mid-layer",
+      "Tensor parallelism pipelines gradient computation across layers, and PCIe latency breaks pipeline timing",
+      "Activation checkpointing in tensor parallelism must broadcast full activations to all GPUs every layer"
+    ],
+    "answer": 3,
+    "explanation": "Tensor parallelism shards weight matrices -- e.g., splitting attention heads across GPUs. Each forward pass through a sharded layer requires an all-reduce to sum partial results before moving to the next layer. These all-reduces happen multiple times per layer per forward pass, requiring the ~600 GB/s NVLink bandwidth."
+  },
+  {
+    "q": "Reinforcement Learning from Verifiable Rewards (RLVR), used in DeepSeek-R1 and similar reasoning models, avoids the need for a separately trained reward model because:",
+    "options": [
+      "Verifiable tasks (math proofs, code execution) have ground-truth answers, so reward is determined by exact-match or program execution, not a learned model",
+      "It uses a large teacher model to annotate all training responses with quality scores before the RL loop begins",
+      "Human raters can verify correctness for these tasks faster than other domains, making manual reward labeling practical at scale",
+      "Constitutional principles provide binary valid/invalid judgments that act as the reward signal without a separate model"
+    ],
+    "answer": 0,
+    "explanation": "RLVR is applicable when correctness can be automatically checked: run the generated code and check test cases, or compare a math answer to the known solution. This bypasses reward model bias, reward hacking, and distribution shift problems that plague learned reward models."
+  },
+  {
+    "q": "Self-consistency prompting (Wang et al., 2022) improves LLM reasoning accuracy primarily by:",
+    "options": [
+      "Asking the model to re-read the question twice before answering to ensure it has fully processed and parsed the entire input prompt",
+      "Generating multiple independent reasoning chains at temperature T > 0 and selecting the answer by majority vote",
+      "Fine-tuning the model on its own correct outputs in an iterative self-improvement loop",
+      "Adding a meta-prompt that instructs the model to verify each step before proceeding to the next"
+    ],
+    "answer": 1,
+    "explanation": "Self-consistency samples multiple diverse reasoning paths at higher temperature, then aggregates their final answers by majority vote. This reduces variance from any single noisy chain. It is inference-only and requires no training changes -- unlike option C which describes iterative self-play fine-tuning."
+  },
+  {
+    "q": "When profiling an LLM inference workload, engineers observe that Time to First Token (TTFT) is slow but Tokens Per Second (TPS) throughput is high. This pattern indicates:",
+    "options": [
+      "The model is over-provisioned for memory bandwidth, so adding cheaper DDR5 memory would improve both metrics",
+      "The decode phase is bottlenecked by GPU FLOP capacity while the prefill phase is memory-bandwidth limited",
+      "The prefill phase (processing the full prompt) is compute-bound (long prompts), while the decode phase is memory-bandwidth bound",
+      "The KV cache is exhausted causing frequent evictions during prefill but not during autoregressive decode"
+    ],
+    "answer": 2,
+    "explanation": "TTFT measures prompt processing (prefill): dense matrix multiplications over all prompt tokens -- compute-bound. TPS measures autoregressive decode: one token per step means mostly KV cache reads -- memory-bandwidth bound. These two phases have fundamentally different bottlenecks."
+  },
+  {
+    "q": "Prompt caching (supported by Claude API and others) provides the greatest cost savings when:",
+    "options": [
+      "System prompts are short and specific to each user request so they change frequently between calls",
+      "Model responses are very long relative to the prompt, making input token cost negligible compared to output cost",
+      "Stable content (long system prompt, few-shot examples, reference documents) appears at the beginning of the prompt and repeats across many requests",
+      "The prompt uses a temperature of 0 so the model always returns the same response and the cache can be keyed on outputs"
+    ],
+    "answer": 3,
+    "explanation": "Prompt caching works by KV-caching the prefix of a prompt. The prefix must be identical across requests. Putting static system prompts and reference documents first -- followed by variable user queries -- maximizes cache hit rate and minimizes per-request compute and cost."
+  },
+  {
+    "q": "Static batching in early LLM serving systems wasted GPU resources because:",
+    "options": [
+      "The entire batch had to wait until the longest sequence in the batch finished generating before results were returned",
+      "Fixed batch sizes prevented the GPU from dynamically resizing tensor cores between requests",
+      "FP16 matrix multiplications are not supported for batched inference, forcing slower FP32 computation",
+      "Static batches always processed requests in strict FIFO order, causing head-of-line blocking that delayed time-sensitive priority requests"
+    ],
+    "answer": 0,
+    "explanation": "In static batching, a GPU slot occupied by a nearly-finished sequence sits idle while waiting for a slow sequence in the same batch to finish. Continuous batching (used by vLLM and Orca) inserts new sequences mid-batch as slots free up, keeping GPU utilization high."
+  },
+  {
+    "q": "INT4 weight quantization of a 70B-parameter LLM (originally stored in BF16) reduces model size from approximately 140 GB to which approximate size, and what is the typical accuracy penalty?",
+    "options": [
+      "17.5 GB with essentially no measurable accuracy loss on standard benchmarks",
+      "35 GB with a typical accuracy degradation of 1 to 3 percentage points on standard benchmarks",
+      "35 GB with a severe degradation of 10+ percentage points making the model unusable for complex tasks",
+      "70 GB with less than 0.1% accuracy loss because INT4 has sufficient precision for transformer weights"
+    ],
+    "answer": 1,
+    "explanation": "70B * 4 bits / 8 bits-per-byte = 35 GB. Modern INT4 methods (GPTQ, AWQ, BnB) typically sacrifice 1-3 percentage points on benchmarks. Larger degradation (option C) occurs only with naive round-to-nearest quantization without calibration data."
+  },
+  {
+    "q": "Constitutional AI (Anthropic, 2022) trains a more helpful and harmless assistant by:",
+    "options": [
+      "Filtering training data with a human-labeled content moderation classifier before supervised fine-tuning",
+      "Using a debate protocol where two AI agents argue opposing positions and a human judge picks the winner",
+      "Having the model critique its own outputs against a list of principles, revise them, then training on the revised outputs with RLAIF",
+      "Augmenting RLHF with adversarial human red-teamers who rate harmful responses with a special penalty reward"
+    ],
+    "answer": 2,
+    "explanation": "CAI pipeline: (1) Supervised phase -- model generates response, critiques it against each constitutional principle, revises; train on revised outputs. (2) RLAIF phase -- use a feedback model (not humans) to select harmless responses, then run PPO. Human labeling is minimal."
+  },
+  {
+    "q": "What is the primary reason that autoregressive token generation cannot be fully parallelized during the decode phase, unlike prompt processing (prefill)?",
+    "options": [
+      "The KV cache for each new token must be written to CPU memory before the next token can be computed",
+      "Each generated token depends on all previously generated tokens, so each step must complete before the next step begins",
+      "The vocabulary projection layer (lm_head) is too large to be computed in batches during the decode phase",
+      "GPU tensor cores cannot reuse computation across decode steps because attention weights change every step"
+    ],
+    "answer": 3,
+    "explanation": "Autoregressive generation is inherently sequential: token t+1 is conditioned on token t (and all prior tokens), so step t must complete before step t+1 can begin. This is the fundamental dependency that prevents decode parallelism. Prefill processes all prompt tokens in parallel because future tokens are not yet needed."
+  },
+  {
+    "q": "The softmax temperature T in autoregressive decoding controls diversity as follows: as T approaches 0, the distribution:",
+    "options": [
+      "Collapses to a near-deterministic peak on the highest-logit token, approximating greedy decoding",
+      "Approaches a uniform distribution over the vocabulary, maximizing output diversity and creativity",
+      "Assigns equal probability to every token whose logit exceeds a threshold and zero to the rest",
+      "Increases the effective vocabulary size by redistributing probability mass to rare tokens"
+    ],
+    "answer": 0,
+    "explanation": "Dividing logits by T < 1 before softmax sharpens the distribution; as T -> 0 the top token probability approaches 1 (greedy). T > 1 flattens the distribution toward uniform. Self-consistency sampling uses T > 0 to get diverse chains."
+  },
+  {
+    "q": "RAGAS (RAG Assessment Suite) evaluates retrieval quality using a metric called Faithfulness, defined as:",
+    "options": [
+      "The fraction of retrieved chunks that are semantically relevant to the user question according to a judge model",
+      "The fraction of claims in the generated answer that are explicitly supported by the retrieved context",
+      "The cosine similarity between the question embedding and the mean embedding of the retrieved documents",
+      "The proportion of the reference answer tokens that appear verbatim in the generated answer"
+    ],
+    "answer": 1,
+    "explanation": "Faithfulness = (claims in answer supported by context) / (total claims in answer). A high score means the model is not hallucinating beyond the retrieved content. Context Relevance and Answer Relevance are separate RAGAS metrics."
+  },
+  {
+    "q": "Reasoning models like OpenAI o1 and DeepSeek-R1 differ from standard instruction-tuned models most significantly in that they:",
+    "options": [
+      "Use a different tokenizer that splits numbers into individual digit tokens for improved arithmetic",
+      "Replace the Transformer architecture with a symbolic reasoning engine that interprets formal logic",
+      "Spend substantially more tokens on internal chain-of-thought reasoning at inference time before emitting the final answer",
+      "Are trained on exclusively mathematical and coding data, giving them specialized but narrow capabilities"
+    ],
+    "answer": 2,
+    "explanation": "Reasoning models are trained (via RLHF/RL) to think out loud in long hidden scratchpads before producing answers, effectively using test-time compute to reason. o1 often generates thousands of reasoning tokens before a single answer token. Architecture and tokenizer are similar to standard LLMs."
+  },
+  {
+    "q": "Tokenization causes out-of-vocabulary (OOV) and character-count errors because LLMs fundamentally operate on:",
+    "options": [
+      "Unicode codepoints, which are fixed-length and therefore fail on multi-byte characters in CJK scripts",
+      "Character n-grams of fixed size that merge rare characters with adjacent common characters probabilistically",
+      "Fixed-size word embeddings that collapse inflected forms with different meanings to the same representation",
+      "Sub-word tokens that may merge several characters; the model never sees individual characters unless they form tokens on their own"
+    ],
+    "answer": 3,
+    "explanation": "When BPE merges characters into tokens, a model never directly attends to individual characters inside a merged token. Counting characters in hello requires the model to reason about the token hell-o (or similar splits), which it was not trained to do reliably. This is a fundamental limitation."
+  },
+  {
+    "q": "Top-p (nucleus) sampling selects the smallest set of tokens whose cumulative probability exceeds p, then samples from this set. Its advantage over top-k sampling is that:",
+    "options": [
+      "It adapts the candidate set size to the local distribution: narrow when the model is confident, wider when uncertain",
+      "It guarantees exactly k candidates per step, making decoding speed perfectly predictable across all token positions in a sequence",
+      "It eliminates the temperature hyperparameter entirely, making it simpler to tune for a specific task",
+      "It is mathematically equivalent to beam search with a dynamic beam width, preserving coherence"
+    ],
+    "answer": 0,
+    "explanation": "Top-k always picks the same number k of candidates regardless of how concentrated the distribution is. Top-p dynamically adjusts: if the top-1 token has p=0.95 and nucleus p=0.9, only that token is sampled (very focused). If the distribution is flat, many tokens make it into the nucleus, preserving diversity."
+  },
+  {
+    "q": "An LLM evaluation framework uses an LLM-as-judge to compare model outputs on open-ended queries. A well-documented bias in this setup is that LLM judges tend to:",
+    "options": [
+      "Penalize longer responses regardless of content quality because verbosity correlates with padding",
+      "Prefer responses listed first (position bias) and responses that match the judges own style (self-preference bias)",
+      "Rate responses higher when they include numerical statistics, even when the numbers are irrelevant",
+      "Consistently score chat-tuned models lower than base models on factual accuracy benchmarks"
+    ],
+    "answer": 1,
+    "explanation": "Multiple studies document positional bias (first-presented response wins more often) and self-preference bias (a model used as judge favors its own family outputs). Mitigations include randomizing response order and using multi-judge ensembles."
+  },
+  {
+    "q": "State space models (SSMs) like Mamba achieve O(n) inference complexity per step compared to Transformers O(n^2) but consistently underperform Transformers on tasks requiring:",
+    "options": [
+      "Multi-step arithmetic where intermediate results must be tracked across many tokens",
+      "Code generation tasks where the model must maintain consistent variable naming over long files",
+      "Precise retrieval of specific facts from long input documents (e.g., key lookup, passkey retrieval tests)",
+      "Open-domain question answering where world knowledge is encoded in model parameters"
+    ],
+    "answer": 2,
+    "explanation": "SSMs compress history into a fixed-size state, which makes them efficient but lossy. Precise key-value recall -- where a specific token from thousands of positions back must be retrieved exactly -- is a known weakness. Transformers retain exact access to every past token via the KV cache."
+  },
+  {
+    "q": "The guardrails approach to LLM safety adds external input/output classifiers rather than relying solely on model alignment because:",
+    "options": [
+      "External classifiers always achieve higher precision than model self-refusal because they run an entirely separate specialized neural inference pass",
+      "Alignment training can degrade over time as the model continues to learn from user feedback in production",
+      "Model self-refusal is unreliable for open-source models since the safety training data is publicly available",
+      "Guardrails can be updated independently and in response to new threats without triggering expensive re-training of the base model"
+    ],
+    "answer": 3,
+    "explanation": "Guardrails (NeMo Guardrails, Llama Guard, etc.) are modular: you can deploy a new content policy without fine-tuning the base model. They also provide defense-in-depth -- catching jailbreaks that succeed despite model alignment. Options A and D make overly absolute claims."
+  },
+  {
+    "q": "Native multimodal LLMs (e.g., GPT-4V, Gemini) differ from adapter-based vision-language models by:",
+    "options": [
+      "Treating visual tokens as first-class inputs during pre-training itself, learning to interleave text and image representations from the beginning",
+      "Using a frozen image encoder with a single linear projection connecting its output to the LLM, thereby avoiding any direct fine-tuning of the language model weights",
+      "Applying cross-attention between image patch embeddings and text token embeddings only in the final transformer layer",
+      "Quantizing image patch features to a discrete codebook so they share the same token vocabulary as text"
+    ],
+    "answer": 0,
+    "explanation": "Adapter models (LLaVA, InstructBLIP) freeze the LLM and bolt on a vision encoder with a small connector. Native multimodal models train the text and vision representations jointly from the start, allowing deeper fusion of modalities. Option A describes LLaVAs original design."
+  },
+  {
+    "q": "Perplexity on a held-out text set is a useful proxy for language model quality, but it is a poor predictor of downstream task safety because:",
+    "options": [
+      "Perplexity measures token-level prediction accuracy, which only correlates with grammar but not with factual correctness",
+      "A model can achieve low perplexity on held-out text (predict tokens well) while still generating harmful, biased, or hallucinated content freely",
+      "Perplexity is undefined on tasks that require yes/no answers rather than free-form token generation",
+      "Low perplexity implies high confidence, and overconfident models refuse to generate harmful content"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity captures how well the model predicts text, but safety requires the model to not output certain harmful completions. A model that perfectly predicts a harmful training corpus has near-zero perplexity but terrible safety properties."
+  },
+  {
+    "q": "Data contamination in benchmark evaluations occurs when benchmark test samples appear in the training corpus. The most reliable method to detect this is:",
+    "options": [
+      "Re-running the model on the same benchmark with slightly paraphrased questions and checking for performance drops",
+      "Measuring training loss on benchmark samples and flagging those with unusually low loss as potential memorization",
+      "Checking n-gram overlap (e.g., 13-gram exact match) between training data and benchmark test items",
+      "Monitoring GPU memory usage during inference, since memorized samples require less working memory to decode"
+    ],
+    "answer": 2,
+    "explanation": "N-gram overlap analysis is the standard detection approach: a high proportion of unique long n-grams (13+) from a test question appearing in training data is strong evidence of contamination. Option A is useful but detects effects after the fact; option B works at the example level but requires access to individual training losses."
+  },
+  {
+    "q": "The LIMA paper (Zhou et al., 2023) challenged the conventional wisdom that large SFT datasets are critical by demonstrating that:",
+    "options": [
+      "A model fine-tuned on 10 million automatically generated examples matched GPT-4 on 70% of test prompts",
+      "LoRA adapters trained on 1000 examples matched full fine-tuning on 100k examples due to lower overfitting",
+      "Instruction tuning is unnecessary if RLHF is applied directly to the base model with a sufficient number of pairwise comparisons",
+      "Fine-tuning a 65B LLaMA model on just ~1000 carefully curated high-quality examples produced a strong instruction-following assistant competitive with larger-dataset baselines"
+    ],
+    "answer": 3,
+    "explanation": "LIMA (Less Is More for Alignment) showed that if you select very high-quality, diverse examples the quantity of SFT data matters much less than quality. The model learned the output style and format efficiently from a small but rich dataset, implying much of the knowledge comes from pre-training."
+  },
+  {
+    "q": "Gender bias in LLM outputs (e.g., defaulting to he for doctor) most directly originates from:",
+    "options": [
+      "Pre-training on internet-scale text that reflects historical societal biases in professional gender associations",
+      "A defect in the BPE tokenizer that maps gendered words to overlapping token sequences creating spurious correlations",
+      "The RLHF annotation workforce consisting predominantly of one demographic group whose preferences dominate the reward model",
+      "Residual stream analysis showing that gender features are concentrated in a small number of outlier attention heads that could be pruned"
+    ],
+    "answer": 0,
+    "explanation": "Internet-scale corpora encode societal bias: doctor, engineer, CEO are historically associated with male pronouns; nurse, assistant with female. The model learns these statistical regularities. While RLHF can introduce additional biases, the primary source is pre-training data statistics."
+  },
+  {
+    "q": "MMLU (Massive Multitask Language Understanding) was widely used as a premier LLM benchmark until approximately 2024, when it was criticized because:",
+    "options": [
+      "Its questions were too abstract and philosophical, making them a poor proxy for practical LLM utility in real applications",
+      "The 57-subject multiple-choice format had been saturated (top models exceeding 90%), reducing its ability to differentiate frontier models",
+      "Token-level perplexity on the MMLU test set became a standard training objective, invalidating it as a held-out evaluation",
+      "Human experts scored below 80% on MMLU, proving the benchmark was mislabeled and of poor quality"
+    ],
+    "answer": 1,
+    "explanation": "When GPT-4 and similar models exceeded 86-90% on MMLU, it lost discriminative power for comparing top models. The community shifted to harder benchmarks (GPQA Diamond, ARC-AGI, LiveCodeBench). Human expert performance is actually ~90%, not below 80%."
+  },
+  {
+    "q": "The EU AI Act imposes additional obligations on providers of general-purpose AI models with systemic risk. What capability threshold is used to categorize a model as having systemic risk?",
+    "options": [
+      "The model must be deployed in at least one critical infrastructure sector as defined by the NIS2 Directive",
+      "The model must be closed-source and commercially licensed, excluding open-source models from the systemic-risk tier",
+      "The model must have been trained with computational resources exceeding 10^25 FLOPs",
+      "The model must demonstrate autonomous tool use or code execution capability in a safety evaluation"
+    ],
+    "answer": 2,
+    "explanation": "The EU AI Act (2024) defines systemic-risk models as those trained with more than 10^25 FLOPs. Providers of such models face enhanced obligations including adversarial testing, incident reporting, and cybersecurity measures. Open-source models with systemic risk can still be covered."
+  },
+  {
+    "q": "Embedding dimensionality in dense retrieval models involves a direct tradeoff: higher dimensions provide richer representations but:",
+    "options": [
+      "Make cosine similarity less numerically stable due to floating-point normalization errors at high precision",
+      "Require the retrieval corpus to be re-embedded from scratch whenever the query encoder is updated",
+      "Force the embedding model to use a larger batch size that strains GPU memory during document encoding",
+      "Increase storage costs, memory footprint during indexing, and slow down nearest-neighbor search because distances span larger vectors"
+    ],
+    "answer": 3,
+    "explanation": "Higher-d embeddings improve recall quality but scale storage as d*n*4 bytes for n documents. HNSW distance computations are also more expensive in higher dimensions. Matryoshka Representation Learning is one approach to getting variable-d embeddings from a single model."
+  },
+  {
+    "q": "Grouped Query Attention (GQA) is a middle ground between Multi-Head Attention (MHA) and Multi-Query Attention (MQA). In GQA with G groups and H query heads:",
+    "options": [
+      "There are H/G Key/Value heads, each shared by G query heads, reducing KV cache size by factor G compared to MHA",
+      "There are H Key/Value heads but they are grouped into G clusters that share weights, reducing KV parameters by G",
+      "There are G Key/Value heads per layer and H/G query heads per group, fully eliminating the W_Q projection matrix",
+      "Query heads are merged into G groups with shared Q projections but independent K and V heads per query head"
+    ],
+    "answer": 0,
+    "explanation": "GQA uses H/G KV heads, each serving a group of G query heads. When G=1, GQA=MQA; when G=H, GQA=MHA. Used in LLaMA-2 70B and Mistral, it saves KV cache memory by factor G with minimal quality degradation. Option A describes a different scheme that still materializes H KV heads."
+  },
+  {
+    "q": "Sycophancy in RLHF-trained models is the tendency to agree with user assertions even when they are incorrect. Its primary cause is:",
+    "options": [
+      "The model being too large -- larger models are more sensitive to user cues and more likely to mirror assertions",
+      "The RLHF reward model exploiting human rater preference for agreeable responses, creating a reward hacking incentive",
+      "Insufficient diversity in the pretraining corpus leading to models that have not seen enough contradictory opinions",
+      "Temperature calibration errors during inference that cause the model to assign too much probability to the users implied preference"
+    ],
+    "answer": 1,
+    "explanation": "Human raters often prefer agreeable responses in pairwise comparisons, even when factually incorrect. The reward model learns this preference and PPO optimizes the policy toward sycophantic outputs. Mitigation approaches include targeted datasets of human corrections to clearly wrong assertions."
+  },
+  {
+    "q": "In the lost-in-the-middle phenomenon, an LLM performs best on long-context tasks when relevant information is positioned:",
+    "options": [
+      "In the middle of the context window where the model dedicates the most attention capacity",
+      "Spread uniformly across the entire context window so no single token position accumulates disproportionate attention weight from the model",
+      "At the very beginning or end of the context window, where positional primacy and recency effects are strongest",
+      "After a special separator token that signals to the model a highly relevant passage follows"
+    ],
+    "answer": 2,
+    "explanation": "Liu et al. (2023) found LLM performance on key-lookup tasks degrades sharply when relevant information is in the middle of a long context. Information at the start or end is much more reliably retrieved, suggesting attention is positionally biased even in long-context models."
+  },
+  {
+    "q": "Prompt injection attacks targeting LLM-based agents are especially dangerous compared to prompt injection in simple chatbots because agents:",
+    "options": [
+      "Use larger context windows that are harder to monitor for injected content than short chatbot contexts",
+      "Are usually deployed without any system prompt, giving attackers more surface area to control behavior",
+      "Produce longer outputs that expose more attack surface for exfiltration through steganographic token patterns",
+      "Can execute actions (web searches, file writes, API calls, code execution) that have real-world side effects beyond generating text"
+    ],
+    "answer": 3,
+    "explanation": "A chatbot that follows injected instructions generates bad text -- annoying but contained. An agent that follows injected instructions can send emails, delete files, exfiltrate data, or make purchases. The real-world action capability is what makes prompt injection an agent security issue."
+  },
+  {
+    "q": "When fine-tuning a pre-trained LLM using supervised fine-tuning (SFT), the loss is typically computed only on the assistant turns rather than the full token sequence. The rationale is:",
+    "options": [
+      "Computing loss on prompt tokens would cause the model to learn to generate user-style queries rather than assistant-style responses",
+      "Human preference labels are only available for assistant turns, making loss computation on other turns technically impossible",
+      "The prompt tokens are often repeated across many examples, and including them would cause high loss weighting on frequently seen prefix patterns",
+      "Transformer attention is causally masked, so prompt token gradients are blocked from propagating to assistant turn parameters"
+    ],
+    "answer": 0,
+    "explanation": "Training on assistant tokens teaches the model to produce high-quality responses. Including loss on instruction/prompt tokens would incentivize the model to assign high probability to user-style input text, hurting the assistant behavior. Masking system and user turns to loss=-100 is standard practice in SFT pipelines."
+  },
+  {
+    "q": "Automated red-teaming scales safety testing because:",
+    "options": [
+      "It trains the LLM on a curated set of adversarial prompts using curriculum learning before release",
+      "Automated attacks can be generated quickly in large numbers using LLMs or RL, far exceeding what human teams can produce",
+      "It replaces RLHF training by converting failed safety cases directly into RLHF preference pairs",
+      "Model-generated adversarial prompts are guaranteed to cover all failure modes found by human red-teamers"
+    ],
+    "answer": 1,
+    "explanation": "Human red-teaming is expensive and limited in scale. Automated red-teaming (Perez et al., 2022) uses LLMs or RL agents to generate adversarial prompts automatically, producing orders of magnitude more test cases. It is complementary to human testing and does not guarantee full coverage (option D is false)."
+  },
+  {
+    "q": "Constrained decoding with a finite state machine (FSM) ensures LLM outputs conform to a grammar or JSON schema by:",
+    "options": [
+      "Fine-tuning the model on a large corpus of schema-conforming examples until it generates valid outputs reliably",
+      "Adding a post-processing filter that parses the completed output and regenerates any token that violates the schema",
+      "Masking logits at each decoding step to zero-out tokens that would lead to an invalid state in the FSM, guiding the model toward grammatically valid completions",
+      "Replacing greedy decoding with beam search and selecting the beam that produces the highest-scoring valid parse"
+    ],
+    "answer": 2,
+    "explanation": "Constrained decoding (used in Outlines, LMQL, and Guidance) integrates the FSM with the decoding loop: at each step, advance the FSM with the previous token, compute the set of tokens that keep the FSM in a valid state, mask all others to -inf, then decode normally. No fine-tuning needed."
+  },
+  {
+    "q": "Speculative decoding accelerates autoregressive inference without changing model outputs by using a small draft model. The large model accepts a draft token if and only if:",
+    "options": [
+      "The draft tokens probability under the draft model exceeds a predefined confidence threshold",
+      "The large models top-1 greedy token matches the draft token at that position",
+      "The draft and large model logits are within a KL-divergence bound set by the system administrator",
+      "A modified rejection sampling procedure accepts the draft token with probability min(1, p_large / p_draft), maintaining the target distribution"
+    ],
+    "answer": 3,
+    "explanation": "Speculative decoding (Leviathan et al., 2022) uses rejection sampling: accept draft token x with probability min(1, p_large(x)/p_draft(x)). When accepted, no extra large-model compute is needed. When rejected, a corrected sample is drawn. The output distribution is provably identical to sampling from the large model alone."
+  }
+]

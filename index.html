@@ -126,12 +126,14 @@
 <!-- mermaid (~2.7MB) and chart.js are lazy-loaded on demand by chapter.js
      (ensureMermaid / ensureChart) — only the few chapters with diagrams/charts pay the cost. -->
 <!-- quizzes.js (225KB) is lazy-loaded on first quiz (chapter.js ensureQuizData);
+     mock_questions.js is lazy-loaded on first Mock Test (mock.js ensureMockData);
      DSA index (420KB) is lazy-loaded on first DSA view / welcome stats (dsa.js ensureDsaIndex). -->
 <!-- App modules — load order matters (state defines globals used by later files). -->
 <script defer src="js/state.js"></script>
 <script defer src="js/chapter.js"></script>
 <script defer src="js/pages.js"></script>
 <script defer src="js/dsa.js"></script>
+<script defer src="js/mock.js"></script>
 <script defer src="js/pins.js"></script>
 <script defer src="js/init.js"></script>
 </body>

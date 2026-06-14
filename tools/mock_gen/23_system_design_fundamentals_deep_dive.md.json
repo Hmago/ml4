@@ -1,0 +1,362 @@
+[
+  {
+    "q": "Which HTTP method returns exactly the same response headers as GET on the same URL but always with no body, and is safe, idempotent, and cacheable?",
+    "options": ["HEAD", "OPTIONS", "DELETE", "PATCH"],
+    "answer": 0,
+    "explanation": "HEAD is identical to GET except the server omits the body — ideal for checking ETag or Content-Length without downloading the full resource. OPTIONS is safe and idempotent but not cacheable per spec; DELETE and PATCH are not safe methods that change server state."
+  },
+  {
+    "q": "TLS 1.3 reduces handshake latency over TLS 1.2. On a cold connection (no prior session), how many round-trips does TLS 1.3 require before the client can send application data?",
+    "options": ["2 RTTs — cipher suites are still negotiated in a separate second exchange", "1 RTT — client sends key share in ClientHello; server responds with cert and Finished", "0 RTTs always — TLS 1.3 derives session keys from pre-shared keys for every new connection", "3 RTTs — TLS 1.3 adds a certificate transparency verification step beyond TLS 1.2"],
+    "answer": 1,
+    "explanation": "TLS 1.3 folds key material into the first client message so the server can compute the session key immediately and reply with certificate + Finished in one shot. 0-RTT is reserved for session resumption only, not cold connections. TLS 1.2 required 2 RTTs on every cold start."
+  },
+  {
+    "q": "Gunther's Universal Scalability Law adds which penalty on top of Amdahl's serial fraction to explain why throughput can actually decrease past some peak node count?",
+    "options": ["Memory bandwidth saturation as all processor caches fill up simultaneously at peak load", "Network fabric exhaustion once inter-node traffic exceeds the switch's aggregate bandwidth", "A quadratic coherency cost: cross-node coordination grows as N squared, not linearly with N", "OS context-switch overhead that starts dominating CPU time beyond a few dozen threads"],
+    "answer": 2,
+    "explanation": "Amdahl models only the serial fraction. USL adds a coherency term where every node must synchronise with every other, growing quadratically — past some peak N, each new node costs more in coordination than it contributes in throughput. The fix is to shrink the serial choke-point before adding boxes."
+  },
+  {
+    "q": "Nagle's algorithm and TCP delayed ACK interact destructively on request/response protocols, injecting latency of approximately:",
+    "options": ["About 10 ms — the kernel's minimum segment retransmission timer lower bound", "About 50 ms — delayed ACK fires at one-half RTT as specified in the RFC standard", "About 500 ms — Nagle holds writes until the TCP keepalive timer fires and flushes them", "About 200 ms — Nagle waits for an ACK that delayed ACK defers by up to ~200 ms"],
+    "answer": 3,
+    "explanation": "Nagle holds a small write until an ACK arrives. Delayed ACK waits up to 200 ms before acknowledging, to batch ACKs. They deadlock: Nagle waits for ACK; delayed ACK waits before sending one. Fix: set TCP_NODELAY on any interactive or chatty request/response protocol."
+  },
+  {
+    "q": "A service's SLA promises 99.99% availability ('four 9s'). Approximately how much total downtime per year does this budget permit?",
+    "options": ["About 52.6 minutes per year", "About 8.76 hours per year", "About 5.26 minutes per year", "About 3.65 days per year"],
+    "answer": 0,
+    "explanation": "99.99% = 0.01% downtime = 0.0001 × 365 × 24 × 60 ≈ 52.6 min/year. For comparison: three 9s allows ~8.76 h/year; five 9s allows ~5.26 min/year; two 9s allows ~3.65 days/year. Every additional nine is exponentially harder and more expensive to achieve."
+  },
+  {
+    "q": "HTTP/2's HPACK header compression achieves 10–20× reduction in per-request header bytes primarily through:",
+    "options": ["Stripping non-essential headers automatically before they reach the backend server", "A shared dynamic table mapping repeated headers to short integer indices", "Per-value Huffman coding applied independently to each individual header string", "Truncating header values beyond 256 bytes to fit within a single HTTP/2 HEADERS frame"],
+    "answer": 1,
+    "explanation": "HPACK builds a dynamic table of previously-seen headers. After the first request, Cookie, User-Agent, and Authorization headers send a single-byte table index instead of the full string. Huffman coding is also applied but the indexed table is the dominant win for header-heavy API traffic."
+  },
+  {
+    "q": "Why does reusing a persistent HTTP connection (keep-alive / connection pooling) improve throughput for many small requests compared to opening a fresh TCP+TLS connection per request?",
+    "options": ["It allows multiple parallel requests on one connection, removing application-layer HOL blocking", "Each new connection forces certificate re-pinning that adds an extra RTT of validation overhead", "A reused connection skips the TCP+TLS handshake and slow-start congestion-window restart", "Keep-alive lets requests bypass congestion control by sharing a single persistent large cwnd"],
+    "answer": 2,
+    "explanation": "Every new TCP connection starts slow start with only ~10 packets in flight. A burst of 100 fresh connections each sends 50 KB paying the slow-start tax 100 times. A persistent pooled connection pays it once and runs at full speed for its lifetime — the reason HTTP keep-alive, gRPC channels, and DB pools exist."
+  },
+  {
+    "q": "A browser cookie set with `SameSite=Strict` is withheld in which scenario?",
+    "options": ["A same-origin JavaScript fetch() call to an API endpoint on the same domain", "A form POST submitted from the same-origin page to a route on the same host", "An HTTPS request made by a service worker registered on the same-origin page", "A user clicks an inbound link from an external site that navigates to your domain"],
+    "answer": 3,
+    "explanation": "SameSite=Strict blocks the cookie on ALL cross-site requests including top-level navigations triggered by external links — the user arrives at your page but is not logged in. SameSite=Lax (the better default) allows top-level GET navigations so shared links work, while still blocking most CSRF vectors."
+  },
+  {
+    "q": "A server responds with `Access-Control-Allow-Origin: *` alongside `Access-Control-Allow-Credentials: true`. What does the browser do with a credentialed cross-origin fetch?",
+    "options": ["Rejects the response — the CORS spec forbids combining wildcard origin with credentials", "Allows it if the request is over HTTPS and the server has a valid TLS certificate", "Allows it only when `Vary: Origin` is also present in the server response headers", "Treats the wildcard as equivalent to explicitly echoing the request's Origin value"],
+    "answer": 0,
+    "explanation": "The CORS spec explicitly forbids `*` when cookies or Authorization headers are in play, because it would allow any attacker page to make authenticated API requests. You must echo the specific Origin from a server-side whitelist when Allow-Credentials is enabled. Browsers unconditionally reject the wildcard+credentials combination."
+  },
+  {
+    "q": "In Protocol Buffers 3, which change to an existing `.proto` message definition is backwards-compatible with already-deployed clients?",
+    "options": ["Changing a field's type from `string` to `bytes` for improved binary compatibility", "Adding a new optional field assigned a field number not previously used in this message", "Removing an unused field and immediately reusing its field number for a new purpose", "Renumbering existing fields to restore clean sequential order across the whole file"],
+    "answer": 1,
+    "explanation": "Field numbers are the wire-format identity — names exist only for humans. Adding a field with a fresh number is safe: old decoders ignore unknown field numbers. Reusing a field number causes silent data corruption. Type changes break the wire format even if names are unchanged."
+  },
+  {
+    "q": "A leaky-bucket rate limiter differs from a token-bucket limiter specifically in that it:",
+    "options": ["Allows short request bursts up to the bucket size before enforcing the rate limit", "Consumes less state per client because it never tracks per-client token-refill timestamps", "Drains requests at a fixed rate, transforming bursty input into a constant output flow", "Counts requests in a rolling 60-second window rather than measuring a steady drain rate"],
+    "answer": 2,
+    "explanation": "Token bucket permits bursts up to the bucket size (requests spend pre-accumulated tokens). Leaky bucket queues arrivals and drains them at a fixed, constant rate — any burst above capacity waits in queue or is dropped, producing smooth output regardless of input pattern. nginx uses a leaky bucket variant."
+  },
+  {
+    "q": "Google's BBR congestion-control algorithm differs from CUBIC primarily because BBR:",
+    "options": ["Uses exponential backoff on packet loss rather than CUBIC's polynomial window recovery", "Begins each new connection with a larger initial cwnd to probe link capacity faster", "Backs off far more aggressively than CUBIC to maintain fairness with legacy TCP flows", "Ignores packet-loss signals and directly measures bottleneck bandwidth and minimum RTT"],
+    "answer": 3,
+    "explanation": "CUBIC and all AIMD variants treat packet loss as the congestion signal. On Wi-Fi and cellular, losses are often radio noise, not congestion — CUBIC needlessly backs off. BBR estimates actual bottleneck bandwidth + minimum RTT directly, maintaining throughput regardless of occasional loss noise."
+  },
+  {
+    "q": "DNSSEC provides which security property for DNS responses?",
+    "options": ["Cryptographic signature verification of record integrity — no encryption of queries", "End-to-end encryption of all DNS queries and responses using TLS over port 53", "Both integrity and confidentiality, serving as a replacement for plain-UDP DNS", "Client-side pinning of every DNS resource record signature for offline validation"],
+    "answer": 0,
+    "explanation": "DNSSEC signs records so resolvers can verify they haven't been tampered with, defending against cache poisoning. It does NOT encrypt queries — an observer can still see what you looked up. For query privacy you need DoH (DNS over HTTPS, RFC 8484) or DoT (DNS over TLS, RFC 7858)."
+  },
+  {
+    "q": "Write-back (write-behind) caching is faster than write-through on writes but introduces which specific risk?",
+    "options": ["Increased read latency because the backing store lags behind the current cache state", "Data loss if the cache node fails before its asynchronous flush commits to the database", "Write amplification that accelerates SSD wear compared to synchronous write-through patterns", "Eviction stalls because dirty blocks prevent the displacement of cold, unrelated entries"],
+    "answer": 1,
+    "explanation": "Write-back acknowledges the write immediately and flushes to the DB asynchronously. If the cache crashes before flushing, those writes are permanently lost. Write-through is slower (synchronous DB write on every update) but fully durable as soon as the acknowledgment is returned."
+  },
+  {
+    "q": "DataLoader in a GraphQL server is specifically built to solve which problem?",
+    "options": ["Caching POST-based GraphQL queries at the CDN edge for faster repeated requests", "Enforcing per-field depth limits to prevent expensive recursive resolver-chain attacks", "The N+1 query problem — batching many per-item DB lookups into one single round-trip", "Schema federation that stitches graphs from multiple microservices into one endpoint"],
+    "answer": 2,
+    "explanation": "A naive `user.posts` resolver fires one DB query per user — fetching 50 users triggers 50 queries (N+1). DataLoader collects all pending IDs within one event-loop tick and issues a single `SELECT … WHERE id IN (…)`, then distributes results back to each resolver."
+  },
+  {
+    "q": "WebSocket frames sent from a browser (client) to server must always be masked with a per-frame random key. The primary security reason for this is:",
+    "options": ["To encrypt the payload, since TLS cannot be layered on top of WebSocket connections", "To let intermediate proxies detect and decompress WebSocket messages transparently", "To signal to the server that a multi-frame fragmented message is still continuing", "To prevent HTTP proxies from cache-poisoning by mistaking frames for HTTP responses"],
+    "answer": 3,
+    "explanation": "Older HTTP proxies might interpret a binary WebSocket frame as an HTTP response and cache it, poisoning downstream clients. Masking with a random per-frame key makes the data look entirely random to any proxy that doesn't understand WebSocket, neutralising the attack vector. Client-to-server masking is mandatory; server-to-client is not."
+  },
+  {
+    "q": "HTTP status 401 is labelled 'Unauthorized'. Its actual semantic meaning per the HTTP specification is:",
+    "options": ["The request is unauthenticated — valid credentials must be provided to proceed", "The client is authenticated but does not have access to the requested resource", "The resource exists but the server will not reveal it to users of this access tier", "Two-factor authentication is required before this request will be processed at all"],
+    "answer": 0,
+    "explanation": "Despite the confusing name, 401 = unauthenticated (send credentials). 403 = authenticated but forbidden (don't bother retrying with different credentials — you simply aren't allowed). Misusing 401 when 403 is correct breaks retry logic in HTTP client libraries and auth middleware."
+  },
+  {
+    "q": "Split-horizon DNS configures the same hostname to resolve to different addresses depending on:",
+    "options": ["The age of the cached record relative to when the resolver last refreshed its entry", "Whether the querying client sits inside or outside the organisation's private network", "Which TLD registry holds the authoritative delegation for that domain at the time", "Whether the resolver uses DNS over HTTPS or standard UDP for its resolution queries"],
+    "answer": 1,
+    "explanation": "Internal resolvers return private RFC-1918 addresses; external resolvers return public IPs. This lets `api.example.com` resolve to `10.0.0.5` inside the VPC and `203.0.113.5` for outside callers — one name, two worlds, controlled entirely by which resolver the client queries."
+  },
+  {
+    "q": "Cache 'avalanche' differs from cache 'breakdown' (stampede) in that avalanche is triggered by:",
+    "options": ["One very hot cache key expiring and triggering thousands of concurrent re-fetches on it", "Requests for non-existent keys bypassing the cache and hitting the database on every call", "Many cache keys expiring at roughly the same time, causing a concurrent surge to the database", "A CDN origin shield failure that sends all edge cache misses directly to the origin server"],
+    "answer": 2,
+    "explanation": "Avalanche = many keys expire together (e.g., after a cache restart or bulk-aligned TTLs) → massive simultaneous miss burst on the DB. Breakdown = one hot key expires → stampede on that entry. The fixes differ: avalanche → randomise TTLs ±20% and pre-warm on startup; breakdown → single-flight mutex."
+  },
+  {
+    "q": "The browser's built-in EventSource API (Server-Sent Events) handles server disconnections by:",
+    "options": ["Calling an `onerror` callback — reconnect logic must be written in application code", "Waiting for a kernel TCP keepalive probe to determine if the connection is still alive", "Buffering all events received so far in IndexedDB for replay after reconnection", "Automatically reconnecting and sending `Last-Event-Id` to resume from the last event received"],
+    "answer": 3,
+    "explanation": "SSE auto-reconnect is built into the EventSource spec — no application reconnect code is needed, unlike WebSocket. The `id:` field in each event lets the client report its last-received event ID so the server can replay missed events. This makes SSE a zero-config push solution for server-to-client streams."
+  },
+  {
+    "q": "During TCP slow start, how does the congestion window (cwnd) grow after each successful round-trip?",
+    "options": ["It doubles each RTT — exponential growth until a loss event or the slow-start threshold", "It grows by one MSS per RTT, the same additive-increase used in congestion avoidance", "It stays constant at ~10 packets until the receiver's window advertisement shrinks", "It grows proportional to the square root of in-flight bytes to prevent bandwidth overshoot"],
+    "answer": 0,
+    "explanation": "Despite the name, slow start is exponential: cwnd roughly doubles every round-trip starting at ~10 packets, quickly probing the link's real capacity. Once cwnd reaches the slow-start threshold (ssthresh), TCP switches to linear congestion avoidance (+1 MSS per RTT). This single fact is why connection reuse matters so much."
+  },
+  {
+    "q": "In gRPC, when service A has 200 ms remaining on its deadline and calls service B, and B calls service C, what deadline does C receive?",
+    "options": ["A fresh 200 ms budget — C gets the same window that A originally started with", "The remaining time in A's deadline — if B used 80 ms, C gets only ~120 ms left", "No deadline by default; each service must explicitly set its own timeout on outbound calls", "Double the remaining time, as a safety buffer added at each downstream service hop"],
+    "answer": 1,
+    "explanation": "gRPC deadlines are absolute timestamps that propagate downstream. If A sets a deadline 200 ms from now and B uses 80 ms, C inherits only ~120 ms. This prevents the 'everyone retries for 30 s' cascading outages that occur when each hop resets an independent per-hop timeout."
+  },
+  {
+    "q": "HTTP/1.1 allows only one in-flight request per TCP connection. How do browsers work around this when loading a page with many sub-resources?",
+    "options": ["They use HTTP pipelining to queue multiple requests back-to-back on one connection", "They upgrade to HTTP/2 automatically, multiplexing all resources on one TCP connection", "They open up to about six parallel TCP connections to the same origin server domain", "They use WebSocket upgrades to multiplex all sub-resource fetches on a single socket"],
+    "answer": 2,
+    "explanation": "HTTP/1.1 pipelining was disabled in practice because intermediaries broke it and HOL blocking persisted. Browsers settled on ~6 parallel connections per origin — which is also why 'domain sharding' (spreading assets across fake subdomains to exceed the 6-connection limit) was a pre-HTTP/2 performance hack."
+  },
+  {
+    "q": "A CDN 'origin shield' is an extra cache layer placed between the CDN edge POPs and the origin server. Its primary job is:",
+    "options": ["Scanning cached responses for malware or policy violations before serving from the edge", "Re-encoding assets with Brotli compression before distributing them to edge nodes globally", "Enforcing TLS certificate pinning on every connection from CDN edges to the origin server", "Collapsing simultaneous edge cache misses so the origin receives only a single fetch request"],
+    "answer": 3,
+    "explanation": "Without a shield, after a cold deploy every edge POP worldwide sends its own miss simultaneously to origin — a thundering herd. The shield sits in one region: all edges miss to the shield, the shield misses once to origin and caches the result. The origin sees O(1) misses regardless of how many POPs exist."
+  },
+  {
+    "q": "Setting `Vary: User-Agent` on a CDN-cached resource will most likely cause:",
+    "options": ["A separate CDN cache entry per distinct User-Agent string, cratering the overall hit rate", "The CDN to select the best cached version and serve it uniformly to all user agents", "Browsers to skip local caching entirely for this URL on every device type used", "The CDN to route different User-Agent groups to different backend A/B test pools"],
+    "answer": 0,
+    "explanation": "Vary instructs caches to store a separate entry per distinct value of the listed headers. User-Agent has thousands of different strings — so `Vary: User-Agent` creates one cache shard per UA, making the cache practically useless. Fix: normalise User-Agents into a small set like 'mobile / desktop / bot' at the CDN edge before caching."
+  },
+  {
+    "q": "The Backend For Frontend (BFF) pattern most commonly becomes an anti-pattern when:",
+    "options": ["Multiple BFFs share a deployment pipeline, creating release coupling between teams", "Business logic accumulates in the BFF, turning a shape-adapter into a coupled god service", "The frontend team must redeploy the BFF for every minor upstream service API change", "Two BFFs accidentally share infrastructure, creating cross-client data isolation risks"],
+    "answer": 1,
+    "explanation": "A BFF is meant to be a 'shape adapter' — it joins, trims, and reformats upstream data for one specific client. When teams push validation rules, authorization logic, or domain computation into it, it becomes a tightly-coupled, hard-to-test monolith. BFFs should contain no business logic — only request aggregation and response shaping."
+  },
+  {
+    "q": "A DNS PTR record is used for:",
+    "options": ["Delegating a subdomain zone to a different set of authoritative name servers", "Mapping a mail domain to a mail server hostname with a numeric delivery priority", "Reverse DNS — resolving an IP address back to its associated domain hostname", "Specifying which Certificate Authorities are authorised to issue TLS certs for a domain"],
+    "answer": 2,
+    "explanation": "PTR (pointer) records live in `in-addr.arpa` zones and map IPs back to hostnames. Used for email spam filtering (does the sender's IP reverse-resolve to the expected domain?), logging, and auditing. NS records handle subdomain delegation; MX records specify mail servers; CAA records authorise certificate issuers."
+  },
+  {
+    "q": "Which IP address range is defined in RFC 1918 as a private block intended for internal network use only?",
+    "options": ["100.64.0.0/10 — the CGNAT shared address space defined in RFC 6598", "169.254.0.0/16 — the link-local auto-configuration range per RFC 3927", "127.0.0.0/8 — the loopback range reserved for same-host communication", "172.16.0.0/12 — one of the three private blocks enumerated in RFC 1918"],
+    "answer": 3,
+    "explanation": "RFC 1918 defines exactly three private blocks: 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16. CGNAT (100.64/10) is RFC 6598; link-local (169.254/16) is RFC 3927; loopback (127/8) is RFC 990. All four are non-publicly-routable, but only the RFC 1918 trio are the canonical 'private' address ranges."
+  },
+  {
+    "q": "When a server receives a request with an Idempotency-Key it has already fully processed and stored a response for, the correct server behaviour is:",
+    "options": ["Return the stored response immediately — do not re-execute the operation", "Re-execute the operation but suppress any additional side effects generated this time", "Return 409 Conflict to indicate the key is already claimed by a prior completed request", "Validate the incoming request body hash against the stored value before deciding action"],
+    "answer": 0,
+    "explanation": "The idempotency pattern: look up the key, find a completed result, replay the stored response — no second execution. 409 is reserved for keys that are *in-flight* (processing is not yet complete) so the client backs off. Re-executing on retry is exactly the bug the pattern exists to prevent: duplicate charges, double emails, etc."
+  },
+  {
+    "q": "W-TinyLFU, the default eviction policy in Java's Caffeine cache library, combines which three components to outperform LRU and ARC on most workloads?",
+    "options": ["A sorted access list, a B-tree frequency index, and a Bloom filter for key rejection", "A recency window LRU, a main LFU region tracked with Count-Min Sketch, and an admission filter", "An LRU primary cache, an LFU overflow tier, and a TTL-based expiry queue for aging entries", "A consistent hash ring, a frequency sketch for new items, and a FIFO drain for old entries"],
+    "answer": 1,
+    "explanation": "W-TinyLFU admits new items into a small window LRU; popular ones graduate to the main LFU region tracked with a Count-Min Sketch (space-efficient probabilistic frequency counter). An admission filter evicts the incoming item rather than the LFU victim when the victim is more popular — yielding near-optimal hit rates across workload types."
+  },
+  {
+    "q": "Using the Mathis formula (`Throughput ≈ MSS / (RTT × √loss_rate)`), a single TCP flow on a link with 1% packet loss and 100 ms RTT is approximately capped at:",
+    "options": ["~12 Mbps per flow — computed by skipping the square root of the loss-rate term", "~120 Mbps per flow — below 5% loss is considered negligible for modern TCP stacks", "~1.2 Mbps per flow — MSS 1460 B / (0.1 s × √0.01) ≈ 146 KB/s × 8 ≈ 1.17 Mbps", "~0.12 Mbps per flow — applying the loss-rate penalty twice in the denominator"],
+    "answer": 2,
+    "explanation": "1460 / (0.1 × √0.01) = 1460 / (0.1 × 0.1) = 146,000 bytes/s ≈ 1.17 Mbps. Even 1% loss on a high-BDP link is crippling for a single flow — TCP keeps halving its cwnd. Multiple parallel flows can still fill the link, which is why parallel HTTP/1.1 connections sometimes beat one HTTP/2 stream on a lossy path."
+  },
+  {
+    "q": "A modern Linux server with tuned `ulimit -n` and epoll-based I/O can sustain approximately how many concurrent WebSocket connections?",
+    "options": ["5,000–10,000 — capped by the default Linux open-file-descriptor count per process", "10,000–20,000 — one socket per event-loop worker thread in a typical server setup", "64,000 — constrained by the TCP ephemeral-port range when connecting to one destination", "50,000–250,000 — achievable with adjusted file descriptors and event-driven I/O via epoll"],
+    "answer": 3,
+    "explanation": "The 64K port limit applies to *outbound* connections from one IP to one destination. Inbound WebSocket connections each carry a unique client (IP, port) pair, so the real ceiling is OS file descriptors and memory per socket. With epoll and `ulimit -n` tuning, hundreds of thousands of concurrent connections are practical."
+  },
+  {
+    "q": "URI-path API versioning (e.g., `/v1/users`) has which specific advantage over header-based versioning (`Accept: application/vnd.acme.v2+json`)?",
+    "options": ["The version is visible in logs, routing rules, and browser URLs — trivially observable", "URI versions are inherently CDN-cacheable while header versions bypass all edge caches", "Path versioning is the only strategy that strictly satisfies the REST architectural style", "URI versions are opaque to clients, preventing accidental coupling to version numbers"],
+    "answer": 0,
+    "explanation": "Visibility is the key practical advantage: you can grep logs, write LB routing rules (/v1/ → cluster-A), share URLs with the version intact, and debug with nothing more than a browser. Header versioning is semantically cleaner but the version is invisible to most observability, routing, and debugging tooling."
+  },
+  {
+    "q": "Which HTTP status code should a server return when a valid request has been received and queued for asynchronous processing, but no result is available yet?",
+    "options": ["201 Created — a resource was accepted and will be accessible at a Location header URL", "202 Accepted — request received and queued; processing is not yet complete", "204 No Content — the operation completed synchronously but has no body to return", "200 OK with a `Retry-After` header pointing the client to a status-polling endpoint"],
+    "answer": 1,
+    "explanation": "202 Accepted is the semantically correct response for async operations: 'I have your request, I will process it, check back later.' 201 is for synchronous resource creation. 204 is for synchronous success with no body (e.g., a DELETE). Using 200 with a vague body for in-progress jobs is the #1 REST status-code anti-pattern."
+  },
+  {
+    "q": "Why do browser JavaScript clients using gRPC require an intermediary proxy like Envoy between themselves and a gRPC server?",
+    "options": ["Browsers refuse to parse binary Protobuf and require JSON over XHR for all requests", "gRPC servers cannot authenticate browser requests without an OAuth2-aware gateway", "Browsers cannot access HTTP/2 trailers, which gRPC uses to deliver its final status code", "gRPC's QUIC transport is blocked by the browser same-origin policy without a proxy"],
+    "answer": 2,
+    "explanation": "gRPC encodes its final status code (and trailing metadata) in HTTP/2 trailers — data sent after the response body is complete. The browser Fetch API has no access to HTTP/2 trailers. A grpc-web proxy translates trailers into the response body, making them readable by browser clients."
+  },
+  {
+    "q": "The chapter cites the speed-of-light constraint for trans-Atlantic fiber. What are the approximate one-way (in-glass) and practical RTT values for London ↔ New York?",
+    "options": ["~5 ms one-way in glass and ~15 ms RTT in practice on production routes", "~15 ms one-way in glass and ~40 ms RTT in practice on production routes", "~50 ms one-way in glass and ~100 ms RTT in practice on production routes", "~28 ms one-way in glass and ~70 ms RTT in practice on production routes"],
+    "answer": 3,
+    "explanation": "Light travels ~200,000 km/s in glass fiber. The London–New York distance (~5,500 km) yields ~28 ms minimum one-way. In practice, routing, repeaters, and protocol overhead push RTT to ~70 ms. This floor is immovable — 'put compute near the user, or move bytes asynchronously' is the only answer."
+  },
+  {
+    "q": "HLS and DASH adaptive video streaming protocols work exceptionally well with CDNs primarily because:",
+    "options": ["Video is split into short segments served as ordinary static HTTP files, ideal for CDN caching", "Players maintain WebSocket connections to CDN edges to minimise per-chunk round-trip overhead", "Each segment is encrypted per-session and must be validated against the origin on every CDN hit", "Adaptive bitrate selection is offloaded to the CDN edge node rather than the player client"],
+    "answer": 0,
+    "explanation": "HLS/DASH split video into 2–10 second segments served as static HTTP files — perfectly CDN-cacheable, no different to images or JS bundles. The player fetches a manifest (.m3u8/.mpd) then requests chunk URLs, adjusting quality tier based on bandwidth. This is why YouTube and Netflix serve billions of concurrent viewers without destroying origin."
+  },
+  {
+    "q": "QUIC connections survive a client changing networks (e.g., Wi-Fi to 5G) without reconnecting because QUIC identifies connections using:",
+    "options": ["A 5-tuple of (protocol, src-IP, src-port, dst-IP, dst-port) bound to the network address", "A random opaque connection ID that is independent of the client's current network address", "The TLS session ticket, which encodes the original client IP for resumption validation", "An application-layer user ID negotiated in the first QUIC+TLS combined handshake"],
+    "answer": 1,
+    "explanation": "TCP connections are pinned to a 5-tuple — change the client's IP (Wi-Fi → 5G) and the connection dies. QUIC uses a random connection ID chosen at setup, so the same session continues streaming as the client's IP changes. This connection migration is a key design goal of QUIC and a direct benefit of HTTP/3 for mobile users."
+  },
+  {
+    "q": "HTTP/2 Server Push was deprecated in Chrome in 2022. The core reason was:",
+    "options": ["It violated the HTTP/2 framing spec by reusing stream IDs across different request types", "Pushed resources had no TTL header and occupied browser cache slots indefinitely", "The server cannot know whether the client already has the pushed resource cached locally", "Each pushed resource required a separate TCP connection, doubling handshake overhead"],
+    "answer": 2,
+    "explanation": "The fundamental problem: the server doesn't know what the client has cached. Pushed assets either waste bandwidth (client already had them) or evict other useful cached entries. Resource Hints (`<link rel=preload>`) in HTML achieve the same early-loading effect while letting the browser decide whether to actually fetch."
+  },
+  {
+    "q": "GraphQL Subscriptions differ from Queries and Mutations primarily in that they:",
+    "options": ["Execute a batch of mutations atomically inside a server-managed database transaction", "Use HTTP GET polling on a configurable interval rather than a long-lived connection", "Stream result sets incrementally over HTTP/2 server-push frames from the server side", "Push live updates to clients over a persistent WebSocket or SSE transport connection"],
+    "answer": 3,
+    "explanation": "Subscriptions use the same typed schema as Queries/Mutations but switch transport to a long-lived connection (typically WebSocket using graphql-ws protocol, or SSE). The client receives new messages automatically whenever subscribed data changes — no polling, no extra infrastructure beyond a WebSocket-capable server."
+  },
+  {
+    "q": "The bulkhead pattern applied to a multi-tenant API most directly prevents:",
+    "options": ["One tenant's load spike from exhausting shared connection pools and starving other tenants", "A cache stampede when tenants simultaneously request the same expiring popular key", "DNS propagation lag causing some tenants to reach stale backend replicas temporarily", "JWT validation errors enabling cross-tenant authorization token leakage between accounts"],
+    "answer": 0,
+    "explanation": "Named after ship watertight compartments — one flooded compartment doesn't sink the ship. In APIs: separate thread pools, connection pools, or queue partitions per tenant. Tenant A's runaway load exhausts only its own bulkhead, leaving B and C unaffected. Implemented via per-tenant thread pools, connection pools, or separate cluster slices."
+  },
+  {
+    "q": "TCP flow control and congestion control both regulate in-flight data. What is the key distinction between them?",
+    "options": ["Both use the same receiver-advertised window; they differ only in how they count lost packets", "Flow control stops a fast sender from swamping the receiver's buffer; congestion control protects the network", "Flow control operates at the IP network layer; congestion control operates at the transport layer", "Congestion control uses sequence numbers; flow control uses acknowledgment numbers to track state"],
+    "answer": 1,
+    "explanation": "Flow control: the receiver advertises a window ('I have N bytes of buffer free') — stops the sender from drowning a slow receiver. Congestion control: the sender manages a cwnd budget based on estimated network capacity — stops senders collectively from overloading shared routers and links between the two endpoints."
+  },
+  {
+    "q": "For which resource type is `Cache-Control: immutable` safe and appropriate to apply?",
+    "options": ["API responses that remain valid for the duration of one user's browser session only", "Any publicly cached resource the team commits not to change for at least one full week", "Content-addressed assets like `app.abc123.js` where every build produces a new filename", "Private session tokens stored client-side that must not be shared with shared CDN caches"],
+    "answer": 2,
+    "explanation": "`immutable` tells the browser to never revalidate this URL during its `max-age` — it will never change at this address. This is only safe for content-addressed (hash-in-filename) URLs where new content always gets a new URL. Applying it to API responses or session data would silently serve stale data to users."
+  },
+  {
+    "q": "A live telemetry dashboard must simultaneously stream continuous metric uploads from clients to the server AND push aggregated anomaly alerts back to each client. Which gRPC streaming mode is most appropriate?",
+    "options": ["Unary — client sends one metric snapshot per call, server returns one anomaly check each", "Server streaming — client sends one metric batch per call, server replies with many alerts", "Client streaming — client uploads many metric messages, server returns one aggregated summary", "Bidirectional streaming — both client and server send messages independently over one RPC"],
+    "answer": 3,
+    "explanation": "Bidirectional streaming opens a single long-lived RPC where client and server each send messages independently and concurrently. The client continuously streams metrics; the server continuously streams back alerts — no polling, no per-message RPCs, fully event-driven. The chapter lists telemetry uploads as a canonical bidirectional streaming use case."
+  },
+  {
+    "q": "TCP's AIMD congestion control — additive increase on success, multiplicative decrease on loss — produces which observable behaviour across many competing flows?",
+    "options": ["A sawtooth: gentle ramp-up, sharp drop on loss — the shape that collectively self-regulates the internet", "A monotonically rising throughput curve as all flows converge towards full link utilisation", "Perfectly equal bandwidth allocation regardless of how many flows compete on the link", "Smooth asymptotic approach to maximum bandwidth with zero packet drops at steady state"],
+    "answer": 0,
+    "explanation": "AIMD produces the characteristic sawtooth: gentle linear ramp, sharp halving on detected loss. When many competing flows all back off simultaneously, the internet self-regulates — it is a form of distributed rate control. The packet drops are the signal; the sawtooth is the signature observable on any TCP bandwidth graph."
+  },
+  {
+    "q": "The Happy Eyeballs algorithm (RFC 8305) was designed to address which specific IPv6 deployment problem?",
+    "options": ["Stale AAAA records from long DNS TTLs routing traffic to decommissioned IPv6 addresses", "IPv6 connectivity blackholes where a client has a v6 address but the path silently fails", "TCP slow-start inefficiency on the first request of a newly established IPv6 connection", "Latency variance between IPv4 and IPv6 paths when both are healthy for a given destination"],
+    "answer": 1,
+    "explanation": "Many clients have IPv6 addresses but misconfigured paths — connections hang silently for seconds. Happy Eyeballs races a v6 and a v4 connection in parallel (staggered by 250 ms) and uses whichever completes first. It eliminates the multi-second 'IPv6 blackhole' user-experience problem that was slowing IPv6 adoption."
+  },
+  {
+    "q": "A Bloom filter placed in front of the cache and database defends against cache penetration by:",
+    "options": ["Storing all previously evicted keys so the system can quickly re-warm them on next access", "Using a mutex so that only one rebuild request fires per expired cache key at a time", "Rejecting requests for keys that provably cannot exist before they reach the cache or DB", "Spreading miss queries across all cache shards to prevent any single-shard overload"],
+    "answer": 2,
+    "explanation": "A Bloom filter has no false negatives: a key that fails the filter is guaranteed absent from the DB — the request is dropped before touching cache or database. The rare false positives (may exist → check cache) simply result in a normal cache miss. Ideal for endpoints probed for non-existent IDs by bots or scrapers."
+  },
+  {
+    "q": "WebSocket servers should send ping frames to connected browsers at what interval to reliably detect dead connections caused by NAT timeouts and sleeping devices?",
+    "options": ["Every 2 hours — mirroring the default Linux TCP keepalive kernel parameter interval", "Every 5 minutes — just before typical NAT state entries expire in most consumer routers", "Every 60 seconds — the standard browser SSE reconnect timeout used across all browsers", "Every 15–30 seconds — detects ghost connections before they inflate your live-connection count"],
+    "answer": 3,
+    "explanation": "NAT devices and firewalls silently drop idle connections within minutes. Without application-level heartbeats, 'connected' WebSocket counts include large numbers of ghost connections. Pinging every 15–30 s detects dead clients quickly; browsers automatically reply to pings with pongs — no JavaScript code required."
+  },
+  {
+    "q": "Why do engineers monitor p99 (99th percentile) latency rather than mean latency as the primary performance metric?",
+    "options": ["Mean latency hides slow-tail outliers — at scale, 1-in-100 means millions of degraded experiences", "p99 is numerically lower than the mean, providing a more conservative SLO target value", "p99 is computationally cheaper than mean latency in a streaming high-volume metrics pipeline", "Mean always overstates typical performance while p99 always precisely reflects the median"],
+    "answer": 0,
+    "explanation": "A 50 ms mean can hide a 2 s p99 — 1 in 100 users waits 2 seconds. At billions of requests per day, 1% is tens of millions of bad experiences. Tail latency also amplifies under fan-out: 100 parallel calls make the user's latency the max of 100 draws, approximately the p9999 of one backend's distribution."
+  },
+  {
+    "q": "What should you do several days before migrating a DNS A record to a new IP address (e.g., changing a load balancer)?",
+    "options": ["Perform the cutover atomically in a maintenance window with all incoming traffic paused", "Lower the record's TTL so resolvers worldwide will re-query it soon after the change", "Sign the current record with DNSSEC to provide an authenticated pointer to the new IP", "Flush all recursive resolver caches globally using the DNS NOTIFY control message"],
+    "answer": 1,
+    "explanation": "DNS propagation isn't instant — resolvers cache records for the current TTL. If the TTL is 24 hours and you change the A record, some users hit the old IP for up to 24 hours. Lower the TTL to 60 s several days before the migration so resolvers drain their caches, then change the IP. Raise TTL again afterwards."
+  },
+  {
+    "q": "A browser sends `GET /logo.png` with `If-None-Match: \"v17\"`. The resource's current ETag on the server is still `\"v17\"`. The server should respond with:",
+    "options": ["200 OK with the full resource body, confirming the locally cached version is still current", "412 Precondition Failed, indicating the ETag condition could not be satisfied", "304 Not Modified with no body — the browser may reuse its locally cached copy", "200 OK with an empty body and an updated ETag indicating the content is still fresh"],
+    "answer": 2,
+    "explanation": "304 Not Modified is the cache-validation success response: ETag matched, content unchanged, reuse the local copy. A 304 is typically ~150 bytes vs. a full re-download — saving bandwidth and latency. 412 Precondition Failed applies to conditional write operations (If-Match on PUT/DELETE), not reads."
+  },
+  {
+    "q": "The HTTP HEAD method is best suited for which specific task compared to a GET on the same URL?",
+    "options": ["Sending form data with reduced encoding overhead to lower the total request body size", "Listing all HTTP methods available on a resource without changing any server state", "Fetching only the first N bytes of a large response as a preview before a full download", "Checking ETag, Content-Length, or Last-Modified metadata without downloading the full body"],
+    "answer": 3,
+    "explanation": "HEAD returns exactly the same headers a GET would — Content-Length, ETag, Last-Modified, Content-Type — but omits the body entirely. Ideal for: checking file size before a large download, cache revalidation probes, and link health-checking. OPTIONS (not HEAD) is used to list allowed methods for a URL."
+  },
+  {
+    "q": "Mutual TLS (mTLS) extends standard TLS by:",
+    "options": ["Requiring both client and server to present and verify X.509 certificates during the handshake", "Requiring the client to attach an HMAC-signed nonce to each request after TLS establishment", "Mandating a hardware security module on both endpoints for private key generation and storage", "Having the server present two certificates — one for bulk encryption and one for identity signing"],
+    "answer": 0,
+    "explanation": "In normal TLS, only the server presents a certificate. mTLS requires both sides to authenticate — the server verifies the client's certificate too, providing cryptographic identity for service-to-service communication. This is the foundation of zero-trust service meshes (Istio, Linkerd) and is noted in the chapter as a Ch 25 deep-dive."
+  },
+  {
+    "q": "EDNS Client Subnet (ECS) improves CDN GeoDNS accuracy by:",
+    "options": ["Encrypting DNS queries so only the authoritative server can read the requesting client's IP", "Including a portion of the client's actual IP prefix in the recursive resolver's upstream query", "Extending the DNS UDP response size limit from 512 bytes up to 4,096 bytes maximum", "Letting clients embed their preferred geographic region directly inside DNS query packets"],
+    "answer": 1,
+    "explanation": "Without ECS, the authoritative server only sees the resolver's IP. A Tokyo user on Google's 8.8.8.8 (US resolver) might get a US CDN POP. ECS passes the first /24 of the client's real IP so the authoritative server picks a geographically correct answer. Privacy trade-off: the authoritative server learns the approximate client location."
+  },
+  {
+    "q": "TCP Selective ACK (SACK) improves loss recovery over basic cumulative ACK by:",
+    "options": ["Forcing retransmission of every in-flight packet beyond the gap to guarantee delivery order", "Doubling the retransmission timeout to give the network extra time to deliver lost segments", "Letting the receiver report non-contiguous ACK ranges so only missing bytes are retransmitted", "Negotiating a larger congestion window immediately after each loss event is acknowledged"],
+    "answer": 2,
+    "explanation": "Without SACK, one lost packet can force retransmission of it and everything that followed (go-back-N). SACK lets the receiver say 'I have bytes 1–99 and 101–200; only 100 is missing,' so the sender retransmits only the gap — a significant throughput improvement on links with any meaningful loss rate."
+  },
+  {
+    "q": "CRIME and BREACH attacks against HTTPS exploit which combination of TLS properties?",
+    "options": ["Weak RC4 stream-cipher re-use, enabling statistical recovery of repeated session token bytes", "TLS renegotiation flaws in servers with outdated library versions that leak session keys", "Buffer over-read bugs in TLS implementations that expose server memory and private keys", "Compressing responses that mix secret tokens alongside attacker-controlled input data"],
+    "answer": 3,
+    "explanation": "When TLS/HTTP compression is applied to a response containing both an attacker-controlled string and a secret (e.g., a CSRF token), a guess that partially matches the secret compresses slightly smaller — leaking the secret one byte at a time. Mitigation: don't compress responses that mix user input with secrets, or disable compression on sensitive endpoints."
+  },
+  {
+    "q": "In a multi-tier cache stack (in-process → Redis → read replica → primary DB), what latency is typical for a cache hit at the in-process L1 layer?",
+    "options": ["~100 nanoseconds — directly reading from the process's own heap with no system call", "~1 millisecond — similar to a Redis lookup over a loopback network socket", "~5 milliseconds — comparable to a read-replica query with a B-tree index seek", "~50 microseconds — a short network hop to a co-located Redis on the same host"],
+    "answer": 0,
+    "explanation": "In-process caches (Caffeine, Guava, an LRU map) access DRAM directly with no system call and no network I/O. Modern DRAM latency is ~50–100 ns. Redis over loopback is ~200 µs–1 ms. The L1 eliminates the entire network round-trip for the hottest 1% of keys — the single largest latency improvement at effectively zero incremental cost."
+  },
+  {
+    "q": "Among gRPC's 16 canonical status codes, which is the only one safe to automatically retry without first confirming the operation was idempotent?",
+    "options": ["RESOURCE_EXHAUSTED — the server was over capacity but may not have started the call yet", "UNAVAILABLE — the server was temporarily down before it could begin processing the RPC", "DEADLINE_EXCEEDED — deadline passed; retrying with a fresh deadline may still succeed", "INTERNAL — an unclassified server error that might be transient and therefore retryable"],
+    "answer": 1,
+    "explanation": "UNAVAILABLE semantically guarantees the server has not begun processing — a retry is safe unconditionally. RESOURCE_EXHAUSTED, DEADLINE_EXCEEDED, and INTERNAL may have been partially executed; retrying without an idempotency key risks duplicate charges, double emails, or other unintended side effects."
+  },
+  {
+    "q": "In CORS, what triggers a 'preflight' request, and which HTTP method is used for it?",
+    "options": ["Every cross-origin request triggers a preflight, always sent using the GET method", "Simple GET and HEAD requests trigger a preflight using the POST method before proceeding", "Non-simple requests — PUT, DELETE, or those with custom headers — trigger an OPTIONS preflight", "Preflights only fire when cookies are included, and they always use the CONNECT method first"],
+    "answer": 2,
+    "explanation": "Simple requests (GET/HEAD/POST with standard content types) bypass the preflight. Non-simple requests — PUT, DELETE, PATCH, or any request with custom headers like Authorization — must first send OPTIONS. The server's Access-Control response tells the browser whether to proceed. `Access-Control-Max-Age` caches the preflight result to avoid repeated round-trips."
+  },
+  {
+    "q": "TCP's kernel-level keep-alive probe fires every 2 hours by default. Why is this default problematic for service-to-service connections in a microservices architecture?",
+    "options": ["Two hours is far too short — probing that frequently wastes bandwidth on idle service links", "TCP keep-alive is incompatible with TLS and triggers a full session renegotiation on each probe", "Keep-alive probes interfere with connection pooling and should be disabled on all microservices", "Dead connections go undetected for up to 2 hours — for services, tune the interval to seconds"],
+    "answer": 3,
+    "explanation": "A 2-hour detection window means a dead service-to-service connection could silently stall requests for up to 2 hours before the kernel notices. For services, tune TCP_KEEPIDLE and TCP_KEEPINTVL to single-digit seconds, or use application-level heartbeats. The 2-hour default is a historical relic designed for terminal sessions, not high-frequency RPC."
+  }
+]

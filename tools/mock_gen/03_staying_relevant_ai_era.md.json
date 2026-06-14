@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Which 2026 forecast in the document is specifically attributed to Gartner rather than to a company adoption snapshot?",
+    "options": [
+      "Copilot users will have 46% AI-generated code, with Java developers reaching 61%",
+      "Google will report that more than 30% of new code uses AI-generated segments",
+      "60% of new code will be AI-generated across the forecasted software landscape",
+      "25% of YC Winter 2025 startups will have codebases that are 95% AI-generated"
+    ],
+    "answer": 2,
+    "explanation": "The Gartner line forecasts that 60% of new code will be AI-generated in 2026. The other figures are adoption snapshots for Copilot, Google, or YC startups."
+  },
+  {
+    "q": "A manager argues that AI adoption proves developers trust AI output more each year. Which survey pattern most directly challenges that claim?",
+    "options": [
+      "Stack Overflow usage rose, but trust in AI accuracy fell from 40% to 29%",
+      "JetBrains found 62% rely on at least one assistant, agent, or editor",
+      "Pragmatic Engineer found 70% of respondents use 2-4 AI tools simultaneously",
+      "Stack Overflow listed ChatGPT and GitHub Copilot as the top developer tools"
+    ],
+    "answer": 0,
+    "explanation": "The adoption-versus-trust gap is explicit: more developers use or plan to use AI, yet only 29% trust its accuracy. Tool popularity alone does not prove confidence."
+  },
+  {
+    "q": "Which task profile best matches the document's warning from the METR study about AI slowing developers down?",
+    "options": [
+      "Writing a new CRUD prototype in an unfamiliar framework with limited existing constraints",
+      "Generating boilerplate tests for a small module with predictable interfaces",
+      "Translating a simple utility from one language to another using stable requirements",
+      "Changing a complex, familiar open-source codebase where the developer already knows the system"
+    ],
+    "answer": 3,
+    "explanation": "METR found experienced open-source developers were slower with AI on complex familiar codebases. The chapter contrasts that with areas like boilerplate and greenfield work where AI can genuinely help."
+  },
+  {
+    "q": "An engineer wants to delegate a decision about long-term service boundaries and organizational tradeoffs entirely to an AI agent. What is the chapter's likely critique?",
+    "options": [
+      "AI agents are mainly weak because they cannot generate enough boilerplate to compare implementations",
+      "Architecture decisions require business context, tradeoff judgment, and constraints AI lacks",
+      "AI-generated architecture is disallowed because coding assistants only support single-file completions",
+      "The main blocker is that AI systems cannot read existing code or architecture documentation"
+    ],
+    "answer": 1,
+    "explanation": "The chapter lists system architecture decisions with long-term tradeoffs as work AI does poorly. AI can assist exploration, but humans must own the judgment under real organizational context."
+  },
+  {
+    "q": "Which item belongs on the document's 'let AI do these' side rather than the 'you are needed here' side?",
+    "options": [
+      "Generating regexes, SQL queries, configuration files, and API integration boilerplate",
+      "Coordinating cross-team decisions during a production incident involving several services",
+      "Choosing which product requirement not to build after stakeholder disagreement",
+      "Optimizing a high-scale system where performance regressions affect production users"
+    ],
+    "answer": 0,
+    "explanation": "The chapter identifies regex, SQL, config files, prototyping, and API boilerplate as AI strengths. Cross-team coordination, knowing what not to build, and scale performance are human-heavy areas."
+  },
+  {
+    "q": "Which compensation signal is presented as evidence that AI-related skills carry a market premium?",
+    "options": [
+      "Entry-level developer salaries rise automatically when companies adopt coding assistants",
+      "Prompt engineer roles replace most senior engineering compensation bands at large firms",
+      "Engineers with AI skills can earn up to a 56% salary premium according to PwC 2025",
+      "Standard ML roles now pay more than distributed systems plus GPU optimization roles"
+    ],
+    "answer": 2,
+    "explanation": "The salary section cites up to a 56% premium for engineers with AI skills. It also notes a separate premium for distributed systems plus GPU optimization, not a decline."
+  },
+  {
+    "q": "Which activity is described as declining in value because AI commoditizes parts of implementation work?",
+    "options": [
+      "Explaining architectural tradeoffs to non-technical stakeholders",
+      "Manually documenting straightforward code and writing boilerplate from scratch",
+      "Investigating complex production incidents across multiple services",
+      "Making ambiguous product decisions with incomplete requirements"
+    ],
+    "answer": 1,
+    "explanation": "The commoditized list includes writing boilerplate, memorizing syntax, straightforward documentation, simple tests, code translation, CRUD work, and formatting. Communication and incident judgment are rising in value."
+  },
+  {
+    "q": "What is the key difference between Level 2 and Level 3 AI usage in the document's tool-use ladder?",
+    "options": [
+      "Level 2 uses paid tools, while Level 3 relies only on free-tier assistants for repeatability",
+      "Level 2 generates single-line completions, while Level 3 avoids repository context entirely",
+      "Level 2 asks AI to create PRs autonomously, while Level 3 only asks for syntax help",
+      "Level 2 guides tasks with context; Level 3 treats AI like a junior engineer implementing designed work"
+    ],
+    "answer": 3,
+    "explanation": "Level 2 includes context-guided tasks like tests, reviews, and refactors. Level 3 adds broader implementation from architecture and patterns, with the human designing and the AI implementing."
+  },
+  {
+    "q": "A team uses several agents to read the codebase, propose architecture, implement, test, and create a PR while a human reviews. Which usage level does this match?",
+    "options": [
+      "Level 1, because the human still approves the generated code before merge",
+      "Level 2, because multiple files are touched in a repository-aware workflow",
+      "Level 4, because multiple AI agents execute parts of a feature under human technical leadership",
+      "Level 3, because the AI receives architecture context before producing implementation"
+    ],
+    "answer": 2,
+    "explanation": "The chapter defines Level 4 as agentic workflows with multiple AI agents handling feature work while the human reviews and approves. Level 3 is advanced, but not necessarily multi-agent."
+  },
+  {
+    "q": "Which reading best captures the pattern the document draws from prominent tech leaders' public statements and company behavior?",
+    "options": [
+      "Companies announce AI coding progress mainly to justify freezing engineering hiring permanently",
+      "Headlines emphasize replacement, but firms keep hiring engineers who use AI to produce more",
+      "Executives agree that entry-level and senior engineering roles are being eliminated equally",
+      "AI-generated code numbers show that software engineering growth has already become negative"
+    ],
+    "answer": 1,
+    "explanation": "The stated pattern is headline replacement talk, continued hiring, AI-using engineers, and fewer people doing more work. The chapter does not say senior roles are equally eliminated."
+  },
+  {
+    "q": "Which leader is associated with the claim that 30%+ of Google's new code is AI-generated and that engineering headcount can still grow?",
+    "options": [
+      "Sundar Pichai",
+      "Dario Amodei, Anthropic CEO",
+      "Sam Altman, OpenAI CEO",
+      "Marc Benioff, Salesforce CEO"
+    ],
+    "answer": 0,
+    "explanation": "The chapter attributes the Google code-generation statistic and expectation of engineering workforce growth to Sundar Pichai. Dario Amodei, Sam Altman, and Marc Benioff are cited for different claims."
+  },
+  {
+    "q": "Which role is listed with the fastest-growing operations positioning rather than a quoted six-figure average salary?",
+    "options": [
+      "AI Engineer",
+      "Prompt Engineer",
+      "Senior AI at FAANG",
+      "MLOps Engineer"
+    ],
+    "answer": 3,
+    "explanation": "The table marks MLOps Engineer as the fastest-growing ops role with an average salary of $87,220. AI Engineer, Prompt Engineer, and Senior AI at FAANG are framed differently."
+  },
+  {
+    "q": "What is the chapter's central point about the junior-to-senior career ladder?",
+    "options": [
+      "The ladder is expanding because companies need more juniors to supervise AI-generated work",
+      "The ladder is becoming irrelevant because senior employment is declining faster than junior hiring",
+      "The ladder is compressing because juniors are expected to use AI to produce at a higher level immediately",
+      "The ladder is unchanged because generative AI affects tools but not expectations for early-career engineers"
+    ],
+    "answer": 2,
+    "explanation": "The junior developer section says the traditional ladder is compressing and the entry-level bar has risen. Juniors must leverage AI to produce closer to mid-level output."
+  },
+  {
+    "q": "According to the cited Harvard study, what happens after companies adopt generative AI?",
+    "options": [
+      "Senior developer employment drops by roughly the same percentage as junior developer hiring",
+      "Junior developer hiring falls by 9-10% within six quarters while senior employment remains unchanged",
+      "Entry-level hiring rises because AI tools reduce onboarding and training costs for new engineers",
+      "Developer layoffs become entirely attributable to AI automation within one fiscal quarter"
+    ],
+    "answer": 1,
+    "explanation": "The chapter summarizes the Harvard study as a 9-10% reduction in junior developer hiring within six quarters, with senior employment unchanged. It does not claim equal senior losses."
+  },
+  {
+    "q": "Which behavior best reflects Addy Osmani's survival strategy for juniors?",
+    "options": [
+      "Accept AI output quickly so throughput matters more than explaining implementation details",
+      "Specialize only in prompt syntax because fundamentals are less relevant to AI-assisted work",
+      "Avoid AI tools until fundamentals are mastered through years of unaided coding practice",
+      "Use AI proficiently while understanding, explaining, and evaluating every generated line"
+    ],
+    "answer": 3,
+    "explanation": "The quoted strategy is to be AI-proficient and versatile while matching a small team's output and explaining every line. The document warns against using AI as a crutch."
+  },
+  {
+    "q": "What changed from the old 10x engineer archetype to the new one described for 2026?",
+    "options": [
+      "The differentiator shifted from coding speed and framework recall toward better questions, validation, and system design",
+      "The differentiator shifted from system design back toward memorizing syntax because AI handles architecture",
+      "The differentiator shifted from production judgment to avoiding AI agents in favor of manual implementation",
+      "The differentiator shifted from domain knowledge to maximizing the number of tools used simultaneously"
+    ],
+    "answer": 0,
+    "explanation": "The new 10x engineer asks better questions, validates faster, designs better systems, and parallelizes with agents. Coding speed is described as commoditized."
+  },
+  {
+    "q": "A founder uses AI to create a prototype instead of hiring a developer. Which statistic in the document most directly mirrors that trend?",
+    "options": [
+      "70% of Pragmatic Engineer respondents use two to four AI tools simultaneously",
+      "68% of developers anticipate AI proficiency becoming a job requirement",
+      "44% of non-technical founders now build prototypes with AI instead of hiring developers",
+      "51% of Stack Overflow respondents use AI tools daily for development tasks"
+    ],
+    "answer": 2,
+    "explanation": "The numbers section explicitly states that 44% of non-technical founders build prototypes with AI instead of hiring developers. The other statistics describe developer tool usage."
+  },
+  {
+    "q": "Which statement best fits the chapter's 'honest picture' of AI productivity across task complexity?",
+    "options": [
+      "AI makes complex work trivially easy and usually leaves simple tasks unchanged",
+      "AI creates uniform productivity gains regardless of codebase familiarity or task type",
+      "AI is valuable only for complex production debugging and not for medium implementation tasks",
+      "AI makes simple things easy, medium work faster, and complex work only slightly faster or sometimes slower"
+    ],
+    "answer": 3,
+    "explanation": "The honest picture says simple tasks become trivially easy, medium tasks noticeably faster, and complex tasks slightly faster at best or slower. The key is knowing the task category."
+  },
+  {
+    "q": "An engineer ships an AI-built feature that precisely follows a vague request but solves the wrong user problem. Which mistake does this illustrate?",
+    "options": [
+      "Building the wrong thing efficiently",
+      "Ignoring AI entirely",
+      "Using AI as a faster typewriter",
+      "The perception gap"
+    ],
+    "answer": 0,
+    "explanation": "The chapter says the biggest risk is not bad code but building the wrong thing with extraordinary efficiency. The recommended fix is to spend more time on requirements and design."
+  },
+  {
+    "q": "Why does the document recommend reviewing AI output like a junior developer's pull request?",
+    "options": [
+      "Junior-style review is faster because AI code usually has fewer edge cases than human code",
+      "Adoption is high while trust is low, so unverified AI output is where bugs accumulate",
+      "AI-generated code is legally required to receive a different review path than human-authored code",
+      "Pull-request review eliminates the need for tests when AI has already generated the implementation"
+    ],
+    "answer": 1,
+    "explanation": "The chapter highlights that only 29% trust AI output while 84% use the tools. That gap means generated code must be verified rather than accepted automatically."
+  },
+  {
+    "q": "What is the recommended fix for the METR-style perception gap around AI productivity?",
+    "options": [
+      "Use AI for every task until subjective speed feels consistent across the team",
+      "Prefer vendor productivity benchmarks because they average across many organizations",
+      "Track actual completion times with and without AI instead of relying on gut feeling",
+      "Disable AI permanently in familiar codebases because measured productivity can never improve"
+    ],
+    "answer": 2,
+    "explanation": "The document's fix is to measure actual completion times with and without AI. It warns that intuition about AI productivity is probably wrong."
+  },
+  {
+    "q": "Which analogy does the document use to criticize engineers who refuse to use AI tools at all?",
+    "options": [
+      "Refusing cloud computing because physical servers feel more authentic",
+      "Ignoring version control because local file copies seem simpler",
+      "Rejecting automated testing because manual QA once worked well enough",
+      "Saying 'I don't need Stack Overflow' in 2010"
+    ],
+    "answer": 3,
+    "explanation": "The chapter calls 'I'm a real programmer, I don't need AI' the 2026 version of 'I don't need Stack Overflow' from 2010. The fix is to start using a simple tool daily."
+  },
+  {
+    "q": "What does becoming a 'prompt monkey' mean in the document's warning?",
+    "options": [
+      "Using too many AI communities and newsletters without enough hands-on implementation",
+      "Relying on AI prompts without building real expertise needed when models fail or tasks require novelty",
+      "Writing prompts that are too detailed for models to follow in multi-file code changes",
+      "Focusing on system design prompts instead of using AI for autocomplete and small fixes"
+    ],
+    "answer": 1,
+    "explanation": "The prompt-monkey warning is about over-reliance without expertise. The document's fix is to build real skills while using AI, because AI amplifies what you already know."
+  },
+  {
+    "q": "Which action belongs in the 'Do This Week' tier of the survival playbook?",
+    "options": [
+      "Install an AI coding tool and use it for actual work tasks rather than toy examples",
+      "Read Designing Data-Intensive Applications and pick a domain specialty",
+      "Build a RAG app or AI agent that combines software engineering and AI",
+      "Practice explaining technical decisions to non-technical stakeholders every week"
+    ],
+    "answer": 0,
+    "explanation": "The weekly tier includes installing a tool, using it on real tasks, setting up Claude Code or Cursor, and joining an AI-focused community. The other examples belong to later tiers."
+  },
+  {
+    "q": "Which monthly action is specifically tied to moving beyond basic autocomplete?",
+    "options": [
+      "Pick a domain such as healthcare, finance, infrastructure, or DevTools and go deep",
+      "Level up from Level 1 to Level 2 by using AI for multi-file tasks",
+      "Shift your identity from writing code to leading AI-assisted teams",
+      "Follow Pragmatic Engineer, Addy Osmani, and Simon Willison to stay current"
+    ],
+    "answer": 1,
+    "explanation": "The monthly tier says to move from Level 1 to Level 2 by stopping autocomplete-only usage and using AI for multi-file tasks. Domain depth and career identity are later-stage moves."
+  },
+  {
+    "q": "Which study plan is placed in the quarter-level tier rather than the week or month tier?",
+    "options": [
+      "Start a journal tracking surprises and failures from AI-assisted work",
+      "Join one AI-focused community such as r/LocalLLaMA or Hacker News",
+      "Deepen system design by reading Designing Data-Intensive Applications",
+      "Install GitHub Copilot free tier or start a Cursor trial for work tasks"
+    ],
+    "answer": 2,
+    "explanation": "The quarter tier includes deepening system design, explicitly naming Designing Data-Intensive Applications. Journaling, joining a community, and installing tools appear in earlier tiers."
+  },
+  {
+    "q": "In the ongoing career strategy tier, what identity shift does the document recommend?",
+    "options": [
+      "From AI-literate engineer to dedicated ML researcher focused on model training",
+      "From code reviewer to individual contributor avoiding cross-team leadership",
+      "From domain specialist to framework generalist who rotates stacks frequently",
+      "From 'I write code' to 'I design systems and lead AI-assisted teams'"
+    ],
+    "answer": 3,
+    "explanation": "The ongoing tier explicitly recommends shifting from writing code to designing systems and leading AI-assisted teams. It does not require becoming a full-time ML researcher."
+  },
+  {
+    "q": "Which learning priority is ranked as the first 'MUST' in the document's new software engineer stack?",
+    "options": [
+      "AI tool proficiency with tools such as Cursor, Copilot, and Claude",
+      "Technical communication and leadership for non-technical stakeholders",
+      "Building AI-powered features such as RAG, agents, MCP, and evals",
+      "Domain expertise by picking an industry and becoming irreplaceable"
+    ],
+    "answer": 0,
+    "explanation": "Priority 1 is AI tool proficiency, justified by the claim that 68% expect it to become a job requirement. Communication and AI-powered features are medium priorities."
+  },
+  {
+    "q": "Why are CS fundamentals still listed as a 'MUST' even when AI can produce code?",
+    "options": [
+      "Fundamentals are mainly needed to memorize APIs that AI tools cannot suggest reliably",
+      "Fundamentals guarantee that AI-generated code will not contain security vulnerabilities",
+      "You cannot debug what you do not understand, and AI amplifies rather than replaces knowledge",
+      "AI tools require manual implementation of operating systems and networking layers"
+    ],
+    "answer": 2,
+    "explanation": "The learning stack says CS fundamentals matter because you cannot debug what you do not understand. The document repeatedly frames AI as an amplifier, not a replacement for knowledge."
+  },
+  {
+    "q": "Which resource is recommended under system design rather than AI tools or staying current?",
+    "options": [
+      "Simon Willison's blog",
+      "MCP server integrations",
+      "System Design Interview by Alex Xu",
+      "Latent Space podcast for AI engineering"
+    ],
+    "answer": 2,
+    "explanation": "System Design Interview by Alex Xu is listed in the system design resources. Simon Willison, Latent Space, and Hacker News belong to staying current; MCP is under AI tools."
+  },
+  {
+    "q": "Which resource pairing is recommended for staying current on AI engineering developments?",
+    "options": [
+      "GitHub Copilot and Cursor",
+      "BERT and Attention Is All You Need",
+      "Designing Data-Intensive Applications and ML System Design Interview",
+      "The Pragmatic Engineer and Simon Willison's blog"
+    ],
+    "answer": 3,
+    "explanation": "The staying-current list includes The Pragmatic Engineer, Addy Osmani, Simon Willison, Latent Space, and Hacker News. The other pairings are tools, papers, or system design resources."
+  },
+  {
+    "q": "Which combination matches the document's final formula for becoming irreplaceable?",
+    "options": [
+      "Strong fundamentals, AI tool proficiency, system design skills, and domain expertise",
+      "Prompt fluency, framework memorization, daily tool usage, and faster typing speed",
+      "Deep ML research, cloud certifications, startup experience, and UI design taste",
+      "Autonomous agents, code generation volume, social media presence, and job hopping"
+    ],
+    "answer": 0,
+    "explanation": "The final perspective gives the formula: strong fundamentals + AI tool proficiency + system design skills + domain expertise. It does not make speed or tool volume the core differentiator."
+  },
+  {
+    "q": "Which conclusion best matches the document's final perspective on job growth?",
+    "options": [
+      "AI eliminates software engineering while creating a smaller set of prompt-only roles",
+      "AI is not eliminating software engineering; BLS projects 17% growth and 327,900 new roles",
+      "Software engineering is shrinking because 60% of new code will be AI-generated",
+      "Only ML engineering roles will grow, while general software development will contract"
+    ],
+    "answer": 1,
+    "explanation": "The final perspective cites BLS projections of 17% growth through 2033 and 327,900 new roles. The chapter says AI reshapes engineering rather than eliminating it."
+  },
+  {
+    "q": "Which scenario best illustrates the rising value of domain expertise in the document?",
+    "options": [
+      "An engineer memorizes every API in a web framework to avoid needing generated code",
+      "A generalist asks AI to build CRUD screens without understanding the product's compliance rules",
+      "A finance-platform engineer uses industry knowledge to judge whether AI-generated logic fits regulatory constraints",
+      "A developer increases output by accepting generated pull requests without reading business requirements"
+    ],
+    "answer": 2,
+    "explanation": "The chapter frames domain expertise in areas like finance, healthcare, and infrastructure as a moat. AI is general; specific domain knowledge makes its output useful and safe."
+  },
+  {
+    "q": "Why is code review expertise more valuable in the AI era according to the document?",
+    "options": [
+      "AI-generated code removes the need for tests, so review becomes the only quality mechanism",
+      "AI tools generate more code to evaluate, and the chapter cites higher churn in AI code",
+      "Code review is easier because AI code is always shorter than human-written alternatives",
+      "Reviewers can focus only on formatting because models handle architecture and edge cases"
+    ],
+    "answer": 1,
+    "explanation": "More AI-generated code means more code to review, and the chapter cites 41% higher code churn with AI code. Reviewers must catch defects, not merely formatting issues."
+  },
+  {
+    "q": "Which security implication is repeatedly emphasized as a reason humans remain critical?",
+    "options": [
+      "Security issues are rare in AI-generated code but impossible to detect with tools",
+      "AI-generated code should be trusted only when it comes from paid coding assistants",
+      "Security review can be skipped when models generate matching unit tests",
+      "45% of AI-generated code contains vulnerabilities, making validation a survival skill"
+    ],
+    "answer": 3,
+    "explanation": "The document repeatedly states that 45% of AI-generated code contains security vulnerabilities. This supports security and AI-output validation as rising-value skills."
+  },
+  {
+    "q": "A developer asks AI to implement payment logic after providing architecture docs, existing service patterns, retries, and observability requirements. Which level does this most closely match?",
+    "options": [
+      "Level 3 advanced usage",
+      "Level 1 basic usage",
+      "Level 4 agentic usage",
+      "Level 2 intermediate usage"
+    ],
+    "answer": 0,
+    "explanation": "The payment-service example appears in Level 3, where the human provides architecture and patterns while AI implements. Level 4 involves multiple agents working more autonomously."
+  },
+  {
+    "q": "Which tool is described as best overall AI editor with multi-file editing and eight parallel agents?",
+    "options": [
+      "GitHub Copilot",
+      "Cursor",
+      "Claude Code",
+      "Windsurf"
+    ],
+    "answer": 1,
+    "explanation": "The tool table labels Cursor as the best overall AI editor and mentions multi-file editing and eight parallel agents. GitHub Copilot is framed as best value."
+  },
+  {
+    "q": "Which tool is characterized as best value with a free tier, 20M+ users, and strong Fortune 100 penetration?",
+    "options": [
+      "Windsurf",
+      "Claude Code",
+      "GitHub Copilot",
+      "Devin by Cognition"
+    ],
+    "answer": 2,
+    "explanation": "GitHub Copilot is listed as best value, with a $10/month paid plan, free tier, 20M+ users, and 90% of Fortune 100. Devin is separately listed as an autonomous AI software engineer."
+  },
+  {
+    "q": "Which tool is positioned for agentic terminal workflows with a large context window and high SWE-bench performance?",
+    "options": [
+      "Amazon Q Developer",
+      "v0 by Vercel",
+      "Replit Agent 3",
+      "Claude Code"
+    ],
+    "answer": 3,
+    "explanation": "The table describes Claude Code as an agentic terminal workflow tool with a 1M token context and high SWE-bench standing. Amazon Q is AWS-integrated, and v0 focuses on UI generation."
+  },
+  {
+    "q": "Which tool is identified as best for beginners because of its gentle learning curve and smart context tracking?",
+    "options": [
+      "Windsurf",
+      "Cursor",
+      "GitHub Copilot",
+      "Claude Code"
+    ],
+    "answer": 0,
+    "explanation": "Windsurf is listed as best for beginners, with a gentle learning curve, unlimited completions, and smart context tracking. Cursor is the best overall AI editor."
+  },
+  {
+    "q": "Which 'other tool' is described as building entire web apps from natural language?",
+    "options": [
+      "v0 by Vercel",
+      "Replit Agent 3",
+      "Amazon Q Developer",
+      "MCP Servers"
+    ],
+    "answer": 1,
+    "explanation": "The document says Replit Agent 3 builds entire web apps from natural language. v0 is described as frontend/UI generation from prompts."
+  },
+  {
+    "q": "What role does MCP play in the document's tool landscape and monthly plan?",
+    "options": [
+      "It replaces system design practice by automatically choosing service boundaries",
+      "It is a Google-only deployment standard for hosting AI-generated production code",
+      "It connects AI to tools through a universal protocol and is worth learning for integrations",
+      "It is mainly a survey metric used to measure code churn in AI-generated repositories"
+    ],
+    "answer": 2,
+    "explanation": "MCP Servers are described as a universal protocol to connect AI to your tools, and the monthly plan says to learn MCP. It is not presented as a replacement for design judgment."
+  },
+  {
+    "q": "Which statement best explains why technical communication rises in value as AI handles more implementation?",
+    "options": [
+      "Communication replaces the need to understand code because AI can answer technical questions",
+      "Engineers must increasingly explain technical decisions to non-technical stakeholders",
+      "Communication matters only for managers because individual contributors focus on prompts",
+      "Written communication is useful mainly for documenting generated code line by line"
+    ],
+    "answer": 1,
+    "explanation": "The rising-skills list explicitly includes technical communication: explaining decisions to non-technical stakeholders. It becomes more important, not less, as implementation is automated."
+  },
+  {
+    "q": "Which example best fits 'AI as a learning tool, not a crutch' for a junior engineer?",
+    "options": [
+      "Accept model output after tests pass and avoid reading internals to preserve velocity",
+      "Ask AI for complete implementations only in languages the engineer does not understand",
+      "Inspect generated code, identify weak spots, and connect suggestions back to CS fundamentals",
+      "Use AI exclusively for production tasks and never disable helpers during practice sessions"
+    ],
+    "answer": 2,
+    "explanation": "The junior section says to understand why AI suggestions work, identify weaknesses, and build fundamentals while using AI. Passing tests alone is not enough if the engineer cannot explain the code."
+  },
+  {
+    "q": "Which item is part of the document's 'declining value' list rather than its 'rising value' list?",
+    "options": [
+      "Security and AI output validation",
+      "System design and architecture",
+      "Domain-specific expertise",
+      "Code formatting and style enforcement"
+    ],
+    "answer": 3,
+    "explanation": "Code formatting and style enforcement appears in the declining-value list. Security validation, architecture, and domain expertise are rising-value skills."
+  },
+  {
+    "q": "What does the chapter mean by saying 'the person who knows WHICH function to write is more valuable'?",
+    "options": [
+      "API memorization is becoming the main differentiator because AI cannot choose libraries",
+      "Implementation speed matters less than understanding requirements, design, and judgment",
+      "Function-level coding contests are now the best preparation for AI-assisted work",
+      "Developers should specialize in handwritten utility functions rather than product design"
+    ],
+    "answer": 1,
+    "explanation": "The chapter contrasts the old world, where writing code was the job, with the new world, where evaluating, designing, and making judgment calls matter more. Knowing what to build beats typing speed."
+  },
+  {
+    "q": "Which productivity claim is presented as vendor marketing rather than the chapter's realistic overall estimate?",
+    "options": [
+      "Routine coding tasks can be 25-50% faster",
+      "Boilerplate and tests can be 2-5x faster",
+      "Overall returns are around 1.6x rather than dramatic across-the-board gains",
+      "Developers get 10x productivity from AI tools"
+    ],
+    "answer": 3,
+    "explanation": "The document contrasts vendor claims of '10x productivity' with data showing about 1.6x returns. It still acknowledges meaningful gains for specific task types."
+  },
+  {
+    "q": "Which metric in the productivity section describes pull-request workflow improvement?",
+    "options": [
+      "A 75% reduction in PR cycle time from 9.6 days to 2.4 days",
+      "A 30-35% improvement in overall developer productivity from METR",
+      "A 3.6-hour weekly time saving specifically for senior FAANG engineers",
+      "A 50-workday annual saving for every developer using any coding assistant"
+    ],
+    "answer": 0,
+    "explanation": "The productivity table states PR cycle time dropped 75%, from 9.6 days to 2.4 days. The 30-35% figure is attributed to Deloitte for overall productivity, not METR."
+  },
+  {
+    "q": "Which survey detail belongs to the Pragmatic Engineer survey rather than Stack Overflow or JetBrains?",
+    "options": [
+      "Only 29% trust AI output to be accurate",
+      "95% use AI tools at least weekly and 55% regularly use AI agents",
+      "85% regularly use AI tools for coding",
+      "84% use or plan to use AI tools"
+    ],
+    "answer": 1,
+    "explanation": "The Pragmatic Engineer survey reports 95% weekly AI-tool use and 55% regular AI-agent use. The other statistics are from Stack Overflow or JetBrains."
+  },
+  {
+    "q": "Which concern is listed among JetBrains developers' top concerns about AI coding tools?",
+    "options": [
+      "Insufficient GPU memory for local fine-tuning",
+      "Higher licensing costs for IDE plugins",
+      "Code quality and limited understanding of complex logic",
+      "Lower availability of frontend/UI generation tools"
+    ],
+    "answer": 2,
+    "explanation": "JetBrains concerns include code quality, limited understanding of complex logic, and privacy/security. GPU memory and plugin licensing are not listed as top concerns there."
+  },
+  {
+    "q": "Which statement correctly distinguishes ChatGPT and GitHub Copilot usage in the Stack Overflow survey excerpt?",
+    "options": [
+      "GitHub Copilot is listed at 82%, while ChatGPT is listed at 68%",
+      "Both tools are listed at the same usage rate because the survey groups them together",
+      "Claude Code is listed above ChatGPT after becoming the top tool in eight months",
+      "ChatGPT is listed at 82%, while GitHub Copilot is listed at 68%"
+    ],
+    "answer": 3,
+    "explanation": "The Stack Overflow excerpt names ChatGPT at 82% and GitHub Copilot at 68%. Claude Code's rapid rise appears in the Pragmatic Engineer survey, not this Stack Overflow line."
+  },
+  {
+    "q": "Which scenario is the best match for 'knowing what NOT to build' as a human responsibility?",
+    "options": [
+      "Declining an AI-generated feature because it conflicts with user needs and business goals",
+      "Autocompleting repetitive setters and getters faster than a teammate can type them",
+      "Generating documentation for straightforward code after implementation is complete",
+      "Converting a stable helper library from JavaScript to Python using a coding assistant"
+    ],
+    "answer": 0,
+    "explanation": "Knowing what not to build appears under work AI does poorly, tied to judgment and business context. The other examples are routine generation or translation tasks AI handles well."
+  },
+  {
+    "q": "Which role is listed as having +134.5% year-over-year growth?",
+    "options": [
+      "MLOps Engineer",
+      "AI Compliance Officer",
+      "AI Integration Specialist",
+      "Senior AI at FAANG"
+    ],
+    "answer": 1,
+    "explanation": "The new career paths table lists AI Compliance Officer with +134.5% YoY growth. Prompt Engineer is the role listed at +135.8% YoY."
+  },
+  {
+    "q": "Which pair of figures comes from the junior developer crisis section?",
+    "options": [
+      "30% of Google's code and 50 workdays saved per year",
+      "46% Copilot-generated code and 61% for Java developers",
+      "25% lower entry-level hiring at major tech firms and 70,474 Q1 2026 tech layoffs",
+      "56% salary premium and 6.8x likelihood of being classified super productive"
+    ],
+    "answer": 2,
+    "explanation": "The junior crisis section cites a 25% drop in entry-level hiring at the 15 biggest tech firms and about 70,474 tech layoffs in Q1 2026. The other figures come from different sections."
+  },
+  {
+    "q": "Which statement best reflects the document's stance on learning ML/AI basics for non-ML software engineers?",
+    "options": [
+      "They must become ML engineers before using AI coding tools professionally",
+      "They can ignore AI internals because tooling abstractions handle model behavior",
+      "They should replace system design study with transformer architecture deep dives",
+      "They do not need to become ML engineers, but they must become AI-literate"
+    ],
+    "answer": 3,
+    "explanation": "The quarter-level tier says software engineers do not need to become ML engineers, but they must be AI-literate. The learning stack includes AI/ML literacy as a high priority."
+  },
+  {
+    "q": "Which project type is explicitly recommended as a quarter-level way to combine software engineering and AI?",
+    "options": [
+      "A RAG app, AI agent, or AI-powered feature in an existing product",
+      "A handwritten compiler implemented without AI helpers for fundamentals practice",
+      "A static portfolio page listing every AI tool the developer has tried",
+      "A benchmark suite comparing vendor claims without building an application"
+    ],
+    "answer": 0,
+    "explanation": "The quarter tier recommends building something that combines software engineering and AI, such as a RAG app, AI agent, or AI-powered feature. It is meant to demonstrate applied AI literacy."
+  },
+  {
+    "q": "Which activity is recommended specifically to preserve fundamentals when using AI heavily?",
+    "options": [
+      "Use AI only for tasks outside your primary programming language",
+      "Occasionally disable AI helpers and write key algorithms by hand",
+      "Replace debugging practice with generated incident summaries",
+      "Avoid reading generated code if tests and linters pass consistently"
+    ],
+    "answer": 1,
+    "explanation": "For skipping fundamentals, the fix says to occasionally disable AI helpers and write key algorithms by hand. This builds muscle memory for when tools fail."
+  },
+  {
+    "q": "Which statement best captures the relationship between AI tool proficiency and system design in the learning priority table?",
+    "options": [
+      "AI tools are a must because of job requirements, while system design remains a must because design is the differentiator",
+      "AI tool proficiency replaces system design because agents can now make long-term architectural tradeoffs",
+      "System design is downgraded to medium priority because code generation dominates modern engineering work",
+      "Both are low priority compared with prompt-engineering salaries and memorizing model APIs"
+    ],
+    "answer": 0,
+    "explanation": "The table ranks AI tool proficiency first and system design second, both as MUST skills. It says code is cheap but design is not, so the two complement rather than replace each other."
+  },
+  {
+    "q": "Which line best explains why blind trust and ignoring AI are both losing strategies in the final perspective?",
+    "options": [
+      "The winners are engineers who embrace AI tools while deepening fundamentals, system thinking, and domain expertise",
+      "The winners are engineers who maximize AI-generated code volume and minimize manual review",
+      "The losers are only engineers in entry-level roles because senior jobs remain entirely unchanged",
+      "The losers are engineers who specialize in any domain instead of staying tool-agnostic"
+    ],
+    "answer": 0,
+    "explanation": "The final perspective says winners embrace AI while deepening fundamentals, system thinking, and domain expertise. It explicitly warns against both ignoring AI and blindly trusting it."
+  }
+]
