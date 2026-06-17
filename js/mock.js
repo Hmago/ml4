@@ -191,7 +191,10 @@ function renderMockLanding() {
 
       ${lastFive.length ? `
       <div class="mock-history">
-        <h3>Recent attempts</h3>
+        <div class="mock-history-head">
+          <h3>Recent attempts</h3>
+          <button class="mock-history-viewall" onclick="renderMockHistory()">View full history (${hist.length}) →</button>
+        </div>
         <div class="mock-history-list">
           ${lastFive.map(h => {
             const d = new Date(h.date);
@@ -199,7 +202,7 @@ function renderMockLanding() {
             const grade = h.pct >= 80 ? 'great' : h.pct >= 60 ? 'good' : 'needs-work';
             return `<div class="mock-history-item">
               <span class="mock-history-pct ${grade}">${h.pct}%</span>
-              <span class="mock-history-meta">${h.score}/${h.total} correct · ${when}</span>
+              <span class="mock-history-meta">${h.score}/${h.total} correct · ${when}${h.timed ? ' · ⏱ timed' : ''}</span>
               <span class="mock-history-time">${h.durationSec ? mockFmtDuration(h.durationSec) : ''}</span>
             </div>`;
           }).join('')}
@@ -230,6 +233,198 @@ function renderMockLanding() {
       ? `On · ${mockState.selectedCount} min (~1 min/question)`
       : 'Off · ~1 min/question when on';
   });
+}
+
+// ─── History page ───
+function mockHistoryStats(hist) {
+  const n = hist.length;
+  const best = n ? Math.max(...hist.map(h => h.pct)) : 0;
+  const avg = n ? Math.round(hist.reduce((s, h) => s + h.pct, 0) / n) : 0;
+  const totalQ = hist.reduce((s, h) => s + (h.total || 0), 0);
+  const totalCorrect = hist.reduce((s, h) => s + (h.score || 0), 0);
+  const totalSec = hist.reduce((s, h) => s + (h.durationSec || 0), 0);
+  const passes = hist.filter(h => h.pct >= 70).length;
+  return { n, best, avg, totalQ, totalCorrect, totalSec, passes };
+}
+
+// Aggregate per-chapter accuracy across every attempt — surfaces the topics
+// that are consistently weak (or strong) over time, not just in one test.
+function mockHistoryByChapter(hist) {
+  const agg = {};
+  hist.forEach(h => {
+    const bc = h.byChapter || {};
+    Object.keys(bc).forEach(k => {
+      const c = bc[k] || {};
+      if (!agg[k]) agg[k] = { title: c.title || 'Unknown', correct: 0, total: 0 };
+      agg[k].correct += c.correct || 0;
+      agg[k].total += c.total || 0;
+    });
+  });
+  return Object.keys(agg).map(k => {
+    const c = agg[k];
+    const pct = c.total ? Math.round((c.correct / c.total) * 100) : 0;
+    return { file: k, title: c.title, correct: c.correct, total: c.total, pct };
+  }).sort((a, b) => a.pct - b.pct);
+}
+
+function mockFmtTotalTime(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return m ? `${h}h ${m}m` : `${h}h`;
+  const s = sec % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function mockGradeOf(pct) { return pct >= 80 ? 'great' : pct >= 60 ? 'good' : 'needs-work'; }
+
+function renderMockHistory() {
+  currentPage = 'mock';
+  const contentEl = document.getElementById('content');
+  const hist = getMockHistory();
+
+  if (!hist.length) {
+    contentEl.innerHTML = `
+      <div class="mock-wrap">
+        <div class="mock-hist-top">
+          <button class="mock-btn-ghost" onclick="renderMockLanding()">← Back</button>
+          <h1 class="mock-hist-title">Mock Test History</h1>
+        </div>
+        <div class="mock-locked">
+          <div style="font-size:34px;margin-bottom:8px;">📊</div>
+          <h2>No mock tests yet</h2>
+          <p>Take your first mock test and your scores, timing and per-chapter performance will be tracked here.</p>
+          <button class="mock-btn-primary" onclick="renderMockLanding()">Go to mock test</button>
+        </div>
+      </div>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  const s = mockHistoryStats(hist);
+  const overallAccuracy = s.totalQ ? Math.round((s.totalCorrect / s.totalQ) * 100) : 0;
+  const passRate = s.n ? Math.round((s.passes / s.n) * 100) : 0;
+  // Trend direction: average of the most recent third vs the earliest third.
+  const third = Math.max(1, Math.floor(s.n / 3));
+  const firstAvg = Math.round(hist.slice(0, third).reduce((a, h) => a + h.pct, 0) / third);
+  const lastAvg = Math.round(hist.slice(-third).reduce((a, h) => a + h.pct, 0) / third);
+  const delta = lastAvg - firstAvg;
+  const trendStr = s.n < 2 ? '' : (delta > 2 ? `▲ +${delta}%` : delta < -2 ? `▼ ${delta}%` : '◆ steady');
+  const trendCls = s.n < 2 ? '' : (delta > 2 ? 'up' : delta < -2 ? 'down' : 'flat');
+
+  // Score trend — one bar per attempt, oldest→newest.
+  const maxBars = hist.length;
+  const trendBars = hist.map((h, i) => {
+    const d = new Date(h.date);
+    const lbl = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `<div class="mock-trend-col" title="${lbl} — ${h.pct}% (${h.score}/${h.total})">
+        <div class="mock-trend-bar-wrap"><div class="mock-trend-bar ${mockGradeOf(h.pct)}" style="height:${Math.max(3, h.pct)}%"></div></div>
+        <div class="mock-trend-pct">${h.pct}</div>
+      </div>`;
+  }).join('');
+
+  // Per-chapter accuracy across all attempts.
+  const byChapter = mockHistoryByChapter(hist);
+  const chapterRows = byChapter.map(c => `
+      <div class="mock-bd-row">
+        <span class="mock-bd-title" title="${c.title}">${c.title}</span>
+        <div class="mock-bd-bar"><div class="mock-bd-fill ${mockGradeOf(c.pct)}" style="width:${c.pct}%"></div></div>
+        <span class="mock-bd-val">${c.pct}%</span>
+        <span class="mock-bd-sub">${c.correct}/${c.total}</span>
+      </div>`).join('');
+
+  // Every attempt, newest first, expandable to its own chapter breakdown.
+  const attempts = hist.map((h, i) => ({ h, num: i + 1 })).reverse().map(({ h, num }) => {
+    const d = new Date(h.date);
+    const when = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) +
+      ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const grade = mockGradeOf(h.pct);
+    const bc = h.byChapter || {};
+    const bcKeys = Object.keys(bc);
+    const breakdown = bcKeys.length
+      ? bcKeys.map(k => {
+          const c = bc[k] || {};
+          const cp = c.total ? Math.round((c.correct / c.total) * 100) : 0;
+          return `<div class="mock-bd-row">
+              <span class="mock-bd-title" title="${c.title || 'Unknown'}">${c.title || 'Unknown'}</span>
+              <div class="mock-bd-bar"><div class="mock-bd-fill ${mockGradeOf(cp)}" style="width:${cp}%"></div></div>
+              <span class="mock-bd-val">${c.correct || 0}/${c.total || 0}</span>
+            </div>`;
+        }).join('')
+      : '<p class="mock-attempt-empty">No per-chapter breakdown saved for this attempt.</p>';
+    return `
+      <details class="mock-attempt">
+        <summary>
+          <span class="mock-attempt-pct ${grade}">${h.pct}%</span>
+          <span class="mock-attempt-main">
+            <span class="mock-attempt-when">Attempt #${num} · ${when}</span>
+            <span class="mock-attempt-meta">${h.score}/${h.total} correct · ${mockFmtDuration(h.durationSec || 0)}${h.timed ? ' · ⏱ timed' : ''}</span>
+          </span>
+          <span class="mock-attempt-chev">▾</span>
+        </summary>
+        <div class="mock-attempt-body">
+          <div class="mock-breakdown-list">${breakdown}</div>
+        </div>
+      </details>`;
+  }).join('');
+
+  contentEl.innerHTML = `
+    <div class="mock-wrap">
+      <div class="mock-hist-top">
+        <button class="mock-btn-ghost" onclick="renderMockLanding()">← Back</button>
+        <h1 class="mock-hist-title">Mock Test History</h1>
+        <button class="mock-btn-ghost mock-hist-clear" onclick="mockClearHistory()">🗑 Clear</button>
+      </div>
+
+      <div class="mock-stats">
+        <div class="mock-stat"><div class="mock-stat-num">${s.n}</div><div class="mock-stat-label">Tests taken</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${s.best}%</div><div class="mock-stat-label">Best score</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${s.avg}%</div><div class="mock-stat-label">Average score</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${passRate}%</div><div class="mock-stat-label">Pass rate (≥70%)</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${s.totalCorrect}<small>/${s.totalQ}</small></div><div class="mock-stat-label">Questions correct</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${overallAccuracy}%</div><div class="mock-stat-label">Overall accuracy</div></div>
+        <div class="mock-stat"><div class="mock-stat-num">${mockFmtTotalTime(s.totalSec)}</div><div class="mock-stat-label">Total time</div></div>
+        <div class="mock-stat"><div class="mock-stat-num ${trendCls === 'up' ? 'trend-up' : trendCls === 'down' ? 'trend-down' : ''}">${trendStr || '—'}</div><div class="mock-stat-label">Recent trend</div></div>
+      </div>
+
+      <div class="mock-trend-card">
+        <h3>Score over time</h3>
+        <p class="mock-coverage-sub">Each bar is one attempt, oldest on the left. Hover for details.</p>
+        <div class="mock-trend ${maxBars > 16 ? 'scroll' : ''}">
+          <div class="mock-trend-axis"><span>100</span><span>50</span><span>0</span></div>
+          <div class="mock-trend-bars">${trendBars}</div>
+        </div>
+      </div>
+
+      <div class="mock-breakdown">
+        <h3>Accuracy by chapter <span class="mock-bd-allnote">across all ${s.n} attempt${s.n === 1 ? '' : 's'}</span></h3>
+        <p class="mock-coverage-sub">Weakest topics first — focus your revision here.</p>
+        <div class="mock-breakdown-list">${chapterRows}</div>
+      </div>
+
+      <div class="mock-attempts">
+        <h3>All attempts</h3>
+        <p class="mock-coverage-sub">Newest first. Click an attempt to see its per-chapter breakdown.</p>
+        ${attempts}
+      </div>
+
+      <div class="mock-results-actions" style="margin-top:24px;">
+        <button class="mock-btn-primary" onclick="renderMockLanding()">Take a new mock test</button>
+        <button class="mock-btn-ghost" onclick="showDashboard()">Dashboard</button>
+      </div>
+    </div>`;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function mockClearHistory() {
+  const hist = getMockHistory();
+  if (!hist.length) return;
+  if (!confirm(`Delete all ${hist.length} mock test result${hist.length === 1 ? '' : 's'}?\n\nThis clears your score history, trend and per-chapter stats. It cannot be undone.`)) return;
+  try { localStorage.removeItem('ml4-mock-history'); } catch (e) {}
+  if (typeof showToast === 'function') showToast('🗑 History cleared', 'Mock test history removed', '📝');
+  renderMockLanding();
 }
 
 function mockSelectCount(c, btn) {
@@ -415,7 +610,7 @@ function submitMockTest(auto) {
 
   // Persist history (cap at last 30).
   const hist = getMockHistory();
-  hist.push({ date: new Date().toISOString(), score, total, pct, durationSec, byChapter });
+  hist.push({ date: new Date().toISOString(), score, total, pct, durationSec, timed: !!st.timed, byChapter });
   if (hist.length > 30) hist.splice(0, hist.length - 30);
   saveMockHistory(hist);
 
