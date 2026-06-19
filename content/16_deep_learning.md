@@ -2091,4 +2091,71 @@ DEBUGGING (in order)
 
 ---
 
+## Key Takeaways
+
+```
+DEEP LEARNING — WHAT TO REMEMBER
+═══════════════════════════════════════════════════════════════════
+
+TRAINING DEEP NETWORKS
+  • Backprop = chain rule; reuse forward activations to get
+    dLoss/dWeight for every layer.
+  • Adam/AdamW is the default optimizer; AdamW decouples weight
+    decay from the gradient and generalizes better.
+  • SGD+momentum can still win on well-tuned vision benchmarks.
+  • BatchNorm normalizes across the batch (CNNs); LayerNorm
+    normalizes per-token (Transformers, RNNs).
+  • Clip gradients by global norm to tame exploding gradients;
+    mixed precision (fp16/bf16 + loss scaling) saves memory/time.
+
+COMPUTER VISION
+  • CNN wins: local receptive fields + weight sharing +
+    translation invariance.
+  • ResNet's skip connections enable very deep nets by letting
+    gradients flow and learning residuals.
+  • YOLO = single-shot grid detection; U-Net = encoder-decoder
+    with skip connections for segmentation.
+  • ViT splits an image into patches and treats them as tokens;
+    needs lots of data (or pre-training) to beat CNNs.
+
+ATTENTION & TRANSFORMERS
+  • Self-attention: softmax(QKᵀ/√d)·V — each token weighs every
+    other token; scaling by √d keeps gradients stable.
+  • Multi-head attention learns several relation types in
+    parallel; complexity is O(n²) in sequence length.
+  • Positional info via sinusoidal, learned, RoPE, or ALiBi
+    (RoPE/ALiBi extrapolate to longer contexts).
+  • BERT = bidirectional encoder (MLM+NSP) for understanding;
+    GPT = causal decoder (next-token) for generation.
+  • LSTM/GRU gates fight vanishing gradients but lose to
+    attention on long-range dependencies.
+
+LLM ADAPTATION
+  • Tokenization (BPE) balances vocab size vs sequence length.
+  • LoRA injects low-rank ΔW = BA, trains <1% of params, no
+    extra inference latency once merged.
+  • RLHF = SFT → reward model → PPO; aligns models to human
+    preference beyond next-token likelihood.
+  • RAG grounds answers in retrieved documents to cut
+    hallucination and add fresh/domain knowledge.
+
+GENERATIVE & SPECIALIZED MODELS
+  • VAE: probabilistic latent + reparameterization trick,
+    trained with ELBO (reconstruction + KL).
+  • Diffusion: fixed noising forward, learned denoising reverse;
+    stable training, now dominant for image gen.
+  • GANs: generator vs discriminator minimax; watch for mode
+    collapse — WGAN improves stability.
+  • CLIP aligns image/text via contrastive loss → zero-shot.
+  • GNNs pass messages over graph edges; MoE routes tokens to a
+    few experts for more params at fixed compute.
+
+PRACTICAL
+  • Debug: overfit one batch, check initial loss, inspect data,
+    monitor per-layer gradient norms, use model.eval().
+  • PyTorch = default; JAX = cutting-edge research/TPUs.
+```
+
+---
+
 **Previous:** [Chapter 15 — Reinforcement Learning](15_reinforcement_learning.md) | **Next:** [Chapter 17 — Large Language Models](17_llm.md)

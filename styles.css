@@ -120,6 +120,11 @@ body.sidebar-collapsed .sidebar {
 .chapter-list {
   flex: 1;
   overflow-y: auto;
+  /* Prevent a spurious horizontal scrollbar: overflow-y:auto otherwise computes
+     overflow-x to `auto`, so when the (classic, width-consuming) vertical
+     scrollbar appears it shrinks the content box and full-width rows overflow by
+     a few px, producing a second scrollbar in the sidebar. */
+  overflow-x: hidden;
   padding: 8px 0;
 }
 
@@ -717,6 +722,7 @@ body.sidebar-collapsed .content {
   display: none;
   padding: 8px 0;
   overflow-y: auto;
+  overflow-x: hidden; /* same sidebar double-scrollbar guard as .chapter-list */
 }
 
 /* When visible, fill the space the (hidden) chapter list vacates instead of
@@ -4393,10 +4399,16 @@ body.focus-mode .sidebar,
 body.focus-mode .topbar,
 body.focus-mode .toc-panel,
 body.focus-mode .scroll-progress,
-body.focus-mode .sel-popup,
 body.focus-mode .toast-container,
 body.focus-mode .overlay {
   display: none !important;
+}
+
+/* Keep the text-selection popup usable in focus mode. `.main` becomes
+   position:fixed; z-index:10000 here, so the popup (a body-level sibling)
+   must sit above it to remain visible and clickable. */
+body.focus-mode .sel-popup {
+  z-index: 10002;
 }
 
 body.focus-mode .main {

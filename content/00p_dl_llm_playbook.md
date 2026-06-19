@@ -609,4 +609,52 @@ SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (c
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  DEEP LEARNING & LLMs PLAYBOOK — FIELD GUIDE                       ║
+╠════════════════════════════════════════════════════════════════════╣
+║  PIPELINE                                                          ║
+║    • Data → tokenise (BPE) → pretrain (next-token) →               ║
+║      post-train (SFT → DPO/RLHF/RLAIF) → serve                     ║
+║    • Sketch the train/inference map; it answers 80%                ║
+╠════════════════════════════════════════════════════════════════════╣
+║  MODEL CHOICE                                                      ║
+║    • Default prototype: Gemini 3 Flash / Sonnet 4.6                ║
+║    • Escalate to Pro/Opus only when measurably needed              ║
+║    • Reasoning models trade test-time compute for IQ;              ║
+║      pay only on hard math/code/planning                           ║
+║    • On-device: privacy, latency, scale, offline                   ║
+╠════════════════════════════════════════════════════════════════════╣
+║  TRAINING DEFAULTS                                                 ║
+║    • LR 3e-4 base; fine-tune 1e-5–5e-5; LoRA 2e-4, r=16            ║
+║    • AdamW + warmup + cosine; BF16 mixed precision                 ║
+║    • Won't converge? lower LR, check data/labels first             ║
+║    • Fine-tune last: prompt + RAG beats it by default              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  SERVING (COST/LATENCY)                                            ║
+║    • vLLM is the 2026 default (PagedAttention, KV reuse)           ║
+║    • Cut cost in order: prompt cache (~90% off) → model            ║
+║      routing → batch API (50%) → small embedder → quantize         ║
+║    • BF16 = 2 bytes/param; INT4 = 0.5 — size your GPU              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  RAG                                                               ║
+║    • Rewrite → hybrid (dense+BM25) → rerank 20→3 → cite            ║
+║    • Chunk 100–500 tokens; eval faithfulness (Ragas)               ║
+║    • Long context replaces RAG only for single big docs            ║
+╠════════════════════════════════════════════════════════════════════╣
+║  AGENTS & DIAGNOSTICS                                              ║
+║    • Build agents only for multi-step, tool-using tasks            ║
+║    • Loops forever → step cap, better stop criteria                ║
+║    • Hallucinates → RAG + JSON schema + 'cite or IDK'              ║
+║    • Fine-tune worse → forgetting/overfit: mix data, lower LR      ║
+╠════════════════════════════════════════════════════════════════════╣
+║  BENCH IN 2026: SWE-bench Verified, Terminal-Bench,                ║
+║  OSWorld, GPQA, ARC-AGI-2 — NOT MMLU/HumanEval                     ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **See also:** [Ch 14 Neural Networks](14_neural_networks.md) · [Ch 16 Deep Learning Reference](16_deep_learning.md) · [Ch 17 LLMs](17_llm.md) · [Ch 18 AI Agents](18_ai_agents.md) · [Ch 19 AI Frameworks](19_ai_frameworks.md) · [Ch 20 The 2026 AI Landscape](20_2026_landscape.md) · [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)

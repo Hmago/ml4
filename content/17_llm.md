@@ -5374,4 +5374,82 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
 ---
 
+## Key Takeaways
+
+```
+LARGE LANGUAGE MODELS — WHAT TO REMEMBER
+═══════════════════════════════════════════════════════════════════
+
+CORE IDEA
+  • An LLM is a next-token predictor: it models
+    P(next token | context) and samples repeatedly.
+  • Emergent reasoning/code/writing come from scale of data and
+    parameters, not from any explicit rules.
+
+MATH FOUNDATIONS
+  • Softmax turns logits into a probability distribution;
+    log-probs avoid underflow and define loss.
+  • Cross-entropy / MLE: training minimizes surprise on real
+    next tokens; perplexity = exp(avg loss).
+  • Dot products measure similarity of embedding vectors;
+    entropy & KL divergence quantify uncertainty/difference.
+
+HOW IT WORKS INSIDE
+  • Pipeline: text → tokens (BPE) → embeddings → Transformer
+    stack → logits → decode.
+  • Self-attention is O(n²) in context length — the main cost
+    driver for long contexts.
+  • Decoding: greedy/beam (deterministic) vs temperature,
+    top-k, top-p (controlled randomness).
+
+TRAINING STAGES
+  • (1) Pre-training: next-token on massive corpora → language
+    + world knowledge.
+  • (2) SFT: curated (prompt, response) pairs → instruction
+    following.
+  • (3) RLHF or DPO: align to human preference; DPO skips the
+    separate reward model and PPO loop.
+  • Scaling laws: loss falls predictably with params, data, and
+    compute (Chinchilla: scale data with params).
+
+MODEL FAMILIES
+  • GPT = decoder-only generation; BERT = encoder-only
+    understanding; T5 = encoder-decoder.
+  • LLaMA/Mistral/Gemma drive open-source; Claude, Gemini, GPT
+    lead closed frontier models.
+  • MoE: route each token to a few experts → more capacity at
+    roughly fixed inference compute.
+
+PROMPTING & RELIABILITY
+  • Techniques: zero-shot, few-shot, chain-of-thought,
+    self-consistency, ReAct, tree-of-thoughts.
+  • System prompts set role/constraints; beware prompt
+    injection — never trust untrusted input as instructions.
+  • Hallucination = confident wrong output; reduce via RAG,
+    grounding/citations, lower temperature, fine-tuning.
+
+APPLICATIONS & RETRIEVAL
+  • RAG: embed query → search vector DB → inject top-k docs →
+    grounded answer (fresh, domain-specific).
+  • Agents = LLM + tools + memory + loop; function calling lets
+    the model emit structured tool calls.
+  • Embedding models (not generative) power semantic search and
+    similarity at scale.
+
+DEPLOYMENT & EVALUATION
+  • Inference is memory-bound and autoregressive; KV cache,
+    quantization, Flash Attention, speculative decoding speed it up.
+  • Quantize to int8/4-bit to shrink models with small quality loss.
+  • Evaluate with perplexity, task benchmarks (MMLU, HumanEval),
+    and human/ELO arenas; cost scales with tokens.
+
+SAFETY & FUTURE
+  • Watch bias, copyright, environmental cost; add guardrails
+    and a responsible-deployment checklist.
+  • Reasoning models "think" (extra tokens/steps) before
+    answering for harder problems.
+```
+
+---
+
 **Previous:** [Chapter 16 — Deep Learning](16_deep_learning.md) | **Next:** [Chapter 18 — AI Agents & Tool Use](18_ai_agents.md)

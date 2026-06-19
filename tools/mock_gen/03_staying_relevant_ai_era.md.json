@@ -658,5 +658,71 @@
     ],
     "answer": 0,
     "explanation": "The final perspective says winners embrace AI while deepening fundamentals, system thinking, and domain expertise. It explicitly warns against both ignoring AI and blindly trusting it."
+  },
+  {
+    "q": "In the context of staying relevant, what is 'brain fog'?",
+    "options": [
+      "A formal neurological disease that shows up clearly on an MRI scan and always requires long-term prescription medication to manage",
+      "A type of burnout that only affects engineers over 40 after many years of sustained on-call rotations",
+      "Slow internet connectivity that makes AI tools laggy and breaks concentration during pair programming",
+      "A non-diagnostic cluster of symptoms — poor concentration, fatigue, forgetfulness, slow recall — that dulls thinking"
+    ],
+    "answer": 3,
+    "explanation": "Brain fog is not a medical diagnosis but a cluster of symptoms (muddy focus, mental fatigue, forgetfulness, slow recall). It matters because it degrades exactly the judgment and review skills the AI era rewards."
+  },
+  {
+    "q": "Which everyday AI-era workflow most directly taxes focus through 'attention residue'?",
+    "options": [
+      "Constantly switching between IDE, ChatGPT, Slack, docs, and terminal — each switch leaves lingering attention residue",
+      "Writing one complex function in a single uninterrupted sitting with notifications fully turned off for the hour",
+      "Reading a single research paper slowly from beginning to end without opening any other browser tabs at all",
+      "Taking a quiet walk away from the screen so a difficult problem can settle in the background for a while"
+    ],
+    "answer": 0,
+    "explanation": "Each context switch leaves 'attention residue' that lingers and slows the next task. The constant IDE/chat/Slack/doc juggling of AI-assisted work is a major fog driver; single-tasking and breaks reduce it."
+  },
+  {
+    "q": "The 2025 MIT Media Lab 'Your Brain on ChatGPT' study is cited to illustrate which risk?",
+    "options": [
+      "That AI assistants reliably make every person who uses them permanently and measurably smarter over time",
+      "'Cognitive debt' — LLM reliance correlated with lower neural connectivity and weaker memory of one's own work",
+      "That wearing an EEG headset while coding directly improves typing speed and reduces the number of bugs shipped",
+      "That brain fog is purely a sleep problem with no measurable connection to how much AI assistance you use"
+    ],
+    "answer": 1,
+    "explanation": "The EEG study found people who leaned on an LLM showed reduced neural connectivity and recalled their own work less well — 'cognitive debt.' It is the neuroscience behind the chapter's Mistakes #4 and #7."
+  },
+  {
+    "q": "Among fixes for brain fog, which is described as the non-negotiable foundation that makes the others matter?",
+    "options": [
+      "Drinking progressively more coffee through the day to power through every afternoon energy dip you hit",
+      "Reading more AI launch news each morning to stay motivated and feel current with a fast-moving field",
+      "Getting 7-9 hours of sleep, which clears metabolic waste and consolidates memory",
+      "Switching to a standing desk and adjusting monitor height to improve posture during long coding sessions"
+    ],
+    "answer": 2,
+    "explanation": "Sleep (7-9h) clears metabolic waste via the glymphatic system and consolidates memory; nothing else on the list compensates for chronic sleep debt. It is the foundation the other fixes build on."
+  },
+  {
+    "q": "What does the chapter recommend as 'AI fasting', and why?",
+    "options": [
+      "Deliberately skipping meals during the day so that hunger keeps you alert and focused through deep-work blocks",
+      "Avoiding every screen for a full uninterrupted week each month to completely reset your attention span at once",
+      "Turning off your home Wi-Fi entirely so that AI coding tools simply cannot be reached during the workday at all",
+      "Regularly solving some problems with no AI — writing the algorithm and reading the error yourself — to keep the muscle"
+    ],
+    "answer": 3,
+    "explanation": "'AI fasting' means periodically working unaided so your reasoning and debugging instincts don't atrophy — a direct counter to cognitive debt and to the 'prompt monkey' failure mode (Mistake #7)."
+  },
+  {
+    "q": "Persistent brain fog that sleep and exercise don't lift should prompt what response?",
+    "options": [
+      "Consider a medical check — sleep apnea, thyroid issues, B12/D/iron deficiency, or depression are common, treatable causes",
+      "Push harder and ignore it completely, since brain fog always passes on its own within a day or two no matter what",
+      "Permanently quit using all AI tools and go back to writing every single line of code by hand from that point on",
+      "Increase caffeine intake steadily until the fog finally clears, even if it means drinking coffee late at night"
+    ],
+    "answer": 0,
+    "explanation": "Lingering fog can signal a treatable medical cause (sleep apnea, thyroid, B12/vitamin D/iron deficiency, depression, long COVID). Ruling these out is part of staying sharp — not a sign of weakness."
   }
 ]

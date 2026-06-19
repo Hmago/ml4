@@ -1439,4 +1439,48 @@ Sources:
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  GOOGLE BEHAVIORAL INTERVIEW — WHAT TO REMEMBER                     ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HOW YOU'RE SCORED                                                 ║
+║  • 4 dimensions: GCA, Leadership, Role Knowledge, Googleyness     ║
+║  • 1-4 scale; aim for 3.5+ average to pass.                       ║
+║  • Behavioral drives HALF your score (Leadership + Googleyness).  ║
+║                                                                    ║
+║  GOOGLEYNESS (7 traits)                                            ║
+║  • Intellectual humility, comfort with ambiguity, bias to action,║
+║    collaboration, user focus, ethics, growth mindset.            ║
+║                                                                    ║
+║  LEADERSHIP (6 signals)                                            ║
+║  • Ownership, influence WITHOUT authority, navigating            ║
+║    disagreement, tradeoffs, growing others, learning from failure.║
+║  • Backed by Project Oxygen (great managers) & Aristotle         ║
+║    (psychological safety makes teams work).                      ║
+║                                                                    ║
+║  STAR METHOD                                                       ║
+║  • S 30s + T 15s + A 90s + R 30s ≈ 2.5 min per answer.          ║
+║  • Spend ~50% on ACTION — that's what's evaluated.              ║
+║  • Every Result needs NUMBERS.                                   ║
+║                                                                    ║
+║  STORY BANK                                                        ║
+║  • Prepare 8 stories; each should answer 3-4 questions.         ║
+║  • Cover failure, conflict, ambiguity, leadership, above-and-   ║
+║    beyond, and a complex ML project.                            ║
+║                                                                    ║
+║  GOLDEN RULES                                                      ║
+║  • Data-driven > opinion; "we" for team, "I" for your actions.  ║
+║  • Own failures (70% = what you learned); never trash others.   ║
+║  • End cleanly, don't ramble; ask 2-3 thoughtful questions.     ║
+║                                                                    ║
+║  RED FLAGS                                                         ║
+║  • Blaming others, no self-awareness, vague results, arrogance,  ║
+║    rambling, treating behavioral as "just soft skills".         ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Back to Start:** [README — Table of Contents](../README.md)

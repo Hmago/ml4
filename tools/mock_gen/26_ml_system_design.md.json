@@ -658,5 +658,71 @@
     ],
     "answer": 3,
     "explanation": "Model cards are transparency artifacts for external stakeholders and regulators. They describe what the model does, what data trained it, how it performs across different groups, and what failure modes exist — not internal implementation details or legal terms."
+  },
+  {
+    "q": "The chapter frames ML system design as a six-step 'ride.' Which ordering matches it?",
+    "options": [
+      "Model -> Data -> Metrics -> Problem -> Serving -> Monitoring, starting from the architecture you intend to ship",
+      "Problem -> Metrics -> Data -> Model -> Serving -> Monitoring",
+      "Data -> Model -> Serving -> Problem -> Metrics -> Monitoring, gathering data before framing the objective at all",
+      "Problem -> Data -> Model -> Metrics -> Monitoring -> Serving, deferring the metric until after the model exists"
+    ],
+    "answer": 1,
+    "explanation": "The mnemonic is 'Please Make Data, Model Smartly, Monitor': Problem, Metrics, Data, Model, Serving, Monitoring. Framing and metrics precede data and modeling; serving and monitoring close the loop."
+  },
+  {
+    "q": "Designing StreamFlix's feed, why is 'predict clicks' a poor label choice?",
+    "options": [
+      "Clicks are impossible to log reliably at StreamFlix's scale of hundreds of millions of users",
+      "Click-based models are not supported by TPU serving and would force a CPU-only deployment",
+      "Optimizing clicks breeds clickbait; the better target is a composite of click, meaningful watch, and positive signals",
+      "Clicks always require expensive explicit human labels rather than the cheap, abundant implicit behavioral signals StreamFlix already logs"
+    ],
+    "answer": 2,
+    "explanation": "The label is destiny: raw clicks reward clickbait and raw watch time rewards bloated videos. A composite engagement-and-satisfaction label aligns the system with the real goal — a feed users love."
+  },
+  {
+    "q": "In StreamFlix retrieval, why precompute video embeddings in a two-tower model?",
+    "options": [
+      "So that the user tower can be skipped entirely at serving time to save a forward pass",
+      "Because jointly cross-attending the query against all 800M candidate videos on every single request is cheap enough to run inline at serving time",
+      "To avoid ever having to train the retrieval model on implicit feedback such as watches or clicks",
+      "Item embeddings are indexed offline, so at request time you embed only the user and do an ANN lookup in milliseconds"
+    ],
+    "answer": 3,
+    "explanation": "Because the towers are independent, video embeddings are computed once and indexed. At serving you run one user-tower pass and an approximate nearest-neighbor search over the index — single-digit milliseconds over billions."
+  },
+  {
+    "q": "StreamFlix fans a request out to 10 shards, each at p99 = 100 ms. What is the effect on tail latency?",
+    "options": [
+      "About a 9.6% chance at least one shard is slow (1 - 0.99^10), so across the fan-out 100 ms behaves like the overall p90",
+      "The overall p99 stays exactly 100 ms because the shards all execute in parallel rather than in sequence",
+      "The overall latency becomes roughly 1,000 ms because the ten independent shard times add up sequentially across the full fan-out path",
+      "Tail latency stops mattering entirely once the requests are parallelized across many independent shards"
+    ],
+    "answer": 0,
+    "explanation": "With 10 independent shards each at p99, P(at least one slow) = 1 - 0.99^10 ~ 9.6%. So per-shard p99 is really your overall p90; holding a true 100 ms p99 across the fan-out needs each shard fast at p99.9."
+  },
+  {
+    "q": "A new StreamFlix ranker lifts CTR 1% but cuts user satisfaction. Which concept says don't ship it?",
+    "options": [
+      "Interleaving, which merges two rankers' results into one list to compare them using far less traffic",
+      "A guardrail metric — one that must not degrade even if the primary metric improves",
+      "Calibration, which aligns a predicted probability with the actual observed frequency",
+      "Backtesting, which replays logged sessions to estimate how a new model would have ranked them"
+    ],
+    "answer": 1,
+    "explanation": "Guardrail metrics (satisfaction, revenue, latency) protect against winning on one number while harming the product. A CTR gain that hurts satisfaction violates the guardrail, so it should not ship."
+  },
+  {
+    "q": "A StreamFlix feature looks great offline but tanks live. What is the most likely culprit and its cure?",
+    "options": [
+      "Too few model parameters to fit the data; the cure is simply training a substantially larger network",
+      "An over-tuned learning rate causing divergence; the cure is early stopping with a held-out validation set",
+      "An A/B test that ran too briefly to capture day-of-week effects; the cure is running the experiment for a full one-to-two-week window",
+      "Training-serving skew from two feature code paths; the cure is one shared definition (a feature store) used by both"
+    ],
+    "answer": 3,
+    "explanation": "'Great offline, terrible live' is the signature of training-serving skew: features computed one way in training and differently at serving. A single shared feature definition (feature store) makes the two paths identical."
   }
 ]

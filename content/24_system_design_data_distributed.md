@@ -3,12 +3,12 @@
 > "Show me your flowcharts and conceal your tables, and I shall continue to be mystified. Show me your tables, and I won't usually need your flowcharts; they'll be obvious." — Fred Brooks, *The Mythical Man‑Month*
 
 **What this chapter covers:**
-The data plane of system design — databases (SQL vs NoSQL, internals, indexing, MVCC/WAL, LSM, schema migrations, specialised stores, backups, DB security), scaling them out (vertical, replication, pooling, partitioning vs sharding, CQRS, online resharding, multi‑region DB architectures, DR), the distributed‑systems theory that holds it all together (CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, CRDTs, Bloom filters), messaging & streaming (Kafka, delivery guarantees, outbox + CDC), storage systems (block/file/object, lakes vs warehouses, erasure coding), and data processing (batch vs stream, MapReduce, Lambda & Kappa, exactly‑once).
+The data plane of system design — databases (SQL vs NoSQL, internals, indexing, MVCC/WAL, schema migrations, specialised stores, backups, DB security), scaling them out (vertical, replication, pooling, partitioning vs sharding, CQRS, online resharding, multi‑region DB architectures, DR), the distributed‑systems theory that holds it all together (CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, Bloom filters), messaging & streaming (Kafka, delivery guarantees, outbox + CDC), storage systems (block/file/object, lakes vs warehouses), and data processing (batch vs stream, MapReduce, Lambda & Kappa, exactly‑once).
 
 This is **Part 2** of the three‑chapter System Design series. Read **[Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md)** first if you haven't covered the network/edge stack (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) — many sections below assume those primitives. **[Chapter 25 — Operations & Case Studies](25_system_design_operations_case_studies.md)** builds on this chapter.
 
 **How to read it:**
-Most topics follow the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs.* You can read it cover‑to‑cover (~4 hours) or jump to specific building blocks.
+Most topics follow the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs.* You can read it cover‑to‑cover (~5 hours) or jump to specific building blocks.
 
 The §X.Y numbering is continuous with Ch 23 and Ch 25 (this chapter contains §7.1 … §12.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §3.21" or "Ch 25, §17.9").
 
@@ -18,12 +18,12 @@ The §X.Y numbering is continuous with Ch 23 and Ch 25 (this chapter contains §
 
 | Part | Section | Building Blocks |
 |------|---------|-----------------|
-| 7 | Databases | SQL vs NoSQL, ACID/BASE, indexing, MVCC/WAL, LSM, schema migrations, specialised DBs, backups & DB security |
+| 7 | Databases | SQL vs NoSQL, ACID/BASE, indexing, MVCC/WAL, schema migrations, specialised DBs, backups & DB security |
 | 8 | Database Scaling | Vertical / replication / pooling, partitioning vs sharding, CQRS, online resharding, multi‑region DB, DR |
-| 9 | Distributed Systems Theory | CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, CRDTs, Bloom |
-| 10 | Messaging & Streaming | Queues vs streams vs pub/sub, Kafka internals, delivery guarantees, outbox + CDC, consumer rebalance |
-| 11 | Storage Systems | Block / file / object storage, lakes vs warehouses vs lakehouses, hot/warm/cold, replication vs erasure coding |
-| 12 | Data Processing | Batch vs stream, MapReduce, Lambda & Kappa, ETL vs ELT, exactly‑once, windowing, stream–table duality |
+| 9 | Distributed Systems Theory | CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, Bloom |
+| 10 | Messaging & Streaming | Queues vs streams vs pub/sub, Kafka internals, delivery guarantees, outbox + CDC |
+| 11 | Storage Systems | Block / file / object storage, lakes vs warehouses vs lakehouses, hot/warm/cold |
+| 12 | Data Processing | Batch vs stream, MapReduce, Lambda & Kappa, ETL vs ELT, exactly‑once, windowing |
 
 ---
 
@@ -127,8 +127,8 @@ Take the four letters one at a time:
 
 - **Atomicity — all or nothing.** Either every operation in the transaction takes effect, or none of them do. Transfer 50 dollars from A to B and you can *never* be left in a state where A was debited but B was never credited — not even if the server loses power halfway through. The database achieves this by first writing down what it is about to do (and how to reverse it) in a log *before* changing the real data; if it crashes mid-transaction, it replays or rolls back from that log on restart, so a half-finished transaction is never visible.
 - **Consistency — the rules always hold.** Every transaction moves the database from one *valid* state to another, never breaking the integrity rules you have declared: a balance can't go negative, a foreign key must point at a row that actually exists, a column marked `UNIQUE` stays unique. This is the most misunderstood letter — its "C" is about *your* declared invariants, **not** about every copy of the data being up to date. (That other meaning, "all replicas agree," is consistency in the CAP sense of §9.2 — a completely separate idea that unluckily shares the word.)
-- **Isolation — concurrent transactions don't step on each other.** When many transactions run at the same time, isolation makes each one behave as though it had the whole database to itself: it never sees another transaction's half-finished work. The database provides this either by making transactions *wait* for one another (pessimistic locking, §7.13) or by letting each one read its own private snapshot and sorting out conflicts at commit time (MVCC, §7.11). Perfect isolation is costly, so databases offer weaker *isolation levels* — the subject of the rest of this section.
-- **Durability — committed means committed.** Once the database has replied "committed," that data survives anything short of the disk physically failing — a power cut one millisecond later will not lose it. The mechanism: before acknowledging your commit, the database forces the change out of volatile RAM and onto permanent storage by calling `fsync` on its write-ahead log (§7.11), so the record is safely on disk *before* you are told the commit succeeded.
+- **Isolation — concurrent transactions don't step on each other.** When many transactions run at the same time, isolation makes each one behave as though it had the whole database to itself: it never sees another transaction's half-finished work. The database provides this either by making transactions *wait* for one another (pessimistic locking, §7.11) or by letting each one read its own private snapshot and sorting out conflicts at commit time (MVCC, §7.10). Perfect isolation is costly, so databases offer weaker *isolation levels* — the subject of the rest of this section.
+- **Durability — committed means committed.** Once the database has replied "committed," that data survives anything short of the disk physically failing — a power cut one millisecond later will not lose it. The mechanism: before acknowledging your commit, the database forces the change out of volatile RAM and onto permanent storage by calling `fsync` on its write-ahead log (§7.10), so the record is safely on disk *before* you are told the commit succeeded.
 
 ### Isolation levels — what each prevents
 
@@ -180,9 +180,7 @@ Both transactions committed successfully, yet the deposit evaporated — because
    COMMIT, COMMIT                          → 0 on call. Rule violated.
 ```
 
-Notice the two transactions never touch the **same row** — Alice's row and Bob's row are different — so there is no write-write conflict for the engine to detect. Each transaction read a *fact* ("2 doctors on call") that the **other** transaction then invalidated. Snapshot Isolation permits this precisely because each txn keeps reading its own start-time snapshot, where the count is still 2. Only `SERIALIZABLE` catches it: SSI tracks that T1 *read* data T2 *wrote* and vice-versa (a read-write dependency cycle) and aborts one transaction, forcing a retry that then sees the real count.
-
-> **Why this matters in an interview:** "lost update" and "write skew" look identical at a glance, but only lost update is a write-write conflict that row locks or `REPEATABLE READ` catch. Write skew is a read-write conflict across *different* rows and needs true serializability. Being able to draw these two timelines is the difference between a memorised answer and an understood one.
+The two transactions never touch the **same row** (Alice's and Bob's are different), so there's no write-write conflict to detect. Each read a *fact* ("2 doctors on call") the **other** then invalidated. Snapshot Isolation permits this because each txn reads its own start-time snapshot, where the count is still 2. Only `SERIALIZABLE` (SSI) catches it: it tracks the read-write dependency cycle and aborts one txn, forcing a retry that sees the real count.
 
 ### Snapshot Isolation vs Serializable Snapshot Isolation
 
@@ -263,7 +261,7 @@ Almost every modern RDBMS uses **B+tree**. The leaf chain makes `WHERE id BETWEE
 
 ### Why a B-tree is only a few levels deep (the fan-out math)
 
-The "≈ 3–4 levels" from the intro isn't a hand-wave — it falls out of arithmetic, and deriving it is a common interview follow-up. A B+tree node is one disk page (8 KB in Postgres). Each entry in an internal node is roughly a key plus a child pointer, say ~16 bytes, so one node points to:
+The "≈ 3–4 levels" isn't a hand-wave — it falls out of arithmetic. A B+tree node is one disk page (8 KB in Postgres). Each internal entry is roughly a key plus a child pointer (~16 bytes), so one node points to:
 
 ```
    fan-out  f ≈ 8192 bytes / 16 bytes ≈ 500 children
@@ -278,23 +276,7 @@ A balanced tree of height `h` with fan-out `f` indexes up to `fʰ` rows:
    height 4:  500⁴  =   62,500,000,000   (62 billion)
 ```
 
-So a primary-key lookup on a **billion-row** table descends only ~4 nodes. The root and usually the next level are permanently cached in the buffer pool (§7.8), so the lookup costs **one physical disk read** in practice. Compare a full scan: a billion rows at ~100 rows/page is 10 million page reads. The index collapses 10,000,000 reads into ≈ 1 — *that* is the "1 ms vs 10 s" in the section title, derived rather than asserted.
-
-### Walking the tree — a worked lookup
-
-`SELECT * FROM users WHERE user_id = 42`, on a B+tree keyed by `user_id`:
-
-```
-   root (L0):     [ keys: 1000 │ 2000 │ 3000 ]      42 < 1000  → leftmost child
-                       │
-   internal (L1): [ keys: 60 │ 120 │ 180 ]          42 < 60    → leftmost child
-                       │
-   leaf (L2):     [ …, (40→row ptr), (42→row ptr), (45→row ptr), … ]
-                  binary-search within the leaf → found, follow pointer to the heap row
-                  leaves are a doubly-linked list → next/prev leaf is O(1)
-```
-
-Two properties make this fast, and both are worth being able to state out loud: (1) **every** search path is the same length because all rows live in leaves at the bottom — that's the "balanced" in self-balancing, so there are no slow keys; and (2) because the leaves form a **sorted linked list**, a range query like `BETWEEN 42 AND 99` finds `42` once, then walks leaves rightward — it never re-descends from the root per row. That second property is exactly why B+trees beat hash indexes for everything except pure equality (a hash index has O(1) point lookups but *no order*, so it can't do ranges or `ORDER BY` at all).
+So a primary-key lookup on a **billion-row** table descends only ~4 nodes. The root and next level stay cached in the buffer pool, so the lookup costs **one physical disk read**. A full scan is 10 million page reads (a billion rows at ~100/page). The index collapses 10,000,000 reads into ≈ 1 — *that* is the "1 ms vs 10 s" in the title.
 
 ### Clustered vs secondary indexes
 
@@ -311,7 +293,7 @@ Two properties make this fast, and both are worth being able to state out loud: 
       'a@x.com'  → 42      ───────────▶      42 → { id:42, email, name, … }
 ```
 
-Two consequences fall straight out of this picture. First, a **covering index** (see below) that already holds every selected column lets the engine stop after step ①, skipping the second traversal — often a 2× speedup. Second, a **random UUID primary key is expensive in InnoDB**: every secondary lookup's step ② jumps to a random spot in the clustered tree, and every *insert* splits a random leaf page (page splits + cache misses). A monotonically increasing key (auto-increment, UUIDv7) keeps inserts appending to the rightmost leaf and keeps the clustered tree compact.
+Two consequences follow. First, a **covering index** that holds every selected column lets the engine stop after step ①, skipping the second traversal — often a 2× speedup. Second, a **random UUID primary key is expensive in InnoDB**: every secondary lookup's step ② jumps to a random spot in the clustered tree, and every *insert* splits a random leaf page. A monotonically increasing key (auto-increment, UUIDv7) keeps inserts appending to the rightmost leaf.
 
 ### Composite index ordering matters (the "leftmost prefix" rule)
 
@@ -327,7 +309,7 @@ Two consequences fall straight out of this picture. First, a **covering index** 
            WHERE user_id = ? ORDER BY name         ✘  (wrong order column)
 ```
 
-**Why the rule exists, not just what it is:** a composite key `(user_id, created_at)` is sorted by `user_id` *first*, and by `created_at` only *within* a single `user_id`. Picture a phone book sorted by `(last_name, first_name)`: you can instantly find every "Smith," and "Smith, John" — but you *cannot* efficiently find everyone whose first name is "John," because the Johns are scattered under every last name. Same mechanics here: `WHERE created_at > ?` with no `user_id` has to scan the whole index, because the rows that match are smeared across every `user_id` block. The filter must consume the index columns left-to-right with no gaps — that's the leftmost-prefix rule, and now you can see it's a property of the *sort order*, not an arbitrary database rule.
+**Why the rule exists:** a composite key `(user_id, created_at)` is sorted by `user_id` *first*, and by `created_at` only *within* a single `user_id`. Picture a phone book sorted by `(last_name, first_name)`: you instantly find every "Smith" and "Smith, John" — but *not* everyone named "John," who are scattered under every last name. Same here: `WHERE created_at > ?` with no `user_id` must scan the whole index. The leftmost-prefix rule is a property of the *sort order*, not an arbitrary database rule.
 
 ### Covering indexes & index-only scans
 
@@ -364,14 +346,66 @@ SELECT status, total FROM orders WHERE user_id = 42;
    No duplication.                      Faster reads (no join), painful updates.
 ```
 
-### Normal forms in 30 seconds each
+### The normal forms — each with a violation and its fix
 
-- **1NF** — atomic columns (no comma-separated lists in a cell).
-- **2NF** — every non-key column depends on the *whole* primary key (not just part of a composite).
-- **3NF** — non-key columns don't depend on other non-key columns ("no transitive dependencies").
-- **BCNF** — stricter 3NF: every determinant is a candidate key. Handles edge cases 3NF misses.
+Normalization is a progression: each form removes one kind of redundancy. Watch a messy `orders` table get fixed one rule at a time.
 
-OLTP (banking, e-commerce) lean **normalized** (3NF). Analytics warehouses lean **denormalized**.
+**1NF — atomic values, no repeating groups.** Every cell holds a single value — no lists, no multi-fact columns.
+
+```
+   violates 1NF (items is a list)         →   1NF (one row per item)
+   order_id | items          | customer       order_id | item   | customer
+   1        | widget, gadget | Alice           1        | widget | Alice
+                                               1        | gadget | Alice
+```
+
+The primary key is now the composite `(order_id, item)`.
+
+**2NF — no partial dependencies.** With a composite key, every non-key column must depend on the *whole* key, not just part of it.
+
+```
+   violates 2NF: key is (order_id, item), but `customer` depends on order_id alone
+```
+
+`customer` describes the order, not the order-item — so split the one table into two:
+
+```
+   order_items(order_id, item)        orders(order_id, customer_id)
+```
+
+**3NF — no transitive dependencies.** A non-key column must not depend on *another* non-key column.
+
+```
+   violates 3NF: order_id → customer_id → city   (city depends on the key only via customer_id)
+   orders(order_id, customer_id, city)
+```
+
+`city` is a fact about the customer, not the order. Move it where it belongs:
+
+```
+   orders(order_id, customer_id)      customers(customer_id, name, city)
+```
+
+3NF is the target for almost every OLTP schema: every non-key column depends on *"the key, the whole key, and nothing but the key."*
+
+**BCNF — every determinant is a candidate key.** A stricter 3NF, needed only when a table has *overlapping* candidate keys. Classic case: a student takes each course from one instructor, and each instructor teaches exactly one course.
+
+```
+   teaches(student, course, instructor)
+     rules           : (student, course) → instructor   and   instructor → course
+     candidate keys  : (student, course)  and  (student, instructor)
+     but instructor → course, and `instructor` is not a candidate key → violates BCNF
+```
+
+The table is already in 3NF (`course` is a prime attribute), yet `instructor → course` is repeated on every row. Decompose on the offending dependency so the determinant becomes a key:
+
+```
+   enrolment(student, instructor)     assignment(instructor, course)
+```
+
+**4NF / 5NF** address multi-valued and join dependencies, but they rarely change a real-world OLTP design.
+
+**Practical rule:** normalize OLTP schemas to **3NF** (reach for **BCNF** only with overlapping keys); deliberately **denormalize** read-heavy analytics — the anomalies below show *why* the normalized side is worth the joins.
 
 ### Why normalize? The three anomalies, concretely
 
@@ -392,9 +426,9 @@ Normalization isn't aesthetic — each normal form removes a specific failure mo
 - **Insertion anomaly** — you can't record a brand-new customer until they place a first order, because email only exists on `orders` rows. The fact "this person exists" has nowhere to live.
 - **Deletion anomaly** — Alice's last order is refunded and deleted. Her email — and the fact she was ever a customer — vanishes with it.
 
-Moving `user_email` into a `users` table fixes all three at once: the email now lives in exactly **one place**, so there is nothing to keep in sync, nothing that requires an order to exist, and nothing lost when an order is deleted. That single-source-of-truth property *is* 3NF; the formal phrasing ("no non-key column depends on another non-key column") is just a precise way of saying "don't store the same fact twice."
+Moving `user_email` into a `users` table fixes all three at once: the email lives in exactly **one place** — nothing to keep in sync, nothing that requires an order to exist, nothing lost when an order is deleted. That single-source-of-truth property *is* 3NF; the formal phrasing just means "don't store the same fact twice."
 
-The cost is the mirror image: reading an order together with its customer email now needs a **join**. Denormalization deliberately re-introduces the duplication to skip that join — trading write-side pain (keep the copies in sync) for read-side speed. That trade is exactly why OLTP normalizes (writes must stay correct under concurrency) and warehouses denormalize (reads dominate, and the data is rebuilt by a pipeline rather than edited in place).
+The cost is the mirror image: reading an order with its customer email now needs a **join**. Denormalization re-introduces the duplication to skip that join — trading write-side pain for read-side speed. That's why OLTP normalizes (writes must stay correct under concurrency) and warehouses denormalize (reads dominate, rebuilt by a pipeline).
 
 ### Star schema (warehouses)
 
@@ -481,66 +515,11 @@ Two ways to execute it:
 - If `country='JP'` matches **50 users**, nested loop does 50 cheap indexed lookups into `orders` — tiny — and the planner picks it.
 - If it matches **5,000,000 users**, those 5 M index probes are a disaster, so the planner instead builds one hash table and scans `orders` exactly once.
 
-The whole decision hinges on the *estimated row count* for `country='JP'`, which comes from column statistics. This is why stale stats are catastrophic: if `ANALYZE` last ran when there were 50 Japanese users but there are now 5 M, the planner still believes "50," picks nested loop, and a query that should take 200 ms takes 20 minutes. The fix isn't a cleverer query — it's `ANALYZE`, so the estimate matches reality.
+The decision hinges on the *estimated row count* for `country='JP'`, from column statistics. This is why stale stats are catastrophic: if `ANALYZE` last ran at 50 Japanese users but there are now 5 M, the planner still picks nested loop and a 200 ms query takes 20 minutes. The fix isn't a cleverer query — it's `ANALYZE`.
 
 **How to read the output like an engineer:** run `EXPLAIN (ANALYZE, BUFFERS)` and look for one thing first — the largest gap between `rows=` (estimated) and `actual rows=`. A 1000× gap there is your bug, nearly every time. Then scan for a `Seq Scan` on a big table under a selective filter (missing index), or a `Sort`/`Hash` node that reports `Disk:` instead of `Memory:` (raise `work_mem`, or cut the row count feeding it).
 
-## 7.8 Buffer pool, page cache, and how disk I/O actually works
-
-Databases don't read rows; they read **pages** (typically 8 KB in Postgres, 16 KB in InnoDB). The page is the unit of caching, locking, and I/O.
-
-```
-   Query ─▶ Buffer Pool (RAM)   ─── hit ──▶ done
-              │
-              │ miss
-              ▼
-           OS Page Cache (RAM)  ─── hit ──▶ load into buffer pool
-              │
-              │ miss
-              ▼
-           Disk (SSD/NVMe)      ─── ~100 µs ──▶ load
-```
-
-### Buffer pool — the DB's own cache
-
-The buffer pool is the slice of RAM the database reserves to hold recently-used pages, so most queries can be answered without touching disk at all. Four things worth knowing:
-
-- **Size** — set by `shared_buffers` (Postgres) or `innodb_buffer_pool_size` (MySQL). This is usually the single most important memory-tuning knob.
-- **Eviction** — when the pool is full and a new page is needed, the DB must throw one out. It typically uses **CLOCK-sweep**, a cheap approximation of "evict the least-recently-used page" that avoids the locking overhead a true LRU list would incur on many-core machines.
-- **Double-buffering** — on Linux, file reads also pass through the operating system's own page cache, so the same page can sit in *both* caches. Postgres deliberately keeps `shared_buffers` well below total RAM and leans on the OS cache as a second tier (so a buffer-pool miss is often still a RAM hit); MySQL InnoDB instead takes 70–80 % of RAM and uses direct I/O to avoid storing each page twice.
-- **Hit ratio** — the fraction of page requests served from the pool. Aim for **> 99 %** on OLTP; under 95 % usually means the pool is too small, or queries are scanning far more data than they should.
-
-**What the hit-ratio target actually buys — do the arithmetic.** A buffer-pool *hit* is a RAM read (~100 ns); a *miss* is an SSD read (~100 µs) — a **1000×** gap. So the average read time is dominated by how often you miss, not how often you hit:
-
-```
-   hit ratio 99 %:   0.99 × 100 ns + 0.01 × 100 µs ≈ 1.1 µs   average read
-   hit ratio 95 %:   0.95 × 100 ns + 0.05 × 100 µs ≈ 5.1 µs   average read
-```
-
-Slipping from 99 % to 95 % — which *sounds* like a rounding error — makes the average read ~5× slower, because the rare miss costs 1000× a hit and now happens 5× as often. That asymmetry is the whole reason the OLTP target is "> 99 %" rather than just "high," and why a buffer pool one size too small can flatten a database that looked only marginally under-provisioned on paper.
-
-### fsync, group commit, and the durability cost
-
-Every committed transaction must reach **non-volatile** storage before the client gets an ack:
-
-```
-   COMMIT ─▶ write WAL record to OS ─▶ fsync(WAL) ─▶ ack client
-                                        ▲
-                                        │ slowest step:
-                                        │   SSD: ~50–200 µs
-                                        │   HDD: ~5–10 ms
-                                        │   network EBS: 1–5 ms
-```
-
-**Group commit** — multiple concurrent txns share one `fsync`. Modern DBs do this automatically; throughput scales nearly linearly with concurrency until the disk is saturated.
-
-**`synchronous_commit = off` (Postgres)** — don't `fsync` on commit. Throughput rockets; you can lose the last second of writes on a crash. Acceptable for non-critical writes (analytics events); never for money.
-
-### Page cache + buffer pool double-buffering
-
-On Linux, files go through the OS page cache. Postgres reads land in *both* the buffer pool and the page cache. Wasteful in RAM but means a buffer-pool miss is usually still a RAM hit. MySQL InnoDB does **direct I/O** to avoid the duplication.
-
-## 7.9 Transactions across services — Saga pattern
+## 7.8 Transactions across services — Saga pattern
 
 In microservices, a logical transaction spans multiple databases. ACID across them is hard (2PC is slow and fragile). **Saga** breaks the transaction into local steps with compensating actions.
 
@@ -591,11 +570,11 @@ Sagas are easy to wave at and easy to get wrong, so trace one failure end to end
    t3  state = ABORTED, surface "payment declined" to the user
 ```
 
-The key insight: there is **no rollback**, because the inventory write *already committed* in its own database — another transaction may have seen the reduced stock in the meantime. A saga doesn't undo; it runs a *new forward* transaction (the compensation) that semantically reverses the first. "Release inventory" is itself a real write that can fail and must be retried — which is why the next rule about idempotency isn't optional.
+The key insight: there is **no rollback** — the inventory write *already committed* in its own database (another transaction may have seen the reduced stock). A saga doesn't undo; it runs a *new forward* transaction (the compensation) that semantically reverses the first. "Release inventory" is itself a write that can fail and must be retried — which is why idempotency isn't optional.
 
 ### What a saga gives up — isolation (the missing 'I' in ACID)
 
-A single ACID transaction is invisible until it commits. A saga's steps each commit independently, so **intermediate states are visible to everyone else**. Between `INVENTORY_RESERVED` and the card charge, the stock count is genuinely lower, and a concurrent order can see it and act on it — a *dirty read* across services that the saga cannot prevent. You manage it with **semantic locks** (mark the row "pending" so others know it's in-flight), **commutative updates** (operations safe in any order, like increments), or by ordering steps so the riskiest, hardest-to-compensate one runs last. Recognising that a saga trades away isolation — not just atomicity — is the senior-level point.
+A single ACID transaction is invisible until it commits. A saga's steps each commit independently, so **intermediate states are visible to everyone else**. Between `INVENTORY_RESERVED` and the card charge, the stock count is genuinely lower, and a concurrent order can see it and act on it — a *dirty read* across services that the saga cannot prevent. You manage it with **semantic locks** (mark the row "pending" so others know it's in-flight), **commutative updates** (operations safe in any order, like increments), or by ordering steps so the riskiest, hardest-to-compensate one runs last. A saga trades away isolation — not just atomicity.
 
 ### Hard rules
 
@@ -603,7 +582,7 @@ A single ACID transaction is invisible until it commits. A saga's steps each com
 - **Compensation isn't always possible** (you can't "un-send" an email). Either avoid the step until you're sure, or add an explicit follow-up ("oops" email).
 - **No assumption of order** — the orchestrator may receive events out of order on retries.
 
-## 7.10 N+1 query problem
+## 7.9 N+1 query problem
 
 ```
    bad:                              good:
@@ -627,7 +606,7 @@ The "+N" hides a multiplier most people underestimate: it isn't N units of *work
                = 1 round-trip × ~2 ms   ≈   2 ms        (~50× faster)
 ```
 
-The database did roughly the same total *work* either way — the killer is the 100 *sequential* round-trips, each paying a latency the previous one couldn't hide. And it degrades with distance: cross-AZ adds ~1 ms per trip, cross-region 30–80 ms per trip — at which point 100 round-trips is *several seconds*. That's why N+1 is the most common ORM performance bug and why it scales with your data: 100 orders today is 100 ms; 10,000 orders next year is 10 seconds, for the same code.
+The database did roughly the same total *work* either way — the killer is the 100 *sequential* round-trips, each paying a latency the previous couldn't hide. It degrades with distance: cross-AZ adds ~1 ms per trip, cross-region 30–80 ms — at which point 100 trips is *several seconds*. And it scales with your data: 100 orders today is 100 ms; 10,000 next year is 10 s, for the same code.
 
 ### Three solid fixes
 
@@ -641,7 +620,7 @@ The database did roughly the same total *work* either way — the killer is the 
 - Tools like `pg_stat_statements` showing many identical, fast queries.
 - APM (Datadog, New Relic) flame graphs.
 
-## 7.11 MVCC and the Write-Ahead Log (WAL)
+## 7.10 MVCC and the Write-Ahead Log (WAL)
 
 **MVCC (Multi-Version Concurrency Control)** is how modern RDBMS (Postgres, MySQL InnoDB, Oracle) let readers and writers coexist without locking each other.
 
@@ -653,29 +632,16 @@ The database did roughly the same total *work* either way — the killer is the 
              (txn 115) name="Alice T"
 ```
 
-### MVCC in action — two transactions, two truths
-
-The payoff of versioning is that a long read never blocks a write, and a write never blocks a read. Watch two transactions overlap:
-
-```
-   T_reader BEGIN  (snapshot taken at txn 110)
-   T_writer BEGIN  (txn 120): UPDATE users SET name='Bob' WHERE id=5; COMMIT
-   T_reader:  SELECT name WHERE id=5   → 'Alice'   (still its own snapshot!)
-   T_reader COMMIT
-   T_other (new): SELECT name WHERE id=5 → 'Bob'   (sees the committed version)
-```
-
-`T_reader` keeps seeing `'Alice'` for its entire life even though `T_writer` committed `'Bob'` in the middle — because each row version carries the ID of the transaction that created it, and a reader only sees versions committed *before its snapshot*. No locks were taken; nobody waited. This is why a ten-minute analytics query doesn't freeze your OLTP writes. The flip side is the cost: that same ten-minute query keeps ten minutes' worth of old row versions alive (they're still visible to *its* snapshot), which is exactly the dead-tuple bloat the next section has to clean up.
+Because a reader only sees versions committed *before its snapshot* and writers just add new versions, **a long read never blocks a write and vice-versa** — a ten-minute analytics query doesn't freeze OLTP writes. The cost: that query keeps ten minutes of old versions alive, the dead-tuple bloat VACUUM must clean up.
 
 ### Postgres VACUUM and the dead-tuple problem
 
-Because MVCC never overwrites a row in place — every update writes a *new* version and leaves the old one behind — old versions accumulate. Once no running transaction can still see an old version, it becomes a **dead tuple**: invisible to queries, but still taking up space on its page. `VACUUM` is the background cleanup that reclaims that space, and **autovacuum** runs it automatically. Let it fall behind and three things go wrong:
+Because MVCC never overwrites in place — every update writes a *new* version and leaves the old behind — old versions accumulate. Once no running transaction can see one, it's a **dead tuple**: invisible but still taking space. `VACUUM` (run automatically by **autovacuum**) reclaims it. Let it fall behind and three things go wrong:
 
-- **Bloat** — the table keeps growing on disk even though the live row count is flat, because dead tuples are never reclaimed.
-- **Slower queries** — scans and index lookups must step over all those dead tuples to reach the live ones.
-- **Wraparound shutdown** — Postgres stamps every transaction with an ever-increasing 32-bit ID, and that counter eventually has to wrap around and reuse old numbers. VACUUM is what "freezes" old rows so they stay visible after the wrap; fall too far behind and Postgres halts all writes to protect your data — the dreaded "VACUUM to prevent wraparound" emergency.
+- **Bloat & slower scans** — the table grows on disk though the live row count is flat, and every scan/index lookup must step over the dead tuples to reach live rows.
+- **Wraparound shutdown** — Postgres's 32-bit transaction-ID counter eventually wraps; VACUUM "freezes" old rows so they stay visible after it. Fall too far behind and Postgres halts all writes to protect your data — the dreaded "VACUUM to prevent wraparound" emergency.
 
-**HOT updates (Heap-Only Tuples)** — an important optimisation. If an update changes only *non-indexed* columns *and* the new row version fits on the same page as the old one, Postgres skips updating the indexes entirely (the index keeps pointing at the page, and a small internal chain links the old version to the new). For frequently-updated tables this avoids rewriting every index on every update — a large reduction in write amplification.
+**HOT updates (Heap-Only Tuples)** — if an update touches only *non-indexed* columns and the new version fits on the same page, Postgres skips the index updates entirely, sharply cutting write amplification on frequently-updated tables.
 
 ### WAL — durability + performance
 
@@ -693,7 +659,7 @@ Before mutating data pages on disk, append the change to a sequential log first.
                                              dirty pages
 ```
 
-**Why sequential is ~100× faster — the mechanism, not just the number.** A data file's pages are scattered, so committing 50 transactions might dirty 50 pages all over the disk — flushing them means 50 *random* writes. The WAL instead appends all 50 change-records contiguously to the end of one file: a single *sequential* write. On a spinning disk that's the difference between 50 seek-and-rotate operations (~10 ms each) and one streaming write — literally ~100×. On SSDs the gap is smaller but real (a sequential write aligns with the flash erase-block and avoids write-amplification inside the drive). The whole trick: durability only requires the *log* to be safe at commit time, so you pay one cheap sequential `fsync` now and defer the expensive, random data-page writes to a background checkpoint that can batch and re-order them.
+**Why sequential is ~100× faster.** Committing 50 txns might dirty 50 scattered data pages (50 *random* writes); the WAL instead appends all 50 change-records to one file — a single *sequential* write (~100× fewer seeks on disk). Durability only needs the *log* safe at commit, so you pay one cheap sequential `fsync` now and defer the random data-page writes to a background checkpoint that batches them.
 
 ### Checkpoints
 
@@ -705,69 +671,7 @@ Ship WAL segments to S3 / blob storage continuously. To restore: take the last b
 
 This is the same idea as Kafka's log, Oracle redo logs, LSM-tree memtables, and SQLite journal mode. **Append-only logs are the universal building block.**
 
-## 7.12 LSM-tree internals (Cassandra, RocksDB, LevelDB)
-
-```
-   write ──▶ memtable (in-RAM sorted map) + WAL
-                │
-                │ memtable full
-                ▼
-            flush ──▶ SSTable L0 (immutable, sorted on disk)
-                          │
-                          │ compaction
-                          ▼
-                       SSTable L1, L2, ... (merged & deduplicated)
-```
-
-| Aspect | LSM (Cassandra/RocksDB) | B-tree (Postgres/InnoDB) |
-|--------|-------------------------|--------------------------|
-| Write | Append → very fast | Update-in-place → slower |
-| Read | May scan multiple SSTables → slower | One path down the tree → fast |
-| Write amplification | High (compaction rewrites) | Low |
-| Read amplification | Higher (multi-level) | Low |
-| Space amplification | High during compaction | Low |
-| Best for | Write-heavy, time-series | Read-heavy, OLTP |
-
-### Following a read — why an LSM read can touch many files
-
-A B-tree read is one path to one place. An LSM read is a *search across layers*, newest-first, because a key's latest value might be in RAM or in any SSTable:
-
-```
-   get(key=42):
-     1. memtable (RAM)            — newest writes; hit? return.
-     2. SSTable L0 (newest flush) — Bloom filter says "maybe"? read it.
-     3. L1, L2, …                 — progressively older, each Bloom-filtered
-     stop at the first level that has the key (levels are searched newest-first)
-```
-
-Unaided, that's "read amplification" — one logical read fanning out into many file checks. Two mechanisms tame it. A **Bloom filter** per SSTable (§9.17) answers "is this key *definitely not* here?" from RAM, so reads skip files that can't contain the key — turning ~all SSTables into ~1. And **compaction** continuously merges SSTables so there are fewer levels to search. This is the exact mirror of the B-tree trade in the table above: LSM makes writes cheap (always an append) and pays on reads; a B-tree makes reads cheap (one path) and pays on writes (update-in-place plus page splits).
-
-### Compaction strategies
-
-- **Size-Tiered (STCS)** — merge SSTables of similar size. Write-amp low, space-amp high. Cassandra default.
-- **Leveled (LCS)** — each level is ~10× the previous; keys don't overlap within a level. Read-amp low, write-amp high. Used by LevelDB, RocksDB, Cassandra read-heavy tables.
-- **Time-Window (TWCS)** — bucket by time window; never compact across windows. Perfect for time-series with TTL.
-
-### Write amplification, quantified
-
-"Compaction rewrites data" stays vague until you count it. Under **leveled** compaction each level is ~10× the previous, and merging a key downward rewrites it at each level it passes through:
-
-```
-   L0 → L1 → L2 → … → L6     one logical write may be physically rewritten
-                              ~10–30× over its lifetime as it migrates down
-```
-
-That 10–30× write amplification is the price of keeping reads fast (few, non-overlapping files per level). **Size-tiered** compaction rewrites far less (lower write-amp) but leaves more overlapping files — higher read-amp, and up to ~2× transient disk during a big merge. That's the dial every LSM exposes: STCS for write-heavy ingest, LCS for read-heavy serving, TWCS for time-series you'll expire by whole window. Being able to say *why* you'd pick one — in terms of which amplification you can afford — is the interview answer.
-
-### Tombstones
-
-Deletes write a "tombstone" marker; the row really disappears at compaction. Excessive tombstones (deleting whole partitions) tank read performance. Symptom: Cassandra "WARN: Read X tombstones".
-
-### Bloom filters keep reads fast
-
-Each SSTable has a Bloom filter so reads can skip files that definitely don't contain the key. Without them, every read would touch every SSTable. See §9.17 for the math.
-
-## 7.13 Locking strategies — optimistic vs pessimistic
+## 7.11 Locking strategies — optimistic vs pessimistic
 
 ```
    PESSIMISTIC                            OPTIMISTIC
@@ -782,20 +686,6 @@ Each SSTable has a Bloom filter so reads can skip files that definitely don't co
 ```
 
 Optimistic concurrency is the default in DynamoDB, Spanner, and most NoSQL systems. Pessimistic is still right for hot rows (inventory counters) or money transfers within one DB.
-
-### Optimistic concurrency, stepped through
-
-The retry *is* the pattern, so trace it. Two clients apply a coupon to the same cart, whose `version` column starts at 7:
-
-```
-   A: SELECT total, version FROM cart WHERE id=1            → (100, v7)
-   B: SELECT total, version FROM cart WHERE id=1            → (100, v7)
-   A: UPDATE cart SET total=90, version=8 WHERE id=1 AND version=7   → 1 row  ✔
-   B: UPDATE cart SET total=80, version=8 WHERE id=1 AND version=7   → 0 rows ✘
-   B: sees "0 rows affected" → re-SELECT (now 90, v8) → re-apply → succeeds
-```
-
-No lock was ever held. The `WHERE version = 7` clause is the whole mechanism: it makes the write *conditional on nothing having changed since the read*. B matches zero rows because A already bumped the version to 8, so B learns its read is stale and retries against fresh data. This is precisely how DynamoDB conditional writes and Spanner operate — and it explains the contention rule: optimistic concurrency shines under *low* contention (retries are rare) and collapses under *high* contention (everyone retries against everyone — wasted work). For a hot inventory counter, the pessimistic `FOR UPDATE` that simply serialises writers is the better tool.
 
 ### Lock granularity
 
@@ -826,81 +716,13 @@ The DB detects this with a wait-for graph and aborts one txn. Application **must
 - Keeping transactions short.
 - Avoiding `SELECT FOR UPDATE` when an optimistic version check would do.
 
-**The lock-ordering fix, concretely.** The deadlock above happens *only* because T1 grabs A-then-B while T2 grabs B-then-A. Force every transaction to lock rows in ascending primary-key order and the cycle becomes impossible: both now try to lock A first, so one simply waits for the other — a clean queue, not a deadlock. The canonical application is a bank transfer that locks `min(from_id, to_id)` before `max(from_id, to_id)` regardless of which way the money flows, so two opposing transfers between the same pair of accounts can never deadlock.
+**The lock-ordering fix.** The deadlock happens *only* because T1 grabs A-then-B while T2 grabs B-then-A. Force every transaction to lock in ascending primary-key order and the cycle is impossible: both try A first, so one waits — a clean queue. The canonical case is a bank transfer that locks `min(from_id, to_id)` before `max(from_id, to_id)` regardless of direction, so two opposing transfers can never deadlock.
 
 ### Advisory locks
 
 Application-defined locks the DB enforces but doesn't tie to any row. `pg_advisory_lock(key)` is perfect for "one worker runs this cron at a time."
 
-## 7.14 Database internals you should be able to draw
-
-```
-   ┌─────────────────────────────────────────────────┐
-   │ Query                                            │
-   │   ↓                                              │
-   │ Parser → AST → Planner → Optimizer → Executor    │
-   │                                ↓                 │
-   │                          Access methods          │
-   │                  (B-tree / hash / seq scan)      │
-   │                                ↓                 │
-   │                          Buffer pool             │
-   │                                ↓                 │
-   │                          Storage + WAL           │
-   └─────────────────────────────────────────────────┘
-```
-
-A query's life:
-
-1. **Parse** — SQL text → AST. Reject syntax errors.
-2. **Rewrite** — apply views, rules.
-3. **Plan** — try plans, pick the lowest estimated cost.
-4. **Execute** — open access methods, walk indexes, fetch pages from the buffer pool.
-5. **Commit** — write WAL, fsync, release locks, ack.
-
-Knowing this stack lets you reason about *why* `EXPLAIN ANALYZE` shows what it shows — and what to fix (missing index? bad plan? buffer cache cold? `fsync` slow?).
-
-## 7.15 Connection pool sizing — a real formula
-
-```
-   pool_size = ((core_count × 2) + effective_spindle_count)
-                                        (HikariCP guidance)
-
-   OR via Little's Law:
-   pool_size = QPS_per_db × avg_query_time_s × safety
-```
-
-The classic mistake: setting pool size to thousands "just in case." A pool too large causes thread contention inside the database server. Most prod systems land between **10 and 50** connections per app instance.
-
-### Sizing it with Little's Law — a worked number
-
-Little's Law (Ch 23) says: in-flight requests = arrival rate × service time. Apply it straight to connections:
-
-```
-   Serve              2,000 queries/sec
-   Each query takes   5 ms = 0.005 s on the DB
-   Busy at once     = 2000 × 0.005 = 10 connections, on average
-   + headroom for bursts (×2–3)    ≈ 20–30 connections
-```
-
-So a service doing 2,000 QPS needs ~20–30 connections, **not** 500. The counterintuitive part is *why a bigger pool is slower*. A Postgres backend is an OS process, and the box has, say, 16 cores. With 30 active queries, ~16 run and the rest queue for a moment — fine. With 500 active queries, the OS thrashes 500 processes across 16 cores: context switches, lock contention on shared buffers, and cache eviction mean **every** query gets slower. Throughput is bounded by cores and disk, not by connection count, so beyond "all cores busy," extra connections only add queueing *inside* the database. When 30 isn't enough, the answer is a faster query or a read replica — never a bigger pool.
-
-### pgbouncer / ProxySQL — the external pooler
-
-When you have hundreds of app pods × tens of connections each, you reach Postgres's `max_connections` quickly. Solution: a **shared pooler** between app and DB.
-
-| pgbouncer mode | What's pooled | Trade-off |
-|----------------|---------------|-----------|
-| **Session** | one client → one DB conn for session lifetime | Safe; little pooling benefit |
-| **Transaction** | DB conn returned to pool at COMMIT | Sweet spot; breaks server-side state (`SET`, prepared statements) |
-| **Statement** | DB conn returned after each statement | Maximum pooling; no multi-statement txns |
-
-**Transaction pooling** is the standard. Just don't expect session-scoped state to persist.
-
-### Connection storms
-
-App restarts → all pods reconnect → DB CPU spikes on auth + planning. Mitigations: connection warming, staggered rolling deploys, pooler in front.
-
-## 7.16 Schema migrations at scale — the expand-contract pattern
+## 7.12 Schema migrations at scale — the expand-contract pattern
 
 For a small app, `ALTER TABLE` and restart. For an app with 24/7 traffic and millions of rows, *any blocking DDL is an outage.*
 
@@ -933,7 +755,7 @@ Those four words hide the reason it's safe: at no instant does running app code 
                         DB:  DROP COLUMN email   ← only now, when nothing references it
 ```
 
-Two properties make this bullet-proof, and both explain why you can't shortcut it. **Dual-writing** through the transition means every new row has *both* columns filled, so a read never hits a NULL no matter which column the currently-deployed code consults. And **batched backfill** (not one giant `UPDATE`) avoids locking millions of rows in a single transaction that would block writes and balloon the WAL. The whole pattern exists because *a deploy is not atomic* — for minutes, old and new app versions run simultaneously behind the load balancer, so the schema must satisfy both at once. Try to rename in one `ALTER TABLE` plus a deploy and the old pods throw "column does not exist" the instant the DDL lands. (The same dance, run across shards, is §8.13.)
+Two properties make this bullet-proof. **Dual-writing** through the transition means every new row has *both* columns filled, so a read never hits a NULL whichever column the deployed code consults. And **batched backfill** (not one giant `UPDATE`) avoids locking millions of rows in a transaction that would block writes and balloon the WAL. The pattern exists because *a deploy is not atomic* — for minutes, old and new app versions run simultaneously, so the schema must satisfy both. Rename in one `ALTER TABLE` plus a deploy and the old pods throw "column does not exist" the instant the DDL lands. (The same dance across shards is §8.13.)
 
 ### Safe vs unsafe DDL (Postgres)
 
@@ -964,7 +786,7 @@ Two properties make this bullet-proof, and both explain why you can't shortcut i
    4. ALTER TABLE t ALTER COLUMN status SET NOT NULL;    -- now fast
 ```
 
-## 7.17 Soft delete, audit, and temporal data
+## 7.13 Soft delete, audit, and temporal data
 
 ### Soft delete
 
@@ -1009,7 +831,7 @@ Supported by SQL Server, MariaDB, DB2. Excellent for compliance and "show me yes
 
 Store *every change* as an immutable event; derive current state by replaying. Powerful for audit + time travel + rebuildable read models, but heavier upfront design. Pairs naturally with CQRS (§8.8).
 
-## 7.18 Materialized views — pre-computed answers
+## 7.14 Materialized views — pre-computed answers
 
 A regular **view** runs its query every time. A **materialized view** stores the result on disk and updates it on refresh.
 
@@ -1030,7 +852,7 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY daily_sales; -- no read block, needs UNIQ
                        each load reads ~365 pre-computed rows     → ~5 ms per load
 ```
 
-Loaded 10,000 times an hour, the plain view does 10,000 × 2 s of work; the materialized view does *one* 2 s refresh and serves 10,000 reads from the tiny result. What you accept in return is **staleness** — numbers can be up to one refresh interval old (≤ 1 hour here). That single knob, the refresh interval, is the dial between freshness and load, and setting it *is* the design decision. `REFRESH ... CONCURRENTLY` matters because a plain `REFRESH` takes an exclusive lock that blocks reads for the whole 2 s; the concurrent form rebuilds a copy alongside the live one and swaps atomically — at the cost of a required unique index and more total work.
+Loaded 10,000 times an hour, the plain view does 10,000 × 2 s of work; the materialized view does *one* 2 s refresh and serves 10,000 reads from the tiny result. The price is **staleness** — numbers can be up to one refresh interval old (≤ 1 hour here); that interval is the dial between freshness and load. `REFRESH ... CONCURRENTLY` matters because a plain `REFRESH` takes an exclusive lock that blocks reads for the whole 2 s; the concurrent form rebuilds a copy and swaps atomically — at the cost of a required unique index.
 
 ### Refresh strategies
 
@@ -1040,7 +862,7 @@ Loaded 10,000 times an hour, the plain view does 10,000 × 2 s of work; the mate
 
 **Use cases:** dashboard aggregates, leaderboards, geospatial heatmaps, fraud-feature stores.
 
-## 7.19 Specialised databases — when generic SQL isn't enough
+## 7.15 Specialised databases — when generic SQL isn't enough
 
 ### Time-series (TimescaleDB, InfluxDB, ClickHouse, Druid, Prometheus)
 
@@ -1068,7 +890,7 @@ Native storage of nodes + edges; queries traverse instead of join. Cypher / Grem
 
 Store data **column-by-column** instead of row-by-row. Reading `SUM(amount)` over 1 B rows touches only the `amount` column. Add aggressive compression (10–30× on real data), massive parallelism, and vectorised execution — billions of rows aggregated in seconds. *Wrong* for OLTP (single-row writes are slow).
 
-## 7.20 Backups, PITR, and database disaster recovery
+## 7.16 Backups, PITR, and database disaster recovery
 
 ### Backup types
 
@@ -1102,7 +924,7 @@ Store data **column-by-column** instead of row-by-row. Reading `SUM(amount)` ove
 4. **Air-gapped copies** — defends against ransomware that encrypts mounted backups too.
 5. **Test the WAL gap window** — what happens if archiver is down for 30 minutes?
 
-## 7.21 Database security essentials
+## 7.17 Database security essentials
 
 - **Encryption at rest (TDE)** — managed by the DB engine or the storage layer (EBS, KMS). Defends against stolen disks.
 - **Encryption in transit** — mTLS between app and DB. Don't rely on "we're in the same VPC."
@@ -1113,15 +935,6 @@ Store data **column-by-column** instead of row-by-row. Reading `SUM(amount)` ove
 - **Audit logging** — `pgaudit`, MySQL audit plugin, cloud-managed logs streamed to a SIEM.
 - **Network isolation** — DBs in a private subnet, ingress only from app SG. No public endpoint.
 - **Backup encryption** — same KMS key boundary as the live DB.
-
-## 7.22 Connection management & operational sins to avoid
-
-- **Long-lived transactions** — block VACUUM and pile up locks. Kill anything > 30 s in OLTP.
-- **`SELECT *`** in hot code paths — wastes IO, breaks index-only scans, breaks projections.
-- **No statement timeout** — one runaway query holds connections and degrades the whole DB. Set `statement_timeout` per role.
-- **No `idle_in_transaction_session_timeout`** — a stuck client with an open txn ages WAL and tombstones.
-- **DDL during peak hours** — schedule windows or use online tools.
-- **Ignoring the slow query log** — most production wins come from the top 10 queries by `total_time`. Read `pg_stat_statements` weekly.
 
 ---
 
@@ -1303,13 +1116,7 @@ Add 1–N replicas, route writes to primary, route reads to replicas. Best ROI s
    user GETs feed       ──▶ REPLICA  (still lagging — comment missing!)
 ```
 
-User refreshes, sees nothing, posts again → duplicate. Five common fixes (full list in §8.8):
-
-1. **Sticky window** — for X seconds after a write, route this user's reads to the primary.
-2. **Session pinning** — user → region → primary stays consistent.
-3. **Read-after-write tokens** — write returns LSN; reads block until replica catches up.
-4. **Sync replication for critical paths only.**
-5. **Client-side optimistic UI** — show the user their own writes locally.
+User refreshes, sees nothing, posts again → duplicate. The fixes — sticky-window, session pinning, read-after-write tokens, selective sync replication, optimistic UI — are catalogued in §8.8.
 
 ### Routing read traffic
 
@@ -1352,7 +1159,7 @@ Great for systems where reads vastly outnumber writes and need different shapes 
 
 For read-heavy aggregations (counts, top-N, leaderboards), don't compute on read:
 
-- **Materialized views** (§7.18) — DB-managed refresh.
+- **Materialized views** (§7.14) — DB-managed refresh.
 - **Streaming aggregators** — Kafka Streams / Flink / Materialize update aggregates incrementally as events arrive.
 - **App-maintained denormalised counters** — `INCR likes:post:42` in Redis on every like event; periodically reconciled with the source.
 
@@ -1445,7 +1252,7 @@ Schema migrations are scary on one DB. On 64 shards they're a deployment plan:
    4. Drop the deprecated parts (V4)
 ```
 
-This is the **expand-contract** pattern (§7.16) applied across shards. **App must be tolerant of mixed schema state for the duration.**
+This is the **expand-contract** pattern (§7.12) applied across shards. **App must be tolerant of mixed schema state for the duration.**
 
 ### Per-shard rolling upgrades
 
@@ -1457,7 +1264,7 @@ This is the **expand-contract** pattern (§7.16) applied across shards. **App mu
 
 - **Percolator** (Google, original BigTable transactions) — optimistic 2PC over Bigtable; powered the original web index.
 - **Calvin** — pre-determine an order, then apply deterministically on all replicas (FaunaDB).
-- **Sagas** (§7.9) — give up atomicity, embrace compensation.
+- **Sagas** (§7.8) — give up atomicity, embrace compensation.
 - **Outbox + CDC** (§10.10) — local atomic write to DB + outbox table; CDC publishes to other systems eventually.
 - **Spanner / CockroachDB** — TrueTime or hybrid logical clocks + Raft per range. SQL transactions across continents at the cost of commit latency.
 
@@ -1548,11 +1355,11 @@ This is the real-world architecture of almost every web-scale company. Each stor
 
 | Strategy | RPO | RTO | Cost |
 |----------|-----|-----|------|
-| **Daily snapshot to same region** | 24 h | 1–4 h | `$` |
-| **Daily snapshot to another region** | 24 h | 1–4 h | `$$` |
-| **PITR with WAL archive** | seconds–minutes | 10 min – hours | `$$` |
-| **Cross-region async replica** | seconds (lag) | minutes (promote) | `$$$` |
-| **Cross-region sync replica** | 0 | minutes | `$$$$` (write latency) |
+| **Daily snapshot to same region** | 24 h | 1–4 h | Low |
+| **Daily snapshot to another region** | 24 h | 1–4 h | Medium |
+| **PITR with WAL archive** | seconds–minutes | 10 min – hours | Medium |
+| **Cross-region async replica** | seconds (lag) | minutes (promote) | High |
+| **Cross-region sync replica** | 0 | minutes | Very high (write latency) |
 
 ### The DR runbook elements no one prepares until it's too late
 
@@ -1882,7 +1689,7 @@ When some replicas are unreachable, **sloppy quorum** lets a write succeed on te
 - A participant times out → ambiguous outcome until coordinator recovers.
 - The protocol is *not* partition-tolerant: a network partition during phase 2 produces inconsistent state.
 
-Modern systems prefer **sagas** (§7.9) or **consensus-backed transactions** (Spanner, Calvin) — both replace the coordinator's "single point of failure" with a Raft/Paxos group.
+Modern systems prefer **sagas** (§7.8) or **consensus-backed transactions** (Spanner, Calvin) — both replace the coordinator's "single point of failure" with a Raft/Paxos group.
 
 When 2PC *is* OK: short-lived, intra-datacenter, low-volume transactions where downtime on the coordinator is rare and recoverable (e.g., XA across two RDBMSs that both you and your DBA control). For internet-scale, choose another tool.
 
@@ -1975,49 +1782,7 @@ How do nodes know who's alive in a cluster of thousands?
 
 Phi accrual lets the *consumer* of the failure signal choose its tolerance (`φ_threshold`) without changing the detector.
 
-## 9.15 Anti-entropy & Merkle trees
-
-When replicas drift (network blips, dropped writes, hinted handoffs replayed), you need a way to find and repair the differences — without sending the whole dataset over the wire.
-
-### Merkle trees to the rescue
-
-```
-                  root_hash
-                /          \
-            H(L)            H(R)
-           /    \          /    \
-         H1     H2       H3     H4
-         |      |        |      |
-        data1  data2   data3  data4
-```
-
-Two replicas compare root hashes. If equal → done. If different → descend into the differing subtree. **Only mismatched leaves are sent.**
-
-Used in: Cassandra (`nodetool repair`), DynamoDB, Riak, Git (every commit is a Merkle DAG), Bitcoin/Ethereum (Merkle Patricia tries), every BitTorrent client.
-
-### Read repair
-
-Cheaper alternative: when a quorum read sees disagreeing replicas, write the latest value back to the stale ones in the background. Doesn't catch unread keys — pair with periodic full anti-entropy.
-
-## 9.16 Chandy–Lamport distributed snapshots
-
-> **Problem:** Capture a consistent global state of a running distributed system *without* stopping it.
-
-### Algorithm in one paragraph
-
-1. Initiator records its own state and sends a **marker** on every outgoing channel.
-2. On receiving a marker on channel C, a process: records its state (if not already), records C as empty, and starts recording all *other* incoming channels.
-3. A process stops recording channel C' when a marker arrives on C'.
-
-The result: a consistent cut of the system — every message recorded was either fully delivered or fully in-flight, never "half-applied."
-
-### Where you see this in production
-
-- **Apache Flink savepoints** — exactly-once stream processing relies on Chandy-Lamport variants.
-- **Distributed debugging** — capture a snapshot to reproduce bugs.
-- **DB consistent backups** — many distributed DBs use snapshot algorithms for online backups.
-
-## 9.17 Bloom filter
+## 9.15 Bloom filter
 
 > **Simple Explanation:** A *probabilistic* "is this key in the set?" answer. Tiny memory. May say "yes" when the answer is no (false positive). *Never* says "no" when the answer is yes.
 
@@ -2052,97 +1817,7 @@ For a Bloom filter with `n` elements and target false-positive rate `p`:
 
 **Sweet spot:** ~10 bits/element for 1 % FPR. If you can't afford that, accept a higher FPR (rarely a problem — false positives just trigger an extra real lookup).
 
-## 9.18 Other probabilistic structures
-
-- **HyperLogLog** — count distinct elements in ~12 KB with ~2% error (Redis `PFCOUNT`, BigQuery `APPROX_COUNT_DISTINCT`, Presto). Combine sketches via `PFMERGE` for distributed cardinality.
-- **Count-Min Sketch** — frequency estimation in sublinear memory. "Heavy hitters" detection.
-- **t-digest / DDSketch** — approximate quantiles (p99 latency) with bounded error. The defaults in Datadog, OpenTelemetry.
-- **Top-K (Redis `TOPK`)** — track top N most-frequent items in a stream.
-- **Reservoir sampling** — uniform random sample of an unbounded stream in O(k) memory.
-
-These are the toolbox for "I need approximate answers fast" — a recurring system design need.
-
-## 9.19 Vector clocks & Lamport timestamps (recap with examples)
-
-Already covered in §9.6, but the worked examples are worth seeing once for memory.
-
-### Lamport: pinned to "happens-before" but flattens concurrency
-
-```
-   A:  e1(L=1) ─▶ e2(L=2) ───────┐
-                                 │ send msg(L=2)
-   B:  e3(L=1) ─▶ e4(L=2) ─▶ e5(L=max(2,2)+1=3)
-```
-
-`L(e2) < L(e5)` truthfully tells us e2 happened-before e5. But `L(e2) > L(e3)` lies — they're concurrent.
-
-### Vector clock: detects concurrency
-
-```
-   A:  V=[1,0] ─▶ V=[2,0] ─send─▶
-                                 ▼
-   B:  V=[0,1] ─▶ V=[2,2] (merged: max per slot + own++)
-
-   Compare [1,0] vs [0,1]: neither dominates → concurrent
-   Compare [2,0] vs [2,2]: [2,0] < [2,2]    → A's e2 happened-before B's e4
-```
-
-Cost: O(N) per timestamp for N nodes. Real systems prune old vectors or use HLC (§9.6) instead.
-
-## 9.20 CRDTs — data types that merge themselves
-
-> **Problem:** Concurrent updates on replicas without coordination → conflicts.
-> **CRDT idea:** Use data structures whose merge function is associative, commutative, and idempotent. Apply ops in *any order* on *any replica* and they all converge.
-
-| Type | Examples | Use case |
-|------|----------|----------|
-| **G-Counter** | Per-replica counter; merge = max per slot | Page-view counter |
-| **PN-Counter** | Two G-Counters: +1s and −1s | Likes / dislikes |
-| **LWW-Register** | Value + timestamp; latest wins | Simple K/V with last-write-wins |
-| **OR-Set** | Observed-remove set with unique tags | Shopping cart |
-| **RGA / WOOT / Yjs** | Sequence with positions | Collaborative text editing |
-| **MV-Register** | Multi-value register | Dynamo conflict resolution |
-
-### Two families
-
-- **State-based (CvRDT)** — replicas exchange full state; merge is a join in a lattice. Simple but heavy.
-- **Operation-based (CmRDT)** — replicas exchange operations; ops must commute. Lighter but requires a reliable broadcast.
-
-CRDTs power Redis Enterprise multi-master, Riak, Automerge / Yjs (Google Docs-style real-time editing), Figma's multiplayer, and parts of Apple iCloud and Phoenix LiveView Presence.
-
-## 9.21 Network-partition pathologies (Jepsen-style)
-
-Kyle Kingsbury's **Jepsen** test suite has found correctness bugs in nearly every distributed database he's tested. The patterns recur:
-
-### Common pathologies caught by Jepsen
-
-- **Lost updates** under repeated network partitions when "last write wins" loses concurrent writes.
-- **Stale reads** at consistency levels advertised as "strong" but defined loosely.
-- **Split-brain** during leader elections — two leaders both accepting writes.
-- **Linearizability violations** in supposedly-linearizable systems under specific GC + clock + partition patterns.
-- **Read skew / G-anomalies** under snapshot isolation marketed as serializable.
-
-### Defensive practice
-
-- Read the Jepsen report for any DB you depend on (jepsen.io).
-- Add chaos tests (Gremlin, Chaos Monkey) that inject partitions and verify invariants.
-- Track invariants in production: idempotency counts, fencing-token rejections, replication lag, monotonicity checks.
-- Default to *more* conservative settings (sync replicas, majority quorums) — relax only with measured need.
-
-## 9.22 FLP impossibility — and what it means in practice
-
-> **FLP theorem (Fischer, Lynch, Paterson, 1985):** In an asynchronous system with even *one* faulty process, no deterministic consensus protocol can guarantee termination.
-
-In English: you can't have a consensus protocol that's *always* fast, *always* safe, and *always* live with even one crashed node — given a fully async network.
-
-How real systems escape it:
-- **Use timeouts** (assume "synchrony in practice") — Raft, Paxos.
-- **Sacrifice liveness occasionally** — system pauses (rare leader election) rather than answering wrong.
-- **Add randomization** — randomised election timeouts in Raft break ties.
-
-The takeaway: every consensus protocol you'll use chooses **safety over liveness** when the network is partitioned. Reads/writes pause; they don't lie.
-
-## 9.23 CAP in a nutshell — the decision table
+## 9.16 CAP in a nutshell — the decision table
 
 ```
    ┌─────────────────────────────────────────────────────────────┐
@@ -2305,12 +1980,6 @@ This gives you exactly-once *within Kafka*. End-to-end exactly-once into a datab
 | Retention | Configurable (days/weeks) | Until consumed | 14 days max |
 | Best for | Event streaming, replay, analytics | Complex routing, RPC | Simple decoupling, no ops |
 
-## 10.12 Consumer rebalance — the surprise outage
-
-When a Kafka consumer in a group joins or leaves, partitions are re-assigned. During the brief rebalance window, **no consumption happens**. With many partitions and large state, this can be seconds of lag.
-
-Modern Kafka clients use **cooperative rebalancing** (incremental, only the changed partitions pause). Always set `partition.assignment.strategy=CooperativeStickyAssignor` for new deployments.
-
 ---
 
 # PART 11: STORAGE SYSTEMS
@@ -2356,29 +2025,13 @@ Modern Kafka clients use **cooperative rebalancing** (incremental, only the chan
 
 Lifecycle policies move objects between tiers automatically (S3 Intelligent-Tiering).
 
-## 11.5 Replication vs Erasure Coding
-
-> **Problem:** How do you keep data durable when disks and nodes fail?
-
-```
-   3× REPLICATION                       REED-SOLOMON (10, 4)
-   ─────────────                         ─────────────────────
-   3 full copies                         10 data + 4 parity chunks
-   3× storage cost                       1.4× storage cost
-   Tolerates 2 disk failures             Tolerates 4 failures
-   Reads & rebuilds simple               Rebuilds require 10 chunks (CPU + IO)
-   Used for: hot data, RAM-tier          Used for: cold data, S3, HDFS, Ceph
-```
-
-Most cloud object stores use erasure coding for cold tiers to push storage cost near the theoretical minimum while still surviving multi-disk and even rack failures.
-
-## 11.6 Cloud object storage consistency (S3 in 2020+)
+## 11.5 Cloud object storage consistency (S3 in 2020+)
 
 For years, S3 was famously *eventually* consistent for list/overwrite. Since December 2020, **S3 offers strong read-after-write consistency** for all operations. This is important because it changes design patterns: you can safely "write then list" in workflows without sleep loops.
 
 GCS and Azure Blob have been strongly consistent for years; designs targeting multiple clouds should not assume the loosest model.
 
-## 11.7 Wide-column storage layouts — Bigtable & friends
+## 11.6 Wide-column storage layouts — Bigtable & friends
 
 ```
    ROW KEY  →  COLUMN FAMILY : COLUMN  →  CELL (value, timestamp)
@@ -2392,21 +2045,6 @@ GCS and Azure Blob have been strongly consistent for years; designs targeting mu
 - Underpins Bigtable, HBase, Cassandra (logically), Accumulo.
 
 Design rule for the Bigtable family: **the row key is the only thing you can query efficiently** — pick it carefully (often `userId#reverseTimestamp` to scan recent activity per user).
-
-## 11.8 Object-store-as-database (the lakehouse era)
-
-A surprisingly modern pattern: skip a database for analytical workloads and write **Parquet files into S3** (or GCS / ADLS) with a metadata layer like **Apache Iceberg** or **Delta Lake**.
-
-```
-   ┌──────────────────────────────────────────────────────┐
-   │ Parquet files (columnar, compressed) on S3            │
-   │   + Iceberg / Delta manifest (ACID, snapshots, schema)│
-   │     ↓                                                 │
-   │ Queried by Spark, Trino, DuckDB, Snowflake, BigQuery  │
-   └──────────────────────────────────────────────────────┘
-```
-
-You get ACID, time travel, schema evolution, and cheap object-store storage — without locking into a proprietary warehouse. This is the foundation of every modern data lakehouse architecture.
 
 ---
 
@@ -2488,22 +2126,7 @@ Flink achieves exactly-once via **distributed snapshots** (Chandy-Lamport algori
 
 Combined with idempotent or transactional sinks, this gives end-to-end exactly-once for stream pipelines.
 
-## 12.7 Stream-table duality
-
-A profound idea from Kafka Streams: **a table is a snapshot of a stream of updates; a stream is a sequence of changes to a table.** You can convert freely between them.
-
-```
-   Stream of updates                       Materialized table
-   ─────────────────                       ───────────────────
-   (user42, "Alice")    ──aggregate──▶     user42 → "Alice"
-   (user42, "Alicia")                      user42 → "Alicia"
-   (user43, "Bob")                         user43 → "Bob"
-   ◀────────────────  change log
-```
-
-Powers materialized views, CQRS read models, and event-driven joins.
-
-## 12.8 Windowing in stream processing
+## 12.7 Windowing in stream processing
 
 ```
    TUMBLING   |─5min─|─5min─|─5min─|         non-overlapping fixed windows
@@ -2515,17 +2138,66 @@ Powers materialized views, CQRS read models, and event-driven joins.
 
 Pair with **watermarks** — a heuristic saying "no events older than T will arrive." Late events go to a side output (or are dropped).
 
-## 12.9 Backfills, replays, and Lambda vs Kappa revisited
-
-The killer feature of "Kafka-as-log + Flink" is **replayability**: bug in the logic? Roll back the consumer offset, fix the code, replay history. This is the practical reason most teams adopt Kappa over Lambda — one code path, replay-instead-of-batch.
-
-## 12.10 Common stream-processing pitfalls
+## 12.8 Common stream-processing pitfalls
 
 - **Skewed partitions** — one key (e.g., a celebrity's events) overwhelms one task. Pre-aggregate or two-stage shuffle.
 - **State unbounded growth** — sessions never close, RocksDB fills disks. Use TTL state.
 - **Watermark too aggressive** — late events silently dropped. Always emit a side output for late data.
 - **Time-travel bugs** — using `processing time` for billing/audit (use event time always).
 - **Checkpointing too rarely** — recovery replays hours of events. Tune interval to your tolerance.
+
+---
+
+## Key Takeaways
+
+```
+SYSTEM DESIGN PART 2 — DATA & DISTRIBUTED SYSTEMS
+═══════════════════════════════════════════════════════════════
+
+DATABASES
+  • SQL = strong schema + ACID joins; NoSQL = pick by
+    access pattern (KV, doc, wide-column, graph).
+  • ACID vs BASE: strong vs eventual; choose per workload.
+  • Indexes turn 10s into 1ms — but cost writes & space.
+  • Normalize for writes, denormalize for reads.
+  • MVCC + WAL give concurrency and crash recovery.
+  • Optimistic locking for low contention, pessimistic
+    for high; expand-contract for zero-downtime migrations.
+  • Saga (not 2PC) for cross-service transactions.
+  • Watch the N+1 query trap; read EXPLAIN plans.
+
+SCALING DATA
+  • Escape ladder: index → cache → replicas → shard.
+  • Replication gives read scale + failover; mind lag.
+  • Sharding splits by key — shard key is hard to undo.
+  • CQRS / materialized views separate read & write paths.
+  • Mitigate hot keys/shards; online resharding is brutal.
+  • Spanner/TrueTime = strong consistency at planet scale.
+
+DISTRIBUTED SYSTEMS THEORY
+  • Don't trust the 8 fallacies (network is reliable, etc.).
+  • CAP: partition → C or A. PACELC adds else latency/cons.
+  • Consistency is a spectrum: linearizable → eventual.
+  • No global clock — use logical/vector clocks, TrueTime.
+  • Consensus (Raft/Paxos) for a single agreed leader/log.
+  • Consistent hashing minimizes reshuffle on node changes.
+  • Quorum: W + R > N for read-your-writes.
+  • Distributed locks need fencing tokens — leases expire.
+  • Bloom filter: probabilistic, no false negatives.
+
+MESSAGING & STREAMING
+  • Queue vs stream vs pub/sub: pick by replay & fan-out.
+  • Delivery: at-most / at-least / exactly-once (hard).
+  • Kafka = partitioned durable log; order within partition.
+  • Outbox + CDC for reliable DB-to-event propagation.
+  • Use DLQs and backpressure; idempotent consumers.
+
+STORAGE & PROCESSING
+  • Block vs file vs object storage; object = cheap & vast.
+  • Lake vs warehouse vs lakehouse; hot/warm/cold tiers.
+  • Batch vs stream; Lambda vs Kappa architecture.
+  • Use event time + watermarks; window correctly; TTL state.
+```
 
 ---
 

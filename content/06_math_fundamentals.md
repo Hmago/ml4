@@ -2587,6 +2587,46 @@ FP8 (2024–2025): Even faster on H100/H200 GPUs. DeepSeek-V3 used FP8 for train
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  MATH FOUNDATIONS FOR ML — WHAT TO REMEMBER                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  LINEAR ALGEBRA                                                    ║
+║    • Dot product powers neurons & attention                        ║
+║    • Cosine similarity compares direction (embeddings)             ║
+║    • Matmul C[i,j]=sum A[i,k]B[k,j] — every layer                  ║
+║    • Eigen/SVD = rotate-stretch; basis of PCA & LoRA               ║
+║    • Attention = softmax(QK^T/√d_k)V                               ║
+╠════════════════════════════════════════════════════════════════════╣
+║  CALCULUS (HOW MODELS LEARN)                                       ║
+║    • Gradient = direction of steepest ascent                       ║
+║    • Chain rule is the engine of backpropagation                   ║
+║    • Backprop = cache forward, multiply grads backward             ║
+╠════════════════════════════════════════════════════════════════════╣
+║  PROBABILITY & STATISTICS                                          ║
+║    • Know Bernoulli/Binomial/Gaussian/Poisson/Categorical          ║
+║    • E[X], variance, covariance/correlation                        ║
+║    • Bayes updates beliefs with evidence                           ║
+║    • CLT → normality; MLE = fit by max log-likelihood              ║
+║    • Error = Bias^2 + Variance + irreducible noise                 ║
+╠════════════════════════════════════════════════════════════════════╣
+║  OPTIMIZATION                                                      ║
+║    • GD: θ ← θ − lr·∇f; tune the learning rate                     ║
+║    • Momentum smooths; Adam/AdamW = adaptive default               ║
+║    • Regularize (L1 sparse, L2 decay, dropout) vs overfit          ║
+║    • Batch/Layer-Norm stabilize training                           ║
+╠════════════════════════════════════════════════════════════════════╣
+║  INFO THEORY & NUMERICS                                            ║
+║    • Entropy = uncertainty; cross-entropy = THE loss               ║
+║    • KL divergence penalizes drift (RLHF/DPO)                      ║
+║    • Use log-sum-exp & mixed precision for stability               ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Related:** For probability fundamentals with more examples, see the LLM chapter.
 
 **Back to Start:** [README — Table of Contents](../README.md)

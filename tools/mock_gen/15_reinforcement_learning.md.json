@@ -658,5 +658,29 @@
     ],
     "answer": 3,
     "explanation": "Chip floorplanning is sequential: each placement decision interacts with all others, and final quality (wire length, timing, power) is only evaluable at the end. There is no pre-existing labeled dataset mapping chip specs to optimal layouts. The chapter lists 'sequential decisions' and 'too complex for hand-coded rules' as RL indicators — both apply here."
+  },
+  {
+    "q": "A single reward r_t and the return G_t differ in that:",
+    "options": ["they denote exactly the same quantity and are interchangeable", "the reward is one step's scalar feedback, while the return aggregates all discounted future rewards from that step onward", "the return applies only at the terminal state and the reward only at the start state", "the reward is discounted by gamma but the return is never discounted at all"],
+    "answer": 1,
+    "explanation": "$G_t = \\sum_{k\\ge 0}\\gamma^k r_{t+k+1}$. RL maximizes expected return, not an individual reward, so an action with low immediate reward can still be optimal if it leads to high future return."
+  },
+  {
+    "q": "A critic estimates V(s) = 5. The agent takes an action, receives r = 2, and lands in s' with V(s') = 6. With gamma = 0.9, the one-step advantage $A = r + \\gamma V(s') - V(s)$ is:",
+    "options": ["+2.4", "+3.0", "-0.6", "+5.4"],
+    "answer": 0,
+    "explanation": "A = 2 + 0.9(6) - 5 = 2 + 5.4 - 5 = 2.4 > 0, so the actor makes this action more likely; a negative advantage would make it less likely. Using advantage rather than the raw return is what cuts REINFORCE's variance."
+  },
+  {
+    "q": "In state s, Q(s, Left) = 2 and Q(s, Right) = 10. Under a policy that picks each action with probability 0.5, the state value $V(s) = \\sum_a \\pi(a|s)\\,Q(s,a)$ is:",
+    "options": ["10", "12", "6", "2"],
+    "answer": 2,
+    "explanation": "V(s) = 0.5(2) + 0.5(10) = 6 — the policy-weighted average of the action-values. A greedy policy (always Right) would instead give V(s) = 10, which is why improving the policy raises the state value."
+  },
+  {
+    "q": "With discount factor gamma = 0.9, a reward of 100 received one step in the future has approximately what present value?",
+    "options": ["100, because future and present rewards are always valued equally", "90 — it is multiplied by gamma", "0, because future rewards are ignored entirely", "111, because it is divided by gamma to compound it forward"],
+    "answer": 1,
+    "explanation": "Discounting multiplies a one-step-future reward by gamma, so 100 becomes 90. Smaller gamma makes the agent short-sighted (gamma = 0 ignores the future); gamma near 1 makes it far-sighted. It reflects that future reward is less certain."
   }
 ]

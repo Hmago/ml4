@@ -10,7 +10,7 @@ This is **Part 3** of the three‑chapter System Design series, picking up from 
 **How to read it:**
 Same shape as the previous two chapters — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* ~3 hours cover‑to‑cover. The final three Parts (20–22) are case‑study material that ties everything together — read after at least skimming Parts 13–19 of this chapter and the two preceding chapters.
 
-The §X.Y numbering is continuous with Ch 23 and Ch 24 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §4.8" or "Ch 24, §9.18").
+The §X.Y numbering is continuous with Ch 23 and Ch 24 (this chapter contains §13.1 … §22.x). Cross‑chapter pointers are prefixed (e.g. "Ch 23, §4.8" or "Ch 24, §9.9").
 
 ---
 
@@ -762,7 +762,7 @@ Big-O isn't just for the coding round — it decides whether a design survives g
 | B-tree index seek | O(log N) | A healthy indexed database read |
 | Full table scan | O(N) | Fine on 1k rows, fatal on 1B — the classic missing-index bug |
 | Fan-out on write | O(followers) | One celebrity post → millions of writes (§21.7) |
-| N+1 / nested loop | O(N × M) | "One query per row" — batch it instead (Ch 24, §7.10) |
+| N+1 / nested loop | O(N × M) | "One query per row" — batch it instead (Ch 24, §7.9) |
 | Sort / join without index | O(N log N) | Watch memory; it spills to disk when N is huge |
 | Cross join / cartesian | O(N²) | Breaks past ~10⁴ items on a single machine |
 
@@ -1255,7 +1255,7 @@ Feed cache: Redis sorted set per user, scored by `created_at + ranking_signal`.
 | Concern | Mitigation |
 |---------|------------|
 | Hot celebrities | Hybrid feed; separate "big-account" cache shard |
-| Hot photo (viral) | CDN absorbs reads; like counter sharded via Ch 24, §9.18 PN-Counter |
+| Hot photo (viral) | CDN absorbs reads; like counter sharded across keys and merged |
 | Spam / abuse | Rate-limit uploads per user (token bucket); ML moderation queue |
 | Search at scale | Elasticsearch with hashtag-sharded indices |
 | Multi-region | Photo + follow stored in user's home region; cross-region reads via CDN |
@@ -1413,6 +1413,61 @@ This chapter is the **map**; those three are the **terrain**.
 ---
 
 > **Final thought:** None of these building blocks are magic. Each one solves *one specific problem* — and the senior engineer's job is to know which problem they have, pick the smallest set of blocks that fix it, and clearly name the trade-offs. The diagrams in your interview matter less than the *reasoning* behind every box.
+
+---
+
+## Key Takeaways
+
+```
+SYSTEM DESIGN PART 3 — OPERATIONS & CASE STUDIES
+═══════════════════════════════════════════════════════════════
+
+RELIABILITY & FAULT TOLERANCE
+  • Redundancy + failover remove single points of failure.
+  • Retry with exponential backoff + jitter; cap attempts.
+  • Timeouts everywhere; idempotency makes retries safe.
+  • Circuit breakers + graceful degradation stop cascades.
+  • Hedged requests cut tail latency; beware retry storms.
+  • Chaos engineering + game days prove it before prod does.
+  • Error budgets drive freeze policy; postmortems blameless.
+
+SECURITY
+  • AuthN = who you are; AuthZ = what you may do.
+  • OAuth 2.0 + OIDC for delegated auth; use Auth Code+PKCE.
+  • JWT = signed, stateless claims — short-lived, validate.
+  • Encrypt at rest AND in transit; hash ≠ encrypt.
+  • Know OWASP Top 10 and the one-line defense for each.
+  • Zero-trust + mTLS + secrets manager + key rotation.
+  • Threat-model with STRIDE; defense in depth.
+
+OBSERVABILITY
+  • Three pillars: logs, metrics, traces (structured logs).
+  • SLI/SLO/SLA define & promise reliability; budget burns.
+  • Four golden signals: latency, traffic, errors, saturation.
+  • RED (services) and USE (resources) frameworks.
+  • OpenTelemetry = one SDK; watch metric cardinality.
+
+DEPLOYMENT & INFRA
+  • Containers + K8s: declarative, self-healing workloads.
+  • Get probes right (liveness vs readiness vs startup).
+  • Service mesh for mTLS/retries/observability sidecars.
+  • Deploy strategies: rolling, blue-green, canary; GitOps.
+  • Autoscale on real signals; IaC for repeatable infra.
+
+BUILDING BLOCKS & SCALE-OUT
+  • Inverted index for search; geohash for geo queries.
+  • Distributed unique IDs (Snowflake), service discovery.
+  • Feature flags = decouple deploy from release; safe net.
+  • Multi-region: topologies, traffic steering, split-brain,
+    data sovereignty — global costs real money (FinOps).
+
+ANTI-PATTERNS & PROCESS
+  • Avoid microservices-first, distributed monolith,
+    premature sharding, cache as source of truth, no timeouts.
+  • Interview framework: clarify → estimate → API → data →
+    architecture → scale → failures → trade-offs.
+  • Memorize the latency numbers + back-of-envelope math.
+```
 
 ---
 

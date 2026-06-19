@@ -2286,20 +2286,72 @@ function highlightSelection() {
   if (!selectionRange || !selectedText || currentIndex < 0) return;
   const file = chapters[currentIndex].file;
 
-  // Wrap selected text in a highlight mark
-  try {
-    const mark = document.createElement('mark');
-    mark.className = 'user-hl';
-    mark.title = 'Click to remove highlight';
-    mark.dataset.file = file;
-    selectionRange.surroundContents(mark);
+  if (wrapRangeInHighlights(selectionRange, file)) {
     saveHighlights(file);
-    showToast('🖍 Highlighted', selectedText.substring(0, 40) + '...', '✓');
-  } catch(e) {
-    // surroundContents fails if selection spans multiple elements
-    showToast('⚠️ Highlight failed', 'Try selecting text within a single paragraph', '🖍');
+    showToast('🖍 Highlighted', selectedText.substring(0, 40) + (selectedText.length > 40 ? '…' : ''), '✓');
+  } else {
+    showToast('⚠️ Highlight failed', 'Could not highlight that selection', '🖍');
   }
   window.getSelection().removeAllRanges();
+}
+
+// Wrap every text node that intersects `range` in its own <mark class="user-hl">.
+// Range.surroundContents throws when a selection crosses element boundaries
+// (e.g. the nested bold/italic spans inside the blue "Simple Explanation" /
+// "Official Definition" blockquotes), which is why those boxes couldn't be
+// highlighted. Walking the text nodes individually lets multi-element
+// selections highlight correctly. All marks from one selection share an hlId so
+// they persist as a single highlight and are removed together on click.
+function wrapRangeInHighlights(range, file) {
+  if (!range || range.collapsed) return false;
+
+  const startC = range.startContainer, startO = range.startOffset;
+  const endC = range.endContainer, endO = range.endOffset;
+  const fullText = range.toString();
+
+  let rootEl = range.commonAncestorContainer;
+  if (rootEl.nodeType === Node.TEXT_NODE) rootEl = rootEl.parentNode;
+  if (!rootEl) return false;
+
+  // Collect every intersecting text node up front (before any DOM mutation).
+  const nodes = [];
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      if (!range.intersectsNode(node)) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (p && p.closest('pre, code, script, .sel-popup, .comments-section, mark.user-hl'))
+        return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  if (!nodes.length) return false;
+
+  const hlId = 'hl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  let wrapped = false;
+
+  nodes.forEach(node => {
+    const start = (node === startC) ? startO : 0;
+    const end = (node === endC) ? endO : node.nodeValue.length;
+    if (start >= end) return; // nothing of this node is inside the selection
+    try {
+      const sub = document.createRange();
+      sub.setStart(node, start);
+      sub.setEnd(node, end);
+      const mark = document.createElement('mark');
+      mark.className = 'user-hl';
+      mark.title = 'Click to remove highlight';
+      mark.dataset.file = file;
+      mark.dataset.hlId = hlId;
+      mark.dataset.hlText = fullText;
+      // sub stays within a single text node, so surroundContents never throws.
+      sub.surroundContents(mark);
+      wrapped = true;
+    } catch (e) { /* skip this fragment, keep going */ }
+  });
+  return wrapped;
 }
 
 // Event delegation — handle click on ANY highlight mark
@@ -2311,9 +2363,19 @@ document.addEventListener('click', function(e) {
   if (window.getSelection().toString().length > 0) return;
 
   const file = mark.dataset.file || (currentIndex >= 0 ? chapters[currentIndex]?.file : null);
-  const parent = mark.parentNode;
-  parent.replaceChild(document.createTextNode(mark.textContent), mark);
-  parent.normalize();
+  // A selection that crossed element boundaries is stored as several marks
+  // sharing one hlId — remove them all so the whole highlight clears at once.
+  const hlId = mark.dataset.hlId;
+  const group = hlId
+    ? Array.from(document.querySelectorAll('mark.user-hl')).filter(m => m.dataset.hlId === hlId)
+    : [mark];
+
+  group.forEach(m => {
+    const parent = m.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(m.textContent), m);
+    parent.normalize();
+  });
   if (file) saveHighlights(file);
 });
 
@@ -2330,12 +2392,19 @@ function copySelection() {
 // Save/load highlights per chapter
 function saveHighlights(file) {
   const content = document.getElementById('content');
+  if (!content) return;
   const highlights = [];
+  const seen = new Set();
   content.querySelectorAll('mark.user-hl').forEach(m => {
-    // Save the text AND surrounding context for accurate restoration
+    // Marks sharing an hlId belong to one selection — save the group once,
+    // using the full selected text rather than the per-fragment text.
+    const hlId = m.dataset.hlId || ('m-' + seen.size);
+    if (seen.has(hlId)) return;
+    seen.add(hlId);
+    const text = m.dataset.hlText || m.textContent;
     const parent = m.parentNode;
-    const parentText = parent ? parent.textContent.substring(0, 200) : '';
-    highlights.push({ text: m.textContent, context: parentText });
+    const context = parent ? parent.textContent.substring(0, 200) : '';
+    highlights.push({ text, context });
   });
   const all = JSON.parse(localStorage.getItem('ml4-highlights') || '{}');
   all[file] = highlights;
@@ -2348,41 +2417,59 @@ function loadHighlights(file) {
   if (!highlights.length) return;
 
   const content = document.getElementById('content');
-  // Walk all text nodes in content and wrap matching text
+  if (!content) return;
+  // Restore each saved highlight by locating its text and re-wrapping it.
   highlights.forEach(h => {
     const searchText = typeof h === 'string' ? h : h.text;
     if (!searchText || searchText.length < 2) return;
-    highlightTextInNode(content, searchText, file);
+    restoreHighlight(content, searchText, file);
   });
 }
 
-function highlightTextInNode(root, searchText, file) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  const matches = [];
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    // Skip nodes inside comments section, code blocks, scripts
-    if (node.parentElement.closest('.comments-section, pre, code, script, .sel-popup')) continue;
-    const idx = node.textContent.indexOf(searchText);
-    if (idx >= 0) {
-      matches.push({ node, idx });
+// Find `searchText` within `root` — even when it spans several inline elements —
+// and re-wrap it using the same multi-node primitive as live highlighting.
+function restoreHighlight(root, searchText, file) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (p && p.closest('.comments-section, pre, code, script, .sel-popup, mark.user-hl'))
+        return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
     }
-  }
+  });
 
-  // Only highlight the first match (can't disambiguate without stored position)
-  if (matches.length > 0) {
-    const { node, idx } = matches[0];
-    try {
-      const range = document.createRange();
-      range.setStart(node, idx);
-      range.setEnd(node, idx + searchText.length);
-      const mark = document.createElement('mark');
-      mark.className = 'user-hl';
-      mark.title = 'Click to remove highlight';
-      mark.dataset.file = file;
-      range.surroundContents(mark);
-    } catch(e) { /* skip if DOM structure doesn't allow it */ }
+  const nodes = [];
+  const starts = [];
+  let combined = '';
+  let node;
+  while ((node = walker.nextNode())) {
+    starts.push(combined.length);
+    nodes.push(node);
+    combined += node.nodeValue;
+  }
+  if (!nodes.length) return false;
+
+  const at = combined.indexOf(searchText);
+  if (at < 0) return false;
+  const endAt = at + searchText.length;
+
+  const locate = (pos) => {
+    for (let k = nodes.length - 1; k >= 0; k--) {
+      if (pos >= starts[k]) return { node: nodes[k], offset: pos - starts[k] };
+    }
+    return { node: nodes[0], offset: 0 };
+  };
+
+  try {
+    const s = locate(at);
+    const e = locate(endAt);
+    const range = document.createRange();
+    range.setStart(s.node, s.offset);
+    range.setEnd(e.node, e.offset);
+    return wrapRangeInHighlights(range, file);
+  } catch (e) {
+    return false;
   }
 }
 

@@ -16,7 +16,41 @@ After this chapter you will be able to:
 
 ---
 
-## 10.1 What Is a Neural Network?
+## Before You Start — Prerequisites
+
+> **You'll get the most from this chapter if you've met a few ideas first:** matrix/vector
+> multiplication and derivatives (**Chapter 6 — Math for ML**), and the core training
+> vocabulary — *epoch, batch, loss, gradient descent, forward/backward pass* — introduced
+> in plain language in **Chapter 8 — Core Concepts**. Don't worry if they're fuzzy: the most
+> important terms are re-defined below and explained again in context as they appear.
+
+### Key Terms (Quick Reference)
+
+Skim this table once, then refer back as needed — every term reappears with a concrete
+example later in the chapter.
+
+| Term | Plain meaning |
+|------|---------------|
+| **Weight** ($w$) | A dial the network learns. It sets how strongly one input pushes on a neuron. Large weight = "this input matters a lot." |
+| **Bias** ($b$) | A second dial added *after* the weighted sum. It shifts the result up or down so a neuron can fire even when every input is 0 — like the offset on a thermostat. |
+| **Activation** | The non-linear "decision" function applied to a neuron's result. It lets a network bend to fit curves instead of only straight lines. |
+| **Logit** | A raw output score *before* it becomes a probability. "Logit = 2.0" is just a number the model emits; softmax/sigmoid turns it into a probability. |
+| **Gradient** | The slope of the loss — which way, and how steeply, the error changes if you nudge a weight. Training walks *downhill* along it. |
+| **Epoch** | One full pass through the entire training dataset. |
+| **Batch** (mini-batch) | A small handful of examples (e.g. 32) seen before the weights are updated once. |
+
+---
+
+## 14.1 What Is a Neural Network?
+
+### Simple Explanation
+
+Think of a single **neuron** as a tiny voting machine that makes one decision. It takes a few
+inputs, decides how much it *trusts* each one (the **weights**), adds up the evidence, and if
+the total is convincing enough it "fires." A **neural network** is just a huge pile of these
+voting machines wired together in layers, where one layer's votes become the next layer's
+inputs. No single neuron is smart — but stacked up, they can recognise a face, translate a
+sentence, or steer a car.
 
 > An **artificial neural network (ANN)** is a computational graph of parameterized functions organized into layers, where each connection carries a learnable weight. The network maps inputs to outputs by composing simple non-linear transformations, and learns by adjusting weights to minimize a loss function via gradient-based optimization.
 
@@ -36,13 +70,35 @@ BIOLOGICAL NEURON                 ARTIFICIAL NEURON (PERCEPTRON)
 
 $$z = \sum_{i=1}^{n} w_i x_i + b, \qquad \hat{y} = f(z)$$
 
+**Example — how one neuron works.** Suppose a neuron decides *"should I carry an umbrella?"*
+from two inputs: $x_1$ = cloudiness and $x_2$ = humidity (each scaled 0–1). The network has
+learned weights $w_1 = 3$, $w_2 = 2$ and bias $b = -2.5$ (the bias sets how much evidence is
+needed before it leans "yes"). On a grey, humid morning $x_1 = 0.8$, $x_2 = 0.9$:
+
+$$z = 3(0.8) + 2(0.9) - 2.5 = 2.4 + 1.8 - 2.5 = 1.7$$
+
+Pass $z$ through a sigmoid activation: $f(1.7) \approx 0.85$ → **"85% chance, yes, take the
+umbrella."** Now make the morning clear and dry ($x_1 = 0.1$, $x_2 = 0.2$): $z = 0.3 + 0.4 -
+2.5 = -1.8$, so $f(-1.8) \approx 0.14$ → "probably not." Same neuron, same dials — the answer
+flips only because the *evidence* changed. That is the whole job of a neuron; everything else
+in this chapter is scale and wiring.
+
 The single-neuron model is the **perceptron** (Rosenblatt, 1958). It can learn linearly separable patterns — AND, OR — but fails on XOR. Stack neurons into layers with non-linear activations and that limitation disappears: a network with one hidden layer of sufficient width can approximate any continuous function (Universal Approximation Theorem).
 
 Real-world example: a single neuron could learn "if pixel brightness > threshold, classify as white." Stacking thousands of neurons lets you classify entire chest X-rays as pneumonia vs. healthy.
 
 ---
 
-## 10.2 Architecture: Layers and Neurons
+## 14.2 Architecture: Layers and Neurons
+
+### Simple Explanation
+
+A network is organised like an **assembly line**. Raw materials (your input features) enter at
+one end. Each **layer** is a station that transforms what it receives and passes it on — early
+stations spot simple things, later stations combine them into something meaningful. The
+**input layer** is the loading dock (one slot per feature), the **hidden layers** are the
+workers doing the real shaping, and the **output layer** is the shipping desk that hands you
+the final answer. "Deeper" = more stations in a row; "wider" = more workers per station.
 
 > A **feedforward neural network** consists of an input layer, one or more hidden layers, and an output layer. Data flows forward from input to output with no cycles. The number of hidden layers is the network's **depth**; the number of neurons per layer is its **width**.
 
@@ -68,7 +124,22 @@ INPUT LAYER         HIDDEN LAYERS           OUTPUT LAYER
 | More layers (deeper) | Learns hierarchical features; each layer builds on the last | Harder to train (vanishing gradients), slower per step |
 | More neurons (wider) | More capacity per layer, captures more patterns in parallel | More parameters, higher memory, risk of overfitting |
 
-A 784 → 512 → 256 → 10 network (e.g., MNIST digit classifier) has $784 \times 512 + 512 \times 256 + 256 \times 10 = 534{,}272$ weights. Each arrow in the diagram is one learnable weight.
+A 784 → 512 → 256 → 10 network (e.g., MNIST digit classifier) has $784 \times 512 + 512 \times 256 + 256 \times 10 = 535{,}040$ weights. Each arrow in the diagram is one learnable weight.
+
+**Example — how it works (reading a handwritten digit).** Trace one image through that
+$784 \to 512 \to 256 \to 10$ network:
+
+- **Input layer (784):** a $28\times28$ pixel image flattened into 784 brightness numbers.
+- **Hidden layer 1 (512):** each neuron scans all 784 pixels and learns to react to one small
+  pattern — a stroke, an edge, a short curve.
+- **Hidden layer 2 (256):** combines those strokes into bigger parts — "a closed loop on top,"
+  "a vertical line on the right."
+- **Output layer (10):** one neuron per digit 0–9; the strongest one wins. For a handwritten
+  "7," the "7" neuron lights up because it saw "a horizontal top stroke + a diagonal going
+  down."
+
+You never tell the network what a stroke or loop is — it *discovers* these intermediate ideas
+on its own while learning, because that is what minimises its mistakes.
 
 ```mermaid
 graph LR
@@ -106,7 +177,16 @@ graph LR
 
 ---
 
-## 10.3 Activation Functions
+## 14.3 Activation Functions
+
+### Simple Explanation
+
+If every neuron only added up its inputs, the whole network — no matter how deep — could only
+ever draw **straight lines**. But the real boundary between "spam" and "not spam," or "cat" and
+"dog," bends and curves. An **activation function** is the little non-linear "kink" each neuron
+adds, and those kinks stack up into the curved decision boundaries real problems need.
+Different activations are just differently shaped kinks: ReLU is a sharp elbow, sigmoid is a
+smooth S, softmax turns a row of scores into percentages.
 
 > An **activation function** is a non-linear function applied element-wise to a neuron's pre-activation value $z$. Without it, any stack of linear layers collapses to a single linear transformation, regardless of depth.
 
@@ -147,6 +227,21 @@ Fixes dying ReLU by allowing a small gradient for negative inputs. The neuron is
 $$\text{GELU}(z) = z \cdot \Phi(z)$$
 
 where $\Phi$ is the standard Gaussian CDF. Smooth approximation of ReLU — no hard zero cutoff. Used in BERT, GPT, and most modern Transformers. Smoother gradients lead to more stable training in very deep networks.
+
+**Example — how it works (one value through each activation).** Take a neuron whose weighted
+sum comes out to $z = -2$ in one case and $z = 3$ in another, and watch what each activation
+does to those two numbers:
+
+| Activation | $z=-2$ | $z=3$ | What it did |
+|---|---|---|---|
+| ReLU $\max(0,z)$ | $0$ | $3$ | Killed the negative; passed the positive through unchanged |
+| Sigmoid | $0.12$ | $0.95$ | Squashed both into a 0–1 "probability" |
+| Tanh | $-0.96$ | $0.995$ | Squashed into −1…1, keeping the sign |
+| Leaky ReLU ($\alpha{=}0.1$) | $-0.2$ | $3$ | Like ReLU, but lets a trickle of the negative through |
+
+ReLU's output for $z=-2$ is a hard $0$ — and if a neuron's input stays negative it will output
+$0$ *forever* and stop learning (the "dying ReLU" problem). That is exactly why Leaky ReLU
+keeps a small slope on the left: the neuron can always recover.
 
 ```chart
 {
@@ -239,11 +334,39 @@ where $\Phi$ is the standard Gaussian CDF. Smooth approximation of ReLU — no h
 
 ---
 
-## 10.4 Forward Pass & Loss Functions
+## 14.4 Forward Pass & Loss Functions
+
+### Simple Explanation
+
+The **forward pass** is the network "doing its thing" left to right: numbers go in, get
+multiplied, added, and bent at each layer, and a prediction pops out the far end. The **loss**
+is then a single report-card number that says *how wrong* that prediction was — low loss = good
+guess, high loss = bad guess. Everything the network learns is in service of making that one
+number smaller.
 
 > The **forward pass** computes the network's prediction by propagating inputs through each layer sequentially. A **loss function** (objective function) quantifies the discrepancy between the prediction $\hat{y}$ and the true label $y$.
 
 The forward pass is straightforward: for each layer $l$, compute $z^{(l)} = W^{(l)} a^{(l-1)} + b^{(l)}$, then $a^{(l)} = f(z^{(l)})$, where $f$ is the activation. The final layer's output is the prediction.
+
+**From one neuron to a whole layer.** In §14.1 a neuron was scalars: $z = w_1x_1 + w_2x_2 + b$.
+A *layer* just does that for many neurons at once, so we stack the weights into a matrix $W$ and
+compute them in one shot: $z^{(l)} = W^{(l)}a^{(l-1)} + b^{(l)}$. Here $a^{(l-1)}$ is the previous
+layer's outputs (and $a^{(0)}$ is the raw input). The matrix form is not new math — it's the
+same multiply-and-add, written compactly.
+
+**Example — a tiny forward pass.** A 2-input → 2-neuron hidden layer → 1 output, ReLU in the
+hidden layer and sigmoid at the output. Input $x = [1, 2]$.
+
+Hidden weights $W^{(1)} = \begin{bmatrix} 0.5 & -0.5 \\ 1.0 & 1.0 \end{bmatrix}$, bias $b^{(1)} = [0, -1]$:
+
+$$z^{(1)} = \begin{bmatrix} 0.5(1) - 0.5(2) \\ 1.0(1) + 1.0(2) \end{bmatrix} + \begin{bmatrix} 0 \\ -1 \end{bmatrix} = \begin{bmatrix} -0.5 \\ 2.0 \end{bmatrix} \xrightarrow{\text{ReLU}} a^{(1)} = \begin{bmatrix} 0 \\ 2.0 \end{bmatrix}$$
+
+Output weights $W^{(2)} = [1, 1]$, bias $b^{(2)} = -1$:
+
+$$z^{(2)} = 1(0) + 1(2.0) - 1 = 1.0 \xrightarrow{\sigma} \hat{y} = \sigma(1.0) = 0.73$$
+
+The network predicts **0.73**. Notice the first hidden neuron contributed nothing — ReLU zeroed
+its negative value — a concrete look at why "dead" neurons matter.
 
 ### Common Loss Functions
 
@@ -259,11 +382,53 @@ $$L = -\frac{1}{N}\sum_{i=1}^{N}\sum_{c=1}^{C} y_{i,c} \log(\hat{y}_{i,c})$$
 
 $$L = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{y}_i)^2$$
 
+**Why the log? (cross-entropy intuition).** Cross-entropy rewards *confident correct* answers
+and punishes *confident wrong* ones harshly. Because $-\log(p)$ shoots toward infinity as
+$p \to 0$, telling the truth ("0.99 for the right class") costs almost nothing, while being
+confidently wrong ("0.01 for the right class") is enormously expensive. That asymmetry is what
+pushes the network toward honest, well-calibrated probabilities.
+
+**Example — how it works (binary cross-entropy).** A spam classifier predicts $\hat{y} = 0.9$
+("90% spam") for an email that really is spam ($y = 1$):
+
+$$L = -[\,1\cdot\log(0.9) + 0\cdot\log(0.1)\,] = -\log(0.9) = 0.105 \quad (\text{small — good guess})$$
+
+If it had instead confidently said $\hat{y} = 0.1$ for that same spam email:
+
+$$L = -\log(0.1) = 2.303 \quad (\text{22}\times\text{ larger — punished for being confidently wrong})$$
+
 Real-world example: a speech recognition system's forward pass transforms a spectrogram through convolutional and recurrent layers to produce a probability distribution over characters. The cross-entropy loss measures how far those probabilities are from the true transcript.
 
 ---
 
-## 10.5 Backpropagation & Gradient Descent
+## 14.5 Backpropagation & Gradient Descent
+
+### Simple Explanation
+
+Imagine standing on a foggy hillside, blindfolded, trying to reach the valley. You can't see
+the bottom, but you *can* feel which way the ground slopes under your feet — so you step
+**downhill**, feel again, step again. That slope is the **gradient**, and the whole procedure
+is **gradient descent**. **Backpropagation** is just the clever bookkeeping that works out the
+slope for *every weight at once*, by starting at the output error and passing the blame
+backwards through the network with the chain rule.
+
+```
+LOSS LANDSCAPE — training walks downhill to the minimum
+
+ loss
+  ▲
+  │ ●  ← start (high loss, bad weights)
+  │  \
+  │   \      slope here = gradient
+  │    \._
+  │       `-._
+  │           `-.__      ★ ← minimum (low loss, good weights)
+  │                `--------●--------
+  └────────────────────────────────────►  weight value
+
+ step rule:  weight ← weight − (learning rate) × gradient
+ "−gradient" always points downhill; tiny steps, repeated millions of times.
+```
 
 > **Backpropagation** is the algorithm that computes the gradient of the loss with respect to every weight in the network by recursively applying the chain rule of calculus, propagating error signals from the output layer back to the input layer.
 
@@ -305,6 +470,10 @@ Update with learning rate $\alpha = 0.1$:
 $$w_{\text{new}} = 2.0 - 0.1 \times 0.95 = 1.905$$
 
 ### Optimizers
+
+An **optimizer** is the strategy for *how* to step downhill — how big a step to take and whether
+to build momentum. Plain SGD takes the same cautious step everywhere; smarter optimizers adapt
+the step size to the terrain so training is faster and steadier.
 
 **SGD (Stochastic Gradient Descent):** Update using gradient from a random mini-batch. Simple but can be slow and oscillate in narrow valleys.
 
@@ -356,7 +525,16 @@ $$v \leftarrow \beta v + \nabla L, \qquad w \leftarrow w - \alpha v$$
 
 ---
 
-## 10.6 Vanishing & Exploding Gradients
+## 14.6 Vanishing & Exploding Gradients
+
+### Simple Explanation
+
+Backprop sends the error signal backwards layer by layer, and at each step it gets *multiplied*
+by a number. Picture the children's game **telephone**: a message whispered down a long line
+either fades to nothing (everyone mumbles a little quieter — **vanishing**) or, if everyone
+over-shouts, turns into a deafening garble (**exploding**). When the per-layer multiplier is
+below 1, the gradient shrinks toward zero and the early layers stop learning; when it's above
+1, the gradient blows up and training crashes.
 
 > The **vanishing gradient problem** occurs when gradients shrink exponentially as they propagate back through many layers, causing early layers to learn extremely slowly or not at all. The **exploding gradient problem** is the inverse: gradients grow exponentially, causing unstable weight updates.
 
@@ -366,7 +544,7 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
 
 **Vanishing:** Sigmoid's maximum gradient is 0.25. Through 10 layers: $0.25^{10} \approx 10^{-6}$. Early layers receive near-zero gradients and stop learning. This is why deep sigmoid networks were historically impossible to train.
 
-**Exploding:** If weight magnitudes push each gradient factor above 1, the product grows exponentially. Weight updates become enormous, loss jumps to NaN, and training crashes. Common in RNNs processing long sequences.
+**Exploding:** If weight magnitudes push each gradient factor above 1, the product grows exponentially — a factor of just $1.5$ across 20 layers is $1.5^{20} \approx 3{,}300\times$. Weight updates become enormous, loss jumps to NaN, and training crashes. Common in RNNs processing long sequences.
 
 ```chart
 {
@@ -413,9 +591,21 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
 
 ---
 
-## 10.7 Regularization: Dropout, Batch Norm, Weight Decay
+## 14.7 Regularization: Dropout, Batch Norm, Weight Decay
+
+### Simple Explanation
+
+**Regularization** is anything that stops a network from *memorising* the training data instead
+of *learning* from it (the dreaded overfitting). Picture a student who memorises last year's
+exam answers word-for-word: perfect on the practice paper, lost on the real test. Regularization
+forces the network to grasp the general idea by handicapping it just enough that brute-force
+memorisation no longer works. The three workhorses below each do this a different way.
 
 ### Dropout
+
+**Simple version:** during each training step you randomly "bench" some neurons — like a coach
+who keeps benching star players so the *whole team* learns to play. The network can't lean on
+any single neuron, so it builds backup pathways and generalises better.
 
 > **Dropout** is a regularization technique that randomly sets each neuron's output to zero with probability $p$ during training, forcing the network to learn redundant, distributed representations rather than relying on any single neuron.
 
@@ -432,15 +622,38 @@ All neurons active; outputs scaled by (1 − p) to compensate.
 
 Typical rates: 0.3-0.5 for fully connected layers, 0.1-0.2 for convolutional layers, 0.1 for Transformers. Never apply to the output layer.
 
+**Example — how it works.** A hidden layer outputs $[0.9, 0.4, 0.7, 0.2, 0.6, 0.8]$. With
+dropout $p=0.5$, this training step randomly zeros about half → $[0.9, 0, 0.7, 0, 0, 0.8]$; the
+*next* batch zeros a different half. The network therefore trains a slightly different
+"sub-network" every step — effectively averaging thousands of thinned networks, which is why it
+resists overfitting. At inference all neurons stay on (outputs scaled to compensate), so
+predictions are stable.
+
 ### Batch Normalization
+
+**Simple version:** as data flows through a deep network, the numbers inside each layer can
+drift to wildly different scales, which makes training jittery. Batch Norm re-centres each
+layer's numbers to a tidy, consistent range every step — like a thermostat holding the room at
+a steady temperature so everything downstream behaves.
 
 > **Batch Normalization** normalizes each layer's pre-activations to zero mean and unit variance over the current mini-batch, then applies learnable scale ($\gamma$) and shift ($\beta$) parameters.
 
 $$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \qquad y_i = \gamma \hat{x}_i + \beta$$
 
+**Example — how it works.** Suppose one neuron's pre-activations across a mini-batch are
+$x = [2, 4, 6, 8]$. The mean is $\mu_B = 5$ and variance $\sigma_B^2 = 5$ (std $\approx 2.24$).
+Normalising gives $\hat{x} = [-1.34, -0.45, 0.45, 1.34]$ — now centred at 0 with unit spread,
+regardless of the original scale. The learnable $\gamma, \beta$ then let the network rescale if
+a different range turns out to be useful, so no representational power is lost.
+
 Benefits: enables higher learning rates, reduces sensitivity to initialization, adds mild regularization via batch statistics noise. Standard in CNNs. For Transformers, **Layer Normalization** (normalizing across features instead of across the batch) is preferred. Modern LLMs (LLaMA, Gemini) further simplify to **RMSNorm**, which skips the mean-subtraction step and normalises only by root-mean-square — slightly cheaper and empirically equivalent in quality.
 
 ### Weight Decay (L2 Regularization)
+
+**Simple version:** large weights let a network make sharp, extreme, over-confident decisions —
+the hallmark of memorising noise. Weight decay adds a small "tax" on big weights, gently nudging
+them toward zero unless the data really justifies keeping them large. The result is a smoother,
+simpler model that generalises better.
 
 > **Weight decay** adds a penalty proportional to the squared magnitude of weights to the loss function, discouraging large weight values and reducing overfitting.
 
@@ -448,9 +661,29 @@ $$L_{\text{total}} = L_{\text{data}} + \lambda \sum_i w_i^2$$
 
 Equivalent to shrinking every weight toward zero by a factor of $\lambda$ each update. Typical $\lambda$: $10^{-4}$ to $10^{-2}$.
 
+**Example — how it works.** Two models fit the same scattered points. Model A learns weights
+like $[12, -9, 15]$ and bends wildly to pass through every training point (overfit). Model B,
+trained with weight decay, settles on $[0.8, -0.5, 1.1]$ and draws a smooth curve. The penalty
+$\lambda \sum w_i^2$ made the jagged large-weight solution *expensive*, so the optimizer
+preferred the smooth one — and Model B wins on new data.
+
 ---
 
-## 10.8 CNNs — Convolutional Neural Networks
+## 14.8 CNNs — Convolutional Neural Networks
+
+> **Heads-up — the next five sections are guided tours.** CNNs, RNNs/LSTMs, Transformers,
+> transfer learning, and GANs are each huge topics (with dedicated chapters elsewhere). Here we
+> build just enough intuition to recognise each architecture and know when to reach for it. For
+> depth, see **Chapter 16 — Deep Learning Reference** and **Chapter 17 — Large Language Models**.
+
+### Simple Explanation
+
+To recognise a cat it shouldn't matter whether the cat sits in the top-left or the bottom-right
+of the photo — "cat-ness" is the same pattern wherever it appears. A **CNN** captures this by
+sliding a small pattern-detector (a **filter**) across the whole image like a flashlight
+sweeping a dark wall, lighting up wherever it finds its pattern (an edge, a corner, an eye).
+Stack these detectors and the early ones find edges, the middle ones combine edges into shapes,
+and the deep ones recognise whole objects.
 
 > A **Convolutional Neural Network (CNN)** is a neural network that uses convolution operations — sliding learned filters over spatial input — to automatically extract hierarchical features. The architecture exploits spatial locality and translation invariance, making it the standard for image and spatial data tasks.
 
@@ -469,6 +702,23 @@ IMAGE PATCH (5×5)         FILTER (3×3)          OUTPUT VALUE
 └─────────────────┘
 Slide filter across entire image → produces a feature map.
 ```
+
+**Example — how it works (one convolution step).** Slide a $3\times3$ vertical-edge filter over
+a bright-left / dark-right patch. Multiply each overlapping cell, then add everything up:
+
+```
+patch            filter           row-by-row products
+ 1  1  0          1  0 -1          (1·1)+(1·0)+(0·-1) = 1
+ 1  1  0    ⊛     1  0 -1    →     (1·1)+(1·0)+(0·-1) = 1
+ 1  1  0          1  0 -1          (1·1)+(1·0)+(0·-1) = 1
+                                   ───────────────────────
+                                   sum = 3   → strong vertical edge
+```
+
+A high positive number means "this patch really does look like a vertical edge." A flat patch
+(all cells equal) would sum to ~0 — no edge here. Slide that same filter across the whole image
+and you get a **feature map** that lights up along every vertical edge. Crucially, the network
+*learns* what each filter's nine numbers should be — you never hand-design them.
 
 **Stride** = how many pixels the filter moves per step. Stride 2 halves the spatial dimensions.
 
@@ -544,7 +794,15 @@ Real-world applications: medical imaging (detecting tumors in CT scans), self-dr
 
 ---
 
-## 10.9 RNNs, LSTMs & GRUs
+## 14.9 RNNs, LSTMs & GRUs
+
+### Simple Explanation
+
+When you read a sentence you don't forget the start by the time you reach the end — you carry a
+running summary in your head and update it word by word. An **RNN** works the same way: it keeps
+a **hidden state** (its "memory so far") and updates it at every step from the new word plus what
+it already remembered. The catch: a plain RNN's memory leaks over long distances, which is why
+**LSTMs** and **GRUs** add little "gates" that decide what to keep and what to forget.
 
 > A **Recurrent Neural Network (RNN)** processes sequential data by maintaining a hidden state $h_t$ that is updated at each time step, incorporating information from both the current input and the previous hidden state. This gives the network a form of memory over the sequence.
 
@@ -552,7 +810,26 @@ $$h_t = f(W_x x_t + W_h h_{t-1} + b)$$
 
 Standard RNNs suffer severely from vanishing gradients over long sequences. If the sentence is "Mary, who grew up in Paris and studied at the Sorbonne, loves ___", the gradient must flow back 15+ steps. Each step multiplies by $W_h$ — if its eigenvalues are less than 1, the gradient decays to near zero.
 
+**Example — how it works (sentiment, word by word).** Feed the review "not very good" into an
+RNN one word at a time; the hidden state $h_t$ is a running summary:
+
+| step | input word | what the memory $h_t$ encodes |
+|---|---|---|
+| 1 | "not" | "a negation is in play" |
+| 2 | "very" | "negation + an intensifier coming" |
+| 3 | "good" | "positive word, but flipped by the earlier 'not' → **negative**" |
+
+The final $h_3$ feeds the output layer, which predicts *negative* sentiment. The verdict depends
+on "not" from step 1 still being remembered at step 3 — that *carrying of context* is the whole
+point of recurrence, and exactly what breaks over very long sentences without an LSTM.
+
 ### LSTM (Long Short-Term Memory)
+
+**Simple version:** an LSTM is an RNN with a **notebook** (the cell state) running alongside its
+memory. Three gates act like an editor: the **forget gate** crosses out notes that no longer
+matter, the **input gate** writes down important new facts, and the **output gate** decides what
+to read out right now. Because a fact can sit untouched in the notebook for many steps, the
+network remembers across long gaps.
 
 > **LSTM** is an RNN variant with a gated cell state that acts as a long-term memory highway. Three gates (forget, input, output) control what information is erased, written, or read from the cell state, allowing gradients to flow across many time steps.
 
@@ -575,6 +852,10 @@ Cell State Cₜ ═════════════════════�
 The cell state acts as a highway — gradients can flow through multiplication by $f_t$ (which is close to 1 for information the network wants to remember), bypassing the vanishing gradient bottleneck.
 
 ### GRU (Gated Recurrent Unit)
+
+**Simple version:** a GRU is a streamlined LSTM — same idea of gating memory, but with two gates
+instead of three and no separate notebook. Fewer moving parts, faster to train, and usually
+about as good.
 
 > **GRU** simplifies the LSTM to two gates (update and reset) by merging the forget and input gates and eliminating the separate cell state. Fewer parameters, faster training, similar performance on many tasks.
 
@@ -601,11 +882,20 @@ Practical guidance: for most modern NLP, use a Transformer instead. RNNs/LSTMs r
 
 ---
 
-## 10.10 The Transformer
+## 14.10 The Transformer
+
+### Simple Explanation
+
+To understand the word "it" in "the animal didn't cross the street because **it** was tired,"
+you instinctively glance back at "animal." **Self-attention** lets every word do exactly that:
+each word looks at all the other words and pulls in whichever ones are most relevant to its
+meaning — *all in parallel*. Unlike an RNN, which reads strictly left-to-right and can forget,
+a Transformer lets any word talk directly to any other word in a single step, which is why it
+captures long-range meaning so well and trains so fast.
 
 > The **Transformer** (Vaswani et al., 2017) processes sequences using **self-attention** — a mechanism that lets each token compute a weighted combination of all other tokens' representations in parallel, without recurrence. It has replaced RNNs as the dominant architecture for NLP, and increasingly for vision and audio.
 
-For a thorough treatment, see Chapter 14 (LLMs & Transformers). Here we cover the core mechanics.
+For a thorough treatment, see [Chapter 17 — Large Language Models](17_llm.md). Here we cover the core mechanics.
 
 ### Self-Attention: Q, K, V
 
@@ -617,6 +907,17 @@ Each token is projected into three vectors using learned weight matrices:
 $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
 
 The $QK^\top$ dot product measures similarity between every pair of tokens. Division by $\sqrt{d_k}$ prevents the softmax from saturating. The result is a weighted sum of value vectors — each token's representation becomes a blend of information from the most relevant other tokens.
+
+**Example — how it works (Q, K, V as a search).** Picture each word issuing a tiny search query:
+
+- The word "it" forms a **Query** — "I'm a pronoun; which noun do I refer to?"
+- Every other word advertises a **Key** — "animal" advertises "I'm an animal-noun."
+- The dot product $QK^\top$ scores how well "it"'s query matches each key: "animal" scores high;
+  "street," "because," "tired" score low.
+- **Softmax** turns those scores into weights that sum to 1 — say $0.85$ on "animal," a sliver
+  each elsewhere.
+- The output is that weighted blend of every word's **Value**, so "it" walks away carrying ~85%
+  of "animal"'s meaning. Reference resolved — *in one step, for every word simultaneously.*
 
 **Multi-head attention** runs $H$ parallel attention operations with different weight matrices, then concatenates and projects the results:
 
@@ -674,7 +975,16 @@ graph TB
 
 ---
 
-## 10.11 Transfer Learning & Fine-Tuning
+## 14.11 Transfer Learning & Fine-Tuning
+
+### Simple Explanation
+
+If you already know how to drive a car, learning to drive a van takes an afternoon — you reuse
+almost everything (steering, road rules, judging distances) and only adjust a few details.
+**Transfer learning** does this for networks: take a model that already learned rich, general
+features from a giant dataset, keep that hard-won knowledge, and re-train only the last bit on
+your own small task. You inherit months of someone else's training for the price of a few
+minutes.
 
 > **Transfer learning** is the practice of reusing a model trained on a large source task as the starting point for a different target task. The model's learned representations — edges, textures, grammar, world knowledge — transfer to the new domain, dramatically reducing the data and compute needed.
 
@@ -701,7 +1011,16 @@ In NLP, fine-tuning a pre-trained BERT model on 1,000 labeled movie reviews for 
 
 ---
 
-## 10.12 GANs — Generative Adversarial Networks
+## 14.12 GANs — Generative Adversarial Networks
+
+### Simple Explanation
+
+Imagine a **counterfeiter** trying to print fake banknotes and a **detective** trying to spot
+them. Every time the detective catches a fake, the counterfeiter learns and makes better ones;
+every time a fake slips through, the detective sharpens its eye. Run this arms race long enough
+and the fakes get so good the detective can only guess 50/50. A **GAN** is exactly this: the
+**generator** is the counterfeiter (turning random noise into fake images), the
+**discriminator** is the detective, and they improve by competing.
 
 > A **Generative Adversarial Network (GAN)** consists of two networks trained adversarially: a **generator** $G$ that maps random noise to synthetic data, and a **discriminator** $D$ that classifies inputs as real or fake. Training is a minimax game where $G$ tries to fool $D$ and $D$ tries to catch $G$.
 
@@ -717,6 +1036,17 @@ $$\min_G \max_D \; \mathbb{E}_{x}[\log D(x)] + \mathbb{E}_{z}[\log(1 - D(G(z)))]
 
 At convergence, $G$ produces samples so realistic that $D$ outputs 0.5 (cannot distinguish real from fake).
 
+**Example — how it works (one training round, generating faces).**
+
+1. The **generator** takes random noise (say 100 random numbers) and paints a face. Early on
+   it's a blurry mess.
+2. The **discriminator** is shown a mix of real faces and the generator's fakes and must label
+   each "real" or "fake."
+3. **Both learn from the verdict:** if a fake was caught, the generator adjusts to look more
+   realistic next time; if a fake slipped through, the discriminator adjusts to catch that tell.
+4. Repeat millions of rounds. The two networks ratchet each other upward until the fakes are
+   photorealistic — this is how StyleGAN produces faces of people who don't exist.
+
 **Applications:**
 - Image synthesis: generating photorealistic faces (StyleGAN)
 - Medical imaging: augmenting rare pathology training data
@@ -730,9 +1060,21 @@ At convergence, $G$ produces samples so realistic that $D$ outputs 0.5 (cannot d
 
 ---
 
-## 10.13 Practical Tips: Learning Rate Schedules, Early Stopping, Data Augmentation
+## 14.13 Practical Tips: Learning Rate Schedules, Early Stopping, Data Augmentation
+
+### Simple Explanation
+
+These are the "good habits" that separate a model that works in a demo from one that works in
+production. None of them change the architecture — they're about training it sensibly: take the
+right-sized steps (learning-rate schedules), stop before you overcook it (early stopping),
+squeeze more out of the data you have (augmentation), and begin from sensible weights
+(initialization).
 
 ### Learning Rate Schedules
+
+**Simple version:** think of parking a car — you roll quickly across the lot (big steps), then
+inch carefully into the spot (tiny steps). A schedule lowers the learning rate the same way: big
+steps early to make fast progress, small steps late to settle precisely into the minimum.
 
 A constant learning rate is rarely optimal. Large steps early help escape bad initializations; small steps late enable precise convergence.
 
@@ -782,6 +1124,10 @@ $$\text{LR}_t = \text{LR}_{\min} + \frac{1}{2}(\text{LR}_{\max} - \text{LR}_{\mi
 
 ### Early Stopping
 
+**Simple version:** like taking cookies out of the oven the moment they turn golden — leave them
+in longer ("more epochs") and they burn (overfit). You watch the validation loss and stop at its
+lowest point.
+
 Monitor validation loss during training. When it stops improving for a set number of epochs (the "patience"), stop training and restore the best checkpoint. Prevents overfitting without requiring you to guess the optimal number of epochs.
 
 ```
@@ -795,24 +1141,40 @@ Epoch  Train Loss  Val Loss   Action
 
 ### Data Augmentation
 
+**Simple version:** one labelled photo of a cat can become dozens of training examples — flip it,
+rotate it, crop it, brighten it, and it's still a cat. You teach the model that a cat is a cat
+regardless of angle or lighting, essentially for free.
+
 Artificially expand your training set by applying label-preserving transformations. For images: random horizontal flips, rotations, crops, color jitter, cutout. For text: synonym replacement, back-translation, random deletion. For audio: time stretching, pitch shifting, noise injection.
 
 Data augmentation is free data — it reduces overfitting and improves generalization, especially when your dataset is small. In medical imaging, where labeled data is scarce and expensive, augmentation can be the difference between a usable model and a failed experiment.
 
 ### Weight Initialization
 
+**Simple version:** where you start affects where you finish. Start all weights at zero and every
+neuron stays identical forever — they all learn the same thing, which is useless. Start them too
+big or too small and signals explode or vanish. Good initialization picks a "just right" random
+scale so signals flow cleanly from the very first step.
+
 You cannot start with all weights equal to zero — every neuron would compute the same gradient and update identically (symmetry problem). Proper initialization:
 
 | Activation | Initialization | Formula |
 |---|---|---|
-| Sigmoid, Tanh | Xavier/Glorot | $w \sim \mathcal{N}(0, \sqrt{2/(n_{in}+n_{out})})$ |
-| ReLU, Leaky ReLU, GELU | He/Kaiming | $w \sim \mathcal{N}(0, \sqrt{2/n_{in}})$ |
+| Sigmoid, Tanh | Xavier/Glorot | $w \sim \mathcal{N}(0,\ 2/(n_{in}+n_{out}))$ |
+| ReLU, Leaky ReLU, GELU | He/Kaiming | $w \sim \mathcal{N}(0,\ 2/n_{in})$ |
 
 Modern frameworks handle this automatically — but knowing *why* matters for debugging.
 
 ---
 
-## 10.14 Deep Learning vs Traditional ML — When to Use What
+## 14.14 Deep Learning vs Traditional ML — When to Use What
+
+### Simple Explanation
+
+Deep learning is a power tool — incredible for big, messy, unstructured data (images, audio,
+language), but overkill, and often *worse*, for a tidy spreadsheet. The honest answer to "should
+I use deep learning?" is usually "it depends on your data." This section is your decision guide:
+match the tool to the data instead of reaching for the biggest hammer by default.
 
 > Deep learning excels when data is abundant, the input is unstructured (images, text, audio), and compute is available. Traditional ML (tree ensembles, linear models) often wins on structured/tabular data, small datasets, and when interpretability matters.
 
@@ -829,6 +1191,18 @@ Modern frameworks handle this automatically — but knowing *why* matters for de
 │ Protein / molecules       │ Graph Neural Network or Transformer │
 └───────────────────────────┴─────────────────────────────────────┘
 ```
+
+**Example — how it works (picking a tool for two real tasks).**
+
+- **Task A — predict loan default from a 30-column spreadsheet** (income, age, credit history;
+  10,000 rows). → Use **XGBoost**. The data is structured and smallish; gradient-boosted trees
+  train in seconds, are easy to explain to regulators, and typically *beat* a neural net here.
+- **Task B — detect tumours in 200,000 chest X-rays.** → Use a **CNN** (or a pretrained ViT). The
+  input is unstructured pixels with spatial patterns, the dataset is large, and only deep
+  learning extracts the hierarchy of edges → textures → lesions.
+
+Same engineer, same week — two different right answers, decided entirely by the *data*, not by
+which method is trendier.
 
 ### Dataset Size Considerations
 

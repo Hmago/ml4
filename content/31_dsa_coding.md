@@ -5204,4 +5204,55 @@ public class SelfAttention {
 
 ---
 
+## Key Takeaways
+
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║  DSA & ML CODING (JAVA) — WHAT TO REMEMBER                          ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Complexity & arrays/strings                                        ║
+║  • 10^8 ops/sec rule: pick complexity from input size to dodge TLE  ║
+║  • Two pointers (converging & same-direction), prefix sum           ║
+║  • Kadane (max subarray), Dutch flag three-way partition            ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Hashing, lists, stacks/queues                                      ║
+║  • HashMap O(1): two-sum, frequency, group-by, sliding window       ║
+║  • Linked list: fast/slow (Floyd), reversal, merge, dummy head      ║
+║  • Monotonic stack = next-greater; min-stack; valid parentheses     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Sorting & binary search                                            ║
+║  • Merge (stable), quicksort/quickselect (kth in O(n) avg)          ║
+║  • Counting sort for small ranges; custom comparators               ║
+║  • BS templates: exact, lower/upper bound, search-on-answer         ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Trees, heaps, tries                                                ║
+║  • DFS recursion solves ~90% of tree problems; BFS = level order    ║
+║  • BST inorder is sorted; LCA; serialize/deserialize                ║
+║  • Heap: top-K (size-K heap), merge-K, running median (two heaps)   ║
+║  • Trie: prefix search, autocomplete, word-search backtracking      ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Graphs                                                             ║
+║  • Adjacency list default; BFS = shortest unweighted, DFS = explore ║
+║  • Dijkstra (PQ) for weighted ≥0; Bellman-Ford handles negatives    ║
+║  • Topo sort (Kahn), Union-Find, cycle detection                    ║
+║  • Floyd-Warshall: all-pairs via k-i-j loop order                   ║
+║  • Grids: flood-fill islands, multi-source BFS (rotting oranges)    ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Dynamic programming & advanced patterns                            ║
+║  • Recipe: state → recurrence → base case → order; memo vs tab      ║
+║  • 1D (climb, rob, coin, LIS); 2D (paths, edit dist, LCS, knapsack) ║
+║  • Interval, bitmask, state-machine DP; roll arrays to save space   ║
+║  • Backtracking (subsets/perms/combos, N-Queens), greedy, intervals ║
+║  • Segment/Fenwick trees for range queries; bit tricks; GCD/sieve   ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Strategy & ML coding                                               ║
+║  • Match input to pattern table; clarify → brute → optimize → test  ║
+║  • State & justify time/space; watch int overflow (use long)        ║
+║  • From scratch: linreg/logreg (GD), K-means, KNN, stable softmax,  ║
+║    single-head self-attention (scale by sqrt(dk))                   ║
+╚══════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Previous:** [Chapter 30 — Google ML Ecosystem](30_google_ml_ecosystem.md) | **Next:** [Chapter 32 — ML Interview Questions](32_interview_questions.md)
