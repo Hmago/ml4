@@ -809,6 +809,7 @@ function showDashboard() {
           <p class="db-subtitle">${readCount === realCh.length ? 'Curriculum complete — review and keep sharp' : readCount === 0 ? 'Your learning journey starts here' : Math.round(pct) + '% through the curriculum — keep going'}</p>
         </div>
         <div class="db-header-actions">
+          <button class="db-btn" onclick="showMotivation()" title="Daily motivation &amp; quotes">${ico.flame} Motivation</button>
           <button class="db-btn" onclick="showMockTest()" title="Take a mock test from completed chapters">${ico.pen} Mock Test</button>
           <button class="db-btn" onclick="exportAllChaptersPDF()" title="Export all chapters">${ico.download} Export All PDF</button>
           <div class="mode-toggle ${interactiveMode ? 'active' : ''}" onclick="toggleInteractiveMode();" style="cursor:pointer;">
@@ -1909,6 +1910,7 @@ function showMotivation() {
   trackChapterClose();
   currentIndex = -1;
   currentPage = 'motivation';
+  pushHash('motivation');
   renderSidebar();
   closeSidebar();
   document.getElementById('tocPanel').classList.remove('visible');

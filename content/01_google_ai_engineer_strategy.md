@@ -921,4 +921,49 @@ Key point: RSUs dominate compensation at L5+. A strong RSU negotiation matters f
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  GOOGLE AI ENGINEER INTERVIEW — WHAT TO REMEMBER                    ║
+╠════════════════════════════════════════════════════════════════════╣
+║  THE LOOP                                                          ║
+║  • Recruiter screen → phone screen → 4-5 onsite rounds            ║
+║  • Rounds: 2x coding, ML system design, ML depth, behavioral     ║
+║  • Hiring Committee decides; then team match. Plan ~6-8 weeks.    ║
+║  • Levels: L3 entry, L4 mid, L5 senior, L6 staff, L7 sr staff.   ║
+║                                                                    ║
+║  TOP TOPICS (study by frequency)                                   ║
+║  • Transformers/attention, ML system design, RLHF vs DPO         ║
+║  • Recommenders (two-tower, multi-stage ranking), distributed    ║
+║    training (data/tensor/pipeline, ZeRO), eval metrics           ║
+║  • Agents/tool-use, embeddings/ANN, bias-variance, MoE/Gemini    ║
+║                                                                    ║
+║  SYSTEM DESIGN (6 steps, ~35 min)                                 ║
+║  • Formulate → data/features → model → eval → serve → monitor    ║
+║  • Start with a simple baseline; justify each step up in scale.  ║
+║  • Always ask "does this work for 1B items?" Data > model.       ║
+║  • Bake in responsible AI: bias, fairness, safety every time.    ║
+║                                                                    ║
+║  CODING ROUND                                                      ║
+║  • Highest bar in industry, even for ML. ~160 LeetCode, 60% med. ║
+║  • Top patterns: graphs, DP, trees/BST, arrays/hashmaps.         ║
+║  • Clarify → state complexity → code clean → test edge cases.    ║
+║  • ML coding: stable softmax, attention forward pass.            ║
+║                                                                    ║
+║  ML DEPTH & BEHAVIORAL                                             ║
+║  • Depth tests reasoning, not recall — "here's how I'd reason".  ║
+║  • Behavioral = Googleyness + Leadership; prepare 8 STAR stories.║
+║  • STAR: ~50% on Action; every result needs numbers.            ║
+║                                                                    ║
+║  OFFER & COMMON MISTAKES                                           ║
+║  • RSUs dominate comp at L5+; negotiate equity, get competing    ║
+║    offers, always ask for a signing bonus.                       ║
+║  • Avoid: over-complex models, ignoring scale/data/monitoring,   ║
+║    silent coding, skipping behavioral prep, guessing confidently.║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Back to Start:** [README — Table of Contents](../README.md)

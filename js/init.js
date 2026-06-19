@@ -69,6 +69,8 @@ function routeFromHash() {
       showDashboard();
     } else if (hash === 'goals') {
       showGoals();
+    } else if (hash === 'motivation') {
+      showMotivation();
     } else if (hash === 'dsa-practice') {
       showDSAPractice();
     } else if (hash === 'mock-test') {

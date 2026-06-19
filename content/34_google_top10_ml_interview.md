@@ -4973,3 +4973,35 @@ When building RAG systems with multiple retrieved documents:
 │     I encountered this exact tradeoff and chose Y because..."            │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  GOOGLE TOP-10 ML TOPICS — WHAT TO REMEMBER                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  THE CORE 10:                                                      ║
+║  • 1 Bias-Variance: Err = Bias² + Var + Noise; use curves          ║
+║  • 2 Gradient Descent: θ=θ−α∇J; Adam=momentum+RMSProp              ║
+║  • 3 Regularization: L1→sparsity, L2→shrink, dropout               ║
+║  • 4 Ensembles: bagging cuts variance, boosting cuts bias          ║
+║  • 5 Backprop: chain rule; ReLU fixes vanishing grads              ║
+║  • 6 Transformers: softmax(QK^T/√d)·V; multi-head is free          ║
+║  • 7 Evaluation: precision vs recall vs F1; AUC-PR if imbal        ║
+║  • 8 Dimensionality: PCA = eigenvectors of covariance              ║
+║  • 9 Feature Eng: fit on train, watch leakage, SMOTE               ║
+║  • 10 System Design: data→features→train→serve→monitor             ║
+╠════════════════════════════════════════════════════════════════════╣
+║  LLM EXTENSION (11–14):                                            ║
+║  • 11 Architecture: BPE→RoPE→attention→MoE→KV cache                ║
+║  • 12 Training: pre-train→SFT→RLHF/DPO; Chinchilla ~20×N           ║
+║  • 13 Serving: quantize, distribute, KV cache, RAG                 ║
+║  • 14 Eval: perplexity→MMLU→Arena; test-time compute               ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HOW TO ANSWER:                                                    ║
+║  • Intuition first, then the math; always discuss tradeoffs        ║
+║  • Connect to Google products; reason about 1B-user scale          ║
+╚════════════════════════════════════════════════════════════════════╝
+```

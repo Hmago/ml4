@@ -2255,4 +2255,40 @@ Accuracy asks "did the model get it right?" Ranking metrics ask "did the model p
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  ML INTERVIEW Q&A — RECURRING THEMES                               ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HOW TO ANSWER:                                                    ║
+║  • Give intuition first, then the math                             ║
+║  • State assumptions and ask clarifying questions                  ║
+║  • Name the tradeoffs — every choice has a cost                    ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HIGH-YIELD TOPICS:                                                ║
+║  • Bias-variance, overfitting, L1/L2 regularization                ║
+║  • Stats: p-values, CLT, MLE, Bayes, distributions                 ║
+║  • Deep learning: backprop, vanishing grads, optimizers            ║
+║  • Metrics: precision/recall/F1, AUC-ROC vs AUC-PR                 ║
+║  • Data: leakage, class imbalance, feature engineering             ║
+║  • Ranking & retrieval: NDCG, MAP, recall@k                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  SYSTEM DESIGN:                                                    ║
+║  • Clarify → metrics → model → scale/latency/retraining            ║
+║  • Talk monitoring + retraining, not just training                 ║
+╠════════════════════════════════════════════════════════════════════╣
+║  COMPANY LENS:                                                     ║
+║  • Google: technical depth + large-scale thinking                  ║
+║  • Amazon: business impact + customer obsession                    ║
+║  • OpenAI: research intuition + safety awareness                   ║
+╠════════════════════════════════════════════════════════════════════╣
+║  COMMON MISTAKES:                                                  ║
+║  • Jumping into math without intuition first                       ║
+║  • Textbook answers w/o understanding; ignoring tradeoffs          ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Back to Start:** [README — Table of Contents](../README.md)

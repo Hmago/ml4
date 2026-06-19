@@ -37,12 +37,12 @@ Not every tool deserves equal attention. Here is the honest ranking based on cur
 ```
  ┌─────────────────────────────────────────────────────────────────────┐
  │ TIER 1 — MUST-KNOW  (you will meet these everywhere)                 │
- │   Kubernetes + Docker · Kafka · Redis/Valkey · PostgreSQL ·          │
- │   Cloud+S3 · Spark                                                   │
+ │   Docker · Kubernetes · Kafka · Redis/Valkey · PostgreSQL ·          │
+ │   MongoDB · Cloud+S3 · Spark                                         │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 2 — HIGH PRIORITY  (the modern data stack)                     │
  │   Snowflake/Databricks · dbt · Iceberg/Delta · Flink · Airflow ·     │
- │   Terraform · Prometheus+Grafana · DuckDB · ClickHouse · Ray         │
+ │   Terraform · Prometheus+Grafana · Ray                               │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 3 — SITUATIONAL  (know WHEN, not necessarily HOW)              │
  │   Cassandra/ScyllaDB · Elasticsearch/OpenSearch · gRPC/GraphQL ·     │
@@ -60,18 +60,96 @@ Not every tool deserves equal attention. Here is the honest ranking based on cur
 
 ## 33.3 TIER 1 — The Must-Know Tools
 
-### Kubernetes + Docker — How Software Gets Deployed
+### Docker — Package Once, Run Anywhere
 
-> **Simple Explanation:** **Docker** is a lunchbox: it packs your app *and everything it needs* (libraries, config, runtime) into one sealed container that runs identically on your laptop, a test server, or the cloud. **Kubernetes** is the lunchroom manager: it decides which table (machine) each lunchbox sits at, replaces any that get dropped, and orders more when the room fills up.
+> **Simple Explanation:** Docker is a **lunchbox** for your software. It seals your app together with everything it needs — the exact runtime, libraries, and config — into one portable **image** that runs identically on your laptop, a teammate's machine, CI, and production. It kills the oldest excuse in software: *"but it works on my machine."*
 
-> **Official Definition:** *Docker* is a containerization platform that packages an application and its dependencies into a portable, isolated image. *Kubernetes (K8s)* is a container orchestration system that automates deployment, scaling, healing, and networking of containers across a cluster of machines.
+> **Official Definition:** Docker is a containerization platform that packages an application and its dependencies into a portable, isolated **image**. A running instance of that image is a **container** — an isolated process that shares the host OS kernel (unlike a virtual machine, which virtualizes a whole guest OS), making it far lighter and faster to start.
 
 ```
-   Your App  ─┐
-   Libraries ─┼─▶  [ Docker Image ]  ─▶  runs identically everywhere
-   Runtime   ─┘                              (laptop = cloud)
+   Dockerfile  ──build──▶  Image (read-only layers)  ──run──▶  Container(s)
+   (the recipe)            cached + shareable                  isolated process
 
-   Kubernetes cluster:
+   VM:        virtualizes hardware → each carries a full Guest OS  (GBs, boots in minutes)
+   Container: shares the host kernel → just your app + libs        (MBs, starts in ms)
+```
+
+- **Use it when:** Almost always — packaging any app for consistent local dev, CI, and deploy. The image is the unit that Kubernetes, ECS, Cloud Run, and Nomad all run.
+- **Avoid / don't over-reach when:** You need VM-grade isolation for untrusted or multi-tenant code (containers share the host kernel — use microVMs like Firecracker/gVisor or real VMs), or a tiny static site where a buildpack/PaaS is simpler.
+- **Senior gotcha:** An image is only as good as its `Dockerfile`. The two things that bite teams hardest: (1) **bloated images** (slow builds and pulls, larger attack surface) and (2) **broken layer caching** (copying source *before* installing dependencies busts the cache on every code change).
+
+**Going deeper — the vocabulary and mechanics:**
+
+| Term | Plain words |
+|---|---|
+| **Image** | The sealed, read-only package (app + deps). Built once, run anywhere. |
+| **Container** | A running (or stopped) instance of an image — an isolated process. |
+| **Dockerfile** | The recipe: each instruction (`FROM`, `COPY`, `RUN`) adds a cached **layer**. |
+| **Layer** | A cached filesystem diff. Unchanged layers are reused → fast rebuilds. |
+| **Registry** | Where images live (Docker Hub, GHCR, ECR, Artifact Registry); you `push`/`pull`. |
+| **Volume** | Persistent storage that outlives the container (containers are ephemeral). |
+| **Tag** | A label for an image version (`my-api:1.4.2`). Avoid `:latest` in production. |
+
+**The two techniques that separate a pro Dockerfile:**
+
+1. **Order layers cheap → expensive.** Copy dependency manifests and install *before* copying source, so a one-line code edit doesn't re-run the whole install:
+
+```dockerfile
+# ✅ The dependency layer stays cached until package.json actually changes
+COPY package*.json ./
+RUN npm ci
+COPY . .            # source edits no longer bust the install layer above
+```
+
+2. **Multi-stage builds** — compile in a fat "builder" stage, ship only the artifact in a tiny runtime image:
+
+```dockerfile
+FROM golang:1.23 AS build
+WORKDIR /src
+COPY . .
+RUN go build -o /app ./cmd/api
+
+FROM gcr.io/distroless/base AS runtime   # ~20 MB, no shell, tiny attack surface
+COPY --from=build /app /app
+USER nonroot
+ENTRYPOINT ["/app"]
+```
+
+- **Slim / distroless bases** (`-slim`, `distroless`, `alpine`) cut images from ~1 GB to tens of MB.
+- **`.dockerignore`** keeps `node_modules`, `.git`, and secrets out of the build context — a missing one ships gigabytes to the daemon and can leak credentials into layers.
+- **Don't run as root** — add a non-root `USER`; a container escape as root becomes a host-level risk.
+- **One process per container** — log to stdout/stderr, configure via env vars (the **12-factor** model). For multi-container local dev, use **Docker Compose**.
+- **BuildKit / `docker buildx`** is the modern builder: parallel layers, cache mounts, and **multi-arch** images (`linux/amd64` + `linux/arm64`) from one command — essential now that Apple Silicon (arm64) developers deploy to amd64 servers.
+
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| `exec format error` on deploy | Image built on Apple Silicon (arm64), server is amd64 | Build multi-arch: `docker buildx build --platform linux/amd64,linux/arm64` |
+| Every build re-runs `npm`/`pip install` | Source copied before deps → cache busted each time | Copy manifests + install first, then `COPY . .` |
+| Final image is 1.5 GB | Full base + build tools shipped to production | Multi-stage build with a slim/distroless final stage |
+| Container exits immediately | No long-running foreground process (PID 1 ended) | Run the app in the foreground; don't background it; set a proper `CMD` |
+| "No space left on device" | Dangling images, build cache, and stopped containers pile up | `docker system prune -af --volumes` (review first) |
+| Data gone after re-running the container | The container's writable layer is ephemeral | Persist state in a **volume**, not the container layer |
+| Secret leaked in image | A secret was `COPY`'d or `ENV`'d into a layer | Use build secrets / runtime env; never bake secrets; audit `docker history` |
+| Build crawls: "sending build context… 2 GB" | No `.dockerignore` | Add one (exclude `node_modules`, `.git`, datasets, build output) |
+
+**At a glance — strengths, tradeoffs, and hard limits**
+- **Pros:** Eliminates "works on my machine"; near-instant startup and a tiny footprint vs. VMs; the universal packaging unit every orchestrator (K8s, ECS, Cloud Run, Nomad) consumes; layer caching makes rebuilds fast; reproducible local-dev environments.
+- **Cons:** Shares the host kernel → weaker isolation than a VM; Dockerfile authoring has real gotchas (cache order, image bloat, running as root); stateful data needs volumes (containers are ephemeral); image sprawl eats disk if never pruned.
+- **Limitations:** Not a security boundary for untrusted multi-tenant code (use microVMs — Firecracker/gVisor); Linux containers need a Linux kernel (on macOS/Windows they run inside a lightweight VM); GPU/hardware passthrough needs extra runtime config (e.g., NVIDIA Container Toolkit).
+- **Unsupported / anti-patterns:** Many processes crammed into one container (use one-per-container + Compose/K8s); treating the container layer as durable storage; baking secrets into images; using `:latest` in production (non-reproducible deploys).
+
+---
+
+### Kubernetes — Orchestrating Containers at Scale
+
+> **Simple Explanation:** If **Docker** (above) is a lunchbox that seals your app so it runs identically everywhere, **Kubernetes** is the lunchroom manager for thousands of lunchboxes: it decides which table (machine) each container sits at, replaces any that get dropped, and orders more tables when the room fills up.
+
+> **Official Definition:** *Kubernetes (K8s)* is a container orchestration system that automates deployment, scaling, healing, and networking of containers (typically Docker/OCI images) across a cluster of machines. You declare the *desired state*; a control loop continuously reconciles reality to match it.
+
+```
+   Docker / OCI images  ─▶  scheduled onto a Kubernetes cluster:
    ┌────────────────────────────────────────────────────┐
    │  Node 1          Node 2          Node 3             │
    │  [pod][pod]      [pod][pod]      [pod]              │
@@ -119,7 +197,7 @@ spec:
 
 - **Scaling:** the **Horizontal Pod Autoscaler (HPA)** adds/removes pods based on CPU or custom metrics; the **Vertical Pod Autoscaler (VPA)** right-sizes CPU/memory requests; **KEDA** (Kubernetes Event-Driven Autoscaler) scales on external signals like Kafka lag or queue depth — useful for ML inference workloads; the **Cluster Autoscaler** adds/removes whole machines (nodes).
 - **Ecosystem to know:** **Helm** (package manager — install apps from reusable "charts"), **kubectl** (the CLI), and managed control planes (**EKS / GKE / AKS**) so you don't run the master yourself.
-- **Docker note:** an image is built in layers from a `Dockerfile`; keep images small (use slim/distroless bases, multi-stage builds) — smaller images deploy faster and have a smaller attack surface.
+- **Container images:** K8s runs the Docker/OCI images covered in the **Docker** section above — keep them small (slim/distroless bases, multi-stage builds) so pods schedule and pull faster and present a smaller attack surface.
 
 **Advanced K8s patterns:**
 
@@ -135,6 +213,18 @@ spec:
 ```
 
 - **Interview soundbite:** "Kubernetes declarative reconciliation extends to your whole infrastructure with GitOps — the cluster self-heals to match a git commit, giving you auditability and disaster recovery for free."
+
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| `CrashLoopBackOff` | App crashes on startup (bad config, missing env/secret, failed migration) | `kubectl logs <pod> --previous`; fix the crash — the restart loop is a symptom |
+| `ImagePullBackOff` / `ErrImagePull` | Wrong image name/tag, or no credentials for a private registry | Fix the tag; add an `imagePullSecret` |
+| Pod stuck `Pending` | No node has enough CPU/memory to fit the pod's `requests` | Lower requests, add nodes, or enable the Cluster Autoscaler |
+| `OOMKilled` (exit code 137) | Container exceeded its memory **limit** | Raise the limit or fix the leak; set requests ≈ limits for stable scheduling |
+| Liveness probe restarts a healthy pod | Probe too aggressive — slow startup counted as failure | Add a `startupProbe` or raise `initialDelaySeconds` |
+| Service routes to nothing | Service `selector` labels don't match the pod labels | Align labels; check `kubectl get endpoints` |
+| Config change didn't take effect | ConfigMap updated, but pods weren't restarted | `kubectl rollout restart` (or a checksum annotation to auto-roll) |
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Universal deploy target — works on every cloud and on-prem; strong self-healing and autoscaling primitives; rich ecosystem (Helm, Argo CD, KEDA, Operators); declarative model simplifies rollbacks and audits.
@@ -210,6 +300,18 @@ Scaling rule of thumb: parallelism = number of partitions.
 ```
 
 - **Connect & Streams:** **Kafka Connect** moves data in/out of external systems (DBs, S3) with no code; **Kafka Streams** / **ksqlDB** do lightweight in-Kafka processing.
+
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| Consumer lag keeps growing | Consumers slower than producers, or too few partitions | Add partitions + consumers in the group; speed up / batch processing |
+| Endless rebalancing ("rebalance storm") | Processing exceeds `max.poll.interval.ms` → consumer is evicted | Process faster or off-thread; tune `max.poll.records` / interval |
+| Messages appear "out of order" | Ordering is guaranteed **per partition**, not per topic | Key related events so they land on the same partition |
+| One partition is hot / huge | Skewed partition key (e.g., one giant customer) | Pick a higher-cardinality key, or a custom partitioner |
+| Duplicate side effects downstream | At-least-once delivery re-delivers on retries | Make consumers **idempotent**; use EOS for financial paths |
+| `RecordTooLargeException` | Payload exceeds the ~1 MB default | Raise `max.message.bytes`, or store the blob in S3 and send a pointer |
+| Under-replicated partitions | A broker is down/slow; the ISR shrank | Restore the broker; run `acks=all` with `min.insync.replicas=2` |
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Extremely high throughput (millions of events/sec per cluster); durable, replayable log enables event sourcing and consumer decoupling; KRaft (Kafka 4.0) removes ZooKeeper complexity; tiered storage extends retention cheaply to object storage.
@@ -297,6 +399,18 @@ In **March 2024**, Redis Ltd. changed the license from BSD to a dual SSPL/RSALv2
 
 - **Scaling:** **replicas** for read scaling/HA; Redis/Valkey Cluster for sharding. Managed: ElastiCache, Memorystore, Redis Cloud, Upstash (serverless).
 
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| Latency spike, the server "freezes" | A blocking `KEYS *` / big `SMEMBERS` on a large keyspace | Use `SCAN`; never run `KEYS` in production |
+| DB gets hammered when a key expires | **Cache stampede** — many requests rebuild the same key at once | Add TTL jitter, a rebuild lock, or stale-while-revalidate |
+| Memory full, writes start failing | `noeviction` policy with dataset > `maxmemory` | Set `allkeys-lru` for a pure cache; size RAM; shard |
+| One "big key" causes periodic stalls | A single huge hash/list/set blocks the single thread | Split big keys; avoid million-element structures |
+| Hot key overloads one shard/node | All traffic hits one key (or one hash slot) | Add an in-process/local cache in front; replicate the key |
+| ~1 second of writes lost on crash | AOF `everysec` (or RDB) durability window | `appendfsync always` for critical data — or don't use Redis as the source of truth |
+| Stale data served after an update | Cache wasn't invalidated on write | Invalidate/update on write; keep TTLs short |
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Sub-millisecond read/write latency; rich data structures (sorted sets, streams, pub/sub) cover many use-cases beyond plain caching; Valkey is BSD-licensed and now the cloud default; Dragonfly provides multi-threaded throughput for extreme scale.
 - **Cons:** All data must fit in RAM — cost scales with dataset size; AOF everysec durability can lose ~1 second of writes on crash; Redlock distributed locks have correctness caveats under network partitions and clock drift.
@@ -366,11 +480,93 @@ Queries with a `WHERE ts BETWEEN ...` filter will touch only matching partitions
 
 The rule of thumb: exhaust the Postgres scaling ladder before adding distributed SQL's operational and consistency complexity. Most applications never need it.
 
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| A query is suddenly slow | Missing index, or the planner switched to a sequential scan | `EXPLAIN ANALYZE`; add the right index; refresh stats with `ANALYZE` |
+| "too many connections" / "remaining connection slots" | App opens connections directly; each costs ~5–10 MB | Put **PgBouncer** in front; pool connections |
+| Queries or writes mysteriously hang | Lock contention or `idle in transaction` sessions holding locks | Inspect `pg_stat_activity`; keep transactions short |
+| Table and disk keep growing, scans slow down | MVCC dead tuples (**bloat**); autovacuum can't keep up | Tune autovacuum; `VACUUM` / `pg_repack` |
+| A page fires hundreds of tiny queries | **N+1** query pattern from the ORM | Eager-load / batch (`IN (...)`, joins) |
+| Read replica returns stale rows | Asynchronous replication lag | Read critical-after-write from the primary; monitor lag |
+| Seq scan despite an index existing | Function wrapping the column, or a type mismatch in `WHERE` | Match types; add an expression index |
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** ACID compliance; enormously rich feature set (JSONB, pgvector, PostGIS, full-text search, logical replication); strong extension ecosystem; "just use Postgres" is a genuine architecture strategy for most applications.
 - **Cons:** Single-primary write ceiling (vertical scaling only, natively); connections are expensive — PgBouncer is practically mandatory at scale; MVCC bloat requires regular VACUUM to prevent table bloat and index degradation.
 - **Limitations:** No native horizontal write sharding — requires Citus or a migration to distributed SQL; multi-region active-active writes are not supported by the native replication model; large analytical full-table scans are significantly slower than columnar warehouses; each connection consumes ~5–10 MB of memory, limiting raw connection count.
 - **Unsupported / anti-patterns:** Petabyte-scale OLAP (use Snowflake/Databricks); multi-region active-active transactional writes (use Spanner/CockroachDB); workloads requiring horizontal write sharding without external tools.
+
+---
+
+### MongoDB & Cosmos DB — Document & Multi-Model NoSQL
+
+> **Simple Explanation:** If Postgres is a filing cabinet of rigid, identical forms (every row has the same columns), **MongoDB** is a box of **flexible folders** — each document can hold a different shape of data (nested objects, arrays, optional fields), stored as JSON. You keep an order *and everything about it* — line items, address, history — in **one document**, and read it back in a single call. **Cosmos DB** is Microsoft's fully-managed, globally-distributed cousin that speaks MongoDB's language (and several others) with a turnkey SLA.
+
+> **Official Definition:** MongoDB is an open-source, document-oriented NoSQL database that stores data as flexible BSON (binary JSON) documents grouped into collections, with secondary indexes, an aggregation pipeline, horizontal scaling via sharding, and replica-set high availability. Azure Cosmos DB is a fully-managed, globally-distributed, multi-model database exposing several wire-compatible APIs (NoSQL, MongoDB, Cassandra, Gremlin graph, Table) with turnkey multi-region replication and well-defined consistency levels.
+
+| | **MongoDB** | **Azure Cosmos DB** |
+|---|---|---|
+| Model | Document (JSON/BSON) | Multi-model (document, key-value, graph, wide-column) |
+| Operated by | You self-host, or **Atlas** (managed) | Fully managed by Azure only |
+| Scaling | You design the **shard key** | Auto-partitioning by **partition key** |
+| Pricing | Cluster / instance size | **Request Units (RU/s)** — provisioned or serverless |
+| Global writes | Configurable, more setup | Turnkey multi-region, multi-write |
+| Mental model | "flexible JSON database" | "managed, planet-scale JSON database" |
+
+- **Why they're popular in 2025–2026:** Document databases map directly onto the objects in your code — no object-relational friction, no migration to add a field. MongoDB is a perennial top-5 database (DB-Engines) and a default for Node/JS apps, content/catalog systems, and rapid-iteration products. Cosmos DB is the go-to managed NoSQL for Azure-centric shops that need a global, low-latency, SLA-backed store without running servers.
+- **Use them when:** Flexible or evolving schemas; hierarchical/nested data (product catalogs, user profiles, CMS content, IoT/event payloads, game state); rapid prototyping; or read-by-id-heavy access where the whole entity lives in one document. Cosmos specifically when you need turnkey global distribution with a latency/availability SLA on Azure.
+- **Avoid when:** Data is highly relational with many-to-many joins and ad-hoc analytical queries across entities (Postgres is simpler and cheaper), or you need high-rate multi-document ACID transactions. Large-scale analytics belong in a warehouse, not in Mongo/Cosmos.
+- **Senior gotcha:** "Schemaless" does **not** mean "no schema" — it means the schema lives in your application and your access patterns. The #1 design decision is the **shard key (MongoDB) / partition key (Cosmos)**; a poor choice creates a **hot partition** that throttles throughput and is painful to change later. In Cosmos, both your bill and your throttling (`429 Too Many Requests`) are governed by **Request Units (RU/s)** — model access patterns to the RU budget.
+
+**Going deeper — modeling for documents, not tables:**
+
+- **Embed vs. reference (the core modeling choice):** *Embed* related data in one document when it's read together and bounded (order + its line items). *Reference* (store an id, look up separately) when data is large, unbounded, or shared (a user referenced by thousands of posts). Embedding favors single-read performance; referencing avoids unbounded growth — MongoDB's hard limit is **16 MB per document**.
+- **The aggregation pipeline** is MongoDB's analytical workhorse — a staged `$match → $group → $sort → $lookup` flow (the rough equivalent of SQL `WHERE / GROUP BY / ORDER BY / JOIN`). `$lookup` does joins, but they are far weaker than a relational engine's — design to avoid needing them.
+- **Indexes are mandatory, exactly like Postgres:** an unindexed query is a full **collection scan**. Back your filter and sort fields with single-field, **compound**, text, geospatial, or **TTL** indexes (TTL auto-expires documents — great for sessions/events). `explain()` is the `EXPLAIN ANALYZE` equivalent.
+- **Consistency & durability:** tune **write concern** (`w:1` fast vs. `w:majority` durable) and **read preference** (primary vs. secondaries). A **replica set** gives automatic failover; **sharding** scales writes horizontally across the shard key.
+- **Cosmos DB's five consistency levels** are its signature feature — a spectrum from **Strong → Bounded Staleness → Session → Consistent Prefix → Eventual**. Stronger = higher latency and RU cost; **Session** (the default) is the pragmatic sweet spot for most apps. This explicit, tunable knob is something most databases hide.
+- **Cosmos RU/s model:** every read, write, and query costs Request Units; you provision RU/s (or use serverless/autoscale). Under-provision → throttling (`429`); over-provision → wasted money. It is the direct analog of "right-sizing a Snowflake warehouse."
+
+```javascript
+// MongoDB: one document holds the whole order — no joins to read it back
+db.orders.insertOne({
+  _id: "ord_1001",
+  user:  { id: 42, name: "Ada" },          // embedded sub-document
+  items: [                                  // embedded array
+    { sku: "A1", qty: 2, price: 9.99 },
+    { sku: "B7", qty: 1, price: 19.99 }
+  ],
+  status: "paid", createdAt: new Date()
+});
+
+// Index the fields you filter/sort on, then aggregate
+db.orders.createIndex({ "user.id": 1, createdAt: -1 });
+db.orders.aggregate([
+  { $match: { status: "paid" } },
+  { $group: { _id: "$user.id", spent: { $sum: { $sum: "$items.price" } } } },
+  { $sort:  { spent: -1 } }
+]);
+```
+
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| Queries slow down as data grows | No index → full collection scan | Add single/compound indexes on filter+sort fields; check `explain()` |
+| One shard/partition is hot, throughput capped | Low-cardinality or monotonically-increasing shard/partition key | Pick a high-cardinality, evenly-distributed key; avoid raw timestamps/sequential ids |
+| A document grows until it errors | Unbounded array embedded in one document (16 MB cap) | Reference instead of embed; bucket or cap the array |
+| Cosmos returns `429 Too Many Requests` | RU/s budget exceeded by the workload | Raise RU/s, enable autoscale, or rewrite queries to cost fewer RUs |
+| Read right after write returns stale data | Reading a secondary / weak consistency | Use `w:majority` + primary read, or Cosmos Session/Strong consistency |
+| `$lookup` joins are slow | Using Mongo like a relational DB | Re-model: embed, or denormalize what is read together |
+| Surprise Cosmos bill | Over-provisioned RU/s or extra replicated regions | Right-size RU/s (autoscale/serverless); limit regions to what you need |
+
+**At a glance — strengths, tradeoffs, and hard limits**
+- **Pros:** Flexible schema maps directly to application objects (no migration to add a field); single-document reads/writes are fast and atomic; horizontal scaling via sharding/partitioning; rich secondary indexes and aggregation pipeline; MongoDB Atlas and Cosmos DB offer fully-managed, multi-region operation; Cosmos adds turnkey global distribution with explicit, SLA-backed consistency levels.
+- **Cons:** Cross-document joins are weak and discouraged — relational analytics are painful; the shard/partition key is a hard-to-reverse, performance-critical decision; "schemaless" pushes schema enforcement into application code; Cosmos's RU/s model makes cost and throttling a constant tuning concern; Cosmos is Azure-only (vendor lock-in).
+- **Limitations:** MongoDB documents are capped at 16 MB; multi-document ACID transactions exist but add latency and don't scale like single-document writes; large `$lookup` joins degrade at scale; Cosmos throughput is bounded by provisioned RU/s and per-partition limits; strong global consistency trades away latency and RU budget.
+- **Unsupported / anti-patterns:** Highly relational workloads with many-to-many joins (use Postgres); large-scale ad-hoc analytical querying across entities (use a warehouse/lakehouse); low-cardinality or monotonically-increasing shard/partition keys; treating a document store as a drop-in for complex transactional relational integrity.
 
 ---
 
@@ -410,6 +606,18 @@ Parquet: columnar + compressed    →  read only needed columns + skip row-group
 - **Access patterns:** **presigned URLs** let a browser upload/download directly (no proxying through your server); **IAM roles/policies** grant least-privilege access. Never bake static keys into code.
 - **Multipart upload:** for objects > 100 MB, split the file into parts (minimum 5 MB each) uploaded in parallel, then assembled server-side with `CompleteMultipartUpload`. Mandatory for objects > 5 GB. Benefits: parallelism, retry individual parts on failure, and start uploading before the full file is known. Most SDKs do this automatically with a threshold you configure.
 - **Consistency:** modern S3 is **strongly read-after-write consistent** — after a successful write, the next read sees it (older "eventual consistency" caveats are gone).
+
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| `503 SlowDown` under heavy load | Too many requests concentrated on one key prefix | Spread keys across prefixes — S3 scales throughput per prefix |
+| Surprise huge bill | **Egress** + per-request cost on millions of small reads | Minimize cross-region transfer; batch into larger objects (Parquet) |
+| `AccessDenied` | IAM policy/role missing the exact action or resource ARN | Grant least-privilege `s3:GetObject`/`PutObject` on the right ARN |
+| Bucket accidentally public | Misconfigured bucket policy/ACL | Enable **Block Public Access**; audit policies |
+| `LIST` is slow / paginates forever | Millions of objects under one prefix | Partition by prefix; keep a manifest/catalog (Iceberg/Delta) |
+| Queries scan everything and cost a lot | Data stored as CSV/JSON instead of columnar | Convert to **Parquet** and partition for pruning |
+| "Tiny files" problem kills performance | Millions of small objects → per-request overhead dominates | Compact into larger files |
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Virtually unlimited scale and eleven-nines durability; decoupled from compute (storage scales and bills independently); the universal foundation for lakehouses, ML artifact stores, and data archives; native integration with every major cloud service.
@@ -475,6 +683,18 @@ Three AQE features to know: **(1) dynamic coalescing** of post-shuffle partition
 
 **Structured Streaming** runs the same DataFrame/SQL API for streaming data. It processes Kafka/file streams as an **unbounded table** where new data is appended. The engine issues micro-batches (configurable trigger interval, down to 0 = continuous), maintaining checkpoints in S3/HDFS for exactly-once guarantees. Contrast with Flink: Structured Streaming is good for pipelines already on Spark (sub-second to a few seconds latency); use Flink when you need true event-time, per-event latency, or complex stateful logic.
 
+**Common issues developers hit:**
+
+| Symptom | Real cause | Fix |
+|---|---|---|
+| One task OOMs while the rest finish | **Data skew** — one key holds most of the rows | Enable AQE skew-join; salt the key; broadcast the small side |
+| Driver runs out of memory | `collect()` pulled a huge result back to the driver | Write to storage instead; only `collect()` small results |
+| A stage is painfully slow | A massive **shuffle** from `groupBy` / `join` | Broadcast small tables; filter early; repartition sensibly |
+| "Too many tiny tasks" / slow writes | Thousands of small partitions or output files | Let AQE coalesce post-shuffle partitions; compact output |
+| `Spill to disk` warnings | Shuffle/aggregation exceeds executor memory | Add memory or partitions; reduce per-task data |
+| Small job slower than plain pandas | JVM + cluster overhead on small data | Use DuckDB/pandas under a few hundred GB |
+| Code "ran" but nothing happened | Transformations are lazy until an action | Trigger with an action (`write`/`count`) — this is by design |
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Handles petabyte-scale batch and micro-batch workloads on a single unified API (DataFrame/SQL/Streaming/MLlib); AQE auto-tunes query plans at runtime; runs on every major cloud (Databricks, EMR, Dataproc); 10–100× faster than Hadoop MapReduce.
 - **Cons:** JVM startup and shuffle overhead make small-data jobs slower than DuckDB or pandas; heavy memory tuning required (executor heap, off-heap, shuffle memory); data skew on a single partition can bottleneck the entire stage.
@@ -485,88 +705,90 @@ Three AQE features to know: **(1) dynamic coalescing** of post-shuffle partition
 
 ## 33.4 TIER 2 — The Modern Data Stack
 
-### Snowflake & Databricks — Cloud Warehouses & Lakehouses
+TIER 1 gave you the building blocks; TIER 2 is how they assemble into an end-to-end **data platform**. Before meeting the tools one by one, it pays to see the whole assembly line — because almost every modern data system, from a three-person startup to Netflix or a bank, is the *same handful of stages* wired together. Learn the shape of the flow once, and every tool below snaps into a slot.
 
-> **Simple Explanation:** These are **rentable analytics super-computers**. Instead of running your own cluster, you load data and ask huge analytical questions ("revenue by region by day for 5 years"), and the platform spins up the compute, answers, then spins down — you pay only for what you used. The key trick: **storage and compute are separated**, so each scales independently.
+### How Data Flows Through a Big Data System
 
-> **Official Definition:** *Snowflake* is a cloud-native data warehouse with decoupled storage and compute. *Databricks* is a "lakehouse" platform built on Apache Spark and Delta Lake that unifies data engineering, analytics, and machine learning. Both are the leaders of the modern cloud-data market.
+> **Simple Explanation:** Think of a bottling factory. Trucks drop raw ingredients at the loading dock (**ingest**), everything is kept in a giant warehouse (**store**), machines clean and mix it into product (**process / transform**), and finished bottles go to a storefront where customers grab them instantly (**serve**). A floor manager keeps the lines running in order (**orchestrate**), cameras watch for jams (**observe**), and the building itself was built from a blueprint (**provision**). A data platform is exactly this factory — for data instead of bottles.
 
-| | **Snowflake** | **Databricks** |
+> **Official Definition:** A modern data platform is a pipeline of loosely-coupled stages — **ingestion → storage → processing/transformation → serving** — wrapped by cross-cutting concerns of **orchestration, observability, and provisioning**. Each stage is independently scalable and swappable, connected by open formats (Parquet) and open table specs (Iceberg/Delta) so no single vendor owns the flow.
+
+```
+   ┌──────────────────── ORCHESTRATION   ·   Airflow / Dagster / Prefect ─────────────────────┐
+   │               schedules, sequences, retries & backfills every stage below                │
+   └──────────────────────────────────────────────────────────────────────────────────────────┘
+
+       SOURCES           1 · INGEST         2 · STORE         3 · PROCESS         4 · SERVE
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │ apps         │   │ Kafka        │   │ S3/GCS/ADLS  │   │ BATCH: Spark │   │ Snowflake /  │
+   │ databases    │ ▶ │ CDC          │ ▶ │ + Iceberg /  │ ▶ │        dbt   │ ▶ │ Databricks   │
+   │ APIs · logs  │   │ Fivetran     │   │   Delta      │   │ STREAM:Flink │   │ (warehouse)  │
+   │ sensors      │   │ Airbyte      │   │ = LAKEHOUSE  │   │ ML:    Ray   │   │ → Redis/PG   │
+   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+                      └─ real-time path:  Kafka ─▶ Flink  →  process each event on arrival
+
+   ┌──────────────────────────────── OBSERVE   +   PROVISION ─────────────────────────────────┐
+   │ Prometheus · Grafana · OpenTelemetry watch every stage   ·   Terraform builds the infra  │
+   └──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Every tool in this tier owns one slot in that picture. Here is the map, stage by stage:
+
+| Stage | Its one job | Popular tools (this tier + the TIER 1 foundation) |
 |---|---|---|
-| Roots | SQL data **warehouse** | Spark + ML **lakehouse** |
-| Sweet spot | BI, analytics, SQL teams | Data engineering + ML/AI |
-| Table format | Iceberg (open) | Delta Lake (+ Iceberg) |
-| Mental model | "warehouse you query" | "lake + warehouse + ML" |
+| **1. Ingest** | Get data in reliably, in real time or in batches | **Kafka** (event backbone), CDC (Debezium), Fivetran / Airbyte (managed extract-load) |
+| **2. Store** | Keep it durably and cheaply, with table semantics | **S3 / GCS / ADLS** (object storage) **+ Iceberg / Delta** (table format) = the **lakehouse** |
+| **3. Process / Transform** | Clean, join, aggregate, model, and train on it | **Spark** (batch), **dbt** (SQL transforms), **Flink** (streaming), **Ray** (ML) |
+| **4. Serve / Analyze** | Answer queries fast for BI, apps, and dashboards | **Snowflake / Databricks** (warehouse/lakehouse), **Redis / Postgres** (app serving) |
+| **Orchestrate** | Run the stages in order; retry and backfill | **Airflow / Dagster / Prefect** |
+| **Observe** | Know it is healthy; alert when it breaks | **Prometheus + Grafana + OpenTelemetry** |
+| **Provision** | Build the infra it all runs on, as code | **Terraform / OpenTofu** |
 
-- **Use them when:** You have large-scale analytics, BI dashboards, or ML pipelines and want managed, elastic scale without running infrastructure.
-- **Avoid when:** Small data, or low-latency transactional serving (that's Postgres/Redis territory). Warehouses optimize *analytics*, not single-row OLTP.
-- **Senior gotcha:** **Cost control** is the real skill. Idle/oversized compute warehouses silently burn money. Pick one ecosystem and learn it deeply rather than both shallowly.
+**Two paths through the middle — batch and streaming.** This is the single most important idea in the diagram:
 
-**Going deeper — why "separated storage and compute" is the whole game:**
+- **Batch path (the default):** data lands in the lakehouse first, then is processed on a schedule — Spark/dbt transform it every hour or every night. Simple, cheap, and fault-tolerant. The vast majority of analytics live here.
+- **Streaming path (when latency matters):** events flow **Kafka → Flink** and are processed the instant they arrive — fraud checks, live dashboards, real-time personalization. More powerful, but operationally harder; reach for it only when *seconds* genuinely matter.
 
-- **Storage** (your data, sitting in cloud object storage) and **compute** (the engines that run queries) scale and bill *independently*. Two teams can query the same data on separate compute clusters without fighting for resources.
-- **Snowflake's "virtual warehouse"** is just a compute cluster you size (XS→4XL) and turn on per-workload. **Auto-suspend** stops it when idle so you stop paying — forgetting this is the #1 way teams overspend.
-- **Micro-partitions & pruning:** Snowflake auto-splits tables into small chunks with min/max metadata, so a query for `date = today` skips chunks that can't match (like indexing, but automatic). Good **clustering keys** keep related data together for better pruning.
-- **Time travel:** query or restore data *as of* a past timestamp (e.g., `AT (OFFSET => -3600)`) — undo an accidental delete without backups.
-- **Databricks specifics:** built on Spark + **Delta Lake**, with **Unity Catalog** for governance/lineage and strong **ML/AI** tooling (MLflow, model serving). Choose Databricks when engineering + ML dominate; Snowflake when SQL/BI dominates.
+Many real systems run **both** (a "Lambda"-style architecture): a fast streaming path for fresh-but-approximate numbers, plus a batch path that recomputes the exact source of truth.
 
-```sql
--- Snowflake: spin compute up only for this job, then it auto-suspends
-CREATE WAREHOUSE etl WITH WAREHOUSE_SIZE = 'MEDIUM'
-  AUTO_SUSPEND = 60 AUTO_RESUME = TRUE;   -- pause after 60s idle
-SELECT region, SUM(amount) FROM sales GROUP BY region;
-```
-
-**At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Fully managed, elastic compute-storage separation eliminates cluster ops; Snowflake's micro-partition pruning and time travel are powerful out-of-the-box; Databricks unifies data engineering and ML on a single platform; both support open table formats (Iceberg/Delta).
-- **Cons:** Idle or oversized warehouses silently burn credits — cost control is a continuous operational concern; vendor lock-in is real; per-query pricing can surprise teams used to flat infrastructure costs.
-- **Limitations:** Per-warehouse concurrency limits (Snowflake: ~10 concurrent queries per XS warehouse before queuing); neither is designed for OLTP point lookups or sub-millisecond serving latency; cross-cloud/cross-region egress adds cost.
-- **Unsupported / anti-patterns:** OLTP point-read/write workloads (use Postgres/Redis); sub-millisecond real-time serving; use cases where the data volume is small enough that a self-hosted DuckDB or Postgres handles it cheaply.
-
----
-
-### dbt — Transforming Data with Just SQL
-
-> **Simple Explanation:** dbt lets analysts build reliable data pipelines using **only SQL** — no heavy engineering. You write `SELECT` statements; dbt handles the order they run in, tests the results, and documents everything. Think "version-controlled, tested SQL with dependencies figured out for you."
-
-> **Official Definition:** dbt (data build tool) is a transformation framework that applies software-engineering practices — modularity, version control, testing, documentation, and dependency management — to SQL-based data transformations inside a warehouse (the **T** in **ELT**).
+**A worked example — one e-commerce order, from tap to dashboard.** A shopper taps **"Buy."** Watch the path that *single* order event takes: it immediately **forks into two lanes** — a real-time lane that answers in seconds, and a batch lane that rebuilds the exact source of truth on a schedule.
 
 ```
-   raw tables ──▶ [ staging models ] ──▶ [ business models ] ──▶ BI dashboards
-                       (SQL)                  (SQL)
-   dbt auto-builds this dependency graph (DAG), runs in order, and TESTS each step.
+   1) TAP "Buy"
+       │   the app emits an order event:
+       │   { id: "ord_1001", user: 42, items: [...], total: 39.97, ts }
+       ▼
+   2) KAFKA  ·  topic "orders"   — one event, read independently by two consumers
+       │
+       ├──▶  REAL-TIME LANE   (answers in seconds)
+       │        3) FLINK    fraud-check the card  +  count "sales this minute"
+       │              ▼
+       │        4) REDIS    serves the live counters
+       │              ▼
+       │        5) LIVE OPS DASHBOARD    fraud alerts + sales-right-now
+       │
+       └──▶  BATCH LANE   (the exact source of truth, rebuilt nightly)
+                3) S3       the raw event is written as a Parquet file
+                     ▼
+                4) ICEBERG  ·  table  raw.orders   (DB-like table on object storage)
+                     ▼      ← AIRFLOW triggers the nightly run
+                5) dbt + SPARK    transform  raw.orders ──▶ analytics.daily_revenue
+                     ▼
+                6) SNOWFLAKE ──▶ BI DASHBOARD    revenue by day & region
+
+   ─── observed throughout by  PROMETHEUS + GRAFANA   ·   infra built by  TERRAFORM ───
 ```
 
-- **ELT vs ETL:** Modern stacks **E**xtract and **L**oad raw data first, then **T**ransform *inside* the warehouse (ELT) — because warehouse compute is now cheap and powerful. dbt owns that T step and is the de facto standard (~46% of teams).
-- **Use it when:** You have a warehouse (Snowflake/BigQuery/Databricks) and need maintainable, tested analytics transformations.
-- **Senior gotcha:** dbt only *transforms* data already in the warehouse — it does **not** move data (that's ingestion tools like Fivetran/Airbyte) or schedule itself at scale (often paired with Airflow/Dagster).
+Reading the diagram:
 
-**Going deeper — the building blocks:**
+- **Steps 1–2 (shared):** the tap emits an event, and **Kafka** carries it exactly once while two consumers read it independently — this decoupling is the whole reason to put a log in the middle.
+- **Real-time lane (seconds):** **Flink** fraud-checks the card and counts sales-per-minute → **Redis** holds the live values → a **live ops dashboard** reacts within seconds.
+- **Batch lane (nightly):** the same raw event lands in **S3** as Parquet → registered in an **Iceberg** table `raw.orders` → **Airflow** triggers **dbt + Spark** to build `analytics.daily_revenue` in **Snowflake** → an analyst's **BI dashboard** shows revenue by day and region.
+- **Always-on:** **Prometheus + Grafana** watch the health of every box, on infrastructure that **Terraform** provisioned.
 
-| Concept | What it does |
-|---|---|
-| **Model** | A `.sql` file = one `SELECT`. dbt wraps it into a table or view for you. |
-| **`ref()`** | How models depend on each other. dbt reads these to build the run order (DAG) automatically. |
-| **Source** | A declared raw input table (with freshness checks). |
-| **Test** | A data-quality assertion (`unique`, `not_null`, `accepted_values`, custom SQL). |
-| **Materialization** | *How* a model is built: `view` (cheap, always fresh), `table` (fast to read), or `incremental` (only process new rows — essential at scale). |
-| **Snapshot** | Tracks slowly-changing dimensions (history of how a row changed over time). |
+Notice how the *same* event feeds both an instant answer and the durable, exact history — and how every box in the generic diagram above now maps to a concrete tool doing a concrete job.
 
-```sql
--- models/marts/daily_revenue.sql  →  references another model with ref()
-SELECT order_date, SUM(amount) AS revenue
-FROM {{ ref('stg_orders') }}        -- dbt builds stg_orders first, automatically
-GROUP BY order_date
-```
-
-- **Workflow:** `dbt run` builds models in dependency order; `dbt test` runs assertions; `dbt docs generate` produces a browsable lineage graph. Everything lives in **git** and goes through pull-request review — SQL gets real software engineering.
-- **Why "incremental" matters:** rebuilding a billion-row table daily is wasteful; an incremental model processes only new/changed rows, cutting cost and time dramatically.
-
-**At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Brings software-engineering discipline (version control, testing, documentation, DAG-based dependency management) to SQL transformations; the de facto standard (~46% adoption) with a rich package ecosystem (dbt Hub); runs in every major warehouse without infrastructure.
-- **Cons:** Primarily SQL-first — Python models exist but are limited and slower; doesn't self-schedule at production scale (requires Airflow/Dagster); lacks built-in data ingestion capability.
-- **Limitations:** Operates only on data already loaded into the warehouse — it cannot ingest or extract data from external sources; Python model support is less mature and slower than pure SQL models; `dbt run` is not designed for sub-minute scheduling latency.
-- **Unsupported / anti-patterns:** Data ingestion/EL pipelines (use Fivetran, Airbyte, or custom loaders); streaming or real-time transformations; orchestrating non-dbt tasks (use Airflow/Dagster for that layer); replacing warehouse-level permissions and access control.
+The rest of TIER 2 now walks these stages in order — starting with the **storage foundation** (the lakehouse), then the **engines** that process and serve it, then the cross-cutting layers that **orchestrate, provision, and observe** the whole thing.
 
 ---
 
@@ -610,6 +832,18 @@ GROUP BY order_date
 
 ---
 
+### Snowflake & Databricks — Cloud Warehouses & Lakehouses
+
+**Rentable analytics super-computers** where storage and compute scale (and bill) **separately** — you load data, fire huge analytical/BI queries, and pay only for the compute you use. *Snowflake* leads for SQL/BI teams; *Databricks* (Spark + Delta Lake + MLflow) leads for data engineering and ML — pick one ecosystem and go deep. Use them for large-scale analytics and dashboards without running infrastructure; reach for Postgres/Redis instead for small data or low-latency OLTP serving. **Senior gotcha:** idle or oversized warehouses silently burn credits — cost control is the real skill.
+
+---
+
+### dbt — Transforming Data with Just SQL
+
+**dbt brings software engineering to SQL.** You write `SELECT` models that reference each other with `ref()`; dbt works out the run order (a DAG), builds them **inside the warehouse**, and tests and documents every step — the **T** in **ELT**. It is the de facto transformation standard, always paired with a warehouse (Snowflake/BigQuery/Databricks). **Senior gotcha:** dbt only *transforms* data already loaded — it does not ingest it (that is Fivetran/Airbyte) and does not schedule itself at scale (that is Airflow/Dagster).
+
+---
+
 ### Apache Flink — True Real-Time Streaming
 
 > **Simple Explanation:** If Spark is a team that processes data in **batches** (every few seconds/minutes), Flink processes **each event the instant it arrives**. For fraud detection or live dashboards where milliseconds matter, Flink reacts event-by-event and remembers context ("this card was used in 3 countries in 5 minutes").
@@ -649,51 +883,56 @@ GROUP BY order_date
 
 ---
 
-### Airflow / Dagster / Prefect — Orchestration
+### Ray — Distributed Python for ML
 
-> **Simple Explanation:** An orchestrator is the **conductor of an orchestra**. Your data pipeline has many steps that must run in the right order ("load data → clean → aggregate → email report"). The orchestrator schedules them, runs them in the correct sequence, retries failures, and alerts you when something breaks.
+> **Official Definition:** Ray is an open-source distributed computing framework for Python that scales ML workloads — training, hyperparameter tuning, inference, and data processing — from a laptop to a multi-node cluster using a unified API.
 
-> **Official Definition:** Workflow orchestrators schedule and monitor **DAGs** (Directed Acyclic Graphs) of tasks, managing dependencies, retries, backfills, and observability for data pipelines. Apache **Airflow** is the incumbent leader; **Dagster** and **Prefect** are modern, increasingly popular alternatives.
+**How it works:** Ray provides two primitives: **remote functions** (tasks — stateless, parallelized automatically) and **actors** (stateful objects running on a remote process). On top of these primitives, the Ray AI Libraries add:
 
 ```
-   DAG = the recipe with ordering:
-        extract ──▶ clean ──▶ aggregate ──▶ load ──▶ notify
-                       └──────▶ validate ───┘
-   The orchestrator runs each box when its inputs are ready, retries on failure.
+   Ray Core (tasks + actors)
+     ├── Ray Train    — distributed training (PyTorch, XGBoost, Hugging Face)
+     ├── Ray Tune     — hyperparameter search (integrates with Optuna, HyperOpt)
+     ├── Ray Serve    — scalable model serving with request batching
+     └── Ray Data     — distributed data preprocessing (reads Parquet, Arrow)
 ```
 
-- **Use it when:** You have multi-step, scheduled data pipelines with dependencies (the daily/hourly "batch" world).
-- **Senior gotcha:** Airflow has the biggest ecosystem and community; Dagster brings stronger data-awareness, typing, and local testing. New projects increasingly evaluate Dagster/Prefect, but Airflow still dominates job postings.
+**When to use:**
+- Scaling a Python ML pipeline beyond one machine without Spark's JVM overhead
+- Parallel hyperparameter search (Ray Tune runs thousands of trials across a cluster)
+- Model inference serving that needs auto-scaling and batching
+- LLM serving pipelines (vLLM, Anyscale, and many LLM inference stacks run on Ray Serve)
 
-**Going deeper — the vocabulary and a real DAG:**
+**When not to use:** General-purpose big data ETL (Spark is more mature); simple batch jobs a single machine handles; non-Python stacks.
 
-| Term | Meaning |
-|---|---|
-| **DAG** | The whole pipeline — tasks + their dependency order. |
-| **Task / Operator** | One step (run SQL, call an API, move a file). Operators are pre-built task types. |
-| **Sensor** | A task that *waits* for something (a file to land, a time to pass). |
-| **Scheduler** | The brain that decides what runs when. |
-| **Executor** | *Where* tasks run (Local, Celery, Kubernetes). |
-| **Backfill** | Re-run the pipeline for past dates (e.g., reprocess all of last month). |
+**2026 status:** Ray is the default distributed compute layer for many modern LLM stacks. Anyscale (Ray's commercial backer) provides managed Ray clusters. Kubeflow and MLflow both integrate with Ray Train. It is increasingly used alongside Kubernetes (KubeRay operator deploys Ray clusters on K8s).
 
 ```python
-# Airflow: run daily, in dependency order, with automatic retries
-with DAG("daily_sales", schedule="@daily", catchup=False) as dag:
-    extract  = PythonOperator(task_id="extract",  python_callable=pull_data)
-    transform = PythonOperator(task_id="transform", python_callable=clean)
-    load     = PythonOperator(task_id="load",     python_callable=to_warehouse)
-    extract >> transform >> load        # the >> defines the order
+import ray
+ray.init()
+
+@ray.remote
+def train_fold(fold_id, config):
+    # runs on a separate worker process / node
+    return train_model(fold_id, config)
+
+# launch 8 training jobs in parallel across the cluster
+results = ray.get([train_fold.remote(i, config) for i in range(8)])
 ```
 
-- **What you get for free:** scheduling, **automatic retries** with backoff, alerting on failure, a UI showing each run's status, and **idempotent backfills**. Building this yourself with cron is where pipelines go to die.
-- **Idempotency is the golden rule:** design each task so re-running it produces the same result (e.g., overwrite a date-partition rather than append), so retries and backfills are safe.
-- **Dagster's twist:** it's **asset-centric** ("this pipeline produces *this table*") with built-in types, lineage, and easy local testing — increasingly chosen for new data platforms.
+**Interview soundbite:** "For distributed Python ML — parallel training, hyperparameter search, or LLM inference — Ray is the standard choice. It's the distributed layer under most modern LLM serving stacks."
 
 **At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Handles complex multi-step pipeline dependencies, retries, alerting, and backfills out of the box; Airflow has the largest ecosystem and job-posting footprint; Dagster offers strong data-awareness, asset lineage, and local testability; Prefect is lighter-weight with better developer ergonomics.
-- **Cons:** Airflow is heavy to self-host (scheduler + workers + DB + webserver) and YAML/Python DAG definitions can become sprawling; Dagster's asset model requires a learning curve shift; all three add infrastructure overhead vs. simple cron.
-- **Limitations:** Scheduling granularity is minutes, not seconds — orchestrators are not real-time event dispatchers; Airflow scheduler latency means tasks start with a lag (typically tens of seconds after trigger); none are data-processing engines — they call other systems to do the work.
-- **Unsupported / anti-patterns:** Sub-minute or event-driven low-latency triggering (use Kafka/Flink consumers directly); streaming pipelines; replacing the compute engine (orchestrators schedule work, they don't run transforms themselves).
+- **Pros:** Unified distributed Python API that scales seamlessly from a laptop to a multi-node cluster; Ray AI Libraries cover the full ML lifecycle (training, tuning, serving, data); Python-native without JVM overhead; the de facto distributed layer for LLM inference stacks (vLLM, Anyscale).
+- **Cons:** Python-centric — non-Python workloads are not a first-class use case; cluster operations and debugging distributed Ray programs is complex; object-store memory pressure can cause difficult-to-diagnose failures.
+- **Limitations:** Primarily Python — not suited for JVM or Go-heavy compute workloads; Ray's distributed object store can exhaust memory under heavy in-flight data; cluster observability and debugging is substantially harder than single-machine debugging.
+- **Unsupported / anti-patterns:** General-purpose big data ETL where Spark's maturity and fault tolerance are preferred; simple batch jobs that a single machine handles fine (overkill adds latency and complexity); non-Python stacks; use cases where Kubernetes + simple multiprocessing is sufficient.
+
+---
+
+### Airflow / Dagster / Prefect — Orchestration
+
+**The conductor of the data orchestra.** An orchestrator schedules a pipeline's many steps, runs them in dependency order (a **DAG**), **retries** failures with backoff, and alerts you when something breaks — everything cron cannot do safely. Use it for multi-step, scheduled batch pipelines. *Airflow* has the largest ecosystem and job-market footprint; *Dagster* and *Prefect* are modern, more data-aware, and easier to test locally. **Golden rule:** make every task **idempotent** so retries and backfills are always safe.
 
 ---
 
@@ -788,133 +1027,6 @@ OpenTelemetry is now the **de facto vendor-neutral standard** for instrumenting 
 - **Cons:** Single-node by default — Prometheus local TSDB is not horizontally scalable (requires Thanos/Mimir/VictoriaMetrics for HA and long-term retention); high-cardinality labels blow up in-memory storage and query performance; short-lived jobs need Pushgateway workaround.
 - **Limitations:** Prometheus stores metrics only — no native log or trace storage; local TSDB default retention is 15 days and not designed for multi-year time ranges without external storage backends; cardinality explosions from high-cardinality labels can OOM the process.
 - **Unsupported / anti-patterns:** High-cardinality event-level or log storage (use Loki/Elasticsearch); long-term retention out of the box without Thanos or Mimir; structured log querying or distributed tracing (those require separate systems even in a full OTel stack).
-
----
-
-### DuckDB — Single-Node Analytical Power
-
-> **Official Definition:** DuckDB is an in-process columnar OLAP database engine — "SQLite for analytics." It runs embedded inside your Python/R/Java process with no server, reads Parquet/CSV/JSON directly from disk or S3, and executes vectorized queries on datasets ranging from megabytes to hundreds of gigabytes on a single machine.
-
-**How it works:** DuckDB uses a vectorized query engine (processes data in columnar batches, not row-by-row), aggressive predicate pushdown into Parquet/Iceberg file reads, and parallel execution across all CPU cores. Queries that took minutes in pandas can run in seconds. It has zero external dependencies — just `pip install duckdb`.
-
-```python
-import duckdb
-# Query Parquet on S3 directly — no cluster, no server
-result = duckdb.sql("""
-    SELECT region, SUM(revenue)
-    FROM read_parquet('s3://bucket/sales/**/*.parquet')
-    WHERE year = 2026
-    GROUP BY region
-    ORDER BY 2 DESC
-""").df()
-```
-
-**When to use / when not:**
-
-| Use DuckDB | Use Spark instead |
-|---|---|
-| Data fits one large machine (< ~500 GB) | Multi-terabyte scale, distributed across cluster |
-| Ad-hoc exploration, notebooks, local ETL | Production pipelines requiring fault tolerance |
-| Fast SQL over Parquet/Iceberg files | Streaming or ML training on distributed data |
-| Replace pandas for analytical transforms | Multiple teams sharing a managed cluster |
-
-**2026 status:** DuckDB 1.x is stable and production-used at many data-stack companies. Integrated with Iceberg REST catalogs, MotherDuck (serverless managed DuckDB), and increasingly as a local query engine in dbt workflows. Rising fast as the "first tool to try before reaching for Spark."
-
-**Interview soundbite:** "For single-node analytics on files, DuckDB often delivers Spark-level speed without a cluster — I reach for it first and only add Spark when the data genuinely exceeds one machine's capacity."
-
-**At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Zero infrastructure — embedded in-process with no server or cluster; vectorized columnar engine delivers sub-second analytical queries on hundreds of GBs; reads Parquet/CSV/JSON/Iceberg directly from S3; zero-copy Arrow integration; ideal for notebooks, local ETL, and dbt local runs.
-- **Cons:** Single-node only — no cluster mode; single-writer concurrency (multiple concurrent writers are not supported); MotherDuck (managed) adds cost and network latency vs. fully local.
-- **Limitations:** No distributed multi-node processing — dataset ceiling is the memory and disk of one machine (practical ceiling ~500 GB–1 TB depending on query); concurrent write workloads are not supported; not designed for high-concurrency multi-user OLTP or serving.
-- **Unsupported / anti-patterns:** Distributed multi-node analytics at terabyte-plus scale (use Spark or ClickHouse); high-concurrency multi-user write workloads; OLTP row-level transactional operations.
-
----
-
-### ClickHouse — Real-Time Analytics at Scale
-
-> **Official Definition:** ClickHouse is an open-source columnar OLAP database management system designed for real-time analytics on event-driven data. Its MergeTree storage engine delivers sub-second aggregations over billions of rows with horizontal scalability.
-
-**How it works:** Data is stored column-by-column in compressed blocks (MergeTree family). Inserts are batched into small "parts" that merge asynchronously in the background (like LSM-trees for OLAP). At query time, only the columns referenced are decompressed and scanned — typical analytics queries touch < 5% of stored data. Primary key provides coarse range indexing; **skip indexes** (min-max, bloom filter, set) prune further.
-
-```
-   Insert stream ──▶  small parts on disk
-                            │  background MergeTree merge
-                            ▼
-   large sorted parts  ──▶  query scans only needed columns + skips blocks via indexes
-   Sub-second on billions of rows.
-```
-
-**Common use cases:**
-- Product analytics (Mixpanel/Amplitude-style event funnels at scale)
-- Observability backends (Signoz, HyperDX store traces/logs in ClickHouse)
-- Real-time reporting dashboards where Snowflake/BigQuery latency (seconds) is too slow
-- Time-series workloads (web logs, APM metrics)
-
-**When to use:** You need sub-second interactive queries on high-cardinality event data at billions-of-rows scale. **When not:** Highly relational OLTP workloads (no foreign keys, poor joins on large arbitrary tables), frequent single-row updates (use Postgres), or data < tens of millions of rows (Postgres or DuckDB is simpler).
-
-**2026 status:** ClickHouse Cloud is the managed offering. ClickHouse Inc. raised substantial funding; widely used as the analytics engine inside Cloudflare, Uber, and dozens of observability vendors.
-
-| | **ClickHouse** | **Snowflake/BigQuery** | **DuckDB** |
-|---|---|---|---|
-| Latency | < 1 second | 2–30 seconds | < 1 second |
-| Scale | Billions+ rows, multi-node | Petabytes, managed | < ~500 GB, single node |
-| Operation | Self-hosted or ClickHouse Cloud | Fully managed | Embedded, zero infra |
-| Best fit | Real-time dashboards, events | BI/reporting, SQL teams | Exploration, local ETL |
-
-**Interview soundbite:** "For real-time dashboards on event data where Snowflake's multi-second query time is too slow, ClickHouse's MergeTree engine is the standard answer — sub-second even at billions of rows."
-
-**At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Sub-second interactive analytics on billions of rows; MergeTree background merge + skip indexes prune data aggressively; horizontal scaling; widely adopted in observability and product analytics stacks; ClickHouse Cloud removes most ops burden.
-- **Cons:** UPDATE/DELETE are asynchronous heavy "mutations" — not suitable for frequent row-level changes; joins on large, arbitrary table pairs are weaker than specialized OLTP engines; schema design requires upfront thought (primary key and sort order are critical).
-- **Limitations:** UPDATE/DELETE execute as async mutations that rewrite parts — they are expensive and not suitable for OLTP mutation rates; cross-row ACID transactions are not fully supported historically (limited transactional guarantees); replication is eventually consistent; joins on non-co-located large tables are slower than Postgres or a dedicated OLTP engine.
-- **Unsupported / anti-patterns:** Transactional OLTP workloads requiring frequent row-level mutations or multi-statement ACID transactions; general-purpose relational querying with complex arbitrary joins; workloads where data volume is under tens of millions of rows (DuckDB or Postgres is simpler and sufficient).
-
----
-
-### Ray — Distributed Python for ML
-
-> **Official Definition:** Ray is an open-source distributed computing framework for Python that scales ML workloads — training, hyperparameter tuning, inference, and data processing — from a laptop to a multi-node cluster using a unified API.
-
-**How it works:** Ray provides two primitives: **remote functions** (tasks — stateless, parallelized automatically) and **actors** (stateful objects running on a remote process). On top of these primitives, the Ray AI Libraries add:
-
-```
-   Ray Core (tasks + actors)
-     ├── Ray Train    — distributed training (PyTorch, XGBoost, Hugging Face)
-     ├── Ray Tune     — hyperparameter search (integrates with Optuna, HyperOpt)
-     ├── Ray Serve    — scalable model serving with request batching
-     └── Ray Data     — distributed data preprocessing (reads Parquet, Arrow)
-```
-
-**When to use:**
-- Scaling a Python ML pipeline beyond one machine without Spark's JVM overhead
-- Parallel hyperparameter search (Ray Tune runs thousands of trials across a cluster)
-- Model inference serving that needs auto-scaling and batching
-- LLM serving pipelines (vLLM, Anyscale, and many LLM inference stacks run on Ray Serve)
-
-**When not to use:** General-purpose big data ETL (Spark is more mature); simple batch jobs a single machine handles; non-Python stacks.
-
-**2026 status:** Ray is the default distributed compute layer for many modern LLM stacks. Anyscale (Ray's commercial backer) provides managed Ray clusters. Kubeflow and MLflow both integrate with Ray Train. It is increasingly used alongside Kubernetes (KubeRay operator deploys Ray clusters on K8s).
-
-```python
-import ray
-ray.init()
-
-@ray.remote
-def train_fold(fold_id, config):
-    # runs on a separate worker process / node
-    return train_model(fold_id, config)
-
-# launch 8 training jobs in parallel across the cluster
-results = ray.get([train_fold.remote(i, config) for i in range(8)])
-```
-
-**Interview soundbite:** "For distributed Python ML — parallel training, hyperparameter search, or LLM inference — Ray is the standard choice. It's the distributed layer under most modern LLM serving stacks."
-
-**At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Unified distributed Python API that scales seamlessly from a laptop to a multi-node cluster; Ray AI Libraries cover the full ML lifecycle (training, tuning, serving, data); Python-native without JVM overhead; the de facto distributed layer for LLM inference stacks (vLLM, Anyscale).
-- **Cons:** Python-centric — non-Python workloads are not a first-class use case; cluster operations and debugging distributed Ray programs is complex; object-store memory pressure can cause difficult-to-diagnose failures.
-- **Limitations:** Primarily Python — not suited for JVM or Go-heavy compute workloads; Ray's distributed object store can exhaust memory under heavy in-flight data; cluster observability and debugging is substantially harder than single-machine debugging.
-- **Unsupported / anti-patterns:** General-purpose big data ETL where Spark's maturity and fault tolerance are preferred; simple batch jobs that a single machine handles fine (overkill adds latency and complexity); non-Python stacks; use cases where Kubernetes + simple multiprocessing is sufficient.
 
 ---
 
@@ -1152,18 +1264,19 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 | I need to... | Reach for | Not |
 |---|---|---|
 | Store users, orders, payments safely | **PostgreSQL** | Redis as source of truth |
+| Store flexible / nested JSON documents | **MongoDB** (or Atlas) | a rigid relational schema for fast-evolving data |
+| Globally-distributed managed NoSQL on Azure | **Cosmos DB** | self-managing Mongo replication across regions |
 | Make a slow read instant | **Redis / Valkey** (cache) | bigger DB box |
 | Move events between services reliably | **Kafka** | direct service calls |
 | Store huge files / datasets cheaply | **S3 / object storage** | a relational DB |
 | Crunch terabytes of data | **Spark** | pandas on one box |
-| Fast analytics on one big machine | **DuckDB** | Spark for < 500 GB |
-| Real-time sub-second event analytics | **ClickHouse** | Snowflake (too slow for interactive) |
 | React to events in milliseconds | **Flink** | batch Spark |
 | Run big analytical/BI queries | **Snowflake / Databricks** | Postgres at scale |
 | Transform data in the warehouse | **dbt** | hand-rolled SQL scripts |
 | Give a lake DB-like tables | **Iceberg / Delta** | raw Parquet alone |
 | Schedule multi-step pipelines | **Airflow / Dagster** | cron + hope |
-| Deploy & scale services | **Kubernetes + Docker** | manual servers |
+| Package an app to run anywhere | **Docker** | "works on my machine" |
+| Deploy & scale containers | **Kubernetes** | manual servers |
 | Provision cloud infra repeatably | **Terraform / OpenTofu** | console clicking |
 | Monitor & alert on production | **Prometheus + Grafana + OTel** | log-grepping |
 | Absorb massive writes, never go down | **Cassandra / ScyllaDB** | single Postgres |
@@ -1181,17 +1294,16 @@ You do not learn these all at once. A sensible path for a senior engineer:
 ```
    1. Docker + Kubernetes      ← everything runs here
    2. PostgreSQL (deeply)      ← the default datastore
+      └ MongoDB / Cosmos DB    ← when data is document-shaped or schema-flexible
    3. Cloud + S3 (object storage) ← the foundation everything sits on
    4. Redis / Valkey           ← the universal speed layer
    5. Kafka                    ← event-driven backbone (now KRaft, no ZooKeeper)
    6. Spark                    ← large-scale processing (+ AQE, Structured Streaming)
-   7. DuckDB                   ← fast single-node analytics; often replaces Spark for < 500 GB
-   8. Snowflake OR Databricks  ← pick ONE ecosystem, go deep
-   9. dbt + Iceberg/Delta      ← the modern transform + table layer
-  10. Flink                    ← when real-time becomes a requirement
-  11. Terraform + Prometheus/Grafana + OTel ← operate it all reliably
-  12. ClickHouse               ← when you need sub-second analytics on event data
-  13. Ray                      ← when ML workloads outgrow one machine
+   7. Snowflake OR Databricks  ← pick ONE ecosystem, go deep
+   8. dbt + Iceberg/Delta      ← the modern transform + table layer
+   9. Flink                    ← when real-time becomes a requirement
+  10. Terraform + Prometheus/Grafana + OTel ← operate it all reliably
+  11. Ray                      ← when ML workloads outgrow one machine
    ── Situational, on demand: Cassandra, Elasticsearch, gRPC/GraphQL
    ── Situational, AI context: pgvector → Qdrant/Milvus (vector search)
    ── Situational, growth: CockroachDB/Spanner (when Postgres writes max out)
@@ -1216,8 +1328,8 @@ When a system-design interviewer hears you casually and *correctly* place these 
 ## 33.10 Summary
 
 - Every tool maps to one of four jobs: **ingest, store, process, serve.** Place any new tool in that frame and it stops being scary.
-- **Tier 1 (learn first):** Kubernetes/Docker, Kafka, Redis/Valkey, PostgreSQL, Cloud+S3, Spark — you will meet these everywhere.
-- **Tier 2 (modern stack):** Snowflake/Databricks, dbt, Iceberg/Delta, Flink, Airflow, Terraform, Prometheus+Grafana, **DuckDB, ClickHouse, Ray**.
+- **Tier 1 (learn first):** Docker, Kubernetes, Kafka, Redis/Valkey, PostgreSQL, **MongoDB**, Cloud+S3, Spark — you will meet these everywhere.
+- **Tier 2 (modern stack):** Snowflake/Databricks, dbt, Iceberg/Delta, Flink, Airflow, Terraform, Prometheus+Grafana, **Ray**.
 - **Tier 3 (situational):** Cassandra/ScyllaDB, Elasticsearch, gRPC/GraphQL, **Vector DBs** (pgvector/Qdrant/Milvus), **Distributed SQL** (CockroachDB/Spanner/TiDB) — know *when*, learn *how* on demand.
 - **Tier 4 (legacy):** Hadoop — maintain/migrate only; don't invest for new skills.
 - **The 2025–2026 shifts:**
@@ -1225,8 +1337,59 @@ When a system-design interviewer hears you casually and *correctly* place these 
   - Kafka 4.0 removed ZooKeeper entirely (KRaft); Redpanda and WarpStream are credible alternatives.
   - Redis forked to **Valkey** (BSD) after the 2024 license change; Valkey is now the cloud default.
   - **OpenTelemetry graduated** as the vendor-neutral observability standard (traces + metrics + logs via OTel Collector).
-  - **DuckDB** became the default first tool for single-node analytics before reaching for Spark.
   - **Vector databases** became a standard component for any AI-powered feature (RAG, semantic search).
   - **Ray** is the default distributed Python layer in modern LLM stacks.
   - **Distributed SQL** (Spanner, CockroachDB, Aurora DSQL) matures as the upgrade path when Postgres writes saturate.
 - **Seniority = judgment.** The win is knowing which tool fits which problem and naming the tradeoffs — not memorizing all of them.
+
+---
+
+## Key Takeaways
+
+```
+DATA & INFRA ENGINEERING TOOLS — WHAT TO REMEMBER
+═══════════════════════════════════════════════════════════════
+
+THE MENTAL MODEL
+  • Every tool does one of four jobs: ingest, store,
+    process, serve. Frame any new tool that way.
+  • Pick by access pattern + tradeoff, not by hype.
+  • Seniority = naming which tool fits which problem.
+
+TIER 1 — LEARN FIRST (you meet these everywhere)
+  • Docker: package once, run anywhere; layer caching.
+  • Kubernetes: declarative orchestration, self-healing.
+  • Kafka: durable append-only log, the nervous system.
+  • Redis/Valkey: in-memory speed layer (cache, queues).
+  • PostgreSQL: the default DB; reach for it first.
+  • MongoDB/Cosmos: document/multi-model NoSQL.
+  • Cloud object storage (S3/GCS/Blob): the foundation.
+  • Spark: distributed batch heavy-lifting.
+
+TIER 2 — MODERN DATA STACK
+  • Iceberg/Delta: open table formats on object storage.
+  • Snowflake/Databricks: warehouse + lakehouse.
+  • dbt: transform data with plain SQL.
+  • Flink: true low-latency stream processing.
+  • Ray: distributed Python for ML/LLM workloads.
+  • Airflow/Dagster/Prefect: orchestration (DAGs).
+  • Terraform: infrastructure as code.
+  • Prometheus + Grafana: metrics + dashboards.
+
+TIER 3 — SITUATIONAL (know WHEN, learn HOW on demand)
+  • Cassandra/ScyllaDB: write-heavy, always-on.
+  • Elasticsearch/OpenSearch: search + log analytics.
+  • gRPC/GraphQL: beyond REST (perf / flexible queries).
+  • Vector DBs (pgvector/Qdrant/Milvus): AI similarity.
+  • Distributed SQL (CockroachDB/Spanner/TiDB): scale-out.
+
+TIER 4 — LEGACY
+  • Hadoop: maintain/migrate only; don't invest new.
+
+2025–2026 SHIFTS
+  • Hadoop → lakehouse (S3 + Iceberg won the format war).
+  • Kafka 4.0 removed ZooKeeper (KRaft).
+  • Redis → Valkey (BSD) after the license change.
+  • OpenTelemetry graduated as the observability standard.
+  • Vector DBs are now standard for AI features (RAG).
+```

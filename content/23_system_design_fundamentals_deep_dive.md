@@ -947,7 +947,7 @@ query {
 ### Schema, resolvers, and the N+1 trap
 
 - **Schema** — the typed menu: `type`s, plus `Query` (reads), `Mutation` (writes), and `Subscription` (live updates).
-- **Resolvers** — one function per field. A naive `user.posts` resolver runs *one DB query per user* — the **N+1 problem**. Fix it with **DataLoader**, which batches and dedupes all the little lookups within a single request. (General N+1 problem: Ch 24, §7.10.)
+- **Resolvers** — one function per field. A naive `user.posts` resolver runs *one DB query per user* — the **N+1 problem**. Fix it with **DataLoader**, which batches and dedupes all the little lookups within a single request. (General N+1 problem: Ch 24, §7.9.)
 
 ### Subscriptions — real-time
 
@@ -1615,7 +1615,7 @@ Often confused; they have very different fixes.
 
 | Problem | What happens | Defence |
 |---------|--------------|---------|
-| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (Ch 24, §9.17) to reject impossible keys before the cache |
+| **Penetration** | Many requests for keys that *don't exist* miss cache and hit DB | Cache the negative result with short TTL, or use a **Bloom filter** (Ch 24, §9.15) to reject impossible keys before the cache |
 | **Breakdown / Stampede** | A *single hot key* expires; thousands of concurrent readers all miss simultaneously | Single-flight (mutex), probabilistic early expiry, never-expire + background refresh |
 | **Avalanche** | *Many keys* expire around the same time (or the cache cluster restarts cold) | Randomize TTLs (±20 %), pre-warm cache on startup, tiered caches |
 
@@ -1773,6 +1773,58 @@ The mental shift: the "edge" is no longer just a cache — it's a programmable r
 ```
 
 Anycast is the secret sauce that lets Cloudflare absorb 100 Tbps DDoS attacks — the traffic is split geographically by routing physics, not by your code. Used by every modern CDN, public DNS resolver, and large cloud LBs.
+
+---
+
+## Key Takeaways
+
+```
+SYSTEM DESIGN PART 1 — FOUNDATIONS & PROTOCOLS
+═══════════════════════════════════════════════════════════════
+
+CORE CONCEPTS
+  • Three forces shape every system: scalability,
+    availability, performance — trade them, don't max all.
+  • Scale out (horizontal) beats scale up past one box.
+  • Availability ≠ reliability ≠ durability; nines cost $$.
+  • Latency = one request; throughput = many per second.
+  • Little's Law: concurrency = arrival rate × latency.
+  • Tail (p99) dominates user-facing latency; fan-out
+    amplifies it — design for the slow request.
+  • CAP/PACELC: under partition pick C or A; else latency
+    vs consistency.
+
+NETWORKING & PROTOCOLS
+  • TCP = reliable, ordered, congestion-controlled;
+    UDP = stateless, lossy, fast (DNS, video, QUIC).
+  • HTTP/2 multiplexes; HTTP/3 runs on QUIC/UDP, no
+    head-of-line blocking, faster handshake.
+  • TLS adds round-trips; HTTP/3 folds them in (0/1-RTT).
+  • DNS is the resolution layer and a load-balancing tool.
+  • Use Cache-Control/ETag for HTTP caching correctness.
+
+API STYLES
+  • REST: simple, cacheable, resource-oriented.
+  • gRPC: Protobuf + HTTP/2, deadlines, streaming — internal.
+  • GraphQL: flexible queries, but N+1 and caching pain.
+  • WebSockets/SSE/long-poll for server push & realtime.
+  • Idempotency keys make retries safe; version your APIs.
+
+LOAD BALANCING & RESILIENCE
+  • L4 = fast transport routing; L7 = content-aware routing.
+  • Algorithms: round-robin, least-conn, consistent hash.
+  • Rate limit (token/leaky bucket) to protect backends.
+  • Circuit breaker + bulkhead stop cascading failures.
+
+CACHING & CDN
+  • Four patterns: cache-aside, read/write-through,
+    write-behind. Cache-aside is the default.
+  • Eviction: LRU/LFU/W-TinyLFU; pick by access pattern.
+  • Guard stampedes with single-flight + jittered TTLs.
+  • Cache invalidation is the hard problem — TTL + events.
+  • CDN serves static/edge content near users (push/pull);
+    Anycast routes users to the nearest POP.
+```
 
 ---
 

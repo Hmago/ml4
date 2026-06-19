@@ -1390,4 +1390,48 @@ open("anki_import.txt", "w").write(resp.content[0].text)
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  BRAIN TRAINING — HOW TO LEARN & STAY SHARP                        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HOW MEMORY WORKS                                                  ║
+║    • Sensory → working (~4 chunks) → long-term                     ║
+║    • Forgetting curve is steep; review beats re-reading            ║
+║    • Neuroplasticity: skill changes grey matter (use it)           ║
+╠════════════════════════════════════════════════════════════════════╣
+║  THE BIG SIX TECHNIQUES (high utility first)                       ║
+║    • Active recall: test yourself, don't re-read                   ║
+║    • Spaced repetition: review at growing intervals (FSRS)         ║
+║    • Feynman: teach it simply to expose gaps                       ║
+║    • Interleaving: mix topics, don't block                         ║
+║    • Elaborative interrogation: keep asking 'why?'                 ║
+║    • Deliberate practice: hard, focused, with feedback             ║
+╠════════════════════════════════════════════════════════════════════╣
+║  DESIRABLE DIFFICULTY & LOAD                                       ║
+║    • Effortful retrieval = durable learning                        ║
+║    • Manage intrinsic load; cut extraneous; grow germane           ║
+║    • Chunk + dual coding (words + visuals)                         ║
+╠════════════════════════════════════════════════════════════════════╣
+║  PHYSICAL FOUNDATION                                               ║
+║    • Sleep is non-negotiable — it consolidates memory              ║
+║    • Aerobic exercise is the #1 cognitive enhancer                 ║
+║    • Nutrition + hydration fuel focus                              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  FOCUS, HABITS & MOOD                                              ║
+║    • Pomodoro / deep work; context-switching has a tax             ║
+║    • Implementation intentions: 'when X, I will Y'                 ║
+║    • Identity-based habits (cue → routine → reward)                ║
+║    • Low mood: behavioural activation; act, then motivate          ║
+║    • 3+ weeks of anhedonia/poor sleep → see a professional         ║
+╠════════════════════════════════════════════════════════════════════╣
+║  2026 AI STACK & MYTHS                                             ║
+║    • Use AI as a Socratic tutor, not an answer vending machine     ║
+║    • No 'learning styles'; 10k hours needs deliberate practice     ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Previous:** [Chapter 04 — Aptitude & Mental Math](04_aptitude_mental_math.md) &middot; **Next:** [Chapter 06 — Math Fundamentals](06_math_fundamentals.md) &middot; **See also:** [★ DL & LLMs Playbook](00p_dl_llm_playbook.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)

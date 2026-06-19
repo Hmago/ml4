@@ -1320,3 +1320,39 @@ Step 4: Project onto PC1:
 | "What's wrong with using test data for validation?" | Data leakage | "Optimizing hyperparameters on test data leaks info. Use a separate validation set. Test set is for FINAL evaluation only" |
 | "Should you remove all outliers?" | Not always — they could be signal | "Investigate first. Outliers might be errors (remove) or valuable rare events like fraud (keep). Domain context matters" |
 | "Why not train forever?" | Overfitting | "Monitor validation loss. Use early stopping. Past the sweet spot, the model memorizes training noise" |
+
+---
+
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  QUICK REFERENCE — TOP REMINDERS                                   ║
+╠════════════════════════════════════════════════════════════════════╣
+║  HOW TO USE THIS SHEET:                                            ║
+║  • Skim sections 1–17 the night before; drill formula card         ║
+║  • A recall trigger, not a place for first-time learning           ║
+║  • Map every concept to a Google product (section 24)              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  FORMULAS TO KNOW COLD:                                            ║
+║  • Attention = softmax(QK^T/√d_k)·V   (section 9)                  ║
+║  • Gradient descent: θ = θ − α·∇J(θ); Adam = momentum+RMSProp      ║
+║  • Backprop = forward → loss → backward → update                   ║
+║  • Precision / Recall / F1 read off the confusion matrix           ║
+╠════════════════════════════════════════════════════════════════════╣
+║  DECISION DEFAULTS:                                                ║
+║  • Tabular → XGBoost; images/text/large data → deep learning       ║
+║  • Imbalanced data → F1 / AUC-PR, never plain accuracy             ║
+║  • L1 → sparsity, L2 → shrinkage, Dropout → NN ensemble            ║
+║  • Standardize features; fit scalers on train only (no leak)       ║
+╠════════════════════════════════════════════════════════════════════╣
+║  TRAPS (section 25):                                               ║
+║  • '99% accuracy' → first ask the class distribution               ║
+║  • Correlation ≠ causation; more data fixes variance not bias      ║
+║  • Never tune on the test set; early-stop to avoid overfit         ║
+╠════════════════════════════════════════════════════════════════════╣
+║  INTERVIEW DAY:                                                    ║
+║  • State assumptions, pick metrics before the model                ║
+║  • Discuss tradeoffs; tie answers to scale + business impact       ║
+╚════════════════════════════════════════════════════════════════════╝
+```

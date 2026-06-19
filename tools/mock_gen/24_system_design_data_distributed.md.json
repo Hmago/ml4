@@ -658,5 +658,29 @@
     ],
     "answer": 3,
     "explanation": "CRUD stores current state and loses history. Event sourcing appends every change (OrderPlaced, ItemShipped) and rebuilds current state by replaying events. Benefits: complete audit trail, temporal queries, and rebuilding read models from scratch. Pairs naturally with CQRS. Trade-off: more complex reads and a potentially long replay on startup."
+  },
+  {
+    "q": "The Two Generals problem proves that, over an unreliable network, it is impossible to:",
+    "options": ["guarantee that a message was received AND that the sender knows it was received — which is why exactly-once delivery is impossible", "elect a single stable leader among an odd-sized cluster of nodes", "detect that a remote node has crashed within any bounded amount of time", "achieve linearizable reads across replicas without a synchronized global clock"],
+    "answer": 0,
+    "explanation": "No finite exchange of acknowledgments removes the final uncertainty about delivery. The practical fallout: exactly-once delivery is unachievable, so systems use at-least-once plus idempotency (or at-most-once with accepted loss). Byzantine Generals adds lying nodes, needing 3f+1 to tolerate f traitors."
+  },
+  {
+    "q": "A team needs cheap, web-scale storage for user-uploaded images and video, reachable from anywhere. The chapter's default recommendation is:",
+    "options": ["Block storage such as AWS EBS, chosen for its very low per-operation latency", "A relational database, storing each media file inside a large BLOB column", "A POSIX-compatible file system such as NFS or EFS for lockable shared access", "Object storage such as S3, GCS, or Azure Blob — cheapest, ~11-nines durable, near-infinite scale"],
+    "answer": 3,
+    "explanation": "Object storage (key -> blob + metadata) is the default for new systems: near-infinite scale, very high durability, strong read-after-write since 2020, reachable anywhere. Block storage fits DB volumes and VMs (low latency, not shared); file storage fits legacy or shared-codebase use with POSIX semantics."
+  },
+  {
+    "q": "A 'lakehouse' (e.g., Databricks, Apache Iceberg, Delta Lake) is best described as:",
+    "options": ["a managed in-memory cache layer placed in front of a traditional data warehouse", "warehouse-style schema management over cheap object storage in open table formats, serving both BI and ML", "a data lake that deliberately forbids SQL access in order to enforce schema-on-read", "a proprietary columnar warehouse that cannot ingest or store raw, unstructured event data"],
+    "answer": 1,
+    "explanation": "A lake is schema-on-read on cheap object storage (great for ML/exploration); a warehouse is schema-on-write on proprietary columnar storage (great for BI/SQL). The lakehouse combines them — schema management and open formats (Iceberg/Delta) on an object store — supporting both workloads."
+  },
+  {
+    "q": "Within the Saga pattern, choreography and orchestration differ in that:",
+    "options": ["choreography relies on two-phase commit, whereas orchestration relies on compensating transactions to undo steps", "orchestration requires every saga step to be strictly read-only, whereas choreography does not", "in choreography each service reacts to events (loose coupling, harder to trace); in orchestration a central coordinator drives each step (visible flow, but a coupling point)", "choreography can run only within one database, whereas orchestration coordinates only across separate microservices"],
+    "answer": 2,
+    "explanation": "Choreography is event-driven with no central truth — flexible but the emergent 'who ran what?' is hard to debug. Orchestration uses an engine (Temporal, Cadence, AWS Step Functions, Camunda) that explicitly calls each service and tracks state, at the cost of a central coupling point. Both still use compensating transactions to undo committed steps."
   }
 ]

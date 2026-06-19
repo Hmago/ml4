@@ -31,7 +31,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 01 | Google AI Engineer — Strategy Guide | ★★★ | [01_google_ai_engineer_strategy.md](content/01_google_ai_engineer_strategy.md) | ~2 hrs | All Levels |
 | 02 | Behavioral Interview (Googleyness & Leadership) | ★★★ | [02_behavioral_interview.md](content/02_behavioral_interview.md) | ~2.5 hrs | All Levels |
-| 03 | Staying Relevant in the AI Era | ★ | [03_staying_relevant_ai_era.md](content/03_staying_relevant_ai_era.md) | ~1.25 hrs | All Levels |
+| 03 | Staying Relevant in the AI Era | ★ | [03_staying_relevant_ai_era.md](content/03_staying_relevant_ai_era.md) | ~1.5 hrs | All Levels |
 
 ### Aptitude & Brain Training
 
@@ -77,11 +77,11 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 21 | OO Design, SOLID & Design Patterns (Java) | ★★ | [21_design_fundamentals.md](content/21_design_fundamentals.md) | ~2.5 hrs | Intermediate-Advanced |
-| 22 | Data & Infra Engineering Tools (Kafka, Redis, Spark, K8s…) | ★★ | [22_engineering_tools.md](content/22_engineering_tools.md) | ~2 hrs | Intermediate |
+| 22 | Data & Infra Engineering Tools (Docker, K8s, Kafka, Redis, Spark…) | ★★ | [22_engineering_tools.md](content/22_engineering_tools.md) | ~5.5 hrs | Intermediate |
 | 23 | System Design — Part 1: Foundations & Protocols (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) | ★★★ | [23_system_design_fundamentals_deep_dive.md](content/23_system_design_fundamentals_deep_dive.md) | ~3 hrs | Intermediate-Advanced |
 | 24 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage) | ★★★ | [24_system_design_data_distributed.md](content/24_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |
 | 25 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, Instagram) | ★★★ | [25_system_design_operations_case_studies.md](content/25_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
-| 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~5.75 hrs | Intermediate-Advanced |
+| 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~1.5 hrs | Intermediate-Advanced |
 | | **System Design Total** | | | **~23.25 hrs** | |
 
 ### Practical & Infrastructure
@@ -302,7 +302,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 21 (OO Design — SOLID, patterns) →
   Ch 22 (Engineering Tools — Kafka/Redis/K8s) →
   Ch 23 → Ch 24 → Ch 25 (Generic System Design, 3 parts) →
-  Ch 26 (ML System Design — 7 full designs)
+  Ch 26 (ML System Design — the StreamFlix playbook)
   For experienced engineers focusing on design rounds.
   Prerequisite: ML fundamentals (Track 1 or equivalent).
 

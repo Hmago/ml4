@@ -358,5 +358,29 @@
     "options": ["Below 100 labeled samples — universal approximation guarantees DL can generalize even with minimal data", "Below 500 samples — dropout and data augmentation make DL as data-efficient as any method", "At exactly 1,000 samples — the minimum size for a well-calibrated softmax output layer", "In the 1,000–10,000 sample range — where transfer learning can make DL viable and performance starts improving"],
     "answer": 3,
     "explanation": "The chapter's table: < 1K → traditional ML almost always; 1K–10K → either, transfer learning can make DL viable; 10K–1M → both competitive, DL starts to pull ahead; > 1M → DL's sweet spot. DL's data-hungry nature makes it less reliable than tree-based methods on truly small datasets."
+  },
+  {
+    "q": "In a neuron's pre-activation z = (weighted sum of inputs) + b, removing the bias term b forces what constraint on a single neuron?",
+    "options": ["Its decision boundary must pass through the origin — an all-zero input always yields z = 0", "Its activation function is forced to become purely linear in the inputs", "All of its input weights are constrained to be non-negative values", "It can no longer propagate any gradient during backpropagation"],
+    "answer": 0,
+    "explanation": "The bias is a learnable offset that shifts the weighted sum. Without it, when every input is 0 the pre-activation is exactly 0, pinning the decision boundary to the origin and removing a degree of freedom the network often needs."
+  },
+  {
+    "q": "A hidden layer has weights W = [[0.5, -0.5], [1.0, 1.0]], bias b = [0, -1], and ReLU activation. For input x = [1, 2], the hidden-layer output equals:",
+    "options": ["[-0.5, 2.0] — the pre-activations before ReLU is applied", "[0, 2.0]", "[0.5, 2.0]", "[0, 3.0]"],
+    "answer": 1,
+    "explanation": "z = Wx + b = [0.5(1) - 0.5(2), 1(1) + 1(2)] + [0, -1] = [-0.5, 2.0]. ReLU([-0.5, 2.0]) = [0, 2.0]. The first neuron's negative pre-activation is clipped to 0 — a dead contribution for this input."
+  },
+  {
+    "q": "A ReLU neuron receives only negative pre-activations across the entire dataset, so it always outputs 0 and passes no gradient. This failure mode and its standard fix are:",
+    "options": ["exploding gradients; fixed by clipping the gradient norm to a fixed maximum each update step", "vanishing gradients; fixed by inserting a batch-normalization layer before the activation", "the dying ReLU problem; fixed by Leaky ReLU, which keeps a small slope for negative inputs", "mode collapse; fixed by switching the loss to a Wasserstein objective during training"],
+    "answer": 2,
+    "explanation": "A neuron stuck in ReLU's flat zero region cannot recover, because its gradient there is 0. Leaky ReLU (f(z) = alpha*z for z <= 0, with alpha around 0.01) lets a small gradient through so the neuron stays trainable."
+  },
+  {
+    "q": "In the update w <- w - alpha*(dL/dw), the direction given by the negative gradient -(dL/dw) points:",
+    "options": ["uphill, toward configurations of higher loss", "downhill, in the direction that locally decreases the loss the fastest", "parallel to the contour lines of constant loss value", "directly at the global minimum of the loss, regardless of the local landscape shape"],
+    "answer": 1,
+    "explanation": "The negative gradient is the steepest-descent direction at the current point — like sensing which way a foggy hillside slopes and stepping downward. It targets the local downhill, not necessarily the global minimum."
   }
 ]

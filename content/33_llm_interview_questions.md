@@ -3936,4 +3936,40 @@ Constrained decoding solves this by restricting which tokens the model is allowe
 
 ---
 
+## Key Takeaways
+
+```
+╔════════════════════════════════════════════════════════════════════╗
+║  LLM INTERVIEW Q&A — RECURRING THEMES                              ║
+╠════════════════════════════════════════════════════════════════════╣
+║  ARCHITECTURE:                                                     ║
+║  • Decoder-only Transformer; attention = softmax(QK^T/√d)·V        ║
+║  • Tokenization (BPE), positional encoding (RoPE), KV cache        ║
+╠════════════════════════════════════════════════════════════════════╣
+║  TRAINING PIPELINE:                                                ║
+║  • Pre-train → SFT → RLHF/DPO for alignment                        ║
+║  • LoRA/QLoRA for cheap fine-tuning; Chinchilla scaling            ║
+╠════════════════════════════════════════════════════════════════════╣
+║  PROMPTING & RAG:                                                  ║
+║  • Few-shot, chain-of-thought, in-context learning                 ║
+║  • RAG = retrieve → rerank → generate; cuts hallucination          ║
+║  • Embeddings + vector DB for semantic retrieval                   ║
+╠════════════════════════════════════════════════════════════════════╣
+║  INFERENCE & COST:                                                 ║
+║  • Quantization (INT4/8), batching, speculative decoding           ║
+║  • KV cache + Flash Attention cut latency and memory               ║
+║  • Reason explicitly about cost, latency, and scale                ║
+╠════════════════════════════════════════════════════════════════════╣
+║  EVAL & SAFETY:                                                    ║
+║  • Perplexity → MMLU → Chatbot Arena → LLM-as-judge                ║
+║  • Address hallucination, jailbreaks, alignment, failures          ║
+╠════════════════════════════════════════════════════════════════════╣
+║  DESIGN APPROACH:                                                  ║
+║  • Start simple (RAG + API); add fine-tuning only if needed        ║
+║  • Explain tradeoffs honestly; follow recent developments          ║
+╚════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 **Back to Start:** [README — Table of Contents](../README.md)

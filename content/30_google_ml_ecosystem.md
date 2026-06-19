@@ -1622,4 +1622,50 @@ Scaling laws discovered the same pattern for AI: as you make models bigger, trai
 
 ---
 
+## Key Takeaways
+
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║  GOOGLE ML ECOSYSTEM — WHAT TO REMEMBER                              ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  TPUs (custom silicon)                                               ║
+║  • Systolic arrays: data flows through a grid of MAC units —        ║
+║    one load, many reuses; ideal for big dense matmuls               ║
+║  • BF16: same exponent range as FP32, fewer mantissa bits →         ║
+║    stable training without loss scaling                             ║
+║  • HBM gives huge memory bandwidth; pods link many chips via        ║
+║    fast interconnect into one supercomputer                         ║
+║  • Use TPUs for large transformers / big batches; GPUs for          ║
+║    flexible, dynamic, or smaller workloads                          ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  JAX (functional, composable transforms)                            ║
+║  • jit  → XLA-compile; slow first call, then 10–100x faster         ║
+║  • vmap → auto-vectorize over a batch axis                          ║
+║  • pmap → parallelize across devices (multi-TPU) in one line        ║
+║  • grad → exact autodiff; transforms compose: jit(vmap(grad(f)))    ║
+║  • Pure functions + immutable arrays; explicit PRNG keys            ║
+║  • Ecosystem: Flax (models), Optax (optimizers)                     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  TensorFlow / Keras                                                  ║
+║  • Keras = high-level API: define → compile → fit → predict         ║
+║  • tf.data builds parallel input pipelines (prefetch hides I/O)     ║
+║  • SavedModel packages graph+weights; TFLite for mobile/edge        ║
+║  • TF = production/deploy, JAX = research/scale, PyTorch = flex     ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Vertex AI (managed ML platform)                                    ║
+║  • Pipelines orchestrate reproducible train→deploy workflows        ║
+║  • Feature Store: consistent features for train + serving           ║
+║  • Endpoints serve models w/ autoscaling; Registry versions them    ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Key papers                                                         ║
+║  • Transformer: attention replaces recurrence (2017)                ║
+║  • BERT: bidirectional pretraining; T5: all tasks as text→text      ║
+║  • PaLM/Gemini: frontier scale + multimodality                      ║
+║  • Wide & Deep + YouTube DNN: production recommenders                ║
+║  • Scaling laws: loss falls predictably with params/data/compute    ║
+╚══════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
 *End of Chapter 30 — Google's ML Ecosystem*

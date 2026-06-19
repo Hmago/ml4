@@ -87,6 +87,7 @@
         }
       ],
       "icon": "build/icon.ico",
+      "publisherName": "Harshit Mago",
       "artifactName": "${productName}-${version}-${arch}-Setup.${ext}"
     },
     "nsis": {

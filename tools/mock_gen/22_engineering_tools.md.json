@@ -264,17 +264,6 @@
     "explanation": "Each unique label-value combination creates a separate time series in memory. user_id can have millions of unique values creating millions of seriesâ€”a cardinality explosion that can OOM Prometheus. Labels must have bounded cardinality: status codes, regions, endpointsâ€”never user IDs."
   },
   {
-    "q": "What is DuckDB practical upper bound for single-node analytics, and what replaces it at larger scale?",
-    "options": [
-      "DuckDB handles up to 50 GB reliably; beyond that threshold ClickHouse is always the correct architectural replacement regardless of whether the workload is interactive or batch-oriented",
-      "DuckDB handles datasets up to roughly 500 GB-1 TB on a single large machine; beyond that distributed engines like Apache Spark are needed because DuckDB has no cluster mode",
-      "DuckDB handles up to 1 TB on any machine by default; only beyond 1 TB should the team consider migrating to a managed cloud warehouse like Snowflake or Databricks",
-      "DuckDB handles up to 100 GB before performance degrades; above that the team should rewrite all pipelines in pandas on a high-memory VM instance with enough RAM to hold the full dataset"
-    ],
-    "answer": 1,
-    "explanation": "DuckDB is single-node with no cluster modeâ€”its ceiling is one machine memory and disk (practical limit ~500 GB-1 TB). For multi-terabyte distributed workloads Spark is appropriate. ClickHouse is better for sub-second interactive queries at billions of rows across multiple nodes."
-  },
-  {
     "q": "In Cassandra, why is the choice of partition key the most critical data modeling decision?",
     "options": [
       "The partition key determines on-disk sort order of rows within a partition so a poor choice results in slow range scans requiring full partition reads instead of efficient index seeks",
@@ -484,17 +473,6 @@
     "explanation": "Iceberg stores metadata as JSON and Avro files in S3â€”reads can take seconds at scale (thousands of LIST calls). DuckLake (2025) stores the same logical metadata in a SQL database, making metadata operations sub-millisecond. Data still lives in Parquet in S3; only the catalog layer changes."
   },
   {
-    "q": "Why do ClickHouse UPDATE and DELETE operations behave differently from standard SQL databases?",
-    "options": [
-      "ClickHouse processes every UPDATE and DELETE synchronously on the primary replica before propagating changes asynchronously to replicas causing a brief read-your-writes inconsistency window",
-      "ClickHouse disables UPDATE and DELETE on tables with more than 1 billion rows returning an error; only INSERT and SELECT operations are supported on large ClickHouse tables for performance reasons",
-      "ClickHouse mutations (ALTER TABLE UPDATE/DELETE) are asynchronous background operations that rewrite affected parts on disk rather than performing in-place updates enabling high-throughput INSERT without blocking",
-      "ClickHouse translates UPDATE and DELETE statements into standard Merge-Tree compaction operations that execute during off-peak hours configured via a maintenance window cron schedule"
-    ],
-    "answer": 2,
-    "explanation": "ClickHouse is optimized for high-throughput inserts and analytical reads. UPDATEs and DELETEs are mutationsâ€”they schedule a background part-rewrite rather than in-place row modification. This means they complete eventually, not immediately. For CDC-heavy use cases, Iceberg or a transactional DBMS is more appropriate."
-  },
-  {
     "q": "What property makes Kubernetes StatefulSets the correct choice for databases versus Deployments?",
     "options": [
       "StatefulSets enforce a hard limit of one replica at a time preventing accidental multi-writer scenarios that would corrupt database state through split-brain concurrent writes to the same storage volume",
@@ -583,17 +561,6 @@
     "explanation": "The OTel Collector decouples telemetry generation from backend storage. Apps emit OTLP; the Collector fans out to Prometheus, Jaeger, Datadogâ€”or any combination. The CNCF graduation (2026) means it is the de-facto standard. Changing observability backend only requires reconfiguring the Collector, not re-instrumenting all services."
   },
   {
-    "q": "What happens during a ClickHouse background merge, and why does it matter for query performance?",
-    "options": [
-      "ClickHouse merges aggregate multiple SELECT query result sets from concurrent readers into a unified sorted result buffer improving query parallelism and eliminating redundant disk reads for the same column ranges",
-      "ClickHouse merges rebalance data across shards redistributing rows to ensure every shard holds an equal row count improving JOIN symmetry and preventing storage hotspots on individual cluster nodes",
-      "ClickHouse merges compress newly inserted column blocks in the background combining them with older data files and rebuilding skip indexes enabling faster future reads without blocking active write throughput",
-      "ClickHouse merges smaller part files written by INSERT batches into larger sorted parts in the background, maintaining the MergeTree sorted order and compressing data into fewer files for efficient range scans"
-    ],
-    "answer": 3,
-    "explanation": "ClickHouse MergeTree INSERTs create small part files immediately. Background merges combine them into larger sorted parts (LSM-like), maintaining sort order and reducing file count. Without merges, query planners face too many small files and poor column compression ratios. Merges are what keep ClickHouse fast over time."
-  },
-  {
     "q": "How does Elasticsearch full-text search work at its core?",
     "options": [
       "Elasticsearch stores each document as a dense vector representation generated by a built-in BERT model and retrieves documents using approximate nearest-neighbor cosine similarity at query time",
@@ -658,5 +625,38 @@
     ],
     "answer": 3,
     "explanation": "RED method: Rate (how many requests/sec), Errors (what fraction fail), Duration (how long do they take). Introduced by Tom Wilkie for microservices. USE method (Utilization, Saturation, Errors) applies to infrastructure resources like CPU and disks. RED focuses on user-visible service behavior."
+  },
+  {
+    "q": "In MongoDB (or Cosmos DB), which modeling decision is the most consequential and hardest to reverse?",
+    "options": [
+      "Whether to store timestamps as ISODate objects or epoch-millisecond integers, because the wrong representation silently disables every range query, sort, and time-based index on the entire collection",
+      "The shard key (partition key in Cosmos DB): a low-cardinality or monotonically-increasing key creates a hot partition that caps throughput and is painful to change later",
+      "The name chosen for the _id field, because MongoDB cannot build a secondary index on any document whose primary key is not literally named _id",
+      "Whether to deploy a 3-node or 5-node replica set, because the node count is fixed at cluster creation and determines the maximum allowed document size"
+    ],
+    "answer": 1,
+    "explanation": "The shard/partition key governs how data and load are distributed. A poor choice - low cardinality, or monotonically increasing like a timestamp or sequential id - concentrates traffic on one partition (a hot partition), capping throughput, and changing it later usually means a full data migration. Embed-vs-reference matters too, but the key is the costliest to get wrong."
+  },
+  {
+    "q": "Azure Cosmos DB exposes five consistency levels. Which statement is correct about the trade-off and the common default?",
+    "options": [
+      "Strong is the default, because a globally-distributed database cannot operate safely below linearizable consistency, and weaker levels exist only to support legacy single-region applications",
+      "Eventual is the default and the only level that works across regions; the other four apply solely to single-region accounts and silently degrade to Eventual once geo-replication is switched on",
+      "Session is the common default: it guarantees read-your-own-writes within a client session while costing less latency and fewer Request Units than Strong or Bounded Staleness",
+      "The five levels are only billing tiers; all of them provide identical linearizable guarantees and charge the same Request Units per operation regardless of which one is selected"
+    ],
+    "answer": 2,
+    "explanation": "Cosmos offers Strong, Bounded Staleness, Session, Consistent Prefix, and Eventual. Stronger consistency costs more latency and Request Units. Session (read-your-own-writes per client session) is the pragmatic default for most apps. Throughput and throttling (HTTP 429) are governed by provisioned Request Units (RU/s)."
+  },
+  {
+    "q": "In the worked example, one 'Buy' event forks into a real-time lane and a batch lane (a Lambda-style design). What is the point of running both?",
+    "options": [
+      "The batch lane is a hot standby that runs only when the streaming lane crashes, so the two never produce results at the same time under normal operation",
+      "The real-time lane handles all writes and the batch lane handles all reads, splitting the workload purely for connection-pool and CPU isolation between access patterns",
+      "Two lanes are mandatory because Kafka cannot deliver the same message to more than one consumer group, so each lane must keep its own separate physical copy of the stream",
+      "The real-time lane (Kafka -> Flink -> Redis) gives fresh, approximate answers in seconds, while the batch lane rebuilds the exact, authoritative source of truth on a schedule"
+    ],
+    "answer": 3,
+    "explanation": "A Lambda-style design runs a streaming path for low-latency but approximate results and a batch path that recomputes the exact source of truth on a schedule. The same Kafka event feeds both because independent consumer groups read the same log. It is about freshness vs exactness, not failover or read/write splitting."
   }
 ]
