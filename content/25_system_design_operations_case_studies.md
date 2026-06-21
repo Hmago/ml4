@@ -792,11 +792,11 @@ A geohash string represents a rectangle on Earth. Each character refines the rec
 
 | Length | Cell size | Use case |
 |--------|-----------|----------|
-| 4 | ~20 km × 20 km | City |
+| 4 | ~39 km × 20 km | City |
 | 5 | ~4.9 km × 4.9 km | Neighbourhood |
-| 6 | ~610 m × 610 m | Block |
-| 7 | ~76 m × 76 m | Building cluster |
-| 8 | ~19 m × 19 m | Building |
+| 6 | ~1.2 km × 0.6 km | Block |
+| 7 | ~153 m × 153 m | Building cluster |
+| 8 | ~38 m × 19 m | Building |
 
 "Find drivers near me" → compute the geohash of my location, query that cell + the 8 neighbours, then sort by exact distance.
 

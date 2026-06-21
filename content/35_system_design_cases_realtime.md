@@ -217,8 +217,8 @@ it in your head; it tells you when the network, not the CPU, is your enemy):
    Main memory reference                   100  ns
    Compress 1 KB (Snappy)                2,000  ns =   2 µs
    Send 1 KB over 1 Gbps network        10,000  ns =  10 µs
-   Read 1 MB sequentially from RAM       3,000  ns =   3 µs
    SSD random read                      16,000  ns =  16 µs
+   Read 1 MB sequentially from RAM     250,000  ns = 250 µs
    Round trip in same datacenter       500,000  ns = 0.5 ms
    Read 1 MB sequentially from SSD   1,000,000  ns =   1 ms
    Disk seek                        10,000,000  ns =  10 ms
@@ -376,6 +376,12 @@ calls out the *system-specific* red flags on top of these universal ones.
 # CASE STUDY 1 — NOTIFICATION SYSTEM
 
 > **Google priority:** ★★ · **Difficulty:** Medium · **Frequency:** Very common · **Time budget:** ~35 min
+>
+> **At a glance**
+> - **The hard part —** deliver *billions* of messages across push / email / SMS / in-app, **once each**, fast when it matters and cheap when it doesn't.
+> - **Key building blocks —** durable per-channel queues, Redis (dedupe + token-bucket), provider workers (APNs / FCM / SES / Twilio), delivery webhooks.
+> - **The crux (LLD) —** idempotent dedupe (`SET NX`) + an atomic per-user token-bucket (Lua).
+> - **Scale anchor —** ~35 k notifications/sec at peak; SMS is the quota-limited channel and the delivery log is the real storage cost.
 
 Imagine the single piece of software at a company that every other team wants to use:
 "send my user a message." Search wants to send "your package shipped." Growth wants "we
@@ -449,6 +455,9 @@ the firehose**; **the delivery log is the real storage cost** → put it in a ch
 wide-column store with a TTL, not your primary DB.
 
 ## 1.3 HLD — high-level architecture
+
+Read it top-to-bottom: the **synchronous ingest** (Layer 1) acknowledges the caller in
+milliseconds; every slow step hangs off the **async backbone** (Layer 2) below.
 
 ```
   LAYER 1 — INGEST (synchronous, returns in milliseconds)
@@ -661,6 +670,12 @@ modeling — **Ch 24**; Redis patterns — **Ch 23**.
 # CASE STUDY 2 — CHAT / MESSAGING APP (WhatsApp / Slack)
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~45 min
+>
+> **At a glance**
+> - **The hard part —** keep *millions* of connections open and deliver **ordered** messages with delivery/read receipts, even when the recipient is offline.
+> - **Key building blocks —** WebSocket gateway, a connection registry (who's on which box), per-conversation sequence IDs, wide-column store, push fallback.
+> - **The crux (LLD) —** connection-registry routing + the `sent → delivered → read` receipt state machine.
+> - **Scale anchor —** ~600 k writes/sec and ~1.46 PB/yr ⇒ wide-column store, not SQL.
 
 Texting *feels* trivial — type, hit send, it appears on your friend's phone. The magic you
 don't see is everything that makes it feel instant and reliable: a connection that stays
@@ -1027,6 +1042,12 @@ pub/sub, Kafka, consistent hashing, wide-column (Cassandra) modeling, CAP/AP cho
 # CASE STUDY 3 — VIDEO CONFERENCING (Zoom / Google Meet)
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~40 min
+>
+> **At a glance**
+> - **The hard part —** real-time audio/video for N people; it is **not** request/response — media flows over UDP with a sub-200 ms latency budget.
+> - **Key building blocks —** WebRTC, a **signaling plane separate from the media plane**, STUN/TURN for NAT, SFU media servers, simulcast, a jitter buffer.
+> - **The crux (LLD) —** the **SFU** selective-forwarding model (mesh vs MCU vs SFU stream math).
+> - **Scale anchor —** mesh uplink `(N-1)·B` dies past ~4 people; an SFU keeps each user's uplink flat in N.
 
 This is the case study candidates most often get *wrong*, because they reach for the
 request/response toolbox — REST, a load balancer, a SQL database — and none of it applies.
@@ -1096,7 +1117,7 @@ small (~5–10 Mbps) and shared.
 
    N=4, B=1.5:  mesh uplink = 3×1.5 = 4.5 Mbps/user (already heavy)
    N=8, B=1.5:  mesh uplink = 7×1.5 = 10.5 Mbps/user → home link DIES
-                SFU  uplink = 1×1.5 = 1.5 Mbps/user (flat, regardless of N)
+                SFU  uplink = Σ simulcast layers ≈ 2 Mbps/user (flat in N)
 
    SFU server egress for one meeting = N·(N-1) streams forwarded:
      N=50 → 50×49 = 2,450 stream-forwards (capped by showing ~25 + thumbs)
@@ -1107,8 +1128,8 @@ small (~5–10 Mbps) and shared.
 
 The arithmetic *makes the architecture decision for you*: mesh uplink grows with N and kills
 the constrained direction (home upload), so it's dead past ~4 people. SFU keeps each user's
-**uplink flat at one stream** no matter how big the meeting — that single fact is why SFU is
-the industry default.
+**uplink flat in N** — a fixed simulcast stack (~2 Mbps) that does not grow with the meeting,
+and that single fact is why SFU is the industry default.
 
 ## 3.3 HLD — high-level architecture (two planes)
 
@@ -1270,7 +1291,7 @@ call** and count the streams — this single comparison is the whole case study.
         A ──▶┐                      Everyone uploads ONE stream (×simulcast
         B ──▶┤   ┌───────┐  ──▶ A   layers) to the SFU. SFU forwards each
         C ──▶┼──▶│  SFU  │  ──▶ B   sender's chosen layer to the others.
-        D ──▶┘   │forward│  ──▶ C   Uplink/user = 1·B  (FLAT in N — the win)
+        D ──▶┘   │forward│  ──▶ C   Uplink/user = 1·B×L (FLAT in N — win)
                  │ only  │  ──▶ D   Downlink/user = (N-1)·B
                  └───────┘          Server egress = N·(N-1) streams, but
                                     NO decode → cheap CPU, low latency.
@@ -1342,6 +1363,12 @@ broadcast — **Ch 23** (and YouTube streaming, **Ch 36**); pub/sub for signalin
 # CASE STUDY 4 — COLLABORATIVE EDITOR (Google Docs)
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~40 min
+>
+> **At a glance**
+> - **The hard part —** two people editing the *same character at the same instant* must still converge to one identical document.
+> - **Key building blocks —** OT or CRDT, a per-document authority node that serializes ops, a revision log, presence/cursors, offline replay.
+> - **The crux (LLD) —** **Operational Transformation vs CRDTs**, with a worked concurrent-insert example.
+> - **Scale anchor —** shard by `docId` (one authority per live doc); conflicts resolved server-side in well under 100 ms.
 
 Picture three people typing into the *same* document at the same time. Each person's screen
 must update instantly as they type (no lag — typing has to feel local), everyone must see
