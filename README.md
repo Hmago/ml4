@@ -120,7 +120,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~3.75 hrs | Intermediate-Advanced |
 | 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~3.5 hrs | Intermediate-Advanced |
 | 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~4 hrs | Intermediate-Advanced |
-| 34 | Google's Top 10 ML Interview Topics | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~8.25 hrs | Intermediate-Advanced |
+| 34 | Google's Top 10 ML Interview Topics — Part 1 (Topics 1–10: Classic ML Core) | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~4.75 hrs | Intermediate-Advanced |
+| 34b | Google's Top 10 ML Interview Topics — Part 2 (Topics 11–14: LLM Architecture, Training, Serving, Eval) | ★★★ | [34b_google_top10_ml_interview_part2.md](content/34b_google_top10_ml_interview_part2.md) | ~3.5 hrs | Intermediate-Advanced |
 | | **Interview Prep Total** | | | **~19.5 hrs** | |
 
 ### Grand Total

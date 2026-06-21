@@ -869,7 +869,7 @@ Each added character refines the rectangle ~32× (Ch 25 has the precision table)
    interleave  lng,lat,lng,lat...  → 11010 ... → base32 → "9q9hvu"
 
    precision (chars) → cell size:
-     4 → ~20 km    5 → ~4.9 km    6 → ~610 m    7 → ~76 m
+     4 → ~39 km    5 → ~4.9 km    6 → ~1.2 km    7 → ~153 m
 
    Grid (precision 5), my cell = center; search a radius by
    also scanning the 8 NEIGHBORS (the boundary fix):

@@ -78,7 +78,8 @@ const chapters = [
   { id: '32', file: 'content/32_interview_questions.md', title: 'ML Interview Questions' },
   { id: '33',  file: 'content/33_llm_interview_questions.md', title: 'LLM Interview Questions — Pt 1' },
   { id: '33b', file: 'content/33b_llm_interview_questions_part2.md', title: 'LLM Interview Questions — Pt 2' },
-  { id: '34', file: 'content/34_google_top10_ml_interview.md', title: "Google's Top 10 ML Interview Topics" },
+  { id: '34',  file: 'content/34_google_top10_ml_interview.md', title: "Google's Top 10 ML Topics — Pt 1" },
+  { id: '34b', file: 'content/34b_google_top10_ml_interview_part2.md', title: "Google's Top 10 ML Topics — Pt 2" },
 ];
 
 // ─── Sidebar ───

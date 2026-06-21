@@ -453,7 +453,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/24_system_design_data_distributed.md': 320,
   'content/25_system_design_operations_case_studies.md': 185,
   'content/26_ml_system_design.md': 85,
-  'content/35_system_design_cases_realtime.md': 255,
+  'content/35_system_design_cases_realtime.md': 265,
   'content/36_system_design_cases_search_media.md': 355,
   'content/37_system_design_cases_scale_infra.md': 320,
   'content/27_practical_ml.md': 240,
@@ -465,7 +465,8 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/32_interview_questions.md': 235,
   'content/33_llm_interview_questions.md': 240,
   'content/33b_llm_interview_questions_part2.md': 260,
-  'content/34_google_top10_ml_interview.md': 495,
+  'content/34_google_top10_ml_interview.md': 285,
+  'content/34b_google_top10_ml_interview_part2.md': 215,
   'README.md': 55,
 /* @generated-reading-times:end */ };
 
