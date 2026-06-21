@@ -84,6 +84,17 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~1.5 hrs | Intermediate-Advanced |
 | | **System Design Total** | | | **~23.25 hrs** | |
 
+### System Design — Case Studies (Design X)
+
+> End-to-end "Design X" interview walk-throughs. Mostly HLD with light, crux-only LLD; each system gets labeled ASCII architecture diagrams, a numbered data-flow, estimates, a data model, failure modes, and follow-ups. Builds on Ch 23–25; do those first.
+
+| Ch | Topic | Google | File | Time | Difficulty |
+|----|-------|:------:|------|------|------------|
+| 35 | Case Studies — Part 1: Real-Time & Communication (the universal "Design X" playbook + notifications, chat/WhatsApp, Zoom/Meet, Google Docs) | ★★★ | [35_system_design_cases_realtime.md](content/35_system_design_cases_realtime.md) | ~4.25 hrs | Intermediate-Advanced |
+| 36 | Case Studies — Part 2: Search, Geo, Feeds & Media (autocomplete, web crawler, maps/nearby, Uber, news feed, YouTube, Drive/Dropbox, TinyURL) | ★★★ | [36_system_design_cases_search_media.md](content/36_system_design_cases_search_media.md) | ~6 hrs | Intermediate-Advanced |
+| 37 | Case Studies — Part 3: Scale, Infra, Money & AI (rate limiter, Snowflake IDs, top-K, leaderboard, cache, scheduler, payments, inventory, KV store, pastebin + LLM-serving/RAG/recsys + pattern matrix + cheat sheet) | ★★★ | [37_system_design_cases_scale_infra.md](content/37_system_design_cases_scale_infra.md) | ~5.25 hrs | Intermediate-Advanced |
+| | **Case Studies Total** | | | **~15.5 hrs** | |
+
 ### Practical & Infrastructure
 
 | Ch | Topic | Google | File | Time | Difficulty |
@@ -107,7 +118,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~3.75 hrs | Intermediate-Advanced |
-| 33 | LLM Interview Questions | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~7.5 hrs | Intermediate-Advanced |
+| 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~3.5 hrs | Intermediate-Advanced |
+| 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~4 hrs | Intermediate-Advanced |
 | 34 | Google's Top 10 ML Interview Topics | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~8.25 hrs | Intermediate-Advanced |
 | | **Interview Prep Total** | | | **~19.5 hrs** | |
 
@@ -278,7 +290,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 14 (Neural Nets) → Ch 13 (Evaluation — need metrics) →
   Ch 16 (Deep Learning) → Ch 17 (LLMs) →
   Ch 18 (Agents) → Ch 19 (Frameworks) → Ch 20 (Landscape) →
-  Ch 33 (LLM Interview Qs)  +  ★ Playbook
+  Ch 33 (LLM Interview Qs, Pt 1-2)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
   TRACK 4: Google AI Engineer (~95 hours — full prep)

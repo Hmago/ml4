@@ -55,6 +55,12 @@ const chapters = [
   { id: '25', file: 'content/25_system_design_operations_case_studies.md', title: 'Sys Design Pt 3: Operations & Case Studies' },
   { id: '26', file: 'content/26_ml_system_design.md', title: 'ML System Design (Google)' },
 
+  // ── SYSTEM DESIGN — CASE STUDIES ──
+  { section: 'System Design — Case Studies' },
+  { id: '35', file: 'content/35_system_design_cases_realtime.md', title: 'Design Cases 1: Real-Time & Comms' },
+  { id: '36', file: 'content/36_system_design_cases_search_media.md', title: 'Design Cases 2: Search, Geo & Media' },
+  { id: '37', file: 'content/37_system_design_cases_scale_infra.md', title: 'Design Cases 3: Scale, Infra & Money' },
+
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },
   { id: '27',  file: 'content/27_practical_ml.md', title: 'Practical ML: Zero to Production' },
@@ -70,7 +76,8 @@ const chapters = [
   // ── INTERVIEW PREP ──
   { section: 'Interview Prep' },
   { id: '32', file: 'content/32_interview_questions.md', title: 'ML Interview Questions' },
-  { id: '33', file: 'content/33_llm_interview_questions.md', title: 'LLM Interview Questions' },
+  { id: '33',  file: 'content/33_llm_interview_questions.md', title: 'LLM Interview Questions — Pt 1' },
+  { id: '33b', file: 'content/33b_llm_interview_questions_part2.md', title: 'LLM Interview Questions — Pt 2' },
   { id: '34', file: 'content/34_google_top10_ml_interview.md', title: "Google's Top 10 ML Interview Topics" },
 ];
 

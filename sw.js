@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v231';
+const CACHE_NAME = 'ml-notes-v233';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -52,6 +52,9 @@ const STATIC_FILES = [
   'content/24_system_design_data_distributed.md',
   'content/25_system_design_operations_case_studies.md',
   'content/26_ml_system_design.md',
+  'content/35_system_design_cases_realtime.md',
+  'content/36_system_design_cases_search_media.md',
+  'content/37_system_design_cases_scale_infra.md',
   'content/27_practical_ml.md',
   'content/27_practical_ml.ipynb',
   'content/28_semantic_search.md',
@@ -60,6 +63,7 @@ const STATIC_FILES = [
   'content/31_dsa_coding.md',
   'content/32_interview_questions.md',
   'content/33_llm_interview_questions.md',
+  'content/33b_llm_interview_questions_part2.md',
   'content/34_google_top10_ml_interview.md',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
