@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v234';
+const CACHE_NAME = 'ml-notes-v236';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -31,6 +31,7 @@ const STATIC_FILES = [
   'content/03_staying_relevant_ai_era.md',
   'content/04_aptitude_mental_math.md',
   'content/05_brain_training.md',
+  'content/05b_brain_upgrade_30_days.md',
   'content/06_math_fundamentals.md',
   'content/07_introduction.md',
   'content/08_core_concepts.md',
@@ -66,6 +67,14 @@ const STATIC_FILES = [
   'content/33b_llm_interview_questions_part2.md',
   'content/34_google_top10_ml_interview.md',
   'content/34b_google_top10_ml_interview_part2.md',
+
+  // Case-study HLD diagrams (Ch 35–37) — SVG figures embedded in chapters
+  'diagrams/notification.svg', 'diagrams/chat.svg', 'diagrams/video_conf.svg', 'diagrams/collab_editor.svg',
+  'diagrams/autocomplete.svg', 'diagrams/crawler.svg', 'diagrams/proximity.svg', 'diagrams/ride_hailing.svg',
+  'diagrams/news_feed.svg', 'diagrams/video_streaming.svg', 'diagrams/file_sync.svg', 'diagrams/url_shortener.svg',
+  'diagrams/rate_limiter.svg', 'diagrams/unique_id.svg', 'diagrams/topk.svg', 'diagrams/leaderboard.svg',
+  'diagrams/dist_cache.svg', 'diagrams/scheduler.svg', 'diagrams/payment.svg', 'diagrams/inventory.svg',
+  'diagrams/kv_store.svg', 'diagrams/pastebin.svg',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 

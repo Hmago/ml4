@@ -21,6 +21,7 @@ const chapters = [
   { section: 'Aptitude & Brain Training' },
   { id: '04', file: 'content/04_aptitude_mental_math.md', title: 'Aptitude & Mental Math' },
   { id: '05', file: 'content/05_brain_training.md', title: 'Brain Training & Memory' },
+  { id: '05b', file: 'content/05b_brain_upgrade_30_days.md', title: '30-Day Brain Upgrade Plan' },
 
   // ── MATH FOUNDATIONS ──
   { section: 'Math Foundations' },

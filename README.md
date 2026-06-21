@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  34 chapters · ~122 hours of content · 400+ DSA problems │
+  │  34 chapters · ~124 hours of content · 400+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA · Export to PDF    │
   └─────────────────────────────────────────────────────────┘
@@ -39,6 +39,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 04 | Aptitude & Mental Math for Engineers | ★ | [04_aptitude_mental_math.md](content/04_aptitude_mental_math.md) | ~6.25 hrs | All Levels |
 | 05 | Brain Training — Memory, Focus & IQ | | [05_brain_training.md](content/05_brain_training.md) | ~2.25 hrs | All Levels |
+| 05B | Upgrade Your Brain in 30 Days (Program) | | [05b_brain_upgrade_30_days.md](content/05b_brain_upgrade_30_days.md) | ~1.75 hrs | All Levels |
 
 ### Math Foundations
 
@@ -128,7 +129,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~122 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~124 hrs reading + DSA practice** | |
 
 ---
 

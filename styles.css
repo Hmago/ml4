@@ -4883,3 +4883,23 @@ body.focus-mode .pins-layer {
   }
   .comment-body, .comment-quote, .comment-date { color: #333 !important; }
 }
+
+/* Case-study HLD diagrams — SVG figures embedded in Ch 35–37 */
+#content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border: 1px solid #e3e6ea;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+/* In dark mode the SVGs carry their own prefers-color-scheme styling; frame them
+   as an intentional figure so a light-rendered diagram reads as "paper", and a
+   dark-rendered one blends with the canvas. */
+[data-theme="dark"] #content img {
+  background: #0b1220;
+  border-color: var(--border);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+}
