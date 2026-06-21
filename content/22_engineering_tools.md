@@ -226,6 +226,60 @@ spec:
 | Service routes to nothing | Service `selector` labels don't match the pod labels | Align labels; check `kubectl get endpoints` |
 | Config change didn't take effect | ConfigMap updated, but pods weren't restarted | `kubectl rollout restart` (or a checksum annotation to auto-roll) |
 
+**Senior gotchas & anti-patterns — worked examples:**
+
+The mistakes below pass code review and then page you at 3 a.m.
+
+**1. CPU *limits* cause throttling — even on an idle node.**
+```yaml
+# ❌ ANTI-PATTERN: a tight CPU limit throttles the app via the Linux CFS quota.
+# The container is capped to 200ms of CPU per 100ms period, so p99 latency
+# spikes under bursty load while `kubectl top` shows low AVERAGE CPU. Baffling.
+resources:
+  requests: { cpu: "200m", memory: "512Mi" }
+  limits:   { cpu: "200m", memory: "512Mi" }
+
+# ✅ FIX: request for scheduling, but leave CPU UNLIMITED so the pod can burst
+# into spare node capacity. Memory is incompressible, so keep limit = request
+# (over-limit memory = OOMKilled, not throttled).
+resources:
+  requests: { cpu: "200m", memory: "512Mi" }
+  limits:   { memory: "512Mi" }            # note: no cpu limit
+```
+
+**2. A liveness probe that checks dependencies turns a slow DB into a full outage.**
+```yaml
+# ❌ ANTI-PATTERN: liveness hits an endpoint that pings the database/downstream.
+# When the DB slows, EVERY pod fails liveness and restarts in lockstep — the
+# restart loop amplifies the incident instead of containing it.
+livenessProbe:
+  httpGet: { path: /health/deep, port: 8080 }   # checks DB, cache, downstream
+
+# ✅ FIX: liveness = "is my process wedged?" (a restart fixes it).
+#        readiness = "should I get traffic right now?" (pull from LB, don't restart).
+livenessProbe:
+  httpGet: { path: /healthz, port: 8080 }        # process-local, no dependencies
+readinessProbe:
+  httpGet: { path: /ready, port: 8080 }          # dependency checks live HERE
+```
+
+**3. `:latest` tags and missing PodDisruptionBudgets bite during routine ops.**
+```yaml
+# ❌ image: myrepo/api:latest  → two nodes can run different builds; rollback impossible.
+# ✅ image: myrepo/api@sha256:9b2c...  → immutable digest: reproducible + auditable.
+---
+# ✅ A PodDisruptionBudget stops a node drain (upgrade/autoscaler) from evicting
+#    ALL replicas at once and causing a self-inflicted outage.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: my-api-pdb }
+spec:
+  minAvailable: 2
+  selector: { matchLabels: { app: my-api } }
+```
+
+**4. Limitation — `Secret` is base64, *not* encryption.** A K8s `Secret` is only base64-encoded in etcd; anyone with etcd access or `get secret` RBAC reads it in plaintext. Enable **encryption-at-rest** (`EncryptionConfiguration`) or use an external manager (External Secrets Operator, Vault, a cloud KMS CSI driver). Never commit a `Secret` manifest to git and `kubectl apply` it.
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Universal deploy target — works on every cloud and on-prem; strong self-healing and autoscaling primitives; rich ecosystem (Helm, Argo CD, KEDA, Operators); declarative model simplifies rollbacks and audits.
 - **Cons:** Steep operational curve (YAML sprawl, RBAC, networking, storage classes); significant initial complexity overhead for small teams; debugging failures requires expertise across multiple layers.
@@ -312,6 +366,60 @@ Scaling rule of thumb: parallelism = number of partitions.
 | Duplicate side effects downstream | At-least-once delivery re-delivers on retries | Make consumers **idempotent**; use EOS for financial paths |
 | `RecordTooLargeException` | Payload exceeds the ~1 MB default | Raise `max.message.bytes`, or store the blob in S3 and send a pointer |
 | Under-replicated partitions | A broker is down/slow; the ISR shrank | Restore the broker; run `acks=all` with `min.insync.replicas=2` |
+
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. A null key silently destroys ordering.**
+```java
+// ❌ ANTI-PATTERN: no key → messages round-robin across partitions. Two events for
+// the same order can land on different partitions and be processed out of order
+// (e.g. "order.shipped" handled before "order.created").
+producer.send(new ProducerRecord<>("orders", orderEvent));
+
+// ✅ FIX: key by the entity whose order must hold. All events for order 42 now
+// share one partition → strict per-order ordering.
+producer.send(new ProducerRecord<>("orders", order.getId(), orderEvent));
+```
+
+**2. Auto-commit turns at-least-once into accidental message loss.**
+```properties
+# ❌ ANTI-PATTERN: offsets commit on a timer, BEFORE your handler finishes.
+# Crash after the commit but before processing = the message is gone forever.
+enable.auto.commit=true
+auto.commit.interval.ms=5000
+```
+```java
+// ✅ FIX: disable auto-commit; advance the offset only AFTER successful processing.
+props.put("enable.auto.commit", "false");
+for (var record : consumer.poll(Duration.ofMillis(100))) {
+    process(record);                 // do the work first
+}
+consumer.commitSync();               // then commit (at-least-once)
+// process() MUST be idempotent — at-least-once means you WILL see replays.
+```
+
+**3. Slow work in the poll loop triggers a rebalance storm.**
+```java
+// ❌ If the time between poll() calls exceeds max.poll.interval.ms, the broker
+// assumes the consumer died and rebalances — which PAUSES the whole group.
+// A batch of 500 records making slow network calls is the usual cause.
+
+// ✅ Cap the batch so poll() is called often enough, or offload slow work:
+props.put("max.poll.records", "100");   // smaller batches
+// For genuinely slow handlers: hand records to a worker pool and pause()/resume().
+```
+
+**4. Over-partitioning is a one-way door.**
+```
+❌ "More partitions = more throughput" → 10,000 partitions for a 3-consumer service.
+   Each partition costs memory, open file handles, and slows leader election &
+   rebalances. And you CANNOT reduce the count later — raising it re-buckets keys
+   and breaks per-key ordering for in-flight data.
+✅ Size partitions to target consumer parallelism + headroom (≈2–4× consumers),
+   not to a number you think you'll "never outgrow".
+```
+
+**5. Limitation — retention is a silent data-loss clock.** A consumer group offline longer than `retention.ms` (default 7 days) restarts at `auto.offset.reset`: `latest` silently skips the gap, `earliest` replays everything — both surprising in production. And Kafka is a log, not a database: don't use it for request/reply RPC or as a queryable source of truth.
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Extremely high throughput (millions of events/sec per cluster); durable, replayable log enables event sourcing and consumer decoupling; KRaft (Kafka 4.0) removes ZooKeeper complexity; tiered storage extends retention cheaply to object storage.
@@ -411,6 +519,60 @@ In **March 2024**, Redis Ltd. changed the license from BSD to a dual SSPL/RSALv2
 | ~1 second of writes lost on crash | AOF `everysec` (or RDB) durability window | `appendfsync always` for critical data — or don't use Redis as the source of truth |
 | Stale data served after an update | Cache wasn't invalidated on write | Invalidate/update on write; keep TTLs short |
 
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. `KEYS` and other O(N) commands freeze every client.**
+```
+# ❌ ANTI-PATTERN: O(N) over the whole keyspace on the single-threaded core —
+# blocks EVERY other client until it finishes.
+KEYS user:*
+SMEMBERS huge_set            # same trap on any large collection
+HGETALL huge_hash
+
+# ✅ FIX: incremental, cursor-based iteration that never blocks for long.
+SCAN 0 MATCH user:* COUNT 100
+SSCAN huge_set 0 COUNT 100
+```
+
+**2. Cache stampede (thundering herd) hammers the DB on expiry.**
+```python
+# ❌ ANTI-PATTERN: thousands of concurrent requests miss the SAME expired key and
+# all rebuild it against the database at the same instant.
+def get(key):
+    v = redis.get(key)
+    if v: return v
+    v = db.query(key)
+    redis.set(key, v, ex=300)        # everyone expires at T+300 → synchronized stampede
+    return v
+
+# ✅ FIX: jittered TTL + a short single-flight lock so only one caller rebuilds.
+def get(key):
+    v = redis.get(key)
+    if v: return v
+    if redis.set(f"lock:{key}", "1", nx=True, ex=10):    # only one winner rebuilds
+        v = db.query(key)
+        redis.set(key, v, ex=300 + random.randint(0, 60))  # jitter de-syncs expiry
+        redis.delete(f"lock:{key}")
+        return v
+    time.sleep(0.05)                 # others back off and retry the cache
+    return get(key)
+```
+
+**3. Keys without a TTL are a slow memory leak; cross-slot ops break in Cluster.**
+```
+# ❌ Session/cache data written with no expiry accumulates until maxmemory →
+#    evictions or write failures. Always bound cache/session keys:
+SET session:abc "..."            # ❌ no expiry
+SET session:abc "..." EX 1800    # ✅ 30-min TTL
+
+# ❌ In Redis Cluster these keys hash to different slots → CROSSSLOT error:
+MGET user:1 user:2 user:3
+# ✅ Co-locate them on one slot with a hash tag {...}:
+MGET {user}:1 {user}:2 {user}:3
+```
+
+**4. Limitation — Redlock is not safe for correctness-critical locks.** Under GC pauses, clock drift, or partitions a lock can be held by two clients at once. For "must never double-execute" paths (payments), use a CP store (etcd/ZooKeeper) or a **fencing token** the resource validates. Remember Redis is a speed layer: with `appendfsync everysec` you can lose ~1s of writes on crash, so never make it the durable source of truth.
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Sub-millisecond read/write latency; rich data structures (sorted sets, streams, pub/sub) cover many use-cases beyond plain caching; Valkey is BSD-licensed and now the cloud default; Dragonfly provides multi-threaded throughput for extreme scale.
 - **Cons:** All data must fit in RAM — cost scales with dataset size; AOF everysec durability can lose ~1 second of writes on crash; Redlock distributed locks have correctness caveats under network partitions and clock drift.
@@ -492,6 +654,54 @@ The rule of thumb: exhaust the Postgres scaling ladder before adding distributed
 | Read replica returns stale rows | Asynchronous replication lag | Read critical-after-write from the primary; monitor lag |
 | Seq scan despite an index existing | Function wrapping the column, or a type mismatch in `WHERE` | Match types; add an expression index |
 
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. N+1 queries from the ORM.**
+```sql
+-- ❌ ANTI-PATTERN: 1 query for the list + 1 per row = 101 round-trips for 100 orders.
+SELECT * FROM orders WHERE user_id = 42;          -- then, per order returned:
+SELECT * FROM order_items WHERE order_id = $1;    -- ×100
+
+-- ✅ FIX: one round-trip with a join (or a single IN (...) batch).
+SELECT o.*, i.*
+FROM orders o
+JOIN order_items i ON i.order_id = o.id
+WHERE o.user_id = 42;
+```
+
+**2. A function on the column makes the index unusable (sargability).**
+```sql
+-- ❌ Wrapping the column forces a full sequential scan — the B-tree index is ignored.
+SELECT * FROM users  WHERE lower(email) = 'ada@x.com';
+SELECT * FROM events WHERE date(created_at) = '2026-06-21';
+
+-- ✅ Keep the column bare with a matching expression index, or use a range.
+CREATE INDEX idx_users_email_lower ON users (lower(email));   -- now the 1st query uses it
+SELECT * FROM events                                          -- range beats date():
+WHERE created_at >= '2026-06-21' AND created_at < '2026-06-22';
+-- Always confirm with EXPLAIN (ANALYZE, BUFFERS) — read the plan, don't guess.
+```
+
+**3. `OFFSET` pagination degrades on deep pages.**
+```sql
+-- ❌ OFFSET 100000 still scans and throws away 100k rows — slower the deeper you page.
+SELECT * FROM events ORDER BY id LIMIT 20 OFFSET 100000;
+
+-- ✅ Keyset ("seek") pagination: remember the last id and jump straight to it.
+SELECT * FROM events WHERE id > $last_seen_id ORDER BY id LIMIT 20;
+```
+
+**4. Direct connections exhaust the server — pool them.**
+```
+❌ A 200-pod service each opening 50 direct Postgres connections = 10,000 backends,
+   each ~5–10 MB → the DB OOMs or throws "remaining connection slots are reserved".
+✅ Put PgBouncer (transaction pooling) in front; the app talks to the pooler, which
+   multiplexes a few hundred real backends. And keep transactions SHORT — an
+   "idle in transaction" session pins a backend AND holds its locks.
+```
+
+**5. Limitation — a long-running transaction blocks `VACUUM` (bloat + wraparound risk).** MVCC keeps old row versions until no transaction can still see them. One forgotten `BEGIN;` or an idle analytics session holds the `xmin` horizon back, so autovacuum can't reclaim dead tuples — tables bloat, indexes degrade, and in the extreme you approach transaction-ID wraparound. Watch `pg_stat_activity` for long `xact_start`; never leave a session `idle in transaction`.
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** ACID compliance; enormously rich feature set (JSONB, pgvector, PostGIS, full-text search, logical replication); strong extension ecosystem; "just use Postgres" is a genuine architecture strategy for most applications.
 - **Cons:** Single-primary write ceiling (vertical scaling only, natively); connections are expensive — PgBouncer is practically mandatory at scale; MVCC bloat requires regular VACUUM to prevent table bloat and index degradation.
@@ -562,6 +772,44 @@ db.orders.aggregate([
 | `$lookup` joins are slow | Using Mongo like a relational DB | Re-model: embed, or denormalize what is read together |
 | Surprise Cosmos bill | Over-provisioned RU/s or extra replicated regions | Right-size RU/s (autoscale/serverless); limit regions to what you need |
 
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. An unbounded embedded array eventually hits the 16 MB document cap.**
+```javascript
+// ❌ ANTI-PATTERN: append events forever into one document → it grows until it errors,
+// and EVERY update rewrites the whole (ever-larger) document.
+db.devices.updateOne({ _id: d }, { $push: { readings: reading } });   // unbounded
+
+// ✅ FIX: the "bucket pattern" — cap each document (e.g. one bucket per hour) so
+// documents stay small and writes stay cheap.
+db.readings.updateOne(
+  { device: d, hour: "2026-06-21T13", count: { $lt: 1000 } },
+  { $push: { values: reading }, $inc: { count: 1 } },
+  { upsert: true });
+```
+
+**2. A bad shard / partition key creates a hot partition.**
+```javascript
+// ❌ Monotonically-increasing or low-cardinality keys funnel writes to ONE shard.
+sh.shardCollection("app.events", { createdAt: 1 });   // all new writes hit the newest chunk
+sh.shardCollection("app.events", { country:   1 });   // 80% of traffic = one country = one shard
+
+// ✅ High-cardinality, evenly-distributed key (often hashed) spreads writes across shards.
+sh.shardCollection("app.events", { userId: "hashed" });
+```
+
+**3. Using `$lookup` like a relational JOIN.**
+```javascript
+// ❌ Joining two big collections on every read — far weaker and slower than a SQL engine.
+db.orders.aggregate([{ $lookup: {
+  from: "users", localField: "userId", foreignField: "_id", as: "user" }}]);
+
+// ✅ Embed (or denormalize) what is read together, so the read is a single document.
+db.orders.insertOne({ _id: "ord_1", user: { id: 42, name: "Ada" }, items: [/* ... */] });
+```
+
+**4. Limitation — RU/s (Cosmos) and missing indexes drive cost and `429`s.** In Cosmos DB every read, write, and query costs Request Units; an unindexed or cross-partition query burns RUs and triggers `429 Too Many Requests` under load. Index the fields you filter/sort on (`explain()` is the `EXPLAIN ANALYZE` equivalent), keep queries within one partition key where you can, and size RU/s with autoscale. The same "index your access patterns" rule keeps plain MongoDB queries off full collection scans.
+
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Flexible schema maps directly to application objects (no migration to add a field); single-document reads/writes are fast and atomic; horizontal scaling via sharding/partitioning; rich secondary indexes and aggregation pipeline; MongoDB Atlas and Cosmos DB offer fully-managed, multi-region operation; Cosmos adds turnkey global distribution with explicit, SLA-backed consistency levels.
 - **Cons:** Cross-document joins are weak and discouraged — relational analytics are painful; the shard/partition key is a hard-to-reverse, performance-critical decision; "schemaless" pushes schema enforcement into application code; Cosmos's RU/s model makes cost and throttling a constant tuning concern; Cosmos is Azure-only (vendor lock-in).
@@ -618,6 +866,54 @@ Parquet: columnar + compressed    →  read only needed columns + skip row-group
 | `LIST` is slow / paginates forever | Millions of objects under one prefix | Partition by prefix; keep a manifest/catalog (Iceberg/Delta) |
 | Queries scan everything and cost a lot | Data stored as CSV/JSON instead of columnar | Convert to **Parquet** and partition for pruning |
 | "Tiny files" problem kills performance | Millions of small objects → per-request overhead dominates | Compact into larger files |
+
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. Least-privilege IAM — never `s3:*` on `*`.**
+```json
+// ❌ ANTI-PATTERN: god-mode — every action on every bucket. One leaked key = total compromise.
+{ "Effect": "Allow", "Action": "s3:*", "Resource": "*" }
+
+// ✅ FIX: grant the exact actions on the exact bucket/prefix.
+{ "Effect": "Allow",
+  "Action":   ["s3:GetObject", "s3:PutObject"],
+  "Resource": "arn:aws:s3:::my-data-lake/uploads/*" }
+```
+
+**2. Lifecycle rules auto-tier cold data (don't pay Standard forever).**
+```json
+// ✅ Age objects into cheaper classes, then expire them — set once, runs automatically.
+{ "Rules": [{
+    "ID": "archive-old-events", "Status": "Enabled",
+    "Filter": { "Prefix": "events/" },
+    "Transitions": [
+      { "Days": 30, "StorageClass": "STANDARD_IA" },
+      { "Days": 90, "StorageClass": "GLACIER" }
+    ],
+    "Expiration": { "Days": 365 }
+}]}
+```
+
+**3. Presigned URLs — let clients transfer directly, not through your server.**
+```python
+# ❌ Proxying a 2 GB upload THROUGH your API wastes its bandwidth and memory.
+# ✅ Hand the browser a short-lived presigned URL; it talks straight to S3.
+url = s3.generate_presigned_url(
+    "put_object",
+    Params={"Bucket": "my-data-lake", "Key": f"uploads/{file_id}"},
+    ExpiresIn=300)          # 5-minute window; never ship static keys to clients
+```
+
+**4. Partition the key layout for pruning; avoid tiny files and in-place edits.**
+```
+❌ s3://lake/events/part-0001.csv          (one flat prefix · CSV · millions of files)
+   → every query LISTs + scans everything; per-request cost dominates.
+✅ s3://lake/events/dt=2026-06-21/region=eu/part-0001.parquet   (Parquet · partitioned)
+   → WHERE dt='2026-06-21' AND region='eu' reads ONLY that slice.
+   • Compact small files into ~128 MB–1 GB objects.
+   • Objects are immutable: to change one byte you rewrite the whole object —
+     use a table format (Iceberg/Delta) when you need row-level updates.
+```
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Virtually unlimited scale and eleven-nines durability; decoupled from compute (storage scales and bills independently); the universal foundation for lakehouses, ML artifact stores, and data archives; native integration with every major cloud service.
@@ -694,6 +990,73 @@ Three AQE features to know: **(1) dynamic coalescing** of post-shuffle partition
 | `Spill to disk` warnings | Shuffle/aggregation exceeds executor memory | Add memory or partitions; reduce per-task data |
 | Small job slower than plain pandas | JVM + cluster overhead on small data | Use DuckDB/pandas under a few hundred GB |
 | Code "ran" but nothing happened | Transformations are lazy until an action | Trigger with an action (`write`/`count`) — this is by design |
+
+**Senior gotchas & anti-patterns — worked examples:**
+
+**1. `collect()` drags the whole result into the driver → driver OOM.**
+```python
+# ❌ ANTI-PATTERN: pulls every row into the driver's single JVM heap.
+rows = big_df.collect()
+for r in rows: ...
+
+# ✅ FIX: keep work distributed — write it out, or collect only a bounded sample.
+big_df.write.parquet("s3://out/")
+sample = big_df.limit(1000).collect()
+```
+
+**2. Not caching a reused DataFrame recomputes the entire lineage each action.**
+```python
+# ❌ Each action re-runs the WHOLE plan from S3 — the expensive join executes 3×.
+joined = a.join(b, "id").filter(...)
+print(joined.count())
+joined.write.parquet("s3://out/")
+top = joined.orderBy("score").limit(10).collect()
+
+# ✅ Materialize once when it's reused across multiple actions.
+joined = a.join(b, "id").filter(...).cache()
+joined.count()        # populates the cache
+joined.write.parquet("s3://out/")
+```
+
+**3. Joining a big table to a small one without broadcasting shuffles both sides.**
+```python
+# ❌ A sort-merge join moves BOTH sides across the network — the dominant cost.
+big.join(small_dim, "country_code")
+
+# ✅ Broadcast the small table so only it ships; the big table never moves.
+from pyspark.sql.functions import broadcast
+big.join(broadcast(small_dim), "country_code")
+```
+
+**4. Data skew makes one task run for hours while the cluster idles.**
+```python
+# ❌ One key ("US") holds 90% of rows → a single straggler task bottlenecks the stage.
+big.groupBy("country").agg(...)
+
+# ✅ Easiest: let AQE split the skewed partitions automatically.
+#    spark.sql.adaptive.enabled=true ; spark.sql.adaptive.skewJoin.enabled=true
+# ✅ Manual salting when AQE isn't enough: spread the hot key across N buckets,
+#    aggregate per bucket, then combine the partials.
+from pyspark.sql.functions import floor, rand
+salted   = big.withColumn("salt", floor(rand() * 16))
+partials = salted.groupBy("country", "salt").agg(...)   # parallel across 16 buckets
+result   = partials.groupBy("country").agg(...)         # combine the 16 partials
+```
+
+**5. Python UDFs defeat the optimizer; tiny output files cripple later reads.**
+```python
+# ❌ A row-at-a-time Python UDF serializes every row JVM↔Python and is opaque to Catalyst.
+@udf("double")
+def to_c(f): return (f - 32) / 1.8
+df.withColumn("c", to_c("f"))
+
+# ✅ Use native columnar expressions (vectorized, optimized, no Python hop):
+from pyspark.sql.functions import col
+df.withColumn("c", (col("f") - 32) / 1.8)
+
+# Tiny-files trap: writing thousands of small files cripples downstream reads.
+# Compact before writing — df.repartition(200).write... — or let AQE coalesce.
+```
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Handles petabyte-scale batch and micro-batch workloads on a single unified API (DataFrame/SQL/Streaming/MLlib); AQE auto-tunes query plans at runtime; runs on every major cloud (Databricks, EMR, Dataproc); 10–100× faster than Hadoop MapReduce.
