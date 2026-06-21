@@ -1,0 +1,112 @@
+[
+  {
+    "q": "A learner wants the highest-return daily habit from the 30-day brain-upgrade loop. Which block of the daily loop is described as the single biggest lever?",
+    "options": [
+      "The RECALL block — daily spaced-repetition retrieval practice, run first thing",
+      "The PROMPT block — freewriting five lines on a single mind-expanding question",
+      "The ENCODE block — turning each day's key insight into brand-new flashcards",
+      "The DEEP WORK block — reading one advanced source in a focused twenty-minute sitting"
+    ],
+    "answer": 0,
+    "explanation": "The loop opens with RECALL precisely because active recall plus spacing is the most evidence-backed lever (Roediger & Karpicke; Ebbinghaus). The other blocks matter, but the chapter names daily retrieval as the #1 habit."
+  },
+  {
+    "q": "Why does the program treat sleep as a training input rather than as time taken away from studying?",
+    "options": [
+      "A fixed sleep schedule mainly improves next-day mood, willpower, and motivation",
+      "Memory consolidation happens largely during sleep, so cutting it deletes the day's learning",
+      "Sleep restores eye strain and posture fatigue but plays no real role in memory",
+      "Extra sleep simply leaves a person with fewer hours available to review flashcards"
+    ],
+    "answer": 1,
+    "explanation": "Slow-wave and REM sleep drive hippocampal replay and consolidation (Walker, 2017; Rasch & Born, 2013). A sleep-deprived brain encodes far less and consolidates poorly, so protecting sleep protects gains already earned."
+  },
+  {
+    "q": "Which statement reflects the program's honest expectation-setting about results?",
+    "options": [
+      "A validated IQ score can reliably be raised about fifteen points within the thirty days",
+      "Puzzle and brain-training apps dependably produce broad far transfer to general intelligence",
+      "Real gains are durable near-transfer skills plus repaired sleep and focus leaks that compound",
+      "Whatever improvement appears will vanish completely the very day after the program ends"
+    ],
+    "answer": 2,
+    "explanation": "The chapter rejects a fifteen-point IQ jump as snake oil and cites Owen et al. (2010) and Simons et al. (2016) on the absence of far transfer. The realistic payoff is near-transfer skill gains plus repaired sleep and focus habits."
+  },
+  {
+    "q": "What is the recommended way to use an AI assistant for the daily mind-expanding prompt?",
+    "options": [
+      "Read the assistant's full answer first and then commit its wording to memory",
+      "Have the assistant summarize the whole chapter so the dense reading can be skipped",
+      "Use the assistant only to bulk-generate several hundred flashcards in one batch",
+      "Write your own answer first, then have the assistant critique it and find the weakest assumption"
+    ],
+    "answer": 3,
+    "explanation": "Passively reading an AI answer is re-reading in disguise. The high-leverage pattern is to write first, then let the model act as a Socratic critic that pushes back, and to respond to the gaps it surfaces."
+  },
+  {
+    "q": "According to the chapter and Dunlosky et al. (2013), which study tactic is among the least effective?",
+    "options": [
+      "Highlighting passages and then re-reading the same source over and over again",
+      "Closed-book retrieval of the key ideas immediately after finishing the reading",
+      "Turning the main ideas into your own short question-and-answer style flashcards",
+      "Explaining the concept simply in your own words, Feynman-style, to expose gaps"
+    ],
+    "answer": 0,
+    "explanation": "Highlighting and re-reading feel productive but build little durable memory. The active-reading protocol replaces them with retrieval: close the source and write the key ideas from memory."
+  },
+  {
+    "q": "In the program's memory toolkit, which technique is matched to remembering ordered lists, sequences, or the steps of a process?",
+    "options": [
+      "Spaced repetition driven by the FSRS scheduler built into modern Anki",
+      "The memory palace, also known as the method of loci, walked along a route",
+      "The major system, which maps each digit to a specific consonant sound",
+      "Elaboration combined with dual coding to enrich conceptual understanding"
+    ],
+    "answer": 1,
+    "explanation": "The chapter maps each tool to a job: memory palace for ordered lists and processes, major system for numbers, spaced repetition for long-term facts, and elaboration plus dual coding for conceptual understanding."
+  },
+  {
+    "q": "The thinking routine called Inversion is best summarized as which prompt?",
+    "options": [
+      "Break an unknown quantity into factors, estimate each one, and multiply them",
+      "State the strongest possible version of an idea before you decide to reject it",
+      "Ask what would guarantee failure, then deliberately design those failure modes out",
+      "Attach an explicit probability to each prediction and later score your calibration"
+    ],
+    "answer": 2,
+    "explanation": "Inversion flips 'how do I succeed?' into 'what would guarantee failure?' The chapter suggests listing the top three ways a plan could fail before committing, so most flaws are caught in design rather than in production."
+  },
+  {
+    "q": "Using Keshav's three-pass method for a research paper, what is the goal of Pass 1?",
+    "options": [
+      "Re-implement the paper, mentally or in code, and challenge every single assumption",
+      "Read the full body of the paper carefully, including all proofs and derivations",
+      "Read only the reference list to map out the related prior work and its lineage",
+      "Spend five to ten minutes skimming to grasp the paper's category, contribution, and claims"
+    ],
+    "answer": 3,
+    "explanation": "Pass 1 is a short five-to-ten-minute skim of title, abstract, intro, headings, and conclusion. Pass 2 reads the body while ignoring proofs, and the optional Pass 3 virtually re-implements and critiques the work."
+  },
+  {
+    "q": "Which flashcard-writing rule does the chapter give to keep a spaced-repetition deck effective?",
+    "options": [
+      "Keep one fact per card and phrase the front as a question requiring active recall",
+      "Bulk-import large premade decks early so the collection grows as fast as possible",
+      "Add several multiple-choice options to every card to make daily review feel easier",
+      "Combine several closely related facts onto one card to cut down total review time"
+    ],
+    "answer": 0,
+    "explanation": "The minimum-information principle says one fact per card, phrased as a question that forces retrieval rather than recognition. Oversized or multiple-choice cards undermine the testing effect, and dreaded bulk imports get abandoned."
+  },
+  {
+    "q": "What is the intended role of the weekly full rest day and the scheduled walks and naps in the program?",
+    "options": [
+      "They are optional rewards a learner may freely skip whenever motivation runs high",
+      "They are deliberate recovery that enables consolidation and prevents burnout erasing gains",
+      "They exist mainly to make the month's calendar look a little less demanding overall",
+      "They are meant to replace nightly sleep, so total sleep duration stops mattering much"
+    ],
+    "answer": 1,
+    "explanation": "The chapter frames recovery as a first-class training input: brief naps and wakeful rest aid consolidation, and a weekly rest day prevents burnout. Compounding requires recovery, and these do not substitute for nightly sleep."
+  }
+]

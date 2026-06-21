@@ -116,45 +116,8 @@ almost all traffic while bounding memory.
 
 ## 5.3 HLD — high-level architecture
 
-```
-  LAYER 1 — EDGE  (shave every millisecond off the keystroke)
-    Browser                              Edge / CDN POP
-     debounce 60 ms,        ─────────▶   cache top-K for the
-     cancel stale request                ~10k HOTTEST prefixes
-                          │ miss
-                          ▼
-                  API Gateway / L7 LB   (TLS, light auth, route)
+![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete.svg)
 
-  LAYER 2 — SERVING TIER  (stateless, RAM-speed, read-only)
-                  ┌──────────────────────────────────┐
-                  │  Autocomplete Service (router)    │
-                  │  1. normalize prefix              │
-                  │  2. route to owning trie shard(s) │
-                  │  3. merge + re-rank (personalize) │
-                  └───────────────┬───────────────────┘
-           scatter to shard(s)    │
-       ┌──────────────┬───────────┴────┬───────────────┐
-       ▼              ▼                ▼               ▼
-  Trie Shard A   Trie Shard B    Trie Shard C    Trie Shard D
-  prefixes a–f   prefixes g–m    prefixes n–s    prefixes t–z
-  (in-RAM trie; each node stores the PRECOMPUTED top-K
-   completions for that node's prefix; replicated x3)
-
-  LAYER 3 — DATA / SNAPSHOTS
-    Top-K cache (Redis)        Built-trie snapshots (object store,
-    per-prefix top-10,         versioned; shard servers memory-map
-    short TTL                  the latest snapshot at startup/swap)
-
-  LAYER 4 — OFFLINE POPULARITY PIPELINE  (minutes–hours behind live)
-    Query logs ─▶ Kafka ─▶ Aggregator (Flink / MapReduce):
-        count per query · time-decay old counts · filter spam/PII
-                 │
-                 ▼
-        Popularity table ─▶ Trie Builder ─▶ NEW snapshot
-                 │   (keep top-N phrases)        │
-                 ▼                               ▼
-         metrics / trending boost      ATOMIC SWAP into shard servers
-```
 **Legend:** boxes are stateless services unless they name a store. Read it
 top-to-bottom: keystrokes are answered in **Layers 1–2** from RAM; **Layer 4** runs
 continuously in the background and periodically ships a fresh index into Layer 2.
@@ -425,46 +388,8 @@ throughput.
 
 ## 6.3 HLD — high-level architecture
 
-```
-  ┌────────────┐   seeds
-  │ Seed URLs  │────────────────┐
-  └────────────┘                ▼
-                       ╔════════════════════╗
-                       ║   URL  FRONTIER     ║  (the brain — §6.8)
-                       ║  prioritize +       ║
-                       ║  per-host politeness║◀──── new URLs (re-enqueue)
-                       ╚═════════╤══════════╝
-                                 │ next URL to fetch
-                                 ▼
-                       ┌────────────────────┐    ┌──────────────────┐
-                       │  Fetcher workers    │◀──▶│ DNS resolver     │
-                       │  (1000s, async I/O) │    │ + DNS CACHE      │
-                       │  obey robots, rate   │    └──────────────────┘
-                       │  limit per host      │◀──▶┌──────────────────┐
-                       └─────────┬───────────┘    │ robots.txt CACHE │
-                                 │ raw HTML        └──────────────────┘
-                                 ▼
-                       ┌────────────────────┐
-                       │  Content store      │  (object store: raw gzip
-                       │  write raw page      │   HTML, keyed by URL hash)
-                       └─────────┬───────────┘
-                                 │
-                                 ▼
-                       ┌────────────────────┐
-                       │  Parser / Extractor │  pull <a href>, canonical,
-                       │                     │  text, lastmod, sitemaps
-                       └───┬───────────┬─────┘
-            new URLs       │           │  page fingerprint
-                           ▼           ▼
-                 ┌──────────────┐  ┌──────────────────┐
-                 │ URL DEDUPE   │  │ CONTENT DEDUPE   │
-                 │ Bloom filter │  │ sim-hash store   │
-                 │ "seen URL?"  │  │ "near-dup page?" │
-                 └──────┬───────┘  └──────────────────┘
-                        │ unseen URLs
-                        └──────────▶ back to URL FRONTIER
-                                 (also ─▶ Indexer: inverted index, Ch 25)
-```
+![Web Crawler (Googlebot) — high-level architecture (HLD)](diagrams/crawler.svg)
+
 **Legend:** double-bordered box = the stateful frontier; single boxes = stateless workers
 or stores. The loop is: **frontier → fetch → store → parse → dedupe → frontier**.
 
@@ -738,38 +663,8 @@ an **in-memory grid** with last-write-wins, and only checkpoint occasionally. Th
 
 ## 7.3 HLD — high-level architecture
 
-```
-  LAYER 1 — EDGE
-    Mobile / web ──▶ API Gateway (auth, rate-limit) ──▶ L7 LB
+![Proximity / Nearby (Maps / Yelp) — high-level architecture (HLD)](diagrams/proximity.svg)
 
-  LAYER 2 — SERVICES (stateless)
-    ┌─────────────────────┐      ┌──────────────────────────┐
-    │  Search service      │      │  Location-ingest service  │
-    │  radius / viewport    │      │  (moving-dots variant):   │
-    │  → cells → candidates │      │  accept GPS pings,        │
-    │  → exact-distance     │      │  last-write-wins per user │
-    │     filter + sort     │      └────────────┬─────────────┘
-    └──────────┬───────────┘                    │
-               │ cell ids                        │ writes
-               ▼                                 ▼
-  LAYER 3 — GEO INDEX + DATA
-    ┌────────────────────────────┐   ┌──────────────────────────┐
-    │  GEO INDEX                  │   │  In-memory location grid  │
-    │  cellId → [placeIds]        │   │  cellId → {user→(lat,lng, │
-    │  (geohash / quadtree / S2)  │   │           ts)}  (Redis/   │
-    │  Redis GEO or PostGIS       │   │  sharded RAM, TTL'd)      │
-    └─────────────┬──────────────┘   └──────────────────────────┘
-                  │ placeIds
-                  ▼
-    ┌────────────────────────────┐
-    │  Place store (metadata)     │  Postgres/KV: name, hours,
-    │  placeId → details          │  rating, tags
-    └────────────────────────────┘
-
-  LAYER 4 — ASYNC
-    Place edits ─▶ Indexer → update GEO INDEX cells
-    Grid snapshots ─▶ checkpoint to durable store (for recovery)
-```
 **Legend:** the left column serves **static places**; the right column serves **moving
 users**. They share the same **cell** math but use different stores (durable index vs RAM
 grid).
@@ -1035,37 +930,8 @@ on the *small* match path and keep the *huge* location path cheap and eventually
 
 ## 8.3 HLD — high-level architecture
 
-```
-  LAYER 1 — EDGE
-    Driver app (GPS every 4 s) ─┐         ┌─ Rider app (request ride)
-                                ▼         ▼
-                        API Gateway / WebSocket gateway (persistent
-                        conns for drivers so we can PUSH dispatch offers)
+![Ride-Hailing (Uber / Lyft) — high-level architecture (HLD)](diagrams/ride_hailing.svg)
 
-  LAYER 2 — SERVICES (stateless, city-sharded)
-   ┌──────────────────────┐   ┌──────────────────────────────────────┐
-   │ Location-ingest svc   │   │  Dispatch / Matching service          │
-   │ swallow GPS pings;     │   │  1. find nearby avail drivers (grid)  │
-   │ update grid (LWW);     │   │  2. rank by ETA/score                 │
-   │ update driver state    │   │  3. ATOMIC CLAIM one driver (lock)    │
-   └──────────┬───────────┘   │  4. push offer; await accept/timeout   │
-              │                └───────────────┬──────────────────────┘
-              ▼                                 │
-  LAYER 3 — LIVE STATE (in-memory, sharded by geo cell / city)
-   ┌─────────────────────────────────────────┐  ┌────────────────────┐
-   │ In-memory LOCATION GRID                   │  │ Driver-state store │
-   │ cellId → {driverId→(lat,lng,ts,avail)}    │  │ driverId → status, │
-   │ (Case Study 7's grid; LWW; TTL)           │  │ currentTripId      │
-   └─────────────────────────────────────────┘  │ (Redis; the LOCK)  │
-                                                 └────────────────────┘
-  LAYER 4 — DURABLE + ASYNC
-   ┌──────────────┐  ┌─────────────────┐  ┌─────────────────────────┐
-   │ Trip store    │  │ Surge / pricing │  │ Kafka event bus         │
-   │ FSM, history  │  │ supply÷demand   │  │ trip.* events → ETA,    │
-   │ (DB)          │  │ per cell        │  │ analytics, payments,    │
-   └──────────────┘  └─────────────────┘  │ notifications           │
-                                          └─────────────────────────┘
-```
 **Legend:** WebSocket gateway keeps driver connections open so dispatch is a **push**, not a
 poll. Layer 3 is **RAM**; Layer 4 is **durable**.
 
@@ -1323,39 +1189,8 @@ hybrid**: push for the masses, pull for the whales.
 
 ## 9.3 HLD — high-level architecture
 
-```
-  LAYER 1 — EDGE
-    Client ─▶ API Gateway (auth, rate-limit) ─▶ L7 LB
+![News Feed (Twitter / Facebook) — high-level architecture (HLD)](diagrams/news_feed.svg)
 
-  LAYER 2 — SERVICES (stateless)
-    ┌────────────┐   ┌─────────────────┐   ┌────────────────────────┐
-    │ Post svc    │   │ Fan-out svc      │   │ Timeline (read) svc     │
-    │ write post, │──▶│ on new post:     │   │ on GET feed:            │
-    │ emit event  │   │ if author normal │   │ read pushed feed cache  │
-    └─────┬──────┘   │  → PUSH to        │   │ + PULL celeb posts      │
-          │           │    followers'     │   │ + MERGE + RANK + page   │
-          │           │    feed caches    │   └───────────┬────────────┘
-          │           │ if author celeb   │               │
-          │           │  → SKIP push      │               │
-          │           └────────┬─────────┘               │
-          ▼                    ▼                          ▼
-  LAYER 3 — DATA
-   ┌────────────┐  ┌──────────────────────┐  ┌────────────────────────┐
-   │ Post store  │  │ FEED CACHE (per user) │  │ Graph store (follows)  │
-   │ postId →    │  │ userId → sorted set    │  │ user → followers,      │
-   │ author,text │  │ {postId : score}       │  │ user → followees       │
-   │ (Cassandra) │  │ (Redis ZSET, capped)   │  │ (graph DB / KV)        │
-   └────────────┘  └──────────────────────┘  └────────────────────────┘
-                          ▲
-   ┌──────────────────────┴───────────────┐
-   │ Celebrity post cache (recent posts of  │  ← pulled at read time
-   │ big accounts) celebId → recent postIds │
-   └───────────────────────────────────────┘
-
-  LAYER 4 — ASYNC
-    Kafka "post.created" ─▶ Fan-out workers ─▶ write feed caches
-                        ─▶ Ranking features, search index, analytics
-```
 **Legend:** the **Fan-out service** decides push-vs-skip per post; the **Timeline service**
 merges pushed + pulled at read time. The feed cache is a **Redis sorted set** per user.
 
@@ -1365,6 +1200,10 @@ merges pushed + pulled at read time. The feed cache is a **Redis sorted set** pe
 - **Fan-out service / workers** — consume `post.created` and, **for normal authors**, push the
   `postId` into each follower's feed cache. **For celebrities, they skip the push** (that's the
   whole trick).
+- **Realtime push (live followers)** — in parallel with the (async) cache write, any follower
+  who is **currently connected** also gets the new post pushed instantly over their open
+  **WebSocket** via the **Realtime Gateway** — the same chat/presence gateway from
+  **Ch 35 (Case Study 2)**. Timeline-cache update and live push happen together.
 - **Timeline (read) service** — on a feed request, read the user's **pushed** cache, then
   **pull** recent posts from the **few** celebrities they follow, **merge + rank + paginate**.
 - **Feed cache (Redis ZSET)** — per-user sorted set `postId → score` (score = timestamp or a
@@ -1386,6 +1225,8 @@ merges pushed + pulled at read time. The feed cache is a **Redis sorted set** pe
         │     (trim feed:f to ~800 newest)
         └─ followers ≥ THRESHOLD  (celebrity)  → SKIP push;
               just keep it in the celeb's "recent posts" cache
+  4. In parallel: for any follower ONLINE now, push the post over
+     their open WebSocket via the Realtime Gateway (Ch 35, CS2)
 ```
 
 **Read (timeline) — merge pushed + pulled:**
@@ -1425,6 +1266,12 @@ cap — exactly the "ordered, bounded, fast top-N" shape a timeline needs.
 - **Where to draw the push/pull line?** A threshold on follower count (e.g. push if < 100 k).
   Tune it: pushing to 100 k is fine; pushing to 100 M is not. Some systems push to *active*
   followers only (skip dormant accounts) to cut wasted fan-out.
+- **Segment followers by state** (generalizes "push only to active followers" into a 4-way
+  rule that decides who is worth a write):
+  - **LIVE** (connected now) → real-time **WebSocket** push via the Realtime Gateway (Ch 35, CS2).
+  - **ACTIVE** (recently active) → precompute: push the `postId` into their feed cache.
+  - **PASSIVE** (dormant) → **skip** the fan-out write; rebuild lazily by **pull** on next visit.
+  - **INACTIVE / soft-deleted** → skip entirely.
 - **Fan-out is async + parallel** — workers consume `post.created` from Kafka and shard the
   follower list; a popular-but-not-celebrity post (say 80 k followers) is chunked across workers.
 - **Read scaling** → the feed cache makes reads O(1); replicate Redis for read QPS; CDN/edge
@@ -1547,6 +1394,14 @@ candidates), never on the whole post store.
 - *"How is this different from Instagram (Ch 25)?"* — same fan-out skeleton; Instagram adds the
   **media** pipeline (S3 + transcode + CDN). Here the payload is tiny text, so timeline
   generation *is* the whole problem.
+- *"How do online users see a post instantly, not in seconds?"* — for **live** (connected)
+  followers, the post is also pushed over their open **WebSocket** via the **Realtime Gateway
+  (Ch 35, CS2)**, in parallel with the async cache write — so the feed-cache update and the live
+  push happen together; offline followers just find it in their cache on next read.
+- *"Trending posts, and winning dormant users back?"* — tee feed/post events to a batch
+  **analytics store** (Hadoop / warehouse) that powers **trending / most-popular** queries; a
+  periodic (e.g. weekly) **re-engagement** job emails **PASSIVE** users a digest of popular
+  posts via the **Notification System (Ch 35, CS1)**.
 
 **Red flags that sink candidates:** **pure push** with no celebrity handling (the classic
 fail); **pure pull** for everyone (every read pays O(followees)); unbounded feed caches (OOM);
@@ -1624,34 +1479,8 @@ from the CDN**, not your origin. View counting at 10¹⁰/day can't be exact-per
 
 ## 10.3 HLD — high-level architecture
 
-```
-  LAYER 1 — UPLOAD / EDGE
-    Creator ──presigned PUT──▶ Raw object store (S3/GCS: originals)
-            └─ POST /videos (metadata) ─▶ Upload svc ─▶ emit "uploaded"
+![Video Streaming (YouTube / Netflix) — high-level architecture (HLD)](diagrams/video_streaming.svg)
 
-  LAYER 2 — TRANSCODING PIPELINE (async, CPU fleet)   ── see §10.8
-    "uploaded" ─▶ Splitter ─▶ [chunk1..chunkN] ─▶ Encoder workers
-                  (GOP-aligned)   parallel: each chunk × each rendition
-                                        │
-                                        ▼
-                              Packager (HLS/DASH): segment + manifest
-                                        │
-                                        ▼
-                         Processed store (segments + manifests) ─▶ CDN
-
-  LAYER 3 — DELIVERY (the high-traffic path)          ── see §10.8
-    Viewer player ─▶ CDN edge (segments cached by popularity)
-        │  manifest first, then segments, ABR switching
-        └─ miss ─▶ regional cache ─▶ origin (processed store)
-
-  LAYER 4 — METADATA + ASYNC
-   ┌───────────────┐ ┌─────────────────┐ ┌──────────────────────────┐
-   │ Video metadata │ │ View counter     │ │ Kafka event bus          │
-   │ id→title,      │ │ approx + batched │ │ transcode.done, view.*,  │
-   │ renditions,    │ │ (sharded counts) │ │ → search, recs, analytics│
-   │ status (DB)    │ └─────────────────┘ └──────────────────────────┘
-   └───────────────┘
-```
 **Legend:** Layer 2 turns one upload into many renditions; Layer 3 is where ~billions of
 viewers actually pull bytes — almost all from CDN.
 
@@ -1925,34 +1754,8 @@ turn "20 saves of a big file" into a few 4 MB chunk transfers.
 
 ## 11.3 HLD — high-level architecture
 
-```
-  LAYER 1 — CLIENTS / EDGE
-    Desktop / mobile / web clients (watch local files, chunk, hash)
-                        │            ▲
-                        ▼            │  change notifications
-                 API Gateway / LB    │  (long-poll / WebSocket)
-                        │            │
-  LAYER 2 — SERVICES (stateless)     │
-   ┌───────────────┐ ┌──────────────┴───────┐ ┌────────────────────┐
-   │ Metadata svc   │ │ Block svc             │ │ Notification/Sync   │
-   │ files, folders,│ │ presigned up/download │ │ svc: tell a user's  │
-   │ versions, chunk│ │ to/from block store;  │ │ OTHER devices "pull"│
-   │ lists, ACLs    │ │ verify content hash   │ │ on any change       │
-   └──────┬────────┘ └──────────┬────────────┘ └─────────┬──────────┘
-          │                     │                         │
-  LAYER 3 — DATA                ▼                         │
-   ┌──────────────────┐  ┌───────────────────┐            │
-   │ METADATA DB       │  │ BLOCK STORE        │            │
-   │ (Postgres/Spanner)│  │ (S3/GCS object)    │            │
-   │ file→[chunkHash], │  │ chunkHash → bytes  │            │
-   │ versions, dedupe  │  │ (content-addressed,│            │
-   │ refcounts, ACLs   │  │  write-once)       │            │
-   └──────────────────┘  └───────────────────┘            │
-          │                                                 │
-  LAYER 4 — ASYNC                                           │
-   Kafka "file.changed" ─▶ fan-out to devices ──────────────┘
-                       ─▶ thumbnailing, search index, sharing
-```
+![File Sync & Storage (Drive / Dropbox) — high-level architecture (HLD)](diagrams/file_sync.svg)
+
 **Legend:** the **two stores** are the heart — a transactional **metadata DB** (small, hot) and
 a content-addressed **block store** (huge, immutable). Clients talk to both.
 
@@ -2195,33 +1998,8 @@ dominated**, so it's really "a giant, heavily-cached hash map."
 
 ## 12.3 HLD — high-level architecture
 
-```
-  LAYER 1 — EDGE
-    Client ─▶ CDN / API Gateway (rate-limit) ─▶ L7 LB
+![URL Shortener (TinyURL) — high-level architecture (HLD)](diagrams/url_shortener.svg)
 
-  LAYER 2 — SERVICES (stateless)
-    ┌──────────────────────┐        ┌──────────────────────────┐
-    │ Write svc (shorten)   │        │ Redirect svc (the hot path)│
-    │ get ID → base62 →     │        │ code → lookup long URL →   │
-    │ store {code→longURL}  │        │ 301/302 redirect           │
-    └──────────┬───────────┘        └───────────┬───────────────┘
-               │ ID                              │ read-through
-               ▼                                 ▼
-  LAYER 3 — DATA
-    ┌────────────────────┐   ┌───────────────────────────────────┐
-    │ ID generator        │   │ Cache (Redis): code → longURL      │
-    │ Snowflake / counter │   │  (95%+ of redirects end here)      │
-    │ block (→ Ch 37)     │   └─────────────────┬─────────────────┘
-    └────────────────────┘                     │ miss
-                                                ▼
-                                  ┌───────────────────────────────┐
-                                  │ KV store: code → {longURL,exp} │
-                                  │ (Cassandra/DynamoDB)           │
-                                  └───────────────────────────────┘
-
-  LAYER 4 — ASYNC
-    Redirect events ─▶ Kafka ─▶ click analytics (counts, geo, referrer)
-```
 **Block-by-block:** the **Write service** turns a unique numeric **ID** into a base62 **code**
 and stores `code→longURL`. The **Redirect service** is the hot path — a cache-first KV lookup
 then an HTTP redirect. The **ID generator** avoids collisions by construction. The **cache**

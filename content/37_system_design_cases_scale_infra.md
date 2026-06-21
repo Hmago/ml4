@@ -55,6 +55,7 @@ Parts 1–2.
 - **CASE STUDY 20** — E-commerce Inventory / Flash Sale (condensed)
 - **CASE STUDY 21** — Distributed Key-Value Store, Dynamo-style (condensed)
 - **CASE STUDY 22** — Pastebin (condensed, short)
+- **CASE STUDY 23** — E-commerce Platform / Amazon · Flipkart (FULL — capstone)
 - **PART F** — AI-Flavored Designs (LLM serving · RAG · Recommendation feed)
 - **PART G** — The Cross-Cutting Pattern Library (the synthesis matrix)
 - **PART H** — Rapid-Revision Cheat Sheet (one row per design)
@@ -140,32 +141,8 @@ consistent-hash cluster — Ch 24).
 The limiter lives **inside the API gateway**, as middleware that runs *before*
 any request is routed to a backend. State lives in a sharded Redis cluster.
 
-```
-  LAYER 1 — EDGE  (where the limiter runs)
-     Clients ──▶ Anycast L4 LB ──▶  API GATEWAY FLEET   (N stateless nodes)
-                                     │  limiter middleware runs INLINE,
-                                     │  before routing to any backend
-                                     ▼
-  LAYER 2 — DECISION  (per gateway node)
-     ┌────────────────────────────────────────────────────────┐
-     │  RATE-LIMITER MIDDLEWARE                                 │
-     │   1. extract KEY  (api_key / user_id / ip / route)      │
-     │   2. load POLICY  {limit, window, burst}  ◀── Policy   │
-     │   3. call counter store: ALLOW or DENY        store     │
-     │      (token-bucket check-and-decrement)     (cached    │
-     │   4. add RateLimit-* headers                  locally)  │
-     └───────────┬───────────────────────────┬────────────────┘
-          ALLOW  │                      DENY  │  429 + Retry-After
-                 ▼                            ▼
-          backend services            client backs off
-  LAYER 3 — SHARED STATE  (the counters)
-     ┌────────────────────────────────────────────────────────┐
-     │  REDIS CLUSTER  (sharded by KEY via consistent hashing) │
-     │    per KEY:  hash { tokens, last_refill_ts }            │
-     │    decision: ONE atomic Lua script per check            │
-     │    EXPIRE on idle keys → memory self-cleans             │
-     └────────────────────────────────────────────────────────┘
-```
+![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter.svg)
+
 **Legend:** boxes are stateless unless they name a store; `──▶` = request flow.
 **Block-by-block:** the **gateway fleet** is the only place the limiter runs —
 co-locating it with auth and routing means **zero extra network hops** for the
@@ -432,28 +409,8 @@ Two deployment shapes. **Embedded** (a library inside each service) is the
 default — it has **no network hop**. A standalone **ID service** is used when
 clients can't embed the library (polyglot fleets, or you want central control).
 
-```
-  PATTERN A — EMBEDDED LIBRARY  (the usual choice: zero hop)
-    ┌────────────────────────┐    at boot, lease a unique 10-bit
-    │  App instance          │    worker id from the coordinator:
-    │   ├ Snowflake library  │◀────────────────────────────────────┐
-    │   └ nextId() = CPU ops │                                      │
-    └────────────────────────┘    then generate IDs in-process,     │
-        (one per app pod)         independent of the coordinator.   │
-                                                                    │
-  PATTERN B — STANDALONE ID SERVICE  (central fleet behind an LB)   │
-    Clients ─▶ LB ─▶ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
-                     │ IDgen 1 │ │ IDgen 2 │ │ IDgen 3 │  …         │
-                     │ wkr=001 │ │ wkr=002 │ │ wkr=003 │           │
-                     └────┬────┘ └────┬────┘ └────┬────┘           │
-                          └───────────┴───────────┴────────────────┤
-  COORDINATION (boot-time only, NOT per id)                        │
-    ┌──────────────────────────────────────────────────┐          │
-    │  ZooKeeper / etcd  — assigns/leases worker ids,    │◀────────┘
-    │  detects dead nodes, prevents two live workers     │
-    │  from ever holding the SAME 10-bit id              │
-    └──────────────────────────────────────────────────┘
-```
+![Distributed Unique ID Generator (Snowflake) — high-level architecture (HLD)](diagrams/unique_id.svg)
+
 **Block-by-block:** the **coordinator** (ZooKeeper/etcd — Ch 24, consensus)
 hands each generator a **distinct 10-bit worker id** exactly once, at boot. That
 is the *only* coordination, and it's off the hot path. After that, each
@@ -646,23 +603,8 @@ probabilistic **Count-Min Sketch** estimates counts in fixed space, and a
 
 ## 15.2 HLD — architecture + flow
 
-```
-  INGEST            STREAM PROCESS (partition by KEY)         SERVE
-  ──────            ───────────────────────────────────       ─────
-  clicks/    ┌────┐  ┌──────────────────────────────┐  ┌──────────┐
-  searches ─▶│Kafka│─▶│ Stream worker (Flink/Beam)   │─▶│ Merge /  │
-  /plays     │ log │  │  • Count-Min Sketch (approx) │  │ combine  │
-             └────┘  │  • min-heap of local top-K   │  │ local    │
-                ▲    │  • per-window decay/reset     │  │ heaps →  │
-                │    └──────────────┬───────────────┘  │ GLOBAL   │
-         partition by key           │ flush top-K       │ top-K   │
-         so each KEY's              │ every few sec      └────┬────┘
-         events go to ONE worker    ▼                         ▼
-                              (one sketch+heap per       Redis cache ─▶ API
-                               partition, in RAM)         /trending  ─▶ users
-  BATCH PATH (exact, slower): Kafka → data lake → MapReduce/Spark
-       count-per-key → global sort → exact Top-K (reconciles the approx path)
-```
+![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk.svg)
+
 **Block-by-block:** events land in **Kafka**, **partitioned by key** so every
 occurrence of one hashtag goes to the **same stream worker** — that worker's
 sketch and heap then see *all* of that key's traffic locally (no cross-worker
@@ -758,19 +700,8 @@ which keeps elements ordered by score and answers rank queries in **O(log N)**.
 
 ## 16.2 HLD — architecture + flow
 
-```
-   WRITE PATH                              READ PATH
-   ──────────                              ─────────
-   Game ─▶ Score API ─▶ Redis SORTED SET   Client ─▶ Leaderboard API ─▶ Redis
-            │            "lb:global"          • top N   : ZREVRANGE 0 N-1
-            │            ZADD lb <score> uid   • my rank : ZREVRANK lb uid
-            ▼                                  • around  : ZREVRANGE r-2 r+2
-   Durable store (source of truth)
-   ┌────────────────────────────┐    Redis is a fast INDEX, not the system of
-   │ SQL / KV: user_id → score   │    record. Rebuild the sorted set from this
-   │ (also feeds analytics)      │    store on cold start or failover.
-   └────────────────────────────┘
-```
+![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)
+
 **Block-by-block:** the **Score API** writes each update to both the durable
 store (**source of truth** — survives a Redis flush) and the **Redis sorted
 set** (the live ranking index). The **Leaderboard API** answers all three query
@@ -864,21 +795,8 @@ keys whose value changes faster than it's read.
 
 ## 17.2 HLD — architecture + flow
 
-```
- App servers  (each runs a CACHE CLIENT with the ring)
-     │  1. key → ring → owner node (no central router needed)
-     ▼
-┌──────────────── CACHE CLUSTER (sharded by key) ────────────────┐
-│  Node A          Node B          Node C          Node D          │
-│  primary +       primary +       primary +       primary +       │
-│  async replica   async replica   async replica   async replica   │
-│  LRU/LFU evict    LRU/LFU         LRU/LFU         LRU/LFU         │
-└───────────┬────────────────────────────────────────────────────┘
-            │ 2. MISS  → read-through (or app does cache-aside)
-            ▼
-      Backing DB  (system of record)  ─ 3. fill cache, set TTL ─┐
-            ▲──────────────────────────────────────────────────┘
-```
+![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)
+
 **Block-by-block:** the **cache client** (a library in each app server) hashes
 the key onto a **consistent-hash ring** to find its owner node — there's no
 central coordinator on the read path. Each **cache node** holds a shard in RAM
@@ -974,23 +892,8 @@ completed jobs.
 
 ## 18.2 HLD — architecture + flow
 
-```
-SUBMIT                  SCHEDULE                 EXECUTE
-──────                  ────────                 ───────
-Producers ─▶ Submit ─▶ ┌────────────────────┐   ┌──────────────────┐
-             API       │ DURABLE JOB STORE   │   │ Worker fleet      │
-                       │ {id,payload,run_at, │   │ (autoscaled)      │
-                       │  state,attempts,    │◀─▶│  poll → LEASE →    │
-                       │  lease_until}        │   │  run → ack/fail   │
-                       └─────────┬───────────┘   └────────┬─────────┘
- SCHEDULER (leader-elected)      │ due jobs                │
- ┌───────────────────────────┐  │ (run_at ≤ now)          │ result
- │ scans time-ordered index, │──┘                         ▼
- │ moves due jobs → READY    │            success → delete/done
- │ leader election via etcd  │            fail    → retry w/ backoff
- └───────────────────────────┘            attempts>N → DLQ + alert
- SWEEPER: lease_until < now & leased → reset to READY (redeliver)
-```
+![Distributed Job Scheduler / Task Queue — high-level architecture (HLD)](diagrams/scheduler.svg)
+
 **Block-by-block:** the **Submit API** writes each job **durably** (so nothing is
 lost on a crash) with its `run_at` and `state`. A **leader-elected scheduler**
 (only one active at a time, via etcd/ZooKeeper — Ch 24) scans the **time-ordered
@@ -1146,31 +1049,8 @@ KV.
 
 ## 19.3 HLD — high-level architecture
 
-```
-LAYER 1 — API (synchronous, idempotent)
-  Clients ─▶  Payment API  ─▶  IDEMPOTENCY check
-     (top-up/pay/transfer)      (idem_key → cached result? return it)
-                                 │ first time → proceed
-LAYER 2 — ORCHESTRATION (saga)
-               ┌──────────────────────────────────────────────┐
-               │  Transaction Orchestrator (Saga state machine)│
-               │   reserve → external charge → post ledger →    │
-               │   confirm;  each step has a COMPENSATION       │
-               └───────┬───────────────────────────┬───────────┘
-                       │                            │
-LAYER 3 — CORE         ▼                            ▼
-  ┌───────────────────────────────┐   ┌───────────────────────────────┐
-  │ WALLET / LEDGER service        │   │ PAYMENT GATEWAY adapter        │
-  │  • double-entry, append-only   │   │  • Stripe / Adyen / card nets  │
-  │  • strongly-consistent SQL     │   │  • EXTERNAL, also idempotent   │
-  │  • balance = SUM(entries)      │   │  • async settlement webhooks   │
-  └───────────────┬───────────────┘   └───────────────┬───────────────┘
-                  │ OUTBOX (same DB txn)               │ settlement report
-LAYER 4 — ASYNC   ▼                                    ▼
-  Outbox → CDC → Kafka ─▶ notifications, statements, ANALYTICS
-                        ─▶ RECONCILIATION job: ledger  vs  gateway report
-                           (catch & flag any mismatch — the safety net)
-```
+![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment.svg)
+
 **Legend:** boxes are services; a store is named inside the box.
 **Block-by-block:** the **Payment API** is the only synchronous hop and its
 **first act is the idempotency check** — a retry with the same key returns the
@@ -1388,29 +1268,8 @@ for the buyer to pay.
 
 ## 20.2 HLD — architecture + flow
 
-```
-   FLASH-SALE FLOW
-   ───────────────
-   Millions of clients
-        │  1. queued at the gate
-        ▼
-   ┌─────────────────────────┐   admits a controlled trickle (token/turn);
-   │ VIRTUAL WAITING ROOM    │   the other 999,900 wait or are told "sold out"
-   │ (queue + admission)     │   → protects everything downstream
-   └───────────┬─────────────┘
-        2. admitted │ Buy
-                    ▼
-   ┌─────────────────────────┐   3. ATOMIC reserve-decrement:
-   │ Checkout / Inventory API │──▶  Redis  DECR stock:sku  (single op)
-   └───────────┬─────────────┘     reservation:{order} TTL 5 min
-        4. reserved │ → start payment
-                    ▼
-   ┌─────────────────────────┐   5a. pay OK  → persist Order (durable DB),
-   │ Order + Payment service │       consume reservation
-   └───────────┬─────────────┘   5b. timeout → release: INCR stock back
-                    ▼
-   Durable DB (orders, authoritative stock) ◀─ async reconcile with Redis
-```
+![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)
+
 **Block-by-block:** the **virtual waiting room** is the pressure valve — it
 admits a controlled rate of users and tells the rest to wait, so the inventory
 service never sees a million simultaneous writes. The **inventory API** does the
@@ -1503,22 +1362,8 @@ each node's share ≈ `1/nodes` and resharding cheap.
 
 ## 21.2 HLD — architecture + flow
 
-```
- Clients ─▶ ANY node (acts as COORDINATOR for this request)
- ┌─────────── RING: nodes on a consistent-hash circle (+ vnodes) ──────────┐
- │  key → hash → owner; the N replicas = next N nodes clockwise            │
- │  (the key's "preference list")                                         │
- │                                                                        │
- │   PUT(k,v):  coordinator sends to all N replicas, waits for W acks     │
- │   GET(k):    coordinator asks all N replicas, waits for R responses,   │
- │              returns newest (and triggers read-repair on stale ones)   │
- │                                                                        │
- │   GOSSIP: nodes exchange membership + health (no central master)      │
- │   HINTED HANDOFF: if a replica is down, a stand-in holds its write     │
- │              and replays it when the owner returns                     │
- │   ANTI-ENTROPY: Merkle-tree sync repairs divergence in the background  │
- └────────────────────────────────────────────────────────────────────────┘
-```
+![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store.svg)
+
 **Block-by-block:** there is **no leader** — any node can **coordinate** a
 request, which is why the store stays available. **Consistent hashing + virtual
 nodes** (Ch 24) place keys; each key's **preference list** is the next **N**
@@ -1610,18 +1455,8 @@ a row in SQL.
 
 ## 22.2 HLD — architecture + flow
 
-```
- CREATE                                READ
- ──────                                ────
- Client ─▶ Write API                   Client ─▶ GET /{key}
-     │  1. gen short KEY (base62 of      │  4. meta lookup (DB/cache)
-     │     a Snowflake id, or counter)   │  5. expired/used? → 404/410
-     │  2. PUT text blob → OBJECT STORE  │  6. fetch blob (CDN → object
-     │  3. write META {key→blob_url,         store) → render
-     │     expiry, view_once} → DB+cache
-     ▼                                   ▼
- short link returned                 text shown (then delete if view-once)
-```
+![Pastebin — high-level architecture (HLD)](diagrams/pastebin.svg)
+
 **Block-by-block:** the **Write API** mints a **short key** (same options as the
 shortener: hash+base62, counter, or a Snowflake id — CS14), stores the **text
 blob in object storage** (S3/GCS, fronted by a CDN for hot pastes), and writes
@@ -1690,6 +1525,8 @@ is dominated by **GPU memory and throughput**, not CPU. The design is about
   `batch × context_length` and **caps the batch size**.
 
 ### F1.2 HLD — architecture + flow
+
+![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving.svg)
 
 ```
    Clients ─▶ API Gateway (auth, rate limit, quotas — CS13)
@@ -1781,6 +1618,8 @@ lives in **Ch 28 (Semantic Search)**.
 
 ### F2.2 HLD — architecture + flow
 
+![RAG / Semantic Search — high-level architecture (HLD)](diagrams/rag.svg)
+
 ```
    INGEST (offline / streaming)            QUERY (online)
    ────────────────────────────            ──────────────
@@ -1852,6 +1691,8 @@ crux is the **feature store** and the **online/offline split**. Modeling depth
 - **Latency:** end-to-end **< 200 ms**; the model has a strict slice of that.
 
 ### F3.2 HLD — architecture + flow
+
+![Recommendation Feed — high-level architecture (HLD)](diagrams/recsys.svg)
 
 ```
    Request ─▶ ┌── CANDIDATE GENERATION (recall: 10^8 → 10^3) ──┐

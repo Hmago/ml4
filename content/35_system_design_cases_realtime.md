@@ -417,6 +417,9 @@ ML that decides *who* to notify (that's a different system that calls us).
 - **Latency:** transactional (OTP, security) p95 < 5 s end-to-end; marketing may lag minutes.
 - **Delivery:** **at-least-once**, deduped to feel exactly-once; never silently drop a transactional msg.
 - **Availability:** 99.9%+; a single channel/provider outage must not block other channels.
+- **Multi-tenancy (SaaS):** this is usually a *shared* service that many client teams — and
+  sometimes external companies — call. Enforce **per-tenant quotas/rate-limits** so no single
+  tenant can spam users *or* exhaust a shared downstream provider on everyone else's behalf.
 
 **Questions to ask out loud** (reciting these is senior signal): *What's the read:write?
 Priorities/lanes? Acceptable delay per class? Which providers? Do we need delivery receipts
@@ -459,44 +462,7 @@ wide-column store with a TTL, not your primary DB.
 Read it top-to-bottom: the **synchronous ingest** (Layer 1) acknowledges the caller in
 milliseconds; every slow step hangs off the **async backbone** (Layer 2) below.
 
-```
-  LAYER 1 — INGEST (synchronous, returns in milliseconds)
-    Internal services ──▶ Notification API ──▶ Validate + de-dupe (Redis)
-      (Search, Growth,        (REST/gRPC)        └ assign notifId, persist
-       Security, …)                                "accepted", emit, 202
-
-  LAYER 2 — ASYNC BACKBONE
-                 Kafka topic "notifications.requested"
-                    │  (split topics: transactional vs marketing)
-                    ▼
-        ┌───────────────────────────────┐
-        │  Notification Processor        │ (consumer group, autoscaled)
-        │  1. load user PREFERENCES      │◀─ Preferences store (SQL/KV)
-        │  2. drop if opted-out / quiet  │
-        │  3. pick channels + RENDER     │◀─ Template store (cached)
-        │  4. RATE-LIMIT per user        │◀─ Redis token-bucket
-        │  5. enqueue per-channel jobs   │
-        └───────────────┬────────────────┘
-                        │ fan-out to channel queues
-          ┌────────┬────┴─────┬──────────┐
-          ▼        ▼          ▼          ▼
-        push.q   email.q    sms.q     inapp.q   (one durable queue per
-          │        │          │          │       channel = bulkhead)
-        ┌─▼──┐   ┌─▼───┐   ┌──▼─┐    ┌───▼──┐
-        │Push│   │Email│   │SMS │    │In-app│   per-channel WORKERS:
-        │wkr │   │wkr  │   │wkr │    │writer│   own retry/backoff + DLQ
-        └─┬──┘   └─┬───┘   └──┬─┘    └───┬──┘
-          ▼        ▼          ▼          ▼
-      APNs/FCM  SES/SMTP   Twilio    In-app feed DB
-          │        │          │
-          └────────┴──────────┘
-                   ▼
-        Delivery-status events ──▶ Kafka "notifications.delivered"
-                   ▼                          ▼
-        Delivery log (Cassandra,      Analytics / metrics
-         90-day TTL: sent/             (open & bounce rates,
-         delivered/bounced/opened)      per-channel SLOs)
-```
+![Notification System — high-level architecture (HLD)](diagrams/notification.svg)
 
 **Legend:** `.q` = durable queue (Kafka topic / SQS). Boxes are stateless services unless
 they name a store. Read top-to-bottom: a request enters at LAYER 1, is acknowledged in
@@ -514,7 +480,9 @@ milliseconds, and all the slow work happens in LAYER 2.
   scaled by Kafka partitions.
 - **Per-channel queues + workers** — isolation by channel (the **bulkhead** pattern, Ch 23):
   if Twilio is slow, `sms.q` backs up but push/email/in-app keep flowing. Each worker owns
-  its own retry/backoff and a **dead-letter queue** for poison messages (Ch 24).
+  its own retry/backoff and a **dead-letter queue** for poison messages (Ch 24). The channel
+  layer is **pluggable** — to add WhatsApp as a channel, register a new channel worker +
+  template type and route to its queue; nothing upstream changes.
 - **Delivery log + analytics** — providers call back (webhooks) with delivered/bounced/opened;
   workers turn those into events for the cheap, TTL'd log and the metrics pipeline.
 
@@ -548,6 +516,7 @@ Notice the design promises: step 2 makes retries safe (**idempotent**), step 3 h
 | Templates | `template_id, version, locale → body` | Versioned blob + Redis cache | Read-mostly; never hard-code copy in services |
 | Dedupe keys | `idemKey → 1` (TTL 24 h) | Redis (SETNX) | O(1), auto-expiring; the exactly-once illusion |
 | Rate-limit | `user_id → token bucket` | Redis (Lua, atomic) | Atomic check-and-decrement at the edge of fan-out |
+| Usage/metering | `(tenant_id, day) → request_count` | Redis counters → OLAP rollup | Per-client request counts for quotas, reporting & per-use billing |
 | Delivery log | `(user_id, ts) → status…` | Cassandra (TTL 90 d) | Write-heavy, time-series, cheap, expiring |
 | In-app feed | `(user_id, ts) → notif` | Cassandra / Bigtable | Per-user timeline reads, write-heavy |
 
@@ -557,6 +526,10 @@ Notice the design promises: step 2 makes retries safe (**idempotent**), step 3 h
   `user_id` so one user's traffic stays ordered and on one partition.
 - **Hot tenant** (a service blasting 1 M users in a second): admission-control / quota per
   caller at the API; spread fan-out over time for non-urgent classes.
+- **Per-tenant quotas (multi-tenant isolation):** give every client/tenant its own rate-limit
+  bucket at ingest. This serves *two* ends — it stops one tenant spamming users, and it caps
+  any single tenant's draw on the shared downstream providers (APNs/Twilio/SES), so a noisy
+  tenant can't starve the others (the **bulkhead** pattern applied to tenants, Ch 23).
 - **Provider quotas** (SMS): a **leaky-bucket shaper** in the SMS worker matches Twilio's
   allowed rate; overflow waits in `sms.q` (it's durable) rather than getting dropped.
 - **Priority lanes:** separate `transactional` vs `marketing` topics/queues so a 10 M-email
@@ -644,6 +617,12 @@ classic race). Why **token bucket** over fixed window: it allows short bursts (a
 legit alerts) while still capping the long-run rate — no edge-of-window doubling. (Theory:
 *token-bucket rate limiting* — Ch 23.)
 
+**Two checks, one primitive.** Production systems apply this *same* token-bucket at **two**
+levels: **(a) is this client/tenant allowed to send this volume** — bucket keyed by
+`tenant_id`, checked at ingest, which protects users *and* the shared downstream providers;
+and **(b) is this user supposed to receive this many** — bucket keyed by `user_id`, the script
+above, checked at fan-out. Identical Lua, different key.
+
 ## 1.9 Follow-ups, red flags & building blocks
 
 **Likely follow-ups (with crisp answers):**
@@ -654,6 +633,8 @@ legit alerts) while still capping the long-run rate — no edge-of-window doubli
 - *"Exactly-once?"* — we don't promise it at the transport; we *simulate* it with dedupe keys
   + idempotent provider calls.
 - *"Multi-region?"* — process in the user's home region; replicate preferences; providers are global.
+- *"How do we bill per-use clients?"* — we keep **per-client request counts** (the metering
+  counters in 1.5) and roll them up into usage reports that quota enforcement and billing read from.
 
 **Red flags that sink candidates:** sending synchronously from the API (couples caller
 latency to Twilio); no dedupe (every retry double-sends); one shared queue for all channels
@@ -772,43 +753,7 @@ moment. Your options:
 We use **WebSocket** (Ch 23) for the live path, with long-poll as a fallback for hostile
 networks. Now the architecture:
 
-```
-  LAYER 1 — EDGE (persistent connections, NOT request/response)
-    Phones / web ─▶ GeoDNS ─▶ L4 LB (TCP/TLS pass-through, sticky)
-        (WebSocket)                          │
-                                             ▼
-  LAYER 2 — REALTIME GATEWAY TIER  (the heart; holds the sockets)
-    ┌───────────┐  ┌───────────┐  ┌───────────┐  …  (~500 boxes,
-    │ Gateway 1 │  │ Gateway 2 │  │ Gateway N │      ~500k conns each)
-    │ holds WS  │  │ holds WS  │  │ holds WS  │
-    └─────┬─────┘  └─────┬─────┘  └─────┬─────┘
-          │ on connect: register (userId,deviceId)→(gatewayId,connId)
-          └──────────────┼──────────────┘
-                         ▼
-             Connection Registry (Redis / directory):
-             userId → which gateway box holds the socket
-                         ▲ lookups
-  LAYER 2b — STATELESS SERVICES                      │
-    ┌──────────────┐  ┌─────────────┐  ┌─────────────┴┐
-    │ Chat service │  │ Presence    │  │ Receipt /    │
-    │ seqId assign,│  │ service     │  │ delivery svc │
-    │ persist,     │  │ (online set,│  │ (state m/c:  │
-    │ route        │  │  last-seen) │  │  sent→read)  │
-    └──────┬───────┘  └─────────────┘  └──────────────┘
-           │ internal routing via pub/sub (one channel per gateway)
-  ═════════╪═════════════ LAYER 3 — DATA ═══════════════════════════
-    ┌──────▼──────┐ ┌─────────────┐ ┌──────────┐ ┌──────────────┐
-    │ Message     │ │ User inbox /│ │ Presence │ │ Media blob   │
-    │ store       │ │ delivery    │ │ (Redis:  │ │ (S3 + CDN):  │
-    │ (Cassandra: │ │ offsets     │ │ online,  │ │ images,video │
-    │  by convId, │ │ (per user:  │ │ lastSeen)│ │ by reference │
-    │  seqId)     │ │ lastDelivd) │ └──────────┘ └──────────────┘
-    └─────────────┘ └─────────────┘
-  ═════════════════ LAYER 4 — ASYNC ═══════════════════════════════
-    Kafka ─▶ Push-on-disconnect (FCM/APNs for offline users)  [→ CS1]
-          ─▶ Group fan-out workers (large groups)
-          ─▶ Search indexer / analytics / abuse detection
-```
+![Chat / Messaging (WhatsApp / Slack) — high-level architecture (HLD)](diagrams/chat.svg)
 
 **Block by block:** at **Layer 1**, an **L4 load balancer** does TCP/TLS pass-through (an L7
 proxy that buffered every frame would add latency and cost) and keeps a connection sticky to
@@ -861,13 +806,13 @@ acking but before storing, the user would think it sent when it didn't.
 
 | Entity | Shape (key fields) | Store | Why |
 |--------|--------------------|-------|-----|
-| Message | `(convId, seqId) → {senderId, body/ref, ts}` | Cassandra (by convId) | Write-heavy, time-ordered, range-scan a conversation |
+| Message | `(convId, seqId) → {senderId, body/ref, ts}` | Cassandra (by convId) | Write-heavy, time-ordered, range-scan a conversation; delete-after-delivery ⇒ use TTL/retention, not ad-hoc deletes (tombstones — see 2.7) |
 | Conversation | `convId → {members[], type, lastSeq}` | Cassandra / SQL | Small metadata; members list for fan-out |
 | Delivery offset | `(userId, convId) → lastDeliveredSeq` | Cassandra / KV | Per-user cursor; powers offline sync |
 | Offline inbox | `userId → [undelivered refs]` | Cassandra / Redis | Store-and-forward queue for offline users |
 | Connection reg. | `userId → {deviceId: gatewayId}` (TTL) | Redis | Hot, ephemeral, heartbeat-refreshed routing table |
 | Presence | `userId → {online, lastSeen}` | Redis | Hot, ephemeral; gossip/TTL expiry |
-| Media | `mediaId → bytes` | S3 + CDN | Big blobs never travel the message path |
+| Media | `mediaId(=content hash) → bytes` | S3 + CDN | Big blobs never travel the message path; identical media is deduped by content hash — store once, reference by hash (deep-dive: Case Study 11, File Sync) |
 
 **Shard key = `convId`** for messages: a conversation's whole history lives on one partition,
 ordered by `seqId`, so reading or appending is a single-partition op. (Theory: *wide-column
@@ -916,6 +861,14 @@ conversations would need a global sequencer (a bottleneck) and users never perce
 accept **at-least-once + client dedupe** (a message may be delivered twice on a flaky
 network; `clientMsgId` makes that invisible) instead of costly exactly-once.
 
+**Tombstone trap (Cassandra).** WhatsApp-style systems *delete* a message once it's been
+delivered to every device — a **delete-heavy** workload, which Cassandra handles poorly. Each
+delete writes a **tombstone** that lingers until compaction, so reads of a conversation must
+scan *and skip* tombstones (**read amplification**) while **compaction pressure** climbs. Don't
+issue ad-hoc per-message deletes; give delivered-then-deleted messages a **short TTL** (let
+Cassandra expire them in a batch) or park them in a **delete-friendly store** (a queue/KV where
+deletes are cheap), keeping the long-lived conversation log tombstone-light.
+
 ## 2.8 LLD (the crux) — connection registry + routing, and the ordering/receipt machine
 
 Chat has **two** cruxes; both are where candidates hand-wave, so go deep on both.
@@ -953,6 +906,14 @@ box can — so routing is *find the gateway, then publish to its channel.* The r
 "treat as offline → store + push," which never loses a message. Internal delivery uses
 **pub/sub per gateway** (one channel per box) so a publish reaches exactly the box that needs
 it. (Theory: *pub/sub, consistent hashing* — Ch 24; *WebSockets* — Ch 23.)
+
+**The online→offline race.** The registry can report "B is online on Gateway-B" at lookup
+time, yet B's socket may drop *during* routing — the published frame lands on a gateway whose
+socket just died, so that one message is silently missed. We don't try to make routing atomic;
+the reconciliation **already exists**: the message was persisted to the conversation log before
+routing (Flow 1 step 3), B's `lastDelivered` offset still points before it, so on reconnect B's
+**SYNC/poll** streams everything past that offset (Flow 2). The race is therefore **safe** — at
+worst the message arrives a beat later via sync instead of live.
 
 ### Crux B — per-conversation ordering + the delivery/read-receipt state machine
 
@@ -1137,28 +1098,7 @@ The non-negotiable idea: **a signaling plane (control) separate from a media pla
 bytes).** Signaling is low-volume and reliable; media is high-volume, lossy, and latency-
 critical — they have nothing in common and must not share infrastructure.
 
-```
-  ════════════ SIGNALING PLANE (control; reliable; low volume) ═══════
-    Client(WebRTC) ─WebSocket─▶ Signaling Service ──▶ Room Registry
-       │                        (auth, room membership,   (Redis: who is
-       │                         SDP + ICE relay,           in which room,
-       │                         picks an SFU)              on which SFU)
-       │                              │ allocate media server
-       │                              ▼
-  ════════════ MEDIA PLANE (the A/V; UDP/RTP; high volume) ═══════════
-       │   ICE (STUN: discover my public IP/port; TURN: relay if blocked)
-       │        ┌──────────────┐   ┌──────────────┐
-       └─UDP───▶│  SFU node     │◀─▶│  SFU node    │  (cascade across
-        RTP/SRTP│ (forwards     │   │ (other region)│   regions: 1 stream
-                │  selected     │   └──────────────┘   between SFUs, not N)
-                │  simulcast    │
-                │  layers)      │──▶ other participants (selected layer each)
-                └──────┬────────┘
-                       │ optional copy of streams
-  ════════════ DATA / ASYNC (everything that can be late) ════════════
-       Recording compositor ─▶ Blob store (S3) ─▶ CDN (playback later)
-       Transcription (ML) · Quality metrics/analytics · TURN relay pool
-```
+![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)
 
 **Block by block:** **Signaling Service** is a normal stateless WebSocket service — it
 authenticates the join, tracks **room membership** in a Redis **Room Registry**, **allocates
@@ -1449,32 +1389,7 @@ The defining structure: **each document is owned by a single authority node** th
 ops, assigns revision numbers, transforms concurrent ops, and broadcasts the results. Shard
 by `docId` so a document's whole live session lives on one box.
 
-```
-  LAYER 1 — EDGE
-    Browsers ─WebSocket─▶ Collab Gateway (auth, route by docId)
-        (optimistic                     │ consistent-hash(docId)
-         local apply)                   ▼
-  LAYER 2 — PER-DOCUMENT AUTHORITY  (sharded by docId)
-    ┌──────────────────────────────────────────────┐
-    │ Document Session Owner  (one per active doc)    │
-    │  • in-memory doc state + headRevision           │
-    │  • SERIALIZE incoming ops (single-writer)       │
-    │  • TRANSFORM each op vs ops it missed (OT)       │
-    │  • assign new revision, BROADCAST to editors    │
-    │  • append op to the durable op-log              │
-    └───────────────┬─────────────────┬──────────────┘
-                    │ append           │ presence
-  ═══════════════════╪══ LAYER 3 — DATA ╪══════════════════════════
-    ┌────────────────▼───┐ ┌───────────▼────┐ ┌──────────────────┐
-    │ Op log (append-only │ │ Snapshot store │ │ Presence (Redis: │
-    │  per doc, by rev)    │ │ (doc @ rev R,  │ │ cursors, who's   │
-    │ Bigtable/Spanner/    │ │  periodic)     │ │ editing) TTL     │
-    │  wide-column         │ │ Blob / DB      │ └──────────────────┘
-    └─────────────────────┘ └────────────────┘
-  ═══════════════════ LAYER 4 — ASYNC ══════════════════════════════
-    Snapshot/compaction workers · Export (PDF/Docx) · Search index ·
-    Notifications ("X edited / commented")  [reuse Case Study 1]
-```
+![Collaborative Editor (Google Docs) — high-level architecture (HLD)](diagrams/collab_editor.svg)
 
 **Block by block:** the **Collab Gateway** holds each editor's WebSocket and **routes by
 `docId`** (consistent hashing — Ch 24) to that document's owner, so everyone editing one doc

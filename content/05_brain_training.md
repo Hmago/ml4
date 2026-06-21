@@ -1434,4 +1434,4 @@ open("anki_import.txt", "w").write(resp.content[0].text)
 
 ---
 
-**Previous:** [Chapter 04 — Aptitude & Mental Math](04_aptitude_mental_math.md) &middot; **Next:** [Chapter 06 — Math Fundamentals](06_math_fundamentals.md) &middot; **See also:** [★ DL & LLMs Playbook](00p_dl_llm_playbook.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)
+**Previous:** [Chapter 04 — Aptitude & Mental Math](04_aptitude_mental_math.md) &middot; **Next:** [Chapter 5B — Upgrade Your Brain in 30 Days](05b_brain_upgrade_30_days.md) &middot; **See also:** [★ DL & LLMs Playbook](00p_dl_llm_playbook.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)
