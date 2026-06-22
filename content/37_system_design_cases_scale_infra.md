@@ -67,6 +67,14 @@ Parts 1–2.
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~40 min
 
+> **User story —** *As a* platform team, *I want* to cap how often each client can call our APIs,
+> *so that* one buggy or abusive caller can't exhaust capacity for everyone else.
+> **For example —** a client allowed 100 requests/minute gets a `429 Too Many Requests` with
+> `Retry-After` on the 101st — enforced consistently even though their traffic is spread across
+> hundreds of gateway nodes.
+> **Why it matters —** on one box a limiter is one counter; across a fleet it's a distributed-
+> counter race — an atomic token-bucket in Redis keeps global accuracy at per-request speed.
+
 Imagine the **bouncer standing at the door of every API** at a large company.
 Its job sounds trivial — "let each client in at most 100 times a minute" — and
 on a single server it *is* trivial: one counter. The hard part is that there
@@ -135,6 +143,25 @@ The numbers teach two things: (1) the **state is tiny** (1 GB) — this is a
 *latency* and *contention* problem, not a storage problem; (2) at 1 M ops/s you
 **cannot** hit one Redis node — you must **shard the counters by KEY** (a
 consistent-hash cluster — Ch 24).
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §13.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Distributed Rate Limiter — whiteboard rehearsal sketch](diagrams/rate_limiter_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §13.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §13.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 13.3 HLD — high-level architecture
 
@@ -341,6 +368,15 @@ allow/deny rates — **Ch 25**.
 
 > **Google priority:** ★★★ · **Difficulty:** Medium · **Frequency:** Very common · **Time budget:** ~35 min
 
+> **User story —** *As a* backend service writing sharded data, *I want* to mint unique,
+> time-sortable IDs locally at high rate, *so that* every row gets a global id without a central
+> bottleneck.
+> **For example —** two machines that never talk both stamp millions of IDs/sec; the 64-bit
+> Snowflake layout (timestamp · machine · sequence) guarantees no collision and `ORDER BY id` ≈
+> newest-first.
+> **Why it matters —** UUIDv4 fragments indexes and auto-increment is a SPOF; spending 64 bits
+> wisely gives uniqueness, rough time-ordering, and zero coordination on the hot path.
+
 Every row your company writes — every tweet, message, order, log line — needs a
 **unique id**. On one database, `AUTO_INCREMENT` solves it for free. But once
 you **shard** across hundreds of databases and want to mint **millions of IDs a
@@ -402,6 +438,25 @@ timestamp must we encode)?*
 The arithmetic *is* the design: 41 bits buys ~70 years, 10 bits buys 1024
 machines, 12 bits buys 4096/ms/machine — and the fields are tunable (e.g.
 steal a sequence bit for an 11th machine bit if you need more nodes than years).
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §14.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Distributed Unique ID Generator (Snowflake) — whiteboard rehearsal sketch](diagrams/unique_id_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §14.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §14.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 14.3 HLD — high-level architecture
 
@@ -579,6 +634,13 @@ NTP — **Ch 25**.
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~30 min
 
+> **User story —** *As a* product, *I want* the current top-K (trending hashtags, top URLs, API
+> heavy hitters) from a firehose of events, *so that* I can surface what's hot in near real time.
+> **For example —** millions of events/sec stream by; a Count-Min Sketch + min-heap reports the
+> top-10 hashtags this hour in ~32 MB, instead of a 16 GB exact counter per node.
+> **Why it matters —** you can't keep a counter for billions of distinct keys; trading a little
+> accuracy (a sketch) for fixed memory is the whole point.
+
 "What are the **top 10 trending hashtags right now**?" "Which **100 URLs** got
 the most ad clicks this hour?" "Who are the **heavy hitters** flooding our API?"
 These are all the same problem: a **firehose of events** streams past, and you
@@ -593,13 +655,32 @@ probabilistic **Count-Min Sketch** estimates counts in fixed space, and a
 - **Functional:** return the top-K keys by frequency over a **time window**
   (last hour / day), refreshed every few seconds. Approximate is fine.
 - **Exact or approximate?** *Ask.* Exact top-K over billions of keys needs a
-  full count (MapReduce, offline). Real-time trending tolerates **approximate**.
+  full count (Spark, offline). Real-time trending tolerates **approximate**.
 - **Windowing:** is it a **sliding** window (last 60 min, decaying) or a
   **tumbling** one (this calendar hour)? Decay matters for "trending."
 - **Estimate:** 1 M events/sec, ~10^9 distinct keys/day. An exact hash-map of
   counts = 10^9 × ~16 B ≈ **16 GB per node** (won't fit / won't shard cheaply).
   A Count-Min Sketch at `w=2^20, d=4` = `4 × 1M × 8B` ≈ **32 MB** — *fixed*,
   regardless of key count. That 500× shrink is the whole reason the sketch exists.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §15.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Top-K / Trending / Heavy Hitters — whiteboard rehearsal sketch](diagrams/topk_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §15.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §15.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 15.2 HLD — architecture + flow
 
@@ -611,7 +692,7 @@ sketch and heap then see *all* of that key's traffic locally (no cross-worker
 counting per event). Each **worker** keeps a fixed-size **Count-Min Sketch** and
 a **min-heap of its top-K**, and flushes its local top-K every few seconds. The
 **merge** step combines the per-partition heaps into a **global top-K**, cached
-in Redis for the `/trending` API. A parallel **batch path** (MapReduce) computes
+in Redis for the `/trending` API. A parallel **batch path** (Spark) computes
 the *exact* answer slowly and reconciles drift — the classic **Lambda
 architecture** (Ch 24).
 
@@ -662,7 +743,7 @@ dominate today.
 - **Approximate by design:** the sketch **over-counts** under collisions (never
   under-counts). Bound the error by sizing `w` (`ε ≈ e/w`) and `d`
   (confidence `1−δ`, `δ ≈ e^-d`). Good enough for trending; not for billing.
-- **Exact when you must:** ad-click *billing* needs the **batch MapReduce**
+- **Exact when you must:** ad-click *billing* needs the **batch (Spark)**
   path, not the sketch. Trending/observability use the stream path.
 - **Red flags:** proposing a giant exact hash-map (won't fit at 10^9 keys); a
   global lock on one shared counter (the firehose melts it — partition by key
@@ -678,6 +759,13 @@ dominate today.
 # CASE STUDY 16 — LEADERBOARD / RANKING
 
 > **Google priority:** ★★ · **Difficulty:** Medium · **Frequency:** Common · **Time budget:** ~30 min
+
+> **User story —** *As a* player, *I want* to see the top scores, my own rank, and who's just
+> above and below me — instantly, live — *so that* the competition feels real.
+> **For example —** I submit a score and immediately see "you're #1,234,567; here are the 5 players
+> around you" — answered in O(log N) by a Redis sorted set, not by re-sorting 50 M rows.
+> **Why it matters —** rank / top-N / around-me queries are exactly what a sorted set is built for;
+> the durable scores live in Cassandra behind it.
 
 A **game leaderboard** looks easy — sort users by score — until you notice the
 queries it must answer **in milliseconds, live, for 50 million players**:
@@ -698,6 +786,25 @@ which keeps elements ordered by score and answers rank queries in **O(log N)**.
   **100k+ reads/s**. Memory: 50 M × (8 B score + ~24 B member) ≈ **1.6 GB** per
   board — fits in one Redis node, but shard for HA and multi-board.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §16.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Leaderboard / Ranking — whiteboard rehearsal sketch](diagrams/leaderboard_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §16.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §16.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 16.2 HLD — architecture + flow
 
 ![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)
@@ -708,7 +815,7 @@ set** (the live ranking index). The **Leaderboard API** answers all three query
 shapes directly from Redis sorted-set commands — each **O(log N)**. On a Redis
 failover you **rebuild** the sorted set by replaying scores from the durable
 store. **Numbered flow:** (1) score event → API; (2) `ZADD` into Redis +
-upsert into SQL; (3) reads hit Redis only: `ZREVRANK` for "my rank,"
+persist to Cassandra; (3) reads hit Redis only: `ZREVRANK` for "my rank,"
 `ZREVRANGE` for "top N" and "around me."
 
 ## 16.3 The crux — sorted-set ops, and sharding for global rank
@@ -757,7 +864,7 @@ expensive.
 - **Redis sorted set is the answer** to "rank/top-N/around-me," not a SQL
   `ORDER BY ... LIMIT` (which re-scans and can't do "my rank" cheaply at scale).
 - **Persistence:** treat Redis as a **rebuildable index**; keep the durable
-  scores in SQL/KV so a cache flush doesn't lose the game.
+  scores in Cassandra so a cache flush doesn't lose the game.
 - **Red flags:** sorting in the application tier on every read; storing rank as
   a column and updating millions of rows per score change; ignoring ties;
   assuming one Redis node scales to *any* size (shard + plan global-rank
@@ -771,6 +878,13 @@ expensive.
 # CASE STUDY 17 — DISTRIBUTED CACHE (design Redis / Memcached)
 
 > **Google priority:** ★★ · **Difficulty:** Medium · **Frequency:** Common · **Time budget:** ~30 min
+
+> **User story —** *As a* service owner, *I want* a fast shared in-memory layer in front of my
+> database, *so that* hot reads return in microseconds and the DB survives the read firehose.
+> **For example —** 1 M reads/s at a >90% hit rate means the DB only sees ~100k/s; a product-page
+> read drops from 10 ms to 0.3 ms by hitting the cache first.
+> **Why it matters —** the real design is spreading keys with consistent hashing (so adding a node
+> doesn't reshuffle everything) and surviving a hot key that would melt one shard.
 
 A **distributed cache** is a giant, fast, in-memory key→value layer that sits
 between your services and your database, turning **10 ms database reads into
@@ -793,6 +907,25 @@ keys whose value changes faster than it's read.
 = the DB only sees ~100k/s. Cache 100 GB hot set across nodes of 32 GB RAM →
 **4 nodes** (+ replicas). Each node ~200k ops/s → cluster handles millions/s.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §17.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Distributed Cache (Redis / Memcached) — whiteboard rehearsal sketch](diagrams/dist_cache_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §17.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §17.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 17.2 HLD — architecture + flow
 
 ![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)
@@ -800,7 +933,8 @@ keys whose value changes faster than it's read.
 **Block-by-block:** the **cache client** (a library in each app server) hashes
 the key onto a **consistent-hash ring** to find its owner node — there's no
 central coordinator on the read path. Each **cache node** holds a shard in RAM
-with an **eviction policy** (LRU default) and an **async replica** for failover.
+with an **eviction policy** (LRU default) and an **async replica**; a **Cluster
+Manager** (Redis Sentinel / Cluster) watches nodes and promotes a replica on failover.
 On a **miss**, either the app reads the DB and back-fills (**cache-aside**) or
 the cache reads through itself (**read-through**). **Numbered flow:** (1) client
 maps key→node via the ring; (2) `GET` hits that node; (3) on miss, load from DB,
@@ -869,6 +1003,14 @@ stampede protection — **Ch 23**; consistent hashing + virtual nodes —
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~35 min
 
+> **User story —** *As a* backend, *I want* to run work later or in the background reliably, *so
+> that* delayed and recurring jobs fire on time and nothing is lost when a worker crashes.
+> **For example —** "send this email in 5 minutes" and "generate the report nightly at 02:00" both
+> land in a durable store; a worker leases each job (visibility timeout) and acks on success, so a
+> crash just re-runs it.
+> **Why it matters —** at-least-once + idempotent workers + a durable job store with leased
+> dispatch is what turns "run it later" into a real guarantee.
+
 Almost every backend needs to **run work later or in the background**: send this
 email in 5 minutes, generate this report nightly at 02:00, retry this webhook,
 process this video. A **distributed job scheduler / task queue** accepts jobs,
@@ -889,6 +1031,25 @@ illusion** — so workers must be **idempotent**. Decide this explicitly.
 concurrency needed ≈ `λ × service_time` (Little's Law) = 5000 × 0.2 = **1,000
 workers** at peak. Job store: 100 M × 1 KB = 100 GB/day with a short TTL on
 completed jobs.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §18.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Distributed Job Scheduler / Task Queue — whiteboard rehearsal sketch](diagrams/scheduler_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §18.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §18.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 18.2 HLD — architecture + flow
 
@@ -977,6 +1138,13 @@ with backoff + jitter — **Ch 23/25**.
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~40 min
 
+> **User story —** *As a* user moving money, *I want* every top-up, payment, and transfer to be
+> exactly right — never double-charged, never lost — *so that* I can trust my balance.
+> **For example —** my "pay merchant" call times out and the app retries; the idempotency key makes
+> the retry a no-op, so I'm charged once and the double-entry ledger still balances.
+> **Why it matters —** money is the one place "eventually consistent" is wrong; an immutable ledger
+> + idempotency keys + a saga across the external gateway is what makes it CP-correct.
+
 This is the one design where **"eventually consistent" and "best effort" are
 wrong answers**. When you move money, a bug doesn't show up as a stale tweet —
 it shows up as a **double charge**, a **lost deposit**, or **money created from
@@ -1011,9 +1179,9 @@ rest?
 - Every state-changing call takes an **`Idempotency-Key`**.
 - Multi-currency optional (state it as a stretch; keep one currency in the core).
 
-**Out of scope:** fraud/risk scoring (a separate system that *approves* a payment
-before we move money), KYC/onboarding, the card-network internals (we integrate
-a **gateway** — Stripe/Adyen — as a black box).
+**Out of scope:** the **fraud-detection model itself** and KYC/onboarding — though the payment
+flow does call a thin **Fraud Service** for a risk check before moving money (shown in §19.3) —
+and the card-network internals (we integrate a **gateway** — Stripe/Adyen — as a black box).
 
 **Non-functional**
 - **Correctness:** **no double-spend, no lost money, books always balance**
@@ -1046,6 +1214,25 @@ feed), but **every write must be correct and kept forever**. So we optimize for
 **transactional integrity and auditability**, not raw throughput — a relational,
 strongly-consistent store is the right call here, not an eventually-consistent
 KV.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §19.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Payment System / Digital Wallet — whiteboard rehearsal sketch](diagrams/payment_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §19.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §19.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 19.3 HLD — high-level architecture
 
@@ -1098,6 +1285,7 @@ verifies reality against our records (reconciliation).
 | Accounts | `account_id, type, currency` | Strongly-consistent SQL | Few, critical, relational |
 | **Ledger entries** | `entry_id, txn_id, account_id, amount(signed), ts` | SQL, **append-only** | Immutable audit; `balance = SUM(amount)` |
 | Transactions | `txn_id, idem_key UNIQUE, state, ...` | SQL | Saga state + the dedupe key |
+| Idempotency keys | `idem_key → first_result` (TTL) | Redis (dedupe) | O(1) replay guard at the edge; a retried `pay` returns the first result. The SQL `idem_key UNIQUE` is the durable backstop |
 | Balances (cache) | `account_id → balance` | Derived / materialized | Fast reads; recomputable from entries |
 | Outbox | `event_id, payload, published` | Same SQL DB | Atomic with ledger write (Ch 24) |
 | Settlement reports | gateway files | Object store → OLAP | Reconciliation input |
@@ -1246,6 +1434,13 @@ optimistic vs pessimistic locking, append-only logs — **Ch 24**; CAP/PACELC
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~30 min
 
+> **User story —** *As a* shopper in a flash sale, *I want* a fair shot at the limited stock with
+> no overselling, *so that* if the site says I got one, I actually get it.
+> **For example —** 1 M people tap "Buy" on 100 PlayStations at midnight; an atomic Redis decrement
+> hands out exactly 100 reservations and a waiting room sheds the rest — unit #101 is never sold.
+> **Why it matters —** the entire problem is making "check stock and decrement" one atomic op on a
+> single hot SKU under brutal contention, then holding stock just long enough to pay.
+
 A **flash sale** — 1,000 PlayStations at midnight, a concert on-sale, a
 Black-Friday doorbuster — is a **concurrency stress test disguised as shopping**.
 A million people press "Buy" in the same second on a product with **100 units in
@@ -1266,6 +1461,25 @@ for the buyer to pay.
   seconds → all hitting **one counter**. → must be a single in-memory atomic op
   (Redis), not a contended DB row; and a **waiting room** to shed the flood.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §20.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![E-commerce Inventory / Flash Sale — whiteboard rehearsal sketch](diagrams/inventory_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §20.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §20.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 20.2 HLD — architecture + flow
 
 ![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)
@@ -1277,10 +1491,12 @@ one thing that must be perfect: an **atomic reserve-decrement** on a **Redis
 counter** (fast, single-threaded → naturally serialized). A successful reserve
 creates a **time-boxed reservation** (TTL) so stock is held only while the buyer
 pays. **Payment success** persists a durable order; **timeout** releases the
-unit back. The **durable DB** is the source of truth for orders and final stock,
-**reconciled** asynchronously with the Redis counter. **Numbered flow:**
+unit back. Each confirmed order **emits order events to Apache Kafka** for
+fulfillment, analytics, and **reconciliation**; the **durable DB** is the source
+of truth for orders and final stock, reconciled asynchronously with the Redis
+counter. **Numbered flow:**
 (1) queue → (2) admit → (3) atomic DECR → (4) reserve with TTL → (5) pay or
-release.
+release → (6) order events (Kafka).
 
 ## 20.3 The crux — atomic reserve-decrement (preventing oversell)
 
@@ -1339,6 +1555,14 @@ back units from reservations that expired without release).
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~35 min
 
+> **User story —** *As a* service needing massive, always-writable storage, *I want* a key-value
+> store that stays up and low-latency even during failures, *so that* a shopping cart never rejects
+> a write.
+> **For example —** during a network partition, a `put` still succeeds on the reachable replicas;
+> conflicting versions are reconciled later with version vectors and read-repair.
+> **Why it matters —** it's the canonical AP design — consistent hashing + tunable quorums (W+R>N)
+> + conflict resolution assembled into one horizontally-scalable store.
+
 "Design a key-value store like **Amazon Dynamo / Cassandra**" is the canonical
 **distributed-systems** interview — it forces you to assemble consistent hashing,
 replication, quorums, conflict resolution, and failure handling into one
@@ -1359,6 +1583,25 @@ strong multi-key transactions (that's NewSQL/Spanner).
 - **Estimate:** 1 M ops/s, 10 TB of data, replication factor **N = 3** → 30 TB
 stored. Spread across nodes of ~1 TB → ~30–40 nodes; consistent hashing keeps
 each node's share ≈ `1/nodes` and resharding cheap.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §21.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Distributed Key-Value Store (Dynamo-style) — whiteboard rehearsal sketch](diagrams/kv_store_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §21.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §21.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 21.2 HLD — architecture + flow
 
@@ -1436,6 +1679,13 @@ LSM-tree/WAL storage engine under each node — **Ch 24**.
 
 > **Google priority:** ★ · **Difficulty:** Easy · **Frequency:** Common · **Time budget:** ~20 min
 
+> **User story —** *As a* user, *I want* to paste text and share a short link anyone can read —
+> optionally expiring or view-once — *so that* I can hand off code or notes quickly.
+> **For example —** I paste a 10 KB log, get `pb.cc/aZ3k`, set it to expire in a day; the blob goes
+> to object storage and only the metadata (key → blob, TTL) sits in the DB.
+> **Why it matters —** it's the URL shortener with a text blob instead of a redirect — reuse that
+> design and isolate the big blob from the metadata.
+
 Pastebin is **"a URL shortener whose value is a blob of text instead of a
 redirect."** You paste code/text, get a short link, and anyone with the link can
 read it — optionally with an **expiry** or a **view-once** rule. Almost
@@ -1452,6 +1702,25 @@ the DB. Read-heavy, like the shortener.
 - **Estimate:** 10 M pastes/day ≈ **120 writes/s**; reads ~10× → ~1,200/s. Avg
 paste 10 KB → 10 M × 10 KB = **100 GB/day** of blobs → object store + CDN, not
 a row in SQL.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §22.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Pastebin — whiteboard rehearsal sketch](diagrams/pastebin_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §22.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §22.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 22.2 HLD — architecture + flow
 
@@ -1491,6 +1760,341 @@ cache-aside + TTL — **Ch 23**.
 
 ---
 
+# CASE STUDY 23 — E-COMMERCE PLATFORM (Amazon / Flipkart)
+
+> **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~45 min
+
+> **User story —** *As a* shopper, *I want* to browse fast and check out reliably, *so that* pages
+> never go blank and my order is always right about price, stock, and payment.
+> **For example —** a flaky back-end shows me a slightly stale price (better than a blank page) on
+> the browse plane, while checkout refuses to oversell or double-charge on the order plane.
+> **Why it matters —** the capstone is recognizing "AP on the way in, CP at the till" and composing
+> designs you've already built (search, recsys, inventory, payment, notifications).
+
+This is the **capstone** — not one hard idea but **a dozen wired together**. An
+e-commerce platform is really **two products glued at the cart**: a
+**browse/search experience** that must stay **fast and always-on** even when a
+back-end is flaky (better to show a slightly stale price than a blank page), and
+a **checkout/order pipeline** that must be **exactly right** about money and
+stock (better to reject a click than to oversell or double-charge). The whole
+interview is recognizing that split — **AP on the way in, CP at the till** — and
+then **assembling designs you've already built** (search CS5, recommendations
+F3, inventory CS20, payment CS19, notifications Ch35-CS1) instead of re-deriving
+them. The two genuinely new pieces are a **document-store catalog** for
+polymorphic products and a **serviceability/TAT** service that precomputes "can
+we deliver here, and by when?"
+
+## 23.0 What's really being tested
+
+- Do you split the system into a **read/browse plane (AP, low-latency)** and a
+  **write/order plane (CP, correct)** — and justify CAP on each?
+- Do you reach for a **document DB** for a **polymorphic catalog** (every
+  category has different attributes) instead of forcing it into a wide, sparse
+  relational table?
+- Can you **compose prior designs** — autocomplete/search (CS5), recommendations
+  (F3), inventory/oversell (CS20), payment/saga (CS19), notifications
+  (Ch35 CS1) — rather than rebuilding each from scratch?
+- Do you push expensive, slow-changing work **offline/precomputed** — search
+  indexing, recommendations, and **delivery serviceability/ETA** — so the hot
+  path stays cheap?
+- Do you keep the **OLTP order DB small** with **hot/cold tiering** (terminal
+  orders archived to Cassandra) and still serve full order history?
+
+## 23.1 Clarify — requirements
+
+**Functional**
+- **Browse/search:** home feed, category browse, **typeahead** + full-text
+  search, a product detail page (PDP) with price, attributes, availability,
+  **delivery ETA for my pincode**, and **recommendations** ("you may also like").
+- **Cart & checkout:** add to cart, **reserve stock**, **pay**, place an order;
+  **order tracking** + history; **notifications** on every status change.
+- **Catalog ingest:** suppliers/sellers onboard catalogs in bulk, which flow
+  into search and the PDP.
+
+**Out of scope** (say it to show focus): seller-side analytics, ads ranking,
+returns/RMA internals, fraud scoring (a separate approve-before-pay system — as
+in CS19), and the warehouse-management system itself (we *consume* its data).
+
+**Non-functional**
+- **Browse plane:** **AP, low latency** — PDP and search render in **< 200 ms**
+  and stay up under load; a **slightly stale** price/stock is acceptable (we
+  re-validate at checkout).
+- **Order plane:** **CP, correct** — **no oversell, no double-charge**; money and
+  stock are authoritative.
+- **Scale:** catalog ~**500 M items**; **100 M DAU**; read:write ≈ **100:1**
+  (browsing dwarfs buying).
+- **Availability:** browse 99.99%; checkout favors **correctness over
+  availability** during a partition.
+
+**Questions to ask:** *Marketplace (many sellers) or first-party? Single region
+or global? Stock per-warehouse or global? Do we own logistics or integrate a
+3PL? How fresh must price/stock be on the PDP?*
+
+## 23.2 Estimate — back-of-envelope
+
+```
+ DAU                  100 M; ~10 page views each → 1 B views/day ≈ 12k/s
+ Peak (sale events)   ~10×  → ~120k/s reads on browse/search
+ Orders               ~1% of sessions convert → ~10 M orders/day ≈ 120/s
+                      flash-sale bursts → 10k+ checkout attempts/s on ONE SKU
+ Catalog              500 M items × ~2 KB doc ≈ 1 TB catalog (document store)
+ Search index         500 M docs → sharded Elasticsearch (tens of shards)
+ Read : Write         ≈ 100 : 1 → cache + CDN the browse plane hard
+ Order DB (hot)       keep only OPEN orders in MySQL; archive terminal ones
+                      10 M/day terminal → Cassandra archive grows; OLTP stays small
+```
+The numbers say it plainly: **browsing is a caching/search problem at 100k+/s**,
+**ordering is a correctness problem at a modest ~120/s** (with vicious **per-SKU
+bursts**), and the **catalog + history are storage-tiering problems**. Optimize
+each plane for its own bottleneck — do not let one model dominate.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §23.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![E-commerce Platform (Amazon / Flipkart) — whiteboard rehearsal sketch](diagrams/amazon_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §23.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §23.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
+## 23.3 HLD — high-level architecture
+
+![E-commerce Platform (Amazon / Flipkart) — high-level architecture (HLD)](diagrams/amazon.svg)
+
+**Legend:** boxes are services; the store is named inside. A dashed line splits
+the **AP browse plane** (top) from the **CP order plane** (bottom).
+
+**Block-by-block:**
+- **API Gateway / BFF** — auth, rate-limit (CS13), routes browse vs order planes.
+- **Catalog / Item service → MongoDB (document store)** — owns the
+  **polymorphic** product documents and serves the PDP. Document store because a
+  *shirt* (size, fabric, color) and a *TV* (screen-size, resolution, weight)
+  share almost no attributes (see 23.5).
+- **Inbound / Supplier-onboarding service** — ingests seller catalogs in bulk,
+  validates, writes the catalog document, and **emits an event to Kafka**.
+- **Search-indexer consumer** — reads Kafka, **formats** each item into a search
+  doc, and writes it to **Elasticsearch**; the **Search/Autocomplete service**
+  (reuse **CS5**) serves typeahead + full-text.
+- **Recommendation service** — a **two-tower → ranking funnel** (reuse **F3**),
+  with candidates/features built **offline** by a **Hadoop** batch pipeline and
+  **near-real-time** by **Spark Streaming** over the click/order event stream.
+- **Serviceability / TAT service** — answers "**do we deliver to this pincode,
+  and by when?**" from **precomputed** warehouse × pincode × logistics tables
+  (see 23.6/23.8); read on the PDP, **never** computed on the hot path.
+- **Cart + Order-Taking Service** (cart held in Redis, persisted to **MySQL**) — the
+  order-plane entry point.
+- **Inventory service** — **atomic reserve-decrement** with a `quantity >= 0`
+  constraint + reservation TTL (reuse **CS20**).
+- **Payment service** — idempotent ledger + saga across the gateway (reuse
+  **CS19**), including the **order-expiry-vs-payment-success race**.
+- **Order-processing / fulfillment** — the post-payment workflow; on a terminal
+  state the **Archival service** moves the order MySQL → **Cassandra**, and the
+  **Historical-Order service** serves reads over that archive.
+- **Notification service** (reuse **Ch35 CS1**) — order-status updates (placed,
+  shipped, delivered).
+
+## 23.4 HLD — critical path walkthrough
+
+Two flows, because the platform is two products. **Flow A is AP** (stay fast,
+tolerate staleness); **Flow B is CP** (be correct, tolerate rejection).
+
+**A — Search / browse (availability-first):**
+```
+1. GET /search?q="running sho"  → Autocomplete (CS5) suggests from Elasticsearch
+2. user picks a query → Search service → ES returns ranked item ids (AP, cached)
+3. GET /pdp/{item} → Catalog svc reads the MongoDB document (cache-first)
+4. PDP enriches IN PARALLEL — all best-effort, degrade gracefully:
+      ├─ Serviceability/TAT: ETA for user's pincode   (PRECOMPUTED O(1) lookup)
+      ├─ Recommendations: "you may also like"          (F3, served from cache)
+      └─ price/stock badge: "In stock" (may be slightly STALE — re-checked in B)
+5. render < 200 ms; any failed enrichment is omitted, the page still loads
+```
+
+**B — Checkout / order (consistency-first):**
+```
+1. POST /checkout {cart, Idempotency-Key} → Order-taking svc (MySQL, ACID)
+      create order = PENDING_PAYMENT
+2. Inventory.reserve(sku, qty):  atomic  UPDATE ... SET q = q - :qty
+                                         WHERE sku=:sku AND q >= :qty   (CS20)
+      0 rows → SOLD OUT → fail fast;  else stock reserved with a TTL
+3. Payment.charge(Idempotency-Key) → saga across the gateway (CS19)
+      ├─ success → order = CONFIRMED; commit reservation (stock truly gone)
+      └─ fail/timeout → release reservation; order = FAILED
+4. RACE: reservation TTL expires AT THE SAME TIME payment succeeds
+      → payment wins → COMPENSATE: refund the charge (CS19), or re-acquire
+        stock if still available; NEVER keep money without stock
+5. Order-processing → on terminal state (DELIVERED/CANCELLED):
+      Archival svc moves the order MySQL → Cassandra; Notification (Ch35 CS1) fires
+```
+Each step maps to a reused design: **B2 = CS20** (no oversell), **B3/B4 = CS19**
+(idempotent saga + compensation), **B5 = archival tiering + Ch35 CS1**.
+
+## 23.5 HLD — data model & storage choices
+
+| Entity | Shape (key fields) | Store | Why |
+|--------|--------------------|-------|-----|
+| **Catalog item** | `item_id, category, {polymorphic attrs}, seller_id, price` | **MongoDB (document)** | Attributes vary per category — shirt≠TV; sparse-wide SQL is painful |
+| Search doc | `item_id, title, tokens, facets, price, popularity` | **Elasticsearch** | Inverted index for typeahead + full-text (CS5) |
+| Serviceability/TAT | `(warehouse, pincode) → reachable?, eta_days` | KV / read-replica | **Precomputed** offline; O(1) PDP lookup |
+| Cart | `user_id → [items]` | Redis / KV | Ephemeral, fast, AP |
+| **Order (hot)** | `order_id, user, items, state, total` | **MySQL (ACID)** | Open orders need transactions + strong consistency |
+| Inventory | `sku → available CHECK(≥0), reservations` | SQL row / Redis counter | Atomic decrement, no oversell (CS20) |
+| Payment ledger | `entry_id, txn_id, account, amount` | SQL, append-only | Double-entry, idempotent (CS19) |
+| **Order (cold)** | terminal orders, denormalized | **Cassandra** | Write-once history, huge volume, cheap; keeps OLTP small |
+| Recsys features | user × item × context | Feature store (offline+online) | Funnel + skew-free serving (F3) |
+
+**The catalog call-out:** products are **polymorphic** — a *shirt* document
+carries `{size, fabric, color, fit}`, a *TV* carries
+`{screen_size, resolution, weight, panel}`. Forcing this into one relational
+table yields a **sparse forest of nullable columns** (or an EAV anti-pattern); a
+**document store** lets each item carry exactly its own schema, indexed
+per-field, and evolved per category **without migrations**.
+
+## 23.6 HLD — scaling & bottlenecks
+
+- **Browse plane is ~100× the traffic** — cache aggressively: **CDN** for
+  assets/images, **edge + app cache** for PDP documents and search results,
+  precomputed recommendations. Catalog reads are cache-served; MongoDB is the
+  cache-miss fallback, not the hot path.
+- **Search** scales by **sharding Elasticsearch** by item and replicating for
+  query throughput; indexing is **async off Kafka**, so a supplier bulk-upload
+  never blocks live queries.
+- **Serviceability/TAT** is **precomputed offline** (warehouse × pincode is a
+  huge but slow-changing matrix) and served as an O(1) lookup; recomputing per
+  request against a routing engine would blow the latency budget.
+- **Order plane** is small in QPS but has **per-SKU write hotspots** during sales
+  — handle with the **CS20** Redis-counter + waiting-room pattern, not a
+  contended MySQL row.
+- **Order-DB growth** is the silent killer: 10 M terminal orders/day would bloat
+  MySQL and slow every OLTP query. **Hot/cold tiering** (23.8) keeps only **open**
+  orders hot; history goes to **Cassandra**.
+- **Recsys** offline (Hadoop) pipelines are cheap-but-stale; **Spark Streaming**
+  keeps last-clicks fresh — both feed one feature store (F3).
+
+## 23.7 HLD — failure modes & trade-offs
+
+```
+What dies / happens             →  What we do
+──────────────────────────────────────────────────────────────────────
+Catalog/Mongo slow or down      →  serve PDP from cache (stale-OK, AP);
+                                    re-validate price/stock only at checkout
+Search/ES cluster degraded      →  fall back to category browse / cached
+                                    results; browsing never hard-fails
+Recsys/TAT enrichment fails     →  OMIT the widget; PDP still renders (best-effort)
+Inventory race (two buyers)     →  atomic check+decrement (CS20); last unit sold once
+Reservation TTL vs payment-OK   →  payment wins → COMPENSATE: refund OR re-acquire
+                                    stock; never money-without-stock (CS19)
+Payment gateway timeout         →  UNKNOWN, not failure: re-query by idem-key (CS19)
+Order DB bloats                 →  Archival service tiers terminal orders → Cassandra
+Notification backlog            →  async queue; retries; non-blocking (Ch35 CS1)
+```
+**Trade-offs called out:** we deliberately run **two consistency regimes** —
+**AP** on browse (a stale price is cheaper than downtime, and we *re-check at
+checkout*) and **CP** at the till (reject before oversell/double-charge). We
+accept **read-your-writes lag** on the catalog as the price of cache hit-rate. We
+pay **storage duplication** (hot MySQL + cold Cassandra) to keep the OLTP DB
+fast. We push **search, recommendations, and serviceability offline** —
+accepting staleness — to protect the request-time latency budget.
+
+## 23.8 LLD (the crux)
+
+Two ideas carry the most interview signal: the **atomic reserve-decrement** that
+makes oversell impossible, and the **hot/cold order tiering** that keeps the OLTP
+database small while still serving full history.
+
+**(a) Atomic reserve-decrement — no oversell (reuse CS20).** Checkout's only
+non-negotiable is that **N units sell at most N times**. The bug is
+read-then-write: two buyers both read "1 left," both proceed, both decrement. The
+fix fuses **check + decrement** into one atomic, constraint-guarded operation:
+```sql
+-- one atomic statement; the WHERE + CHECK(quantity >= 0) make it safe
+UPDATE inventory
+   SET quantity = quantity - :qty
+ WHERE sku = :sku AND quantity >= :qty;   -- 1 row → reserved; 0 rows → SOLD OUT
+-- table guard:  quantity INT NOT NULL CHECK (quantity >= 0)
+-- then hold the unit with a time-boxed reservation (TTL) while the buyer pays;
+-- on payment success → commit; on timeout/failure → release (+:qty back).
+```
+For a **hot flash-sale SKU**, swap the contended SQL row for the **CS20** Redis
+single-threaded `DECRBY` + undo counter behind a waiting room — same invariant,
+far less lock contention. The `quantity >= 0` constraint is the backstop: even a
+buggy caller can never drive stock negative.
+
+**(b) Hot/cold order tiering — keep OLTP small (the distinctive crux).** Orders
+have a **lifecycle**: **transactional and contended while open**
+(`PENDING_PAYMENT → CONFIRMED → SHIPPED`) but **immutable, write-once history**
+once **terminal** (`DELIVERED`/`CANCELLED`). Keeping every order forever in MySQL
+bloats indexes and slows every live query, so we **tier by lifecycle**:
+```
+        OPEN orders                           TERMINAL orders
+   ┌────────────────────┐    Archival svc    ┌──────────────────────┐
+   │ MySQL (OLTP, ACID) │ ──(CDC / sweep)──▶ │ Cassandra (archive)  │
+   │ small, fast, hot   │   copy then delete │ huge, cheap, write-   │
+   │ open orders only   │ ◀── ── ── ── ── ── │ once, partitioned     │
+   └─────────┬──────────┘                    └──────────┬───────────┘
+             │ live order ops                            │ history reads
+             ▼                                           ▼
+        Order service                        Historical-Order service
+```
+- The **Archival service** watches for a terminal state (via CDC/outbox or a
+  sweep), **copies** the order into **Cassandra** (partitioned by `user_id`,
+  clustered by time — ideal for "my past orders"), then **deletes** it from MySQL
+  as an idempotent, replayable move.
+- The **Historical-Order service** serves all "past orders" reads from
+  **Cassandra**, so history queries never touch the OLTP DB.
+- Result: MySQL holds only the **small working set** of open orders (fast
+  transactions, small indexes), while **unbounded history** lives on a store
+  built for cheap, high-volume, write-once data. The move must be **idempotent**
+  (archive-then-delete, re-runnable) so a crash mid-archival never loses or
+  double-writes an order.
+
+## 23.9 Follow-ups, red flags & building blocks
+
+**Likely follow-ups:**
+- *"Why a document DB for the catalog?"* — products are **polymorphic**; each
+  category has different attributes. A document per item avoids sparse nullable
+  columns / EAV and evolves schema per category. (23.5)
+- *"How is the PDP fast at 100k/s?"* — it's the **AP plane**: CDN + cache,
+  precomputed recommendations and **serviceability/TAT**; the document store is
+  the cache-miss fallback, not the hot path.
+- *"Why precompute delivery ETA?"* — warehouse × pincode × routing is expensive
+  and **slow-changing**; computing it per request against a maps engine blows the
+  latency budget, so it's a **precomputed O(1) lookup**.
+- *"Stale stock on the PDP — isn't that a bug?"* — no: browse is AP and
+  **re-validates at checkout** (B2). The authoritative check is the **atomic
+  reserve** (CS20), not the badge.
+- *"Payment succeeds but the reservation expired?"* — payment wins;
+  **compensate** with a refund or re-acquire stock — never keep money without
+  stock (CS19).
+- *"Won't the order DB grow forever?"* — **hot/cold tiering**: terminal orders
+  archived to Cassandra; OLTP keeps only open orders. (23.8)
+
+**Red flags that sink candidates:** one consistency model for the whole site
+(either AP money or CP browsing); a giant relational table for polymorphic
+products; computing delivery ETA or recommendations on the hot path;
+read-then-write inventory (the oversell bug); no compensation for the
+payment/expiry race; never archiving orders (OLTP bloat); rebuilding
+search/payment/inventory from scratch instead of reusing CS5/CS19/CS20.
+
+**Building blocks reused:** autocomplete + full-text search — **CS5**;
+recommendation funnel + feature store — **F3**; atomic inventory / flash-sale —
+**CS20**; idempotent payment ledger + saga — **CS19**; notifications —
+**Ch35 CS1**; rate limiting — **CS13**; Kafka + stream/batch (Spark/Hadoop),
+CDC/outbox — **Ch 24**; document vs relational vs wide-column stores, CAP
+per-plane — **Ch 23/24**; caching + CDN — **Ch 23**.
+
+---
+
 # PART F: AI-FLAVORED DESIGNS (the Google AI-Engineer bridge)
 
 The three designs below are where **systems design meets ML** — exactly the
@@ -1506,6 +2110,13 @@ retrieval, feature freshness, latency budgets.
 ## F1 — LLM INFERENCE SERVING / CHATBOT PLATFORM
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Rising fast · **Time budget:** ~35 min
+
+> **User story —** *As a* developer calling a chatbot API, *I want* fast, streaming responses at a
+> sane cost, *so that* users see words appear immediately without burning GPUs.
+> **For example —** 10,000 concurrent chats stream ~30 tokens/s each; continuous batching keeps the
+> GPUs full and a KV-cache avoids recomputing the prompt, so latency and cost stay in budget.
+> **Why it matters —** serving LLMs is a GPU-utilization problem, not a CPU one — batching,
+> KV-cache, and token streaming are what make it economical.
 
 Serving a chatbot is **not** a normal request/response service: a single request
 **streams tokens for seconds**, runs on **scarce, expensive GPUs**, and its cost
@@ -1524,18 +2135,38 @@ is dominated by **GPU memory and throughput**, not CPU. The design is about
   cost** — utilization is the game. **KV-cache memory** grows with
   `batch × context_length` and **caps the batch size**.
 
+### Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §F1.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![LLM Inference Serving — whiteboard rehearsal sketch](diagrams/llm_serving_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §F1.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §F1.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ### F1.2 HLD — architecture + flow
 
 ![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving.svg)
 
 ```
    Clients ─▶ API Gateway (auth, rate limit, quotas — CS13)
+           ─▶ SAFETY / MODERATION  (prompt + output filters)
            ─▶ PROMPT/RESPONSE CACHE  (exact + semantic) ── hit ─▶ stream back
            │     miss
            ▼
    MODEL ROUTER  (pick model by difficulty / tier / cost)
            ▼
-   ┌──────────────── GPU INFERENCE FLEET ────────────────┐
+   ┌──────────────── GPU INFERENCE FLEET ────────────────┐  ◀─ MODEL REGISTRY (weights · versions · adapters)
    │  Continuous-batching scheduler (in-flight batching)  │
    │   • PREFILL: encode prompt → fill KV-cache           │
    │   • DECODE loop: 1 token/step, append to KV-cache,   │
@@ -1545,17 +2176,20 @@ is dominated by **GPU memory and throughput**, not CPU. The design is about
                    ▼
    GPU AUTOSCALER (scale on queue depth / tokens-per-s, not CPU%)
 ```
-**Block-by-block:** the **gateway** does auth + rate limiting (reuse CS13). The
+**Block-by-block:** the **gateway** does auth + rate limiting (reuse CS13). A
+**Safety / Moderation** layer applies **prompt and output filters** — screening the
+incoming prompt and the streamed tokens before they reach the user. The
 **prompt/response cache** short-circuits repeated or semantically-similar
 prompts (huge cost saver). The **router** sends easy queries to a small model
-and hard ones to a large model. The **GPU fleet** runs a **continuous-batching
-scheduler** that interleaves many sequences, a **prefill** phase (build the
-KV-cache for the prompt) and a **decode** loop that emits one token per step and
-**streams** it. The **autoscaler** scales on **queue depth / token throughput**,
-because GPU CPU% is meaningless here. **Flow:** (1) request → gateway →
-(2) cache check → (3) router picks model → (4) scheduler slots it into a live
-batch → (5) prefill fills KV-cache → (6) decode+stream tokens → (7) stop token
-frees the KV-cache slot.
+and hard ones to a large model. The **GPU fleet** — loading weights from a
+**Model Registry / Store** (versioned weights + LoRA adapters) — runs a
+**continuous-batching scheduler** that interleaves many sequences, a **prefill**
+phase (build the KV-cache for the prompt) and a **decode** loop that emits one
+token per step and **streams** it. The **autoscaler** scales on **queue depth /
+token throughput**, because GPU CPU% is meaningless here. **Flow:** (1) request →
+gateway → (2) moderation screens the prompt → (3) cache check → (4) router picks
+model → (5) scheduler slots it into a live batch → (6) prefill fills KV-cache →
+(7) decode+stream (output moderated) → (8) stop token frees the KV-cache slot.
 
 ### F1.3 The crux — KV-cache + continuous batching
 
@@ -1599,6 +2233,13 @@ Model internals (attention, quantization, speculative decoding) live in
 
 > **Google priority:** ★★★ · **Difficulty:** Medium · **Frequency:** Very common · **Time budget:** ~30 min
 
+> **User story —** *As a* user asking questions over my company's docs, *I want* grounded, cited
+> answers, *so that* I get facts from our knowledge base instead of model hallucinations.
+> **For example —** I ask "what's our refund policy?"; the system embeds the query, retrieves the
+> top passages from the vector DB, reranks them, and the LLM answers with citations to those docs.
+> **Why it matters —** the hard parts are retrieval quality and freshness (chunk → embed → index →
+> retrieve → rerank), not the LLM call itself.
+
 **Retrieval-Augmented Generation** grounds an LLM in **your** documents: instead
 of hoping the model memorized a fact, you **retrieve** the relevant passages and
 **feed them into the prompt**. The system is a pipeline: **chunk → embed → index
@@ -1615,6 +2256,25 @@ lives in **Ch 28 (Semantic Search)**.
   **ANN index** (brute-force `O(N)` per query is hopeless), sharded across nodes.
 - **Quality knobs to ask about:** chunk size/overlap, top-k, rerank depth,
   embedding model, refresh cadence.
+
+### Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §F2.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![RAG / Semantic Search — whiteboard rehearsal sketch](diagrams/rag_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §F2.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §F2.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ### F2.2 HLD — architecture + flow
 
@@ -1672,6 +2332,13 @@ covered in **Ch 28**.
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~35 min
 
+> **User story —** *As a* user opening a feed, *I want* a personalized, ranked list in under
+> 200 ms, *so that* I see relevant items without waiting.
+> **For example —** for each request, candidate generation cuts 10^8 items to ~1,000 via ANN, then
+> a ranking model scores those and applies business rules — all within the latency budget.
+> **Why it matters —** you can't score 800 M items per request, so recsys is a funnel; the infra
+> crux is the feature store and the online/offline split.
+
 "Design the feed / recommendations" (YouTube home, app store, shopping) is the
 classic ML-system question. You can't score **800 million items** for every user
 in 100 ms, so recsys is a **funnel**: cheaply **generate candidates** (thousands)
@@ -1685,10 +2352,29 @@ crux is the **feature store** and the **online/offline split**. Modeling depth
   refresh as behavior changes; respect business rules (diversity, freshness,
   dedupe, policy).
 - **Estimate:** 100 M DAU × 10 feed loads/day = **1 B requests/day ≈ 12k/s**
-  (peak ~40k/s), each scoring ~500 candidates → **6 M scorings/s** at peak →
+  (peak ~40k/s), each scoring ~500 candidates → **~6 M scorings/s average, ~20 M/s at peak** →
   ranking must be cheap per item, and candidate generation must cut 10^8 → 10^3
   fast.
 - **Latency:** end-to-end **< 200 ms**; the model has a strict slice of that.
+
+### Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §F3.2 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Recommendation Feed — whiteboard rehearsal sketch](diagrams/recsys_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §F3.2 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §F3.2 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ### F3.2 HLD — architecture + flow
 
@@ -1708,7 +2394,7 @@ crux is the **feature store** and the **online/offline split**. Modeling depth
                                   ▼                            train tables)
               RE-RANK / policy: diversity, dedupe, freshness, business rules
                                   ▼
-              Feed served; impr.+clicks logged ─▶ training data (offline)
+              Feed served; impr.+clicks logged ─▶ training data ─▶ Spark train ─▶ Model Store ─▶ deploy
 ```
 **Block-by-block:** **candidate generation** uses cheap recall sources — a
 **two-tower** model embeds the user and finds nearby items via **ANN**, unioned
@@ -1716,7 +2402,9 @@ with trending/followed/collaborative sources — to cut 10^8 items to ~10^3. The
 **ranking** model then scores each candidate with rich **user × item × context
 features** pulled from the **feature store**. A **re-rank/policy** layer enforces
 diversity, dedupe, and business rules. Served impressions and clicks are
-**logged** to become tomorrow's **training data**. **Flow:** (1) request →
+**logged** to become tomorrow's **training data**. An offline **training pipeline**
+(Spark) turns those logs into refreshed models, published to a **Model Store**
+(versioned artifacts) and deployed to the **ranking** service. **Flow:** (1) request →
 (2) candidate gen (ANN + sources) → (3) feature fetch → (4) rank → (5) policy
 re-rank → (6) serve + log.
 

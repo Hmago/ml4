@@ -53,6 +53,14 @@ the scaffold in miniature.
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~40 min
 
+> **User story —** *As a* user typing in the search box, *I want* relevant completions to appear
+> before I finish the word, *so that* I find what I mean in a few keystrokes instead of typing the
+> whole query.
+> **For example —** I type "ne" and instantly see *netflix, news, nearby restaurants* ranked by
+> what people actually search — each keystroke answered in under 50 ms.
+> **Why it matters —** a `LIKE 'ne%'` SQL scan can't hit that latency at hundreds of thousands of
+> QPS; a sharded in-RAM trie with precomputed top-K per node is what makes "instant" instant.
+
 You start typing **"ne"** into the search box and, before your finger leaves the key,
 a list drops down: *netflix, news, nearby restaurants, nest…* That is **autocomplete**
 (a.k.a. **typeahead**): given the few characters typed so far (a **prefix**), instantly
@@ -114,6 +122,25 @@ side (mining 5 B queries/day) is huge but **entirely asynchronous**, so it never
 with serving. And the long tail is worthless: keeping the **top ~100 M phrases** captures
 almost all traffic while bounding memory.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §5.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Search Autocomplete / Typeahead — whiteboard rehearsal sketch](diagrams/autocomplete_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §5.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §5.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 5.3 HLD — high-level architecture
 
 ![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete.svg)
@@ -129,14 +156,14 @@ continuously in the background and periodically ships a fresh index into Layer 2
 - **Edge / CDN POP** — caches the top-K for the few thousand hottest prefixes ("f", "ne",
   "you…"). Most autocomplete traffic is wildly skewed toward popular prefixes, so the edge
   absorbs a large fraction at ~5 ms (CDN & edge — Ch 23).
-- **Autocomplete Service** — a thin **stateless router**: normalize the prefix, find which
+- **Suggest Service** — a thin **stateless router**: normalize the prefix, find which
   **trie shard** owns it, fetch its precomputed top-K, optionally re-rank for the user.
 - **Trie shards** — the heart. The full trie is too big for one box, so it is **sharded by
   prefix range** and held **in RAM**, replicated for availability. Each node carries its
   **precomputed top-K** so serving is a short walk, not a subtree scan (the LLD crux, §5.8).
 - **Offline pipeline** — Kafka streams the query logs to an aggregator that counts
-  popularity with **time decay**, filters spam/PII, keeps the **top-N** phrases, and a
-  **Trie Builder** compiles a fresh immutable snapshot that is **atomically swapped** in.
+  popularity with **time decay**, filters spam/PII, keeps the **top-N** phrases, and
+  compiles a fresh immutable **score snapshot** (the trie-load artifact) that is **atomically swapped** in.
 
 ## 5.4 HLD — critical path walkthrough
 
@@ -146,7 +173,7 @@ Typing **"ne"** (after "n", "ne" debounced into a single live request):
      GET /ac?q=ne&lang=en&loc=US     (debounced 60 ms)
   2. Edge POP checks its hot-prefix cache for "ne":
         ├─ HIT  ─▶ return top-10 in ~5 ms   (a large share ends here)
-        └─ MISS ─▶ forward to the Autocomplete Service
+        └─ MISS ─▶ forward to the Suggest Service
   3. Service normalizes "ne" (lowercase, trim, strip accents) and
      hashes it to the shard owning the "n–s" prefix range
   4. Trie Shard C walks 2 edges  n ─▶ e  to node "ne" and reads
@@ -200,7 +227,7 @@ the same question in **O(len(prefix))** with the answer pre-sorted. The trie *is
   ALL replicas of a shard down  →  that prefix range degrades to the
                                    Redis top-K cache or returns []; the
                                    rest of the alphabet is unaffected
-  Trie Builder job fails        →  shards KEEP serving the previous
+  Snapshot rebuild fails        →  shards KEEP serving the previous
                                    snapshot (atomic swap, never partial);
                                    suggestions just get staler, not wrong
   Offline pipeline backed up    →  popularity is older; serving fine;
@@ -325,6 +352,15 @@ prefixes; rebuilding the index **in place** (serving a half-built trie); forgett
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~40 min
 
+> **User story —** *As a* search engine, *I want* to discover and continuously re-download the
+> whole web politely, *so that* my index reflects pages as they exist today without overloading
+> anyone's site.
+> **For example —** starting from a few seed URLs, the crawler follows links across tens of
+> billions of pages, re-fetching a news homepage hourly but a static PDF monthly — and never
+> hammering one host faster than its `robots.txt` allows.
+> **Why it matters —** the design hinges on the URL frontier (what to fetch next, how fast per
+> host) and dedupe (seen URLs and seen content), not on "download a page."
+
 A **web crawler** (a.k.a. spider, or "Googlebot") is the program that walks the web: start
 from a few seed URLs, download each page, **extract the links** on it, and follow those
 links — endlessly — to discover and re-download the whole web so a search engine can index
@@ -386,6 +422,25 @@ for a **Bloom filter** (Ch 24). Bandwidth is large but linear; **storage of raw 
 cheap** in an object store. The real engineering is **scheduling and politeness**, not raw
 throughput.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §6.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Web Crawler (Googlebot) — whiteboard rehearsal sketch](diagrams/crawler_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §6.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §6.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 6.3 HLD — high-level architecture
 
 ![Web Crawler (Googlebot) — high-level architecture (HLD)](diagrams/crawler.svg)
@@ -404,6 +459,8 @@ or stores. The loop is: **frontier → fetch → store → parse → dedupe → 
   URL; downstream consumers (indexer, dedupe) read from here.
 - **Parser / Extractor** — extracts outlinks (`<a href>`), the **canonical** URL, visible
   text, `lastmod`, and **sitemaps**; produces a content **fingerprint**.
+- **Link graph (Bigtable)** — the extracted `src → [dst]` edges, persisted for ranking
+  (PageRank-style) and to prioritize what's worth crawling next.
 - **URL dedupe (Bloom filter)** — "have we already enqueued this URL?" answered in O(1) with
   tiny memory (Ch 24). New URLs go back to the frontier.
 - **Content dedupe (sim-hash)** — "is this page a near-duplicate of one we already have?"
@@ -444,6 +501,7 @@ Notice the efficiency levers: **step 4** (conditional GET → 304 avoids a downl
 | Raw pages | `urlHash → gzip(html), fetchedAt` | Object store (S3/GCS) | 450 TB, write-once, cheap |
 | Content fingerprints | `simhash64 → docId` | KV / LSH index | Near-dup detection |
 | Crawl metadata | `url → lastCrawl, changeFreq, nextDue` | Wide-column (Bigtable/Cassandra) | Drives re-crawl scheduling |
+| Link graph | `srcUrl → [dstUrl]` | Bigtable | Web-graph edges for ranking (PageRank) & crawl prioritization |
 
 **Why a Bloom filter for seen-URLs?** A 30 B-entry hash set of full URLs is tens of TB of
 RAM. A Bloom filter holds the same membership test in a few **tens of GB** with a tunable,
@@ -600,6 +658,15 @@ downstream **inverted index** — **Ch 25** (*Full-text search*).
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~40 min
 
+> **User story —** *As a* user, *I want* to find things "near me" — coffee shops within 2 km, or
+> which friends are close — *so that* I get instant local results without the app scanning every
+> place on Earth.
+> **For example —** I search "coffee within 2 km" in Manhattan; the system reads my S2/geohash
+> cell plus its 8 neighbors and returns the ~30 nearby shops in milliseconds, not by computing
+> distance to 200 M rows.
+> **Why it matters —** "nearby" needs a spatial index (geohash / quadtree / S2), not a `WHERE`
+> scan — choosing and tuning that index is the entire problem.
+
 "Show me coffee shops **within 2 km**." "Which of my friends are **nearby**?" These are
 **proximity search** problems, and they all reduce to one question: *given a point on Earth
 and a radius, return the items inside the circle — fast, without scanning all 200 million
@@ -660,6 +727,25 @@ in a database (or Redis GEO) is plenty. For **moving dots**, the **write rate ex
 (millions/sec) — you cannot durably persist every GPS ping; you keep the latest position in
 an **in-memory grid** with last-write-wins, and only checkpoint occasionally. That split
 (static index vs live grid) is the senior insight here.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §7.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Proximity / Nearby (Maps / Yelp) — whiteboard rehearsal sketch](diagrams/proximity_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §7.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §7.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 7.3 HLD — high-level architecture
 
@@ -866,6 +952,14 @@ stores*); **sharding by key prefix** and **consistent hashing** — **Ch 24**.
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~45 min
 
+> **User story —** *As a* rider, *I want* one tap to summon the nearest available driver and never
+> have two riders promised the same car, *so that* I get picked up quickly and reliably.
+> **For example —** I request a ride; the system finds available drivers in my cell, offers the
+> best-ETA one, and **atomically claims** that driver for 15 s so a simultaneous request can't
+> grab the same person.
+> **Why it matters —** it's Case Study 7's moving-dots geo problem plus a real-time matcher whose
+> crux is the atomic claim — the guarantee of no double-dispatch.
+
 Tap "request ride," and within seconds a nearby driver's phone buzzes with your trip. Under
 the hood: **millions of drivers stream their GPS location continuously**, and when a rider
 asks, the system must **find nearby available drivers, pick one, and hand the trip to exactly
@@ -928,6 +1022,25 @@ but **disposable** → keep them in RAM with last-write-wins. **Matches are only
 but **must be perfectly consistent** (no double-dispatch). So we spend our consistency budget
 on the *small* match path and keep the *huge* location path cheap and eventually consistent.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §8.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Ride-Hailing (Uber / Lyft) — whiteboard rehearsal sketch](diagrams/ride_hailing_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §8.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §8.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 8.3 HLD — high-level architecture
 
 ![Ride-Hailing (Uber / Lyft) — high-level architecture (HLD)](diagrams/ride_hailing.svg)
@@ -944,8 +1057,9 @@ poll. Layer 3 is **RAM**; Layer 4 is **durable**.
   perform the **atomic claim** so a driver can't be offered to two riders (the crux, §8.8).
 - **In-memory location grid** — the Case Study 7 structure: `cellId → drivers`, last-write-
   wins, TTL'd so a driver who stops pinging ages out.
-- **Driver-state store (Redis)** — the **single source of truth for availability** and the
-  place the **lock** lives; `driverId → {status, currentTripId}`.
+- **Driver availability + claim lock (Redis)** — the Matching service keeps each driver's
+  availability and the **atomic claim lock** in Redis (the same in-RAM tier as the geo grid);
+  `driverId → {status, currentTripId}` + `driver:d:lock`. This is what prevents double-dispatch (§8.8).
 - **Trip store + surge + Kafka** — durable trip FSM, per-cell surge multiplier, and an event
   bus that feeds ETA, analytics, payments, and notifications asynchronously.
 
@@ -980,7 +1094,7 @@ TTL** ensures a crashed dispatcher can't lock a driver forever.
 |--------|--------------------|-------|-----|
 | Live location | `cellId → {driverId→(lat,lng,ts,avail)}` | In-memory grid (Redis/RAM) | ~1M writes/s, LWW, ephemeral |
 | Driver state / lock | `driverId → {status, currentTripId}` + `driver:d:lock` | Redis (atomic) | Single source of availability + the claim lock |
-| Trip | `tripId → state, rider, driver, ts, route` | Durable DB (Postgres/Spanner) | Money-adjacent; needs ACID + history |
+| Trip | `tripId → state, rider, driver, ts, route` | Cassandra / Spanner (Trip DB) | Durable, queryable trip history; Spanner gives strong consistency for money-adjacent state |
 | Surge | `cellId → multiplier, updatedAt` | Redis / KV | Hot reads at request time; recomputed often |
 | Trip events | `trip.* append` | Kafka → warehouse | Feeds ETA, analytics, payments, notifications |
 
@@ -1124,6 +1238,15 @@ durable, idempotent **payments** downstream — **Ch 37** (*Payment system*).
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~40 min
 
+> **User story —** *As a* user, *I want* an infinitely-scrolling timeline of the people I follow,
+> blended and ranked, that loads instantly, *so that* I always see fresh, relevant posts without
+> waiting.
+> **For example —** I open the app and my feed appears in one cache read; when someone I follow
+> with 100 M followers posts, the system doesn't copy it into 100 M timelines — it's pulled in and
+> merged when I scroll.
+> **Why it matters —** the whole design is the **fan-out** decision: push for normal authors, pull
+> for celebrities, hybrid in between — justified with follower-count arithmetic.
+
 Open Twitter/X or Facebook and you see a **timeline**: the recent posts of everyone you
 follow, blended and ranked, scrolling infinitely. Simple to describe, brutal at scale:
 **you follow hundreds of accounts; some accounts have a hundred million followers.** When
@@ -1179,7 +1302,7 @@ How far back does the timeline go (retention)?*
    Fan-out cost of ONE post:
      avg user (200 followers)   → push 200 entries     (trivial)
      celebrity (100 M followers)→ push 100,000,000      (a "fan-out storm")
-   Feed cache: 500 M users × ~800 entries × ~16 B ≈ 6.4 TB in Redis
+   Timeline cache: 500 M users × ~800 entries × ~16 B ≈ 6.4 TB in Redis
 ```
 
 **What the numbers teach:** reads beat writes **~50:1**, so we want to **precompute timelines
@@ -1187,30 +1310,51 @@ How far back does the timeline go (retention)?*
 entries — one write becoming 100 M writes. That single fact kills pure push and **forces the
 hybrid**: push for the masses, pull for the whales.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §9.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![News Feed (Twitter / Facebook) — whiteboard rehearsal sketch](diagrams/news_feed_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §9.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §9.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 9.3 HLD — high-level architecture
 
 ![News Feed (Twitter / Facebook) — high-level architecture (HLD)](diagrams/news_feed.svg)
 
-**Legend:** the **Fan-out service** decides push-vs-skip per post; the **Timeline service**
-merges pushed + pulled at read time. The feed cache is a **Redis sorted set** per user.
+**Legend:** the **Fan-out service** decides push-vs-skip per post; the **Feed service**
+merges pushed + pulled at read time. The **Timeline cache** is a **Redis sorted set** per user.
 
 **Block-by-block:**
-- **Post service** — persists the post (source of truth) and emits `post.created`; returns to
+- **Tweet service** — persists the post (source of truth) and emits `tweet.created` to **Kafka**; returns to
   the author immediately (the fan-out is async).
 - **Fan-out service / workers** — consume `post.created` and, **for normal authors**, push the
   `postId` into each follower's feed cache. **For celebrities, they skip the push** (that's the
   whole trick).
-- **Realtime push (live followers)** — in parallel with the (async) cache write, any follower
-  who is **currently connected** also gets the new post pushed instantly over their open
-  **WebSocket** via the **Realtime Gateway** — the same chat/presence gateway from
-  **Ch 35 (Case Study 2)**. Timeline-cache update and live push happen together.
-- **Timeline (read) service** — on a feed request, read the user's **pushed** cache, then
-  **pull** recent posts from the **few** celebrities they follow, **merge + rank + paginate**.
-- **Feed cache (Redis ZSET)** — per-user sorted set `postId → score` (score = timestamp or a
+- **Realtime push (optional — reuses Ch 35, not a box here)** — in parallel with the (async)
+  cache write, any follower who is **currently connected** can also get the new post pushed
+  instantly over their open **WebSocket**, reusing the chat/presence gateway from **Ch 35
+  (Case Study 2)**. The timeline-cache write is the system of record; live push is a latency
+  optimization layered on top.
+- **Feed (read) service** — on a feed request, read the user's **pushed** timeline cache, then
+  **pull** recent posts from the **few** celebrities they follow, then a **Ranking Service**
+  **merges + ranks + paginates**.
+- **Timeline cache (Redis ZSET)** — per-user sorted set `postId → score` (score = timestamp or a
   ranking score), **capped** to ~800 entries so memory stays bounded.
-- **Graph store** — the follow edges (`followers`, `followees`), used to know who to push to and
+- **Social graph (Cassandra)** — the follow edges (`followers`, `followees`), used to know who to push to and
   which celebrities to pull from.
-- **Post store (Cassandra)** — write-heavy, time-ordered durable posts; the timeline holds
+- **Tweet store (Cassandra)** — write-heavy, time-ordered durable posts; the timeline holds
   ids, the post bodies are fetched here (or from cache).
 
 ## 9.4 HLD — critical path walkthrough
@@ -1218,7 +1362,7 @@ merges pushed + pulled at read time. The feed cache is a **Redis sorted set** pe
 **Write (post) — hybrid fan-out decision:**
 ```
   1. Author → POST /tweets {text}
-  2. Post svc: persist post (Cassandra), emit "post.created"
+  2. Tweet svc: persist post (Cassandra), emit "tweet.created"
   3. Fan-out worker reads author's follower count:
         ├─ followers < THRESHOLD (e.g. 100k)  → PUSH:
         │     for each follower f:  ZADD feed:f  score  postId
@@ -1236,7 +1380,7 @@ merges pushed + pulled at read time. The feed cache is a **Redis sorted set** pe
   3. celebs = followees(user) ∩ celebrity_set          (a few)
      B = for each celeb: read recent postIds from celeb cache
   4. MERGE A ∪ B → RANK (recency + affinity + engagement)
-  5. Hydrate postIds → bodies (Post store / cache)
+  5. Hydrate postIds → bodies (Tweet store / cache)
   6. Return page + next cursor (for infinite scroll)
 ```
 The asymmetry is the design: **normal authors pay at write time** (cheap — 200 pushes) so the
@@ -1248,9 +1392,9 @@ because you only follow a few celebrities, not thousands.
 
 | Entity | Shape (key fields) | Store | Why |
 |--------|--------------------|-------|-----|
-| Post | `postId → authorId, text, mediaRef, ts` | Cassandra | Write-heavy, time-ordered, durable |
-| Feed cache | `userId → ZSET{postId:score}` (capped ~800) | Redis sorted set | O(log n) insert, O(1) top-N read |
-| Follow graph | `user → [followers]`, `user → [followees]` | Graph DB / KV | Fan-out targets + celeb-pull list |
+| Tweet | `postId → authorId, text, mediaRef, ts` | Cassandra (Tweet Store) | Write-heavy, time-ordered, durable |
+| Timeline cache | `userId → ZSET{postId:score}` (capped ~800) | Redis sorted set | O(log n) insert, O(1) top-N read |
+| Follow graph | `user → [followers]`, `user → [followees]` | Cassandra (Social Graph) | Fan-out targets + celeb-pull list |
 | Celeb recent | `celebId → [recent postIds]` | Redis | Pulled at read time; small, hot |
 | Follower counts | `user → count` | KV (cached) | The push-vs-skip decision input |
 | Ranking features | `(user,post) → signals` | Feature store | Re-rank merged candidates |
@@ -1286,11 +1430,11 @@ cap — exactly the "ordered, bounded, fast top-N" shape a timeline needs.
   ──────────────────────────────────────────────────────────────────
   Fan-out worker lag (spike)    →  posts queue in Kafka (durable); feeds
                                    lag a few seconds; nothing lost
-  Feed cache (Redis) eviction   →  rebuild on read by PULL from followees
+  Timeline cache eviction       →  rebuild on read by PULL from followees
                                    (cache is an optimization, not truth)
   Celebrity posts (hot key)     →  hybrid: never pushed; pulled + merged;
                                    celeb cache is heavily replicated
-  Post store node down          →  tunable quorum keeps reads/writes; ids
+  Tweet store node down         →  tunable quorum keeps reads/writes; ids
                                    in feed still resolve from replicas
   Read-your-own-writes miss     →  on read, UNION the user's own recent
                                    posts so they always see their new post
@@ -1418,6 +1562,14 @@ example*).
 
 > **Google priority:** ★★★ · **Difficulty:** Hard · **Frequency:** Very common · **Time budget:** ~45 min
 
+> **User story —** *As a* viewer, *I want* any video to start fast and play smoothly on my device
+> and connection, adjusting quality as my network wobbles, *so that* I never stare at a buffering
+> spinner.
+> **For example —** I start a 4K creator's upload on my phone over 3G; I get a smooth 480p stream
+> that jumps to 1080p when I reach Wi-Fi — the player swaps renditions per segment from a CDN.
+> **Why it matters —** it takes two pipelines — parallel chunked transcoding into many renditions,
+> and ABR (manifest + segments) over a CDN — to serve one upload to billions of devices.
+
 A creator uploads one 4K video file; minutes later, **billions of viewers on every device and
 network speed** can play it smoothly — your phone on 3G gets a blurry-but-uninterrupted
 stream, your TV on fibre gets crisp 4K, and both **switch quality on the fly** as the network
@@ -1476,6 +1628,25 @@ object store, and transcoding is so CPU-heavy it **must be parallelized by chunk
 **real load is delivery** — billions of watch-hours — which is why **>95% of bytes are served
 from the CDN**, not your origin. View counting at 10¹⁰/day can't be exact-per-event; it's
 **approximate + batched**.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §10.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Video Streaming (YouTube / Netflix) — whiteboard rehearsal sketch](diagrams/video_streaming_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §10.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §10.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 10.3 HLD — high-level architecture
 
@@ -1692,6 +1863,14 @@ for transcode — **Ch 25**.
 
 > **Google priority:** ★★ · **Difficulty:** Hard · **Frequency:** Common · **Time budget:** ~40 min
 
+> **User story —** *As a* user with files on several devices, *I want* a change on one device to
+> appear everywhere in seconds without re-uploading whole files, *so that* sync is fast and doesn't
+> burn my bandwidth.
+> **For example —** I change one line in a 2 GB video project; the client uploads only the handful
+> of changed ~4 MB content-defined chunks, and my phone pulls just those — not 2 GB.
+> **Why it matters —** the design is chunking + content-hash dedupe + delta sync, with metadata
+> split from blocks — re-uploading whole files simply doesn't scale.
+
 You edit a document on your laptop; seconds later the change appears on your phone and your
 colleague's machine. That's **file sync**: keep a set of files **identical across many devices
 and the cloud**, efficiently and reliably. The naïve version (re-upload the whole file on every
@@ -1707,7 +1886,7 @@ is exactly that: **chunking + content-hash dedupe + delta sync**.
 
 - Do you **chunk** files and address chunks by **content hash** (so identical data is stored once)?
 - Do you do **delta sync** — upload/download **only changed chunks**, not whole files?
-- Do you **split metadata from blocks** (a Postgres-ish metadata DB vs an S3-ish block store)?
+- Do you **split metadata from blocks** (a MySQL-style metadata DB vs an S3-ish block store)?
 - Do you design the **notification/sync service** that pushes changes to a user's other devices?
 - Do you handle **conflicts** (two devices edit offline) — versioning vs conflict copies?
 
@@ -1725,7 +1904,7 @@ Ch 35 *Collaborative editor*); full-text search of contents; the desktop client 
 **Non-functional**
 - **Bandwidth-efficient:** never re-send unchanged bytes; dedupe across files/users.
 - **Durable & consistent:** never lose or corrupt a file; reflect the latest committed version.
-- **Scale:** hundreds of millions of users, billions of files, exabytes of data.
+- **Scale:** hundreds of millions of users, ~a trillion (10^12) files, exabytes of data.
 - **Sync latency:** a change should reach other online devices within **seconds**.
 
 **Questions to ask:** *Max file size? Fixed or variable chunking? Block-level dedupe across
@@ -1738,7 +1917,7 @@ per user? Strong or eventual consistency on the file view?*
    Users                        500,000,000
    Files / user                 ~2,000 → 10^12 files total
    Avg file size                ~1 MB (skewed: many small, few huge)
-   Chunk size                   4 MB (fixed) → big files = many chunks
+   Chunk size                   ~4 MB (content-defined) → big files = many chunks
    Raw data                     ~ exabytes → object store, tiered
    Dedupe savings               30–50% (shared installers, photos, docs)
    Edits / active user / day    ~20 saves → delta sync makes these cheap
@@ -1751,6 +1930,25 @@ per user? Strong or eventual consistency on the file view?*
 **Blocks** (the file bytes) are **huge, write-once, bandwidth-heavy** → an object store. Keeping
 them in one system would be a disaster; **the split is the architecture.** Dedupe + delta sync
 turn "20 saves of a big file" into a few 4 MB chunk transfers.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §11.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![File Sync & Storage (Drive / Dropbox) — whiteboard rehearsal sketch](diagrams/file_sync_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §11.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §11.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 11.3 HLD — high-level architecture
 
@@ -1797,7 +1995,7 @@ chunk**, not the whole file — on **both** the upload and the download side. Ev
 
 | Entity | Shape (key fields) | Store | Why |
 |--------|--------------------|-------|-----|
-| File / version | `fileId, version → ordered [chunkHash], size, mtime` | Metadata DB (Postgres/Spanner) | Transactional, versioned, point/range reads |
+| File / version | `fileId, version → ordered [chunkHash], size, mtime` | Metadata DB (MySQL) | Transactional, versioned, point/range reads |
 | Chunk (block) | `chunkHash → bytes` (content-addressed) | Object store (S3/GCS) | Immutable, dedupe by hash, huge, cheap |
 | Dedupe refcount | `chunkHash → refCount` | Metadata DB | Know when a chunk is safe to GC |
 | Folder tree / ACL | `folderId → children, sharedWith` | Metadata DB | Listing, permissions |
@@ -1952,6 +2150,13 @@ real-time co-edit alternative — **Ch 35** (*Collaborative editor*).
 
 > **Google priority:** ★★ · **Difficulty:** Easy · **Frequency:** Very common · **Time budget:** ~25 min
 
+> **User story —** *As a* user, *I want* to turn a long link into a short one that reliably
+> redirects, *so that* I can share and track it cleanly.
+> **For example —** I shorten a long product URL into `tiny.cc/9xQ2bR`; every click does a single
+> cached key→value lookup and 301/302-redirects to the original in a few milliseconds.
+> **Why it matters —** the signal is in two choices: how you generate a short, unique, unguessable
+> id without a counter bottleneck, and 301 vs 302 (caching vs analytics).
+
 Paste a long link, get back a short one like `tiny.cc/9xQ2bR`; click it and you're redirected
 to the original. This is the classic **warm-up** question — small enough to finish cleanly, yet
 it exercises the whole scaffold: **estimate → API → ID generation → KV store → cache →
@@ -1995,6 +2200,25 @@ Do we need analytics (which pushes 302 over 301)? Guessable codes a concern?*
 **Lesson:** at 7 base62 chars you have **3.5 trillion** codes — astronomically more than 5
 years of links — so collisions are a non-issue and codes stay short. The system is **read-
 dominated**, so it's really "a giant, heavily-cached hash map."
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §12.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![URL Shortener (TinyURL) — whiteboard rehearsal sketch](diagrams/url_shortener_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §12.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §12.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
 
 ## 12.3 HLD — high-level architecture
 
@@ -2167,7 +2391,7 @@ THE META-LESSON
 9 · NEWS FEED (push vs pull vs HYBRID)
   • Reads ≫ writes → precompute (push) for normal users; the
     celebrity hot key (10^8 followers) forces pull-on-read.
-  • Feed cache = capped Redis sorted set; cursor pagination.
+  • Timeline cache = capped Redis sorted set; cursor pagination.
   • Read = your pushed feed ∪ pulled celeb posts → rank.
   • Crux: the hybrid fan-out decision, proven with follower math.
 
