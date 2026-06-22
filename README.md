@@ -93,8 +93,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 35 | Case Studies — Part 1: Real-Time & Communication (the universal "Design X" playbook + notifications, chat/WhatsApp, Zoom/Meet, Google Docs) | ★★★ | [35_system_design_cases_realtime.md](content/35_system_design_cases_realtime.md) | ~4.25 hrs | Intermediate-Advanced |
 | 36 | Case Studies — Part 2: Search, Geo, Feeds & Media (autocomplete, web crawler, maps/nearby, Uber, news feed, YouTube, Drive/Dropbox, TinyURL) | ★★★ | [36_system_design_cases_search_media.md](content/36_system_design_cases_search_media.md) | ~6 hrs | Intermediate-Advanced |
-| 37 | Case Studies — Part 3: Scale, Infra, Money & AI (rate limiter, Snowflake IDs, top-K, leaderboard, cache, scheduler, payments, inventory, KV store, pastebin + LLM-serving/RAG/recsys + pattern matrix + cheat sheet) | ★★★ | [37_system_design_cases_scale_infra.md](content/37_system_design_cases_scale_infra.md) | ~5.25 hrs | Intermediate-Advanced |
-| | **Case Studies Total** | | | **~15.5 hrs** | |
+| 37 | Case Studies — Part 3: Scale, Infra, Money & AI (rate limiter, Snowflake IDs, top-K, leaderboard, cache, scheduler, payments, inventory, KV store, pastebin, e-commerce platform capstone + LLM-serving/RAG/recsys + pattern matrix + cheat sheet) | ★★★ | [37_system_design_cases_scale_infra.md](content/37_system_design_cases_scale_infra.md) | ~6 hrs | Intermediate-Advanced |
+| | **Case Studies Total** | | | **~15.75 hrs** | |
 
 ### Practical & Infrastructure
 

@@ -232,6 +232,25 @@ batch and parallelize. **(2) sequential ≫ random** — one big sequential read
 small random ones, which is *why* log-structured stores (Cassandra, Kafka) win for
 write-heavy workloads.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §A.4 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![The 4-Layer Reference Architecture — whiteboard rehearsal sketch](diagrams/arch_reference_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §A.4 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §A.4 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## A.4 The 4-layer reference architecture
 
 Almost every system you will design is a specialization of **four layers read
@@ -239,37 +258,7 @@ top-to-bottom**. Memorize this skeleton; in the interview you draw it first, the
 delete the layers a given problem doesn't need and fatten the one that is the crux.
 Every case study in Ch 35–37 echoes this exact shape.
 
-```
-            THE 4-LAYER REFERENCE ARCHITECTURE
-     (every case study in Ch 35–37 specializes this skeleton)
-
- ═══════════ LAYER 1 · EDGE  —  get bytes in and out ════════════════
-   Client(s) ─▶ GeoDNS ─▶ CDN ─▶ API Gateway ─▶ L7 Load Balancer
-                (static +      (authN, TLS,     (health checks,
-                 media)         rate-limit)      retries, spread)
-                                     │
- ═══════════ LAYER 2 · SERVICES  —  stateless logic ════════════════
-        ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
-        │Service A │ │Service B │ │Service C │ │  Realtime    │
-        │ (CRUD)   │ │ (CRUD)   │ │(compute) │ │  Gateway     │◀─ holds
-        └────┬─────┘ └────┬─────┘ └────┬─────┘ │ (WS/gRPC,    │  persistent
-             │            │            │       │  pub/sub)    │  connections
-             │            │            │       └──────┬───────┘
- ════════════╪════════════╪══ LAYER 3 · DATA ═════════╪════════════════
-        ┌────▼────┐ ┌─────▼──────┐ ┌───▼────┐ ┌────────▼─────┐
-        │  SQL    │ │ Wide-column│ │ Cache  │ │ Blob / Object│
-        │ (ACID:  │ │(Cassandra: │ │(Redis: │ │ store (S3:   │
-        │ users,  │ │ msgs,feeds,│ │ hot kv,│ │ media, files,│
-        │ money)  │ │ logs,TTL)  │ │ counts)│ │ backups)     │
-        └─────────┘ └────────────┘ └────────┘ └──────────────┘
-          + Search index (Elasticsearch) · Geo index (S2 / quadtree)
- ════════════╪═════ LAYER 4 · ASYNC  —  decouple slow work ══════════════
-        every write drops an event ─▶ Message bus (Kafka / PubSub)
-              │          │          │            │
-          Fan-out     Indexer    Transcoder   Analytics    (consumer
-          workers   → search    → media        (Flink)      groups,
-          → inboxes   index       pipeline      → warehouse  each w/ DLQ)
-```
+![The 4-Layer Reference Architecture — Edge · Services · Data · Async](diagrams/arch_reference.svg)
 
 **Layer 1 · Edge** is everything between the user and your code: **GeoDNS** points the
 client at the nearest region, the **CDN** serves static assets and media from the edge
@@ -383,6 +372,16 @@ calls out the *system-specific* red flags on top of these universal ones.
 > - **The crux (LLD) —** idempotent dedupe (`SET NX`) + an atomic per-user token-bucket (Lua).
 > - **Scale anchor —** ~35 k notifications/sec at peak; SMS is the quota-limited channel and the delivery log is the real storage cost.
 
+> **User story —** *As an* internal product team (Security, Growth, Search…), *I want* to hand a
+> single "notify this user" call to a shared service, *so that* I never write APNs, Twilio, or
+> rate-limiting glue myself.
+> **For example —** the Security team fires a "new login from Chrome" alert that must reach the
+> user within seconds, while Growth queues a "we miss you" email that may lag minutes; the same
+> `POST /v1/notify` accepts both and routes each to the right channel and priority lane.
+> **Why it pays off —** centralizing delivery puts dedupe, per-user quiet hours, and per-tenant
+> quotas behind one governed pipe, so no team can spam users and one provider's bad day can't take
+> the other channels down.
+
 Imagine the single piece of software at a company that every other team wants to use:
 "send my user a message." Search wants to send "your package shipped." Growth wants "we
 miss you." Security wants "new login from Chrome." A **notification system** is the shared
@@ -454,8 +453,42 @@ Priorities/lanes? Acceptable delay per class? Which providers? Do we need delive
 ```
 
 Lesson the numbers teach: **SMS volume is small but expensive & quota-limited**; **push is
-the firehose**; **the delivery log is the real storage cost** → put it in a cheap
-wide-column store with a TTL, not your primary DB.
+the firehose**; **the delivery log is the real storage cost** → stream it into a cheap, TTL'd
+wide-column store (here Flink → Cassandra), never your primary OLTP DB.
+
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't draw the polished diagram in §1.3 below — you sketch boxes
+and talk. Here is the **same architecture as a live whiteboard sketch**, in the shorthand you'd
+actually use on a Google whiteboard. The colour code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore (name the tech) · orange = Kafka · violet = 3rd-party vendor**
+
+![Notification System — whiteboard rehearsal sketch](diagrams/notification_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG is for *reading*; this one is for *rehearsing*. Practise
+reproducing it from memory in ~4 minutes while narrating every box out loud — that muscle memory
+is exactly what the interview tests. Narrate it like this:
+
+> "A client `POST`s to the **gateway** (TLS, auth, first-level rate-limit) → **FES** for
+> scheduling and caching → into the **Notification Service**. Inside: the **Validator** checks
+> the payload and hits **Redis** for idempotent **dedupe**; the **Prioritizer** tags OTP as high;
+> the **Rate Limiter** enforces client *and* per-user caps; the **Handler** loads preferences
+> through the **User Service**. It then **publishes to Kafka by priority**. Each
+> **channel handler** — in-app, email, SMS, push — consumes its topic and calls its **vendor**
+> (WebSocket / SES / Twilio / FCM·APNs). In parallel a copy is *tee'd* to the **Notification
+> Tracker**, which records every attempt to the **delivery/audit log**."
+
+It is the *same architecture* as the clean §1.3 diagram below — only drawn in the loose,
+name-the-tool style your hand can produce under pressure, so a few labels are sketchier: the
+rehearsal's **FES + Notification Service** is the polished diagram's **Notification API +
+Notification Processor**, and where the sketch scribbles a generic SQL box and an audit log,
+§1.3/§1.5 pin the exact stores — **PostgreSQL** for preferences, **Amazon S3** for templates,
+**Cassandra** for the in-app feed and the **Flink → Cassandra** delivery log (analytics teed to
+**BigQuery**). Each box still names
+a concrete technology, every datastore is called out in red, and the async backbone
+(Kafka → handlers → vendors) reads left-to-right along the bottom. That is the signal an
+interviewer is looking for.
 
 ## 1.3 HLD — high-level architecture
 
@@ -475,16 +508,20 @@ milliseconds, and all the slow work happens in LAYER 2.
   milliseconds.
 - **Kafka "requested" topic** — the durable buffer that absorbs spikes (the 35 k/s peak) and
   decouples ingest from processing. If processors fall behind, messages wait here, not in RAM.
-- **Notification Processor** — the brain: preferences → quiet-hours/opt-out → channel
-  selection → template render → per-user rate-limit → fan-out. Stateless and horizontally
-  scaled by Kafka partitions.
+- **Notification Processor** — the brain: it loads preferences from **PostgreSQL** (cached in
+  Redis) and templates from **Amazon S3**, then runs quiet-hours/opt-out → channel selection →
+  template render → per-user rate-limit (Redis) → fan-out. Stateless and horizontally scaled by
+  Kafka partitions.
 - **Per-channel queues + workers** — isolation by channel (the **bulkhead** pattern, Ch 23):
   if Twilio is slow, `sms.q` backs up but push/email/in-app keep flowing. Each worker owns
   its own retry/backoff and a **dead-letter queue** for poison messages (Ch 24). The channel
   layer is **pluggable** — to add WhatsApp as a channel, register a new channel worker +
-  template type and route to its queue; nothing upstream changes.
+  template type and route to its queue; nothing upstream changes. The **in-app writer**
+  persists each message to the per-user feed in **Cassandra**.
 - **Delivery log + analytics** — providers call back (webhooks) with delivered/bounced/opened;
-  workers turn those into events for the cheap, TTL'd log and the metrics pipeline.
+  a **Status Consumer** reads the `notifications.delivered` topic and **Apache Flink** aggregates
+  the stream into **Cassandra** (the cheap, 90-day-TTL delivery log) and **BigQuery + Prometheus**
+  (analytics & SLO metrics).
 
 ## 1.4 HLD — critical path walkthrough
 
@@ -512,12 +549,12 @@ Notice the design promises: step 2 makes retries safe (**idempotent**), step 3 h
 
 | Entity | Shape (key fields) | Store | Why |
 |--------|--------------------|-------|-----|
-| Preferences | `user_id → {channel:on/off, quiet_hours, tz, locale}` | Sharded SQL or KV | Point reads by user_id; small, hot → cache in Redis |
-| Templates | `template_id, version, locale → body` | Versioned blob + Redis cache | Read-mostly; never hard-code copy in services |
+| Preferences | `user_id → {channel:on/off, quiet_hours, tz, locale}` | PostgreSQL (sharded by user_id) + Redis cache | Point reads by user_id; small, hot → cache in Redis |
+| Templates | `template_id, version, locale → body` | Amazon S3 (versioned) + Redis cache | Read-mostly; never hard-code copy in services |
 | Dedupe keys | `idemKey → 1` (TTL 24 h) | Redis (SETNX) | O(1), auto-expiring; the exactly-once illusion |
 | Rate-limit | `user_id → token bucket` | Redis (Lua, atomic) | Atomic check-and-decrement at the edge of fan-out |
-| Usage/metering | `(tenant_id, day) → request_count` | Redis counters → OLAP rollup | Per-client request counts for quotas, reporting & per-use billing |
-| Delivery log | `(user_id, ts) → status…` | Cassandra (TTL 90 d) | Write-heavy, time-series, cheap, expiring |
+| Usage/metering | `(tenant_id, day) → request_count` | Redis counters → BigQuery rollup | Per-client request counts for quotas, reporting & per-use billing |
+| Delivery log | `(user_id, ts) → status…` | Kafka → Flink → Cassandra (90-day TTL) | Write-heavy time-series; cheap, expiring wide-column log; analytics teed to BigQuery — not your OLTP DB |
 | In-app feed | `(user_id, ts) → notif` | Cassandra / Bigtable | Per-user timeline reads, write-heavy |
 
 ## 1.6 HLD — scaling & bottlenecks
@@ -658,6 +695,16 @@ modeling — **Ch 24**; Redis patterns — **Ch 23**.
 > - **The crux (LLD) —** connection-registry routing + the `sent → delivered → read` receipt state machine.
 > - **Scale anchor —** ~600 k writes/sec and ~1.46 PB/yr ⇒ wide-column store, not SQL.
 
+> **User story —** *As a* user messaging a friend, *I want* my message to appear on their phone
+> instantly and reliably — ✓ sent, ✓✓ delivered, blue ✓✓ read — *so that* I can trust the
+> conversation even when one of us has a flaky connection or is offline.
+> **For example —** I text "running 5 min late" while my friend is underground with no signal;
+> the app shows a single ✓, then ✓✓ the moment they resurface, and blue ✓✓ when they unlock —
+> nothing is lost or shown out of order.
+> **Why it matters —** that guarantee rests on holding millions of open sockets, knowing which
+> server currently holds each user, ordering messages per conversation, and a store-and-forward
+> inbox — the machinery that turns a bare "send" into an ordered, eventually-delivered event.
+
 Texting *feels* trivial — type, hit send, it appears on your friend's phone. The magic you
 don't see is everything that makes it feel instant and reliable: a connection that stays
 open for hours so a message can be **pushed** to you the instant it arrives (no refreshing);
@@ -738,6 +785,25 @@ horizontally-sharded **connection tier**; **600 k writes/s + 1.46 PB/yr** ⇒ a 
 wide-column store**, never SQL; and **media** ⇒ keep big bytes out of the message path (blob
 store + CDN), store only a reference in the message.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §2.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Chat / Messaging (WhatsApp / Slack) — whiteboard rehearsal sketch](diagrams/chat_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §2.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §2.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 2.3 HLD — high-level architecture
 
 **Transport first — why WebSocket?** Chat needs the *server* to push to the client at any
@@ -761,9 +827,9 @@ one box. **Layer 2 — the gateway tier — is the system's heart:** each box ho
 WebSockets and does nothing but terminate connections and shuttle frames. The moment a socket
 opens, the gateway writes an entry into the **Connection Registry** (which gateway holds which
 user) — this is what makes routing possible. **Layer 2b** are stateless services: the **Chat
-service** assigns the per-conversation **seqId** and persists the message; **Presence** tracks
-who's online; the **Receipt service** advances the delivery state machine. **Layer 3** stores
-messages in a **wide-column store keyed by `convId`** (write-heavy, time-ordered — Ch 24),
+service** assigns the per-conversation **seqId**, persists the message, and advances the
+delivery/read-receipt state machine (`validate · seqId · persist · receipts`); **Presence**
+tracks who's online. **Layer 3** stores messages in a **wide-column store keyed by `convId`** (write-heavy, time-ordered — Ch 24),
 per-user **delivery offsets/inbox** for offline sync, **presence in Redis**, and **media in a
 blob store + CDN**. **Layer 4** handles everything that can be slightly late: waking offline
 users via **push** (reusing Case Study 1), heavy **group fan-out**, and analytics.
@@ -1010,6 +1076,16 @@ pub/sub, Kafka, consistent hashing, wide-column (Cassandra) modeling, CAP/AP cho
 > - **The crux (LLD) —** the **SFU** selective-forwarding model (mesh vs MCU vs SFU stream math).
 > - **Scale anchor —** mesh uplink `(N-1)·B` dies past ~4 people; an SFU keeps each user's uplink flat in N.
 
+> **User story —** *As a* participant in a video call, *I want* everyone's audio and video to stay
+> in sync and low-latency even with 20 people on mixed devices and networks, *so that* the meeting
+> feels like one room, not a laggy slideshow.
+> **For example —** I join from a laptop on fibre while a colleague dials in from a phone on 3G;
+> the SFU forwards me their 720p layer and sends them my 180p layer, so neither of us has to
+> freeze the call to accommodate the other.
+> **Why it matters —** treating media as request/response (TCP, one big server decoding everyone)
+> melts home uplinks past ~4 people; splitting signaling from media and using an SFU keeps each
+> user's uplink flat in N — the single decision the whole design turns on.
+
 This is the case study candidates most often get *wrong*, because they reach for the
 request/response toolbox — REST, a load balancer, a SQL database — and none of it applies.
 A video call is **continuous real-time media**: dozens of streams of audio and video flowing
@@ -1092,6 +1168,25 @@ the constrained direction (home upload), so it's dead past ~4 people. SFU keeps 
 **uplink flat in N** — a fixed simulcast stack (~2 Mbps) that does not grow with the meeting,
 and that single fact is why SFU is the industry default.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §3.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Video Conferencing (Zoom / Google Meet) — whiteboard rehearsal sketch](diagrams/video_conf_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §3.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §3.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 3.3 HLD — high-level architecture (two planes)
 
 The non-negotiable idea: **a signaling plane (control) separate from a media plane (the
@@ -1100,9 +1195,11 @@ critical — they have nothing in common and must not share infrastructure.
 
 ![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)
 
-**Block by block:** **Signaling Service** is a normal stateless WebSocket service — it
-authenticates the join, tracks **room membership** in a Redis **Room Registry**, **allocates
-an SFU** for the meeting, and relays the **SDP offer/answer** (each side's codecs and
+**Block by block:** a stateless **Meeting Service** owns the non-real-time control surface —
+creating and scheduling meetings and authorizing joins — persisting meeting metadata in
+**PostgreSQL** (the **Meeting DB**). The **Signaling Service** is a normal stateless WebSocket
+service — it authenticates the join, tracks **room membership** in a Redis **Room Registry**,
+**allocates an SFU** for the meeting, and relays the **SDP offer/answer** (each side's codecs and
 parameters) plus **ICE candidates** (possible network paths). **STUN** servers let a client
 discover its own public IP:port behind NAT; **TURN** servers **relay** media for the ~10–20%
 of users behind symmetric NATs that can't connect directly (theory: *UDP, NAT* — Ch 23). The
@@ -1110,8 +1207,8 @@ of users behind symmetric NATs that can't connect directly (theory: *UDP, NAT* �
 streams *up* to it over UDP, and it **forwards the right streams down** to each other
 participant — *without decoding them*. For geographically split meetings, SFUs **cascade**:
 each client hits its nearest SFU and the SFUs relay one copy between regions instead of N.
-**Recording** and **transcription** tap the streams in the async plane and never sit on the
-live path; finished recordings live in a blob store and play back via CDN.
+A **Recording Service** and **transcription** tap the streams in the async plane and never sit
+on the live path; finished recordings live in **S3** (the **Recording Store**) and play back via CDN.
 
 ## 3.4 HLD — critical path walkthrough (join + media setup)
 
@@ -1148,7 +1245,7 @@ durable artifacts are recordings and config.
 | Participant↔SFU | `userId → sfuNode` | Redis | Routing within the media plane |
 | ICE/TURN creds | short-lived tokens | Redis (TTL) | Time-boxed relay credentials |
 | Recording | composed MP4 / raw tracks | Blob store (S3) + CDN | Large, write-once, played back later |
-| Meeting metadata | `meetingId, host, start/end, attendees` | SQL | Billing, history, audit |
+| Meeting metadata | `meetingId, host, start/end, attendees` | PostgreSQL | Billing, history, audit |
 | Quality metrics | per-stream loss/jitter/bitrate | Time-series DB | Monitoring, adaptive tuning |
 
 There is **no message store** like chat — losing a video packet is fine (the next frame is
@@ -1310,6 +1407,15 @@ broadcast — **Ch 23** (and YouTube streaming, **Ch 36**); pub/sub for signalin
 > - **The crux (LLD) —** **Operational Transformation vs CRDTs**, with a worked concurrent-insert example.
 > - **Scale anchor —** shard by `docId` (one authority per live doc); conflicts resolved server-side in well under 100 ms.
 
+> **User story —** *As a* collaborator editing a shared doc, *I want* my keystrokes to appear
+> instantly and everyone to converge on the exact same text, *so that* two of us can type in the
+> same sentence at once without overwriting each other or seeing garbled output.
+> **For example —** I insert "X" at the start of a line at the same instant a teammate inserts "Y"
+> three characters in; the server transforms the later edit so we both land on the same "XabYc",
+> not two divergent copies.
+> **Why it matters —** naive last-write-wins silently loses keystrokes; OT/CRDT plus one per-doc
+> authority that serializes ops is what makes concurrent editing converge — the crux interviewers probe.
+
 Picture three people typing into the *same* document at the same time. Each person's screen
 must update instantly as they type (no lag — typing has to feel local), everyone must see
 everyone else's changes within a blink, and — the hard part — **all three screens must end up
@@ -1383,6 +1489,25 @@ The number that matters is **per-document**, not global: each doc has a single o
 authority, so a doc's own edit rate is the bottleneck. 20 ops/s is trivial; the interesting
 design question is the rare doc with thousands of concurrent editors.
 
+## Whiteboard rehearsal — how you'd actually draw this live
+
+In the room you don't reproduce the polished diagram in §4.3 below — you sketch rough
+boxes and talk. So **rehearse from this first**: here is the same architecture as a **live
+whiteboard sketch**, in the shorthand you'd actually use on a Google whiteboard. The colour
+code is the one most candidates settle into:
+
+> **green = client · grey = edge/LB · blue = service · red = datastore · orange = queue / stream · violet = 3rd-party**
+
+![Collaborative Editor (Google Docs) — whiteboard rehearsal sketch](diagrams/collab_editor_whiteboard.svg)
+
+**Why rehearse from the sketch, not the clean diagram?** The polished SVG in §4.3 is for
+*reading*; this one is for *rehearsing*. Practise reproducing it from memory in ~4 minutes while
+narrating every box out loud — that muscle memory is exactly what the interview tests. It is the
+*same* components as the clean §4.3 diagram, only drawn in the loose, name-the-tool style
+your hand can produce under pressure: every box names a concrete technology, each datastore is
+called out in red, queues in orange, third-party vendors in violet. That visual discipline is
+the signal an interviewer is looking for.
+
 ## 4.3 HLD — high-level architecture
 
 The defining structure: **each document is owned by a single authority node** that serializes
@@ -1393,14 +1518,15 @@ by `docId` so a document's whole live session lives on one box.
 
 **Block by block:** the **Collab Gateway** holds each editor's WebSocket and **routes by
 `docId`** (consistent hashing — Ch 24) to that document's owner, so everyone editing one doc
-lands on the same authority. The **Document Session Owner** is the brain: it keeps the
-authoritative document and `headRevision` **in memory**, **serializes** incoming ops into a
-single order (the single-writer property is what makes OT tractable), **transforms** each op
-against any ops the sender hadn't seen yet, assigns the next revision, **broadcasts** to all
-editors, and **appends** the op to a durable log. **Layer 3** persists an **append-only op
-log** keyed by `(docId, rev)`, periodic **snapshots** so you don't replay millions of ops to
-load a doc, and **presence/cursors in Redis** (ephemeral, TTL'd). **Layer 4** compacts the log
-into snapshots, exports, indexes for search, and fires notifications (Case Study 1).
+lands on the same authority. The **Document Session Server** is the brain (the single
+per-document authority): it keeps the authoritative document and `headRevision` **in memory**,
+**serializes** incoming ops into a single order (the single-writer property is what makes OT
+tractable), **transforms** each op against any ops the sender hadn't seen yet, assigns the next
+revision, **broadcasts** to all editors, and **appends** the op to a durable log. **Layer 3**
+persists an **append-only op log (Apache Kafka)** keyed by `(docId, rev)`, periodic **snapshots**
+in the **Document Store** (Spanner/Bigtable) so you don't replay millions of ops to load a doc,
+blobs/assets in **S3**, and **presence/cursors in Redis** (ephemeral, TTL'd). **Layer 4** compacts
+the log into snapshots, exports, indexes for search, and fires notifications (Case Study 1).
 
 ## 4.4 HLD — critical path walkthrough (a concurrent edit)
 
@@ -1410,9 +1536,9 @@ into snapshots, exports, indexes for search, and fires notifications (Case Study
      sends OP{ baseRev:7, ins(0,'X') }.
   3. B concurrently inserts 'Y' at pos 2 → B shows "abYc", sends
      OP{ baseRev:7, ins(2,'Y') }.
-  4. Owner receives A's op first (baseRev 7 == head): apply → rev 8;
+  4. Server receives A's op first (baseRev 7 == head): apply → rev 8;
      broadcast A's op to B.
-  5. Owner receives B's op (baseRev 7, but head is now 8): it missed op A,
+  5. Server receives B's op (baseRev 7, but head is now 8): it missed op A,
      so TRANSFORM B's op against A → ins(2,'Y') becomes ins(3,'Y')
      (A inserted before pos 2, so shift right by 1); apply → rev 9;
      broadcast the transformed op to A.
@@ -1429,8 +1555,8 @@ local apply** (typing feels instant); the server's broadcast later reconciles ev
 
 | Entity | Shape | Store | Why |
 |--------|-------|-------|-----|
-| Op log | `(docId, rev) → {op, userId, ts}` | Bigtable / Spanner | Append-only, ordered by rev, range-scan to replay |
-| Snapshot | `(docId, rev) → full content` | Blob / DB | Avoid replaying millions of ops to load a doc |
+| Op log | `(docId, rev) → {op, userId, ts}` | Apache Kafka → Bigtable / Spanner | Append-only revision stream (broadcast + durability); materialized to a wide-column/Spanner store for range-scan replay |
+| Snapshot | `(docId, rev) → full content` | Amazon S3 / Document Store (Spanner) | Avoid replaying millions of ops to load a doc |
 | Doc metadata | `docId → {owner, acl, headRev}` | SQL / Spanner | Permissions, the authoritative head revision |
 | Presence/cursors | `docId → {userId: cursorPos}` | Redis (TTL) | High-frequency, ephemeral, never persisted |
 | Comments | `(docId, anchor) → thread` | Wide-column | Anchored to a range; side feature |
