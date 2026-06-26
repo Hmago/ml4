@@ -92,16 +92,19 @@ study in Ch 35–37 is just this playbook applied to a new prompt.
         ▲ loop back to step 1 whenever the interviewer adds a constraint
 ```
 
-**Block by block:** **(1) Clarify** turns a vague prompt into a bounded problem — you
-write functional requirements and, critically, *non-functional* ones as numbers (scale,
-latency, consistency). **(2) Estimate** is the back-of-envelope math that justifies every
-later choice; without it you cannot argue "this needs sharding." **(3) API** pins down the
-contract — the 3–5 calls (or, for real-time systems, *message types*) that define the
-system. **(4) Data** picks the right store per entity and the shard key. **(5) HLD** is the
-big layered diagram (the bulk of the score). **(6) Deep-dive** is where you spend the most
-time: drop to code level on the *one* component that is the heart of this problem.
-**(7) Bottleneck** stress-tests the design — "where does this break at 10×?" **(8)
-Trade-offs** is the senior close: name what you gave up and the condition to revisit it.
+**Block by block:**
+- **(1) Clarify** turns a vague prompt into a bounded problem — you write functional
+  requirements and, critically, *non-functional* ones as numbers (scale, latency, consistency).
+- **(2) Estimate** is the back-of-envelope math that justifies every later choice; without it
+  you cannot argue "this needs sharding."
+- **(3) API** pins down the contract — the 3–5 calls (or, for real-time systems, *message
+  types*) that define the system.
+- **(4) Data** picks the right store per entity and the shard key.
+- **(5) HLD** is the big layered diagram (the bulk of the score).
+- **(6) Deep-dive** is where you spend the most time: drop to code level on the *one* component
+  that is the heart of this problem.
+- **(7) Bottleneck** stress-tests the design — "where does this break at 10×?"
+- **(8) Trade-offs** is the senior close: name what you gave up and the condition to revisit it.
 
 | Step | You produce | Time | Senior signal |
 |------|-------------|------|---------------|
@@ -375,9 +378,11 @@ calls out the *system-specific* red flags on top of these universal ones.
 > **User story —** *As an* internal product team (Security, Growth, Search…), *I want* to hand a
 > single "notify this user" call to a shared service, *so that* I never write APNs, Twilio, or
 > rate-limiting glue myself.
+>
 > **For example —** the Security team fires a "new login from Chrome" alert that must reach the
 > user within seconds, while Growth queues a "we miss you" email that may lag minutes; the same
 > `POST /v1/notify` accepts both and routes each to the right channel and priority lane.
+>
 > **Why it pays off —** centralizing delivery puts dedupe, per-user quiet hours, and per-tenant
 > quotas behind one governed pipe, so no team can spam users and one provider's bad day can't take
 > the other channels down.
@@ -698,9 +703,11 @@ modeling — **Ch 24**; Redis patterns — **Ch 23**.
 > **User story —** *As a* user messaging a friend, *I want* my message to appear on their phone
 > instantly and reliably — ✓ sent, ✓✓ delivered, blue ✓✓ read — *so that* I can trust the
 > conversation even when one of us has a flaky connection or is offline.
+>
 > **For example —** I text "running 5 min late" while my friend is underground with no signal;
 > the app shows a single ✓, then ✓✓ the moment they resurface, and blue ✓✓ when they unlock —
 > nothing is lost or shown out of order.
+>
 > **Why it matters —** that guarantee rests on holding millions of open sockets, knowing which
 > server currently holds each user, ordering messages per conversation, and a store-and-forward
 > inbox — the machinery that turns a bare "send" into an ordered, eventually-delivered event.
@@ -821,18 +828,21 @@ networks. Now the architecture:
 
 ![Chat / Messaging (WhatsApp / Slack) — high-level architecture (HLD)](diagrams/chat.svg)
 
-**Block by block:** at **Layer 1**, an **L4 load balancer** does TCP/TLS pass-through (an L7
-proxy that buffered every frame would add latency and cost) and keeps a connection sticky to
-one box. **Layer 2 — the gateway tier — is the system's heart:** each box holds ~500 k live
-WebSockets and does nothing but terminate connections and shuttle frames. The moment a socket
-opens, the gateway writes an entry into the **Connection Registry** (which gateway holds which
-user) — this is what makes routing possible. **Layer 2b** are stateless services: the **Chat
-service** assigns the per-conversation **seqId**, persists the message, and advances the
-delivery/read-receipt state machine (`validate · seqId · persist · receipts`); **Presence**
-tracks who's online. **Layer 3** stores messages in a **wide-column store keyed by `convId`** (write-heavy, time-ordered — Ch 24),
-per-user **delivery offsets/inbox** for offline sync, **presence in Redis**, and **media in a
-blob store + CDN**. **Layer 4** handles everything that can be slightly late: waking offline
-users via **push** (reusing Case Study 1), heavy **group fan-out**, and analytics.
+**Block by block:**
+- **Layer 1 — L4 load balancer** — does TCP/TLS pass-through (an L7 proxy that buffered every
+  frame would add latency and cost) and keeps a connection sticky to one box.
+- **Layer 2 — the gateway tier (the system's heart)** — each box holds ~500 k live WebSockets
+  and does nothing but terminate connections and shuttle frames. The moment a socket opens, the
+  gateway writes an entry into the **Connection Registry** (which gateway holds which user) —
+  this is what makes routing possible.
+- **Layer 2b — stateless services** — the **Chat service** assigns the per-conversation
+  **seqId**, persists the message, and advances the delivery/read-receipt state machine
+  (`validate · seqId · persist · receipts`); **Presence** tracks who's online.
+- **Layer 3 — storage** — messages in a **wide-column store keyed by `convId`** (write-heavy,
+  time-ordered — Ch 24), per-user **delivery offsets/inbox** for offline sync, **presence in
+  Redis**, and **media in a blob store + CDN**.
+- **Layer 4 — async** — everything that can be slightly late: waking offline users via **push**
+  (reusing Case Study 1), heavy **group fan-out**, and analytics.
 
 ## 2.4 HLD — critical path walkthrough
 
@@ -1079,9 +1089,11 @@ pub/sub, Kafka, consistent hashing, wide-column (Cassandra) modeling, CAP/AP cho
 > **User story —** *As a* participant in a video call, *I want* everyone's audio and video to stay
 > in sync and low-latency even with 20 people on mixed devices and networks, *so that* the meeting
 > feels like one room, not a laggy slideshow.
+>
 > **For example —** I join from a laptop on fibre while a colleague dials in from a phone on 3G;
 > the SFU forwards me their 720p layer and sends them my 180p layer, so neither of us has to
 > freeze the call to accommodate the other.
+>
 > **Why it matters —** treating media as request/response (TCP, one big server decoding everyone)
 > melts home uplinks past ~4 people; splitting signaling from media and using an SFU keeps each
 > user's uplink flat in N — the single decision the whole design turns on.
@@ -1195,20 +1207,23 @@ critical — they have nothing in common and must not share infrastructure.
 
 ![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)
 
-**Block by block:** a stateless **Meeting Service** owns the non-real-time control surface —
-creating and scheduling meetings and authorizing joins — persisting meeting metadata in
-**PostgreSQL** (the **Meeting DB**). The **Signaling Service** is a normal stateless WebSocket
-service — it authenticates the join, tracks **room membership** in a Redis **Room Registry**,
-**allocates an SFU** for the meeting, and relays the **SDP offer/answer** (each side's codecs and
-parameters) plus **ICE candidates** (possible network paths). **STUN** servers let a client
-discover its own public IP:port behind NAT; **TURN** servers **relay** media for the ~10–20%
-of users behind symmetric NATs that can't connect directly (theory: *UDP, NAT* — Ch 23). The
-**SFU (Selective Forwarding Unit)** is the heart of the media plane: clients send their RTP
-streams *up* to it over UDP, and it **forwards the right streams down** to each other
-participant — *without decoding them*. For geographically split meetings, SFUs **cascade**:
-each client hits its nearest SFU and the SFUs relay one copy between regions instead of N.
-A **Recording Service** and **transcription** tap the streams in the async plane and never sit
-on the live path; finished recordings live in **S3** (the **Recording Store**) and play back via CDN.
+**Block by block:**
+- **Meeting Service** — a stateless service owning the non-real-time control surface: creating
+  and scheduling meetings and authorizing joins, persisting meeting metadata in **PostgreSQL**
+  (the **Meeting DB**).
+- **Signaling Service** — a stateless WebSocket service: it authenticates the join, tracks
+  **room membership** in a Redis **Room Registry**, **allocates an SFU** for the meeting, and
+  relays the **SDP offer/answer** (each side's codecs and parameters) plus **ICE candidates**
+  (possible network paths).
+- **STUN / TURN** — **STUN** servers let a client discover its own public IP:port behind NAT;
+  **TURN** servers **relay** media for the ~10–20% of users behind symmetric NATs that can't
+  connect directly (theory: *UDP, NAT* — Ch 23).
+- **SFU (Selective Forwarding Unit)** — the heart of the media plane: clients send their RTP
+  streams *up* to it over UDP, and it **forwards the right streams down** to each participant —
+  *without decoding them*. For geographically split meetings, SFUs **cascade**: each client hits
+  its nearest SFU and the SFUs relay one copy between regions instead of N.
+- **Recording Service + transcription** — tap the streams in the async plane and never sit on
+  the live path; finished recordings live in **S3** (the **Recording Store**) and play back via CDN.
 
 ## 3.4 HLD — critical path walkthrough (join + media setup)
 
@@ -1410,9 +1425,11 @@ broadcast — **Ch 23** (and YouTube streaming, **Ch 36**); pub/sub for signalin
 > **User story —** *As a* collaborator editing a shared doc, *I want* my keystrokes to appear
 > instantly and everyone to converge on the exact same text, *so that* two of us can type in the
 > same sentence at once without overwriting each other or seeing garbled output.
+>
 > **For example —** I insert "X" at the start of a line at the same instant a teammate inserts "Y"
 > three characters in; the server transforms the later edit so we both land on the same "XabYc",
 > not two divergent copies.
+>
 > **Why it matters —** naive last-write-wins silently loses keystrokes; OT/CRDT plus one per-doc
 > authority that serializes ops is what makes concurrent editing converge — the crux interviewers probe.
 
@@ -1516,17 +1533,20 @@ by `docId` so a document's whole live session lives on one box.
 
 ![Collaborative Editor (Google Docs) — high-level architecture (HLD)](diagrams/collab_editor.svg)
 
-**Block by block:** the **Collab Gateway** holds each editor's WebSocket and **routes by
-`docId`** (consistent hashing — Ch 24) to that document's owner, so everyone editing one doc
-lands on the same authority. The **Document Session Server** is the brain (the single
-per-document authority): it keeps the authoritative document and `headRevision` **in memory**,
-**serializes** incoming ops into a single order (the single-writer property is what makes OT
-tractable), **transforms** each op against any ops the sender hadn't seen yet, assigns the next
-revision, **broadcasts** to all editors, and **appends** the op to a durable log. **Layer 3**
-persists an **append-only op log (Apache Kafka)** keyed by `(docId, rev)`, periodic **snapshots**
-in the **Document Store** (Spanner/Bigtable) so you don't replay millions of ops to load a doc,
-blobs/assets in **S3**, and **presence/cursors in Redis** (ephemeral, TTL'd). **Layer 4** compacts
-the log into snapshots, exports, indexes for search, and fires notifications (Case Study 1).
+**Block by block:**
+- **Collab Gateway** — holds each editor's WebSocket and **routes by `docId`** (consistent
+  hashing — Ch 24) to that document's owner, so everyone editing one doc lands on the same authority.
+- **Document Session Server** — the brain (the single per-document authority): it keeps the
+  authoritative document and `headRevision` **in memory**, **serializes** incoming ops into a
+  single order (the single-writer property is what makes OT tractable), **transforms** each op
+  against any ops the sender hadn't seen yet, assigns the next revision, **broadcasts** to all
+  editors, and **appends** the op to a durable log.
+- **Layer 3 — storage** — an **append-only op log (Apache Kafka)** keyed by `(docId, rev)`,
+  periodic **snapshots** in the **Document Store** (Spanner/Bigtable) so you don't replay
+  millions of ops to load a doc, blobs/assets in **S3**, and **presence/cursors in Redis**
+  (ephemeral, TTL'd).
+- **Layer 4 — async** — compacts the log into snapshots, exports, indexes for search, and fires
+  notifications (Case Study 1).
 
 ## 4.4 HLD — critical path walkthrough (a concurrent edit)
 

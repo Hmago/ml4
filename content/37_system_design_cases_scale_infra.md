@@ -69,9 +69,11 @@ Parts 1–2.
 
 > **User story —** *As a* platform team, *I want* to cap how often each client can call our APIs,
 > *so that* one buggy or abusive caller can't exhaust capacity for everyone else.
+>
 > **For example —** a client allowed 100 requests/minute gets a `429 Too Many Requests` with
 > `Retry-After` on the 101st — enforced consistently even though their traffic is spread across
 > hundreds of gateway nodes.
+>
 > **Why it matters —** on one box a limiter is one counter; across a fleet it's a distributed-
 > counter race — an atomic token-bucket in Redis keeps global accuracy at per-request speed.
 
@@ -171,14 +173,14 @@ any request is routed to a backend. State lives in a sharded Redis cluster.
 ![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter.svg)
 
 **Legend:** boxes are stateless unless they name a store; `──▶` = request flow.
-**Block-by-block:** the **gateway fleet** is the only place the limiter runs —
-co-locating it with auth and routing means **zero extra network hops** for the
-common path except the counter lookup. The **limiter middleware** resolves the
-KEY, fetches the matching **policy** (cached in-process, refreshed every few
-seconds), and asks the counter store one question: *allow?* The **Redis
-cluster** holds the actual token buckets, **sharded by KEY** so the 1 M ops/s
-spreads across nodes and one user's bucket lives on exactly one shard (no
-cross-node coordination per check).
+**Block-by-block:**
+- **Gateway fleet** — the only place the limiter runs; co-locating it with auth and routing
+  means **zero extra network hops** for the common path except the counter lookup.
+- **Limiter middleware** — resolves the KEY, fetches the matching **policy** (cached in-process,
+  refreshed every few seconds), and asks the counter store one question: *allow?*
+- **Redis cluster** — holds the actual token buckets, **sharded by KEY** so the 1 M ops/s
+  spreads across nodes and one user's bucket lives on exactly one shard (no cross-node
+  coordination per check).
 
 ## 13.4 HLD — critical path walkthrough
 
@@ -371,9 +373,11 @@ allow/deny rates — **Ch 25**.
 > **User story —** *As a* backend service writing sharded data, *I want* to mint unique,
 > time-sortable IDs locally at high rate, *so that* every row gets a global id without a central
 > bottleneck.
+>
 > **For example —** two machines that never talk both stamp millions of IDs/sec; the 64-bit
 > Snowflake layout (timestamp · machine · sequence) guarantees no collision and `ORDER BY id` ≈
 > newest-first.
+>
 > **Why it matters —** UUIDv4 fragments indexes and auto-increment is a SPOF; spending 64 bits
 > wisely gives uniqueness, rough time-ordering, and zero coordination on the hot path.
 
@@ -466,14 +470,14 @@ clients can't embed the library (polyglot fleets, or you want central control).
 
 ![Distributed Unique ID Generator (Snowflake) — high-level architecture (HLD)](diagrams/unique_id.svg)
 
-**Block-by-block:** the **coordinator** (ZooKeeper/etcd — Ch 24, consensus)
-hands each generator a **distinct 10-bit worker id** exactly once, at boot. That
-is the *only* coordination, and it's off the hot path. After that, each
-**generator** mints IDs from `timestamp | worker | sequence` using just its
-local clock and an in-memory counter — **no I/O per id**. Pattern A embeds this
-in every app pod; Pattern B centralizes it behind a load balancer when embedding
-isn't possible. The worker id is what guarantees two machines can never collide,
-even when they generate in the same millisecond.
+**Block-by-block:**
+- **Coordinator** (ZooKeeper/etcd — Ch 24, consensus) — hands each generator a **distinct 10-bit
+  worker id** exactly once, at boot. That is the *only* coordination, and it's off the hot path.
+- **Generator** — mints IDs from `timestamp | worker | sequence` using just its local clock and
+  an in-memory counter — **no I/O per id**.
+- **Deployment** — Pattern A embeds this in every app pod; Pattern B centralizes it behind a load
+  balancer when embedding isn't possible.
+- **Worker id** — guarantees two machines can never collide, even when they generate in the same millisecond.
 
 ## 14.4 HLD — critical path walkthrough
 
@@ -636,8 +640,10 @@ NTP — **Ch 25**.
 
 > **User story —** *As a* product, *I want* the current top-K (trending hashtags, top URLs, API
 > heavy hitters) from a firehose of events, *so that* I can surface what's hot in near real time.
+>
 > **For example —** millions of events/sec stream by; a Count-Min Sketch + min-heap reports the
 > top-10 hashtags this hour in ~32 MB, instead of a 16 GB exact counter per node.
+>
 > **Why it matters —** you can't keep a counter for billions of distinct keys; trading a little
 > accuracy (a sketch) for fixed memory is the whole point.
 
@@ -686,15 +692,16 @@ the signal an interviewer is looking for.
 
 ![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk.svg)
 
-**Block-by-block:** events land in **Kafka**, **partitioned by key** so every
-occurrence of one hashtag goes to the **same stream worker** — that worker's
-sketch and heap then see *all* of that key's traffic locally (no cross-worker
-counting per event). Each **worker** keeps a fixed-size **Count-Min Sketch** and
-a **min-heap of its top-K**, and flushes its local top-K every few seconds. The
-**merge** step combines the per-partition heaps into a **global top-K**, cached
-in Redis for the `/trending` API. A parallel **batch path** (Spark) computes
-the *exact* answer slowly and reconciles drift — the classic **Lambda
-architecture** (Ch 24).
+**Block-by-block:**
+- **Kafka ingest** — events land in **Kafka**, **partitioned by key** so every occurrence of one
+  hashtag goes to the **same stream worker** (that worker sees *all* of that key's traffic
+  locally — no cross-worker counting per event).
+- **Stream worker** — keeps a fixed-size **Count-Min Sketch** and a **min-heap of its top-K**,
+  and flushes its local top-K every few seconds.
+- **Merge** — combines the per-partition heaps into a **global top-K**, cached in Redis for the
+  `/trending` API.
+- **Batch path** (Spark) — computes the *exact* answer slowly and reconciles drift — the classic
+  **Lambda architecture** (Ch 24).
 
 **Numbered flow:** (1) event → Kafka, hashed to a partition by key; (2) worker
 does `sketch.update(key)` and, if `sketch.estimate(key) >` heap-min, updates its
@@ -762,8 +769,10 @@ dominate today.
 
 > **User story —** *As a* player, *I want* to see the top scores, my own rank, and who's just
 > above and below me — instantly, live — *so that* the competition feels real.
+>
 > **For example —** I submit a score and immediately see "you're #1,234,567; here are the 5 players
 > around you" — answered in O(log N) by a Redis sorted set, not by re-sorting 50 M rows.
+>
 > **Why it matters —** rank / top-N / around-me queries are exactly what a sorted set is built for;
 > the durable scores live in Cassandra behind it.
 
@@ -809,14 +818,16 @@ the signal an interviewer is looking for.
 
 ![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)
 
-**Block-by-block:** the **Score API** writes each update to both the durable
-store (**source of truth** — survives a Redis flush) and the **Redis sorted
-set** (the live ranking index). The **Leaderboard API** answers all three query
-shapes directly from Redis sorted-set commands — each **O(log N)**. On a Redis
-failover you **rebuild** the sorted set by replaying scores from the durable
-store. **Numbered flow:** (1) score event → API; (2) `ZADD` into Redis +
-persist to Cassandra; (3) reads hit Redis only: `ZREVRANK` for "my rank,"
-`ZREVRANGE` for "top N" and "around me."
+**Block-by-block:**
+- **Score API** — writes each update to both the durable store (**source of truth** — survives a
+  Redis flush) and the **Redis sorted set** (the live ranking index).
+- **Leaderboard API** — answers all three query shapes directly from Redis sorted-set commands —
+  each **O(log N)**.
+- **Failover** — on a Redis failover you **rebuild** the sorted set by replaying scores from the
+  durable store.
+
+**Numbered flow:** (1) score event → API; (2) `ZADD` into Redis + persist to Cassandra; (3) reads
+hit Redis only: `ZREVRANK` for "my rank," `ZREVRANGE` for "top N" and "around me."
 
 ## 16.3 The crux — sorted-set ops, and sharding for global rank
 
@@ -881,8 +892,10 @@ expensive.
 
 > **User story —** *As a* service owner, *I want* a fast shared in-memory layer in front of my
 > database, *so that* hot reads return in microseconds and the DB survives the read firehose.
+>
 > **For example —** 1 M reads/s at a >90% hit rate means the DB only sees ~100k/s; a product-page
 > read drops from 10 ms to 0.3 ms by hitting the cache first.
+>
 > **Why it matters —** the real design is spreading keys with consistent hashing (so adding a node
 > doesn't reshuffle everything) and surviving a hot key that would melt one shard.
 
@@ -930,16 +943,17 @@ the signal an interviewer is looking for.
 
 ![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)
 
-**Block-by-block:** the **cache client** (a library in each app server) hashes
-the key onto a **consistent-hash ring** to find its owner node — there's no
-central coordinator on the read path. Each **cache node** holds a shard in RAM
-with an **eviction policy** (LRU default) and an **async replica**; a **Cluster
-Manager** (Redis Sentinel / Cluster) watches nodes and promotes a replica on failover.
-On a **miss**, either the app reads the DB and back-fills (**cache-aside**) or
-the cache reads through itself (**read-through**). **Numbered flow:** (1) client
-maps key→node via the ring; (2) `GET` hits that node; (3) on miss, load from DB,
-`SET` with a TTL, return. Write strategies (cache-aside / write-through /
-write-back) are theory from **Ch 23** — pick cache-aside for the default.
+**Block-by-block:**
+- **Cache client** — a library in each app server; hashes the key onto a **consistent-hash ring**
+  to find its owner node — there's no central coordinator on the read path.
+- **Cache node** — holds a shard in RAM with an **eviction policy** (LRU default) and an **async replica**.
+- **Cluster Manager** (Redis Sentinel / Cluster) — watches nodes and promotes a replica on failover.
+- **Miss handling** — either the app reads the DB and back-fills (**cache-aside**) or the cache
+  reads through itself (**read-through**).
+
+**Numbered flow:** (1) client maps key→node via the ring; (2) `GET` hits that node; (3) on miss,
+load from DB, `SET` with a TTL, return. Write strategies (cache-aside / write-through / write-back)
+are theory from **Ch 23** — pick cache-aside for the default.
 
 ## 17.3 The crux — the consistent-hash ring + hot-key mitigation
 
@@ -1005,9 +1019,11 @@ stampede protection — **Ch 23**; consistent hashing + virtual nodes —
 
 > **User story —** *As a* backend, *I want* to run work later or in the background reliably, *so
 > that* delayed and recurring jobs fire on time and nothing is lost when a worker crashes.
+>
 > **For example —** "send this email in 5 minutes" and "generate the report nightly at 02:00" both
 > land in a durable store; a worker leases each job (visibility timeout) and acks on success, so a
 > crash just re-runs it.
+>
 > **Why it matters —** at-least-once + idempotent workers + a durable job store with leased
 > dispatch is what turns "run it later" into a real guarantee.
 
@@ -1055,15 +1071,16 @@ the signal an interviewer is looking for.
 
 ![Distributed Job Scheduler / Task Queue — high-level architecture (HLD)](diagrams/scheduler.svg)
 
-**Block-by-block:** the **Submit API** writes each job **durably** (so nothing is
-lost on a crash) with its `run_at` and `state`. A **leader-elected scheduler**
-(only one active at a time, via etcd/ZooKeeper — Ch 24) scans the **time-ordered
-index** and promotes **due** jobs to READY. **Workers** poll, **lease** a job
-(claim it for a bounded time), run it, and **ack** (delete) on success or
-**retry with backoff** on failure; after `N` attempts the job goes to a **DLQ**.
-A **sweeper** re-queues jobs whose **lease expired** (the worker died
-mid-job) — that's what makes execution **at-least-once**. **Numbered flow:**
-(1) submit → durable store; (2) scheduler marks due jobs READY; (3) worker
+**Block-by-block:**
+- **Submit API** — writes each job **durably** (so nothing is lost on a crash) with its `run_at` and `state`.
+- **Leader-elected scheduler** (only one active at a time, via etcd/ZooKeeper — Ch 24) — scans the
+  **time-ordered index** and promotes **due** jobs to READY.
+- **Workers** — poll, **lease** a job (claim it for a bounded time), run it, and **ack** (delete)
+  on success or **retry with backoff** on failure; after `N` attempts the job goes to a **DLQ**.
+- **Sweeper** — re-queues jobs whose **lease expired** (the worker died mid-job) — that's what
+  makes execution **at-least-once**.
+
+**Numbered flow:** (1) submit → durable store; (2) scheduler marks due jobs READY; (3) worker
 leases + runs; (4) ack→done, or fail→retry/DLQ, or crash→lease expires→redeliver.
 
 ## 18.3 The crux — leased dispatch (visibility timeout) + the delayed-job structure
@@ -1140,8 +1157,10 @@ with backoff + jitter — **Ch 23/25**.
 
 > **User story —** *As a* user moving money, *I want* every top-up, payment, and transfer to be
 > exactly right — never double-charged, never lost — *so that* I can trust my balance.
+>
 > **For example —** my "pay merchant" call times out and the app retries; the idempotency key makes
 > the retry a no-op, so I'm charged once and the double-entry ledger still balances.
+>
 > **Why it matters —** money is the one place "eventually consistent" is wrong; an immutable ledger
 > + idempotency keys + a saga across the external gateway is what makes it CP-correct.
 
@@ -1239,18 +1258,18 @@ the signal an interviewer is looking for.
 ![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment.svg)
 
 **Legend:** boxes are services; a store is named inside the box.
-**Block-by-block:** the **Payment API** is the only synchronous hop and its
-**first act is the idempotency check** — a retry with the same key returns the
-*stored* result without moving money again. The **orchestrator** runs the
-multi-step **saga** (because we can't wrap an external gateway call in our DB
-transaction). The **wallet/ledger service** owns the **double-entry, append-only
-ledger** in a strongly-consistent SQL store — it is the **system of record**.
-The **gateway adapter** talks to the external processor (also idempotent). The
-**outbox** (written in the *same* DB transaction as the ledger entry — Ch 24)
-publishes events for notifications and, crucially, for the **reconciliation
-job** that compares our ledger against the gateway's settlement report and flags
-any discrepancy. That reconciliation loop is the safety net that makes the whole
-thing trustworthy.
+**Block-by-block:**
+- **Payment API** — the only synchronous hop; its **first act is the idempotency check** — a
+  retry with the same key returns the *stored* result without moving money again.
+- **Orchestrator** — runs the multi-step **saga** (because we can't wrap an external gateway call
+  in our DB transaction).
+- **Wallet/ledger service** — owns the **double-entry, append-only ledger** in a
+  strongly-consistent SQL store; it is the **system of record**.
+- **Gateway adapter** — talks to the external processor (also idempotent).
+- **Outbox** (written in the *same* DB transaction as the ledger entry — Ch 24) — publishes events
+  for notifications and, crucially, for the reconciliation job.
+- **Reconciliation job** — compares our ledger against the gateway's settlement report and flags
+  any discrepancy; that loop is the safety net that makes the whole thing trustworthy.
 
 ## 19.4 HLD — critical path walkthrough
 
@@ -1436,8 +1455,10 @@ optimistic vs pessimistic locking, append-only logs — **Ch 24**; CAP/PACELC
 
 > **User story —** *As a* shopper in a flash sale, *I want* a fair shot at the limited stock with
 > no overselling, *so that* if the site says I got one, I actually get it.
+>
 > **For example —** 1 M people tap "Buy" on 100 PlayStations at midnight; an atomic Redis decrement
 > hands out exactly 100 reservations and a waiting room sheds the rest — unit #101 is never sold.
+>
 > **Why it matters —** the entire problem is making "check stock and decrement" one atomic op on a
 > single hot SKU under brutal contention, then holding stock just long enough to pay.
 
@@ -1484,18 +1505,17 @@ the signal an interviewer is looking for.
 
 ![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)
 
-**Block-by-block:** the **virtual waiting room** is the pressure valve — it
-admits a controlled rate of users and tells the rest to wait, so the inventory
-service never sees a million simultaneous writes. The **inventory API** does the
-one thing that must be perfect: an **atomic reserve-decrement** on a **Redis
-counter** (fast, single-threaded → naturally serialized). A successful reserve
-creates a **time-boxed reservation** (TTL) so stock is held only while the buyer
-pays. **Payment success** persists a durable order; **timeout** releases the
-unit back. Each confirmed order **emits order events to Apache Kafka** for
-fulfillment, analytics, and **reconciliation**; the **durable DB** is the source
-of truth for orders and final stock, reconciled asynchronously with the Redis
-counter. **Numbered flow:**
-(1) queue → (2) admit → (3) atomic DECR → (4) reserve with TTL → (5) pay or
+**Block-by-block:**
+- **Virtual waiting room** — the pressure valve: it admits a controlled rate of users and tells
+  the rest to wait, so the inventory service never sees a million simultaneous writes.
+- **Inventory API** — does the one thing that must be perfect: an **atomic reserve-decrement** on
+  a **Redis counter** (fast, single-threaded → naturally serialized). A successful reserve creates
+  a **time-boxed reservation** (TTL) so stock is held only while the buyer pays.
+- **Order outcome** — **payment success** persists a durable order; **timeout** releases the unit back.
+- **Apache Kafka** — each confirmed order **emits order events** for fulfillment, analytics, and **reconciliation**.
+- **Durable DB** — the source of truth for orders and final stock, reconciled asynchronously with the Redis counter.
+
+**Numbered flow:** (1) queue → (2) admit → (3) atomic DECR → (4) reserve with TTL → (5) pay or
 release → (6) order events (Kafka).
 
 ## 20.3 The crux — atomic reserve-decrement (preventing oversell)
@@ -1558,8 +1578,10 @@ back units from reservations that expired without release).
 > **User story —** *As a* service needing massive, always-writable storage, *I want* a key-value
 > store that stays up and low-latency even during failures, *so that* a shopping cart never rejects
 > a write.
+>
 > **For example —** during a network partition, a `put` still succeeds on the reachable replicas;
 > conflicting versions are reconciled later with version vectors and read-repair.
+>
 > **Why it matters —** it's the canonical AP design — consistent hashing + tunable quorums (W+R>N)
 > + conflict resolution assembled into one horizontally-scalable store.
 
@@ -1607,17 +1629,18 @@ the signal an interviewer is looking for.
 
 ![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store.svg)
 
-**Block-by-block:** there is **no leader** — any node can **coordinate** a
-request, which is why the store stays available. **Consistent hashing + virtual
-nodes** (Ch 24) place keys; each key's **preference list** is the next **N**
-nodes clockwise (its replicas). A **PUT** is sent to all N but only waits for
-**W** acks; a **GET** asks all N but waits for **R**. **Gossip** spreads
-membership and failure detection without a central registry. When a replica is
-down, **hinted handoff** parks its writes on a stand-in (sloppy quorum) for later
-replay, and **anti-entropy** (Merkle trees) reconciles replicas in the
-background. **Numbered flow:** (1) client → any coordinator; (2) hash key →
-preference list of N; (3) write waits for W acks / read waits for R responses;
-(4) read-repair fixes any stale replica it noticed.
+**Block-by-block:**
+- **No leader** — any node can **coordinate** a request, which is why the store stays available.
+- **Consistent hashing + virtual nodes** (Ch 24) — place keys; each key's **preference list** is
+  the next **N** nodes clockwise (its replicas).
+- **Quorum reads/writes** — a **PUT** is sent to all N but only waits for **W** acks; a **GET**
+  asks all N but waits for **R**.
+- **Gossip** — spreads membership and failure detection without a central registry.
+- **Failure handling** — when a replica is down, **hinted handoff** parks its writes on a stand-in
+  (sloppy quorum) for later replay, and **anti-entropy** (Merkle trees) reconciles replicas in the background.
+
+**Numbered flow:** (1) client → any coordinator; (2) hash key → preference list of N; (3) write
+waits for W acks / read waits for R responses; (4) read-repair fixes any stale replica it noticed.
 
 ## 21.3 The crux — quorum N/W/R + conflict resolution
 
@@ -1681,8 +1704,10 @@ LSM-tree/WAL storage engine under each node — **Ch 24**.
 
 > **User story —** *As a* user, *I want* to paste text and share a short link anyone can read —
 > optionally expiring or view-once — *so that* I can hand off code or notes quickly.
+>
 > **For example —** I paste a 10 KB log, get `pb.cc/aZ3k`, set it to expire in a day; the blob goes
 > to object storage and only the metadata (key → blob, TTL) sits in the DB.
+>
 > **Why it matters —** it's the URL shortener with a text blob instead of a redirect — reuse that
 > design and isolate the big blob from the metadata.
 
@@ -1726,14 +1751,15 @@ the signal an interviewer is looking for.
 
 ![Pastebin — high-level architecture (HLD)](diagrams/pastebin.svg)
 
-**Block-by-block:** the **Write API** mints a **short key** (same options as the
-shortener: hash+base62, counter, or a Snowflake id — CS14), stores the **text
-blob in object storage** (S3/GCS, fronted by a CDN for hot pastes), and writes
-**metadata** (`key → blob_url, expiry, view_once`) to a KV/SQL store plus cache.
-**Read** resolves the key in metadata (cache-first), checks **expiry/view-once**,
-then streams the blob from the CDN/object store. A background **TTL sweep** (or
-object-store lifecycle rule) deletes expired blobs. **Flow:** (1) gen key →
-(2) blob to object store → (3) meta to DB → (4–6) read path with expiry check.
+**Block-by-block:**
+- **Write API** — mints a **short key** (same options as the shortener: hash+base62, counter, or a
+  Snowflake id — CS14), stores the **text blob in object storage** (S3/GCS, fronted by a CDN for
+  hot pastes), and writes **metadata** (`key → blob_url, expiry, view_once`) to a KV/SQL store plus cache.
+- **Read** — resolves the key in metadata (cache-first), checks **expiry/view-once**, then streams
+  the blob from the CDN/object store.
+- **TTL sweep** — a background job (or object-store lifecycle rule) deletes expired blobs.
+
+**Flow:** (1) gen key → (2) blob to object store → (3) meta to DB → (4–6) read path with expiry check.
 
 ## 22.3 The crux — reuse the shortener; isolate the blob
 
@@ -1766,8 +1792,10 @@ cache-aside + TTL — **Ch 23**.
 
 > **User story —** *As a* shopper, *I want* to browse fast and check out reliably, *so that* pages
 > never go blank and my order is always right about price, stock, and payment.
+>
 > **For example —** a flaky back-end shows me a slightly stale price (better than a blank page) on
 > the browse plane, while checkout refuses to oversell or double-charge on the order plane.
+>
 > **Why it matters —** the capstone is recognizing "AP on the way in, CP at the till" and composing
 > designs you've already built (search, recsys, inventory, payment, notifications).
 
@@ -2113,8 +2141,10 @@ retrieval, feature freshness, latency budgets.
 
 > **User story —** *As a* developer calling a chatbot API, *I want* fast, streaming responses at a
 > sane cost, *so that* users see words appear immediately without burning GPUs.
+>
 > **For example —** 10,000 concurrent chats stream ~30 tokens/s each; continuous batching keeps the
 > GPUs full and a KV-cache avoids recomputing the prompt, so latency and cost stay in budget.
+>
 > **Why it matters —** serving LLMs is a GPU-utilization problem, not a CPU one — batching,
 > KV-cache, and token streaming are what make it economical.
 
@@ -2176,19 +2206,20 @@ the signal an interviewer is looking for.
                    ▼
    GPU AUTOSCALER (scale on queue depth / tokens-per-s, not CPU%)
 ```
-**Block-by-block:** the **gateway** does auth + rate limiting (reuse CS13). A
-**Safety / Moderation** layer applies **prompt and output filters** — screening the
-incoming prompt and the streamed tokens before they reach the user. The
-**prompt/response cache** short-circuits repeated or semantically-similar
-prompts (huge cost saver). The **router** sends easy queries to a small model
-and hard ones to a large model. The **GPU fleet** — loading weights from a
-**Model Registry / Store** (versioned weights + LoRA adapters) — runs a
-**continuous-batching scheduler** that interleaves many sequences, a **prefill**
-phase (build the KV-cache for the prompt) and a **decode** loop that emits one
-token per step and **streams** it. The **autoscaler** scales on **queue depth /
-token throughput**, because GPU CPU% is meaningless here. **Flow:** (1) request →
-gateway → (2) moderation screens the prompt → (3) cache check → (4) router picks
-model → (5) scheduler slots it into a live batch → (6) prefill fills KV-cache →
+**Block-by-block:**
+- **Gateway** — does auth + rate limiting (reuse CS13).
+- **Safety / Moderation** — applies **prompt and output filters**, screening the incoming prompt
+  and the streamed tokens before they reach the user.
+- **Prompt/response cache** — short-circuits repeated or semantically-similar prompts (huge cost saver).
+- **Router** — sends easy queries to a small model and hard ones to a large model.
+- **GPU fleet** — loads weights from a **Model Registry / Store** (versioned weights + LoRA
+  adapters) and runs a **continuous-batching scheduler** that interleaves many sequences: a
+  **prefill** phase (build the KV-cache for the prompt) and a **decode** loop that emits one token
+  per step and **streams** it.
+- **Autoscaler** — scales on **queue depth / token throughput**, because GPU CPU% is meaningless here.
+
+**Flow:** (1) request → gateway → (2) moderation screens the prompt → (3) cache check → (4) router
+picks model → (5) scheduler slots it into a live batch → (6) prefill fills KV-cache →
 (7) decode+stream (output moderated) → (8) stop token frees the KV-cache slot.
 
 ### F1.3 The crux — KV-cache + continuous batching
@@ -2235,8 +2266,10 @@ Model internals (attention, quantization, speculative decoding) live in
 
 > **User story —** *As a* user asking questions over my company's docs, *I want* grounded, cited
 > answers, *so that* I get facts from our knowledge base instead of model hallucinations.
+>
 > **For example —** I ask "what's our refund policy?"; the system embeds the query, retrieves the
 > top passages from the vector DB, reranks them, and the LLM answers with citations to those docs.
+>
 > **Why it matters —** the hard parts are retrieval quality and freshness (chunk → embed → index →
 > retrieve → rerank), not the LLM call itself.
 
@@ -2293,13 +2326,14 @@ the signal an interviewer is looking for.
                                                       ▼
                                           LLM (F1) ─▶ answer + CITATIONS
 ```
-**Block-by-block:** **ingest** splits documents into overlapping **chunks**,
-**embeds** each into a vector, and stores them in a **vector DB / ANN index**
-with metadata (source, ACL, timestamp). **Query** embeds the question, does an
-**ANN top-k** retrieval, **reranks** with a heavier cross-encoder for precision,
-stuffs the best passages into the **prompt**, and calls the **LLM** (which is the
-F1 service) to generate a **cited** answer. **Flow:** (1) embed query →
-(2) ANN retrieve top-k → (3) rerank → (4) assemble context → (5) generate.
+**Block-by-block:**
+- **Ingest** — splits documents into overlapping **chunks**, **embeds** each into a vector, and
+  stores them in a **vector DB / ANN index** with metadata (source, ACL, timestamp).
+- **Query** — embeds the question, does an **ANN top-k** retrieval, **reranks** with a heavier
+  cross-encoder for precision, stuffs the best passages into the **prompt**, and calls the **LLM**
+  (the F1 service) to generate a **cited** answer.
+
+**Flow:** (1) embed query → (2) ANN retrieve top-k → (3) rerank → (4) assemble context → (5) generate.
 
 ### F2.3 The crux — retrieval quality: ANN + reranking + freshness
 
@@ -2334,8 +2368,10 @@ covered in **Ch 28**.
 
 > **User story —** *As a* user opening a feed, *I want* a personalized, ranked list in under
 > 200 ms, *so that* I see relevant items without waiting.
+>
 > **For example —** for each request, candidate generation cuts 10^8 items to ~1,000 via ANN, then
 > a ranking model scores those and applies business rules — all within the latency budget.
+>
 > **Why it matters —** you can't score 800 M items per request, so recsys is a funnel; the infra
 > crux is the feature store and the online/offline split.
 
@@ -2396,17 +2432,19 @@ the signal an interviewer is looking for.
                                   ▼
               Feed served; impr.+clicks logged ─▶ training data ─▶ Spark train ─▶ Model Store ─▶ deploy
 ```
-**Block-by-block:** **candidate generation** uses cheap recall sources — a
-**two-tower** model embeds the user and finds nearby items via **ANN**, unioned
-with trending/followed/collaborative sources — to cut 10^8 items to ~10^3. The
-**ranking** model then scores each candidate with rich **user × item × context
-features** pulled from the **feature store**. A **re-rank/policy** layer enforces
-diversity, dedupe, and business rules. Served impressions and clicks are
-**logged** to become tomorrow's **training data**. An offline **training pipeline**
-(Spark) turns those logs into refreshed models, published to a **Model Store**
-(versioned artifacts) and deployed to the **ranking** service. **Flow:** (1) request →
-(2) candidate gen (ANN + sources) → (3) feature fetch → (4) rank → (5) policy
-re-rank → (6) serve + log.
+**Block-by-block:**
+- **Candidate generation** — cheap recall sources: a **two-tower** model embeds the user and finds
+  nearby items via **ANN**, unioned with trending/followed/collaborative sources — cutting 10^8
+  items to ~10^3.
+- **Ranking** — a heavy model scores each candidate with rich **user × item × context features**
+  pulled from the **feature store**.
+- **Re-rank / policy** — enforces diversity, dedupe, and business rules.
+- **Logging → training** — served impressions and clicks are **logged** to become tomorrow's
+  **training data**; an offline **training pipeline** (Spark) turns those logs into refreshed
+  models, published to a **Model Store** (versioned artifacts) and deployed back to **ranking**.
+
+**Flow:** (1) request → (2) candidate gen (ANN + sources) → (3) feature fetch → (4) rank →
+(5) policy re-rank → (6) serve + log.
 
 ### F3.3 The crux — the funnel + the feature store (online vs offline)
 

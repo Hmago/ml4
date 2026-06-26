@@ -56,8 +56,10 @@ the scaffold in miniature.
 > **User story —** *As a* user typing in the search box, *I want* relevant completions to appear
 > before I finish the word, *so that* I find what I mean in a few keystrokes instead of typing the
 > whole query.
+>
 > **For example —** I type "ne" and instantly see *netflix, news, nearby restaurants* ranked by
 > what people actually search — each keystroke answered in under 50 ms.
+>
 > **Why it matters —** a `LIKE 'ne%'` SQL scan can't hit that latency at hundreds of thousands of
 > QPS; a sharded in-RAM trie with precomputed top-K per node is what makes "instant" instant.
 
@@ -355,9 +357,11 @@ prefixes; rebuilding the index **in place** (serving a half-built trie); forgett
 > **User story —** *As a* search engine, *I want* to discover and continuously re-download the
 > whole web politely, *so that* my index reflects pages as they exist today without overloading
 > anyone's site.
+>
 > **For example —** starting from a few seed URLs, the crawler follows links across tens of
 > billions of pages, re-fetching a news homepage hourly but a static PDF monthly — and never
 > hammering one host faster than its `robots.txt` allows.
+>
 > **Why it matters —** the design hinges on the URL frontier (what to fetch next, how fast per
 > host) and dedupe (seen URLs and seen content), not on "download a page."
 
@@ -661,9 +665,11 @@ downstream **inverted index** — **Ch 25** (*Full-text search*).
 > **User story —** *As a* user, *I want* to find things "near me" — coffee shops within 2 km, or
 > which friends are close — *so that* I get instant local results without the app scanning every
 > place on Earth.
+>
 > **For example —** I search "coffee within 2 km" in Manhattan; the system reads my S2/geohash
 > cell plus its 8 neighbors and returns the ~30 nearby shops in milliseconds, not by computing
 > distance to 200 M rows.
+>
 > **Why it matters —** "nearby" needs a spatial index (geohash / quadtree / S2), not a `WHERE`
 > scan — choosing and tuning that index is the entire problem.
 
@@ -954,9 +960,11 @@ stores*); **sharding by key prefix** and **consistent hashing** — **Ch 24**.
 
 > **User story —** *As a* rider, *I want* one tap to summon the nearest available driver and never
 > have two riders promised the same car, *so that* I get picked up quickly and reliably.
+>
 > **For example —** I request a ride; the system finds available drivers in my cell, offers the
 > best-ETA one, and **atomically claims** that driver for 15 s so a simultaneous request can't
 > grab the same person.
+>
 > **Why it matters —** it's Case Study 7's moving-dots geo problem plus a real-time matcher whose
 > crux is the atomic claim — the guarantee of no double-dispatch.
 
@@ -1241,9 +1249,11 @@ durable, idempotent **payments** downstream — **Ch 37** (*Payment system*).
 > **User story —** *As a* user, *I want* an infinitely-scrolling timeline of the people I follow,
 > blended and ranked, that loads instantly, *so that* I always see fresh, relevant posts without
 > waiting.
+>
 > **For example —** I open the app and my feed appears in one cache read; when someone I follow
 > with 100 M followers posts, the system doesn't copy it into 100 M timelines — it's pulled in and
 > merged when I scroll.
+>
 > **Why it matters —** the whole design is the **fan-out** decision: push for normal authors, pull
 > for celebrities, hybrid in between — justified with follower-count arithmetic.
 
@@ -1565,8 +1575,10 @@ example*).
 > **User story —** *As a* viewer, *I want* any video to start fast and play smoothly on my device
 > and connection, adjusting quality as my network wobbles, *so that* I never stare at a buffering
 > spinner.
+>
 > **For example —** I start a 4K creator's upload on my phone over 3G; I get a smooth 480p stream
 > that jumps to 1080p when I reach Wi-Fi — the player swaps renditions per segment from a CDN.
+>
 > **Why it matters —** it takes two pipelines — parallel chunked transcoding into many renditions,
 > and ABR (manifest + segments) over a CDN — to serve one upload to billions of devices.
 
@@ -1866,8 +1878,10 @@ for transcode — **Ch 25**.
 > **User story —** *As a* user with files on several devices, *I want* a change on one device to
 > appear everywhere in seconds without re-uploading whole files, *so that* sync is fast and doesn't
 > burn my bandwidth.
+>
 > **For example —** I change one line in a 2 GB video project; the client uploads only the handful
 > of changed ~4 MB content-defined chunks, and my phone pulls just those — not 2 GB.
+>
 > **Why it matters —** the design is chunking + content-hash dedupe + delta sync, with metadata
 > split from blocks — re-uploading whole files simply doesn't scale.
 
@@ -2152,8 +2166,10 @@ real-time co-edit alternative — **Ch 35** (*Collaborative editor*).
 
 > **User story —** *As a* user, *I want* to turn a long link into a short one that reliably
 > redirects, *so that* I can share and track it cleanly.
+>
 > **For example —** I shorten a long product URL into `tiny.cc/9xQ2bR`; every click does a single
 > cached key→value lookup and 301/302-redirects to the original in a few milliseconds.
+>
 > **Why it matters —** the signal is in two choices: how you generate a short, unique, unguessable
 > id without a counter bottleneck, and 301 vs 302 (caching vs analytics).
 
@@ -2224,11 +2240,12 @@ the signal an interviewer is looking for.
 
 ![URL Shortener (TinyURL) — high-level architecture (HLD)](diagrams/url_shortener.svg)
 
-**Block-by-block:** the **Write service** turns a unique numeric **ID** into a base62 **code**
-and stores `code→longURL`. The **Redirect service** is the hot path — a cache-first KV lookup
-then an HTTP redirect. The **ID generator** avoids collisions by construction. The **cache**
-(Redis) absorbs the 100:1 read load; the **KV store** is the durable backstop. Clicks are logged
-**asynchronously** so they never slow the redirect.
+**Block-by-block:**
+- **Write service** — turns a unique numeric **ID** into a base62 **code** and stores `code→longURL`.
+- **Redirect service** — the hot path: a cache-first KV lookup then an HTTP redirect.
+- **ID generator** — avoids collisions by construction.
+- **Cache (Redis)** — absorbs the 100:1 read load; the **KV store** is the durable backstop.
+- **Click logging** — done **asynchronously** so it never slows the redirect.
 
 ## 12.4 HLD — critical path walkthrough
 
