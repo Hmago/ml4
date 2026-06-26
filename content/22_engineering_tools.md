@@ -41,8 +41,8 @@ Not every tool deserves equal attention. Here is the honest ranking based on cur
  │   MongoDB · Cloud+S3 · Spark                                         │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 2 — HIGH PRIORITY  (the modern data stack)                     │
- │   Snowflake/Databricks · dbt · Iceberg/Delta · Flink · Airflow ·     │
- │   Terraform · Prometheus+Grafana · Ray                               │
+ │   Snowflake/Databricks · dbt · Parquet · Iceberg/Delta · Flink ·     │
+ │   Airflow · Terraform · Prometheus+Grafana · Ray                     │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 3 — SITUATIONAL  (know WHEN, not necessarily HOW)              │
  │   Cassandra/ScyllaDB · Elasticsearch/OpenSearch · gRPC/GraphQL ·     │
@@ -1155,6 +1155,37 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 
 ---
 
+### Apache Parquet — The Columnar File Format
+
+> **Simple Explanation:** A CSV stores a table **row by row**, so reading just the `price` column still drags across every other field on every line. Parquet stores it **column by column** — a query that wants only `price` and `region` reads *just those two stripes* and skips the rest. Each column compresses tightly (same-type values), and per-chunk "min/max" stats let a reader skip whole blocks without opening them.
+
+> **Official Definition:** Apache Parquet is an open-source, **columnar** storage file format optimized for analytical (OLAP) workloads. It stores data column-by-column within row groups, applies per-column encoding and compression, and embeds metadata (schema + per-column statistics) that engines use for **column pruning** and **predicate pushdown** — reading only the columns and row groups a query needs.
+
+```
+   ROW format (CSV/JSON)              COLUMNAR format (Parquet)
+   id │ region │ price │ ...          id      │ region  │ price
+    1 │  eu    │  9.90 │ ...          1,2,3.. │ eu,us.. │ 9.90 ..
+    2 │  us    │ 12.00 │ ...          read "price" → touch ONE stripe,
+   read "price" → scans every          skip the rest + per-column
+   field of every row off disk         compression + min/max skipping
+```
+
+- **Use it when:** Storing data for analytics, ML training, or batch processing in a lake/lakehouse — it is the default file format under Iceberg, Delta, Spark, Snowflake, BigQuery, DuckDB, and pandas/Polars. Ideal when queries read a few columns out of many or filter on a sortable key.
+- **Avoid when:** You need row-by-row **OLTP** writes or single-record lookups (use Postgres) — Parquet files are **immutable**, written once and never updated in place. Also poor for tiny datasets, per-event streaming sinks (the *small-files problem*), or human-readable interchange (it is binary).
+- **Senior gotcha:** Parquet is a **file** format, not a **table** format. A directory of Parquet files has no transactions or atomic updates — that is the gap Iceberg/Delta (below) fill by adding metadata on top of Parquet.
+
+**Going deeper — layout & tuning:**
+
+- A file splits into **row groups** (horizontal slices, ~128 MB); each holds one **column chunk** per column, made of encoded+compressed **pages**. A **footer** (read first) stores the schema, offsets, and per-chunk **min/max** stats.
+- **Predicate pushdown:** `WHERE price > 100` skips any row group whose `max(price) ≤ 100` without decoding it — sorting data on filter columns makes this far more effective.
+- **Encodings** (per column, before compression): **dictionary** (low-cardinality strings), **run-length + bit-packing**, **delta** (sorted ints/timestamps). **Codecs:** `snappy` (fast default), `zstd` (best ratio/speed), `gzip` (smallest).
+- **Tuning:** large row groups compress and scan better but use more memory; many tiny files wreck performance — compact them. Parquet also stores typed, **nested** schemas (structs/lists/maps).
+- **Cousins:** **ORC** (similar columnar, Hive world); **Avro** (*row*-oriented — great for Kafka messages, poor for column scans); **Arrow** (the *in-memory* columnar standard, Parquet's on-disk counterpart). Rule of thumb: **Avro to move records, Parquet to store/scan them, Arrow to process them in memory.**
+
+**At a glance:** **Pros** — scans only the columns/row groups a query needs (often **10–100× less I/O** than CSV/JSON), excellent compression, open and read by every analytics engine, self-describing. **Cons / limits** — binary, immutable (updates rewrite files), full-row reads slower than a row store, and on its own no transactions or row-level update/delete (needs a table format). **Anti-patterns** — operational/transactional storage, sub-ms single-record serving, append-per-event sinks without compaction.
+
+---
+
 ### Apache Iceberg & Delta Lake — Open Table Formats
 
 > **Simple Explanation:** Raw files in S3 are like a pile of loose pages. A **table format** is the binder, index, and table-of-contents that turns that pile into a real, queryable table — with the ability to update rows, undo mistakes, and have many engines read it safely at once.
@@ -1632,6 +1663,7 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 | Make a slow read instant | **Redis / Valkey** (cache) | bigger DB box |
 | Move events between services reliably | **Kafka** | direct service calls |
 | Store huge files / datasets cheaply | **S3 / object storage** | a relational DB |
+| Store analytics data for fast column scans | **Parquet** (columnar) | CSV / JSON |
 | Crunch terabytes of data | **Spark** | pandas on one box |
 | React to events in milliseconds | **Flink** | batch Spark |
 | Run big analytical/BI queries | **Snowflake / Databricks** | Postgres at scale |
@@ -1663,7 +1695,7 @@ You do not learn these all at once. A sensible path for a senior engineer:
    5. Kafka                    ← event-driven backbone (now KRaft, no ZooKeeper)
    6. Spark                    ← large-scale processing (+ AQE, Structured Streaming)
    7. Snowflake OR Databricks  ← pick ONE ecosystem, go deep
-   8. dbt + Iceberg/Delta      ← the modern transform + table layer
+   8. dbt + Parquet + Iceberg/Delta ← columnar files + the transform/table layer
    9. Flink                    ← when real-time becomes a requirement
   10. Terraform + Prometheus/Grafana + OTel ← operate it all reliably
   11. Ray                      ← when ML workloads outgrow one machine
@@ -1692,7 +1724,7 @@ When a system-design interviewer hears you casually and *correctly* place these 
 
 - Every tool maps to one of four jobs: **ingest, store, process, serve.** Place any new tool in that frame and it stops being scary.
 - **Tier 1 (learn first):** Docker, Kubernetes, Kafka, Redis/Valkey, PostgreSQL, **MongoDB**, Cloud+S3, Spark — you will meet these everywhere.
-- **Tier 2 (modern stack):** Snowflake/Databricks, dbt, Iceberg/Delta, Flink, Airflow, Terraform, Prometheus+Grafana, **Ray**.
+- **Tier 2 (modern stack):** Snowflake/Databricks, dbt, **Parquet**, Iceberg/Delta, Flink, Airflow, Terraform, Prometheus+Grafana, **Ray**.
 - **Tier 3 (situational):** Cassandra/ScyllaDB, Elasticsearch, gRPC/GraphQL, **Vector DBs** (pgvector/Qdrant/Milvus), **Distributed SQL** (CockroachDB/Spanner/TiDB) — know *when*, learn *how* on demand.
 - **Tier 4 (legacy):** Hadoop — maintain/migrate only; don't invest for new skills.
 - **The 2025–2026 shifts:**

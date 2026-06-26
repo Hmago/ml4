@@ -392,7 +392,7 @@ body.sidebar-collapsed .content {
 }
 
 .content p {
-  margin: 12px 0;
+  margin: 16px 0;
   font-size: 16px;
   line-height: 1.7;
 }
@@ -408,13 +408,16 @@ body.sidebar-collapsed .content {
 
 .content blockquote {
   border-left: 4px solid var(--accent);
-  padding: 12px 20px;
-  margin: 16px 0;
+  padding: 14px 22px;
+  margin: 18px 0;
   background: var(--accent-light);
   border-radius: 0 8px 8px 0;
-  font-style: italic;
-  color: var(--text-secondary);
+  color: var(--text);
 }
+
+.content blockquote p { margin: 8px 0; }
+.content blockquote p:first-child { margin-top: 0; }
+.content blockquote p:last-child { margin-bottom: 0; }
 
 .content ul, .content ol {
   margin: 12px 0;
@@ -422,10 +425,14 @@ body.sidebar-collapsed .content {
 }
 
 .content li {
-  margin: 6px 0;
+  margin: 8px 0;
   font-size: 16px;
   line-height: 1.6;
 }
+
+.content.chapter-view > ul,
+.content.chapter-view > ol { margin-top: 16px; margin-bottom: 16px; }
+.content.chapter-view li::marker { color: var(--accent); }
 
 .content code {
   background: var(--code-bg);
