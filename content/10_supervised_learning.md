@@ -23,26 +23,26 @@ After reading this chapter, you will be able to:
 ## Chapter Map
 
 ```
-  6.1   What is Supervised Learning?
-  6.2   The Two Flavors: Classification vs Regression
-  6.3   How Models Learn: Loss Functions & Optimization
-  6.4   The Training Pipeline: Train / Val / Test Splits
-  6.5   Overfitting, Underfitting & the Bias-Variance Tradeoff
-  6.6   Classification Algorithms
-  6.7   Decision Tree Splits: Gini vs Entropy
-  6.8   Ensemble Methods: Bagging, Boosting, Stacking
-  6.9   Regression Algorithms
-  6.10  Feature Importance & Model Explainability (SHAP)
-  6.11  Class Imbalance: The 99% Trap
-  6.12  Algorithm Selection Guide
-  6.13  Case Study: Churn Model for YouTube Premium
+  10.1  What is Supervised Learning?
+  10.2  The Two Flavors: Classification vs Regression
+  10.3  How Models Learn: Loss Functions & Optimization
+  10.4  The Training Pipeline: Train / Val / Test Splits
+  10.5  Overfitting, Underfitting & the Bias-Variance Tradeoff
+  10.6  Classification Algorithms
+  10.7  Decision Tree Splits: Gini vs Entropy
+  10.8  Ensemble Methods: Bagging, Boosting, Stacking
+  10.9  Regression Algorithms
+  10.10 Feature Importance & Model Explainability (SHAP)
+  10.11 Class Imbalance: The 99% Trap
+  10.12 Algorithm Selection Guide
+  10.13 Case Study: Churn Model for YouTube Premium
   Key Takeaways
   Review Questions
 ```
 
 ---
 
-## 6.1 What is Supervised Learning?
+## 10.1 What is Supervised Learning?
 
 > **Supervised Learning** is a machine learning paradigm where the algorithm learns a mapping function $f: X \rightarrow Y$ from a labeled training dataset of $(x_i, y_i)$ pairs, and is evaluated on its ability to generalize that mapping to unseen inputs.
 
@@ -97,7 +97,7 @@ Supervised learning works so well because labeled data encodes human knowledge d
 
 ---
 
-## 6.2 The Two Flavors: Classification vs Regression
+## 10.2 The Two Flavors: Classification vs Regression
 
 Every supervised learning problem falls into one of two categories, depending on what the output looks like.
 
@@ -163,13 +163,13 @@ Sometimes the line between classification and regression blurs. Star ratings (1-
 
 ---
 
-## 6.3 How Models Learn: Loss Functions & Optimization
+## 10.3 How Models Learn: Loss Functions & Optimization
 
 > A **loss function** quantifies the difference between predictions and true labels. Training means finding parameters that minimize this loss via iterative gradient-based updates.
 
 Every supervised learning algorithm follows the same loop: make a prediction, measure error with the loss function, compute gradients, update parameters. The right loss depends on the task: MSE or MAE for regression, binary cross-entropy for two-class problems, categorical cross-entropy for multi-class problems. The optimizer (almost always Adam or mini-batch SGD) takes a step in the direction of the negative gradient, scaled by the learning rate.
 
-→ **Full treatment: Chapter 7 §7.8 (Loss Functions) and §7.9 (Gradient Descent and variants)**
+→ **Full treatment: Chapter 8 §8.8 (Loss Functions) and §8.9 (Gradient Descent and variants)**
 
 The key supervised-learning–specific point: the loss function must match the output type.
 
@@ -182,7 +182,7 @@ The key supervised-learning–specific point: the loss function must match the o
 
 ---
 
-## 6.4 The Training Pipeline: Train / Val / Test Splits
+## 10.4 The Training Pipeline: Train / Val / Test Splits
 
 > The **train/validation/test split** divides labeled data into three disjoint sets: one for fitting model parameters (train), one for tuning hyperparameters and model selection (validation), and one held-out set for final unbiased evaluation (test).
 
@@ -274,7 +274,7 @@ Data leakage is one of the most common and dangerous mistakes in ML. Your model 
 
 ---
 
-## 6.5 Overfitting, Underfitting, and the Bias-Variance Tradeoff
+## 10.5 Overfitting, Underfitting, and the Bias-Variance Tradeoff
 
 Every modeling decision — algorithm choice, hyperparameter tuning, regularization, data augmentation — is ultimately about managing this tradeoff.
 
@@ -284,7 +284,7 @@ Every modeling decision — algorithm choice, hyperparameter tuning, regularizat
 
 Total expected error = Bias² + Variance + Irreducible Noise. The sweet spot minimizes their sum.
 
-→ **Full treatment: Chapter 7 §7.11 (Overfitting/Underfitting), §7.12 (Bias–Variance Tradeoff), and §7.13 (Regularization)**
+→ **Full treatment: Chapter 8 §8.11 (Overfitting/Underfitting), §8.12 (Bias–Variance Tradeoff), and §8.13 (Regularization)**
 
 ### Quick Diagnosis Table (Supervised-Learning Reference)
 
@@ -297,16 +297,16 @@ Total expected error = Bias² + Variance + Irreducible Noise. The sweet spot min
 
 ### Algorithm-Specific Regularization
 
-While the general mechanisms (L1/L2/early stopping) are covered in §7.13, each algorithm family exposes them differently:
+While the general mechanisms (L1/L2/early stopping) are covered in Chapter 8 §8.13, each algorithm family exposes them differently:
 
-- **Linear/Logistic Regression:**  in sklearn is the inverse of λ (C = 1/λ). Ridge = L2 penalty; Lasso = L1 penalty; Elastic Net = both.
-- **Decision Trees / Random Forest:** , ,  — structural constraints that act as implicit regularization.
-- **Gradient Boosting (XGBoost/LightGBM):** , ,  (L1),  (L2), and crucially  ×  interplay — small learning rate with early stopping is the dominant regularization strategy.
-- **Neural Networks:** Dropout rate and L2 weight decay ( in PyTorch's AdamW).
+- **Linear/Logistic Regression:** `C` in sklearn is the inverse of λ (C = 1/λ). Ridge = L2 penalty; Lasso = L1 penalty; Elastic Net = both.
+- **Decision Trees / Random Forest:** `max_depth`, `min_samples_leaf`, `min_samples_split` — structural constraints that act as implicit regularization.
+- **Gradient Boosting (XGBoost/LightGBM):** `n_estimators`, `learning_rate`, `reg_alpha` (L1), `reg_lambda` (L2), and crucially `learning_rate` × `n_estimators` interplay — small learning rate with early stopping is the dominant regularization strategy.
+- **Neural Networks:** Dropout rate and L2 weight decay (`weight_decay` in PyTorch's AdamW).
 
 ---
 
-## 6.6 Classification Algorithms
+## 10.6 Classification Algorithms
 
 ### Logistic Regression ★★★
 
@@ -398,6 +398,30 @@ This guarantees all class probabilities are positive and sum to 1.
   ✗ Sensitive to outliers in features
 ```
 
+### Logistic Regression: Why Cross-Entropy? (the MLE view)
+
+You saw *that* Logistic Regression minimizes cross-entropy — here's *why* that's the principled choice. Start with the model:
+
+$$P(y=1\mid x)=\sigma(w^\top x+b),\qquad \sigma(z)=\frac{1}{1+e^{-z}}$$
+
+Treat each label as an independent Bernoulli draw with $p_i=\sigma(w^\top x_i+b)$. The likelihood of the whole dataset is
+
+$$\prod_i p_i^{\,y_i}(1-p_i)^{1-y_i}.$$
+
+Products of tiny probabilities underflow, so take the negative log (turning the product into a sum). That gives
+
+$$-\sum_i\big[y_i\log p_i+(1-y_i)\log(1-p_i)\big],$$
+
+which is exactly **binary cross-entropy**. So minimizing BCE *is* maximum likelihood for a Bernoulli — nothing was invented, it falls out of the probability model.
+
+> **Key result:** For Logistic Regression, minimizing binary cross-entropy is equivalent to maximum-likelihood estimation of the Bernoulli parameters.
+
+The gradient is remarkably clean — prediction error times input:
+
+$$\nabla_w = \sum_i (p_i-y_i)\,x_i.$$
+
+**Why not just use MSE on the sigmoid?** Two reasons, and this is a classic interview trap. First, $\text{MSE}(\sigma(w^\top x))$ is **non-convex** in $w$, so gradient descent can stall in local minima. Second, its gradient carries a $\sigma'(z)=\sigma(z)(1-\sigma(z))$ factor that **vanishes when the sigmoid saturates** (confidently wrong predictions learn *slowly*). Cross-entropy is convex and its gradient stays healthy exactly where you need it most.
+
 ---
 
 ### K-Nearest Neighbors (KNN) ★
@@ -481,7 +505,7 @@ A decision tree is a flowchart of if-then-else questions. At each node, it asks:
     (leaf)       (leaf)      (leaf)           (leaf)
 ```
 
-**How does the tree choose which question to ask?** At each node, it evaluates every possible feature and every possible threshold, picks the split that creates the "purest" child nodes (we'll see the exact math in Section 6.7), and recurses. It stops when a node is pure (all one class), hits a depth limit, or has too few samples to split further.
+**How does the tree choose which question to ask?** At each node, it evaluates every possible feature and every possible threshold, picks the split that creates the "purest" child nodes (we'll see the exact math in Section 10.7), and recurses. It stops when a node is pure (all one class), hits a depth limit, or has too few samples to split further.
 
 ```mermaid
 flowchart TD
@@ -574,6 +598,29 @@ Real-world data is rarely linearly separable. SVMs handle this with kernels — 
   ✗ Choosing the right kernel and C parameter requires tuning
 ```
 
+### SVM: Hinge Loss and the Soft Margin
+
+Under the hood, an SVM is minimizing a specific loss. With labels $y\in\{-1,+1\}$ and score $f(x)=w^\top x+b$, the **hinge loss** is
+
+$$L=\max\big(0,\;1-y\,f(x)\big).$$
+
+Intuitively: you pay zero penalty *only* when a point is correctly classified **with margin** $\ge 1$ (i.e. $y\,f(x)\ge 1$). Inside the margin or misclassified, the loss grows linearly. This is why the SVM cares about points near the boundary and ignores the easy ones far away.
+
+Real data isn't perfectly separable, so we allow controlled violations via slack variables $\xi_i\ge 0$ — the **soft-margin** objective:
+
+$$\min_{w,b,\xi}\;\tfrac{1}{2}\lVert w\rVert^2 + C\sum_i \xi_i,\qquad \xi_i\ge 0.$$
+
+The term $\tfrac{1}{2}\lVert w\rVert^2$ **widens the margin**; $C\sum_i\xi_i$ **penalizes violations**. The knob $C$ trades the two off:
+
+| $C$ | Behavior | Risk |
+|---|---|---|
+| Large | Penalize violations hard → narrow margin, fit training data tightly | Overfitting |
+| Small | Tolerate violations → wider margin, stronger regularization | Underfitting |
+
+The **support vectors** are precisely the points on or inside the margin ($\xi_i>0$ or exactly on the edge) — the only ones that determine $w$.
+
+**Multiclass:** SVMs are binary at heart, so you extend them with **one-vs-rest** (one classifier per class) or **one-vs-one** (a classifier per class pair, then vote).
+
 ---
 
 ### Naive Bayes ★
@@ -615,7 +662,7 @@ The "naive" assumption — that features are independent — is almost never tru
 
 ---
 
-## 6.7 Decision Tree Splits: Gini vs Entropy
+## 10.7 Decision Tree Splits: Gini vs Entropy
 
 At each node, the tree must decide: "Which feature and which threshold give the best split?" It evaluates every possible split and picks the one that creates the purest child nodes. But how do we measure "purity"?
 
@@ -767,7 +814,7 @@ In practice, they almost always produce the same tree. Gini is slightly faster t
 
 ---
 
-## 6.8 Ensemble Methods: Bagging, Boosting, Stacking
+## 10.8 Ensemble Methods: Bagging, Boosting, Stacking
 
 > **Ensemble methods** combine multiple models to produce a single, stronger model. The core insight: a group of diverse, imperfect models often outperforms any single model, just as a committee of experts typically makes better decisions than any individual.
 
@@ -989,7 +1036,7 @@ Stacking is complex to implement and computationally expensive, but it frequentl
 
 ---
 
-## 6.9 Regression Algorithms
+## 10.9 Regression Algorithms
 
 ### Linear Regression
 
@@ -1241,7 +1288,7 @@ Decision trees, Random Forests, and Gradient Boosting all work for regression �
 
 ---
 
-## 6.10 Feature Importance & Model Explainability (SHAP)
+## 10.10 Feature Importance & Model Explainability (SHAP)
 
 Understanding WHY a model makes its predictions is often as important as the predictions themselves. In healthcare, finance, and legal applications, you can't just say "the model says so" — you need to explain the reasoning.
 
@@ -1389,7 +1436,7 @@ Feature importance tells you "in general, square footage matters most." SHAP tel
 
 ---
 
-## 6.11 Class Imbalance: The 99% Trap
+## 10.11 Class Imbalance: The 99% Trap
 
 > **Class imbalance** occurs when the distribution of classes in the training data is highly skewed. Standard classifiers optimized for accuracy will be biased toward the majority class and fail to learn the minority class.
 
@@ -1528,9 +1575,32 @@ Don't rely on accuracy. Use these instead:
   may be a good trade-off.
 ```
 
+### Reading a ROC Curve
+
+The **ROC curve** plots how your classifier behaves as you sweep the decision threshold. Each threshold produces one confusion matrix, hence one point on the curve:
+
+- **x-axis** = FPR (fall-out) = $\dfrac{FP}{FP+TN}$ — of all real negatives, how many you wrongly flagged.
+- **y-axis** = TPR (recall) = $\dfrac{TP}{TP+FN}$ — of all real positives, how many you caught.
+
+Lowering the threshold catches more positives (TPR ↑) but also raises false alarms (FPR ↑), so you move up and to the right. The whole curve is threshold-independent — it summarizes the model's *ranking*, not one operating point.
+
+```
+  TPR │      ______   ← ideal: hug the top-left corner
+   ↑  │   __/    ⋰
+      │  /     ⋰   ← diagonal = random guessing (AUC 0.5)
+      │ /   ⋰
+      │/ ⋰
+      └───────────── FPR →
+      0             1
+```
+
+> **AUC** = the probability that a randomly chosen positive is scored higher than a randomly chosen negative. It measures **ranking quality**: 1.0 is perfect, 0.5 is a coin flip.
+
+**Caveat — imbalance:** ROC can look deceptively good when negatives vastly outnumber positives. A huge $TN$ keeps FPR = $\frac{FP}{FP+TN}$ tiny even when there are *many* false positives, so the curve stays near the top-left. On heavily imbalanced data, prefer the **Precision-Recall curve** (precision is not inflated by a large $TN$). See Chapter 13 for the full treatment of ROC vs PR and threshold selection.
+
 ---
 
-## 6.12 Algorithm Selection Guide
+## 10.12 Algorithm Selection Guide
 
 Choosing an algorithm isn't about finding "the best" one — it's about finding the best one for YOUR problem, given your data, your constraints, and your goals.
 
@@ -1637,12 +1707,12 @@ For any new supervised learning problem, follow this sequence:
                 → common in competitions, rare in production
 ```
 
-**The uncomfortable truth:** For tabular data (spreadsheets, databases), gradient boosted trees beat neural networks in most benchmarks. Neural networks dominate on images, text, and audio, but for structured data, XGBoost/LightGBM are still king as of 2025. Several recent papers (TabNet, TabTransformer, FT-Transformer) have tried to change this, with mixed results.
+**The uncomfortable truth:** For tabular data (spreadsheets, databases), gradient boosted trees beat neural networks in most benchmarks. Neural networks dominate on images, text, and audio, but for structured data, XGBoost/LightGBM are still king as of 2026. Several recent papers (TabNet, TabTransformer, FT-Transformer) have tried to change this, with mixed results.
 
 ---
 
 
-## 6.13 Case Study: Churn Model for YouTube Premium ★★★
+## 10.13 Case Study: Churn Model for YouTube Premium ★★★
 
 End-to-end worked example walking the full ML pipeline that a Google interviewer expects.
 

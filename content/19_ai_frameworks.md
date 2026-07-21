@@ -20,7 +20,7 @@ By the end of this chapter you'll be able to:
 
 ---
 
-## 18.1 The 2026 AI Framework Landscape
+## 19.1 The 2026 AI Framework Landscape
 
 A quick map of the territory, because the framework zoo grew fast:
 
@@ -70,7 +70,7 @@ There are 50+ tools in this space; you only need to know the dozen that show up 
 
 ---
 
-## 18.2 LangChain 1.0 & LangGraph 1.0
+## 19.2 LangChain 1.0 & LangGraph 1.0
 
 > **LangChain** is an open-source framework that gives you composable components — prompt templates, retrievers, output parsers, model wrappers, agents — so you stop writing the same glue code on every project.
 
@@ -80,6 +80,8 @@ There are 50+ tools in this space; you only need to know the dozen that show up 
 
 LCEL ("LangChain Expression Language") is the pipe-syntax way to compose components. It looks Unix-y on purpose:
 
+> Model IDs in examples are illustrative — swap in your current frontier/mini model (e.g. GPT-5.5, Claude Opus 4.7, Gemini 3.1).
+
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -87,7 +89,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 chain = (
     ChatPromptTemplate.from_template("Explain {topic} in 3 bullets.")
-    | ChatOpenAI(model="gpt-4o", temperature=0)
+    | ChatOpenAI(model="gpt-5.5", temperature=0)
     | StrOutputParser()
 )
 
@@ -174,7 +176,7 @@ os.environ["LANGSMITH_API_KEY"] = "..."
 
 ---
 
-## 18.3 LlamaIndex Workflows 1.0
+## 19.3 LlamaIndex Workflows 1.0
 
 > **LlamaIndex** is a data framework specialised for **connecting LLMs to your data** — ingestion, parsing, chunking, indexing, retrieval. **Workflows** is its agent layer.
 
@@ -224,7 +226,7 @@ Many production stacks use **both**: LlamaIndex for ingestion and retrieval, Lan
 
 ---
 
-## 18.4 DSPy — Programming, Not Prompting
+## 19.4 DSPy — Programming, Not Prompting
 
 > **DSPy** (Stanford NLP) treats prompts as code that the framework **compiles and optimises** for you. You declare *what* you want; DSPy figures out the prompt that gets the best score on your eval set.
 
@@ -276,7 +278,7 @@ Skip DSPy when you don't have evals — there's nothing for the optimizer to opt
 
 ---
 
-## 18.5 Pydantic AI — Type-Safe Agents
+## 19.5 Pydantic AI — Type-Safe Agents
 
 > **Pydantic AI** is an agent framework built around Pydantic's type system. Inputs, outputs, dependencies, and tool signatures are typed; your IDE and type checker catch most agent bugs at write-time instead of runtime.
 
@@ -321,7 +323,7 @@ The tool's docstring + type hints become the JSON schema sent to the model. No m
 
 ---
 
-## 18.6 Multi-Agent Frameworks: CrewAI vs AutoGen vs LangGraph
+## 19.6 Multi-Agent Frameworks: CrewAI vs AutoGen vs LangGraph
 
 > **Multi-agent system**: multiple LLM-powered agents that collaborate by passing messages, calling each other as tools, or executing a defined workflow.
 
@@ -332,7 +334,7 @@ Three main frameworks. They model collaboration differently:
 | **LangGraph** | Explicit state graph; you draw the workflow | Production agents needing durability, branching, HIL | **GA / production-ready** |
 | **CrewAI** | Role-based "crews" (researcher, writer, reviewer) | Pipeline-style workflows, low learning curve | Active, growing |
 | **AutoGen / AG2** | Conversational `GroupChat`, emergent coordination | Research, code-gen experiments | **Maintenance mode** (Microsoft pivoted to Agent Framework) |
-| **Google ADK** | Code-first, multi-agent native, Vertex deploy | Enterprise GCP shops | Active (see §18.12) |
+| **Google ADK** | Code-first, multi-agent native, Vertex deploy | Enterprise GCP shops | Active (see §19.12) |
 
 ### Hello world — CrewAI
 
@@ -362,11 +364,11 @@ A real warning: every agent turn in a `GroupChat` re-sends the full history. A 4
 
 ---
 
-## 18.7 Hugging Face — The GitHub of Models
+## 19.7 Hugging Face — The GitHub of Models
 
 > **Hugging Face** hosts 1M+ pretrained models, 200K+ datasets, and thousands of demos (Spaces). The `transformers` library is the unified API to load and run almost any of them.
 
-Three libraries you'll meet:
+The core libraries you'll meet:
 
 | Library | What it does |
 |---|---|
@@ -420,7 +422,7 @@ trainer.save_model()  # Saves only the adapter — a few MB
 
 ---
 
-## 18.8 Prompt Engineering Patterns
+## 19.8 Prompt Engineering Patterns
 
 > **Prompt engineering**: the practice of designing and structuring inputs to LLMs to get reliable, high-quality outputs.
 
@@ -457,7 +459,7 @@ Q: A bat and ball cost $1.10. The bat costs $1 more than the ball. How much is t
 A: Let's think step by step.
 ```
 
-CoT trades latency and tokens for accuracy on multi-step reasoning. With 2026 reasoning models (o3, Claude Opus 4.7, Gemini 3 Thinking) it's often built in — you don't need to ask.
+CoT trades latency and tokens for accuracy on multi-step reasoning. With 2026 reasoning models (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Thinking) it's often built in — you don't need to ask.
 
 ### Structured output — constrain to a schema
 
@@ -471,8 +473,8 @@ class Intent(BaseModel):
     label: str
     confidence: float
 
-resp = OpenAI().chat.completions.parse(
-    model="gpt-4o-2024-08-06",
+resp = OpenAI().beta.chat.completions.parse(  # Pydantic parse helper lives under .beta
+    model="gpt-5.5",
     messages=[{"role": "user", "content": "Classify: 'I want a refund.'"}],
     response_format=Intent,
 )
@@ -490,7 +492,7 @@ Anthropic shipped strict JSON-schema **Structured Outputs** in 2025; Gemini 2.5+
 
 ---
 
-## 18.9 Vector Databases & Modern RAG
+## 19.9 Vector Databases & Modern RAG
 
 ### The vector DB landscape (2026)
 
@@ -560,7 +562,7 @@ Retrieve 20, rerank to 3, send to the LLM. Single biggest quality win after swit
 
 ---
 
-## 18.10 Evaluation & Observability
+## 19.10 Evaluation & Observability
 
 > **LLM evaluation**: measuring the quality, safety, and cost of LLM outputs without a closed-form correctness test.
 
@@ -645,7 +647,7 @@ with mlflow.start_run():
 
 ---
 
-## 18.11 Inference Servers — Serving LLMs at Scale
+## 19.11 Inference Servers — Serving LLMs at Scale
 
 > **Inference server**: a process that loads model weights and exposes a request/response API, optimised for throughput, latency, and GPU memory.
 
@@ -676,7 +678,7 @@ with mlflow.start_run():
 
 ### vLLM is the default — why?
 
-**PagedAttention**: vLLM partitions the KV cache into fixed-size blocks (like OS virtual memory pages) so requests can share memory without fragmentation. Net effect: 2–10× more concurrent users on the same GPU. Red Hat benchmark on identical hardware: vLLM peaked at **793 tokens/sec** vs Ollama's 41; p99 time-to-first-token **80 ms** vs 673 ms. Stripe cut inference cost 73% migrating to vLLM.
+**PagedAttention**: vLLM partitions the KV cache into fixed-size blocks (like OS virtual memory pages) so requests can share memory without fragmentation. Net effect: 5–10× throughput on the same GPU under concurrent load. Red Hat benchmark on identical hardware: vLLM peaked at **793 tokens/sec** vs Ollama's 41 (Ollama is a single-user/local runtime, so this is apples-to-oranges — it isn't built for concurrent serving); p99 time-to-first-token **80 ms** vs 673 ms. Stripe cut inference cost 73% migrating to vLLM.
 
 ### Hello world — Ollama (local dev)
 
@@ -718,7 +720,7 @@ Most teams: **Ollama for dev, vLLM for prod.**
 
 ---
 
-## 18.12 The Google AI Engineer Stack
+## 19.12 The Google AI Engineer Stack
 
 If you're interviewing at Google, you must know this stack — they invented half of it.
 
@@ -744,7 +746,7 @@ from google.adk.tools import google_search
 
 root_agent = Agent(
     name="search_assistant",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash",
     description="Answers questions using Google Search.",
     instruction="Be concise and cite sources.",
     tools=[google_search],
@@ -766,7 +768,7 @@ ADK's strength is **enterprise scale + GCP-native**: deploy with one command, ge
 
 ---
 
-## 18.13 MLOps — The Production Discipline
+## 19.13 MLOps — The Production Discipline
 
 > **MLOps**: the practice of deploying, monitoring, and maintaining ML/AI systems in production reliably and at scale — DevOps for ML.
 
@@ -866,7 +868,7 @@ The interview tip every Google ML system design candidate should internalise: **
 
 ---
 
-## 18.14 Cost, Latency, Reliability
+## 19.14 Cost, Latency, Reliability
 
 > **Production LLM system**: an LLM app that has to meet real-world SLOs on cost, latency, and reliability — not just demo quality.
 
@@ -897,7 +899,7 @@ The interview tip every Google ML system design candidate should internalise: **
 
 ---
 
-## 18.15 Decision Tree — Pick the Right Tool
+## 19.15 Decision Tree — Pick the Right Tool
 
 ```
   What are you building?
@@ -925,7 +927,7 @@ The interview tip every Google ML system design candidate should internalise: **
 
 ---
 
-## 18.16 What Goes Wrong (Pitfalls)
+## 19.16 What Goes Wrong (Pitfalls)
 
 1. **Adopting a framework before you have evals.** You'll churn through three frameworks before realising the problem was your prompt or your retrieval.
 2. **Multi-agent for everything.** Every agent turn is an LLM call. A 4-agent debate is 20× the cost of a single well-prompted agent. Justify the agents.
@@ -938,7 +940,7 @@ The interview tip every Google ML system design candidate should internalise: **
 
 ---
 
-## 18.17 Interview Questions
+## 19.17 Interview Questions
 
 **Q1. When would you choose LangGraph over LangChain?**
 LangChain is enough for linear chains and a single-agent loop with tools. Use LangGraph when the workflow needs cycles, branching, durable state across crashes, or human-in-the-loop pauses — e.g. a multi-day approval workflow or an agent that loops between research and refine until a check passes.
@@ -974,7 +976,7 @@ LLM responses constrained to a JSON Schema at decode time. Eliminates parser fai
 
 ---
 
-## 18.18 Key Takeaways
+## 19.18 Key Takeaways
 
 - **Frameworks are leverage, not a substitute for taste.** Pick by mental model fit, not popularity.
 - **LangChain 1.0 + LangGraph 1.0** (Oct 2025) are the safe production default for general agents.
@@ -990,7 +992,7 @@ LLM responses constrained to a JSON Schema at decode time. Eliminates parser fai
 
 ---
 
-## 18.19 Review Questions
+## 19.19 Review Questions
 
 1. You're building a "chat with my company's 10K PDFs" app. Which framework do you reach for first, and why?
 2. A junior engineer wires every feature through CrewAI by default. What's the cost concern, and when *should* you choose CrewAI?

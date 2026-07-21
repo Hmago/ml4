@@ -1441,7 +1441,22 @@ OpenTelemetry is now the **de facto vendor-neutral standard** for instrumenting 
 - **Primary key = partition key + clustering key.** The **partition key** decides *which node* holds the row (data is spread by hashing it); the **clustering key** decides the *sort order within* that partition. You design tables **around the exact query** you'll run — joins and ad-hoc filtering aren't supported the way they are in SQL.
 - **Tunable consistency:** per query you choose how many replicas must respond — `ONE` (fast, weak) up to `QUORUM` (majority) or `ALL` (strong, slower). The classic trick: `QUORUM` reads **+** `QUORUM` writes = strong consistency on an otherwise-AP system.
 - **Replication factor** = copies per data center; combined with consistency level, this is how you tune the availability/consistency dial.
-- **Why writes are so fast:** it's an **LSM-tree** store — writes append to an in-memory table + commit log, later flushed to immutable **SSTables** on disk (no slow random in-place updates). The cost is read amplification and periodic **compaction**.
+- **Why writes are so fast — what an LSM-tree actually is:** A traditional SQL database uses a **B-tree**, which updates rows *in place* — every write hunts down the right spot on disk and overwrites it (slow random I/O). An **LSM-tree (Log-Structured Merge-tree)** never overwrites. A write just appends to a commit log and an in-memory sorted table (the **memtable**); when that fills up it's flushed *sequentially* to a new immutable file on disk called an **SSTable**. Sequential appends are dramatically faster than random in-place updates, which is why Cassandra (and RocksDB, LevelDB, ScyllaDB) sustain huge write throughput.
+
+  ```
+   WRITE PATH (fast — pure append)
+     write → commit log (durability) + memtable (in-RAM, sorted)
+            memtable full → flush → SSTable-1 (immutable) → SSTable-2 → ...
+
+   READ PATH (must check several places)
+     look in memtable, then newest SSTable → ... → oldest
+     (a Bloom filter skips SSTables that can't hold the key)
+
+   COMPACTION (background cleanup)
+     merge many SSTables → fewer, drop overwritten rows + tombstones
+  ```
+
+  The trade-off is **read amplification** — a single key may live in several SSTables, so reads check more places (mitigated by Bloom filters and in-memory indexes) — plus periodic **compaction**, a background job that merges SSTables and discards superseded values and deleted-row **tombstones**. In short: **LSM = optimized for writes, B-tree = optimized for reads.**
 
 ```sql
 -- Designed for ONE query: "get a user's messages, newest first"
@@ -1526,7 +1541,18 @@ message GetUserRequest { int32 id = 1; }
 query { user(id: 42) { name, orders { total } } }
 ```
 
-- **GraphQL's classic trap — the N+1 problem:** fetching a list and then one query per item explodes into hundreds of calls. The fix is a **DataLoader** that batches them. This is a frequent interview question.
+- **GraphQL's classic trap — the N+1 problem (worked example):** Take the query above, `user(id: 42) { name, orders { total } }`. The server runs **1** query to load the user, then the `orders` resolver fires — and if that user has 100 orders, a naive resolver runs **one query per order** to fetch each `total`. That's **1 + N = 101** database round-trips for a single request. Scale it to a list of 50 users each with orders and the query count explodes into the thousands — the page crawls and the database melts, even though the GraphQL query *looks* tiny.
+
+  ```
+   NAIVE (N+1):                          BATCHED (DataLoader):
+     SELECT * FROM users WHERE id=42       SELECT * FROM users WHERE id=42
+     SELECT total FROM orders WHERE id=1   ── collect ids: 1,2,3,...,100 ──
+     SELECT total FROM orders WHERE id=2   SELECT total FROM orders
+     ... 98 more queries ...                 WHERE id IN (1,2,...,100)
+     = 101 round-trips                     = 2 round-trips
+  ```
+
+  **The fix — a DataLoader:** instead of querying immediately, each resolver *registers* the id it needs. The DataLoader waits one tick of the event loop, **collects all the ids**, and fires a single batched query (`WHERE id IN (...)`), then hands each resolver its slice back. It also **caches** within the request so the same id is never fetched twice. Result: 101 queries collapse to 2. The interview soundbite: *"GraphQL's flexibility pushes the N+1 problem onto the server, so you batch with a DataLoader per request."*
 - **Rule of thumb:** REST for public/cacheable APIs; **gRPC** for fast internal service-to-service; **GraphQL** when diverse front-ends need flexible, tailored data.
 
 **At a glance — strengths, tradeoffs, and hard limits**
@@ -1717,6 +1743,10 @@ When a system-design interviewer hears you casually and *correctly* place these 
 - **Start simple.** Propose Postgres + a cache before reaching for Cassandra or a Spark cluster. Over-engineering is a red flag (see Ch 26).
 - **Know the tradeoffs.** Every choice costs something: Kafka adds operational weight; caching adds invalidation bugs; Kubernetes adds complexity; Cassandra trades consistency for availability.
 - **Be current.** Mention that the field moved from Hadoop/HDFS to **lakehouse** (S3 + Iceberg/Delta + Spark/Flink), and that Kafka + Flink is the modern streaming pair. This signals you track the industry, not a 2015 textbook.
+- **Place tools in the four-job frame out loud.** When you reach for a tool, say *which job* it does — "Kafka to **ingest** and buffer, S3 + Iceberg to **store**, Flink to **process**, Redis to **serve** hot reads." Narrating the ingest→store→process→serve pipeline shows you have a mental model, not a list of brand names.
+- **Name the failure mode, then the mitigation.** Seniority shows up when you volunteer what breaks: "Redis is in-memory, so on a node loss I lose the cache and cold-start the DB — I'd warm it and set sane TTLs," or "Kafka consumer lag spikes under a poison message, so I'd add a dead-letter topic." Pairing every tool with its sharp edge is the strongest signal you've run these in production.
+- **Anchor choices in numbers.** Tie the tool to a back-of-envelope estimate: "~50k writes/sec write-heavy and append-only → that's a Cassandra/LSM workload, not Postgres." Capacity math (QPS, payload size, storage growth) turns an opinion into a defensible decision.
+- **Worked example — "design a URL shortener."** A senior answer sounds like: "Reads dominate ~100:1, so I'd **serve** from Redis in front of the DB; **store** mappings in Postgres (or Cassandra if we expect billions of keys); generate ids with a counter or hash, not random retries; and **ingest** click events into Kafka so analytics never slows the redirect path." Notice every tool is justified by a job and a tradeoff — never name-dropped.
 
 ---
 

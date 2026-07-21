@@ -39,7 +39,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 04 | Aptitude & Mental Math for Engineers | ★ | [04_aptitude_mental_math.md](content/04_aptitude_mental_math.md) | ~6.25 hrs | All Levels |
 | 05 | Brain Training — Memory, Focus & IQ | | [05_brain_training.md](content/05_brain_training.md) | ~2.25 hrs | All Levels |
-| 05B | Upgrade Your Brain in 30 Days (Program) | | [05b_brain_upgrade_30_days.md](content/05b_brain_upgrade_30_days.md) | ~1.75 hrs | All Levels |
+| 05B | Build a Sharper, Younger Brain (Complete Program) | | [05b_brain_upgrade_30_days.md](content/05b_brain_upgrade_30_days.md) | ~1.75 hrs | All Levels |
 
 ### Math Foundations
 
@@ -60,6 +60,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~2 hrs | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~2 hrs | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1.75 hrs | Intermediate |
+| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.5 hrs | All Levels |
 | | **Core ML Total** | | | **~21 hrs** | |
 
 ### Deep Learning & LLMs
@@ -71,6 +72,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~1.75 hrs | Intermediate-Advanced |
 | 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~1.5 hrs | Intermediate-Advanced |
 | 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~1 hr | Intermediate |
+| ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~3 hrs | All Levels |
 | | **Deep Learning & LLMs Total** | | | **~17 hrs** | |
 
 ### System Design
@@ -83,6 +85,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 24 | System Design — Part 2: Data & Distributed Systems (DBs, sharding, CAP/consensus, Kafka, storage) | ★★★ | [24_system_design_data_distributed.md](content/24_system_design_data_distributed.md) | ~4 hrs | Intermediate-Advanced |
 | 25 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, Instagram) | ★★★ | [25_system_design_operations_case_studies.md](content/25_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
 | 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~1.5 hrs | Intermediate-Advanced |
+| ↻ | **System Design — Quick Revision** (recap of Ch 21–26; no read status / quiz) | ★★ | [26s_system_design_recap.md](content/26s_system_design_recap.md) | ~3.25 hrs | All Levels |
 | | **System Design Total** | | | **~23.25 hrs** | |
 
 ### System Design — Case Studies (Design X)

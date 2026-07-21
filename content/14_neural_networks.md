@@ -648,6 +648,8 @@ a different range turns out to be useful, so no representational power is lost.
 
 Benefits: enables higher learning rates, reduces sensitivity to initialization, adds mild regularization via batch statistics noise. Standard in CNNs. For Transformers, **Layer Normalization** (normalizing across features instead of across the batch) is preferred. Modern LLMs (LLaMA, Gemini) further simplify to **RMSNorm**, which skips the mean-subtraction step and normalises only by root-mean-square — slightly cheaper and empirically equivalent in quality.
 
+**Train vs. inference — the classic gotcha.** During training, BatchNorm uses the *current mini-batch's* mean and variance. At inference you often score one example at a time, where a "batch mean" is meaningless — so BatchNorm instead applies **running (moving-average) statistics** accumulated during training. This is exactly why you must put the model in eval mode (`model.eval()` in PyTorch) before inference; forget it, and predictions leak information across whatever else happens to be in the batch. LayerNorm and RMSNorm avoid this entirely — they normalize per-example, so training and inference behave identically.
+
 ### Weight Decay (L2 Regularization)
 
 **Simple version:** large weights let a network make sharp, extreme, over-confident decisions —
@@ -931,6 +933,8 @@ Self-attention is permutation-invariant — it treats "cat sat" and "sat cat" id
 
 $$PE(\text{pos}, 2i) = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right), \qquad PE(\text{pos}, 2i+1) = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
 
+**Modern positional encodings.** The sinusoidal scheme above is *absolute* — it stamps each position with a fixed vector. Today's LLMs almost all use **relative** schemes instead. **RoPE (Rotary Position Embedding)** rotates the query and key vectors by an angle proportional to their position, so attention depends on the *relative offset* between two tokens and extrapolates better to longer contexts — it is the default in LLaMA, Gemini, Qwen, and most open models. **ALiBi** instead adds a distance-based linear penalty straight to the attention scores. Both have largely replaced absolute sinusoidal/learned encodings in production.
+
 ```mermaid
 graph TB
     A[Token Embeddings + Positional Encoding] --> B[Multi-Head Self-Attention]
@@ -1057,6 +1061,21 @@ At convergence, $G$ produces samples so realistic that $D$ outputs 0.5 (cannot d
 - **Mode collapse:** $G$ learns to produce only one type of output that fools $D$
 - **Training instability:** If $D$ becomes too strong too quickly, $G$ gets no useful gradient signal
 - **Evaluation difficulty:** No single loss metric reliably measures generation quality; FID and IS are common proxies
+
+### GANs vs. Diffusion Models
+
+**Simple Explanation.** A GAN sculpts an image in a single shot and is famously hard to train (the generator and discriminator must stay perfectly balanced). A **diffusion model** takes an easier route: it learns to *denoise*. Start from pure static and remove a little noise at a time, over many steps, until a clean image emerges.
+
+> **Diffusion models** learn to reverse a gradual noising process: a forward process adds Gaussian noise to data over many steps, and a neural network is trained to predict and remove that noise — generating new samples by denoising from pure noise.
+
+By the mid-2020s, diffusion (and latent-diffusion) models overtook GANs as the dominant approach to image, audio, and video generation. They train with a simple denoising regression loss (no adversarial min-max), cover the full data distribution (no mode collapse), and scale cleanly with compute — powering Stable Diffusion, DALL·E 3, Imagen, Midjourney, and Sora-style video.
+
+| | GAN | Diffusion |
+|---|---|---|
+| Generation | One forward pass (fast) | Many denoising steps (slower; distillation narrows the gap) |
+| Training | Adversarial min-max (unstable) | Denoising regression (stable) |
+| Coverage | Prone to mode collapse | Covers the full distribution |
+| 2026 status | Niche / real-time uses | Dominant for image, audio & video |
 
 ---
 

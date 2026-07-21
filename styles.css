@@ -615,6 +615,73 @@ body.sidebar-collapsed .content {
   margin: 32px 0;
 }
 
+/* ═══════════════════════════════════════════════════════ */
+/* ═══  QUICK-REVISION (recap) CHAPTERS                ═══ */
+/* ═══════════════════════════════════════════════════════ */
+/* Scoped to .content.recap-view (toggled in loadChapter, cleared wherever
+   chapter-view is). These summary chapters are information-dense, so the goal
+   is calmer pacing and stronger hierarchy: chapter "cards", quieter
+   sub-headings, distinct 💡/✅ callouts, and friendlier, scannable tables. */
+
+.content.recap-view p,
+.content.recap-view li { line-height: 1.75; }
+
+/* Chapter headings become clearly separated section cards */
+.content.recap-view h2 {
+  margin: 56px 0 22px;
+  padding: 14px 20px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  font-size: 23px;
+  scroll-margin-top: 80px;
+}
+.content.recap-view h2:first-of-type { margin-top: 24px; }
+
+/* Sub-sections: a light accent tick instead of a heavy underline */
+.content.recap-view h3 {
+  margin: 32px 0 12px;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent);
+  font-size: 18px;
+  scroll-margin-top: 80px;
+}
+
+/* Deepest headings step back so they stop competing with H3 */
+.content.recap-view h4 {
+  margin: 22px 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* 💡 In-a-sentence + ✅ Must-remember callouts (rendered as blockquotes) */
+.content.recap-view blockquote {
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.content.recap-view blockquote ul { margin: 6px 0; }
+.content.recap-view blockquote li { margin: 5px 0; }
+
+/* Scannable tables: quiet uppercase headers + row hover */
+.content.recap-view thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 12px;
+}
+.content.recap-view tbody tr { transition: background 0.12s; }
+.content.recap-view tbody tr:hover { background: var(--accent-light); }
+
+/* Lists, dividers & code: a little more breathing room */
+.content.recap-view ul { padding-left: 24px; }
+.content.recap-view li { margin: 7px 0; }
+.content.recap-view li::marker { color: var(--accent); }
+.content.recap-view hr { margin: 40px 0; opacity: 0.5; }
+.content.recap-view pre { border-radius: 10px; }
+
 .content img {
   max-width: 100%;
   border-radius: 8px;
@@ -767,6 +834,156 @@ body.sidebar-collapsed .content {
 
 [data-theme="dark"] .search-result-item mark {
   background: #5c4b00;
+}
+
+/* ─── Grouped search results (chapter groups, keyboard nav, snippets) ─── */
+
+/* Busy "Searching…" row — small spinner + muted text */
+.search-result-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.search-result-loading::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Empty "No results" + suggestions — muted, roomy, readable */
+.search-result-empty {
+  padding: 16px 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* One group per matched chapter — subtle separation between groups */
+.search-result-group {
+  border-top: 1px solid var(--border);
+}
+.search-result-group:first-child {
+  border-top: none;
+}
+
+/* Clickable chapter header row — title + badges + count on one line */
+.search-result-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.search-result-group-header:hover {
+  background: var(--accent-light);
+}
+
+/* Chapter title — fills the row, truncates with an ellipsis when long */
+.srg-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small accent-tinted pills marking where the match was found */
+.sr-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.sr-badge.title {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+.sr-badge.heading {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--text-secondary);
+}
+
+/* "N matches" count — small, muted, sits at the right edge */
+.srg-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Snippet rows read as indented children beneath their group header */
+.search-result-group .search-result-item {
+  padding-left: 28px;
+}
+
+/* Heading-context label e.g. "› Backpropagation" — small, muted, one line */
+.search-result-item .sr-heading {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keyboard-selected row — stronger than hover, with an accent bar.
+   Equal specificity to :hover but defined later, so it wins when both apply. */
+.search-result-item.selected {
+  background: color-mix(in srgb, var(--accent) 20%, var(--bg));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+[data-theme="dark"] .search-result-item.selected {
+  background: color-mix(in srgb, var(--accent) 28%, var(--bg));
+}
+
+/* Footer: "Showing 30 of 84 matches…" */
+.search-result-more {
+  padding: 10px 20px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+/* Brief flash on the matched text when deep-linking into a chapter (#content).
+   Animates an attention-grabbing tint that fades to transparent (not permanent). */
+mark.search-flash {
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+  scroll-margin-top: 90px;
+  animation: search-flash-fade 2.2s ease-out forwards;
+}
+@keyframes search-flash-fade {
+  0%   { background: #ffe066; }
+  60%  { background: #fff3bf; }
+  100% { background: transparent; }
+}
+[data-theme="dark"] mark.search-flash {
+  animation-name: search-flash-fade-dark;
+}
+@keyframes search-flash-fade-dark {
+  0%   { background: #7a6300; }
+  60%  { background: #5c4b00; }
+  100% { background: transparent; }
 }
 
 /* ─── Loading / Empty ─── */

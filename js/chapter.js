@@ -21,7 +21,7 @@ const chapters = [
   { section: 'Aptitude & Brain Training' },
   { id: '04', file: 'content/04_aptitude_mental_math.md', title: 'Aptitude & Mental Math' },
   { id: '05', file: 'content/05_brain_training.md', title: 'Brain Training & Memory' },
-  { id: '05b', file: 'content/05b_brain_upgrade_30_days.md', title: '30-Day Brain Upgrade Plan' },
+  { id: '05b', file: 'content/05b_brain_upgrade_30_days.md', title: 'Sharper, Younger Brain (Program)' },
 
   // ── MATH FOUNDATIONS ──
   { section: 'Math Foundations' },
@@ -38,6 +38,7 @@ const chapters = [
   { id: '13', file: 'content/13_model_evaluation.md', title: 'Model Evaluation & Tuning' },
   { id: '14', file: 'content/14_neural_networks.md', title: 'Neural Networks' },
   { id: '15', file: 'content/15_reinforcement_learning.md', title: 'Reinforcement Learning' },
+  { id: '↻', file: 'content/15s_ml_curriculum_recap.md', title: 'ML Curriculum — Quick Revision', ref: true, recap: true },
 
   // ── DEEP LEARNING & LLMs ──
   { section: 'Deep Learning & LLMs' },
@@ -46,6 +47,7 @@ const chapters = [
   { id: '18', file: 'content/18_ai_agents.md', title: 'AI Agents & Tool Use' },
   { id: '19', file: 'content/19_ai_frameworks.md', title: 'AI Frameworks & Engineering' },
   { id: '20', file: 'content/20_2026_landscape.md', title: 'The 2026 AI Landscape' },
+  { id: '↻', file: 'content/20s_deep_learning_llms_recap.md', title: 'Deep Learning & LLMs — Quick Revision', ref: true, recap: true },
 
   // ── SYSTEM DESIGN ──
   { section: 'System Design' },
@@ -55,6 +57,7 @@ const chapters = [
   { id: '24', file: 'content/24_system_design_data_distributed.md', title: 'Sys Design Pt 2: Data & Distributed Systems' },
   { id: '25', file: 'content/25_system_design_operations_case_studies.md', title: 'Sys Design Pt 3: Operations & Case Studies' },
   { id: '26', file: 'content/26_ml_system_design.md', title: 'ML System Design (Google)' },
+  { id: '↻', file: 'content/26s_system_design_recap.md', title: 'System Design — Quick Revision', ref: true, recap: true },
 
   // ── SYSTEM DESIGN — CASE STUDIES ──
   { section: 'System Design — Case Studies' },
@@ -127,6 +130,7 @@ async function loadChapter(index) {
   closeSidebar();
 
   const contentEl = document.getElementById('content');
+  contentEl.classList.toggle('recap-view', !!ch.recap);
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
 
   try {
@@ -611,23 +615,69 @@ function toggleReadStatus() {
 }
 
 // ─── Search ───
+// Sidebar global search. Primary path consumes a prebuilt, lazy-loaded index
+// (js/data/search_index.js → global SEARCH_INDEX) and scans it in memory — no
+// per-keystroke markdown fetches. Results are grouped by chapter, weighted so
+// title/heading matches rank first, keyboard-navigable, and each snippet
+// deep-links to the matched text in #content with a brief flash. A network
+// fetch fallback keeps search working when the index can't be loaded.
 let searchTimeout;
-// Per-file index of lowercased lines, so repeat searches don't re-split/re-lowercase
-// the whole corpus on every keystroke. Built lazily, keyed by file path.
-const searchIndex = {};
-function getSearchLines(file, md) {
-  let entry = searchIndex[file];
-  if (!entry) {
-    const lines = md.split('\n');
-    const lowerLines = lines.map(l => l.toLowerCase());
-    // lowerConcat lets us reject an entire chapter with one includes() check
-    // before scanning its lines.
-    entry = { lines, lowerLines, lowerConcat: lowerLines.join('\n') };
-    searchIndex[file] = entry;
-  }
-  return entry;
+let _searchIndexData = null;     // resolved SEARCH_INDEX (or fallback pseudo-index) once loaded
+let _searchIndexPromise = null;  // de-dupes the lazy <script> injection
+let _fallbackData = null;        // pseudo-index built from fetched markdown (offline fallback)
+let _fileToRegistry = null;      // file path → registry index in `chapters`
+let _searchSeq = 0;              // guards against out-of-order async renders
+let _searchSelectedIndex = -1;   // keyboard-selected snippet (index into rendered .search-result-item list)
+let _searchState = { query: '', items: [], visible: false }; // items[] carries deep-link payloads in document order
+// Lowercased mirror per index-chapter, built once on first use. Keyed by the
+// chapter object (WeakMap) so the real index and the fallback pseudo-index don't
+// collide. We deliberately keep ONLY the lowercased-lines mirror (+ title/headings)
+// and reject chapters by scanning it for the first token's stem — no separate
+// permanently-stored joined "lowerConcat" blob (avoids the old double-storage).
+const _lowerCache = new WeakMap();
+
+// Lazy-load the prebuilt index exactly once (mirrors the quizzes.js loader).
+function loadSearchIndex() {
+  if (typeof SEARCH_INDEX !== 'undefined') return Promise.resolve(SEARCH_INDEX);
+  if (_searchIndexPromise) return _searchIndexPromise;
+  _searchIndexPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'js/data/search_index.js';
+    s.onload = () => {
+      if (typeof SEARCH_INDEX !== 'undefined') resolve(SEARCH_INDEX);
+      else { _searchIndexPromise = null; reject(new Error('search_index.js loaded but SEARCH_INDEX is undefined')); }
+    };
+    s.onerror = () => { _searchIndexPromise = null; reject(new Error('search_index.js failed to load')); };
+    document.head.appendChild(s);
+  });
+  return _searchIndexPromise;
 }
-// Fetch one chapter's markdown (from cache when available); returns null on failure.
+
+// file → registry index, so a matched index-chapter maps back to loadChapter().
+function getFileToRegistry() {
+  if (!_fileToRegistry) {
+    _fileToRegistry = {};
+    chapters.forEach((ch, i) => { if (ch.file) _fileToRegistry[ch.file] = i; });
+  }
+  return _fileToRegistry;
+}
+
+function getLowerCache(ich) {
+  let c = _lowerCache.get(ich);
+  if (!c) {
+    const lines = ich.lines || [];
+    c = {
+      lowerTitle: (ich.title || '').toLowerCase(),
+      lowerHeadings: (ich.headings || []).map(h => (h || '').toLowerCase()),
+      lowerLines: lines.map(l => ((l && l[0]) || '').toLowerCase()),
+    };
+    _lowerCache.set(ich, c);
+  }
+  return c;
+}
+
+// Fetch one chapter's markdown (from cache when available); returns null on
+// failure. Retained for the offline fallback path only — NOT the hot path.
 async function fetchSearchContent(ch) {
   if (cachedContent[ch.file]) return cachedContent[ch.file];
   try {
@@ -641,61 +691,492 @@ async function fetchSearchContent(ch) {
   return null;
 }
 
-document.getElementById('search').addEventListener('input', function(e) {
-  clearTimeout(searchTimeout);
-  const query = e.target.value.trim().toLowerCase();
-  const resultsEl = document.getElementById('searchResults');
+// ── Query analysis & matching ──────────────────────────────────────────────
+function _escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function _escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
-  if (query.length < 2) {
-    resultsEl.classList.remove('visible');
-    document.getElementById('chapterList').style.display = '';
+// Light, dependency-free stemmer: strip one common trailing suffix on words long
+// enough to keep a ≥3-char stem. Used for typo/morphology tolerance ("embedding"
+// ⇄ "embeddings"). The stem is always a substring of any exact OR fuzzy hit, so
+// it doubles as a sound quick-reject key.
+function _stemToken(t) {
+  if (t.length <= 3) return t;
+  const suffixes = ['ing', 'es', 'ed', 's'];
+  for (const sfx of suffixes) {
+    if (t.length - sfx.length >= 3 && t.slice(-sfx.length) === sfx) return t.slice(0, -sfx.length);
+  }
+  return t;
+}
+
+// Returns 0 = no match, 1 = fuzzy (stem) match, 2 = exact (every token is a
+// substring). A line/title/heading matches only if EVERY token matches.
+function _matchText(lowText, tokens, stems) {
+  if (!lowText) return 0;
+  let allExact = true;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (lowText.indexOf(t) !== -1) continue;        // exact substring for this token
+    allExact = false;
+    const st = stems[i];
+    if (st !== t && lowText.indexOf(st) !== -1) continue; // fuzzy (stemmed) match
+    return 0;
+  }
+  return allExact ? 2 : 1;
+}
+
+// Tokenise + stem + build the highlight regex ONCE per query.
+function _buildQueryParts(query) {
+  const tokens = query.split(/\s+/).filter(Boolean);
+  const stems = tokens.map(_stemToken);
+  const terms = [];
+  if (tokens.length > 1) terms.push(_escapeRegex(query));   // whole-phrase match wins
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i], st = stems[i];
+    // Expand reasonably long stems to whole words so morphological variants
+    // (embedding/embeddings) highlight fully; short tokens stay literal.
+    if (st !== t && st.length >= 3) terms.push(_escapeRegex(st) + '\\w*');
+    else terms.push(_escapeRegex(t));
+  }
+  const uniq = Array.from(new Set(terms)).sort((a, b) => b.length - a.length);
+  const highlightRe = uniq.length ? new RegExp('(' + uniq.join('|') + ')', 'gi') : null;
+  return { tokens, stems, highlightRe };
+}
+
+// Strip residual markdown so snippets read as plain prose.
+function _cleanLine(s) {
+  return (s || '')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')   // images → alt text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')    // links → label
+    .replace(/`+/g, '')                          // inline-code backticks
+    .replace(/[*_~]{1,3}/g, '')                   // **bold** _italic_ ~~strike~~
+    .replace(/^\s{0,3}#{1,6}\s*/, '')             // leading heading hashes
+    .replace(/^\s*>+\s?/, '')                     // blockquote markers
+    .replace(/\|/g, ' ')                          // table pipes
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Build a clean, windowed, highlighted snippet around the first match.
+function _makeSnippet(rawText, parts, query) {
+  const { tokens, highlightRe } = parts;
+  const text = _cleanLine(rawText);
+  if (!text) return '';
+  const lower = text.toLowerCase();
+  let idx = lower.indexOf(query);
+  let mlen = query.length;
+  if (idx < 0) {
+    idx = Infinity;
+    for (const t of tokens) {
+      let p = lower.indexOf(t), len = t.length;
+      if (p < 0) { const st = _stemToken(t); if (st !== t) { p = lower.indexOf(st); len = st.length; } }
+      if (p >= 0 && p < idx) { idx = p; mlen = len; }
+    }
+    if (!isFinite(idx)) { idx = 0; mlen = 0; }
+  }
+  const RAD = 40;
+  let start = Math.max(0, idx - RAD);
+  let end = Math.min(text.length, idx + mlen + RAD);
+  // Nudge to nearby word boundaries so we don't slice mid-word.
+  if (start > 0) { const sp = text.lastIndexOf(' ', start); if (sp > start - 15 && sp > 0) start = sp + 1; }
+  if (end < text.length) { const sp = text.indexOf(' ', end); if (sp !== -1 && sp < end + 15) end = sp; }
+  let snip = _escapeHtml(text.slice(start, end));
+  if (highlightRe) { highlightRe.lastIndex = 0; snip = snip.replace(highlightRe, '<mark>$1</mark>'); }
+  return (start > 0 ? '… ' : '') + snip + (end < text.length ? ' …' : '');
+}
+
+// ── Index scan (primary path) ──────────────────────────────────────────────
+function scanSearchIndex(data, query, parts) {
+  const { tokens, stems } = parts;
+  const needle = stems[0] || tokens[0] || query;   // sound quick-reject key
+  const reg = getFileToRegistry();
+  const list = (data && data.chapters) || [];
+  const groups = [];
+  let totalMatches = 0;
+
+  for (const ich of list) {
+    const registryIndex = reg[ich.file];
+    if (registryIndex === undefined) continue;       // not a registered chapter
+    const lc = getLowerCache(ich);
+
+    // Quick-reject: every exact OR fuzzy hit must contain the first token's stem,
+    // so a chapter with the stem nowhere (title/headings/body) can't match. Scans
+    // the lowercased mirror only — no separate joined blob is stored.
+    let maybe = lc.lowerTitle.indexOf(needle) !== -1;
+    if (!maybe) for (let h = 0; h < lc.lowerHeadings.length; h++) { if (lc.lowerHeadings[h].indexOf(needle) !== -1) { maybe = true; break; } }
+    if (!maybe) for (let i = 0; i < lc.lowerLines.length; i++) { if (lc.lowerLines[i].indexOf(needle) !== -1) { maybe = true; break; } }
+    if (!maybe) continue;
+
+    const titleM = _matchText(lc.lowerTitle, tokens, stems);
+
+    let headingExact = false, headingFuzzy = false, headingHitText = null, headingHitIndex = -1;
+    for (let h = 0; h < lc.lowerHeadings.length; h++) {
+      const m = _matchText(lc.lowerHeadings[h], tokens, stems);
+      if (!m) continue;
+      if (m === 2 && !headingExact) { headingExact = true; headingHitText = ich.headings[h]; headingHitIndex = h; }
+      else if (!headingHitText) { headingFuzzy = true; headingHitText = ich.headings[h]; headingHitIndex = h; }
+    }
+
+    const bodyHits = [];
+    const lines = ich.lines || [];
+    for (let i = 0; i < lines.length; i++) {
+      const m = _matchText(lc.lowerLines[i], tokens, stems);
+      if (!m) continue;
+      const ln = lines[i];
+      bodyHits.push({
+        text: (ln && ln[0]) || '',
+        headingIndex: (ln && ln[1] != null) ? ln[1] : -1,
+        exact: m === 2,
+      });
+    }
+
+    if (!titleM && !headingExact && !headingFuzzy && bodyHits.length === 0) continue;
+
+    bodyHits.sort((a, b) => (b.exact ? 1 : 0) - (a.exact ? 1 : 0));   // exact first within chapter
+
+    let items = bodyHits.slice(0, 3);
+    if (items.length === 0) {
+      // Title/heading-only match — synthesise one preview item so the group is clickable.
+      if (headingHitText) {
+        items = [{ text: headingHitText, headingIndex: headingHitIndex, exact: headingExact, isHeading: true }];
+      } else if (titleM) {
+        const first = lines.find(l => l && l[0] && /[a-z0-9]/i.test(l[0]));
+        items = [first
+          ? { text: first[0], headingIndex: (first[1] != null ? first[1] : -1), exact: false, titleOnly: true }
+          : { text: ich.title, headingIndex: -1, exact: false, titleOnly: true }];
+      }
+    }
+
+    let exactBody = 0, fuzzyBody = 0;
+    for (const b of bodyHits) { if (b.exact) exactBody++; else fuzzyBody++; }
+    let score = 0;
+    if (titleM) score += (titleM === 2 ? 2000 : 1200);
+    if (headingExact) score += 400; else if (headingFuzzy) score += 200;
+    score += exactBody * 4 + fuzzyBody * 1;
+
+    const count = bodyHits.length || items.length;   // title/heading-only counts its preview
+    totalMatches += count;
+    const badge = titleM ? 'title' : ((headingExact || headingFuzzy) ? 'heading' : null);
+    groups.push({ registryIndex, title: ich.title, headings: ich.headings || [], score, count, badge, items });
+  }
+
+  groups.sort((a, b) => b.score - a.score || a.registryIndex - b.registryIndex);
+  return { groups, totalMatches, totalGroups: groups.length };
+}
+
+// ── Offline fallback (network fetch of the markdown corpus) ─────────────────
+async function ensureFallbackData() {
+  if (_fallbackData) return _fallbackData;
+  const searchable = chapters.filter(ch => !ch.section);   // skip section dividers
+  await Promise.all(searchable.map(fetchSearchContent));
+  const pseudo = { v: 0, chapters: [] };
+  for (const ch of searchable) {
+    const md = cachedContent[ch.file];
+    if (!md) continue;
+    // No heading map in the fallback — each line carries headingIndex -1.
+    const lines = md.split('\n').map(l => [l, -1]);
+    pseudo.chapters.push({ id: ch.id, file: ch.file, title: ch.title, headings: [], lines });
+  }
+  _fallbackData = pseudo;
+  return pseudo;
+}
+
+// ── Rendering ───────────────────────────────────────────────────────────────
+function renderSearchResults(render, query, parts) {
+  const resultsEl = document.getElementById('searchResults');
+  resultsEl.classList.add('visible');
+  document.getElementById('chapterList').style.display = 'none';
+  _searchSelectedIndex = -1;
+
+  const { groups, totalMatches, totalGroups } = render;
+  if (!groups.length) {
+    resultsEl.innerHTML = '<div class="search-result-empty">No matches for &ldquo;' + _escapeHtml(query) +
+      '&rdquo;. Try a chapter title, a single keyword, or open <strong>DSA Practice</strong> for coding problems.</div>';
+    _searchState = { query, items: [], visible: true };
     return;
   }
 
-  searchTimeout = setTimeout(async () => {
-    const searchable = chapters.filter(ch => !ch.section);   // skip section dividers
-    // Fetch any uncached chapters in parallel — turns ~30 serial round-trips
-    // (the main first-search cost) into a single concurrent batch.
-    await Promise.all(searchable.map(fetchSearchContent));
+  const MAX_GROUPS = 12, MAX_ITEMS = 30, MAX_PER_GROUP = 3;
+  const stateItems = [];
+  let html = '', shownItems = 0, shownGroups = 0;
 
-    const results = [];
-    // Build the highlight regex once instead of recompiling it per matched line.
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const highlightRe = new RegExp('(' + escapedQuery + ')', 'gi');
-    for (const ch of searchable) {
-      const md = cachedContent[ch.file];
-      if (!md) continue;
-      const { lines, lowerLines, lowerConcat } = getSearchLines(ch.file, md);
-      // Skip the whole chapter in one check if the query appears nowhere in it.
-      if (!lowerConcat.includes(query)) continue;
-      for (let i = 0; i < lowerLines.length; i++) {
-        if (lowerLines[i].includes(query)) {
-          const line = lines[i].replace(/[#*`|]/g, '').trim();
-          if (!line) continue;
-          const idx = line.toLowerCase().indexOf(query);
-          const start = Math.max(0, idx - 30);
-          const end = Math.min(line.length, idx + query.length + 30);
-          let snippet = (start > 0 ? '...' : '') + line.slice(start, end) + (end < line.length ? '...' : '');
-          snippet = snippet.replace(highlightRe, '<mark>$1</mark>');
-          results.push({ chapter: ch, index: chapters.indexOf(ch), snippet, lineNum: i });
-          if (results.length >= 30) break;
-        }
-      }
-      if (results.length >= 30) break;
+  for (const g of groups) {
+    if (shownGroups >= MAX_GROUPS || shownItems >= MAX_ITEMS) break;
+    shownGroups++;
+
+    const badgeHtml = g.badge === 'title' ? '<span class="sr-badge title">Title</span>'
+      : g.badge === 'heading' ? '<span class="sr-badge heading">Heading</span>' : '';
+    html += '<div class="search-result-group">';
+    html += '<div class="search-result-group-header" data-registry="' + g.registryIndex + '">'
+      + '<span class="srg-title">' + _escapeHtml(g.title) + '</span>'
+      + badgeHtml
+      + '<span class="srg-count">' + g.count + (g.count === 1 ? ' match' : ' matches') + '</span>'
+      + '</div>';
+
+    const budget = Math.min(MAX_PER_GROUP, MAX_ITEMS - shownItems);
+    for (const it of g.items.slice(0, budget)) {
+      const snippet = _makeSnippet(it.text, parts, query);
+      if (!snippet) continue;   // skip lines that clean to nothing
+      const headingLabel = (!it.isHeading && it.headingIndex >= 0 && g.headings[it.headingIndex])
+        ? g.headings[it.headingIndex] : null;
+      const idx = stateItems.length;
+      stateItems.push({
+        registryIndex: g.registryIndex,
+        query,
+        lineText: it.text,
+        headingText: headingLabel || (it.isHeading ? it.text : ''),
+      });
+      html += '<div class="search-result-item" data-idx="' + idx + '">';
+      if (headingLabel) html += '<div class="sr-heading">&rsaquo; ' + _escapeHtml(headingLabel) + '</div>';
+      html += '<div class="match">' + snippet + '</div>';
+      html += '</div>';
+      shownItems++;
+      if (shownItems >= MAX_ITEMS) break;
+    }
+    html += '</div>';
+  }
+
+  if (shownItems < totalMatches || shownGroups < totalGroups) {
+    html += '<div class="search-result-more">Showing ' + shownItems + ' of ' + totalMatches
+      + ' matches across ' + totalGroups + (totalGroups === 1 ? ' chapter' : ' chapters') + '</div>';
+  }
+
+  resultsEl.innerHTML = html;
+  _searchState = { query, items: stateItems, visible: true };
+}
+
+// ── Activation & deep-linking ───────────────────────────────────────────────
+function resetSearchUI() {
+  const s = document.getElementById('search');
+  if (s) s.value = '';
+  const r = document.getElementById('searchResults');
+  if (r) { r.classList.remove('visible'); r.innerHTML = ''; }
+  const cl = document.getElementById('chapterList');
+  if (cl) cl.style.display = '';
+  _searchSelectedIndex = -1;
+  _searchState = { query: '', items: [], visible: false };
+}
+
+// Group-header click: open the chapter at its top (no scroll target).
+function openSearchChapter(registryIndex) {
+  resetSearchUI();
+  loadChapter(registryIndex);   // loadChapter() also calls closeSidebar()
+}
+
+// Snippet click / keyboard-Enter: open the chapter AND scroll to the match.
+async function openSearchResult(registryIndex, query, lineText, headingText) {
+  resetSearchUI();
+  await loadChapter(registryIndex);
+  _deepLinkScroll(query, lineText, headingText);
+}
+
+// Locate the match in #content (exact line → query → heading) and flash it.
+function _deepLinkScroll(query, lineText, headingText) {
+  const content = document.getElementById('content');
+  if (!content) return;
+  const candidates = [];
+  if (lineText) candidates.push(_cleanLine(lineText));
+  if (query) candidates.push(query);
+  if (headingText) candidates.push(_cleanLine(headingText));
+  for (const cand of candidates) {
+    if (cand && cand.length >= 2 && _flashMatch(content, cand)) return;
+  }
+}
+
+// Walk the text nodes of `root` (reusing restoreHighlight's spanning technique),
+// case-insensitively find `needle`, wrap it in <mark class="search-flash">,
+// scroll it into view, and auto-clear after the CSS fade completes.
+function _flashMatch(root, needle) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (p && p.closest('pre, code, script, .sel-popup, .comments-section')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [], starts = [];
+  let combined = '', node;
+  while ((node = walker.nextNode())) { starts.push(combined.length); nodes.push(node); combined += node.nodeValue; }
+  if (!nodes.length) return false;
+
+  const at = combined.toLowerCase().indexOf(needle.toLowerCase());
+  if (at < 0) return false;
+  const endAt = at + needle.length;
+  const locate = (pos) => {
+    for (let k = nodes.length - 1; k >= 0; k--) { if (pos >= starts[k]) return { node: nodes[k], offset: pos - starts[k] }; }
+    return { node: nodes[0], offset: 0 };
+  };
+
+  try {
+    const s = locate(at), e = locate(endAt);
+    const range = document.createRange();
+    range.setStart(s.node, s.offset);
+    range.setEnd(e.node, e.offset);
+    const marks = _wrapFlash(range);
+    if (marks.length) {
+      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => _unwrapFlash(marks), 2300);   // matches the 2.2s CSS fade
+      return true;
+    }
+  } catch (e) { /* fall through */ }
+  return false;
+}
+
+// Wrap every text-node fragment inside `range` in a temporary flash mark.
+function _wrapFlash(range) {
+  const marks = [];
+  let rootEl = range.commonAncestorContainer;
+  if (rootEl.nodeType === Node.TEXT_NODE) rootEl = rootEl.parentNode;
+  if (!rootEl) return marks;
+  const startC = range.startContainer, startO = range.startOffset;
+  const endC = range.endContainer, endO = range.endOffset;
+  const nodes = [];
+  const w = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (!n.nodeValue) return NodeFilter.FILTER_REJECT;
+      if (!range.intersectsNode(n)) return NodeFilter.FILTER_REJECT;
+      const p = n.parentElement;
+      if (p && p.closest('pre, code, script')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = w.nextNode())) nodes.push(n);
+  nodes.forEach(node => {
+    const st = (node === startC) ? startO : 0;
+    const en = (node === endC) ? endO : node.nodeValue.length;
+    if (st >= en) return;
+    try {
+      const sub = document.createRange();
+      sub.setStart(node, st);
+      sub.setEnd(node, en);
+      const mk = document.createElement('mark');
+      mk.className = 'search-flash';
+      sub.surroundContents(mk);
+      marks.push(mk);
+    } catch (e) { /* skip this fragment */ }
+  });
+  return marks;
+}
+
+function _unwrapFlash(marks) {
+  marks.forEach(m => {
+    const p = m.parentNode;
+    if (!p) return;
+    while (m.firstChild) p.insertBefore(m.firstChild, m);
+    p.removeChild(m);
+    p.normalize();
+  });
+}
+
+// ── Driver: debounce → load (first time) → scan → render ────────────────────
+async function performSearch(query) {
+  const resultsEl = document.getElementById('searchResults');
+  _searchSeq++;
+  const seq = _searchSeq;
+  const parts = _buildQueryParts(query);
+
+  // Fast path: index already in memory — scan + render synchronously.
+  if (_searchIndexData) {
+    renderSearchResults(scanSearchIndex(_searchIndexData, query, parts), query, parts);
+    return;
+  }
+
+  // First query: show the busy row before awaiting the lazy-loaded index.
+  resultsEl.classList.add('visible');
+  document.getElementById('chapterList').style.display = 'none';
+  resultsEl.innerHTML = '<div class="search-result-loading">Searching…</div>';
+
+  try {
+    const data = await loadSearchIndex();
+    if (seq !== _searchSeq) return;   // superseded by a newer keystroke
+    _searchIndexData = data;
+    renderSearchResults(scanSearchIndex(data, query, parts), query, parts);
+  } catch (err) {
+    // Fallback: scan the fetched markdown corpus so search still works offline.
+    try {
+      const data = await ensureFallbackData();
+      if (seq !== _searchSeq) return;
+      renderSearchResults(scanSearchIndex(data, query, parts), query, parts);
+    } catch (e2) {
+      if (seq !== _searchSeq) return;
+      resultsEl.innerHTML = '<div class="search-result-empty">Search is unavailable right now. Check your connection and try again.</div>';
+    }
+  }
+}
+
+// Move the keyboard selection and keep it visible within the results panel.
+function _applySearchSelection(items) {
+  items.forEach((el, i) => el.classList.toggle('selected', i === _searchSelectedIndex));
+  const sel = items[_searchSelectedIndex];
+  if (sel) sel.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+(function initSearch() {
+  const searchInput = document.getElementById('search');
+  const resultsEl = document.getElementById('searchResults');
+  if (!searchInput || !resultsEl) return;
+
+  searchInput.addEventListener('input', function (e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim().toLowerCase();
+
+    if (query.length < 2) {
+      resultsEl.classList.remove('visible');
+      resultsEl.innerHTML = '';
+      document.getElementById('chapterList').style.display = '';
+      _searchState = { query: '', items: [], visible: false };
+      _searchSelectedIndex = -1;
+      return;
     }
 
+    // Reveal the panel immediately; show the busy row up front on the first
+    // (pre-index-load) query so there's instant feedback during the debounce.
     document.getElementById('chapterList').style.display = 'none';
     resultsEl.classList.add('visible');
-    resultsEl.innerHTML = results.length === 0
-      ? '<div class="search-result-item" style="color:var(--text-secondary)">No results found</div>'
-      : results.map(r => `
-        <div class="search-result-item" onclick="loadChapter(${r.index}); document.getElementById('search').value=''; document.getElementById('searchResults').classList.remove('visible'); document.getElementById('chapterList').style.display='';">
-          <strong>${r.chapter.title}</strong>
-          <div class="match">${r.snippet}</div>
-        </div>
-      `).join('');
-  }, 200);
-});
+    if (!_searchIndexData) resultsEl.innerHTML = '<div class="search-result-loading">Searching…</div>';
+
+    searchTimeout = setTimeout(() => performSearch(query), 200);
+  });
+
+  // Keyboard navigation across all snippet rows while the input is focused.
+  searchInput.addEventListener('keydown', function (e) {
+    if (!resultsEl.classList.contains('visible')) return;   // Escape handled globally
+    const items = Array.from(resultsEl.querySelectorAll('.search-result-item'));
+    if (e.key === 'ArrowDown') {
+      if (!items.length) return;
+      e.preventDefault();   // don't scroll the page
+      _searchSelectedIndex = (_searchSelectedIndex + 1) % items.length;
+      _applySearchSelection(items);
+    } else if (e.key === 'ArrowUp') {
+      if (!items.length) return;
+      e.preventDefault();
+      _searchSelectedIndex = (_searchSelectedIndex - 1 + items.length) % items.length;
+      _applySearchSelection(items);
+    } else if (e.key === 'Enter') {
+      if (_searchSelectedIndex >= 0 && items[_searchSelectedIndex]) {
+        e.preventDefault();
+        items[_searchSelectedIndex].click();   // → delegated handler → openSearchResult
+      }
+    }
+  });
+
+  // Delegated activation (avoids fragile inline onclick with quoted snippet text).
+  resultsEl.addEventListener('click', function (e) {
+    const item = e.target.closest('.search-result-item');
+    if (item && item.dataset.idx !== undefined) {
+      const d = _searchState.items[+item.dataset.idx];
+      if (d) openSearchResult(d.registryIndex, d.query, d.lineText, d.headingText);
+      return;
+    }
+    const header = e.target.closest('.search-result-group-header');
+    if (header && header.dataset.registry !== undefined) {
+      openSearchChapter(+header.dataset.registry);
+    }
+  });
+})();
 
 // ─── In-chapter Find (Ctrl+F) ───
 // A browser-style "find in page" scoped to the open chapter: highlights every
@@ -929,10 +1410,8 @@ document.addEventListener('keydown', (e) => {
     const fb = document.getElementById('findBar');
     if (fb && fb.classList.contains('visible')) { closeFind(); return; }
     if (focusModeActive) { toggleFocusMode(); return; }
-    document.getElementById('search').value = '';
     document.getElementById('search').blur();
-    document.getElementById('searchResults').classList.remove('visible');
-    document.getElementById('chapterList').style.display = '';
+    resetSearchUI();   // clears input, hides + empties results, restores #chapterList, resets nav state
     closeSidebar();
   }
   // Arrow keys: navigate prev/next chapter — only when actually on a chapter page
@@ -1512,7 +1991,7 @@ let nbCellCounter = 0;
 
 async function loadNotebook(file) {
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view');
+  contentEl.classList.remove('chapter-view', 'recap-view');
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading notebook...</div>';
 
   try {

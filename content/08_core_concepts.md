@@ -21,29 +21,29 @@ After reading this chapter, you will be able to:
 ## Chapter Map
 
 ```
-  7.1  Data                      — what we learn from
-  7.2  Features & Labels         — inputs and outputs
-  7.3  Train / Val / Test        — how we split data
-  7.4  The Model                 — what we're building
-  7.5  Parameters vs Hyperparams — set by training vs set by you
-  7.6  The Training Loop         — how learning actually works
-  7.7  Epochs, Batches, Iters    — the units of training
-  7.8  Loss Functions            — how we measure "wrong"
-  7.9  Gradient Descent          — how we fix "wrong"
-  7.10 Optimizers                — smarter ways to fix "wrong"
-  7.11 Overfitting/Underfitting  — the central tension
-  7.12 Bias–Variance Tradeoff    — formalizing that tension
-  7.13 Regularization            — tools to prevent overfitting
-  7.14 Generalization            — the actual goal of ML
-  7.15 Probability in ML         — predictions as confidence
-  7.16 No Free Lunch Theorem     — why no algorithm rules all
-  7.17 Weight Initialization     — why starting values matter
-  7.18 Learning-Rate Schedules   — varying the step size over training
+  8.1  Data                      — what we learn from
+  8.2  Features & Labels         — inputs and outputs
+  8.3  Train / Val / Test        — how we split data
+  8.4  The Model                 — what we're building
+  8.5  Parameters vs Hyperparams — set by training vs set by you
+  8.6  The Training Loop         — how learning actually works
+  8.7  Epochs, Batches, Iters    — the units of training
+  8.8  Loss Functions            — how we measure "wrong"
+  8.9  Gradient Descent          — how we fix "wrong"
+  8.10 Optimizers                — smarter ways to fix "wrong"
+  8.11 Overfitting/Underfitting  — the central tension
+  8.12 Bias–Variance Tradeoff    — formalizing that tension
+  8.13 Regularization            — tools to prevent overfitting
+  8.14 Generalization            — the actual goal of ML
+  8.15 Probability in ML         — predictions as confidence
+  8.16 No Free Lunch Theorem     — why no algorithm rules all
+  8.17 Weight Initialization     — why starting values matter
+  8.18 Learning-Rate Schedules   — varying the step size over training
 ```
 
 ---
 
-## 7.1 Data: The Foundation of ML
+## 8.1 Data: The Foundation of ML
 
 ### Simple Explanation
 Imagine you want to teach your little brother how to tell dogs apart from cats.
@@ -96,7 +96,7 @@ Each row = one example / data point / observation    This is what
 
 ---
 
-## 7.2 Features and Labels ★★
+## 8.2 Features and Labels ★★
 
 ### Features (X) — The Inputs
 
@@ -163,7 +163,7 @@ only the clues and ask: "Now YOU tell me the answer."
 
 ---
 
-## 7.3 Training, Validation & Test Sets ★★
+## 8.3 Training, Validation & Test Sets ★★
 
 ### Simple Explanation
 Imagine you're studying for a big math exam:
@@ -244,9 +244,26 @@ More formally:
 }
 ```
 
+### Data Leakage — The Cardinal Sin ★★★
+
+**Simple Explanation.** Leakage is when information that won't be available at prediction time sneaks into training. Your model looks brilliant on the test set, then falls apart in production — like acing a practice exam because you had the answer key, then failing the real one.
+
+> **Data leakage** is the use of information during training that would not legitimately be available at inference time, producing over-optimistic validation scores and poor real-world performance.
+
+The dangerous part: leakage *raises* your validation score, so it stays hidden until deployment. Watch for four common forms:
+
+| Type | Example | Fix |
+|---|---|---|
+| **Preprocessing leakage** | Fitting a scaler/imputer/encoder on *all* data before the split | Fit on the training fold only (wrap in a Pipeline) |
+| **Target leakage** | A feature computed from the label or the future (`account_closed_date` to predict churn) | Drop features unknown at prediction time |
+| **Temporal leakage** | A random split on time-series data → training on the future | Use a time-based split |
+| **Group leakage** | The same entity (patient, user) in both train and test | Group-aware split (`GroupKFold`) |
+
+> **Rule of thumb:** if a feature would not exist at the exact moment you make the prediction, it is leakage. (Full preprocessing recipe in Chapter 9; leakage *inside* cross-validation folds in Chapter 13.)
+
 ---
 
-## 7.4 The Model
+## 8.4 The Model
 
 ### Simple Explanation
 Think of a model like a **recipe-making machine**. You feed ingredients in one side
@@ -310,7 +327,7 @@ answer looks like — that's inductive bias. Every ML algorithm has one too.
 
 ---
 
-## 7.5 Parameters vs Hyperparameters ★★
+## 8.5 Parameters vs Hyperparameters ★★
 
 ### Simple Explanation
 Imagine you're learning to ride a bike:
@@ -349,7 +366,7 @@ Imagine you're learning to ride a bike:
 
 ---
 
-## 7.6 The Training Loop ★
+## 8.6 The Training Loop ★
 
 This is the most important section in this chapter. Understanding the training loop
 means you understand *how* machine learning actually works.
@@ -495,7 +512,7 @@ That's one training step. Loss fell from 0.693 to ≈0.04. Repeat this across ma
 
 ---
 
-## 7.7 Epochs, Batches, and Iterations ★
+## 8.7 Epochs, Batches, and Iterations ★
 
 ### Simple Explanation
 Imagine you have a big box of 1,000 flashcards to study:
@@ -654,7 +671,7 @@ The chart below shows how the loss curves look across a run of ~200 update steps
 
 ---
 
-## 7.8 Loss Functions — Measuring "How Wrong" ★★★
+## 8.8 Loss Functions — Measuring "How Wrong" ★★★
 
 ### Simple Explanation
 Remember the blindfolded basketball game? The **loss function** is your friend who
@@ -889,9 +906,25 @@ Where `y ∈ {-1, +1}` and `ŷ` is the raw model score (not a probability).
 }
 ```
 
+### Loss vs. Metric — Optimize One, Report the Other ★★
+
+**Simple Explanation.** The number the optimizer minimizes is usually *not* the number you actually care about. You train on a smooth stand-in (the **loss**) but judge the model by a real-world score (the **metric**).
+
+> A **loss** (objective / surrogate) is the differentiable function minimized during training; a **metric** is the — often non-differentiable — quantity used to evaluate the model for the task.
+
+Why the split? Metrics like accuracy, F1, and AUC are flat or discontinuous in the parameters: nudging one weight rarely changes them, so their gradient is zero almost everywhere and gradient descent has nothing to follow. We instead minimize a differentiable surrogate that *tracks* the metric.
+
+| Task | Loss you optimize | Metric you report |
+|---|---|---|
+| Classification | Cross-entropy | Accuracy · F1 · ROC-AUC |
+| Regression | MSE · Huber | MAE · RMSE · R² |
+| Ranking / retrieval | Pairwise / softmax loss | NDCG · MRR · Recall@k |
+
+**Interview follow-ups.** *"Why not optimize accuracy directly?"* — it is non-differentiable with a zero gradient. *"Loss went down but F1 didn't?"* — surrogate–metric mismatch: tune the decision threshold, add class weights, or pick a loss better aligned with the metric.
+
 ---
 
-## 7.9 Gradient Descent — How We Minimize Loss
+## 8.9 Gradient Descent — How We Minimize Loss
 
 ### Simple Explanation
 Imagine you're standing on a mountain on a foggy day. You can't see the bottom, but
@@ -1024,7 +1057,7 @@ $$w_{\text{new}} = w_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial w}$$
 
 ---
 
-## 7.10 Optimizers — Smarter Gradient Descent ★
+## 8.10 Optimizers — Smarter Gradient Descent ★
 
 ### Simple Explanation
 Basic gradient descent is like walking downhill in the fog wearing the same shoes
@@ -1185,7 +1218,7 @@ where $g = \nabla L$ (gradient), $\hat{m}$ and $\hat{v}$ are bias-corrected esti
 
 ---
 
-## 7.11 Overfitting and Underfitting ★★★
+## 8.11 Overfitting and Underfitting ★★★
 
 ### Simple Explanation
 This is the **Goldilocks Problem** of machine learning — and it's one of the most
@@ -1364,7 +1397,7 @@ Model too simple          Model fits               Model too complex
 
 ---
 
-## 7.12 The Bias–Variance Tradeoff ★★★
+## 8.12 The Bias–Variance Tradeoff ★★★
 
 ### Simple Explanation
 Imagine you're throwing darts at a target:
@@ -1492,9 +1525,30 @@ Every model's error can be broken down into two sources:
 }
 ```
 
+### Deep Double Descent — When Bigger Beats the U-Curve ★★
+
+**Simple Explanation.** The classic bias–variance story above says test error follows a **U**: too simple underfits, too complex overfits. Modern deep networks break the right half of that U — keep growing the model *past* the point where it perfectly memorizes the training set, and test error often falls a *second* time.
+
+> **Deep double descent** is the empirical phenomenon where, as capacity (model size, data, or training epochs) increases past the **interpolation threshold** (the point of zero training error), test error first rises — classical overfitting — then descends again to a new, often lower minimum.
+
+```
+   test │╲
+  error │ ╲          ╱╲   ← interpolation threshold (train error = 0)
+        │  ╲       ╱    ╲
+        │   ╲____╱       ╲___________________  ← second descent
+        │  "sweet          test error falls again as
+        │   spot"          the model keeps growing
+        └────────────────────────────────────────►  capacity
+          underfit │ classical U │  over-parameterized
+```
+
+**Why it matters.** This is why massively over-parameterized models (modern LLMs) still generalize — contradicting the naive "more parameters ⇒ more variance ⇒ worse." Implicit regularization from SGD, plus sheer scale, biases the network toward smooth solutions even when it *could* memorize.
+
+**Interview note.** If asked *"doesn't a 100-billion-parameter model just overfit?"*, cite double descent, implicit regularization, and scaling laws.
+
 ---
 
-## 7.13 Regularization — Controlling Complexity ★★★
+## 8.13 Regularization — Controlling Complexity ★★★
 
 ### Simple Explanation
 Remember the "Memorizer" student from overfitting? Regularization is like a teacher
@@ -1629,7 +1683,7 @@ $$L2\ \text{Loss} = \text{data loss} + \lambda \sum w^2$$
 
 ---
 
-## 7.14 Generalization — The Actual Goal of ML ★
+## 8.14 Generalization — The Actual Goal of ML ★
 
 ### Simple Explanation
 If you memorize every single math problem in your textbook, you'll ace the homework.
@@ -1688,7 +1742,7 @@ it's to do well on **data you've never seen before**.
 **Official Definition:**
 > **Generalization** is a model's ability to produce accurate predictions on new, unseen
 > data drawn from the same distribution as the training data. It is the fundamental goal
-> of supervised machine learning. Generalization gap = training error − test error.
+> of supervised machine learning. Generalization gap = test error − training error.
 
 ### What Helps Generalization?
 
@@ -1698,7 +1752,7 @@ Six reliable levers. They compound — use several together.
 
 **2. Simpler model.** Fewer parameters → less capacity to memorize. A linear model with 10 features can't memorize a million-row dataset; a 100-layer network can. Start simple; only scale up when training error says you must. *Use when*: training error is already low but test error is much higher — you have capacity to spare.
 
-**3. Regularization.** Add a penalty to the loss that discourages complexity. The four common variants (L1, L2, Dropout, Early Stopping) are covered in depth in **§7.13 Regularization** above.
+**3. Regularization.** Add a penalty to the loss that discourages complexity. The four common variants (L1, L2, Dropout, Early Stopping) are covered in depth in **§8.13 Regularization** above.
 
 **4. Data augmentation.** Generate new training examples by applying label-preserving transforms. Effectively multiplies the dataset without new labeling.
 - **Images**: random crop, flip, rotation, color jitter, cutout, Mixup.
@@ -1769,7 +1823,7 @@ The tuning parameter (λ for L1/L2, dropout rate, early-stopping patience) needs
 
 ---
 
-## 7.15 Probability in ML ★
+## 8.15 Probability in ML ★
 
 ### Simple Explanation
 Imagine you're looking at a blurry photo and someone asks "Is that a cat or a dog?"
@@ -1913,7 +1967,7 @@ $$= \frac{0.95 \times 0.01}{(0.95 \times 0.01) + (0.05 \times 0.99)} = \frac{0.0
 
 ---
 
-## 7.16 The No Free Lunch Theorem ★
+## 8.16 The No Free Lunch Theorem ★
 
 ### Simple Explanation
 Imagine you have a Swiss Army knife. It has a blade, scissors, a screwdriver, and
@@ -1978,7 +2032,7 @@ why good ML engineers always try several approaches and pick what works best for
 
 ---
 
-## 7.17 Weight Initialization ★★
+## 8.17 Weight Initialization ★★
 
 > **Weight initialization** sets the starting values of a neural network's learnable parameters before training begins. The choice matters because a poor starting point can make gradient signals vanish, explode, or produce a network that cannot break symmetry and learn distinct features.
 
@@ -2067,7 +2121,7 @@ The factor of 2 in the numerator corrects for the expected 50% of activations th
 
 ---
 
-## 7.18 Learning-Rate Schedules ★★
+## 8.18 Learning-Rate Schedules ★★
 
 > A **learning-rate schedule** (or **LR schedule**) adjusts the learning rate during training according to a predefined policy. A fixed learning rate is rarely optimal: too large at the end of training prevents settling into a sharp minimum; too small from the start slows initial convergence.
 

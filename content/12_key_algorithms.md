@@ -16,7 +16,7 @@ After this chapter you will be able to:
 
 ---
 
-## 9.1 The Algorithm Landscape
+## 12.1 The Algorithm Landscape
 
 > **Algorithm taxonomy** groups supervised learning methods by how they represent the learned function. Linear models fit hyperplanes; tree models partition the feature space into axis-aligned regions; instance-based methods store examples and compare at prediction time; probabilistic models apply Bayes' theorem.
 
@@ -53,14 +53,14 @@ graph TD
 |---|---|
 | Introduction to these algorithms | [Chapter 10 — Supervised Learning](10_supervised_learning.md) |
 | Unsupervised methods (K-Means, DBSCAN) | [Chapter 11 — Unsupervised Learning](11_unsupervised_learning.md) |
-| Neural networks and deep learning | [Chapter 11 — Neural Networks](14_neural_networks.md) |
-| Model evaluation (ROC, AUC, cross-val) | [Chapter 15 — Model Evaluation](13_model_evaluation.md) |
+| Neural networks and deep learning | [Chapter 14 — Neural Networks](14_neural_networks.md) |
+| Model evaluation (ROC, AUC, cross-val) | [Chapter 13 — Model Evaluation](13_model_evaluation.md) |
 
 Chapter 10 gave you the "what." This chapter gives you the "how" and "why" — the math, the implementation details, the hyperparameter knobs, and the practical failure modes.
 
 ---
 
-## 9.2 Linear Regression — Deep Dive
+## 12.2 Linear Regression — Deep Dive
 
 > **Linear Regression** fits a linear function $\hat{y} = \mathbf{w}^\top \mathbf{x} + b$ to minimize the sum of squared residuals between predicted and observed values. It is the foundation of most parametric supervised learning.
 
@@ -148,7 +148,7 @@ When assumptions break: non-linearity means you need polynomial features or a no
 
 Ridge adds an L2 penalty ($\lambda \sum w_j^2$) — shrinks all weights, keeps all features. Lasso adds an L1 penalty ($\lambda \sum |w_j|$) — drives some weights to exactly zero (built-in feature selection). Elastic Net combines both. The penalty strength $\lambda$ is tuned via cross-validation.
 
-→ **Full treatment of regularization mechanics: Chapter 7 §7.13 (Regularization)**
+→ **Full treatment of regularization mechanics: Chapter 8 §8.13 (Regularization)**
 
 The chart below shows how test MSE changes with $\lambda$ for a linear regression problem — the U-shape confirms that both under-regularization (overfitting) and over-regularization (underfitting) hurt.
 
@@ -243,7 +243,7 @@ def linear_regression_gd(X, y, lr=0.01, epochs=1000):
 
 ---
 
-## 9.3 Logistic Regression — Deep Dive
+## 12.3 Logistic Regression — Deep Dive
 
 > **Logistic Regression** models the probability of a binary outcome by applying the logistic (sigmoid) function to a linear combination of features. It is trained by maximizing log-likelihood, equivalently minimizing binary cross-entropy loss.
 
@@ -277,7 +277,7 @@ MSE cannot be used for classification — it produces a non-convex loss surface.
 
 $$\mathcal{L} = -\frac{1}{n}\sum_{i=1}^{n} \left[ y_i \log(\hat{p}_i) + (1 - y_i) \log(1 - \hat{p}_i) \right]$$
 
-→ **Full treatment of loss functions: Chapter 7 §7.8 (Loss Functions)**
+→ **Full treatment of loss functions: Chapter 8 §8.8 (Loss Functions)**
 
 ### Worked Example — Spam Detection
 
@@ -381,7 +381,7 @@ def logistic_regression_gd(X, y, lr=0.01, epochs=1000):
 
 ---
 
-## 9.4 Decision Trees — Deep Dive
+## 12.4 Decision Trees — Deep Dive
 
 > **Decision Tree (CART)** is a non-parametric supervised algorithm that recursively partitions the feature space into axis-aligned regions by choosing splits that maximize an impurity reduction criterion (Gini impurity or information gain). Predictions are the majority class (classification) or mean value (regression) in each leaf.
 
@@ -507,7 +507,7 @@ In sklearn, this is `ccp_alpha`. Use `cost_complexity_pruning_path()` to find ca
 
 ---
 
-## 9.5 Random Forest — Deep Dive
+## 12.5 Random Forest — Deep Dive
 
 > **Random Forest** is an ensemble of decision trees trained on bootstrap samples with random feature subsets at each split (bagging + feature randomization). Predictions are aggregated by majority vote (classification) or averaging (regression). The decorrelation between trees reduces ensemble variance without increasing bias.
 
@@ -530,8 +530,10 @@ Each tree gets a random sample of $n$ rows drawn with replacement. On average, e
 At each split, only a random subset of features is considered:
 
 ```
-  Classification default: max_features = sqrt(p)
-  Regression default:     max_features = p/3
+  Classification default: max_features = 'sqrt'  (i.e. sqrt(p) per split)
+  Regression:  sklearn default = 1.0 (ALL features). p/3 is Breiman's
+               classic heuristic — try it to decorrelate trees, but it
+               is NOT the current library default.
 
   Why? If one feature dominates (e.g., "amount" for fraud), every
   tree splits on it first -> trees are correlated -> ensemble gains
@@ -567,7 +569,7 @@ Random Forest provides two importance measures:
 ```
   n_estimators:    100-500 (more is better, diminishing returns after ~200)
   max_depth:       None (let trees grow deep) or 10-30 for regularization
-  max_features:    'sqrt' (classification) or 0.33 (regression)
+  max_features:    'sqrt' (classification); regression default is 1.0, try 0.33/'sqrt' to decorrelate
   min_samples_leaf: 1-5 (lower = more complex trees)
   bootstrap:       True (use bagging) — almost always leave as True
 ```
@@ -613,15 +615,15 @@ Random Forest provides two importance measures:
 ```python
 from sklearn.ensemble import RandomForestClassifier
 rf = RandomForestClassifier(n_estimators=200, max_depth=10,
-                            min_samples_leaf=5, random_state=42, n_jobs=-1)
+                            min_samples_leaf=5, random_state=42, n_jobs=-1, oob_score=True)
 rf.fit(X_train, y_train)
-print(f"OOB Score: {rf.oob_score_:.3f}")  # requires oob_score=True
+print(f"OOB Score: {rf.oob_score_:.3f}")  # oob_score=True set in constructor
 importances = dict(zip(feature_names, rf.feature_importances_))
 ```
 
 ---
 
-## 9.6 Gradient Boosting — The Competition King
+## 12.6 Gradient Boosting — The Competition King
 
 > **Gradient Boosting** builds an additive ensemble of weak learners (shallow trees) sequentially. Each new tree is fit to the negative gradient of the loss function with respect to the current ensemble's predictions (i.e., the residuals for squared error loss). The final prediction is the weighted sum of all trees' outputs.
 
@@ -811,9 +813,9 @@ import lightgbm as lgb
 
 # XGBoost
 xgb_model = xgb.XGBClassifier(n_estimators=300, max_depth=6,
-    learning_rate=0.1, subsample=0.8, colsample_bytree=0.8)
-xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)],
-              early_stopping_rounds=20, verbose=False)
+    learning_rate=0.1, subsample=0.8, colsample_bytree=0.8,
+    early_stopping_rounds=20)
+xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
 
 # LightGBM — typically 3-5x faster
 lgb_model = lgb.LGBMClassifier(n_estimators=300, num_leaves=31,
@@ -824,7 +826,7 @@ lgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)],
 
 ---
 
-## 9.7 Support Vector Machines — Deep Dive
+## 12.7 Support Vector Machines — Deep Dive
 
 > **Support Vector Machine (SVM)** finds the hyperplane that maximizes the geometric margin between two classes. With soft margins (the C parameter) it tolerates some misclassifications. The kernel trick implicitly maps inputs to a high-dimensional feature space where linear separation is possible, enabling non-linear classification without explicit feature transformation.
 
@@ -964,7 +966,7 @@ When data is not linearly separable, map it to a higher-dimensional space where 
 
 ---
 
-## 9.8 K-Nearest Neighbors — Deep Dive
+## 12.8 K-Nearest Neighbors — Deep Dive
 
 > **K-Nearest Neighbors (KNN)** is a non-parametric, instance-based (lazy) learning algorithm. It stores the entire training set and classifies a new point by majority vote among its $K$ closest neighbors by distance. It has no explicit training phase.
 
@@ -1094,7 +1096,7 @@ Brute-force KNN computes distance to all $n$ training points — $O(np)$ per pre
 
 ---
 
-## 9.9 Naive Bayes — Deep Dive
+## 12.9 Naive Bayes — Deep Dive
 
 > **Naive Bayes** is a family of probabilistic classifiers based on applying Bayes' theorem with the "naive" assumption of conditional independence between features given the class label. Despite this simplification, it achieves competitive accuracy and is particularly strong for text classification and high-dimensional sparse data.
 
@@ -1215,7 +1217,7 @@ predictions = spam_pipeline.predict(test_texts)
 
 ---
 
-## 9.10 Time & Space Complexity Comparison
+## 12.10 Time & Space Complexity Comparison
 
 ```
   n = samples, p = features, K = trees/neighbors, d = tree depth, SV = support vectors
@@ -1282,7 +1284,7 @@ predictions = spam_pipeline.predict(test_texts)
 
 ---
 
-## 9.11 Key Hyperparameters Cheat Sheet
+## 12.11 Key Hyperparameters Cheat Sheet
 
 ```
 ┌──────────────────────┬──────────────────────────────────────────────────────────┐
@@ -1332,7 +1334,7 @@ TUNING ORDER:
 
 ---
 
-## 9.12 Algorithm Selection Guide
+## 12.12 Algorithm Selection Guide
 
 ```mermaid
 graph TD
@@ -1469,18 +1471,18 @@ graph TD
 
 ### 2026 Update: GBMs Still Dominate Tabular Data
 
-Recent Kaggle competitions and benchmarks (2025-2026) continue to show gradient boosting (LightGBM, XGBoost, CatBoost) as the clear winner on tabular/structured data. In a meta-analysis of 200+ Kaggle competitions, GBMs won 70%+ of tabular competitions.
+Recent Kaggle competitions and benchmarks (2025-2026) continue to show gradient boosting (LightGBM, XGBoost, CatBoost) as the clear winner on tabular/structured data — GBMs still take the large majority of structured-data competitions.
 
 **When to consider neural nets for tabular data:**
 - **TabNet** (Google, 2019): attention-based, built-in feature selection, works without feature engineering. Occasionally matches GBMs but rarely beats them, and trains much slower.
 - **FT-Transformer** (2021): applies Transformer architecture to tabular data with feature tokenization. Competitive with GBMs on some datasets but 10-50x slower to train.
-- **TabPFN** (2022): meta-learned prior-fitted network. Impressive on small datasets (< 10K rows) but doesn't scale.
+- **TabPFN** (2022; **v2** in *Nature*, 2025): a pre-trained transformer that classifies a whole table in one forward pass via in-context learning — no per-dataset training. v2 and its successors (TabPFN-2.5 / 3, 2025-2026) pushed the ceiling from ~1K to tens of thousands of rows (and beyond) and can beat tuned GBMs on small-to-medium tables; still memory-bound on very large data.
 
 **Bottom line:** Start with LightGBM. Try CatBoost if you have many categorical features. Only reach for neural-net tabular approaches if GBMs plateau AND you have a very large dataset with complex feature interactions.
 
 ---
 
-## 9.13 Practical Algorithm Tuning
+## 12.13 Practical Algorithm Tuning
 
 > **Hyperparameter tuning** is the process of finding the configuration that maximizes validation performance. The right tuning strategy can improve a model by 2-5% — often more impactful than switching algorithms.
 
@@ -1576,7 +1578,7 @@ Not all hyperparameters are created equal. These are the ones that actually move
 
 ---
 
-## 9.14 Model Calibration
+## 12.14 Model Calibration
 
 > **Calibration** means a model's predicted probabilities match the actual frequencies. If a model says "80% chance of spam" for 100 emails, roughly 80 of them should actually be spam.
 
@@ -1593,6 +1595,8 @@ Most models are NOT well-calibrated out of the box. Logistic regression tends to
 **Platt Scaling:** Fit a logistic regression on the model's raw scores to map them to calibrated probabilities. Works well when the calibration curve is roughly sigmoid-shaped.
 
 **Isotonic Regression:** Fit a non-parametric, monotonically increasing function. More flexible than Platt scaling but needs more data (risk of overfitting with < 1000 samples).
+
+**Temperature Scaling:** For neural networks, divide the logits by a single learned scalar $T$ (fit on a validation set) before the softmax. It is the standard fix for overconfident deep nets and leaves accuracy and ranking unchanged — it only sharpens ($T<1$) or softens ($T>1$) the probability distribution.
 
 ```python
 from sklearn.calibration import CalibratedClassifierCV
@@ -1632,6 +1636,8 @@ A calibration plot divides predictions into bins (e.g., 0-0.1, 0.1-0.2, ..., 0.9
 ```
 
 The diagonal dashed line is perfect calibration. The closer your curve is to that line, the better calibrated your model is.
+
+→ To put a single number on calibration — **Expected Calibration Error (ECE)** and the **Brier score** — see **Chapter 13 §13.12**.
 
 ---
 

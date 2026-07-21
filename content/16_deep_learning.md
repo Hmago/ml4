@@ -34,6 +34,22 @@ After reading this chapter, you will be able to:
 
 ---
 
+> **How this chapter fits:** Chapter 14 covers neural-network *fundamentals* (backprop
+> mechanics, optimizers, BatchNorm, CNNs, LSTM, self-attention/Transformer, positional
+> encodings incl. RoPE, GANs, diffusion), and Chapter 17 covers *LLM applications*
+> (tokenization, RLHF, RAG, LoRA, MoE, BERT/GPT in depth). **Chapter 16 is the
+> *reference* layer** — it goes deeper where those chapters stay high-level. Come here
+> for: the fully **worked numerical backprop** (§1.1), the **optimizer family compared**
+> end-to-end (SGD → Momentum → AdaGrad → RMSProp → Adam → AdamW, §1.2), the **full
+> normalization family** (Batch / Layer / Group / RMS, §1.4), **specialized losses**
+> (Focal / Triplet / NT-Xent, §1.3), the **CNN history** (LeNet → AlexNet → VGG → ResNet
+> → EfficientNet, §2.1) plus **ViT / YOLO / U-Net**, **WGAN** (§5.4), **GNNs / MoE / SSMs**
+> (Part 6), and the **debugging & training-curves playbook** (Part 7). If a topic here
+> feels thin, that's on purpose — the fundamentals live in **Ch 14** and the LLM specifics
+> live in **Ch 17**, and this chapter points you there instead of duplicating them.
+
+---
+
 # PART 1: TRAINING DEEP NETWORKS
 
 ---
@@ -525,7 +541,9 @@ The tricky part: 16-bit numbers have a limited range (up to ~65,504). Very small
   7. Update weights:   float32  (precise — always kept in full precision)
 ```
 
-**BF16 (Brain Float 16):** Same range as float32, slightly less precision than float16. Better for training (no overflow risk). Used on Google TPUs and NVIDIA A100/H100 GPUs. Most modern LLM training uses BF16.
+**BF16 (Brain Float 16):** Same range as float32, slightly less precision than float16. Better for training (no overflow risk). Used on Google TPUs and modern NVIDIA data-center GPUs. Most modern LLM training uses BF16.
+
+**Hardware baselines (mid-2026):** the A100/H100 generation is now the *floor*, not the frontier. NVIDIA's current data-center parts are **H200** (more HBM than H100), **B200 / GB200** (Blackwell — much higher BF16/FP8 throughput and memory bandwidth), and Blackwell also mainstreams **FP8** (and experimental FP4) training via the Transformer Engine. On Google's side, **TPU v5p**, **v6 (Trillium)**, and **v7 (Ironwood)** are the current training/inference accelerators. When someone quotes "trains in X GPU-hours," always ask *which* generation — a GB200 hour is worth many A100 hours.
 
 ```python
   # PyTorch AMP
@@ -897,91 +915,27 @@ This was the direct predecessor of self-attention — the key insight that you c
 
 ## 3.2 Self-Attention ★★★
 
-**In one sentence:** Every word in a sentence simultaneously asks "which other words should I pay attention to?" and gathers context from them.
+**In one sentence:** Every token simultaneously asks "which other tokens should I pay attention to?" and gathers a weighted blend of their information.
 
-### The Story
+> **→ Full treatment: Ch 14 §14.10 and Ch 17 §2.4.** This is a quick recap; those
+> sections carry the intuition, the scaling rationale, and the end-to-end Transformer block.
 
-In a meeting room, everyone can hear everyone else at once. Each person decides: "I'll weight Alice's comment at 70% and Bob's at 30% when forming my opinion." Self-attention is the mathematical version of this simultaneous listening.
+### Quick Recap — Q, K, V
 
-In Bahdanau attention, only the decoder asks about encoder words. In self-attention, EVERY word asks about EVERY other word (including itself) — in both directions, all at once.
+Each token's embedding is multiplied by three learned matrices ($W^Q, W^K, W^V$) to produce a **Query** ("what am I looking for?"), a **Key** ("what do I contain?"), and a **Value** ("what do I hand over?"). A token attends to another when its Query aligns with that token's Key; the output is the Value-weighted blend. All tokens are computed at once as a single matrix multiply — very GPU-friendly:
 
-### Q, K, V — The Three Roles
+$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
 
-Each word plays three roles simultaneously:
+The $\sqrt{d_k}$ scaling keeps dot-products from growing with dimension and saturating the softmax.
 
-- **Query (Q):** "What information am I looking for?"
-- **Key (K):** "What information do I contain?"
-- **Value (V):** "What information do I actually give to others?"
+### Multi-Head Attention + the Output Projection $W^O$
 
-Each word's embedding is multiplied by three learned weight matrices (Wq, Wk, Wv) to produce its Q, K, V vectors.
-
-### Worked Example
-
-```
-  Sentence: "cat sat mat"  (embedding dimension = 4, simplified to d_k = 2)
-
-  Token embeddings:
-  cat → x₁ = [1, 0, 1, 0]
-  sat → x₂ = [0, 1, 0, 1]
-  mat → x₃ = [1, 1, 0, 0]
-
-  After multiplying by Wq, Wk, Wv (learned matrices):
-  cat: q₁=[2,1]  k₁=[0,2]  v₁=[2,0]
-  sat: q₂=[0,2]  k₂=[2,0]  v₂=[0,2]
-```
-
-**For "cat" — how much attention to pay to each word:**
-
-```
-  score(cat→cat) = q₁ · k₁ = [2,1]·[0,2] = 2
-  score(cat→sat) = q₁ · k₂ = [2,1]·[2,0] = 4   ← cat pays most attention to sat!
-  score(cat→mat) = ...
-
-  Scale by 1/√2 (prevents scores from getting too large):
-  scores = [1.41, 2.83, ...]
-
-  Softmax → attention weights = [0.22, 0.65, 0.13]
-```
-
-**Output for "cat" — a blend of all values, weighted by attention:**
-
-```
-  output = 0.22 × v_cat + 0.65 × v_sat + 0.13 × v_mat
-         = 0.22×[2,0] + 0.65×[0,2] + ...
-         = [0.44, 1.30, ...]
-```
-
-"cat" now contains information about "sat" and "mat." Its representation is enriched by context.
-
-**The matrix formula (all tokens at once):**
-
-$$\text{Output} = \text{softmax}\!\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
-
-This computes attention for ALL tokens simultaneously using matrix multiplication. Very GPU-friendly.
-
-### Multi-Head Attention + Output Projection
-
-Running attention once captures one type of relationship (e.g., syntactic subject-verb agreement). **Multi-head attention** runs $h$ attention operations in parallel with separate learned projections, then merges the results:
+Real Transformers run $h$ attention heads in parallel, each with its own $W^Q_i, W^K_i, W^V_i$, so different heads can specialize (syntax, coreference, position, …):
 
 $$\text{head}_i = \text{Attention}(Q W^Q_i,\; K W^K_i,\; V W^V_i)$$
+$$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\, W^O$$
 
-$$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h)\, W^O$$
-
-The output projection $W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}$ mixes information from all heads back into a single $d_{\text{model}}$-dimensional vector. Without $W^O$ the concatenated output would have the wrong dimension and the heads could not coordinate — each head would contribute independently with no cross-head integration.
-
-```
-  h=8 heads, d_model=512, d_k=d_v=64:
-
-  Input (seq_len × 512)
-       ↓  × 8 parallel heads
-  head_i = Attention(Q·Wᵢᴼ, K·Wᵢᴷ, V·Wᵢᵛ)  → each: (seq_len × 64)
-       ↓  Concat
-  Concatenated                                → (seq_len × 512)
-       ↓  × W^O  (512 × 512 learned matrix)
-  MultiHead output                            → (seq_len × 512)
-```
-
-Typical: 8 heads in BERT-base, 12 in GPT-2 (medium), 96 in GPT-3.
+The often-overlooked piece is the **output projection** $W^O \in \mathbb{R}^{hd_v \times d_{\text{model}}}$: it mixes the concatenated per-head outputs back into one $d_{\text{model}}$ vector. Without it the heads would just sit side by side with no cross-head integration, and the dimension wouldn't match the residual stream. Typical head counts: 12 (BERT-base), 16 (GPT-2 medium), 96 (GPT-3).
 
 ---
 
@@ -1047,110 +1001,32 @@ Rather than modifying embeddings, ALiBi adds a **negative linear penalty** to at
 
 ## 3.4 BERT ★★★
 
-**In one sentence:** A pre-trained language model that reads text in both directions simultaneously, pre-trained on "fill in the blank" and "do these sentences connect?" tasks.
+**In one sentence:** An encoder-only Transformer that reads text *bidirectionally*, pre-trained by filling in masked words — great for *understanding* tasks (classification, NER, QA span-finding).
 
-### How to Think About It
-
-BERT reads a sentence the way a careful editor does — going back and forth, using context from both before AND after a word to understand it. A detective doesn't just read forward; they re-read the whole file. BERT does this at every layer.
-
-### Architecture
-
-- **BERT-base:** 12 Transformer layers, 12 attention heads, 768 dimensions → 110M parameters
-- **BERT-large:** 24 layers, 16 heads, 1024 dimensions → 340M parameters
-- Every token can attend to EVERY other token (unlike GPT, which can only look backwards)
-
-### Pre-Training Tasks
-
-BERT is trained on two tasks (no manual labels needed — the labels come from the text itself):
-
-**Task 1 — Masked Language Modeling (MLM):**
-
-```
-  Input:  "The [MASK] sat on the [MASK]"
-  Target: "The cat   sat on the mat"
-```
-
-15% of tokens are randomly chosen. Of those:
-- 80% are replaced with [MASK]
-- 10% are replaced with a random wrong word (makes the model robust)
-- 10% are kept unchanged (helps the model learn about normal tokens too)
-
-The model must predict the original word. This forces it to use BOTH left and right context — truly bidirectional.
-
-**Task 2 — Next Sentence Prediction (NSP):**
-
-```
-  Input: [CLS] "Dogs are great pets." [SEP] "They are loyal." [SEP]
-  Label: IsNext  (these sentences belong together)
-
-  Input: [CLS] "Dogs are great pets." [SEP] "The stock market fell." [SEP]
-  Label: NotNext  (random, unrelated sentences)
-```
-
-Note: Later research showed NSP doesn't help much. RoBERTa (an improved BERT) removed it and did better.
-
-### Fine-Tuning for Your Task
-
-Add a small task-specific layer on top of pre-trained BERT, then train on your labeled data:
-
-| Task | Input | Output |
-|------|-------|--------|
-| Sentiment analysis | [CLS] + sentence | [CLS] output → positive/negative |
-| Named Entity Recognition | [CLS] + tokens | each token output → entity type |
-| Question answering | [CLS] + question + [SEP] + paragraph | predict answer start + end positions |
-
-Only the new layer learns from scratch. BERT's weights adjust slightly through fine-tuning.
+- **Objective:** Masked Language Modeling (MLM) — hide ~15% of tokens, predict them from *both* left and right context. (Original BERT also used Next-Sentence Prediction, later shown unhelpful; RoBERTa dropped it.)
+- **Sizes:** BERT-base = 12 layers / 12 heads / 768-d / 110M; BERT-large = 24 / 16 / 1024-d / 340M.
+- **Use it by** adding a small task head on top and fine-tuning: `[CLS]` output → sentence label; per-token outputs → NER tags; start/end pointers → QA spans.
 
 ---
 
 ## 3.5 GPT ★★★
 
-**In one sentence:** A model trained to predict the next word — trained billions of times, it learned a surprisingly broad understanding of language.
+**In one sentence:** A decoder-only Transformer trained to predict the *next* token with a causal mask, so each position sees only the past — which makes it a natural generator.
 
-### The Training Objective
+The **causal mask** sets attention to future positions to $-\infty$ before the softmax, so position $t$ attends only to $\le t$. Generation is autoregressive: predict a token, append it, repeat. Scale is the story — GPT-3 (175B params, 96 layers) showed emergent few-shot learning, arithmetic, and chain-of-thought that were never explicitly trained.
 
-GPT has one job: given all previous words, predict the next word.
+### BERT vs GPT at a glance
 
-```
-  Input:  "The cat sat on the"
-  Target: "mat"
+| | **BERT (encoder-only)** | **GPT (decoder-only)** |
+|---|---|---|
+| Attention | Bidirectional (sees both sides) | Causal (past only) |
+| Pre-training | Masked LM | Next-token prediction |
+| Best for | Understanding: classify, NER, extractive QA | Generation: chat, completion, reasoning |
+| How you use it | Fine-tune a task head | Prompt / few-shot / instruction-tune |
 
-  During training, all positions are predicted simultaneously using a mask:
-  "The" predicts "cat"
-  "The cat" predicts "sat"
-  "The cat sat" predicts "on"
-  etc.
-```
-
-**Why only look backwards?** This is called a **causal mask** — each position can only see past tokens. This makes GPT naturally suited for generation: you generate one word, add it to the input, generate the next.
-
-### The Causal Mask
-
-```
-  Attention mask (1 = allowed, 0 = blocked):
-
-         The  cat  sat  on
-  The  [  1    0    0    0  ]  ← sees only itself
-  cat  [  1    1    0    0  ]  ← sees "The" and itself
-  sat  [  1    1    1    0  ]  ← sees "The cat sat"
-  on   [  1    1    1    1  ]  ← sees everything so far
-
-  Blocked positions → set to -infinity before softmax → e^(-∞) ≈ 0
-```
-
-### Scale: GPT-3
-
-GPT-3 showed that scale creates emergent capabilities that smaller models don't have:
-
-| Property | Value |
-|----------|-------|
-| Parameters | 175 billion |
-| Layers | 96 |
-| Attention heads | 96 per layer |
-| Training tokens | 300 billion |
-| Training cost | ~$4.6 million in GPU time |
-
-At this scale, GPT-3 could do few-shot learning, arithmetic, code generation, and chain-of-thought reasoning — none of which were explicitly trained.
+> **→ Deep dive: Ch 17 §4.1 (GPT), §4.2 (BERT)** — full pre-training recipes, the
+> encoder/decoder/encoder-decoder taxonomy, and how modern instruction-tuned chat models
+> are built on top of the GPT-style backbone.
 
 ---
 
@@ -1198,11 +1074,22 @@ Every LLM can only process a limited number of tokens at once. Beyond that limit
 |-------|---------------|
 | GPT-2 | 1,024 tokens |
 | GPT-3 | 2,048 tokens |
-| GPT-4 | up to 128K tokens |
-| Claude 3 | 200,000 tokens |
-| LLaMA-3 8B | 8,192 tokens |
+| GPT-4 (2023) | 128K tokens |
+| GPT-4.1 / GPT-5-class (2025+) | 1,000,000+ tokens |
+| Gemini 1.5 / 2.5 Pro | 1,000,000+ tokens (2M in some tiers) |
+| Claude 4 | up to 1,000,000 tokens |
+| Llama 3.1+ | 128K tokens |
+| Llama 4 Scout | up to 10,000,000 tokens |
 
 1 token ≈ 0.75 English words. 128K tokens ≈ ~100,000 words ≈ 3-4 novels.
+
+**The 1M+ regime (mid-2026):** frontier models now routinely take **1M+ tokens** — entire
+codebases, hundreds of pages, hours of transcripts — with a few pushing to **10M**. Two
+caveats survive the scale-up: (1) **cost and latency grow with context** (attention is
+still expensive, even with efficient kernels), so bigger isn't free; and (2) **"lost in the
+middle"** — models attend most reliably to the *beginning* and *end* of a long prompt and
+can miss facts buried in the middle. Put the critical instructions and evidence near the
+edges, and use retrieval (RAG) rather than dumping everything into context when you can.
 
 ---
 
@@ -1343,6 +1230,16 @@ $$R_{\text{total}} = R_{\text{reward model}} - \beta \times D_{KL}(\pi \| \pi_{\
 The KL term penalizes the model for straying too far from its Stage 1 behavior. Without it, the model finds clever ways to fool the reward model (giving high-scoring gibberish). The KL term keeps it grounded.
 
 **Result:** ChatGPT, Claude, Gemini — models that are actually helpful to use.
+
+### RLVR & GRPO — the 2025 reasoning-model recipe
+
+Classic RLHF learns a reward *model* from human preferences — which is noisy and gameable. **RLVR (Reinforcement Learning with Verifiable Rewards)** replaces the learned reward with an **automatically checkable** signal: did the final answer match ground truth? Did the code pass the unit tests? Does the proof check? This works beautifully for **math, code, and logic**, where correctness is objective — and it's the engine behind the 2025 reasoning models (**DeepSeek-R1**, OpenAI's **o-series**). The model is rewarded for *getting it right*, so it learns to produce long chains of thought that actually pay off.
+
+The optimizer of choice here is **GRPO (Group Relative Policy Optimization)**, which is **critic-free**. Standard PPO needs a separate value network (the critic) to estimate a baseline; GRPO drops it. Instead it samples a **group** of $G$ answers for the same prompt, scores them all, and uses the **group's mean/std as the baseline** — each answer's advantage is just how much better or worse it did than its siblings:
+
+$$A_i = \frac{r_i - \text{mean}(r_1, \ldots, r_G)}{\text{std}(r_1, \ldots, r_G)}$$
+
+No value network means far less memory and a simpler, more stable loop — ideal for RL over verifiable rewards. **The modern alignment stack** is therefore often: **SFT → DPO** (cheap offline preference tuning) **→ RLVR/GRPO** (for reasoning and tool-use skill).
 
 ---
 
@@ -1504,14 +1401,30 @@ $$L = \|\epsilon - \hat{\epsilon}\|^2$$
 
 ### Text-to-Image (DALL-E, Stable Diffusion)
 
-To condition on text, add a cross-attention mechanism in the UNet. The text description (encoded by a text model like CLIP) is used to guide the denoising at every step.
+To condition on text, add a cross-attention mechanism in the denoiser. The text description (encoded by a text model like CLIP or T5) is used to guide the denoising at every step.
 
 ```
   "a red cat on a blue chair"
     → text encoder → text embedding
-    → cross-attention in UNet at every denoising step
+    → cross-attention in denoiser at every denoising step
     → each step removes noise guided by the text description
 ```
+
+### Modern Diffusion (what actually ships in 2026)
+
+Vanilla DDPM above is the *foundation*; production systems layer four upgrades on top:
+
+- **Latent diffusion (Stable Diffusion).** Running diffusion on raw 512×512 pixels is expensive. Instead, a **VAE** first compresses the image into a small latent (e.g., 64×64×4); diffusion happens *in that latent space*, and the VAE decoder turns the final latent back into pixels. Same math, ~10–50× less compute — this is why Stable Diffusion runs on a consumer GPU.
+
+- **DiT (Diffusion Transformer).** The denoiser doesn't have to be a UNet. **DiT** replaces it with a **Transformer** over latent patches (like ViT), which scales more predictably with compute and data. Newer systems (**Stable Diffusion 3**, and many video/image models) use DiT backbones instead of UNets.
+
+- **Classifier-Free Guidance (CFG).** How do you make the image follow the prompt *strongly*? At each step, run the denoiser **twice** — once with the text condition, once with an empty/null condition — and extrapolate away from the unconditional prediction:
+
+  $$\hat{\epsilon} = \epsilon_\text{uncond} + w \cdot (\epsilon_\text{cond} - \epsilon_\text{uncond})$$
+
+  The **guidance scale** $w$ (typically 5–8) trades diversity for prompt adherence: higher $w$ = more literal to the prompt but less varied. "Classifier-free" because it needs no separate classifier — the same model provides both predictions (it's trained with the condition randomly dropped).
+
+- **Fast samplers.** The original 1000-step loop is slow. Deterministic samplers like **DDIM** (and DPM-Solver, etc.) produce comparable images in **20–50 steps**; distillation methods push a few models to 1–4 steps. This is what makes interactive image generation practical.
 
 ---
 
@@ -1732,6 +1645,44 @@ Replace each feed-forward layer in the Transformer with E expert layers + a rout
 **Example:** Mixtral-8x7B has 8 experts, uses 2 at a time. Total params: ~46B. Active params per token: ~12B. Speed of a 12B model, quality of a 46B model.
 
 **The routing problem:** Without intervention, all tokens route to the same 1-2 experts (because they're slightly better initially). Fix: add a "load balancing loss" that penalizes routing imbalance, forcing all experts to get roughly equal workload.
+
+---
+
+## 6.3 State-Space Models (SSMs) & Mamba
+
+**In one sentence:** A sequence model that scans the input left-to-right in **linear** time — sub-quadratic where a Transformer is quadratic — making it attractive for *very* long sequences.
+
+### The Problem With Attention on Long Sequences
+
+Self-attention compares every token to every other token: **$O(n^2)$** compute and memory in sequence length $n$. At 1M tokens that's a trillion pairwise scores. SSMs sidestep this by *never forming the $n \times n$ attention matrix* at all.
+
+### The Core Idea — a Learned Recurrence
+
+An SSM carries a fixed-size hidden **state** $h_t$ and updates it one step at a time, like an RNN, but with a linear state-space formulation borrowed from control theory:
+
+$$h_t = A\,h_{t-1} + B\,x_t, \qquad y_t = C\,h_t$$
+
+Because the recurrence is linear, it can be **unrolled as a convolution** and computed in parallel during training (no slow step-by-step loop), yet run as a cheap recurrence at inference. Total cost is **$O(n)$** in time and **$O(1)$ state** per step — so memory doesn't grow with context length.
+
+### Mamba — the "Selective" Upgrade
+
+Early SSMs (S4) used *fixed* $A, B, C$ for every token, so they couldn't decide what to remember vs. forget based on content. **Mamba** makes $B$, $C$, and the step size **input-dependent** — the **selective scan**. Now the model can, per token, choose to *store* important information and *skip* irrelevant filler, which is exactly what attention does implicitly. A hardware-aware parallel scan keeps it fast on GPUs.
+
+```
+  Transformer:  every token attends to every token   → O(n²), grows fast
+  SSM / Mamba:  scan a fixed-size state across tokens → O(n),  flat memory
+```
+
+### Where They Fit & Hybrids
+
+| | Transformer | SSM / Mamba |
+|---|---|---|
+| Cost in seq length | $O(n^2)$ | $O(n)$ |
+| Inference memory | grows with context (KV cache) | fixed-size state |
+| Random "look-back" recall | excellent | weaker (state is a bottleneck) |
+| Best at | in-context recall, reasoning | very long streams, audio, genomics |
+
+In practice the strongest recipe is a **hybrid**: interleave a few attention layers (for precise recall) with many SSM layers (for cheap long-range mixing). **Jamba** (Mamba + Transformer + MoE) is a well-known example. Reach for SSMs when sequences are **very long** and you care about throughput and flat memory more than exact needle-in-a-haystack recall.
 
 ---
 
@@ -1971,6 +1922,17 @@ If your model gives different results on the same data each run, you have unset 
 | Google TPU access | JAX |
 | Quick prototyping | Keras |
 
+### Accelerators (mid-2026)
+
+Whichever framework you pick, know the hardware you'll rent. The A100/H100 generation is now the baseline, not the ceiling:
+
+| Vendor | Current parts | Notes |
+|--------|--------------|-------|
+| NVIDIA | H200, **B200 / GB200** (Blackwell) | Big jumps in BF16/FP8 throughput and HBM bandwidth over H100; Blackwell mainstreams FP8 (and FP4) training. |
+| Google | TPU **v5p**, **v6 (Trillium)**, **v7 (Ironwood)** | Pod-scale training/inference; pairs naturally with JAX/XLA. |
+
+Rule of thumb: when a paper or vendor quotes "trained in X GPU-hours," always ask *which generation* — a GB200 hour is worth many A100 hours, so raw hour counts aren't comparable across eras.
+
 ---
 
 # QUICK REFERENCE
@@ -2037,7 +1999,9 @@ TRANSFORMERS & LLMs
   BPE = tokenization that handles any word
   LoRA = fine-tune 0.1% of params, nearly same quality as full training
   RLHF = SFT → Reward Model → PPO (with KL penalty to stay on track)
+  RLVR = verifiable rewards (math/code) + GRPO (critic-free) → reasoning models
   RAG = retrieve relevant documents → add to prompt → generate
+  SSM/Mamba = O(n) selective-scan sequence model; hybridize w/ attention for long ctx
 
 RECURRENT ARCHITECTURES
   LSTM gates: forget fₜ, input iₜ, output oₜ; cell state Cₜ = highway for gradients
@@ -2055,6 +2019,7 @@ GENERATIVE MODELS
   GAN = Generator vs Discriminator; minimax objective; mode collapse risk
   WGAN = Wasserstein distance + critic + gradient penalty → stable GAN training
   Diffusion = learn to reverse noise → DALL-E, Stable Diffusion, Midjourney
+              latent diffusion (VAE space) + DiT backbone + CFG + fast samplers (20-50 steps)
   CLIP = image + text trained together → zero-shot classification
 
 DEBUGGING (in order)

@@ -470,7 +470,7 @@ $$\log(0.001) = -10 \quad \leftarrow \text{tiny probabilities give large negativ
 
 **WITHOUT LOGS** (chain rule -- multiplying probabilities):
 
-$$P(\text{sentence}) = 0.05 \times 0.08 \times 0.12 \times 0.15 \times 0.30 = 0.00000216 \text{ (tiny, hard to work with)}$$
+$$P(\text{sentence}) = 0.05 \times 0.08 \times 0.12 \times 0.15 \times 0.30 = 0.0000216 \text{ (tiny, hard to work with)}$$
 
 **WITH LOGS** (chain rule -- adding log-probabilities):
 
@@ -1582,12 +1582,14 @@ LLMs use special tokens as bookmarks to understand the structure of input:
   − More tokens per sentence (slower, uses more context window)
   − Common words get split unnecessarily
 
-  Large vocabulary (100K tokens):
+  Large vocabulary (100K+ tokens):
   + Fewer tokens per sentence (faster, more efficient)
   − More parameters to learn
   − Rare tokens get poor representations
 
-  Sweet spot: 32K-50K tokens (most modern LLMs)
+  Modern LLMs: 100K–262K (GPT-4o ~200K, Llama 3 128K, Gemma 256K).
+  Early models (GPT-2/3) used ~50K; vocabularies grew to shorten
+  multilingual/code sequences.
 ```
 
 ---
@@ -1945,7 +1947,7 @@ Not all LLMs attend to all tokens. There are two major patterns:
 
 ## 2.5 Generating Text — How the Output Works
 
-The LLM produces a list of scores — one for every token in its vocabulary (~50,000 tokens). The score says "how likely is this token to come next?"
+The LLM produces a list of scores — one for every token in its vocabulary (100K–200K in modern models). The score says "how likely is this token to come next?"
 
 ```
   After processing "The capital of France is"...
@@ -1964,7 +1966,7 @@ These scores are converted to probabilities using **softmax**. Then one token is
 
 ## 2.6 Decoding Strategies — How Tokens Are Chosen
 
-The model produces a probability distribution over ~50,000 tokens. But how do you pick which token to actually use? Different strategies give very different results.
+The model produces a probability distribution over the whole vocabulary (100K+ tokens). But how do you pick which token to actually use? Different strategies give very different results.
 
 ### Greedy Decoding
 
@@ -2207,6 +2209,22 @@ RLHF is effective but complex — it requires training a separate reward model a
 - More stable training
 - Used by LLaMA 3, Zephyr, and many open-source models
 - Results are comparable to RLHF
+
+---
+
+## 3.5b Stage 3 (2025) — RLVR & GRPO for Reasoning Models ★★★
+
+RLHF and DPO align a model to human *preferences*. The 2025 breakthrough was aligning it to **correctness** — the method behind reasoning models (OpenAI o-series, DeepSeek-R1).
+
+> **RLVR (Reinforcement Learning with Verifiable Rewards)** trains the model on tasks whose answers can be *checked automatically* — math with a known result, code that must pass tests, proofs a verifier accepts. The reward is the objective correctness signal, so there is no learned (and gameable) reward model.
+
+The workhorse optimizer is **GRPO (Group Relative Policy Optimization)**, introduced with DeepSeek-R1. GRPO drops PPO's separate value/critic network:
+
+- Sample a **group** of *k* answers for each prompt.
+- Score each (e.g., 1 if the math/code is correct, else 0).
+- Use each answer's reward **minus the group average** as its advantage — a group baseline that replaces PPO's value function. Cheaper, and a natural fit for verifiable rewards.
+
+Because the model is rewarded for reasoning traces that reach correct answers, it learns to "think" in long chains of thought before responding. The modern post-training stack is often **SFT → DPO → RLVR/GRPO**. (More on reasoning models in §15.1.)
 
 ---
 
@@ -3437,533 +3455,22 @@ Every agent follows the same fundamental pattern: **Think → Act → Observe �
 
 ---
 
-### 9.2.2 Agent Architectures
+### 9.2.2 Patterns, Tools, Memory, Multi-Agent & Protocols → see Chapter 18
 
-Different architectures give agents different strengths.
+> **Chapter 18 (AI Agents & Tool Use) is the canonical, code-complete treatment.** The rest of this section is a one-screen map so you can reason about agents here — go to Ch 18 for the depth (runnable code, MCP/A2A protocols, evaluation, production failure modes).
 
-**ReAct (Reason + Act) — The Foundation**
+The essentials you'll be asked about:
 
-The simplest and most common pattern. The agent alternates between reasoning and acting in a single loop.
+| Topic | One-line summary | Depth |
+|---|---|---|
+| **Reasoning patterns** | **ReAct** (interleave reason + act), **Plan-and-Execute** (plan upfront, then run), **Reflexion** (self-critique and retry) | Ch 18 §18.4 |
+| **Tool / function calling** | The model emits a structured call; your code runs it and feeds the result back into the loop | Ch 18 §18.2 (and §9.3 below) |
+| **Memory** | Short-term (context window) vs long-term (vector store / summaries) vs scratchpad state | Ch 18 §18.8 |
+| **Multi-agent** | Orchestrator + specialist workers (router, pipeline, debate) — more capable, more failure surface | Ch 18 §18.5 |
+| **Computer use / browser agents** | The agent sees a screenshot and emits click/type actions — for apps with no API | Ch 18 §18.6 |
+| **MCP & A2A** | **MCP** standardizes model↔tool connections; **A2A** standardizes agent↔agent | Ch 18 §18.3 |
 
-```
-  ReAct pattern:
-  Thought: "I need to find the current stock price of Apple."
-  Action: search("AAPL stock price today")
-  Observation: "AAPL: $198.50, up 2.3%"
-  Thought: "I have the price. The user also asked about the trend."
-  Action: search("AAPL stock price trend last month")
-  Observation: "AAPL rose from $185 to $198 over the past month..."
-  Thought: "I have both pieces. I can answer now."
-  Answer: "Apple (AAPL) is at $198.50, up 2.3% today and up 7% over the past month."
-
-  Strengths: Simple, transparent reasoning, works well for most tasks
-  Weaknesses: Can get stuck in loops, no long-term planning
-```
-
-**Plan-and-Execute — Think First, Then Do**
-
-The agent creates a full plan BEFORE taking any action, then executes steps one by one.
-
-```
-  Plan-and-Execute pattern:
-
-  PLANNING PHASE (LLM creates a plan):
-  "To research competitors and write a report, I need to:
-   1. Search for competitors in the CRM software market
-   2. Get details on each competitor (pricing, features, market share)
-   3. Compare them against our product
-   4. Write a structured report with findings
-   5. Save the report as a PDF"
-
-  EXECUTION PHASE (execute each step):
-  Step 1: call search("top CRM software competitors 2026") → results
-  Step 2: call browse(competitor1_url), browse(competitor2_url), ... → details
-  Step 3: [LLM analyzes and compares internally]
-  Step 4: [LLM generates report text]
-  Step 5: call save_pdf("competitor_report.pdf", report_text) → done
-
-  Strengths: Better for complex multi-step tasks, can re-plan if a step fails
-  Weaknesses: Initial plan may be wrong, harder to adapt mid-execution
-```
-
-**Reflexion — Learn From Mistakes**
-
-The agent attempts a task, evaluates its own output, and retries if it's not good enough.
-
-```
-  Reflexion pattern:
-
-  ATTEMPT 1:
-  Agent writes a Python function to solve the problem
-  → Runs tests → 3 out of 5 tests fail
-
-  REFLECT:
-  "My function fails on edge cases with negative numbers.
-   I didn't handle the case where the input list is empty.
-   I should add input validation and handle negatives."
-
-  ATTEMPT 2:
-  Agent rewrites the function incorporating the reflection
-  → Runs tests → 5 out of 5 tests pass ✓
-
-  Strengths: Self-correcting, improves over iterations
-  Weaknesses: More expensive (multiple attempts), needs clear success criteria
-```
-
----
-
-### 9.2.3 Function/Tool Calling — How Agents Interact With the World
-
-Tools are how agents go beyond text generation. Modern LLMs are trained to know WHEN to call a tool and HOW to format the call.
-
-**How tool calling works:**
-
-```
-  Step 1: You define tools with names, descriptions, and parameter schemas:
-
-  tools = [
-    {
-      "name": "get_weather",
-      "description": "Get current weather for a city",
-      "parameters": {
-        "city": {"type": "string", "description": "City name"}
-      }
-    },
-    {
-      "name": "search_web",
-      "description": "Search the web for current information",
-      "parameters": {
-        "query": {"type": "string"}
-      }
-    },
-    {
-      "name": "run_python",
-      "description": "Execute Python code and return the output",
-      "parameters": {
-        "code": {"type": "string"}
-      }
-    }
-  ]
-
-  Step 2: The LLM sees these tool definitions alongside the user's message.
-
-  Step 3: If the LLM decides a tool would help, it outputs a structured
-          tool call instead of a text response:
-
-  User: "What's 347 × 892?"
-  LLM output: {"tool": "run_python", "parameters": {"code": "print(347 * 892)"}}
-  System executes: → "309324"
-  LLM: "347 × 892 = 309,324"
-
-  The LLM decided to use a calculator tool instead of trying to do
-  arithmetic (which it's bad at). This is the power of tool calling.
-```
-
-**Tool calling patterns:**
-
-```
-  SEQUENTIAL: Tools called one after another, each depending on the previous
-  search("best restaurants") → get_details(restaurant_id) → make_reservation(id, time)
-
-  PARALLEL: Multiple independent tools called at the same time
-  get_weather("Tokyo") + get_weather("Paris") + get_weather("NYC")
-  (all three happen simultaneously — much faster)
-
-  NESTED: One tool's output is used as input to another tool
-  translate(summarize(read_file("report_french.pdf")))
-```
-
-**Common tool types in agent systems:**
-
-| Tool Category | Examples | What It Enables |
-|--------------|---------|-----------------|
-| Search | Web search, database query | Access to current information |
-| Code execution | Python interpreter, shell | Math, data analysis, automation |
-| File I/O | Read, write, edit files | Persistent storage, document creation |
-| API calls | REST APIs, GraphQL | Integration with external services |
-| Browser | Navigate, click, fill forms | Web interaction and scraping |
-| Communication | Email, Slack, SMS | Sending notifications and messages |
-
----
-
-### 9.2.4 Agent Memory — How Agents Remember
-
-A basic LLM forgets everything between conversations. Agents need memory to be useful over time.
-
-```
-  THREE TYPES OF AGENT MEMORY:
-
-  ┌─────────────────────────────────────────────────────────┐
-  │ SHORT-TERM MEMORY (Context Window)                       │
-  │                                                          │
-  │ The current conversation. Everything the agent has seen   │
-  │ in this session — user messages, tool results, its own    │
-  │ reasoning. Limited by context window (4K to 1M tokens).   │
-  │                                                          │
-  │ Analogy: Your working memory — what you're thinking       │
-  │ about right now.                                          │
-  └─────────────────────────────────────────────────────────┘
-
-  ┌─────────────────────────────────────────────────────────┐
-  │ LONG-TERM MEMORY (External Storage)                      │
-  │                                                          │
-  │ Facts, preferences, and knowledge stored in a database    │
-  │ or file system that persists across conversations.        │
-  │ Retrieved when relevant using embeddings/vector search.   │
-  │                                                          │
-  │ Examples:                                                 │
-  │ - "User prefers Python over JavaScript"                   │
-  │ - "The project uses PostgreSQL, not MySQL"                │
-  │ - "Last meeting decided to delay the launch to March"     │
-  │                                                          │
-  │ Analogy: Your notebook — things you wrote down to         │
-  │ remember later.                                           │
-  └─────────────────────────────────────────────────────────┘
-
-  ┌─────────────────────────────────────────────────────────┐
-  │ EPISODIC MEMORY (Past Experiences)                       │
-  │                                                          │
-  │ Summaries of past conversations and task outcomes.        │
-  │ Helps the agent learn from what worked and what didn't.   │
-  │                                                          │
-  │ Examples:                                                 │
-  │ - "Last time I searched with query X, results were poor.  │
-  │    Query Y worked much better."                           │
-  │ - "User rejected the bar chart format; they prefer tables"│
-  │                                                          │
-  │ Analogy: Your past experiences — "last time I tried this, │
-  │ it didn't work, so I'll try something different."         │
-  └─────────────────────────────────────────────────────────┘
-```
-
-**How memory is managed in practice:**
-
-```
-  1. CONTEXT WINDOW MANAGEMENT:
-     The context window fills up fast. Strategies to manage it:
-
-     - Sliding window: Drop oldest messages, keep recent ones
-     - Summarization: Periodically summarize old messages into a shorter version
-     - Smart pruning: Keep important messages (user instructions, key results),
-       drop routine ones (intermediate tool outputs)
-
-  2. LONG-TERM MEMORY STORAGE:
-     Store in a vector database (Section 10). At the start of each conversation:
-     → Embed the user's first message
-     → Search for relevant memories
-     → Inject them into the system prompt
-
-  3. EPISODIC MEMORY:
-     After each conversation or task:
-     → Summarize what happened and the outcome
-     → Store as a memory entry
-     → Next time a similar task comes up, retrieve and learn from it
-```
-
----
-
-### 9.2.5 Multi-Agent Systems — Agents Working Together
-
-Instead of one agent doing everything, split the work across specialized agents that collaborate.
-
-```
-  SINGLE AGENT:
-  One LLM tries to do everything — research, code, write, review.
-  Works for simple tasks, but struggles with complex ones.
-
-  MULTI-AGENT SYSTEM:
-  ┌──────────────────────────────────────────────────┐
-  │                ORCHESTRATOR AGENT                  │
-  │   (Breaks down the task, delegates, coordinates)   │
-  │                                                    │
-  │   ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-  │   │ RESEARCH │  │  CODER   │  │ REVIEWER │       │
-  │   │  AGENT   │  │  AGENT   │  │  AGENT   │       │
-  │   │          │  │          │  │          │       │
-  │   │ Searches │  │ Writes   │  │ Reviews  │       │
-  │   │ the web, │  │ code,    │  │ code for │       │
-  │   │ reads    │  │ runs     │  │ bugs and │       │
-  │   │ papers   │  │ tests    │  │ quality  │       │
-  │   └──────────┘  └──────────┘  └──────────┘       │
-  └──────────────────────────────────────────────────┘
-
-  Example flow:
-  1. Orchestrator receives: "Build a web scraper for product prices"
-  2. Orchestrator → Research Agent: "Find the best Python scraping libraries"
-  3. Research Agent returns: "Use BeautifulSoup or Playwright..."
-  4. Orchestrator → Coder Agent: "Write a scraper using Playwright"
-  5. Coder Agent writes code and runs tests
-  6. Orchestrator → Reviewer Agent: "Review this code for edge cases"
-  7. Reviewer Agent suggests improvements
-  8. Orchestrator → Coder Agent: "Apply these fixes"
-  9. Orchestrator returns final, reviewed code to user
-```
-
-**Common multi-agent patterns:**
-
-```
-  SUPERVISOR (one boss, many workers):
-  Orchestrator assigns tasks to specialized agents.
-  Best for: well-defined workflows with clear roles.
-
-  DEBATE (agents argue to find truth):
-  Two agents argue different positions, a judge picks the best answer.
-  Best for: complex decisions, reducing hallucination.
-
-  PIPELINE (assembly line):
-  Agent A's output becomes Agent B's input → Agent C → ...
-  Best for: sequential workflows (draft → review → edit → publish).
-
-  SWARM (equals collaborating):
-  Agents hand off tasks to each other based on expertise.
-  No central orchestrator — each agent decides when to delegate.
-  Best for: customer service routing, dynamic task handling.
-```
-
----
-
-### 9.2.6 Computer Use — Agents That See and Click
-
-A breakthrough capability: agents that can interact with computer interfaces just like a human — seeing the screen, moving the mouse, clicking buttons, typing text.
-
-```
-  HOW COMPUTER USE WORKS:
-
-  1. Take a screenshot of the desktop/browser
-  2. Send the screenshot to a multimodal LLM (e.g., Claude, GPT-4o)
-  3. LLM "sees" the screen and decides what action to take:
-     - Click at coordinates (x, y)
-     - Type text into a field
-     - Scroll up/down
-     - Press keyboard shortcuts
-  4. Execute the action
-  5. Take a new screenshot → repeat
-
-  ┌─────────────────────────────────┐
-  │         COMPUTER SCREEN          │
-  │                                  │
-  │  [Screenshot captured]           │
-  │         ↓                        │
-  │  LLM "sees" the screen           │
-  │         ↓                        │
-  │  LLM decides: "Click the         │
-  │  'Submit' button at (450, 320)"  │
-  │         ↓                        │
-  │  System clicks at (450, 320)     │
-  │         ↓                        │
-  │  [New screenshot captured]       │
-  │         ↓                        │
-  │  LLM: "Form submitted. Now I     │
-  │  see the confirmation page..."   │
-  └─────────────────────────────────┘
-```
-
-**What computer-use agents can do:**
-
-```
-  - Fill out web forms (booking flights, submitting applications)
-  - Navigate complex enterprise software (SAP, Salesforce)
-  - Test software by interacting with the UI
-  - Automate repetitive desktop workflows
-  - Use any software that doesn't have an API
-```
-
-**Models with computer use:** Claude (Anthropic), GPT-4o with tools (OpenAI), Gemini with Project Mariner (Google)
-
-**Limitation:** Computer use is slower than API calls (screenshot → think → click cycle takes seconds per action) and less reliable than structured API integration. Use APIs when available; use computer use when there's no API.
-
----
-
-### 9.2.7 Agentic Coding — AI That Writes and Runs Code
-
-One of the most impactful agent applications: AI that can write code, run it, debug errors, and iterate until it works.
-
-```
-  HOW AGENTIC CODING WORKS:
-
-  User: "Write a Python script that downloads all images from a webpage"
-
-  Step 1 — Agent writes initial code
-  Step 2 — Agent runs the code in a sandboxed environment
-  Step 3 — Code crashes with ImportError: "requests not installed"
-  Step 4 — Agent reads error, runs: pip install requests beautifulsoup4
-  Step 5 — Agent runs code again
-  Step 6 — Code runs but downloads 0 images (selector was wrong)
-  Step 7 — Agent reads the page HTML, fixes the CSS selector
-  Step 8 — Agent runs code again → successfully downloads 15 images
-  Step 9 — Agent responds: "Done! Downloaded 15 images to ./images/"
-
-  The agent didn't just write code — it ran, debugged, and fixed it
-  through multiple iterations, just like a human developer would.
-```
-
-**Major agentic coding tools:**
-
-| Tool | Creator | How It Works |
-|------|---------|-------------|
-| Claude Code | Anthropic | CLI agent that reads/writes your codebase, runs commands |
-| Codex | OpenAI | Cloud agent that executes coding tasks in sandboxes |
-| Cursor | Cursor Inc. | IDE with built-in AI agent that edits across files |
-| GitHub Copilot | GitHub/OpenAI | Code completion + agent mode for multi-file edits |
-| Windsurf | Codeium | IDE with agentic "Cascade" for codebase-wide changes |
-| Aider | Open-source | Terminal-based coding agent using git |
-
-**Why agentic coding is so effective:**
-
-```
-  Code is uniquely suited for AI agents because:
-  1. Clear success criteria — code either runs or it doesn't
-  2. Fast feedback loops — run tests, see results immediately
-  3. Self-correcting — error messages tell the agent exactly what's wrong
-  4. Verifiable — test suites prove correctness objectively
-
-  This is why coding was the first domain where AI agents became
-  genuinely useful in production (not just demos).
-```
-
----
-
-### 9.2.8 Agent Reliability and Error Handling
-
-Agents are powerful but imperfect. Errors compound across steps — if each step has 95% accuracy, a 10-step task has only 0.95^10 = 60% chance of full success.
-
-```
-  THE COMPOUNDING ERROR PROBLEM:
-
-  Step accuracy:  95%    90%    85%
-  5 steps:        77%    59%    44%
-  10 steps:       60%    35%    20%
-  20 steps:       36%    12%     4%
-
-  Even 95% per-step accuracy becomes unreliable over many steps.
-```
-
-**Strategies for improving agent reliability:**
-
-```
-  1. KEEP TASKS SHORT
-     Break complex goals into sub-tasks with 3-5 steps each.
-     Verify intermediate results before continuing.
-
-  2. USE STRUCTURED OUTPUTS
-     Don't let agents output free text for tool calls.
-     Use JSON schemas to constrain tool arguments.
-
-  3. ADD GUARDRAILS
-     - Maximum step limits (prevent infinite loops)
-     - Budget limits (prevent runaway API costs)
-     - Action allowlists (agent can only call approved tools)
-     - Confirmation required for irreversible actions (send email, delete file)
-
-  4. IMPLEMENT RETRIES WITH REFLECTION
-     When a step fails, don't just retry blindly.
-     Have the agent analyze what went wrong and adjust.
-
-  5. VERIFY OUTPUTS
-     After the agent finishes, check its work:
-     - Run tests (for code)
-     - Fact-check (for research)
-     - Compare against expected format (for data extraction)
-
-  6. LOG EVERYTHING
-     Record every thought, action, and observation.
-     Essential for debugging and improving the agent.
-```
-
----
-
-### 9.2.9 Human-in-the-Loop Patterns
-
-For high-stakes tasks, agents should involve humans at critical decision points.
-
-```
-  LEVELS OF AGENT AUTONOMY:
-
-  Level 0 — FULLY MANUAL:
-  Agent suggests actions, human approves each one.
-  "I'd like to search for X. Proceed? [Y/N]"
-  Best for: Learning the agent's behavior, high-risk tasks
-
-  Level 1 — APPROVE RISKY ACTIONS:
-  Agent acts freely for safe operations (search, read).
-  Asks for permission for risky ones (send email, delete, purchase).
-  Best for: Most production applications
-
-  Level 2 — NOTIFY AND CONTINUE:
-  Agent acts autonomously but sends notifications for key decisions.
-  Human can intervene if something looks wrong.
-  Best for: Background automation, monitoring tasks
-
-  Level 3 — FULLY AUTONOMOUS:
-  Agent completes the entire task without human involvement.
-  Human reviews the final output only.
-  Best for: Well-tested, low-risk workflows with clear success criteria
-```
-
-**Example: Email agent with human-in-the-loop**
-
-```
-  User: "Reply to all customer complaints from today"
-
-  Agent reads 5 complaint emails (autonomous — safe, read-only)
-  Agent drafts 5 replies (autonomous — no side effects yet)
-  Agent presents drafts to human for review:
-    "I've drafted 5 replies. Here's a summary:
-     Email 1: Apologize for late delivery, offer 10% discount
-     Email 2: Explain the billing error and issue refund
-     ...
-     Approve all? Edit any? [approve / edit / cancel]"
-  Human: "Approve 1, 3, 4, 5. Edit #2 — increase refund to full amount."
-  Agent sends approved emails, updates #2, sends it after re-approval.
-```
-
----
-
-### 9.2.10 Agent Frameworks and Protocols
-
-**Popular agent frameworks:**
-
-| Framework | Creator | Best For |
-|-----------|---------|---------|
-| LangChain / LangGraph | LangChain Inc. | General-purpose agents with complex workflows |
-| OpenAI Agents SDK | OpenAI | Building agents with OpenAI models and tool calling |
-| CrewAI | Open-source | Multi-agent collaboration with roles and goals |
-| AutoGen | Microsoft | Multi-agent conversation and code execution |
-| LlamaIndex | LlamaIndex Inc. | Data-focused agents (RAG + tools) |
-| Semantic Kernel | Microsoft | Enterprise agent orchestration (.NET/Python) |
-| Haystack | deepset | Production NLP/agent pipelines |
-| Smolagents | Hugging Face | Lightweight agents with code-based tool calling |
-
-**MCP (Model Context Protocol) — Connecting Agents to Data and Tools**
-
-```
-  MCP is an open protocol (created by Anthropic) that standardizes
-  how LLMs connect to external tools and data sources.
-
-  THE PROBLEM WITHOUT MCP:
-  Every tool has a different API format.
-  Every LLM provider has a different tool-calling format.
-  Every integration is custom, fragile, and has to be rebuilt per provider.
-
-  WITH MCP:
-  Tools expose a standard MCP interface.
-  LLMs connect to tools through a standard MCP client.
-  One integration works across any MCP-compatible LLM.
-
-  Analogy: MCP is like USB for AI tools.
-  Before USB, every device had a different connector.
-  USB standardized it — any device works with any computer.
-  MCP does the same for AI tool connections.
-
-  ┌──────────┐     MCP      ┌──────────────────┐
-  │   LLM    │◄────────────►│  MCP Server:     │
-  │ (Claude, │   standard   │  - File system   │
-  │  GPT,    │   protocol   │  - Database      │
-  │  etc.)   │              │  - GitHub        │
-  └──────────┘              │  - Slack         │
-                            │  - Any tool...   │
-                            └──────────────────┘
-```
+**The one number to remember — reliability compounds.** An agent that is 95% reliable *per step* is only $0.95^{10} \approx 60\%$ reliable over a 10-step task. This is *the* central challenge of agents: errors multiply, so production systems need guardrails, retries, iteration caps, and human-in-the-loop checkpoints (Ch 18 §18.10, §18.13).
 
 ---
 
@@ -4000,7 +3507,7 @@ For high-stakes tasks, agents should involve humans at critical decision points.
 
 ## 9.3 Function/Tool Calling — The Technical Details
 
-Section 9.2.3 covered tool calling conceptually. Here's how it works at the API level:
+Tool calling was introduced above (§9.2.2) and is covered in depth in Ch 18 §18.2. Here's how it works at the API level:
 
 ```python
   # How tool calling works with the OpenAI API:
@@ -4478,6 +3985,18 @@ No automated metric perfectly captures quality. For critical applications, human
 | BBH | Hard reasoning tasks | 23 challenging BIG-Bench tasks |
 | MT-Bench | Multi-turn conversation quality | Open-ended conversation judged by GPT-4 |
 
+> **Saturation warning (2026):** MMLU, HellaSwag, GSM8K, and HumanEval are largely *saturated* — top models score 90%+, so they no longer separate the frontier. The benchmarks that actually matter in 2026:
+
+| Frontier benchmark (2026) | What it tests |
+|---|---|
+| **GPQA (Diamond)** | Graduate-level science, "Google-proof" hard Q&A |
+| **SWE-bench Verified** | Real GitHub bug fixes — the patch must pass the repo's tests (the agentic-coding benchmark) |
+| **AIME / MATH-500 / FrontierMath** | Competition- to research-level math (reasoning models) |
+| **ARC-AGI-2** | Abstract reasoning / fluid intelligence |
+| **MMLU-Pro** | Harder, less-saturated MMLU |
+| **LiveCodeBench** | Contamination-resistant competitive coding |
+| **Humanity's Last Exam** | Expert-level, cross-domain frontier questions |
+
 **Example benchmark questions:**
 
 ```
@@ -4556,6 +4075,7 @@ $$\text{Memory (GB)} = \frac{\text{Parameters} \times \text{bits per param}}{8 \
 ```
   FP32 (Full precision):   32 bits per parameter
   FP16 / BF16 (Half):      16 bits per parameter → 2× smaller
+  FP8 (E4M3/E5M2):          8 bits per parameter → 4× smaller (native on H100/Blackwell)
   INT8 (8-bit):              8 bits per parameter → 4× smaller
   INT4 (4-bit):              4 bits per parameter → 8× smaller
 
@@ -4563,7 +4083,7 @@ $$\text{Memory (GB)} = \frac{\text{Parameters} \times \text{bits per param}}{8 \
   FP32: 280 GB    (needs 4× A100 80GB GPUs)
   FP16: 140 GB    (needs 2× A100 80GB GPUs)
   INT8:  70 GB    (fits on 1× A100 80GB)
-  INT4:  35 GB    (fits on 1× consumer GPU with 48GB!)
+  INT4:  35 GB    (fits on 1× workstation GPU with 48GB)
 ```
 
 **Popular quantization methods:**
@@ -4575,6 +4095,8 @@ $$\text{Memory (GB)} = \frac{\text{Parameters} \times \text{bits per param}}{8 \
 | GGUF/GGML | CPU-friendly format, mixed precision | Ollama, llama.cpp (run on laptops) |
 | BitsAndBytes | On-the-fly quantization in PyTorch | Hugging Face integration |
 | SmoothQuant | Migrates quantization difficulty from activations to weights | Good for INT8 |
+| **FP8 (E4M3)** | 8-bit *float*; near-lossless, hardware-native | **The 2025-26 production default** on H100/Blackwell (vLLM, TensorRT-LLM); FP8 KV cache too |
+| **NF4 / MXFP4** | 4-bit formats tuned for LLM weight distributions | QLoRA fine-tuning (NF4); gpt-oss and newer (MXFP4) |
 
 **Quality impact:**
 
@@ -4656,6 +4178,8 @@ Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
   - Used by virtually all modern LLM implementations
 ```
 
+**Versions:** FlashAttention-2 (2023) is the widely-used baseline; **FlashAttention-3** (2024) targets Hopper/Blackwell GPUs with FP8 support and is standard on newer hardware.
+
 ---
 
 ## 12.5 Speculative Decoding — Using Small Models to Speed Up Big Ones
@@ -4678,6 +4202,8 @@ Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
   No quality loss: The target model has final say on every token
 ```
 
+**Common variants:** **Medusa** adds extra decoding "heads" to the model itself to draft several tokens at once; **EAGLE** (EAGLE-3 by 2026) drafts at the feature level for higher acceptance rates. Both are widely supported in vLLM / TensorRT-LLM and give ~2–3× throughput with *bit-exact* output. By 2026 speculative decoding is considered the single biggest inference speed lever.
+
 ---
 
 ## 12.6 Serving Infrastructure
@@ -4691,7 +4217,7 @@ Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
 | TensorRT-LLM | NVIDIA | Maximum GPU performance |
 | Ollama | Community | Local deployment, simplicity |
 | llama.cpp | Community | CPU inference, edge devices |
-| SGLang | Stanford | Structured generation, function calling |
+| SGLang | UC Berkeley / LMSYS | Structured generation, function calling |
 
 **Batching strategies:**
 
@@ -4755,17 +4281,17 @@ Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
 
 LLMs charge per token. **Prices drop rapidly — always check current pricing.** Order-of-magnitude estimates:
 
-| Model | Input cost | Output cost | 1M tokens ≈ |
+| Model tier (2026) | Input ~$/M | Output ~$/M | Notes |
 |-------|-----------|-------------|------------|
-| GPT-4o | ~$5/M tokens | ~$15/M tokens | 750,000 words |
-| GPT-3.5 Turbo | ~$0.50/M | ~$1.50/M | cheap! |
-| Claude 3 Sonnet | ~$3/M | ~$15/M | |
-| LLaMA 3 (self-hosted) | infrastructure cost | | near free at scale |
+| **Frontier** (GPT-5.5, Claude Opus 4.x, Gemini 3 Pro) | $2–15 | $10–75 | best quality; reasoning "thinking" tokens are billed too |
+| **Mid** (GPT-5-mini, Claude Sonnet 4.x, Gemini 3 Flash) | $0.15–3 | $0.60–15 | the production workhorse |
+| **Small / nano** (GPT-5-nano, Claude Haiku, Gemini Flash-Lite) | ~$0.05–0.40 | cheap | bulk classification / extraction |
+| **Open-weight** (Llama 4, DeepSeek, Qwen — self-hosted) | infra cost only | | near-free at scale |
 
 **Cost rule of thumb:**
 - A chatbot that handles 1000 conversations/day × 1000 tokens/conversation = 1M tokens/day
-- At GPT-4o pricing: ~$5-20/day to run
-- At GPT-3.5 pricing: ~$0.50-1.50/day
+- At mid-tier pricing: pennies to a few dollars/day
+- At frontier / reasoning-model pricing: 10–50× more (reasoning models also bill hidden thinking tokens)
 
 ---
 
@@ -4793,20 +4319,20 @@ The context window limits how much text the model can "see" at once.
 
 ```
   Task: Simple Q&A, summarization, classification
-  → GPT-3.5 Turbo, Claude Haiku, or LLaMA-3-8B
+  → a small/mini model (GPT-5-mini, Claude Haiku, Gemini Flash, or Llama 4 self-hosted)
   → Cheap, fast, good enough
 
   Task: Complex reasoning, code generation, analysis
-  → GPT-4o, Claude Sonnet/Opus, LLaMA-3-70B
+  → a frontier or reasoning model (GPT-5.5, Claude Opus 4.x, Gemini 3 Pro, DeepSeek-R1)
   → More expensive, but worth it for quality
 
   Task: Running on-device or with data privacy
-  → LLaMA-3-8B via Ollama (runs on a laptop)
+  → a small open-weight model (Llama / Gemma / Qwen via Ollama)
   → Free, private, no internet needed
 
   Task: High-volume production with tight budgets
-  → Fine-tune a smaller model (7B-13B) on your specific task
-  → Often beats a 175B general model on narrow domains
+  → Fine-tune a smaller model (or use a mini model) on your specific task
+  → Often beats a much larger general model on narrow domains
 ```
 
 ---
@@ -4867,7 +4393,9 @@ A significant ongoing legal debate: **LLMs were trained on copyrighted text. Is 
 
   1. Is training on copyrighted text "fair use"?
      → Active lawsuits (NYT vs OpenAI, Authors Guild vs OpenAI)
-     → No definitive legal ruling yet (as of 2024)
+     → By 2026: early rulings exist but no blanket precedent
+       (Bartz v. Anthropic, 2025 — training can be fair use, but using
+        pirated source copies is not; Kadrey v. Meta; Thomson Reuters v. ROSS)
 
   2. Who owns LLM-generated content?
      → US Copyright Office: "AI-generated content cannot be copyrighted"
@@ -5170,6 +4698,23 @@ Understanding the key papers helps you understand WHY things are the way they ar
 
   Lesson: Data quantity and quality matter as much as model size.
   This launched the open-source LLM revolution.
+```
+
+### "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL" (DeepSeek, 2025)
+
+```
+  The paper that made reasoning models mainstream and reproducible.
+
+  Key contribution: strong reasoning can be learned by RL on VERIFIABLE
+  rewards (RLVR) — no human-preference labels — using GRPO, a critic-free
+  policy-gradient method (group-relative advantage, no value network).
+
+  R1-Zero showed reasoning can emerge from pure RL (no SFT first); the full
+  R1 recipe (SFT → RL) produced an open-weight model rivaling OpenAI's o1
+  on math/code, and its distilled small models stayed strong.
+
+  Lesson: for checkable tasks, optimize correctness directly. This is the
+  training method behind the 2025-26 reasoning wave (o-series, R1, and more).
 ```
 
 ---

@@ -23,6 +23,9 @@ it is plain HTML/CSS/vanilla JS rendered in the browser.
     markers) from live word counts (~55 wpm model).
   - `node tools/split-dsa.js` — regenerates `js/data/dsa_problems_index.js` (metadata)
     and `js/data/dsa_problems_full.js` (starter-code lookup) from `js/data/dsa_problems.js`.
+  - `node tools/build-search-index.js` (`--check` to validate) — generates
+    `js/data/search_index.js` (the prebuilt `SEARCH_INDEX`) from the chapter markdown,
+    so the app doesn't fetch every `.md` file on first in-app search.
 - **Desktop app** (Electron, in `desktop/`): `npm ci`, then `npm start` (dev) or
   `npm run build` (electron-builder, Windows x64). It bundles the root static
   files as `extraResources` — it does **not** have its own copy of the content.
@@ -65,8 +68,8 @@ it is plain HTML/CSS/vanilla JS rendered in the browser.
 - **Bump `CACHE_NAME` in `sw.js`** whenever you change shipped assets, or users
   get stale cached files after deploy.
 - **Never hand-edit generated files:** `mock_questions.js`, the `dsa_problems_*`
-  split pair, and the `CHAPTER_MINUTES` marker block. Edit the source and re-run
-  the matching tool.
+  split pair, `search_index.js`, and the `CHAPTER_MINUTES` marker block. Edit the
+  source and re-run the matching tool.
 - **DSA Java starter code must contain no backticks** — `split-dsa.js` relies on
   backtick-delimited `starterCode` blocks. Edit `js/data/dsa_problems.js` (the
   unsplit source), then re-run the split tool.
