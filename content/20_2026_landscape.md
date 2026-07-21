@@ -23,7 +23,7 @@ By the end of this chapter you'll be able to:
 
 ---
 
-## 19.1 The 2026 Frontier Model Lineup
+## 20.1 The 2026 Frontier Model Lineup
 
 > **Frontier model**: a generally-capable foundation model at or near the state of the art on the standard benchmarks (reasoning, coding, math, multimodal). Built by a small set of labs with the compute and talent to push the curve.
 
@@ -71,7 +71,7 @@ Interview tip: don't memorise these numbers — they shift monthly. Memorise the
 
 ---
 
-## 19.2 Reasoning Models & Test-Time Compute
+## 20.2 Reasoning Models & Test-Time Compute
 
 > **Reasoning model**: an LLM that allocates additional compute *at inference time* — generating hidden "thinking" tokens before producing a final answer — so accuracy on hard problems scales with thinking budget rather than parameters alone.
 
@@ -137,7 +137,7 @@ print(msg.content)
 
 ---
 
-## 19.3 The Open-Weight Race
+## 20.3 The Open-Weight Race
 
 The single biggest 2025–2026 story: open-weight models closed the capability gap on closed-weight ones. Almost every flagship is now a **sparse Mixture-of-Experts (MoE)** — a giant total parameter count, only a small slice active per token.
 
@@ -167,7 +167,7 @@ When to pick **closed-weight**: top-end agent reliability, latest reasoning fron
 
 ---
 
-## 19.4 Coding Agents — The 2026 Headline Story
+## 20.4 Coding Agents — The 2026 Headline Story
 
 > **Coding agent**: an LLM-powered system that reads a codebase, plans changes, edits files, runs tests, and iterates — autonomously or with a human in the loop. The category that took over developer tooling in 2025–2026.
 
@@ -222,7 +222,7 @@ Expect questions like *"How would you build a coding agent?"* or *"Why did SWE-b
 
 ---
 
-## 19.5 Multimodal Generation — Images, Video, Voice
+## 20.5 Multimodal Generation — Images, Video, Voice
 
 By 2026, generation went from a research demo to a product category.
 
@@ -263,7 +263,7 @@ The shift: 2024 voice was `STT → LLM → TTS` (high latency, lost prosody). 20
 
 ---
 
-## 19.6 Computer-Use Agents
+## 20.6 Computer-Use Agents
 
 > **Computer-use agent**: an AI that drives a real computer — looking at the screen, moving a mouse, typing, clicking — to complete tasks intended for humans (filling forms, navigating browsers, operating apps).
 
@@ -303,7 +303,7 @@ response = client.messages.create(
 
 ---
 
-## 19.7 On-Device AI & Quantization
+## 20.7 On-Device AI & Quantization
 
 > **On-device AI**: running ML models locally on phones, laptops, or edge devices instead of in the cloud — trading model size for privacy, latency, cost, and offline availability.
 
@@ -333,6 +333,8 @@ INT4 loses ~1–3% on benchmarks. **GPTQ**, **AWQ**, and **GGUF** make it practi
 
 ### Hello world — load a 4-bit quantized model
 
+> `Llama-3.1-8B-Instruct` here is an illustrative, stable reference model — swap in Llama 4 or your current base; the quantization flow is identical.
+
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
@@ -358,7 +360,7 @@ print(tok.decode(model.generate(**tok("Hello", return_tensors="pt").to("cuda"))[
 
 ---
 
-## 19.8 The Cost Trajectory
+## 20.8 The Cost Trajectory
 
 The single most under-appreciated fact of 2026: **token prices fell ~150–1000× between late 2022 and 2026** for equivalent quality.
 
@@ -381,7 +383,7 @@ The single most under-appreciated fact of 2026: **token prices fell ~150–1000�
 
 ---
 
-## 19.9 The Long-Context Era
+## 20.9 The Long-Context Era
 
 Context windows scaled fast: **8K (GPT-3.5, 2022) → 32K (GPT-4) → 200K (Claude 3) → 1M (Gemini 1.5 / Claude 4) → 10M (Llama 4 Scout, 2025)**.
 
@@ -407,7 +409,7 @@ A 2026 best practice: **use both.** Retrieve top-50 with hybrid search and reran
 
 ---
 
-## 19.10 Context Engineering — The 2026 Skill
+## 20.10 Context Engineering — The 2026 Skill
 
 > **Context engineering**: the systematic design of everything a model sees at inference — system prompt, retrieved docs (RAG), tool outputs, conversation history, structured memory, layout — to maximise task quality.
 
@@ -458,7 +460,7 @@ If 2024 was about prompt engineering, 2026 is about context engineering. The wor
 
 ---
 
-## 19.11 Responsible AI & Regulation
+## 20.11 Responsible AI & Regulation
 
 Safety stopped being optional in 2024; in 2026 it's also legally enforced.
 
@@ -492,7 +494,9 @@ If you build foundation models, deploy them in the EU, or sell to EU customers, 
 - **China**: generative AI services must register with the CAC; approved-content models only.
 - **Industry**: Frontier Model Forum (Anthropic, Google, Microsoft, OpenAI) publishes voluntary safety commitments.
 
-### Google's AI Principles (2018 — still cited)
+### Google's AI Principles — 2018 (historical) and the 2025 revision
+
+The original **2018** principles (widely cited for years):
 
 1. Be socially beneficial.
 2. Avoid creating or reinforcing unfair bias.
@@ -502,9 +506,13 @@ If you build foundation models, deploy them in the EU, or sell to EU customers, 
 6. Uphold high standards of scientific excellence.
 7. Be available for uses that align with these principles.
 
+The 2018 list also included explicit **"AI we will not pursue"** pledges — notably not building AI for weapons or for surveillance violating internationally accepted norms.
+
+> **Feb 2025 revision.** Google rewrote its AI Principles, **removing** those explicit pledges against weapons and surveillance. The framing shifted toward pursuing AI "where the overall likely benefits substantially exceed the foreseeable risks," consistent with international law and human rights. In interviews, treat the 7-point list above as historical and cite the 2025 benefit-vs-risk framing as current.
+
 ---
 
-## 19.12 Google's 2026 AI Stack
+## 20.12 Google's 2026 AI Stack
 
 If you're interviewing for an AI Engineer role at Google, you must know this stack — they invented half of it.
 
@@ -534,7 +542,7 @@ At **Cloud Next 2026** Google rebranded **Vertex AI** as the **Gemini Enterprise
 | **Model Garden** | Curated catalogue (Gemini, Llama, Mistral, Anthropic, etc.) |
 | **Genkit** | Lighter open-source GenAI framework |
 
-(Hello world for ADK is in Ch 19 §18.12.)
+(Hello world for ADK is in Ch 19 §19.12.)
 
 ### Infrastructure — TPU v7 "Ironwood"
 
@@ -561,7 +569,7 @@ Anthropic committed to up to **1 million Ironwood chips and >1 GW of capacity** 
 
 ---
 
-## 19.13 Benchmarks 2026 — What Saturated, What's New
+## 20.13 Benchmarks 2026 — What Saturated, What's New
 
 A quick map of the eval landscape interviewers expect you to know:
 
@@ -583,7 +591,7 @@ If a candidate cites *MMLU* or *HumanEval* as a quality signal in 2026, it's a y
 
 ---
 
-## 19.14 What's NOT New — and Still Wins
+## 20.14 What's NOT New — and Still Wins
 
 A useful counterweight to the hype cycle. Many production systems in 2026 still run **classical ML** because it's faster, cheaper, more debuggable, and good enough.
 
@@ -599,7 +607,7 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
 
 ---
 
-## 19.15 Decision Tree — Which Model for Which Job
+## 20.15 Decision Tree — Which Model for Which Job
 
 ```
    What's the task?
@@ -629,7 +637,7 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
 
 ---
 
-## 19.16 What Goes Wrong (Pitfalls)
+## 20.16 What Goes Wrong (Pitfalls)
 
 1. **Defaulting to a reasoning model for everything.** They charge for thinking tokens; on simple tasks they cost 10–50× and add latency without quality gain.
 2. **Citing saturated benchmarks** (MMLU, HumanEval) in interviews. Use SWE-bench, GPQA Diamond, OSWorld, ARC-AGI-2.
@@ -644,7 +652,7 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
 
 ---
 
-## 19.17 Interview Questions
+## 20.17 Interview Questions
 
 **Q1. Walk me through the May 2026 frontier model lineup.**
 GPT-5.5 leads autonomous agents (Terminal-Bench 82.7%, OSWorld 78.7%); Claude Opus 4.7 leads software engineering (SWE-bench 87.6%) and tool orchestration; Gemini 3.1 Pro leads price/multimodal (GPQA 94.3%, $2/$12 per M tokens). Open-weight: DeepSeek V4-Pro at 83.7% SWE-bench, Llama 4 Scout with a 10M context window, Qwen 3.5 at 88.4% GPQA. Within ~3 points at the top, so model choice in production is mostly about price, latency, and ecosystem.
@@ -678,7 +686,7 @@ Use for legacy software with no API, one-off cross-app automation, QA of flaky i
 
 ---
 
-## 19.18 Key Takeaways
+## 20.18 Key Takeaways
 
 - **Frontier is plural in 2026** — GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro within ~3 points of each other; pick by task fit, not raw score.
 - **Open-weight closed the gap.** DeepSeek V4-Pro, Llama 4, Qwen 3.5 are real production options.
@@ -696,7 +704,7 @@ Use for legacy software with no API, one-off cross-app automation, QA of flaky i
 
 ---
 
-## 19.19 Review Questions
+## 20.19 Review Questions
 
 1. List three places a reasoning model is the *wrong* choice and explain why.
 2. Llama 4 Scout has a 10M-token context. What does that unlock that 1M doesn't, and what *doesn't* it solve?

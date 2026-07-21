@@ -1,530 +1,524 @@
-# Chapter 5B — Upgrade Your Brain in 30 Days: A Practical Program
+# Chapter 5B — Build a Sharper, Younger Brain: The Complete Science-Based Program
 
-> A concrete, time-boxed 30-day plan that turns the *science* from Chapter 5 into a *daily routine*. **[← Chapter 5 — Brain Training](05_brain_training.md)** gives you the "why" (the cognitive-science evidence). This chapter gives you the "what to do today", in ~45 minutes a day. No pseudoscience, no nootropic hype — every routine below is an application of a peer-reviewed effect cited in Chapter 5.
+> A practical, **months-long** program to make your brain **sharper, faster, and biologically "younger"** — built entirely on peer-reviewed science, not supplement-store hype. **[← Chapter 5 — Brain Training](05_brain_training.md)** covers the memory-and-focus science in depth. *This* chapter is the whole-body owner's manual: what to **eat**, which **supplements** actually have evidence, how to **exercise**, **sleep**, **train your mind**, and **manage stress** so the brain you already have performs at its ceiling and ages slowly. Easy language, real examples, honest expectations, and a plan you can start today.
 
 ---
 
 ## Simple Explanation
 
-Think of your brain like an athlete training for a season. You don't get fitter by reading about exercise — you get fitter by doing a structured program: warm-up, progressive overload, recovery days, and tracking. This chapter is that program for your *mind*. For 30 days you run a small, repeatable daily loop that exercises five capacities at once:
+Your brain is not a fixed machine you're stuck with — it's a **living organ that rebuilds itself based on how you use and feed it**. This is called *neuroplasticity*, and it never fully switches off, even in your 70s.
 
-1. **Reasoning** (high-IQ thinking routines)
-2. **Curiosity & range** (mind-expanding prompts)
-3. **Input quality** (advanced reading material)
-4. **Retention** (memory-enhancing techniques)
-5. **Recovery** (strategic rest habits)
+Here's the key idea most "brain hack" articles get wrong: **the brain is part of your body.** It runs on the blood your heart pumps, the fuel your food provides, and the cleanup your sleep performs. So the biggest levers for a sharper mind are not exotic pills — they're the same things that keep the rest of you healthy, just aimed at your head:
 
-Each capacity has a famous result behind it — spacing, retrieval, elaboration, sleep-dependent consolidation — but you don't need to think about the theory while you run it. You just follow the day card.
+```
+   WHAT MAKES A BRAIN SHARP AND "YOUNG"  (biggest levers first)
+
+     1. MOVE     exercise grows brain tissue and floods it with growth factors
+     2. EAT      the right food is the raw material and the fuel
+     3. SLEEP    when the brain repairs, files memories, and washes out waste
+     4. TRAIN    effortful learning physically rewires you (use it or lose it)
+     5. CALM     chronic stress corrodes the memory centre; calming protects it
+     6. CONNECT  people, novelty, and purpose build "spare capacity"
+     7. SUPPLEMENT  a small final polish — only a few have real evidence
+```
+
+Notice supplements are **last and smallest**. That order is the whole message of this chapter: the "boring" habits (moving, eating, sleeping) beat every powder in the store, and they're free. Pills are the garnish, not the meal.
 
 ## Official Definition
 
-> A **cognitive training program** is a structured, progressive schedule of effortful mental tasks combined with deliberate recovery, designed to produce *durable* improvement in targeted skills. The evidence is clear on one boundary: training transfers to the **specific skills you practice and to closely related tasks (near transfer)**, but broad "general IQ" gains from puzzle apps are **not** supported (Owen et al., 2010, *Nature*; Simons et al., 2016, *Psychological Science in the Public Interest*). This program is therefore built around skills that *do* transfer to engineering and interview performance: reasoning under uncertainty, durable recall of technical material, and sustained focus — not abstract "brain games."
+> **Neuroplasticity** is the brain's lifelong ability to reorganize its structure, function, and connections in response to experience. It is why practice physically changes the brain: London taxi drivers who memorize the city grow a larger memory centre (hippocampus) (Maguire et al., 2000), and adults who learn to juggle grow measurable grey matter in weeks (Draganski et al., 2004, *Nature*). The brain you use is the brain you keep.
 
-> **In plain English:** practising a Sudoku app makes you better at *Sudoku* — not smarter in general. ("Near transfer" just means a skill carries over to *similar* tasks; "far transfer" to *unrelated* ones, and that mostly doesn't happen.) So instead of brain-game puzzles, this program drills the skills you *actually* want: thinking clearly, remembering technical material, and staying focused.
+> **Cognitive reserve** is your brain's buffer against aging and damage — built up by education, mentally demanding work, exercise, and rich social/intellectual life. People with more reserve can sustain more physical brain aging before it shows up as decline (Stern, 2012, *Lancet Neurology*). This is the mechanism behind a "younger" brain: you can't stop the clock, but you can build a bigger tank.
 
-> ⚠️ **Honest expectation-setting.** You cannot raise a validated IQ score by 15 points in 30 days; anyone selling that is selling snake oil. What you *can* do in 30 days: build retrieval-practice and spacing habits that measurably improve how much you retain, sharpen specific reasoning routines, fix the sleep/focus leaks that quietly cap your performance, and read deeper material than you currently do. Those are real, and they compound.
+> ⚠️ **Honest expectation-setting — read this before anything else.** You **cannot** permanently raise a validated IQ score by 15 points, and no food, app, or supplement does. *Fluid intelligence* (raw reasoning horsepower) is largely stable in adulthood, and "brain-training" games do **not** transfer to general intelligence (Owen et al., 2010, *Nature*; Melby-Lervåg & Hulme, 2013; Simons et al., 2016). What you genuinely **can** do — and what this program delivers — is: (1) get your existing brain performing at its true ceiling (most people run it chronically under-slept, under-fed, and under-moved), (2) sharpen the *specific* skills you practise, and (3) slow biological brain aging so you stay sharp for **decades** longer. Those are real, measurable, and they compound. Anyone promising a quick IQ jump is selling snake oil.
 
----
-
-## What You'll Build in 30 Days
-
-By Day 30 you will have:
-
-- A running **Anki / spaced-repetition deck** you actually review daily (the single highest-ROI habit here).
-- A repertoire of **5 thinking routines** you can deploy on any hard problem.
-- A **reading habit** of one dense source per week, processed with active recall — not passive skimming.
-- A **memory palace** you can build on demand, plus working knowledge of major/peg systems.
-- A **sleep and rest protocol** that protects the consolidation your daytime effort depends on.
-- A **metrics log** showing your retention %, focus minutes, and reading throughput trending up.
+> **In plain English:** think of it like fitness. You can't turn a 5-foot-6 person into a 6-foot-2 NBA player — but almost *anyone* can go from unfit and sluggish to strong, lean, and energetic with training. Same with your brain: not a new engine, but a fully tuned, well-fueled, well-rested one that keeps running strong far longer than a neglected one. That transformation is huge, and it's available to you.
 
 ---
 
-## The Core Principle: It's a Loop, Not a List
+## What Results to Expect, and When
 
-Most "brain upgrade" plans fail because they're a pile of unrelated tips. This one is a single **daily loop** repeated 30 times, with the *content* changing as you progress. The loop is deliberately short so it survives bad days (see Chapter 5 on implementation intentions and the 5-minute rule).
+Different levers pay off on different timelines. This chart keeps you honest and patient — the big structural gains take **months**, which is exactly why you said you're willing to commit to them.
 
 ```
-   THE DAILY 45-MINUTE LOOP  (the engine of the whole program)
+   HONEST RESULTS TIMELINE
 
-   ┌──────────────────────────────────────────────────────────────┐
-   │  0–10 min   RECALL     Review spaced-repetition cards (Anki)   │
-   │                        → retrieval practice = the #1 lever     │
-   ├──────────────────────────────────────────────────────────────┤
-   │  10–15 min  PROMPT     One mind-expanding prompt, write 5 lines│
-   │                        → divergent thinking + writing-to-learn │
-   ├──────────────────────────────────────────────────────────────┤
-   │  15–35 min  DEEP WORK  One thinking routine on hard material   │
-   │                        (read advanced source OR solve problem) │
-   │                        → effortful, single-tasked, timed       │
-   ├──────────────────────────────────────────────────────────────┤
-   │  35–45 min  ENCODE     Turn today's insight into 2–4 new cards │
-   │                        + 3-line Feynman explanation            │
-   │                        → generation effect closes the loop     │
-   └──────────────────────────────────────────────────────────────┘
-              ▲                                          │
-              └─────────  tomorrow's RECALL reviews ─────┘
-                          what you ENCODED today
+   FIRST FEW DAYS   Sharper focus, steadier mood, more energy
+                    (from fixing sleep, hydration, a walk, less junk food)
+   2–4 WEEKS        Better retention, calmer under stress, exercise feels easier,
+                    fewer afternoon crashes; new habits start to stick
+   2–3 MONTHS       Measurable memory gains, real fitness, diet effects on the
+                    brain kick in, meditation visibly steadies attention
+   6–12 MONTHS      Cardio-driven growth in the memory centre; a durable, sharper
+                    baseline; noticeably faster learning of hard material
+   YEARS            Cognitive RESERVE — a brain that stays sharp far longer and
+                    resists age-related decline (the real "younger brain" payoff)
 ```
 
-**Why this exact order works (Chapter 5 cross-refs):**
+| Timeframe | What you'll notice | Main drivers |
+|-----------|--------------------|--------------|
+| Days | Clearer head, better mood, more energy | Sleep, hydration, a daily walk, cutting junk |
+| Weeks | Sharper focus, better recall, less stress | Spaced repetition, exercise habit, meditation |
+| Months | Real memory + fitness gains; diet effects | Aerobic training, MIND-style diet, deep sleep |
+| Years | Slow aging, protected sharpness | Cognitive reserve from all seven pillars |
 
-| Block | Technique applied | Evidence (see Ch 5) |
-|-------|-------------------|---------------------|
-| Recall | Active recall + spaced repetition | Roediger & Karpicke 2006; Ebbinghaus 1885 |
-| Prompt | Elaborative interrogation, writing-to-learn | Pressley et al. 1992 |
-| Deep Work | Deliberate practice, desirable difficulty | Ericsson 1993; Bjork & Bjork |
-| Encode | Generation effect, dual coding, Feynman | Slamecka & Graf 1978; Paivio |
-
-Everything else in this chapter — the routines, prompts, reading list, rest protocol — is just *what you pour into the loop* each day.
-
-### What one day actually looks like (a worked example)
-
-Theory is abstract, so here is the loop filled in with real content. Say it's **Day 9** and you're prepping for an ML interview:
-
-| Block | What you actually do on Day 9 |
-|-------|-------------------------------|
-| **RECALL** (10 min) | Anki shows you 18 cards that are "due" today. One asks: *"Why does dropout reduce overfitting?"* You say the answer out loud from memory, **then** flip the card to check. You got 16 of 18 right. |
-| **PROMPT** (5 min) | Today's prompt: *"Explain backpropagation using a cooking metaphor."* You write 5 lines: gradients are like tasting a sauce, deciding it's too salty, and adjusting the recipe a little each time. |
-| **DEEP WORK** (20 min) | You read 4 pages on batch normalization. Then you apply the **Inversion** routine (below): *"How could batch norm make training **worse**?"* — and you discover the small-batch edge case. |
-| **ENCODE** (10 min) | You make 3 new cards (e.g., *"What does batch norm normalize, and over which axis?"*) and write a 3-sentence plain-English summary of what you learned. |
-
-Total: **~45 minutes.** Tomorrow, those 3 new cards show up in RECALL — so today's effort gets reviewed automatically, and the loop compounds. That's the whole machine.
+> **Takeaway:** the fast wins (days) keep you motivated; the big wins (months–years) are why you're here. Don't quit at week 3 because you don't feel like a genius yet — the structural changes are still cooking.
 
 ---
 
-## Week-by-Week Arc
+## The Seven Pillars (Ranked by Evidence)
 
-The 30 days are organized as four progressive weeks. Difficulty and autonomy ramp up; the daily time stays ~45 min.
+Every pillar below is tagged with how solid the science is, so you spend effort where it pays:
 
 ```
-  WEEK 1  FOUNDATIONS     Install the loop. Build the deck. Fix sleep.
-  WEEK 2  REASONING       Add thinking routines. Harder reading. Memory palace.
-  WEEK 3  RANGE           Mind-expanding prompts. Cross-domain reading. Interleave.
-  WEEK 4  INTEGRATION     Full loop on real interview/ML material. Test yourself.
-        ───────────────────────────────────────────────────────────
-        Throughout: spaced review compounds; rest protocol is non-negotiable.
+   🟢 STRONG   Multiple randomized trials or large studies — high confidence
+   🟡 PROMISING  Some good evidence, but limited or mixed — worth trying
+   🔴 OVERHYPED  Popular but weak/failed evidence — don't rely on it
 ```
 
-| Week | Theme | New skill added | Reading target |
-|------|-------|-----------------|----------------|
-| 1 | Foundations | Daily recall + encode habit; sleep protocol | 1 accessible deep article |
-| 2 | Reasoning | 5 thinking routines; memory palace | 1 dense technical chapter |
-| 3 | Range | Mind-expanding prompts; interleaving | 1 cross-domain primary source |
-| 4 | Integration | Self-testing under exam conditions | 1 research paper (full) |
+| # | Pillar | One-line why | Evidence | Effort-to-payoff |
+|---|--------|--------------|:--------:|------------------|
+| 1 | **Move** (exercise) | Grows the memory centre; floods brain with growth factor | 🟢 | Highest |
+| 2 | **Eat** (food) | Raw material + steady fuel; slows brain aging | 🟢 | High |
+| 3 | **Sleep** | Consolidates memory; power-washes waste out of the brain | 🟢 | Highest |
+| 4 | **Train** (mental practice) | Rewires you for the *specific* skills you drill | 🟢 (near-transfer) | High |
+| 5 | **Calm** (stress/mind) | Chronic stress shrinks memory centre; calming protects it | 🟢 / 🟡 | Medium |
+| 6 | **Connect & challenge** | People, novelty, purpose build cognitive reserve | 🟢 | Medium |
+| 7 | **Supplements** | A few help a little; most are marketing | 🟡 / 🔴 | Lowest |
+
+The rest of the chapter is one section per pillar (what it is, why it works, and exactly what to **do**), then a **12-week plan** that combines them, plus tracking, myths, and safety.
 
 ---
 
-## Part 1 — High-IQ Thinking Routines
+## Pillar 1 — MOVE: Exercise Is the Closest Thing to a Smart Pill 🟢
 
-> **Simple version:** Smart problem-solving is less about raw horsepower and more about having *reusable routines* you run instead of staring blankly. Below are five routines used by strong engineers and forecasters. Learn one per day in Week 2, then keep all five in rotation.
+> **Simple version:** If there were a single pill that grew new brain cells, improved memory, lifted mood, and slowed aging, it would be the biggest drug in history. That "pill" exists — it's called **exercise**, and it's free. Of everything in this chapter, physical movement has the strongest and most direct evidence for a sharper brain.
 
-> **Official:** These routines come from research on how people make good judgments and decisions — especially **calibration and probabilistic reasoning** (Tetlock & Gardner, *Superforecasting*, 2015), the split between fast-intuitive and slow-deliberate thinking (**System 1 / System 2**, Kahneman, 2011), and the **structured analytic techniques** used by professional analysts. Because they're "near-transfer" skills — you practise the *exact* kind of reasoning you'll use on real problems and in interviews — they're the kind of training the evidence actually supports.
+> **Official:** Aerobic exercise increases **BDNF** (Brain-Derived Neurotrophic Factor) — a protein so important for growing and maintaining neurons that scientists nickname it *"Miracle-Gro for the brain"* (Cotman & Berchtold, 2002). In a landmark randomized trial, one year of moderate aerobic exercise **grew the hippocampus (the brain's memory centre) by ~2%, effectively reversing 1–2 years of age-related shrinkage**, and improved memory — while the non-exercising group's hippocampus shrank as expected (Erickson et al., 2011, *PNAS*). A meta-analysis of 39 studies confirmed **both aerobic and resistance training improve cognition in adults** (Northey et al., 2018, *British Journal of Sports Medicine*).
 
-### Routine 1 — First-Principles Decomposition
-
-Strip a problem down to the handful of facts you're *sure* of, then build back up from there — instead of copying how everyone else does it. Ask: *"What do I actually know to be true here?"*
+### Why it works (in plain English)
 
 ```
-  Problem:  "Design a system to detect fraud in real time."
-  ❌ By analogy:        "Just copy what Company X did."
-  ✅ First principles:  What even IS fraud here (a yes/no label)?
-                        What signal shows up BEFORE the fraud happens?
-                        How fast must we answer (latency budget)?
-                        What's worse — a false alarm (flagging a good user)
-                        or a miss (letting fraud through)?
-                        → Once you list the real constraints, the design
-                          almost writes itself.
+   EXERCISE → SHARPER BRAIN  (the chain of cause and effect)
+
+   You move  →  more blood + oxygen to the brain
+             →  release of BDNF ("Miracle-Gro")
+             →  new neurons + new connections in the hippocampus
+             →  better memory, focus, mood, and slower aging
 ```
 
-> *(A "false alarm" is a **false positive**; a "miss" is a **false negative**. Deciding which is more costly drives the whole design.)*
+Even a **single** brisk walk improves attention and problem-solving for the next couple of hours — handy right before studying or an interview.
 
-### Routine 2 — Inversion ("Think Backwards")
-
-Instead of asking *"How do I succeed?"*, ask *"What would guarantee failure?"* — then avoid those things. The mathematician Jacobi's advice was *"invert, always invert"*; the investor Charlie Munger made it famous.
-
-> Daily use: before any plan, list the top 3 ways it could fail. You'll catch most problems while you're still designing, instead of after they blow up.
+### What to actually do
 
 ```
-  Example — your plan is "I'll prepare for my interview in 4 weeks."
-  Invert it → "What would guarantee I FAIL?"
-    • I cram only theory and never practise coding out loud → fix: do mock interviews early.
-    • I burn out by week 2 → fix: schedule rest days from the start.
-    • I skip the topics I dislike → fix: begin with my weakest area, not my favourite.
-  Each failure mode just handed you a to-do item.
+   THE WEEKLY MOVEMENT PRESCRIPTION  (based on WHO / AHA guidelines)
+
+   AEROBIC (the big one)   150 min/week moderate  (e.g., 5 × 30-min brisk walks)
+                           OR 75 min/week vigorous (e.g., 3 × 25-min jog/cycle)
+                           → "moderate" = you can talk but not sing
+
+   STRENGTH                2 sessions/week, all major muscle groups
+                           (bodyweight squats/push-ups count; no gym required)
+
+   DAILY MOVEMENT          Break up sitting every ~30–60 min — stand, stretch,
+                           walk. Sitting all day is its own risk factor.
+
+   BONUS                   A short walk RIGHT BEFORE hard mental work primes focus.
 ```
 
-### Routine 3 — Fermi Estimation
+**Real examples of "moderate aerobic" that count:** a fast walk while on a phone call, cycling to the shops, a dance class, swimming, an energetic game with your kids, mowing the lawn briskly. It does **not** have to be a gym or a marathon — consistency beats intensity.
 
-Take any scary unknown number and break it into smaller numbers you *can* guess, then multiply. (There's a whole chapter of these — see **[Chapter 4 — Aptitude & Mental Math](04_aptitude_mental_math.md)**.) The steps: break it down → guess each piece roughly → multiply → check the answer "feels" the right size.
-
-```
-  Example — "How many piano tuners are in Chicago?"  (a classic)
-    ~3,000,000 people ÷ ~3 per household        = ~1,000,000 households
-    ~1 in 20 households owns a piano             = ~50,000 pianos
-    each tuned once a year; one tuner does ~1,000/yr
-    50,000 ÷ 1,000                               ≈ 50 tuners
-  You'll never be exact — but ~50 is the right ballpark, and that's the goal.
-```
-
-### Routine 4 — Steelman Before You Argue
-
-Before you reject an idea, first describe the **strongest** possible version of it (a "steelman" — the opposite of a "strawman", where you attack a weak, easy-to-beat version). This is the fastest way to actually understand something you dislike, and it kills *confirmation bias* (only noticing evidence that you were already right).
-
-```
-  Example — you believe "writing unit tests on a prototype is a waste of time."
-  Steelman the OPPOSITE first: "Tests document what the code is supposed to do,
-  they catch breakage when I refactor fast, and prototypes that 'just ship' often
-  silently become production." Now you understand WHEN tests are worth it — and
-  your own opinion comes out sharper, not weaker.
-```
-
-### Routine 5 — Calibrated Forecasting
-
-Attach a probability to your predictions, then check them later. Say *"I'm 70% sure this refactor lands by Friday."* The goal: of all the things you call "70% likely," about 70% should actually happen. If you keep saying "90%" but only half come true, you're **overconfident** — and now you know it.
-
-```
-  Example log (check it a week later):
-    "80% this PR passes review today"   → it did     ✅
-    "60% I finish the design doc"        → I didn't   ❌
-    "90% tonight's build is green"       → it was     ✅
-  After ~20 predictions you can SEE whether your "90%"s really happen ~90% of
-  the time. (Scoring this formally is called a *Brier score* — just a number for
-  "how close were my probabilities to reality." Lower is better. You don't need
-  the formula; the habit of writing the % down is what trains your judgment.)
-```
-
-```
-  THINKING-ROUTINE CHEAT CARD (keep visible during Deep Work)
-
-   Stuck on a problem?  → First-Principles Decomposition
-   Making a plan?       → Inversion (how could this fail?)
-   Unknown number?      → Fermi Estimation
-   Disagree with X?     → Steelman X first
-   Predicting outcome?  → Attach a probability, log it
-```
-
-**How to train them:** In Week 2, spend the Deep Work block deliberately applying one routine per day to a real problem (a LeetCode design question, an ML system-design prompt from Chapter 26, or a decision in your own work). Write the routine's output in your log. By Day 14 you'll reach for them automatically.
+> **If you do only ONE thing from this whole chapter:** take a brisk 30-minute walk most days. It's the highest-return, lowest-cost brain upgrade that exists.
 
 ---
 
-## Part 2 — Mind-Expanding Prompts
+## Pillar 2 — EAT: Feed the Brain Its Raw Materials 🟢
 
-> **Simple version:** A good prompt is a key that opens a room in your mind you don't usually visit. Spend 5 minutes a day writing a short answer to one. The point isn't the answer — it's the *mental stretch* and the **writing-to-learn** effect.
+> **Simple version:** Your brain is ~60% fat and burns about 20% of your daily energy despite being 2% of your weight. What you eat is literally the raw material it's built from and the fuel it runs on. You don't need a perfect or expensive diet — you need a **pattern** that's rich in the few foods shown to keep brains young, and low in the ones that age them.
 
-> **Official:** This is **elaborative interrogation** and **self-explanation** (Pressley et al., 1992; Chi et al., 1994) plus **divergent-thinking** practice (coming up with *many* different ideas, not one "right" answer). Writing forces you to make fuzzy, half-formed thoughts explicit, which both deepens understanding and exposes the gaps. Pairing the prompt with a frontier LLM as a **Socratic partner** (one that asks you probing questions instead of just handing you the answer) is the 2026 high-leverage version — see Chapter 5's AI-tutor section. The rule: you write *first*, then let the AI critique — never read its answer cold.
+> **Official:** The **MIND diet** (a blend of the Mediterranean and DASH diets) was associated with markedly slower cognitive decline — high adherence corresponded to a brain roughly **7.5 years younger** cognitively (Morris et al., 2015, *Alzheimer's & Dementia*). Specific foods stand out: eating **~1 serving of leafy greens per day** tracked with cognition ~11 years younger (Morris et al., 2018, *Neurology*), and higher **berry/flavonoid** intake delayed cognitive aging by up to 2.5 years (Devore et al., 2012, *Annals of Neurology*). Conversely, diets high in **ultra-processed food** are linked to faster cognitive decline (Gomes Gonçalves et al., 2023, *JAMA Neurology*).
 
-### A 30-prompt bank (one per day)
+### The brain-food shortlist (eat more of these)
 
-**Reasoning & models**
-1. Explain today's hardest concept to a 12-year-old in 4 sentences. (Feynman)
-2. What's a belief you held a year ago that you've since updated? What changed your mind?
-3. Pick a technology you use daily. How would you rebuild it from first principles?
-4. What's the strongest argument *against* something you believe about ML/AI?
-5. If you had to remove one feature from a system you know well, which, and what breaks?
+| Food group | Why it helps | Easy target |
+|------------|--------------|-------------|
+| 🥬 Leafy greens | Folate, vitamin K, lutein — top single predictor | ~1 serving/day (spinach, kale, rocket) |
+| 🫐 Berries | Flavonoids protect and connect neurons | 2+ handfuls/week |
+| 🐟 Fatty fish | DHA omega-3 is a structural brain fat | 2 servings/week (salmon, sardines, mackerel) |
+| 🥜 Nuts & seeds | Healthy fats, vitamin E | A small handful most days |
+| 🫒 Olive oil | Anti-inflammatory monounsaturated fat | Your main cooking/dressing fat |
+| 🫘 Beans & whole grains | Steady glucose, no sugar spikes | Most meals |
+| 🥚 Eggs | Choline for the memory chemical acetylcholine | Fine daily for most people |
+| ☕ Coffee / tea | Caffeine + antioxidants aid focus (in moderation) | 1–3 cups, not late in the day |
 
-**Range & analogy**
-6. Find a non-obvious analogy between a biological system and a software system.
-7. What does this ML concept have in common with something in economics?
-8. Describe backpropagation using only a cooking metaphor.
-9. What's a question in your field that no one seems to be asking?
-10. Connect two chapters of this course you'd never normally link.
-
-**Inversion & risk**
-11. What would have to be true for your current main project to fail completely?
-12. What's a "best practice" that's probably wrong in some contexts? When?
-13. If your future self looked back at this week, what would they wish you'd done?
-14. What are you avoiding because it's hard, not because it's unimportant?
-
-**Estimation & scale**
-15. Estimate how many GPUs your favorite LLM needed to train. Show your reasoning.
-16. How much would it cost to store every email you've ever sent? Estimate.
-17. What's the smallest change that would 10x your learning speed this month?
-
-**Self-model & metacognition**
-18. When do you think most clearly during the day? What's your evidence?
-19. What's one thing you "know" but have never actually verified?
-20. Describe your own biggest reasoning blind spot.
-21. What did you learn this week that you'll still use in five years?
-
-**Creative recombination**
-22. Combine two unrelated tools/ideas into a product that shouldn't exist but might work.
-23. Rewrite a problem you're stuck on as a different *kind* of problem.
-24. What would you build if compute and money were free for one year?
-25. Steelman the technology you're most skeptical of.
-
-**Frontier & future**
-26. What becomes possible if context windows become effectively infinite?
-27. Which of your current skills will matter *more* as AI improves, not less?
-28. What's a second-order consequence of cheap, ubiquitous AI agents?
-29. If you could ask a superintelligence one question, what would it be — and why that one?
-30. What's the single most important thing you learned in this 30-day program?
-
-> **How to run it:** Pick the day's prompt, set a 5-minute timer, write at least 5 lines. On Week 3+, paste your answer into an LLM with *"Critique this reasoning. Find the weakest assumption. Don't be nice."* and respond to its pushback. Save the best answers — by Day 30 you have a personal idea journal.
+### What to cut (these age the brain)
 
 ```
-  Example of the write-then-critique loop (using Prompt #4):
-  You write:  "The strongest argument against scaling up LLMs is that we'll
-               simply run out of high-quality training data."
-  You paste it to an LLM: "Critique this. Find the weakest assumption."
-  It replies: "You're assuming DATA is the binding limit — but compute cost and
-               energy may run out first, and synthetic data may relax the data
-               limit entirely."
-  → In 60 seconds you found a hole in your OWN thinking. That's the point — not
-    to be told an answer, but to have your reasoning stress-tested.
+   DIAL DOWN  (not "never," just "usually not")
+
+   • Ultra-processed foods  (packaged snacks, sugary cereals, sodas, fast food)
+       → linked to faster cognitive decline
+   • Added sugar + refined carbs → blood-sugar spikes then crashes = brain fog
+   • Excess alcohol → even moderate drinking is linked to brain shrinkage
+       (Topiwala et al., 2017, BMJ). Less is better for the brain.
+   • Trans fats and heavily fried food
+```
+
+### The plate + the blood-sugar rule
+
+```
+   A BRAIN-HEALTHY PLATE (rough guide, most meals)
+
+   ┌───────────────────────────────────────────────┐
+   │  1/2  colourful vegetables (esp. leafy greens) │
+   │  1/4  protein (fish, beans, eggs, poultry)     │
+   │  1/4  whole grains / starchy veg               │
+   │   +   a little olive oil, nuts, or seeds       │
+   │  drink: water; berries for dessert             │
+   └───────────────────────────────────────────────┘
+```
+
+> **Why blood sugar matters (plain English):** a doughnut sends your blood sugar up like a rocket, then it crashes — and the crash is the "3 p.m. brain fog" you know well. Whole foods with fibre and protein release fuel *slowly and steadily*, so your brain gets a constant supply and your focus stays level. **Steady fuel = steady focus.**
+
+### Don't forget water
+
+Even **mild dehydration** (1–2% of body weight) measurably worsens attention, memory, and mood (Ganio et al., 2011; Armstrong et al., 2012). The fix is trivial and immediate.
+
+```
+   HYDRATION: keep water in reach; aim for pale-yellow urine.
+   A common cause of "afternoon fog" is simply not enough water.
 ```
 
 ---
 
-## Part 3 — Advanced Reading Material
+## Pillar 3 — SLEEP: When the Brain Repairs and Cleans Itself 🟢
 
-> **Simple version:** You become what you read. Skimming social feeds trains a shallow, twitchy mind; one dense source per week, read *actively*, trains depth. The trick is not to read *more* — it's to read *harder things, more slowly, with retrieval*.
+> **Simple version:** You don't build muscle in the gym — you build it while resting. Your brain is identical: the studying you do all day only *sticks* when you sleep, and sleep is also when the brain literally **power-washes waste out of itself**. Skimping on sleep doesn't buy you more learning time; it deletes the learning you already did. Sleep is not the opposite of productivity — it's part of it.
 
-> **Official:** Reading comprehension and knowledge growth follow the **"rich get richer" / Matthew effect** (Stanovich, 1986): the more background knowledge you already have, the easier new dense material is — so knowledge snowballs. *(Example: once you truly understand gradient descent, every optimizer paper you read afterwards goes faster, because you're only learning the new twist, not the whole foundation.)* The technique that actually converts reading into durable knowledge is **retrieval after reading** (closing the book and recalling it — the "testing effect"), **not** re-reading or highlighting. Highlighting in particular is among the *least* effective strategies ever studied (Dunlosky et al., 2013) — it feels productive but mostly just colours the page.
+> **Official:** During sleep, the brain **consolidates memory** — slow-wave (deep) and REM sleep replay the day's learning and move it into long-term storage (Walker, 2017; Rasch & Born, 2013). Sleep also activates the **glymphatic system**, which clears metabolic waste — including the amyloid-beta protein tied to Alzheimer's — far faster than during waking (Xie et al., 2013, *Science*). A sleep-deprived brain both **learns ~40% less** and **consolidates worse** — a double hit.
 
-### The active-reading protocol (use on every source)
-
-```
-  BEFORE:  Skim headings. Write the 1 question you want answered. (2 min)
-  DURING:  Read in one focused block. Mark only what surprises you. (no highlighting marathons)
-  AFTER:   Close the source. Write — from memory — the 3 key ideas + 1 thing
-           you disagree with or didn't understand. (this is the retrieval rep)
-  ENCODE:  Turn the 3 ideas into Anki cards. Schedule a re-read of the hard part in 3 days.
-```
-
-### A graded reading ladder (pick to match the week)
-
-You don't need to buy anything exotic — much is free and open-access. Choose **one** per week and go deep rather than sampling many.
-
-| Tier | Type | Examples (author / venue — find the latest editions) |
-|------|------|------------------------------------------------------|
-| Accessible (Wk 1) | Popular science on cognition & reasoning | Kahneman, *Thinking, Fast and Slow*; Tetlock & Gardner, *Superforecasting*; Duhigg, *The Power of Habit* |
-| Technical (Wk 2) | This course's own dense chapters | Ch 14 (Neural Networks), Ch 16 (Deep Learning), Ch 24 (Distributed Systems) |
-| Cross-domain (Wk 3) | Primary sources outside your specialty | A classic essay (e.g., Hamming, *"You and Your Research"*); a paper from an adjacent field (economics, biology, info theory) |
-| Frontier (Wk 4) | Read a full research paper, properly | A foundational ML paper (e.g., *"Attention Is All You Need"*, Vaswani et al. 2017) using the three-pass method below |
-
-> **Note:** Titles above are recommendations to seek out from legitimate sources (libraries, publishers, open-access archives like arXiv). This course does not reproduce their contents — read the originals.
-
-### The three-pass method for research papers (Keshav, 2007)
+### Why it works
 
 ```
-  PASS 1 (5–10 min):  Title, abstract, intro, headings, conclusion, references you know.
-                      Goal: can you state the paper's category, contribution, and claims?
-  PASS 2 (~1 hr):     Read the body, ignore proofs. Note figures, mark references to read.
-                      Goal: could you summarize it to a peer with supporting evidence?
-  PASS 3 (several hrs): Re-implement it mentally (or actually). Challenge every assumption.
-                      Goal: you could reproduce or critique it. (Reserve for the most important papers.)
+   WHAT SLEEP DOES FOR YOUR BRAIN EACH NIGHT
+
+   DEEP SLEEP  →  files today's facts into long-term memory
+   REM SLEEP   →  links ideas, boosts creativity + emotional balance
+   BOTH        →  glymphatic "power-wash" flushes out waste proteins
+
+   Skip it, and: today's learning half-evaporates, waste builds up,
+   focus/mood/willpower all drop tomorrow.
 ```
 
-Most days you stop at Pass 1–2. Reserve Pass 3 for the Week-4 paper.
+### The sleep protocol (highest-leverage habit here)
+
+```
+   NON-NEGOTIABLE SLEEP RULES
+
+   • Aim 7–9 hours. Both too little AND too much track with worse cognition.
+   • FIXED WAKE TIME, 7 days a week — this anchors your body clock more than
+     bedtime does. Consistency matters as much as duration.
+   • Morning daylight within ~30 min of waking → sets a strong clock.
+   • Last caffeine ~8–10 hrs before bed (its half-life is ~5–6 hrs).
+   • Screens/bright light down 30–60 min before bed.
+   • Cool, dark, quiet room. Alcohol wrecks sleep quality even if it helps you
+     fall asleep — it suppresses REM.
+   • Study the hardest material EARLIER in the day; let that night consolidate it.
+```
+
+### Naps and micro-rest
+
+```
+   • A 10–20 min nap restores alertness without grogginess (avoid >30 min midday).
+   • "Sleep on it": recall of a tough concept is often better the next morning.
+   • Quiet wakeful rest (a walk with no podcast) also aids consolidation.
+```
+
+> ⚠️ If you regularly sleep 7–9 hours and still wake unrefreshed, snore heavily, or feel exhausted daily, that can signal a treatable **sleep disorder** (e.g., apnea) — see a doctor. Fixing it can transform your cognition.
 
 ---
 
-## Part 4 — Memory-Enhancing Techniques
+## Pillar 4 — TRAIN: Deliberate Practice That Actually Transfers 🟢
 
-> **Simple version:** Your memory isn't "good" or "bad" — it's *trained* or *untrained*. Two tools do 90% of the work: **spaced repetition** (so you don't forget) and **mnemonic encoding** (so things stick the first time). World memory champions aren't born with photographic memory; they use these systems.
+> **Simple version:** "Use it or lose it" is literally true — challenging your brain builds and keeps connections. But there's a catch the puzzle-app industry hides: **you only get better at what you actually practise.** Sudoku makes you better at Sudoku, not smarter in general. So this pillar drills the skills you *actually* want — remembering things, reasoning clearly, focusing deeply, learning hard material — because *those* transfer.
 
-> **Official:** Spaced repetition exploits the **spacing effect** and **testing effect** (Ebbinghaus 1885; Cepeda et al. 2006; Roediger & Karpicke 2006). Mnemonics exploit **dual coding** (pairing words with vivid mental pictures) and the **method of loci** (remembering things by placing them along a familiar route — more on this in Tool B). Their power shows up even in the brain: memory athletes have distinctive connectivity that *complete novices can acquire with just six weeks of training* (Dresler et al., 2017, *Neuron*). Memory is one of the most reliably *trainable* skills there is.
+> **Official:** Practice physically rewires the brain (Draganski et al., 2004; Maguire et al., 2000), but improvements are largely **near-transfer** — they carry to the trained skill and closely related tasks, not to "general IQ" (Owen et al., 2010; Simons et al., 2016). The techniques below are chosen because they train exactly the abilities you want to keep: durable memory (**testing effect + spacing**, Roediger & Karpicke, 2006), clear reasoning, and sustained focus. Learning **genuinely new, demanding skills** (not easy games) improved memory in older adults — the "Synapse Project" (Park et al., 2014, *Psychological Science*).
 
-### Tool A — Spaced Repetition (the daily engine)
+### 4a. Spaced repetition — the single best memory habit
 
-This is the **0–10 min RECALL** block of your loop. Use Anki (free; its **FSRS** scheduler — the part that decides *when* to show each card again — automatically learns *your* personal forgetting speed; see Chapter 5).
-
-```
-  CARD-WRITING RULES (the difference between a useless and a powerful deck)
-  1. One fact per card. (Don't cram "define + example + history" onto one card.)
-  2. Ask a QUESTION, don't show a statement.
-       Good front: "Why does dropout reduce overfitting?"
-       Bad  front: "Dropout reduces overfitting."   ← nothing to recall
-  3. Make it RETRIEVAL, not recognition — no multiple choice on your own cards.
-       (Recognising the right answer is easy; pulling it from memory is what sticks.)
-  4. Use a "cloze" (a fill-in-the-blank) for definitions:
-       "FSRS adapts review intervals to your {{c1::forgetting curve}}."
-       ← Anki hides the {{c1::...}} part and asks you to fill it in.
-  5. If you can't answer a card in under ~10 seconds, it's too big — split it.
-```
-
-Add **2–4 cards per day** (the ENCODE block). Never bulk-import 500 cards — a deck you dread is a deck you abandon. By Day 30 you'll have ~60–120 high-quality cards and a daily review habit that lasts for years.
-
-### Tool B — The Memory Palace (method of loci)
-
-For ordered lists, sequences, and speeches. Build one in Week 2.
+This is the highest-return *mental* habit in the chapter. Use **Anki** (free; its FSRS scheduler learns your personal forgetting speed).
 
 ```
-  HOW TO BUILD ONE
-  1. Pick a route you know cold (your home, your commute). Fix 10 "stations" in order.
-  2. For each item to remember, place a VIVID, absurd, moving image at a station.
-     (Absurd + emotional + in-motion = memorable. Bland = forgotten.)
-  3. To recall: walk the route mentally; the images are waiting where you left them.
-
-  Example — remembering the ML pipeline stages along your hallway:
-    Front door  → a giant DATASET pouring out as you open it      (data collection)
-    Coat rack   → coats being SCRUBBED clean                       (preprocessing)
-    Kitchen     → a chef SPLITTING a cake into 3 uneven slices     (train/val/test split)
-    Stairs      → a robot doing push-ups on each step              (training)
-    Bathroom    → a scale weighing the robot                        (evaluation)
+   CARD-WRITING RULES (a good deck vs. a useless one)
+   1. One fact per card.
+   2. Ask a QUESTION, don't show a statement.
+        Good: "Why does exercise grow the hippocampus?"   (something to recall)
+        Bad:  "Exercise grows the hippocampus."           (nothing to recall)
+   3. Make it RETRIEVAL — pull the answer from memory before flipping.
+   4. If you can't answer in ~10 seconds, the card's too big — split it.
+   5. Add just 2–4 of YOUR OWN cards a day. Never bulk-import 500 — a deck
+      you dread is a deck you quit.
 ```
 
-### Tool C — Major System & Pegs (for numbers)
+> **Why it beats re-reading:** *trying to recall* a fact (even when you fail) burns it in far deeper than reading it again. Highlighting and re-reading are among the **least** effective study methods ever measured (Dunlosky et al., 2013) — they feel productive but build little. Close the book and test yourself instead.
 
-Numbers are hard to remember because they're abstract. The trick: turn each digit into a consonant *sound*, glue the sounds into a word, then picture that word. The standard code is:
+### 4b. Five reusable thinking routines
 
-```
-  0 = s/z    1 = t/d    2 = n     3 = m     4 = r
-  5 = l      6 = j/sh   7 = k/g   8 = f/v   9 = p/b   (vowels are free filler)
-
-  Example:  "314"  →  3=m, 1=t, 4=r  →  "m_t_r"  →  "MOTOR"  →  picture a motor.
-  Now you can't forget that π ≈ 3.14 — just see the motor.
-```
-
-Great for constants, dates, phone numbers, and the magnitude facts in Chapter 4 (e.g., picture a vivid image for "1024" to lock in 2¹⁰).
-
-### Tool D — Elaborative & Dual Encoding
-
-When learning anything new, ask *"What does this connect to that I already know?"* (elaboration) and *"What's the picture?"* (dual coding). A concept tied to five existing memories and an image has six retrieval routes instead of one.
+Sharp thinking is less about raw horsepower and more about having **routines you run instead of staring blankly.** Keep this card visible:
 
 ```
-  MEMORY TECHNIQUE → USE WHEN
-  Spaced repetition (Anki) → facts, definitions, vocab, anything you must retain long-term
-  Memory palace            → ordered lists, processes, a talk you must deliver
-  Major/peg system         → numbers, constants, dates
-  Elaboration + dual coding→ conceptual understanding (the default for new ideas)
+   THINKING-ROUTINE CHEAT CARD
+
+   Stuck on a problem?   → First-Principles: "What do I actually know is true?"
+   Making a plan?        → Inversion: "What would GUARANTEE failure?" then avoid it
+   Unknown number?       → Fermi: break it into guessable pieces, multiply
+   Disagree with X?      → Steelman: state X's STRONGEST version before rejecting
+   Predicting outcome?   → Attach a probability; check it later (calibration)
+```
+
+**Worked example — Inversion.** Your plan is "prepare for my interview in 4 weeks." Invert it: *"What would guarantee I fail?"* → I only read theory and never practise out loud; I burn out by week 2; I avoid my weak topics. Each failure mode just handed you a to-do: do mock interviews early, schedule rest, start with your weakest area. (More routines and examples in **[Chapter 5](05_brain_training.md)** and **[Chapter 4 — Aptitude & Mental Math](04_aptitude_mental_math.md)**.)
+
+### 4c. Memory techniques for when you need them
+
+| Technique | Use it for | The trick |
+|-----------|-----------|-----------|
+| **Memory palace** (method of loci) | Ordered lists, steps, a talk | Place vivid, absurd images along a route you know (your home) |
+| **Major system** | Numbers, dates, constants | Turn digits into sounds → a word → a picture (314 → "MoToR") |
+| **Elaboration + dual coding** | Understanding new ideas | Ask "what does this connect to?" and "what's the picture?" |
+
+**Memory-palace example** — the ML pipeline along your hallway: front door → a giant *dataset* pours out (collection); coat rack → coats *scrubbed* clean (preprocessing); kitchen → a chef *splits* a cake into 3 slices (train/val/test); stairs → a robot doing *push-ups* on each step (training); bathroom → a *scale* weighs the robot (evaluation). Walk the route, the images are waiting.
+
+### 4d. Read hard things, actively
+
+You become what you read: shallow feeds train a twitchy mind; one dense source a week, read *actively*, trains depth.
+
+```
+   ACTIVE-READING PROTOCOL (any article, chapter, or paper)
+   BEFORE:  Skim headings. Write the 1 question you want answered.   (2 min)
+   DURING:  Read in one focused block. Mark only what surprises you.
+   AFTER:   Close the source. Write, FROM MEMORY, the 3 key ideas +
+            1 thing you didn't understand.  (this is the rep that sticks)
+   ENCODE:  Turn those 3 ideas into Anki cards.
+```
+
+### 4e. Keep it novel — the anti-"brain-game" rule
+
+The brain grows most when a task is **new and just beyond comfortable**. So the best "brain training" is **learning a real, demanding skill you don't yet have**: a language, a musical instrument, coding, drawing, dancing. These beat any app because they combine novelty, challenge, and often movement and social contact.
+
+---
+
+## Pillar 5 — CALM: Protect the Brain From Chronic Stress 🟢 / 🟡
+
+> **Simple version:** Short bursts of stress are fine — even helpful. But *chronic*, grinding stress bathes your brain in cortisol, and over time that literally shrinks the memory centre and weakens the focus centre. Managing stress isn't self-indulgence; it's protecting the exact brain regions you're trying to sharpen.
+
+> **Official:** Prolonged stress and elevated glucocorticoids (cortisol) impair and can atrophy the **hippocampus** and **prefrontal cortex**, harming memory and executive control (Lupien et al., 2009, *Nature Reviews Neuroscience*; McEwen). **Mindfulness meditation** counters this: just **two weeks** of practice improved working memory and reading comprehension and reduced mind-wandering (Mrazek et al., 2013, *Psychological Science*); a large meta-analysis found moderate evidence it reduces anxiety, depression, and stress (Goyal et al., 2014, *JAMA Internal Medicine*).
+
+### What to do
+
+```
+   CALM TOOLKIT (pick 1–2 and be consistent — consistency beats intensity)
+
+   • MEDITATION      10 min/day of focused-attention or breath meditation.
+                     Apps or silence both work. The skill you're training is
+                     "notice your mind wandered → gently return" — that IS focus.
+   • BREATHING       When acutely stressed, do the "physiological sigh": two
+                     inhales through the nose, one long exhale through the mouth,
+                     ~1–3 min. Fastest evidence-based way to calm down
+                     (Balban et al., 2023, Cell Reports Medicine).
+   • NATURE          A 20–50 min walk in green space restores attention and
+                     working memory (Berman et al., 2008). Leave the podcast off.
+   • BOUNDARIES      Protect deep-focus blocks; single-task; cut doomscrolling.
+                     Fragmented attention all day is its own chronic stressor.
+```
+
+> **Plain-English meditation reframe:** you're not trying to "empty your mind" (impossible). Every time you notice you drifted and come back, that's **one rep of the attention muscle** — like a bicep curl for focus. A "distracted" session full of returns is a *successful* workout.
+
+---
+
+## Pillar 6 — CONNECT & CHALLENGE: Build Cognitive Reserve 🟢
+
+> **Simple version:** The people you talk to, the new things you learn, and having a reason to get up in the morning aren't "soft" extras — they build the brain's **spare capacity** that keeps you sharp as you age. Isolation and boredom, by contrast, quietly accelerate decline.
+
+> **Official:** Rich social, intellectual, and physical engagement builds **cognitive reserve**, letting the brain tolerate more aging before decline appears (Stern, 2012). Strong social connection is protective, while **loneliness and social isolation raise dementia risk**. Having a clear **sense of purpose** is associated with slower cognitive decline and lower Alzheimer's risk (Boyle et al., 2010, *Archives of General Psychiatry*). Learning **demanding new skills** (not passive hobbies) improved memory in older adults (Park et al., 2014).
+
+### What to do
+
+```
+   RESERVE-BUILDERS (weave these into normal life)
+
+   • CONNECT      Regular real conversations, shared activities, teaching others.
+                  Teaching forces you to understand deeply (the Feynman effect).
+   • LEARN NEW    Take up something hard and unfamiliar each season — a language,
+                  instrument, sport, or craft. Novelty + difficulty = growth.
+   • PURPOSE      Keep a goal bigger than today's task (why you're upgrading your
+                  brain at all). Purpose predicts a slower-aging mind.
+   • VARY ROUTES  Small novelty daily — new route, new recipe, non-dominant hand.
 ```
 
 ---
 
-## Part 5 — Strategic Rest Habits
+## Pillar 7 — SUPPLEMENTS: The Honest, Evidence-Tiered List 🟡 / 🔴
 
-> **Simple version:** You don't build muscle in the gym — you build it while resting afterward. Memory is identical: the *consolidation* of everything you studied today happens mostly while you **sleep**. Skimping on rest doesn't give you more learning time; it deletes the learning you already did. Rest is part of the training, not a break from it.
+> **Simple version:** This is deliberately the **last and smallest** pillar. No pill comes close to sleep, exercise, or diet — and the supplement industry is barely regulated, so most "brain boosters" are marketing. That said, a *few* have real evidence, mostly by **fixing a deficiency** or giving a modest edge. Rule one: **food first.** Rule two: **test before you guess** — supplement a deficiency you actually have.
 
-> **Official:** Sleep, especially the interplay of **slow-wave (deep) sleep** and **REM (dreaming) sleep**, drives **memory consolidation** — the brain replays the day's learning and moves it from the hippocampus (think of it as the brain's short-term "inbox") into the neocortex (long-term storage) (Walker, 2017; Rasch & Born, 2013). Sleep deprivation hurts you *twice*: a tired brain *learns* about 40% less, **and** it *consolidates* what it did learn far worse. Even short **naps** and quiet **wakeful rest** give measurable consolidation. That's why this program treats rest as a real training input, not a luxury.
+> ⚠️ **Talk to a doctor before starting any supplement**, especially if you're pregnant, breastfeeding, on medication, or have a health condition. "Natural" does not mean "safe" or "no interactions." Buy third-party-tested brands (e.g., USP, NSF) since quality varies wildly.
 
-### The non-negotiable rest protocol
+### Tier 1 — Worth it, mainly to fix a gap or under stress 🟢/🟡
+
+| Supplement | What the evidence shows | Typical studied dose* |
+|------------|-------------------------|-----------------------|
+| **Omega-3 (fish oil)** | Structural brain fat; useful if you rarely eat oily fish | ~1–2 g/day EPA+DHA, or eat fish |
+| **Vitamin D** | Deficiency is common and linked to worse cognition — correct if low | Per blood test (often 1000–2000 IU) |
+| **Vitamin B12** | Deficiency (common in vegans/older adults) causes real cognitive problems | Per blood test |
+| **Creatine** | Improved working memory & reasoning, esp. in vegetarians and when sleep-deprived/stressed (Rae et al., 2003; Avgerinos et al., 2018) | 3–5 g/day |
+| **Caffeine + L-theanine** | Reliable attention/alertness boost; L-theanine smooths the jitters | ~100 mg caffeine + 200 mg L-theanine |
+
+### Tier 2 — Promising but limited; try if curious 🟡
 
 ```
-  SLEEP (the highest-leverage cognitive enhancer that exists)
-  • Target 7–9 hours. Consistency of TIMING matters as much as duration.
-  • Fixed wake time, 7 days a week — anchors your circadian clock.
-  • Last screen 30–60 min before bed; last caffeine ~8–10 hrs before bed
-    (caffeine half-life ≈ 5–6 hrs).
-  • Study the hardest material EARLIER; let sleep consolidate it.
-
-  WITHIN-DAY RECOVERY
-  • Pomodoro: ~25 min focus / 5 min real break (walk, look far, no feed-scrolling).
-  • After ~90 min, take a longer 15–20 min break (ultradian rhythm).
-  • The 10–20 min nap: consolidates without grogginess (avoid >30 min midday).
-  • "Active rest" (a walk, no podcast) lets default-mode network connect ideas.
-
-  WEEKLY
-  • 1 full rest day from the program. Compounding needs recovery; burnout erases gains.
-  • Aerobic exercise 3×/week — the single best-supported booster of memory and BDNF
-    (Erickson et al., 2011 — aerobic exercise grew hippocampal volume in adults).
+   • Bacopa monnieri  — modest memory improvement over ~8–12 weeks (be patient)
+   • Rhodiola rosea   — may reduce mental fatigue under stress
+   • Lion's mane      — early/preliminary human evidence only
 ```
 
-### Strategic rest *inside* the 30 days
+### Tier 3 — Overhyped; save your money 🔴
 
-| Cue | Strategic rest move |
-|-----|---------------------|
-| Just finished hard Deep Work | 5-min walk before encoding — don't power through |
-| Studied a tough concept at night | Sleep on it *before* the quiz; recall is better the next morning |
-| Feeling foggy / re-reading the same line | Stop. 20-min nap or walk beats 60 min of fog |
-| End of Week | Take the rest day — it's scheduled, not a failure |
-| Stuck on a problem | Deliberately disengage; incubation often solves it (the "shower effect") |
+```
+   • Ginkgo biloba    — a large trial found it did NOT prevent dementia or
+                        cognitive decline (DeKosky et al., 2008, JAMA)
+   • Most "nootropic stacks" & memory pills (e.g., heavily marketed brands)
+                      — little to no solid evidence in healthy people
+   • Anything promising a fast "IQ boost"  — not real
+```
 
-> ⚠️ If low mood, anhedonia, or disrupted sleep persists **3+ weeks**, that's beyond the scope of any productivity program — see Chapter 5's note on behavioral activation and seeking a professional. Rest habits help a tired brain; they are not a treatment for clinical depression.
+*Doses are what studies used, **not** medical advice — confirm with a clinician.
+
+> **The one-sentence supplement summary:** get your bloodwork checked, fix any real deficiency (especially D and B12), eat fish or take omega-3, consider creatine, and use coffee + L-theanine for focus — then stop worrying about pills and go for a walk.
 
 ---
 
-## The Full 30-Day Schedule
+## What to CUT (the anti-list)
 
-Each day = the ~45-min loop, with these specifics. Days are light by design so the habit survives. Adapt the material to your goals (ML interview prep, a new domain, etc.).
+Sharpening a brain is as much about **removing harm** as adding help:
 
-### Week 1 — Foundations (install the loop)
+```
+   BRAIN-AGERS TO MINIMIZE
 
-| Day | Recall | Prompt | Deep Work (20 min) | Encode | Rest focus |
-|-----|--------|--------|--------------------|--------|------------|
-| 1 | Install Anki; make 3 cards | #1 | Read accessible source, active-reading protocol | 3 cards | Set fixed wake time |
-| 2 | Review | #2 | Continue source; 3-pass Pass 1 on anything dense | 3 cards | No caffeine after 2pm |
-| 3 | Review | #3 | Finish source; write 3-idea summary from memory | 4 cards | First 7–9 hr night, logged |
-| 4 | Review | #11 | Learn Pomodoro; do 1 focused cycle on weak topic | 2 cards | 20-min walk break |
-| 5 | Review | #18 | Feynman-explain Week-1 source to an LLM, fix gaps | 3 cards | Screens off 45 min pre-bed |
-| 6 | Review | #19 | Light: tidy deck, fix any oversized cards | 2 cards | Aerobic exercise 30 min |
-| 7 | Review | — | **Rest day** — no deep work | — | Full rest; reflect on Week 1 |
+   ✗ Chronic short sleep        ✗ Ultra-processed / high-sugar diet
+   ✗ Sedentary all-day sitting  ✗ Excess alcohol (less is better)
+   ✗ Chronic unmanaged stress   ✗ Smoking / vaping
+   ✗ Social isolation           ✗ Fragmented attention (constant scrolling)
+   ✗ Dehydration                ✗ Untreated depression/anxiety/sleep disorders
+```
 
-### Week 2 — Reasoning (add the thinking routines + memory palace)
-
-| Day | Routine of the day | Prompt | Deep Work | Memory focus |
-|-----|--------------------|--------|-----------|--------------|
-| 8 | First-Principles | #3 | Apply it to a real design problem; log output | Read memory-palace section |
-| 9 | Inversion | #12 | List 3 failure modes of your current project | Build your palace (10 stations) |
-| 10 | Fermi | #15 | Estimate a quantity end-to-end (see Ch 4) | Place 5 facts in the palace |
-| 11 | Steelman | #4 | Steelman a view you reject; write it convincingly | Walk the palace from memory |
-| 12 | Calibrated forecast | #13 | Make 3 dated predictions w/ probabilities | Add major-system to a constant |
-| 13 | All five in rotation | #20 | Dense technical chapter, 3-pass Pass 1–2 | Encode chapter into cards |
-| 14 | — | — | **Rest day** | Reflect; review forecasts later |
-
-### Week 3 — Range (mind-expanding + interleaving)
-
-| Day | Prompt | Deep Work | Interleaving move |
-|-----|--------|-----------|-------------------|
-| 15 | #6 | Cross-domain primary source, active-reading protocol | Mix 2 topics in today's review |
-| 16 | #7 | Find 3 analogies between your field and the source's | Shuffle card order, don't block |
-| 17 | #22 | Creative recombination: design something that "shouldn't exist" | Interleave easy + hard cards |
-| 18 | #9 | Identify an unasked question; sketch how you'd investigate it | — |
-| 19 | #25 | Steelman the tech you're most skeptical of; LLM critiques you | Mix old + new material |
-| 20 | #26 | Frontier prompt → 1-page written exploration | — |
-| 21 | — | **Rest day** | Reflect on Week 3 |
-
-### Week 4 — Integration (full loop on real target material + self-test)
-
-| Day | Prompt | Deep Work | Self-testing |
-|-----|--------|-----------|--------------|
-| 22 | #27 | Research paper, 3-pass Pass 1 | — |
-| 23 | #28 | Paper Pass 2 (body, figures) | Closed-book recall of Pass-1 claims |
-| 24 | #16 | Paper Pass 3 on the key contribution | Re-derive a result from memory |
-| 25 | #5 | Apply paper's idea to a problem you care about | Teach it to an LLM; it grades you |
-| 26 | #21 | Mixed practice: routines + recall on weak spots | Take a Mock Test (see app) |
-| 27 | #17 | Review every prediction from Day 12 — Brier check | Re-test the cards you fail most |
-| 28 | #29 | Synthesize: write what changed in how you think | Full closed-book self-quiz |
-| 29 | #30 | Plan Days 31+: which habits stay, which deck grows | Calibration review |
-| 30 | — | **Graduation:** write your 30-day retrospective | Lock in the keepers |
-
-> **Days 31+:** The only habits proven to *compound* are the ones you keep. Drop the scaffolding (the day cards) and keep the **engine**: daily Anki review, one deep source a week, the thinking routines, and the sleep protocol. That's the maintenance dose.
+Cutting even two or three of these often does more than any supplement you could add.
 
 ---
 
-## Track It (or it didn't happen)
+## Putting It Together — One Real Day
 
-You can't improve what you don't measure. Keep a one-line daily log — a spreadsheet or a note. Three numbers, ten seconds:
+Theory is abstract, so here's a normal weekday with the pillars woven in. It's not extra hours — it's *how* you spend hours you already have.
 
 ```
-  DATE | ANKI retention % | focused minutes | source read (y/n) | sleep hrs
-  ─────┼──────────────────┼─────────────────┼───────────────────┼──────────
-  Anki shows your retention % automatically. Watch it climb past ~85–90%.
-  Focused minutes: trend matters more than any single day.
-  Sleep hrs: if this dips, expect retention to dip 1–2 days later — proof rest is training.
+   A SHARPER-BRAIN DAY (illustrative — adapt to your life)
+
+   WAKE (fixed time)   Daylight + a glass of water. No phone-scroll in bed.
+   MORNING             10 min spaced-repetition review (Anki) with coffee.
+                       Hardest mental work now (brain is freshest).
+   MIDDAY              Brisk 20–30 min walk (Pillar 1) — doubles as a break.
+                       Lunch = brain-healthy plate (greens, protein, olive oil).
+   AFTERNOON           Single-task deep work; stand/stretch every ~45 min.
+                       When stressed: 2 min of physiological-sigh breathing.
+   EVENING             Learn your "new hard skill" 20 min (language/instrument).
+                       Dinner with fish or beans; berries for dessert.
+                       Real conversation with someone (Pillar 6).
+   WIND-DOWN           Screens down 45 min before bed; 10 min meditation.
+   SLEEP (7–9 hrs)     The brain files the day and washes itself clean.
+```
+
+Total *added* time is maybe 60–75 minutes — walk, review, skill, meditation — and several of those (the walk, the conversation, better food) are things you'd do anyway, just aimed well.
+
+---
+
+## The 12-Week Starter Program
+
+Don't try to install all seven pillars on day one — that's how people burn out and quit. **Add one focus per phase**, keep the earlier ones going, and by week 12 the whole system is running on autopilot. Then keep going: the gains compound for years.
+
+```
+   PHASE 1  WEEKS 1–4   FOUNDATIONS   Sleep + Move + Water + cut the worst junk
+   PHASE 2  WEEKS 5–8   BUILD         Add the MIND-style diet + daily mental training
+   PHASE 3  WEEKS 9–12  OPTIMIZE      Add strength, meditation, a new hard skill,
+                                      social/purpose, and (optionally) supplements
+        ──────────────────────────────────────────────────────────────────────
+        Throughout: everything from earlier phases keeps running. Layer, don't restart.
+```
+
+| Phase | Weeks | Install (new focus) | Keep going | Realistic win by end |
+|-------|-------|---------------------|------------|----------------------|
+| **1 — Foundations** | 1–4 | Fixed wake time + 7–9 h sleep; 30-min walk most days; water in reach; cut sodas/junk | — | Clearer head, steadier energy & mood |
+| **2 — Build** | 5–8 | Brain-healthy plate; start a small daily Anki deck + 1 deep read/week | Phase 1 habits | Better retention; food + habit locked in |
+| **3 — Optimize** | 9–12 | 2× strength/week; 10-min daily meditation; a new hard skill; regular social + a clear "why"; fix deficiencies (bloodwork) | Phases 1–2 | Fitter, calmer, faster learning; full system live |
+
+### A sustainable weekly template (from Phase 3 onward)
+
+```
+   MON  Aerobic 30m · Anki · deep read
+   TUE  Strength · Anki · new-skill practice · meditation
+   WED  Aerobic 30m · Anki · social/teach someone
+   THU  Strength · Anki · new-skill practice · meditation
+   FRI  Aerobic 30m · Anki · deep read
+   SAT  Long walk/hike in nature · new-skill · relaxed social
+   SUN  Full rest · reflect · plan the week · prep brain-healthy meals
+        (Sleep 7–9 h and brain-healthy eating: every single day.)
+```
+
+> **Beyond 90 days — the maintenance dose:** drop the "installing" mindset and just *live* it. The habits that compound are the ones you keep: daily walk, nightly good sleep, brain-healthy eating, a running Anki deck, and one hard thing you're always learning. That's a brain that stays sharp for decades.
+
+---
+
+## Track It (or It Didn't Happen)
+
+You can't improve what you don't measure. A 15-second daily log keeps you honest and shows the trends that motivate you.
+
+```
+   DATE | sleep hrs | moved? | brain-food day? | Anki done? | mood/focus 1–5
+   ─────┼───────────┼────────┼─────────────────┼────────────┼───────────────
+   Simple checkmarks. Watch the WEEKLY pattern, not any single day.
 ```
 
 | Metric | Where it comes from | Healthy trend |
-|--------|--------------------|----------------|
-| Retention % | Anki stats | Stabilizes 85–90%+ |
-| Cards mature | Anki | Grows steadily, not in spikes |
-| Focused minutes | Your timer | Up and consistent |
-| Forecast Brier score | Your prediction log | Down over weeks (better calibration) |
-| Sleep hours | Log / wearable | Steady 7–9, consistent timing |
+|--------|---------------------|---------------|
+| Sleep hours | Log / wearable | Steady 7–9, consistent wake time |
+| Movement days | Your log | 5+ days/week with any brisk activity |
+| Anki retention % | Anki stats | Climbs and stabilizes ~85–90% |
+| Resting heart rate | Wearable / manual | Drifts **down** as fitness improves |
+| Mood & focus (1–5) | Self-rating | Trends up; dips flag a bad-sleep week |
+
+> **The clearest signal:** when your sleep dips, your focus and retention dip 1–2 days later. Seeing that in your own log is proof — sleep really is training.
 
 ---
 
-## Common Failure Modes (and the fix)
+## Myths and Failure Modes (and the Fix)
 
-| You're doing this | Why it fails | Fix |
-|-------------------|--------------|-----|
-| Importing huge premade decks | You dread review and quit | Make 2–4 of your *own* cards/day |
-| Re-reading & highlighting | Feels productive, builds little (Dunlosky 2013) | Replace with closed-book recall |
-| Skipping the rest day | Burnout erases the month's gains | Rest is scheduled — take it |
-| Cutting sleep to study more | A tired brain learns ~40% less | Protect sleep first, then study |
-| Passive AI use (read its answer) | It's re-reading in disguise | Write first, then let AI critique |
-| Doing puzzle/brain-game apps | Near-zero far transfer (Owen 2010) | Train real skills: recall, reasoning, reading |
-| Chasing 50 tips at once | Nothing becomes a habit | Run the *one* loop; change only the content |
+| Myth / mistake | Why it's wrong | Do this instead |
+|----------------|----------------|-----------------|
+| "This pill/app will boost my IQ 15 points" | No evidence; IQ is largely stable | Optimize the brain you have; slow its aging |
+| Brain-training games make you smarter | Near-zero far transfer (Owen 2010) | Learn a real hard skill; drill actual reasoning/recall |
+| Cutting sleep to study more | A tired brain learns ~40% less | Protect sleep FIRST, then study |
+| "I'll fix it all with supplements" | Smallest lever; mostly marketing | Move, eat, sleep first; pills are a garnish |
+| Highlighting & re-reading | Feels productive, builds little (Dunlosky 2013) | Close the book, recall from memory |
+| "Detox teas / miracle nootropics" | Pseudoscience | Bloodwork + real food + exercise |
+| Trying all 7 pillars perfectly at once | Overwhelm → quit | One phase at a time; layer over 12 weeks |
+| "I'm too old to change my brain" | Neuroplasticity is lifelong (Erickson 2011) | Start now — gains happen at every age |
+
+---
+
+## Safety and When to See a Professional
+
+This program is for generally healthy people who want to sharpen and protect their minds. It is **not** a medical treatment.
+
+> ⚠️ **See a doctor if you notice:** persistent or worsening memory loss, confusion, or trouble with everyday tasks; low mood, hopelessness, or loss of interest lasting 2+ weeks; chronic exhaustion despite adequate sleep, or heavy snoring/gasping (possible sleep apnea). These need professional care, not a productivity plan. Also consult a clinician **before** starting supplements or a big new exercise regimen if you have any health condition, are pregnant/breastfeeding, or take medication.
 
 ---
 
@@ -532,37 +526,27 @@ You can't improve what you don't measure. Keep a one-line daily log — a spread
 
 ```
 ╔════════════════════════════════════════════════════════════════════╗
-║  UPGRADE YOUR BRAIN IN 30 DAYS — ONE-PAGE PLAN                     ║
+║  A SHARPER, YOUNGER BRAIN — THE 7 PILLARS (biggest levers first)   ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  THE ENGINE: a ~45-min daily loop, run 30 times                   ║
-║    RECALL (10) → PROMPT (5) → DEEP WORK (20) → ENCODE (10)         ║
+║  1. MOVE     150 min/wk aerobic + 2× strength · a walk = smart pill ║
+║  2. EAT      greens, berries, fish, olive oil · cut ultra-processed ║
+║  3. SLEEP    7–9 h, fixed wake time · files memory, cleans waste    ║
+║  4. TRAIN    spaced repetition + a real new hard skill (not games)  ║
+║  5. CALM     10 min meditation · breathing · nature · less scroll   ║
+║  6. CONNECT  people · novelty · purpose → cognitive reserve         ║
+║  7. SUPPLEMENT  fix D/B12, omega-3, creatine, coffee+theanine — last║
 ╠════════════════════════════════════════════════════════════════════╣
-║  WEEK 1 Foundations  install loop, build Anki deck, fix sleep      ║
-║  WEEK 2 Reasoning    5 thinking routines + memory palace          ║
-║  WEEK 3 Range        mind-expanding prompts + interleaving         ║
-║  WEEK 4 Integration  real paper, full loop, self-test             ║
+║  PLAN: Phase 1 foundations (sleep/move) → Phase 2 diet + training   ║
+║        → Phase 3 strength/calm/new-skill/social. Layer over 12 wks. ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  FIVE THINKING ROUTINES                                           ║
-║    First-principles · Inversion · Fermi · Steelman · Forecast     ║
+║  HONEST: no 15-point IQ jump. Real: your brain at its true ceiling, ║
+║          learning faster, and aging YEARS more slowly. Compounds.   ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  MEMORY STACK                                                     ║
-║    Spaced repetition (daily engine) · Memory palace · Major sys   ║
-║    · Elaboration + dual coding (default for new ideas)            ║
-╠════════════════════════════════════════════════════════════════════╣
-║  READING                                                          ║
-║    1 dense source/week · active-reading protocol · 3-pass papers  ║
-║    · retrieve after reading (NOT highlight/re-read)               ║
-╠════════════════════════════════════════════════════════════════════╣
-║  REST IS TRAINING                                                 ║
-║    7–9 hr sleep, fixed wake time · naps 10–20 min · walks         ║
-║    · aerobic 3×/wk · 1 full rest day/week                         ║
-╠════════════════════════════════════════════════════════════════════╣
-║  TRACK: retention % · focus minutes · sleep hrs · Brier score     ║
-║  HONEST: no 15-point IQ jump; but real, compounding skill gains   ║
+║  IF YOU DO ONE THING: a brisk 30-min walk most days. Free. Proven.  ║
 ╚════════════════════════════════════════════════════════════════════╝
 ```
 
-The science is in **[Chapter 5](05_brain_training.md)**; this chapter is the *program*. Run the loop, protect your sleep, and let 30 days of small, effortful, well-spaced reps compound.
+The deeper cognitive-science is in **[Chapter 5 — Brain Training](05_brain_training.md)**; this chapter is the **whole-body program**. Move, eat, and sleep well; train your mind on real skills; stay calm and connected; add a few evidence-based supplements last. Do it for months and your brain gets measurably sharper — and stays that way for years.
 
 ---
 

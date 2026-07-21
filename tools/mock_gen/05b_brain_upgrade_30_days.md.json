@@ -1,112 +1,112 @@
 [
   {
-    "q": "A learner wants the highest-return daily habit from the 30-day brain-upgrade loop. Which block of the daily loop is described as the single biggest lever?",
+    "q": "A learner asks which single change has the strongest, most direct evidence for a sharper, slower-aging brain. Which pillar does the chapter rank first?",
     "options": [
-      "The RECALL block — daily spaced-repetition retrieval practice, run first thing",
-      "The PROMPT block — freewriting five lines on a single mind-expanding question",
-      "The ENCODE block — turning each day's key insight into brand-new flashcards",
-      "The DEEP WORK block — reading one advanced source in a focused twenty-minute sitting"
-    ],
-    "answer": 0,
-    "explanation": "The loop opens with RECALL precisely because active recall plus spacing is the most evidence-backed lever (Roediger & Karpicke; Ebbinghaus). The other blocks matter, but the chapter names daily retrieval as the #1 habit."
-  },
-  {
-    "q": "Why does the program treat sleep as a training input rather than as time taken away from studying?",
-    "options": [
-      "A fixed sleep schedule mainly improves next-day mood, willpower, and motivation",
-      "Memory consolidation happens largely during sleep, so cutting it deletes the day's learning",
-      "Sleep restores eye strain and posture fatigue but plays no real role in memory",
-      "Extra sleep simply leaves a person with fewer hours available to review flashcards"
+      "Taking a daily multivitamin and fish-oil capsule",
+      "Regular aerobic exercise, like a brisk daily walk",
+      "Playing timed brain-training puzzle apps each day",
+      "Pulling occasional all-nighters to study longer"
     ],
     "answer": 1,
-    "explanation": "Slow-wave and REM sleep drive hippocampal replay and consolidation (Walker, 2017; Rasch & Born, 2013). A sleep-deprived brain encodes far less and consolidates poorly, so protecting sleep protects gains already earned."
+    "explanation": "Aerobic exercise has the strongest evidence: a one-year trial grew the hippocampus about 2% and improved memory (Erickson et al., 2011), and it raises BDNF. The chapter's one-thing advice is a brisk 30-minute walk most days."
   },
   {
-    "q": "Which statement reflects the program's honest expectation-setting about results?",
+    "q": "Mechanistically, why is aerobic exercise so good for the brain?",
     "options": [
-      "A validated IQ score can reliably be raised about fifteen points within the thirty days",
-      "Puzzle and brain-training apps dependably produce broad far transfer to general intelligence",
-      "Real gains are durable near-transfer skills plus repaired sleep and focus leaks that compound",
-      "Whatever improvement appears will vanish completely the very day after the program ends"
+      "It raises BDNF, growing new neurons in the hippocampus",
+      "It permanently clears all cortisol from the body forever",
+      "It converts brain neurons into faster-firing muscle cells",
+      "It benefits only the developing brains of young children"
+    ],
+    "answer": 0,
+    "explanation": "Exercise increases BDNF, nicknamed 'Miracle-Gro for the brain', which supports growth and maintenance of neurons and their connections (Cotman & Berchtold, 2002) — a key reason movement improves memory."
+  },
+  {
+    "q": "Which eating pattern does the chapter recommend for a 'younger' brain?",
+    "options": [
+      "A high-sugar diet, to keep quick brain fuel on hand",
+      "Mostly fried and packaged food, chosen for convenience",
+      "The MIND diet: greens, berries, fish, nuts, olive oil",
+      "Energy drinks paired with skipped meals through the day"
     ],
     "answer": 2,
-    "explanation": "The chapter rejects a fifteen-point IQ jump as snake oil and cites Owen et al. (2010) and Simons et al. (2016) on the absence of far transfer. The realistic payoff is near-transfer skill gains plus repaired sleep and focus habits."
+    "explanation": "The MIND diet tracked with much slower decline — about 7.5 years younger at high adherence (Morris et al., 2015). Leafy greens and berries stand out (Morris 2018; Devore 2012), while ultra-processed food tracks with faster decline (Gomes Goncalves 2023)."
   },
   {
-    "q": "What is the recommended way to use an AI assistant for the daily mind-expanding prompt?",
+    "q": "The chapter links '3 p.m. brain fog' partly to blood sugar. What fix does it give?",
     "options": [
-      "Read the assistant's full answer first and then commit its wording to memory",
-      "Have the assistant summarize the whole chapter so the dense reading can be skipped",
-      "Use the assistant only to bulk-generate several hundred flashcards in one batch",
-      "Write your own answer first, then have the assistant critique it and find the weakest assumption"
+      "Eat extra candy so your blood sugar can never dip at all",
+      "Drink much less water so the brain can concentrate more",
+      "Cut every last carbohydrate out of your daily diet permanently",
+      "Favour whole foods with fibre and protein for steady fuel"
     ],
     "answer": 3,
-    "explanation": "Passively reading an AI answer is re-reading in disguise. The high-leverage pattern is to write first, then let the model act as a Socratic critic that pushes back, and to respond to the gaps it surfaces."
+    "explanation": "Refined carbs spike blood sugar then crash it, causing fog; whole foods release fuel slowly for steady focus. Mild dehydration also causes fog (Ganio et al., 2011), so keep water within reach."
   },
   {
-    "q": "According to the chapter and Dunlosky et al. (2013), which study tactic is among the least effective?",
+    "q": "Beyond filing away memories, what makes losing sleep especially costly for the brain?",
     "options": [
-      "Highlighting passages and then re-reading the same source over and over again",
-      "Closed-book retrieval of the key ideas immediately after finishing the reading",
-      "Turning the main ideas into your own short question-and-answer style flashcards",
-      "Explaining the concept simply in your own words, Feynman-style, to expose gaps"
+      "Sleep power-washes waste like amyloid-beta from the brain",
+      "Sleep permanently erases all of the previous day's skills",
+      "Sleep prevents neurons from ever firing signals again",
+      "Sleep rests the muscles but does nothing for the brain"
     ],
     "answer": 0,
-    "explanation": "Highlighting and re-reading feel productive but build little durable memory. The active-reading protocol replaces them with retrieval: close the source and write the key ideas from memory."
+    "explanation": "During sleep the glymphatic system clears metabolic waste, including the amyloid-beta protein tied to Alzheimer's, far faster than while awake (Xie et al., 2013, Science). Sleep both consolidates memory and cleans the brain."
   },
   {
-    "q": "In the program's memory toolkit, which technique is matched to remembering ordered lists, sequences, or the steps of a process?",
+    "q": "Which sleep habit does the chapter call the strongest anchor for your body clock?",
     "options": [
-      "Spaced repetition driven by the FSRS scheduler built into modern Anki",
-      "The memory palace, also known as the method of loci, walked along a route",
-      "The major system, which maps each digit to a specific consonant sound",
-      "Elaboration combined with dual coding to enrich conceptual understanding"
-    ],
-    "answer": 1,
-    "explanation": "The chapter maps each tool to a job: memory palace for ordered lists and processes, major system for numbers, spaced repetition for long-term facts, and elaboration plus dual coding for conceptual understanding."
-  },
-  {
-    "q": "The thinking routine called Inversion is best summarized as which prompt?",
-    "options": [
-      "Break an unknown quantity into factors, estimate each one, and multiply them",
-      "State the strongest possible version of an idea before you decide to reject it",
-      "Ask what would guarantee failure, then deliberately design those failure modes out",
-      "Attach an explicit probability to each prediction and later score your calibration"
+      "Varying your schedule based on how tired you happen to feel",
+      "Sleeping in very late on weekends to fully catch up on rest",
+      "A fixed daily wake time, paired with morning daylight",
+      "A strong alcoholic nightcap to fall asleep more quickly"
     ],
     "answer": 2,
-    "explanation": "Inversion flips 'how do I succeed?' into 'what would guarantee failure?' The chapter suggests listing the top three ways a plan could fail before committing, so most flaws are caught in design rather than in production."
+    "explanation": "A consistent wake time (even on weekends) plus morning light anchors the circadian clock more than bedtime does. Alcohol may speed sleep onset but suppresses REM and worsens overall sleep quality."
   },
   {
-    "q": "Using Keshav's three-pass method for a research paper, what is the goal of Pass 1?",
+    "q": "A learner wants to begin their upgrade with supplements. What is the chapter's guidance?",
     "options": [
-      "Re-implement the paper, mentally or in code, and challenge every single assumption",
-      "Read the full body of the paper carefully, including all proofs and derivations",
-      "Read only the reference list to map out the related prior work and its lineage",
-      "Spend five to ten minutes skimming to grasp the paper's category, contribution, and claims"
-    ],
-    "answer": 3,
-    "explanation": "Pass 1 is a short five-to-ten-minute skim of title, abstract, intro, headings, and conclusion. Pass 2 reads the body while ignoring proofs, and the optional Pass 3 virtually re-implements and critiques the work."
-  },
-  {
-    "q": "Which flashcard-writing rule does the chapter give to keep a spaced-repetition deck effective?",
-    "options": [
-      "Keep one fact per card and phrase the front as a question requiring active recall",
-      "Bulk-import large premade decks early so the collection grows as fast as possible",
-      "Add several multiple-choice options to every card to make daily review feel easier",
-      "Combine several closely related facts onto one card to cut down total review time"
-    ],
-    "answer": 0,
-    "explanation": "The minimum-information principle says one fact per card, phrased as a question that forces retrieval rather than recognition. Oversized or multiple-choice cards undermine the testing effect, and dreaded bulk imports get abandoned."
-  },
-  {
-    "q": "What is the intended role of the weekly full rest day and the scheduled walks and naps in the program?",
-    "options": [
-      "They are optional rewards a learner may freely skip whenever motivation runs high",
-      "They are deliberate recovery that enables consolidation and prevents burnout erasing gains",
-      "They exist mainly to make the month's calendar look a little less demanding overall",
-      "They are meant to replace nightly sleep, so total sleep duration stops mattering much"
+      "Buy the most expensive nootropic stack and take it first thing",
+      "Fix diet, sleep and exercise first; only a few pills help",
+      "Rely on ginkgo biloba, which reliably prevents dementia",
+      "Assume any 'natural' pill is safe with no interactions"
     ],
     "answer": 1,
-    "explanation": "The chapter frames recovery as a first-class training input: brief naps and wakeful rest aid consolidation, and a weekly rest day prevents burnout. Compounding requires recovery, and these do not substitute for nightly sleep."
+    "explanation": "Supplements are the last, smallest pillar: food first, and test before you guess. A large trial found ginkgo did NOT prevent dementia (DeKosky 2008); creatine and correcting real deficiencies (D, B12) have better evidence. Check with a clinician."
+  },
+  {
+    "q": "Why does the chapter include managing chronic stress as a form of brain protection?",
+    "options": [
+      "Stress has no measurable effect on the human brain at all",
+      "Cortisol is needed for memory, so more stress is always good",
+      "Only a physical head injury can ever affect the hippocampus",
+      "Chronic cortisol can shrink the hippocampus over time"
+    ],
+    "answer": 3,
+    "explanation": "Prolonged stress and high cortisol can atrophy the hippocampus and impair the prefrontal cortex (Lupien et al., 2009) — the very regions you are trying to sharpen. Mindfulness and slow breathing help (Mrazek 2013; Balban 2023)."
+  },
+  {
+    "q": "To build 'cognitive reserve' and stay sharp with age, which activity does the chapter favour?",
+    "options": [
+      "Repeating easy tasks that you have already fully mastered",
+      "Learning a hard new skill, plus social ties and purpose",
+      "Isolating yourself from other people to avoid distraction",
+      "Passive television and scrolling for several hours a day"
+    ],
+    "answer": 1,
+    "explanation": "Rich intellectual, social and physical engagement builds reserve (Stern, 2012). Learning demanding new skills improved memory in older adults (Park et al., 2014), and a sense of purpose predicts slower decline (Boyle et al., 2010)."
+  },
+  {
+    "q": "Which statement matches the chapter's honest expectation-setting about results?",
+    "options": [
+      "A validated IQ can reliably be raised 15 points in two weeks",
+      "Brain-training games broadly raise general intelligence too",
+      "No quick IQ jump, but a tuned brain that ages more slowly",
+      "Every benefit is instant and permanent after one session"
+    ],
+    "answer": 2,
+    "explanation": "Fluid IQ is largely stable and brain games don't transfer to general intelligence (Owen 2010; Melby-Lervag & Hulme 2013). The real, compounding payoff is a fully-tuned brain, faster learning of specific skills, and years-slower aging (the Erickson trial ran a full year)."
   }
 ]

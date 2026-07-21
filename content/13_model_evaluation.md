@@ -4,7 +4,7 @@
 
 ---
 
-## 11.1 Why Evaluation Matters
+## 13.1 Why Evaluation Matters
 
 > **Model evaluation** is the systematic process of measuring how well a trained model generalizes to unseen data, using metrics appropriate to the task and the cost structure of errors.
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-## 11.2 The Confusion Matrix
+## 13.2 The Confusion Matrix
 
 > **Confusion matrix**: a table that describes the performance of a classification model by comparing predicted labels against actual labels across all four possible outcomes: true positives, true negatives, false positives, and false negatives.
 
@@ -105,7 +105,7 @@ flowchart TD
 
 ---
 
-## 11.3 Classification Metrics
+## 13.3 Classification Metrics
 
 ### Accuracy
 
@@ -117,7 +117,7 @@ From our cancer example:
 
 $$\text{Accuracy} = \frac{90 + 885}{1000} = 97.5\%$$
 
-Sounds excellent. But remember: a model that always predicts "No Cancer" gets $885 + 0 + 0 + 100 = 1000$ predictions, with $\frac{900}{1000} = 90\%$ accuracy, while catching zero cancer cases. Accuracy only works when classes are roughly balanced.
+Sounds excellent. But remember: a model that always predicts "No Cancer" would correctly label all 900 healthy patients and miss all 100 cancer patients — $\frac{900}{1000} = 90\%$ accuracy, while catching zero cancer cases. Accuracy only works when classes are roughly balanced.
 
 ### Precision
 
@@ -145,7 +145,7 @@ Recall answers: "Of all real positive cases, how many did you find?" High recall
 
 $$\text{Specificity} = \frac{TN}{TN + FP} = \frac{885}{885 + 15} = 98.3\%$$
 
-Specificity is recall's mirror image — it measures how well you identify negatives. It appears in the ROC curve (Section 11.4) as $1 - \text{Specificity} = \text{FPR}$.
+Specificity is recall's mirror image — it measures how well you identify negatives. It appears in the ROC curve (Section 13.4) as $1 - \text{Specificity} = \text{FPR}$.
 
 ### F1 Score
 
@@ -239,7 +239,7 @@ Most classifiers output a probability (e.g., 0.73 for "cancer"). You pick a **th
 
 ---
 
-## 11.4 ROC Curve & AUC
+## 13.4 ROC Curve & AUC
 
 > **ROC (Receiver Operating Characteristic) curve**: a plot of the True Positive Rate (recall) against the False Positive Rate ($1 - \text{specificity}$) at every possible classification threshold. **AUC (Area Under the Curve)** summarizes the ROC curve into a single number between 0 and 1.
 
@@ -313,7 +313,7 @@ ROC-AUC can be **misleading** on heavily imbalanced datasets because it is domin
 
 ---
 
-## 11.5 Precision-Recall Curve & AUC-PR
+## 13.5 Precision-Recall Curve & AUC-PR
 
 > **Precision-Recall (PR) curve**: a plot of precision (y-axis) vs. recall (x-axis) at varying thresholds. **AUC-PR** is the area under this curve. Unlike ROC, the PR curve focuses exclusively on the positive class, making it the right choice for imbalanced datasets.
 
@@ -377,7 +377,7 @@ In fraud detection, only 0.2% of transactions are fraudulent. The ROC curve migh
 
 ---
 
-## 11.6 Regression Metrics
+## 13.6 Regression Metrics
 
 > **Regression metrics** quantify how far a model's continuous predictions deviate from actual values, each with a different sensitivity to error magnitude and interpretation.
 
@@ -513,7 +513,7 @@ MAPE is intuitive ("we're off by about 8.4%") but fails when actual values are n
 
 ---
 
-## 11.7 Cross-Validation
+## 13.7 Cross-Validation
 
 > **Cross-validation** is a resampling procedure that partitions data into multiple train/test splits, trains and evaluates the model on each split, and averages the results to produce a more reliable performance estimate than a single split.
 
@@ -624,7 +624,7 @@ flowchart TD
 
 ---
 
-## 11.8 Hyperparameter Tuning
+## 13.8 Hyperparameter Tuning
 
 > **Hyperparameters** are configuration values set before training that control the learning process itself — unlike model parameters (weights, biases) which are learned from data. **Hyperparameter tuning** is the search for the combination that yields the best validation performance.
 
@@ -713,7 +713,7 @@ Libraries: **Optuna**, **Hyperopt**, **scikit-optimize**, **Ray Tune**.
 
 ---
 
-## 11.9 Learning Curves — Diagnosing Bias vs. Variance
+## 13.9 Learning Curves — Diagnosing Bias vs. Variance
 
 > **Learning curves** plot training and validation performance as a function of training set size or training epochs, revealing whether a model suffers from high bias (underfitting) or high variance (overfitting).
 
@@ -811,7 +811,7 @@ The gap between training and validation curves is the diagnostic signal.
 
 ---
 
-## 11.10 Model Selection: Which Metric for Which Problem?
+## 13.10 Model Selection: Which Metric for Which Problem?
 
 The metric you optimize defines what your model learns to care about. Choose wrong and you optimize for the wrong thing.
 
@@ -849,7 +849,7 @@ In practice, never rely on a single metric. Report a dashboard:
 
 ---
 
-## 11.11 Common Evaluation Mistakes
+## 13.11 Common Evaluation Mistakes
 
 These are the errors that trip up practitioners from beginners to experienced engineers.
 
@@ -877,7 +877,7 @@ Never report training set metrics as your model's performance. Always hold out a
 
 ### 3. Using Accuracy on Imbalanced Data
 
-As shown in Section 11.1, accuracy can be 99.8% while catching zero positives. Use F1, AUC-PR, or the metric aligned with your cost structure.
+As shown in Section 13.1, accuracy can be 99.8% while catching zero positives. Use F1, AUC-PR, or the metric aligned with your cost structure.
 
 ### 4. Not Using Stratified Splits for Classification
 
@@ -907,11 +907,61 @@ A single accuracy number is meaningless without variance. Report mean ± standar
 
 ### 7. Shuffling Time Series Data
 
-Random train/test splits on time series data leak future information into the past. Always use temporal splits (Section 11.7).
+Random train/test splits on time series data leak future information into the past. Always use temporal splits (Section 13.7).
 
 ### 8. Comparing Models on Different Splits
 
 When comparing two models, they must be evaluated on the exact same test data. Otherwise differences in performance could be due to different splits, not different models.
+
+---
+
+## 13.12 Calibration — Do the Probabilities Mean Anything? ★★
+
+### Simple Explanation
+A model can *rank* cases perfectly (great AUC) yet still lie about its confidence. Calibration asks a different question from accuracy: when the model says **"90% sure,"** is it right about 90% of the time? A forecaster who says "70% chance of rain" is well-calibrated if it actually rains on ~70% of such days.
+
+> **Calibration** is the agreement between predicted probabilities and observed frequencies: a classifier is calibrated if, among all predictions made with confidence $p$, a fraction $p$ are truly positive. It is *independent* of ranking — a model can have high AUC and terrible calibration.
+
+Accuracy and AUC never check this. Boosted trees and SVMs push scores toward the extremes, and deep nets are notoriously overconfident; logistic regression is calibrated almost by construction.
+
+### Reliability Diagram
+Bin predictions by confidence, then plot the mean predicted probability (x) against the actual positive rate (y). Perfect calibration lies on the diagonal; points **below** the line mean the model is over-confident.
+
+```
+  fraction │                    /  ideal: y = x
+  positive │                 /
+  (per bin)│              / o
+           │           /  o      o points sag BELOW the
+           │        /  o           line  =>  model is
+           │     / o                OVER-confident
+           │  / o
+           └──────────────────────► mean predicted probability
+```
+
+### Measuring it: ECE and Brier score
+**Expected Calibration Error (ECE)** — the average gap between confidence and accuracy across bins $B_1,\dots,B_M$:
+
+$$\text{ECE}=\sum_{m=1}^{M}\frac{|B_m|}{N}\,\bigl|\,\text{acc}(B_m)-\text{conf}(B_m)\,\bigr|$$
+
+Lower is better; 0 = perfectly calibrated.
+
+**Brier score** — the mean squared error of the predicted probabilities, a *proper scoring rule* that rewards calibration **and** sharpness:
+
+$$\text{Brier}=\frac{1}{N}\sum_i (p_i-y_i)^2$$
+
+```python
+from sklearn.calibration import calibration_curve
+from sklearn.metrics import brier_score_loss
+
+# prob_true = actual positive rate per bin; prob_pred = mean predicted prob per bin
+prob_true, prob_pred = calibration_curve(y_test, probs, n_bins=10)
+print("Brier:", brier_score_loss(y_test, probs))   # lower is better
+```
+
+### Fixing miscalibration
+Recalibrate *post-hoc* on a held-out set — **Platt scaling** (sigmoid), **isotonic regression** (flexible, needs more data), or **temperature scaling** (neural nets). Full methods and code are in **Chapter 12 §12.14**.
+
+> **Interview cue:** "High AUC but a bad Brier score / ECE" means the model *ranks* well but its probabilities are off — recalibrate rather than retrain.
 
 ---
 

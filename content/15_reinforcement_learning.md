@@ -400,6 +400,68 @@ Grid world (deterministic transitions):
   states nearer G have higher value, each step discounted by γ.
 ```
 
+### Value Iteration & Policy Iteration
+
+#### Simple Explanation
+
+The Bellman equation is a *promise* about what the optimal values must satisfy — but it doesn't
+hand you those values on a plate. When you actually **know the rules of the world** (the transition
+probabilities $P(s'\mid s,a)$ and rewards $R$), you can *solve* for them with two classic
+dynamic-programming recipes. Both turn the Bellman equation into an algorithm; both need a fully
+known **MDP model**; both provably converge to the optimal policy. Think of them as "planning with
+the map in hand" — before you've ever taken a single real step.
+
+**Value Iteration** — just keep hammering the Bellman *optimality* update until the numbers stop
+moving, then read off the greedy policy at the end.
+
+> Repeat the sweep until $V$ converges:
+> $$V_{k+1}(s) = \max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V_k(s')\,\bigr]$$
+> Then extract the greedy policy once:
+> $$\pi^*(s) = \arg\max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V(s')\,\bigr]$$
+
+**Policy Iteration** — hold a policy fixed, work out exactly how good it is, then make it greedy
+w.r.t. those values, and repeat. It alternates two steps:
+
+> **(a) Policy Evaluation** — solve (or iterate) the Bellman *expectation* equations for the current
+> policy $\pi$ to get $V^\pi$:
+> $$V^\pi(s) = \sum_{s'} P(s'\mid s,\pi(s))\,\bigl[\,R(s,\pi(s),s') + \gamma\,V^\pi(s')\,\bigr]$$
+> **(b) Policy Improvement** — make the policy greedy w.r.t. those values:
+> $$\pi'(s) = \arg\max_a Q^\pi(s,a) = \arg\max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V^\pi(s')\,\bigr]$$
+> Repeat (a)→(b) until the policy stops changing — at which point it is optimal.
+
+The key trade-off: Value Iteration does **many cheap sweeps** (one `max` per state per sweep and it
+never explicitly stores a policy until the end). Policy Iteration does **fewer but heavier
+iterations** — each one includes a full policy-evaluation solve — yet it often converges in a
+*remarkably small* number of policy updates (frequently a handful), because a greedy improvement
+step is a big, decisive jump.
+
+```
+Value Iteration                          Policy Iteration
+─────────────────                        ─────────────────
+ V ← 0                                     π ← arbitrary
+ repeat:                                   repeat:
+   for each s:                               EVALUATE: solve V^π (Bellman
+     V(s) ← max_a Σ P[R + γV(s')]                     expectation eqs)
+ until V stops changing                      IMPROVE: π(s) ← argmax_a Q^π(s,a)
+ π*(s) ← argmax_a Σ P[R + γV(s')]          until π stops changing
+```
+
+| Aspect | Value Iteration | Policy Iteration |
+|---|---|---|
+| Core update | Bellman **optimality** (`max` every sweep) | Evaluate $V^\pi$, then greedy improve |
+| Cost per iteration | Cheap (one sweep) | Expensive (full policy evaluation each round) |
+| Iterations to converge | Many | Few (often converges in a handful of updates) |
+| Explicit policy during run? | No — extracted at the end | Yes — maintained and improved each round |
+| Needs known model $P,R$? | **Yes (model-based)** | **Yes (model-based)** |
+
+Both give you the *same* optimal policy in the end — the choice is purely about which is cheaper
+for your problem's size and structure.
+
+The catch: both **require you to already know $P$ and $R$.** In most real problems you don't. The
+**model-free** methods in the next section drop that "known model" assumption entirely — they
+estimate values by *sampling experience* (actually acting in the world) instead of summing over a
+known transition table.
+
 ---
 
 ## 15.7 Q-Learning
@@ -536,6 +598,65 @@ for episode in range(num_episodes):
     epsilon *= decay_rate  # reduce exploration over time
 ```
 
+### SARSA: On-Policy TD Control
+
+#### Simple Explanation
+
+Q-Learning is an optimist: when it bootstraps the future, it assumes it will act *greedily* next
+(the $\max$), even while it's actually exploring. **SARSA** is a realist: it updates using the
+action it **actually takes next** under its current (e.g. $\varepsilon$-greedy) policy. Because it
+learns about the *very policy it follows* — exploration mistakes and all — SARSA is **on-policy**.
+
+The name is literally the transition tuple it uses: **S**tate, **A**ction, **R**eward, next
+**S**tate, next **A**ction — $(s, a, r, s', a')$.
+
+> **SARSA update** — $a'$ is the action the agent *will actually take* in $s'$ under its current policy:
+> $$Q(s,a) \leftarrow Q(s,a) + \alpha\,\bigl[\,r + \gamma\,Q(s',a') - Q(s,a)\,\bigr]$$
+
+Put the two targets side by side and the whole distinction jumps out:
+
+```
+Q-Learning (off-policy):   target = r + γ · max_a' Q(s', a')   ← assumes greedy next move
+SARSA      (on-policy):    target = r + γ ·      Q(s', a')     ← uses the move ACTUALLY taken
+                                                      ▲
+                                          a' ~ ε-greedy policy the agent follows
+```
+
+Q-Learning learns the **optimal (greedy)** policy no matter how it behaves; SARSA learns the value
+of the policy it is *behaving under*, so its estimates bake in the cost of exploration.
+
+#### Cliff Walking: the classic consequence
+
+```
+The Cliff (reward -1 per step, -100 for falling in, then reset):
+
+   S . . . . . . . . . . G      ← Q-Learning: optimal but RISKY path
+   S . . . . . . . . . . G          (hugs the cliff edge — shortest)
+   ┌───────────────────────┐
+   │ C C C C C C C C C C C │  ← the cliff (fall = -100)
+   └───────────────────────┘
+
+   S → → → → → → → → → ↓        ← SARSA: SAFER path
+   ↑ . . . . . . . . . . ↓          (detours away from the edge)
+   ┌───────────────────────┐
+   │ C C C C C C C C C C C │
+   └───────────────────────┘
+```
+
+During $\varepsilon$-greedy training, a random step near the edge sends Q-Learning off the cliff for
+$-100$. SARSA *sees* that exploratory risk in its updates (its $a'$ sometimes IS the fatal step), so
+it learns to keep a safe distance. Result: **SARSA earns higher online returns during training**,
+even though Q-Learning's final greedy policy is technically the shortest path. As
+$\varepsilon \to 0$, both converge to the optimal policy.
+
+| Aspect | SARSA | Q-Learning |
+|---|---|---|
+| Policy type | **On-policy** | **Off-policy** |
+| TD target | $r + \gamma\,Q(s',a')$ | $r + \gamma\,\max_{a'} Q(s',a')$ |
+| $a'$ used | Action actually taken (e.g. $\varepsilon$-greedy) | Hypothetical greedy action |
+| Behavior learned | Safe policy that accounts for exploration risk | Optimal-but-riskier greedy policy |
+| When to prefer | Costly/dangerous mistakes during training (real robots, live systems) | You only care about the final optimal policy; safe to explore freely |
+
 ---
 
 ## 15.8 Deep Q-Networks (DQN)
@@ -668,6 +789,7 @@ for episode in range(num_episodes):
         returns.insert(0, G)
 
     # 3. Update policy
+    optimizer.zero_grad()
     for (s, a, _), G_t in zip(trajectory, returns):
         loss = -log(policy_network(s)[a]) * G_t
         loss.backward()
@@ -731,7 +853,7 @@ that plagued REINFORCE.
 
 ### PPO — The Workhorse
 
-PPO (Schulman et al., 2017) is the most widely used RL algorithm in practice. It is the algorithm behind RLHF in ChatGPT, Claude, and Gemini. The key idea: clip the policy ratio to prevent destructively large updates.
+PPO (Schulman et al., 2017) is the most widely used RL algorithm in practice. It has long been the workhorse behind RLHF in systems like ChatGPT — though by 2025 many labs use DPO or critic-free variants such as GRPO (see §15.14). The key idea: clip the policy ratio to prevent destructively large updates.
 
 $$L^{CLIP}(\theta) = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t, \; \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t\right)\right]$$
 
@@ -961,6 +1083,8 @@ Year │ Milestone                           │ Key Method
 2023 │ RT-2 — robotic manipulation from    │ Vision-Language-Action
      │ language instructions               │
 2024 │ AlphaProof — IMO silver-medal math  │ RL + self-play (AlphaZero-like)
+2025 │ DeepSeek-R1, o-series — reasoning   │ RL from verifiable rewards
+     │ models trained with RL              │ (RLVR); GRPO, critic-free
 ```
 
 ```chart
@@ -1103,6 +1227,16 @@ The KL penalty is critical — without it, the LLM will find degenerate outputs 
 $$\mathcal{L}_{DPO} = -\mathbb{E}\left[\log \sigma\left(\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{ref}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{ref}(y_l|x)}\right)\right]$$
 
 DPO is simpler to implement (no reward model, no PPO loop) and has become increasingly popular. The debate over RLHF vs DPO is active — PPO can be more powerful but DPO is easier to get right.
+
+### RL from Verifiable Rewards: GRPO & Reasoning Models (2025)
+
+The biggest RL story of 2025 wasn't alignment — it was **reasoning**. Instead of a learned reward model trained on human preferences, **RLVR (RL with Verifiable Rewards)** rewards the model for *getting the answer right* on tasks you can check automatically: math with a known answer, code that passes tests, proofs a checker validates. The reward is objective, cheap, and far harder to game than a preference model.
+
+The workhorse algorithm is **GRPO (Group Relative Policy Optimization)**, introduced with **DeepSeek-R1**. GRPO drops PPO's separate value/critic network entirely:
+
+> **GRPO** samples a *group* of completions per prompt, scores each one, and uses each completion's reward *minus the group's average* as its advantage — a group baseline that replaces PPO's learned value function (much cheaper, and a natural fit for verifiable rewards).
+
+This recipe — often **SFT → DPO → RLVR/GRPO** — produced the 2025 wave of *reasoning models* (DeepSeek-R1, OpenAI's o1/o3, and others) that "think" in long chains of thought before answering. A live research debate: how much of this is genuinely *new* reasoning versus RL sharpening abilities already latent in the pretrained base model.
 
 ---
 

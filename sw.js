@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v246';
+const CACHE_NAME = 'ml-notes-v253';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -20,6 +20,7 @@ const STATIC_FILES = [
   'js/data/mock_questions.js',
   'js/data/dsa_problems_index.js',
   'js/data/dsa_problems_full.js',
+  'js/data/search_index.js',
   'manifest.json',
   'icon-192.svg',
   'icon-512.svg',
@@ -42,17 +43,20 @@ const STATIC_FILES = [
   'content/13_model_evaluation.md',
   'content/14_neural_networks.md',
   'content/15_reinforcement_learning.md',
+  'content/15s_ml_curriculum_recap.md',
   'content/16_deep_learning.md',
   'content/17_llm.md',
   'content/18_ai_agents.md',
   'content/19_ai_frameworks.md',
   'content/20_2026_landscape.md',
+  'content/20s_deep_learning_llms_recap.md',
   'content/21_design_fundamentals.md',
   'content/22_engineering_tools.md',
   'content/23_system_design_fundamentals_deep_dive.md',
   'content/24_system_design_data_distributed.md',
   'content/25_system_design_operations_case_studies.md',
   'content/26_ml_system_design.md',
+  'content/26s_system_design_recap.md',
   'content/35_system_design_cases_realtime.md',
   'content/36_system_design_cases_search_media.md',
   'content/37_system_design_cases_scale_infra.md',

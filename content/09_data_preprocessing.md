@@ -229,13 +229,13 @@ $$\text{Upper Bound} = Q3 + 1.5 \times IQR$$
   Sort data: 10, 15, 18, 20, 22, 25, 27, 28, 35, 100
 
   Q1 = 25th percentile = 18    ←── Middle of lower half
-  Q3 = 75th percentile = 27    ←── Middle of upper half
-  IQR = Q3 - Q1 = 9
+  Q3 = 75th percentile = 28    ←── Middle of upper half
+  IQR = Q3 - Q1 = 10
 
-  Lower Bound = Q1 - 1.5 × IQR = 18 - 13.5 = 4.5
-  Upper Bound = Q3 + 1.5 × IQR = 27 + 13.5 = 40.5
+  Lower Bound = Q1 - 1.5 × IQR = 18 - 15 = 3
+  Upper Bound = Q3 + 1.5 × IQR = 28 + 15 = 43
 
-  Value 100 > 40.5  →  OUTLIER! Flag it.
+  Value 100 > 43  →  OUTLIER! Flag it.
 ```
 
 **Method 2: Z-Score**
@@ -593,6 +593,63 @@ with target     │ Example: "Customer's favorite color" for
   }
 }
 ```
+
+---
+
+## Putting It Together: A Leakage-Safe Pipeline ★★★
+
+**Simple Explanation:** The reliable way to prevent data leakage isn't to *remember* "fit on train only" for every impute, scale, and encode step — humans forget, and one slip leaks the test set into training. Instead, bundle **every fit-based transform into ONE object** that is fit on the training fold and merely *applied* to validation/test. scikit-learn's `Pipeline` + `ColumnTransformer` do exactly this: because they refit inside each cross-validation fold, leakage is prevented **automatically**, not by discipline.
+
+> **Official Definition:** A **Pipeline** is a single estimator that chains a sequence of transformers with a final model. Calling `.fit(X_train, y_train)` learns *all* parameters — imputation values, scaling statistics, encoding categories, and model weights — **from the training data only**, and `.predict(X_new)` applies those learned parameters in order. This makes the entire workflow leakage-safe, reproducible, and deployable as one object.
+
+```python
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
+numeric_features = ["age", "income", "tenure"]
+categorical_features = ["city", "plan"]
+
+numeric = Pipeline([
+    ("impute", SimpleImputer(strategy="median")),
+    ("scale", StandardScaler()),
+])
+categorical = Pipeline([
+    ("impute", SimpleImputer(strategy="most_frequent")),
+    ("encode", OneHotEncoder(handle_unknown="ignore")),
+])
+
+preprocessor = ColumnTransformer([
+    ("num", numeric, numeric_features),
+    ("cat", categorical, categorical_features),
+])
+
+pipe = Pipeline([
+    ("prep", preprocessor),
+    ("model", LogisticRegression(max_iter=1000)),
+])
+
+# The imputer, scaler, and encoder are REFIT inside every one of the 5 folds
+# using only that fold's training rows -> no leakage. At inference, the SAME
+# fitted objects (learned on train) are simply applied to new data.
+scores = cross_val_score(pipe, X, y, cv=5, scoring="roc_auc")
+print(f"ROC-AUC: {scores.mean():.3f} +/- {scores.std():.3f}")
+```
+
+**Leakage sources beyond scaling**
+
+| Leakage source | The mistake | The fix |
+|---|---|---|
+| Target leakage | A feature is computed from the label or from the future | Drop it; only use info available at prediction time |
+| Temporal leakage | Using future rows to predict the past | Use time-based (chronological) splits, not random |
+| Fitting on the full dataset | Imputers/encoders/feature-selectors `.fit()` on all rows | Put them in the Pipeline so they refit per fold |
+| Target/mean encoding | Encoding categories on the whole data | Compute encodings out-of-fold (cross-fitted) |
+| Duplicate rows | Same record lands in both train & test | De-duplicate (and group-split) before evaluating |
+
+**Interview tip:** Asked *"how do you prevent leakage in preprocessing?"*, the strong answer is: **"wrap all fit-based steps in a `Pipeline`/`ColumnTransformer` and fit inside CV folds"** — so the fix is structural, not a checklist you have to remember.
 
 ---
 

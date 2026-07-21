@@ -16,7 +16,7 @@ After this chapter you will be able to:
 
 ---
 
-## 7.1 What is Unsupervised Learning?
+## 11.1 What is Unsupervised Learning?
 
 > **Unsupervised learning** discovers hidden structure, patterns, or representations in data that carries no labeled responses. Core objectives include clustering, dimensionality reduction, density estimation, and generative modeling.
 
@@ -62,7 +62,7 @@ graph LR
 
 ---
 
-## 7.2 The Curse of Dimensionality
+## 11.2 The Curse of Dimensionality
 
 > **The curse of dimensionality** refers to the collection of phenomena that arise when analyzing data in high-dimensional spaces — phenomena that do not occur in low-dimensional settings, including data sparsity, distance concentration, and exponential growth of the volume to be sampled.
 
@@ -121,7 +121,7 @@ In practical terms: with 1,000 features, the "nearest" neighbor is barely closer
 
 ---
 
-## 7.3 Clustering Overview
+## 11.3 Clustering Overview
 
 > **Clustering** partitions a dataset into groups (clusters) such that objects within a cluster are more similar to each other than to objects in other clusters. The definition of "similar" depends on the chosen distance metric and algorithm.
 
@@ -147,7 +147,7 @@ Clustering is probably the most intuitive unsupervised task. You hand the algori
 
 ---
 
-## 7.4 K-Means Clustering
+## 11.4 K-Means Clustering
 
 > **K-Means** partitions $n$ observations into $K$ clusters by iteratively assigning each point to the nearest centroid and recomputing centroids as the mean of assigned points, minimizing the within-cluster sum of squares (WCSS / inertia):
 >
@@ -245,7 +245,7 @@ This spreads centroids apart, yielding 2-10x faster convergence and consistently
 
 ---
 
-## 7.5 Hierarchical Clustering
+## 11.5 Hierarchical Clustering
 
 > **Agglomerative hierarchical clustering** starts with each observation as a singleton cluster and iteratively merges the two closest clusters until a single cluster remains. The merge history forms a binary tree called a **dendrogram**, which can be cut at any height to produce a partition into $K$ clusters.
 
@@ -295,7 +295,7 @@ How do you measure the "distance" between two clusters containing multiple point
 
 ---
 
-## 7.6 DBSCAN
+## 11.6 DBSCAN
 
 > **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** groups together points that are closely packed — defined by a minimum number of points ($\text{minPts}$) within a radius ($\varepsilon$). Points in low-density regions are labeled as noise. It requires no pre-specification of the number of clusters and can discover clusters of arbitrary shape.
 
@@ -368,7 +368,7 @@ K-Means forces you to choose K and assumes round clusters. DBSCAN says: "cluster
 
 **Real-world use case:** geographic clustering of delivery addresses into zones. Addresses form arbitrary shapes around cities — DBSCAN naturally captures this while labeling remote rural addresses as noise.
 
-### 7.6.1 HDBSCAN
+### 11.6.1 HDBSCAN
 
 > **HDBSCAN (Hierarchical DBSCAN)** extends DBSCAN by replacing the single global density threshold ε with a variable-density framework. It transforms pairwise distances into **mutual reachability distances**, builds a **minimum spanning tree** over those distances, extracts a full cluster hierarchy (a dendrogram over density levels), converts it to a **condensed tree**, and selects clusters that are most stable across the density range. The result: clusters of differing density are found correctly, and no single ε needs to be tuned.
 
@@ -421,7 +421,7 @@ where $\text{core-dist}_k(p)$ is the distance from $p$ to its $k$-th nearest nei
 
 **When to prefer HDBSCAN:** datasets with clusters at multiple scales (e.g., a few tight urban clusters plus broader suburban groups), or when DBSCAN consistently splits one cluster or merges two depending on ε.
 
-### 7.6.2 Spectral Clustering
+### 11.6.2 Spectral Clustering
 
 > **Spectral Clustering** maps data into a low-dimensional Euclidean embedding derived from the eigenvectors of a graph Laplacian, then applies k-means (or another partitioner) in that embedding space. It finds clusters defined by connectivity structure rather than Euclidean proximity, enabling it to separate non-convex, manifold-shaped clusters that k-means and sometimes DBSCAN cannot handle.
 
@@ -494,7 +494,7 @@ In the similarity graph, points within each crescent are densely connected to th
 
 ---
 
-## 7.7 Gaussian Mixture Models
+## 11.7 Gaussian Mixture Models
 
 > A **Gaussian Mixture Model (GMM)** represents the data distribution as a weighted sum of $K$ multivariate Gaussian distributions. Each component $k$ has parameters $(\pi_k, \mu_k, \Sigma_k)$ — mixing weight, mean, and covariance. Training uses the Expectation-Maximization (EM) algorithm to maximize data likelihood.
 
@@ -571,9 +571,37 @@ This is a generalization of K-Means. If you constrain all covariances to $\sigma
 }
 ```
 
+### The EM Algorithm (E-step / M-step)
+
+The intuition above becomes concrete with two update equations you should be able to write on a whiteboard.
+
+**E-step (responsibilities).** With the current parameters fixed, compute how much each component $k$ "owns" each point $x_i$:
+
+$$\gamma_{ik}=\frac{\pi_k\,\mathcal{N}(x_i\mid\mu_k,\Sigma_k)}{\sum_{j}\pi_j\,\mathcal{N}(x_i\mid\mu_j,\Sigma_j)}$$
+
+Each $\gamma_{ik}\in[0,1]$ and $\sum_k \gamma_{ik}=1$ — a soft assignment of point $i$ across the components.
+
+**M-step.** With responsibilities fixed, re-estimate every component using responsibility-weighted averages. Let $N_k=\sum_i\gamma_{ik}$ be the effective number of points owned by component $k$:
+
+$$N_k=\sum_i\gamma_{ik}, \qquad \mu_k=\frac{1}{N_k}\sum_i\gamma_{ik}\,x_i$$
+
+$$\Sigma_k=\frac{1}{N_k}\sum_i\gamma_{ik}(x_i-\mu_k)(x_i-\mu_k)^\top, \qquad \pi_k=\frac{N_k}{N}$$
+
+You alternate E and M until the log-likelihood stops improving.
+
+**What to remember for interviews:**
+- EM **monotonically increases** the data log-likelihood every iteration — it never makes the fit worse.
+- It converges to a **local optimum**, so it is sensitive to initialization; a standard trick is to seed the means with a quick **k-means** run.
+- The responsibilities are **soft assignments** ($\gamma_{ik}$ spread across components), in contrast to k-means' **hard assignments** (each point to exactly one center).
+
+| | k-means | GMM (EM) |
+|---|---|---|
+| Assignment | Hard (one cluster) | Soft (responsibilities $\gamma_{ik}$) |
+| Cluster shape | Spherical | Elliptical (full $\Sigma$) |
+
 ---
 
-## 7.8 Evaluating Clusters
+## 11.8 Evaluating Clusters
 
 > **Cluster evaluation** quantifies how well a clustering captures the structure in data. **Internal metrics** (Silhouette, Davies-Bouldin, inertia) require only the data and cluster labels. **External metrics** (Adjusted Rand Index, Normalized Mutual Information) compare against ground-truth labels when available.
 
@@ -679,7 +707,7 @@ Do not rely on a single metric. Use Elbow + Silhouette + Davies-Bouldin together
 
 ---
 
-## 7.9 Dimensionality Reduction Overview
+## 11.9 Dimensionality Reduction Overview
 
 > **Dimensionality reduction** transforms data from a high-dimensional space to a lower-dimensional space while preserving as much meaningful structure as possible. It serves two purposes: **feature compression** (for downstream models) and **visualization** (projecting to 2D/3D for human inspection).
 
@@ -708,7 +736,7 @@ graph TD
 
 ---
 
-## 7.10 PCA — Principal Component Analysis
+## 11.10 PCA — Principal Component Analysis
 
 > **PCA** finds an orthogonal linear transformation that projects data onto a new coordinate system where axes (principal components) are ordered by the amount of variance they explain. PC1 captures maximum variance, PC2 the maximum remaining variance orthogonal to PC1, and so on. All principal components are uncorrelated.
 
@@ -780,7 +808,33 @@ Common rules for choosing $k$:
 
 **Real-world use:** Image compression. A 256x256 face image (65,536 features) can be reconstructed with high fidelity from ~100 principal components — a 650x compression ratio.
 
-### 7.10.1 Kernel PCA
+### PCA via SVD (the practical route)
+
+In practice you rarely build the covariance matrix and eigendecompose it by hand — you run an **SVD** on the centered data, which is exactly what libraries do under the hood.
+
+**Step 1 — center.** Subtract each column's mean from $X$ (shape $n\times p$) so every feature has zero mean.
+
+**Step 2 — factor.** Take the singular value decomposition:
+
+$$X = U\Sigma V^\top$$
+
+- **Principal directions** = columns of $V$ (the right singular vectors).
+- **Projected scores** (coordinates in PC space) = $U\Sigma$ (equivalently $XV$).
+
+**Relationship to the covariance route.** Substitute the SVD into the covariance matrix:
+
+$$C=\frac{1}{n-1} X^\top X = \frac{1}{n-1} V\Sigma^\top U^\top U\Sigma V^\top = V\,\frac{\Sigma^2}{n-1}\,V^\top$$
+
+So PCA's eigenvectors are exactly the columns of $V$, and each eigenvalue (variance along that PC) is $\lambda_i=\sigma_i^2/(n-1)$. The **explained-variance ratio** of component $i$ is
+
+$$\frac{\sigma_i^2}{\sum_j \sigma_j^2}$$
+
+**Why SVD is the preferred route:**
+- **Numerically stable** — it avoids forming $X^\top X$, which **squares the condition number** and amplifies round-off error.
+- **Works when $p \gg n$** (far more features than samples), where the $p\times p$ covariance matrix is enormous and rank-deficient.
+- It is what **scikit-learn's `PCA` uses internally** (full SVD, or randomized/truncated SVD for large data).
+
+### 11.10.1 Kernel PCA
 
 > **Kernel PCA** applies the kernel trick to PCA: instead of computing principal components in the original feature space, it implicitly maps data to a high-dimensional (possibly infinite-dimensional) feature space $\phi: \mathbb{R}^d \to \mathcal{H}$ via a kernel function $k(x_i, x_j) = \langle \phi(x_i), \phi(x_j) \rangle$, then performs standard PCA in $\mathcal{H}$. The result is a nonlinear dimensionality reduction — the low-dimensional embedding can capture curved manifolds and nonlinear structure that linear PCA misses entirely.
 
@@ -836,7 +890,7 @@ No explicit $\phi(x)$ is ever computed. The entire method operates on the $n \ti
 
 ---
 
-## 7.11 t-SNE
+## 11.11 t-SNE
 
 > **t-SNE (t-distributed Stochastic Neighbor Embedding)** is a nonlinear dimensionality reduction technique that models pairwise similarities in high-dimensional space as conditional probabilities and finds a low-dimensional (typically 2D) embedding that minimizes the KL divergence between those probabilities and corresponding probabilities in the low-dimensional space. It uses a Student-t distribution in the low-dimensional space to address the "crowding problem."
 
@@ -870,7 +924,7 @@ Always run t-SNE at **multiple perplexity values** and check whether the cluster
 
 ---
 
-## 7.12 UMAP
+## 11.12 UMAP
 
 > **UMAP (Uniform Manifold Approximation and Projection)** is a nonlinear dimensionality reduction technique grounded in Riemannian geometry and algebraic topology. It constructs a weighted graph representation of the high-dimensional data, then optimizes a low-dimensional layout to preserve that topological structure. It preserves both local and global structure better than t-SNE, runs significantly faster, and can be used for feature engineering (not just visualization).
 
@@ -900,7 +954,7 @@ UMAP is the modern replacement for t-SNE in most workflows. It produces similar 
 
 ---
 
-## 7.13 Autoencoders
+## 11.13 Autoencoders
 
 > An **autoencoder** is a neural network trained to reconstruct its input through a bottleneck layer of lower dimensionality. The encoder $f: \mathbb{R}^d \to \mathbb{R}^k$ compresses the input; the decoder $g: \mathbb{R}^k \to \mathbb{R}^d$ reconstructs it. Training minimizes reconstruction loss $\mathcal{L} = \|x - g(f(x))\|^2$, forcing the bottleneck to learn a compact, informative representation.
 
@@ -942,7 +996,7 @@ PCA is a linear autoencoder with one hidden layer and no activation function. A 
 
 ---
 
-## 7.14 Anomaly Detection
+## 11.14 Anomaly Detection
 
 > **Anomaly detection** (outlier detection) identifies observations that deviate significantly from the majority of data. In unsupervised anomaly detection, the model learns a representation of "normal" behavior from unlabeled data and flags points that are statistically unlikely under that model.
 
@@ -990,7 +1044,7 @@ where $h(x)$ = average path length for point $x$ across all trees, and $c(n)$ = 
 
 ---
 
-## 7.15 Association Rule Learning
+## 11.15 Association Rule Learning
 
 > **Association rule learning** discovers interesting relations (rules) between variables in large databases. A rule $\{A\} \Rightarrow \{B\}$ means that transactions containing item $A$ tend to also contain item $B$. The strength of a rule is measured by **support**, **confidence**, and **lift**.
 
@@ -1079,7 +1133,7 @@ The challenge: with $n$ items, there are $2^n$ possible itemsets. Brute-force en
 }
 ```
 
-### 7.15.1 FP-Growth
+### 11.15.1 FP-Growth
 
 > **FP-Growth (Frequent Pattern Growth)** mines frequent itemsets without candidate generation by compressing the transaction database into an **FP-tree** — a compact prefix-tree structure — and then recursively mining **conditional FP-trees** for each frequent item. It requires only two passes over the database and avoids the candidate explosion that makes Apriori slow on dense or long-itemset datasets.
 
@@ -1103,24 +1157,29 @@ FP-Growth fixes both problems: two database scans total, zero candidate generati
     Bread:4  Milk:4  Beer:3  Diapers:3  Butter:3
     (all ≥ 3 → all frequent; discard items below threshold)
 
-  Order items by frequency (descending) within each transaction:
+  One fixed global order (frequency desc, ties broken in this order):
+    Bread > Milk > Beer > Diapers > Butter
+
+  Order items within each transaction by that single global order:
     T1: Bread, Milk, Butter
-    T2: Bread, Diapers, Beer
+    T2: Bread, Beer, Diapers
     T3: Milk, Beer, Diapers, Butter
-    T4: Bread, Milk, Diapers, Beer
+    T4: Bread, Milk, Beer, Diapers
     T5: Bread, Milk, Butter
 
   Scan 2: insert ordered transactions into prefix tree
 
-         root
-          │
-      Bread:4 ────────── Milk:1
-       /     \                \
-    Milk:3  Diapers:1        Beer:1
-    /    \       \               \
- Butter:2 Diapers:1 Beer:1      Diapers:1
-              \                      \
-              Beer:1                Butter:1
+  root
+  ├─ Bread:4
+  │   ├─ Milk:3
+  │   │   ├─ Butter:2
+  │   │   └─ Beer:1 ─ Diapers:1
+  │   └─ Beer:1 ─ Diapers:1
+  └─ Milk:1
+      └─ Beer:1 ─ Diapers:1 ─ Butter:1
+
+  Header-table totals (link all nodes of the same item):
+    Bread 4 | Milk 4 (=3+1) | Beer 3 | Diapers 3 | Butter 3 (=2+1)
 ```
 
 Each path from root → leaf represents a set of transactions that share that prefix. The counts on nodes give support directly.
@@ -1165,7 +1224,7 @@ The rule evaluation step (support / confidence / lift) is identical for both alg
 
 ---
 
-## 7.16 Self-Supervised Learning
+## 11.16 Self-Supervised Learning
 
 > **Self-supervised learning** is a paradigm where the model generates its own supervisory signal from the structure of unlabeled data. By solving a pretext task (e.g., predicting masked tokens, predicting the next frame, matching augmented views), the model learns general-purpose representations that transfer to downstream tasks with minimal labeled data.
 
@@ -1231,7 +1290,7 @@ CLIP (Contrastive Language-Image Pre-training) extends contrastive learning acro
 
 ---
 
-## 7.17 Algorithm Selection Guide
+## 11.17 Algorithm Selection Guide
 
 Choosing the right unsupervised algorithm depends on the task, data characteristics, and computational constraints.
 
@@ -1437,4 +1496,4 @@ Use **PCA** or **UMAP** — never t-SNE. t-SNE distorts distances non-uniformly,
 
 ---
 
-**Previous:** [Chapter 10 — Supervised Learning](10_supervised_learning.md) | **Next:** [Chapter 15 — Reinforcement Learning](15_reinforcement_learning.md)
+**Previous:** [Chapter 10 — Supervised Learning](10_supervised_learning.md) | **Next:** [Chapter 12 — Key ML Algorithms Deep Dive](12_key_algorithms.md)
