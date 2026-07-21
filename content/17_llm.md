@@ -2442,7 +2442,7 @@ GPT stands for **Generative Pre-trained Transformer**.
 | GPT-4o | 2024 | Native multimodal (text, vision, audio), faster and cheaper |
 | GPT-4.1 | 2025 | API-focused, improved coding and instruction following |
 | GPT-4.5 | 2025 | Largest pre-trained model, improved "EQ" and naturalness |
-| GPT-5 series | 2025-26 | GPT-5.1 → 5.2 → 5.3-Codex → 5.4 (current flagship) |
+| GPT-5 series | 2025-26 | GPT-5.1 → 5.2 → 5.3-Codex → 5.4 → 5.5 → 5.6 Sol (current flagship; ~1M context, tiers Sol/Terra/Luna, plus 5.6 mini/nano) |
 
 **Reasoning models (o-series):**
 
@@ -2512,13 +2512,13 @@ Anthropic was founded by former OpenAI employees with a focus on AI safety. Clau
 | Claude 4 (Haiku/Sonnet/Opus) | 2025 | Extended thinking, tool use, computer use |
 | Claude Haiku 4.5 | 2025 | Fastest and most cost-efficient, high-volume automation |
 | Claude Opus 4.5 | 2025 | Major coding and workplace task improvements |
-| Claude Opus 4.6 | 2026 | 1M context, 128K output, strongest coding and reasoning |
-| Claude Sonnet 4.6 | 2026 | Near-Opus quality at 5x lower cost, improved computer use |
+| Claude Opus 4.8 | 2026 | Current flagship — 1M context, strongest coding and reasoning |
+| Claude Sonnet 5 | 2026 | Mid-tier, best price/performance default; near-Opus quality, improved computer use |
 
 **Key differences:**
 - **Constitutional AI (CAI):** Claude is trained to evaluate its own responses against a set of written principles (a "constitution"), reducing harmful outputs without relying solely on human feedback
 - **Extended thinking:** Claude 4+ models can "think" step-by-step internally before responding, similar to reasoning models
-- **1M context window:** Claude 4.6 models support 1 million tokens of context — entire codebases or books
+- **1M context window:** The latest Claude models (Opus 4.8, Sonnet 5) support 1 million tokens of context — entire codebases or books
 - **Computer use:** Claude can interact with desktop GUIs, clicking buttons and reading screens
 
 ---
@@ -2538,7 +2538,8 @@ Google's multimodal model designed from the ground up to handle text, images, au
 | Gemini 3 Flash | 2025 | 78% SWE-bench, fast reasoning + coding |
 | Gemini 3 Pro Preview | 2026 | State-of-the-art reasoning and multimodal |
 | Gemini 3 Deep Think | 2026 | Specialized reasoning, 84.6% on ARC-AGI-2 |
-| Gemini 3.1 Pro | 2026 | Latest, complex problem-solving |
+| Gemini 3.5 Pro | 2026 | Current flagship — 1–2M context, state-of-the-art reasoning + multimodal |
+| Gemini 3.5 Flash | 2026 | Current mid-tier, best value for high-volume use (Flash-Lite = cheapest) |
 
 **Google's advantage:** Seamless integration with Google Search, Gmail, Docs, YouTube. Gemini models offer some of the longest context windows available (up to 1M tokens).
 
@@ -4030,9 +4031,9 @@ Academic benchmarks don't always reflect real-world usefulness. **Chatbot Arena*
   3. User picks which answer they prefer (or tie)
   4. ELO ratings are calculated (like chess ratings)
 
-  Top-tier models (as of early 2026) include:
-  - GPT-5.4, Claude Opus 4.6, Gemini 3.1 Pro   (highest tier)
-  - o3, Claude Sonnet 4.6, Gemini 3 Flash       (strong reasoning)
+  Top-tier models (as of July 2026 — model versions shift monthly) include:
+  - GPT-5.6, Claude Opus 4.8, Gemini 3.5 Pro    (highest tier)
+  - GPT-5.6 (high-effort), Claude Sonnet 5, Gemini 3.5 Flash  (strong reasoning)
   - GPT-4o, Claude Sonnet, LLaMA 4 Maverick     (very capable)
   - DeepSeek R1, Qwen 3                          (strong open-source)
 
@@ -4279,13 +4280,13 @@ Standard attention memory: $O(N^2)$. Flash Attention memory: $O(N)$.
 
 ## 13.3 Cost Estimation
 
-LLMs charge per token. **Prices drop rapidly — always check current pricing.** Order-of-magnitude estimates:
+LLMs charge per token. **Prices drop rapidly — always check current pricing (as of July 2026 — model versions shift monthly).** Order-of-magnitude estimates:
 
 | Model tier (2026) | Input ~$/M | Output ~$/M | Notes |
 |-------|-----------|-------------|------------|
-| **Frontier** (GPT-5.5, Claude Opus 4.x, Gemini 3 Pro) | $2–15 | $10–75 | best quality; reasoning "thinking" tokens are billed too |
-| **Mid** (GPT-5-mini, Claude Sonnet 4.x, Gemini 3 Flash) | $0.15–3 | $0.60–15 | the production workhorse |
-| **Small / nano** (GPT-5-nano, Claude Haiku, Gemini Flash-Lite) | ~$0.05–0.40 | cheap | bulk classification / extraction |
+| **Frontier** (GPT-5.6, Claude Opus 4.8, Gemini 3.5 Pro) | $2–15 | $10–75 | best quality; reasoning "thinking" tokens are billed too |
+| **Mid** (GPT-5.6 mini, Claude Sonnet 5, Gemini 3.5 Flash) | $0.15–3 | $0.60–15 | the production workhorse |
+| **Small / nano** (GPT-5.6 nano, Claude Haiku, Gemini 3.5 Flash-Lite) | ~$0.05–0.40 | cheap | bulk classification / extraction |
 | **Open-weight** (Llama 4, DeepSeek, Qwen — self-hosted) | infra cost only | | near-free at scale |
 
 **Cost rule of thumb:**
@@ -4317,13 +4318,15 @@ The context window limits how much text the model can "see" at once.
 
 ## 13.5 Choosing the Right Model
 
+*As of July 2026 — model versions shift monthly; choose by tier, not exact name.*
+
 ```
   Task: Simple Q&A, summarization, classification
-  → a small/mini model (GPT-5-mini, Claude Haiku, Gemini Flash, or Llama 4 self-hosted)
+  → a small/mini model (GPT-5.6 mini, Claude Haiku, Gemini 3.5 Flash, or Llama 4 self-hosted)
   → Cheap, fast, good enough
 
   Task: Complex reasoning, code generation, analysis
-  → a frontier or reasoning model (GPT-5.5, Claude Opus 4.x, Gemini 3 Pro, DeepSeek-R1)
+  → a frontier or reasoning model (GPT-5.6, Claude Opus 4.8, Gemini 3.5 Pro, DeepSeek-R1)
   → More expensive, but worth it for quality
 
   Task: Running on-device or with data privacy
@@ -4508,7 +4511,7 @@ A major recent breakthrough: models that spend extra compute **thinking step-by-
   Model immediately starts generating the answer token by token.
   → Fast, but prone to errors on complex reasoning.
 
-  REASONING MODEL (OpenAI o3/o4-mini, Claude extended thinking, Gemini 3 Deep Think, DeepSeek R1):
+  REASONING MODEL (GPT-5.6 high-effort, Claude Opus 4.8 extended thinking, Gemini 3.5 Pro, DeepSeek R1):
   User: "What is 27 × 43?"
   Model first generates a hidden "thinking" chain:
     <thinking>
@@ -4772,9 +4775,9 @@ Understanding the key papers helps you understand WHY things are the way they ar
        │ Mistral Small 3 — 24B param model, strong coding
        │ "DeepSeek moment" — open-source matches proprietary at fraction of cost
        │
-  2026 │ Claude Opus 4.6 / Sonnet 4.6 — 1M context, 128K output
-       │ Gemini 3 Pro, 3 Deep Think (84.6% ARC-AGI-2), 3.1 Pro
-       │ GPT-5.4 — Current OpenAI flagship
+  2026 │ Claude Opus 4.8 / Sonnet 5 — 1M context; Opus flagship, Sonnet best price/performance
+       │ Gemini 3.5 Pro (current flagship), 3.5 Flash (earlier 3 Deep Think hit 84.6% ARC-AGI-2)
+       │ GPT-5.5 → 5.6 — GPT-5.6 (Sol) is the current OpenAI flagship
        │ Open-source models fully competitive with proprietary on many tasks
        │ AI agents and computer-use capabilities mature rapidly
        │ Focus shifts from "bigger models" to "smarter inference"
@@ -4875,16 +4878,17 @@ Understanding the key papers helps you understand WHY things are the way they ar
 ## Model Selection Guide
 
 ```
+  (As of July 2026 — model versions shift monthly; choose by tier, not exact name.)
   Free & runs on your laptop?       → LLaMA 4 Scout via Ollama, or Qwen 3
-  Best quality, no cost limit?      → Claude Opus 4.6, GPT-5.4, or Gemini 3.1 Pro
-  Balance of quality and cost?      → Claude Sonnet 4.6, Gemini 3 Flash, or GPT-4o
+  Best quality, no cost limit?      → Claude Opus 4.8, GPT-5.6, or Gemini 3.5 Pro
+  Balance of quality and cost?      → Claude Sonnet 5, Gemini 3.5 Flash, or GPT-5.6 mini
   Privacy-sensitive data?           → Local model (Ollama) — free, private, no internet
-  Heavy reasoning/math?             → o3/o4-mini, Claude extended thinking, Gemini 3 Deep Think, DeepSeek R1
-  Code generation?                  → Claude Opus/Sonnet 4.6, GPT-5.3-Codex, or DeepSeek V3.2
-  Long documents?                   → Claude 4.6 (1M context), Gemini (1M), or LLaMA 4 Scout (10M!)
-  Multimodal (images + text)?       → GPT-4o, Claude 4.6, Gemini 3, or LLaMA 4
-  High-volume production?           → Claude Haiku 4.5, Gemini 2.5 Flash, or fine-tuned small model
-  Complex multi-step tasks?         → Reasoning model with agentic tool use (o3, Claude, Gemini)
+  Heavy reasoning/math?             → GPT-5.6 (high-effort), Claude extended thinking, Gemini 3.5 Pro, DeepSeek R1
+  Code generation?                  → Claude Opus 4.8/Sonnet 5, GPT-5.6, or DeepSeek V3.2
+  Long documents?                   → Claude Opus 4.8 (1M context), Gemini (1–2M), or LLaMA 4 Scout (10M!)
+  Multimodal (images + text)?       → GPT-5.6, Claude Opus 4.8, Gemini 3.5, or LLaMA 4
+  High-volume production?           → Claude Haiku, Gemini 3.5 Flash-Lite, or fine-tuned small model
+  Complex multi-step tasks?         → Reasoning model with agentic tool use (GPT-5.6, Claude, Gemini)
 ```
 
 ---

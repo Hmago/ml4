@@ -738,6 +738,8 @@ readapt to changing input distributions.
 BatchNorm stabilizes these distributions → faster, more stable training.
 ```
 
+> **Modern caveat:** The original "Internal Covariate Shift" explanation is now contested. Santurkar et al. (2018) showed BatchNorm's main benefit is **smoothing the loss landscape** (making gradients more predictable), not reducing ICS — the two are only weakly correlated. Cite the loss-landscape view in interviews.
+
 ### Step-by-Step Computation ★★★
 
 For a mini-batch $B = \{x_1, x_2, \ldots, x_m\}$:
@@ -1673,8 +1675,9 @@ Dimensions:
   Each head's W_Q, W_K, W_V: [512 × 64]
   W_O: [512 × 512]
 
-Cost: same as single-head with d=512, because heads operate
-on d/h dimensions each. Multi-head attention is FREE in compute!
+Cost: roughly the same as single-head attention with d=512, because the
+heads split the d dimension (each operates on d/h). The extra W_O output
+projection [512×512] adds a little compute — it's near-free, not truly free.
 ```
 
 ---

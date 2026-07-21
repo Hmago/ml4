@@ -13,7 +13,7 @@
 | 5 | Inference, Deployment & Optimization | Q39 – Q47 |
 | 6 | Evaluation & Benchmarks | Q48 – Q53 |
 | 7 | Safety, Alignment & Ethics | Q54 – Q60 |
-| 8 | Frontier Topics (2024-2025) | Q61 – Q68 |
+| 8 | Frontier Topics (2025-2026) | Q61 – Q68 |
 | 9 | Advanced Alignment & Production (2025) | Q69 – Q72 |
 
 ---
@@ -54,6 +54,7 @@ you round them down to use fewer bits (8 or even 4).
   │ BitsAndBytes │ On-the-fly in PyTorch                │
   │ FP8          │ Native on H100/H200 GPUs (2024+)     │
   └──────────────┴─────────────────────────────────────┘
+  Also: NF4 (4-bit for QLoRA fine-tuning), MXFP4 (4-bit float, native on Blackwell)
 ```
 
 **Official Definition:**
@@ -167,6 +168,7 @@ each sentence from scratch (slow).
 - Speed depends on acceptance rate — how often the draft model matches the target model
 - Higher acceptance rate = bigger speed gain. Typical: 70-85% acceptance → 2-3× speedup
 - Draft model can be: a smaller model from the same family, a quantized version, or an n-gram model
+- Modern self-drafting methods dominate 2025-26: **Medusa** (extra decoding heads) and **EAGLE / EAGLE-3** (feature-level drafting, higher acceptance) — bit-exact, ~2-3× throughput
 - Increasingly supported in serving frameworks: vLLM, TensorRT-LLM, SGLang
 
 ---
@@ -217,7 +219,7 @@ and seat a new group." The kitchen (GPU) is always busy.
 - Continuous batching: requests enter and exit independently → near 100% GPU utilization
 - vLLM introduced **PagedAttention** alongside continuous batching — manages KV cache memory like virtual memory pages
 - This is what makes LLM serving at scale practical — 10-20× throughput improvement
-- Key serving frameworks (2025): vLLM (PagedAttention), TGI (Hugging Face), TensorRT-LLM (NVIDIA), SGLang (Stanford — best for structured generation), Ollama (local/edge deployment)
+- Key serving frameworks (2025): vLLM (PagedAttention), TGI (Hugging Face), TensorRT-LLM (NVIDIA), SGLang (UC Berkeley / LMSYS — best for structured generation), Ollama (local/edge deployment)
 
 ---
 
@@ -263,7 +265,7 @@ that can be stored anywhere. Just like how your computer manages RAM.
 - PagedAttention: non-contiguous KV cache stored in fixed-size blocks, mapped by a page table
 - Benefits: no fragmentation, no over-allocation, enables memory sharing across requests (e.g., shared prompt prefix)
 - vLLM combines: PagedAttention + continuous batching + CUDA kernels → state-of-the-art throughput
-- Alternatives: TGI (Hugging Face), TensorRT-LLM (NVIDIA), SGLang (Stanford — best for structured generation)
+- Alternatives: TGI (Hugging Face), TensorRT-LLM (NVIDIA), SGLang (UC Berkeley / LMSYS — best for structured generation)
 
 ---
 
@@ -509,17 +511,19 @@ tests — like giving a student a standardized exam covering many subjects.
 
   BENCHMARKS (standardized tests — 2025):
   ──────────────────────────────────────
-  MMLU:             57 subjects, multiple choice (general knowledge)
+  MMLU:             57 subjects, multiple choice (general knowledge — now saturated)
   MMLU-Pro:         Harder MMLU with 10 answer choices (replacing MMLU)
-  GSM8K:            Grade school math word problems
+  GPQA (Diamond):   Graduate-level "Google-proof" science Q&A
+  GSM8K:            Grade school math word problems (saturated)
   MATH / AIME:      Competition math (for reasoning models)
-  HumanEval:        Python function generation
-  SWE-bench:        Real GitHub issues — measures coding AGENTS
-  ARC-AGI:          Novel reasoning / fluid intelligence
+  HumanEval:        Python function generation (saturated)
+  LiveCodeBench:    Contamination-resistant competitive coding
+  SWE-bench Verified: Real GitHub issues — measures coding AGENTS
+  ARC-AGI-2:        Novel reasoning / fluid intelligence (frontier)
   TruthfulQA:       Resistance to common misconceptions
   SimpleQA:         Factual accuracy (OpenAI)
   Humanity's Last Exam: Expert-level questions to avoid saturation
-  Chatbot Arena:    Real humans pick which model they prefer (ELO)
+  LMArena:          Real humans pick which model they prefer (ELO; formerly Chatbot Arena)
 ```
 
 **Official Definition:**
@@ -534,9 +538,9 @@ tests — like giving a student a standardized exam covering many subjects.
 - No single metric captures everything — use a combination
 - Perplexity: good for comparing language models, but low perplexity ≠ useful model
 - MMLU/MMLU-Pro: broad knowledge tests — MMLU is saturated (top models >90%), MMLU-Pro is the harder replacement
-- **SWE-bench** (2024-2025): the key benchmark for coding agents — measures ability to solve real GitHub issues. Models went from ~30% to 50%+ in one year
-- **ARC-AGI**: measures novel reasoning/fluid intelligence — o3 scored ~88%, a major milestone
-- Chatbot Arena (LMSYS): crowd-sourced preferences, ELO rating — closest to real-world quality. Increasingly trusted over static benchmarks
+- **SWE-bench Verified** (2025-26): the key benchmark for coding agents — measures ability to solve real GitHub issues. Frontier models went from ~13% (2023) to 70-88% by 2026
+- **ARC-AGI-2**: measures novel reasoning/fluid intelligence — remains hard (frontier scores far below the saturated ARC-AGI-1); **GPQA-Diamond** and **LiveCodeBench** are the other go-to 2026 differentiators
+- LMArena (formerly Chatbot Arena / LMSYS): crowd-sourced preferences, ELO rating — closest to real-world quality. Increasingly trusted over static benchmarks
 - Always evaluate on YOUR specific use case — benchmark scores don't guarantee performance on your data
 
 ---
@@ -889,7 +893,7 @@ let them self-evaluate.
 - Two phases: (1) supervised self-critique and revision, (2) RL from AI feedback (RLAIF) using the constitution
 - Advantages over RLHF: scalable (no human raters needed per response), transparent (principles are written down), consistent
 - The constitution can be updated without retraining the full model
-- Used by Anthropic for Claude (including Claude 4 Opus/Sonnet) — designed to be "helpful, harmless, and honest"
+- Used by Anthropic for Claude (including Claude Opus 4.8/Sonnet 5) — designed to be "helpful, harmless, and honest"
 - Anthropic also introduced **Responsible Scaling Policies (RSP)** — "if-then" safety commitments tied to model capability levels (ASL-1 through ASL-4)
 - Limitation: quality depends on the constitution — poorly written principles → poor alignment
 - Anthropic open-sourced their constitution, making the approach auditable
@@ -1028,23 +1032,23 @@ for LLM Applications because no complete defense exists.
   4. Indirect injection is especially dangerous
      (hidden instructions in documents, emails, or webpages the LLM reads)
 
-  OWASP TOP 10 FOR LLMs (2023):
+  OWASP TOP 10 FOR LLMs (2025):
   ──────────────────────────────
   #1  Prompt Injection
-  #2  Insecure Output Handling
-  #3  Training Data Poisoning
-  #4  Model Denial of Service
-  #5  Supply Chain Vulnerabilities
-  #6  Sensitive Information Disclosure
-  #7  Insecure Plugin Design
-  #8  Excessive Agency
-  #9  Overreliance
-  #10 Model Theft
+  #2  Sensitive Information Disclosure
+  #3  Supply Chain
+  #4  Data & Model Poisoning
+  #5  Improper Output Handling
+  #6  Excessive Agency
+  #7  System Prompt Leakage          (NEW in 2025)
+  #8  Vector & Embedding Weaknesses  (NEW in 2025)
+  #9  Misinformation
+  #10 Unbounded Consumption          (expanded from "Model DoS")
 ```
 
 **Official Definition:**
 > **Prompt injection** is classified as the #1 vulnerability in the OWASP Top 10 for LLM
-> Applications (2023). It exploits the fundamental architectural weakness that LLMs
+> Applications (2025). It exploits the fundamental architectural weakness that LLMs
 > process instructions and data in the same text channel, making it impossible to
 > perfectly distinguish between system instructions and user-controlled input. Unlike
 > SQL injection (solved by parameterized queries), no equivalent architectural solution
@@ -1182,7 +1186,7 @@ model tries to go sideways, the guardrails keep it on track.
 
 ---
 
-# PART 8 — Frontier Topics (2024-2025)
+# PART 8 — Frontier Topics (2025-2026)
 
 ---
 
@@ -1237,7 +1241,7 @@ tokens), it gets dramatically better at hard problems.
 - OpenAI's approach: hidden reasoning traces — user sees only the summary. Variable "reasoning effort" (low/medium/high)
 - Anthropic's approach: visible "extended thinking" — user can see the model's reasoning. Configurable thinking budget
 - DeepSeek-R1: trained reasoning purely with RL (GRPO + verifiable rewards) — no supervised CoT data needed. Open-sourced the approach and distilled into smaller models (1.5B-70B)
-- Trade-off: reasoning models are slower and more expensive per query, but dramatically better on hard problems (AIME math: o3 scored 96.7% vs GPT-4o ~30%)
+- Trade-off: reasoning models are slower and more expensive per query, but dramatically better on hard problems (AIME 2024 math: o3 ~90%+ vs GPT-4o ~12%)
 - Not always better: for simple tasks (summarization, translation), standard models are faster and equally good
 
 ---
@@ -1493,7 +1497,7 @@ you can run frontier-competitive models on your own hardware — even on a lapto
   │ LLaMA 4 Scout    │ Meta    │ 109B MoE   │ 10M context window!  │
   │ DeepSeek-V3      │ DeepSeek│ 671B MoE   │ Trained for ~$5.5M   │
   │ DeepSeek-R1      │ DeepSeek│ 671B MoE   │ Open reasoning model │
-  │ Qwen 2.5         │ Alibaba │ 0.5B-72B   │ Strong multilingual   │
+  │ Qwen 3           │ Alibaba │ 0.5B-72B   │ Strong multilingual   │
   │ Mistral Large    │ Mistral │ ~123B      │ Strong European model │
   │ Gemma 2          │ Google  │ 2B-27B     │ Lightweight, open     │
   │ Phi-4            │ Microsoft│ ~14B      │ Small but capable     │
@@ -1505,8 +1509,8 @@ you can run frontier-competitive models on your own hardware — even on a lapto
 ```
 
 **Official Definition:**
-> The open-source LLM ecosystem (as of 2025) includes models with publicly available
-> weights from Meta (LLaMA 4), DeepSeek (V3, R1), Alibaba (Qwen), Mistral, Google
+> The open-source LLM ecosystem (as of July 2026) includes models with publicly available
+> weights from Meta (LLaMA 4), DeepSeek (V3.2, R1), Alibaba (Qwen), Mistral, Google
 > (Gemma), and Microsoft (Phi). These models are competitive with proprietary models
 > on many benchmarks. Key enablers: efficient architectures (MoE), better training
 > recipes (more data, less parameters), open tooling (Ollama, vLLM, Hugging Face),
@@ -1515,7 +1519,7 @@ you can run frontier-competitive models on your own hardware — even on a lapto
 **Interview Answer:**
 - DeepSeek-V3/R1 was a watershed moment — frontier performance at ~$5.5M training cost challenged the assumption that only big-budget labs could compete
 - LLaMA 4 (Meta, April 2025): MoE architecture, 10M context, multiple sizes — the dominant open-weight family
-- Open-source ≈ proprietary on many tasks, but proprietary models (GPT-4.1, Claude 4 Opus) still lead on the hardest reasoning and coding tasks
+- Open-source ≈ proprietary on many tasks, but proprietary models (GPT-5.6, Claude Opus 4.8) still lead on the hardest reasoning and coding tasks
 - Local deployment stack: Ollama (easy setup) + GGUF quantization + llama.cpp (efficient inference)
 - Production deployment: vLLM, TGI, or SGLang for serving open-source models at scale
 - Key advantage of open-source: data privacy, no per-token cost, full control, fine-tuning freedom
@@ -1550,12 +1554,12 @@ read emails, look at photos, listen to voice messages, and draw pictures.
   "Explain this chart"              → data interpretation from visuals
   "What's happening in this video?" → video understanding (Gemini)
 
-  KEY MULTIMODAL MODELS (2025):
-  ─────────────────────────────
-  GPT-4o:        Text + image + audio in/out (native image generation)
-  Claude 4:      Text + image input (strong document/chart understanding)
-  Gemini 2.5:    Text + image + audio + video in (broadest modality support)
-  LLaMA 4:       Text + image (vision variants)
+  KEY MULTIMODAL MODELS (as of July 2026):
+  ────────────────────────────────────────
+  GPT-5.6:          Text + image + audio in/out (native image generation)
+  Claude Opus 4.8:  Text + image input (strong document/chart understanding)
+  Gemini 3.5 Pro:   Text + image + audio + video in (broadest modality support)
+  LLaMA 4:          Text + image (vision variants)
 ```
 
 **Official Definition:**
@@ -1627,7 +1631,7 @@ systems face stricter rules.
 - Risk-based classification: unacceptable → high → limited → minimal risk
 - LLMs classified as General-Purpose AI (GPAI) — must document training data, energy use, known limitations
 - "Systemic risk" threshold (~10^25 FLOPS training compute) triggers extra obligations for frontier models
-- US approach (as of 2025): Executive Order on AI (Oct 2023) plus state-level legislation, less comprehensive than EU
+- US approach (mid-2026): Biden's Executive Order 14110 (Oct 2023) was **rescinded in Jan 2025**; the federal stance shifted deregulatory/innovation-first. No comprehensive federal AI law — **state laws lead** (Colorado AI Act eff. 2026, Texas HB 149, California SB 53), with a federal-vs-state preemption fight ongoing
 - **Responsible Scaling Policies**: Anthropic's self-governance framework (ASL levels) — voluntary safety commitments tied to model capabilities
 - **AI Safety Institutes**: US AISI and UK AISI established for pre-deployment testing of frontier models
 - Interview tip: showing awareness of regulation demonstrates maturity — interviewers increasingly ask about responsible deployment
@@ -1765,7 +1769,7 @@ The payoff: you can have a 671B-parameter model (DeepSeek-V3) that only activate
   REAL NUMBERS (DeepSeek-V3, 2024):
   ──────────────────────────────────
   Total parameters:   671B
-  Active per token:    37B  (top-2 of 256 experts activated)
+  Active per token:    37B  (8 of 256 routed experts + 1 shared expert)
   FLOPs vs. dense 37B: comparable
   Quality vs. dense 37B: much higher (larger total knowledge capacity)
 ```

@@ -79,8 +79,8 @@ all by predicting "what word should come next?"
 - Built on the Transformer architecture (self-attention mechanism)
 - Trained on trillions of tokens from diverse text sources
 - "Emergent abilities" appear at scale — few-shot learning, chain-of-thought reasoning
-- Examples: GPT-4.1, Claude 4, LLaMA 4, Gemini 2.5, DeepSeek-V3
-- Modern frontier: reasoning models (o3, DeepSeek-R1) that use chain-of-thought at inference time
+- Examples: GPT-5.6, Claude Opus 4.8, LLaMA 4, Gemini 3.5 Pro, DeepSeek-V3.2 (as of July 2026 — versions shift monthly)
+- Modern frontier: reasoning models (GPT-5.6, DeepSeek-R1) that use chain-of-thought at inference time
 
 ---
 
@@ -238,7 +238,7 @@ the other part writes the output. Great for turning one thing into another
   Output: "great"  (fills in the blank — understands context)
   Can't generate new text. Used for classification, search, Q&A, reranking.
 
-  DECODER-ONLY (GPT-4.1, Claude 4, LLaMA 4, Gemini 2.5, DeepSeek-V3):
+  DECODER-ONLY (GPT-5.6, Claude Opus 4.8, LLaMA 4, Gemini 3.5 Pro, DeepSeek-V3.2):
   Input: "Once upon a time"
   Output: "there was a brave little mouse who..."  (writes new text)
   The dominant architecture today. Almost all modern chatbots use this.
@@ -339,7 +339,7 @@ the entire textbook every night.
 
 **Interview Answer:**
 - KV cache turns O(n²) inference into O(n) — essential for practical LLM serving
-- Memory trade-off: for LLaMA-70B with 4K context, KV cache ≈ 10 GB per request
+- Memory trade-off: for LLaMA-70B with 4K context, KV cache ≈ 1.3 GB per request with GQA (8 KV heads); the pre-GQA MHA baseline (64 heads) would be ~10 GB
 - Techniques to manage KV cache memory: **GQA** (Grouped Query Attention), **MQA** (Multi-Query Attention), **PagedAttention** (vLLM)
 - GQA shares Key-Value heads across multiple Query heads, reducing cache size by 4-8× (used in LLaMA 2/3/4)
 - **Multi-head Latent Attention (MLA)** (DeepSeek-V2/V3): compresses KV into a low-rank latent space, dramatically reducing cache memory — a major 2024-2025 innovation
@@ -515,7 +515,7 @@ Double the words → quadruple the work. It gets expensive really fast.
 - Solutions: Flash Attention (hardware-efficient attention), sparse attention patterns, sliding window attention (Mistral), RoPE scaling (YaRN, NTK-aware), Ring Attention (distributed across GPUs)
 - Longer context ≠ better performance — models struggle to use information in the middle of long contexts ("lost in the middle" phenomenon)
 - Trade-off: longer context enables more RAG documents, longer conversations, but increases latency and cost per query
-- 2025 trend: 1M+ context is now standard for frontier models (Gemini 2.5, GPT-4.1), with LLaMA 4 Scout pushing to 10M
+- 2026 trend: 1M+ context is now standard for frontier models (Gemini 3.5 Pro, GPT-5.6), with LLaMA 4 Scout pushing to 10M
 
 ---
 

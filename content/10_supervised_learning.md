@@ -165,6 +165,8 @@ Sometimes the line between classification and regression blurs. Star ratings (1-
 
 ## 10.3 How Models Learn: Loss Functions & Optimization
 
+Training a model is really a game of "warmer, colder." The model makes a guess, a loss function scores how wrong that guess was, and the optimizer nudges the model's dials in whatever direction lowers the score — over and over, thousands of times. Pick the wrong scorekeeper, though, and the model will happily get very good at the wrong thing.
+
 > A **loss function** quantifies the difference between predictions and true labels. Training means finding parameters that minimize this loss via iterative gradient-based updates.
 
 Every supervised learning algorithm follows the same loop: make a prediction, measure error with the loss function, compute gradients, update parameters. The right loss depends on the task: MSE or MAE for regression, binary cross-entropy for two-class problems, categorical cross-entropy for multi-class problems. The optimizer (almost always Adam or mini-batch SGD) takes a step in the direction of the negative gradient, scaled by the learning rate.
@@ -183,6 +185,8 @@ The key supervised-learning–specific point: the loss function must match the o
 ---
 
 ## 10.4 The Training Pipeline: Train / Val / Test Splits
+
+You wouldn't judge a chef by letting them cook the one dish they've rehearsed a thousand times — you'd ask for something new. A model needs the same honest test, so you carve your labeled data into three separate roles: a set to learn from, a set to make tuning decisions against, and a final set kept in a sealed envelope for a single unbiased grade at the very end.
 
 > The **train/validation/test split** divides labeled data into three disjoint sets: one for fitting model parameters (train), one for tuning hyperparameters and model selection (validation), and one held-out set for final unbiased evaluation (test).
 
@@ -1437,6 +1441,8 @@ Feature importance tells you "in general, square footage matters most." SHAP tel
 ---
 
 ## 10.11 Class Imbalance: The 99% Trap
+
+Picture a smoke detector that stays silent no matter what. In a building that almost never catches fire, it looks 99.9% "accurate" — and it is also completely worthless. That is the trap of imbalanced data: when one class dominates, a lazy model can post sky-high accuracy while missing every one of the rare cases you actually built it to catch.
 
 > **Class imbalance** occurs when the distribution of classes in the training data is highly skewed. Standard classifiers optimized for accuracy will be biased toward the majority class and fail to learn the minority class.
 

@@ -741,7 +741,7 @@ Evaluating agents is harder than evaluating single LLM calls because correctness
 
 **SWE-bench Verified** is the most widely-cited agent benchmark (2025–2026): 500 real GitHub issues from verified-solvable repositories. Measures end-to-end coding agent performance with patch submission and automated test evaluation.
 
-**LLM-as-judge** for agent evaluation: ask a strong model (GPT-5.5 or Claude Opus) to score the agent's final response and trace against a rubric. Faster and cheaper than human annotation, but suffers from self-preference and verbosity biases — mitigate by using a different model family as the judge.
+**LLM-as-judge** for agent evaluation: ask a strong model (GPT-5.6 or Claude Opus) to score the agent's final response and trace against a rubric. Faster and cheaper than human annotation, but suffers from self-preference and verbosity biases — mitigate by using a different model family as the judge.
 
 > ✅ **Must-remember**
 >
@@ -959,7 +959,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 | Lever | Savings |
 |-------|---------|
 | **Prompt caching** | 50–90% on repeated prefixes (system prompt cached) |
-| **Model routing** | 30–80% — easy queries → Flash/Haiku/mini; hard → Opus/Pro/GPT-5.5 |
+| **Model routing** | 30–80% — easy queries → Flash/Haiku/mini; hard → Opus/Pro/GPT-5.6 |
 | Batch APIs | 50% async off-peak |
 | Provider failover | LiteLLM, OpenRouter |
 
@@ -979,17 +979,18 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 ## Ch 20 — The 2026 AI Landscape
 
-> 💡 **In a sentence —** By May 2026 no single model wins everything — GPT-5.5 leads agents, Claude Opus 4.7 leads code/tools, Gemini 3.1 Pro leads multimodal/value, and open-weight models (DeepSeek, Llama 4, Qwen 3.5) are within ~5 points on most tasks, making model choice primarily a question of price, latency, and ecosystem.
+> 💡 **In a sentence —** By July 2026 no single model wins everything — GPT-5.6 leads agents, Claude Opus 4.8 leads code/tools (Claude Sonnet 5 the mid-tier default), Gemini 3.5 Pro leads multimodal/value, and open-weight models (DeepSeek, Llama 4, Qwen 3.5) are within ~5 points on most tasks, making model choice primarily a question of price, latency, and ecosystem.
 
 ---
 
-### Frontier Model Lineup (May 2026)
+### Frontier Model Lineup (July 2026)
 
 ```
 CLOSED-WEIGHT FRONTIER:
-   GPT-5.5 (OpenAI)      — agents leader; Terminal-Bench 82.7%; SWE-bench 88.7%
-   Claude Opus 4.7 (Ant) — SWE-bench 87.6%; tool orchestration
-   Gemini 3.1 Pro (Ggl)  — GPQA 94.3%; cheapest flagship $2/$12 per M tokens
+   GPT-5.6 (OpenAI)      — agents leader; Terminal-Bench 82.7%; SWE-bench 88.7%
+   Claude Opus 4.8 (Ant) — SWE-bench 87.6%; tool orchestration
+   Claude Sonnet 5 (Ant) — mid-tier price/perf default; $2/$10 per M tokens
+   Gemini 3.5 Pro (Ggl)  — GPQA 94.3%; cheapest flagship $4/$12 per M tokens
 
 OPEN-WEIGHT (sparse MoE era):
    DeepSeek V4-Pro        — 1.6T/49B active; SWE-bench 83.7%; MIT license
@@ -1026,7 +1027,7 @@ All flagship open models in 2026 are **sparse MoE** — large total parameter co
 
 1. **Cost & sovereignty**: self-host on H100s/TPUs; data never leaves your VPC.
 2. **License war**: Apache 2.0 (Qwen 3.5, Mistral, Gemma 4). Llama keeps MAU clause (no commercial use above 700M monthly active users). DeepSeek went MIT.
-3. **Quality**: DeepSeek V4 at 83.7% SWE-bench is within 5 points of GPT-5.5 — close enough that self-hosted open-weight + good infra often beats premium API on cost.
+3. **Quality**: DeepSeek V4 at 83.7% SWE-bench is within 5 points of GPT-5.6 — close enough that self-hosted open-weight + good infra often beats premium API on cost.
 
 **When to pick open-weight**: privacy-critical (health, finance, defence), bulk inference (token cost dominates), long-context RAG (Llama 4 Scout 10M), research reproducibility. **When to pick closed**: top-end agent reliability, latest reasoning frontier, computer-use, zero ops.
 
@@ -1034,7 +1035,7 @@ All flagship open models in 2026 are **sparse MoE** — large total parameter co
 
 ### Coding Agents & SWE-bench
 
-SWE-bench Verified scores late-2023 → May 2026: ~13% → **88.7%**. Four compounding factors: (1) stronger base models, (2) test-time compute / reasoning, (3) better scaffolds (file IO, test runners, diff review, persistent state), (4) RL on agentic traces.
+SWE-bench Verified scores late-2023 → July 2026: ~13% → **88.7%**. Four compounding factors: (1) stronger base models, (2) test-time compute / reasoning, (3) better scaffolds (file IO, test runners, diff review, persistent state), (4) RL on agentic traces.
 
 Scaffold gap: Augment Code at 72% with Opus 4.6 vs Cursor at 65.7% with Sonnet 4.6 — same model family, better harness wins.
 
@@ -1058,7 +1059,7 @@ Trend: coding split into **interactive copilots** (tight feedback) and **autonom
 
 Veo 3.1's native audio is the biggest leap — bypasses post-production sound.
 
-**Voice (2026)**: end-to-end speech-to-speech models (~300ms latency), natural interruptions. GPT-5.5 Realtime API, Gemini Live (real-time + screen-share), ElevenLabs Conversational. Vs 2024's 3-step pipeline (STT → LLM → TTS): 2026 is one model.
+**Voice (2026)**: end-to-end speech-to-speech models (~300ms latency), natural interruptions. GPT-5.6 Realtime API, Gemini Live (real-time + screen-share), ElevenLabs Conversational. Vs 2024's 3-step pipeline (STT → LLM → TTS): 2026 is one model.
 
 ---
 
@@ -1126,11 +1127,11 @@ Start: What is the task?
      → If quality insufficient, step up one tier
 
   2. Hard math / complex code / multi-step logic?
-     → Use reasoning model (GPT-5.5, Claude Opus 4.7 extended thinking, Gemini 3.1 Thinking)
+     → Use reasoning model (GPT-5.6, Claude Opus 4.8 extended thinking, Gemini 3.5 Thinking)
      → Watch cost: 10-50× premium; only if quality improvement justifies
 
   3. Multimodal input (images, documents)?
-     → Gemini 3.1 Pro or GPT-5.5 / Claude Opus 4.7
+     → Gemini 3.5 Pro or GPT-5.6 / Claude Opus 4.8
 
   4. High-volume / privacy-critical / bulk offline?
      → Open-weight: DeepSeek V4, LLaMA 4 Scout, Qwen 3.5
@@ -1140,7 +1141,7 @@ Start: What is the task?
      → XGBoost first; LLM only if text context is the main signal
 
   6. Real-time voice?
-     → GPT-5.5 Realtime / Gemini Live (end-to-end, not STT+LLM+TTS)
+     → GPT-5.6 Realtime / Gemini Live (end-to-end, not STT+LLM+TTS)
 
   7. Coding agent / autonomous dev work?
      → Claude Code (terminal), Cursor (IDE), GitHub Copilot (enterprise)
@@ -1204,8 +1205,8 @@ Penalties: up to €35M or 7% global revenue. Headline obligations for foundatio
 
 | Tier | Model | Use case |
 |------|-------|---------|
-| Gemini 3.1 Pro | Flagship | Complex reasoning, multimodal, SWE-bench 80.6%, GPQA 94.3% |
-| Gemini 3 Flash | High-throughput | Production workhorse |
+| Gemini 3.5 Pro | Flagship | Complex reasoning, multimodal, SWE-bench 80.6%, GPQA 94.3% |
+| Gemini 3.5 Flash | High-throughput | Production workhorse |
 | Gemini 3 Nano | On-device | Pixel, Android, ChromeOS |
 | Gemini Live | Real-time | Bidirectional audio + video |
 | Imagen 4 / Veo 3.1 | Generation | Image/video in Vertex |
@@ -1220,8 +1221,8 @@ Penalties: up to €35M or 7% global revenue. Headline obligations for foundatio
 |-----------|--------|
 | MMLU, HumanEval, GSM8K | **Saturated** (≥90% frontier) — citing them is a yellow flag |
 | **SWE-bench Verified** | Active — frontier ~88% |
-| **Terminal-Bench 2.0** | Active — GPT-5.5 82.7% |
-| **OSWorld** | Active — Claude Opus 4.7 ~44% |
+| **Terminal-Bench 2.0** | Active — GPT-5.6 82.7% |
+| **OSWorld** | Active — Claude Opus 4.8 ~44% |
 | **GPQA Diamond** | Active — frontier ~94% |
 | **ARC-AGI-2** | Active — frontier well below humans |
 | **FrontierMath** | Active — frontier ~30% |
@@ -1241,7 +1242,7 @@ Penalties: up to €35M or 7% global revenue. Headline obligations for foundatio
 
 > ✅ **Must-remember**
 >
-> - No single model wins everything — pick by task (GPT-5.5 for agents, Claude for code, Gemini for multimodal/value).
+> - No single model wins everything — pick by task (GPT-5.6 for agents, Claude for code, Gemini for multimodal/value).
 > - **Test-time compute** (reasoning budget) > parameter scaling for hard decomposable tasks.
 > - **SWE-bench** went 13% → 88% in 18 months: better models + reasoning + better scaffolds + RL on traces.
 > - **EU AI Act enforcement: Aug 2, 2026** — €35M or 7% global revenue.
