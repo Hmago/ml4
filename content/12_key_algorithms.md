@@ -62,6 +62,8 @@ Chapter 10 gave you the "what." This chapter gives you the "how" and "why" — t
 
 ## 12.2 Linear Regression — Deep Dive
 
+You already do linear regression in your head. If every extra bedroom tends to add about $30k to a house's price and every year of age knocks a little off, you can price a new listing by adding up those per-feature effects. That is all this model is: a weighted sum where each weight says how strongly one feature pushes the prediction up or down.
+
 > **Linear Regression** fits a linear function $\hat{y} = \mathbf{w}^\top \mathbf{x} + b$ to minimize the sum of squared residuals between predicted and observed values. It is the foundation of most parametric supervised learning.
 
 ### The Model
@@ -383,6 +385,8 @@ def logistic_regression_gd(X, y, lr=0.01, epochs=1000):
 
 ## 12.4 Decision Trees — Deep Dive
 
+A decision tree is just a flowchart of yes/no questions, like the game of Twenty Questions. Each question splits the cases still in play into purer and purer groups until you are confident enough to commit to an answer. The only real skill is picking which question to ask at each step.
+
 > **Decision Tree (CART)** is a non-parametric supervised algorithm that recursively partitions the feature space into axis-aligned regions by choosing splits that maximize an impurity reduction criterion (Gini impurity or information gain). Predictions are the majority class (classification) or mean value (regression) in each leaf.
 
 ### How Splits Are Chosen
@@ -509,6 +513,8 @@ In sklearn, this is `ccp_alpha`. Use `cost_complexity_pruning_path()` to find ca
 
 ## 12.5 Random Forest — Deep Dive
 
+Ask one expert and you get one confident answer that might be wildly off. Ask hundreds of experts who each studied slightly different books and looked at slightly different clues, then take a vote — the individual quirks cancel out and the consensus is far steadier. A random forest builds exactly that panel, but out of decision trees.
+
 > **Random Forest** is an ensemble of decision trees trained on bootstrap samples with random feature subsets at each split (bagging + feature randomization). Predictions are aggregated by majority vote (classification) or averaging (regression). The decorrelation between trees reduces ensemble variance without increasing bias.
 
 ### The Two Sources of Randomness
@@ -624,6 +630,8 @@ importances = dict(zip(feature_names, rf.feature_importances_))
 ---
 
 ## 12.6 Gradient Boosting — The Competition King
+
+Gradient boosting is the art of fixing your own mistakes, one small correction at a time. Build a weak model, look at exactly where it is wrong, then train the next model specifically to patch those errors — and keep stacking tiny corrections until almost nothing is left to fix. It is like refining a guess by repeatedly asking "how far off was I, and in which direction?"
 
 > **Gradient Boosting** builds an additive ensemble of weak learners (shallow trees) sequentially. Each new tree is fit to the negative gradient of the loss function with respect to the current ensemble's predictions (i.e., the residuals for squared error loss). The final prediction is the weighted sum of all trees' outputs.
 
@@ -968,6 +976,8 @@ When data is not linearly separable, map it to a higher-dimensional space where 
 
 ## 12.8 K-Nearest Neighbors — Deep Dive
 
+You are the company you keep. To label something new, K-Nearest Neighbors simply looks at the handful of training examples sitting closest to it and lets them vote. There is no real "training" step at all — the model just memorizes every example and does all of its thinking at prediction time.
+
 > **K-Nearest Neighbors (KNN)** is a non-parametric, instance-based (lazy) learning algorithm. It stores the entire training set and classifies a new point by majority vote among its $K$ closest neighbors by distance. It has no explicit training phase.
 
 ### Distance Metrics
@@ -1097,6 +1107,8 @@ Brute-force KNN computes distance to all $n$ training points — $O(np)$ per pre
 ---
 
 ## 12.9 Naive Bayes — Deep Dive
+
+Your spam filter is really just tallying evidence. Words like "free" and "winner" nudge an email toward spam; your manager's name and a project reference nudge it toward legitimate — and Naive Bayes multiplies all of those little clues together to reach a verdict. The "naive" part is its bold assumption that each clue is independent of the others, which is rarely true yet works remarkably well in practice.
 
 > **Naive Bayes** is a family of probabilistic classifiers based on applying Bayes' theorem with the "naive" assumption of conditional independence between features given the class label. Despite this simplification, it achieves competitive accuracy and is particularly strong for text classification and high-dimensional sparse data.
 

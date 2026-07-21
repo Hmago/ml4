@@ -133,8 +133,8 @@ graph LR
 | Method | How It Works | Used By |
 |--------|-------------|---------|
 | **BPE** | Merge most frequent pairs bottom-up | GPT, LLaMA |
-| **WordPiece** | Like BPE but maximizes likelihood, not frequency | BERT, Gemini |
-| **Unigram (SentencePiece)** | Start with large vocab, prune tokens that least reduce likelihood | T5, ALBERT |
+| **WordPiece** | Like BPE but maximizes likelihood, not frequency | BERT, DistilBERT |
+| **Unigram (SentencePiece)** | Start with large vocab, prune tokens that least reduce likelihood | T5, ALBERT, Gemma/Gemini |
 
 ---
 
@@ -493,17 +493,17 @@ LLaMA 2 70B specifications:
 KV cache for 1 request at sequence length 4096:
   = 2 × 1 × 80 × 8 × 128 × 4096 × 2 bytes
   = 2 × 1 × 80 × 8 × 128 × 4096 × 2
-  = 1,073,741,824 bytes
-  = 1.0 GB per request!
+  = 1,342,177,280 bytes
+  = 1.25 GB per request!
 
 At batch size 32:
-  = 32 × 1.0 GB = 32 GB just for KV cache
+  = 32 × 1.25 GB = 40 GB just for KV cache
 
 Compare: Model weights (70B params × 2 bytes) = 140 GB
-KV cache at batch 32, seq 4096 = 32 GB (23% of model weight memory!)
+KV cache at batch 32, seq 4096 = 40 GB (~29% of model weight memory!)
 
 Without GQA (standard MHA, 64 KV heads instead of 8):
-  = 32 × 8.0 GB = 256 GB  → wouldn't fit in GPU memory!
+  = 32 × 10.0 GB = 320 GB  → wouldn't fit in GPU memory!
   GQA saves 8× on KV cache memory.
 ```
 
@@ -1384,9 +1384,10 @@ For each token i (left to right):
 Key guarantee: Output distribution is IDENTICAL to target model!
                Speculative decoding is lossless.
 
-Speedup ≈ 1 / (1 - acceptance_rate^K) × K
-  If draft model matches target 90% of the time and K=4:
-  Speedup ≈ 2-3×
+Expected tokens accepted per step ≈ (1 - α^(K+1)) / (1 - α)   [α = acceptance rate]
+  If α=0.9 and K=4: ≈ 4.1 tokens drafted per verification step
+  → ~2-3× real speedup (wall-clock gain is lower than the raw token count
+    because the draft model itself costs time each step)
 ```
 
 ### When to Use Speculative Decoding ★★★
@@ -1397,6 +1398,16 @@ Speedup ≈ 1 / (1 - acceptance_rate^K) × K
 | Large model, hard text (reasoning) | 1.1-1.5× | Draft model often wrong → rejected |
 | Small model | Not useful | Already fast enough |
 | Batch serving | Limited | Already compute-bound, not memory-bound |
+
+### Modern Serving Techniques (2025-26) ★★★
+
+Beyond a single draft model, know these production-standard techniques:
+
+| Technique | What it does |
+|---|---|
+| **Medusa / EAGLE(-3)** | Self-speculation — extra decoding heads (Medusa) or feature-level drafting (EAGLE) replace a separate draft model; higher acceptance, bit-exact |
+| **Continuous (in-flight) batching** | New requests join an in-flight batch instead of waiting for it to fill — the default in vLLM/TGI/TensorRT-LLM; massively raises GPU utilization |
+| **Disaggregated prefill/decode** | Run the compute-bound *prefill* and memory-bound *decode* phases on separate GPU pools (DistServe/Splitwise) so each is tuned independently |
 
 ---
 
@@ -1751,6 +1762,8 @@ Benchmark results (approximate):
   Gemini Ultra:        90.0%
   Human expert:        ~89.8%
 ```
+
+> **Currency note (2026):** MMLU (like GSM8K, HumanEval, HellaSwag) is now **saturated** — frontier models all score 88-92%, so it no longer separates them. The benchmarks that differentiate in 2026 are **GPQA-Diamond** (graduate science), **SWE-bench Verified** (agentic coding), **ARC-AGI-2** (fluid reasoning, still very hard), **AIME / FrontierMath** (competition math), **LiveCodeBench**, and **Humanity's Last Exam**. Cite these, not MMLU, when discussing the current frontier.
 
 ### Chatbot Arena — Crowdsourced Elo Rankings ★★★
 

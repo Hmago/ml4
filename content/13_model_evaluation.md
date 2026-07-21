@@ -52,6 +52,9 @@ flowchart LR
 
 ## 13.2 The Confusion Matrix
 
+### Simple Explanation
+Every prediction your classifier makes lands in one of four buckets: right and it said yes, right and it said no, or wrong in one of two different ways. The confusion matrix is simply a 2×2 scoreboard that tallies how often each of those four outcomes happens.
+
 > **Confusion matrix**: a table that describes the performance of a classification model by comparing predicted labels against actual labels across all four possible outcomes: true positives, true negatives, false positives, and false negatives.
 
 Every classification metric you will ever use derives from four numbers in this matrix.
@@ -241,6 +244,9 @@ Most classifiers output a probability (e.g., 0.73 for "cancer"). You pick a **th
 
 ## 13.4 ROC Curve & AUC
 
+### Simple Explanation
+A classifier doesn't just answer yes or no — under the hood it produces a score, and *you* pick the threshold that turns that score into a decision. Slide the threshold and you trade catching more real positives against triggering more false alarms. The ROC curve draws that entire trade-off in one picture, and AUC squeezes the whole picture down to a single number.
+
 > **ROC (Receiver Operating Characteristic) curve**: a plot of the True Positive Rate (recall) against the False Positive Rate ($1 - \text{specificity}$) at every possible classification threshold. **AUC (Area Under the Curve)** summarizes the ROC curve into a single number between 0 and 1.
 
 The ROC curve shows how well a model separates positives from negatives across *all* thresholds simultaneously. You do not need to pick a single threshold to compare models — AUC does that for you.
@@ -315,6 +321,9 @@ ROC-AUC can be **misleading** on heavily imbalanced datasets because it is domin
 
 ## 13.5 Precision-Recall Curve & AUC-PR
 
+### Simple Explanation
+When the thing you care about is rare — fraud, disease, defects — most of your data is the boring negative class, and a metric can look wonderful while your model quietly misses the needles in the haystack. The precision-recall curve throws out those easy negatives and focuses only on how well you find the rare positives *and* how often your alarms are real.
+
 > **Precision-Recall (PR) curve**: a plot of precision (y-axis) vs. recall (x-axis) at varying thresholds. **AUC-PR** is the area under this curve. Unlike ROC, the PR curve focuses exclusively on the positive class, making it the right choice for imbalanced datasets.
 
 In fraud detection, only 0.2% of transactions are fraudulent. The ROC curve might look great (AUC = 0.97) because TN dominates. But the PR curve reveals how well the model actually catches fraud without flooding analysts with false alerts.
@@ -378,6 +387,9 @@ In fraud detection, only 0.2% of transactions are fraudulent. The ROC curve migh
 ---
 
 ## 13.6 Regression Metrics
+
+### Simple Explanation
+For regression there is no "right or wrong," only "how far off." Every metric here answers that question a little differently: some average the raw miss, some punish big misses far more harshly than small ones, and some report the error in the original units so you can explain it to a stakeholder. Which one you reach for depends on whether a single huge mistake should hurt more than many tiny ones.
 
 > **Regression metrics** quantify how far a model's continuous predictions deviate from actual values, each with a different sensitivity to error magnitude and interpretation.
 
@@ -626,6 +638,9 @@ flowchart TD
 
 ## 13.8 Hyperparameter Tuning
 
+### Simple Explanation
+Some settings a model figures out on its own; others you have to dial in yourself before training even begins — how deep a tree may grow, how big each learning step is. Those knobs are the hyperparameters, and there is no formula that hands you the best combination. Tuning is the organized search for the settings that make validation performance the best.
+
 > **Hyperparameters** are configuration values set before training that control the learning process itself — unlike model parameters (weights, biases) which are learned from data. **Hyperparameter tuning** is the search for the combination that yields the best validation performance.
 
 ```
@@ -714,6 +729,9 @@ Libraries: **Optuna**, **Hyperopt**, **scikit-optimize**, **Ray Tune**.
 ---
 
 ## 13.9 Learning Curves — Diagnosing Bias vs. Variance
+
+### Simple Explanation
+When a model underperforms, you face a fork in the road: is it too simple to capture the pattern (high bias), or so flexible that it memorized the training data (high variance)? Learning curves diagnose this by plotting how training and validation scores evolve as the model is fed more and more data.
 
 > **Learning curves** plot training and validation performance as a function of training set size or training epochs, revealing whether a model suffers from high bias (underfitting) or high variance (overfitting).
 

@@ -80,7 +80,7 @@ There are 50+ tools in this space; you only need to know the dozen that show up 
 
 LCEL ("LangChain Expression Language") is the pipe-syntax way to compose components. It looks Unix-y on purpose:
 
-> Model IDs in examples are illustrative — swap in your current frontier/mini model (e.g. GPT-5.5, Claude Opus 4.7, Gemini 3.1).
+> Model IDs in examples are illustrative — swap in your current frontier/mini model (e.g. GPT-5.6, Claude Opus 4.8, Gemini 3.5 Pro).
 
 ```python
 from langchain_openai import ChatOpenAI
@@ -89,7 +89,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 chain = (
     ChatPromptTemplate.from_template("Explain {topic} in 3 bullets.")
-    | ChatOpenAI(model="gpt-5.5", temperature=0)
+    | ChatOpenAI(model="gpt-5.6", temperature=0)
     | StrOutputParser()
 )
 
@@ -459,7 +459,7 @@ Q: A bat and ball cost $1.10. The bat costs $1 more than the ball. How much is t
 A: Let's think step by step.
 ```
 
-CoT trades latency and tokens for accuracy on multi-step reasoning. With 2026 reasoning models (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Thinking) it's often built in — you don't need to ask.
+CoT trades latency and tokens for accuracy on multi-step reasoning. With 2026 reasoning models (GPT-5.6, Claude Opus 4.8, Gemini 3.5 Thinking) it's often built in — you don't need to ask.
 
 ### Structured output — constrain to a schema
 
@@ -474,7 +474,7 @@ class Intent(BaseModel):
     confidence: float
 
 resp = OpenAI().beta.chat.completions.parse(  # Pydantic parse helper lives under .beta
-    model="gpt-5.5",
+    model="gpt-5.6",
     messages=[{"role": "user", "content": "Classify: 'I want a refund.'"}],
     response_format=Intent,
 )
@@ -746,7 +746,7 @@ from google.adk.tools import google_search
 
 root_agent = Agent(
     name="search_assistant",
-    model="gemini-3-flash",
+    model="gemini-3.5-flash",
     description="Answers questions using Google Search.",
     instruction="Be concise and cite sources.",
     tools=[google_search],
@@ -877,7 +877,7 @@ The interview tip every Google ML system design candidate should internalise: **
 | Lever | Typical savings | How |
 |---|---|---|
 | **Prompt caching** | 50–90% on repeated prefixes | Claude, OpenAI, Gemini all support |
-| **Model routing** | 30–80% | Easy queries → Haiku/Flash/4o-mini; hard ones → Opus/Pro/o3 |
+| **Model routing** | 30–80% | Easy queries → Haiku/Flash/GPT-5.6 nano; hard ones → Opus/Pro/GPT-5.6 |
 | **Batch APIs** | 50% | Async batches on Anthropic / OpenAI |
 | **Provider failover** | varies | OpenRouter, LiteLLM cascade across providers |
 | **Smaller embedding model** | 5–10× retrieval cost | Often within 1% quality |

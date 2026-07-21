@@ -30,15 +30,15 @@
   │  Focus on ML fundamentals. These come up in EVERY interview.    │
   │  Know overfitting, bias-variance, gradient descent cold.        │
   │                                                                  │
-  │  WEEK 2: Statistics + Deep Learning (Q16-Q35)                    │
+  │  WEEK 2: Statistics + Deep Learning (Q16-Q30)                    │
   │  Probability questions are common at Google.                     │
   │  Deep learning questions are common at all AI companies.        │
   │                                                                  │
-  │  WEEK 3: Data + System Design (Q36-Q48)                          │
+  │  WEEK 3: Data + System Design (Q31-Q36)                          │
   │  System design is crucial for senior roles.                     │
   │  Practice explaining your approach out loud.                    │
   │                                                                  │
-  │  WEEK 4: Company-Specific (Q49-Q63)                              │
+  │  WEEK 4: Company-Specific + Ranking (Q37-Q49)                    │
   │  Tailor your prep to target companies.                          │
   │  Review their recent papers and products.                       │
   │                                                                  │
@@ -57,14 +57,14 @@
 | Part | Topic | Questions |
 |------|-------|-----------|
 | 1 | ML Fundamentals | Q1 – Q15 |
-| 2 | Statistics & Probability | Q16 – Q25 |
-| 3 | Deep Learning | Q26 – Q35 |
-| 4 | Data, Features & Evaluation | Q36 – Q42 |
-| 5 | ML System Design | Q43 – Q48 |
-| 6 | Ranking & Retrieval Metrics | Q49 |
-| 7 | Google-Specific | Q50 – Q54 |
-| 8 | Amazon-Specific | Q55 – Q59 |
-| 9 | OpenAI-Specific | Q60 – Q64 |
+| 2 | Statistics & Probability | Q16 – Q22 |
+| 3 | Deep Learning | Q23 – Q30 |
+| 4 | Data, Features & Evaluation | Q31 – Q33 |
+| 5 | ML System Design | Q34 – Q36 |
+| 6 | Google-Specific | Q37 – Q40 |
+| 7 | Amazon-Specific | Q41 – Q43 |
+| 8 | OpenAI-Specific | Q44 – Q48 |
+| 9 | Ranking & Retrieval Metrics | Q49 |
 
 ---
 
@@ -697,7 +697,9 @@ click rates. That's A/B testing!
     Use power analysis: $n = \frac{2\sigma^2 (z_\alpha + z_\beta)^2}{\delta^2}$
     Where: σ = baseline variance, δ = minimum detectable effect,
            z_α = 1.96 (α=0.05), z_β = 0.84 (power=80%)
-    Example: CTR=10%, want to detect +1% improvement, need ~3,600/group
+    Example: CTR=10%, want to detect +1 percentage point (δ=0.01),
+             σ²=0.09, (1.96+0.84)²=7.84 → need ~14,000/group
+             (a larger +2pp effect would need only ~3,600/group)
 
   STEP 4: Random assignment
     Randomly assign each user to A or B (not by time — avoids day-of-week bias!)
@@ -852,7 +854,7 @@ Model: each observation $\sim \mathcal{N}(\mu, \sigma^2)$. Find $\mu$ and $\sigm
 
 **MLE solution:**
 
-$$\mu_{\text{MLE}} = \text{sample mean} = \frac{2.1+1.8+2.3+2.0+1.9}{5} = 2.02 \qquad \sigma_{\text{MLE}} = 0.19$$
+$$\mu_{\text{MLE}} = \text{sample mean} = \frac{2.1+1.8+2.3+2.0+1.9}{5} = 2.02 \qquad \sigma_{\text{MLE}} = \sqrt{\tfrac{1}{n}\textstyle\sum (x_i-\mu)^2} = 0.17$$
 
 **Connection to ML loss functions:**
 
@@ -1784,6 +1786,8 @@ get "out of stock" messages. Good forecasting is worth billions.
 
 # PART 8 — OpenAI-Specific Questions
 
+> **Currency note (2026):** OpenAI interviews now center on **reasoning models** (the o-series and GPT-5-class) — models trained with **RL on verifiable rewards (RLVR/GRPO)** to "think" before answering, scaling accuracy with test-time compute. When these questions mention chain-of-thought or benchmarks, frame your answer around reasoning models and current evals (GPQA, SWE-bench Verified, ARC-AGI-2), not just prompt-based CoT and saturated MMLU/GSM8K.
+
 ---
 
 ### Q44 (O). How do large language models (LLMs) work?
@@ -1903,7 +1907,7 @@ human evaluation.
   → LMSYS Chatbot Arena: 1M+ human votes comparing models
 
   Red-teaming:    Try to make the model fail, be harmful, hallucinate
-  Constitutional AI: automated evaluation against safety principles
+  LLM-as-judge:   automated evaluation of outputs against a safety rubric
 
   KEY LIMITATIONS:
   ─────────────────────────────────────────────────────────────────
@@ -1997,7 +2001,8 @@ AI systems actually do what we MEAN, not just what we technically asked for.
   OPENAI'S APPROACHES:
   ─────────────────────────────────────────────────────────────────
   RLHF:            Align model behavior with human preferences
-  Constitutional AI: Specify principles, have model critique its own outputs
+  Deliberative Alignment / RBR: Model reasons over a written safety spec
+                   (the "Model Spec"); rule-based rewards encode desired behavior
   Scalable Oversight: Use AI to help humans supervise more capable AI
   Interpretability: Understand WHAT the model has learned (sparse autoencoders,
                     activation patching, probing classifiers)
@@ -2012,7 +2017,7 @@ AI systems actually do what we MEAN, not just what we technically asked for.
 
 ---
 
-# PART 6 — Ranking & Retrieval Metrics
+# PART 9 — Ranking & Retrieval Metrics
 
 ---
 

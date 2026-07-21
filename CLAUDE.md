@@ -44,7 +44,7 @@ Each chapter follows a consistent pedagogical format:
 ## When Editing Content
 
 - Maintain the existing tone: accessible explanations first, then formal definitions.
-- Preserve ASCII diagram style — do not replace with image links or Mermaid.
+- Preserve the diagram style: prefer ASCII-art diagrams and Markdown tables, and **do not replace them with external image links**. Mermaid diagrams are also supported (the app lazy-loads Mermaid) and are used widely (100+ diagrams across chapters), so keep/author Mermaid where it fits — the rule is "no image links," not "no Mermaid."
 - Keep the numbered chapter prefix (`00_`, `01_`, ...) in filenames.
 - If adding a new chapter, update the table of contents in `README.md` to include the new entry with its difficulty level and Google priority rating.
 - When adding quiz questions for a chapter, add them to `quizzes.js`.

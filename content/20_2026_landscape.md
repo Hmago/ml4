@@ -1,8 +1,8 @@
 # Chapter 20 — The 2026 AI Landscape
 
-> A field map of where AI is in May 2026 — frontier models, the open-weight race, coding agents, multimodal generation, computer-use, regulation, and the trends a Google AI Engineer interviewer expects you to know.
+> A field map of where AI is in July 2026 — frontier models, the open-weight race, coding agents, multimodal generation, computer-use, regulation, and the trends a Google AI Engineer interviewer expects you to know.
 
-The state of AI in May 2026 is unrecognisable from late 2022. GPT-3.5 just answered questions; today's frontier models reason for minutes, navigate browsers, write production code, and generate minute-long video with synchronised audio. This chapter is the bird's-eye view: what's new, what changed, what saturated, and what interviewers now ask. Use it to ground every other chapter — the techniques in Ch 7–19 are tools; this chapter is the world they operate in.
+The state of AI in July 2026 is unrecognisable from late 2022. GPT-3.5 just answered questions; today's frontier models reason for minutes, navigate browsers, write production code, and generate minute-long video with synchronised audio. This chapter is the bird's-eye view: what's new, what changed, what saturated, and what interviewers now ask. Use it to ground every other chapter — the techniques in Ch 7–19 are tools; this chapter is the world they operate in.
 
 ---
 
@@ -10,7 +10,7 @@ The state of AI in May 2026 is unrecognisable from late 2022. GPT-3.5 just answe
 
 By the end of this chapter you'll be able to:
 
-- Name the May 2026 frontier models and their specialisations.
+- Name the July 2026 frontier models and their specialisations.
 - Explain test-time compute scaling and when reasoning models are worth the cost.
 - Compare the open-weight contenders (Llama 4, DeepSeek V4, Qwen 3.5, Mistral, Gemma 4).
 - Talk fluently about coding agents, SWE-bench, and the dev-tool revolution.
@@ -27,16 +27,16 @@ By the end of this chapter you'll be able to:
 
 > **Frontier model**: a generally-capable foundation model at or near the state of the art on the standard benchmarks (reasoning, coding, math, multimodal). Built by a small set of labs with the compute and talent to push the curve.
 
-As of May 2026, four labs anchor the closed-weight frontier and three more lead the open-weight race:
+As of July 2026, four labs anchor the closed-weight frontier and three more lead the open-weight race:
 
 ```
                   ┌─────────────────────── CLOSED-WEIGHT FRONTIER ───────────────────────┐
                   │                                                                       │
-                  │   GPT-5.5            Claude Opus 4.7         Gemini 3.1 Pro          │
+                  │   GPT-5.6            Claude Opus 4.8         Gemini 3.5 Pro          │
                   │   (OpenAI)           (Anthropic)             (Google)                │
                   │   • agents leader    • SWE-bench leader      • cheapest flagship     │
                   │   • Terminal-Bench   • tool orchestration    • PhD-reasoning tied #1 │
-                  │     82.7%            • 87.6% SWE-bench       • $2/$12 per M tokens   │
+                  │     82.7%            • 87.6% SWE-bench       • $4/$12 per M tokens   │
                   │                                                                       │
                   └───────────────────────────────────────────────────────────────────────┘
 
@@ -54,15 +54,16 @@ As of May 2026, four labs anchor the closed-weight frontier and three more lead 
                   └───────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key takeaway:** No single model wins everything. GPT-5.5 leads autonomous agents; Claude Opus 4.7 leads software engineering and tool orchestration; Gemini 3.1 Pro leads price/speed/multimodal; DeepSeek V4 leads open-weight raw benchmarks; Llama 4 Scout leads context length (10M tokens). **Pick by task.**
+**Key takeaway:** No single model wins everything. GPT-5.6 leads autonomous agents; Claude Opus 4.8 leads software engineering and tool orchestration (Claude Sonnet 5 is the mid-tier price/perf default); Gemini 3.5 Pro leads price/speed/multimodal; DeepSeek V4 leads open-weight raw benchmarks; Llama 4 Scout leads context length (10M tokens). **Pick by task.**
 
 ### Frontier comparison at a glance
 
 | Model | Strength | SWE-bench | GPQA Diamond | Context | Headline price (in/out per M tok) |
 |---|---|---|---|---|---|
-| **GPT-5.5** | Agents, computer use | 88.7% | ~94% | 1M | premium |
-| **Claude Opus 4.7** | Coding, tool orchestration | 87.6% | 94.2% | 1M | premium |
-| **Gemini 3.1 Pro** | Multimodal, value | 80.6% | 94.3% | 2M | $2 / $12 |
+| **GPT-5.6** | Agents, computer use | 88.7% | ~94% | 1M | $5 / $30 |
+| **Claude Opus 4.8** | Coding, tool orchestration | 87.6% | 94.2% | 1M | $5 / $25 |
+| **Claude Sonnet 5** | Mid-tier default, price/perf | ~85% | ~91% | 1M | $2 / $10 |
+| **Gemini 3.5 Pro** | Multimodal, value | 80.6% | 94.3% | 2M | $4 / $12 |
 | **DeepSeek V4-Pro** | Open-weight reasoning | 83.7% | ~88% | 1M | self-host |
 | **Llama 4 Scout** | Long context | mid | mid | **10M** | self-host |
 | **Qwen 3.5** | Open-weight science | mid | 88.4% | 1M | self-host |
@@ -84,7 +85,7 @@ Plain explanation: a normal LLM is like a student who blurts the first answer th
       Input ──> [ one forward pass ] ──> Output
       cost: fixed per token
 
-   Reasoning Model (o3, Claude extended thinking, Gemini 3 Thinking, DeepSeek-R1):
+   Reasoning Model (o3, Claude extended thinking, Gemini 3.5 Thinking, DeepSeek-R1):
       Input ──> [ think... think... think... ] ──> Output
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                 Hidden tokens (1K to 100K+)
@@ -96,10 +97,10 @@ Plain explanation: a normal LLM is like a student who blurts the first answer th
 
 ### Hello world — controlling thinking budget
 
-OpenAI exposes `reasoning_effort` (`low`/`medium`/`high`); Anthropic exposes `thinking` blocks with a token budget; Google exposes `thinking_config` on Gemini 3 Pro.
+OpenAI exposes `reasoning_effort` (`low`/`medium`/`high`); Anthropic exposes `thinking` blocks with a token budget; Google exposes `thinking_config` on Gemini 3.5 Pro.
 
 ```python
-# OpenAI o-series / GPT-5.5 reasoning
+# OpenAI o-series / GPT-5.6 reasoning
 from openai import OpenAI
 c = OpenAI()
 r = c.chat.completions.create(
@@ -115,7 +116,7 @@ print(r.choices[0].message.content)
 import anthropic
 client = anthropic.Anthropic()
 msg = client.messages.create(
-    model="claude-opus-4-7",
+    model="claude-opus-4-8",
     max_tokens=4096,
     thinking={"type": "enabled", "budget_tokens": 16000},
     messages=[{"role": "user", "content": "Optimal seating for 8 guests with 3 constraints..."}],
@@ -154,7 +155,7 @@ The single biggest 2025–2026 story: open-weight models closed the capability g
 
 1. **Cost & sovereignty** — self-host on TPUs/H100s, no per-token bill, data never leaves your VPC.
 2. **License war** — Apache 2.0 won for permissive labs (Qwen, Mistral, Gemma). Llama keeps its MAU clause; DeepSeek went MIT.
-3. **Quality** — DeepSeek V4 at 83.7% SWE-bench Verified is within 5 points of GPT-5.5 — close enough that for many production tasks, open-weight + good infra beats premium API.
+3. **Quality** — DeepSeek V4 at 83.7% SWE-bench Verified is within 5 points of GPT-5.6 — close enough that for many production tasks, open-weight + good infra beats premium API.
 
 ### When to pick open-weight
 
@@ -171,13 +172,13 @@ When to pick **closed-weight**: top-end agent reliability, latest reasoning fron
 
 > **Coding agent**: an LLM-powered system that reads a codebase, plans changes, edits files, runs tests, and iterates — autonomously or with a human in the loop. The category that took over developer tooling in 2025–2026.
 
-**SWE-bench Verified** is the benchmark that defined the race: real GitHub bug-fix tasks, scored by whether the patch passes the project's test suite. In late 2023 the frontier was ~13%. By May 2026:
+**SWE-bench Verified** is the benchmark that defined the race: real GitHub bug-fix tasks, scored by whether the patch passes the project's test suite. In late 2023 the frontier was ~13%. By July 2026:
 
 ```
-   SWE-bench Verified — May 2026 leaderboard (selected)
+   SWE-bench Verified — July 2026 leaderboard (selected)
 
-   GPT-5.5 (with Codex CLI scaffold)        ████████████████████████  88.7%
-   Claude Opus 4.7 (Adaptive)               ███████████████████████   87.6%
+   GPT-5.6 (with Codex CLI scaffold)        ████████████████████████  88.7%
+   Claude Opus 4.8 (Adaptive)               ███████████████████████   87.6%
    GPT-5.3 Codex                            ██████████████████████    85.0%
    DeepSeek V4-Pro                          █████████████████████     83.7%
    Augment Code (Opus 4.6)                  ██████████████████        72.0%
@@ -276,7 +277,7 @@ import anthropic
 client = anthropic.Anthropic()
 
 response = client.messages.create(
-    model="claude-opus-4-7",
+    model="claude-opus-4-8",
     max_tokens=2048,
     tools=[{
         "type": "computer_20250124",
@@ -372,7 +373,7 @@ The single most under-appreciated fact of 2026: **token prices fell ~150–1000�
    Mid 2023 (GPT-4 Turbo)      $10.00      ██████
    Mid 2024 (GPT-4o)            $2.50      ██
    Mid 2025 (GPT-4o-mini etc)   $0.15      ▌
-   May 2026 (Gemini Flash etc)  $0.06      .
+   July 2026 (Gemini Flash etc) $0.06      .
 
    Roughly 1000× cheaper in 4.5 years for equivalent quality.
 ```
@@ -520,8 +521,8 @@ If you're interviewing for an AI Engineer role at Google, you must know this sta
 
 | Tier | Use case |
 |---|---|
-| **Gemini 3.1 Pro** | Flagship — reasoning, coding, complex multimodal analysis |
-| **Gemini 3 Flash** | High-throughput production workhorse |
+| **Gemini 3.5 Pro** | Flagship — reasoning, coding, complex multimodal analysis |
+| **Gemini 3.5 Flash** | High-throughput production workhorse |
 | **Gemini 3 Nano** | On-device — Pixel, Android, ChromeOS |
 | **Gemini Live** | Real-time bidirectional audio + video streaming |
 | **Imagen 4 / Veo 3.1** | Image and video generation, in Vertex |
@@ -579,9 +580,9 @@ A quick map of the eval landscape interviewers expect you to know:
 | **HumanEval** | Python function generation | **Saturated** (~95%+) |
 | **GSM8K** | Grade-school math | **Saturated** |
 | **GPQA Diamond** | Graduate-level science | Active — frontier ~94% |
-| **SWE-bench Verified** | Real GitHub bug fixes | Active — frontier ~88.7% (May 2026) |
-| **Terminal-Bench 2.0** | CLI agent tasks | Active — GPT-5.5 82.7% |
-| **OSWorld** | Full computer use | Active — Claude Opus 4.7 ~44% |
+| **SWE-bench Verified** | Real GitHub bug fixes | Active — frontier ~88.7% (July 2026) |
+| **Terminal-Bench 2.0** | CLI agent tasks | Active — GPT-5.6 82.7% |
+| **OSWorld** | Full computer use | Active — Claude Opus 4.8 ~44% |
 | **WebArena / VisualWebArena** | Long-horizon web nav | **Unsolved** for long tasks |
 | **τ-bench** | Tool-use reasoning | Active |
 | **ARC-AGI-2** | Abstract reasoning | Active — frontier still well behind humans |
@@ -614,13 +615,13 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
         │
         ├── Real-time mobile autocomplete             → Gemini Nano / Apple Foundation (on-device)
         │
-        ├── High-QPS classification at scale          → Gemini 3 Flash / GPT-5 mini / open-weight Qwen 3.5
+        ├── High-QPS classification at scale          → Gemini 3.5 Flash / GPT-5.6 mini / open-weight Qwen 3.5
         │
-        ├── Complex code generation, formal specs     → Claude Opus 4.7 (extended thinking) or GPT-5.5
+        ├── Complex code generation, formal specs     → Claude Opus 4.8 (extended thinking) or GPT-5.6
         │
-        ├── PhD-level science reasoning               → Gemini 3.1 Pro or Claude Opus 4.7 (thinking)
+        ├── PhD-level science reasoning               → Gemini 3.5 Pro or Claude Opus 4.8 (thinking)
         │
-        ├── Long document analysis (>1M tokens)       → Llama 4 Scout (10M ctx) or Gemini 3.1 Pro (2M)
+        ├── Long document analysis (>1M tokens)       → Llama 4 Scout (10M ctx) or Gemini 3.5 Pro (2M)
         │
         ├── Browser / desktop automation              → Claude Computer Use, OpenAI Operator
         │
@@ -654,8 +655,8 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
 
 ## 20.17 Interview Questions
 
-**Q1. Walk me through the May 2026 frontier model lineup.**
-GPT-5.5 leads autonomous agents (Terminal-Bench 82.7%, OSWorld 78.7%); Claude Opus 4.7 leads software engineering (SWE-bench 87.6%) and tool orchestration; Gemini 3.1 Pro leads price/multimodal (GPQA 94.3%, $2/$12 per M tokens). Open-weight: DeepSeek V4-Pro at 83.7% SWE-bench, Llama 4 Scout with a 10M context window, Qwen 3.5 at 88.4% GPQA. Within ~3 points at the top, so model choice in production is mostly about price, latency, and ecosystem.
+**Q1. Walk me through the July 2026 frontier model lineup.**
+GPT-5.6 leads autonomous agents (Terminal-Bench 82.7%, OSWorld 78.7%); Claude Opus 4.8 leads software engineering (SWE-bench 87.6%) and tool orchestration, with Claude Sonnet 5 as the mid-tier price/perf default; Gemini 3.5 Pro leads price/multimodal (GPQA 94.3%, $4/$12 per M tokens). Open-weight: DeepSeek V4-Pro at 83.7% SWE-bench, Llama 4 Scout with a 10M context window, Qwen 3.5 at 88.4% GPQA. Within ~3 points at the top, so model choice in production is mostly about price, latency, and ecosystem.
 
 **Q2. When does test-time compute scaling beat parameter scaling?**
 Test-time compute (reasoning models) scales accuracy on hard, decomposable tasks — math, code, multi-step planning — by spending more inference tokens. Doubling thinking budget often beats doubling parameters on those tasks. Skip it for simple Q&A, creative writing, real-time voice, and high-throughput classification, where the extra cost and latency don't earn back quality.
@@ -670,10 +671,10 @@ Each weight goes from 32 bits (FP32, 28 GB total) to 4 bits (INT4, 3.5 GB) — a
 General-purpose AI obligations applied from Aug 2, 2025; full enforcement powers and GPAI penalties go live Aug 2, 2026; high-risk regulated-product rules cover Aug 2, 2027. Headline obligations: detailed training data summaries, copyright respect, transparency documentation, systemic-risk evaluations for the largest models. Penalties top out at €35M or 7% of global revenue.
 
 **Q6. Design a Google Photos feature where users ask natural-language questions about their library.**
-(1) Embed photos with a SigLIP-style vision-language encoder into a vector store. (2) Embed the user query into the same space; retrieve top-k photos. (3) Send retrieved photos + query to Gemini 3.1 Pro multimodal — the model sees images natively. (4) Route simple search queries to Gemini Nano on-device for privacy and latency; complex reasoning to cloud. (5) Filter for sensitive content and respect user-hidden flags. (6) Measure retrieval recall, answer accuracy, p95 latency, user satisfaction.
+(1) Embed photos with a SigLIP-style vision-language encoder into a vector store. (2) Embed the user query into the same space; retrieve top-k photos. (3) Send retrieved photos + query to Gemini 3.5 Pro multimodal — the model sees images natively. (4) Route simple search queries to Gemini Nano on-device for privacy and latency; complex reasoning to cloud. (5) Filter for sensitive content and respect user-hidden flags. (6) Measure retrieval recall, answer accuracy, p95 latency, user satisfaction.
 
 **Q7. How would you choose between a closed-weight API and a self-hosted open-weight model?**
-Pick closed-weight (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro) when you want zero ops, the latest frontier reasoning, computer-use, or quick model-swap. Pick open-weight (DeepSeek V4-Pro, Llama 4, Qwen 3.5) for privacy/sovereignty, billions-of-QPS workloads where token cost dominates, long-context RAG (Llama 4 Scout 10M), or research reproducibility. Many production stacks blend: open-weight for routine traffic, closed-weight API for hard tasks.
+Pick closed-weight (GPT-5.6, Claude Opus 4.8 / Claude Sonnet 5, Gemini 3.5 Pro) when you want zero ops, the latest frontier reasoning, computer-use, or quick model-swap. Pick open-weight (DeepSeek V4-Pro, Llama 4, Qwen 3.5) for privacy/sovereignty, billions-of-QPS workloads where token cost dominates, long-context RAG (Llama 4 Scout 10M), or research reproducibility. Many production stacks blend: open-weight for routine traffic, closed-weight API for hard tasks.
 
 **Q8. What's wrong with citing MMLU or HumanEval in 2026?**
 They're saturated — frontier models score 90%+ and the metric stops discriminating. Cite live benchmarks: SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (computer use), GPQA Diamond (graduate science), ARC-AGI-2 (abstract reasoning), FrontierMath (research math).
@@ -688,7 +689,7 @@ Use for legacy software with no API, one-off cross-app automation, QA of flaky i
 
 ## 20.18 Key Takeaways
 
-- **Frontier is plural in 2026** — GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro within ~3 points of each other; pick by task fit, not raw score.
+- **Frontier is plural in 2026** — GPT-5.6, Claude Opus 4.8 (with Claude Sonnet 5 as mid-tier), Gemini 3.5 Pro within ~3 points of each other; pick by task fit, not raw score.
 - **Open-weight closed the gap.** DeepSeek V4-Pro, Llama 4, Qwen 3.5 are real production options.
 - **Reasoning models** are about *spending compute at inference time*, not bigger weights. Use them where decomposition pays.
 - **Coding agents** went from 13% to 88% on SWE-bench in 18 months — base model × scaffold × RL on agentic traces.
@@ -714,7 +715,7 @@ Use for legacy software with no API, one-off cross-app automation, QA of flaky i
 6. Token prices fell ~1000× since 2022 but your AI bill went up. Resolve the paradox.
 7. Design the context stack for a medical Q&A agent answering doctor-side queries against a hospital's records.
 8. EU AI Act — name three obligations a foundation-model provider has and the date they apply.
-9. Why is "use Gemini 3 Flash" usually a better production answer than "use Gemini 3 Pro"?
+9. Why is "use Gemini 3.5 Flash" usually a better production answer than "use Gemini 3.5 Pro"?
 10. Your interviewer asks for the SWE-bench leader. You don't remember the latest score. What do you say?
 
 <div class="chart-container" style="max-width: 600px; margin: 2rem auto;">
