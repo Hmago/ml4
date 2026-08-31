@@ -2,7 +2,7 @@
 
 > A decision-oriented quick reference for Ch 14–20. Skim during interview prep; grep during a real on-call. Recipes, defaults, decision trees, diagnostic flowcharts, and the numbers worth memorising.
 
-This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks), Ch 16 (Deep Learning Reference), Ch 17 (LLMs), Ch 18 (AI Agents), Ch 19 (Frameworks), Ch 20 (2026 Landscape). This is the index of decisions you make most often, in the order you make them.
+This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks), Ch 16 (Deep Learning Reference), Ch 17 (LLMs — how they work), **Ch 17b (LLMs — how you use them)**, **Ch 17c (LLM Systems — serving, scaling, evaluation)**, Ch 18 (AI Agents), **Ch 18b (Agents in Production)**, Ch 19 (Frameworks), Ch 20 (2026 Landscape). This is the index of decisions you make most often, in the order you make them.
 
 ---
 

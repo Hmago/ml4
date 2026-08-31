@@ -658,5 +658,49 @@
     ],
     "answer": 3,
     "explanation": "The chapter's optimizer cheat sheet explicitly lists 'RNNs' and 'non-stationary problems' as RMSProp's best-fit use case. Its decaying exponential average of squared gradients adapts efficiently to changing gradient distributions across time steps — ideal for RNNs where the hidden state evolves and gradient magnitudes shift dynamically throughout a sequence."
+  },
+  {
+    "q": "Which GNN variant can produce an embedding for a node that did not exist during training?",
+    "options": [
+      "GraphSAGE, which learns an aggregator over a sampled fixed-size neighbourhood",
+      "GCN, whose normalised mean aggregation is independent of node identity",
+      "GAT, because its attention weights are recomputed for every edge at inference time",
+      "None — all graph neural networks require retraining when nodes are added"
+    ],
+    "answer": 0,
+    "explanation": "GCN is transductive: it learns over a fixed graph structure and does not extend cleanly to unseen nodes. GraphSAGE learns a reusable aggregation function over sampled neighbours, so a new node is embedded immediately from its neighbourhood. That inductive property is why it is the variant deployed on large, constantly growing production graphs."
+  },
+  {
+    "q": "Why are graph neural networks typically limited to 2-3 message-passing layers?",
+    "options": [
+      "Gradients vanish through the repeated aggregation steps beyond roughly three hops of depth",
+      "Over-smoothing — repeated aggregation drives all node embeddings toward each other",
+      "Graph datasets are too small to support additional parameters",
+      "Sparse adjacency operations are unsupported beyond shallow depth"
+    ],
+    "answer": 1,
+    "explanation": "Each round widens a node's receptive field by one hop, so after many rounds every node has absorbed nearly the whole graph and the representations become indistinguishable. This over-smoothing effect reverses the deeper-is-better intuition carried over from convolutional networks."
+  },
+  {
+    "q": "Label smoothing replaces a one-hot target of 1.0 with a slightly softened target. What problem does that solve?",
+    "options": [
+      "Vanishing gradients caused by saturated output activations in deep classifiers",
+      "Overconfidence and poor calibration, since one-hot targets push logits apart without limit",
+      "Class imbalance, by giving rare classes proportionally more weight in the loss",
+      "Numerical instability that arises whenever predicted probabilities approach zero inside the logarithm"
+    ],
+    "answer": 1,
+    "explanation": "With a hard target the only way to reduce cross-entropy is to drive the correct logit ever higher, producing models that are 99.9% confident and wrong. Smoothing caps that pressure, improving calibration and usually accuracy slightly. The cost is worse raw log-likelihood, and it degrades knowledge distillation because the teacher's soft labels carry less information."
+  },
+  {
+    "q": "Which statement about label smoothing is correct?",
+    "options": [
+      "It regularises the parameters directly, in the same manner as weight decay does",
+      "It constrains the output distribution rather than the parameters themselves",
+      "It is applied only at inference time to recalibrate the predicted probabilities",
+      "It requires the number of classes to be known only after training completes"
+    ],
+    "answer": 1,
+    "explanation": "Unlike weight decay or dropout, which act on parameters and activations, label smoothing changes the target distribution the model is trained against. It discourages the network from driving logits infinitely apart, which is a constraint on outputs rather than on weights."
   }
 ]

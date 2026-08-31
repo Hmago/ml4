@@ -6,6 +6,32 @@ You can build an LLM app with the raw OpenAI SDK and 100 lines of code. You can 
 
 ---
 
+## Where you are
+
+**Layer: SYSTEMS — *how you run it at scale*.** Part of **Deep Learning & LLMs** (Ch 16–20). ~145 min — the densest chapter in the section.
+
+| | |
+|---|---|
+| **Read this before** | [Ch 17](#content/17_llm), [Ch 17b](#content/17b_llm_applications) and [Ch 18](#content/18_ai_agents) — this chapter names tools, those chapters explain the ideas |
+| **On Track C** (shipping) | Essential — this is your toolbox |
+| **On Track A** (interview) | Optional. Skim §19.9–§19.11 and §19.14 only; framework trivia is rarely asked, but **RAG design, evaluation and cost/latency are** |
+| **Shelf life** | Shortest in the book. Framework versions move fast — trust the *decision trees*, not the version numbers |
+
+**Full section map, tracks and the L1–L4 depth ladder → [Ch 16 — Deep Learning Reference](#content/16_deep_learning).**
+
+### Covered in depth elsewhere
+
+| If you are asked about… | Go to |
+|---|---|
+| Vector index internals — HNSW, IVF-PQ, hybrid search, reranking | [Ch 28 — Semantic Search](#content/28_semantic_search) |
+| How the serving engines actually work — batching, KV cache, quantization, evaluation | [Ch 17c — LLM Systems](#content/17c_llm_systems) |
+| GPU/TPU hardware, parallelism, serving throughput and cost per token | [Ch 29 — GPUs, TPUs & Infrastructure](#content/29_gpus_tpus_infrastructure) |
+| General engineering tooling — Docker, Kubernetes, Terraform, CI | [Ch 22 — Engineering Tools](#content/22_engineering_tools) |
+| Production ML practice — drift, monitoring, retraining | [Ch 27 — Practical ML](#content/27_practical_ml) |
+| Real serving case studies at scale | [Ch 37 — Scale & Infra Cases](#content/37_system_design_cases_scale_infra) |
+
+---
+
 ## What You'll Learn
 
 By the end of this chapter you'll be able to:
@@ -542,6 +568,66 @@ Vanilla RAG is `chunk → embed → top-k → stuff into prompt`. By 2026, every
 
 You don't need all seven. Bolt them on as you hit each failure.
 
+> **Going deeper on retrieval itself:** the index internals — HNSW graph construction, IVF-PQ, BM25, and **reciprocal rank fusion (RRF)** for merging hybrid results — live in **[Ch 28 — Semantic Search](#content/28_semantic_search)**. **Semantic caching** (skipping the model entirely on similar questions) is in [Ch 17c §2.4](#content/17c_llm_systems). This section is about *which tool to pick*; those chapters are about *how it works*.
+
+### GraphRAG, multimodal RAG and fine-tuned embeddings ★★
+
+Three variants worth more than the one-line entries above.
+
+**GraphRAG** — for questions vanilla RAG structurally cannot answer.
+
+Vector RAG retrieves the *k* chunks most similar to the query. That fails on **global** questions ("what are the main themes across these 500 documents?") because no single chunk contains the answer, and on **multi-hop** questions ("which of our suppliers is affected by the port closure?") where the answer requires joining facts that live in different documents.
+
+```
+  Vanilla RAG:   query ──▶ top-k similar chunks ──▶ answer
+                 (fails when the answer is spread across many chunks)
+
+  GraphRAG:      documents ──▶ extract entities + relations ──▶ knowledge graph
+                            ──▶ cluster into communities
+                            ──▶ pre-summarise each community
+                 query ──▶ traverse graph / read community summaries ──▶ answer
+```
+
+The build step is expensive — an LLM pass over the whole corpus to extract entities and relationships, then community detection and summarisation. **Use it when the corpus is stable and the questions are global or relational.** For "find the passage that answers this", vanilla RAG plus a reranker wins on both cost and latency.
+
+**Multimodal RAG** — when the answer is in a chart, not the prose. Two approaches: caption every image with a vision model and index the captions (simple, lossy), or use a **multimodal embedding model** to put images and text in one vector space and retrieve directly (better, and it handles diagrams and screenshots that captioning flattens). Document-heavy domains — finance, engineering, medical — are usually the ones that need it.
+
+**Fine-tuning the embedding model** — the retrieval lever people forget. Off-the-shelf embeddings are trained on general text and can be poor at domain vocabulary where two terms look similar to a general model but mean different things to a specialist. Fine-tune with **contrastive learning** on (query, relevant passage, irrelevant passage) triples. You need surprisingly few — a few thousand pairs, and you can bootstrap them from click logs or by generating synthetic queries per chunk with an LLM. Ordering of effort: **better base embedding model → reranker → fine-tuned embeddings**, because the first two are far cheaper.
+
+### Choosing an embedding model ★★★
+
+
+"Just use OpenAI embeddings" is the answer that ends an interview early. The real decision has five axes:
+
+| Axis | Question to ask | Why it bites |
+|---|---|---|
+| **Task match** | Retrieval, or semantic similarity? | They are *different* MTEB tasks. A model that tops STS can underperform on retrieval |
+| **Domain** | Legal, medical, code, multilingual? | General-purpose models degrade sharply on specialised vocabulary |
+| **Dimension** | 384 / 768 / 1536 / 3072? | Storage and query latency scale with it. Many models now support Matryoshka truncation — take the first 512 dims and lose very little |
+| **Max sequence length** | Does it truncate your chunks? | A 512-token limit silently cuts long chunks in half |
+| **Hosting** | API or self-hosted? | Embeddings are called on *every* document *and* every query — the volume is far higher than generation |
+
+**MTEB** (Massive Text Embedding Benchmark) is the standard leaderboard. Use it correctly:
+
+- Filter to the **Retrieval** task, not the overall average — the average blends in tasks you don't care about.
+- Treat gaps under ~2 points as noise, then choose on dimension, latency and cost.
+- **Always re-rank the shortlist on your own data.** Public benchmarks are broad; your corpus is narrow. A 50-query hand-labelled set beats the leaderboard every time.
+
+> **Interview soundbite:** "I'd shortlist from MTEB's retrieval task rather than the overall average, filter by max sequence length and dimension for my latency budget, then evaluate the top two or three on a small hand-labelled set from my own corpus — because leaderboard rank rarely survives a domain shift. Switching to a stronger embedding model and adding a reranker are the two highest-leverage RAG changes."
+
+### The production concerns nobody demos ★★★
+
+Every RAG demo ignores these. Every RAG *system* has to solve them.
+
+| Concern | The problem | The approach |
+|---|---|---|
+| **Multi-tenancy & ACLs** | User A must never retrieve User B's documents — and a vector search has no natural notion of permission | Store tenant and ACL as **metadata**, filter *before* or during search, not after. Post-filtering silently shrinks your top-k and can return nothing. For strong isolation use a namespace or collection per tenant |
+| **Right to erasure (GDPR)** | A user demands deletion. Their text is in chunks, in embeddings, and possibly in a cache | Keep a source-document → chunk-ID mapping so deletes are surgical. Verify the vector store *hard*-deletes rather than tombstoning. Purge caches keyed on that content too |
+| **Freshness** | The index is a snapshot; the source moves | Incremental upsert on change events rather than nightly full rebuilds; store a version or timestamp per chunk and expose it in citations |
+| **Citation integrity** | The model cites a chunk that doesn't support the claim | Return chunk IDs with the answer and validate that quoted spans actually appear in the retrieved text |
+
+**The ACL mistake worth remembering:** filtering *after* retrieval. If you retrieve the top 20 globally and then drop the ones the user can't see, a user with narrow permissions may end up with two results — or zero — while the system reports success. Filter inside the query.
+
 ### Hello world — RAG with reranking (LangChain + Cohere Rerank)
 
 ```python
@@ -583,9 +669,28 @@ LLM apps don't have a "right vs wrong" oracle. You need three layers:
 | **DeepEval** | Pytest-style LLM unit tests; CI/CD friendly |
 | **promptfoo** | CLI prompt testing, regression detection, red-team |
 | **Arize Phoenix** | Open-source tracing, OpenTelemetry-native |
+| **Langfuse** | Open-source, self-hostable tracing + evals + prompt management — the usual pick when data cannot leave your infrastructure |
 | **Braintrust** | Enterprise eval dashboards + experiment tracking |
 
 The pattern most teams converge on: **one CI tool + one platform.** Pair Ragas/DeepEval (gating in CI) with LangSmith/Braintrust (annotation, regressions, dashboards).
+
+> **The self-hosting fork.** LangSmith, Braintrust and Weave are hosted SaaS — every prompt and completion you trace leaves your network. In regulated environments that is a blocker, and **Langfuse** or **Arize Phoenix** (both open-source and self-hostable) become the answer. Ask "can traces leave our VPC?" before choosing, because migrating an observability stack later is painful. Both emit **OpenTelemetry**, so instrument against OTel semantics rather than a vendor SDK and the switch stays cheap.
+
+### Prompt versioning — treat prompts as deployable artefacts ★★
+
+A prompt is the highest-leverage, least-governed thing in an LLM system. One person edits one line and behaviour changes for every user, with no build, no review and no rollback.
+
+| Practice | Why |
+|---|---|
+| **Version every prompt** with an ID and hash | So a trace can record *which* prompt produced it |
+| **Store prompts in git**, not in a database someone edits live | You get review, blame, and revert for free |
+| **Tie prompt version to eval results** | "v7 scored 0.82 on the golden set" is the only basis for promoting it |
+| **Pin the model version alongside it** | A prompt that works on one snapshot may regress on the next |
+| **Roll out like code** — canary, then full | A prompt change is a production deploy, not a config tweak |
+
+A **prompt registry** (MLflow 3, LangSmith and Langfuse all provide one) gives you the version-plus-eval-plus-trace linkage in one place. The minimum viable version is prompts in git with the hash logged on every request.
+
+> **The incident question this answers:** "quality dropped at 14:00 — what changed?" Without prompt versioning you cannot distinguish a prompt edit from a model update from a retrieval regression. With it, that is one query.
 
 ### Hello world — Ragas RAG eval
 
@@ -765,6 +870,119 @@ ADK's strength is **enterprise scale + GCP-native**: deploy with one command, ge
 - **ADK** — multi-agent, enterprise compliance, deploying on Google Cloud.
 - **Genkit** — single agents or pipelines, broad model support, minimal ceremony.
 - **LangChain** — neutral framework, multi-cloud, biggest community.
+
+---
+
+## 19.12a Model Access — Bedrock vs Azure OpenAI vs Vertex ★★★
+
+**In one line:** most enterprises do not call OpenAI or Anthropic directly — they call them *through* a cloud provider, and the reason is almost never price.
+
+**Why it exists.** Job descriptions ask for "AWS Bedrock" or "Azure OpenAI" far more often than they ask for the raw provider SDKs. The reason is procurement and compliance: the model already sits inside a cloud account you have a contract, a security review and a data-processing agreement with.
+
+| Route | Models it fronts | Why teams pick it |
+|---|---|---|
+| **AWS Bedrock** | Anthropic, Meta, Mistral, Cohere, Amazon Nova | The standard path to Claude in an AWS shop. Contractual guarantee that prompts are not used for training; stays inside your VPC |
+| **Azure OpenAI** | OpenAI models | **Region pinning.** You choose the deployment region, which is what makes EU data-residency commitments possible |
+| **Google Vertex AI** | Gemini, plus a model garden | Native fit for GCP; the only first-party route to Gemini at enterprise scale |
+| **Direct provider API** | Whatever that provider ships | Newest features first, simplest to start, best docs |
+
+**The trade-off worth stating:** going through a cloud provider costs you *time to newest model* — a new frontier release often lands on the direct API weeks before it appears in Bedrock or Azure — and buys you compliance, a single bill, existing IAM, and private networking. Startups take the direct API; regulated enterprises take the cloud route; plenty of teams run both behind a routing layer.
+
+### Data residency, air-gapped and the questions procurement will ask
+
+| Requirement | What it actually means | How it is met |
+|---|---|---|
+| **Data residency** | Prompts and completions must be processed in a named region | Azure OpenAI region-pinned deployments; Bedrock in-region endpoints. **Not** satisfiable on most direct APIs |
+| **No training on our data** | The provider must not train on your inputs | Enterprise tiers and cloud routes contract for this; free tiers frequently do not |
+| **Private networking** | Traffic must never traverse the public internet | VPC endpoints / Private Link |
+| **Air-gapped** | No external network at all — defence, classified, some healthcare | Self-hosted open-weight models only. No API is an option here |
+| **SOC 2 / ISO 27001** | Audited controls, evidenced | Inherit the provider's attestations, but *your* application still needs its own |
+
+> **The interview answer that lands:** "I'd choose the model access route from the compliance requirement first and the model quality second, because a model I'm contractually not allowed to send this data to has quality zero. Region pinning via Azure, or Bedrock for Claude inside AWS. If the requirement is genuinely air-gapped, no API is viable and I'm self-hosting an open-weight model — which changes the whole architecture, so it's the first question I'd ask, not the last."
+
+---
+
+## 19.12b Governance — OWASP, Model Cards & Documentation ★★
+
+**In one line:** the artefacts you produce so that someone else can audit what you shipped.
+
+### OWASP Top 10 for LLM Applications
+
+The standard vocabulary for LLM risk. You are expected to recognise the list and name the top entry:
+
+| ID | Risk | Where it is covered here |
+|---|---|---|
+| **LLM01** | **Prompt injection** — still number one | [Ch 18b §18.10](#content/18b_agents_in_production) |
+| LLM02 | Sensitive information disclosure | §19.12a above; PII filtering |
+| LLM03 | Supply chain (models, adapters, MCP servers) | [Ch 18 §18.3](#content/18_ai_agents) — tool poisoning, rug pulls |
+| LLM04 | Data and model poisoning | Training-data provenance |
+| LLM05 | Improper output handling | Treat model output as untrusted input — escape it, never `eval` it |
+| LLM06 | Excessive agency | [Ch 18b §18.14](#content/18b_agents_in_production) — least privilege, approval gates |
+| LLM07 | System prompt leakage | Assume the prompt is public; never put secrets in it |
+| LLM08 | Vector and embedding weaknesses | [Ch 19 §19.9](#content/19_ai_frameworks) — multi-tenant ACLs |
+| LLM09 | Misinformation | Grounding, citations, abstention |
+| LLM10 | Unbounded consumption | Budgets and rate limits |
+
+**LLM05 is the one engineers under-rate.** Model output routinely flows into a shell, a SQL string, an HTML page or a downstream API call. It is user-controlled data from an untrusted source — the same class of bug as XSS or SQL injection, and it gets treated as trusted because it "came from our model".
+
+### Model cards and the paper trail
+
+A **model card** documents what a model is for: intended use, out-of-scope uses, training-data summary, evaluation results **broken out by relevant subgroup**, known limitations, and version. A **system card** does the same for the whole application, including the guardrails around the model.
+
+They matter for three practical reasons: EU AI Act transparency obligations for general-purpose models, enterprise procurement that will ask for one, and the internal question "which version shipped, evaluated how?" during an incident.
+
+| Artefact | Answers |
+|---|---|
+| Model card | What is this model for, and where does it fail? |
+| System card | What does the whole product do, and what guards it? |
+| Eval report | How do we know it works, on which data, at which version? |
+| Data sheet | Where did the training or retrieval data come from, and may we use it? |
+
+---
+
+## 19.12c The Rest of the Stack — Data, Infra and the Job Itself ★★
+
+Job descriptions for AI engineers ask for a good deal that is not an LLM framework. This section closes that gap; each item links to its full treatment.
+
+### The data layer
+
+Retrieval has to be fed, and evaluation has to be measured — both need somewhere to put data.
+
+| Tool | Role in an AI system | Depth |
+|---|---|---|
+| **PostgreSQL + pgvector** | The most common vector store in practice — one database for rows *and* embeddings, no new infrastructure | [Ch 19 §19.9](#content/19_ai_frameworks) · [Ch 24](#content/24_system_design_data_distributed) |
+| **Snowflake / BigQuery** | Content warehouse feeding the embedding pipeline; where the source of truth for documents usually lives | [Ch 24](#content/24_system_design_data_distributed) |
+| **ClickHouse** | OLAP store for traces, token counts and eval results — the thing your quality dashboards query | [Ch 24](#content/24_system_design_data_distributed) |
+| **Kafka / streaming** | Change events that trigger incremental re-indexing, so retrieval stays fresh | [Ch 24](#content/24_system_design_data_distributed) |
+
+**The pattern worth naming:** documents live in the warehouse, embeddings live in the vector store, traces and metrics live in the OLAP store. Conflating them — especially putting traces in your transactional database — is a common early mistake that gets expensive quickly.
+
+### The infrastructure layer
+
+| Skill | Why an AI engineer needs it | Depth |
+|---|---|---|
+| **Docker** | The unit of deployment for every serving stack | [Ch 22](#content/22_engineering_tools) |
+| **Kubernetes** | How GPU workloads are scheduled and scaled in most companies | [Ch 22](#content/22_engineering_tools) · [Ch 25](#content/25_system_design_operations_case_studies) |
+| **Terraform / IaC** | GPU quota, VPC endpoints and IAM are infrastructure — clicking them in a console is not reproducible | [Ch 22](#content/22_engineering_tools) |
+| **CI/CD** | Where your golden-set evals run and block a bad prompt from shipping | [Ch 22](#content/22_engineering_tools) |
+
+### Compliance you will be asked about
+
+**SOC 2** is the audit most enterprise buyers require: evidence that you have controls over security, availability and confidentiality, and that you *follow* them. For an AI feature the questions that actually get asked are concrete — where does prompt data go, who can read traces, how long are they retained, is the provider contractually barred from training on your data, and can you delete a customer's data on request ([§19.9](#content/19_ai_frameworks)). Inheriting a provider's SOC 2 covers the model endpoint; it does **not** cover your application.
+
+### The role itself
+
+The JD landscape shifted, and knowing the vocabulary helps you target the right posting:
+
+| Profile | What they actually do |
+|---|---|
+| **AI Product Engineer** | The dominant 2026 hiring profile: full-stack plus LLMs plus evals plus RAG. Ships user-facing features end to end |
+| **AI Platform Engineer** | Builds the shared internal layer — gateway, eval harness, tracing, model routing — that product teams build on |
+| **ML / Research Engineer** | Training, fine-tuning, post-training. The chapter's distributed-training and post-training material targets this |
+| **Forward Deployed Engineer (FDE)** | Embeds with a customer, builds the integration and the evals against *their* data, feeds requirements back. Heavy travel, high ambiguity, growing fast |
+| **Inference / Performance Engineer** | Serving throughput and cost — [Ch 17c](#content/17c_llm_systems) is the chapter for this role |
+
+> **Reading the JD:** "evals" and "RAG" in the requirements means product engineering. "Distributed training", "FSDP" or "CUDA" means research or infra. "Customer-facing" plus "travel" means FDE. The same title covers all of these, so read the responsibilities rather than the heading.
 
 ---
 

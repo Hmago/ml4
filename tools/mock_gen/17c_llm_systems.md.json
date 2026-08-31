@@ -1,0 +1,816 @@
+[
+  {
+    "q": "A 70B model in FP16 has 140 GB of weights. On a GPU with 3.35 TB/s of memory bandwidth, what is the approximate ceiling on single-stream decode speed?",
+    "options": [
+      "Roughly 48 tokens/sec, since the 140 GB must be sharded over two H100s at 70 GB each",
+      "Roughly 24 tokens/sec, dividing the full 140 GB by a single GPU's 3.35 TB/s bandwidth",
+      "It is set purely by the GPU's FLOPs, so bandwidth is not the relevant quantity here",
+      "There is no meaningful ceiling, because adding compute raises decode speed indefinitely"
+    ],
+    "answer": 0,
+    "explanation": "A 140 GB model does not fit on one 80 GB H100, so it is sharded across at least two with tensor parallelism. Each GPU streams 70 GB per token and both read concurrently, giving 3350/70 which is roughly 48 tokens/sec. Dividing 140 by 3350 gives 24 and is the classic mistake: it charges one GPU for weights it does not hold. Always state the shard count."
+  },
+  {
+    "q": "Which pair correctly matches each inference phase to its bottleneck?",
+    "options": [
+      "Prefill is bandwidth-bound, while decode is bound by the GPU's math units",
+      "Prefill is compute-bound, while decode is bound by memory bandwidth",
+      "Both phases are compute-bound once the batch size exceeds one",
+      "Both phases are ultimately limited by network and scheduler latency"
+    ],
+    "answer": 1,
+    "explanation": "Prefill processes all prompt tokens in parallel as large matrix multiplications, saturating the math units, and it sets TTFT. Decode generates one token at a time and must re-read the whole model per token, so it is bandwidth-bound and sets TPOT. Nearly every serving question reduces to knowing which phase you are bottlenecked on."
+  },
+  {
+    "q": "The KV cache formula is 2 x layers x KV-heads x head-dim x sequence-length x bytes-per-element. What does the leading factor of 2 represent?",
+    "options": [
+      "Double-buffering, so one buffer fills while the other is being read",
+      "The two distinct phases of inference, namely prefill and then decode",
+      "One cached tensor for the keys and one for the values",
+      "FP16 storage, which consumes exactly two bytes for every element"
+    ],
+    "answer": 2,
+    "explanation": "The factor of 2 accounts for caching both K and V. Bytes-per-element is a separate term in the formula (2 for FP16, 1 for FP8). Confusing the two is a common slip when candidates reconstruct the formula under pressure."
+  },
+  {
+    "q": "Llama-3-70B uses 8 KV heads rather than 64. At 8K context this changes the KV cache from about 20 GB to about 2.5 GB per request. What is this technique called?",
+    "options": [
+      "Multi-query attention, in which a single key/value head is shared by everything",
+      "Multi-head latent attention, which compresses K and V into a low-rank latent",
+      "Sliding-window attention, which bounds how far back each token may attend",
+      "Grouped-query attention, which shares K and V across groups of query heads"
+    ],
+    "answer": 3,
+    "explanation": "GQA shares K/V across groups of query heads, giving an 8x KV reduction at near-zero quality cost. MQA is the extreme case with a single KV head and a noticeable quality penalty. MLA is DeepSeek's low-rank latent compression. Sliding-window attention bounds context length rather than head count."
+  },
+  {
+    "q": "Why does static batching waste GPU capacity when serving LLM traffic?",
+    "options": [
+      "Every slot stays blocked until the longest sequence finishes, and output lengths vary hugely",
+      "Static batching is restricted to a single GPU and cannot be sharded across devices",
+      "It requires every prompt in the batch to contain an identical number of tokens",
+      "It disables the KV cache, forcing attention to be recomputed on every step"
+    ],
+    "answer": 0,
+    "explanation": "One user may want a single word and another a thousand-word essay. Static batching holds the whole batch until the longest member completes, so most slots idle on padding. Continuous batching fixes this by scheduling at token granularity instead of request granularity."
+  },
+  {
+    "q": "Continuous batching depends on paged KV memory. What specifically breaks without it?",
+    "options": [
+      "Attention becomes mathematically incorrect for sequences beyond 4096 tokens",
+      "Constant admission and eviction fragments a contiguous KV allocation until nothing fits",
+      "The sampler can no longer access the logits produced by the final layer",
+      "Speculative decoding stops producing the correct output distribution"
+    ],
+    "answer": 1,
+    "explanation": "Sequences enter and leave on every decode step. With contiguous per-request slabs you get severe fragmentation plus the waste of reserving max sequence length up front. Fixed-size blocks with a per-sequence block table eliminate external fragmentation and additionally allow copy-on-write prefix sharing."
+  },
+  {
+    "q": "PagedAttention typically moves KV cache memory utilisation from roughly 20-40% to over 90%. Where does the reclaimed memory mainly come from?",
+    "options": [
+      "Compressing the cached keys and values down to four-bit precision",
+      "Spilling the least recently touched blocks out to host CPU memory",
+      "No longer reserving the maximum sequence length for every single request",
+      "Deduplicating repeated tokens across the model's whole vocabulary"
+    ],
+    "answer": 2,
+    "explanation": "A naive server reserves max_len per request because it cannot know the output length in advance. If max_len is 4096 and the average answer is 200 tokens, roughly 95% of that reservation is wasted. Paging allocates blocks on demand instead. KV quantization and CPU offload are separate, complementary techniques."
+  },
+  {
+    "q": "Your P99 inter-token latency spikes badly while the mean stays flat. What is the most likely cause?",
+    "options": [
+      "The sampling temperature has been configured far too high for this workload",
+      "A slow memory leak inside the tokenizer is degrading throughput over time",
+      "Intermittent packet loss on the network path between client and server",
+      "A long prefill is monopolising the GPU and stalling active decode streams"
+    ],
+    "answer": 3,
+    "explanation": "A single 100K-token prefill can hold the device for seconds, freezing all streaming users. Averages hide this; the tail exposes it. The standard fix is chunked prefill, which interleaves prefill slices with decode steps, slightly worsening that one request's TTFT while protecting everyone else's P99."
+  },
+  {
+    "q": "What does chunked prefill trade away in exchange for better tail latency?",
+    "options": [
+      "Slightly higher TTFT for the long request, since each step parallelises less work",
+      "Correctness of the KV cache whenever sequences exceed the configured chunk size",
+      "The ability to run continuous batching, which requires whole-prompt prefill",
+      "Compatibility with prefix caching, because chunk boundaries break prefix matching"
+    ],
+    "answer": 0,
+    "explanation": "Splitting a prompt into chunks means less work is parallelised per step, so the big request's own time-to-first-token rises marginally. In exchange, concurrent users stop experiencing multi-second stalls. For interactive serving this is almost always the right trade."
+  },
+  {
+    "q": "Which prompt layout will cause a prefix cache to miss on essentially every request?",
+    "options": [
+      "System prompt, then few-shot examples, then tool definitions, then the user query",
+      "A per-request timestamp first, then the system prompt, then the user's query",
+      "System prompt, then tool definitions, then the accumulated conversation history",
+      "Stable few-shot examples, then the system prompt, then the user's actual query"
+    ],
+    "answer": 1,
+    "explanation": "A prefix cache matches from the start of the token sequence. A timestamp at position 0 changes on every call, so no cached prefix ever matches and both the TTFT and cost benefits vanish silently. The design rule is to keep everything stable at the front and everything variable at the end."
+  },
+  {
+    "q": "How do prefix caching and semantic caching differ in what they risk?",
+    "options": [
+      "Both are exact-match mechanisms, so their risk profiles are essentially equivalent",
+      "Prefix caching risks serving stale text, semantic caching merely costs extra memory",
+      "Prefix caching is exact and safe, semantic caching can return a wrong answer",
+      "Semantic caching is the exact one, whereas prefix caching matches approximately"
+    ],
+    "answer": 2,
+    "explanation": "Prefix caching reuses computed KV state for an exact token prefix, so it cannot change the answer. Semantic caching returns a previous response when a new question is embedding-similar, which can misfire on near-duplicates with opposite meaning, on personalised answers shared across users, and on data that has since changed."
+  },
+  {
+    "q": "With speculative decoding, expected accepted tokens per verification step is (1 - a^(g+1))/(1 - a). At acceptance rate a = 0.8 with a 4-token draft, roughly how many tokens do you get per step?",
+    "options": [
+      "Exactly 4 tokens, because the draft model proposed 4 and they are verified together",
+      "About 1.9 tokens, since acceptance compounds unfavourably across the draft window",
+      "About 8 tokens, because verification effectively doubles the draft length each step",
+      "About 3.4 tokens, somewhat below the draft length because acceptance compounds"
+    ],
+    "answer": 3,
+    "explanation": "Substituting a = 0.8 and g = 4 gives roughly 3.36 tokens per step, a strong win. At a = 0.5 you would get about 1.94, which is marginal once the draft model's own forward pass is subtracted. As a rule of thumb you want acceptance above roughly 0.6 for it to pay for itself."
+  },
+  {
+    "q": "Which statement about speculative decoding is correct?",
+    "options": [
+      "Correct verification makes it lossless, matching the target model's distribution",
+      "It exchanges a small, bounded amount of output quality for materially lower latency",
+      "It functions only under greedy decoding, meaning a temperature of exactly zero",
+      "It requires the draft model to share the target model's exact layer architecture"
+    ],
+    "answer": 0,
+    "explanation": "The verification rule is designed so the resulting distribution is identical to sampling from the target model directly. It is a pure latency optimisation, not a quality trade-off. Candidates frequently claim it degrades quality, which is wrong and easy to correct."
+  },
+  {
+    "q": "When does speculative decoding stop helping?",
+    "options": [
+      "Once the prompt grows beyond roughly eight thousand tokens in total length",
+      "At high batch size, where compute is saturated and no spare capacity remains",
+      "After the target model has been quantized down to four-bit weight precision",
+      "Whenever prefix caching is enabled, since the two optimisations conflict"
+    ],
+    "answer": 1,
+    "explanation": "Speculation converts spare compute into lower latency. At batch size 1 there is abundant idle compute, so it works well. At high batch the GPU is already compute-saturated by the batch itself, so verifying extra draft tokens has no free capacity to exploit and the gain disappears."
+  },
+  {
+    "q": "Weight-only INT4 quantization such as GPTQ or AWQ accelerates which phase, and why?",
+    "options": [
+      "Prefill, because representing weights in fewer bits makes the matmuls run faster",
+      "Neither phase, since the benefit is purely a reduction in on-disk model size",
+      "Decode, because it cuts the bytes streamed per token in a bandwidth-bound phase",
+      "Both phases equally, since every arithmetic operation now executes in four bits"
+    ],
+    "answer": 2,
+    "explanation": "Weight-only schemes leave activations in FP16, so the matmuls still execute on FP16 paths and compute-bound prefill is unchanged. Decode, whose cost is dominated by streaming weights, benefits substantially. Speeding up prefill requires quantized activations too, as in W8A8 or FP8."
+  },
+  {
+    "q": "You are serving on H100 hardware and want to improve both TTFT and TPOT with minimal quality loss. Which quantization scheme is the natural default?",
+    "options": [
+      "NF4, since it was purpose-built to make quantized fine-tuning fit on one GPU",
+      "GPTQ four-bit weight-only, on the basis that fewer bits is always strictly better",
+      "INT4 weight-only paired with a full-precision FP16 key-value cache",
+      "FP8, since quantizing weights and activations engages low-precision tensor cores"
+    ],
+    "answer": 3,
+    "explanation": "FP8 quantizes both operands, so it helps compute-bound prefill as well as bandwidth-bound decode, and on H100-class hardware the quality loss is close to zero. Weight-only 4-bit schemes help decode only. NF4 is aimed at fitting fine-tuning onto a single GPU rather than at serving throughput."
+  },
+  {
+    "q": "A 70B model quantized to INT4 occupies about 35 GB instead of 140 GB on an 80 GB GPU. Beyond fitting on fewer GPUs, what is usually the bigger practical win?",
+    "options": [
+      "The freed memory becomes KV cache, raising batch size and thus concurrency",
+      "The model becomes measurably more accurate, as quantization acts as a regulariser",
+      "Prefill latency falls by roughly a factor of four, matching the compression ratio",
+      "Tokenization and detokenization throughput improve proportionally to compression"
+    ],
+    "answer": 0,
+    "explanation": "Concurrency at a given context length is roughly (VRAM minus weights) divided by KV bytes per token times sequence length. Freeing 105 GB of weight memory converts almost directly into KV cache headroom, which multiplies the number of simultaneous sessions and thus cuts cost per token."
+  },
+  {
+    "q": "At 128K context a 70B GQA model's KV cache reaches roughly 40 GB. What follows for optimisation strategy?",
+    "options": [
+      "Speculative decoding becomes strictly mandatory once context exceeds 100K tokens",
+      "The cache, not the weights, now binds, so FP8 KV quantization becomes the lever",
+      "Prefill switches from being compute-bound to being memory-bandwidth-bound",
+      "Continuous batching must be turned off in order to preserve cache coherence"
+    ],
+    "answer": 1,
+    "explanation": "Once the cache is comparable to or larger than the quantized weights, shrinking the weights further yields little. FP8 KV cache roughly doubles either context length or batch size at negligible cost. INT4 KV is more aggressive and degrades long-context recall first, so it must be validated on retrieval-style long-context tasks."
+  },
+  {
+    "q": "In multi-LoRA serving, why can requests using different adapters share the same batch?",
+    "options": [
+      "The adapters are merged into the base weights before any batch is assembled",
+      "Each adapter is assigned a dedicated CUDA stream that executes independently",
+      "The base matmul is shared and only the small low-rank term differs per request",
+      "Adapters are applied after sampling, so they never affect the forward pass itself"
+    ],
+    "answer": 2,
+    "explanation": "One base model stays resident while adapters of a few tens of megabytes are applied per request. Since the shared base computation dominates and is amortised across the batch, you retain continuous batching's throughput while serving many fine-tuned tenants from roughly a single deployment."
+  },
+  {
+    "q": "Disaggregated prefill/decode serving splits the two phases across separate GPU pools. What is the principal cost that determines whether it is worthwhile?",
+    "options": [
+      "Each pool requires its own separately fine-tuned copy of the underlying model",
+      "Quantization can no longer be applied, since the pools must agree on precision",
+      "The number of stored model replicas doubles, roughly doubling storage costs",
+      "The KV cache must cross between pools, needing a genuinely fast interconnect"
+    ],
+    "answer": 3,
+    "explanation": "At roughly 320 KB per token, a 10K-token prompt means transferring about 3 GB before decoding can begin. Over NVLink or InfiniBand this is acceptable; over ordinary networking it is not. Below large scale, chunked prefill on a single pool captures most of the benefit at a fraction of the complexity."
+  },
+  {
+    "q": "Which set of biases is specifically associated with LLM-as-judge evaluation?",
+    "options": [
+      "Position bias, verbosity bias and self-preference for its own family",
+      "Selection bias, survivorship bias and straightforward confirmation bias",
+      "Anchoring bias, recency bias and the well-known availability heuristic",
+      "Sampling bias, noisy labelling and severe imbalance between the classes"
+    ],
+    "answer": 0,
+    "explanation": "Judges favour whichever answer appears first, reward longer answers regardless of quality, and prefer text from their own model family. Mitigations are pairwise rather than absolute scoring, swapping presentation order and averaging, controlling for length, and using a judge from a different family than the system under test."
+  },
+  {
+    "q": "Why is pairwise comparison generally preferred over absolute 1-10 scoring when using an LLM judge?",
+    "options": [
+      "Pairwise prompts consume far fewer tokens and are therefore cheaper to run",
+      "Absolute scores drift between runs and bunch mid-scale, hiding real differences",
+      "Absolute scoring cannot be automated and always requires a human in the loop",
+      "Pairwise comparison completely removes position bias from the evaluation"
+    ],
+    "answer": 1,
+    "explanation": "Absolute scores are poorly calibrated and unstable across runs, so genuine but modest improvements get lost in noise. Pairwise judgements are far more reliable. Note that pairwise does not remove position bias by itself, which is exactly why you also randomise and swap order then average."
+  },
+  {
+    "q": "What is the most important discipline in maintaining a golden set for regression testing?",
+    "options": [
+      "Growing it past five thousand cases so that it covers the full input space",
+      "Regenerating the entire set from scratch immediately before each release",
+      "Every production failure becomes a permanent case, so defects cannot recur",
+      "Using only judge-based assertions, which keeps the suite flexible over time"
+    ],
+    "answer": 2,
+    "explanation": "50-200 cases is the practical sweet spot: fast enough for CI, large enough to catch regressions. Cases should come from real incidents rather than invented examples, be versioned in git next to the prompts, and use deterministic assertions wherever expressible, reserving judged assertions for genuinely subjective criteria."
+  },
+  {
+    "q": "Your offline evaluation shows a clear improvement, but the A/B test shows engagement fell. What is the right conclusion?",
+    "options": [
+      "The experiment is underpowered and its result should therefore be disregarded",
+      "Raise the judge model's temperature and simply re-run the offline evaluation",
+      "Ship it regardless, because offline evaluation is the more controlled measurement",
+      "Trust the online result, then feed those failures back into the golden set"
+    ],
+    "answer": 3,
+    "explanation": "Judges and offline suites measure proxies; experiments measure actual user behaviour. The usual causes are a mismatch between the eval distribution and live traffic, or optimising a vanity metric such as thumbs-up while task completion falls. Closing the loop from production failures into the golden set is the fix."
+  },
+  {
+    "q": "A model has 60 layers, 8 KV heads and head dimension 128, served in FP16. What is the KV cache for one 16,384-token request?",
+    "options": [
+      "About 4 GB, from 2 x 60 x 8 x 128 x 16384 x 2 bytes",
+      "About 2 GB, because the factor of two for K and V is already included in the head count",
+      "About 8 GB, since both keys and values need their own full allocation",
+      "About 1 GB, because grouped-query attention divides the total by the head ratio"
+    ],
+    "answer": 0,
+    "explanation": "2 x 60 x 8 x 128 x 2 bytes = 245,760 bytes per token, or 240 KiB. Multiplied by 16,384 tokens gives 4,026,531,840 bytes, which is 3.75 GiB, or about 4 GB. The factor of 2 for K and V is explicit in the formula and must not be double-counted or omitted."
+  },
+  {
+    "q": "A request has TTFT of 400 ms, TPOT of 25 ms and produces 300 output tokens. What is the end-to-end latency, and where is the time spent?",
+    "options": [
+      "4.5 seconds, roughly evenly split between prefill and decode",
+      "7.9 seconds, with about 95 percent of it spent in decode",
+      "0.4 seconds, since TTFT is the only user-visible component",
+      "12.5 seconds, because TPOT applies to input tokens as well"
+    ],
+    "answer": 1,
+    "explanation": "Total is TTFT plus TPOT times output tokens: 0.4 + (0.025 x 300) = 0.4 + 7.5 = 7.9 seconds. Decode accounts for 7.5 of those 7.9 seconds, about 95 percent. Halving TTFT would improve the total by under 3 percent, which is why optimising the wrong phase feels like no improvement at all."
+  },
+  {
+    "q": "Your workload is document summarisation: 30,000-token inputs producing 200-token summaries. Which optimisation set should you reach for first?",
+    "options": [
+      "Speculative decoding plus a larger batch size, since decode dominates",
+      "Weight-only INT4 quantization, because it reduces bytes streamed per token",
+      "FP8 or W8A8 quantization, aggressive prefix caching and chunked prefill",
+      "Multi-LoRA serving, so each document type gets its own tuned adapter"
+    ],
+    "answer": 2,
+    "explanation": "With a 150:1 input-to-output ratio this is overwhelmingly prefill-bound, so the levers are the ones that help compute-bound work: quantized activations to engage low-precision tensor cores, prefix caching for the shared instruction prefix, and chunked prefill so these long prompts do not stall other users. Decode-side optimisations barely matter here."
+  },
+  {
+    "q": "Your workload is an interactive coding agent: short prompts producing long structured outputs at low concurrency. Which combination fits best?",
+    "options": [
+      "Chunked prefill and W8A8, since prefill dominates the request",
+      "Disaggregated prefill and decode pools, to isolate the two phases",
+      "Semantic caching, because code questions repeat frequently across users",
+      "Weight-only quantization, continuous batching and speculative decoding"
+    ],
+    "answer": 3,
+    "explanation": "Short prompts and long outputs make this decode-bound. Weight-only quantization cuts bytes streamed per token, continuous batching amortises the weight read, and speculative decoding works especially well here because code output is highly predictable and the low batch size leaves spare compute to verify with."
+  },
+  {
+    "q": "Which serving engine is most associated with RadixAttention, a prefix tree that shares cached KV state across requests automatically?",
+    "options": [
+      "SGLang, which also has strong structured-output and constrained-decoding support",
+      "TensorRT-LLM, which compiles the model into optimised NVIDIA kernels",
+      "Ollama, which targets local development on consumer hardware",
+      "vLLM, which introduced the paged key-value memory approach"
+    ],
+    "answer": 0,
+    "explanation": "SGLang's RadixAttention maintains a prefix tree across all in-flight requests, so any shared prefix is reused without being declared. It is particularly effective for agent loops, where each step resends a growing conversation history. vLLM introduced PagedAttention, a related but distinct idea."
+  },
+  {
+    "q": "Throughput collapses as your user count grows, even though GPU utilisation looks low. What is the most likely explanation?",
+    "options": [
+      "The tokenizer has become the bottleneck at high request rates",
+      "The KV cache is exhausted, so the scheduler is forced to shrink the batch",
+      "Network bandwidth to the clients has saturated and is throttling streams",
+      "The sampling step is serialised across requests inside the scheduler"
+    ],
+    "answer": 1,
+    "explanation": "When KV memory runs out the server cannot admit more sequences, so batch size falls and with it throughput, while compute sits idle. The fixes are to shrink the weights or the cache through quantization, cap maximum context length, or add admission control. This is the classic memory-bound-not-compute-bound serving failure."
+  },
+  {
+    "q": "Cost per request has been creeping up for weeks with no change in traffic or model. What should you audit first?",
+    "options": [
+      "The GPU driver version, which can regress kernel performance silently",
+      "The sampling parameters, since higher temperature produces longer outputs",
+      "Prompt length, since few-shot examples and tool definitions tend to accumulate",
+      "The load balancer configuration, which may be routing to a costlier region"
+    ],
+    "answer": 2,
+    "explanation": "Prompt bloat is the usual culprit. Teams keep adding few-shot examples, tool definitions and instructions, and every one of those tokens is billed on every single call. Auditing prompt length and restructuring so the stable portion can be served from a prefix cache is usually the fastest saving available."
+  },
+  {
+    "q": "Which layer of the evaluation stack should run on every commit, and why?",
+    "options": [
+      "Online A/B tests, because only live traffic reveals real quality changes",
+      "LLM-as-judge scoring, because it correlates best with human preference",
+      "Human review of sampled outputs, because it is the ground truth",
+      "Assertions and the golden set, because they are fast, cheap and deterministic"
+    ],
+    "answer": 3,
+    "explanation": "The stack runs fastest-first: assertions and golden sets in CI on every change, judge-based evaluation nightly because it costs tokens and time, and online experiments continuously. Putting a slow or expensive layer in the commit path means it gets disabled the first time it slows someone down."
+  },
+  {
+    "q": "You enable speculative decoding and end-to-end latency gets worse. Which diagnosis and action fit best?",
+    "options": [
+      "Acceptance rate is too low or the batch is already saturated; measure it and gate it",
+      "The draft model is too large in parameter count; always pick one under one billion",
+      "Verification is lossy at high temperature; disable sampling and use greedy decoding",
+      "The KV cache is being duplicated per draft token; enable paged attention to fix it"
+    ],
+    "answer": 0,
+    "explanation": "Speculation converts spare compute into latency. Two things break it: an acceptance rate too low for the draft cost to pay for itself, and a batch large enough that no spare compute exists. The practical response is to measure acceptance in production and disable speculation above a batch-size threshold."
+  },
+  {
+    "q": "In the KV cache formula, which term does grouped-query attention actually reduce?",
+    "options": [
+      "The head dimension, by projecting keys and values into a smaller space",
+      "The number of layers whose keys and values must be retained in the cache",
+      "The number of key/value heads, leaving the query head count unchanged",
+      "The bytes per element, by storing the cache in a lower precision format"
+    ],
+    "answer": 2,
+    "explanation": "GQA changes only the KV-head term. Query heads stay at their full count while groups of them share one key/value head. Reducing bytes per element is quantization, reducing head dimension is closer to what MLA does with its low-rank latent, and layer count is fixed by the architecture."
+  },
+  {
+    "q": "For an interactive chat product, which pair of targets is a sensible starting point?",
+    "options": [
+      "TTFT under 3 seconds and TPOT under 200 milliseconds per token",
+      "TTFT under 300 milliseconds and TPOT under 30 milliseconds per token",
+      "TTFT under 10 milliseconds and TPOT under 1 millisecond per token",
+      "TTFT and TPOT are the same quantity, so a single 100 millisecond target applies"
+    ],
+    "answer": 1,
+    "explanation": "Roughly 300 ms to first token keeps the interface feeling responsive, and 30 ms per token is about 33 tokens per second, comfortably faster than human reading speed of 5 to 8 tokens per second. Pushing much below that buys little perceived quality, so the spare GPU is better spent on throughput."
+  },
+  {
+    "q": "Why should you alert on P99 latency rather than on the mean?",
+    "options": [
+      "The mean is harder to compute correctly in a streaming system",
+      "P99 is the only metric that correlates with total infrastructure cost",
+      "Scheduling and queueing problems surface in the tail long before the mean moves",
+      "Mean latency cannot be measured without instrumenting the client side"
+    ],
+    "answer": 2,
+    "explanation": "Batching, queueing and admission problems affect a small fraction of requests first. A long prefill blocking the decode loop can freeze some users for seconds while the average barely shifts. By the time the mean degrades the problem is already severe and widespread."
+  },
+  {
+    "q": "What is the primary trade-off exposed by increasing the serving batch size?",
+    "options": [
+      "Higher throughput and cheaper tokens, but worse per-user TPOT and tail latency",
+      "Higher throughput and better latency, limited only by available GPU memory",
+      "Lower memory usage, at the cost of reduced output quality per request",
+      "Better accuracy through averaging, at the cost of increased power draw"
+    ],
+    "answer": 0,
+    "explanation": "A larger batch amortises the weight read across more sequences, raising throughput and cutting cost per token. But each decode step now does more work and queueing grows, so inter-token latency and the tail degrade. The right batch size is the largest one that still meets your P99 TPOT target."
+  },
+  {
+    "q": "In PagedAttention, what is the main consequence of choosing a very small block size?",
+    "options": [
+      "Sequences become limited to a maximum length equal to the block size",
+      "Less internal fragmentation, but more block-table overhead and indirection",
+      "Keys and values must be stored separately rather than in the same block",
+      "Copy-on-write prefix sharing between requests becomes impossible"
+    ],
+    "answer": 1,
+    "explanation": "Smaller blocks waste less memory on the partially filled final block of each sequence, but they increase the number of table entries and the indirection cost in the attention kernel. Blocks of roughly 16 to 32 tokens are the usual compromise between the two."
+  },
+  {
+    "q": "A service handles 2 million requests per day at 400 input and 100 output tokens each. At $5 per million input and $25 per million output tokens, what is the approximate daily API cost?",
+    "options": [
+      "About $1,000, since only output tokens are billed at a premium rate",
+      "About $2,500, taking the input tokens alone at the quoted input price",
+      "About $9,000, using the combined per-request price across both directions",
+      "About $9,000, from $4,000 of input plus $5,000 of output token spend"
+    ],
+    "answer": 3,
+    "explanation": "Input is 2M x 400 = 800M tokens, costing 800 x $5 = $4,000. Output is 2M x 100 = 200M tokens, costing 200 x $25 = $5,000. The daily total is $9,000, or roughly $270,000 per month, which is exactly the arithmetic interviewers expect you to perform out loud."
+  },
+  {
+    "q": "Before comparing self-hosting against an API, which cheap optimisation should you evaluate first?",
+    "options": [
+      "Switching to a smaller model, which reduces cost proportionally to parameters",
+      "Caching, since a meaningful prefix or semantic hit rate cuts the bill immediately",
+      "Moving to a cheaper cloud region with lower per-GPU-hour pricing",
+      "Reducing the maximum output length so responses terminate earlier"
+    ],
+    "answer": 1,
+    "explanation": "A 30 percent cache hit rate removes 30 percent of the bill for roughly a day of work and no new infrastructure. Self-hosting is a large commitment involving headcount, peak capacity provisioning and a possible quality gap, so exhausting the cheap wins first is the sensible order."
+  },
+  {
+    "q": "Which factor most often erodes the apparent cost advantage of self-hosting?",
+    "options": [
+      "Storage costs for holding multiple quantized copies of the model weights",
+      "The licensing fees attached to most open-weight model releases",
+      "Provisioning for peak traffic rather than average, plus the engineering headcount",
+      "Higher per-token energy consumption compared with a managed provider"
+    ],
+    "answer": 2,
+    "explanation": "The naive comparison divides daily tokens by 86,400 seconds and assumes perfectly flat traffic. Real load has peaks, and GPUs must be provisioned for the peak while being billed around the clock. Adding the engineers needed to operate the cluster frequently closes most of the remaining gap."
+  },
+  {
+    "q": "You are asked to double context length from 32K to 64K on fixed hardware. Which change addresses the actual constraint?",
+    "options": [
+      "Increase the batch size so more requests share each weight read",
+      "Enable speculative decoding to produce more tokens per forward pass",
+      "Switch from weight-only INT4 back to FP16 weights for better numerics",
+      "Quantize the KV cache to FP8, which roughly halves its memory footprint"
+    ],
+    "answer": 3,
+    "explanation": "At long context the KV cache is the binding constraint, and it grows linearly with sequence length. FP8 KV quantization roughly halves it at negligible quality cost, directly buying the extra context. Batching and speculation address throughput and latency, not the memory wall."
+  },
+  {
+    "q": "Why is CPU offload of KV cache blocks only suitable for specific workloads?",
+    "options": [
+      "Offloaded blocks lose precision because host memory stores them in INT8",
+      "Every re-access pays PCIe transfer latency, so it suits rarely-touched context",
+      "The CPU cannot perform the attention computation over offloaded blocks",
+      "Offloading is incompatible with continuous batching and paged attention"
+    ],
+    "answer": 1,
+    "explanation": "Blocks moved to host RAM must travel back across PCIe whenever attention touches them. That is acceptable when the context is very long but sparsely re-read, and ruinous when every decode step attends over the offloaded region. It is a niche tool, not a general fix."
+  },
+  {
+    "q": "What limits the number of LoRA adapters a multi-LoRA server can hold?",
+    "options": [
+      "GPU memory for resident adapters, plus a cold-start cost when loading one",
+      "The maximum batch size, since each adapter occupies exactly one batch slot",
+      "The rank of the adapters, which must be identical across every tenant",
+      "The base model's layer count, which caps how many adapters can attach"
+    ],
+    "answer": 0,
+    "explanation": "Adapters are small, typically tens of megabytes, so many fit alongside the base model, but they still consume memory and an adapter not already resident incurs a load latency on first use. Adapters of different ranks can coexist and multiple adapters share a single batch."
+  },
+  {
+    "q": "A single H100 has 80 GB. After loading a 35 GB INT4 model and reserving about 10 percent overhead, roughly how many concurrent 8K-token requests can you serve at 320 KB per token?",
+    "options": [
+      "About 60, because overhead scales with the number of active sequences",
+      "About 5, since each request needs its full maximum context reserved up front",
+      "About 14, from roughly 37 GB of usable cache divided by 2.5 GB per request",
+      "About 100, because paged attention removes the per-request memory cost"
+    ],
+    "answer": 2,
+    "explanation": "80 minus 35 is 45 GB, and removing roughly 8 GB of overhead leaves about 37 GB. Each 8K request needs 8192 x 320 KB, about 2.5 GB. That gives roughly 14 concurrent sequences. This back-of-envelope calculation is the standard way to size concurrency in a design round."
+  },
+  {
+    "q": "Why does the chapter recommend putting session IDs and timestamps at the end of a prompt rather than the beginning?",
+    "options": [
+      "Models attend more strongly to tokens that appear later in the context",
+      "Trailing metadata is cheaper because it is billed at the output token rate",
+      "Prefix caches match from the start, so a leading variable token defeats them",
+      "Tokenizers compress trailing numeric sequences more efficiently than leading ones"
+    ],
+    "answer": 2,
+    "explanation": "A prefix cache can only reuse a contiguous run of tokens starting at position zero. One token that changes per request at the front means no cached prefix ever matches, silently removing both the latency and the cost benefit while the system appears to be working normally."
+  },
+  {
+    "q": "Which risk is specific to semantic caching rather than prefix caching?",
+    "options": [
+      "Cached entries consume GPU memory that would otherwise serve larger batches",
+      "Two questions with opposite meaning can embed similarly and share an answer",
+      "The cache must be invalidated whenever the model version changes",
+      "Cache lookups add latency to every request, including those that miss"
+    ],
+    "answer": 1,
+    "explanation": "Semantic caching matches on embedding similarity, so a negation or a small but meaningful qualifier can fall inside the similarity threshold and receive the wrong cached answer. Prefix caching matches exact tokens and therefore cannot change what the model would have said."
+  },
+  {
+    "q": "Which of these is a genuine reason NOT to adopt disaggregated prefill and decode serving?",
+    "options": [
+      "It is incompatible with quantization, so you lose all memory savings",
+      "It requires the prefill and decode pools to run different model versions",
+      "Your traffic is modest and the interconnect between pools is ordinary networking",
+      "It prevents continuous batching from operating within the decode pool"
+    ],
+    "answer": 2,
+    "explanation": "The technique depends on moving gigabytes of KV cache between pools, which is fine over NVLink or InfiniBand and unacceptable over commodity networking. Without large scale to justify the operational complexity, chunked prefill on a single pool delivers most of the benefit far more cheaply."
+  },
+  {
+    "q": "Why is perplexity a poor sole check that a quantized model has not degraded?",
+    "options": [
+      "Perplexity cannot be computed once the weights are stored in four bits",
+      "It is a blunt aggregate that misses long-form and instruction-following failures",
+      "Perplexity always improves after quantization, so it is misleading by construction",
+      "It requires labelled data, which is rarely available for production workloads"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity averages next-token surprise over a corpus and can look nearly unchanged while specific capabilities degrade. The characteristic four-bit failure mode is fine short answers with worse long-form reasoning, instruction adherence and rare formats, so task-level evaluation before and after is required."
+  },
+  {
+    "q": "In a golden set, why prefer deterministic assertions over judge-based ones wherever possible?",
+    "options": [
+      "Judge-based assertions cannot be expressed for open-ended generation tasks",
+      "Deterministic assertions are free, instant and give an unambiguous verdict",
+      "Deterministic checks are the only kind that can run inside continuous integration",
+      "Judges are unable to evaluate structured output such as JSON documents"
+    ],
+    "answer": 1,
+    "explanation": "Checks such as valid JSON, contains a citation, correctly refuses, or stays under a token limit cost nothing, run in milliseconds and never disagree with themselves. Reserving the judge for genuinely subjective criteria keeps the suite fast, cheap and trustworthy enough to run on every commit."
+  },
+  {
+    "q": "What does the peeking problem describe in the context of A/B testing an LLM feature?",
+    "options": [
+      "Engineers viewing production prompts, which raises privacy and compliance issues",
+      "The model observing evaluation data during training, inflating benchmark scores",
+      "Users noticing the experimental variant and changing their behaviour accordingly",
+      "Repeatedly checking results and stopping at the first significant reading"
+    ],
+    "answer": 3,
+    "explanation": "Checking an experiment daily and stopping as soon as it looks significant dramatically inflates the false-positive rate, because random fluctuation eventually crosses the threshold. The remedies are fixing the sample size in advance or using a sequential test designed for continuous monitoring."
+  },
+  {
+    "q": "What is the purpose of guardrail metrics in an LLM experiment?",
+    "options": [
+      "They replace the primary metric when the primary one proves too noisy",
+      "They can block a launch when latency, cost or safety regresses, without driving it",
+      "They provide the statistical power needed to detect small quality improvements",
+      "They convert offline evaluation scores into predicted online engagement lift"
+    ],
+    "answer": 1,
+    "explanation": "You pick one primary metric such as task completion to decide success, then guard against collateral damage with metrics like P95 latency, cost per session, escalation rate and safety incidents. Guardrails only ever veto a launch; letting several metrics all drive the decision invites cherry-picking."
+  },
+  {
+    "q": "Why does the chapter recommend using a judge from a different model family than the system under test?",
+    "options": [
+      "Different families tokenise differently, which improves scoring granularity",
+      "Cross-family evaluation is required to compute statistically valid win rates",
+      "Models systematically prefer text produced by their own family, biasing scores",
+      "A judge from another family is typically cheaper to run at evaluation scale"
+    ],
+    "answer": 2,
+    "explanation": "Self-preference bias means a model rates its own family's output more favourably, so using the same family to judge its own improvements produces a flattering and misleading signal. Combined with position and verbosity bias, this is why judges must be calibrated against human labels before being trusted."
+  },
+  {
+    "q": "What makes benchmark contamination difficult to detect from the outside?",
+    "options": [
+      "Benchmark authors rarely publish the answer keys needed for the comparison",
+      "Training corpora are not public, so leakage can only be inferred from behaviour",
+      "Contamination only affects multiple-choice benchmarks, never open-ended ones",
+      "Model providers apply differential privacy, which masks memorised examples"
+    ],
+    "answer": 1,
+    "explanation": "Models are trained on broad web scrapes whose exact contents are undisclosed, so you cannot simply check whether a test item was included. The practical signals are a suspiciously large gap between public benchmark performance and your own held-out evaluation, and the existence of decontaminated or rolling benchmark variants."
+  },
+  {
+    "q": "Which statement best captures how Ch 17c and Ch 29 divide the serving material?",
+    "options": [
+      "Ch 29 covers hardware and the training cluster; Ch 17c covers the serving software",
+      "Ch 29 covers inference while Ch 17c is restricted to evaluation methodology",
+      "Ch 17c supersedes Ch 29 entirely, which is retained only for historical reference",
+      "They cover identical material, with Ch 17c offering a shorter summary version"
+    ],
+    "answer": 0,
+    "explanation": "Ch 29 owns GPU and TPU architecture, CUDA, and the distributed training stack including DDP, FSDP, ZeRO and tensor and pipeline parallelism. Ch 17c owns the serving software layer: the scheduler, the cache, the batching policy and the evaluation harness. Each topic has exactly one home."
+  },
+  {
+    "q": "An out-of-memory error appears only under sustained load, never during testing. What are the two most likely causes?",
+    "options": [
+      "A driver memory leak, or an incorrectly configured tensor parallel degree",
+      "Fragmentation of the key-value cache, or a maximum context setting that is too high",
+      "Excessive logging retained in GPU memory, or an oversized tokenizer vocabulary",
+      "Model weights being reloaded per request, or missing gradient checkpointing"
+    ],
+    "answer": 1,
+    "explanation": "Under load many variable-length sequences enter and leave, which fragments cache memory, and a generous max_model_len lets a handful of long requests consume the space many short ones needed. The fixes are paged key-value memory, a lower maximum context, and reserving headroom rather than sizing to the theoretical limit."
+  },
+  {
+    "q": "Why does the mechanism of MHA, MQA and GQA live in Ch 17 rather than in Ch 17c?",
+    "options": [
+      "Those variants are considered legacy and are no longer used in modern models",
+      "Ch 17c is written for readers who have not yet encountered attention at all",
+      "Ch 17c is the systems layer and only covers their consequences for serving",
+      "The mechanism requires mathematics that the systems chapter deliberately avoids"
+    ],
+    "answer": 2,
+    "explanation": "Under the one concept, one home rule, the model-layer explanation of how each attention variant works belongs with the architecture material, while the systems chapter covers only what each variant does to the KV cache formula and therefore to batch size and concurrency."
+  },
+  {
+    "q": "Which pairing of technique to bottleneck is INCORRECT?",
+    "options": [
+      "Prefix caching reduces repeated prefill work and therefore improves TTFT",
+      "Chunked prefill protects P99 inter-token latency for concurrent decoding users",
+      "Continuous batching raises throughput by amortising the weight read across requests",
+      "Weight-only INT4 quantization is the primary lever for compute-bound prefill"
+    ],
+    "answer": 3,
+    "explanation": "Weight-only quantization leaves activations in full precision, so prefill matmuls still execute on high-precision paths and gain little. It is a decode lever. Improving compute-bound prefill requires quantized activations as in W8A8 or FP8. The other three pairings are correct."
+  },
+  {
+    "q": "What does it mean that speculative decoding produces several tokens per weight read?",
+    "options": [
+      "The draft model's weights are read once and reused across all target verifications",
+      "One target forward pass verifies a whole draft, so accepted tokens share that read",
+      "The KV cache is written once per draft rather than once per individual token",
+      "Weights are cached in GPU SRAM between steps, avoiding repeated HBM traffic"
+    ],
+    "answer": 1,
+    "explanation": "Because decode is bandwidth-bound, verifying several candidate tokens in one forward pass costs roughly the same as producing one. Every token accepted from that pass therefore rides on a single streaming of the target model's weights, which is precisely where the latency saving comes from."
+  },
+  {
+    "q": "A stakeholder proposes semantic caching for a banking assistant that quotes account balances. What is the correct response?",
+    "options": [
+      "Approve it, provided the similarity threshold is set above 0.9 for safety",
+      "Approve it, since caching never alters the model's underlying reasoning",
+      "Approve it only for the embedding step, leaving generation uncached",
+      "Reject it for personalised or actionable answers; they must not be shared or staled"
+    ],
+    "answer": 3,
+    "explanation": "Balances are per-user and change over time, so a cached response can be both wrong and financially consequential. Semantic caching suits narrow, static, non-personalised content such as FAQs, and even then wants per-user keys, high thresholds, TTLs tied to data freshness and a bypass path."
+  },
+  {
+    "q": "Which sequence correctly orders the evaluation stack from fastest to slowest?",
+    "options": [
+      "Golden set, assertions, online metrics, LLM-as-judge",
+      "LLM-as-judge, assertions, golden set, online metrics",
+      "Assertions, golden set, LLM-as-judge, online metrics",
+      "Online metrics, LLM-as-judge, golden set, assertions"
+    ],
+    "answer": 2,
+    "explanation": "Deterministic assertions are instant, the golden set runs in minutes, judge-based scoring costs tokens and time so it typically runs nightly, and online experiments take days to reach significance. Running them fastest-first means most regressions are caught before the expensive layers are needed."
+  },
+  {
+    "q": "Why does the guidance say a production failure should become a golden-set case rather than only a bug fix?",
+    "options": [
+      "Because prompts have no type checker, so only a regression test prevents recurrence",
+      "Because judge models learn from the added examples and improve their calibration",
+      "Because golden sets must reach a minimum size before they detect anything reliably",
+      "Because incident reports are required evidence for model governance and audit"
+    ],
+    "answer": 0,
+    "explanation": "Prompts behave like code but have no compiler and no static analysis, so a change that silently breaks a previously working case is invisible until a user finds it. Converting each incident into a permanent, automatically executed case is the mechanism that makes the system improve rather than oscillate."
+  },
+  {
+    "q": "A language model achieves a cross-entropy loss of 3.0 bits on a test set. What is its perplexity?",
+    "options": [
+      "3.0, since perplexity is defined as the cross-entropy loss itself on standard benchmarks",
+      "8, since perplexity = 2^loss when loss is measured in bits (2^3 = 8)",
+      "20.1, since perplexity = e^loss where e is Euler's number regardless of the log base",
+      "9.0, since perplexity is the cross-entropy loss raised to the power of the vocabulary size"
+    ],
+    "answer": 1,
+    "explanation": "Perplexity = 2^(cross-entropy loss in bits) = 2^3.0 = 8. The chapter confirms: 'Loss of 3.0 → Perplexity of 8.' If loss were in nats (natural log), perplexity would equal e^3 ≈ 20.1."
+  },
+  {
+    "q": "For a 70B-parameter model serving 32 concurrent users each with 4K context, which resource does the KV cache most critically strain?",
+    "options": [
+      "Forward-pass computation time per token, since caching makes each generation step linear in accumulated sequence length",
+      "Model weight integrity, since cached K/V tensors can accumulate quantization drift over long generation sessions",
+      "GPU memory, since each concurrent request requires its own KV cache allocation (~10 GB for LLaMA-2-70B at 4K context)",
+      "Gradient accumulation buffers during online fine-tuning, requiring special memory-efficient optimizer configurations"
+    ],
+    "answer": 2,
+    "explanation": "LLaMA-2-70B with 4K context requires ~10.7 GB of KV cache per request. Serving 32 users simultaneously needs ~342 GB just for KV caches — independent of model weights. This GPU memory pressure, not computation time, is the dominant bottleneck in production inference."
+  },
+  {
+    "q": "Which example best illustrates BLEU score's most fundamental limitation as a text evaluation metric?",
+    "options": [
+      "BLEU assigns zero to multilingual outputs because it requires reference and hypothesis to share the same script",
+      "BLEU aggressively penalizes any output longer than the reference through an unbounded length penalty term",
+      "BLEU requires multiple reference translations to be statistically valid, making single-reference evaluation unreliable",
+      "A word-scrambled sentence like 'the mat on sat cat the' scores highly on BLEU-1 despite being semantically incorrect"
+    ],
+    "answer": 3,
+    "explanation": "BLEU counts n-gram overlap but does not assess word order or meaning beyond n-gram matching. A scrambled sentence with the same unigrams as the reference would score perfectly on BLEU-1, exposing the core flaw: high overlap does not imply correct meaning or grammar."
+  },
+  {
+    "q": "A 7B-parameter model in FP16 (~14 GB) is quantized to INT4 for QLoRA fine-tuning. What is the approximate memory used by the quantized base model weights?",
+    "options": [
+      "7 GB, since INT4 quantization halves the memory compared to FP16's two bytes per parameter",
+      "14 GB, since quantization only affects computation speed but does not reduce memory at the parameter storage level",
+      "3.5 GB, since INT4 uses 0.5 bytes per parameter giving 7B × 0.5 = 3.5 GB for the base model weights",
+      "1.75 GB, since INT4 quantization rounds down to effectively one bit of useful information per parameter"
+    ],
+    "answer": 2,
+    "explanation": "INT4 uses 4 bits = 0.5 bytes per parameter. 7B × 0.5 bytes = 3.5 GB. FP16 uses 2 bytes: 7B × 2 = 14 GB. INT4 is 4× smaller than FP16, so 14/4 = 3.5 GB. This is why QLoRA enables fine-tuning large models on consumer-grade hardware with limited VRAM."
+  },
+  {
+    "q": "In speculative decoding, what happens when the large target model rejects the third of five draft tokens generated by the small draft model?",
+    "options": [
+      "The entire five-token draft is discarded and the target model regenerates all five tokens sequentially one by one",
+      "Only the rejected token is resampled by the draft model and the remaining two tokens are re-validated immediately",
+      "The target model accepts tokens 1-2, rejects token 3, generates its own replacement for position 3, and continues from position 4",
+      "The target model accepts tokens 1-2, generates a replacement for position 3, then stops and waits for a new full draft"
+    ],
+    "answer": 2,
+    "explanation": "Speculative decoding accepts all correct tokens before the rejection point, generates one new replacement token at the rejection position, and continues from the next position. This preserves the target model's quality guarantee (it has final say on every accepted token) while achieving 2-3× speedup from parallel batch verification."
+  },
+  {
+    "q": "Which formula correctly relates perplexity to cross-entropy loss when loss is measured in bits (log base 2)?",
+    "options": [
+      "Perplexity = 2^(cross-entropy loss in bits), so a loss of 3.0 bits gives a perplexity of exactly 8",
+      "Perplexity = e^(cross-entropy loss) using Euler's number as the base regardless of what log base is used",
+      "Perplexity = 1 / (cross-entropy loss), meaning minimizing loss always maximizes perplexity simultaneously",
+      "Perplexity = (cross-entropy loss)^2, applying a quadratic penalization to the model's prediction errors"
+    ],
+    "answer": 0,
+    "explanation": "Perplexity = 2^loss when loss is measured in bits. The chapter confirms: 'Loss of 3.0 → Perplexity of 8' (2^3 = 8). When using natural log (nats), Perplexity = e^loss. Lower perplexity means the model was less surprised by the evaluation text — it predicted tokens more accurately."
+  },
+  {
+    "q": "Continuous (dynamic) batching in vLLM achieves much higher GPU throughput than static batching. What is the key enabling mechanism?",
+    "options": [
+      "Continuous batching pre-allocates fixed per-user KV cache slots and fills them sequentially as requests arrive in order",
+      "Continuous batching immediately adds new requests to the batch as soon as any existing request finishes generation",
+      "Continuous batching applies speculative decoding to all batch requests simultaneously to reduce per-step latency",
+      "Continuous batching uses tensor parallelism within each individual request to keep all GPU cores saturated"
+    ],
+    "answer": 1,
+    "explanation": "Static batching leaves GPU slots idle when one request finishes before others in the same batch. Continuous batching fills vacated slots immediately with new requests, keeping GPU utilization near 100%. The chapter states this yields 10-20× higher throughput than static batching."
+  },
+  {
+    "q": "The MMLU (Massive Multitask Language Understanding) benchmark evaluates LLMs using which testing format?",
+    "options": [
+      "Open-ended generation tasks graded by a separate GPT-4 judge on helpfulness, accuracy, and fluency dimensions",
+      "Code generation problems evaluated by running the model's output against hidden Python unit test suites",
+      "Retrieval tasks where models locate supporting passages from documents provided in the prompt context",
+      "Multiple-choice questions drawn from 57 academic and professional subjects including law, medicine, history, and mathematics"
+    ],
+    "answer": 3,
+    "explanation": "MMLU uses multiple-choice questions across 57 subjects spanning professional and academic domains. A representative question presents a clinical case and asks for the correct diagnosis from four options. HumanEval uses code generation; MT-Bench uses open-ended multi-turn conversation."
+  },
+  {
+    "q": "Perplexity is used to evaluate language model quality on held-out text. A lower perplexity means the model is:",
+    "options": [
+      "Less surprised by the test text, assigning higher average probability to each token, indicating better language modeling",
+      "More conservative in token selection, choosing from fewer candidates at each step due to a more peaked distribution",
+      "Slower at generating text, since lower perplexity requires more attention heads to scan the full context per token",
+      "More likely to hallucinate, since high confidence in familiar patterns can cause the model to ignore novel contexts"
+    ],
+    "answer": 0,
+    "explanation": "Lower perplexity means the model assigned higher probability to the tokens that actually appeared — it was less 'surprised.' Perplexity = 2^(average negative log probability), so lower values mean better predictions. Perplexity has no direct causal relationship to generation speed or hallucination rate."
+  },
+  {
+    "q": "Speculative decoding uses a small draft model to generate candidate tokens for a large target model to validate. What is the key speed advantage of this approach?",
+    "options": [
+      "The small draft model replaces the large target model entirely for most tokens, only deferring to the target for uncertain ones",
+      "The target model verifies all K draft tokens in a single parallel forward pass rather than generating each token sequentially",
+      "The draft model caches its KV tensors and transfers them directly to the target model, saving redundant attention computation",
+      "The target model skips attention for tokens already seen in the draft, only computing attention for newly generated tokens"
+    ],
+    "answer": 1,
+    "explanation": "The target model can verify all K draft tokens simultaneously in one forward pass (much cheaper than K sequential generation steps), accepting correct ones and replacing the first wrong one. This parallel verification step is what makes speculative decoding 2-3× faster with no quality loss — the target model still controls every accepted token."
+  },
+  {
+    "q": "You must reduce serving cost, have no training budget, and need the option to roll back. Which technique fits?",
+    "options": [
+      "Distillation, since it typically yields the largest single reduction in overall model size",
+      "Quantization, which needs no training run and can be reverted by reloading FP16",
+      "Unstructured pruning, which reaches very high sparsity quickly",
+      "Structured pruning, which requires no fine-tuning afterwards"
+    ],
+    "answer": 1,
+    "explanation": "Quantization is the only one of the three requiring no training data or training run, and it is reversible. Distillation needs a full run on the student model, and pruning requires fine-tuning to recover quality. Quantize first, always."
+  },
+  {
+    "q": "Unstructured pruning reaches 90% sparsity but inference speed is unchanged. Why?",
+    "options": [
+      "The pruned weights must be restored at inference time to preserve numerical stability",
+      "Scattered zeros require sparse-matrix hardware support to reduce actual operations",
+      "Pruning reduces checkpoint size on disk but never resident memory",
+      "The remaining weights must be stored at higher precision, cancelling the gain"
+    ],
+    "answer": 1,
+    "explanation": "Irregular sparsity patterns cannot be exploited by dense matrix kernels, so the multiplications still execute. Structured pruning, which removes entire attention heads, neurons or layers, produces a genuinely smaller dense model and therefore speeds up on standard hardware."
+  }
+]

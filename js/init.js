@@ -53,14 +53,24 @@ if (fontSize !== 0) {
 // and routeFromHash() — re-renders the current page when the user hits Back/Forward.
 // A _navFromPopstate flag suppresses pushState during popstate-driven renders
 // so Back/Forward doesn't create duplicate history entries.
+//
+// _lastRoutedHash records the hash currently on screen. Fragment-only history
+// traversal fires BOTH popstate and hashchange, and both listeners below call
+// routeFromHash — without this guard a single Back press would render the
+// chapter twice (two fetches, two marked/KaTeX/highlight passes). pushHash
+// keeps the key in sync so sidebar navigation doesn't leave it stale.
 let _navFromPopstate = false;
+let _lastRoutedHash = null;
 function pushHash(h) {
+  _lastRoutedHash = h;
   if (_navFromPopstate) return;
   if (window.location.hash.slice(1) === h) return;
   history.pushState(null, '', '#' + h);
 }
 function routeFromHash() {
   const hash = window.location.hash.slice(1);
+  if (hash === _lastRoutedHash) return;
+  _lastRoutedHash = hash;
   _navFromPopstate = true;
   try {
     if (hash === 'home' || hash === '') {
@@ -88,6 +98,23 @@ function routeFromHash() {
   }
 }
 window.addEventListener('popstate', routeFromHash);
+
+// Anchor-driven hash changes (in-content cross-chapter links like
+// `[Ch 29](#content/29_gpus_tpus_infrastructure)`) fire `hashchange`, not
+// `popstate`, so they would otherwise rewrite the URL without navigating.
+// Route only hashes we recognise — unknown fragments are in-page heading
+// anchors and must keep their default scroll behaviour. The _lastRoutedHash
+// check inside routeFromHash absorbs the duplicate call on Back/Forward.
+function isRoutableHash(hash) {
+  if (!hash) return true;
+  if (['home', 'dashboard', 'goals', 'motivation', 'dsa-practice', 'mock-test'].includes(hash)) return true;
+  if (hash.startsWith('dsa-problem-')) return true;
+  const hashLower = hash.toLowerCase();
+  return chapters.some(ch => ch.file && ch.file.replace('.md', '').toLowerCase() === hashLower);
+}
+window.addEventListener('hashchange', () => {
+  if (isRoutableHash(window.location.hash.slice(1))) routeFromHash();
+});
 
 // Initial hash-based route (preserves the page across hard refresh)
 routeFromHash();

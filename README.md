@@ -8,7 +8,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
   ┌─────────────────────────────────────────────────────────┐
   │  34 chapters · ~124 hours of content · 400+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
-  │  Dark mode · Focus mode · Offline PWA · Export to PDF    │
+  │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
 ```
 
@@ -68,8 +68,11 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 16 | Deep Learning — Complete Reference | ★★★ | [16_deep_learning.md](content/16_deep_learning.md) | ~3.5 hrs | Advanced |
-| 17 | Large Language Models (LLMs) | ★★★ | [17_llm.md](content/17_llm.md) | ~9 hrs | Intermediate-Advanced |
-| 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~1.75 hrs | Intermediate-Advanced |
+| 17 | LLMs — How They Work (Transformer, training, families) | ★★★ | [17_llm.md](content/17_llm.md) | ~4 hrs | Intermediate-Advanced |
+| 17b | LLMs — How You Use Them (prompting, RAG, tools, safety) | ★★★ | [17b_llm_applications.md](content/17b_llm_applications.md) | ~3 hrs | Intermediate |
+| 17c | LLM Systems — Serving, Scaling & Measuring | ★★★ | [17c_llm_systems.md](content/17c_llm_systems.md) | ~3 hrs | Advanced |
+| 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~2.5 hrs | Intermediate-Advanced |
+| 18b | Agents in Production (failures, evals, sandboxing) | ★★★ | [18b_agents_in_production.md](content/18b_agents_in_production.md) | ~2 hrs | Advanced |
 | 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~1.5 hrs | Intermediate-Advanced |
 | 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~1 hr | Intermediate |
 | ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~3 hrs | All Levels |
@@ -156,7 +159,7 @@ Open `index.html` in any modern browser — no build step, no server needed. Eve
   ────────────────────────        ────────────────────────
   ▸ Per-chapter quizzes           ▸ PWA — installable, offline
   ▸ Pinned notes on any text     ▸ Export/import all data (JSON)
-  ▸ Text highlights               ▸ Export chapters as PDF
+  ▸ Text highlights
   ▸ XP, streaks, achievements    ▸ Service worker caching
   ▸ Study timer                   ▸ Mobile responsive
   ▸ Progress dashboard            ▸ GitHub Pages deployable

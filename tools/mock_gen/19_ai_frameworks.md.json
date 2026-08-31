@@ -658,5 +658,137 @@
     ],
     "answer": 3,
     "explanation": "The chapter's picking flowchart branches at '<10M' vectors leading to pgvector (if already on Postgres). The 10M–1B range routes to Qdrant/Weaviate/Milvus self-hosted, or Pinecone managed. The 100K, 1M, and 5M thresholds are not from the chapter."
+  },
+  {
+    "q": "What is the most common mistake when picking an embedding model from the MTEB leaderboard?",
+    "options": [
+      "Sorting on the overall average rather than filtering to the Retrieval task",
+      "Selecting a model whose embedding dimension is too small for the size of the corpus",
+      "Choosing a hosted API model over a self-hosted open-weight one",
+      "Evaluating with cosine similarity instead of Euclidean distance"
+    ],
+    "answer": 0,
+    "explanation": "The overall MTEB average mixes retrieval with classification, clustering and semantic similarity. A model that leads on semantic similarity can trail on retrieval, which is what RAG needs. Filter to Retrieval, treat sub-two-point gaps as noise, then validate the shortlist on your own labelled queries."
+  },
+  {
+    "q": "In a multi-tenant RAG system, why must ACL filtering happen inside the vector query rather than after retrieval?",
+    "options": [
+      "Post-filtering requires an additional database round trip, which measurably raises overall query latency",
+      "Post-filtering silently shrinks the result set, so a restricted user may receive few or no results",
+      "Vector databases cannot store metadata alongside embeddings",
+      "Post-filtering exposes other tenants' embeddings during scoring"
+    ],
+    "answer": 1,
+    "explanation": "Retrieving a global top-k and then discarding what the user may not see leaves narrowly-permissioned users with a fraction of the intended context, while the pipeline reports success. Filter within the query using tenant and ACL metadata, or isolate tenants by namespace or collection."
+  },
+  {
+    "q": "A GDPR erasure request arrives for a user whose documents are indexed in your RAG system. What makes compliance non-trivial?",
+    "options": [
+      "Embeddings are irreversible transformations, so the affected vectors cannot be located at all",
+      "It lives as chunks, embeddings and cache entries, so deletion must be traced across all",
+      "Vector stores support only overwrite operations, never deletion",
+      "The entire corpus must be re-embedded after any removal"
+    ],
+    "answer": 1,
+    "explanation": "You need a source-document to chunk-ID mapping so deletion is surgical, confirmation that the store hard-deletes rather than tombstoning, and purging of any semantic or prefix cache keyed on that content. Removing the source record alone leaves the data retrievable from the index."
+  },
+  {
+    "q": "What is the principal reason an enterprise accesses Claude through AWS Bedrock rather than Anthropic's API directly?",
+    "options": [
+      "Bedrock consistently offers lower per-token pricing than the direct provider does",
+      "Compliance — existing contracts, private networking and contractual no-training guarantees",
+      "Bedrock hosts fine-tuned variants that outperform the models on the direct API",
+      "The direct provider API applies rate limits that are far too restrictive for enterprise-scale workloads"
+    ],
+    "answer": 1,
+    "explanation": "The model sits inside a cloud account that already has a contract, a completed security review and a data-processing agreement, plus VPC-private networking and a single bill. The cost is time-to-newest-model, since frontier releases usually appear on the direct API weeks before reaching Bedrock or Azure."
+  },
+  {
+    "q": "Which capability makes Azure OpenAI the common choice for European deployments?",
+    "options": [
+      "Region pinning, letting you specify exactly where prompts are processed",
+      "Lower latency achieved through Microsoft's European edge network presence",
+      "Exclusive access to model versions that have been certified under the EU AI Act",
+      "Automatic translation of prompts into the end user's local language"
+    ],
+    "answer": 0,
+    "explanation": "Data residency requires prompts and completions to be processed in a named region, and region-pinned deployments are what make that commitment possible. Most direct provider APIs cannot satisfy it at all, which is why the requirement often decides the platform before model quality is even discussed."
+  },
+  {
+    "q": "A customer mandates an air-gapped deployment with no external network access. What follows?",
+    "options": [
+      "Bedrock remains viable because traffic stays inside the customer's own VPC",
+      "Only a self-hosted open-weight model will work, since no hosted API is reachable",
+      "Azure OpenAI works provided the deployment is pinned to a sovereign cloud region",
+      "Any API is acceptable as long as all requests are proxied through an allowlist"
+    ],
+    "answer": 1,
+    "explanation": "Air-gapped means no external network at all, so every hosted API is excluded regardless of VPC endpoints or region pinning. You must self-host an open-weight model, which changes serving, evaluation and update strategy — making it a question to ask at the start of a design rather than late."
+  },
+  {
+    "q": "Which risk occupies the LLM01 position in the OWASP Top 10 for LLM Applications?",
+    "options": [
+      "Sensitive information disclosure through model outputs, logs or error messages",
+      "Prompt injection",
+      "Excessive agency given to autonomous agents that hold powerful tool access",
+      "Supply-chain compromise affecting models, LoRA adapters or MCP servers"
+    ],
+    "answer": 1,
+    "explanation": "Prompt injection retained the top position through the 2025 revision. Sensitive disclosure, excessive agency and supply chain all appear on the list as well, but injection ranks first because the major labs have acknowledged it cannot be fully eliminated within current model architectures."
+  },
+  {
+    "q": "Why is OWASP LLM05, improper output handling, a frequent blind spot?",
+    "options": [
+      "Model responses are usually too long, so downstream systems truncate them unsafely",
+      "Output arrives in inconsistent formats, breaking the parsers that consume it downstream",
+      "Output reaches shells, SQL and HTML but is trusted because it came from your own model",
+      "Regulations require verbatim output logging, which conflicts with privacy obligations"
+    ],
+    "answer": 2,
+    "explanation": "Model output is user-influenced data from an untrusted source, exactly like a form field. Passing it unescaped into a shell command, a SQL string or rendered HTML reproduces the XSS and SQL-injection bug classes. The slip is mental: it feels internal because it originated inside your own system."
+  },
+  {
+    "q": "What does a model card primarily document?",
+    "options": [
+      "Complete architecture and hyperparameters sufficient to reproduce the training run",
+      "Intended use, out-of-scope use, subgroup evaluation results and known limitations",
+      "The full contents of the training dataset for copyright and licensing clearance",
+      "Latency and throughput benchmarks measured across each supported accelerator"
+    ],
+    "answer": 1,
+    "explanation": "A model card states what the model is for and where it fails, including evaluation broken out by relevant subgroup. It supports EU AI Act transparency obligations, satisfies enterprise procurement requests, and answers the incident-time question of which version shipped and how it was evaluated."
+  },
+  {
+    "q": "When is GraphRAG worth its considerably higher build cost over vanilla RAG?",
+    "options": [
+      "When latency requirements are strict and the corpus changes several times a day",
+      "When questions are global or multi-hop, so no single chunk contains the answer",
+      "When the corpus is small enough to fit entirely inside the model's context window",
+      "When the documents are primarily images and diagrams rather than prose"
+    ],
+    "answer": 1,
+    "explanation": "Vector retrieval returns the chunks most similar to the query, which fails for 'what are the themes across these 500 documents' or questions requiring facts joined across documents. GraphRAG extracts entities and relations, clusters them into communities and pre-summarises those. The build needs an LLM pass over the whole corpus, so it suits stable corpora with relational questions."
+  },
+  {
+    "q": "You want to improve RAG retrieval quality. Which order of effort is most cost-effective?",
+    "options": [
+      "Fine-tune the embedding model, then add a reranker, then consider a stronger base model",
+      "Try a stronger base embedding model, then add a reranker, then fine-tune embeddings",
+      "Rebuild the vector index with a higher recall target before changing any model",
+      "Increase the number of retrieved chunks until answer quality stops improving"
+    ],
+    "answer": 1,
+    "explanation": "Swapping the base embedding model and adding a cross-encoder reranker are both cheap and frequently deliver the largest gains. Fine-tuning embeddings with contrastive triples works well for specialised domain vocabulary but requires labelled pairs, so it is the third move rather than the first."
+  },
+  {
+    "q": "Why should prompts be versioned and stored in git rather than edited live?",
+    "options": [
+      "Git storage reduces the latency of loading prompts at request time",
+      "So a trace records which prompt produced it, and a bad change can be reviewed and reverted",
+      "Because prompt files have to be compiled into the deployment artefact before every release",
+      "To prevent the model provider from training on the prompt contents"
+    ],
+    "answer": 1,
+    "explanation": "A prompt is the highest-leverage, least-governed component in an LLM system: one edited line changes behaviour for every user with no build, review or rollback. Versioning with a logged hash lets you answer the incident question — quality dropped at 14:00, was it the prompt, the model version or retrieval?"
   }
 ]

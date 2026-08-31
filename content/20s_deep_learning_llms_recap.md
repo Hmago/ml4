@@ -1,17 +1,20 @@
 # Deep Learning & LLMs — Quick Revision
 
-> **Purpose:** This is a fast revision recap of Chapters 16–20 (Deep Learning, Large Language Models, AI Agents, AI Frameworks, and the 2026 AI Landscape). Skim it the night before an interview instead of re-reading the full chapters. Full explanations, worked examples, and diagrams live in the source chapters — treat this as your flashcard deck, not a replacement.
+> **Purpose:** This is a fast revision recap of the **Deep Learning & LLMs** section — Ch 16 (Deep Learning), Ch 17 / 17b / 17c (LLMs: how they work, how you use them, how you run them), Ch 18 / 18b (AI Agents, and agents in production), Ch 19 (AI Frameworks) and Ch 20 (the 2026 Landscape). Skim it the night before an interview instead of re-reading the full chapters. Full explanations, worked examples, and diagrams live in the source chapters — treat this as your flashcard deck, not a replacement.
 
 ---
 
 ## Contents
 
 - [Ch 16 — Deep Learning: Complete Reference](#ch-16--deep-learning-complete-reference)
-- [Ch 17 — Large Language Models](#ch-17--large-language-models)
-- [Ch 18 — AI Agents & Tool Use](#ch-18--ai-agents--tool-use)
+- [Ch 17 / 17b — Large Language Models](#ch-17--17b--large-language-models)
+- [Ch 17c — LLM Systems: Serving, Scaling & Measuring](#ch-17c--llm-systems-serving-scaling--measuring)
+- [Ch 18 / 18b — AI Agents & Tool Use](#ch-18--18b--ai-agents--tool-use)
 - [Ch 19 — AI Frameworks & Engineering](#ch-19--ai-frameworks--engineering)
 - [Ch 20 — The 2026 AI Landscape](#ch-20--the-2026-ai-landscape)
 - [One-page cheat recap](#one-page-cheat-recap)
+
+> **The section is now nine chapters.** Ch 17 and Ch 18 were each split so no chapter is a nine-hour read. Full map, the three learning tracks and the L1–L4 depth ladder → [Ch 16](#content/16_deep_learning).
 
 ---
 
@@ -294,7 +297,9 @@ Context window determines maximum sequence length: 4K (GPT-3) → 8K (LLaMA 2) �
 
 ---
 
-## Ch 17 — Large Language Models
+## Ch 17 / 17b — Large Language Models
+
+> **Chapter 17 is now three chapters.** [Ch 17](#content/17_llm) = how an LLM works inside (tokenizer → Transformer → training → families). [Ch 17b](#content/17b_llm_applications) = how you build with one (prompting, hallucinations, RAG, tools, fine-tuning, cost, safety). [Ch 17c](#content/17c_llm_systems) = how you run one at scale — recapped in its own section below.
 
 > 💡 **In a sentence —** An LLM is a massive decoder-only Transformer that learns to predict the next token from a trillion-token corpus, producing emergent capabilities (reasoning, code, translation) from a single objective.
 
@@ -603,7 +608,105 @@ FP16→INT8: <1% quality loss. FP16→INT4: 1–3% loss. Methods: GPTQ (GPU infe
 
 ---
 
-## Ch 18 — AI Agents & Tool Use
+## Ch 17c — LLM Systems: Serving, Scaling & Measuring
+
+> 💡 **In a sentence —** Inference has two phases with opposite bottlenecks (prefill = compute-bound, decode = bandwidth-bound); almost every serving optimisation helps exactly one of them, and evaluation is the four-layer stack that tells you whether any of it worked.
+
+---
+
+### Prefill vs Decode — the master model
+
+| | **Prefill** | **Decode** |
+|---|---|---|
+| Processes | Whole prompt in parallel | One token at a time |
+| Bottleneck | **Compute** (math units) | **Memory bandwidth** |
+| Sets | **TTFT** | **TPOT / ITL** |
+| Helped by | Chunked prefill, prefix caching, W8A8/FP8 | Batching, weight-only quantization, speculative decoding, GQA |
+
+**Bandwidth ceiling:** max tok/s = per-GPU bandwidth ÷ bytes of weights **per GPU**. A 70B FP16 (140 GB) sharded over 2×H100 → 70 GB each ÷ 3.35 TB/s ≈ **48 tok/s** for one stream. At INT4 (35 GB) on one GPU ≈ **96 tok/s**. Always state the shard count.
+
+### KV cache — the formula to memorise
+
+**KV bytes = 2 × layers × KV-heads × head-dim × seq-len × bytes**
+
+Llama-3-70B (80 layers, 8 KV heads, dim 128, FP16) → **320 KB/token**. With plain MHA (64 heads) it would be 2.5 MB/token — the 8× gap *is* why GQA exists.
+
+| Context | 4K | 8K | 32K | 128K |
+|---|---|---|---|---|
+| KV cache | 1.25 GB | 2.5 GB | 10 GB | **40 GB** |
+
+At 128K the cache rivals the quantized weights → KV quantization becomes the lever, not weight quantization.
+
+### The four metrics
+
+**TTFT** (prefill + queue) · **TPOT/ITL** (decode) · **throughput** (your bill) · **P95/P99** (queueing). Chat targets: TTFT < 300 ms, TPOT < 30 ms. Total = TTFT + TPOT × output tokens. Bigger batch → more throughput, worse TPOT and tail.
+
+### Serving optimisations
+
+| Technique | What it does | Watch out for |
+|---|---|---|
+| **Continuous batching** | Refills slots at token granularity; ~10–20× throughput | Needs paged KV; raises TPOT under load |
+| **PagedAttention** | Block table + free list; utilisation 20–40% → 90%+ | Kernel indirection; block-size trade-off |
+| **Chunked prefill** | Interleaves prefill slices with decode | Slightly worse TTFT for the long request |
+| **Prefix caching** | Reuses KV of a shared prefix | Put variable content **last**, or it never hits |
+| **Semantic caching** | Skips the model on similar questions | Can return a *wrong* answer |
+| **Speculative decoding** | Draft + verify; lossless | Needs α > ~0.6; useless at high batch |
+| **Disaggregation** | Separate prefill/decode pools | Must ship GB of KV between pools |
+
+**Speculative decoding maths:** E[tokens] = (1 − α^(γ+1))/(1 − α). At α = 0.8, γ = 4 → **3.36 tokens/step**. At α = 0.3 → 1.43, a net loss.
+
+### Quantization — the question people get wrong
+
+- **Weight-only** (GPTQ, AWQ, NF4) → helps **decode** only (fewer bytes streamed)
+- **W8A8 / FP8** → helps **both**, because activations are quantized too and the low-precision tensor cores engage
+- 70B: FP16 140 GB · FP8 70 GB · INT4 35 GB. Dropping to INT4 on one H100 frees ~45 GB for KV cache — the concurrency win usually beats the hardware saving.
+- **Multi-LoRA:** one resident base model, ~30 MB adapters per request; different adapters share a batch because only the low-rank term differs.
+
+### Evaluation stack
+
+```
+4. ONLINE      A/B tests, guardrails, cost & latency   ← slowest, truest
+3. JUDGE       LLM-as-judge on open-ended output
+2. GOLDEN SET  50–200 curated cases, run every change
+1. ASSERTIONS  valid JSON? cites source? no PII?        ← fastest
+```
+
+**LLM-as-judge biases:** *position* (swap order and average), *verbosity* (length-control), *self-preference* (use a different model family). Prefer **pairwise** over absolute 1–10; calibrate against human labels first.
+
+**Golden sets:** built from **real production failures**, versioned in git, mostly deterministic assertions. Every incident becomes a permanent case.
+
+**A/B traps:** peeking (fix sample size up front), novelty effect, wrong primary metric, high variance. One primary metric + guardrails on latency, cost and escalation rate.
+
+### Cost arithmetic (do this out loud)
+
+1M req/day × (500 in + 200 out) = 500M in + 200M out. At $5/$25 per M → **$7,500/day ≈ $225k/mo**. Self-host: 200M ÷ 86,400 ≈ **2,315 out tok/s** → ~2×8×H100 ≈ **$23k/mo**. Caveats: headcount, peak-vs-mean capacity, quality gap. **Cache first** — 30% hit rate is a day's work and 30% off the bill.
+
+---
+
+## Ch 18 / 18b — AI Agents & Tool Use
+
+> **Chapter 18 is now two chapters.** [Ch 18](#content/18_ai_agents) = how an agent works (loop, tools, MCP, patterns, multi-agent, memory, context engineering). [Ch 18b](#content/18b_agents_in_production) = how you run one safely (failure modes, injection defence, evaluation, human gates, sandboxing, long-running agents).
+
+### Agents in production — the flashcard version
+
+**Five failure modes:** prompt injection · tool misuse · infinite loops · hallucinated tool calls · cost explosion. Each needs a *guard*, not a better prompt.
+
+**Jailbreak vs injection.** Jailbreak attacks the vendor's safety training; injection attacks *your* instructions. Indirect injection (payload inside a page, PDF or RAG chunk the agent reads) is the dangerous one — invisible to the user, and with tools attached it becomes real actions. "Ignore instructions in the input" cannot work: instructions and data share one channel.
+
+**Dual-LLM (CaMeL):** privileged model plans and holds tools but never sees untrusted bytes; quarantined model reads untrusted content but has no tools. Only schema-validated values cross. Same principle as parameterised SQL.
+
+**MCP attacks:** *tool poisoning* (instructions hidden in tool metadata) · *rug pull* (definition changed after approval — hash at approval, re-verify on load) · *cross-server shadowing*.
+
+**Action classification:** read-only → allow · low-risk write → allow + log · high-risk → confirm · irreversible → explicit human approval, always.
+
+**Containment:** process < container < gVisor < Firecracker. Filesystem isolation without a **default-deny egress allowlist** still permits exfiltration. Hard budgets on tokens, steps, time and cost, then escalate.
+
+**Long-running agents:** durable state + checkpoint/resume · **idempotency keys** on side-effecting calls · re-check permissions at point of *use* · re-validate the goal (it may be stale).
+
+**Dashboard:** task success · tool-call error rate · steps p95 · cost per task · escalation rate (two-sided alarm — zero usually means the gate broke) · safety events · **trace replay**.
+
+---
+
 
 > 💡 **In a sentence —** An AI agent is an LLM operating in a loop — observe → think → act → observe — that uses tools to accomplish multi-step goals autonomously in the real world.
 
