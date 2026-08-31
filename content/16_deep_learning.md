@@ -7,6 +7,120 @@
 
 ---
 
+## How to use this section
+
+**Layer: MODEL — *how it works inside*.** This chapter is part of **Deep Learning & LLMs** (Ch 16–20). Every chapter in the section sits in one layer. Read the layer name and you already know what kind of question the chapter answers.
+
+| Layer | The question it answers | Where it lives | Time |
+|-------|------------------------|----------------|------|
+| **Model** | *How does it work inside?* | **Ch 16 (you are here)**, **Ch 17** | 270 + 280 min |
+| **Application** | *How do I build something with it?* | **Ch 17b**, **Ch 18**, **Ch 18b** | 170 + 140 + 130 min |
+| **Systems** | *How do I train and run it at scale?* | **Ch 17c**, Ch 19 | 195 + 165 min |
+| **Context** | *Where is the field right now?* | Ch 20 | 125 min |
+
+> **A note on chapter length.** The target across this section is ~250 minutes per chapter, and Ch 16 (270) and Ch 17 (265) sit just above it. That is deliberate: both are **reference** chapters, and both now carry the navigation that made the target worth having in the first place — the depth map, the implementation ladder, per-topic `L1`–`L4` tags and the cross-reference table below. A 545-minute chapter with no index was the problem; a 270-minute chapter you can navigate to the exact topic and depth you need is not the same thing. Splitting them further would fragment material that belongs together.
+
+### Pick one track — do not read everything
+
+| Track | Choose this if… | Read in this order | Approx. |
+|-------|-----------------|--------------------|---------|
+| **A — Interview in 4 weeks** | You have a tier-1 loop booked | Playbook → Ch 17 → **Ch 17c** → **Ch 16** → Ch 18 → Ch 18b → Ch 20 → Revision | ≈ 23 h |
+| **B — Understand deeply** | You want real intuition, no deadline | **Ch 16** → Ch 17 → **Ch 17b** → **Ch 17c** → Ch 18 → Ch 18b → Ch 19 → Ch 20 | ≈ 24 h |
+| **C — Ship a product** | You are building with LLMs right now | Ch 17 → **Ch 17b** → Ch 18 → Ch 18b → Ch 19 → **Ch 17c** (Parts 1–3, 5) | ≈ 16 h |
+
+### Depth ladder — know when to stop
+
+Not every topic deserves the same effort. Decide the level you need *before* you start:
+
+| Level | Means | You can… |
+|-------|-------|----------|
+| **L1** | Recognise | Say what the name means, in one sentence |
+| **L2** | Explain | Draw it, state the trade-off, survive the follow-up question |
+| **L3** | Implement | Write it from scratch in ~30 minutes |
+| **L4** | Design | Use it in a system-design round, with cost arithmetic |
+
+> **The rule that saves the most time:** aim for **L2 on everything marked ★★★**, **L3 on the dozen topics interviewers actually ask you to code** (attention, MHA, GQA, KV cache, LoRA, DPO, top-p, BPE, RoPE, RMSNorm), and **L1 on everything else**. Chasing L3 on every topic is the most common way to run out of preparation time.
+
+### Target depth for the section's critical topics
+
+| Topic | Lives in | Target | Why that level |
+|-------|----------|--------|----------------|
+| Backpropagation | Ch 16 §1.1 | **L3** | Asked as a from-scratch derivation; the worked example here is enough |
+| Optimizers (SGD → Adam → AdamW) | Ch 16 §1.2 | **L2** | Compare-and-justify question, rarely coded |
+| Normalization (Batch / Layer / RMS) | Ch 16 §1.4 | **L3** | RMSNorm is a common 10-minute coding warm-up |
+| Self-attention | Ch 16 §3.2, Ch 17 §2.4 | **L3** | The single most-implemented interview problem |
+| Multi-head, grouped-query & latent attention (MHA/MQA/GQA/MLA) | Ch 17 §2.4 | **L3** | "Compare MHA / MQA / GQA — why did Llama pick GQA?" |
+| Sliding-window attention & the modern block (SwiGLU, RMSNorm, pre-LN) | Ch 17 §2.4 | **L2** | "How does a 2026 block differ from the 2017 one?" |
+| Positional encodings (sinusoidal, RoPE) | Ch 16 §3.3 | **L3** | RoPE is an Easy-rated implementation question |
+| BERT vs GPT (encoder vs decoder) | Ch 16 §3.4–3.5 | **L2** | Architecture-choice question |
+| Tokenization / BPE | Ch 17 §2.2 | **L3** | Easy-rated implementation question |
+| Decoding strategies (temperature, top-k, top-p) | Ch 17 §2.6 | **L3** | Very commonly coded |
+| Scaling laws (Chinchilla) | Ch 17 §3.7 | **L2** | Reasoning-about-budget question |
+| SFT / RLHF / DPO / GRPO | Ch 17 §3.3–3.5c | **L2**, DPO **L3** | DPO loss is a Hard-rated implementation at frontier labs |
+| Alignment family & reward hacking | Ch 17 §3.5c | **L2** | "Compare SFT, DPO, GRPO and RLVR — what data does each need?" |
+| Distill vs quantize vs prune | Ch 17c §3.4 | **L2** | "Make this cheaper to serve" has three answers |
+| LoRA / QLoRA | Ch 17b §9.4 | **L3** | Implemented at Meta, Google, Anthropic, OpenAI, Databricks |
+| Mixture of Experts | Ch 16 §6.2, Ch 17 §4.8 | **L2** | Active vs total parameters; routing intuition |
+| KV cache | Ch 17c §1.2 | **L3** | Implemented at Anthropic, OpenAI, Meta, Perplexity |
+| Quantization | Ch 17c §3.1 | **L2** | Weight-only vs W8A8 — which phase each one helps |
+| Continuous batching | Ch 17c §2.1 | **L3** | Implemented at Perplexity, Together AI, Anyscale, Meta |
+| RAG (end to end) | Ch 17b §9.1, Ch 19 §19.9 | **L4** | Appears as a full system-design round |
+| Agents & tool calling | Ch 18 | **L4** | Now a separate round at several companies |
+| Evaluation & LLM-as-judge | Ch 17c §4 | **L2** | "How do you know it got better?" is asked every time |
+
+### The implementation ladder — what you will actually be asked to code ★★★ `L3`
+
+The depth map above says *which* topics need L3. This is the concrete list, in the order to practise it. These are the problems candidates report being asked to implement from scratch, usually in 20–40 minutes with no libraries beyond NumPy or PyTorch tensors.
+
+| # | Implement | Where it's explained | Difficulty | Reported at |
+|---|---|---|---|---|
+| 1 | **Byte-Pair Encoding** — train merges, then encode | [Ch 17 §2.2](#content/17_llm) | Easy | Broadly |
+| 2 | **Sinusoidal positional encoding** | [Ch 16 §3.3](#content/16_deep_learning) | Easy | Broadly |
+| 3 | **RoPE** — rotate Q and K by position | [Ch 16 §3.3](#content/16_deep_learning) | Easy | Broadly |
+| 4 | **RMSNorm** | [Ch 16 §1.4](#content/16_deep_learning) | Easy | Broadly |
+| 5 | **Softmax, numerically stable** — subtract the max | [Ch 17 §1.4](#content/17_llm) | Easy | Apple, Meta, Google, Amazon |
+| 6 | **Scaled dot-product attention** | [Ch 17 §2.4](#content/17_llm) | Medium | The most-asked of all |
+| 7 | **Multi-head attention** — split, attend, concat, project | [Ch 17 §2.4](#content/17_llm) | Medium | Broadly |
+| 8 | **Grouped-query attention** — share K/V across groups | [Ch 17 §2.4](#content/17_llm) | Medium | Broadly |
+| 9 | **KV cache** — append and reuse across decode steps | [Ch 17c §1.2](#content/17c_llm_systems) | Medium | Anthropic, OpenAI, Meta, Perplexity |
+| 10 | **Sampling** — temperature, top-k, top-p | [Ch 17 §2.6](#content/17_llm) | Medium | OpenAI, Anthropic, Cohere, DeepMind |
+| 11 | **Sliding-window attention** | [Ch 17 §2.4](#content/17_llm) | Medium | Mistral, Anthropic, Google, DeepMind |
+| 12 | **LoRA layer** — low-rank adapter on a frozen weight | [Ch 16 §4.3](#content/16_deep_learning) | Medium | Meta, Google, Anthropic, OpenAI, Databricks |
+| 13 | **KL divergence loss** | [Ch 17 §1.4](#content/17_llm) | Easy | Broadly |
+| 14 | **DPO loss** | [Ch 17 §3.5](#content/17_llm) | Hard | Anthropic, OpenAI, DeepMind, Meta |
+| 15 | **Mixture-of-Experts layer** — routing + top-k gating | [Ch 17 §4.8](#content/17_llm) | Hard | Google, DeepMind, Mistral, Databricks |
+| 16 | **Speculative decoding** — draft, verify, accept prefix | [Ch 17c §2.5](#content/17c_llm_systems) | Hard | Google, DeepMind, Anthropic, Apple |
+| 17 | **Continuous batching** — the scheduler loop | [Ch 17c §2.1](#content/17c_llm_systems) | Hard | Perplexity, Together AI, Anyscale, Meta |
+| 18 | **GRPO** — group-relative advantage, no critic | [Ch 17 §3.5c](#content/17_llm) | Expert | DeepMind, Anthropic, OpenAI |
+
+**How to use this ladder**
+
+- **Work top-down.** Each rung reuses the one above: MHA needs attention, GQA needs MHA, the KV cache needs GQA to be interesting, speculative decoding needs sampling.
+- **Rungs 1–10 are the realistic bar** for most product and applied roles. Get those fluent before touching the bottom half.
+- **Rungs 14–18 are research and infra roles.** They are Hard/Expert for a reason — attempt them only if you're targeting a frontier lab or an inference company.
+- **Write it once from scratch, then once from memory a week later.** The second pass is what makes it retrievable under interview pressure.
+- **Say your invariants out loud as you go** — tensor shapes at each step, what the mask does, where the batch dimension is. Interviewers score reasoning, and shape errors are the most common way candidates lose an otherwise correct answer.
+
+> **If you only have a weekend:** rungs 6, 7, 9 and 10 — attention, multi-head, KV cache, sampling. Those four cover the majority of reported LLM coding rounds.
+
+### Covered in depth elsewhere
+
+
+This chapter is the *model* layer, so it deliberately stops where a topic becomes a *systems* question. That material already exists — it just lives in another section. Follow the link rather than expecting it here.
+
+| If you are asked about… | Go to |
+|---|---|
+| Serving — prefill vs decode, continuous batching, KV cache maths, quantization trade-offs, evaluation | [Ch 17c — LLM Systems](#content/17c_llm_systems) |
+| Distributed training — DDP, FSDP, ZeRO, tensor & pipeline parallelism | [Ch 29 — GPUs, TPUs & Infrastructure](#content/29_gpus_tpus_infrastructure) |
+| Knowledge distillation and pruning — the mechanisms | [Ch 29 §24.9](#content/29_gpus_tpus_infrastructure) (the *decision* is in [Ch 17c §3.4](#content/17c_llm_systems)) |
+| GPU/TPU hardware, cost per GPU-hour, emerging silicon | [Ch 29 — GPUs & TPUs](#content/29_gpus_tpus_infrastructure) · [Ch 37 — Scale & Infra Cases](#content/37_system_design_cases_scale_infra) |
+| Vector index internals — HNSW, IVF-PQ, hybrid search, reranking | [Ch 28 — Semantic Search](#content/28_semantic_search) |
+| Jailbreaks, red-teaming, benchmark contamination | [Ch 33b — LLM Interview Questions Pt 2](#content/33b_llm_interview_questions_part2) |
+| Neural-network *fundamentals* — backprop mechanics, CNNs, LSTM basics | [Ch 14 — Neural Networks](#content/14_neural_networks) |
+| The probability and linear-algebra prerequisites | [Ch 06 — Math Fundamentals](#content/06_math_fundamentals) |
+
+---
+
 ## What You'll Learn
 
 After reading this chapter, you will be able to:
@@ -416,8 +530,27 @@ $$L = -\log \frac{\text{sim}(v_1, v_2)}{\sum_{k} \text{sim}(v_1, v_k)}$$
 
 ---
 
-## 1.4 Normalization ★★
+### Label Smoothing — stop the model being certain ★ `L1`
 
+**In one line:** instead of training toward a hard target of 1.0 for the correct class, train toward 0.9 and spread the remaining 0.1 across the others.
+
+**Why it exists.** Cross-entropy with a one-hot target pushes the correct logit toward infinity — the model can only reduce loss by becoming ever more confident. That produces two problems: **overconfidence** (a model that is 99.9% sure and wrong) and **poor calibration** (predicted probabilities that don't match real accuracy).
+
+$$y_{\text{smooth}} = (1 - \varepsilon) \cdot y_{\text{one-hot}} + \frac{\varepsilon}{K}$$
+
+With $\varepsilon = 0.1$ and $K = 1000$ classes, the target becomes 0.9 for the true class and 0.0001 for each other. Typical values are 0.1 for vision and 0.1 in the original Transformer.
+
+| Effect | Detail |
+|---|---|
+| **Better calibration** | Predicted confidence tracks actual accuracy more closely |
+| **Slight accuracy gain** | Standard in ImageNet training and the original Transformer recipe |
+| **Costs you** | Worse *raw* log-likelihood, and it damages knowledge distillation — a smoothed teacher's soft labels carry less information for the student |
+
+**Interview note:** the trap is "does label smoothing regularise?" — yes, but not like weight decay or dropout. It constrains the *output distribution* rather than the parameters, discouraging the model from driving logits apart without limit.
+
+---
+
+## 1.4 Normalization ★★
 **In one sentence:** Normalization keeps the numbers flowing through the network in a healthy range so training doesn't collapse.
 
 ### Why It Matters
@@ -1030,263 +1163,23 @@ The **causal mask** sets attention to future positions to $-\infty$ before the s
 
 ---
 
-# PART 4: LANGUAGE MODELS & LLMs
-
----
-
-## 4.1 Tokenization ★★
-
-**In one sentence:** The process of splitting text into pieces (tokens) that the model can process — each piece gets a unique number.
-
-### Why Not Just Use Words?
-
-Words have problems:
-- "run", "running", "ran" — are these three entries or one?
-- "antidisestablishmentarianism" — one word, rare in training data
-- Code, URLs, emojis — don't fit word boundaries
-
-**Byte Pair Encoding (BPE)** solves this by learning a vocabulary of subwords.
-
-### BPE Algorithm
-
-```
-  Start with characters as the vocabulary: {l, o, w, e, r, s, t, _}
-  Training data: "low lower lowest"
-
-  Iteration 1: Count pairs → (l,o) appears 3 times → merge to "lo"
-  Iteration 2: (lo,w) appears 3 times → merge to "low"
-  Iteration 3: (low,e) appears 2 times → merge to "lowe"
-  ...continue until vocabulary reaches target size (e.g. 50,000)
-```
-
-**Result:**
-- Common words → single token: "the" → [the]
-- Rare words → subwords: "photosynthesis" → ["photo", "synthesis"]
-- Unknown words → characters: "ChatGPT4" → ["Chat", "G", "PT", "4"]
-
-Never hits an "unknown word" error.
-
-### Context Window
-
-Every LLM can only process a limited number of tokens at once. Beyond that limit, it can't "see" the earlier text.
-
-| Model | Context Length |
-|-------|---------------|
-| GPT-2 | 1,024 tokens |
-| GPT-3 | 2,048 tokens |
-| GPT-4 (2023) | 128K tokens |
-| GPT-4.1 / GPT-5-class (2025+) | 1,000,000+ tokens |
-| Gemini 1.5 / 2.5 Pro | 1,000,000+ tokens (2M in some tiers) |
-| Claude 4 | up to 1,000,000 tokens |
-| Llama 3.1+ | 128K tokens |
-| Llama 4 Scout | up to 10,000,000 tokens |
-
-1 token ≈ 0.75 English words. 128K tokens ≈ ~100,000 words ≈ 3-4 novels.
-
-**The 1M+ regime (mid-2026):** frontier models now routinely take **1M+ tokens** — entire
-codebases, hundreds of pages, hours of transcripts — with a few pushing to **10M**. Two
-caveats survive the scale-up: (1) **cost and latency grow with context** (attention is
-still expensive, even with efficient kernels), so bigger isn't free; and (2) **"lost in the
-middle"** — models attend most reliably to the *beginning* and *end* of a long prompt and
-can miss facts buried in the middle. Put the critical instructions and evidence near the
-edges, and use retrieval (RAG) rather than dumping everything into context when you can.
-
----
-
-## 4.2 Fine-Tuning Strategies ★★
-
-**In one sentence:** Take a pre-trained model and continue training it on your specific task so it performs better there.
-
-### The Analogy
-
-Pre-training is like a university education — the model learns broadly about the world. Fine-tuning is like on-the-job training — it specializes for your specific role.
-
-### Full Fine-Tuning
-
-Update all weights in the model on your labeled dataset.
-
-**Good:** Best possible performance on your task.
-
-**Bad:** Requires enormous compute. BERT-base (110M params) is fine on one GPU. LLaMA-7B needs 4-8 high-end GPUs. GPT-3 (175B) is practically impossible.
-
-Also risks **catastrophic forgetting** — the model overwrites general knowledge with task-specific knowledge.
-
-### Adapter Layers
-
-Freeze all original weights. Insert tiny "adapter" modules between the existing layers. Only train the adapters (~0.5% of parameters).
-
-```
-  [Frozen Layer] → Adapter (down → non-linear → up) → [Frozen Layer] → ...
-```
-
-### Prompt Tuning
-
-Prepend a few "soft prompt" tokens to the input. These aren't real words — just learned embeddings. Train ONLY these tokens (100-1000 parameters). Freeze the entire model.
-
-Surprisingly effective at 7B+ parameter scale.
-
----
-
-## 4.3 LoRA — Low-Rank Adaptation ★★★
-
-**In one sentence:** Fine-tune a tiny fraction of parameters (0.1%) by learning small updates to existing weight matrices instead of changing the whole matrix.
-
-### The Intuition
-
-When you fine-tune a model, the weight matrices don't change dramatically. The changes (ΔW) are actually "low-rank" — they can be approximated by multiplying two small matrices together.
-
-Think of a shadow on a wall. The shadow is a complex 2D shape, but it's fully described by two simpler things: the 3D object casting it, and the angle of the light. Two simpler things × each other = one complex result. LoRA does the same with weight updates.
-
-### How It Works
-
-Instead of modifying the weight matrix W₀ directly, learn two small matrices A and B whose product approximates the needed change:
-
-$$W_{\text{eff}} = W_0 + B \times A$$
-
-$W_0$ is frozen (never changes). $B$ has shape $(d \times r)$ e.g. $(4096 \times 8)$. $A$ has shape $(r \times d)$ e.g. $(8 \times 4096)$. $r$ = rank, usually 4, 8, or 16.
-
-**Parameter count:**
-
-Full matrix $W_0$: $4096 \times 4096 = 16{,}777{,}216$ parameters
-
-LoRA ($r = 8$): $4096 \times 8 + 8 \times 4096 = 65{,}536$ parameters -- 256x fewer parameters to train.
-
-**At inference time:** Just add B×A to W₀ and use the result. Zero extra compute.
-
-### In Practice
-
-Fine-tuning LLaMA-7B:
-- Full fine-tuning: 28 GB GPU memory, 7B trainable parameters
-- LoRA (r=8): ~12 GB GPU memory, ~4M trainable parameters (0.06%)
-- Quality: within a few percent of full fine-tuning for most tasks
-
-LoRA is applied to the Q and V attention matrices by default, sometimes also K and the feed-forward layers.
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Full Fine-Tuning", "LoRA (r=8)"],
-    "datasets": [
-      {
-        "label": "Trainable Parameters (millions)",
-        "data": [7000, 4],
-        "backgroundColor": ["rgba(239, 68, 68, 0.7)", "rgba(34, 197, 94, 0.7)"],
-        "borderColor": ["rgba(239, 68, 68, 1)", "rgba(34, 197, 94, 1)"],
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "LoRA vs Full Fine-Tuning — 7B Model (99.94% Fewer Trainable Parameters!)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Parameters (millions)" }, "beginAtZero": true },
-      "x": {}
-    }
-  }
-}
-```
-
----
-
-## 4.4 RLHF — Reinforcement Learning from Human Feedback ★★★
-
-**In one sentence:** A three-stage pipeline that teaches an LLM to produce outputs humans prefer — not just grammatically correct outputs.
-
-### Why Next-Token Prediction Isn't Enough
-
-A model trained only to predict the next token is fluent, but not necessarily helpful, honest, or harmless. It might generate plausible-sounding nonsense, dodge questions, or say harmful things. RLHF teaches the model what humans actually want.
-
-**The analogy:** You hire a new employee (the pre-trained model). They can write, but not well. You train them with a manual (SFT). Then their manager reviews their work and ranks it (reward model). Then you coach them to always produce top-ranked work (RL fine-tuning).
-
-### Stage 1 — Supervised Fine-Tuning (SFT)
-
-Collect ~10,000 examples of ideal (prompt, response) pairs written by humans. Fine-tune the base LLM on these. Result: a model that follows instructions, but inconsistently.
-
-### Stage 2 — Train a Reward Model
-
-For each prompt, generate 4-9 different responses from the SFT model. Have human labelers rank them (which is better?).
-
-Train a separate "reward model" on these rankings:
-
-```
-  Input:  (prompt, response) → Output: one number (quality score)
-```
-
-Training objective — push score(winning response) above score(losing response):
-
-$$L = -\log\!\left(\sigma(s_{\text{win}} - s_{\text{lose}})\right)$$
-
-After training, the reward model can score any new response without needing human input.
-
-### Stage 3 — RL Fine-Tuning with PPO
-
-Use the reward model as an automatic judge. The LLM generates responses, the reward model scores them, PPO updates the LLM to generate higher-scoring responses.
-
-**The critical KL constraint:**
-
-$$R_{\text{total}} = R_{\text{reward model}} - \beta \times D_{KL}(\pi \| \pi_{\text{SFT}})$$
-
-The KL term penalizes the model for straying too far from its Stage 1 behavior. Without it, the model finds clever ways to fool the reward model (giving high-scoring gibberish). The KL term keeps it grounded.
-
-**Result:** ChatGPT, Claude, Gemini — models that are actually helpful to use.
-
-### RLVR & GRPO — the 2025 reasoning-model recipe
-
-Classic RLHF learns a reward *model* from human preferences — which is noisy and gameable. **RLVR (Reinforcement Learning with Verifiable Rewards)** replaces the learned reward with an **automatically checkable** signal: did the final answer match ground truth? Did the code pass the unit tests? Does the proof check? This works beautifully for **math, code, and logic**, where correctness is objective — and it's the engine behind the 2025 reasoning models (**DeepSeek-R1**, OpenAI's **o-series**). The model is rewarded for *getting it right*, so it learns to produce long chains of thought that actually pay off.
-
-The optimizer of choice here is **GRPO (Group Relative Policy Optimization)**, which is **critic-free**. Standard PPO needs a separate value network (the critic) to estimate a baseline; GRPO drops it. Instead it samples a **group** of $G$ answers for the same prompt, scores them all, and uses the **group's mean/std as the baseline** — each answer's advantage is just how much better or worse it did than its siblings:
-
-$$A_i = \frac{r_i - \text{mean}(r_1, \ldots, r_G)}{\text{std}(r_1, \ldots, r_G)}$$
-
-No value network means far less memory and a simpler, more stable loop — ideal for RL over verifiable rewards. **The modern alignment stack** is therefore often: **SFT → DPO** (cheap offline preference tuning) **→ RLVR/GRPO** (for reasoning and tool-use skill).
-
----
-
-## 4.5 RAG — Retrieval-Augmented Generation ★★★
-
-**In one sentence:** Instead of memorizing everything, the model looks up relevant information at query time and uses it to answer.
-
-### The Problem
-
-An LLM knows only what it was trained on. It doesn't know your company's internal documents, this week's news, or your private data. And you can't retrain it every time something changes.
-
-**The open-book exam analogy:** Instead of forcing the student to memorize a 10,000-page library, let them bring the library to the exam and look things up.
-
-### The RAG Pipeline
-
-```
-  SETUP (done once):
-  ─────────────────────────────────────────────
-  Your documents (PDFs, emails, docs)
-    ↓
-  Split into ~500-word chunks
-    ↓
-  Convert each chunk to a vector (using an embedding model)
-    ↓
-  Store all vectors in a vector database
-
-  AT QUERY TIME:
-  ─────────────────────────────────────────────
-  User: "What's our return policy for digital products?"
-    ↓
-  Convert question to a vector
-    ↓
-  Find the 3-5 most similar document chunks (nearest neighbor search)
-    ↓
-  Add those chunks to the prompt:
-  "Here are relevant documents: [chunk 1] [chunk 2]
-   Question: What's our return policy for digital products?"
-    ↓
-  LLM generates answer grounded in the retrieved text
-```
-
-**Why it works better than fine-tuning for facts:**
-- Update documents without retraining the model
-- Can cite which document the answer came from
-- No risk of hallucinating invented facts (it's reading from real text)
-
-**Vector databases:** Pinecone, Weaviate, Chroma, FAISS (open-source), pgvector (Postgres extension).
+# PART 4: LANGUAGE MODELS & LLMs — moved
+
+> **This part has moved.** When this chapter was written it was the only place LLM
+> techniques were covered. They now have dedicated chapters that go considerably
+> deeper, so keeping a second copy here would mean two homes for one concept — and
+> two places to fall out of date.
+
+| Topic | Now lives in |
+|---|---|
+| **Tokenization** — BPE, WordPiece, SentencePiece | [Ch 17 §2.2](#content/17_llm) |
+| **Fine-tuning strategies** — full, PEFT, when to use which | [Ch 17b §9.4](#content/17b_llm_applications) |
+| **LoRA / QLoRA** — the mechanism, rank selection, serving many adapters | [Ch 17b §9.4](#content/17b_llm_applications) · [Ch 17c §3.3](#content/17c_llm_systems) |
+| **RLHF** — and the wider alignment family (DPO, GRPO, RLVR, reward hacking) | [Ch 17 §3.4–3.5c](#content/17_llm) |
+| **RAG** — pipeline, chunking, hybrid search, reranking, production concerns | [Ch 17b §9.1](#content/17b_llm_applications) · [Ch 19 §19.9](#content/19_ai_frameworks) |
+
+**What stays here:** the *architectures* those techniques run on — attention and
+Transformers in Part 3 above, and Mixture of Experts in Part 6 below.
 
 ---
 
@@ -1611,6 +1504,26 @@ The core idea: each node collects information from its neighbors, combines it wi
 | Social networks | users | friendships | spam detection, recommendations |
 | Google Maps | intersections | roads | predict travel time |
 | AlphaFold | amino acids | spatial proximity | predict protein structure |
+
+### The three variants you should be able to name ★★ `L2`
+
+"GNN" is a family, not an architecture. The variants differ only in **how step 2 (aggregate) works**:
+
+| Variant | Aggregation | Key property | Use when |
+|---|---|---|---|
+| **GCN** (Graph Convolutional Network) | Normalised mean over neighbours | Simplest; fixed weights per edge | Small, static, homophilous graphs |
+| **GraphSAGE** | **Samples** a fixed number of neighbours, then aggregates (mean / LSTM / pool) | **Inductive** — generalises to nodes unseen at training time; scales to billions of nodes | Large, growing graphs. The production default |
+| **GAT** (Graph Attention Network) | Attention-weighted sum — the model *learns* how much each neighbour matters | Most expressive; interpretable edge weights | Neighbours differ in importance; heterogeneous graphs |
+
+Two properties decide most interview answers:
+
+- **Transductive vs inductive.** GCN trains on a fixed graph and struggles with new nodes. GraphSAGE samples neighbourhoods, so a brand-new user can be embedded immediately — which is why it, not GCN, is what large platforms actually deploy.
+- **Over-smoothing.** Stack too many message-passing layers and every node's representation converges toward the same value, because each node has aggregated the whole graph. Most GNNs are therefore **2–3 layers deep**, not 50 — the opposite of the "deeper is better" intuition from CNNs.
+
+**Say this in an interview:**
+> "A GNN is message passing: each node aggregates its neighbours' features and updates its own, repeated K times so a node sees its K-hop neighbourhood. GCN uses a normalised mean, GAT learns attention weights over neighbours, and GraphSAGE samples a fixed number of neighbours — which makes it inductive and scalable, so it's the one used in production on billion-node graphs. You keep them shallow, 2–3 layers, because more causes over-smoothing where all node embeddings collapse together."
+
+**They will then ask:** *"Why not just use features and a gradient-boosted tree?"* — often you should. GNNs pay off when the *structure itself* carries signal that features don't: fraud rings visible only as connection patterns, molecular properties determined by bond topology, or cold-start users whose only signal is who they follow. If the graph is sparse or the neighbours are uninformative, a tabular model with hand-built graph features (degree, neighbour counts) is usually cheaper and just as good.
 
 ---
 

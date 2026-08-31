@@ -904,6 +904,45 @@ $P(170 < X < 175) = \text{some \%}$ — a RANGE has real probability.
 
 ---
 
+## 3.1b Independence, Joint Probability and the Addition Rule ★★
+
+Three rules that decide how probabilities combine. They come up whenever you reason about compound events — and in ML, most notably in Naive Bayes and in reliability arguments about multi-step pipelines.
+
+**Independence.** Two events are independent if knowing one tells you nothing about the other.
+
+$$P(A \cap B) = P(A) \cdot P(B) \qquad \text{(independent only)}$$
+
+Two coin flips are independent. Drawing two cards *without replacement* is not — the first draw changes what is left. For dependent events you must use the conditional form:
+
+$$P(A \cap B) = P(A) \cdot P(B \mid A) \qquad \text{(always true)}$$
+
+Note the second formula is the general one; independence is just the special case where $P(B \mid A) = P(B)$.
+
+**The addition rule** — for "A **or** B":
+
+$$P(A \cup B) = P(A) + P(B) - P(A \cap B)$$
+
+You subtract the overlap because otherwise it is counted twice. If the events are **mutually exclusive** (they cannot both happen) the overlap is zero and it simplifies to $P(A) + P(B)$.
+
+```
+        A only    both    B only
+      ┌────────┬────────┬────────┐
+      │        │////////│        │   the shaded overlap is in
+      │  P(A)  │////////│  P(B)  │   BOTH P(A) and P(B), so it
+      │        │////////│        │   must be subtracted once
+      └────────┴────────┴────────┘
+```
+
+| Confusion | Correct rule |
+|---|---|
+| "Independent" vs "mutually exclusive" | **Opposites, not synonyms.** Mutually exclusive events are maximally *dependent* — if one happens, the other definitely did not |
+| Multiplying probabilities of dependent events | Use $P(A)\cdot P(B \mid A)$, not $P(A)\cdot P(B)$ |
+| Adding probabilities of overlapping events | Subtract the intersection, or you double-count |
+
+**Why it matters in ML:** *Naive* Bayes is called naive precisely because it assumes all features are conditionally independent given the class — usually false, but the classifier works well anyway. And independence is what makes reliability compound: an agent chaining 10 steps that each succeed 90% of the time succeeds $0.9^{10} \approx 35\%$ of the time overall, because the steps multiply.
+
+---
+
 ## 3.2 Probability Distributions
 
 ### Bernoulli — One Coin Flip

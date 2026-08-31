@@ -6,6 +6,28 @@ The state of AI in July 2026 is unrecognisable from late 2022. GPT-3.5 just answ
 
 ---
 
+## Where you are
+
+**Layer: CONTEXT — *where the field is right now*.** Part of **Deep Learning & LLMs** (Ch 16–20). ~120 min.
+
+| | |
+|---|---|
+| **Read this** | **First** if you want orientation, or **last** if you want the techniques first. Both work |
+| **On Track A** (interview) | Read §20.13–§20.15 and §20.17 the week of your interview — it is the cheapest way to sound current |
+| **Shelf life** | Shortest in the book alongside Ch 19. Memorise the **shape** of the leaderboard, never the numbers — see §20.14 for what does *not* go stale |
+
+**Full section map, tracks and the L1–L4 depth ladder → [Ch 16 — Deep Learning Reference](#content/16_deep_learning).**
+
+### Covered in depth elsewhere
+
+| If you are asked about… | Go to |
+|---|---|
+| How the techniques behind these models actually work | [Ch 16](#content/16_deep_learning) · [Ch 17](#content/17_llm) · [Ch 17b](#content/17b_llm_applications) |
+| TPUs, Google's accelerator stack and training hardware | [Ch 29 — GPUs, TPUs & Infrastructure](#content/29_gpus_tpus_infrastructure) · [Ch 30 — Google ML Ecosystem](#content/30_google_ml_ecosystem) |
+| The frameworks used to build on these models | [Ch 19 — AI Frameworks & Engineering](#content/19_ai_frameworks) |
+
+---
+
 ## What You'll Learn
 
 By the end of this chapter you'll be able to:
@@ -358,6 +380,24 @@ print(tok.decode(model.generate(**tok("Hello", return_tensors="pt").to("cuda"))[
 | Latency-critical (autocomplete, real-time UX) | Multi-step reasoning beyond on-device capacity |
 | Billions of queries (zero marginal cost) | Live external data lookups |
 | Offline / spotty connectivity | Computer-use, video gen, multimodal beyond text+image |
+
+---
+
+### Small language models (SLMs) — the other half of on-device ★★
+
+Quantization shrinks a big model. The complementary move is to **start smaller**: a 1–8B model purpose-built for a narrow job.
+
+| | Frontier model | SLM (1–8B) |
+|---|---|---|
+| Where it runs | Datacentre GPU | Phone, laptop, edge device, CPU |
+| Cost per call | Cents | Effectively zero after deployment |
+| Latency | Network round trip | Local, no network |
+| Privacy | Data leaves the device | **Data never leaves** |
+| Breadth | General | Narrow — and often *better* on that narrow task after fine-tuning |
+
+**The insight interviewers want:** on a well-scoped task — classification, extraction, routing, summarising a known format — a fine-tuned 3B model frequently matches a frontier model at a fraction of the cost and latency, because you are not paying for general capability you never use. This is the same argument as distillation ([Ch 17c §3.4](#content/17c_llm_systems)), applied at model-selection time.
+
+**The 2026 pattern is a cascade:** a small local model handles the common case and escalates only what it cannot confidently answer to a frontier model. Most traffic never leaves the device; the hard tail gets the expensive model. That is usually a bigger cost win than any single optimisation.
 
 ---
 

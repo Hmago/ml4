@@ -408,6 +408,30 @@ function getStudyData() {
 }
 function saveStudyData(d) { localStorage.setItem('ml4-study', JSON.stringify(d)); }
 
+// Derive the earliest real "started" moment from any available signal
+// (explicit study.startDate, per-chapter first-open dates, or the activity
+// log) and persist it. Fixes "Started: Not started" and broken pace/ETA math
+// when ml4-study was cleared mid-session (e.g. after a progress reset — the
+// first-visit init only re-seeds on a full reload) while real activity remains,
+// and corrects a startDate that is later than the user's earliest activity.
+function ensureStudyStartDate() {
+  const d = getStudyData();
+  let earliest = d.startDate ? new Date(d.startDate).getTime() : Infinity;
+  if (isNaN(earliest)) earliest = Infinity;
+  try {
+    const track = getChapterTrack();
+    Object.values(track).forEach(t => {
+      if (t && t.startDate) { const ms = new Date(t.startDate).getTime(); if (!isNaN(ms) && ms < earliest) earliest = ms; }
+    });
+    const act = getActivityLog();
+    Object.keys(act).forEach(day => { const ms = new Date(day).getTime(); if (!isNaN(ms) && ms < earliest) earliest = ms; });
+  } catch (e) { /* corrupt store — keep whatever we already have */ }
+  if (earliest === Infinity) return '';
+  const iso = new Date(earliest).toISOString();
+  if (iso !== d.startDate) { d.startDate = iso; saveStudyData(d); }
+  return iso;
+}
+
 // Record first visit date
 (function() {
   const d = getStudyData();
@@ -426,30 +450,33 @@ function wordsToMinutes(words) {
 }
 const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/00_quick_reference_cheat_sheet.md': 185,
-  'content/00p_dl_llm_playbook.md': 75,
+  'content/00p_dl_llm_playbook.md': 80,
   'content/01_google_ai_engineer_strategy.md': 140,
   'content/02_behavioral_interview.md': 150,
   'content/03_staying_relevant_ai_era.md': 95,
   'content/04_aptitude_mental_math.md': 365,
   'content/05_brain_training.md': 150,
   'content/05b_brain_upgrade_30_days.md': 105,
-  'content/06_math_fundamentals.md': 310,
+  'content/06_math_fundamentals.md': 315,
   'content/07_introduction.md': 90,
-  'content/08_core_concepts.md': 230,
-  'content/09_data_preprocessing.md': 50,
-  'content/10_supervised_learning.md': 215,
-  'content/11_unsupervised_learning.md': 175,
-  'content/12_key_algorithms.md': 170,
-  'content/13_model_evaluation.md': 115,
-  'content/14_neural_networks.md': 185,
-  'content/15_reinforcement_learning.md': 155,
+  'content/08_core_concepts.md': 240,
+  'content/09_data_preprocessing.md': 60,
+  'content/10_supervised_learning.md': 230,
+  'content/11_unsupervised_learning.md': 185,
+  'content/12_key_algorithms.md': 180,
+  'content/13_model_evaluation.md': 130,
+  'content/14_neural_networks.md': 190,
+  'content/15_reinforcement_learning.md': 175,
   'content/15s_ml_curriculum_recap.md': 215,
-  'content/16_deep_learning.md': 240,
-  'content/17_llm.md': 545,
-  'content/18_ai_agents.md': 205,
-  'content/19_ai_frameworks.md': 110,
-  'content/20_2026_landscape.md': 110,
-  'content/20s_deep_learning_llms_recap.md': 180,
+  'content/16_deep_learning.md': 270,
+  'content/17_llm.md': 280,
+  'content/17b_llm_applications.md': 170,
+  'content/17c_llm_systems.md': 195,
+  'content/18_ai_agents.md': 140,
+  'content/18b_agents_in_production.md': 130,
+  'content/19_ai_frameworks.md': 165,
+  'content/20_2026_landscape.md': 125,
+  'content/20s_deep_learning_llms_recap.md': 200,
   'content/21_design_fundamentals.md': 125,
   'content/22_engineering_tools.md': 395,
   'content/23_system_design_fundamentals_deep_dive.md': 250,
@@ -463,14 +490,14 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/27_practical_ml.md': 240,
   'content/27_practical_ml.ipynb': 240,
   'content/28_semantic_search.md': 140,
-  'content/29_gpus_tpus_infrastructure.md': 180,
+  'content/29_gpus_tpus_infrastructure.md': 190,
   'content/30_google_ml_ecosystem.md': 165,
   'content/31_dsa_coding.md': 525,
-  'content/32_interview_questions.md': 235,
+  'content/32_interview_questions.md': 240,
   'content/33_llm_interview_questions.md': 240,
   'content/33b_llm_interview_questions_part2.md': 260,
   'content/34_google_top10_ml_interview.md': 285,
-  'content/34b_google_top10_ml_interview_part2.md': 215,
+  'content/34b_google_top10_ml_interview_part2.md': 220,
   'README.md': 60,
 /* @generated-reading-times:end */ };
 

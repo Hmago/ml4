@@ -1,0 +1,200 @@
+[
+  {
+    "q": "A developer wants a decoding strategy that automatically samples from fewer tokens when the model is confident and more tokens when uncertain. Which strategy achieves this?",
+    "options": [
+      "Top-K sampling, which always considers exactly K candidate tokens regardless of how peaked the distribution is",
+      "Top-P (nucleus) sampling, which dynamically adjusts the candidate set to the smallest token set summing to probability P",
+      "Beam search with width B, which systematically tracks B complete-sequence candidates at every generation step",
+      "Greedy decoding with temperature annealing, which reduces temperature gradually during the generation"
+    ],
+    "answer": 1,
+    "explanation": "Top-P adapts the candidate set — when the model is confident (one token dominates), fewer tokens reach the P threshold; when uncertain, more are included. Top-K always considers exactly K tokens regardless of the distribution shape, which is the key difference."
+  },
+  {
+    "q": "A LoRA adapter with rank r=16 is applied to a weight matrix of shape [4096 × 4096]. Approximately what percentage of the original matrix's parameters does the adapter introduce?",
+    "options": [
+      "16%, since the rank value directly equals the percentage of parameters added by the adapter",
+      "1.6%, since the adapter adds two matrices each with 4096×16 elements divided by total original size",
+      "0.78%, since LoRA adds A:[4096×16] and B:[16×4096] totaling 131K vs 16.7M original parameters",
+      "0.016%, since only the diagonal elements of the low-rank update matrices require gradient tracking"
+    ],
+    "answer": 2,
+    "explanation": "LoRA adds A:[4096×16] and B:[16×4096], totaling 2×4096×16 = 131,072 parameters. Original: 4096×4096 = 16,777,216. Ratio: 131,072 / 16,777,216 ≈ 0.78%. Options A and B both overestimate by an order of magnitude or more."
+  },
+  {
+    "q": "An LLM confidently generates fabricated paper citations with plausible author names and journal titles. Which mechanism most directly explains this hallucination?",
+    "options": [
+      "The output temperature was set too high, injecting excessive randomness into token selection at citation positions",
+      "The knowledge cutoff erased all citation metadata, forcing the model to interpolate from adjacent facts",
+      "The context window was exceeded, causing retrieval of unrelated cached activations from earlier in the sequence",
+      "The model generates statistically plausible tokens based on learned patterns without any internal fact-verification step"
+    ],
+    "answer": 3,
+    "explanation": "LLMs have no internal truth checker — they predict plausible next tokens. For obscure queries, pattern matching produces statistically believable but fabricated content. High temperature or cutoff may worsen this, but the root cause is that generation and fact-checking are entirely separate processes."
+  },
+  {
+    "q": "A legal document review tool needs maximally deterministic and reproducible summaries. Which temperature setting is most appropriate?",
+    "options": [
+      "Temperature = 0, which forces greedy decoding by always selecting the single highest-probability next token",
+      "Temperature = 0.7, which provides a practical balance between determinism and natural linguistic variation",
+      "Temperature = 1.0, which samples directly from the model's native learned probability distribution at each step",
+      "Temperature = 1.5, which flattens the distribution to avoid repetitive phrasing in longer summaries"
+    ],
+    "answer": 0,
+    "explanation": "Temperature = 0 performs greedy decoding — always selecting the most probable next token — producing identical output for identical input. For legal review where accuracy and reproducibility outweigh creativity, this is the correct setting. Higher temperatures add randomness that degrades factual reliability."
+  },
+  {
+    "q": "A developer wants to improve an LLM's accuracy on a multi-step word problem without any external tool access. Which prompting approach is most effective?",
+    "options": [
+      "Asking the model to 'think step by step' before stating the final answer, exposing intermediate reasoning in the output",
+      "Providing the expected final answer first and asking the model to verify and explain it backward",
+      "Setting temperature to zero to force deterministic token selection at each generation step",
+      "Using a shorter prompt to ensure all problem tokens fit within the first quarter of the context window"
+    ],
+    "answer": 0,
+    "explanation": "Chain-of-thought prompting ('think step by step') dramatically improves multi-step reasoning because each generated intermediate step conditions subsequent tokens, allowing the model to perform explicit computation. Temperature and prompt length affect other properties but do not fundamentally improve reasoning accuracy."
+  },
+  {
+    "q": "A developer needs to implement semantic search over 10 million customer support tickets by converting each ticket to a vector. Which model type is most appropriate?",
+    "options": [
+      "A generative LLM such as GPT-4o, because it produces the richest contextual representation for each document",
+      "A BERT model fine-tuned with next-sentence prediction, because its [CLS] token captures full cross-sentence context",
+      "A dedicated embedding model such as text-embedding-3 or BGE-large, because it outputs fixed-size semantic vectors efficiently",
+      "A decoder-only LLM at temperature=0, since greedy decoding yields deterministic last-layer hidden states for each ticket"
+    ],
+    "answer": 2,
+    "explanation": "Embedding models produce fixed-size semantic vectors in a single fast forward pass and are purpose-built for similarity search. Generative models output text, not vectors. Dedicated embedding models outperform repurposed generative model hidden states for retrieval tasks at far lower cost and latency."
+  },
+  {
+    "q": "When a developer uses tool calling in an LLM API, who is responsible for actually executing the tool function and returning results to the model?",
+    "options": [
+      "The LLM provider's API infrastructure, which automatically detects and executes any tool calls in the model's response",
+      "A dedicated tool-execution microservice that the API provider attaches automatically to any request containing tool definitions",
+      "The model itself, since it executes the tool call internally during its forward pass before producing the final text response",
+      "The developer's application code, which must call the function and send the result back in a follow-up API message"
+    ],
+    "answer": 3,
+    "explanation": "The LLM outputs a structured tool call specification (function name and arguments in JSON). The developer's own code must execute that function, collect the result, and send it back to the model in a follow-up message. The LLM cannot execute external code — it only generates structured instructions to do so."
+  },
+  {
+    "q": "The Model Context Protocol (MCP), created by Anthropic, solves which specific problem in AI agent development?",
+    "options": [
+      "Providing a standard protocol for LLMs to connect to external tools and data sources, eliminating per-provider custom integrations",
+      "Defining a common agent memory schema so multi-agent systems can share long-term memory across different framework implementations",
+      "Specifying a universal agent benchmark format for comparing agent performance fairly across different architectures",
+      "Standardizing system prompt formats across different LLM providers so agent behavior is consistent regardless of model used"
+    ],
+    "answer": 0,
+    "explanation": "MCP is described as 'USB for AI tools' — before MCP, every tool needed a custom integration for every LLM provider. With MCP, a tool exposes a standard server interface that any MCP-compatible LLM can use. This dramatically reduces integration fragmentation in multi-tool agent applications."
+  },
+  {
+    "q": "An LLM confidently states a factual answer based on patterns in training data. This behavior is called a hallucination. According to RLHF research, which training incentive contributes to hallucinations?",
+    "options": [
+      "High learning rates during pre-training cause the model to overfit specific facts while degrading on novel factual combinations",
+      "Human raters during RLHF training often rated confident-sounding responses higher than 'I don't know,' inadvertently rewarding confident hallucination",
+      "The beam search decoding strategy inherently selects the highest-probability response, which is often a confident fabrication",
+      "Backpropagation through the full attention stack causes factual information to leak from late layers back to early layers"
+    ],
+    "answer": 1,
+    "explanation": "The chapter identifies that during RLHF, human raters often preferred confident-sounding answers over uncertain ones, inadvertently training the model to sound certain even when guessing. Combined with compression (facts stored diffusely across weights), this creates systematic confident hallucination."
+  },
+  {
+    "q": "LLMs often fail the 'how many r's are in strawberry' question. Which technical reason from the chapter best explains this?",
+    "options": [
+      "The model's training corpus underrepresents letter-counting tasks, making this an out-of-distribution query",
+      "The model's attention mechanism prioritizes semantic tokens over individual characters during generation",
+      "The word 'strawberry' may be a single token in the vocabulary, meaning the model never 'sees' individual letters",
+      "Counting requires persistent working memory that exceeds the model's ability to track state across generation steps"
+    ],
+    "answer": 2,
+    "explanation": "Tokenization is the root cause — 'strawberry' may be tokenized as a single token or a small number of subword pieces, not individual letters. The model processes token IDs, not characters. Asking it to count letters requires perceiving structure below its unit of representation."
+  },
+  {
+    "q": "A RAG system loses context for clauses that span chunk boundaries. Which chunking approach best addresses this?",
+    "options": [
+      "Reducing chunk size to 100 tokens to ensure each chunk contains exactly one complete clause or sentence",
+      "Using fixed 512-token boundaries strictly with no overlap to minimize storage and embedding computation costs",
+      "Increasing chunk size to 5000 tokens to ensure complete contract sections are always within a single chunk",
+      "Adding token overlap between adjacent chunks so boundary context is duplicated in both neighboring chunks"
+    ],
+    "answer": 3,
+    "explanation": "Adding 50-200 token overlap between adjacent chunks ensures that context spanning a chunk boundary appears in both chunks, making it retrievable from either side. Reducing chunk size increases fragmentation; large chunks hurt retrieval precision; fixed chunks without overlap are the root cause of the original problem."
+  },
+  {
+    "q": "Self-consistency prompting improves performance on math and logic questions by which mechanism?",
+    "options": [
+      "Generating multiple independent reasoning chains at non-zero temperature and selecting the most frequent final answer",
+      "Running the same prompt at temperature=0 multiple times and averaging all generated numerical answer values",
+      "Using a separate verifier model to assign a confidence score to each candidate answer before selection",
+      "Asking the model to re-solve the problem backward from the stated answer to verify the forward solution is correct"
+    ],
+    "answer": 0,
+    "explanation": "Self-consistency samples multiple diverse reasoning paths (non-zero temperature) and takes a majority vote over final answers. The correct answer tends to appear across more paths than any specific wrong answer. This is distinct from averaging numerical outputs (inappropriate for reasoning) and from external verifiers."
+  },
+  {
+    "q": "In a 'Debate' multi-agent pattern, two agents argue opposing positions and a judge agent picks the winner. What is the primary benefit over a single-agent approach?",
+    "options": [
+      "The debate pattern halves inference cost by distributing computation between two smaller-parameter specialist agents",
+      "The debate pattern forces claims to survive adversarial challenge, reducing hallucination through mutual scrutiny",
+      "The debate pattern enables both agents to perform web searches in parallel, doubling information retrieval throughput",
+      "The debate pattern lets each agent access a separate context window, effectively doubling total available context"
+    ],
+    "answer": 1,
+    "explanation": "The adversarial dynamic forces each agent's claims to be challenged by the other, surfacing weak reasoning and unsupported assertions. Claims that withstand challenge are more likely to be well-grounded. This is especially valuable for complex decisions where a single agent might confidently hallucinate without correction."
+  },
+  {
+    "q": "An autonomous agent runs a 10-step task where each step independently succeeds with 90% probability. What is the approximate probability that all 10 steps succeed?",
+    "options": [
+      "90%, since the first step dominates the overall success probability for the task",
+      "81%, since two independent 90% steps multiply to give 0.9 × 0.9 = 0.81",
+      "35%, since 0.9^10 ≈ 0.349, illustrating how compounding errors accumulate rapidly across many steps",
+      "60%, since agent systems benefit from retry mechanisms that substantially recover from individual step failures"
+    ],
+    "answer": 2,
+    "explanation": "P(all 10 succeed) = 0.9^10 ≈ 35%. This compounding effect is why the chapter warns that even at 95% per-step reliability, a 10-step task has only 0.95^10 ≈ 60% success. At 85% per step, a 10-step task fails almost 80% of the time."
+  },
+  {
+    "q": "A developer embeds a secret string in the system prompt to detect if it has been leaked via prompt injection. What is this defensive technique called?",
+    "options": [
+      "Sandboxing — restricting the model's accessible tools so it cannot relay system prompt contents through API calls",
+      "Prompt hardening — explicitly instructing the model never to deviate from its instructions under any circumstances",
+      "Output filtering — scanning every model response for sensitive strings before returning them to the user",
+      "A canary token — if this secret string appears in the model's output, prompt injection may have occurred"
+    ],
+    "answer": 3,
+    "explanation": "Canary tokens are secret strings embedded in the system prompt. If injection causes the model to reveal system prompt contents, the canary string appears in output and triggers an alert. The chapter notes this is analogous to canary records in databases used to detect unauthorized data access."
+  },
+  {
+    "q": "Tree of Thoughts (ToT) is specifically motivated by which problem characteristic where chain-of-thought (CoT) may fail?",
+    "options": [
+      "Problems where the initial reasoning path may be a dead end requiring backtracking and exploration of multiple alternatives",
+      "Problems requiring precise arithmetic where multiple independent reasoning chains help average out numerical errors",
+      "Problems with ambiguous phrasing where multiple semantic interpretations must be considered and evaluated in parallel",
+      "Problems that exceed the context window where ToT's tree structure compresses reasoning into shorter hierarchical branches"
+    ],
+    "answer": 0,
+    "explanation": "ToT is motivated by combinatorial problems like the '24 game' where a first approach may fail and backtracking is needed. CoT follows a single linear path and gets stuck at dead ends. ToT explores multiple branches, evaluates each, prunes failing ones, and continues promising ones — like a chess player considering moves."
+  },
+  {
+    "q": "Cosine similarity between embedding vectors A and B is defined as their dot product divided by the product of their magnitudes. What does this specifically measure?",
+    "options": [
+      "The L2 (Euclidean) distance between A and B, normalized to the range 0 to 1 for comparison across dimensions",
+      "The cosine of the angle between A and B, ranging from -1 (opposite directions) to +1 (identical direction)",
+      "The element-wise Pearson correlation coefficient between vectors A and B normalized to unit variance",
+      "The ratio of the dot product to the sum of all individual element values across both vectors A and B"
+    ],
+    "answer": 1,
+    "explanation": "Cosine similarity = (A·B) / (||A|| × ||B||) measures the angle between vectors, ranging from -1 to +1. It ignores magnitude differences, making it ideal for semantic search where direction encodes meaning. The chapter confirms it is the most common metric for text embeddings in retrieval tasks."
+  },
+  {
+    "q": "A developer notices the LLM repeatedly uses the word 'however' and wants to reduce repetition proportionally to how often it has already appeared. Which parameter addresses this?",
+    "options": [
+      "Presence penalty, which applies a fixed probability reduction to any token that has appeared at least once in the output",
+      "Frequency penalty, which reduces a token's logit score proportionally to the number of times it has already appeared",
+      "Temperature, which flattens the entire output distribution equally, making all tokens relatively more likely regardless of history",
+      "Top-P, which reduces the candidate token pool at each step and indirectly penalizes tokens that dominate the distribution"
+    ],
+    "answer": 1,
+    "explanation": "Frequency penalty reduces a token's probability by (penalty × number_of_prior_appearances). A word used three times is penalized three times more than one used once. Presence penalty applies the same flat reduction regardless of frequency — appropriate for avoiding any topic re-use rather than repetition of specific words."
+  }
+]

@@ -645,6 +645,43 @@ Sequence parallelism is standard in Megatron-LM and is increasingly used for tra
 
 ---
 
+### Ring Attention — sequence parallelism for million-token contexts ★★ `L2`
+
+Sequence parallelism above splits the *replicated* regions (LayerNorm, Dropout). **Ring Attention** goes further and splits the attention computation itself, which is what makes million-token context lengths trainable at all.
+
+**The problem.** Attention needs every query to see every key. Split the sequence across N devices and each device holds only its own shard of K and V — so a naive split simply cannot compute full attention.
+
+**The idea.** Arrange the devices in a **ring** and rotate the K/V blocks around it. Each device computes attention between its local queries and whichever K/V block it currently holds, accumulates the partial result, then passes that block to its neighbour and receives the next one. After N steps every query has seen every key, and no device ever held the whole sequence.
+
+```
+   Devices in a ring, each holding a shard of the sequence:
+
+        ┌── K/V block ──▶ GPU0 ──▶ GPU1 ──┐
+        │   rotates       (Q0)     (Q1)   │
+        └── GPU3 ◀── GPU2 ◀───────────────┘
+            (Q3)      (Q2)
+
+   Step 1: each GPU attends its local Q to its own K/V
+   Step 2: K/V blocks shift one position around the ring
+   ...
+   Step N: every Q has attended over every K — exact, not approximate
+```
+
+**Why it works so well:** the communication of the next K/V block **overlaps with the computation** on the current one. If the block is big enough, the transfer is fully hidden behind the maths and the ring costs almost nothing over local attention.
+
+| | Sequence parallelism (§24.6b) | Ring Attention |
+|---|---|---|
+| Splits | LayerNorm / Dropout activations | The attention computation itself |
+| Enables | Lower activation memory | **Context beyond any single device's memory** |
+| Communication | Same as tensor parallelism | Ring rotation, overlapped with compute |
+| Exactness | Exact | **Exact** — not an approximation like sparse or linear attention |
+
+**The point worth stating in an interview:** Ring Attention is *exact*. Unlike sliding-window, sparse or linear attention, it does not approximate the attention matrix — it just refuses to materialise it in one place. That is why it underpins the 1M-token context claims rather than the quality-for-length trades that windowed methods make.
+
+> Not to be confused with **Ring All-Reduce** (§24.6a), which is a collective-communication algorithm for averaging gradients. Same ring topology, completely different job — and a distinction interviewers occasionally probe.
+
+---
+
 ## 24.6c MFU — Model FLOPs Utilization
 
 > **MFU (Model FLOPs Utilization):** the fraction of a hardware accelerator's peak throughput that is actually spent on useful model computation. MFU = (achieved model FLOPs/s) ÷ (hardware peak FLOPs/s).
