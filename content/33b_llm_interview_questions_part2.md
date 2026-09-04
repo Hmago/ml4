@@ -1,6 +1,6 @@
 # Chapter 33 (Part 2 of 2) — LLM Interview Questions: Inference, Evaluation, Safety & Frontier
 
-> Continuation of the LLM interview question bank. **[← Part 1](33_llm_interview_questions.md)**
+> Continuation of the LLM interview question bank. **[← Part 1](#content/33_llm_interview_questions)**
 > covers Q1–Q38 (Fundamentals & Architecture, Training & Fine-Tuning, Prompting & In-Context
 > Learning, and RAG / Embeddings / Vector Databases). This part picks up at **Q39**.
 
@@ -2122,7 +2122,7 @@ Constrained decoding solves this by restricting which tokens the model is allowe
 
 ---
 
-> **End of Chapter 33 (Parts 1–2).** Return to **[← Part 1 — Fundamentals, Training, Prompting & RAG](33_llm_interview_questions.md)** for Q1–Q38.
+> **End of Chapter 33 (Parts 1–2).** Return to **[← Part 1 — Fundamentals, Training, Prompting & RAG](#content/33_llm_interview_questions)** for Q1–Q38.
 
 ---
 

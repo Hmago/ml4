@@ -657,4 +657,4 @@ SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (c
 
 ---
 
-**See also:** [Ch 14 Neural Networks](14_neural_networks.md) · [Ch 16 Deep Learning Reference](16_deep_learning.md) · [Ch 17 LLMs](17_llm.md) · [Ch 18 AI Agents](18_ai_agents.md) · [Ch 19 AI Frameworks](19_ai_frameworks.md) · [Ch 20 The 2026 AI Landscape](20_2026_landscape.md) · [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)
+**See also:** [Ch 14 Neural Networks](#content/14_neural_networks) · [Ch 16 Deep Learning Reference](#content/16_deep_learning) · [Ch 17 LLMs](#content/17_llm) · [Ch 18 AI Agents](#content/18_ai_agents) · [Ch 19 AI Frameworks](#content/19_ai_frameworks) · [Ch 20 The 2026 AI Landscape](#content/20_2026_landscape) · [Ch 00 Cheat Sheet](#content/00_quick_reference_cheat_sheet)

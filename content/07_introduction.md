@@ -11,6 +11,7 @@ After reading this chapter, you will be able to:
 - Use the core ML vocabulary (features, labels, training set, loss, inference, …)
 - Walk an ML project end-to-end, from problem definition to deployment
 - Identify when ML is (and isn't) the right approach to a problem
+- Explain the No Free Lunch theorem and why every project needs a baseline
 
 ---
 
@@ -616,6 +617,60 @@ size │ bed │ age │ zip    │ schools │ lot  │ PRICE (label)
 ```
 
 > **Surprising fact:** on *tabular* data, Gradient Boosting (XGBoost, LightGBM) still wins most Kaggle competitions — even in the deep learning era. Deep learning dominates vision and language, not spreadsheets.
+
+---
+
+## No Free Lunch — Why No Algorithm Wins Everywhere
+
+### Simple Explanation
+
+Imagine a Swiss Army knife. It has a blade, scissors, a screwdriver and a bottle opener, and it's
+pretty good at a lot of things — but a chef would never use that tiny blade instead of a proper
+kitchen knife, and an electrician would never use that stubby screwdriver for real work.
+
+In ML there is **no Swiss Army knife that beats everything**. Neural networks are astonishing on
+images and text but overkill for a tidy spreadsheet. Decision trees are excellent on structured
+data and hopeless on photographs. With 100 rows of data, a simple algorithm will often beat a
+fancy one.
+
+This isn't just a rule of thumb — it's a **theorem**, proved by Wolpert & Macready in 1997.
+
+**Official Definition:**
+> The **No Free Lunch theorem** states that, averaged over *all possible* problems, every
+> optimization algorithm performs identically. Superior performance on one class of problems is
+> necessarily paid for by inferior performance on another.
+
+```
+  WHAT THIS MEANS IN PRACTICE
+  ───────────────────────────────────────────────────────
+  XGBoost / LightGBM  wins on tabular, structured data
+  CNNs                win on images
+  Transformers        win on text and sequences
+  Naive Bayes         wins on simple text with little data
+  KNN                 wins on some low-dimensional problems
+
+  ✗ "Neural networks are always best"  — FALSE
+  ✗ "XGBoost always beats neural nets" — FALSE
+  ✓ "Try several, pick what works here" — TRUE
+```
+
+The practical consequence is that **every project starts with a baseline**. Before you build
+anything complex, beat something simple — otherwise you have no idea whether your complexity is
+buying you anything.
+
+```
+  BASELINE HIERARCHY
+  ───────────────────────────────────────────────────────────────
+  1. Naive baseline    Regression: always predict the mean
+                       Classification: always predict majority class
+  2. Single feature    Use only the most correlated feature
+  3. Linear model      Linear / Logistic Regression
+  4. Gradient boosting XGBoost / LightGBM on raw features
+  5. Your fancy model  Deep learning, ensembles, etc.
+
+  If step 5 barely beats step 3, the complexity isn't worth it.
+  If step 5 crushes step 3, you've found real signal.
+```
 
 ---
 

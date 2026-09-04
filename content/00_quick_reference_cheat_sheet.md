@@ -336,6 +336,34 @@ LightGBM: Leaf-wise growth (faster). CatBoost: Native categoricals.
 | **Permutation** | Shuffle one feature, measure accuracy drop | More reliable, model-agnostic |
 | **SHAP** | Per-prediction additive explanations based on game theory | Gold standard. Interpretable + consistent |
 
+### Hyperparameter Cheat Sheet
+
+| Algorithm | Key hyperparameters, most impactful first |
+|---|---|
+| **Linear Regression** (regularized) | `alpha` (Ridge/Lasso strength) · penalty type · `l1_ratio` (Elastic Net blend) |
+| **Logistic Regression** | `C` (inverse regularization, default 1.0) · `penalty` (`l1`/`l2`/`elasticnet`) · `solver` (`lbfgs` default, `saga` for large *n* or L1) · `class_weight='balanced'` for imbalanced data |
+| **Decision Tree** | `max_depth` (3–15, most impactful) · `min_samples_split` (2–20) · `min_samples_leaf` (1–10) · `ccp_alpha` (post-pruning) · `criterion` (`gini`/`entropy`) |
+| **Random Forest** | `n_estimators` (100–500) · `max_features` (`'sqrt'` or 0.33) · `max_depth` (`None` or 10–30) · `min_samples_leaf` (1–5) · `oob_score=True` for free validation |
+| **XGBoost / LightGBM** | `learning_rate` (0.01–0.3) paired with `n_estimators` · `max_depth` (3–8) · `subsample` (0.6–0.9) · `colsample_bytree` (0.6–0.9) · `reg_alpha`, `reg_lambda` · `early_stopping_rounds` (always use) |
+| **SVM** | `C` (0.001–1000, log scale — most important) · `kernel` (`rbf` default, `linear`, `poly`) · `gamma` (`scale` default, `auto`, or a float). Tune `C` and `gamma` **together** |
+| **KNN** | `n_neighbors` (1–21, odd for binary, pick by CV) · `weights` (`uniform`/`distance`) · `metric` (`euclidean`/`manhattan`/`minkowski`) |
+| **Naive Bayes** | `alpha` (Laplace smoothing, MultinomialNB, default 1.0) · `var_smoothing` (GaussianNB, default 1e-9) |
+
+**Tuning order:** baseline with defaults → tune the leftmost parameter in the row →
+`RandomizedSearchCV` over broad ranges → `GridSearchCV` around the winner → touch the
+test set once, at the end.
+
+**What to tune first, per family:**
+
+| Algorithm | Tune first | Usually leave alone |
+|---|---|---|
+| Linear / Logistic | `C`, `penalty` | `solver`, `tol` |
+| Decision Tree | `max_depth`, `min_samples_leaf` | `criterion`, `splitter` |
+| Random Forest | `n_estimators`, `max_depth`, `min_samples_leaf` | `bootstrap`, `criterion` |
+| XGBoost / LightGBM | `n_estimators`, `learning_rate`, `max_depth`/`num_leaves`, `subsample`, `colsample_bytree` | `reg_alpha`/`reg_lambda` unless overfitting |
+| SVM | `C`, `gamma`, `kernel` | `shrinking`, `cache_size` |
+| KNN | `n_neighbors`, `weights`, `metric` | `algorithm`, `leaf_size` |
+
 ---
 
 ## 7 — Unsupervised Learning

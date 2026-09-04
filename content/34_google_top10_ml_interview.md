@@ -2,7 +2,7 @@
 
 > Comprehensive, interview-ready deep dives into the topics Google asks about most frequently in Machine Learning interviews — with step-by-step explanations, Mermaid diagrams, worked examples, and follow-up questions.
 >
-> **This is Part 1 of 2.** It covers **Topics 1–10** — the classic ML core. The LLM deep-dives (**Topics 11–14**: architecture, training, serving, evaluation & frontier research) and the quick-reference summary are in **[Part 2 →](34b_google_top10_ml_interview_part2.md)**.
+> **This is Part 1 of 2.** It covers **Topics 1–10** — the classic ML core. The LLM deep-dives (**Topics 11–14**: architecture, training, serving, evaluation & frontier research) and the quick-reference summary are in **[Part 2 →](#content/34b_google_top10_ml_interview_part2)**.
 
 ---
 
@@ -43,7 +43,7 @@
 | 8 | [Dimensionality Reduction](#topic-8--dimensionality-reduction) | PCA, t-SNE, curse of dimensionality |
 | 9 | [Data Preprocessing & Feature Engineering](#topic-9--data-preprocessing--feature-engineering) | Missing data, imbalanced classes, data leakage |
 | 10 | [ML System Design](#topic-10--ml-system-design) | End-to-end pipelines, serving, monitoring |
-| 11–14 | [LLM Architecture, Training, Serving & Frontier → **Part 2**](34b_google_top10_ml_interview_part2.md) | Tokenization, RoPE, KV cache, Flash Attention, MoE, RLHF/DPO, quantization, RAG, LLM eval |
+| 11–14 | [LLM Architecture, Training, Serving & Frontier → **Part 2**](#content/34b_google_top10_ml_interview_part2) | Tokenization, RoPE, KV cache, Flash Attention, MoE, RLHF/DPO, quantization, RAG, LLM eval |
 
 ---
 
@@ -2841,4 +2841,4 @@ graph TD
 
 ---
 
-> **Continued in [Part 2 — LLM Architecture, Training, Serving & Frontier Research (Topics 11–14)](34b_google_top10_ml_interview_part2.md).** Part 2 covers the four LLM topics — architecture deep dive, the training pipeline (pre-training → SFT → RLHF/DPO), serving & production at scale, and evaluation & frontier research — plus the quick-reference cheat sheet, final interview tips, and chapter Key Takeaways.
+> **Continued in [Part 2 — LLM Architecture, Training, Serving & Frontier Research (Topics 11–14)](#content/34b_google_top10_ml_interview_part2).** Part 2 covers the four LLM topics — architecture deep dive, the training pipeline (pre-training → SFT → RLHF/DPO), serving & production at scale, and evaluation & frontier research — plus the quick-reference cheat sheet, final interview tips, and chapter Key Takeaways.

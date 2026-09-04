@@ -1,6 +1,6 @@
 # Chapter 34 (Part 2 of 2) — Google's Top 10 ML Interview Topics: LLM Architecture, Training, Serving & Frontier
 
-> Continuation of Chapter 34. **[← Part 1](34_google_top10_ml_interview.md)** covers Topics 1–10
+> Continuation of Chapter 34. **[← Part 1](#content/34_google_top10_ml_interview)** covers Topics 1–10
 > (the classic ML core — bias-variance, optimization, regularization, ensembles, backpropagation,
 > transformers, evaluation, dimensionality reduction, feature engineering, and ML system design).
 > This part picks up at **Topic 11** with the LLM deep-dives.
@@ -2204,4 +2204,4 @@ graph TD
 
 ---
 
-> **End of Chapter 34 (Parts 1–2).** Return to **[← Part 1 — Topics 1–10 (Classic ML Core)](34_google_top10_ml_interview.md)** for bias-variance, optimization, regularization, ensembles, backpropagation, transformers, evaluation, dimensionality reduction, feature engineering, and ML system design.
+> **End of Chapter 34 (Parts 1–2).** Return to **[← Part 1 — Topics 1–10 (Classic ML Core)](#content/34_google_top10_ml_interview)** for bias-variance, optimization, regularization, ensembles, backpropagation, transformers, evaluation, dimensionality reduction, feature engineering, and ML system design.

@@ -5,7 +5,7 @@
 >
 > **This is Part 1 of 2.** It covers Q1–Q38 (Parts 1–4). For inference & deployment, evaluation,
 > safety, frontier topics, and production (Q39–Q72), see
-> **[Part 2 →](33b_llm_interview_questions_part2.md)**.
+> **[Part 2 →](#content/33b_llm_interview_questions_part2)**.
 
 ```
   ┌──────────────────────────────────────────────────────────────────┐
@@ -36,7 +36,7 @@
 | 3 | Prompting & In-Context Learning | Q23 – Q30 |
 | 4 | RAG, Embeddings & Vector Databases | Q31 – Q38 |
 
-> **Parts 5–9 (Q39–Q72)** — Inference & Deployment, Evaluation & Benchmarks, Safety & Alignment, Frontier Topics, and Advanced Production — are in **[Part 2](33b_llm_interview_questions_part2.md)**.
+> **Parts 5–9 (Q39–Q72)** — Inference & Deployment, Evaluation & Benchmarks, Safety & Alignment, Frontier Topics, and Advanced Production — are in **[Part 2](#content/33b_llm_interview_questions_part2)**.
 
 ---
 
@@ -1873,7 +1873,7 @@ in the same direction?" not "how bright are they?"
 
 ---
 
-> **Continued in [Part 2 — Inference, Evaluation, Safety & Frontier](33b_llm_interview_questions_part2.md).** Part 2 covers Q39–Q72: inference, deployment & optimization, evaluation & benchmarks, safety & alignment, frontier topics, and advanced production — plus the quick-reference summary tables, interview tips, and the chapter Key Takeaways.
+> **Continued in [Part 2 — Inference, Evaluation, Safety & Frontier](#content/33b_llm_interview_questions_part2).** Part 2 covers Q39–Q72: inference, deployment & optimization, evaluation & benchmarks, safety & alignment, frontier topics, and advanced production — plus the quick-reference summary tables, interview tips, and the chapter Key Takeaways.
 
 ---
 

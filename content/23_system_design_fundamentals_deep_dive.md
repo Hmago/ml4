@@ -1828,6 +1828,6 @@ CACHING & CDN
 
 ---
 
-> **Continued in [Chapter 24 — System Design — Part 2: Data & Distributed Systems](24_system_design_data_distributed.md).** Part 2 picks up the §X.Y numbering at §7.1 and covers databases (SQL/NoSQL internals, indexing, MVCC/WAL, LSM), scaling them out (replication, sharding, multi‑region), the distributed‑systems theory that holds it together (CAP, consensus, time, locks, CRDTs), messaging & streaming (Kafka, outbox + CDC), storage systems, and data processing.
+> **Continued in [Chapter 24 — System Design — Part 2: Data & Distributed Systems](#content/24_system_design_data_distributed).** Part 2 picks up the §X.Y numbering at §7.1 and covers databases (SQL/NoSQL internals, indexing, MVCC/WAL, LSM), scaling them out (replication, sharding, multi‑region), the distributed‑systems theory that holds it together (CAP, consensus, time, locks, CRDTs), messaging & streaming (Kafka, outbox + CDC), storage systems, and data processing.
 >
-> **After that:** [Chapter 25 — System Design — Part 3: Operations & Case Studies](25_system_design_operations_case_studies.md) covers reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, and a full Instagram worked example.
+> **After that:** [Chapter 25 — System Design — Part 3: Operations & Case Studies](#content/25_system_design_operations_case_studies) covers reliability, security, observability, deployment, multi‑region, FinOps, anti‑patterns, and a full Instagram worked example.
