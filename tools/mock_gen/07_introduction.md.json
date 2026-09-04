@@ -658,5 +658,38 @@
     ],
     "answer": 2,
     "explanation": "The timeline marks 1997 as IBM Deep Blue beating Kasparov. AlexNet is listed in 2012, much later."
+  },
+  {
+    "q": "What does the chapter's No Free Lunch discussion imply for a new ML project?",
+    "options": [
+      "Neural networks should be chosen first because they make the weakest assumptions",
+      "Averaged over all possible problems, no optimizer or algorithm is universally best",
+      "XGBoost always beats neural networks except on text data",
+      "The best algorithm can be selected without trying baselines"
+    ],
+    "answer": 1,
+    "explanation": "No Free Lunch says algorithms are equivalent when averaged across all possible problems. Good engineers try several approaches for their specific problem."
+  },
+  {
+    "q": "Which baseline hierarchy item from the chapter is appropriate for a regression task before building a fancy model?",
+    "options": [
+      "Always predict the mean target value",
+      "Always predict the majority class",
+      "Initialize every neural weight to zero",
+      "Use the test set to choose the learning rate"
+    ],
+    "answer": 0,
+    "explanation": "The chapter's naive baseline for regression is always predicting the mean. Majority-class prediction is the corresponding naive baseline for classification."
+  },
+  {
+    "q": "Why does the chapter say to compare a fancy model with simple baselines?",
+    "options": [
+      "Baselines are required because validation sets cannot compare architectures",
+      "If a complex model barely beats a simple one, its extra complexity may not be worthwhile",
+      "Baselines remove irreducible noise from labels before training begins",
+      "A fancy model must use the same inductive bias as linear regression"
+    ],
+    "answer": 1,
+    "explanation": "The chapter says if the fancy model barely beats a linear baseline, it may not be worth the complexity. Strong improvement over baselines suggests real signal."
   }
 ]

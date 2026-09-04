@@ -747,7 +747,7 @@ Two layers: the unglamorous physiology that actually moves the needle, and the A
 
 Persistent fog that sleep and movement don't lift is a signal, not a character flaw. **See a doctor if it lingers** — common, treatable medical causes include sleep apnea, thyroid issues, B12 / vitamin D / iron deficiency, anxiety or depression, chronic stress/burnout, and post-viral effects (e.g., long COVID). Ruling these out is part of staying sharp, not separate from it.
 
-> 🔗 **Go deeper:** for focus, memory techniques, and long-term mental performance, see **[Chapter 05 — Brain Training & Memory](05_brain_training.md)**.
+> 🔗 **Go deeper:** for focus, memory techniques, and long-term mental performance, see **[Chapter 05 — Brain Training & Memory](#content/05_brain_training)**.
 
 ```
   ╔══════════════════════════════════════════════════════════════════════╗

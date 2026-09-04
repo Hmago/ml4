@@ -5,7 +5,7 @@
 **What this chapter covers:**
 The data plane of system design — databases (SQL vs NoSQL, internals, indexing, MVCC/WAL, schema migrations, specialised stores, backups, DB security), scaling them out (vertical, replication, pooling, partitioning vs sharding, CQRS, online resharding, multi‑region DB architectures, DR), the distributed‑systems theory that holds it all together (CAP, PACELC, consistency models, time & clocks, Paxos/Raft, consistent hashing, distributed locks, Bloom filters), messaging & streaming (Kafka, delivery guarantees, outbox + CDC), storage systems (block/file/object, lakes vs warehouses), and data processing (batch vs stream, MapReduce, Lambda & Kappa, exactly‑once).
 
-This is **Part 2** of the three‑chapter System Design series. Read **[Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md)** first if you haven't covered the network/edge stack (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) — many sections below assume those primitives. **[Chapter 25 — Operations & Case Studies](25_system_design_operations_case_studies.md)** builds on this chapter.
+This is **Part 2** of the three‑chapter System Design series. Read **[Chapter 23 — Foundations & Protocols](#content/23_system_design_fundamentals_deep_dive)** first if you haven't covered the network/edge stack (HTTP/TCP/DNS/TLS, load balancing, caching, CDN) — many sections below assume those primitives. **[Chapter 25 — Operations & Case Studies](#content/25_system_design_operations_case_studies)** builds on this chapter.
 
 **How to read it:**
 Most topics follow the same shape — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs.* You can read it cover‑to‑cover (~5 hours) or jump to specific building blocks.
@@ -2201,6 +2201,6 @@ STORAGE & PROCESSING
 
 ---
 
-> **Continued in [Chapter 25 — System Design — Part 3: Operations & Case Studies](25_system_design_operations_case_studies.md).** Part 3 picks up at §13.1 and covers reliability and chaos engineering, security (AuthN/AuthZ, OAuth/OIDC, JWT, crypto, OWASP, mTLS, STRIDE), observability (logs/metrics/traces, SLI/SLO, OpenTelemetry, golden signals), deployment (containers, K8s, GitOps, progressive delivery), search and supporting building blocks, multi‑region architecture, FinOps, the anti‑patterns to spot in design discussions, and a full Instagram worked example.
+> **Continued in [Chapter 25 — System Design — Part 3: Operations & Case Studies](#content/25_system_design_operations_case_studies).** Part 3 picks up at §13.1 and covers reliability and chaos engineering, security (AuthN/AuthZ, OAuth/OIDC, JWT, crypto, OWASP, mTLS, STRIDE), observability (logs/metrics/traces, SLI/SLO, OpenTelemetry, golden signals), deployment (containers, K8s, GitOps, progressive delivery), search and supporting building blocks, multi‑region architecture, FinOps, the anti‑patterns to spot in design discussions, and a full Instagram worked example.
 >
-> **Coming from Part 1?** Return to [Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md) for the network/edge stack referenced throughout this chapter.
+> **Coming from Part 1?** Return to [Chapter 23 — Foundations & Protocols](#content/23_system_design_fundamentals_deep_dive) for the network/edge stack referenced throughout this chapter.

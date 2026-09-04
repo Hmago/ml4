@@ -4,7 +4,25 @@
 
 ---
 
-## 13.1 Why Evaluation Matters
+## What You'll Learn
+
+After this chapter you will be able to:
+- Read a confusion matrix and derive every classification metric from it
+- Choose between precision, recall, F1 and F-beta based on the cost of each error
+- Construct an ROC curve by hand and know when AUC-PR is the honest metric instead
+- Pick the right regression metric, and read what an RMSE–MAE gap is telling you
+- Select a cross-validation scheme — stratified, grouped, or time-ordered
+- Tune hyperparameters without contaminating your estimate of performance
+- Diagnose bias vs variance from learning curves
+- Tell whether one model is genuinely better than another
+
+**Markers:** ★★★ = know cold for interviews · ★★ = high priority · ★ = good to know.
+**Quick check** boxes are retrieval practice — attempt before revealing.
+**Interview** boxes give the question, what to say, and the follow-up trap.
+
+---
+
+## 13.1 Why Evaluation Matters ★
 
 > **Model evaluation** is the systematic process of measuring how well a trained model generalizes to unseen data, using metrics appropriate to the task and the cost structure of errors.
 
@@ -31,6 +49,12 @@ THE ACCURACY TRAP
 
 This chapter gives you the full toolkit: classification metrics, regression metrics, validation strategies, hyperparameter tuning, and diagnostic tools for figuring out what is going wrong and how to fix it.
 
+> **How this chapter fits:** [Ch 8 §8.4](#content/08_core_concepts) explains *data
+> leakage* — the failure this chapter's validation machinery exists to prevent.
+> [Ch 12](#content/12_key_algorithms) covers the algorithms being evaluated and owns
+> the calibration *fixes*; this chapter owns the *diagnosis*.
+> [Ch 27](#content/27_practical_ml) puts it all into a production pipeline.
+
 ```mermaid
 flowchart LR
     A[Trained Model] --> B{Classification or Regression?}
@@ -50,7 +74,7 @@ flowchart LR
 
 ---
 
-## 13.2 The Confusion Matrix
+## 13.2 The Confusion Matrix ★★★
 
 ### Simple Explanation
 Every prediction your classifier makes lands in one of four buckets: right and it said yes, right and it said no, or wrong in one of two different ways. The confusion matrix is simply a 2×2 scoreboard that tallies how often each of those four outcomes happens.
@@ -69,10 +93,10 @@ Every classification metric you will ever use derives from four numbers in this 
            │ Negative │    FP    │    TN    │
            └──────────┴──────────┴──────────┘
 
-  TP (True Positive)  — Model said YES, reality was YES   ✓
-  TN (True Negative)  — Model said NO,  reality was NO    ✓
-  FP (False Positive)  — Model said YES, reality was NO   ✗ (Type I error)
-  FN (False Negative)  — Model said NO,  reality was YES  ✗ (Type II error)
+  TP  True Positive   said YES, was YES   ✓
+  TN  True Negative   said NO,  was NO    ✓
+  FP  False Positive  said YES, was NO    ✗  Type I error
+  FN  False Negative  said NO,  was YES   ✗  Type II error
 ```
 
 ### Worked Example: Cancer Screening
@@ -108,7 +132,7 @@ flowchart TD
 
 ---
 
-## 13.3 Classification Metrics
+## 13.3 Classification Metrics ★★★
 
 ### Accuracy
 
@@ -158,6 +182,22 @@ $$F_1 = \frac{2 \times \text{Precision} \times \text{Recall}}{\text{Precision} +
 
 Why the harmonic mean instead of the arithmetic mean? Because the harmonic mean punishes imbalance. If precision = 1.0 and recall = 0.01, the arithmetic mean is 0.505 (looks acceptable), but the harmonic mean is 0.02 (correctly reflects the disaster).
 
+> **Interview —** *"Why is F1 the harmonic mean rather than a plain average?"*
+> **Say:** Because a plain average lets one number rescue the other, and that is exactly the failure you want to catch. A model that flags a single transaction, correctly, has precision 1.0 and recall ~0.01 — arithmetic mean 0.505, which looks passable for a useless model. The harmonic mean gives 0.02. It is dominated by the **smaller** value, so F1 is only high when **both** are high.
+> **They follow up with:** *"When is F1 the wrong choice?"* — when the two errors have different costs, since F1 weights them equally. Use $F_\beta$ instead: $F_2$ leans toward recall for cancer screening, $F_{0.5}$ toward precision for spam. F1 also ignores **true negatives** entirely, so if correctly identifying negatives matters, reach for MCC.
+
+<details>
+<summary><strong>Quick check.</strong> A model scores precision 0.9 and recall 0.3. Compute F1. Would the arithmetic mean have told you the same story?</summary>
+
+$$F_1 = \frac{2(0.9)(0.3)}{0.9 + 0.3} = \frac{0.54}{1.2} = \mathbf{0.45}$$
+
+The arithmetic mean is $(0.9 + 0.3)/2 = 0.60$ — noticeably rosier.
+
+F1 sits much closer to the **weaker** metric (0.3) than to the stronger one. That is
+the harmonic mean doing its job: the model finds only 30% of positives, and no amount
+of precision on the ones it does flag compensates for that.
+</details>
+
 ### F-beta Score
 
 When you want to weight precision and recall unequally:
@@ -166,6 +206,69 @@ $$F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \times \text{Recall}}{\be
 
 - $F_2$ — weights recall 2x more than precision (use for cancer detection)
 - $F_{0.5}$ — weights precision 2x more than recall (use for spam filtering)
+
+### Multi-Class Metrics — Macro vs Micro vs Weighted
+
+Everything so far has been binary. With more than two classes you compute precision
+and recall **per class** (one-vs-rest), then choose how to average them — and the
+three choices answer different questions.
+
+Three classes, 120 samples:
+
+| Class | TP | FP | FN | Support | Precision |
+|---|---|---|---|---|---|
+| A | 50 | 10 | 5 | 55 | $50/60 = 0.833$ |
+| B | 30 | 15 | 20 | 50 | $30/45 = 0.667$ |
+| C | 10 | 5 | 5 | 15 | $10/15 = 0.667$ |
+| **Total** | **90** | **30** | **30** | **120** | |
+
+**Macro** — plain average of the per-class scores. Every class counts equally,
+regardless of size:
+
+$\frac{0.833 + 0.667 + 0.667}{3} = \mathbf{0.722}$
+
+**Micro** — pool the counts first, then compute once:
+
+$\frac{\sum TP}{\sum TP + \sum FP} = \frac{90}{120} = \mathbf{0.750}$
+
+**Weighted** — average the per-class scores, weighted by support:
+
+$\frac{55(0.833) + 50(0.667) + 15(0.667)}{120} = \mathbf{0.743}$
+
+| Use | When |
+|---|---|
+| **Macro** | Every class matters equally — especially when the rare class is the point. A tiny class scoring 0.2 drags the average down, which is what you want |
+| **Micro** | Every *sample* matters equally. Large classes dominate |
+| **Weighted** | You want a single headline number that reflects the real class mix |
+
+> **The fact interviewers check:** in single-label multi-class, micro-precision,
+> micro-recall and micro-F1 are **all identical, and all equal accuracy** — here every
+> one of them is 0.750. Every misclassification is simultaneously an FP for one class
+> and an FN for another, so the pooled sums coincide. Quoting "micro-F1" as if it adds
+> information beyond accuracy signals you haven't worked it through.
+
+> **Interview —** *"You have a 5-class problem where one class is 2% of the data. Which averaging do you report?"*
+> **Say:** **Macro**, if that rare class is the one that matters — macro gives it equal weight, so poor performance on 2% of the data visibly drags the score down. Micro and weighted are both dominated by the large classes and will happily hide a rare class the model never predicts at all. I would report macro alongside the **per-class** breakdown, since a single number always hides which class is failing.
+> **They follow up with:** *"When would macro be the wrong choice?"* — when class sizes reflect genuine importance rather than a sampling artifact. If 90% of your traffic really is class A, macro penalises you for underperforming on classes users rarely encounter. Then weighted is the honest headline. The question to ask is: *is the imbalance a property of the world, or of my dataset?*
+
+### Matthews Correlation Coefficient (MCC)
+
+A single number that stays honest under imbalance, because it uses **all four** cells:
+
+$\text{MCC} = \frac{TP \cdot TN - FP \cdot FN}{\sqrt{(TP{+}FP)(TP{+}FN)(TN{+}FP)(TN{+}FN)}}$
+
+It ranges from −1 to +1, where 0 is random. Take a model on 1,000 samples with 20
+positives — $TP = 10$, $FP = 5$, $FN = 10$, $TN = 975$:
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.985 — meaningless here |
+| F1 | 0.571 |
+| **MCC** | **0.570** |
+
+Accuracy says the model is superb. MCC agrees with F1 that it is mediocre. Unlike F1,
+MCC also rewards correctly identifying negatives, so it cannot be gamed by a model
+that simply predicts the majority class.
 
 ```chart
 {
@@ -195,12 +298,15 @@ $$F_\beta = (1 + \beta^2) \cdot \frac{\text{Precision} \times \text{Recall}}{\be
 Most classifiers output a probability (e.g., 0.73 for "cancer"). You pick a **threshold** to convert this probability into a label. Changing the threshold directly trades precision for recall.
 
 ```
-  Threshold = 0.3 (aggressive):          Threshold = 0.7 (conservative):
-  ──────────────────────────              ──────────────────────────
-  Flag anything above 0.3 as +           Flag only above 0.7 as +
-  → Catches almost all positives          → Only flags when very confident
-  → Many false alarms                     → Misses borderline cases
-  → HIGH Recall, LOW Precision            → HIGH Precision, LOW Recall
+  Threshold = 0.3            Threshold = 0.7
+  (aggressive)               (conservative)
+  ─────────────────          ─────────────────
+  Flag above 0.3             Flag only above 0.7
+  → catches almost all       → flags only when
+    positives                  very confident
+  → many false alarms        → misses borderline
+  → HIGH recall              → HIGH precision
+    LOW precision              LOW recall
 ```
 
 ```chart
@@ -242,7 +348,7 @@ Most classifiers output a probability (e.g., 0.73 for "cancer"). You pick a **th
 
 ---
 
-## 13.4 ROC Curve & AUC
+## 13.4 ROC Curve & AUC ★★★
 
 ### Simple Explanation
 A classifier doesn't just answer yes or no — under the hood it produces a score, and *you* pick the threshold that turns that score into a decision. Slide the threshold and you trade catching more real positives against triggering more false alarms. The ROC curve draws that entire trade-off in one picture, and AUC squeezes the whole picture down to a single number.
@@ -252,6 +358,90 @@ A classifier doesn't just answer yes or no — under the hood it produces a scor
 The ROC curve shows how well a model separates positives from negatives across *all* thresholds simultaneously. You do not need to pick a single threshold to compare models — AUC does that for you.
 
 **Interpreting AUC:** if you randomly draw one positive and one negative example, AUC is the probability that the model assigns a higher score to the positive example.
+
+### Worked Example — Building an ROC by Hand
+
+This is the classic whiteboard exercise. Eight predictions, sorted by score, four of
+each class:
+
+| Score | Actual |
+|---|---|
+| 0.95 | **P** |
+| 0.85 | **P** |
+| 0.70 | N |
+| 0.60 | **P** |
+| 0.55 | N |
+| 0.40 | **P** |
+| 0.30 | N |
+| 0.20 | N |
+
+**Sweep the threshold down the list.** Each row you pass gets labelled positive.
+With $P = 4$ and $N = 4$: $\text{TPR} = TP/4$, $\text{FPR} = FP/4$.
+
+| Threshold just below | TP | FP | FPR | TPR |
+|---|---|---|---|---|
+| — (start) | 0 | 0 | 0.00 | 0.00 |
+| 0.95 (P) | 1 | 0 | 0.00 | 0.25 |
+| 0.85 (P) | 2 | 0 | 0.00 | 0.50 |
+| 0.70 (N) | 2 | 1 | 0.25 | 0.50 |
+| 0.60 (P) | 3 | 1 | 0.25 | 0.75 |
+| 0.55 (N) | 3 | 2 | 0.50 | 0.75 |
+| 0.40 (P) | 4 | 2 | 0.50 | **1.00** |
+| 0.30 (N) | 4 | 3 | 0.75 | 1.00 |
+| 0.20 (N) | 4 | 4 | 1.00 | 1.00 |
+
+Notice the shape of the walk: **a positive moves you UP, a negative moves you RIGHT.**
+That is the entire mechanic of an ROC curve.
+
+```
+  TPR
+  1.00│           ┌────────────────
+      │           │
+  0.75│      ┌────┘
+      │      │
+  0.50│ ┌────┘
+      │ │
+  0.25│ │
+      │ │
+  0.00└─┴──────────────────────────
+      0   0.25  0.50  0.75  1.00  FPR
+```
+
+**AUC by the trapezoid rule** — sum the area of each step:
+
+$$(0.25 \times 0.50) + (0.25 \times 0.75) + (0.25 \times 1.00) + (0.25 \times 1.00) = \mathbf{0.8125}$$
+
+**AUC the other way — count the pairs.** Remember AUC is the probability a random
+positive outranks a random negative. There are $4 \times 4 = 16$ pairs. Count how many
+negatives each positive beats: $0.95$ beats all 4, $0.85$ beats 4, $0.60$ beats 3,
+$0.40$ beats 2.
+
+$$\text{AUC} = \frac{4 + 4 + 3 + 2}{16} = \frac{13}{16} = \mathbf{0.8125}$$
+
+**The two methods agree exactly** — they are the same quantity computed differently,
+and being able to show that is what separates a memorised definition from real
+understanding. (If scores tie, a tied pair counts as half.)
+
+> **Interview —** *"Your model has AUC = 0.85. What does that number actually mean?"*
+> **Say:** Take one random positive and one random negative. There is an **85% chance the model scores the positive higher**. That is the precise interpretation — AUC measures **ranking quality**, not accuracy, and it does not depend on any threshold.
+> **They follow up with:** *"So is 0.85 good?"* — it depends entirely on the base rate and the alternative. Two things I would flag: AUC of 0.5 is random and **below 0.5 means the model is anti-correlated** (invert it and you have a good model). And a high AUC says nothing about whether the **probabilities** are trustworthy — a model can rank perfectly and still be badly calibrated (§13.12).
+
+<details>
+<summary><strong>Quick check.</strong> Three predictions, scores 0.9 (positive), 0.6 (negative), 0.4 (positive). Compute AUC by counting pairs.</summary>
+
+There are $1 \times 2$... careful — 2 positives × 1 negative = **2 pairs**.
+
+- Positive 0.9 vs negative 0.6 → positive ranks higher ✓
+- Positive 0.4 vs negative 0.6 → negative ranks higher ✗
+
+$$\text{AUC} = \frac{1}{2} = \mathbf{0.5}$$
+
+Exactly random, even though the model got the top-ranked item right. With so few
+points AUC is extremely noisy — which is the real lesson: always report an interval
+(§13.10), not a bare AUC, on small test sets.
+</details>
+
+### When to Use ROC-AUC
 
 ```
   AUC INTERPRETATION GUIDE
@@ -319,7 +509,7 @@ ROC-AUC can be **misleading** on heavily imbalanced datasets because it is domin
 
 ---
 
-## 13.5 Precision-Recall Curve & AUC-PR
+## 13.5 Precision-Recall Curve & AUC-PR ★★★
 
 ### Simple Explanation
 When the thing you care about is rare — fraud, disease, defects — most of your data is the boring negative class, and a metric can look wonderful while your model quietly misses the needles in the haystack. The precision-recall curve throws out those easy negatives and focuses only on how well you find the rare positives *and* how often your alarms are real.
@@ -327,6 +517,36 @@ When the thing you care about is rare — fraud, disease, defects — most of yo
 > **Precision-Recall (PR) curve**: a plot of precision (y-axis) vs. recall (x-axis) at varying thresholds. **AUC-PR** is the area under this curve. Unlike ROC, the PR curve focuses exclusively on the positive class, making it the right choice for imbalanced datasets.
 
 In fraud detection, only 0.2% of transactions are fraudulent. The ROC curve might look great (AUC = 0.97) because TN dominates. But the PR curve reveals how well the model actually catches fraud without flooding analysts with false alerts.
+
+### Worked Example — Why ROC Flatters an Imbalanced Model
+
+Take 100 transactions: **5 fraud, 95 legitimate**. At some threshold the model catches
+4 of the 5 frauds, and also flags 20 legitimate transactions.
+
+| Metric | Computation | Result |
+|---|---|---|
+| **Recall** | $4/5$ | 0.80 |
+| **FPR** (ROC's x-axis) | $20/95$ | **0.21** — looks fine |
+| **Precision** (PR's y-axis) | $4/(4+20)$ | **0.17** — brutal |
+
+The same 20 false alarms produce a *reassuring* number and an *alarming* one. The
+reason is the denominator:
+
+$$\text{FPR} = \frac{FP}{FP + TN} = \frac{20}{95} \qquad\text{vs}\qquad \text{Precision} = \frac{TP}{TP + FP} = \frac{4}{24}$$
+
+**FPR divides by the huge negative class**, so 20 mistakes barely register. Precision
+divides by the number of alarms you actually raised, so those same 20 mistakes
+dominate. On this model an analyst opens 24 cases to find 4 real ones — five out of
+every six alerts are wasted.
+
+> **The rule:** when the positive class is rare, ROC-AUC measures something real but
+> not what you care about. Report **AUC-PR**, and remember its baseline is not 0.5 —
+> a random classifier scores the positive prevalence, here **0.05**. An AUC-PR of 0.30
+> sounds terrible and is in fact 6× better than random.
+
+> **Interview —** *"A fraud model reports ROC-AUC of 0.97, but the fraud team says it is useless. How can both be true?"*
+> **Say:** ROC-AUC is computed from TPR and **FPR**, and FPR divides by the negative class. When 99.8% of transactions are legitimate, thousands of false positives barely move FPR, so the curve looks superb. The team experiences **precision** — of the alerts they open, how many are real — and precision divides by the number of alerts, so those same false positives dominate it.
+> **They follow up with:** *"What should they have reported?"* — **AUC-PR**, plus **precision@k** for the k alerts analysts can actually review in a day. And I'd note AUC-PR's baseline is the prevalence, not 0.5, so the numbers look small even when the model is doing well — you must compare against that baseline rather than against 0.5.
 
 ```
   PR CURVE KEY PROPERTIES
@@ -386,7 +606,7 @@ In fraud detection, only 0.2% of transactions are fraudulent. The ROC curve migh
 
 ---
 
-## 13.6 Regression Metrics
+## 13.6 Regression Metrics ★★
 
 ### Simple Explanation
 For regression there is no "right or wrong," only "how far off." Every metric here answers that question a little differently: some average the raw miss, some punish big misses far more harshly than small ones, and some report the error in the original units so you can explain it to a stakeholder. Which one you reach for depends on whether a single huge mistake should hurt more than many tiny ones.
@@ -427,6 +647,26 @@ $$\text{RMSE} = \sqrt{\text{MSE}} = \sqrt{860} \approx \$29{,}300$$
 
 RMSE is always $\geq$ MAE. The gap between RMSE and MAE tells you about error variance: if RMSE $\gg$ MAE, a few predictions have very large errors.
 
+> **Interview —** *"Your RMSE is roughly three times your MAE. What does that tell you, before you look at anything else?"*
+> **Say:** That the errors are **very unevenly distributed** — a small number of predictions are badly wrong. RMSE squares each error before averaging, so it is dominated by the largest ones, while MAE weights every error equally. If they were similar in size the two would be close; a 3× gap means outliers are carrying the metric.
+> **They follow up with:** *"What would you do about it?"* — first look at the worst rows rather than reach for a model change. Usually it is one of three things: genuine outliers in the target, a subpopulation the model handles badly (which a segment-wise MAE will expose), or data errors. Then decide deliberately: if those large errors are **disproportionately costly**, RMSE is the right objective and I should fix the model. If they are noise or bad labels, MAE — or Huber loss, which is quadratic near zero and linear in the tails — is the more honest target.
+
+<details>
+<summary><strong>Quick check.</strong> On a test set your model scores R² = −0.15. Is this a bug?</summary>
+
+**No — it is a legitimate and meaningful result.** R² compares your model against the
+baseline of always predicting the mean:
+
+$$R^2 = 1 - \frac{SS_{res}}{SS_{tot}}$$
+
+A negative value means $SS_{res} > SS_{tot}$: your model's squared error is **larger
+than simply predicting the average** would have been. A constant would beat it.
+
+On *training* data with an intercept, OLS cannot do this — R² is bounded at 0. Seeing
+it on a **test set** signals real trouble: severe overfitting, distribution shift
+between train and test, or a broken preprocessing step at inference time.
+</details>
+
 ### R² — Coefficient of Determination
 
 > **R²** = the proportion of variance in the target variable explained by the model. Compares model performance against the baseline of always predicting the mean.
@@ -440,6 +680,27 @@ $$R^2 = 1 - \frac{\sum(y_i - \hat{y}_i)^2}{\sum(y_i - \bar{y})^2} = 1 - \frac{SS
 | 0.5 | Model explains 50% of variance |
 | 0.0 | No better than predicting the mean |
 | < 0 | Worse than predicting the mean |
+
+**Computed for our five houses.** The mean price is $\bar{y} = 1800/5 = 360$:
+
+$$SS_{res} = 400 + 100 + 900 + 400 + 2500 = 4{,}300$$
+
+$$SS_{tot} = (300{-}360)^2 + (450{-}360)^2 + (200{-}360)^2 + (500{-}360)^2 + (350{-}360)^2$$
+$$= 3600 + 8100 + 25600 + 19600 + 100 = 57{,}000$$
+
+$$R^2 = 1 - \frac{4{,}300}{57{,}000} = \mathbf{0.925}$$
+
+The model explains 92.5% of the variation in house prices. Note that $SS_{res}$ is the
+same 4,300 that produced MSE — R² is just that error **rescaled against the spread of
+the data itself**, which is why it is unitless and comparable across problems in a way
+RMSE is not.
+
+> **Why R² can go negative.** $SS_{tot}$ is the error of the dumbest useful baseline:
+> always predict the mean. If your model's $SS_{res}$ exceeds it, the fraction is
+> greater than 1 and R² goes below zero. That is not a broken metric — it is R²
+> correctly reporting that a constant would have beaten your model. It happens most
+> often on a **test set**, where a fitted model can genuinely underperform the
+> training mean.
 
 ### MAPE — Mean Absolute Percentage Error
 
@@ -525,7 +786,7 @@ MAPE is intuitive ("we're off by about 8.4%") but fails when actual values are n
 
 ---
 
-## 13.7 Cross-Validation
+## 13.7 Cross-Validation ★★★
 
 > **Cross-validation** is a resampling procedure that partitions data into multiple train/test splits, trains and evaluates the model on each split, and averages the results to produce a more reliable performance estimate than a single split.
 
@@ -596,6 +857,93 @@ For imbalanced data this is essential. If your dataset is 5% fraud, regular K-Fo
 
 **Rule:** always use Stratified K-Fold for classification. In scikit-learn: `StratifiedKFold(n_splits=5)`.
 
+### Group K-Fold — When One Entity Owns Several Rows
+
+Stratification fixes class balance. It does **not** stop the same *entity* appearing on
+both sides of a split — and that is a silent, score-inflating leak.
+
+```
+  30 X-rays from 10 patients (3 scans each)
+
+  Plain KFold — split by ROW:
+    train: patient_7 scan_1, scan_3
+    test:  patient_7 scan_2      ← same patient, both sides
+    The model can memorise the PATIENT, not the disease.
+    AUC looks superb. New patients break it.
+
+  GroupKFold — split by GROUP:
+    every scan from patient_7 lands on ONE side
+    Score drops. That lower number is the honest one.
+```
+
+Use it whenever rows are **not independent**: several visits per customer, several
+sessions per user, several photos per product, several rows per household.
+
+```python
+from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
+
+gkf = GroupKFold(n_splits=5)
+for tr, te in gkf.split(X, y, groups=patient_ids):
+    ...
+
+# Need class balance AND group isolation? Use both at once:
+sgkf = StratifiedGroupKFold(n_splits=5)
+```
+
+> **The tell that you needed this:** validation scores that are excellent and stable,
+> followed by a large, unexplained drop in production. Group leakage is covered from
+> the data side in [Ch 8 §8.4](#content/08_core_concepts); this is the validation-side
+> fix.
+
+> **Interview —** *"You have 10,000 medical images from 500 patients. How do you split them?"*
+> **Say:** By **patient**, not by image — `GroupKFold` with `patient_id` as the group. With 20 images per patient, a random row-level split puts the same patient on both sides, and the model can memorise patient-specific anatomy rather than learn the pathology. The validation score would look excellent and would not survive contact with new patients.
+> **They follow up with:** *"What if the classes are also imbalanced?"* — `StratifiedGroupKFold`, which keeps whole patients on one side while approximately preserving class ratios. It cannot do both perfectly, since patients are indivisible, but it gets close. I would also expect the honest score to be **lower** than the leaky one — that drop is the point, not a regression.
+
+<details>
+<summary><strong>Quick check.</strong> Match each scenario to its CV scheme: (a) predicting next quarter's revenue from 8 years of monthly data; (b) 1,200 loan applications, 4% default; (c) 60 rare-disease samples; (d) 50,000 reviews from 3,000 users.</summary>
+
+- **(a) `TimeSeriesSplit`** — never shuffle temporal data. Training on the future to
+  predict the past inflates the score and cannot be reproduced in production.
+- **(b) `StratifiedKFold`** — at 4% positives, a plain split can hand you a fold with
+  almost no defaults, making that fold's metric meaningless.
+- **(c) LOOCV** — with 60 samples, holding out 20% wastes data you cannot spare. The
+  cost of 60 fits is trivial at this size.
+- **(d) `GroupKFold` on `user_id`** — one user writes many reviews, so row-level
+  splitting leaks their writing style across the boundary.
+
+The general rule: ask **what unit is actually independent?** That unit is what you
+split on.
+</details>
+
+### Nested Cross-Validation — Tuning Without Cheating
+
+If you use the same CV loop to pick hyperparameters *and* to report performance, the
+reported number is optimistic: you chose the settings that happened to suit those
+folds. Nested CV separates the two jobs.
+
+```
+  OUTER loop (estimates performance)
+  ├─ fold 1 → held out
+  │    INNER loop on the other 4 folds
+  │      tries hyperparameters, picks the best
+  │    → train with those, score on outer fold 1
+  ├─ fold 2 → held out ... and so on
+  └─ report the MEAN of the outer scores
+```
+
+The inner loop never sees the outer test fold, so tuning cannot contaminate the
+estimate. The cost is multiplicative — 5 outer × 5 inner × 20 configurations = 500
+fits — which is why it is used to *report* a trustworthy number, or to compare two
+modelling approaches, rather than to produce the final shipped model.
+
+> **What people say instead, and why it is usually fine:** a single held-out test set,
+> touched exactly once. Nested CV earns its cost when data is scarce (a single split
+> would be too noisy) or when the headline number will be published.
+
+> **Interview —** *"How do you tune hyperparameters and report performance without contaminating the estimate?"*
+> **Say:** Keep the two jobs on separate data. The simple version is a three-way split — train, validation, test — where I tune on validation and touch test exactly once, at the end. If data is too scarce for that to be stable, **nested cross-validation**: an inner loop selects hyperparameters, an outer loop estimates performance, and the inner loop never sees the outer test fold.
+> **They follow up with:** *"What goes wrong if you just use plain CV for both?"* — you get an optimistically biased number, because you reported the best score over many configurations, and the maximum of many noisy estimates is biased upward. With enough configurations you can "achieve" a strong CV score on **pure noise**. The bias grows with the size of the search, which is exactly why a big hyperparameter sweep makes this worse, not better.
+
 ### Leave-One-Out Cross-Validation (LOOCV)
 
 > **LOOCV** is K-Fold where K = N (number of samples). Each fold trains on N-1 samples and tests on exactly one.
@@ -629,6 +977,7 @@ In scikit-learn: `TimeSeriesSplit(n_splits=5)`.
 flowchart TD
     A{What kind of data?} -->|"Balanced classification"| B["K-Fold (K=5 or 10)"]
     A -->|"Imbalanced classification"| C["Stratified K-Fold"]
+    A -->|"Repeated entities (patients, users)"| G["GroupKFold / StratifiedGroupKFold"]
     A -->|"Very small dataset < 100"| D["Leave-One-Out (LOOCV)"]
     A -->|"Time series / sequential"| E["TimeSeriesSplit"]
     A -->|"Regression"| F["K-Fold (K=5 or 10)"]
@@ -636,7 +985,7 @@ flowchart TD
 
 ---
 
-## 13.8 Hyperparameter Tuning
+## 13.8 Hyperparameter Tuning ★★
 
 ### Simple Explanation
 Some settings a model figures out on its own; others you have to dial in yourself before training even begins — how deep a tree may grow, how big each learning step is. Those knobs are the hyperparameters, and there is no formula that hands you the best combination. Tuning is the organized search for the settings that make validation performance the best.
@@ -728,7 +1077,7 @@ Libraries: **Optuna**, **Hyperopt**, **scikit-optimize**, **Ray Tune**.
 
 ---
 
-## 13.9 Learning Curves — Diagnosing Bias vs. Variance
+## 13.9 Learning Curves — Diagnosing Bias vs. Variance ★★★
 
 ### Simple Explanation
 When a model underperforms, you face a fork in the road: is it too simple to capture the pattern (high bias), or so flexible that it memorized the training data (high variance)? Learning curves diagnose this by plotting how training and validation scores evolve as the model is fed more and more data.
@@ -738,28 +1087,51 @@ When a model underperforms, you face a fork in the road: is it too simple to cap
 The gap between training and validation curves is the diagnostic signal.
 
 ```
-  HIGH VARIANCE (Overfitting)          HIGH BIAS (Underfitting)
-  ─────────────────────────            ─────────────────────────
-  Score                                Score
-    │ ──── Train ≈ 0.97                  │
-  1.0│                                 1.0│
-    │                                    │
-  0.9│                                 0.9│
-    │                                    │
-  0.8│                                 0.8│  ──── Train ≈ 0.72
-    │   ···· Val ≈ 0.68                  │  ···· Val ≈ 0.70
-  0.7│                                 0.7│
-    │                                    │
-  0.6│                                 0.6│
-    └──────────────── →                  └──────────────── →
-    Training data / epochs               Training data / epochs
+  HIGH VARIANCE                 HIGH BIAS
+  (overfitting)                 (underfitting)
+  ─────────────────             ─────────────────
+  Score                         Score
+    │ ─── Train ≈ 0.97            │
+  1.0│                          1.0│
+    │                             │
+  0.9│                          0.9│
+    │                             │
+  0.8│                          0.8│ ─── Train ≈ 0.72
+    │  ··· Val ≈ 0.68             │ ··· Val ≈ 0.70
+  0.7│                          0.7│
+    │                             │
+  0.6│                          0.6│
+    └────────────── →             └────────────── →
+      training size                 training size
 
-  LARGE GAP = variance problem         BOTH LOW = bias problem
-  Train is great, val is poor           Model can't learn the pattern
+  LARGE GAP                     BOTH LOW
+  Train great, val poor         Cannot learn the pattern
 
-  Fix: more data, regularization,      Fix: more features, bigger model,
-       dropout, simpler model                less regularization, train longer
+  Fix: more data,               Fix: more features,
+  regularization, dropout,      bigger model, less
+  simpler model                 regularization, train longer
 ```
+
+> **Interview —** *"Training accuracy 0.98, validation 0.72. What is wrong and what do you do?"*
+> **Say:** A 26-point gap is **high variance** — the model is memorising rather than generalising. In order of what I would try: more training data (the learning curve tells me whether that will help — if the validation curve is still climbing, it will); stronger regularization; a simpler model or fewer features; and for boosting or neural nets, early stopping.
+> **They follow up with:** *"What if both curves sat at 0.72?"* — the opposite problem, **high bias**. More data would not help at all; the curves would have already converged. There I would add features or interactions, increase model capacity, or reduce regularization. The diagnostic is the **gap**, not the level: a large gap means variance, both-low-and-converged means bias.
+
+<details>
+<summary><strong>Quick check.</strong> A learning curve shows training score falling from 0.99 to 0.91 as data grows, while validation rises from 0.62 to 0.88 and is still climbing at the largest size. What should you do?</summary>
+
+**Collect more data.** The curves are converging and the validation curve has not
+plateaued — that is the signature of a variance problem that more data will keep
+fixing.
+
+Note the training score *falling* is healthy, not a regression: with 100 rows a
+flexible model memorises them (0.99); with 10,000 it can no longer memorise and must
+generalise, so training score drops while validation climbs. The gap narrowing from
+0.37 to 0.03 is the real signal.
+
+**When more data would NOT help:** if both curves had flattened and converged at a low
+value. Then you are bias-limited and need a better model or better features, not more
+rows.
+</details>
 
 ```chart
 {
@@ -829,7 +1201,7 @@ The gap between training and validation curves is the diagnostic signal.
 
 ---
 
-## 13.10 Model Selection: Which Metric for Which Problem?
+## 13.10 Model Selection: Which Metric for Which Problem? ★★
 
 The metric you optimize defines what your model learns to care about. Choose wrong and you optimize for the wrong thing.
 
@@ -865,9 +1237,57 @@ In practice, never rely on a single metric. Report a dashboard:
   cost of false alarm vs cost of missed fraud.
 ```
 
+### Is Model B Actually Better Than Model A?
+
+Model A scores 91.0%, Model B scores 92.0%. Ship B? **Not yet** — you have two point
+estimates and no idea whether that gap is signal or noise.
+
+**Bootstrap confidence intervals.** Resample the test set with replacement, say 1,000
+times, and recompute the metric each time. The 2.5th and 97.5th percentiles give a 95%
+interval:
+
+```
+  Model A: 0.910  (95% CI 0.887 – 0.933)
+  Model B: 0.920  (95% CI 0.898 – 0.942)
+                   └── intervals overlap heavily ──┘
+
+  The 1-point gap is well inside the noise.
+```
+
+**McNemar's test** is sharper, because it compares the models **on the same rows**
+rather than treating the two scores as independent. Build a 2×2 table of *disagreements*
+only:
+
+| | B correct | B wrong |
+|---|---|---|
+| **A correct** | 800 | $b = 15$ |
+| **A wrong** | $c = 35$ | 150 |
+
+The cells where both agree carry no information about which is better — only $b$ and
+$c$ matter. Under the null hypothesis that the models are equally good, $b$ and $c$
+should be about equal:
+
+$$\chi^2 = \frac{(|b - c| - 1)^2}{b + c} = \frac{(|15-35| - 1)^2}{50} = \frac{361}{50} = 7.22$$
+
+That exceeds the critical value of **3.84** ($p < 0.05$, 1 degree of freedom), so B is
+genuinely better — B fixes 35 of A's mistakes while breaking only 15 of A's successes.
+
+> **Why the paired test is the right one:** the two models saw identical test data, so
+> their errors are correlated. Treating the scores as two independent samples throws
+> that pairing away and needs a far larger gap to reach significance. Same reason you
+> would use a paired t-test rather than an unpaired one.
+
+**In practice:** if the intervals overlap substantially, prefer the model that is
+simpler, faster, or easier to maintain — you have no evidence to pay a complexity cost
+for the other one.
+
+> **Interview —** *"Model A scores 91.0%, Model B scores 92.0% on your test set. Do you ship B?"*
+> **Say:** Not on that evidence alone. Two point estimates with no uncertainty tell me nothing about whether a 1-point gap is real. I would bootstrap the test set — resample with replacement 1,000 times and recompute — to get confidence intervals, and run **McNemar's test**, which compares the models on the *same rows* and only looks at where they disagree.
+> **They follow up with:** *"Why McNemar rather than a two-sample test?"* — because the models saw identical test data, so their errors are correlated; a paired test is strictly more powerful. And even if B wins significantly, I would still weigh cost: if B is slower, larger or harder to maintain, a statistically real 1-point gain may not be worth it.
+
 ---
 
-## 13.11 Common Evaluation Mistakes
+## 13.11 Common Evaluation Mistakes ★★★
 
 These are the errors that trip up practitioners from beginners to experienced engineers.
 
@@ -905,7 +1325,7 @@ Random splits can produce folds where rare classes are absent. Always use strati
 
 > If you use the test set to make modeling decisions (threshold tuning, feature selection, model selection), it becomes a second training set and your "test" performance is no longer an unbiased estimate.
 
-The fix: use three sets — **train / validation / test**. Tune on validation, report final numbers on test. Or use nested cross-validation.
+The fix: use three sets — **train / validation / test**. Tune on validation, report final numbers on test. Or use **nested cross-validation** (§13.7).
 
 ```
   CORRECT THREE-WAY SPLIT
@@ -977,51 +1397,74 @@ print("Brier:", brier_score_loss(y_test, probs))   # lower is better
 ```
 
 ### Fixing miscalibration
-Recalibrate *post-hoc* on a held-out set — **Platt scaling** (sigmoid), **isotonic regression** (flexible, needs more data), or **temperature scaling** (neural nets). Full methods and code are in **Chapter 12 §12.14**.
+Recalibrate *post-hoc* on a held-out set — **Platt scaling** (sigmoid), **isotonic regression** (flexible, needs more data), or **temperature scaling** (neural nets). Full methods and code are in [Ch 12 §12.14](#content/12_key_algorithms).
 
 > **Interview cue:** "High AUC but a bad Brier score / ECE" means the model *ranks* well but its probabilities are off — recalibrate rather than retrain.
+
+> **Interview —** *"A model has AUC 0.94 but the product team says its probabilities are unusable. Explain how both can be true."*
+> **Say:** AUC measures **discrimination** — whether positives are ranked above negatives. Calibration is a different property: whether a predicted 0.8 actually occurs 80% of the time. A model can rank every case perfectly and still be systematically over- or under-confident, because **any monotonic squash of the scores leaves the ranking, and therefore the AUC, completely unchanged.** Squaring every probability would keep AUC at 0.94 and destroy calibration.
+> **They follow up with:** *"So how do you diagnose and fix it?"* — diagnose with a **reliability diagram** plus **ECE** or the **Brier score**; AUC will never reveal it. Fix post-hoc on held-out data with Platt scaling or isotonic regression ([Ch 12 §12.14](#content/12_key_algorithms)). Because those transforms are monotonic, **calibration cannot hurt your AUC** — it fixes the numbers while leaving the ordering intact. It matters whenever anything downstream does arithmetic on the probability: expected value, bidding, risk thresholds.
+
+<details>
+<summary><strong>Quick check.</strong> Of 100 predictions made with confidence 0.9, only 60 turn out positive. Is the model over- or under-confident, and what is the contribution to ECE from this bin?</summary>
+
+**Over-confident.** It claimed 90% and delivered 60%.
+
+The bin's gap is $|0.90 - 0.60| = 0.30$. If these 100 predictions are the whole test
+set, that bin contributes its full weight:
+
+$$\frac{100}{100} \times 0.30 = \mathbf{0.30}$$
+
+An ECE of 0.30 is severe — for reference, a well-calibrated model usually lands below
+0.05. On a reliability diagram this point sits **well below the diagonal**, which is
+the visual signature of over-confidence. Boosted trees and deep networks both fail
+this way by default.
+</details>
 
 ---
 
 ## Key Takeaways
 
 ```
-╔════════════════════════════════════════════════════════════════════╗
-║  MODEL EVALUATION — WHAT TO REMEMBER                             ║
-╠════════════════════════════════════════════════════════════════════╣
-║                                                                   ║
-║  CLASSIFICATION                                                   ║
-║  • Confusion matrix: TP, TN, FP, FN — the foundation             ║
-║  • Precision: "when I say positive, am I right?"                  ║
-║  • Recall: "of all real positives, how many did I catch?"         ║
-║  • F1: harmonic mean of precision & recall                        ║
-║  • ROC-AUC: threshold-independent, overall discrimination         ║
-║  • AUC-PR: preferred for imbalanced data                          ║
-║  • Specificity: recall for the negative class                     ║
-║                                                                   ║
-║  REGRESSION                                                       ║
-║  • MAE: interpretable, robust to outliers                         ║
-║  • RMSE: penalizes large errors more heavily                      ║
-║  • R²: proportion of variance explained (0 = mean baseline)       ║
-║  • MAPE: percentage-based, intuitive but fails near zero          ║
-║                                                                   ║
-║  VALIDATION                                                       ║
-║  • K-Fold CV: average over K splits for reliable estimates         ║
-║  • Stratified K-Fold: preserve class ratios (always for clf)      ║
-║  • Time Series Split: never leak future into past                  ║
-║                                                                   ║
-║  TUNING                                                           ║
-║  • Grid Search: exhaustive, expensive                              ║
-║  • Random Search: surprisingly effective, better coverage          ║
-║  • Bayesian Optimization: smart, efficient, best for costly evals  ║
-║                                                                   ║
-║  DIAGNOSTICS                                                      ║
-║  • Learning curves: gap = variance, both low = bias                ║
-║  • Never evaluate on training data                                 ║
-║  • Never tune on the test set                                      ║
-║  • Always report confidence intervals                              ║
-║                                                                   ║
-╚════════════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════╗
+║  MODEL EVALUATION — WHAT TO REMEMBER                           ║
+║  ────────────────────────────────────────────────────────────  ║
+║  CLASSIFICATION                                                ║
+║  Confusion matrix: TP, TN, FP, FN — everything derives here    ║
+║  Precision  "when I say positive, am I right?"                 ║
+║  Recall     "of all real positives, how many did I catch?"     ║
+║  F1         harmonic mean — punishes imbalance between them    ║
+║  Specificity = recall for the negative class                   ║
+║  ROC-AUC    threshold-free ranking quality                     ║
+║  AUC-PR     preferred when positives are rare                  ║
+║  ────────────────────────────────────────────────────────────  ║
+║  REGRESSION                                                    ║
+║  MAE   interpretable, robust to outliers                       ║
+║  RMSE  penalizes large errors; RMSE >> MAE means a few         ║
+║        predictions are badly wrong                             ║
+║  R²    variance explained; 0 = no better than the mean,        ║
+║        and it CAN go negative                                  ║
+║  MAPE  intuitive percentage, but blows up near zero            ║
+║  ────────────────────────────────────────────────────────────  ║
+║  VALIDATION                                                    ║
+║  K-Fold        average over K splits                           ║
+║  Stratified    preserve class ratios — always for classifying  ║
+║  GroupKFold    when one entity owns several rows               ║
+║  TimeSeries    never let the future leak into the past         ║
+║  Nested CV     inner loop tunes, outer loop estimates          ║
+║  ────────────────────────────────────────────────────────────  ║
+║  TUNING                                                        ║
+║  Grid      exhaustive and expensive                            ║
+║  Random    better coverage for the same budget                 ║
+║  Bayesian  smart; worth it when each fit is costly             ║
+║  ────────────────────────────────────────────────────────────  ║
+║  DIAGNOSTICS                                                   ║
+║  Learning curves: big gap = variance, both low = bias          ║
+║  Never evaluate on training data                               ║
+║  Never tune on the test set                                    ║
+║  A high AUC can still be badly calibrated                      ║
+║  Report intervals, not just point estimates                    ║
+╚════════════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -1044,15 +1487,7 @@ No. A model that always predicts "healthy" also achieves 99% accuracy, while cat
 Marking a real email as spam (FP) is generally worse — the user misses a potentially critical message. Optimize **Precision**: when the model says "spam," it should be right. The F0.5 score is also appropriate since it weights precision higher than recall. However, the tradeoff depends on context — for a security-focused filter, letting malicious spam through (FN) might be worse.
 </details>
 
-**3.** Explain what AUC = 0.85 means in practical terms.
-
-<details>
-<summary>Answer</summary>
-
-AUC = 0.85 means: if you randomly pick one positive example and one negative example, the model assigns a higher predicted probability to the positive example 85% of the time. It measures the model's ability to **rank** positives above negatives across all thresholds. An AUC of 0.85 is considered "good" (0.8–0.9 range).
-</details>
-
-**4.** You have 500 data points. Should you use a single train/test split or cross-validation? Why?
+**3.** You have 500 data points. Should you use a single train/test split or cross-validation? Why?
 
 <details>
 <summary>Answer</summary>
@@ -1060,15 +1495,7 @@ AUC = 0.85 means: if you randomly pick one positive example and one negative exa
 Use **cross-validation** (5-fold or 10-fold). With only 500 samples, a single random split could produce a test set that is unrepresentative — either too easy or too hard — giving a misleading estimate. K-fold CV evaluates on every data point across K runs and gives you both a mean score and a standard deviation, providing a much more reliable and informative performance estimate.
 </details>
 
-**5.** Your model has train accuracy = 97% and validation accuracy = 68%. Diagnose the problem and propose three fixes.
-
-<details>
-<summary>Answer</summary>
-
-This is **high variance (overfitting)** — the large gap between train and validation performance means the model has memorized the training data but fails to generalize. Three fixes: (1) **Add more training data** to give the model more examples to learn genuine patterns. (2) **Add regularization** (L1/L2 penalties, dropout for neural nets) to constrain model complexity. (3) **Simplify the model** — reduce the number of layers, trees, or features. Early stopping is also effective for iterative learners.
-</details>
-
-**6.** You are tuning 4 hyperparameters, each with 5 possible values. How many combinations does grid search try? Why might random search be better?
+**4.** You are tuning 4 hyperparameters, each with 5 possible values. How many combinations does grid search try? Why might random search be better?
 
 <details>
 <summary>Answer</summary>
@@ -1076,15 +1503,7 @@ This is **high variance (overfitting)** — the large gap between train and vali
 Grid search tries $5^4 = 625$ combinations. With 5-fold cross-validation, that is 3,125 model fits. Random search is often better because (a) in practice only 1–2 hyperparameters significantly affect performance, and (b) grid search wastes budget by exhaustively varying unimportant hyperparameters while only testing 5 unique values of the important ones. Random search with 100 trials typically explores far more unique values of each hyperparameter and often finds near-optimal settings faster.
 </details>
 
-**7.** Why is AUC-PR preferred over AUC-ROC for fraud detection with 0.1% fraud rate?
-
-<details>
-<summary>Answer</summary>
-
-With 0.1% fraud rate, there are ~1,000 negatives for every positive. The ROC curve's x-axis (False Positive Rate = FP / (FP + TN)) is dominated by the huge TN count, so even many false positives barely move the FPR. This makes the ROC curve look excellent even for mediocre models. The PR curve focuses exclusively on the positive class — precision measures FP relative to the (small number of) predicted positives, making it much more sensitive to the model's actual ability to identify fraud without flooding analysts with false alerts.
-</details>
-
-**8.** What is data leakage? Give two concrete examples.
+**5.** What is data leakage? Give two concrete examples.
 
 <details>
 <summary>Answer</summary>
@@ -1092,15 +1511,7 @@ With 0.1% fraud rate, there are ~1,000 negatives for every positive. The ROC cur
 **Data leakage** is when information from outside the training set improperly influences model training, leading to overly optimistic evaluation that does not generalize. Two examples: (1) **Feature leakage**: normalizing the entire dataset (computing mean/std on all data including test) before splitting — the test set's statistics influence training preprocessing. (2) **Target leakage**: including a feature that is a proxy for the label, like "treatment_received" when predicting disease (the treatment was assigned because the patient was diagnosed). Both produce models that look great in evaluation but fail in production.
 </details>
 
-**9.** Explain the difference between MAE and RMSE. When would you choose one over the other?
-
-<details>
-<summary>Answer</summary>
-
-**MAE** (Mean Absolute Error) treats all errors linearly — a $50K error is exactly 5x worse than a $10K error. **RMSE** (Root Mean Squared Error) squares errors before averaging, so large errors are penalized disproportionately — a $50K error contributes 25x more than a $10K error to MSE. Choose MAE when all errors matter equally and you want interpretability (e.g., "on average, predictions are off by $26K"). Choose RMSE when large errors are especially undesirable (e.g., demand forecasting where a big miss causes stockouts). RMSE is always $\geq$ MAE; a large gap between them indicates a few predictions with very large errors.
-</details>
-
-**10.** You trained three models and their 5-fold CV results are: Model A = 91% ± 1.0%, Model B = 92% ± 4.5%, Model C = 89% ± 0.8%. Which do you deploy and why?
+**6.** You trained three models and their 5-fold CV results are: Model A = 91% ± 1.0%, Model B = 92% ± 4.5%, Model C = 89% ± 0.8%. Which do you deploy and why?
 
 <details>
 <summary>Answer</summary>

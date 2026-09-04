@@ -1,6 +1,6 @@
 # Chapter 5B — Build a Sharper, Younger Brain: The Complete Science-Based Program
 
-> A practical, **months-long** program to make your brain **sharper, faster, and biologically "younger"** — built entirely on peer-reviewed science, not supplement-store hype. **[← Chapter 5 — Brain Training](05_brain_training.md)** covers the memory-and-focus science in depth. *This* chapter is the whole-body owner's manual: what to **eat**, which **supplements** actually have evidence, how to **exercise**, **sleep**, **train your mind**, and **manage stress** so the brain you already have performs at its ceiling and ages slowly. Easy language, real examples, honest expectations, and a plan you can start today.
+> A practical, **months-long** program to make your brain **sharper, faster, and biologically "younger"** — built entirely on peer-reviewed science, not supplement-store hype. **[← Chapter 5 — Brain Training](#content/05_brain_training)** covers the memory-and-focus science in depth. *This* chapter is the whole-body owner's manual: what to **eat**, which **supplements** actually have evidence, how to **exercise**, **sleep**, **train your mind**, and **manage stress** so the brain you already have performs at its ceiling and ages slowly. Easy language, real examples, honest expectations, and a plan you can start today.
 
 ---
 
@@ -277,7 +277,7 @@ Sharp thinking is less about raw horsepower and more about having **routines you
    Predicting outcome?   → Attach a probability; check it later (calibration)
 ```
 
-**Worked example — Inversion.** Your plan is "prepare for my interview in 4 weeks." Invert it: *"What would guarantee I fail?"* → I only read theory and never practise out loud; I burn out by week 2; I avoid my weak topics. Each failure mode just handed you a to-do: do mock interviews early, schedule rest, start with your weakest area. (More routines and examples in **[Chapter 5](05_brain_training.md)** and **[Chapter 4 — Aptitude & Mental Math](04_aptitude_mental_math.md)**.)
+**Worked example — Inversion.** Your plan is "prepare for my interview in 4 weeks." Invert it: *"What would guarantee I fail?"* → I only read theory and never practise out loud; I burn out by week 2; I avoid my weak topics. Each failure mode just handed you a to-do: do mock interviews early, schedule rest, start with your weakest area. (More routines and examples in **[Chapter 5](#content/05_brain_training)** and **[Chapter 4 — Aptitude & Mental Math](#content/04_aptitude_mental_math)**.)
 
 ### 4c. Memory techniques for when you need them
 
@@ -546,7 +546,7 @@ This program is for generally healthy people who want to sharpen and protect the
 ╚════════════════════════════════════════════════════════════════════╝
 ```
 
-The deeper cognitive-science is in **[Chapter 5 — Brain Training](05_brain_training.md)**; this chapter is the **whole-body program**. Move, eat, and sleep well; train your mind on real skills; stay calm and connected; add a few evidence-based supplements last. Do it for months and your brain gets measurably sharper — and stays that way for years.
+The deeper cognitive-science is in **[Chapter 5 — Brain Training](#content/05_brain_training)**; this chapter is the **whole-body program**. Move, eat, and sleep well; train your mind on real skills; stay calm and connected; add a few evidence-based supplements last. Do it for months and your brain gets measurably sharper — and stays that way for years.
 
 ---
 

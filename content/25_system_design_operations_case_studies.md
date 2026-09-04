@@ -5,7 +5,7 @@
 **What this chapter covers:**
 The production reality of system design — reliability and fault tolerance (redundancy, retries, chaos engineering, circuit breakers, error budgets, hedged requests), security (AuthN/AuthZ, OAuth 2.0 + OIDC, JWT, encryption at rest / in transit / end‑to‑end, OWASP Top 10, mTLS, threat modelling with STRIDE), observability (logs/metrics/traces, SLI/SLO/SLA, OpenTelemetry, golden signals, exemplars), deployment (containers, K8s, service mesh, CI/CD, GitOps, progressive delivery), search and supporting building blocks (inverted index, geo‑indexes, ID generation, autocomplete, webhooks, feature flags), multi‑region architecture, cost & capacity engineering (FinOps), the recurring anti‑patterns to spot in a design discussion, and a full end‑to‑end Instagram worked example.
 
-This is **Part 3** of the three‑chapter System Design series, picking up from **[Chapter 24 — Data & Distributed Systems](24_system_design_data_distributed.md)**. If you skipped **[Chapter 23 — Foundations & Protocols](23_system_design_fundamentals_deep_dive.md)**, some references to load balancers, caching, and HTTP/TLS will assume that context.
+This is **Part 3** of the three‑chapter System Design series, picking up from **[Chapter 24 — Data & Distributed Systems](#content/24_system_design_data_distributed)**. If you skipped **[Chapter 23 — Foundations & Protocols](#content/23_system_design_fundamentals_deep_dive)**, some references to load balancers, caching, and HTTP/TLS will assume that context.
 
 **How to read it:**
 Same shape as the previous two chapters — *Simple Explanation → Official Definition → How it works (with ASCII diagrams) → Variants → Trade‑offs → Interview takeaway.* ~3 hours cover‑to‑cover. The final three Parts (20–22) are case‑study material that ties everything together — read after at least skimming Parts 13–19 of this chapter and the two preceding chapters.
@@ -1473,8 +1473,8 @@ ANTI-PATTERNS & PROCESS
 
 > **End of the three‑chapter System Design series.** Continue your study with:
 >
-> - **[Chapter 21 — Design Fundamentals](21_design_fundamentals.md)** — SOLID, design patterns, Java specifics.
-> - **[Chapter 26 — ML System Design](26_ml_system_design.md)** — recsys, ranking, feature stores.
-> - **[Chapter 22 — Engineering Tools](22_engineering_tools.md)** — Kafka, Redis, Spark, K8s in depth.
+> - **[Chapter 21 — Design Fundamentals](#content/21_design_fundamentals)** — SOLID, design patterns, Java specifics.
+> - **[Chapter 26 — ML System Design](#content/26_ml_system_design)** — recsys, ranking, feature stores.
+> - **[Chapter 22 — Engineering Tools](#content/22_engineering_tools)** — Kafka, Redis, Spark, K8s in depth.
 >
 > The three System Design chapters are the **map**; those three are the **terrain**.
