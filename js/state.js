@@ -25,7 +25,7 @@
   // These localStorage keys hold {fileName: ...} maps — need their keys rewritten
   const fileKeyedStores = [
     'ml4-read', 'ml4-quiz-scores', 'ml4-quiz-history',
-    'ml4-chapter-track', 'ml4-comments', 'ml4-highlights',
+    'ml4-chapter-track', 'ml4-comments', 'ml4-highlights', 'ml4-strikes',
   ];
   let touched = 0;
   for (const storeKey of fileKeyedStores) {
@@ -93,7 +93,7 @@
     'content/20_google_top10_ml_interview.md': 'content/31_google_top10_ml_interview.md',
     'content/21_quick_reference_cheat_sheet.md': 'content/32_quick_reference_cheat_sheet.md',
   };
-  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights'];
+  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights','ml4-strikes'];
   storeKeys.forEach(function(key) {
     var raw = localStorage.getItem(key);
     if (!raw) return;
@@ -154,7 +154,7 @@
     'content/30_llm_interview_questions.md': 'content/33_llm_interview_questions.md',
     'content/31_google_top10_ml_interview.md': 'content/34_google_top10_ml_interview.md',
   };
-  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights'];
+  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights','ml4-strikes'];
   storeKeys.forEach(function(key) {
     var raw = localStorage.getItem(key);
     if (!raw) return;
@@ -402,11 +402,29 @@ function getXP() { return JSON.parse(localStorage.getItem('ml4-xp') || '{"xp":0,
 function saveXP(data) { localStorage.setItem('ml4-xp', JSON.stringify(data)); updateXPDisplay(); }
 
 // ─── Study Time Tracker ───
-// Time is ONLY recorded when the user explicitly starts the timer.
+// "totalMinutes" is added to ONLY by the manual Start/Stop timer; auto-tracked
+// per-chapter reading time (ml4-chapter-track) is combined with it separately
+// wherever "Time Studied" is displayed. "sessions" and "lastActivityAt" are
+// shared between both sources via _markStudyActivity() below.
 function getStudyData() {
   return JSON.parse(localStorage.getItem('ml4-study') || '{"totalMinutes":0,"sessions":0,"startDate":"","completionDate":""}');
 }
 function saveStudyData(d) { localStorage.setItem('ml4-study', JSON.stringify(d)); }
+
+// A gap of 25+ minutes since the last recorded activity (auto-tracked reading
+// OR the manual timer) starts a new "session". Without this, "Sessions" only
+// ever counted manual-timer stops, so it stayed at 0 for anyone who just reads
+// chapters — misleadingly implying no study activity next to a real "Time
+// Studied" total.
+const SESSION_GAP_MS = 25 * 60 * 1000;
+function _markStudyActivity() {
+  const d = getStudyData();
+  const now = Date.now();
+  const lastMs = d.lastActivityAt ? new Date(d.lastActivityAt).getTime() : 0;
+  if (!lastMs || isNaN(lastMs) || (now - lastMs) > SESSION_GAP_MS) d.sessions = (d.sessions || 0) + 1;
+  d.lastActivityAt = new Date(now).toISOString();
+  saveStudyData(d);
+}
 
 // Derive the earliest real "started" moment from any available signal
 // (explicit study.startDate, per-chapter first-open dates, or the activity
@@ -461,13 +479,13 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/07_introduction.md': 95,
   'content/08_core_concepts.md': 385,
   'content/09_data_preprocessing.md': 60,
-  'content/10_supervised_learning.md': 290,
-  'content/11_unsupervised_learning.md': 295,
-  'content/12_key_algorithms.md': 275,
+  'content/10_supervised_learning.md': 335,
+  'content/11_unsupervised_learning.md': 350,
+  'content/12_key_algorithms.md': 250,
   'content/13_model_evaluation.md': 205,
   'content/14_neural_networks.md': 260,
   'content/15_reinforcement_learning.md': 175,
-  'content/15s_ml_curriculum_recap.md': 215,
+  'content/15s_ml_curriculum_recap.md': 250,
   'content/16_deep_learning.md': 270,
   'content/17_llm.md': 280,
   'content/17b_llm_applications.md': 170,
@@ -486,12 +504,14 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/26s_system_design_recap.md': 200,
   'content/35_system_design_cases_realtime.md': 290,
   'content/36_system_design_cases_search_media.md': 385,
-  'content/37_system_design_cases_scale_infra.md': 430,
+  'content/37_system_design_cases_scale_infra.md': 435,
   'content/27_practical_ml.md': 240,
   'content/27_practical_ml.ipynb': 240,
   'content/28_semantic_search.md': 140,
   'content/29_gpus_tpus_infrastructure.md': 190,
   'content/30_google_ml_ecosystem.md': 165,
+  'content/38_java_refresher.md': 335,
+  'content/38b_java_modern.md': 295,
   'content/31_dsa_coding.md': 525,
   'content/32_interview_questions.md': 240,
   'content/33_llm_interview_questions.md': 240,
@@ -699,7 +719,7 @@ function formatBytes(b) {
 }
 function getStorageStats() {
   const groups = [
-    { name: 'Notes & highlights', match: k => k === 'ml4-comments' || k === 'ml4-highlights' },
+    { name: 'Notes, highlights & strikethroughs', match: k => k === 'ml4-comments' || k === 'ml4-highlights' || k === 'ml4-strikes' },
     { name: 'DSA solutions', match: k => k === 'ml4-dsa' || k === 'ml4-dsa-custom' },
     { name: 'Quiz history', match: k => k === 'ml4-quiz-scores' || k === 'ml4-quiz-history' },
     { name: 'Reading & activity', match: k => ['ml4-read', 'ml4-chapter-track', 'ml4-chapter-words', 'ml4-activity'].indexOf(k) !== -1 },
@@ -737,7 +757,16 @@ function saveQuizHistory(h) { localStorage.setItem('ml4-quiz-history', JSON.stri
 function getChapterTrack() { return JSON.parse(localStorage.getItem('ml4-chapter-track') || '{}'); }
 function saveChapterTrack(t) { localStorage.setItem('ml4-chapter-track', JSON.stringify(t)); }
 let activeChapterFile = null;
-let activeChapterOpenedAt = null;
+let activeChapterOpenedAt = null;   // Date.now() of the current running segment, or null while paused
+let activeChapterAccumSeconds = 0;  // seconds already banked from earlier segments of this same chapter-open
+const MAX_TRACKED_SESSION_SECONDS = 3 * 60 * 60; // safety clamp against clock skew — not a cap on real reading
+
+// A chapter only "counts" as being read while its tab is both visible and
+// focused — this is what keeps "Time Studied" honest when a tab is left open
+// in the background (another tab, another app, screen locked, etc).
+function _isTabActive() {
+  return !document.hidden && document.hasFocus();
+}
 
 function trackChapterOpen(file) {
   // Save time on previous chapter
@@ -748,22 +777,54 @@ function trackChapterOpen(file) {
   if (!t[file].startDate) t[file].startDate = new Date().toISOString();
   saveChapterTrack(t);
   activeChapterFile = file;
-  activeChapterOpenedAt = Date.now();
+  activeChapterAccumSeconds = 0;
+  // Don't start the clock if the tab isn't actually active right now (e.g. a
+  // chapter loaded while backgrounded) — wait for the next focus/visible event.
+  activeChapterOpenedAt = _isTabActive() ? Date.now() : null;
 }
 
-function trackChapterClose() {
+// Bank the elapsed time of the current running segment (if any) without
+// ending the chapter — called on blur/hide so idle time is never counted.
+function _pauseChapterTracking() {
   if (activeChapterFile && activeChapterOpenedAt) {
-    const elapsed = Math.floor((Date.now() - activeChapterOpenedAt) / 1000);
-    if (elapsed > 0 && elapsed < 7200) { // cap at 2h to avoid stale tabs
+    activeChapterAccumSeconds += Math.max(0, Math.floor((Date.now() - activeChapterOpenedAt) / 1000));
+    activeChapterOpenedAt = null;
+  }
+}
+
+// Start a fresh segment when the tab becomes active again.
+function _resumeChapterTracking() {
+  if (activeChapterFile && !activeChapterOpenedAt) {
+    activeChapterOpenedAt = Date.now();
+  }
+}
+
+// Pause/resume tracking whenever the tab is hidden or the window loses focus,
+// so time spent in another tab/app/meeting is never counted as study time.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) _pauseChapterTracking(); else if (_isTabActive()) _resumeChapterTracking();
+});
+window.addEventListener('blur', _pauseChapterTracking);
+window.addEventListener('focus', () => { if (_isTabActive()) _resumeChapterTracking(); });
+
+function trackChapterClose() {
+  if (activeChapterFile) {
+    _pauseChapterTracking(); // bank any still-running segment first
+    // Clamp (rather than discard) — guards against clock skew without
+    // throwing away legitimate long reads the old ">= 2h ⇒ 0 credit" rule did.
+    const elapsed = Math.min(activeChapterAccumSeconds, MAX_TRACKED_SESSION_SECONDS);
+    if (elapsed > 0) {
       const t = getChapterTrack();
       if (!t[activeChapterFile]) t[activeChapterFile] = { startDate: null, completedDate: null, seconds: 0 };
       t[activeChapterFile].seconds += elapsed;
       saveChapterTrack(t);
       logActivitySeconds(elapsed); // credit today's heatmap cell
+      _markStudyActivity(); // so "Sessions" reflects real reading, not just the manual timer
     }
   }
   activeChapterFile = null;
   activeChapterOpenedAt = null;
+  activeChapterAccumSeconds = 0;
 }
 
 function trackChapterComplete(file) {
@@ -1054,8 +1115,8 @@ function toggleStudyTimer() {
     if (timerSeconds > 0) {
       const d = getStudyData();
       d.totalMinutes += Math.floor(timerSeconds / 60);
-      d.sessions += 1;
       saveStudyData(d);
+      _markStudyActivity();
       logActivitySeconds(timerSeconds); // credit today's heatmap cell
       const mins = Math.floor(timerSeconds / 60);
       if (mins >= 1) {
@@ -1092,8 +1153,8 @@ window.addEventListener('beforeunload', () => {
   if (timerRunning && timerSeconds > 0) {
     const d = getStudyData();
     d.totalMinutes += Math.floor(timerSeconds / 60);
-    d.sessions += 1;
     saveStudyData(d);
+    _markStudyActivity();
     logActivitySeconds(timerSeconds);
   }
 });

@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v283';
+const CACHE_NAME = 'ml-notes-v295';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -68,6 +68,8 @@ const STATIC_FILES = [
   'content/28_semantic_search.md',
   'content/29_gpus_tpus_infrastructure.md',
   'content/30_google_ml_ecosystem.md',
+  'content/38_java_refresher.md',
+  'content/38b_java_modern.md',
   'content/31_dsa_coding.md',
   'content/32_interview_questions.md',
   'content/33_llm_interview_questions.md',
@@ -94,6 +96,15 @@ const STATIC_FILES = [
   'diagrams/payment_whiteboard.svg', 'diagrams/inventory_whiteboard.svg', 'diagrams/kv_store_whiteboard.svg',
   'diagrams/pastebin_whiteboard.svg', 'diagrams/amazon_whiteboard.svg', 'diagrams/llm_serving_whiteboard.svg',
   'diagrams/rag_whiteboard.svg', 'diagrams/recsys_whiteboard.svg',
+
+  // AI-generated draft diagrams (review copies, inserted alongside the SVGs above)
+  'diagrams/arch_reference_ai.png', 'diagrams/notification_ai.png', 'diagrams/chat_ai.png', 'diagrams/video_conf_ai.png', 'diagrams/collab_editor_ai.png',
+  'diagrams/autocomplete_ai.png', 'diagrams/crawler_ai.png', 'diagrams/proximity_ai.png', 'diagrams/ride_hailing_ai.png',
+  'diagrams/news_feed_ai.png', 'diagrams/video_streaming_ai.png', 'diagrams/file_sync_ai.png', 'diagrams/url_shortener_ai.png',
+  'diagrams/rate_limiter_ai.png', 'diagrams/unique_id_ai.png', 'diagrams/topk_ai.png', 'diagrams/leaderboard_ai.png',
+  'diagrams/dist_cache_ai.png', 'diagrams/scheduler_ai.png', 'diagrams/payment_ai.png', 'diagrams/inventory_ai.png',
+  'diagrams/kv_store_ai.png', 'diagrams/pastebin_ai.png', 'diagrams/amazon_ai.png',
+  'diagrams/llm_serving_ai.png', 'diagrams/rag_ai.png', 'diagrams/recsys_ai.png',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 

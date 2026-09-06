@@ -1,0 +1,662 @@
+[
+  {
+    "q": "The chapter's 2022 to 2026 diff map marks nine of thirteen rows *unchanged*. Which row is marked **superseded**?",
+    "options": [
+      "Using `.equals()` instead of `==` to compare two `String` values",
+      "Using `StringBuilder` to accumulate characters inside a loop",
+      "Using `java.util.Stack` for a stack, now replaced by `ArrayDeque`",
+      "Using `int[]` and 2-D grids for array-heavy algorithm problems"
+    ],
+    "answer": 2,
+    "explanation": "`Stack` extends `Vector`, so every method is synchronised and iteration runs bottom-to-top; the diff map names `ArrayDeque` as its replacement. Arrays, `StringBuilder` and `.equals()` are all listed as unchanged."
+  },
+  {
+    "q": "An interviewer asks how current your Java is after four years away. Which answer does the chapter model?",
+    "options": [
+      "Name the delta: records, sealed types, pattern matching and virtual threads",
+      "Apologise for the gap and promise a month of catching up before contributing",
+      "Say the language is unchanged since Java 8 apart from a little extra syntax",
+      "Claim daily production use of structured concurrency and scoped values"
+    ],
+    "answer": 0,
+    "explanation": "The advice is to state the delta precisely rather than apologise, then say what it means: data modelling got terser and exhaustively checkable, and thread-per-request became viable again."
+  },
+  {
+    "q": "Ch 31's 400+ problems use `int[]` 2,799 times and `stream()` exactly once. What does the chapter conclude?",
+    "options": [
+      "Streams are the better investment because interviewers reward concise pipelines",
+      "Both matter equally, so practice time should be split evenly between them",
+      "Arrays are legacy, so the problem set should be rewritten using streams first",
+      "Arrays and comparators get the drill time; streams belong in backend code"
+    ],
+    "answer": 3,
+    "explanation": "The chapter allocates space by measured usage. Streams are covered in Ch 38b, where backend code actually uses them, not in the DSA on-ramp."
+  },
+  {
+    "q": "Your only near-term goal is passing a Java coding interview. Which route does the chapter recommend?",
+    "options": [
+      "Ch 38b alone, since modern syntax is what graders reward",
+      "This chapter, then Ch 31 — Ch 38b is optional for that goal",
+      "Ch 38b first, then this chapter, and skip Ch 31 altogether",
+      "Ch 31 first, using this chapter only as a lookup reference"
+    ],
+    "answer": 1,
+    "explanation": "The goal table routes interview candidates through this chapter and then Ch 31; Ch 38b is the track for returning to a modern backend codebase."
+  },
+  {
+    "q": "`Integer[] a = new Integer[3]; int s = 0; for (Integer x : a) s += x;` — what happens at run time?",
+    "options": [
+      "`ArrayStoreException`, because boxing writes into a reference slot",
+      "`NullPointerException`, because reference-array slots start as `null`",
+      "It prints 0, because every new array is zero-filled by the JVM",
+      "It fails to compile, since `Integer` cannot be added to an `int`"
+    ],
+    "answer": 1,
+    "explanation": "Only primitive arrays are zero-filled. `new Integer[3]` is three null pointers wearing a numeric costume, and `s += x` unboxes a null."
+  },
+  {
+    "q": "`int[][] g = new int[3][4];` — which expressions give the row count and the column count?",
+    "options": [
+      "`g[0].length` is 3 and `g.length` is 4, since the inner array holds rows",
+      "`g.length` is 12 and `g[0].length` is 4, because storage is contiguous",
+      "`g.length` is 4 and `g[0].length` is 3, mirroring the C declaration form",
+      "`g.length` is 3 and `g[0].length` is 4 — rows outside, columns inside"
+    ],
+    "answer": 3,
+    "explanation": "`int[][]` is an array of references to row arrays, so the outer length is the row count and each row carries its own length. The asymmetry falls straight out of the representation."
+  },
+  {
+    "q": "Every cell of `int[][] fill = new int[2][3]` must be set to -1. Which line does it?",
+    "options": [
+      "`for (int[] row : fill) Arrays.fill(row, -1);` — one call per row",
+      "`Arrays.fill(fill, -1);` — the varargs form reaches nested arrays",
+      "`Arrays.deepFill(fill, -1);` — the deep partner of `deepToString`",
+      "`Arrays.setAll(fill, -1);` — assigns the constant to every element"
+    ],
+    "answer": 0,
+    "explanation": "`Arrays.fill(grid, -1)` would try to write an `int` into slots typed `int[]`, so you must fill row by row. There is no `deepFill`."
+  },
+  {
+    "q": "`Arrays.binarySearch` on the sorted array `{1, 2, 5, 7, 9}` returns -4 for the key 6. What does -4 encode?",
+    "options": [
+      "The number of comparisons the search made before it gave up",
+      "The distance from 6 to the nearest element actually present in it",
+      "Insertion point 3, since a miss returns `-(insertionPoint) - 1`",
+      "Index 4 counted back from the end of the array, negated as a miss flag"
+    ],
+    "answer": 2,
+    "explanation": "6 belongs at index 3, so the result is -3-1 = -4. Applying `-result - 1` recovers the insertion point, which is how you find the smallest element greater than a key in one call."
+  },
+  {
+    "q": "`int[][] copy = grid.clone(); copy[0][0] = 99;` — what does `grid[0][0]` hold afterwards?",
+    "options": [
+      "99 — `clone` copies the row references, not the rows",
+      "0, because `clone` makes a full deep copy of the whole grid",
+      "0, because writes into a clone never reach the original array",
+      "99, because `clone` on an array simply returns the same object"
+    ],
+    "answer": 0,
+    "explanation": "`clone()` on `int[]` is a real copy, but on `int[][]` it duplicates only the outer array of references, so both grids share every row. Clone each row for a deep copy."
+  },
+  {
+    "q": "Which statement about `Arrays.sort` matches the chapter's table?",
+    "options": [
+      "Both use dual-pivot quicksort, and both are stable in practice",
+      "Both use TimSort, so both guarantee $O(n \\log n)$ in the worst case",
+      "`int[]` gets dual-pivot quicksort, while `Integer[]` gets stable TimSort",
+      "`int[]` gets stable TimSort, while `Integer[]` gets dual-pivot quicksort"
+    ],
+    "answer": 2,
+    "explanation": "Stability is meaningless for primitives, so `int[]` gets in-place quicksort with an $O(n^2)$ adversarial worst case. Object arrays get TimSort, which is stable and $O(n \\log n)$ guaranteed."
+  },
+  {
+    "q": "`int[] p = {9, 8, 7, 3, 2, 1}; Arrays.sort(p, 1, 4);` — which slots are reordered?",
+    "options": [
+      "All six slots, because the extra arguments only choose a pivot",
+      "Indices 1, 2 and 3, because the range is half-open `[from, to)`",
+      "Indices 1, 2, 3 and 4, because both endpoints are inclusive here",
+      "Indices 2, 3 and 4, because `from` names the last untouched slot"
+    ],
+    "answer": 1,
+    "explanation": "Half-open intervals are the Java convention everywhere — `substring`, `copyOfRange`, `subList`, `subMap` — so the sort touches indices 1 to 3 and leaves the rest alone."
+  },
+  {
+    "q": "Why does the chapter call an `int[]` a terrible `HashMap` key?",
+    "options": [
+      "Arrays are mutable, so the JVM refuses to hash them on insertion",
+      "Arrays hash purely by their contents, so unrelated arrays collide constantly",
+      "Arrays are covariant, so the map files them under the wrong bucket",
+      "Arrays inherit identity `equals`/`hashCode`, so equal contents hash apart"
+    ],
+    "answer": 3,
+    "explanation": "`Arrays.equals` compares element-wise but `Object.equals` does not, so `map.get(equalContentArray)` returns null. Key on `Arrays.hashCode`, a `List<Integer>`, or a built string instead."
+  },
+  {
+    "q": "`int[] prim = {1, 2, 3}; var l = Arrays.asList(prim);` — what does `l.size()` return?",
+    "options": [
+      "3, because the three primitives are autoboxed into `Integer`",
+      "0, because a primitive array fails the varargs match entirely",
+      "It does not compile, since `asList` demands a reference array",
+      "1, because inference makes `T` the whole `int[]` and wraps it"
+    ],
+    "answer": 3,
+    "explanation": "`asList` is `<T> List<T> asList(T... a)` and `T` cannot be a primitive, so the compiler infers `T = int[]` and hands back a one-element `List<int[]>`. It compiles cleanly and is silently wrong."
+  },
+  {
+    "q": "`List<Integer> f = Arrays.asList(1, 2, 3);` — which single call succeeds?",
+    "options": [
+      "`f.clear()`, because clearing only resets the list's size field",
+      "`f.set(0, 99)`, because element writes map onto array writes",
+      "`f.add(4)`, because the varargs list grows like an `ArrayList`",
+      "`f.remove(0)`, because removal shrinks the backing array too"
+    ],
+    "answer": 1,
+    "explanation": "`asList` is a fixed-size view over the varargs array: `set` writes through to the array, while every structural change throws `UnsupportedOperationException`."
+  },
+  {
+    "q": "You want a genuinely mutable list seeded with three literals. Which expression gives it?",
+    "options": [
+      "`List.of(1, 2, 3)` — an immutable copy that rejects `set` too",
+      "`List.copyOf(source)` — an unmodifiable snapshot of the source list",
+      "`new ArrayList<>(List.of(1, 2, 3))` — its own resizable array",
+      "`Arrays.asList(1, 2, 3)` — a fixed-size view over the varargs"
+    ],
+    "answer": 2,
+    "explanation": "The mutability ladder runs `Arrays.asList` (replace only), `List.of` (frozen), and `new ArrayList<>(...)`, which owns its own array and supports add and remove."
+  },
+  {
+    "q": "`reverseInPlace(int[] a)` returns `void`, yet the caller's array comes back reversed. Why?",
+    "options": [
+      "The reference is passed by value, so both names see the same array object",
+      "Java passes arrays by reference, so the parameter is the caller's variable",
+      "The array is copied in and the JVM copies the result back on return",
+      "A `void` method implicitly returns its first parameter to the caller"
+    ],
+    "answer": 0,
+    "explanation": "Java copies the reference, so the method cannot repoint `nums` but can freely rewrite what `nums` points at. Half of all in-place problems depend on exactly this."
+  },
+  {
+    "q": "Printing a 2-D grid gives `[[I@4b67cf4d, [I@7ea987ac]`. Which call produced that?",
+    "options": [
+      "`System.out.println(grid[0])`, which prints one row's values",
+      "`Arrays.toString(grid)`, which calls `toString` on each row",
+      "`Arrays.deepToString(grid)`, which recurses into every row",
+      "`grid.toString()`, which arrays override for two dimensions"
+    ],
+    "answer": 1,
+    "explanation": "`Arrays.toString` on `int[][]` calls `toString` on each `int[]` row, giving type descriptors and identity hashes. `deepToString` is the one that recurses."
+  },
+  {
+    "q": "A candidate builds a result with `out += c` inside a loop over `n` characters and calls it $O(n)$. What is the true cost?",
+    "options": [
+      "$O(n^2)$, because each `+=` copies the whole accumulated string",
+      "$O(n)$, because Java 9 compiles concatenation to `invokedynamic`",
+      "$O(n \\log n)$, because the backing array doubles as it grows",
+      "$O(n)$, because `String` reuses its buffer while capacity remains"
+    ],
+    "answer": 0,
+    "explanation": "`String` is immutable, so iteration `i` copies `i` characters and the total is `1+2+...+n`. Counting loop iterations only gives the complexity when each iteration is constant time."
+  },
+  {
+    "q": "Is `String s = a + b + c;` written as a single expression also quadratic?",
+    "options": [
+      "Yes, unless all three operands are compile-time constant literals",
+      "No — the JIT rewrites all string concatenation into a builder",
+      "No — since Java 9 `javac` builds it in one `invokedynamic` pass",
+      "Yes — every `+` on strings allocates an intermediate copy first"
+    ],
+    "answer": 2,
+    "explanation": "The quadratic problem is concatenation spread across loop iterations, where each iteration is its own expression. One expression is compiled into a single pass."
+  },
+  {
+    "q": "A loop calls `s.substring(i, j)` on every iteration. What does the chapter say that costs?",
+    "options": [
+      "$O(1)$ per call, because the substring shares the backing array",
+      "$O(1)$ per call, because every substring is interned in the pool",
+      "$O(\\log n)$ per call, because the offset lookup walks a tree",
+      "$O(k)$ per call since Java 7, so the loop is $O(n^2)$ overall"
+    ],
+    "answer": 3,
+    "explanation": "Before Java 7 `substring` shared the parent's array and was $O(1)$; that kept huge strings alive, so it now copies. Plenty of candidates still quote the old behaviour."
+  },
+  {
+    "q": "Why is the `int[26]` character-frequency count described as $O(1)$ space?",
+    "options": [
+      "The array sits on the stack, so it consumes no heap memory at all",
+      "Characters reuse one slot, so the total never exceeds a single int",
+      "26 slots is a constant, no matter how long the input is",
+      "The counters are primitives, and primitives are not counted at all"
+    ],
+    "answer": 2,
+    "explanation": "The alphabet is bounded, so auxiliary space does not grow with `n`. Saying '$O(1)$ space, since the alphabet is fixed at 26' is exactly what the interviewer listens for."
+  },
+  {
+    "q": "Splitting the text `a.b.c` on a bare dot returns an empty array. What is the fix?",
+    "options": [
+      "Pass a limit of -1, because trailing empty strings are discarded",
+      "Use the `char` overload, which skips regular-expression compiling",
+      "Call `splitLiteral`, the non-regex variant added back in Java 11",
+      "Escape it — pass the regex `\\\\.` rather than a bare dot character"
+    ],
+    "answer": 3,
+    "explanation": "`split` takes a regex, and `.` matches every character, so every field is empty and the trailing empties are dropped. The same care is needed for `|`, `+`, `*` and `$`."
+  },
+  {
+    "q": "Parsing CSV, the text `a,b,,` split on a comma yields two fields rather than four. Which call keeps the tail?",
+    "options": [
+      "`splitWithDelimiters(\",\")` — it never discards an empty field",
+      "`split(\",\", -1)` — a negative limit preserves trailing empties",
+      "`split(\",\", 4)` — a positive limit fixes the field count at four",
+      "`split(\",\", 0)` — a zero limit asks for every field to be kept"
+    ],
+    "answer": 1,
+    "explanation": "A negative limit tells `split` to keep trailing empty strings. The default, and a limit of 0, drop them — which silently loses empty CSV columns."
+  },
+  {
+    "q": "What separates `strip` from `trim`?",
+    "options": [
+      "`strip` is Unicode-aware; `trim` cuts only code points at or below U+0020",
+      "`trim` is Unicode-aware; `strip` cuts only the plain ASCII space character",
+      "`strip` also removes interior whitespace, not just the leading and trailing",
+      "`trim` returns a new string while `strip` edits the receiver in place"
+    ],
+    "answer": 0,
+    "explanation": "`trim` predates Unicode awareness; `strip` (Java 11) uses `Character.isWhitespace`, so it also removes non-breaking spaces. Default to `strip` in new code."
+  },
+  {
+    "q": "`String a = \"hello\"; String d = \"hel\" + \"lo\";` gives `a == d` true, but assembling the same value from a variable gives false. Why?",
+    "options": [
+      "The first folds into the pooled literal; the second is built at run time",
+      "The second is constant-folded into the pool, while the first allocates a fresh object",
+      "Both are pooled, but `==` on strings compares lengths before identity",
+      "Neither is pooled — `javac` interns only literals that appear twice"
+    ],
+    "answer": 0,
+    "explanation": "`\"hel\" + \"lo\"` is a compile-time constant that `javac` folds into the interned literal; a runtime concatenation builds a new object. This is why `.equals()` is the only safe comparison."
+  },
+  {
+    "q": "`\"app\".compareTo(\"apple\")` returns -2. What is that value?",
+    "options": [
+      "The count of positions at which the two strings differ from each other",
+      "The index of the first mismatch, negated to signal the ordering",
+      "A normalised sign, so the result is always -1, 0 or 1 in practice",
+      "The length difference, since one string is a prefix of the other"
+    ],
+    "answer": 3,
+    "explanation": "`compareTo` returns the difference of the first differing characters, or the length difference when one string is a prefix. Assuming it returns only -1, 0 or 1 breaks comparators."
+  },
+  {
+    "q": "Pushing 1, 2, 3 then printing gives `[3, 2, 1]` on one type and `[1, 2, 3]` on the other. Which is which?",
+    "options": [
+      "Both print top-first; only `Stack` reverses when it grows its capacity",
+      "Both print bottom-first, and only their `pop` order actually differs",
+      "`ArrayDeque` prints top-first; `java.util.Stack` prints bottom-first",
+      "`java.util.Stack` prints top-first; `ArrayDeque` prints bottom-first, oddly"
+    ],
+    "answer": 2,
+    "explanation": "`Stack` extends `Vector`, so its iterator walks insertion order — the reverse of pop order. Printing a `Stack` while debugging means reading it upside down."
+  },
+  {
+    "q": "What does `offer(null)` do on an `ArrayDeque`?",
+    "options": [
+      "Throws `IllegalStateException`, since capacity cannot be null",
+      "Throws `NullPointerException`, since `null` is the empty sentinel",
+      "Stores the null and returns `true`, like any other element value",
+      "Returns `false` quietly, leaving the deque exactly as it was"
+    ],
+    "answer": 1,
+    "explanation": "`ArrayDeque` forbids null because `poll` and `peek` use null to mean empty. If you genuinely need nulls in a queue, `LinkedList` also implements `Deque`."
+  },
+  {
+    "q": "Which pair describes empty-deque behaviour correctly?",
+    "options": [
+      "`poll` throws `NoSuchElementException` while `pop` quietly returns null",
+      "Both return `null`, and only `element` throws on an empty deque",
+      "Both throw, so only `peekFirst` is safe to call on an empty deque",
+      "`pop` throws `NoSuchElementException`; `poll` returns `null` instead"
+    ],
+    "answer": 3,
+    "explanation": "The `pop`/`element`/`removeFirst` family throws on an empty deque; the `poll`/`peek`/`offer` family signals with `null` or `false` instead."
+  },
+  {
+    "q": "Which single line replaces the old containsKey-then-put frequency counter?",
+    "options": [
+      "`counts.putIfAbsent(w, counts.get(w) + 1)` — writes only when absent",
+      "`counts.replace(w, counts.get(w) + 1)` — updates the existing mapping",
+      "`counts.merge(w, 1, Integer::sum)` — insert 1, else add to the old value",
+      "`counts.computeIfAbsent(w, k -> 1)` — installs a 1 and returns it each time"
+    ],
+    "answer": 2,
+    "explanation": "`merge(k, v, fn)` inserts `v` when absent and applies `fn(old, v)` otherwise. If `fn` returns null the entry is removed, which is how you decrement-and-delete in one call."
+  },
+  {
+    "q": "Which line appends to an adjacency list and creates it on first use with one hash lookup?",
+    "options": [
+      "`adj.computeIfAbsent(u, k -> new ArrayList<>()).add(v);`",
+      "`adj.merge(u, new ArrayList<>(), (x, y) -> x).add(v);` — the merge form",
+      "`adj.getOrDefault(u, new ArrayList<>()).add(v);`",
+      "`adj.putIfAbsent(u, new ArrayList<>()).add(v);`"
+    ],
+    "answer": 0,
+    "explanation": "`computeIfAbsent` returns the value it found or created, so `.add(...)` chains onto it. `getOrDefault` builds a list that is never stored, and `putIfAbsent` returns null on first use."
+  },
+  {
+    "q": "`int x = map.get(\"missing\");` on a `Map<String, Integer>` does what?",
+    "options": [
+      "Throws `NoSuchElementException` raised inside the map's `get`",
+      "Throws `NullPointerException` while unboxing the `null` result",
+      "Assigns 0, because a missing key unboxes to the default value",
+      "Fails to compile, since `Integer` cannot be assigned to an `int`"
+    ],
+    "answer": 1,
+    "explanation": "`get` returns null for a missing key and the assignment calls `intValue()` on it. The NPE points at the assignment line, not the map. `getOrDefault(k, 0)` makes it impossible."
+  },
+  {
+    "q": "`for (int v : nums) if (!seen.add(v)) return true;` over a `HashSet` detects what?",
+    "options": [
+      "A null element, since `add` returns `false` rather than throwing",
+      "A duplicate, since `add` returns `false` when the element is present",
+      "A missing value, since `add` returns `false` whenever insertion succeeds",
+      "A resize, since `add` returns `false` when the table has to rehash"
+    ],
+    "answer": 1,
+    "explanation": "`Set.add` returns false when the element was already there, so this tests membership and inserts in one operation — the trick that turns a nested loop into a single pass."
+  },
+  {
+    "q": "Printing a `PriorityQueue` shows `[1, 3, 9, 5]`. What is guaranteed about that output?",
+    "options": [
+      "It is insertion order, since the heap preserves arrival sequence",
+      "Nothing at all, since iteration order changes on every traversal",
+      "Only index 0 holds the minimum — the rest is heap order",
+      "The array is fully sorted, so index 3 holds the maximum too"
+    ],
+    "answer": 2,
+    "explanation": "A binary heap only guarantees its root. Iterating or printing gives array order; repeated `poll()` is the only way to get sorted output, and it drains the queue."
+  },
+  {
+    "q": "To keep the k largest of n values, which heap and which eviction rule?",
+    "options": [
+      "A size-k max-heap, evicting the largest once the size exceeds k",
+      "A size-n min-heap that is polled k times after the traversal ends",
+      "A size-k max-heap, evicting the smallest once the size exceeds k",
+      "A size-k min-heap, evicting the smallest once the size exceeds k"
+    ],
+    "answer": 3,
+    "explanation": "You want cheap access to the weakest survivor so it can be evicted, which is the root of a min-heap. That gives $O(n \\log k)$ time and $O(k)$ space instead of $O(n \\log n)$."
+  },
+  {
+    "q": "Dijkstra with decrease-key must remove an arbitrary heap entry. Why does the chapter suggest lazy deletion instead?",
+    "options": [
+      "`remove(Object)` scans the heap linearly, costing $O(n)$ per call",
+      "`remove(Object)` rebuilds the array, which loses the heap ordering",
+      "`remove(Object)` is unsupported on a heap, so the call throws",
+      "`remove(Object)` matches by identity, so equal entries never match"
+    ],
+    "answer": 0,
+    "explanation": "A heap has no index, so both `contains` and `remove(Object)` do a linear scan. Pushing the updated entry and skipping stale ones on `poll` avoids that cost."
+  },
+  {
+    "q": "A `TreeMap` holds keys 10, 20, 30, 40. What are `floorKey(20)` and `higherKey(20)`?",
+    "options": [
+      "20 and 30 — `floorKey` includes the key, `higherKey` excludes it",
+      "10 and 30, because both navigation methods exclude the key itself",
+      "20 and 20, because both methods include the key when it is present",
+      "10 and 20, because `higherKey` includes it and `floorKey` does not"
+    ],
+    "answer": 0,
+    "explanation": "`floorKey` is the greatest key at most k, `higherKey` the smallest key strictly above it. All four navigation methods return null when nothing qualifies, so always null-check."
+  },
+  {
+    "q": "An LRU cache built on `LinkedHashMap` needs which two ingredients?",
+    "options": [
+      "A comparator on access time plus a scheduled eviction task per entry",
+      "Access-order mode in the constructor plus an overridden `removeEldestEntry`",
+      "Insertion-order mode in the constructor plus an overridden `removeEldestEntry`",
+      "Access-order mode in the constructor plus an explicit capacity check on put"
+    ],
+    "answer": 1,
+    "explanation": "`super(16, 0.75f, true)` switches to access order, and returning `size() > cap` from `removeEldestEntry` evicts the least recently used entry with no logic of your own."
+  },
+  {
+    "q": "With `a = 2_000_000_000` and `b = -2_000_000_000`, what does the comparator `(a, b) -> b - a` report?",
+    "options": [
+      "A negative value, correctly matching the ordering of the operands",
+      "Zero, because the magnitudes cancel and the sign bit is discarded",
+      "`ArithmeticException`, because the JVM detects the overflow first",
+      "A positive value — the true difference wraps around in `int`"
+    ],
+    "answer": 3,
+    "explanation": "The true difference is four billion, which does not fit in an `int` and wraps to +294,967,296 — the exact opposite of the truth, with no exception. `Integer.compare` cannot overflow."
+  },
+  {
+    "q": "A comparator calls values within 2 of each other equal. At n=8 the sort finishes in the wrong order; at n=200 it throws. Why the difference?",
+    "options": [
+      "Above 32 elements a parallel merge validates each comparison it makes",
+      "Above 32 elements the accumulated overflow finally becomes visible",
+      "Below 32 elements a binary insertion sort runs, and it never checks",
+      "Below 32 elements the comparator is never invoked by the sort at all"
+    ],
+    "answer": 2,
+    "explanation": "`Arrays.sort` on objects uses binary insertion sort under 32 elements and TimSort above it, and only TimSort's merge phase detects the contract violation. Small tests cannot find this bug."
+  },
+  {
+    "q": "`comparingInt(T::a).thenComparing(T::b).reversed()` orders by what?",
+    "options": [
+      "Key `a` ascending and key `b` descending, since only the last clause flips",
+      "Both keys ascending, since `reversed` only reverses the result list",
+      "Both keys descending, since `reversed` flips the whole chain so far",
+      "Key `a` descending and key `b` ascending, since `reversed` binds tightest"
+    ],
+    "answer": 2,
+    "explanation": "`reversed()` is a method on the finished comparator, not on the clause you just added. For a descending primary key only, call `.reversed()` on that key before chaining."
+  },
+  {
+    "q": "Why prefer `comparingInt(Task::prio)` over `comparing(Task::prio)`?",
+    "options": [
+      "It is null-safe, unlike `comparing`, which throws on a null key",
+      "It is primitive-specialised, so no box and unbox per comparison",
+      "It is stable, whereas the generic `comparing` form gives no guarantee",
+      "It is overflow-safe, whereas `comparing` subtracts the extracted keys"
+    ],
+    "answer": 1,
+    "explanation": "`comparing` extracts an `int`, boxes it, and unboxes it again on every comparison — $O(n \\log n)$ pointless allocations that the primitive-specialised form avoids."
+  },
+  {
+    "q": "`Arrays.sort(prim, (a, b) -> b - a)` on an `int[]` does not compile. Why not?",
+    "options": [
+      "Generics cannot bind to primitives, so no such overload can exist",
+      "Comparators are accepted only by `List.sort`, never by `Arrays.sort`",
+      "Dual-pivot quicksort rejects lambdas because it sorts out of place",
+      "The lambda is ambiguous between the `int` and `Integer` overloads here"
+    ],
+    "answer": 0,
+    "explanation": "`Comparator<T>` is generic and `T` cannot be a primitive, so `Arrays.sort(int[], Comparator)` cannot exist. Object-array overloads take comparators; primitive ones never will."
+  },
+  {
+    "q": "You need an `int[]` in descending order without paying for boxing. What does the chapter suggest reaching for in an interview?",
+    "options": [
+      "Box into `Integer[]`, sort with a comparator, then unbox again",
+      "Negate every element, sort ascending, then negate them all back",
+      "Sort an index array by value, then rebuild the data in that order",
+      "Sort ascending, then reverse in place with a two-pointer swap"
+    ],
+    "answer": 3,
+    "explanation": "Reversing after an ascending sort stays on primitives, keeps the memory win, and is still $O(n \\log n)$. Sorting an index array is the idiom when you must recover original positions."
+  },
+  {
+    "q": "`Arrays.sort(intervals, cmp)` works on an `int[][]` but no such call exists for `int[]`. Why?",
+    "options": [
+      "Two-dimensional arrays are contiguous blocks the sort can index directly",
+      "The comparator applies to columns, which are reference types in Java",
+      "`int[][]` implements `Comparable`, so a comparator is optional there",
+      "The outer array holds `int[]` objects, so it accepts a comparator"
+    ],
+    "answer": 3,
+    "explanation": "`int[][]` is an array of references to rows, so the outer array is an object array — which is exactly why sorting intervals by `r[0]` or `r[1]` compiles."
+  },
+  {
+    "q": "Chaining `comparingInt(r -> r[0]).thenComparing(r -> -r[1])` fails to infer the row type. What fixes it?",
+    "options": [
+      "An explicit witness: `Comparator.<int[]>comparingInt(...)`",
+      "Casting each lambda parameter inside the `thenComparing` call",
+      "Swapping the order so `thenComparing` comes first in the chain",
+      "Replacing `thenComparing` with `thenComparingInt`, which infers it"
+    ],
+    "answer": 0,
+    "explanation": "Once you chain, inference loses the element type, so the chapter writes `Comparator.<int[]>comparingInt(r -> r[0])` to supply the witness explicitly."
+  },
+  {
+    "q": "`Integer a = 128, b = 128; a == b` prints false, while the same code with 127 prints true. Why?",
+    "options": [
+      "Values above 127 need two bytes, so `==` reads only the low byte",
+      "`Integer.valueOf` shares cached boxes only from -128 to 127",
+      "`Integer.valueOf` compares numerically only for values below 128",
+      "The JIT folds small constants but heap-allocates the larger ones"
+    ],
+    "answer": 1,
+    "explanation": "Autoboxing routes through `Integer.valueOf`, which returns preallocated shared instances inside that range. The comparison was never correct — the cache just hid it."
+  },
+  {
+    "q": "A method counting matches with `x == target` over a `List<Integer>` returns 2 for small values and 0 for large ones. What is the fix?",
+    "options": [
+      "Hold the target in one `Integer` field so both sides share an instance",
+      "Intern the boxed values so equal numbers become the very same object",
+      "Compare with `Objects.equals(x, target)` — value- and null-safe",
+      "Raise `-XX:AutoBoxCacheMax` so the cache spans the whole input range"
+    ],
+    "answer": 2,
+    "explanation": "Never write `==` between two wrapper-typed values. `Objects.equals` compares by value and survives nulls; the spec only guarantees caching in -128..127, so the cache limit is not a fix."
+  },
+  {
+    "q": "A binary search passes locally and throws on a huge hidden input at `int mid = (lo + hi) / 2;`. What went wrong?",
+    "options": [
+      "`mid` was computed before the bounds update, so nothing narrowed",
+      "`lo + hi` overflowed negative, so `mid` indexed outside the array",
+      "`lo + hi` lost precision in the division, so `mid` skipped the target",
+      "`lo` and `hi` were swapped, so the midpoint fell outside the range"
+    ],
+    "answer": 1,
+    "explanation": "Once both indices are large, their sum exceeds `Integer.MAX_VALUE` and wraps negative. `lo + (hi - lo) / 2` is mathematically identical and cannot overflow."
+  },
+  {
+    "q": "`Math.abs(Integer.MIN_VALUE)` returns what, and why does it matter for hashing?",
+    "options": [
+      "`Integer.MAX_VALUE`, so bucket indices saturate at the top of range",
+      "Zero, so every negative hash collapses into the very first bucket",
+      "It throws `ArithmeticException`, so hashing code must catch that",
+      "`Integer.MIN_VALUE` again, so `abs(hash) % n` can go negative"
+    ],
+    "answer": 3,
+    "explanation": "The negative int range has one more value than the positive range, so `abs` cannot represent the result. `Math.floorMod` is the safe way to bucket a hash code."
+  },
+  {
+    "q": "`List<Integer> l = new ArrayList<>(List.of(10, 20, 30, 40)); l.remove(1);` leaves what?",
+    "options": [
+      "`[20, 30, 40]`, because removal by value shifts from the head",
+      "`[10, 20, 30]`, because the index is counted from the tail end",
+      "`[10, 30, 40]` — the `int` literal picks the index overload",
+      "`[10, 20, 30, 40]`, because the value 1 is not in the list"
+    ],
+    "answer": 2,
+    "explanation": "Overload resolution prefers the exact primitive match, so `remove(int index)` wins over `remove(Object)`. Write `remove(Integer.valueOf(v))` whenever you mean the value."
+  },
+  {
+    "q": "Removing even numbers inside a for-each over an `ArrayList` throws. Which fix is a single $O(n)$ pass?",
+    "options": [
+      "`list.removeIf(n -> n % 2 == 0)` over the whole list at once",
+      "An indexed loop that calls `list.remove(i)` for each even element",
+      "Collect the doomed values first, then `remove` each one by value",
+      "Synchronize the loop body so the modification counter stays stable"
+    ],
+    "answer": 0,
+    "explanation": "`removeIf` does one pass; repeated `list.remove(...)` is $O(n^2)$ because each removal shifts the tail. An explicit `Iterator.remove()` is the other sanctioned fix."
+  },
+  {
+    "q": "You `put` a key, mutate a field its `hashCode` reads, then look it up. What does the chapter report?",
+    "options": [
+      "`get` returns null and `containsKey` is false, yet `size()` still counts it",
+      "`get` still works, because the entry caches the hash code it was filed under",
+      "The map rehashes on the next `put`, quietly relocating the stranded entry",
+      "`ConcurrentModificationException` is raised the next time you iterate it"
+    ],
+    "answer": 0,
+    "explanation": "The entry stays in the bucket chosen at insertion time, so it is unreachable by any lookup yet still appears in `size()` and iteration — a memory leak with a friendly face."
+  },
+  {
+    "q": "`Object[] objs = new String[2]; objs[0] = Integer.valueOf(1);` — what happens?",
+    "options": [
+      "It compiles and runs, storing a boxed `Integer` in the array",
+      "It compiles, then throws `ClassCastException` on the read",
+      "It compiles, then throws `ArrayStoreException` on the assignment",
+      "It fails to compile, because arrays are invariant just like generics"
+    ],
+    "answer": 2,
+    "explanation": "Arrays are covariant, so the assignment type-checks, and the JVM checks the real component type on every array store. Generics are invariant, which is why `List<T>` avoids this."
+  },
+  {
+    "q": "`arr[(i - k) % n]` throws once `i < k`. What is the recommended fix?",
+    "options": [
+      "`arr[Math.abs((i - k) % n)]`, which strips the sign of the result",
+      "`arr[(i - k) / n]`, since division truncates toward zero in Java",
+      "`arr[(i + k) % n]`, since adding keeps the index non-negative",
+      "`arr[Math.floorMod(i - k, n)]`, which always lands in 0..n-1"
+    ],
+    "answer": 3,
+    "explanation": "Java's `%` takes the sign of the dividend, so `-7 % 2` is -1. `Math.floorMod(x, n)` returns a value in 0..n-1 for positive `n`; `((x % n) + n) % n` is the manual equivalent."
+  },
+  {
+    "q": "A class overrides `equals` but not `hashCode`. What does the chapter call the diagnostic signature?",
+    "options": [
+      "Sorting breaks first, and hash lookups merely get slower over time",
+      "Hash structures fail while `List.contains` still finds a match",
+      "Everything fails, including `List.contains` and a plain linear loop",
+      "Hash lookups still work, but `HashSet` stops rejecting duplicates"
+    ],
+    "answer": 1,
+    "explanation": "`HashMap` picks the bucket by hash before it ever calls `equals`, so hash-based structures break while linear scans still work. That asymmetry names the bug."
+  },
+  {
+    "q": "Why does `x instanceof List<String>` fail to compile?",
+    "options": [
+      "`List` is unreifiable because it is an interface rather than a class",
+      "A cast is required before any `instanceof` test on a generic type",
+      "Type arguments are erased, so there is nothing to test at run time",
+      "`instanceof` never accepts an interface on its right-hand side here"
+    ],
+    "answer": 2,
+    "explanation": "Generic type arguments are removed at compile time, so at run time a `List<String>` and a `List<Integer>` are the same class. Write `x instanceof List<?>` instead."
+  },
+  {
+    "q": "Two overloads take `List<String>` and `List<Integer>` respectively. What does `javac` report?",
+    "options": [
+      "A name clash — both methods share the same erasure",
+      "Nothing, since overload resolution picks by the type argument",
+      "An ambiguity error at the call site rather than the declaration",
+      "An unchecked warning that `@SuppressWarnings` silences entirely"
+    ],
+    "answer": 0,
+    "explanation": "After erasure both signatures become `count(List)`, so the declarations collide before any call site exists. Give the methods different names."
+  },
+  {
+    "q": "A method reads `Number` values out of its list parameter and never adds to it. Which signature fits?",
+    "options": [
+      "`sum(List<?> src)` — an unbounded wildcard still exposes `doubleValue`",
+      "`sum(List<? extends Number> src)` — a producer you only read from",
+      "`sum(List<? super Number> src)` — a consumer you only read from",
+      "`sum(List<Number> src)` — invariance keeps the call sites simple"
+    ],
+    "answer": 1,
+    "explanation": "Producer Extends, Consumer Super. `? extends Number` lets you pass a `List<Integer>` and read elements as `Number`, which a plain `List<Number>` parameter would reject."
+  },
+  {
+    "q": "`compareTo` returns 0 for two objects that `equals` reports as different. What breaks?",
+    "options": [
+      "`HashSet` treats them as duplicates, while `TreeSet` keeps both of them",
+      "`ArrayList.contains` returns false for an element that is present",
+      "`PriorityQueue` rejects the second insert and returns `false`",
+      "`TreeSet` treats them as duplicates while `HashSet` keeps both"
+    ],
+    "answer": 3,
+    "explanation": "`TreeMap` and `TreeSet` order by `compareTo` and ignore `equals`, so an inconsistent natural order makes them disagree with `HashSet`. `BigDecimal` is the standard example."
+  }
+]

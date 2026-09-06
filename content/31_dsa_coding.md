@@ -134,6 +134,16 @@ public int maxArea(int[] height) {
 }
 ```
 
+**Example (twoSumSorted):**
+Input: nums = [2, 7, 11, 15], target = 9
+Output: [0, 1]
+
+**Example (maxArea):**
+Input: height = [1, 8, 6, 2, 5, 4, 8, 3, 7]
+Output: 49  (between index 1 and 8: min(8,7) * 7 = 49)
+
+**Practice:** [Two Sum II — Input Array Is Sorted →](#dsa-problem-two-sum-ii-sorted) · [Container With Most Water →](#dsa-problem-container-with-most-water)
+
 ### Pattern 2: Two Pointers (Same Direction)
 
 Both start at the beginning. "Fast" explores, "slow" marks write position or boundary.
@@ -151,6 +161,12 @@ public int removeDuplicates(int[] nums) {
     return slow + 1;
 }
 ```
+
+**Example:**
+Input: nums = [1, 1, 2, 2, 3]
+Output: 3  (nums becomes [1, 2, 3, _, _])
+
+**Practice:** [Remove Duplicates from Sorted Array →](#dsa-problem-remove-duplicates-sorted-array)
 
 ### Pattern 3: Prefix Sum
 
@@ -176,6 +192,12 @@ public int subarraySum(int[] nums, int k) {
 }
 ```
 
+**Example:**
+Input: nums = [1, 1, 1], k = 2
+Output: 2
+
+**Practice:** [Subarray Sum Equals K →](#dsa-problem-subarray-sum-equals-k)
+
 ### Pattern 4: Kadane's Algorithm (Maximum Subarray)
 
 At each position, decide: extend current subarray or start fresh. A negative running sum can never help.
@@ -191,6 +213,12 @@ public int maxSubArray(int[] nums) {
     return best;
 }
 ```
+
+**Example:**
+Input: nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+Output: 6  (subarray [4, -1, 2, 1])
+
+**Practice:** [Maximum Subarray (Kadane's Algorithm) →](#dsa-problem-maximum-subarray)
 
 ### Pattern 5: Dutch National Flag (Three-Way Partition)
 
@@ -210,6 +238,12 @@ private void swap(int[] a, int i, int j) {
     int tmp = a[i]; a[i] = a[j]; a[j] = tmp;
 }
 ```
+
+**Example:**
+Input: nums = [2, 0, 2, 1, 1, 0]
+Output: [0, 0, 1, 1, 2, 2]
+
+**Practice:** [Sort Colors →](#dsa-problem-sort-colors)
 
 ### Tips & Common Mistakes
 
@@ -416,6 +450,12 @@ public int[] twoSum(int[] nums, int target) {
 }
 ```
 
+**Example:**
+Input: nums = [2, 7, 11, 15], target = 9
+Output: [0, 1]
+
+**Practice:** [Two Sum →](#dsa-problem-two-sum)
+
 ### Pattern 2: Frequency Counting
 
 ```java
@@ -432,7 +472,13 @@ public boolean isAnagram(String s, String t) {
 }
 ```
 
+**Example:**
+Input: s = "anagram", t = "nagaram"
+Output: true
+
 For small character sets use `int[26]` instead of HashMap — faster and less memory.
+
+**Practice:** [Valid Anagram →](#dsa-problem-valid-anagram)
 
 ### Pattern 3: Group By Key
 
@@ -448,6 +494,12 @@ public List<List<String>> groupAnagrams(String[] strs) {
     return new ArrayList<>(groups.values());
 }
 ```
+
+**Example:**
+Input: strs = ["eat", "tea", "tan", "ate", "nat", "bat"]
+Output: [["eat", "tea", "ate"], ["tan", "nat"], ["bat"]]
+
+**Practice:** [Group Anagrams →](#dsa-problem-group-anagrams)
 
 ### Pattern 4: Sliding Window + HashMap
 
@@ -467,6 +519,12 @@ public int lengthOfLongestSubstring(String s) {
 }
 ```
 
+**Example:**
+Input: s = "abcabcbb"
+Output: 3  ("abc")
+
+**Practice:** [Longest Substring Without Repeating Characters →](#dsa-problem-longest-substring-without-repeating)
+
 ### HashSet Essentials
 
 ```java
@@ -485,6 +543,12 @@ public int longestConsecutive(int[] nums) {
     return longest;
 }
 ```
+
+**Example:**
+Input: nums = [100, 4, 200, 1, 3, 2]
+Output: 4  (the sequence [1, 2, 3, 4])
+
+**Practice:** [Longest Consecutive Sequence →](#dsa-problem-longest-consecutive-sequence)
 
 ### Tips & Common Mistakes
 
@@ -641,7 +705,15 @@ public ListNode findMiddle(ListNode head) {
     }
     return slow;
 }
+```
 
+**Example (findMiddle):**
+Input: 1 -> 2 -> 3 -> 4 -> 5
+Output: 3
+
+**Practice:** [Middle of the Linked List →](#dsa-problem-middle-of-linked-list)
+
+```java
 // Detect cycle start — O(n) time, O(1) space
 public ListNode detectCycleStart(ListNode head) {
     ListNode slow = head, fast = head;
@@ -657,6 +729,12 @@ public ListNode detectCycleStart(ListNode head) {
     return null;
 }
 ```
+
+**Example (detectCycleStart):**
+Input: 3 -> 2 -> 0 -> -4, with -4's next pointing back to node 2
+Output: node with value 2 (the cycle entry point)
+
+**Practice:** [Linked List Cycle II →](#dsa-problem-linked-list-cycle-ii)
 
 ### Pattern 2: Reversal (Iterative)
 
@@ -682,6 +760,12 @@ public ListNode reverseList(ListNode head) {
 }
 ```
 
+**Example:**
+Input: 1 -> 2 -> 3 -> 4 -> 5
+Output: 5 -> 4 -> 3 -> 2 -> 1
+
+**Practice:** [Reverse Linked List →](#dsa-problem-reverse-linked-list)
+
 ### Pattern 3: Merge Two Sorted Lists
 
 Dummy head eliminates edge cases.
@@ -699,6 +783,12 @@ public ListNode mergeTwoLists(ListNode l1, ListNode l2) {
 }
 ```
 
+**Example:**
+Input: l1 = 1 -> 2 -> 4, l2 = 1 -> 3 -> 4
+Output: 1 -> 1 -> 2 -> 3 -> 4 -> 4
+
+**Practice:** [Merge Two Sorted Lists →](#dsa-problem-merge-two-sorted-lists)
+
 ### Pattern 4: Remove Nth From End
 
 Two pointers separated by n nodes. When leader reaches end, follower is before the target.
@@ -713,6 +803,12 @@ public ListNode removeNthFromEnd(ListNode head, int n) {
     return dummy.next;
 }
 ```
+
+**Example:**
+Input: head = 1 -> 2 -> 3 -> 4 -> 5, n = 2
+Output: 1 -> 2 -> 3 -> 5
+
+**Practice:** [Remove Nth Node From End of List →](#dsa-problem-remove-nth-from-end)
 
 ### Tips & Common Mistakes
 
@@ -902,6 +998,12 @@ public int[] nextGreaterElement(int[] nums) {
 }
 ```
 
+**Example:**
+Input: nums = [2, 1, 4, 3, 5]
+Output: [4, 4, 5, 5, -1]
+
+**Practice:** [Next Greater Element I →](#dsa-problem-next-greater-element-i)
+
 ### Pattern 2: Min Stack
 
 O(1) push/pop/top/getMin via a parallel min-tracking stack.
@@ -920,6 +1022,12 @@ class MinStack {
 }
 ```
 
+**Example:**
+Input: push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()
+Output: -3, 0, -2  (successive call results)
+
+**Practice:** [Min Stack →](#dsa-problem-min-stack)
+
 ### Pattern 3: Queue Using Two Stacks
 
 Push into `inStack`. On pop/peek, pour into `outStack` (reverses order). Amortized O(1).
@@ -935,6 +1043,12 @@ class MyQueue {
 }
 ```
 
+**Example:**
+Input: push(1), push(2), peek(), pop(), empty()
+Output: 1, 1, false
+
+**Practice:** [Implement Queue using Stacks →](#dsa-problem-implement-queue-using-stacks)
+
 ### Pattern 4: Valid Parentheses
 
 ```java
@@ -948,6 +1062,12 @@ public boolean isValid(String s) {
     return stack.isEmpty();
 }
 ```
+
+**Example:**
+Input: s = "()[]{}"
+Output: true
+
+**Practice:** [Valid Parentheses →](#dsa-problem-valid-parentheses)
 
 ### Tips & Common Mistakes
 
@@ -1031,6 +1151,12 @@ private void merge(int[] arr, int left, int mid, int right) {
 }
 ```
 
+**Example:**
+Input: [5, 2, 8, 1, 9]
+Output: [1, 2, 5, 8, 9]
+
+**Practice:** [Merge Sort →](#dsa-problem-merge-sort) · [Sort an Array →](#dsa-problem-sort-an-array)
+
 ### Quick Sort + Quick Select
 
 ```java
@@ -1063,6 +1189,16 @@ private int quickSelect(int[] a, int lo, int hi, int t) {
 }
 ```
 
+**Example (quickSort):**
+Input: [5, 2, 8, 1, 9]
+Output: [1, 2, 5, 8, 9]
+
+**Example (findKthLargest):**
+Input: nums = [3, 2, 1, 5, 6, 4], k = 2
+Output: 5
+
+**Practice:** [Quick Sort →](#dsa-problem-quick-sort) · [Kth Largest Element in an Array →](#dsa-problem-kth-largest-element)
+
 ### Counting Sort
 
 ```java
@@ -1075,11 +1211,19 @@ public void countingSort(int[] arr, int maxVal) {
 }
 ```
 
+**Example:**
+Input: arr = [4, 2, 2, 8, 3, 3, 1], maxVal = 8
+Output: [1, 2, 2, 3, 3, 4, 8]
+
 ### Custom Comparators
 
 ```java
 Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0])); // by start time
 ```
+
+**Example:**
+Input: intervals = [[1,3],[15,18],[2,6]]
+Output: [[1,3],[2,6],[15,18]]  (sorted by start time)
 
 ### Tips & Common Mistakes
 
@@ -1125,6 +1269,12 @@ public int binarySearch(int[] nums, int target) {
 }
 ```
 
+**Example:**
+Input: nums = [-1, 0, 3, 5, 9, 12], target = 9
+Output: 4
+
+**Practice:** [Binary Search — Implement from Scratch →](#dsa-problem-binary-search-impl)
+
 ### Template 2: Bisect-Left (First True / Lower Bound)
 
 Find first position where condition becomes true.
@@ -1147,6 +1297,10 @@ public int bisectLeft(int[] nums, int target) {
 }
 ```
 
+**Example:**
+Input: nums = [1, 3, 3, 3, 5, 7], target = 3
+Output: 1  (first index where nums[i] >= 3)
+
 ### Template 3: Bisect-Right (Upper Bound)
 
 ```java
@@ -1160,6 +1314,12 @@ public int bisectRight(int[] nums, int target) {
     return lo; // first index where nums[i] > target
 }
 ```
+
+**Example:**
+Input: nums = [1, 3, 3, 3, 5, 7], target = 3
+Output: 4  (first index where nums[i] > 3)
+
+**Practice:** [Find First and Last Position of Element in Sorted Array →](#dsa-problem-find-first-and-last-position)
 
 First occurrence = `bisectLeft(target)`. Last occurrence = `bisectRight(target) - 1`.
 
@@ -1184,6 +1344,12 @@ private boolean canFinish(int[] piles, int speed, int h) {
     return hours <= h;
 }
 ```
+
+**Example:**
+Input: piles = [3, 6, 7, 11], h = 8
+Output: 4
+
+**Practice:** [Koko Eating Bananas →](#dsa-problem-koko-eating-bananas)
 
 This template also solves: split array largest sum, capacity to ship packages, minimum days to make bouquets.
 
@@ -1347,6 +1513,10 @@ public int maxSumSubarray(int[] nums, int k) {
 }
 ```
 
+**Example:**
+Input: nums = [2, 1, 5, 1, 3, 2], k = 3
+Output: 9  (window [5, 1, 3])
+
 ### Variable-Size Window (Universal Template)
 
 ```
@@ -1378,6 +1548,10 @@ public int slidingWindow(String s) {
 }
 ```
 
+**Example (conceptual):** For "longest substring with at most 2 distinct characters" applied to s = "eceba":
+Input: s = "eceba"
+Output: 3  (window "ece")
+
 ### Minimum Window Substring
 
 ```java
@@ -1404,6 +1578,12 @@ public String minWindow(String s, String t) {
 }
 ```
 
+**Example:**
+Input: s = "ADOBECODEBANC", t = "ABC"
+Output: "BANC"
+
+**Practice:** [Minimum Window Substring →](#dsa-problem-minimum-window-substring)
+
 ### Longest Repeating Character Replacement
 
 ```java
@@ -1422,6 +1602,12 @@ public int characterReplacement(String s, int k) {
     return result;
 }
 ```
+
+**Example:**
+Input: s = "ABAB", k = 2
+Output: 4
+
+**Practice:** [Longest Repeating Character Replacement →](#dsa-problem-longest-repeating-character-replacement)
 
 > Fun fact: `maxFreq` doesn't need updating when shrinking. It only needs to increase to discover longer valid windows.
 
@@ -1604,6 +1790,18 @@ private int depth(TreeNode n) {
 }
 ```
 
+**Example (maxDepth):**
+Input: root = [3, 9, 20, null, null, 15, 7]
+Output: 3
+
+**Practice:** [Maximum Depth of Binary Tree →](#dsa-problem-max-depth-binary-tree)
+
+**Example (diameterOfBinaryTree):**
+Input: root = [1, 2, 3, 4, 5]
+Output: 3  (path [4,2,1,3] or [5,2,1,3])
+
+**Practice:** [Diameter of Binary Tree →](#dsa-problem-diameter-of-binary-tree)
+
 ### Pattern 2: BFS Level-Order
 
 ```java
@@ -1627,6 +1825,12 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 }
 ```
 
+**Example:**
+Input: root = [3, 9, 20, null, null, 15, 7]
+Output: [[3], [9, 20], [15, 7]]
+
+**Practice:** [Binary Tree Level Order Traversal →](#dsa-problem-level-order-traversal)
+
 ### BST Properties & Validation
 
 Inorder traversal of a BST produces sorted output. Search/insert/delete are O(h).
@@ -1641,6 +1845,12 @@ private boolean validate(TreeNode node, long min, long max) {
     return validate(node.left, min, node.val) && validate(node.right, node.val, max);
 }
 ```
+
+**Example:**
+Input: root = [5, 1, 4, null, null, 3, 6]
+Output: false  (4 is in the right subtree of 5 but 4 < 5)
+
+**Practice:** [Validate Binary Search Tree →](#dsa-problem-validate-bst)
 
 ### Lowest Common Ancestor
 
@@ -1679,6 +1889,18 @@ public TreeNode lcaBST(TreeNode root, TreeNode p, TreeNode q) {
 }
 ```
 
+**Example (lowestCommonAncestor):**
+Input: root = [3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], p = 5, q = 1
+Output: 3
+
+**Practice:** [Lowest Common Ancestor of a Binary Tree →](#dsa-problem-lowest-common-ancestor)
+
+**Example (lcaBST):**
+Input: root = [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p = 2, q = 8
+Output: 6
+
+**Practice:** [Lowest Common Ancestor of a BST →](#dsa-problem-lowest-common-ancestor-bst)
+
 ### Serialize / Deserialize
 
 ```java
@@ -1705,6 +1927,12 @@ private TreeNode desHelper(Queue<String> q) {
     return node;
 }
 ```
+
+**Example:**
+Input: root = [1, 2, 3, null, null, 4, 5]
+Output: serialize → "1,2,null,null,3,4,null,null,5,null,null," → deserialize reconstructs the same tree
+
+**Practice:** [Serialize and Deserialize Binary Tree →](#dsa-problem-serialize-deserialize-binary-tree)
 
 ### Tips & Common Mistakes
 
@@ -1890,6 +2118,12 @@ public int findKthLargest(int[] nums, int k) {
 }
 ```
 
+**Example:**
+Input: nums = [3, 2, 1, 5, 6, 4], k = 2
+Output: 5
+
+**Practice:** [Kth Largest Element in an Array →](#dsa-problem-kth-largest-element)
+
 ### Pattern 2: Merge K Sorted Lists
 
 Min-heap of K list heads. Extract min, push next node from that list.
@@ -1908,6 +2142,12 @@ public ListNode mergeKLists(ListNode[] lists) {
     return dummy.next;
 }
 ```
+
+**Example:**
+Input: lists = [[1,4,5],[1,3,4],[2,6]]
+Output: [1,1,2,3,4,4,5,6]
+
+**Practice:** [Merge K Sorted Lists →](#dsa-problem-merge-k-sorted-lists)
 
 ### Pattern 3: Running Median (Two Heaps)
 
@@ -1928,6 +2168,12 @@ class MedianFinder {
     }
 }
 ```
+
+**Example:**
+Input: addNum(1), addNum(2), findMedian(), addNum(3), findMedian()
+Output: 1.5, 2
+
+**Practice:** [Find Median from Data Stream →](#dsa-problem-find-median-from-data-stream)
 
 ### Tips & Common Mistakes
 
@@ -2011,6 +2257,12 @@ class Trie {
 }
 ```
 
+**Example:**
+Input: insert("apple"); search("apple") → true; search("app") → false; startsWith("app") → true
+Output: true, false, true
+
+**Practice:** [Implement Trie (Prefix Tree) →](#dsa-problem-implement-trie)
+
 ### Autocomplete
 
 Navigate to the prefix node, DFS to collect all words below.
@@ -2033,6 +2285,10 @@ private void dfs(TrieNode node, StringBuilder path, List<String> results) {
     }
 }
 ```
+
+**Example:**
+Input: insert("app"), insert("apple"), insert("apex"); autocomplete("ap")
+Output: ["app", "apple", "apex"]
 
 ### Word Search II (Trie + Backtracking)
 
@@ -2063,6 +2319,12 @@ private void dfsBoard(char[][] board, int r, int c, TrieNode node,
     path.deleteCharAt(path.length() - 1);
 }
 ```
+
+**Example:**
+Input: board = [["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]], words = ["oath","pea","eat","rain"]
+Output: ["eat", "oath"]
+
+**Practice:** [Word Search II →](#dsa-problem-word-search-ii)
 
 ### Trie vs HashMap
 
@@ -2167,6 +2429,10 @@ for (int[] edge : edges) {
 }
 ```
 
+**Example:**
+Input: n = 4, edges = [[0,1],[0,2],[1,2],[2,3]]
+Output: adjacency list {0: [1,2], 1: [0,2], 2: [0,1,3], 3: [2]}
+
 ### BFS Template (Breadth-First Search)
 
 BFS explores level by level. It uses a **queue** and guarantees the **shortest path in unweighted graphs**.
@@ -2197,6 +2463,10 @@ public int bfs(Map<Integer, List<Integer>> graph, int start, int target) {
     return -1; // not reachable
 }
 ```
+
+**Example:**
+Input: graph = {0: [1,2], 1: [0,2], 2: [0,1,3], 3: [2]}, start = 0, target = 3
+Output: 2  (shortest path 0 -> 2 -> 3)
 
 ### DFS Template (Depth-First Search)
 
@@ -2233,6 +2503,12 @@ public void dfsIterative(Map<Integer, List<Integer>> graph, int start) {
     }
 }
 ```
+
+**Example (dfs / dfsIterative):**
+Input: graph = {0: [1,2], 1: [0,2], 2: [0,1,3], 3: [2]}, start = 0
+Output: visits nodes in order 0, 1, 2, 3 (order can vary by neighbor list order)
+
+**Practice:** [Number of Islands →](#dsa-problem-number-of-islands) · [Graph Valid Tree →](#dsa-problem-graph-valid-tree)
 
 ### When BFS vs DFS?
 
@@ -2461,6 +2737,12 @@ public int[] dijkstra(List<int[]>[] graph, int n, int src) {
 }
 ```
 
+**Example:**
+Input: n = 6, edges/graph as pictured above (A=0,B=1,C=2,D=3,E=4,F=5), src = A(0)
+Output: dist = [0, 1, 4, 3, 2, 3]  (A=0, B=1, C=4, D=3, E=2, F=3)
+
+**Practice:** [Network Delay Time →](#dsa-problem-network-delay-time)
+
 > **Critical:** The `if (d > dist[u]) continue` line is not optional — it prunes stale entries and keeps the algorithm efficient.
 
 ### Topological Sort (Kahn's BFS)
@@ -2497,6 +2779,12 @@ public List<Integer> topologicalSort(int n, int[][] edges) {
     return order.size() == n ? order : List.of(); // empty = cycle exists
 }
 ```
+
+**Example:**
+Input: n = 4, edges = [[1,0],[2,0],[3,1],[3,2]]
+Output: [0, 1, 2, 3]  (0 before 1 and 2; 1 and 2 before 3 — order among ties may vary)
+
+**Practice:** [Course Schedule →](#dsa-problem-course-schedule) · [Course Schedule II →](#dsa-problem-course-schedule-ii)
 
 **Cycle detection bonus:** If `order.size() < n`, the graph has a cycle.
 
@@ -2538,6 +2826,10 @@ class UnionFind {
 }
 ```
 
+**Example:**
+Input: UnionFind(5); union(0,1); union(1,2); connected(0,2); connected(0,3)
+Output: true, false
+
 **When to use Union-Find:**
 - "Are these two nodes connected?" queries
 - Counting connected components dynamically
@@ -2570,6 +2862,10 @@ private boolean dfs(List<List<Integer>> graph, int u, int[] color) {
 }
 ```
 
+**Example:**
+Input: n = 4, edges (directed) = [[0,1],[1,2],[2,3],[3,1]]
+Output: true  (cycle 1 -> 2 -> 3 -> 1)
+
 **Undirected graph — Union-Find:**
 
 ```java
@@ -2582,6 +2878,12 @@ public boolean hasCycleUndirected(int n, int[][] edges) {
     return false;
 }
 ```
+
+**Example:**
+Input: n = 3, edges = [[1,2],[1,3],[2,3]]
+Output: true  (edge [2,3] connects an already-connected pair)
+
+**Practice:** [Redundant Connection →](#dsa-problem-redundant-connection)
 
 **Common Mistakes:**
 - Using Dijkstra's with negative weights — it breaks. Use Bellman-Ford instead.
@@ -2771,6 +3073,12 @@ private void dfs(char[][] grid, int r, int c) {
 }
 ```
 
+**Example:**
+Input: grid = [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]
+Output: 3
+
+**Practice:** [Number of Islands →](#dsa-problem-number-of-islands)
+
 ### Shortest Path in Grid — BFS
 
 ```java
@@ -2803,6 +3111,12 @@ public int shortestPathBinaryMatrix(int[][] grid) {
     return -1;
 }
 ```
+
+**Example:**
+Input: grid = [[0,1],[1,0]]
+Output: 2
+
+**Practice:** [Shortest Path in Binary Matrix →](#dsa-problem-shortest-path-binary-matrix)
 
 ### Rotting Oranges — Multi-Source BFS
 
@@ -2845,6 +3159,12 @@ public int orangesRotting(int[][] grid) {
     return fresh == 0 ? minutes : -1;
 }
 ```
+
+**Example:**
+Input: grid = [[2,1,1],[1,1,0],[0,1,1]]
+Output: 4
+
+**Practice:** [Rotting Oranges →](#dsa-problem-rotting-oranges)
 
 **Grid Problem Decision Table:**
 
@@ -3084,6 +3404,12 @@ int fib(int n) {
 // Time: O(n), Space: O(1)
 ```
 
+**Example (all three approaches):**
+Input: n = 5
+Output: 5  (0, 1, 1, 2, 3, 5)
+
+**Practice:** [Fibonacci Number →](#dsa-problem-fibonacci-number)
+
 ```
 Fibonacci call tree WITHOUT memoization (exponential!):
                      fib(5)
@@ -3124,6 +3450,12 @@ public int climbStairs(int n) {
 }
 ```
 
+**Example:**
+Input: n = 3
+Output: 3  (1+1+1, 1+2, 2+1)
+
+**Practice:** [Climbing Stairs →](#dsa-problem-climbing-stairs)
+
 ### House Robber (Can't Pick Adjacent)
 
 **Recognition:** "Maximum sum of non-adjacent elements."
@@ -3144,6 +3476,10 @@ public int rob(int[] nums) {
     return prev1;
 }
 ```
+
+**Example:**
+Input: nums = [2, 7, 9, 3, 1]
+Output: 12  (rob houses 0, 2, 4)
 
 ### Coin Change (Unbounded Knapsack: Minimum Coins)
 
@@ -3182,6 +3518,10 @@ public int coinChange(int[] coins, int amount) {
 }
 ```
 
+**Example:**
+Input: coins = [1, 3, 4], amount = 6
+Output: 2
+
 ### Longest Increasing Subsequence (LIS)
 
 **Recognition:** "Longest subsequence where each element is strictly greater than the previous."
@@ -3206,6 +3546,12 @@ public int lengthOfLIS(int[] nums) {
     return tails.size();
 }
 ```
+
+**Example:**
+Input: nums = [10, 9, 2, 5, 3, 7, 101, 18]
+Output: 4  (subsequence [2, 3, 7, 18] or [2, 3, 7, 101])
+
+**Practice:** [Longest Increasing Subsequence →](#dsa-problem-longest-increasing-subsequence)
 
 ```
 nums = [10, 9, 2, 5, 3, 7, 101, 18]
@@ -3248,6 +3594,10 @@ public boolean wordBreak(String s, List<String> wordDict) {
 }
 ```
 
+**Example:**
+Input: s = "leetcode", wordDict = ["leet", "code"]
+Output: true
+
 ### Decode Ways
 
 **Recognition:** "How many ways to decode a digit string into letters (A=1, B=2, ..., Z=26)?"
@@ -3273,6 +3623,12 @@ public int numDecodings(String s) {
     return prev1;
 }
 ```
+
+**Example:**
+Input: s = "226"
+Output: 3  ("2,2,6", "22,6", "2,26")
+
+**Practice:** [Decode Ways →](#dsa-problem-decode-ways)
 
 **Key Problems — Detailed Solutions:**
 
@@ -3446,6 +3802,12 @@ public int uniquePaths(int m, int n) {
 }
 ```
 
+**Example:**
+Input: m = 3, n = 4
+Output: 10
+
+**Practice:** [Unique Paths →](#dsa-problem-unique-paths)
+
 ### Edit Distance (String Matching)
 
 **State:** `dp[i][j]` = minimum edits to convert word1[0..i-1] to word2[0..j-1].
@@ -3492,6 +3854,10 @@ public int minDistance(String word1, String word2) {
 }
 ```
 
+**Example:**
+Input: word1 = "horse", word2 = "ros"
+Output: 3
+
 ### Longest Common Subsequence (LCS)
 
 **State:** `dp[i][j]` = length of LCS of text1[0..i-1] and text2[0..j-1].
@@ -3529,6 +3895,10 @@ public int longestCommonSubsequence(String text1, String text2) {
 }
 ```
 
+**Example:**
+Input: text1 = "abcde", text2 = "ace"
+Output: 3
+
 ### 0/1 Knapsack
 
 **State:** `dp[i][w]` = max value using first i items with capacity w.
@@ -3559,6 +3929,12 @@ public int knapsack(int[] weight, int[] value, int capacity) {
 }
 ```
 
+**Example:**
+Input: weight = [1, 3, 4, 5], value = [1, 4, 5, 7], capacity = 7
+Output: 9  (items with weight 3+4, value 4+5)
+
+**Practice:** [Partition Equal Subset Sum →](#dsa-problem-partition-equal-subset-sum) (classic knapsack variant)
+
 > **Critical:** In 0/1 knapsack, iterate capacity **backwards** to avoid using the same item twice. In unbounded knapsack (Coin Change), iterate **forwards** because reuse is allowed.
 
 ### Palindromic Substrings
@@ -3584,6 +3960,10 @@ public int countSubstrings(String s) {
     return count;
 }
 ```
+
+**Example:**
+Input: s = "aaa"
+Output: 6  (palindromes: "a","a","a","aa","aa","aaa")
 
 **Key Problems — Detailed Solutions:**
 
@@ -3728,6 +4108,12 @@ public int maxCoins(int[] nums) {
 }
 ```
 
+**Example:**
+Input: nums = [3, 1, 5, 8]
+Output: 167
+
+**Practice:** [Burst Balloons →](#dsa-problem-burst-balloons)
+
 ### Bitmask DP
 
 When you need to track which elements from a small set (n <= 20) have been used. The bitmask represents the subset of chosen items.
@@ -3755,6 +4141,10 @@ public int minCostAssignment(int[][] cost) {
     return dp[(1 << n) - 1];
 }
 ```
+
+**Example:**
+Input: cost = [[9,2,7],[6,4,3],[5,8,1]]
+Output: 9  (worker0→task1(2) + worker1→task0(6) + worker2→task2(1) = 9)
 
 ### State Machine DP (Stock Buy/Sell)
 
@@ -3799,6 +4189,12 @@ public int maxProfit(int k, int[] prices) {
     return dp[k][0];
 }
 ```
+
+**Example:**
+Input: k = 2, prices = [2, 4, 1]
+Output: 2  (buy at 2, sell at 4)
+
+**Practice:** [Best Time to Buy and Sell Stock IV →](#dsa-problem-best-time-buy-sell-stock-iv)
 
 **Stock variant cheat sheet:**
 
@@ -3885,6 +4281,12 @@ void backtrackSubsets(List<List<Integer>> res, List<Integer> curr, int[] nums, i
 }
 ```
 
+**Example (subsets):**
+Input: nums = [1, 2, 3]
+Output: [[], [1], [2], [1,2], [3], [1,3], [2,3], [1,2,3]]
+
+**Practice:** [Subsets →](#dsa-problem-subsets)
+
 ```java
 // PERMUTATIONS (LC 46) — use all elements in every order
 public List<List<Integer>> permute(int[] nums) {
@@ -3910,6 +4312,12 @@ void backtrackPermute(List<List<Integer>> res, List<Integer> curr,
 }
 ```
 
+**Example (permute):**
+Input: nums = [1, 2, 3]
+Output: [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+
+**Practice:** [Permutations →](#dsa-problem-permutations)
+
 ```java
 // COMBINATIONS (LC 77) — choose k from n
 public List<List<Integer>> combine(int n, int k) {
@@ -3931,6 +4339,12 @@ void backtrackCombine(List<List<Integer>> res, List<Integer> curr,
     }
 }
 ```
+
+**Example (combine):**
+Input: n = 4, k = 2
+Output: [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+
+**Practice:** [Combinations →](#dsa-problem-combinations)
 
 ### N-Queens
 
@@ -3967,6 +4381,12 @@ void solve(List<List<String>> res, char[][] board, int row,
     }
 }
 ```
+
+**Example:**
+Input: n = 4
+Output: [[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]]  (2 solutions)
+
+**Practice:** [N-Queens →](#dsa-problem-n-queens)
 
 > **Fun fact:** The number of solutions to N-Queens grows roughly exponentially. N=8 has 92 solutions, N=14 has 365,596, and no closed-form formula is known.
 
@@ -4127,6 +4547,12 @@ public int eraseOverlapIntervals(int[][] intervals) {
 }
 ```
 
+**Example:**
+Input: intervals = [[1,2],[2,3],[3,4],[1,3]]
+Output: 1  (remove [1,3] to leave [1,2],[2,3],[3,4] non-overlapping)
+
+**Practice:** [Non-overlapping Intervals →](#dsa-problem-non-overlapping-intervals)
+
 ### Jump Game
 
 ```java
@@ -4154,6 +4580,16 @@ public int jump(int[] nums) {
 }
 ```
 
+**Example (canJump):**
+Input: nums = [2, 3, 1, 1, 4]
+Output: true
+
+**Example (jump):**
+Input: nums = [2, 3, 1, 1, 4]
+Output: 2  (jump 0->1->4)
+
+**Practice:** [Jump Game →](#dsa-problem-jump-game) · [Jump Game II →](#dsa-problem-jump-game-ii)
+
 ### Task Scheduler
 
 ```java
@@ -4172,6 +4608,12 @@ public int leastInterval(char[] tasks, int n) {
     return Math.max(tasks.length, tasks.length + idleSlots);
 }
 ```
+
+**Example:**
+Input: tasks = [A,A,A,B,B,B], n = 2
+Output: 8  (e.g. A B idle A B idle A B)
+
+**Practice:** [Task Scheduler →](#dsa-problem-task-scheduler)
 
 **Problem List — Greedy:**
 
@@ -4224,7 +4666,15 @@ public int singleNumber(int[] nums) {
     for (int num : nums) result ^= num; // pairs cancel, single remains
     return result;
 }
+```
 
+**Example (singleNumber):**
+Input: nums = [4, 1, 2, 1, 2]
+Output: 4
+
+**Practice:** [Single Number →](#dsa-problem-single-number)
+
+```java
 // LC 338: Counting Bits — count 1-bits for every number 0..n
 public int[] countBits(int n) {
     int[] dp = new int[n + 1];
@@ -4233,7 +4683,15 @@ public int[] countBits(int n) {
     }
     return dp;
 }
+```
 
+**Example (countBits):**
+Input: n = 5
+Output: [0, 1, 1, 2, 1, 2]
+
+**Practice:** [Counting Bits →](#dsa-problem-counting-bits)
+
+```java
 // Generate all subsets using bitmask
 public List<List<Integer>> subsets(int[] nums) {
     List<List<Integer>> result = new ArrayList<>();
@@ -4248,6 +4706,10 @@ public List<List<Integer>> subsets(int[] nums) {
     return result;
 }
 ```
+
+**Example (subsets via bitmask):**
+Input: nums = [1, 2]
+Output: [[], [1], [2], [1,2]]
 
 **Problem List — Bit Manipulation:**
 
@@ -4294,6 +4756,12 @@ public int[][] merge(int[][] intervals) {
 }
 ```
 
+**Example:**
+Input: intervals = [[1,3],[2,6],[8,10],[15,18]]
+Output: [[1,6],[8,10],[15,18]]
+
+**Practice:** [Merge Intervals →](#dsa-problem-merge-intervals)
+
 ### Meeting Rooms II (Minimum Conference Rooms)
 
 ```java
@@ -4311,6 +4779,12 @@ public int minMeetingRooms(int[][] intervals) {
     return pq.size(); // rooms in use = rooms needed
 }
 ```
+
+**Example:**
+Input: intervals = [[0,30],[5,10],[15,20]]
+Output: 2
+
+**Practice:** [Meeting Rooms II →](#dsa-problem-meeting-rooms-ii)
 
 **Problem List — Intervals:**
 
@@ -4341,6 +4815,10 @@ int gcd(int a, int b) {
 int lcm(int a, int b) { return a / gcd(a, b) * b; } // divide first to avoid overflow
 ```
 
+**Example:**
+Input: a = 48, b = 18
+Output: gcd = 6, lcm = 144
+
 ### Sieve of Eratosthenes
 
 ```java
@@ -4359,6 +4837,12 @@ public int countPrimes(int n) {
     return count;
 }
 ```
+
+**Example:**
+Input: n = 10
+Output: 4  (primes below 10: 2, 3, 5, 7)
+
+**Practice:** [Count Primes →](#dsa-problem-count-primes)
 
 ### Modular Arithmetic for Large Numbers
 
@@ -4385,6 +4869,12 @@ long power(long base, long exp, long mod) {
     return result;
 }
 ```
+
+**Example (power):**
+Input: base = 2, exp = 10, mod = 1_000_000_007
+Output: 1024
+
+**Practice:** [Pow(x, n) →](#dsa-problem-pow-x-n)
 
 ### Integer Overflow Prevention in Java
 
@@ -4495,6 +4985,12 @@ class SegmentTree {
 }
 ```
 
+**Example:**
+Input: nums = [2, 4, 5, 1, 8, 3]; query(1, 3); update(3, 10); query(1, 3)
+Output: 10 (4+5+1), then after update(3,10) → 19 (4+5+10)
+
+**Practice:** [Range Sum Query — Mutable →](#dsa-problem-range-sum-query-mutable)
+
 **Complexity:** Build O(n), query O(log n), update O(log n). Space O(n).
 
 **Range minimum variant:** replace `tree[node] = tree[L] + tree[R]` with `Math.min(...)`, and the out-of-range identity becomes `Integer.MAX_VALUE`.
@@ -4553,6 +5049,10 @@ class BIT {
     }
 }
 ```
+
+**Example:**
+Input: BIT(5); update(1, 3); update(2, 5); update(3, -2); query(1, 3); query(2, 3)
+Output: query(1,3) = 6 (3+5-2), query(2,3) = 3 (5-2)
 
 **The `i & (-i)` idiom:** `-i` in two's complement flips all bits then adds 1, so `i & (-i)` isolates the lowest set bit of `i`. Adding this to `i` in `update` moves to the next responsible ancestor; subtracting it in `query` moves to the next responsible prefix.
 
@@ -4631,6 +5131,12 @@ public int[] bellmanFord(int n, int[][] edges, int src) {
 }
 ```
 
+**Example:**
+Input: n = 3, edges = [[0,1,4],[0,2,-3],[1,2,2]], src = 0
+Output: dist = [0, 4, -3]  (direct 0->2 beats 0->1->2 = 6)
+
+**Practice:** [Cheapest Flights Within K Stops →](#dsa-problem-cheapest-flights-within-k-stops) · [Network Delay Time →](#dsa-problem-network-delay-time)
+
 **Dijkstra vs Bellman-Ford:**
 
 | | Dijkstra | Bellman-Ford |
@@ -4706,6 +5212,12 @@ public int[][] floydWarshall(int[][] graph) {
 }
 ```
 
+**Example:**
+Input: graph (4 nodes) = [[0,3,INF,7],[8,0,2,INF],[5,INF,0,1],[2,INF,INF,0]]
+Output: dist = [[0,3,5,6],[5,0,2,3],[3,6,0,1],[2,5,7,0]]  (e.g. dist[2][3]=1 via direct edge, dist[0][2]=5 via 0->1->2)
+
+**Practice:** [Evaluate Division →](#dsa-problem-evaluate-division) (best-effort — weighted-graph, all-pairs style reasoning)
+
 **Complexity:** O(V³) time, O(V²) space. For sparse graphs with E << V², run Dijkstra from every source (O(V·(V+E) log V)) instead.
 
 **Key problems:** Find the City With the Smallest Number of Neighbors at a Threshold Distance (LC 1334), Network Delay Time (LC 743), Evaluate Division (LC 399 — treat as weighted graph).
@@ -4775,6 +5287,12 @@ public int[] maxSlidingWindow(int[] nums, int k) {
     return result;
 }
 ```
+
+**Example:**
+Input: nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3
+Output: [3, 3, 5, 5, 6, 7]
+
+**Practice:** [Sliding Window Maximum →](#dsa-problem-sliding-window-maximum)
 
 **Why O(n):** Each index is pushed to the deque exactly once and popped at most once — from the back when a larger element arrives, or from the front when it expires. Total work is O(2n) = O(n), regardless of k.
 
@@ -4970,6 +5488,10 @@ public class LinearRegression {
 }
 ```
 
+**Example:**
+Input: x = [1, 2, 3, 4], y = [2, 4, 6, 8], lr = 0.01, epochs = 1000
+Output: w ≈ 2.0, b ≈ 0.0 → predict(5) ≈ 10.0  (model recovers y = 2x)
+
 ### Logistic Regression (Sigmoid + Cross-Entropy)
 
 ```java
@@ -5012,6 +5534,10 @@ public class LogisticRegression {
     }
 }
 ```
+
+**Example:**
+Input: X = [[0],[1],[2],[3]], y = [0, 0, 1, 1], lr = 0.1, epochs = 1000
+Output: predict([0]) = 0, predict([3]) = 1  (converges to separate the two classes)
 
 ### K-Means Clustering
 
@@ -5064,6 +5590,10 @@ public class KMeans {
 }
 ```
 
+**Example:**
+Input: data = [[1,1],[1,2],[10,10],[10,11]], k = 2, maxIter = 5
+Output: labels = [0, 0, 1, 1]  (two well-separated clusters around (1,~1.5) and (10,~10.5))
+
 ### K-Nearest Neighbors (KNN)
 
 ```java
@@ -5105,6 +5635,10 @@ public class KNN {
 }
 ```
 
+**Example:**
+Input: trainX = [[1],[2],[3],[10],[11],[12]], trainY = [0,0,0,1,1,1], query = [2.5], k = 3
+Output: 0  (3 nearest neighbors are 2, 3, 1 — all label 0)
+
 ### Numerically Stable Softmax
 
 ```java
@@ -5128,6 +5662,10 @@ public static double[] softmax(double[] logits) {
     return exp;
 }
 ```
+
+**Example:**
+Input: logits = [2.0, 1.0, 0.1]
+Output: [0.659, 0.242, 0.099]  (probabilities sum to 1.0)
 
 > Without the `- max` trick, `exp(1000)` = infinity. With it, the largest exponent becomes `exp(0) = 1`. This is the single most asked numerical stability question in ML interviews.
 
@@ -5199,6 +5737,10 @@ public class SelfAttention {
     }
 }
 ```
+
+**Example:**
+Input: X is a 3x4 matrix (seqLen=3, dModel=4), dk = 2
+Output: forward(X) returns a 3x2 matrix — each row is a weighted average of the 3 value rows (V), with weights given by softmax(Q·K^T / sqrt(2)) (exact numbers depend on the random Wq/Wk/Wv init)
 
 > **Interview context:** You won't be asked to implement a full transformer, but understanding how Q, K, V are computed and how the attention matrix forms is essential. The scaling by `sqrt(dk)` prevents dot products from growing too large, which would push softmax into a region with near-zero gradients.
 

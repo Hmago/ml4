@@ -146,6 +146,7 @@ the signal an interviewer is looking for.
 ## 5.3 HLD — high-level architecture
 
 ![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete.svg)
+![search autocomplete / typeahead system (like Google Suggest) — AI-generated draft (for review, not yet final)](diagrams/autocomplete_ai.png)
 
 **Legend:** boxes are stateless services unless they name a store. Read it
 top-to-bottom: keystrokes are answered in **Layers 1–2** from RAM; **Layer 4** runs
@@ -448,6 +449,7 @@ the signal an interviewer is looking for.
 ## 6.3 HLD — high-level architecture
 
 ![Web Crawler (Googlebot) — high-level architecture (HLD)](diagrams/crawler.svg)
+![web crawler (Googlebot style) — AI-generated draft (for review, not yet final)](diagrams/crawler_ai.png)
 
 **Legend:** double-bordered box = the stateful frontier; single boxes = stateless workers
 or stores. The loop is: **frontier → fetch → store → parse → dedupe → frontier**.
@@ -756,6 +758,7 @@ the signal an interviewer is looking for.
 ## 7.3 HLD — high-level architecture
 
 ![Proximity / Nearby (Maps / Yelp) — high-level architecture (HLD)](diagrams/proximity.svg)
+![proximity / nearby-search system (like Maps or Yelp nearby search) — AI-generated draft (for review, not yet final)](diagrams/proximity_ai.png)
 
 **Legend:** the left column serves **static places**; the right column serves **moving
 users**. They share the same **cell** math but use different stores (durable index vs RAM
@@ -1052,6 +1055,7 @@ the signal an interviewer is looking for.
 ## 8.3 HLD — high-level architecture
 
 ![Ride-Hailing (Uber / Lyft) — high-level architecture (HLD)](diagrams/ride_hailing.svg)
+![ride-hailing system (Uber / Lyft style) — AI-generated draft (for review, not yet final)](diagrams/ride_hailing_ai.png)
 
 **Legend:** WebSocket gateway keeps driver connections open so dispatch is a **push**, not a
 poll. Layer 3 is **RAM**; Layer 4 is **durable**.
@@ -1342,6 +1346,7 @@ the signal an interviewer is looking for.
 ## 9.3 HLD — high-level architecture
 
 ![News Feed (Twitter / Facebook) — high-level architecture (HLD)](diagrams/news_feed.svg)
+![news feed system (Twitter / Facebook style) — AI-generated draft (for review, not yet final)](diagrams/news_feed_ai.png)
 
 **Legend:** the **Fan-out service** decides push-vs-skip per post; the **Feed service**
 merges pushed + pulled at read time. The **Timeline cache** is a **Redis sorted set** per user.
@@ -1663,6 +1668,7 @@ the signal an interviewer is looking for.
 ## 10.3 HLD — high-level architecture
 
 ![Video Streaming (YouTube / Netflix) — high-level architecture (HLD)](diagrams/video_streaming.svg)
+![video streaming platform (YouTube / Netflix style) — AI-generated draft (for review, not yet final)](diagrams/video_streaming_ai.png)
 
 **Legend:** Layer 2 turns one upload into many renditions; Layer 3 is where ~billions of
 viewers actually pull bytes — almost all from CDN.
@@ -1967,6 +1973,7 @@ the signal an interviewer is looking for.
 ## 11.3 HLD — high-level architecture
 
 ![File Sync & Storage (Drive / Dropbox) — high-level architecture (HLD)](diagrams/file_sync.svg)
+![file sync and storage system (Google Drive / Dropbox style) — AI-generated draft (for review, not yet final)](diagrams/file_sync_ai.png)
 
 **Legend:** the **two stores** are the heart — a transactional **metadata DB** (small, hot) and
 a content-addressed **block store** (huge, immutable). Clients talk to both.
@@ -2239,6 +2246,7 @@ the signal an interviewer is looking for.
 ## 12.3 HLD — high-level architecture
 
 ![URL Shortener (TinyURL) — high-level architecture (HLD)](diagrams/url_shortener.svg)
+![URL shortener system (TinyURL style) — AI-generated draft (for review, not yet final)](diagrams/url_shortener_ai.png)
 
 **Block-by-block:**
 - **Write service** — turns a unique numeric **ID** into a base62 **code** and stores `code→longURL`.

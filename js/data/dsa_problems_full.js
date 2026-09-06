@@ -12394,6 +12394,409 @@ public class Solution {
     }
 }
 `,
+
+  "java-2d-array-rotate-in-place": `import java.util.*;
+
+public class Solution {
+    public static void rotate(int[][] matrix) {
+        // Your solution here: transpose, then reverse each row.
+    }
+
+    public static int[][] spiral(int n) {
+        // Your solution here
+        return new int[n][n];
+    }
+
+    public static void main(String[] args) {
+        int[][] m = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        rotate(m);
+        System.out.println(Arrays.deepToString(m));
+        System.out.println(Arrays.deepToString(spiral(3)));
+    }
+}
+`,
+
+  "java-arrays-utilities-toolkit": `import java.util.*;
+
+public class Solution {
+    public static int[] padRight(int[] a, int len, int pad) {
+        // Your solution here: Arrays.fill for padding, Arrays.copyOfRange for the prefix.
+        return new int[Math.max(len, 0)];
+    }
+
+    public static boolean blocksEqual(int[] a, int i, int j, int k) {
+        // Your solution here: Arrays.copyOfRange twice, then Arrays.equals.
+        return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(padRight(new int[]{1, 2}, 5, 9)));
+        System.out.println(blocksEqual(new int[]{1, 2, 1, 2}, 0, 2, 2));
+    }
+}
+`,
+
+  "java-stringbuilder-run-length-encoding": `public class Solution {
+    public static String encode(String s) {
+        // Your solution here: one StringBuilder, one pass over s.toCharArray().
+        return "";
+    }
+
+    public static String decode(String s) {
+        // Your solution here: multi-digit counts must work.
+        return "";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(encode("aaabbc"));
+        System.out.println(decode("a3b2c1"));
+    }
+}
+`,
+
+  "java-char-frequency-int-array": `public class Solution {
+    public static int firstUniqChar(String s) {
+        // Your solution here: int[26] counts, then a second scan.
+        return -1;
+    }
+
+    public static boolean isAnagram(String a, String b) {
+        // Your solution here: one int[26], increment for a and decrement for b.
+        return false;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(firstUniqChar("loveleetcode"));
+        System.out.println(isAnagram("anagram", "nagaram"));
+    }
+}
+`,
+
+  "java-hashmap-merge-computeifabsent": `import java.util.*;
+
+public class Solution {
+    public static Map<String, Integer> wordCount(String text) {
+        // Your solution here: use counts.merge(word, 1, Integer::sum).
+        return new HashMap<>();
+    }
+
+    public static Map<Character, List<String>> groupByFirstLetter(String[] words) {
+        // Your solution here: use computeIfAbsent(key, k -> new ArrayList<>()).
+        return new HashMap<>();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new TreeMap<>(wordCount("a b a c a")));
+        System.out.println(new TreeMap<>(groupByFirstLetter(new String[]{"apple", "avocado", "banana"})));
+    }
+}
+`,
+
+  "java-arraydeque-stack-and-queue": `import java.util.*;
+
+public class Solution {
+    public static boolean isBalanced(String s) {
+        // Your solution here: Deque<Character> used as a stack.
+        return false;
+    }
+
+    public static int[] maxSlidingWindow(int[] nums, int k) {
+        // Your solution here: Deque<Integer> of indexes, monotonic decreasing.
+        return new int[0];
+    }
+
+    public static void main(String[] args) {
+        System.out.println(isBalanced("{[()]}"));
+        System.out.println(Arrays.toString(maxSlidingWindow(new int[]{1, 3, -1, -3, 5, 3, 6, 7}, 3)));
+    }
+}
+`,
+
+  "java-priorityqueue-comparator": `import java.util.*;
+
+public class Solution {
+    public static int findKthLargest(int[] nums, int k) {
+        // Your solution here: min-heap capped at size k, explicit Comparator.
+        return 0;
+    }
+
+    public static int[] kLargestDescending(int[] nums, int k) {
+        // Your solution here
+        return new int[0];
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findKthLargest(new int[]{3, 2, 1, 5, 6, 4}, 2));
+        System.out.println(Arrays.toString(kLargestDescending(new int[]{3, 2, 1, 5, 6, 4}, 3)));
+    }
+}
+`,
+
+  "java-treemap-floorkey-navigation": `import java.util.*;
+
+public class Solution {
+    public static Integer latestAtOrBefore(int[] times, int[] values, int query) {
+        // Your solution here: TreeMap plus floorKey.
+        return null;
+    }
+
+    public static int[] answerAll(int[] times, int[] values, int[] queries) {
+        // Your solution here
+        return new int[queries.length];
+    }
+
+    public static int countInRange(int[] times, int lo, int hi) {
+        // Your solution here: subMap(lo, true, hi, true).
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        int[] times = {1, 5, 10};
+        int[] values = {100, 500, 1000};
+        System.out.println(latestAtOrBefore(times, values, 7));
+        System.out.println(Arrays.toString(answerAll(times, values, new int[]{0, 1, 4, 5, 11})));
+    }
+}
+`,
+
+  "java-comparator-composition": `import java.util.*;
+
+public class Solution {
+    public record Player(String name, String team, int score) {}
+
+    public static Player player(String name, String team, int score) {
+        return new Player(name, team, score);
+    }
+
+    public static List<String> rankPlayers(List<Player> players) {
+        // Your solution here: score descending, then team, then name.
+        return new ArrayList<>();
+    }
+
+    public static String[] sortWords(String[] words) {
+        // Your solution here: length ascending, then alphabetical.
+        return Arrays.copyOf(words, words.length);
+    }
+
+    public static void main(String[] args) {
+        List<Player> squad = List.of(player("amy", "red", 5), player("bob", "blue", 7), player("cat", "blue", 5));
+        System.out.println(rankPlayers(squad));
+        System.out.println(Arrays.toString(sortWords(new String[]{"pear", "fig", "apple", "kiwi", "date"})));
+    }
+}
+`,
+
+  "java-integer-cache-equality-trap": `import java.util.*;
+
+public class Solution {
+    // BROKEN: == compares references for boxed Integer values.
+    public static boolean sameValue(Integer a, Integer b) {
+        return a == b;
+    }
+
+    // BROKEN: same bug, and it also has to survive null entries.
+    public static int countMatches(List<Integer> values, Integer target) {
+        int count = 0;
+        for (Integer v : values) {
+            if (v == target) count++;
+        }
+        return count;
+    }
+
+    // BROKEN: same bug again.
+    public static int indexOfValue(Integer[] values, Integer target) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == target) return i;
+        }
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sameValue(127, 127));
+        System.out.println(sameValue(128, 128));
+        System.out.println(countMatches(Arrays.asList(1000, 1000, 2), 1000));
+    }
+}
+`,
+
+  "java-overflow-safe-arithmetic": `public class Solution {
+    // BROKEN for large values: this addition overflows.
+    public static int midpoint(int lo, int hi) {
+        return (lo + hi) / 2;
+    }
+
+    public static int binarySearch(int[] sorted, int target) {
+        // Your solution here: use midpoint(lo, hi).
+        return -1;
+    }
+
+    public static String sumChecked(int[] nums) {
+        // Your solution here: Math.addExact plus a try/catch.
+        return "0";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(midpoint(Integer.MAX_VALUE - 2, Integer.MAX_VALUE));
+        System.out.println(binarySearch(new int[]{1, 3, 5, 7, 9}, 7));
+        System.out.println(sumChecked(new int[]{Integer.MAX_VALUE, 1}));
+    }
+}
+`,
+
+  "java-equals-hashcode-map-key": `import java.util.*;
+
+public class Solution {
+    public static final class CellKey {
+        private final int row;
+        private final int col;
+
+        public CellKey(int row, int col) {
+            this.row = row;
+            this.col = col;
+        }
+
+        public int row() { return row; }
+
+        public int col() { return col; }
+
+        // TODO: override equals(Object other) here.
+
+        // TODO: override hashCode() here, consistently with equals.
+
+        @Override
+        public String toString() {
+            return "(" + row + "," + col + ")";
+        }
+    }
+
+    public static CellKey key(int row, int col) {
+        return new CellKey(row, col);
+    }
+
+    public static int countDistinct(int[][] cells) {
+        Set<CellKey> seen = new HashSet<>();
+        for (int[] cell : cells) {
+            seen.add(new CellKey(cell[0], cell[1]));
+        }
+        return seen.size();
+    }
+
+    public static String lookup(int[][] cells, String[] labels, int row, int col) {
+        Map<CellKey, String> map = new HashMap<>();
+        for (int i = 0; i < cells.length; i++) {
+            map.put(new CellKey(cells[i][0], cells[i][1]), labels[i]);
+        }
+        return map.getOrDefault(new CellKey(row, col), "none");
+    }
+
+    public static void main(String[] args) {
+        System.out.println(countDistinct(new int[][]{{1, 2}, {1, 2}, {3, 4}}));
+        System.out.println(lookup(new int[][]{{1, 2}, {3, 4}}, new String[]{"a", "b"}, 3, 4));
+    }
+}
+`,
+
+  "java-record-compact-constructor": `public class Solution {
+    public record Money(String currency, long amountCents) {
+        public Money {
+            // Your validation and normalisation here.
+        }
+
+        public String format() {
+            // Your solution here: two minor digits, for example USD 12.34.
+            return currency + " " + amountCents;
+        }
+    }
+
+    public static Money money(String currency, long cents) {
+        return new Money(currency, cents);
+    }
+
+    public static String describe(String currency, long cents) {
+        try {
+            return money(currency, cents).format();
+        } catch (IllegalArgumentException e) {
+            return "invalid: " + e.getMessage();
+        }
+    }
+
+    public static boolean sameMoney(String c1, long a1, String c2, long a2) {
+        return money(c1, a1).equals(money(c2, a2));
+    }
+
+    public static void main(String[] args) {
+        System.out.println(describe("usd", 1234));
+        System.out.println(money("gbp", 250));
+    }
+}
+`,
+
+  "java-sealed-pattern-switch-expr": `public class Solution {
+    public sealed interface Expr permits Num, Add, Mul {}
+
+    public record Num(int value) implements Expr {}
+
+    public record Add(Expr left, Expr right) implements Expr {}
+
+    public record Mul(Expr left, Expr right) implements Expr {}
+
+    public static Expr num(int value) { return new Num(value); }
+
+    public static Expr add(Expr left, Expr right) { return new Add(left, right); }
+
+    public static Expr mul(Expr left, Expr right) { return new Mul(left, right); }
+
+    public static int eval(Expr e) {
+        // Your solution here: a switch expression with no default branch.
+        return 0;
+    }
+
+    public static String show(Expr e) {
+        // Your solution here: fully parenthesised infix notation.
+        return "";
+    }
+
+    public static void main(String[] args) {
+        Expr tree = add(num(2), mul(num(3), num(4)));
+        System.out.println(eval(tree));
+        System.out.println(show(tree));
+    }
+}
+`,
+
+  "java-record-patterns-when-guards": `public class Solution {
+    public record Point(int x, int y) {}
+
+    public sealed interface Shape permits Dot, Segment, Circle {}
+
+    public record Dot(Point at) implements Shape {}
+
+    public record Segment(Point from, Point to) implements Shape {}
+
+    public record Circle(Point center, int radius) implements Shape {}
+
+    public static Shape dot(int x, int y) { return new Dot(new Point(x, y)); }
+
+    public static Shape segment(int x1, int y1, int x2, int y2) { return new Segment(new Point(x1, y1), new Point(x2, y2)); }
+
+    public static Shape circle(int x, int y, int radius) { return new Circle(new Point(x, y), radius); }
+
+    public static String classify(Shape shape) {
+        // Your solution here: nested record patterns plus when guards.
+        return "todo";
+    }
+
+    public static String originLabel(Shape shape) {
+        // Your solution here: destructure one level.
+        return "todo";
+    }
+
+    public static void main(String[] args) {
+        System.out.println(classify(segment(1, 5, 9, 5)));
+        System.out.println(originLabel(segment(1, 2, 3, 4)));
+    }
+}
+`,
 };
 
 // Merge into DSA_PROBLEMS (index must have loaded first).

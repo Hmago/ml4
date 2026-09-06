@@ -76,8 +76,10 @@ const chapters = [
   { id: '29',  file: 'content/29_gpus_tpus_infrastructure.md', title: 'GPUs, TPUs & AI Infrastructure' },
   { id: '30',  file: 'content/30_google_ml_ecosystem.md', title: 'Google ML Ecosystem (TPUs, JAX, Vertex AI)' },
 
-  // ── DSA / CODING ──
-  { section: 'DSA / Coding' },
+  // ── JAVA & CODING ──
+  { section: 'Java & Coding' },
+  { id: '38', file: 'content/38_java_refresher.md', title: 'Java Refresher — Core & DSA Toolkit' },
+  { id: '38b', file: 'content/38b_java_modern.md', title: 'Modern Java — Language, Concurrency & Ecosystem' },
   { id: '31', file: 'content/31_dsa_coding.md', title: 'DSA & ML Coding (Java)' },
 
   // ── INTERVIEW PREP ──
@@ -1556,6 +1558,7 @@ loadChapter = async function(index) {
     closeSidebar();
     await loadNotebook(ch.file);
     loadHighlights(ch.file);
+    loadStrikes(ch.file);
     injectComments(ch.file);
     if (typeof renderPins === 'function') setTimeout(() => renderPins(ch.file), 60);
     return;
@@ -1570,6 +1573,8 @@ loadChapter = async function(index) {
     }
     // Restore saved highlights
     loadHighlights(chapters[index].file);
+    // Restore saved strikethroughs
+    loadStrikes(chapters[index].file);
     // Always inject comments at bottom of chapter
     injectComments(chapters[index].file);
     // Render any saved floating-note pins (Figma-style). Small delay so markdown,
@@ -2338,7 +2343,14 @@ function deleteAllHighlights() {
   showDashboard();
 }
 
-// ─── Text Selection Popup (select text → Note / Highlight / Copy) ───
+function deleteAllStrikes() {
+  if (!confirm('Delete ALL strikethroughs from ALL chapters?\n\nThis cannot be undone.')) return;
+  localStorage.removeItem('ml4-strikes');
+  showToast('S̶ Strikethroughs Deleted', 'All strikethroughs cleared', '⚠️');
+  showDashboard();
+}
+
+// ─── Text Selection Popup (select text → Note / Highlight / Strike / Copy) ───
 let selectedText = '';
 let selectionRange = null;
 
@@ -2447,6 +2459,20 @@ function highlightSelection() {
   window.getSelection().removeAllRanges();
 }
 
+function strikeSelection() {
+  document.getElementById('selPopup').classList.remove('visible');
+  if (!selectionRange || !selectedText || currentIndex < 0) return;
+  const file = chapters[currentIndex].file;
+
+  if (wrapRangeInStrikes(selectionRange, file)) {
+    saveStrikes(file);
+    showToast('S̶ Struck through', selectedText.substring(0, 40) + (selectedText.length > 40 ? '…' : ''), '✓');
+  } else {
+    showToast('⚠️ Strikethrough failed', 'Could not strike that selection', 'S̶');
+  }
+  window.getSelection().removeAllRanges();
+}
+
 // Wrap every text node that intersects `range` in its own <mark class="user-hl">.
 // Range.surroundContents throws when a selection crosses element boundaries
 // (e.g. the nested bold/italic spans inside the blue "Simple Explanation" /
@@ -2529,6 +2555,86 @@ document.addEventListener('click', function(e) {
     parent.normalize();
   });
   if (file) saveHighlights(file);
+});
+
+// Wrap every text node that intersects `range` in its own <s class="user-strike">.
+// Same multi-node approach as wrapRangeInHighlights, kept as a separate pass so a
+// strikethrough and a highlight can freely overlap the same text.
+function wrapRangeInStrikes(range, file) {
+  if (!range || range.collapsed) return false;
+
+  const startC = range.startContainer, startO = range.startOffset;
+  const endC = range.endContainer, endO = range.endOffset;
+  const fullText = range.toString();
+
+  let rootEl = range.commonAncestorContainer;
+  if (rootEl.nodeType === Node.TEXT_NODE) rootEl = rootEl.parentNode;
+  if (!rootEl) return false;
+
+  // Collect every intersecting text node up front (before any DOM mutation).
+  const nodes = [];
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      if (!range.intersectsNode(node)) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (p && p.closest('pre, code, script, .sel-popup, .comments-section, s.user-strike'))
+        return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  if (!nodes.length) return false;
+
+  const stId = 'st-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+  let wrapped = false;
+
+  nodes.forEach(node => {
+    const start = (node === startC) ? startO : 0;
+    const end = (node === endC) ? endO : node.nodeValue.length;
+    if (start >= end) return; // nothing of this node is inside the selection
+    try {
+      const sub = document.createRange();
+      sub.setStart(node, start);
+      sub.setEnd(node, end);
+      const s = document.createElement('s');
+      s.className = 'user-strike';
+      s.title = 'Click to remove strikethrough';
+      s.dataset.file = file;
+      s.dataset.stId = stId;
+      s.dataset.stText = fullText;
+      // sub stays within a single text node, so surroundContents never throws.
+      sub.surroundContents(s);
+      wrapped = true;
+    } catch (e) { /* skip this fragment, keep going */ }
+  });
+  return wrapped;
+}
+
+// Event delegation — handle click on ANY strikethrough span
+document.addEventListener('click', function(e) {
+  const s = e.target.closest('s.user-strike');
+  if (!s) return;
+
+  // Don't trigger during text selection
+  if (window.getSelection().toString().length > 0) return;
+
+  const file = s.dataset.file || (currentIndex >= 0 ? chapters[currentIndex]?.file : null);
+  // A selection that crossed element boundaries is stored as several spans
+  // sharing one stId — remove them all so the whole strikethrough clears at once.
+  const stId = s.dataset.stId;
+  const group = stId
+    ? Array.from(document.querySelectorAll('s.user-strike')).filter(m => m.dataset.stId === stId)
+    : [s];
+
+  group.forEach(m => {
+    const parent = m.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(m.textContent), m);
+    parent.normalize();
+  });
+  if (file) saveStrikes(file);
 });
 
 function copySelection() {
@@ -2620,6 +2726,91 @@ function restoreHighlight(root, searchText, file) {
     range.setStart(s.node, s.offset);
     range.setEnd(e.node, e.offset);
     return wrapRangeInHighlights(range, file);
+  } catch (e) {
+    return false;
+  }
+}
+
+// Save/load strikethroughs per chapter (kept in a separate localStorage key
+// from highlights so the two annotation types don't collide).
+function saveStrikes(file) {
+  const content = document.getElementById('content');
+  if (!content) return;
+  const strikes = [];
+  const seen = new Set();
+  content.querySelectorAll('s.user-strike').forEach(m => {
+    // Spans sharing an stId belong to one selection — save the group once,
+    // using the full selected text rather than the per-fragment text.
+    const stId = m.dataset.stId || ('m-' + seen.size);
+    if (seen.has(stId)) return;
+    seen.add(stId);
+    const text = m.dataset.stText || m.textContent;
+    const parent = m.parentNode;
+    const context = parent ? parent.textContent.substring(0, 200) : '';
+    strikes.push({ text, context });
+  });
+  const all = JSON.parse(localStorage.getItem('ml4-strikes') || '{}');
+  all[file] = strikes;
+  localStorage.setItem('ml4-strikes', JSON.stringify(all));
+}
+
+function loadStrikes(file) {
+  const all = JSON.parse(localStorage.getItem('ml4-strikes') || '{}');
+  const strikes = all[file] || [];
+  if (!strikes.length) return;
+
+  const content = document.getElementById('content');
+  if (!content) return;
+  // Restore each saved strikethrough by locating its text and re-wrapping it.
+  strikes.forEach(st => {
+    const searchText = typeof st === 'string' ? st : st.text;
+    if (!searchText || searchText.length < 2) return;
+    restoreStrike(content, searchText, file);
+  });
+}
+
+// Find `searchText` within `root` — even when it spans several inline elements —
+// and re-wrap it using the same multi-node primitive as live strikethroughs.
+function restoreStrike(root, searchText, file) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (p && p.closest('.comments-section, pre, code, script, .sel-popup, s.user-strike'))
+        return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  const starts = [];
+  let combined = '';
+  let node;
+  while ((node = walker.nextNode())) {
+    starts.push(combined.length);
+    nodes.push(node);
+    combined += node.nodeValue;
+  }
+  if (!nodes.length) return false;
+
+  const at = combined.indexOf(searchText);
+  if (at < 0) return false;
+  const endAt = at + searchText.length;
+
+  const locate = (pos) => {
+    for (let k = nodes.length - 1; k >= 0; k--) {
+      if (pos >= starts[k]) return { node: nodes[k], offset: pos - starts[k] };
+    }
+    return { node: nodes[0], offset: 0 };
+  };
+
+  try {
+    const s = locate(at);
+    const e = locate(endAt);
+    const range = document.createRange();
+    range.setStart(s.node, s.offset);
+    range.setEnd(e.node, e.offset);
+    return wrapRangeInStrikes(range, file);
   } catch (e) {
     return false;
   }

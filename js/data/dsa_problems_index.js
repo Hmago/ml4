@@ -5947,9 +5947,903 @@ public class Solution {
     ]
   },
 
-];
+  // ═════════════════════════════════════════
+  // ═══  JAVA LANGUAGE (Ch 38 / 38b)      ═══
+  // ═════════════════════════════════════════
+  // Drills for the language itself rather than algorithmic insight.
+  // Companion to content/38_java_refresher.md and 38b_java_modern.md.
 
-// ─── Category metadata for display ───
+  {
+    id: "java-2d-array-rotate-in-place",
+    title: "Arrays — Rotate a Matrix In Place and Spiral-Fill a Grid",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/rotate-image/",
+    tags: ["Arrays","2-D Arrays","In-Place"],
+    description: "Java arrays are objects with a fixed length, and an int[][] is an array of int[] rows, not a rectangular block of memory. This problem makes you feel that.\n\nImplement two methods:\n\n  public static void rotate(int[][] matrix)\n  public static int[][] spiral(int n)\n\n1. rotate(matrix) rotates a square n x n matrix 90 degrees clockwise IN PLACE. Do not allocate a second matrix. The classic trick is transpose first (swap matrix[i][j] with matrix[j][i] for j > i), then reverse each row.\n\n2. spiral(n) returns a fresh n x n grid filled with 1..n*n walking clockwise from the top-left corner inward.\n\nRules: rotate must mutate the argument and return void. Handle n = 0 and n = 1 without crashing. Remember matrix.length is the number of rows and matrix[0].length is the number of columns.",
+    examples: "Input: matrix = [[1,2,3],[4,5,6],[7,8,9]]\nrotate(matrix) then matrix is [[7,4,1],[8,5,2],[9,6,3]]\n\nInput: n = 3\nspiral(3) returns [[1,2,3],[8,9,4],[7,6,5]]",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static void rotate(int[][] matrix) {
+        int n = matrix.length;
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                int tmp = matrix[i][j];
+                matrix[i][j] = matrix[j][i];
+                matrix[j][i] = tmp;
+            }
+        }
+        for (int[] row : matrix) {
+            for (int lo = 0, hi = n - 1; lo < hi; lo++, hi--) {
+                int tmp = row[lo];
+                row[lo] = row[hi];
+                row[hi] = tmp;
+            }
+        }
+    }
+
+    public static int[][] spiral(int n) {
+        int[][] grid = new int[n][n];
+        int top = 0, bottom = n - 1, left = 0, right = n - 1, value = 1;
+        while (top <= bottom && left <= right) {
+            for (int c = left; c <= right; c++) grid[top][c] = value++;
+            top++;
+            for (int r = top; r <= bottom; r++) grid[r][right] = value++;
+            right--;
+            if (top <= bottom) {
+                for (int c = right; c >= left; c--) grid[bottom][c] = value++;
+                bottom--;
+            }
+            if (left <= right) {
+                for (int r = bottom; r >= top; r--) grid[r][left] = value++;
+                left++;
+            }
+        }
+        return grid;
+    }
+
+    public static void main(String[] args) {
+        int[][] m = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        rotate(m);
+        System.out.println(Arrays.deepToString(m));
+        System.out.println(Arrays.deepToString(spiral(3)));
+    }
+}
+`,
+    tests: [
+      { name: "2x2 rotate", input: "", expectedOutput: "[[3, 1], [4, 2]]", runnerCode: `int[][] m = {{1, 2}, {3, 4}}; Solution.rotate(m); System.out.println(java.util.Arrays.deepToString(m));` },
+      { name: "3x3 rotate", input: "", expectedOutput: "[[7, 4, 1], [8, 5, 2], [9, 6, 3]]", runnerCode: `int[][] m = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}; Solution.rotate(m); System.out.println(java.util.Arrays.deepToString(m));` },
+      { name: "4x4 rotate", input: "", expectedOutput: "[[13, 9, 5, 1], [14, 10, 6, 2], [15, 11, 7, 3], [16, 12, 8, 4]]", runnerCode: `int[][] m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}}; Solution.rotate(m); System.out.println(java.util.Arrays.deepToString(m));` },
+      { name: "edge: 1x1 and empty matrix", input: "", expectedOutput: "[[7]] []", runnerCode: `int[][] one = {{7}}; Solution.rotate(one); int[][] none = new int[0][0]; Solution.rotate(none); System.out.println(java.util.Arrays.deepToString(one) + " " + java.util.Arrays.deepToString(none));` },
+      { name: "spiral 3", input: "", expectedOutput: "[[1, 2, 3], [8, 9, 4], [7, 6, 5]]", runnerCode: `System.out.println(java.util.Arrays.deepToString(Solution.spiral(3)));` },
+      { name: "edge: spiral 1 and spiral 0", input: "", expectedOutput: "[[1]] []", runnerCode: `System.out.println(java.util.Arrays.deepToString(Solution.spiral(1)) + " " + java.util.Arrays.deepToString(Solution.spiral(0)));` }
+    ]
+  },
+
+  {
+    id: "java-arrays-utilities-toolkit",
+    title: "Arrays Utilities — copyOfRange, fill and equals",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "",
+    tags: ["Arrays","java.util.Arrays","API"],
+    description: "java.util.Arrays is the utility class every Java developer should reach for before writing a loop. Note that Arrays.equals compares CONTENTS while == compares references, and that arrays have no .equals of their own worth using.\n\nImplement two methods using only Arrays helpers plus System.arraycopy:\n\n  public static int[] padRight(int[] a, int len, int pad)\n  public static boolean blocksEqual(int[] a, int i, int j, int k)\n\n1. padRight returns a NEW array of exactly length len. It holds the first min(a.length, len) elements of a, and every remaining slot is set to pad. If len is smaller than a.length the result is truncated. Throw IllegalArgumentException when len is negative. Use Arrays.fill for the padding and Arrays.copyOfRange for the prefix.\n\n2. blocksEqual returns true when the k elements starting at index i are equal, element by element, to the k elements starting at index j. Use Arrays.copyOfRange twice and compare with Arrays.equals. Return true when k is 0 or negative. Return false (do not throw) when either block runs off the end of the array.",
+    examples: "Input: padRight([1,2], 5, 9)\nOutput: [1, 2, 9, 9, 9]\n\nInput: padRight([1,2,3], 2, 0)\nOutput: [1, 2]\n\nInput: blocksEqual([1,2,1,2], 0, 2, 2)\nOutput: true",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static int[] padRight(int[] a, int len, int pad) {
+        if (len < 0) throw new IllegalArgumentException("len must be >= 0");
+        int[] out = new int[len];
+        Arrays.fill(out, pad);
+        int keep = Math.min(a.length, len);
+        int[] head = Arrays.copyOfRange(a, 0, keep);
+        System.arraycopy(head, 0, out, 0, keep);
+        return out;
+    }
+
+    public static boolean blocksEqual(int[] a, int i, int j, int k) {
+        if (k <= 0) return true;
+        if (i < 0 || j < 0 || i + k > a.length || j + k > a.length) return false;
+        int[] left = Arrays.copyOfRange(a, i, i + k);
+        int[] right = Arrays.copyOfRange(a, j, j + k);
+        return Arrays.equals(left, right);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Arrays.toString(padRight(new int[]{1, 2}, 5, 9)));
+        System.out.println(blocksEqual(new int[]{1, 2, 1, 2}, 0, 2, 2));
+    }
+}
+`,
+    tests: [
+      { name: "pad shorter array", input: "", expectedOutput: "[1, 2, 9, 9, 9]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.padRight(new int[]{1, 2}, 5, 9)));` },
+      { name: "truncate longer array", input: "", expectedOutput: "[1, 2]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.padRight(new int[]{1, 2, 3}, 2, 0)));` },
+      { name: "edge: empty source and zero length", input: "", expectedOutput: "[-1, -1, -1] []", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.padRight(new int[]{}, 3, -1)) + " " + java.util.Arrays.toString(Solution.padRight(new int[]{4}, 0, 7)));` },
+      { name: "repeated block found", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.blocksEqual(new int[]{1, 2, 1, 2}, 0, 2, 2));` },
+      { name: "blocks differ", input: "", expectedOutput: "false", runnerCode: `System.out.println(Solution.blocksEqual(new int[]{1, 2, 3, 4}, 0, 2, 2));` },
+      { name: "edge: out of range and zero width", input: "", expectedOutput: "false true", runnerCode: `System.out.println(Solution.blocksEqual(new int[]{1, 2}, 0, 1, 5) + " " + Solution.blocksEqual(new int[]{1, 2}, 0, 0, 0));` }
+    ]
+  },
+
+  {
+    id: "java-stringbuilder-run-length-encoding",
+    title: "StringBuilder — Run-Length Encode and Decode",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "",
+    tags: ["StringBuilder","Strings","char[]"],
+    description: "Java Strings are immutable, so s += c inside a loop allocates a brand new String on every iteration and turns an O(n) job into O(n^2). StringBuilder is the fix.\n\nImplement:\n\n  public static String encode(String s)\n  public static String decode(String s)\n\n1. encode walks the input once and emits each character followed by the length of its run. Every run gets a count, even a run of length 1. Convert to a char[] with toCharArray() and append into a single StringBuilder. Return the empty string for a null or empty input.\n\n2. decode reverses encode. Counts may have more than one digit, so keep reading digits while Character.isDigit is true and build the number as count * 10 + (c - 48).\n\nRules: no string concatenation with += inside any loop, and both methods must run in O(n).",
+    examples: "Input: encode(\"aaabbc\")\nOutput: a3b2c1\n\nInput: encode(\"wwwwwwwwwwww\")\nOutput: w12\n\nInput: decode(\"a3b2c1\")\nOutput: aaabbc",
+    starterCode: null,
+    solution: `public class Solution {
+    public static String encode(String s) {
+        if (s == null || s.isEmpty()) return "";
+        char[] chars = s.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int run = 1;
+        for (int i = 1; i <= chars.length; i++) {
+            if (i < chars.length && chars[i] == chars[i - 1]) {
+                run++;
+                continue;
+            }
+            sb.append(chars[i - 1]).append(run);
+            run = 1;
+        }
+        return sb.toString();
+    }
+
+    public static String decode(String s) {
+        if (s == null || s.isEmpty()) return "";
+        char[] chars = s.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < chars.length) {
+            char c = chars[i++];
+            int count = 0;
+            while (i < chars.length && Character.isDigit(chars[i])) {
+                count = count * 10 + (chars[i++] - '0');
+            }
+            for (int r = 0; r < count; r++) sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(encode("aaabbc"));
+        System.out.println(decode("a3b2c1"));
+    }
+}
+`,
+    tests: [
+      { name: "simple runs", input: "", expectedOutput: "a3b2c1", runnerCode: `System.out.println(Solution.encode("aaabbc"));` },
+      { name: "no repeats", input: "", expectedOutput: "a1b1c1", runnerCode: `System.out.println(Solution.encode("abc"));` },
+      { name: "multi-digit run", input: "", expectedOutput: "w12", runnerCode: `System.out.println(Solution.encode("wwwwwwwwwwww"));` },
+      { name: "edge: empty and null input", input: "", expectedOutput: "[] []", runnerCode: `System.out.println("[" + Solution.encode("") + "] [" + Solution.encode(null) + "]");` },
+      { name: "decode basic", input: "", expectedOutput: "aaabbc", runnerCode: `System.out.println(Solution.decode("a3b2c1"));` },
+      { name: "round trip with multi-digit counts", input: "", expectedOutput: "z10y1 11", runnerCode: `String round = Solution.encode(Solution.decode("z10y1")); System.out.println(round + " " + Solution.decode("z10y1").length());` }
+    ]
+  },
+
+  {
+    id: "java-char-frequency-int-array",
+    title: "char Frequency — Counting With int[26]",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/first-unique-character-in-a-string/",
+    tags: ["char","Arrays","Strings"],
+    description: "In Java a char is a 16-bit unsigned integer, so c - 'a' is plain arithmetic and gives you a 0..25 slot directly. For lowercase ASCII input an int[26] beats a HashMap on both speed and memory.\n\nImplement:\n\n  public static int firstUniqChar(String s)\n  public static boolean isAnagram(String a, String b)\n\n1. firstUniqChar returns the index of the first character in s that appears exactly once, or -1 if there is none. Two passes: count into int[26], then scan again for the first slot whose count is 1.\n\n2. isAnagram returns true when a and b contain exactly the same letters with the same multiplicities. Return false immediately when the lengths differ. Use a single int[26]: increment for a, decrement for b, then check every slot is 0.\n\nAssume both inputs contain only lowercase letters a..z and may be empty. Do not use a HashMap.",
+    examples: "Input: firstUniqChar(\"loveleetcode\")\nOutput: 2\n\nInput: firstUniqChar(\"aabb\")\nOutput: -1\n\nInput: isAnagram(\"anagram\", \"nagaram\")\nOutput: true",
+    starterCode: null,
+    solution: `public class Solution {
+    public static int firstUniqChar(String s) {
+        int[] freq = new int[26];
+        for (int i = 0; i < s.length(); i++) {
+            freq[s.charAt(i) - 'a']++;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            if (freq[s.charAt(i) - 'a'] == 1) return i;
+        }
+        return -1;
+    }
+
+    public static boolean isAnagram(String a, String b) {
+        if (a.length() != b.length()) return false;
+        int[] freq = new int[26];
+        for (int i = 0; i < a.length(); i++) {
+            freq[a.charAt(i) - 'a']++;
+            freq[b.charAt(i) - 'a']--;
+        }
+        for (int count : freq) {
+            if (count != 0) return false;
+        }
+        return true;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(firstUniqChar("loveleetcode"));
+        System.out.println(isAnagram("anagram", "nagaram"));
+    }
+}
+`,
+    tests: [
+      { name: "first character is unique", input: "", expectedOutput: "0", runnerCode: `System.out.println(Solution.firstUniqChar("leetcode"));` },
+      { name: "unique appears later", input: "", expectedOutput: "2", runnerCode: `System.out.println(Solution.firstUniqChar("loveleetcode"));` },
+      { name: "edge: no unique character and empty string", input: "", expectedOutput: "-1 -1", runnerCode: `System.out.println(Solution.firstUniqChar("aabb") + " " + Solution.firstUniqChar(""));` },
+      { name: "valid anagram", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.isAnagram("anagram", "nagaram"));` },
+      { name: "same length not anagram", input: "", expectedOutput: "false", runnerCode: `System.out.println(Solution.isAnagram("rat", "car"));` },
+      { name: "edge: different lengths and two empties", input: "", expectedOutput: "false true", runnerCode: `System.out.println(Solution.isAnagram("a", "ab") + " " + Solution.isAnagram("", ""));` }
+    ]
+  },
+
+  {
+    id: "java-hashmap-merge-computeifabsent",
+    title: "HashMap — merge and computeIfAbsent",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "",
+    tags: ["HashMap","Collections","Java 8"],
+    description: "The get-check-null-put dance is obsolete. Modern Map has merge (combine an old value with a new one) and computeIfAbsent (create the missing value lazily, then return it so you can mutate it).\n\nImplement:\n\n  public static Map<String, Integer> wordCount(String text)\n  public static Map<Character, List<String>> groupByFirstLetter(String[] words)\n\n1. wordCount splits text on a single space and counts each word. You must use counts.merge(word, 1, Integer::sum) rather than getOrDefault plus put. Skip empty tokens. Return an empty map for a null or empty input.\n\n2. groupByFirstLetter buckets each word under its first character. You must use groups.computeIfAbsent(key, k -> new ArrayList<>()).add(word). Skip null and empty words.\n\nHashMap iteration order is not defined, so the tests wrap your result in a TreeMap before printing. Return a plain HashMap.",
+    examples: "Input: wordCount(\"a b a c a\")\nOutput (sorted): {a=3, b=1, c=1}\n\nInput: groupByFirstLetter([\"apple\", \"avocado\", \"banana\"])\nOutput (sorted): {a=[apple, avocado], b=[banana]}",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static Map<String, Integer> wordCount(String text) {
+        Map<String, Integer> counts = new HashMap<>();
+        if (text == null || text.isEmpty()) return counts;
+        for (String word : text.split(" ")) {
+            if (word.isEmpty()) continue;
+            counts.merge(word, 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    public static Map<Character, List<String>> groupByFirstLetter(String[] words) {
+        Map<Character, List<String>> groups = new HashMap<>();
+        for (String word : words) {
+            if (word == null || word.isEmpty()) continue;
+            groups.computeIfAbsent(word.charAt(0), k -> new ArrayList<>()).add(word);
+        }
+        return groups;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new TreeMap<>(wordCount("a b a c a")));
+        System.out.println(new TreeMap<>(groupByFirstLetter(new String[]{"apple", "avocado", "banana"})));
+    }
+}
+`,
+    tests: [
+      { name: "counts repeated words", input: "", expectedOutput: "{a=3, b=1, c=1}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.wordCount("a b a c a")));` },
+      { name: "single word", input: "", expectedOutput: "{x=1}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.wordCount("x")));` },
+      { name: "edge: empty and null text", input: "", expectedOutput: "{} {}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.wordCount("")) + " " + new java.util.TreeMap<>(Solution.wordCount(null)));` },
+      { name: "groups by first letter", input: "", expectedOutput: "{a=[apple, avocado], b=[banana]}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.groupByFirstLetter(new String[]{"apple", "avocado", "banana"})));` },
+      { name: "skips empty and null words", input: "", expectedOutput: "{c=[cat, cow]}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.groupByFirstLetter(new String[]{"cat", "", null, "cow"})));` },
+      { name: "edge: empty word array", input: "", expectedOutput: "{}", runnerCode: `System.out.println(new java.util.TreeMap<>(Solution.groupByFirstLetter(new String[]{})));` }
+    ]
+  },
+
+  {
+    id: "java-arraydeque-stack-and-queue",
+    title: "ArrayDeque — One Class, Both a Stack and a Queue",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "",
+    tags: ["ArrayDeque","Deque","Collections"],
+    description: "java.util.Stack is a legacy synchronized class and you should not use it. ArrayDeque is the modern answer for both a stack (push / pop / peek) and a double-ended queue (offerLast / pollFirst / peekFirst / pollLast).\n\nImplement:\n\n  public static boolean isBalanced(String s)\n  public static int[] maxSlidingWindow(int[] nums, int k)\n\n1. isBalanced uses a Deque<Character> as a STACK. Push every opening bracket from the set ( [ { and on a closing bracket pop and check it matches. Ignore any other character. Return true only when the stack is empty at the end. An empty string is balanced.\n\n2. maxSlidingWindow uses a Deque<Integer> of INDEXES as a monotonic double-ended queue. Before adding index i, drop indexes that fell out of the window from the front, then drop indexes from the back whose value is less than or equal to nums[i]. The front is always the max of the current window. Return an empty array when nums is empty, when k is not positive, or when k is larger than nums.length.\n\nNote: ArrayDeque does not allow null elements, so use isEmpty() rather than a null check on peek.",
+    examples: "Input: isBalanced(\"{[()]}\")\nOutput: true\n\nInput: isBalanced(\"(]\")\nOutput: false\n\nInput: maxSlidingWindow([1,3,-1,-3,5,3,6,7], 3)\nOutput: [3, 3, 5, 5, 6, 7]",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static boolean isBalanced(String s) {
+        Deque<Character> stack = new ArrayDeque<>();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(' || c == '[' || c == '{') {
+                stack.push(c);
+            } else if (c == ')' || c == ']' || c == '}') {
+                if (stack.isEmpty()) return false;
+                char open = stack.pop();
+                if (c == ')' && open != '(') return false;
+                if (c == ']' && open != '[') return false;
+                if (c == '}' && open != '{') return false;
+            }
+        }
+        return stack.isEmpty();
+    }
+
+    public static int[] maxSlidingWindow(int[] nums, int k) {
+        if (nums == null || nums.length == 0 || k <= 0 || k > nums.length) return new int[0];
+        int n = nums.length;
+        int[] out = new int[n - k + 1];
+        Deque<Integer> window = new ArrayDeque<>();
+        for (int i = 0; i < n; i++) {
+            while (!window.isEmpty() && window.peekFirst() <= i - k) {
+                window.pollFirst();
+            }
+            while (!window.isEmpty() && nums[window.peekLast()] <= nums[i]) {
+                window.pollLast();
+            }
+            window.offerLast(i);
+            if (i >= k - 1) out[i - k + 1] = nums[window.peekFirst()];
+        }
+        return out;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(isBalanced("{[()]}"));
+        System.out.println(Arrays.toString(maxSlidingWindow(new int[]{1, 3, -1, -3, 5, 3, 6, 7}, 3)));
+    }
+}
+`,
+    tests: [
+      { name: "nested brackets balanced", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.isBalanced("{[()]}"));` },
+      { name: "mismatched pair", input: "", expectedOutput: "false", runnerCode: `System.out.println(Solution.isBalanced("(]"));` },
+      { name: "edge: empty string and unclosed bracket", input: "", expectedOutput: "true false", runnerCode: `System.out.println(Solution.isBalanced("") + " " + Solution.isBalanced("(()"));` },
+      { name: "ignores other characters", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.isBalanced("a(b)c[d]{e}"));` },
+      { name: "sliding window max", input: "", expectedOutput: "[3, 3, 5, 5, 6, 7]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.maxSlidingWindow(new int[]{1, 3, -1, -3, 5, 3, 6, 7}, 3)));` },
+      { name: "edge: k of 1, k too large, empty array", input: "", expectedOutput: "[9, 8, 7] [] []", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.maxSlidingWindow(new int[]{9, 8, 7}, 1)) + " " + java.util.Arrays.toString(Solution.maxSlidingWindow(new int[]{9, 8, 7}, 4)) + " " + java.util.Arrays.toString(Solution.maxSlidingWindow(new int[]{}, 3)));` }
+    ]
+  },
+
+  {
+    id: "java-priorityqueue-comparator",
+    title: "PriorityQueue — Kth Largest With an Explicit Comparator",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/kth-largest-element-in-an-array/",
+    tags: ["PriorityQueue","Comparator","Heap"],
+    description: "PriorityQueue is a binary heap. Its head is the SMALLEST element under the comparator, so a min-heap of size k is how you keep the k largest values.\n\nImplement:\n\n  public static int findKthLargest(int[] nums, int k)\n  public static int[] kLargestDescending(int[] nums, int k)\n\n1. findKthLargest keeps a min-heap capped at size k: offer every value, and whenever size exceeds k, poll. The head is then the kth largest. Return it.\n\n2. kLargestDescending returns the top min(k, nums.length) values sorted from largest to smallest. Drain the same heap and fill the result array backwards. Return an empty array when k is not positive or nums is empty.\n\nHARD RULE: you must pass an explicit Comparator to the PriorityQueue constructor, for example Comparator.naturalOrder() or Comparator.reverseOrder(). Do NOT write (a, b) -> a - b. Subtraction overflows: Integer.MAX_VALUE - (-1) wraps to a negative number and silently corrupts the ordering. One test uses Integer.MIN_VALUE and Integer.MAX_VALUE together to catch exactly that bug.",
+    examples: "Input: findKthLargest([3,2,1,5,6,4], 2)\nOutput: 5\n\nInput: kLargestDescending([3,2,1,5,6,4], 3)\nOutput: [6, 5, 4]",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static int findKthLargest(int[] nums, int k) {
+        Comparator<Integer> ascending = Comparator.naturalOrder();
+        PriorityQueue<Integer> heap = new PriorityQueue<>(ascending);
+        for (int num : nums) {
+            heap.offer(num);
+            if (heap.size() > k) heap.poll();
+        }
+        return heap.peek();
+    }
+
+    public static int[] kLargestDescending(int[] nums, int k) {
+        if (nums == null || nums.length == 0 || k <= 0) return new int[0];
+        int size = Math.min(k, nums.length);
+        Comparator<Integer> ascending = Comparator.naturalOrder();
+        PriorityQueue<Integer> heap = new PriorityQueue<>(ascending);
+        for (int num : nums) {
+            heap.offer(num);
+            if (heap.size() > size) heap.poll();
+        }
+        int[] out = new int[size];
+        for (int i = size - 1; i >= 0; i--) {
+            out[i] = heap.poll();
+        }
+        return out;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(findKthLargest(new int[]{3, 2, 1, 5, 6, 4}, 2));
+        System.out.println(Arrays.toString(kLargestDescending(new int[]{3, 2, 1, 5, 6, 4}, 3)));
+    }
+}
+`,
+    tests: [
+      { name: "second largest", input: "", expectedOutput: "5", runnerCode: `System.out.println(Solution.findKthLargest(new int[]{3, 2, 1, 5, 6, 4}, 2));` },
+      { name: "duplicates counted separately", input: "", expectedOutput: "4", runnerCode: `System.out.println(Solution.findKthLargest(new int[]{3, 2, 3, 1, 2, 4, 5, 5, 6}, 4));` },
+      { name: "edge: overflow trap with MIN_VALUE and MAX_VALUE", input: "", expectedOutput: "0", runnerCode: `System.out.println(Solution.findKthLargest(new int[]{Integer.MIN_VALUE, Integer.MAX_VALUE, 0}, 2));` },
+      { name: "edge: single element and all equal", input: "", expectedOutput: "1 -1", runnerCode: `System.out.println(Solution.findKthLargest(new int[]{1}, 1) + " " + Solution.findKthLargest(new int[]{-1, -1}, 2));` },
+      { name: "top three descending", input: "", expectedOutput: "[6, 5, 4]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.kLargestDescending(new int[]{3, 2, 1, 5, 6, 4}, 3)));` },
+      { name: "edge: k larger than array, k of zero, empty array", input: "", expectedOutput: "[5] [] []", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.kLargestDescending(new int[]{5}, 10)) + " " + java.util.Arrays.toString(Solution.kLargestDescending(new int[]{5}, 0)) + " " + java.util.Arrays.toString(Solution.kLargestDescending(new int[]{}, 3)));` }
+    ]
+  },
+
+  {
+    id: "java-treemap-floorkey-navigation",
+    title: "TreeMap — Latest Value At Or Before a Timestamp",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/time-based-key-value-store/",
+    tags: ["TreeMap","NavigableMap","Collections"],
+    description: "TreeMap is a sorted NavigableMap. Its navigation methods (floorKey, ceilingKey, higherKey, lowerKey, firstKey, lastKey, subMap, headMap, tailMap) give you binary search over keys for free, so you almost never need to hand-roll one.\n\nGiven parallel arrays of timestamps and values, implement:\n\n  public static Integer latestAtOrBefore(int[] times, int[] values, int query)\n  public static int[] answerAll(int[] times, int[] values, int[] queries)\n  public static int countInRange(int[] times, int lo, int hi)\n\n1. latestAtOrBefore builds a TreeMap<Integer, Integer> from the parallel arrays and returns the value recorded at the largest timestamp that is less than or equal to query. Use floorKey. Return null (the boxed type is Integer for exactly this reason) when no such timestamp exists.\n\n2. answerAll returns one answer per query, using -1 instead of null when nothing was recorded yet.\n\n3. countInRange returns how many timestamps fall in the INCLUSIVE range lo..hi. Use subMap(lo, true, hi, true).size(), not a loop.\n\nLater entries with the same timestamp overwrite earlier ones.",
+    examples: "times = [1,5,10], values = [100,500,1000]\n\nInput: latestAtOrBefore(times, values, 7)\nOutput: 500\n\nInput: latestAtOrBefore(times, values, 0)\nOutput: null\n\nInput: answerAll(times, values, [0,1,4,5,11])\nOutput: [-1, 100, 100, 500, 1000]",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    private static TreeMap<Integer, Integer> build(int[] times, int[] values) {
+        TreeMap<Integer, Integer> log = new TreeMap<>();
+        for (int i = 0; i < times.length; i++) {
+            log.put(times[i], values[i]);
+        }
+        return log;
+    }
+
+    public static Integer latestAtOrBefore(int[] times, int[] values, int query) {
+        TreeMap<Integer, Integer> log = build(times, values);
+        Integer key = log.floorKey(query);
+        return key == null ? null : log.get(key);
+    }
+
+    public static int[] answerAll(int[] times, int[] values, int[] queries) {
+        TreeMap<Integer, Integer> log = build(times, values);
+        int[] out = new int[queries.length];
+        for (int i = 0; i < queries.length; i++) {
+            Integer key = log.floorKey(queries[i]);
+            out[i] = key == null ? -1 : log.get(key);
+        }
+        return out;
+    }
+
+    public static int countInRange(int[] times, int lo, int hi) {
+        if (lo > hi) return 0;
+        TreeMap<Integer, Integer> log = new TreeMap<>();
+        for (int t : times) {
+            log.put(t, t);
+        }
+        return log.subMap(lo, true, hi, true).size();
+    }
+
+    public static void main(String[] args) {
+        int[] times = {1, 5, 10};
+        int[] values = {100, 500, 1000};
+        System.out.println(latestAtOrBefore(times, values, 7));
+        System.out.println(Arrays.toString(answerAll(times, values, new int[]{0, 1, 4, 5, 11})));
+    }
+}
+`,
+    tests: [
+      { name: "between two timestamps", input: "", expectedOutput: "500", runnerCode: `System.out.println(Solution.latestAtOrBefore(new int[]{1, 5, 10}, new int[]{100, 500, 1000}, 7));` },
+      { name: "exact hit and far future", input: "", expectedOutput: "1000 1000", runnerCode: `System.out.println(Solution.latestAtOrBefore(new int[]{1, 5, 10}, new int[]{100, 500, 1000}, 10) + " " + Solution.latestAtOrBefore(new int[]{1, 5, 10}, new int[]{100, 500, 1000}, 99));` },
+      { name: "edge: query before every timestamp returns null", input: "", expectedOutput: "null", runnerCode: `System.out.println(Solution.latestAtOrBefore(new int[]{1, 5, 10}, new int[]{100, 500, 1000}, 0));` },
+      { name: "edge: no data at all", input: "", expectedOutput: "null", runnerCode: `System.out.println(Solution.latestAtOrBefore(new int[]{}, new int[]{}, 5));` },
+      { name: "batch of queries", input: "", expectedOutput: "[-1, 100, 100, 500, 1000]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.answerAll(new int[]{1, 5, 10}, new int[]{100, 500, 1000}, new int[]{0, 1, 4, 5, 11})));` },
+      { name: "inclusive range counting", input: "", expectedOutput: "2 0 3", runnerCode: `int[] times = {1, 5, 10}; System.out.println(Solution.countInRange(times, 1, 5) + " " + Solution.countInRange(times, 6, 9) + " " + Solution.countInRange(times, -100, 100));` }
+    ]
+  },
+
+  {
+    id: "java-comparator-composition",
+    title: "Comparator — Compose With comparing and thenComparing",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "",
+    tags: ["Comparator","Sorting","Java 8"],
+    description: "Since Java 8 you build comparators by composition instead of writing a compare method full of if statements.\n\nImplement:\n\n  public static Player player(String name, String team, int score)\n  public static List<String> rankPlayers(List<Player> players)\n  public static String[] sortWords(String[] words)\n\nA nested record Player(String name, String team, int score) is already declared for you, and player(...) is a factory the tests use.\n\n1. rankPlayers returns the names ordered by score DESCENDING, then team ascending, then name ascending. Build it as one composed comparator: comparingInt(...).reversed().thenComparing(...).thenComparing(...). Do not mutate the caller list; copy it first.\n\n2. sortWords returns a NEW array sorted by length ascending, then alphabetically. Use Arrays.sort(copy, comparator).\n\nGOTCHA that bites everyone: Comparator.comparingInt(Player::score).reversed() does NOT compile on its own, because in a chained call there is no target type, so T is inferred as Object and the method reference fails. Give the compiler the type explicitly with Comparator.<Player>comparingInt(Player::score), or assign the first comparator to a typed local variable before chaining.\n\nAlso note that .reversed() reverses everything composed SO FAR, so put it immediately after the first key and before thenComparing.",
+    examples: "players = [amy/red/5, bob/blue/7, cat/blue/5]\n\nInput: rankPlayers(players)\nOutput: [bob, cat, amy]\n\nInput: sortWords([\"pear\", \"fig\", \"apple\", \"kiwi\", \"date\"])\nOutput: [fig, date, kiwi, pear, apple]",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public record Player(String name, String team, int score) {}
+
+    public static Player player(String name, String team, int score) {
+        return new Player(name, team, score);
+    }
+
+    public static List<String> rankPlayers(List<Player> players) {
+        Comparator<Player> order = Comparator.<Player>comparingInt(Player::score)
+                .reversed()
+                .thenComparing(Player::team)
+                .thenComparing(Player::name);
+        List<Player> sorted = new ArrayList<>(players);
+        sorted.sort(order);
+        List<String> names = new ArrayList<>();
+        for (Player p : sorted) {
+            names.add(p.name());
+        }
+        return names;
+    }
+
+    public static String[] sortWords(String[] words) {
+        Comparator<String> order = Comparator.<String>comparingInt(String::length)
+                .thenComparing(Comparator.naturalOrder());
+        String[] copy = Arrays.copyOf(words, words.length);
+        Arrays.sort(copy, order);
+        return copy;
+    }
+
+    public static void main(String[] args) {
+        List<Player> squad = List.of(player("amy", "red", 5), player("bob", "blue", 7), player("cat", "blue", 5));
+        System.out.println(rankPlayers(squad));
+        System.out.println(Arrays.toString(sortWords(new String[]{"pear", "fig", "apple", "kiwi", "date"})));
+    }
+}
+`,
+    tests: [
+      { name: "score then team then name", input: "", expectedOutput: "[bob, cat, amy]", runnerCode: `java.util.List<Solution.Player> squad = java.util.List.of(Solution.player("amy", "red", 5), Solution.player("bob", "blue", 7), Solution.player("cat", "blue", 5)); System.out.println(Solution.rankPlayers(squad));` },
+      { name: "full tie falls through to name", input: "", expectedOutput: "[ann, zoe]", runnerCode: `java.util.List<Solution.Player> squad = java.util.List.of(Solution.player("zoe", "red", 3), Solution.player("ann", "red", 3)); System.out.println(Solution.rankPlayers(squad));` },
+      { name: "does not mutate the caller list", input: "", expectedOutput: "[bob, amy] amy", runnerCode: `java.util.List<Solution.Player> squad = new java.util.ArrayList<>(java.util.List.of(Solution.player("amy", "red", 1), Solution.player("bob", "red", 9))); System.out.println(Solution.rankPlayers(squad) + " " + squad.get(0).name());` },
+      { name: "edge: empty player list", input: "", expectedOutput: "[]", runnerCode: `System.out.println(Solution.rankPlayers(java.util.List.of()));` },
+      { name: "length then alphabetical", input: "", expectedOutput: "[fig, date, kiwi, pear, apple]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.sortWords(new String[]{"pear", "fig", "apple", "kiwi", "date"})));` },
+      { name: "edge: empty array and single word", input: "", expectedOutput: "[] [solo]", runnerCode: `System.out.println(java.util.Arrays.toString(Solution.sortWords(new String[]{})) + " " + java.util.Arrays.toString(Solution.sortWords(new String[]{"solo"})));` }
+    ]
+  },
+
+  {
+    id: "java-integer-cache-equality-trap",
+    title: "Fix the Bug — The Integer Cache and == on Boxed Types",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "",
+    tags: ["Autoboxing","Integer Cache","Debugging"],
+    description: "The starter code below is DELIBERATELY BROKEN. It compares boxed Integer values with ==, which compares object references, not numeric values. It appears to work for small numbers only because Integer.valueOf caches the objects for -128..127, so 127 == 127 is true while 128 == 128 is false. Your job is to fix it.\n\nMethods to fix:\n\n  public static boolean sameValue(Integer a, Integer b)\n  public static int countMatches(List<Integer> values, Integer target)\n  public static int indexOfValue(Integer[] values, Integer target)\n\nAll three must compare by VALUE and must survive nulls without throwing NullPointerException. Objects.equals(a, b) handles both concerns in one call: it returns true when both are null, false when exactly one is null, and otherwise delegates to a.equals(b).\n\nsameValue(null, null) must be true. sameValue(5, null) must be false. Every comparison must work identically at 127 and at 128 and at 100000.",
+    examples: "Input: sameValue(127, 127)\nOutput: true\n\nInput: sameValue(128, 128)\nOutput: true   (the broken version prints false)\n\nInput: countMatches([1000, 1000, 2], 1000)\nOutput: 2     (the broken version prints 0)",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static boolean sameValue(Integer a, Integer b) {
+        return Objects.equals(a, b);
+    }
+
+    public static int countMatches(List<Integer> values, Integer target) {
+        int count = 0;
+        for (Integer v : values) {
+            if (Objects.equals(v, target)) count++;
+        }
+        return count;
+    }
+
+    public static int indexOfValue(Integer[] values, Integer target) {
+        for (int i = 0; i < values.length; i++) {
+            if (Objects.equals(values[i], target)) return i;
+        }
+        return -1;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(sameValue(127, 127));
+        System.out.println(sameValue(128, 128));
+        System.out.println(countMatches(Arrays.asList(1000, 1000, 2), 1000));
+    }
+}
+`,
+    tests: [
+      { name: "inside the cache range", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.sameValue(127, 127));` },
+      { name: "just past the cache range", input: "", expectedOutput: "true", runnerCode: `System.out.println(Solution.sameValue(128, 128) + "");` },
+      { name: "large values and negatives", input: "", expectedOutput: "true true", runnerCode: `System.out.println(Solution.sameValue(100000, 100000) + " " + Solution.sameValue(-500, -500));` },
+      { name: "edge: nulls must not throw", input: "", expectedOutput: "true false false", runnerCode: `System.out.println(Solution.sameValue(null, null) + " " + Solution.sameValue(5, null) + " " + Solution.sameValue(null, 5));` },
+      { name: "counting past the cache range", input: "", expectedOutput: "2", runnerCode: `System.out.println(Solution.countMatches(java.util.Arrays.asList(1000, 1000, 2), 1000));` },
+      { name: "edge: list with a null and lookup by index", input: "", expectedOutput: "1 2 -1", runnerCode: `java.util.List<Integer> vals = java.util.Arrays.asList(300, null, 300, 7); System.out.println(Solution.countMatches(vals, null) + " " + Solution.indexOfValue(new Integer[]{300, 400, 500}, 500) + " " + Solution.indexOfValue(new Integer[]{300}, 999));` }
+    ]
+  },
+
+  {
+    id: "java-overflow-safe-arithmetic",
+    title: "Overflow — Safe Midpoints and Math.addExact",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/binary-search/",
+    tags: ["int overflow","Math","Binary Search"],
+    description: "Java int arithmetic wraps silently. Integer.MAX_VALUE + 1 is Integer.MIN_VALUE, with no exception and no warning. That is the bug that sat in the JDK binary search for nine years.\n\nImplement:\n\n  public static int midpoint(int lo, int hi)\n  public static int binarySearch(int[] sorted, int target)\n  public static String sumChecked(int[] nums)\n\n1. midpoint returns the midpoint of lo and hi WITHOUT overflowing. (lo + hi) / 2 overflows once lo + hi exceeds Integer.MAX_VALUE. Write lo + (hi - lo) / 2 instead. Assume lo is less than or equal to hi.\n\n2. binarySearch returns the index of target in the ascending array sorted, or -1 when it is absent. Use your midpoint method. Return -1 for an empty array.\n\n3. sumChecked adds every element with Math.addExact, which THROWS ArithmeticException on overflow instead of wrapping. Catch it and return the string \"overflow\". Otherwise return the total as a string.",
+    examples: "Input: midpoint(2147483645, 2147483647)\nOutput: 2147483646   ((lo + hi) / 2 gives -2 here)\n\nInput: binarySearch([1,3,5,7,9], 7)\nOutput: 3\n\nInput: sumChecked([2147483647, 1])\nOutput: overflow",
+    starterCode: null,
+    solution: `public class Solution {
+    public static int midpoint(int lo, int hi) {
+        return lo + (hi - lo) / 2;
+    }
+
+    public static int binarySearch(int[] sorted, int target) {
+        int lo = 0;
+        int hi = sorted.length - 1;
+        while (lo <= hi) {
+            int mid = midpoint(lo, hi);
+            if (sorted[mid] == target) return mid;
+            if (sorted[mid] < target) {
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return -1;
+    }
+
+    public static String sumChecked(int[] nums) {
+        int total = 0;
+        try {
+            for (int n : nums) {
+                total = Math.addExact(total, n);
+            }
+        } catch (ArithmeticException e) {
+            return "overflow";
+        }
+        return String.valueOf(total);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(midpoint(Integer.MAX_VALUE - 2, Integer.MAX_VALUE));
+        System.out.println(binarySearch(new int[]{1, 3, 5, 7, 9}, 7));
+        System.out.println(sumChecked(new int[]{Integer.MAX_VALUE, 1}));
+    }
+}
+`,
+    tests: [
+      { name: "ordinary midpoint", input: "", expectedOutput: "5 -6", runnerCode: `System.out.println(Solution.midpoint(0, 10) + " " + Solution.midpoint(-10, -2));` },
+      { name: "edge: midpoint near Integer.MAX_VALUE", input: "", expectedOutput: "2147483646", runnerCode: `System.out.println(Solution.midpoint(Integer.MAX_VALUE - 2, Integer.MAX_VALUE));` },
+      { name: "binary search finds the target", input: "", expectedOutput: "3 0 4", runnerCode: `int[] a = {1, 3, 5, 7, 9}; System.out.println(Solution.binarySearch(a, 7) + " " + Solution.binarySearch(a, 1) + " " + Solution.binarySearch(a, 9));` },
+      { name: "edge: target absent and empty array", input: "", expectedOutput: "-1 -1", runnerCode: `System.out.println(Solution.binarySearch(new int[]{1, 3, 5, 7, 9}, 4) + " " + Solution.binarySearch(new int[]{}, 1));` },
+      { name: "checked sum without overflow", input: "", expectedOutput: "6 0", runnerCode: `System.out.println(Solution.sumChecked(new int[]{1, 2, 3}) + " " + Solution.sumChecked(new int[]{}));` },
+      { name: "edge: overflow is detected, not wrapped", input: "", expectedOutput: "overflow overflow", runnerCode: `System.out.println(Solution.sumChecked(new int[]{Integer.MAX_VALUE, 1}) + " " + Solution.sumChecked(new int[]{Integer.MIN_VALUE, -1}));` }
+    ]
+  },
+
+  {
+    id: "java-equals-hashcode-map-key",
+    title: "equals and hashCode — Make a Custom HashMap Key Work",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "",
+    tags: ["equals","hashCode","HashMap"],
+    description: "A HashMap finds a bucket with hashCode() and then compares candidates with equals(). Object inherits identity versions of both, so a class that does not override them can never be looked up with a freshly constructed equal key. The contract is: equal objects MUST have equal hash codes.\n\nThe nested class CellKey currently overrides neither. Fix it, then the three methods below work:\n\n  public static CellKey key(int row, int col)\n  public static int countDistinct(int[][] cells)\n  public static String lookup(int[][] cells, String[] labels, int row, int col)\n\n1. Override equals(Object other): return true for the same reference, false when other is not a CellKey, otherwise compare row and col. Use instanceof (a pattern variable is fine on Java 16 and later).\n\n2. Override hashCode() consistently, for example Objects.hash(row, col) or 31 * row + col.\n\n3. countDistinct puts every cell into a HashSet<CellKey> and returns the size. lookup builds a HashMap<CellKey, String> and returns the label for (row, col), or the string \"none\" when it is absent.\n\nWithout the overrides countDistinct([[1,2],[1,2],[3,4]]) wrongly returns 3.",
+    examples: "Input: countDistinct([[1,2],[1,2],[3,4]])\nOutput: 2\n\nInput: lookup([[1,2],[3,4]], [\"a\",\"b\"], 3, 4)\nOutput: b\n\nInput: lookup([[1,2]], [\"a\"], 9, 9)\nOutput: none",
+    starterCode: null,
+    solution: `import java.util.*;
+
+public class Solution {
+    public static final class CellKey {
+        private final int row;
+        private final int col;
+
+        public CellKey(int row, int col) {
+            this.row = row;
+            this.col = col;
+        }
+
+        public int row() { return row; }
+
+        public int col() { return col; }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            if (!(other instanceof CellKey that)) return false;
+            return row == that.row && col == that.col;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(row, col);
+        }
+
+        @Override
+        public String toString() {
+            return "(" + row + "," + col + ")";
+        }
+    }
+
+    public static CellKey key(int row, int col) {
+        return new CellKey(row, col);
+    }
+
+    public static int countDistinct(int[][] cells) {
+        Set<CellKey> seen = new HashSet<>();
+        for (int[] cell : cells) {
+            seen.add(new CellKey(cell[0], cell[1]));
+        }
+        return seen.size();
+    }
+
+    public static String lookup(int[][] cells, String[] labels, int row, int col) {
+        Map<CellKey, String> map = new HashMap<>();
+        for (int i = 0; i < cells.length; i++) {
+            map.put(new CellKey(cells[i][0], cells[i][1]), labels[i]);
+        }
+        return map.getOrDefault(new CellKey(row, col), "none");
+    }
+
+    public static void main(String[] args) {
+        System.out.println(countDistinct(new int[][]{{1, 2}, {1, 2}, {3, 4}}));
+        System.out.println(lookup(new int[][]{{1, 2}, {3, 4}}, new String[]{"a", "b"}, 3, 4));
+    }
+}
+`,
+    tests: [
+      { name: "duplicate cells collapse", input: "", expectedOutput: "2", runnerCode: `System.out.println(Solution.countDistinct(new int[][]{{1, 2}, {1, 2}, {3, 4}}));` },
+      { name: "row and col are not interchangeable", input: "", expectedOutput: "3", runnerCode: `System.out.println(Solution.countDistinct(new int[][]{{0, 0}, {0, 1}, {1, 0}, {0, 0}}));` },
+      { name: "edge: no cells at all", input: "", expectedOutput: "0", runnerCode: `System.out.println(Solution.countDistinct(new int[][]{}));` },
+      { name: "lookup with a freshly built key", input: "", expectedOutput: "b", runnerCode: `System.out.println(Solution.lookup(new int[][]{{1, 2}, {3, 4}}, new String[]{"a", "b"}, 3, 4));` },
+      { name: "edge: missing key falls back to none", input: "", expectedOutput: "none", runnerCode: `System.out.println(Solution.lookup(new int[][]{{1, 2}}, new String[]{"a"}, 9, 9));` },
+      { name: "equals and hashCode agree", input: "", expectedOutput: "true true false", runnerCode: `System.out.println(Solution.key(2, 3).equals(Solution.key(2, 3)) + " " + (Solution.key(2, 3).hashCode() == Solution.key(2, 3).hashCode()) + " " + Solution.key(2, 3).equals(Solution.key(3, 2)));` }
+    ]
+  },
+
+  {
+    id: "java-record-compact-constructor",
+    title: "Records — Compact Constructor Validation",
+    category: "Java Language",
+    difficulty: "Easy",
+    link: "",
+    tags: ["Records","Java 16","Validation"],
+    description: "A record is a transparent carrier for immutable data. One line gives you private final fields, a canonical constructor, accessors named after the components, plus equals, hashCode and toString for free.\n\nThe COMPACT CONSTRUCTOR is the record-specific piece to learn. You write the header with no parameter list and no assignments. Inside it the parameters are mutable locals, and Java assigns them to the fields for you AFTER the body runs, so validating and normalising there actually sticks.\n\nComplete the nested record and its methods:\n\n  public record Money(String currency, long amountCents)\n  public static Money money(String currency, long cents)\n  public static String describe(String currency, long cents)\n  public static boolean sameMoney(String c1, long a1, String c2, long a2)\n\n1. In the compact constructor: throw new IllegalArgumentException(\"bad currency\") when currency is null or its length is not 3, throw new IllegalArgumentException(\"negative amount\") when amountCents is below zero, and otherwise normalise with currency = currency.toUpperCase().\n\n2. Implement format() to return the currency, a space, and the amount as major.minor with exactly two minor digits, for example USD 12.34 and EUR 0.05.\n\n3. describe returns format() or, if construction fails, \"invalid: \" plus the exception message.\n\n4. sameMoney compares two Money values with the record equals you get for free.",
+    examples: "Input: describe(\"usd\", 1234)\nOutput: USD 12.34\n\nInput: describe(\"US\", 100)\nOutput: invalid: bad currency\n\nInput: money(\"gbp\", 250)\nOutput: Money[currency=GBP, amountCents=250]",
+    starterCode: null,
+    solution: `public class Solution {
+    public record Money(String currency, long amountCents) {
+        public Money {
+            if (currency == null || currency.length() != 3) {
+                throw new IllegalArgumentException("bad currency");
+            }
+            if (amountCents < 0) {
+                throw new IllegalArgumentException("negative amount");
+            }
+            currency = currency.toUpperCase();
+        }
+
+        public String format() {
+            long major = amountCents / 100;
+            long minor = amountCents % 100;
+            String pad = minor < 10 ? "0" : "";
+            return currency + " " + major + "." + pad + minor;
+        }
+    }
+
+    public static Money money(String currency, long cents) {
+        return new Money(currency, cents);
+    }
+
+    public static String describe(String currency, long cents) {
+        try {
+            return money(currency, cents).format();
+        } catch (IllegalArgumentException e) {
+            return "invalid: " + e.getMessage();
+        }
+    }
+
+    public static boolean sameMoney(String c1, long a1, String c2, long a2) {
+        return money(c1, a1).equals(money(c2, a2));
+    }
+
+    public static void main(String[] args) {
+        System.out.println(describe("usd", 1234));
+        System.out.println(money("gbp", 250));
+    }
+}
+`,
+    tests: [
+      { name: "normalises the currency code", input: "", expectedOutput: "USD 12.34", runnerCode: `System.out.println(Solution.describe("usd", 1234));` },
+      { name: "edge: pads the minor units and handles zero", input: "", expectedOutput: "EUR 0.05 EUR 0.00", runnerCode: `System.out.println(Solution.describe("eur", 5) + " " + Solution.describe("eur", 0));` },
+      { name: "edge: rejects a bad currency, including null", input: "", expectedOutput: "invalid: bad currency invalid: bad currency", runnerCode: `System.out.println(Solution.describe("US", 100) + " " + Solution.describe(null, 100));` },
+      { name: "edge: rejects a negative amount", input: "", expectedOutput: "invalid: negative amount", runnerCode: `System.out.println(Solution.describe("USD", -1));` },
+      { name: "generated toString and accessors", input: "", expectedOutput: "Money[currency=GBP, amountCents=250] GBP 250", runnerCode: `Solution.Money m = Solution.money("gbp", 250); System.out.println(m + " " + m.currency() + " " + m.amountCents());` },
+      { name: "generated equals compares by value", input: "", expectedOutput: "true false", runnerCode: `System.out.println(Solution.sameMoney("usd", 100, "USD", 100) + " " + Solution.sameMoney("usd", 100, "usd", 101));` }
+    ]
+  },
+
+  {
+    id: "java-sealed-pattern-switch-expr",
+    title: "Sealed Types — Evaluate an Expression Tree With a Switch",
+    category: "Java Language",
+    difficulty: "Medium",
+    link: "",
+    tags: ["Sealed","Pattern Matching","Java 21"],
+    description: "A sealed interface names every type allowed to implement it. Because the compiler knows the full list, a switch over a sealed type needs NO default branch, and if you later add a permitted type every switch that does not handle it fails to COMPILE instead of silently falling through at runtime. That is the closest Java gets to an algebraic data type.\n\nThe hierarchy is declared for you inside Solution:\n\n  sealed interface Expr permits Num, Add, Mul\n  record Num(int value) implements Expr\n  record Add(Expr left, Expr right) implements Expr\n  record Mul(Expr left, Expr right) implements Expr\n\nImplement:\n\n  public static int eval(Expr e)\n  public static String show(Expr e)\n\n1. eval recursively evaluates the tree. Write it as a switch EXPRESSION using record patterns, for example case Num(int value) -> value; and case Add(Expr left, Expr right) -> eval(left) + eval(right);\n\n2. show returns fully parenthesised infix notation: a Num renders as its digits, an Add as (left + right), a Mul as (left * right).\n\nHARD RULE: neither switch may have a default branch. If yours needs one, you are not covering every permitted type. The factories num, add and mul are provided so the tests can build trees.",
+    examples: "Input: eval(add(num(2), mul(num(3), num(4))))\nOutput: 14\n\nInput: show(add(num(2), mul(num(3), num(4))))\nOutput: (2 + (3 * 4))",
+    starterCode: null,
+    solution: `public class Solution {
+    public sealed interface Expr permits Num, Add, Mul {}
+
+    public record Num(int value) implements Expr {}
+
+    public record Add(Expr left, Expr right) implements Expr {}
+
+    public record Mul(Expr left, Expr right) implements Expr {}
+
+    public static Expr num(int value) { return new Num(value); }
+
+    public static Expr add(Expr left, Expr right) { return new Add(left, right); }
+
+    public static Expr mul(Expr left, Expr right) { return new Mul(left, right); }
+
+    public static int eval(Expr e) {
+        return switch (e) {
+            case Num(int value) -> value;
+            case Add(Expr left, Expr right) -> eval(left) + eval(right);
+            case Mul(Expr left, Expr right) -> eval(left) * eval(right);
+        };
+    }
+
+    public static String show(Expr e) {
+        return switch (e) {
+            case Num(int value) -> String.valueOf(value);
+            case Add(Expr left, Expr right) -> "(" + show(left) + " + " + show(right) + ")";
+            case Mul(Expr left, Expr right) -> "(" + show(left) + " * " + show(right) + ")";
+        };
+    }
+
+    public static void main(String[] args) {
+        Expr tree = add(num(2), mul(num(3), num(4)));
+        System.out.println(eval(tree));
+        System.out.println(show(tree));
+    }
+}
+`,
+    tests: [
+      { name: "edge: a bare number is a whole tree", input: "", expectedOutput: "7 0", runnerCode: `System.out.println(Solution.eval(Solution.num(7)) + " " + Solution.eval(Solution.num(0)));` },
+      { name: "one addition", input: "", expectedOutput: "5", runnerCode: `System.out.println(Solution.eval(Solution.add(Solution.num(2), Solution.num(3))));` },
+      { name: "nested add and mul", input: "", expectedOutput: "14", runnerCode: `System.out.println(Solution.eval(Solution.add(Solution.num(2), Solution.mul(Solution.num(3), Solution.num(4)))));` },
+      { name: "multiplication of two sums", input: "", expectedOutput: "21", runnerCode: `System.out.println(Solution.eval(Solution.mul(Solution.add(Solution.num(1), Solution.num(2)), Solution.add(Solution.num(3), Solution.num(4)))));` },
+      { name: "edge: negative numbers", input: "", expectedOutput: "-10", runnerCode: `System.out.println(Solution.eval(Solution.mul(Solution.num(-2), Solution.num(5))));` },
+      { name: "printed as parenthesised infix", input: "", expectedOutput: "(2 + (3 * 4))", runnerCode: `System.out.println(Solution.show(Solution.add(Solution.num(2), Solution.mul(Solution.num(3), Solution.num(4)))));` }
+    ]
+  },
+
+  {
+    id: "java-record-patterns-when-guards",
+    title: "Record Patterns — Destructure Nested Records With when Guards",
+    category: "Java Language",
+    difficulty: "Hard",
+    link: "",
+    tags: ["Record Patterns","when Guard","Java 21"],
+    description: "Record patterns let a case label take a record apart, and they NEST, so case Segment(Point(var x1, var y1), Point(var x2, var y2)) binds four ints in one line. A when guard adds a boolean test to a case label. Guards are checked in source order, so the specific cases must come first.\n\nThe shapes are declared for you inside Solution:\n\n  record Point(int x, int y)\n  sealed interface Shape permits Dot, Segment, Circle\n  record Dot(Point at), record Segment(Point from, Point to), record Circle(Point center, int radius)\n\nImplement:\n\n  public static String classify(Shape shape)\n  public static String originLabel(Shape shape)\n\n1. classify returns exactly one of: \"origin\" for a Dot at (0,0); \"dot\" for any other Dot; \"degenerate segment\" when both endpoints are the same point; \"horizontal\" when only the y values match; \"vertical\" when only the x values match; \"diagonal\" for any other Segment; \"invalid circle\" when the radius is negative; \"centered circle\" for a Circle centred on the origin; and \"circle\" otherwise.\n\n2. originLabel destructures one level and returns \"dot at X,Y\", \"segment from X,Y\" or \"circle r=R\".\n\nCRITICAL: a guarded case NEVER counts towards exhaustiveness, so every permitted type still needs one UNGUARDED case or the switch will not compile. Do not add a default branch. The factories dot, segment and circle are provided.",
+    examples: "Input: classify(segment(1,5,9,5))\nOutput: horizontal\n\nInput: classify(dot(0,0))\nOutput: origin\n\nInput: classify(circle(1,1,-2))\nOutput: invalid circle\n\nInput: originLabel(segment(1,2,3,4))\nOutput: segment from 1,2",
+    starterCode: null,
+    solution: `public class Solution {
+    public record Point(int x, int y) {}
+
+    public sealed interface Shape permits Dot, Segment, Circle {}
+
+    public record Dot(Point at) implements Shape {}
+
+    public record Segment(Point from, Point to) implements Shape {}
+
+    public record Circle(Point center, int radius) implements Shape {}
+
+    public static Shape dot(int x, int y) { return new Dot(new Point(x, y)); }
+
+    public static Shape segment(int x1, int y1, int x2, int y2) { return new Segment(new Point(x1, y1), new Point(x2, y2)); }
+
+    public static Shape circle(int x, int y, int radius) { return new Circle(new Point(x, y), radius); }
+
+    public static String classify(Shape shape) {
+        return switch (shape) {
+            case Dot(Point(var x, var y)) when x == 0 && y == 0 -> "origin";
+            case Dot ignored -> "dot";
+            case Segment(Point(var x1, var y1), Point(var x2, var y2)) when x1 == x2 && y1 == y2 -> "degenerate segment";
+            case Segment(Point(var x1, var y1), Point(var x2, var y2)) when y1 == y2 -> "horizontal";
+            case Segment(Point(var x1, var y1), Point(var x2, var y2)) when x1 == x2 -> "vertical";
+            case Segment ignored -> "diagonal";
+            case Circle(Point center, int radius) when radius < 0 -> "invalid circle";
+            case Circle(Point(var cx, var cy), int radius) when cx == 0 && cy == 0 -> "centered circle";
+            case Circle ignored -> "circle";
+        };
+    }
+
+    public static String originLabel(Shape shape) {
+        return switch (shape) {
+            case Dot(Point(int x, int y)) -> "dot at " + x + "," + y;
+            case Segment(Point(int x, int y), Point to) -> "segment from " + x + "," + y;
+            case Circle(Point center, int radius) -> "circle r=" + radius;
+        };
+    }
+
+    public static void main(String[] args) {
+        System.out.println(classify(segment(1, 5, 9, 5)));
+        System.out.println(originLabel(segment(1, 2, 3, 4)));
+    }
+}
+`,
+    tests: [
+      { name: "guard picks the origin dot first", input: "", expectedOutput: "origin dot", runnerCode: `System.out.println(Solution.classify(Solution.dot(0, 0)) + " " + Solution.classify(Solution.dot(3, 4)));` },
+      { name: "horizontal and vertical segments", input: "", expectedOutput: "horizontal vertical", runnerCode: `System.out.println(Solution.classify(Solution.segment(1, 5, 9, 5)) + " " + Solution.classify(Solution.segment(2, 1, 2, 8)));` },
+      { name: "edge: zero-length segment beats horizontal and vertical", input: "", expectedOutput: "degenerate segment diagonal", runnerCode: `System.out.println(Solution.classify(Solution.segment(4, 4, 4, 4)) + " " + Solution.classify(Solution.segment(0, 0, 1, 1)));` },
+      { name: "circles by centre and radius", input: "", expectedOutput: "centered circle circle", runnerCode: `System.out.println(Solution.classify(Solution.circle(0, 0, 5)) + " " + Solution.classify(Solution.circle(2, 3, 5)));` },
+      { name: "edge: negative radius wins over the centre guard", input: "", expectedOutput: "invalid circle invalid circle", runnerCode: `System.out.println(Solution.classify(Solution.circle(1, 1, -2)) + " " + Solution.classify(Solution.circle(0, 0, -1)));` },
+      { name: "destructuring one level deep", input: "", expectedOutput: "dot at 3,4 | segment from 1,2 | circle r=9", runnerCode: `System.out.println(Solution.originLabel(Solution.dot(3, 4)) + " | " + Solution.originLabel(Solution.segment(1, 2, 3, 4)) + " | " + Solution.originLabel(Solution.circle(5, 5, 9)));` }
+    ]
+  },
+
+  ];
+
+  // ─── Category metadata for display ───
 const DSA_CATEGORIES = [
   { name: 'Fundamentals',        icon: '🎯', color: '#0ea5e9' },
   { name: 'Arrays',              icon: '📊', color: '#3b82f6' },
@@ -5968,6 +6862,7 @@ const DSA_CATEGORIES = [
   { name: 'Intervals',           icon: '📏', color: '#10b981' },
   { name: 'Greedy',              icon: '💰', color: '#eab308' },
   { name: 'Heap',                icon: '⛰️', color: '#84cc16' },
+  { name: 'Java Language',       icon: '☕', color: '#b45309' },
 ];
 
 

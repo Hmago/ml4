@@ -206,19 +206,25 @@ Every modelling decision — algorithm choice, hyperparameters, regularization �
 
 The part [Ch 8](#content/08_core_concepts) *can't* give you is that every algorithm family exposes regularization through different knobs. This is the translation table:
 
-| Family | The knobs | What actually controls capacity |
-|---|---|---|
-| **Linear / Logistic** | `C`, `penalty` | sklearn's `C` is the **inverse** of λ — smaller `C` means *more* regularization, which trips people up constantly. Ridge = L2, Lasso = L1, Elastic Net = both |
-| **Decision Tree** | `max_depth`, `min_samples_leaf`, `min_samples_split` | Structural limits, not a penalty term — an unbounded tree will memorise every row |
-| **Random Forest** | `n_estimators`, `max_features` | More trees never overfits (it only averages more); `max_features` is the real diversity knob |
-| **Gradient Boosting** | `learning_rate` × `n_estimators`, `reg_alpha`, `reg_lambda`, `max_depth` | More trees **does** overfit here. A small `learning_rate` plus early stopping is the dominant strategy |
-| **Neural networks** | Dropout rate, `weight_decay` | Use **AdamW**, not Adam + L2 (§8.10) |
+> 📖 **Reading ahead is fine here.** This table names algorithms — Random Forest, Gradient Boosting — that aren't explained until **§10.6 and §10.8**. That's deliberate: it's a reference table you'll come back to. Skim it now for the *shape* of the idea (every family has capacity knobs, and they look nothing alike), and return once you've met the algorithms. Nothing later depends on you memorising it today.
+
+| Family | The knobs | What actually controls capacity | Symptom when you get it wrong |
+|---|---|---|---|
+| **Linear / Logistic** | `C`, `penalty` | sklearn's `C` is the **inverse** of λ — smaller `C` means *more* regularization, which trips people up constantly. Ridge = L2, Lasso = L1, Elastic Net = both | Train and val scores both mediocre and nearly equal → `C` is too small |
+| **Decision Tree** | `max_depth`, `min_samples_leaf`, `min_samples_split` | Structural limits, not a penalty term — an unbounded tree will memorise every row | Train accuracy 100%, val far below → depth is unbounded |
+| **Random Forest** | `n_estimators`, `max_features` | More trees never overfits (it only averages more); `max_features` is the real diversity knob | Adding trees stops helping → raise diversity, not `n_estimators` |
+| **Gradient Boosting** | `learning_rate` × `n_estimators`, `reg_alpha`, `reg_lambda`, `max_depth` | More trees **does** overfit here. A small `learning_rate` plus early stopping is the dominant strategy | Val loss falls, bottoms out, then *climbs* → you passed the early-stopping point |
+| **Neural networks** | Dropout rate, `weight_decay`, width/depth, early stopping | Capacity is mostly **architecture** — parameter count sets the ceiling, and dropout plus `weight_decay` pull back from it. Dropout randomly silences a fraction of units each step, so no unit can rely on any other; `weight_decay` shrinks weights toward zero every update | Train loss → 0 while val loss rises → raise dropout, or stop earlier |
 
 > ⚠️ **The single most confusing knob in sklearn:** `C=0.01` is *strong* regularization and `C=100` is *weak*. It is `1/λ`. Getting this backwards silently produces an underfit model that looks like a bad algorithm choice.
+
+> ⚠️ **Use AdamW, not Adam + L2.** With Adam, an L2 penalty gets divided by the same per-parameter scaling the optimizer applies to gradients, so the amount of regularization each weight actually receives is not what you asked for. AdamW *decouples* the decay and applies it directly to the weights. See §8.10.
 
 > **Interview —** *"Random Forest and Gradient Boosting are both tree ensembles. Why does adding trees overfit one but not the other?"*
 > **Say:** Random Forest **averages** independent trees — more trees reduce variance and the training error plateaus, so extra trees are just wasted compute. Boosting builds trees **sequentially**, each fitting the previous residuals, so more trees keep reducing training error and eventually fit noise.
 > **They follow up with:** *"So how do you control boosting?"* — a small learning rate plus early stopping on a validation set, then `max_depth` and the L1/L2 terms.
+
+> ↪ **Both of these are unpacked properly in [§10.8](#content/10_supervised_learning).** If the bagging-vs-boosting distinction doesn't land yet, that is expected — read on and come back.
 
 ---
 
@@ -228,15 +234,15 @@ Five algorithms cover almost every classification problem you'll meet. This sect
 
 **The whole section in one table** — skim this first, then read the entries:
 
-| Algorithm | The one-line idea | Reach for it when | Breaks when |
-|---|---|---|---|
-| **Logistic Regression** | A scorecard: each feature adds or subtracts points, and the total becomes a probability | You need speed, calibrated probabilities, or to *explain* the decision | The boundary is genuinely curved |
-| **KNN** | Ask the nearest few neighbours and go with the majority | The data is small, low-dimensional, and "similar things cluster" is true | Dimensions grow, or features aren't scaled |
-| **Decision Tree** | A game of twenty questions, each splitting the remaining possibilities | You need a human-readable rule set | Left unpruned — it memorises |
-| **SVM** | Draw the widest road between two groups | Data is high-dimensional or wide-but-short (text) | The dataset is large ($n > 50\text{K}$) |
-| **Naive Bayes** | Count how often each clue appears in each class, then multiply the evidence | Text classification, or you need a baseline in five minutes | Features are strongly redundant |
+| Algorithm | The one-line idea | It assumes… | Reach for it when | …so it breaks when |
+|---|---|---|---|---|
+| **Logistic Regression** | A scorecard: each feature adds or subtracts points, and the total becomes a probability | Classes are separable by a **straight line** (in log-odds) | You need speed, calibrated probabilities, or to *explain* the decision | The boundary is genuinely curved |
+| **KNN** | Ask the nearest few neighbours and go with the majority | **Nearby points share a label** — and "nearby" is measured meaningfully | The data is small, low-dimensional, and "similar things cluster" is true | Dimensions grow, or features aren't scaled |
+| **Decision Tree** | A game of twenty questions, each splitting the remaining possibilities | Classes fall into **rectangular, axis-aligned regions** | You need a human-readable rule set | Left unpruned — it memorises |
+| **SVM** | Draw the widest road between two groups | A **wide margin** separates the classes — in the input space or a kernel-implied one | Data is high-dimensional or wide-but-short (text) | The dataset is large ($n > 50\text{K}$) |
+| **Naive Bayes** | Count how often each clue appears in each class, then multiply the evidence | Features are **independent given the class** | Text classification, or you need a baseline in five minutes | Features are strongly redundant |
 
-> **How to read an algorithm entry.** The *assumption* is the most important line. An algorithm fails when its assumption doesn't match your data — not because it's a "bad algorithm" ([Ch 8 §8.5](#content/08_core_concepts), inductive bias).
+> **How to read an algorithm entry.** Columns 3 and 5 are the same fact stated twice — *an algorithm breaks precisely when its assumption stops being true of your data.* That is the whole game, and it is why "which algorithm is best?" has no answer without seeing the data ([Ch 8 §8.5](#content/08_core_concepts), inductive bias). Each entry below repeats its assumption on an **Assumes:** line, so you can find it fast.
 
 ### Logistic Regression ★★★
 
@@ -258,6 +264,8 @@ That is the entire algorithm: **add up weighted evidence, squash it into a proba
 
 Despite the name, it classifies. It takes a weighted sum of features, pushes it through a sigmoid to get a probability, and thresholds.
 
+**Assumes:** the two classes can be separated by a **straight line** — more precisely, that the log-odds are linear in the features. Curved boundaries need engineered features or a different model.
+
 $$z = w_0 + w_1 x_1 + \dots + w_n x_n \qquad \hat{y} = \sigma(z) = \frac{1}{1 + e^{-z}}$$
 
 ```
@@ -274,9 +282,27 @@ $$z = w_0 + w_1 x_1 + \dots + w_n x_n \qquad \hat{y} = \sigma(z) = \frac{1}{1 + 
       ŷ = σ(0.5) = 0.622  → SPAM at threshold 0.5
 ```
 
-**What the weights actually mean — the log-odds view.** This is the reason logistic regression is the interpretable classifier, and it's the question interviewers ask. Rearranging the model:
+**What the weights actually mean — the log-odds view.**
+
+You just computed `z = 0.5` and turned it into a probability of 0.622. That raises the obvious
+next question — and it is the one interviewers actually ask: *the weight on MONEY is `+1.2`.
+What does "+1.2" mean?*
+
+It is tempting to answer "+1.2 probability" or "+1.2 percent." Both are wrong, and saying
+either is an audible tell. The correct answer needs one idea first: **odds**.
+
+**Odds** are just the bookmaker's way of stating a chance. Instead of "75% likely" you say
+"3 to 1 on" — for every 1 time it fails, it happens 3 times. The arithmetic is
+$\text{odds} = P / (1 - P)$, so $0.75 / 0.25 = 3$.
+
+With that in hand, undo the sigmoid and rearrange the model. What falls out is:
 
 $$\log\underbrace{\frac{P(y=1)}{1 - P(y=1)}}_{\text{odds}} = w_0 + w_1x_1 + \dots + w_nx_n$$
+
+The right-hand side is the ordinary linear score. The left-hand side is *not* a probability —
+it is the **log of the odds**. That is the whole reveal: the weights were never acting on
+probability at all. They were adding up log-odds all along, and the sigmoid existed only to
+convert that total back into a probability at the very end.
 
 **Logistic regression is linear in the log-odds**, not in the probability. That single fact gives you the interpretation:
 
@@ -324,16 +350,70 @@ your data gets big.
 
 **Assumes:** nearby points share a label. There is no training phase — the training set *is* the model.
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "The 3 votes counted",
+        "data": [{"x":5,"y":5},{"x":4.2,"y":4.4},{"x":5,"y":5},{"x":5.9,"y":5.5},{"x":5,"y":5},{"x":5.2,"y":3.7}],
+        "borderColor": "rgba(120, 120, 120, 0.9)",
+        "backgroundColor": "transparent",
+        "showLine": true, "borderWidth": 2, "borderDash": [5, 4], "pointRadius": 0
+      },
+      {
+        "label": "Class A — too far to vote",
+        "data": [{"x":3,"y":6.2},{"x":7.2,"y":6.8},{"x":2.2,"y":7.4},{"x":7.8,"y":8}],
+        "backgroundColor": "rgba(99, 102, 241, 0.25)",
+        "borderColor": "rgba(99, 102, 241, 0.4)",
+        "pointStyle": "circle", "pointRadius": 7, "borderWidth": 1
+      },
+      {
+        "label": "Class B — too far to vote",
+        "data": [{"x":3.4,"y":2.6},{"x":6.8,"y":2.2},{"x":2,"y":3}],
+        "backgroundColor": "rgba(234, 88, 12, 0.25)",
+        "borderColor": "rgba(234, 88, 12, 0.4)",
+        "pointStyle": "triangle", "pointRadius": 8, "borderWidth": 1
+      },
+      {
+        "label": "Nearest 3 → Class A (1 vote)",
+        "data": [{"x":5.9,"y":5.5}],
+        "backgroundColor": "rgba(99, 102, 241, 1)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "circle", "pointRadius": 11, "borderWidth": 3
+      },
+      {
+        "label": "Nearest 3 → Class B (2 votes)",
+        "data": [{"x":4.2,"y":4.4},{"x":5.2,"y":3.7}],
+        "backgroundColor": "rgba(234, 88, 12, 1)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "triangle", "pointRadius": 12, "borderWidth": 3
+      },
+      {
+        "label": "New point to classify",
+        "data": [{"x":5,"y":5}],
+        "backgroundColor": "rgba(239, 68, 68, 1)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "rectRot", "pointRadius": 13, "borderWidth": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "KNN with K=3 — Only the 3 Linked Points Get a Vote → Class B Wins 2–1" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Feature 2" }, "min": 1, "max": 9 },
+      "x": { "title": { "display": true, "text": "Feature 1" }, "min": 1, "max": 9 }
+    }
+  }
+}
 ```
-  Feature 2
-     │  ○ ○                K=3: who are the 3 nearest?
-     │  ○   ○  ○
-     │          ★  ← NEW POINT
-     │     ●  ●   ○        neighbors: ○, ●, ●
-     │  ●        ●
-     └──────────────── Feature 1
-     Vote: ○=1, ●=2  →  predict ●
-```
+
+The three dashed spokes are the whole algorithm. Measured from the new point, the
+distances are **1.00** (Class B), **1.03** (Class A) and **1.32** (Class B) — and the
+*fourth*-closest point is way back at **2.33**. That gap is why K=3 is unambiguous here.
+Count the linked points only: **B=2, A=1 → predict B**. Every faded point is ignored
+entirely, no matter how obvious the overall pattern looks to your eye.
 
 **Choosing K:** `K=1` is maximally sensitive to noise with a jagged boundary; `K=5` is a good default; `K=√n` is the usual rule of thumb; `K=n` always predicts the majority class. Use an **odd** K for binary problems to avoid ties.
 
@@ -370,10 +450,15 @@ $\sqrt{(30-8)^2 + (520-540)^2} = \sqrt{884} = 29.73$:
 
 3-NN = {B, A, E} → **Fail, Fail, Pass → predicts Fail** ❌
 
-Look at what the arithmetic actually did. The hours term can contribute at most
+**That answer should bother you.** Q studied 30 hours. The two "nearest" students the model
+picked, A and B, studied **5 and 8** hours — nothing like her. Meanwhile C, who studied 28
+hours, was ranked *fourth*. How did a candidate with 30 hours end up neighbours with people
+who barely studied?
+
+The answer is in the arithmetic. The hours term can contribute at most
 $25^2 = 625$ to any of those distances; the questions term contributes up to
-$680^2 = 462{,}400$. Hours are, numerically, noise. So a candidate who studied **30 hours**
-was judged closest to A and B, who studied **5 and 8**.
+$680^2 = 462{,}400$ — roughly **740 times more**. Hours never stood a chance. The distance
+formula was, in effect, sorting on questions alone and ignoring the column you cared about.
 
 **After min-max scaling** onto $[0, 1]$ using the training ranges (hours 5–35, questions
 460–1,200), which puts $Q$ at $(0.833, 0.081)$:
@@ -446,6 +531,28 @@ flowchart TD
 > **Say:** An unbounded tree keeps splitting until every leaf is pure, so it ends up memorising individual rows — classic high variance. A Random Forest trains many trees on bootstrap samples with a random feature subset at each split, then averages, and averaging decorrelated high-variance models cancels much of that variance.
 > **They follow up with:** *"Why the random feature subset — isn't bootstrapping enough?"* — no. With one dominant feature every tree splits on it first and the trees end up near-identical, so averaging buys little. `max_features` forces the diversity that makes averaging work.
 
+**Why that follow-up answer is true — the one idea underneath it.** Averaging only helps when
+the things you average make **different** mistakes.
+
+Picture asking 100 doctors to read the same scan. If all 100 trained at the same school under
+the same professor, they share the same blind spot — they will all miss the same tumour, and
+asking 100 of them is no better than asking one. Get 100 doctors from 100 different schools and
+their individual errors point in different directions, so pooling them cancels the errors out.
+
+The maths says exactly this. Average $n$ trees that each have error variance $\sigma^2$ and are
+correlated with each other by $\rho$:
+
+$$\text{Var(average)} = \rho\sigma^2 + \frac{1-\rho}{n}\sigma^2$$
+
+Push $n \to \infty$ and the second term vanishes, but the first does not. **You are left with
+$\rho\sigma^2$ — a floor set entirely by how correlated the trees are.** So piling on trees
+cannot save you; only reducing $\rho$ can. Bootstrapping alone leaves $\rho$ high, because
+every tree still sees every feature and so every tree still splits on the dominant one first.
+`max_features` is the knob that attacks $\rho$ directly: hide that feature from most splits,
+and the trees are finally forced to disagree.
+
+*This is also the cleanest way to say why more trees never overfit a Random Forest — extra trees only shrink the $\frac{1-\rho}{n}\sigma^2$ term toward zero. They cannot add capacity.*
+
 ---
 
 ### Support Vector Machines (SVMs) ★★
@@ -472,22 +579,74 @@ called the **kernel trick** that never has to build that bigger space explicitly
 
 The core idea is elegant: among all lines separating two classes, choose the one with the widest gap. That maximum-margin hyperplane tends to generalize best.
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Margin edge (upper)",
+        "data": [{"x":0,"y":12},{"x":10,"y":2}],
+        "borderColor": "rgba(120, 120, 120, 0.8)",
+        "backgroundColor": "transparent",
+        "showLine": true, "borderWidth": 2, "borderDash": [6, 4], "pointRadius": 0
+      },
+      {
+        "label": "Margin edge (lower)",
+        "data": [{"x":0,"y":8},{"x":8,"y":0}],
+        "borderColor": "rgba(120, 120, 120, 0.8)",
+        "backgroundColor": "transparent",
+        "showLine": true, "borderWidth": 2, "borderDash": [6, 4], "pointRadius": 0
+      },
+      {
+        "label": "Decision boundary",
+        "data": [{"x":0,"y":10},{"x":10,"y":0}],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "transparent",
+        "showLine": true, "borderWidth": 3, "pointRadius": 0
+      },
+      {
+        "label": "Class A",
+        "data": [{"x":2.5,"y":10.5},{"x":5,"y":9.5},{"x":7.5,"y":7},{"x":9,"y":5.5},{"x":3.5,"y":9.5}],
+        "backgroundColor": "rgba(99, 102, 241, 0.45)",
+        "borderColor": "rgba(99, 102, 241, 0.7)",
+        "pointStyle": "circle", "pointRadius": 7, "borderWidth": 1
+      },
+      {
+        "label": "Class B",
+        "data": [{"x":2,"y":4},{"x":4,"y":2},{"x":6,"y":1.5},{"x":1,"y":5.5},{"x":7,"y":0.5},{"x":3.5,"y":3}],
+        "backgroundColor": "rgba(234, 88, 12, 0.45)",
+        "borderColor": "rgba(234, 88, 12, 0.7)",
+        "pointStyle": "triangle", "pointRadius": 8, "borderWidth": 1
+      },
+      {
+        "label": "Support vectors — these 4 decide everything",
+        "data": [{"x":4,"y":8},{"x":6.5,"y":5.5},{"x":5,"y":3},{"x":2.5,"y":5.5}],
+        "backgroundColor": "rgba(22, 163, 74, 0.9)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "rectRot", "pointRadius": 12, "borderWidth": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "SVM — The Widest Possible Road Between Two Classes" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Feature 2" }, "min": 0, "max": 12 },
+      "x": { "title": { "display": true, "text": "Feature 1" }, "min": 0, "max": 10 }
+    }
+  }
+}
 ```
-  Feature 2
-     │
-     │  ○ ○                ○ ○
-     │  ○   ○  ╱           ○   ○   ← margin
-     │     ○  ╱   ● ●          ╱  ← boundary (hyperplane)
-     │       ╱   ●  ●         ╱   ← margin
-     │      ╱  ●    ● ●     ╱
-     │     ╱  ●   ●        ╱
-     └──────────────────────── Feature 1
 
-  The points sitting on the margin edge are the
-  "support vectors" — the only points that decide
-  where the boundary goes. Remove any other training
-  point and the boundary does not move.
-```
+Read it as a road. The solid red line is the **boundary**; the two dashed lines are the
+edges of the widest empty corridor you can slide between the classes. The four green
+diamonds are the **support vectors** — the only points *touching* the edges, and the only
+points the model actually depends on.
+
+That last part is the property interviewers probe: **delete any faded point and the
+boundary does not move.** Only by moving a support vector — or adding a new point inside
+the corridor — can you change the answer. A trained SVM can throw the rest of the training
+set away.
 
 **The Kernel Trick**
 
@@ -563,6 +722,8 @@ baseline you build in five minutes before trying anything clever.
 
 > **Naive Bayes** is a probabilistic classifier based on Bayes' theorem with the "naive" assumption that features are conditionally independent given the class label.
 
+**Assumes:** every feature is **independent of every other, given the class**. It is the boldest assumption of the five — and the one most often false — which is exactly why the algorithm is named after it.
+
 $$P(y|x_1,...,x_n) = \frac{P(y) \prod_{i=1}^n P(x_i|y)}{P(x_1,...,x_n)}$$
 
 The "naive" assumption — that features are independent — is almost never true in practice. Email words are definitely correlated ("Nigerian" and "prince" tend to appear together). Yet Naive Bayes works surprisingly well anyway, especially for text classification. This is one of the great paradoxes of ML: a model built on a clearly wrong assumption can still make accurate predictions.
@@ -595,6 +756,21 @@ The "naive" assumption — that features are independent — is almost never tru
 > algorithm's **assumption**. KNN's weakness in high dimensions *is* its assumption that distance
 > means something. Naive Bayes' calibration problem *is* the independence lie. Match the assumption
 > to your data and most of these limitations stop mattering.
+
+**Closing the loop on §10.6.** Go back to the table at the top of this section and read only
+column 3. Those five assumptions *are* the section — everything between them and here was
+justification. If you can state each algorithm's assumption from memory, you can re-derive when
+it wins and how it fails without memorising either.
+
+<details>
+<summary><strong>Quick check.</strong> A colleague reports that logistic regression gets 71% accuracy on their dataset while a decision tree gets 94%. They conclude logistic regression is "a weak algorithm." What is the better explanation, and what would you look at?</summary>
+
+**Nothing is wrong with logistic regression — its assumption doesn't fit their data.** Logistic regression can only draw a straight boundary (in log-odds); a tree can carve out rectangles. A large gap in *that* direction is evidence the true boundary is non-linear, not evidence that one algorithm is better than another.
+
+**What to look at:** plot the decision boundary, or just add interaction and polynomial features to the logistic model. If the gap largely closes, you've confirmed the diagnosis — and you now have an interpretable model that works. If it doesn't close, the structure is genuinely tree-shaped and you should use the tree.
+
+**The trap in the opposite direction:** if the tree's *training* accuracy is ~100%, that 94% may be an unpruned tree that memorised the data. Check train-vs-validation before believing it (§10.5).
+</details>
 
 ---
 
@@ -1825,9 +2001,33 @@ For any new supervised learning problem, follow this sequence:
 
 End-to-end worked example walking the full ML pipeline that a Google interviewer expects.
 
+**Read this section for the *order*, not the details.** What separates a strong ML design
+answer from a weak one is almost never the algorithm — it's whether you did things in the
+right sequence. Each step below exists because **skipping it silently ruins every step after
+it.** That's the logic of the whole pipeline:
+
+| Step | The question it answers | If you skip it |
+|---|---|---|
+| **1. Framing** | What decision does this model drive, and what does success mean in dollars? | You optimise a metric nobody asked for |
+| **2. Label** | What exactly counts as "churn," measured over what window? | Your target is ambiguous, so the model learns noise |
+| **3. Features** | What did we know *before* the outcome happened? | **Leakage** — brilliant offline scores, worthless in production |
+| **4. Split** | How do we simulate predicting the future? | Random splits let the model see the future and inflate every number |
+| **5. Models** | Is the complexity buying anything? | You can't tell whether the fancy model helped |
+| **6. Imbalance** | Is the rare class getting learned at all? | The model predicts "nobody churns" and scores 95% |
+| **7. Evaluation** | Is the ranking good *and* are the probabilities honest? | You pick a threshold on numbers that don't mean what you think |
+| **8. Threshold** | Where do we cut, given what an offer costs and a save earns? | The default 0.5 gets used — a business decision made by accident |
+| **9. Production** | How do we know when it stops working? | It silently decays and no one notices for a quarter |
+
+> **The thread running through all nine:** steps 1–2 define the *target*, steps 3–4 protect
+> against **leakage and time travel**, steps 5–7 measure honestly, and steps 8–9 convert a
+> probability into a decision and keep it alive. If an interviewer interrupts you at any point,
+> being able to say *why this step exists* is worth more than the details inside it.
+
 ---
 
 ### Step 1 — Problem Framing and Business Metric
+
+*Why this step: a model is only useful if it changes a decision. Naming the decision first is what tells you the label, the metric, and eventually the threshold — get this wrong and everything downstream optimises the wrong thing.*
 
 **Business question:** Which subscribers are likely to cancel YouTube Premium in the next 30 days, so we can target them with a retention offer (e.g., discounted renewal)?
 
@@ -1840,6 +2040,8 @@ End-to-end worked example walking the full ML pipeline that a Google interviewer
 ---
 
 ### Step 2 — Label Definition
+
+*Why this step: "churn" sounds obvious until you try to write it in SQL. Is a lapsed card churn? Someone who resubscribes two days later? Every ambiguity you leave here becomes label noise that no model can recover from — a fuzzy target caps your accuracy before training starts.*
 
 **What is "churn"?** A subscriber is labeled churned (y = 1) if their subscription lapses within 30 days of the observation date AND they do not re-subscribe within 7 days (to exclude brief accidental lapses).
 
@@ -1864,6 +2066,8 @@ End-to-end worked example walking the full ML pipeline that a Google interviewer
 ---
 
 ### Step 3 — Data Sources and Feature Engineering
+
+*Why this step: this is where models die. Every feature must have been **observable before the outcome window opened** — otherwise you're feeding the model the answer. Leakage here produces a 0.95 AUC offline and a useless model in production, and it is the single most common failure in real interviews.*
 
 #### Behavioral (most predictive)
 
@@ -1905,6 +2109,8 @@ End-to-end worked example walking the full ML pipeline that a Google interviewer
 
 ### Step 4 — Time-Based Train / Val / Test Split
 
+*Why this step: in production the model always predicts forward in time. Your evaluation has to imitate that. A random split scatters future rows into training, so the model gets to peek at the period it's being tested on — and every number you report afterwards is optimistic.*
+
 For temporal data, never use random splits.
 
 ```
@@ -1930,6 +2136,8 @@ For temporal data, never use random splits.
 ---
 
 ### Step 5 — Baseline → Logistic Regression → Gradient Boosted Trees
+
+*Why this step: you climb the ladder so that every rung has to justify itself. Without a baseline you have no idea whether 0.71 PR-AUC is excellent or embarrassing, and without the linear model you can't tell whether the boosted trees earned their complexity — or just their maintenance cost.*
 
 **Naive baseline:** Predict P(churn) = population base rate (~3%). Sets the floor.
 
@@ -1972,6 +2180,8 @@ lgb_model.fit(
 
 ### Step 6 — Class Imbalance Handling
 
+*Why this step: at a 3% base rate the loss function barely notices the churners. Left alone, the model takes the easy win — predict "nobody churns" — and looks excellent on accuracy while being worth nothing. This step forces the rare class to matter.*
+
 At ~3% monthly churn, a naive model achieves 97% accuracy by predicting "no churn" everywhere — completely useless.
 
 **Do not use accuracy.** Strategies:
@@ -1983,6 +2193,8 @@ At ~3% monthly churn, a naive model achieves 97% accuracy by predicting "no chur
 ---
 
 ### Step 7 — Evaluation: PR-AUC and Calibration
+
+*Why this step: two different things have to be true, and one metric can't check both. **Ranking** decides who gets targeted — that's PR-AUC. **Calibration** decides whether "0.30" really means a 30% chance — and Step 8 does arithmetic on those numbers, so if they're inflated the threshold you derive will be wrong.*
 
 ```
   Dataset: 97% retained, 3% churned
@@ -2005,6 +2217,8 @@ At ~3% monthly churn, a naive model achieves 97% accuracy by predicting "no chur
 ---
 
 ### Step 8 — Threshold Selection Tied to Offer Economics
+
+*Why this step: the model outputs a probability, but the business needs a yes/no. Somebody has to choose the cut — and if you don't, the library's default of 0.5 chooses it for you. That default encodes the assumption that a false positive and a false negative cost the same, which here they emphatically do not.*
 
 The optimal threshold is not 0.5 — derive it from business costs.
 
@@ -2032,6 +2246,8 @@ The optimal threshold is not 0.5 — derive it from business costs.
 ---
 
 ### Step 9 — Deployment, Monitoring, and Retraining
+
+*Why this step: a churn model degrades by default. Prices change, competitors launch, and — uniquely here — **your own retention offers change the behaviour you're predicting**. Without monitoring, the model quietly stops working and the first sign is a bad quarter.*
 
 **Deployment:** Daily batch scoring pipeline reads from the feature store, applies saved transformers, outputs P(churn) per subscriber to the CRM. Marketing triggers the offer for users above threshold who are not on a suppression list (to prevent offer fatigue).
 

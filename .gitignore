@@ -1,2 +1,5 @@
 # Generated PDF exports (built by the study-notes-pdf skill / tools)
 export/
+
+# Local credentials for tools/generate-diagrams.js — NEVER commit real tokens
+tools/diagrams-auth.json

@@ -2,6 +2,51 @@
 // ═══  pages.js — welcome, dashboard, motivation, goals     ═══
 // ═══════════════════════════════════════════════════════════
 
+// ─── Achievement catalog (single source of truth) ───
+// Used by both the Welcome page (badge strip) and the Dashboard (full grid,
+// which additionally uses `cat` for its color-coded category styling in
+// styles.css). Previously this 30-entry list was duplicated in both places —
+// keep additions/edits here only.
+const ACHIEVEMENTS = [
+  // Reading
+  {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',cat:'read',tier:'common'},
+  {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',cat:'read',tier:'common'},
+  {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',cat:'read',tier:'rare'},
+  {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',cat:'read',tier:'rare'},
+  {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',cat:'read',tier:'epic'},
+  {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',cat:'read',tier:'epic'},
+  // Streaks
+  {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',cat:'streak',tier:'common'},
+  {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',cat:'streak',tier:'rare'},
+  {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',cat:'streak',tier:'epic'},
+  {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',cat:'streak',tier:'epic'},
+  // XP / Levels
+  {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',cat:'xp',tier:'common'},
+  {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',cat:'xp',tier:'rare'},
+  {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',cat:'xp',tier:'epic'},
+  {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',cat:'xp',tier:'rare'},
+  // Quizzes
+  {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',cat:'quiz',tier:'common'},
+  {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',cat:'quiz',tier:'rare'},
+  {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',cat:'quiz',tier:'epic'},
+  {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',cat:'quiz',tier:'epic'},
+  {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',cat:'quiz',tier:'epic'},
+  // Study
+  {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',cat:'study',tier:'common'},
+  {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',cat:'study',tier:'rare'},
+  {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',cat:'study',tier:'epic'},
+  {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',cat:'study',tier:'rare'},
+  // Notes
+  {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',cat:'note',tier:'common'},
+  {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',cat:'note',tier:'common'},
+  {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',cat:'note',tier:'rare'},
+  // DSA
+  {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',cat:'dsa',tier:'common'},
+  {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'dsa',tier:'rare'},
+  {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',cat:'dsa',tier:'rare'},
+  {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',cat:'dsa',tier:'epic'},
+];
+
 // ─── Animated Welcome Dashboard ───
 function renderWelcome() {
   exitFocusMode();
@@ -48,50 +93,11 @@ function renderWelcome() {
     ? MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)]
     : { q: 'The expert in anything was once a beginner.', a: 'Helen Hayes' };
 
-  const allAch = [
-    // Reading
-    {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',tier:'common'},
-    {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',tier:'common'},
-    {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',tier:'rare'},
-    {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',tier:'rare'},
-    {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',tier:'epic'},
-    {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',tier:'epic'},
-    // Streaks
-    {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',tier:'common'},
-    {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',tier:'rare'},
-    {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',tier:'epic'},
-    {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',tier:'epic'},
-    // XP / Levels
-    {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',tier:'common'},
-    {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',tier:'rare'},
-    {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',tier:'epic'},
-    {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',tier:'rare'},
-    // Quizzes
-    {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',tier:'common'},
-    {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',tier:'rare'},
-    {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',tier:'epic'},
-    {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',tier:'epic'},
-    {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',tier:'epic'},
-    // Study
-    {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',tier:'common'},
-    {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',tier:'rare'},
-    {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',tier:'epic'},
-    {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',tier:'rare'},
-    // Notes
-    {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',tier:'common'},
-    {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',tier:'common'},
-    {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',tier:'rare'},
-    // DSA
-    {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',tier:'common'},
-    {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',tier:'rare'},
-    {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',tier:'rare'},
-    {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',tier:'epic'},
-  ];
   const unlockedIds = data.achievements || [];
-  const unlockedCount = allAch.filter(a => unlockedIds.includes(a.id)).length;
+  const unlockedCount = ACHIEVEMENTS.filter(a => unlockedIds.includes(a.id)).length;
 
   const tierColor = {common:'#6366f1',rare:'#f59e0b',epic:'#ef4444'};
-  const achHtml = allAch.sort((a,b) => {
+  const achHtml = ACHIEVEMENTS.slice().sort((a,b) => {
     const aU = unlockedIds.includes(a.id) ? 0 : 1;
     const bU = unlockedIds.includes(b.id) ? 0 : 1;
     return aU - bU;
@@ -203,7 +209,7 @@ function renderWelcome() {
 
       <div style="margin-top:20px;">
         <div class="stat-card" style="text-align:left;padding:20px 24px;">
-          <strong style="font-size:14px;">Achievements (${unlockedCount}/${allAch.length} unlocked)</strong>
+          <strong style="font-size:14px;">Achievements (${unlockedCount}/${ACHIEVEMENTS.length} unlocked)</strong>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
             ${achHtml}
           </div>
@@ -257,9 +263,14 @@ function showDashboard() {
   // measured word count when the chapter has been opened, else the generated
   // baseline. The Practical-ML notebook is the same content as ch 27 rendered as
   // runnable cells, so it is skipped here to avoid double-counting the hours.
+  // Memoized per render: this dashboard calls it across three separate loops
+  // (hero totals, section breakdown, chapter table) over the same chapter list,
+  // and the underlying lookup re-parses localStorage JSON on every call.
+  const estMinutesCache = {};
+  const estMinutes = (file) => estMinutesCache[file] ?? (estMinutesCache[file] = chapterEstMinutes(file));
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
-  realCh.forEach(c => { if (c.notebook) return; const m = chapterEstMinutes(c.file); totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
-  const totalH = Math.round(totalMinutesAll / 60); const remainH = (remainingHours / 60).toFixed(1);
+  realCh.forEach(c => { if (c.notebook) return; const m = estMinutes(c.file); totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
+  const totalH = (totalMinutesAll / 60).toFixed(1); const remainH = (remainingHours / 60).toFixed(1);
   const doneH = (completedMinutes / 60).toFixed(1);
 
   // Completion % is weighted by each chapter's estimated study time
@@ -431,6 +442,7 @@ function showDashboard() {
     download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
     upload:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>',
     trash:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    strike:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/></svg>',
   };
 
   contentEl.innerHTML = `
@@ -587,30 +599,6 @@ function showDashboard() {
       <!-- ─── Two-column stat panels ─── -->
       <div class="db-panels">
         <div class="db-panel">
-          <h3 class="db-panel-title">${ico.book} Study Progress</h3>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.book}</span>
-            <span class="db-stat-label">Chapters read</span>
-            <span class="db-stat-value">${readCount} / ${realCh.length}</span>
-          </div>
-          <div class="db-bar-wrap"><div class="db-bar"><div class="db-bar-fill" style="width:${pct}%"></div></div></div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.timer}</span>
-            <span class="db-stat-label">Study time</span>
-            <span class="db-stat-value">${studyHrs}h</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.layers}</span>
-            <span class="db-stat-label">Sessions</span>
-            <span class="db-stat-value">${study.sessions||0}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.clock}</span>
-            <span class="db-stat-label">Remaining</span>
-            <span class="db-stat-value">${remainH}h</span>
-          </div>
-        </div>
-        <div class="db-panel">
           <h3 class="db-panel-title">${ico.target} Quiz Performance</h3>
           <div class="db-stat-row">
             <span class="db-stat-icon">${ico.target}</span>
@@ -633,6 +621,39 @@ function showDashboard() {
             <span class="db-stat-value">${passedQuizzes} / ${totalQuizzes}</span>
           </div>
           <div class="db-bar-wrap"><div class="db-bar"><div class="db-bar-fill db-bar-fill--quiz" style="width:${totalQuizzes > 0 ? Math.round(passedQuizzes/totalQuizzes*100) : 0}%"></div></div></div>
+        </div>
+        <div class="db-panel">
+          <h3 class="db-panel-title">${ico.pen} Notes & Annotations</h3>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.pen}</span>
+            <span class="db-stat-label">Total notes</span>
+            <span class="db-stat-value">${totalComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.check}</span>
+            <span class="db-stat-label">Resolved</span>
+            <span class="db-stat-value">${resolvedComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.flag}</span>
+            <span class="db-stat-label">Open</span>
+            <span class="db-stat-value">${openComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.book}</span>
+            <span class="db-stat-label">Chapters with notes</span>
+            <span class="db-stat-value">${chaptersWithComments}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.palette}</span>
+            <span class="db-stat-label">Total highlights</span>
+            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-highlights')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-icon">${ico.strike}</span>
+            <span class="db-stat-label">Total strikethroughs</span>
+            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-strikes')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
+          </div>
         </div>
       </div>
 
@@ -663,7 +684,7 @@ function showDashboard() {
               sections.push(cur);
             } else if (cur && !item.ref && !item.notebook) {
               cur.total++;
-              const mins = chapterEstMinutes(item.file);
+              const mins = estMinutes(item.file);
               cur.estMin += mins;
               if (readChapters[item.file]) { cur.done++; cur.doneMin += mins; }
               const qh = quizHist[item.file];
@@ -697,7 +718,7 @@ function showDashboard() {
         <div class="db-quickref-grid">
         ${chapters.filter(c => c.ref).map(c => {
           const idx = chapters.indexOf(c);
-          const mins = chapterEstMinutes(c.file);
+          const mins = estMinutes(c.file);
           const estH = mins >= 60 ? Math.floor(mins/60) + 'h ' + (mins%60 ? mins%60 + 'm' : '') : mins + 'm';
           const isRead = !!readChapters[c.file];
           return '<button class="db-quickref-card" onclick="loadChapter(' + idx + ')">' +
@@ -712,56 +733,6 @@ function showDashboard() {
             '<span class="db-quickref-arrow">→</span>' +
           '</button>';
         }).join('')}
-        </div>
-      </div>
-
-      <!-- ─── Notes & Highlights Overview ─── -->
-      <div class="db-panels" style="margin-bottom:0;">
-        <div class="db-panel">
-          <h3 class="db-panel-title">${ico.pen} Notes</h3>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.pen}</span>
-            <span class="db-stat-label">Total notes</span>
-            <span class="db-stat-value">${totalComments}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.check}</span>
-            <span class="db-stat-label">Resolved</span>
-            <span class="db-stat-value">${resolvedComments}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.flag}</span>
-            <span class="db-stat-label">Open</span>
-            <span class="db-stat-value">${openComments}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.book}</span>
-            <span class="db-stat-label">Chapters with notes</span>
-            <span class="db-stat-value">${chaptersWithComments}</span>
-          </div>
-        </div>
-        <div class="db-panel">
-          <h3 class="db-panel-title">${ico.palette} Highlights & Study</h3>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.palette}</span>
-            <span class="db-stat-label">Total highlights</span>
-            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-highlights')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.timer}</span>
-            <span class="db-stat-label">Estimated total</span>
-            <span class="db-stat-value">${totalH}h</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.clock}</span>
-            <span class="db-stat-label">Time completed</span>
-            <span class="db-stat-value">${doneH}h</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-icon">${ico.calendar}</span>
-            <span class="db-stat-label">Started</span>
-            <span class="db-stat-value">${startDate}</span>
-          </div>
         </div>
       </div>
 
@@ -816,7 +787,7 @@ function showDashboard() {
             const isRead = isRef ? true : !!readChapters[c.file];
             const qh = quizHist[c.file];
             const ct = chTrack[c.file] || {};
-            const estMin = chapterEstMinutes(c.file);
+            const estMin = estMinutes(c.file);
             const estStr = estMin >= 60 ? Math.floor(estMin/60)+'h '+estMin%60+'m' : estMin+'m';
             const spentSec = ct.seconds || 0;
             const spentMin = Math.floor(spentSec / 60);
@@ -853,7 +824,7 @@ function showDashboard() {
                   : '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-actions">' +
                 '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="' + (qh ? 'Retake quiz' : 'Take quiz') + '">↺ Quiz</button>' +
-                ((!isRef && (isRead || qh || ct.seconds)) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress">↺</button>' : '') +
+                ((!isRef && (isRead || qh || ct.seconds)) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress" aria-label="Reset progress for ' + titleEsc + '">↺</button>' : '') +
               '</td>' +
             '</tr>';
           }
@@ -865,41 +836,10 @@ function showDashboard() {
 
       <!-- ─── Achievements (collapsed) ─── -->
       <details class="db-collapse">
-        <summary class="db-collapse-summary">${ico.award} Achievements <span class="db-collapse-badge">${(data.achievements||[]).length}/30</span></summary>
+        <summary class="db-collapse-summary">${ico.award} Achievements <span class="db-collapse-badge">${(data.achievements||[]).length}/${ACHIEVEMENTS.length}</span></summary>
         <div class="db-collapse-body">
           <div class="ach-grid">
-            ${[
-              {id:'first_read',icon:'📖',name:'First Steps',desc:'Read 1 chapter',cat:'read',tier:'common'},
-              {id:'five_read',icon:'📚',name:'Getting Serious',desc:'Read 5 chapters',cat:'read',tier:'common'},
-              {id:'ten_read',icon:'🐛',name:'Bookworm',desc:'Read 10 chapters',cat:'read',tier:'rare'},
-              {id:'all_read',icon:'🏛️',name:'Scholar',desc:'Read every chapter',cat:'read',tier:'epic'},
-              {id:'streak7',icon:'💪',name:'Dedicated',desc:'7-day streak',cat:'streak',tier:'common'},
-              {id:'streak14',icon:'⚡',name:'Unstoppable',desc:'14-day streak',cat:'streak',tier:'rare'},
-              {id:'streak30',icon:'🛡️',name:'Iron Will',desc:'30-day streak',cat:'streak',tier:'epic'},
-              {id:'xp100',icon:'💎',name:'Centurion',desc:'100 XP',cat:'xp',tier:'common'},
-              {id:'xp500',icon:'🏆',name:'XP Hunter',desc:'500 XP',cat:'xp',tier:'rare'},
-              {id:'xp1000',icon:'👑',name:'XP Legend',desc:'1000 XP',cat:'xp',tier:'epic'},
-              {id:'level10',icon:'🌟',name:'Double Digits',desc:'Level 10',cat:'xp',tier:'rare'},
-              {id:'first_quiz',icon:'📝',name:'Quiz Taker',desc:'Complete a quiz',cat:'quiz',tier:'common'},
-              {id:'quiz10',icon:'⚔️',name:'Quiz Warrior',desc:'10 quizzes done',cat:'quiz',tier:'rare'},
-              {id:'quiz_perfect',icon:'💯',name:'Flawless',desc:'100% on a quiz',cat:'quiz',tier:'epic'},
-              {id:'quiz_master',icon:'🧠',name:'Quiz Master',desc:'90%+ on 5 quizzes',cat:'quiz',tier:'epic'},
-              {id:'study5h',icon:'🧘',name:'Deep Focus',desc:'5 hours study',cat:'study',tier:'common'},
-              {id:'study10h',icon:'🏅',name:'Marathon Learner',desc:'10 hours study',cat:'study',tier:'rare'},
-              {id:'study25h',icon:'⛏️',name:'Grinder',desc:'25 hours study',cat:'study',tier:'epic'},
-              {id:'first_note',icon:'🗒️',name:'Note Taker',desc:'Write first note',cat:'note',tier:'common'},
-              {id:'dsa10',icon:'💻',name:'Algorithm Pro',desc:'Solve 10 DSA problems',cat:'dsa',tier:'rare'},
-              {id:'ch20_read',icon:'📚',name:'Devoted Reader',desc:'Read 20 chapters',cat:'read',tier:'rare'},
-              {id:'ch30_read',icon:'🎓',name:'True Scholar',desc:'Read 30 chapters',cat:'read',tier:'epic'},
-              {id:'dsa1',icon:'✨',name:'First Solve',desc:'Solve 1 DSA problem',cat:'dsa',tier:'common'},
-              {id:'dsa50',icon:'🦾',name:'Algorithm Maestro',desc:'Solve 50 DSA problems',cat:'dsa',tier:'epic'},
-              {id:'dsa_hard',icon:'🔥',name:'Hard Mode',desc:'Solve 5 Hard DSA problems',cat:'dsa',tier:'rare'},
-              {id:'notes10',icon:'🗂️',name:'Prolific Annotator',desc:'Write 10 notes',cat:'note',tier:'rare'},
-              {id:'notes_pin',icon:'📍',name:'Pin Master',desc:'Pin a note to a chapter spot',cat:'note',tier:'common'},
-              {id:'quiz20',icon:'🎯',name:'Quiz Champion',desc:'Complete 20 quizzes',cat:'quiz',tier:'epic'},
-              {id:'session20',icon:'🗓️',name:'Consistent Studier',desc:'20 study sessions',cat:'study',tier:'rare'},
-              {id:'streak90',icon:'🔱',name:'Relentless',desc:'90-day streak',cat:'streak',tier:'epic'},
-            ].sort((a, b) => {
+            ${ACHIEVEMENTS.slice().sort((a, b) => {
                 const aU = (data.achievements||[]).includes(a.id) ? 0 : 1;
                 const bU = (data.achievements||[]).includes(b.id) ? 0 : 1;
                 return aU - bU;
@@ -976,13 +916,14 @@ function showDashboard() {
           <p class="db-collapse-desc">Reset parts of your data independently.</p>
           <div class="db-action-row">
             <button class="db-danger-btn" onclick="resetAppData()">${ico.trash} Reset Progress</button>
-            <button class="db-danger-btn" style="background:#06b6d4;" onclick="resetQuizData()">${ico.target} Reset Quizzes</button>
-            <button class="db-danger-btn" style="background:#8b5cf6;" onclick="deleteAllComments()">${ico.pen} Delete Notes</button>
-            <button class="db-danger-btn" style="background:#f59e0b;color:#1a1a2e;" onclick="deleteAllHighlights()">${ico.palette} Delete Highlights</button>
+            <button class="db-danger-btn db-danger-btn--cyan" onclick="resetQuizData()">${ico.target} Reset Quizzes</button>
+            <button class="db-danger-btn db-danger-btn--violet" onclick="deleteAllComments()">${ico.pen} Delete Notes</button>
+            <button class="db-danger-btn db-danger-btn--amber" onclick="deleteAllHighlights()">${ico.palette} Delete Highlights</button>
+            <button class="db-danger-btn db-danger-btn--slate" onclick="deleteAllStrikes()">${ico.strike} Delete Strikethroughs</button>
           </div>
-          <p class="db-collapse-desc" style="margin-top:18px;color:#dc2626;font-weight:600;">⚠ Nuclear option — erases <em>everything</em> below.</p>
+          <p class="db-collapse-desc db-collapse-desc--critical">⚠ Nuclear option — erases <em>everything</em> below.</p>
           <div class="db-action-row">
-            <button class="db-danger-btn" style="background:#dc2626;color:#fff;font-weight:700;border:2px solid #b91c1c;" onclick="deleteEverything()">${ico.trash} Delete ALL Data</button>
+            <button class="db-danger-btn db-danger-btn--critical" onclick="deleteEverything()">${ico.trash} Delete ALL Data</button>
           </div>
         </div>
       </details>
@@ -1261,7 +1202,7 @@ function updaterInstall() {
 // Covers: progress, scores, XP, study time, DSA code, notes, highlights, custom problems, preferences
 const ML4_STORAGE_KEYS = [
   'ml4-read', 'ml4-quiz-scores', 'ml4-quiz-history', 'ml4-chapter-track',
-  'ml4-xp', 'ml4-study', 'ml4-goals', 'ml4-comments', 'ml4-highlights',
+  'ml4-xp', 'ml4-study', 'ml4-goals', 'ml4-comments', 'ml4-highlights', 'ml4-strikes',
   'ml4-dsa', 'ml4-dsa-custom', 'ml4-activity', 'ml4-chapter-words',
   'ml4-theme', 'ml4-fontsize', 'ml4-interactive', 'ml4-sidebar'
 ];
@@ -1344,13 +1285,13 @@ function handleImportData(event) {
 }
 
 function resetAppData() {
-  const confirmed = confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete:\n• All reading progress\n• All quiz scores\n• XP, level, and streak\n• All achievements\n• Study time and chapter tracking\n\n(Your comments, highlights, and preferences like theme/font/sidebar will NOT be deleted)\n\nThis action CANNOT be undone.\n\nAre you sure?');
+  const confirmed = confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete:\n• All reading progress\n• All quiz scores\n• XP, level, and streak\n• All achievements\n• Study time and chapter tracking\n\n(Your comments, highlights, strikethroughs, and preferences like theme/font/sidebar will NOT be deleted)\n\nThis action CANNOT be undone.\n\nAre you sure?');
   if (!confirmed) return;
   const doubleConfirm = confirm('Are you REALLY sure?\nAll progress will be lost forever.');
   if (!doubleConfirm) return;
   // Preserve user preferences and user-authored content; wipe only progress/gamification data
   const preserve = new Set([
-    'ml4-comments', 'ml4-highlights',
+    'ml4-comments', 'ml4-highlights', 'ml4-strikes',
     'ml4-sidebar', 'ml4-fontsize', 'ml4-theme', 'ml4-interactive',
     'ml4-dsa-view', 'ml4-dsa-collapsed', 'ml4-dsa-custom',
     'ml4-migration-content-v1',
@@ -1371,7 +1312,7 @@ function resetAppData() {
 // solutions, custom problems, goals, theme, etc. Asks for two confirmations
 // because there's no recovery path.
 function deleteEverything() {
-  const confirmed = confirm('💣 DELETE EVERYTHING?\n\nThis wipes ALL data, including:\n• Reading progress & chapter time\n• Quiz scores & attempt history\n• XP, level, streak, achievements\n• ALL notes & comments\n• ALL highlights & pins\n• DSA progress & custom problems\n• Goals & study timetable\n• Theme, font, sidebar, and other preferences\n\nNothing can be recovered.\n\nContinue?');
+  const confirmed = confirm('💣 DELETE EVERYTHING?\n\nThis wipes ALL data, including:\n• Reading progress & chapter time\n• Quiz scores & attempt history\n• XP, level, streak, achievements\n• ALL notes & comments\n• ALL highlights, strikethroughs & pins\n• DSA progress & custom problems\n• Goals & study timetable\n• Theme, font, sidebar, and other preferences\n\nNothing can be recovered.\n\nContinue?');
   if (!confirmed) return;
   const doubleConfirm = confirm('LAST CHANCE.\n\nAre you ABSOLUTELY sure you want to permanently erase everything?');
   if (!doubleConfirm) return;

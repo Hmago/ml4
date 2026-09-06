@@ -643,6 +643,20 @@ Small learning rate (0.05–0.1) + more trees + early stopping = dominant regula
 | High-dimensional sparse (NLP) | Logistic Regression or SVM (linear) | Efficient with sparse features |
 | Images, audio, video | CNN (deep learning) | Needs learned spatial features |
 
+### Quick Comparison Table
+
+| Algorithm | Task | It assumes | Breaks when | Decision boundary | Handles outliers? | Scalability | Use when |
+|---|---|---|---|---|---|---|---|
+| Logistic Regression | Classification | Log-odds are linear in the features | True boundary is curved (XOR-like patterns) | Linear (hyperplane) | Sensitive — unbounded linear score | Excellent | Need calibrated probabilities, interpretability, a fast baseline |
+| KNN | Classification / Regression | Nearby points share a label | High dimensions, or features left unscaled | Arbitrary — follows local density | No — one noisy neighbor flips the vote | Poor — O(n·d) per query, no training | Small dataset, any boundary shape, no time to train |
+| Decision Tree | Classification / Regression | Classes separable by axis-aligned rectangles | Boundary is diagonal/curved, or depth unbounded | Axis-aligned rectangles | Fairly robust — splits on order, not magnitude | Good — O(n log n) per level | Must explain every decision to a stakeholder |
+| Random Forest | Classification / Regression | Many decorrelated trees average out noise | One feature dominates every split (keeps ρ high) | Piecewise-rectangular, smoother than one tree | Robust — bagging dilutes any single outlier | Excellent — trees train in parallel | Strong low-tuning-effort default for tabular data |
+| Gradient Boosting (XGBoost/LightGBM) | Classification / Regression | Residual error shrinks via sequential weak learners | No early stopping (chases noise) | Piecewise-rectangular, sharpest of the tree family | Sensitive without care — residuals amplify large errors | Good — sequential, but each tree is fast | Maximum accuracy needed on tabular data |
+| SVM | Classification (SVR for regression) | Classes separable by a wide margin (input or kernel space) | n is large (O(n²)–O(n³) training), or features unscaled | Linear, or kernel-defined nonlinear (e.g. RBF) | Sensitive near the margin; soft-margin `C` trades this off | Poor beyond ~10K–100K rows | High-dimensional sparse data (text) with a clear margin |
+| Naive Bayes | Classification | Features are conditionally independent given the class | Features are heavily correlated/redundant | N/A (probabilistic scoring, not geometric) | Robust — probabilistic averaging dilutes extremes | Excellent — O(np), trivially parallel | Text classification, fast baseline on small data |
+| Linear Regression | Regression | Linearity, independent errors, homoscedasticity, no multicollinearity | Any assumption violated (esp. multicollinearity → unstable weights) | N/A — fits a hyperplane to continuous y | Sensitive — squared error punishes large residuals | Excellent — closed-form for small p | Interpretable regression baseline |
+| Ridge / Lasso / Elastic Net | Regression (regularized) | Same as Linear Regression, plus shrinkage improves generalization | λ mistuned — too high underfits, too low doesn't regularize | N/A | Same sensitivity as Linear Regression | Excellent | Many/correlated features; Lasso for built-in feature selection |
+
 ### Class Imbalance — The 99% Trap
 
 In fraud detection (0.1% fraud), spam filtering, or medical diagnosis, a model that always predicts the majority class gets 99.9% accuracy but catches nothing.
@@ -845,6 +859,43 @@ Creates labels from the data's own structure — no human annotation.
 
 The resulting representations transfer powerfully to downstream tasks. Pre-train on 100B tokens → fine-tune on 1K labeled examples → outperforms full supervised on 1M labels.
 
+### Algorithm Selection Guide
+
+| Goal | Situation | Pick | Why |
+|---|---|---|---|
+| Clustering | Know K; expect spherical/globular clusters | K-Means (++ init) | Fast, scales to millions |
+| Clustering | Know K; expect overlapping/elliptical clusters | GMM | Soft assignment via EM, elliptical covariance |
+| Clustering | Don't know K; need noise flagged | DBSCAN (HDBSCAN if density varies) | Auto-discovers K, arbitrary shape, marks outliers |
+| Clustering | Don't know K; want the full merge structure | Hierarchical (Ward's linkage) | Dendrogram shows every K at once, no noise handling |
+| Clustering | Clusters connected but non-convex (e.g. interlocking moons) | Spectral Clustering | Graph Laplacian embedding, then K-Means |
+| Dim. reduction | Linear structure; need it fast and as ML features | PCA | Closed-form, fast, deterministic |
+| Dim. reduction | Nonlinear structure; need features for a downstream model | UMAP or Autoencoder | UMAP has `transform()`; Autoencoder for complex/large data |
+| Dim. reduction | Nonlinear structure; need a 2D plot only | t-SNE (or UMAP) | Best local-neighbor visualization; never feed to a model |
+| Anomaly detection | General purpose, high-D, need speed | Isolation Forest | Default choice; fast, scales well |
+| Anomaly detection | Density varies across regions (local outliers) | Local Outlier Factor | Judges "unusual" relative to local neighbors |
+| Association rules | Small-medium data; want visible pruning steps | Apriori | Simple, level-wise, easy to reason about |
+| Association rules | Large-scale transactions; need speed | FP-Growth | 2 scans, no candidate generation, 10-100x faster |
+
+### Quick Comparison Table
+
+| Algorithm | Task | It assumes | Breaks when | K needed? | Handles noise? | Cluster shape | Scalability | Use when |
+|---|---|---|---|---|---|---|---|---|
+| K-Means | Clustering | Spherical, equal-size, equal-density blobs | Clusters are elongated, unequal, or non-convex | Yes | No | Spherical | Excellent | Fast default when clusters are naturally round and similar-sized |
+| K-Medoids (PAM) | Clustering | Same as K-Means, but centre is a real point (any metric) | Same shape limits; also slow past ~10K | Yes | Robust to them | Spherical, any metric | Poor (>10K) | Non-Euclidean distance, or outliers you can't remove |
+| Hierarchical | Clustering | Data is genuinely nested | There is no hierarchy — it builds one anyway | No (cut tree) | No | Depends on linkage | Poor (>10K) | Want the full dendrogram / a genuine nested taxonomy |
+| DBSCAN | Clustering | Dense regions split by sparse ones; one global density | Clusters have very different densities | No | Yes | Arbitrary | Good | Arbitrary shapes + need noise/outliers flagged |
+| HDBSCAN | Clustering | Dense regions; density may vary | Data is uniformly dense with no real gaps | No | Yes | Arbitrary, multi-density | Good | Same as DBSCAN, but density varies across clusters |
+| Spectral Clustering | Clustering | Clusters are connected in the similarity graph | Graph is badly built, or n is large | Yes | No | Graph-connected / manifold | Poor (>10K dense) | Clusters connected but non-convex (e.g. interlocking moons) |
+| GMM | Clustering | Data came from a mixture of Gaussians | Clusters are strongly non-Gaussian | Yes | No | Elliptical | Moderate | Need soft/probabilistic cluster membership |
+| PCA | Dim. reduction | Structure is linear; variance = information | Structure is curved, or you forgot to scale | Choose # PCs | N/A | Linear only | Excellent | Fast linear feature reduction; need `transform()` for new data |
+| Kernel PCA | Dim. reduction | Structure is linear *after* the kernel map | Wrong kernel, or n is large | Choose # PCs | N/A | Nonlinear (kernel-defined) | Poor (>10K) | Known nonlinear manifold (circles, spirals) on small-medium n |
+| t-SNE | Visualization | Only local neighbourhoods matter | You read distance or size between blobs | N/A | N/A | Nonlinear | Poor (>50K) | One-off 2D plot for a slide/report — never as ML input |
+| UMAP | Dim. red. / viz | Data lies on a manifold, locally connected | Very small n, or over-tuned neighbours | N/A | N/A | Nonlinear | Good | Visualization or features, faster than t-SNE, scales further |
+| Isolation Forest | Anomaly det. | Anomalies are few, different, globally unusual | Density varies — local outliers are missed | N/A | Detects them | N/A | Excellent | Default anomaly detector, high-D, need speed |
+| Local Outlier Factor | Anomaly det. | "Unusual" is relative to local neighbours | n is large, or k is badly chosen | N/A | Detects them | N/A | Poor (>10K) | Anomalies only "weird" relative to their local neighborhood |
+| Apriori | Assoc. rules | Frequent itemsets are rare enough to prune | Data is dense with long frequent patterns | N/A | N/A | N/A | Moderate | Small catalog, want visible/interpretable pruning steps |
+| FP-Growth | Assoc. rules | Transactions share prefixes worth compressing | The FP-tree exceeds memory | N/A | N/A | N/A | Good | Large-scale transactions, need speed |
+
 ---
 
 > ✅ **Must-remember**
@@ -855,6 +906,7 @@ The resulting representations transfer powerfully to downstream tasks. Pre-train
 > - PCA: linear, global variance, use scree plot for k; fit on train only
 > - t-SNE: local only, visualization only; UMAP: local + global, faster, use for features too
 > - Self-supervised = labels from data structure; powers BERT, GPT, SimCLR
+> - No single K/algorithm fits everything: match the assumption (shape, density, linearity) to the data, not the other way round
 
 ---
 
@@ -1589,6 +1641,30 @@ Bandits are used in A/B testing (web optimisation), clinical trials (adaptive al
 - Simulator or cheap interaction available → RL ✓
 - Single-shot prediction with labeled data → use supervised learning instead
 - No clear reward signal → use unsupervised or supervised instead
+
+### Algorithm Selection Guide
+
+| Situation | Pick | Why |
+|---|---|---|
+| Know the environment's rules (P, R) exactly | Value / Policy Iteration | Solves exactly via dynamic programming — no learning needed |
+| Discrete actions, small/tabular state, rules unknown | Q-Learning (SARSA if training mistakes are costly) | Off-policy TD learning from sampled experience |
+| Discrete actions, high-dimensional state (pixels) | DQN | Neural net generalizes Q-values across similar states |
+| Continuous actions, or the optimal policy is inherently stochastic | Policy Gradient / Actor-Critic (PPO) | Q-learning's argmax is intractable over continuous actions |
+| No state at all — just reward per choice (ads, page variants) | Multi-Armed Bandit (ε-greedy / UCB / Thompson) | Pure explore-exploit, no transition dynamics to model |
+| Cheap, accurate simulator available (board games, robotics sim) | Model-Based (AlphaZero / MuZero) | Plans ahead instead of only reacting to experience |
+| Aligning an LLM to human preferences | RLHF (SFT → Reward Model → PPO) or DPO | Turns human preference into a reward signal RL can optimize |
+
+### Quick Comparison Table
+
+| Method | Task | It assumes | Breaks when | On/off-policy | Sample efficiency | Scalability | Use when |
+|---|---|---|---|---|---|---|---|
+| Q-Learning | Discrete control (tabular) | State space small enough for a table; Markov property holds | State/action space is large or continuous (table explodes) | Off-policy | Low-moderate — needs many episodes | Poor beyond small discrete state spaces | Small discrete grid-world / tabular problems |
+| SARSA | Discrete control (tabular) | Same as Q-Learning, but tolerates on-policy exploration cost | You only care about the final greedy policy, not training-time safety | On-policy | Low-moderate | Poor beyond small discrete state spaces | Mistakes during training are costly/dangerous (real robots, live systems) |
+| DQN | Discrete control, high-dim state (e.g. pixels) | A neural net can generalize Q-values across similar states | Action space is continuous, or replay/target-net omitted (unstable) | Off-policy | Low — needs millions of frames | Good — scales to large/high-dim state spaces | Discrete actions, raw high-dimensional input (Atari-style) |
+| REINFORCE (Policy Gradient) | Any action space, incl. continuous | Sampling full episodes gives an unbiased gradient of expected return | Episodes are long/high-variance (noisy gradients) | On-policy | Low — high variance, needs many episodes | Moderate | Continuous actions, or an inherently stochastic optimal policy |
+| Actor-Critic (A2C / PPO) | Any action space | A learned critic is a lower-variance baseline than raw returns | Clip ratio mis-set, or critic estimates are poor early on | On-policy (PPO/A2C); SAC is off-policy | Moderate | Good — PPO is the most widely deployed RL algorithm today | Default modern choice; robotics, game AI, RLHF |
+| Model-Based (AlphaZero / MuZero) | Planning + control, esp. games/simulators | A learned/known environment model is accurate enough to plan with | The model is wrong — plans confidently fail | N/A — uses search + self-play | High — simulates instead of acting | Good in simulators; poor where real data is the only signal | Cheap accurate simulator exists; real-world data is expensive |
+| Multi-Armed Bandit (ε-greedy / UCB) | Stateless action selection | No state/transition dynamics — just K arms with unknown rewards | The problem actually has sequential state (a bandit ignores it) | N/A | High for its narrow scope | Excellent | A/B testing, ad selection, clinical trials — no state, pure explore/exploit |
 
 ---
 

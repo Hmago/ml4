@@ -3643,6 +3643,24 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(207,34,46,0.3);
 }
+/* Non-critical danger-zone actions get their own accent so the truly
+   destructive "Delete ALL Data" button still stands out as the reddest one. */
+.db-danger-btn--cyan { background: #06b6d4; }
+.db-danger-btn--cyan:hover { background: #0891b2; box-shadow: 0 4px 16px rgba(6,182,212,0.3); }
+.db-danger-btn--violet { background: #8b5cf6; }
+.db-danger-btn--violet:hover { background: #7c3aed; box-shadow: 0 4px 16px rgba(139,92,246,0.3); }
+.db-danger-btn--amber { background: #f59e0b; color: #1a1a2e; }
+.db-danger-btn--amber:hover { background: #d97706; box-shadow: 0 4px 16px rgba(245,158,11,0.3); }
+.db-danger-btn--slate { background: #64748b; color: #fff; }
+.db-danger-btn--slate:hover { background: #475569; box-shadow: 0 4px 16px rgba(100,116,139,0.3); }
+.db-danger-btn--critical {
+  background: #dc2626;
+  color: #fff;
+  font-weight: 700;
+  border: 2px solid #b91c1c;
+}
+.db-danger-btn--critical:hover { background: #b91c1c; box-shadow: 0 4px 16px rgba(220,38,38,0.35); }
+.db-collapse-desc--critical { margin-top: 18px; color: #dc2626; font-weight: 600; }
 
 /* ─── DSA stats inside collapse ─── */
 .db-dsa-stats {
@@ -4407,6 +4425,7 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
 }
 .sel-popup .sp-note { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
 .sel-popup .sp-hl { background: #fbbf24; color: #1a1a2e; }
+.sel-popup .sp-strike { background: #64748b; color: white; }
 .sel-popup .sp-copy { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); }
 .sel-popup button:hover { transform: scale(1.05); }
 
@@ -4503,6 +4522,25 @@ mark.user-hl::after {
 mark.user-hl:hover::after { display: flex; }
 [data-theme="dark"] mark.user-hl { background: #854d0e; color: #fef9c3; border-bottom-color: #a16207; }
 [data-theme="dark"] mark.user-hl:hover { background: #a16207; box-shadow: 0 2px 8px rgba(161,98,7,0.4); }
+
+/* User strikethroughs in content */
+s.user-strike {
+  text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: #64748b;
+  color: var(--text-secondary); border-radius: 3px; padding: 1px 2px;
+  cursor: pointer; transition: all 0.2s; position: relative;
+}
+s.user-strike:hover {
+  background: rgba(100,116,139,0.15);
+}
+s.user-strike::after {
+  content: '✕'; position: absolute; top: -8px; right: -6px;
+  font-size: 10px; background: #ef4444; color: white; width: 14px; height: 14px;
+  border-radius: 50%; display: none; align-items: center; justify-content: center;
+  line-height: 1;
+}
+s.user-strike:hover::after { display: flex; }
+[data-theme="dark"] s.user-strike { text-decoration-color: #94a3b8; }
+[data-theme="dark"] s.user-strike:hover { background: rgba(148,163,184,0.2); }
 
 /* Comment with a quote reference */
 .comment-quote {

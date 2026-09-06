@@ -1,0 +1,27 @@
+{
+  "_comment": "Copy this file to tools/diagrams-auth.json (gitignored) and fill in real values captured from a live Designer/Copilot 'Create' image-generation session in your browser's DevTools Network tab. All values expire (~1 hour) — capture them fresh right before running the script.",
+  "_howTo": [
+    "1. Open https://copilot.cloud.microsoft/create (or wherever the Designer image-creation tool lives) and open DevTools > Network.",
+    "2. Generate one image manually with any prompt, so a 'generate.ashx?intent=image' POST appears in the Network tab.",
+    "3. Click that request, open the Headers tab, and copy these exact header VALUES (not names) into the fields below: sessionid, deviceid, userid, containerid, filetoken, authorization, x-dc-hint, x-modelvariant, origin, referer.",
+    "4. apiBase / audienceGroup / caller / clientName / operationType can usually be left at their defaults below.",
+    "5. Run: node tools/generate-diagrams.js --dry-run   (prints prompts + targets without calling the API)",
+    "6. Run: node tools/generate-diagrams.js             (generates for real, once you're happy with the dry-run)"
+  ],
+  "apiBase": "https://designerapp.edog.officeapps.live.com/designerapp",
+  "sessionId": "PASTE-sessionid-HEADER-VALUE-HERE",
+  "deviceId": "PASTE-deviceid-HEADER-VALUE-HERE",
+  "userId": "PASTE-userid-HEADER-VALUE-HERE",
+  "containerId": "PASTE-containerid-HEADER-VALUE-HERE",
+  "fileToken": "PASTE-filetoken-HEADER-VALUE-HERE",
+  "authorization": "PASTE-authorization-HEADER-VALUE-HERE",
+  "audienceGroup": "Dogfood",
+  "caller": "CreateModule",
+  "clientName": "CreateModule",
+  "operationType": "AiGeneration",
+  "dcHint": "WestUS2",
+  "modelVariant": "prod-gpt-image-2",
+  "origin": "PASTE-origin-HEADER-VALUE-HERE",
+  "referer": "PASTE-referer-HEADER-VALUE-HERE",
+  "concurrency": 4
+}

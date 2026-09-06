@@ -1,0 +1,662 @@
+[
+  {
+    "q": "Which of these declarations actually compiles?",
+    "options": [
+      "`var handler = () -> \"hi\";` in a method, with no target type given",
+      "`var count;` declared inside a method and assigned on the following line",
+      "`var limit = 100;` written as a field on the enclosing class",
+      "`var reader = new BufferedReader(new FileReader(path));` in a method"
+    ],
+    "answer": 3,
+    "explanation": "`var` is local variable type inference only: it needs an initialiser it can read a type from, and it is rejected for fields, parameters, bare lambdas and `null`."
+  },
+  {
+    "q": "What is true of a local variable declared with `var`?",
+    "options": [
+      "It is dynamically typed, so type errors surface only at run time",
+      "It has one fixed static type, inferred from its initialiser",
+      "It can hold any type later, since inference reruns per assignment",
+      "It is implicitly `Object`, with casts inserted wherever it is used"
+    ],
+    "answer": 1,
+    "explanation": "`var` is not dynamic typing and not JavaScript's `var`. It is the same deal as the diamond operator, moved from the right of the `=` to the left of it."
+  },
+  {
+    "q": "You want a text block whose value has no trailing newline. What do you do?",
+    "options": [
+      "Put the closing delimiter on the same line as the last character",
+      "Put the closing delimiter on its own line, indented to match the block",
+      "End the final content line with a backslash, which escapes the break",
+      "Call `stripTrailing()`, since the newline is otherwise fixed"
+    ],
+    "answer": 0,
+    "explanation": "Closing on the same line as the last character omits the trailing newline; closing on its own line adds one. A trailing backslash instead suppresses a line break mid-block."
+  },
+  {
+    "q": "How does the compiler decide how much indentation to strip from a text block?",
+    "options": [
+      "It removes all leading whitespace from every single line, unconditionally",
+      "It keeps the indentation intact unless you call `stripIndent()` yourself",
+      "It takes the smallest common indent of non-blank lines and the closer",
+      "It strips exactly as much indentation as the opening delimiter line carries"
+    ],
+    "answer": 2,
+    "explanation": "Incidental whitespace is computed from every non-blank line plus the closing delimiter, so you can indent the block to match surrounding code at no cost to the value."
+  },
+  {
+    "q": "Why does the chapter say adding `default` to a switch over an enum or a sealed type actively hurts?",
+    "options": [
+      "It turns the switch back into a statement that cannot be assigned",
+      "It makes the switch trivially exhaustive, so a new case compiles silently",
+      "It disables the arrow form, so every single arm needs an explicit `break` again",
+      "It prevents `yield`, so multi-statement arms can no longer return"
+    ],
+    "answer": 1,
+    "explanation": "Omitting `default` lets the compiler prove exhaustiveness, so adding a constant or subtype turns every switch that needs updating into a build error rather than a runtime surprise."
+  },
+  {
+    "q": "An arrow arm needs several statements before producing its value. What do you write?",
+    "options": [
+      "A block ending in `return value;` to exit that switch arm",
+      "A block ending in `break value;`, as in the old label form",
+      "A lambda body, since arrow arms are compiled as lambdas anyway",
+      "A block ending in `yield value;` to hand the result back"
+    ],
+    "answer": 3,
+    "explanation": "`yield` (Java 14) hands a value back from a block-bodied arm. `return` would exit the enclosing method, which is not what a switch expression means."
+  },
+  {
+    "q": "`var x = switch (n) { case 1 -> \"one\"; default -> 2; };` — what happens?",
+    "options": [
+      "It compiles, and `x` is `Object`, so every call needs a cast first",
+      "It fails to compile, because `var` cannot be used with a switch",
+      "It compiles, and `x` gets a near-useless least upper bound type",
+      "It fails to compile, because switch arms must agree on one type"
+    ],
+    "answer": 2,
+    "explanation": "The inferred type is roughly `Comparable<?> & Serializable` — you can neither call `length()` nor do arithmetic on it. Give mixed-type expressions an explicit type, or do not mix types."
+  },
+  {
+    "q": "For `record Point(int x, int y)`, how do you read the first component?",
+    "options": [
+      "`p.x()` — records generate accessors named for the components",
+      "`p.getX()` — records follow the JavaBean getter naming convention",
+      "`p.x` — record components are public fields rather than methods",
+      "`p.component1()` — positional accessors, as in Kotlin data classes"
+    ],
+    "answer": 0,
+    "explanation": "The accessor is named after the component, not `getX()`. This is the one thing that trips people up in review; Jackson, Spring and JPA-adjacent mappers all read records fine."
+  },
+  {
+    "q": "Inside the compact constructor `Money { currency = currency.toUpperCase(); }`, what is being assigned?",
+    "options": [
+      "The constructor parameter, which the compiler then stores in the field",
+      "The field itself, which is why a record component must not be declared final",
+      "A fresh copy of the record, since records are rebuilt during normalisation",
+      "Nothing — the assignment is dead code that the compiler removes"
+    ],
+    "answer": 0,
+    "explanation": "A compact constructor omits the parameter list and the assignments. You write validation and normalisation against the parameters, and the compiler appends `this.x = x;` for each component."
+  },
+  {
+    "q": "Which of these can a record legally do?",
+    "options": [
+      "Declare extra private instance fields beyond its components",
+      "Be subclassed by a record that adds one further component",
+      "Implement an interface and declare static factory methods",
+      "Extend an abstract base class that supplies shared behaviour"
+    ],
+    "answer": 2,
+    "explanation": "Records are implicitly final and already extend `java.lang.Record`, and the component list is the whole state — but they may implement interfaces and carry static or instance methods."
+  },
+  {
+    "q": "`record Order(String id, List<String> items)` with no compact constructor — the caller mutates the list they passed in. What happens?",
+    "options": [
+      "Nothing changes, because the canonical constructor copies every input",
+      "The record throws on the next accessor call, detecting the mutation",
+      "The record's `hashCode` is recomputed, so map lookups keep working",
+      "The record's contents change too, since only the reference is final"
+    ],
+    "answer": 3,
+    "explanation": "Record immutability is shallow: the field reference is final, but a `List` or array component stays mutable through the reference you were handed and the one you hand back."
+  },
+  {
+    "q": "Which compact-constructor line actually closes the mutable-list leak?",
+    "options": [
+      "`Objects.requireNonNull(items);` — rejects null but keeps the reference",
+      "`items = List.copyOf(items);` — copies and returns an unmodifiable list",
+      "`items = Collections.unmodifiableList(items);` — wraps the caller's list",
+      "`items = new ArrayList<>(items);` — copies but stays fully modifiable"
+    ],
+    "answer": 1,
+    "explanation": "`List.copyOf` closes the hole from both directions: the caller's later writes are not visible, and the accessor's return value cannot be modified. `unmodifiableList` is only a view."
+  },
+  {
+    "q": "Why does a record work correctly as a `HashMap` key where a hand-written class so often does not?",
+    "options": [
+      "Record keys are hashed by identity, which stays stable for their lifetime",
+      "Records cache their hash at construction, so lookups skip the comparison",
+      "`equals` and `hashCode` come from the component list and cannot drift",
+      "Records are interned by the JVM, so equal instances share one object"
+    ],
+    "answer": 2,
+    "explanation": "The usual hand-written failure is adding a field and updating `equals` but not `hashCode`. A record makes that unrepresentable, because there is no state the generated methods cannot see."
+  },
+  {
+    "q": "Which is the chapter's clearest reason *not* to model something as a record?",
+    "options": [
+      "It carries primitive components, since records take references only",
+      "It has identity and a lifecycle, like a JPA entity with a generated id",
+      "It is used as a map key, since generated equality is far too permissive",
+      "It is returned from a method, since records cannot cross package lines"
+    ],
+    "answer": 1,
+    "explanation": "The four listed cases are identity over value, needed mutability, state not captured by the components, and required inheritance. Map keys are a reason *to* use a record."
+  },
+  {
+    "q": "What does declaring a record inside a method body buy you?",
+    "options": [
+      "A throwaway shape scoped to that method and out of the package",
+      "A mutable variant, since local records relax the final-field rule",
+      "Access to the enclosing method's locals as implicit components",
+      "Faster construction, since local records skip `equals` generation"
+    ],
+    "answer": 0,
+    "explanation": "Local records are perfect for a temporary shape needed for one sort or one grouping, without polluting the package with a type nothing else uses."
+  },
+  {
+    "q": "A method must return both a minimum and a maximum. Which shape does the chapter prefer?",
+    "options": [
+      "An `int[]` of length two, documented by a comment at the call site",
+      "Two out-parameters passed in as single-element arrays to fill",
+      "A generic `Pair<Integer, Integer>` from a shared utility library",
+      "A small `record MinMax(int min, int max)` returned by value"
+    ],
+    "answer": 3,
+    "explanation": "Records give multiple return values a name, a readable `toString` and a correct `equals`, replacing out-parameters, two-element arrays and hand-rolled `Pair` classes."
+  },
+  {
+    "q": "`if (!(a instanceof String s)) return false;` — where is the binding `s` in scope?",
+    "options": [
+      "Only inside the `if` body, which is exactly why the return is required",
+      "Nowhere at all, because a negated pattern never introduces a binding",
+      "Throughout the whole method, since pattern bindings are method-scoped",
+      "After the `if`, because the early return proves the test passed"
+    ],
+    "answer": 3,
+    "explanation": "The binding is in scope wherever the compiler can prove the test succeeded, so negating the pattern and returning early flips the scope — the idiom that makes guard clauses read well."
+  },
+  {
+    "q": "Which rule applies to a sealed interface and its permitted subtypes?",
+    "options": [
+      "Each permitted subtype must be `final`, `sealed`, or `non-sealed`",
+      "Each permitted subtype must be a record, so equality stays by value",
+      "Permitted subtypes may live in any module the compiler can see",
+      "The `permits` clause is required even when all types share one file"
+    ],
+    "answer": 0,
+    "explanation": "Permitted subtypes must sit in the same module (or package, unnamed modules) and each must declare its own sealing. Records are implicitly final, which is why the two features pair so naturally."
+  },
+  {
+    "q": "What does marking one permitted subtype `non-sealed` achieve?",
+    "options": [
+      "It allows extension of that subtype only from inside the declaring module",
+      "It reopens that branch for extension while the categories stay closed",
+      "It drops that subtype from `permits` without any edit to the parent type",
+      "It defers the exhaustiveness check on that branch until run time"
+    ],
+    "answer": 1,
+    "explanation": "`sealed interface Response permits Ok, Redirect, Error` with a `non-sealed` `Error` says there are exactly three kinds of response and errors are extensible; switches still get exhaustiveness over the three."
+  },
+  {
+    "q": "A colleague adds `Triangle` to a sealed `Shape` that two `default`-free switches already handle. What happens?",
+    "options": [
+      "Both switches compile and silently fall into the first arm's value",
+      "Only the switch in the same file fails; the others warn at run time",
+      "Both switches stop compiling, naming the lines that need a new arm",
+      "Both switches compile and throw `MatchException` on a triangle input"
+    ],
+    "answer": 2,
+    "explanation": "That is the whole value proposition: extending the model turns every incomplete switch into a compile error with a file and line number, so the compiler becomes the checklist."
+  },
+  {
+    "q": "What is `MatchException` for?",
+    "options": [
+      "The compile error raised when a pattern switch is not exhaustive",
+      "The failure raised when a record pattern's component types mismatch",
+      "A runtime backstop when compiled artefacts are out of step on subtypes",
+      "The error thrown when two case patterns overlap inside a single switch block"
+    ],
+    "answer": 2,
+    "explanation": "Exhaustiveness is checked at compile time, so if a sealed interface gains a subtype and a switch is not recompiled, `MatchException` throws instead of returning garbage."
+  },
+  {
+    "q": "`case Line(Point(var x1, var y1), Point p2)` binds what?",
+    "options": [
+      "Both points whole, with `x1` and `y1` naming the line's endpoints",
+      "The first point whole, plus the second point's two components",
+      "Nothing until a `when` guard narrows the shape of the argument",
+      "The first point's two components, plus the second point whole"
+    ],
+    "answer": 3,
+    "explanation": "Record patterns nest and you can mix depths freely — destructure the first component two levels down while keeping the second one intact."
+  },
+  {
+    "q": "You put `case Integer i` before `case Integer i when i > 100`. What does the compiler do?",
+    "options": [
+      "Rejects the first arm, because an unguarded pattern must come last",
+      "Rejects the second arm as unreachable, since the first dominates it",
+      "Accepts both and tries the guarded arm first, since guards are ranked",
+      "Accepts both and warns that guarded arms should precede plain ones"
+    ],
+    "answer": 1,
+    "explanation": "Cases are tried in order, so specific guarded patterns must come first. The dominance check is enforced by the compiler at no cost to you."
+  },
+  {
+    "q": "A pattern switch has no `case null` and is handed `null`. What happens?",
+    "options": [
+      "It throws `NullPointerException`, as the old switch always did",
+      "It falls through to `default`, which now covers the null selector",
+      "It matches the first pattern whose type accepts a null reference",
+      "It returns the switch's default value for the target result type"
+    ],
+    "answer": 0,
+    "explanation": "The NPE-on-null behaviour is kept unless you explicitly write `case null`, which lets you fold the null branch into the switch instead of guarding around it."
+  },
+  {
+    "q": "Sealed types plus pattern matching pick which side of the expression problem?",
+    "options": [
+      "Cheap new operations; adding a type means editing every switch",
+      "Cheap new types; adding an operation means editing every class",
+      "Both are cheap, because the compiler regenerates the missing arms",
+      "Neither is cheap, which is why the Visitor pattern is still needed"
+    ],
+    "answer": 0,
+    "explanation": "A sealed switch is the Visitor trade-off without the double-dispatch ceremony: new operations are a new method, new types break every switch — and the compiler lists them."
+  },
+  {
+    "q": "Why is a `default` arm that throws worse than exhaustiveness over a sealed type?",
+    "options": [
+      "It costs an extra branch at run time on every single evaluation of the switch",
+      "It prevents record patterns, which require the whole switch to be exhaustive",
+      "It makes the switch a statement, so it can no longer yield a value",
+      "It moves the failure to run time and hides the switches needing updates"
+    ],
+    "answer": 3,
+    "explanation": "A `default` makes the switch trivially exhaustive, so adding a subtype produces no warning anywhere and the new case quietly falls into the trapdoor instead of failing the build."
+  },
+  {
+    "q": "Before Java 21, what did reading the last element of a `LinkedHashSet` cost?",
+    "options": [
+      "$O(\\log n)$, because the set kept a balanced index of positions",
+      "It was impossible without converting the set into a `TreeSet` first",
+      "$O(n)$ with a full scan or a copy, since there was no `getLast`",
+      "$O(1)$ via `getLast`, which `LinkedHashSet` has always supplied"
+    ],
+    "answer": 2,
+    "explanation": "`List` had `get(0)`, `Deque` had `getFirst()`, and `LinkedHashSet` had neither — so you copied the set or iterated it just to peek. Sequenced collections made both ends $O(1)$."
+  },
+  {
+    "q": "`var view = list.reversed(); list.add(4);` — what does `view` show?",
+    "options": [
+      "An empty result, because adding invalidates the reversed handle",
+      "The 4 at its front, because `reversed()` returns a live view",
+      "The original elements only, because `reversed()` copies eagerly",
+      "A `ConcurrentModificationException` on the next read of the view"
+    ],
+    "answer": 1,
+    "explanation": "`reversed()` is a cheap live view, not a snapshot, so writes to the backing list show through. Copy it if you need an independent snapshot."
+  },
+  {
+    "q": "Why does the chapter reject `Optional` method parameters?",
+    "options": [
+      "Parameters are positional, and `Optional` erases the argument type",
+      "The caller can now pass present, empty, or `null` — three states",
+      "The JVM boxes the wrapper on every call, which costs an allocation",
+      "`Optional` is final, so such a parameter cannot be mocked in tests"
+    ],
+    "answer": 1,
+    "explanation": "It does not remove a case, it adds one — you still have to null-check. `Optional` was designed as a return type that says in the signature that a lookup may find nothing."
+  },
+  {
+    "q": "`opt.orElse(expensive())` on an Optional that *is* present does what?",
+    "options": [
+      "Runs `expensive()` anyway and discards the result",
+      "Skips `expensive()`, since the value is already present",
+      "Runs `expensive()` only if the present value happens to be null",
+      "Fails to compile unless `expensive()` returns a `Supplier`"
+    ],
+    "answer": 0,
+    "explanation": "Java is strict, so the argument is evaluated before `orElse` is even called. Use `orElseGet` whenever the fallback is a call rather than an already-computed constant."
+  },
+  {
+    "q": "Which reason does the chapter give against storing an `Optional` in a field?",
+    "options": [
+      "Reflection-based frameworks refuse to populate a generic wrapper field",
+      "Its `equals` compares the wrappers, so two empty values never match up",
+      "It is not `Serializable` and adds a wrapper object per instance",
+      "It cannot be made final, so the field would have to stay mutable forever"
+    ],
+    "answer": 2,
+    "explanation": "Keep the field nullable and return `Optional.ofNullable(field)` from the getter; frameworks that populate fields reflectively do not expect a wrapper there."
+  },
+  {
+    "q": "A lookup may match no rows at all. What should the method's return type be?",
+    "options": [
+      "An `Optional<List<T>>`, so callers must handle the miss",
+      "A nullable `List<T>`, documented as possibly null in the Javadoc",
+      "An `Optional<T>` holding the first row, or empty otherwise",
+      "A plain `List<T>` that is empty when nothing was found"
+    ],
+    "answer": 3,
+    "explanation": "`Optional` is for a single missing value. Wrapping a collection gives callers two ways to say 'nothing' — empty optional and empty list — when an empty list already says it."
+  },
+  {
+    "q": "`list.stream().map(String::trim);` on its own line does what?",
+    "options": [
+      "Throws `IllegalStateException`, since every stream must be consumed once",
+      "Nothing — with no terminal operation the source is never traversed",
+      "Trims every element of `list` in place and hands back that same list",
+      "Builds a new trimmed list which the enclosing statement then discards"
+    ],
+    "answer": 1,
+    "explanation": "Intermediate operations only build a description of the pipeline. Streams also never mutate their source, so `list` is untouched either way."
+  },
+  {
+    "q": "`var names = stream.toList(); names.add(\"x\");` throws. Why?",
+    "options": [
+      "The stream was already consumed, so the list it produced is frozen",
+      "`add` on a collector result requires an explicit merge function",
+      "`Stream.toList()` returns an unmodifiable list, unlike the old collector",
+      "`Stream.toList()` returns a fixed-size view backed by the pipeline's source"
+    ],
+    "answer": 2,
+    "explanation": "`collect(Collectors.toList())` returned a mutable `ArrayList`; `toList()` (Java 16) does not. Use `collect(Collectors.toCollection(ArrayList::new))` when you need mutability."
+  },
+  {
+    "q": "`Collectors.toMap` meets two elements with the same key. What happens?",
+    "options": [
+      "It keeps the last value seen, overwriting the earlier mapping",
+      "It keeps the first value seen and skips every later collision",
+      "It stores a list of both values under that key automatically",
+      "It throws, naming the duplicate key and the two attempted values"
+    ],
+    "answer": 3,
+    "explanation": "Duplicate keys throw rather than overwrite, which surprises people coming from `put`. Supply a merge function whenever collisions are possible."
+  },
+  {
+    "q": "What does `flatMap` do in a pipeline over a `List<List<Integer>>`?",
+    "options": [
+      "Maps each element to a stream and concatenates one level down",
+      "Maps each element and flattens every level of nesting at once",
+      "Filters out the empty inner lists before mapping what remains",
+      "Sorts the inner lists and merges them into one ordered stream"
+    ],
+    "answer": 0,
+    "explanation": "`flatMap` maps each element to a stream and concatenates the results, flattening exactly one level — so a list of lists becomes a flat stream of elements."
+  },
+  {
+    "q": "Which pair of operations moves between the object and primitive stream worlds?",
+    "options": [
+      "`mapToInt` enters the primitive world; `boxed` leaves it again",
+      "`boxed` enters the primitive world; `mapToInt` leaves it again",
+      "`map` enters the primitive world, and `collect` leaves it again",
+      "`toList` enters the primitive world; `summaryStatistics` leaves"
+    ],
+    "answer": 0,
+    "explanation": "`Stream<Integer>` boxes every element; `mapToInt`, `mapToLong` and `mapToDouble` enter the primitive streams, and `boxed`/`mapToObj` come back out."
+  },
+  {
+    "q": "Which situation does the chapter say wants a plain loop rather than a stream?",
+    "options": [
+      "Filtering then mapping, since two stages traverse the source twice",
+      "Walking two collections in lockstep, since streams have no clean zip",
+      "Grouping records by a key, since `groupingBy` reads poorly in practice",
+      "Summing one field of a list, since `mapToInt` boxes every element"
+    ],
+    "answer": 1,
+    "explanation": "The listed loop cases are index-based work, mutation, awkward early exit, hot numeric paths, lockstep iteration — and interviews. `groupingBy` is where streams clearly win."
+  },
+  {
+    "q": "What does the chapter warn about `parallelStream()`?",
+    "options": [
+      "It spawns one virtual thread per element, which exhausts the heap",
+      "It reorders results, so a sorted pipeline loses its ordering entirely",
+      "It works only on a `List`, so other sources fall back to sequential",
+      "It shares the common `ForkJoinPool` and can starve request threads"
+    ],
+    "answer": 3,
+    "explanation": "It pays off only for large, CPU-bound, side-effect-free work over a cheaply splittable source. Measure before reaching for it, and never use it for I/O."
+  },
+  {
+    "q": "A request blocks about 100 ms on I/O and the server has a 200-thread pool. What is the throughput ceiling?",
+    "options": [
+      "About 20,000 per second, since idle threads do not consume any CPU",
+      "Unbounded, because blocked threads are descheduled by the kernel",
+      "About 2,000 requests per second, which is 200 divided by 0.1 seconds",
+      "About 200 requests per second, since each thread serves one request at a time"
+    ],
+    "answer": 2,
+    "explanation": "Little's Law inverted: with $L = \\lambda W$, 200 concurrent slots and 0.1 s in system gives 2,000 req/s — no matter how idle the CPUs are. The server runs out of threads to block."
+  },
+  {
+    "q": "What backs a virtual thread's stack?",
+    "options": [
+      "A dedicated OS thread with a smaller reserved stack allocation",
+      "A slot in the carrier pool reserved for the thread's whole lifetime",
+      "Native memory outside the heap, much like a direct byte buffer",
+      "A continuation object on the heap, mounted on a carrier to run"
+    ],
+    "answer": 3,
+    "explanation": "A virtual thread is a `Thread` scheduled by the JVM: mounted on a platform carrier to run, unmounted onto the heap as a continuation whenever it blocks."
+  },
+  {
+    "q": "You must cap concurrent calls to Postgres at 20 while using virtual threads. What do you use?",
+    "options": [
+      "A `newVirtualThreadPerTaskExecutor` constructed with a size limit of 20",
+      "A `ThreadLocal` counter checked before every call to the database",
+      "A `Semaphore` around the call, since virtual threads are not pooled",
+      "A fixed pool of 20 virtual threads created once at application startup"
+    ],
+    "answer": 2,
+    "explanation": "Pooling amortises expensive creation, and virtual threads are cheap. To *limit* concurrency against a downstream, use a semaphore — and remember to resize the connection pool too."
+  },
+  {
+    "q": "Which statement about pinning matches the chapter?",
+    "options": [
+      "On Java 21 a blocking call inside `synchronized` pins its carrier",
+      "On Java 21 only native frames pin; `synchronized` was never an issue",
+      "JEP 491 removed pinning entirely, including inside native frames",
+      "Pinning happens whenever a virtual thread blocks on any socket read"
+    ],
+    "answer": 0,
+    "explanation": "JEP 491 in Java 24 removed pinning for common `synchronized` usage, but most estates are still on 21. Native frames (JNI, FFM) can still pin on any version."
+  },
+  {
+    "q": "Swapping a 200-thread pool for virtual threads on a CPU-bound image resizer gives no improvement. Why not?",
+    "options": [
+      "Image work uses native frames, so every virtual thread pins at once",
+      "CPU work never blocks, so it holds a carrier for its full duration",
+      "Virtual threads are slower per operation than platform threads are",
+      "The scheduler caps virtual threads at the old pool size by default"
+    ],
+    "answer": 1,
+    "explanation": "Virtual threads solve blocking, not computing. You still have only as many carriers as cores, so keep a fixed platform pool near `availableProcessors()` for compute."
+  },
+  {
+    "q": "Why is `ThreadLocal` a poor cache under virtual threads?",
+    "options": [
+      "A million short-lived threads means a million copies and no reuse",
+      "Virtual threads share one carrier, so values collide unpredictably",
+      "`ThreadLocal` is unsupported on virtual threads and throws on `set`",
+      "The value unmounts with the continuation, so `get` returns null"
+    ],
+    "answer": 0,
+    "explanation": "It was sane when threads were few and long-lived. It still works, but treat it as per-request state, never as a cache — scoped values are the modern replacement."
+  },
+  {
+    "q": "Why does `try (var exec = Executors.newVirtualThreadPerTaskExecutor()) { ... }` wait for every submitted task?",
+    "options": [
+      "`submit` returns only once the task has completed on its own thread",
+      "The executor is effectively a pool of one, so tasks run sequentially",
+      "`ExecutorService` became `AutoCloseable`, and `close` blocks until done",
+      "Virtual threads are non-daemon, so the JVM refuses to exit while any remain"
+    ],
+    "answer": 2,
+    "explanation": "`ExecutorService` gained `AutoCloseable` in Java 19, so try-with-resources gives you an implicit join. The executor is not a pool — it mints a fresh virtual thread per task."
+  },
+  {
+    "q": "Which job does the chapter say virtual threads do *not* replace?",
+    "options": [
+      "Blocking on a database call from directly inside a controller method body",
+      "Deduplicating in-flight work with a map of futures and `computeIfAbsent`",
+      "Running two independent I/O calls at once and then combining their results",
+      "Handling one request per task without ever exhausting a fixed thread pool"
+    ],
+    "answer": 1,
+    "explanation": "A `ConcurrentHashMap<K, CompletableFuture<V>>` collapses a hundred simultaneous cache misses into one load, and virtual threads offer no equivalent trick."
+  },
+  {
+    "q": "As of Java 25, what is the status of structured concurrency and of scoped values?",
+    "options": [
+      "Structured concurrency is final; scoped values are still in preview",
+      "Both were finalised in Java 21 alongside virtual threads themselves",
+      "Both are still preview, and neither has a target release announced",
+      "Structured concurrency is still preview; scoped values are final"
+    ],
+    "answer": 3,
+    "explanation": "Structured concurrency is in its fifth preview under JEP 505; scoped values finalised as JEP 506. The API has churned across previews, so the version detail matters in interviews."
+  },
+  {
+    "q": "A blind project-wide `javax` to `jakarta` replace breaks the build. Which packages must stay put?",
+    "options": [
+      "The Jakarta EE ones, such as `javax.persistence` and `javax.servlet`",
+      "The validation ones, since Hibernate Validator kept the old namespace",
+      "The annotation ones, since `javax.annotation` moved into the JDK itself",
+      "The JDK's own, such as `javax.sql`, `javax.crypto` and `javax.net.ssl`"
+    ],
+    "answer": 3,
+    "explanation": "Only the Jakarta EE packages moved. The JDK's own `javax` packages are unchanged, which is why the chapter recommends the OpenRewrite recipe over a regex."
+  },
+  {
+    "q": "What is the whole virtual-thread migration for most Boot 3 MVC applications?",
+    "options": [
+      "Raise `server.tomcat.threads.max` to several thousand at startup",
+      "Set `spring.threads.virtual.enabled=true` on Java 21 or newer",
+      "Rewrite the controllers to return `Mono` and `Flux` using WebFlux",
+      "Wrap each controller body in a virtual-thread-per-task executor"
+    ],
+    "answer": 1,
+    "explanation": "One property switches Tomcat's request executor, `@Async`, `@Scheduled` and the messaging listener containers. Then re-check the Hikari pool size, which becomes the new ceiling."
+  },
+  {
+    "q": "How is HTTP security configured in Spring Boot 3?",
+    "options": [
+      "Annotate the controller with `@EnableWebSecurity` plus matchers",
+      "List the matchers in `application.yml` under a security section",
+      "Publish a `SecurityFilterChain` bean and configure it with lambdas",
+      "Extend `WebSecurityConfigurerAdapter` and override its `configure`"
+    ],
+    "answer": 2,
+    "explanation": "The adapter base class is gone: you return a `SecurityFilterChain` bean, `antMatchers` became `requestMatchers`, and every `.and()` chain became a lambda."
+  },
+  {
+    "q": "Why can a JPA `@Entity` not be a record?",
+    "options": [
+      "JPA needs a no-arg constructor, mutable fields and subclassable types",
+      "Records cannot implement interfaces, which every entity is required to",
+      "Records cannot be annotated, so `@Id` would have nowhere to sit at all",
+      "JPA compares entities by identity, and records compare only by value"
+    ],
+    "answer": 0,
+    "explanation": "JPA instantiates entities reflectively, dirty-checks field changes, and subclasses them for lazy proxies. Records are final with final fields, so they break all three requirements."
+  },
+  {
+    "q": "An endpoint returning 200 orders with each customer's name takes 4 seconds in production but passes every test. Which fix does the chapter name first?",
+    "options": [
+      "Switch `spring.jpa.open-in-view` to `true` so the session stays open",
+      "Add a second-level cache so repeated lookups skip the database call",
+      "`@EntityGraph(attributePaths = ...)` or a `join fetch` on the query",
+      "Raise the HikariCP pool size so the extra queries can run in parallel"
+    ],
+    "answer": 2,
+    "explanation": "This is the classic N+1: one query for the orders and 200 lazy loads while serializing. `open-in-view` defaults to true and is what *hides* it; the chapter suggests turning it off."
+  },
+  {
+    "q": "Why does `maven.compiler.release` beat the old `source`/`target` pair?",
+    "options": [
+      "It also checks you have not called an API newer than the target",
+      "It downloads the matching JDK, the way Gradle toolchains do",
+      "It sets the bytecode version without needing a compiler plugin",
+      "It applies to test sources too, which `source`/`target` skipped"
+    ],
+    "answer": 0,
+    "explanation": "`source`/`target` never verified the API surface, which is how projects shipped code that compiled fine and then threw `NoSuchMethodError` on an older JRE."
+  },
+  {
+    "q": "Why does the chapter say to commit `./mvnw` and `./gradlew` to git?",
+    "options": [
+      "They cache dependencies in the repository, cutting CI download time",
+      "They replace the need for a `pom.xml` or a `build.gradle.kts` file",
+      "They let CI run a build without installing any JDK on the machine",
+      "They pin the build-tool version, so a fresh clone builds identically"
+    ],
+    "answer": 3,
+    "explanation": "The wrapper ships the oven with the recipe, so a build-tool upgrade becomes a reviewed one-line diff instead of an untracked change on somebody's laptop."
+  },
+  {
+    "q": "`assertEquals(\"should be two\", 2, count);` ported from JUnit 4 passes even when `count` is 7. Why?",
+    "options": [
+      "In JUnit 5 a three-argument call is treated as a delta comparison",
+      "In JUnit 5 the message moved last, so this hits a different overload",
+      "In JUnit 5 messages are ignored, so the assertion always succeeds",
+      "In JUnit 5 `assertEquals` compares only the types, never the two values given"
+    ],
+    "answer": 1,
+    "explanation": "JUnit 4 took the message first; JUnit 5 takes it last. The call still compiles and silently compares the wrong things, which is why the migration wants an automated recipe."
+  },
+  {
+    "q": "Which testing judgement does the chapter make?",
+    "options": [
+      "Aim at a fixed coverage number so untested branches become visible",
+      "Use a real Postgres in Testcontainers over a mocked `DataSource`",
+      "Mock the database so unit tests stay fast enough to run on each save",
+      "Use H2 in memory, since it behaves closely enough to production SQL"
+    ],
+    "answer": 1,
+    "explanation": "Mocked SQL only proves your mock agrees with itself. Testcontainers makes real dependencies cheap enough that mocking a database is no longer defensible."
+  },
+  {
+    "q": "Where does a virtual thread's stack live, and why does that matter operationally?",
+    "options": [
+      "In the per-thread stack region, sized by `-Xss` like any other thread",
+      "In metaspace beside class metadata, outside the collected heap area",
+      "In the JIT code cache, which is why deep recursion is cheap for them",
+      "On the heap as a continuation, so a million of them is a heap question"
+    ],
+    "answer": 3,
+    "explanation": "Platform thread stacks sit in their own native region at roughly 1 MB each; a virtual thread's stack is a heap object, which is the entire trick behind §38b.6."
+  },
+  {
+    "q": "The heap climbs steadily and never falls after a full GC, ending in `OutOfMemoryError`. What is it?",
+    "options": [
+      "A leak — something still holds references, so `-Xmx` only delays it",
+      "A tuning problem — the young generation is too small for this load",
+      "A collector problem — G1 cannot reclaim humongous objects at all",
+      "A metaspace problem — class metadata counts toward the heap total"
+    ],
+    "answer": 0,
+    "explanation": "A full GC collects everything unreachable, so what survives is still referenced. Take a heap dump and read the dominator tree, which ranks objects by retained size."
+  },
+  {
+    "q": "Which collector choice matches the chapter's table?",
+    "options": [
+      "Parallel is the balanced default; Serial buys the shortest pauses",
+      "Serial is the balanced default; Parallel buys the shortest pauses",
+      "G1 is the balanced default; ZGC buys sub-millisecond pauses",
+      "ZGC is the balanced default; G1 buys sub-millisecond pauses"
+    ],
+    "answer": 2,
+    "explanation": "G1 has been the default since Java 9 for 4–32 GB heaps; ZGC trades CPU and memory headroom for sub-millisecond pauses, and Parallel wins on batch throughput."
+  }
+]

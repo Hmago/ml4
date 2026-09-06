@@ -187,6 +187,8 @@ a graph, or a probability distribution. That choice drives everything else.
 Imagine dropping a handful of magnets onto a scatter of iron filings: each filing snaps to its nearest magnet, then you slide every magnet to the middle of its own pile, and repeat until nothing moves. That settling process *is* K-Means — it hunts for K natural centers and glues each point to the closest one, tightening the groups on every pass.
 
 > **K-Means** partitions $n$ observations into $K$ clusters by iteratively assigning each point to the nearest centroid and recomputing centroids as the mean of assigned points, minimizing the within-cluster sum of squares (WCSS / inertia):
+
+**Assumes:** clusters are **spherical, similar in size, and similar in density** — and that you already know how many there are. Every K-Means failure you will ever see traces back to one of those four.
 >
 > $$J = \sum_{k=1}^{K} \sum_{x_i \in C_k} \| x_i - \mu_k \|^2$$
 
@@ -363,6 +365,8 @@ That merge-tree has a name: a **dendrogram**.
 
 > **Agglomerative hierarchical clustering** starts with each observation as a singleton cluster and iteratively merges the two closest clusters until a single cluster remains. The merge history forms a binary tree called a **dendrogram**, which can be cut at any height to produce a partition into $K$ clusters.
 
+**Assumes:** the data has a genuine **nested** structure — that groups sit inside larger groups. It will happily build a tree over data with no hierarchy at all, which is why the dendrogram must be judged, not trusted.
+
 The big advantage: you do not need to specify K upfront. Build the full tree, then cut it wherever makes sense. The dendrogram gives you a view of cluster structure at every granularity simultaneously.
 
 ### Agglomerative Algorithm
@@ -439,6 +443,8 @@ That is the whole idea. A cluster is a **crowded region**, not a ball around a c
 
 > **DBSCAN (Density-Based Spatial Clustering of Applications with Noise)** groups together points that are closely packed — defined by a minimum number of points ($\text{minPts}$) within a radius ($\varepsilon$). Points in low-density regions are labeled as noise. It requires no pre-specification of the number of clusters and can discover clusters of arbitrary shape.
 
+**Assumes:** clusters are **dense regions separated by sparse ones**, and that a *single* density threshold (ε, minPts) fits every cluster. When one cluster is much sparser than another, that single threshold cannot serve both — which is exactly the gap HDBSCAN fills.
+
 K-Means forces you to choose K and assumes round clusters. DBSCAN says: "clusters are dense regions separated by sparse regions." It figures out how many clusters exist, finds them regardless of shape, and explicitly marks outliers as noise.
 
 ### Three Point Types
@@ -463,6 +469,101 @@ K-Means forces you to choose K and assumes round clusters. DBSCAN says: "cluster
 4. If $|\text{neighbors}| < \text{minPts}$ and $p$ is within $\varepsilon$ of a core point, mark $p$ as a **border point**.
 5. Otherwise, mark $p$ as **noise**.
 6. Repeat until all points visited.
+
+### Worked Example — Tracing DBSCAN by Hand
+
+Ten points, $\varepsilon = 2$, $\text{minPts} = 3$.
+
+> **State your convention first.** Here minPts **counts the point itself** — that
+> is what scikit-learn's `min_samples` does — so minPts = 3 means "me plus at
+> least two others." Other texts exclude the point, and write the identical rule
+> as minPts = 2. Interviewers differ, so say which one you mean before you start.
+
+| Point | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| $x$ | 1 | 2 | 2 | 1 | 3 | 5 | 5 | 7 | 8 | 7 |
+| $y$ | 1 | 1 | 2 | 2 | 3 | 5 | 6 | 7 | 7 | 8 |
+
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Core (≥ 3 neighbours incl. itself)",
+        "data": [{"x":1,"y":1},{"x":2,"y":1},{"x":2,"y":2},{"x":1,"y":2},{"x":7,"y":7},{"x":8,"y":7},{"x":7,"y":8}],
+        "backgroundColor": "rgba(99, 102, 241, 0.8)",
+        "pointRadius": 9
+      },
+      {
+        "label": "Border (too few, but reached by a core point)",
+        "data": [{"x":3,"y":3}],
+        "backgroundColor": "rgba(234, 88, 12, 0.9)",
+        "pointStyle": "triangle", "pointRadius": 12
+      },
+      {
+        "label": "Noise (too few, and no core point in reach)",
+        "data": [{"x":5,"y":5},{"x":5,"y":6}],
+        "backgroundColor": "rgba(239, 68, 68, 1)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "rectRot", "pointRadius": 11, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "DBSCAN — the Three Point Types, Worked Out Below" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "y" }, "min": 0, "max": 9 },
+      "x": { "title": { "display": true, "text": "x" }, "min": 0, "max": 9 }
+    }
+  }
+}
+```
+
+**Step 1 — count neighbours.** For each point, list everything inside the radius.
+
+| Point | Neighbours within $\varepsilon=2$ (distance) | Count (with itself) |
+|---|---|---|
+| P1 | P2 (1.00), P3 (1.41), P4 (1.00) | 4 |
+| P2 | P1 (1.00), P3 (1.00), P4 (1.41) | 4 |
+| P3 | P1 (1.41), P2 (1.00), P4 (1.00), P5 (1.41) | 5 |
+| P4 | P1 (1.00), P2 (1.41), P3 (1.00) | 4 |
+| P5 | P3 (1.41) | 2 |
+| P6 | P7 (1.00) | 2 |
+| P7 | P6 (1.00) | 2 |
+| P8 | P9 (1.00), P10 (1.00) | 3 |
+| P9 | P8 (1.00), P10 (1.41) | 3 |
+| P10 | P8 (1.00), P9 (1.41) | 3 |
+
+Nothing is borderline: every pairwise distance in this data is either $\le 1.41$
+or $\ge 2.24$, so no verdict hangs on a rounding decision.
+
+**Step 2 — classify.** Ask the count question first; only if it fails do you ask
+the anchor question.
+
+| Point | Count | Verdict | Reason |
+|---|---|---|---|
+| P1, P2, P4 | 4 | **Core** | $4 \ge 3$ |
+| P3 | 5 | **Core** | $5 \ge 3$ — the densest point here |
+| P8, P9, P10 | 3 | **Core** | exactly 3, clearing the bar by nothing |
+| P5 | 2 | **Border** | fails the count, but core point P3 is 1.41 away |
+| P6 | 2 | **Noise** | fails the count, and neighbour P7 is not core |
+| P7 | 2 | **Noise** | fails the count, and neighbour P6 is not core |
+
+**Step 3 — the clusters.** Core points within $\varepsilon$ of each other merge;
+each border point then joins the cluster of a core point that reached it.
+
+- **Cluster 1:** {P1, P2, P3, P4} core **+** P5 border — 5 points
+- **Cluster 2:** {P8, P9, P10} — all three core
+- **Noise:** P6, P7
+
+Two things are worth pausing on. P6 and P7 are **1.00 apart** — closer to each
+other than P5 is to P3 — and yet *both* are noise: proximity alone builds nothing,
+because a cluster has to be anchored by a **core** point and neither of them
+qualifies. And Cluster 2 clears the threshold exactly, so raising minPts to 4
+would turn all three of those points into noise as well.
+
+*Takeaway: DBSCAN's three-way label falls out of two questions asked in order — "do I have minPts neighbours?" (core, or not), and if not, "is a core point within ε of me?" (border, or noise). Density has to be anchored, and reachability flows only through core points.*
 
 ### DBSCAN vs K-Means
 
@@ -496,15 +597,43 @@ K-Means forces you to choose K and assumes round clusters. DBSCAN says: "cluster
 2. Sort these distances in ascending order and plot.
 3. The "elbow" in the plot suggests a good ε.
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Distance to the 4th nearest neighbour",
+        "data": [{"x":0,"y":0.099},{"x":1,"y":0.108},{"x":2,"y":0.116},{"x":3,"y":0.12},{"x":4,"y":0.12},{"x":5,"y":0.122},{"x":6,"y":0.125},{"x":7,"y":0.132},{"x":8,"y":0.135},{"x":9,"y":0.141},{"x":10,"y":0.15},{"x":11,"y":0.15},{"x":12,"y":0.151},{"x":13,"y":0.151},{"x":14,"y":0.153},{"x":15,"y":0.156},{"x":16,"y":0.159},{"x":17,"y":0.162},{"x":18,"y":0.17},{"x":19,"y":0.171},{"x":20,"y":0.174},{"x":21,"y":0.175},{"x":22,"y":0.177},{"x":23,"y":0.178},{"x":24,"y":0.182},{"x":25,"y":0.183},{"x":26,"y":0.183},{"x":27,"y":0.185},{"x":28,"y":0.198},{"x":29,"y":0.198},{"x":30,"y":0.199},{"x":31,"y":0.199},{"x":32,"y":0.205},{"x":33,"y":0.215},{"x":34,"y":0.215},{"x":35,"y":0.215},{"x":36,"y":0.225},{"x":37,"y":0.226},{"x":38,"y":0.227},{"x":39,"y":0.232},{"x":40,"y":0.232},{"x":41,"y":0.233},{"x":42,"y":0.233},{"x":43,"y":0.24},{"x":44,"y":0.24},{"x":45,"y":0.249},{"x":46,"y":0.264},{"x":47,"y":0.265},{"x":48,"y":0.269},{"x":49,"y":0.27},{"x":50,"y":0.273},{"x":51,"y":0.274},{"x":52,"y":0.275},{"x":53,"y":0.281},{"x":54,"y":0.283},{"x":55,"y":0.294},{"x":56,"y":0.345},{"x":57,"y":0.359},{"x":58,"y":0.359},{"x":59,"y":0.398},{"x":60,"y":0.415},{"x":61,"y":0.421},{"x":62,"y":0.443},{"x":63,"y":0.444},{"x":64,"y":0.488},{"x":65,"y":0.522},{"x":66,"y":0.552},{"x":67,"y":0.573},{"x":68,"y":0.587},{"x":69,"y":0.712},{"x":70,"y":1.032},{"x":71,"y":1.337},{"x":72,"y":1.534},{"x":73,"y":1.534},{"x":74,"y":1.583},{"x":75,"y":2.072},{"x":76,"y":2.147},{"x":77,"y":2.444},{"x":78,"y":2.711},{"x":79,"y":3.018},{"x":80,"y":3.636},{"x":81,"y":4.079}],
+        "borderColor": "rgba(99, 102, 241, 1)",
+        "backgroundColor": "rgba(99, 102, 241, 0.15)",
+        "showLine": true, "fill": true, "pointRadius": 2, "borderWidth": 2
+      },
+      {
+        "label": "Suggested ε ≈ 0.69 (the knee)",
+        "data": [{"x": 0, "y": 0.69}, {"x": 81, "y": 0.69}],
+        "borderColor": "rgba(239, 68, 68, 1)",
+        "backgroundColor": "transparent",
+        "showLine": true, "pointRadius": 0, "borderWidth": 2, "borderDash": [6, 4]
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "DBSCAN k-Distance Plot — Read ε Off the Knee, Not by Guessing" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Distance to 4th nearest neighbour" }, "beginAtZero": true },
+      "x": { "title": { "display": true, "text": "Points, sorted by that distance" } }
+    }
+  }
+}
 ```
-  k-distance
-     │                           ●
-  0.8│                       ● ●      ← noise (large k-dist)
-  0.6│                   ● ●          ← elbow → ε ≈ 0.5
-  0.4│               ●●
-  0.2│      ●●●●●●●●                 ← dense cluster points
-     └─────────────────────────── points (sorted)
-```
+
+Read it left to right. For most of the curve the line is low and almost flat — those are
+points sitting comfortably inside a dense region, whose 4th neighbour is close by. Then it
+turns sharply upward: those few points on the right are far from everything, which is
+precisely what "noise" means. **The knee is the boundary between the two populations**, so
+taking ε at the knee (here **≈ 0.69**) keeps the dense points connected while leaving the
+stragglers outside.
 
 **Real-world use case:** geographic clustering of delivery addresses into zones. Addresses form arbitrary shapes around cities — DBSCAN naturally captures this while labeling remote rural addresses as noise.
 
@@ -585,6 +714,8 @@ Picture a crowded party. You could group people by who is standing physically cl
 
 > **Spectral Clustering** maps data into a low-dimensional Euclidean embedding derived from the eigenvectors of a graph Laplacian, then applies k-means (or another partitioner) in that embedding space. It finds clusters defined by connectivity structure rather than Euclidean proximity, enabling it to separate non-convex, manifold-shaped clusters that k-means and sometimes DBSCAN cannot handle.
 
+**Assumes:** clusters are **connected in the similarity graph**, even if they are nowhere near convex. It cares about *who is linked to whom*, not about raw distance — which is why it solves the moons and K-Means cannot.
+
 The core insight: if you build a similarity graph over the data and look at how that graph is connected, clusters correspond to weakly connected components or near-disconnected subgraphs. The graph Laplacian's eigenvectors expose this connectivity structure.
 
 **Algorithm:**
@@ -611,33 +742,78 @@ The core insight: if you build a similarity graph over the data and look at how 
 
 **Why the eigenvectors work — interlocking moons example:**
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Moon 1 (true group)",
+        "data": [{"x":0.95,"y":0.11},{"x":-0.88,"y":0.23},{"x":-0.85,"y":0.58},{"x":0.87,"y":0.4},{"x":-0.83,"y":0.38},{"x":-0.73,"y":0.84},{"x":0.43,"y":0.96},{"x":-0.47,"y":0.87},{"x":-0.22,"y":1.01},{"x":0.12,"y":1.02},{"x":-0.82,"y":0.68},{"x":-0.79,"y":0.55},{"x":0.89,"y":0.39},{"x":0,"y":0.95},{"x":-0.99,"y":-0.05},{"x":-1.1,"y":0.04},{"x":-0.28,"y":0.9},{"x":-0.62,"y":0.8},{"x":-0.88,"y":0.5},{"x":0.8,"y":0.59},{"x":0.64,"y":0.64},{"x":0.94,"y":0.17},{"x":-0.15,"y":1.01},{"x":0.98,"y":0.01},{"x":-0.02,"y":1.04},{"x":0.96,"y":0.37},{"x":0.28,"y":0.93},{"x":0.56,"y":0.88},{"x":0.67,"y":0.73},{"x":0.22,"y":0.95}],
+        "backgroundColor": "rgba(99, 102, 241, 0.75)",
+        "pointRadius": 5
+      },
+      {
+        "label": "Moon 2 (true group)",
+        "data": [{"x":0.41,"y":-0.33},{"x":0.72,"y":-0.36},{"x":1.32,"y":-0.43},{"x":1.51,"y":-0.32},{"x":0.99,"y":-0.6},{"x":0.17,"y":0.25},{"x":0.15,"y":-0.11},{"x":0.53,"y":-0.34},{"x":1.85,"y":-0.11},{"x":1.2,"y":-0.62},{"x":0.23,"y":-0.15},{"x":1.76,"y":-0.17},{"x":0.72,"y":-0.5},{"x":1.94,"y":0.22},{"x":0.07,"y":0.35},{"x":1.48,"y":-0.45},{"x":0.12,"y":0.27},{"x":1.16,"y":-0.48},{"x":0.36,"y":-0.19},{"x":1.9,"y":0.03},{"x":1.56,"y":-0.26},{"x":0,"y":0.46},{"x":0.07,"y":0.01},{"x":1.82,"y":0.04},{"x":2.04,"y":0.48},{"x":1.89,"y":0.39},{"x":1.03,"y":-0.54},{"x":1.95,"y":0.28},{"x":0.91,"y":-0.47},{"x":0.18,"y":-0.12}],
+        "backgroundColor": "rgba(234, 88, 12, 0.75)",
+        "pointStyle": "triangle", "pointRadius": 6
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "BEFORE — Original Feature Space: the Moons Interlock, So No Straight Line Separates Them" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Feature 2" } },
+      "x": { "title": { "display": true, "text": "Feature 1" } }
+    }
+  }
+}
 ```
-  BEFORE — original feature space (k-means fails)
 
-    Feature 2
-      │  ○○○○○
-      │ ○      ○
-      │  ●●●●●●●
-      │○        ○
-      │  ○○○○○
-      └──────────────── Feature 1
+Run plain k-means on those coordinates and it fails — it can only cut with a straight
+line, so it slices both crescents in half. Measured against the true groups it scores
+an **Adjusted Rand Index of 0.24**, barely better than guessing.
 
-    The two crescents interleave. No straight line — and no
-    convex boundary — can separate them.
+Now rebuild each point's coordinates from the eigenvectors of the graph Laplacian and
+plot the same 60 points again:
 
-  AFTER — spectral embedding (k-means works)
-
-    Eigenvector 2
-      │     ○ ○ ○ ○ ○
-      │
-      │
-      │ ●●●●●●●●●●●●
-      │
-      └──────────────── Eigenvector 1
-
-    In spectral space the two classes are linearly separable,
-    so k-means succeeds.
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Moon 1 (same points)",
+        "data": [{"x":8.45,"y":-5.35},{"x":6.19,"y":-7.86},{"x":6.28,"y":-7.78},{"x":8.33,"y":-5.54},{"x":6.21,"y":-7.83},{"x":6.41,"y":-7.67},{"x":7.83,"y":-6.22},{"x":6.98,"y":-7.16},{"x":7.46,"y":-6.66},{"x":7.64,"y":-6.45},{"x":6.35,"y":-7.73},{"x":6.28,"y":-7.78},{"x":8.33,"y":-5.54},{"x":7.8,"y":-6.26},{"x":6.19,"y":-7.86},{"x":6.19,"y":-7.86},{"x":7.55,"y":-6.56},{"x":6.59,"y":-7.52},{"x":6.24,"y":-7.82},{"x":8.2,"y":-5.72},{"x":8.08,"y":-5.89},{"x":8.45,"y":-5.35},{"x":7.47,"y":-6.65},{"x":8.94,"y":-4.47},{"x":7.59,"y":-6.51},{"x":8.43,"y":-5.38},{"x":7.73,"y":-6.34},{"x":7.91,"y":-6.12},{"x":8.04,"y":-5.94},{"x":7.72,"y":-6.36}],
+        "backgroundColor": "rgba(99, 102, 241, 0.75)",
+        "pointRadius": 5
+      },
+      {
+        "label": "Moon 2 (same points)",
+        "data": [{"x":8.83,"y":4.69},{"x":8.29,"y":5.6},{"x":6.46,"y":7.63},{"x":6.07,"y":7.94},{"x":7.35,"y":6.78},{"x":9.62,"y":2.72},{"x":9.3,"y":3.67},{"x":8.49,"y":5.28},{"x":5.57,"y":8.3},{"x":6.86,"y":7.27},{"x":9.08,"y":4.19},{"x":5.77,"y":8.17},{"x":7.81,"y":6.25},{"x":5.46,"y":8.38},{"x":9.67,"y":2.54},{"x":6.27,"y":7.79},{"x":9.67,"y":2.54},{"x":6.8,"y":7.33},{"x":9.05,"y":4.26},{"x":5.49,"y":8.36},{"x":5.93,"y":8.05},{"x":10,"y":0.31},{"x":9.49,"y":3.16},{"x":5.52,"y":8.34},{"x":5.44,"y":8.39},{"x":5.45,"y":8.39},{"x":7.16,"y":6.98},{"x":5.46,"y":8.38},{"x":7.42,"y":6.7},{"x":9.3,"y":3.67}],
+        "backgroundColor": "rgba(234, 88, 12, 0.75)",
+        "pointStyle": "triangle", "pointRadius": 6
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "AFTER — Spectral Embedding: the Same 60 Points Collapse Into Two Blobs (ARI = 1.00)" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Eigenvector 2" } },
+      "x": { "title": { "display": true, "text": "Eigenvector 1" } }
+    }
+  }
+}
 ```
+
+**That is the whole trick.** Nothing was added to the data and no labels were used — the
+points were simply re-described using the connectivity of the neighbour graph instead of
+raw distance. In that new space the two groups are far apart and convex, so ordinary
+k-means separates them perfectly: **ARI goes from 0.24 to 1.00.**
+
+Spectral clustering is therefore not really a clustering algorithm at all. It is a
+**change of coordinates**, followed by k-means.
 
 In the similarity graph, points within each crescent are densely connected to their neighbors; cross-crescent connections are weak (large Euclidean distance → near-zero W). The Laplacian captures this — its eigenvectors encode "which group does this node belong to?" structurally.
 
@@ -679,24 +855,58 @@ Real groups have blurry edges — a person might be mostly "city commuter" yet a
 
 > A **Gaussian Mixture Model (GMM)** represents the data distribution as a weighted sum of $K$ multivariate Gaussian distributions. Each component $k$ has parameters $(\pi_k, \mu_k, \Sigma_k)$ — mixing weight, mean, and covariance. Training uses the Expectation-Maximization (EM) algorithm to maximize data likelihood.
 
+**Assumes:** the data was **generated by a mixture of Gaussians** — elliptical blobs, each with its own centre, shape and weight. Real data is rarely exactly Gaussian, but the assumption is far looser than K-Means', which is the same model frozen to spheres with hard assignment.
+
 $$p(x) = \sum_{k=1}^{K} \pi_k \;\mathcal{N}(x \mid \mu_k, \Sigma_k)$$
 
 K-Means makes a hard assignment: each point belongs to exactly one cluster. GMM makes a soft assignment: each point has a probability of belonging to each cluster. A customer near the boundary of two segments is not forced into one — GMM says "65% segment A, 35% segment B." This is more honest and more useful.
 
 ### GMM vs K-Means
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "P(component B) ≤ 0.25 — safely A",
+        "data": [{"x":1.94,"y":3.14},{"x":2.32,"y":2.48},{"x":2.11,"y":3.55},{"x":2.38,"y":0.2},{"x":1.71,"y":0.43},{"x":-0.85,"y":1.87},{"x":1.23,"y":1.46},{"x":3.53,"y":2.56},{"x":2.45,"y":2.35},{"x":2.44,"y":3.21},{"x":2.95,"y":2.62},{"x":1.36,"y":2.91},{"x":1.72,"y":3.49},{"x":1.13,"y":2.26},{"x":2.39,"y":1.08},{"x":1.94,"y":3.17},{"x":2.78,"y":-0.21},{"x":2.65,"y":2.34},{"x":2.48,"y":1.32},{"x":2.13,"y":2.22},{"x":2.39,"y":3.93},{"x":1.84,"y":2.01},{"x":0.58,"y":3.97},{"x":3.07,"y":2.51},{"x":2.62,"y":2.15},{"x":2.2,"y":2.45},{"x":2.34,"y":1.82},{"x":1.77,"y":4},{"x":2.91,"y":2.47},{"x":2.05,"y":1.29},{"x":3.05,"y":2.89}],
+        "backgroundColor": "rgba(99, 102, 241, 0.65)",
+        "pointRadius": 5
+      },
+      {
+        "label": "P(component B) ≥ 0.75 — safely B",
+        "data": [{"x":4.12,"y":3.86},{"x":4.93,"y":5.17},{"x":4.61,"y":4.07},{"x":4.78,"y":4.41},{"x":4.15,"y":5.18},{"x":4.23,"y":4.88},{"x":6.52,"y":3.99},{"x":4.4,"y":4.49},{"x":5,"y":3.31},{"x":5.46,"y":6.32},{"x":4.74,"y":4.1},{"x":3.96,"y":4.62},{"x":6.28,"y":3.39},{"x":6.08,"y":5.82},{"x":5.26,"y":4.85},{"x":6.95,"y":4.1},{"x":4.41,"y":2.95},{"x":5.04,"y":5.78},{"x":5.96,"y":3.36},{"x":4.14,"y":3.8},{"x":5.29,"y":4.09},{"x":5.21,"y":4.6},{"x":4.7,"y":4.26},{"x":5.21,"y":4.22},{"x":5.5,"y":6.17},{"x":5.59,"y":4.36},{"x":5.85,"y":5.01},{"x":4.85,"y":2.59},{"x":4.63,"y":3.62},{"x":5.64,"y":6.56},{"x":5.22,"y":3.52},{"x":3.83,"y":4.24}],
+        "backgroundColor": "rgba(234, 88, 12, 0.65)",
+        "pointStyle": "triangle", "pointRadius": 6
+      },
+      {
+        "label": "Undecided (0.25 – 0.75) — GMM says so, k-means cannot",
+        "data": [{"x":3.73,"y":2.45},{"x":3.59,"y":2.73},{"x":3.36,"y":3.32},{"x":3.91,"y":2.96},{"x":3.41,"y":4.06},{"x":3.75,"y":3.19},{"x":3.31,"y":4.69}],
+        "backgroundColor": "rgba(34, 197, 94, 0.95)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "rectRot", "pointRadius": 11, "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "GMM Soft Assignment — the 7 Green Points Are Genuinely Between Clusters" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Feature 2" } },
+      "x": { "title": { "display": true, "text": "Feature 1" } }
+    }
+  }
+}
 ```
-  K-Means (hard):                   GMM (soft):
-  ────────────────────────          ────────────────────────────
-  Point ★ → cluster A.             Point ★:
-                                      P(cluster A) = 0.70
-     ● ● ● ★ ○ ○ ○                   P(cluster B) = 0.25
-         A | B                        P(cluster C) = 0.05
 
-  A boundary point is crammed       Uncertainty is explicit.
-  into one cluster with no           This is a proper probabilistic
-  indication it was close.           model.
-```
+The blue and orange points are easy — both algorithms agree on those. The **7 green
+diamonds** are the interesting ones. K-means would stamp each with a single label and give
+you no hint that it was a close call. GMM reports the truth: the most balanced point here
+sits at (3.75, 3.19) with **P(B) = 0.54** — an almost perfect coin-flip.
+
+Why that matters in practice: if these are customers and you are about to spend money on a
+segment-specific campaign, the green points are the ones to *exclude*, or to test on. A hard
+assignment hides that risk; a soft one lets you act on it.
 
 | Property | K-Means | GMM |
 |---|---|---|
@@ -775,10 +985,6 @@ You alternate E and M until the log-likelihood stops improving.
 - It converges to a **local optimum**, so it is sensitive to initialization; a standard trick is to seed the means with a quick **k-means** run.
 - The responsibilities are **soft assignments** ($\gamma_{ik}$ spread across components), in contrast to k-means' **hard assignments** (each point to exactly one center).
 
-| | k-means | GMM (EM) |
-|---|---|---|
-| Assignment | Hard (one cluster) | Soft (responsibilities $\gamma_{ik}$) |
-| Cluster shape | Spherical | Elliptical (full $\Sigma$) |
 
 > **Interview —** *"Is EM guaranteed to converge? Does that mean it finds the best fit?"*
 > **Say:** Yes to the first, no to the second — and the gap between them is the whole point. Each EM iteration **provably cannot decrease** the data log-likelihood, so the sequence is monotonic and bounded, and therefore converges. But it converges to a **local** optimum. Different initialisations give different final fits, which is why the standard recipe is to seed the means with a quick k-means run and take the best of several restarts.
@@ -793,6 +999,76 @@ The GMM is saying **"I have no idea"** — the point is roughly equidistant from
 
 This is the core argument for soft assignment: it distinguishes *confident* from *arbitrary* decisions, and the boundary cases are usually the ones that matter.
 </details>
+
+### Worked Example — One E-Step in Actual Numbers
+
+A 1-D mixture of two Gaussians, caught mid-fit:
+
+| Component | $\pi_k$ | $\mu_k$ | $\sigma_k^2$ | $\sigma_k$ |
+|---|---|---|---|---|
+| A ($k=1$) | 0.7 | 4 | 4 | 2 |
+| B ($k=2$) | 0.3 | 8 | 9 | 3 |
+
+Data: $x=\{2,\,4,\,6,\,11\}$. Densities to **6 decimals**, responsibilities to **3**.
+
+$$\mathcal{N}(x \mid \mu,\sigma^2)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)$$
+
+**E-step for $x=6$** — chosen deliberately, because it lies *exactly 2 away from
+both means*.
+
+Component A:
+
+$$\tfrac{1}{\sqrt{2\pi\cdot4}}=0.199471,\quad -\tfrac{(6-4)^2}{2\cdot4}=-0.5,\quad e^{-0.5}=0.606531$$
+
+$$\mathcal{N}_A(6)=0.199471\times0.606531=0.120985$$
+
+Component B:
+
+$$\tfrac{1}{\sqrt{2\pi\cdot9}}=0.132981,\quad -\tfrac{(6-8)^2}{2\cdot9}=-0.2222,\quad e^{-0.2222}=0.800737$$
+
+$$\mathcal{N}_B(6)=0.132981\times0.800737=0.106483$$
+
+Weight each by its prior, then normalise so the two shares sum to 1:
+
+$$\pi_A\mathcal{N}_A=0.7(0.120985)=0.084690,\qquad \pi_B\mathcal{N}_B=0.3(0.106483)=0.031945$$
+
+$$\gamma_A=\frac{0.084690}{0.116635}=\mathbf{0.726},\qquad \gamma_B=\frac{0.031945}{0.116635}=\mathbf{0.274}$$
+
+**Equidistant, yet nowhere near 50/50 — why?** Two effects stack. A is narrower,
+so its peak is taller ($0.199$ vs $0.133$) and it wins on raw density even though
+$x=6$ is a full $1\sigma$ from $\mu_A$ but only $0.67\sigma$ from $\mu_B$. Then
+the prior, $0.7$ against $0.3$, widens the gap further.
+
+**All four points:**
+
+| $x_i$ | $\pi_A\mathcal{N}_A$ | $\pi_B\mathcal{N}_B$ | Sum | $\gamma_{iA}$ | $\gamma_{iB}$ |
+|---|---|---|---|---|---|
+| 2 | 0.084690 | 0.005399 | 0.090089 | 0.940 | 0.060 |
+| 4 | 0.139630 | 0.016401 | 0.156031 | 0.895 | 0.105 |
+| 6 | 0.084690 | 0.031945 | 0.116635 | **0.726** | **0.274** |
+| 11 | 0.000305 | 0.024197 | 0.024503 | 0.012 | 0.988 |
+
+**M-step — closing the loop on $\mu_A$.** With $N_A=\sum_i\gamma_{iA}$:
+
+$$N_A=0.940+0.895+0.726+0.012=2.573$$
+
+$$\mu_A^{\text{new}}=\frac{\sum_i\gamma_{iA}x_i}{N_A}=\frac{1.880+3.580+4.356+0.132}{2.573}=\frac{9.948}{2.573}=\mathbf{3.87}$$
+
+and $\pi_A^{\text{new}}=N_A/N=2.573/4=0.643$. Feed both back into the E-step and
+go round again — that loop *is* EM.
+
+**Against k-means.** At $x=6$ k-means hits an exact tie, $|6-4|=|6-8|=2$, and has
+to break it arbitrarily. Send the 6 left and $\mu_A=\text{mean}\{2,4,6\}=4.00$;
+send it right and $\mu_A=\text{mean}\{2,4\}=3.00$. A coin flip moves the centre a
+whole unit. The GMM never flips.
+
+```
+  GMM     A ████████████████████░░░░░░░  B    0.726 / 0.274
+  k-means A ███████████████████████████  B    1.000 / 0.000
+                        ...or 0.000 / 1.000, on a coin flip
+```
+
+*Takeaway: "soft assignment" is not a metaphor — 0.726 literally enters the mean as 0.726 of a data point. That one line of arithmetic is the whole difference between EM and k-means.*
 
 ---
 
@@ -845,6 +1121,61 @@ Strongly negative, so this point is **on the wrong side**: it sits closer, on av
 
 One such point is noise. **Many** of them means the clustering itself is wrong — usually K is off, or the cluster shapes violate the algorithm's assumptions (K-Means on non-spherical data). Plot the per-point silhouettes, not just the mean: a healthy-looking average of 0.55 can hide one entirely negative cluster.
 </details>
+
+### Worked Example — Silhouette by Hand
+
+Six points, already assigned to two clusters. Everything below is rounded to
+**3 decimals**.
+
+| Point | $x$ | $y$ | Assigned cluster |
+|---|---|---|---|
+| A | 1 | 1 | 1 |
+| B | 2 | 1 | 1 |
+| C | 1 | 2 | 1 |
+| D | 8 | 8 | 2 |
+| E | 9 | 8 | 2 |
+| F | 4 | 4 | 2 |
+
+**Point A, in full.**
+
+$a(A)$ — mean distance to the *rest of its own cluster*:
+
+$$d(A,B)=1.000,\qquad d(A,C)=1.000 \;\Longrightarrow\; a(A)=\frac{2.000}{2}=1.000$$
+
+$b(A)$ — mean distance to the *nearest other cluster* (with $K=2$ there is only
+one candidate, cluster 2):
+
+$$d(A,D)=\sqrt{98}=9.899,\quad d(A,E)=\sqrt{113}=10.630,\quad d(A,F)=\sqrt{18}=4.243$$
+
+$$b(A)=\frac{9.899+10.630+4.243}{3}=\frac{24.772}{3}=8.257$$
+
+$$s(A)=\frac{b(A)-a(A)}{\max\big(a(A),\,b(A)\big)}=\frac{8.257-1.000}{8.257}=\mathbf{0.879}$$
+
+**Now all six.**
+
+| Point | Cluster | $a(i)$ | $b(i)$ | $s(i)$ |
+|---|---|---|---|---|
+| A | 1 | 1.000 | 8.257 | **0.879** |
+| B | 1 | 1.207 | 7.575 | **0.841** |
+| C | 1 | 1.207 | 7.608 | **0.841** |
+| D | 2 | 3.328 | 9.446 | **0.648** |
+| E | 2 | 3.702 | 10.177 | **0.636** |
+| F | 2 | 6.030 | 3.818 | **−0.367** |
+
+$$\bar{s}=\frac{0.879+0.841+0.841+0.648+0.636-0.367}{6}=\frac{3.478}{6}=\mathbf{0.580}$$
+
+**Reading the scale.** $s \to +1$: the point sits deep inside its own cluster and
+far from any other. $s \approx 0$: it is on the fence, about as close to a
+neighbouring cluster as to its own. $s < 0$: it is, on average, **nearer to
+another cluster than to its own** — the label is probably wrong.
+
+That last case is exactly **F**. It sits $6.030$ from its own clustermates but
+only $3.818$ from cluster 1. And it damages the score twice over: parked at
+$(4,4)$ it inflates $a(D)$ and $a(E)$ while deflating $b$ for A, B and C. Move F
+into cluster 1 and the mean silhouette jumps from $0.580$ to $\mathbf{0.753}$,
+with F itself swinging from $-0.367$ to $+0.367$.
+
+*Takeaway: never report the mean silhouette alone. One misplaced point held a 0.75 clustering down at 0.58 — and the average is precisely the number that hides which point was at fault.*
 
 ### Elbow Method (Inertia / WCSS)
 
@@ -1051,6 +1382,8 @@ graph TD
 Photograph a flat, tilted plate and from most angles it looks like a shapeless blob — but from the one right angle you see its full circular shape in 2-D and lose almost nothing. PCA finds those most-informative viewing angles for your data: the directions along which the points spread out the most. Keep just enough of them to capture the picture, and you can throw the rest away.
 
 > **PCA** finds an orthogonal linear transformation that projects data onto a new coordinate system where axes (principal components) are ordered by the amount of variance they explain. PC1 captures maximum variance, PC2 the maximum remaining variance orthogonal to PC1, and so on. All principal components are uncorrelated.
+
+**Assumes:** the interesting structure is **linear**, and that **high variance means high information**. Both can be false — variance is not importance, and a feature measured in a larger unit will dominate every component unless you standardize first.
 
 PCA asks: "What direction in feature space has the most spread?" That direction becomes PC1. Then: "What direction, perpendicular to PC1, has the next most spread?" That is PC2. And so on. You keep only the top $k$ components that capture, say, 95% of total variance, and discard the rest.
 
@@ -1298,6 +1631,8 @@ But read the result the way you read a class photo. Who is sitting next to whom 
 
 > **t-SNE (t-distributed Stochastic Neighbor Embedding)** is a nonlinear dimensionality reduction technique that models pairwise similarities in high-dimensional space as conditional probabilities and finds a low-dimensional (typically 2D) embedding that minimizes the KL divergence between those probabilities and corresponding probabilities in the low-dimensional space. It uses a Student-t distribution in the low-dimensional space to address the "crowding problem."
 
+**Assumes:** only **local** neighbourhoods are worth preserving. It makes no promise at all about global geometry, so distances *between* the blobs it draws — and their sizes — carry no meaning.
+
 t-SNE is purpose-built for visualization. It takes your 784-dimensional MNIST digits and produces a 2D scatter plot where the 0s cluster together, the 1s cluster together, and so on. It is spectacularly good at revealing cluster structure that is invisible in raw feature space.
 
 ### How It Works (Intuition)
@@ -1461,6 +1796,8 @@ Most data is normal. Anomalies are rare by definition. You usually cannot collec
 
 > **Isolation Forest** detects anomalies by randomly partitioning the feature space with axis-aligned splits. Anomalies, being few and different, are isolated in fewer splits (shorter path length). Normal points, being clustered in dense regions, require more splits.
 
+**Assumes:** anomalies are **few and different**, so random axis-aligned cuts isolate them in fewer splits than normal points. It also assumes a *global* notion of "unusual" — when density varies across the data, reach for LOF instead.
+
 ```
   WHY IT WORKS:
 
@@ -1492,18 +1829,54 @@ middling density, so a global method shrugs.
 **LOF** asks a **relative** question instead: *is this point in a sparser
 neighbourhood than its own neighbours are?*
 
+```chart
+{
+  "type": "scatter",
+  "data": {
+    "datasets": [
+      {
+        "label": "Dense cluster — LOF ≈ 1.05 (normal)",
+        "data": [{"x":3,"y":7.13},{"x":2.88,"y":6.6},{"x":2.8,"y":6.55},{"x":3.03,"y":7.6},{"x":2.78,"y":6.72},{"x":3.22,"y":7.16},{"x":3.05,"y":6.58},{"x":2.99,"y":7.31},{"x":2.4,"y":6.79},{"x":2.14,"y":6.42},{"x":2.17,"y":6.89},{"x":2.43,"y":7.12},{"x":3.07,"y":6.92},{"x":1.87,"y":6.76},{"x":2.98,"y":7.05},{"x":2.31,"y":6.79},{"x":2.56,"y":6.64},{"x":3.48,"y":6.64},{"x":2.99,"y":7.4},{"x":2.74,"y":6.95},{"x":3.05,"y":7.03},{"x":2.45,"y":7.03}],
+        "backgroundColor": "rgba(99, 102, 241, 0.65)",
+        "pointRadius": 5
+      },
+      {
+        "label": "Sparse cluster — LOF ≈ 1.03 (also normal!)",
+        "data": [{"x":6.34,"y":1.05},{"x":7.44,"y":1.21},{"x":8.44,"y":1.4},{"x":9.73,"y":1.08},{"x":6.21,"y":2.41},{"x":7.33,"y":2.42},{"x":8.49,"y":2.42},{"x":9.79,"y":2.28},{"x":6.22,"y":3.45},{"x":7.36,"y":3.38},{"x":8.44,"y":3.48},{"x":9.74,"y":3.61},{"x":6.07,"y":4.57},{"x":7.41,"y":4.45},{"x":8.45,"y":4.64},{"x":9.78,"y":4.72}],
+        "backgroundColor": "rgba(234, 88, 12, 0.65)",
+        "pointStyle": "triangle", "pointRadius": 7
+      },
+      {
+        "label": "The outlier — LOF = 3.7",
+        "data": [{"x":5.1,"y":6.6}],
+        "backgroundColor": "rgba(239, 68, 68, 1)",
+        "borderColor": "rgba(30, 30, 30, 1)",
+        "pointStyle": "rectRot", "pointRadius": 14, "borderWidth": 3
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "LOF — Density Is Judged Locally, So the Sparse Cluster Is Still 'Normal'" } },
+    "scales": {
+      "y": { "title": { "display": true, "text": "Feature 2" } },
+      "x": { "title": { "display": true, "text": "Feature 1" } }
+    }
+  }
+}
 ```
-  Feature 2
-     │  ●●●●●            ← dense cluster
-     │  ●●●●●   ×        ← × sits just outside a DENSE region:
-     │  ●●●●●               its density is far below its
-     │                      neighbours' → LOF >> 1  (anomaly)
-     │      ○     ○
-     │   ○     ○          ← sparse cluster: these points are
-     │      ○     ○         far apart, but so are THEIR
-     │                      neighbours → LOF ≈ 1  (normal)
-     └──────────────────── Feature 1
-```
+
+Compare the red diamond with the orange triangles, because that contrast is the entire
+argument for LOF. The orange points are **far apart in absolute terms** — much further from
+each other than the red point is from the blue cluster. A global rule like "flag anything
+more than *d* away from its neighbours" would flag the whole orange cluster and miss the red
+point completely.
+
+LOF asks a relative question instead, and the numbers come out the other way round: the
+orange points score **1.03** because their neighbours are *equally* spread out, while the red
+point scores **3.7** because it is markedly emptier around it than around the tight blue
+neighbours it is being compared against.
+
+*Rule of thumb: LOF ≈ 1 is normal, LOF well above 1 is an outlier. There is no universal cutoff — calibrate it on your own data.*
 
 It is built in three steps, each defined over a point's $k$ nearest neighbours:
 
@@ -1671,95 +2044,21 @@ The challenge: with $n$ items, there are $2^n$ possible itemsets. Brute-force en
 }
 ```
 
-### 11.16.1 FP-Growth
+### Apriori vs FP-Growth — what you actually need
 
-> **FP-Growth (Frequent Pattern Growth)** mines frequent itemsets without candidate generation by compressing the transaction database into an **FP-tree** — a compact prefix-tree structure — and then recursively mining **conditional FP-trees** for each frequent item. It requires only two passes over the database and avoids the candidate explosion that makes Apriori slow on dense or long-itemset datasets.
+Apriori's weakness is that it rescans the database once per itemset length. **FP-Growth**
+fixes that by compressing the transactions into a prefix tree (an *FP-tree*) and mining it
+recursively — **two scans total, no candidate generation**, typically 10–100× faster on large
+data. Rule scoring afterwards is identical; only the itemset-discovery step differs.
 
-**Why Apriori is slow at scale:**
+That one paragraph is the whole interview answer. Reach for FP-Growth by default at
+production scale, and Apriori only when the data is small and you want each pruning step to
+be visible.
 
-Apriori scans the entire database once per itemset length level ($L$ levels = $L$ full scans). At each level it generates candidate itemsets from frequent smaller itemsets and checks them all. With $k$-item frequent patterns, it may generate and test $O(2^k)$ candidates. For large transaction databases (millions of transactions, thousands of items), this is prohibitive.
-
-FP-Growth fixes both problems: two database scans total, zero candidate generation.
-
-**Building the FP-tree:**
-
-```
-  Transactions (min_support = 3/5 = 0.6, threshold = 3):
-  T1: {Bread, Milk, Butter}
-  T2: {Bread, Diapers, Beer}
-  T3: {Milk, Diapers, Beer, Butter}
-  T4: {Bread, Milk, Diapers, Beer}
-  T5: {Bread, Milk, Butter}
-
-  Scan 1: count item frequencies
-    Bread:4  Milk:4  Beer:3  Diapers:3  Butter:3
-    (all ≥ 3 → all frequent; discard items below threshold)
-
-  One fixed global order (frequency desc, ties as listed):
-    Bread > Milk > Beer > Diapers > Butter
-
-  Reorder each transaction to follow that single order:
-    T1: Bread, Milk, Butter
-    T2: Bread, Beer, Diapers
-    T3: Milk, Beer, Diapers, Butter
-    T4: Bread, Milk, Beer, Diapers
-    T5: Bread, Milk, Butter
-
-  Scan 2: insert ordered transactions into prefix tree
-
-  root
-  ├─ Bread:4
-  │   ├─ Milk:3
-  │   │   ├─ Butter:2
-  │   │   └─ Beer:1 ─ Diapers:1
-  │   └─ Beer:1 ─ Diapers:1
-  └─ Milk:1
-      └─ Beer:1 ─ Diapers:1 ─ Butter:1
-
-  Header-table totals (link all nodes of the same item):
-    Bread 4 | Milk 4 (=3+1) | Beer 3 | Diapers 3 | Butter 3 (=2+1)
-```
-
-Each path from root → leaf represents a set of transactions that share that prefix. The counts on nodes give support directly.
-
-**Mining via conditional FP-trees:**
-
-```
-  To find all frequent itemsets containing Butter (support=3):
-
-  1. Trace all paths ending at Butter nodes:
-       Bread→Milk→Butter (count 2)
-       Milk→Beer→Diapers→Butter (count 1)
-
-  2. Build conditional FP-tree for Butter:
-     (only items in those paths, with their conditional counts)
-       Bread:2, Milk:3 (meets threshold)
-       Beer:1, Diapers:1 (below threshold in conditional tree)
-
-  3. Frequent itemsets containing Butter:
-       {Butter} support=3
-       {Milk, Butter} support=3
-       {Bread, Butter} support=2  ← below threshold, discard
-       → Mine recursively until no frequent items remain
-```
-
-**Why FP-Growth scales better than Apriori:**
-
-| Property | Apriori | FP-Growth |
-|---|---|---|
-| Database scans | $L$ scans (one per itemset length) | 2 scans (build tree + mine) |
-| Candidate generation | Explicit — exponential blowup | None |
-| Memory model | Candidate list + database | Compressed FP-tree |
-| Dense datasets (long patterns) | Very slow | Handles well |
-| Sparse datasets (few frequent items) | Reasonable | Also fast |
-| Typical speedup | Baseline | 10-100x faster on large data |
-
-**When to use FP-Growth vs Apriori:**
-- Use **FP-Growth** as the default for any production-scale frequent-itemset task (millions of transactions or hundreds of items).
-- Use **Apriori** when the dataset is small and interpretability of each pruning step matters, or when an FP-tree would exceed available memory (extremely wide transactions can produce large trees).
-
-The rule evaluation step (support / confidence / lift) is identical for both algorithms — only the itemset discovery mechanism differs.
-
+> **Why this section is short.** Market-basket mining is classic data-mining rather than
+> modern ML, and at Google/Meta/OpenAI it surfaces mainly as a *reasoning* question — "this
+> rule has 100% confidence, is it good?" — not an implementation one. Learn support,
+> confidence and lift cold; treat the tree mechanics as reference.
 ---
 
 ## 11.17 Self-Supervised Learning ★★★
@@ -1840,6 +2139,58 @@ CLIP (Contrastive Language-Image Pre-training) extends contrastive learning acro
 - Train image encoder and text encoder jointly so matching pairs have similar embeddings
 - Result: zero-shot image classification — describe any category in text, and CLIP can classify images into it without task-specific training.
 
+### The Three Families — One Table to Hold It All
+
+Every self-supervised method is answering the same question — *what free signal can I extract
+from unlabelled data?* — in one of three ways:
+
+| Family | The pretext task | Examples | Strength | Weakness |
+|---|---|---|---|---|
+| **Generative** | Hide part of the input, reconstruct it | BERT (masked), GPT (next-token), MAE (masked patches) | Dense signal — every token/patch teaches something | Spends capacity on details that may not matter (exact pixels) |
+| **Contrastive** | Pull two views of the same item together, push different items apart | SimCLR, CLIP, MoCo | Learns what makes things *different* — excellent linear-probe features | Needs many negatives, so large batches or a memory bank |
+| **Self-distillation** | A student network predicts a slowly-updated teacher's output | BYOL, DINO | No negatives needed at all | Needs architectural tricks to stay stable |
+
+**How to choose in one line:** generative objectives dominate language (the tokens *are* the
+task); contrastive and self-distillation dominate vision, where reconstructing exact pixels
+wastes effort on texture nobody needs.
+
+### The Collapse Problem ★★★
+
+This is the question interviewers reach for, because it separates people who *used* SimCLR
+from people who understand it.
+
+Contrastive learning asks the encoder to map two augmented views of one image to nearby
+embeddings. There is a degenerate way to do that perfectly: **output the same constant vector
+for every input.** Distance between views is then exactly zero, the objective is minimised,
+and the model has learned precisely nothing. That failure is **representational collapse**.
+
+Three ways to prevent it:
+
+| Method | The fix | Cost |
+|---|---|---|
+| **Negatives** (SimCLR, MoCo) | The loss also *pushes apart* different images, so a constant output is heavily penalised | Needs many negatives — SimCLR uses batches of 4096+, MoCo uses a queue |
+| **Asymmetry** (BYOL) | Student predicts an exponential-moving-average teacher; the extra predictor head and stop-gradient break the symmetry that makes collapse an attractor | No negatives, but stability depends on those tricks |
+| **Regularisation** (Barlow Twins, VICReg) | Explicitly penalise correlated or low-variance embedding dimensions | Simple objective, needs tuning |
+
+**Temperature.** The InfoNCE loss divides similarities by a temperature $\tau$ (typically
+0.05–0.1). Low $\tau$ sharpens the distribution, concentrating the penalty on the *hardest*
+negatives — the ones most easily confused with the positive. It is a small constant with a
+large effect on the features you get.
+
+> **Interview —** *"Why does SimCLR need such large batch sizes when supervised training doesn't?"*
+> **Say:** Because in contrastive learning the **batch supplies the negatives**. Each image's negatives are the other images in the same batch, so batch size directly sets how many contrasts the loss can draw per step — and the quality of the representation depends on seeing hard negatives. A batch of 256 gives a much weaker signal than 4096.
+> **They follow up with:** *"How would you avoid needing a huge batch?"* — MoCo keeps a **queue** of embeddings from previous batches with a momentum-updated encoder, so the negative pool is decoupled from batch size. Or drop negatives altogether and use BYOL/DINO, which prevent collapse with asymmetry instead.
+
+<details>
+<summary><strong>Quick check.</strong> You train a contrastive model. Training loss drops smoothly to near zero, but a linear probe on the learned features performs at chance. What almost certainly happened, and how would you confirm it in one line of code?</summary>
+
+**Representational collapse.** The encoder found the shortcut: emit (nearly) the same vector for every input. Two views of one image are then trivially identical, so the loss goes to zero while the features carry no information — which is exactly why a linear probe is at chance.
+
+**Confirm it:** compute the standard deviation of the embeddings across a batch — `z.std(dim=0).mean()`. If it's near zero, every input maps to the same point. A healthy model also has low off-diagonal correlation between embedding dimensions.
+
+**Fix:** check that negatives are actually in the loss (a batch-size or masking bug is a common culprit), verify the stop-gradient if you're using BYOL-style asymmetry, and confirm the augmentations are strong enough that the task isn't trivially solvable.
+</details>
+
 ---
 
 ## 11.18 Algorithm Selection Guide ★★
@@ -1870,23 +2221,27 @@ graph TD
 
 ### Quick Comparison Table
 
-| Algorithm | Task | K required? | Handles noise? | Cluster shape | Scalability |
-|---|---|---|---|---|---|
-| K-Means | Clustering | Yes | No | Spherical | Excellent |
-| K-Medoids (PAM) | Clustering | Yes | Robust to them | Spherical, any metric | Poor (>10K) |
-| Hierarchical | Clustering | No (cut tree) | No | Depends on linkage | Poor (>10K) |
-| DBSCAN | Clustering | No | Yes | Arbitrary | Good |
-| HDBSCAN | Clustering | No | Yes | Arbitrary, multi-density | Good |
-| Spectral Clustering | Clustering | Yes | No | Graph-connected / manifold | Poor (>10K dense) |
-| GMM | Clustering | Yes | No | Elliptical | Moderate |
-| PCA | Dim. reduction | Choose # PCs | N/A | Linear only | Excellent |
-| Kernel PCA | Dim. reduction | Choose # PCs | N/A | Nonlinear (kernel-defined) | Poor (>10K) |
-| t-SNE | Visualization | N/A | N/A | Nonlinear | Poor (>50K) |
-| UMAP | Dim. red. / viz | N/A | N/A | Nonlinear | Good |
-| Isolation Forest | Anomaly det. | N/A | Detects them | N/A | Excellent |
-| Local Outlier Factor | Anomaly det. | N/A | Detects them | N/A | Poor (>10K) |
-| Apriori | Assoc. rules | N/A | N/A | N/A | Moderate |
-| FP-Growth | Assoc. rules | N/A | N/A | N/A | Good |
+The column that actually decides your choice is **"It assumes"** — every algorithm below
+works beautifully when its assumption holds and fails when it doesn't. "Breaks when" is the
+same sentence read backwards.
+
+| Algorithm | Task | It assumes | Breaks when | K required? | Handles noise? | Cluster shape | Scalability |
+|---|---|---|---|---|---|---|---|
+| K-Means | Clustering | Spherical, equal-size, equal-density blobs | Clusters are elongated, unequal, or non-convex | Yes | No | Spherical | Excellent |
+| K-Medoids (PAM) | Clustering | Same as K-Means, but centre must be a real point | Same shape limits; also slow past ~10K | Yes | Robust to them | Spherical, any metric | Poor (>10K) |
+| Hierarchical | Clustering | Data is genuinely nested | There is no hierarchy — it builds one anyway | No (cut tree) | No | Depends on linkage | Poor (>10K) |
+| DBSCAN | Clustering | Dense regions split by sparse ones; one global density | Clusters have very different densities | No | Yes | Arbitrary | Good |
+| HDBSCAN | Clustering | Dense regions, density may vary | Data is uniformly dense with no real gaps | No | Yes | Arbitrary, multi-density | Good |
+| Spectral Clustering | Clustering | Clusters are connected in the similarity graph | Graph is badly built, or $n$ is large | Yes | No | Graph-connected / manifold | Poor (>10K dense) |
+| GMM | Clustering | Data came from a mixture of Gaussians | Clusters are strongly non-Gaussian | Yes | No | Elliptical | Moderate |
+| PCA | Dim. reduction | Structure is linear; variance = information | Structure is curved, or you forgot to scale | Choose # PCs | N/A | Linear only | Excellent |
+| Kernel PCA | Dim. reduction | Structure is linear *after* the kernel map | Wrong kernel, or $n$ is large | Choose # PCs | N/A | Nonlinear (kernel-defined) | Poor (>10K) |
+| t-SNE | Visualization | Only local neighbourhoods matter | You read distance or size between blobs | N/A | N/A | Nonlinear | Poor (>50K) |
+| UMAP | Dim. red. / viz | Data lies on a manifold, locally connected | Very small $n$, or over-tuned neighbours | N/A | N/A | Nonlinear | Good |
+| Isolation Forest | Anomaly det. | Anomalies are few, different, globally unusual | Density varies — local outliers are missed | N/A | Detects them | N/A | Excellent |
+| Local Outlier Factor | Anomaly det. | "Unusual" is relative to local neighbours | $n$ is large, or $k$ is badly chosen | N/A | Detects them | N/A | Poor (>10K) |
+| Apriori | Assoc. rules | Frequent itemsets are rare enough to prune | Data is dense with long frequent patterns | N/A | N/A | N/A | Moderate |
+| FP-Growth | Assoc. rules | Transactions share prefixes worth compressing | The FP-tree exceeds memory | N/A | N/A | N/A | Good |
 
 ```chart
 {

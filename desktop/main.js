@@ -6,6 +6,8 @@ const path = require('node:path');
 const url = require('node:url');
 const fs = require('node:fs');
 
+const { registerJavaIpc } = require('./java-runner');
+
 const isDev = process.argv.includes('--dev');
 
 // In dev mode we serve content directly from the repo root (../).
@@ -96,7 +98,6 @@ function setupAutoUpdater() {
   ipcMain.handle('updater:get-version', () => app.getVersion());
   ipcMain.handle('updater:get-status', () => updateStatus);
   ipcMain.handle('updater:is-packaged', () => app.isPackaged);
-
   if (!app.isPackaged) {
     // In dev mode, expose a stub so the renderer UI can still render with
     // a friendly "auto-update disabled in dev" message instead of crashing.
@@ -300,6 +301,7 @@ app.whenReady().then(() => {
   buildMenu();
   createWindow();
   setupAutoUpdater();
+  registerJavaIpc(ipcMain);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

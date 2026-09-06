@@ -1107,25 +1107,7 @@ graph LR
 
 > Standard gradient boosting evaluates every unique value of every feature at every split — O(n x features x unique_values). Histogram-based methods bucket continuous features into ~256 bins first, reducing split evaluation to O(bins x features).
 
-This is the single biggest reason LightGBM trains 5-10x faster than vanilla XGBoost on large datasets. XGBoost added histogram support (`tree_method='hist'`) but LightGBM was built for it from day one.
-
-### Leaf-Wise vs Level-Wise Growth
-
-```
-  LEVEL-WISE (XGBoost)        LEAF-WISE (LightGBM)
-  ────────────────────        ─────────────────────
-  Grows every node at         Grows whichever leaf gives
-  the same depth              the biggest loss reduction
-
-  Level 1:  [root]            Step 1:  [root]
-            /    \                     /    \
-  Level 2: [A]  [B]           Step 2: [A]    B
-           /\    /\                   /\
-  Level 3:[C][D][E][F]        Step 3:[C] D
-
-  → Balanced, slower to fit   → Asymmetric, lower loss sooner
-  → Less prone to overfit     → Can overfit; cap num_leaves
-```
+This is the single biggest reason LightGBM trains 5-10x faster than vanilla XGBoost on large datasets. XGBoost added histogram support (`tree_method='hist'`) but LightGBM was built for it from day one — combined with the leaf-wise growth shown above, that's LightGBM's full speed story.
 
 ### CatBoost — Ordered Boosting
 
@@ -1136,44 +1118,6 @@ This eliminates the subtle overfitting that happens with standard target encodin
 > **Interview —** *"XGBoost, LightGBM, CatBoost — how do you choose?"*
 > **Say:** I default to **LightGBM** for speed: histogram binning plus leaf-wise growth makes it several times faster than vanilla XGBoost on large data, and the accuracy is usually within noise. I switch to **CatBoost** when the dataset is dominated by high-cardinality categorical features, because ordered boosting handles the target-encoding leakage that would otherwise quietly overfit. I reach for **XGBoost** when I want the most battle-tested option or need its ecosystem. Honestly, with equal tuning effort all three land within about 1% of each other — algorithm choice matters far less than features and validation design.
 > **They follow up with:** *"What is the catch with LightGBM's leaf-wise growth?"* — it overfits more readily on small data. It keeps splitting the single highest-loss leaf, so it can grow deep, narrow branches that chase a handful of rows. The control is **`num_leaves`**, not `max_depth`, and the rule of thumb is to keep `num_leaves` below $2^{\text{max\_depth}}$. On a few thousand rows, level-wise XGBoost is often the safer default.
-
-### Tuning Strategy — What to Tune First
-```
-  PRIORITY ORDER (tune top to bottom):
-  ────────────────────────────────────────────────
-  1. n_estimators + learning_rate (inverse relationship)
-     → Start: 300 trees, lr=0.1. Then try 1000 trees, lr=0.03.
-  
-  2. max_depth / num_leaves (model complexity)
-     → XGBoost: max_depth 4-8
-     → LightGBM: num_leaves 20-100 (≈ 2^depth - 1)
-  
-  3. subsample + colsample_bytree (regularization)
-     → Both 0.7-0.9 usually works
-  
-  4. min_child_weight / min_data_in_leaf (leaf constraints)
-     → Prevents tiny leaves. Start with 20-50.
-  
-  5. reg_alpha (L1) + reg_lambda (L2)
-     → Only if still overfitting after steps 1-4
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["XGBoost", "LightGBM", "CatBoost"],
-    "datasets": [
-      { "label": "Training Time (s)", "data": [120, 25, 45], "backgroundColor": "rgba(239, 68, 68, 0.7)" },
-      { "label": "AUC-ROC (%)", "data": [94.2, 94.5, 94.8], "backgroundColor": "rgba(34, 197, 94, 0.7)" }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "GBM Framework Comparison — 1M Rows, 50 Features, Binary Classification" } },
-    "scales": { "y": { "beginAtZero": true } }
-  }
-}
-```
 
 ### Implementation — XGBoost vs LightGBM
 
@@ -1341,41 +1285,6 @@ When data is not linearly separable, map it to a higher-dimensional space where 
 | Binary classification | Many features, very few samples — prefer Lasso |
 | Features have been scaled | Features are unscaled (SVM is distance-based, so this breaks it) |
 
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-    "datasets": [
-      {
-        "label": "Training Accuracy",
-        "data": [55, 68, 82, 91, 96, 99, 99.5],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 3
-      },
-      {
-        "label": "Validation Accuracy",
-        "data": [54, 67, 81, 90, 88, 78, 65],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "borderDash": [5,5],
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 3
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "SVM — C Parameter Sweep (Sweet Spot Around C=1)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 50, "max": 100 },
-      "x": { "type": "logarithmic", "title": { "display": true, "text": "C (log scale)" } }
-    }
-  }
-}
-```
-
 ---
 
 ## 12.8 K-Nearest Neighbors — Deep Dive ★★
@@ -1522,48 +1431,7 @@ As dimensions increase, distances become meaningless — all points are roughly 
 
 > **Interview —** *"KNN trains in O(1). Why is it almost never used in production?"*
 > **Say:** Because it moves all the cost to **inference**, which is the wrong end. Every prediction scans the training set — $O(np)$ per query — so a model that "trained instantly" then needs the entire dataset in memory and hundreds of milliseconds per call. Compare a Random Forest: expensive once, then $O(Kd)$ per prediction. Production cares about p99 latency and memory footprint, and KNN is worst exactly there.
-> **They follow up with:** *"What about KD-trees?"* — they help, but only in low dimensions. A KD-tree gets you to about $O(p\log n)$, and then degrades toward brute force above roughly 20 dimensions, because the curse of dimensionality means the search cannot prune branches effectively. Ball trees push that a little further, not fundamentally. If I genuinely need nearest-neighbour lookup at scale I would reach for an **approximate** index — HNSW or IVF-PQ ([Ch 28](#content/28_semantic_search)) — and accept approximate recall in exchange for sub-millisecond queries.
-
-### Speeding Up KNN: KD-Trees and Ball Trees
-
-Brute-force KNN computes distance to all $n$ training points — $O(np)$ per prediction. For large datasets, use spatial data structures:
-
-```
-  KD-Tree: partitions space into axis-aligned regions.
-    Average query: O(p log n) instead of O(np)
-    Degrades in high dimensions (p > 20)
-
-  Ball Tree: partitions space into nested hyperspheres.
-    Works better in high dimensions than KD-Tree.
-    Still degrades eventually.
-
-  sklearn uses algorithm='auto' which picks the best structure.
-```
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [1,3,5,7,9,11,13,15,17,19,21],
-    "datasets": [{
-      "label": "Validation Error",
-      "data": [0.28,0.19,0.12,0.10,0.09,0.09,0.10,0.11,0.13,0.15,0.17],
-      "borderColor": "rgba(99, 102, 241, 1)",
-      "backgroundColor": "rgba(99, 102, 241, 0.1)",
-      "fill": true,
-      "tension": 0.4,
-      "pointRadius": 3
-    }]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "KNN — Optimal K Minimizes Validation Error" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Validation Error" }, "beginAtZero": true, "max": 0.35 },
-      "x": { "title": { "display": true, "text": "K (number of neighbors)" } }
-    }
-  }
-}
-```
+> **They follow up with:** *"What about KD-trees?"* — they help, but only in low dimensions. A KD-tree gets you to about $O(p\log n)$ instead of $O(np)$, and then degrades toward brute force above roughly 20 dimensions, because the curse of dimensionality means the search cannot prune branches effectively. Ball trees push that a little further, not fundamentally — sklearn's `algorithm='auto'` picks between them automatically. If I genuinely need nearest-neighbour lookup at scale I would reach for an **approximate** index — HNSW or IVF-PQ ([Ch 28](#content/28_semantic_search)) — and accept approximate recall in exchange for sub-millisecond queries.
 
 ---
 
@@ -1702,37 +1570,6 @@ The independence assumption is almost always wrong — features ARE correlated. 
 > **Say:** Because classification only needs the **argmax**, not accurate probabilities. Correlated features get double-counted, which pushes the scores toward 0 and 1 — but it usually pushes the *correct* class further, so the ranking survives even as the calibration collapses. Zhang's 2004 result is the formal version: the decision boundary can stay optimal even when the probability estimates are badly wrong.
 > **They follow up with:** *"When does it actually break?"* — two cases. First, when you **need the probability itself** — for expected-value decisions or risk scoring — because the outputs are wildly overconfident. Second, when features are **heavily redundant**: bag-of-words with 50 near-synonyms lets one piece of evidence get counted 50 times, and the double-counting stops being symmetric. It is also why Naive Bayes stays a strong *baseline* for text — few parameters, so very low variance on small data — rather than a final model.
 
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["free", "money", "click", "meeting", "project", "report"],
-    "datasets": [
-      {
-        "label": "P(word | Spam)",
-        "data": [0.90, 0.85, 0.88, 0.05, 0.03, 0.02],
-        "backgroundColor": "rgba(239, 68, 68, 0.7)",
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "borderWidth": 1
-      },
-      {
-        "label": "P(word | Not Spam)",
-        "data": [0.05, 0.02, 0.01, 0.60, 0.55, 0.50],
-        "backgroundColor": "rgba(34, 197, 94, 0.7)",
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Naive Bayes — Word Probabilities Differ Dramatically by Class" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "P(word | class)" }, "beginAtZero": true, "max": 1.0 }
-    }
-  }
-}
-```
-
 ### Implementation — Text Classification
 
 ```python
@@ -1779,38 +1616,6 @@ Two entries deserve a second look. **KNN inverts the usual cost profile** — tr
 free, prediction is expensive, which is the opposite of every other model here and the
 reason it struggles in latency-sensitive serving. And **SVM's $O(n^2)$–$O(n^3)$ training**
 is the practical reason it falls out of favour above roughly 100k rows.
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Naive Bayes", "Logistic Reg", "Decision Tree", "Random Forest", "XGBoost", "SVM (RBF)", "KNN"],
-    "datasets": [
-      {
-        "label": "Training Speed (higher = faster)",
-        "data": [98, 90, 85, 70, 55, 20, 99],
-        "backgroundColor": "rgba(99, 102, 241, 0.7)",
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "borderWidth": 1
-      },
-      {
-        "label": "Prediction Speed (higher = faster)",
-        "data": [98, 98, 95, 75, 80, 85, 10],
-        "backgroundColor": "rgba(34, 197, 94, 0.7)",
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "indexAxis": "y",
-    "plugins": { "title": { "display": true, "text": "Training vs Prediction Speed by Algorithm" } },
-    "scales": {
-      "x": { "title": { "display": true, "text": "Speed Score (higher = faster)" }, "beginAtZero": true, "max": 100 }
-    }
-  }
-}
-```
 
 ---
 
@@ -1946,65 +1751,9 @@ this scale, and prediction is $O(Kd)$ — microseconds), or plain logistic regre
 if the relationship is close to linear and you need maximum speed and interpretability.
 </details>
 
-```chart
-{
-  "type": "radar",
-  "data": {
-    "labels": ["Accuracy", "Training Speed", "Prediction Speed", "Interpretability", "Handles Non-linearity"],
-    "datasets": [
-      {
-        "label": "Logistic Regression",
-        "data": [60, 95, 98, 90, 20],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "backgroundColor": "rgba(99, 102, 241, 0.1)",
-        "borderWidth": 2,
-        "pointRadius": 3
-      },
-      {
-        "label": "Random Forest",
-        "data": [82, 70, 75, 60, 85],
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "backgroundColor": "rgba(34, 197, 94, 0.1)",
-        "borderWidth": 2,
-        "pointRadius": 3
-      },
-      {
-        "label": "XGBoost",
-        "data": [92, 60, 80, 40, 90],
-        "borderColor": "rgba(234, 88, 12, 1)",
-        "backgroundColor": "rgba(234, 88, 12, 0.1)",
-        "borderWidth": 2,
-        "pointRadius": 3
-      },
-      {
-        "label": "SVM (RBF)",
-        "data": [85, 20, 85, 15, 88],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "backgroundColor": "rgba(239, 68, 68, 0.1)",
-        "borderWidth": 2,
-        "pointRadius": 3
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Algorithm Comparison — Every Algorithm Has Different Strengths" } },
-    "scales": {
-      "r": { "beginAtZero": true, "max": 100 }
-    }
-  }
-}
-```
-
 ### 2026 Update: GBMs Still Dominate Tabular Data
 
-Recent Kaggle competitions and benchmarks (2025-2026) continue to show gradient boosting (LightGBM, XGBoost, CatBoost) as the clear winner on tabular/structured data — GBMs still take the large majority of structured-data competitions.
-
-**When to consider neural nets for tabular data:**
-- **TabNet** (Google, 2019): attention-based, built-in feature selection, works without feature engineering. Occasionally matches GBMs but rarely beats them, and trains much slower.
-- **FT-Transformer** (2021): applies Transformer architecture to tabular data with feature tokenization. Competitive with GBMs on some datasets but 10-50x slower to train.
-- **TabPFN** (2022; **v2** in *Nature*, 2025): a pre-trained transformer that classifies a whole table in one forward pass via in-context learning — no per-dataset training. v2 and its successors (TabPFN-2.5 / 3, 2025-2026) pushed the ceiling from ~1K to tens of thousands of rows (and beyond) and can beat tuned GBMs on small-to-medium tables; still memory-bound on very large data.
-
-**Bottom line:** Start with LightGBM. Try CatBoost if you have many categorical features. Only reach for neural-net tabular approaches if GBMs plateau AND you have a very large dataset with complex feature interactions.
+Recent Kaggle competitions and benchmarks (2025-2026) continue to show gradient boosting (LightGBM, XGBoost, CatBoost) as the clear winner on tabular/structured data. Attention-based tabular nets — TabNet, FT-Transformer, TabPFN (v2 in *Nature*, 2025) — occasionally match or beat tuned GBMs on small-to-medium tables, but train far slower and rarely justify the swap. **Bottom line:** start with LightGBM, try CatBoost for heavy categorical data, and only reach for a neural-net tabular approach if GBMs plateau on a genuinely large, complex-interaction dataset.
 
 ---
 
@@ -2054,30 +1803,22 @@ print(f"Best params: {study.best_params}")
 
 ### The 80/20 of Hyperparameters
 
-Not all hyperparameters are created equal. The per-algorithm breakdown of what to
-tune first is in
-[Cheat Sheet §6](#content/00_quick_reference_cheat_sheet); the principle behind it is
-what matters here:
-
-**In almost every model, one or two hyperparameters do nearly all the work.** For
-trees it is `max_depth`; for boosting, `learning_rate` × `n_estimators`; for SVM,
-`C` and `gamma`. Everything else is a rounding error by comparison.
-
-That single fact is why **random search beats grid search** at equal budget. A grid
-spends its trials evenly across all dimensions, so most of them differ only in
-parameters that don't matter. Random search samples every dimension independently, so
-it explores many more *distinct values of the parameters that do matter* for the same
-number of fits.
+Not all hyperparameters are created equal — in almost every model, one or two do
+nearly all the work (for trees, `max_depth`; for boosting, `learning_rate` ×
+`n_estimators`; for SVM, `C` and `gamma`). That is exactly why **random search beats
+grid search** at equal budget: a grid spends trials evenly across every dimension,
+while random search explores more distinct values of the ones that actually matter.
+The full per-algorithm breakdown of what to tune first is in
+[Cheat Sheet §6](#content/00_quick_reference_cheat_sheet).
 
 ### Feature Importance — MDI vs Permutation vs SHAP
 
-| Method | What it measures | Caveat |
-|---|---|---|
-| **MDI** (impurity-based, the sklearn default) | Total impurity reduction from every split using that feature | **Biased toward high-cardinality features** — an ID column can top the chart |
-| **Permutation importance** | Accuracy drop when that feature's values are randomly shuffled | Slower; correlated features split the credit between them |
-| **SHAP** | Per-prediction contribution, based on Shapley values | Slowest, but the gold standard for explanation |
-
-> **Rule of thumb:** Use permutation importance for model selection (reliable, fast enough). Use SHAP when you need to explain individual predictions to stakeholders.
+Three ways to ask "which feature mattered?", ranked by cost and reliability: **MDI**
+(impurity reduction per split, the sklearn default) is free but biased toward
+high-cardinality features; **permutation importance** (accuracy drop when a feature
+is shuffled) is slower but model-agnostic and reliable; **SHAP** (per-prediction
+Shapley values) is slowest but the gold standard for explaining individual
+predictions. → Full comparison table: [Cheat Sheet §6](#content/00_quick_reference_cheat_sheet).
 
 → **SHAP in depth** — Shapley values, the additive decomposition, and a worked
 waterfall — is [Ch 10 §10.10](#content/10_supervised_learning). Two points specific
@@ -2085,25 +1826,6 @@ to the algorithms in *this* chapter: use **`TreeSHAP`** for tree ensembles (exac
 polynomial-time; generic KernelSHAP is exponential), and remember **MDI's bias is a
 tree artifact** — it rewards features offering many split points, so high-cardinality
 columns rise whether or not they predict (see the `customer_id` box in §12.5).
-
-### Debugging Checklist — "My Model Won't Learn"
-
-```
-  □ Is the data loaded correctly?
-      Check shapes, dtypes, NaN counts
-  □ Are features scaled?
-      Critical for SVM, KNN, logistic regression
-  □ Is the target encoded correctly? Binary 0/1, not strings
-  □ Is there data leakage?
-      Future info in features? The target itself?
-  □ Is class imbalance extreme? Try class_weight='balanced'
-  □ Any constant or near-constant features? Drop them
-  □ Is the split time-ordered, if the data is temporal?
-  □ Is the learning rate too high?
-      Loss oscillating instead of falling
-  □ Is the model too simple for the pattern?
-  □ Is there enough data? Plot a learning curve
-```
 
 ---
 
@@ -2119,9 +1841,7 @@ Most models are NOT well-calibrated out of the box. Logistic regression tends to
 
 ### Why Calibration Matters
 
-- **Ads bidding:** If your CTR model predicts 5% click probability but the true rate is 3%, you'll overbid and waste budget.
-- **Medical diagnosis:** A model saying "90% chance of cancer" when the true probability is 60% causes unnecessary anxiety and invasive procedures.
-- **Multi-model systems:** When combining scores from different models (e.g., relevance score + freshness score), they must be on the same scale.
+**Ads bidding** is the sharpest example: if your CTR model predicts 5% click probability but the true rate is 3%, you overbid and waste budget. The same failure mode hits anywhere a probability is used in arithmetic rather than just for ranking — medical risk scores, expected-revenue calculations, or combining scores from multiple models on a shared scale.
 
 ### Calibration Methods
 
@@ -2143,15 +1863,10 @@ calibrated_model = CalibratedClassifierCV(base_model, method='isotonic', cv=5)
 calibrated_model.fit(X_train, y_train)
 ```
 
-### Reliability Diagram
-
-A calibration plot bins predictions (0–0.1, 0.1–0.2, …) and compares the mean
-predicted probability in each bin against the actual fraction of positives. Perfect
-calibration lies on the diagonal; a curve sagging below it means the model is
-over-confident.
-
-→ **The diagram, plus how to put a number on it** — Expected Calibration Error and
-the Brier score — is [Ch 13 §13.12](#content/13_model_evaluation). That section
+A **reliability diagram** — bin predictions and compare each bin's mean prediction
+against its actual observed frequency — is the standard way to check whether it
+worked. → **The diagram, plus how to put a number on it** (Expected Calibration
+Error, Brier score) is [Ch 13 §13.12](#content/13_model_evaluation). That section
 diagnoses miscalibration; this one fixes it.
 
 ---

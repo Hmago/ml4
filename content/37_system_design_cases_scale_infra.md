@@ -171,6 +171,7 @@ The limiter lives **inside the API gateway**, as middleware that runs *before*
 any request is routed to a backend. State lives in a sharded Redis cluster.
 
 ![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter.svg)
+![distributed rate limiter — AI-generated draft (for review, not yet final)](diagrams/rate_limiter_ai.png)
 
 **Legend:** boxes are stateless unless they name a store; `──▶` = request flow.
 **Block-by-block:**
@@ -469,6 +470,7 @@ default — it has **no network hop**. A standalone **ID service** is used when
 clients can't embed the library (polyglot fleets, or you want central control).
 
 ![Distributed Unique ID Generator (Snowflake) — high-level architecture (HLD)](diagrams/unique_id.svg)
+![distributed unique ID generator (Snowflake style) — AI-generated draft (for review, not yet final)](diagrams/unique_id_ai.png)
 
 **Block-by-block:**
 - **Coordinator** (ZooKeeper/etcd — Ch 24, consensus) — hands each generator a **distinct 10-bit
@@ -691,6 +693,7 @@ the signal an interviewer is looking for.
 ## 15.2 HLD — architecture + flow
 
 ![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk.svg)
+![top-K / trending / heavy-hitters system, reporting the top-K most frequent keys from a firehose of events — AI-generated draft (for review, not yet final)](diagrams/topk_ai.png)
 
 **Block-by-block:**
 - **Kafka ingest** — events land in **Kafka**, **partitioned by key** so every occurrence of one
@@ -817,6 +820,7 @@ the signal an interviewer is looking for.
 ## 16.2 HLD — architecture + flow
 
 ![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)
+![leaderboard / ranking system — AI-generated draft (for review, not yet final)](diagrams/leaderboard_ai.png)
 
 **Block-by-block:**
 - **Score API** — writes each update to both the durable store (**source of truth** — survives a
@@ -942,6 +946,7 @@ the signal an interviewer is looking for.
 ## 17.2 HLD — architecture + flow
 
 ![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)
+![distributed cache system (designing Redis / Memcached itself) — AI-generated draft (for review, not yet final)](diagrams/dist_cache_ai.png)
 
 **Block-by-block:**
 - **Cache client** — a library in each app server; hashes the key onto a **consistent-hash ring**
@@ -1070,6 +1075,7 @@ the signal an interviewer is looking for.
 ## 18.2 HLD — architecture + flow
 
 ![Distributed Job Scheduler / Task Queue — high-level architecture (HLD)](diagrams/scheduler.svg)
+![distributed job scheduler / task queue system — AI-generated draft (for review, not yet final)](diagrams/scheduler_ai.png)
 
 **Block-by-block:**
 - **Submit API** — writes each job **durably** (so nothing is lost on a crash) with its `run_at` and `state`.
@@ -1256,6 +1262,7 @@ the signal an interviewer is looking for.
 ## 19.3 HLD — high-level architecture
 
 ![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment.svg)
+![payment system / digital wallet — AI-generated draft (for review, not yet final)](diagrams/payment_ai.png)
 
 **Legend:** boxes are services; a store is named inside the box.
 **Block-by-block:**
@@ -1504,6 +1511,7 @@ the signal an interviewer is looking for.
 ## 20.2 HLD — architecture + flow
 
 ![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)
+![e-commerce inventory / flash-sale system — AI-generated draft (for review, not yet final)](diagrams/inventory_ai.png)
 
 **Block-by-block:**
 - **Virtual waiting room** — the pressure valve: it admits a controlled rate of users and tells
@@ -1628,6 +1636,7 @@ the signal an interviewer is looking for.
 ## 21.2 HLD — architecture + flow
 
 ![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store.svg)
+![distributed key-value store (Dynamo style, leaderless and highly available) — AI-generated draft (for review, not yet final)](diagrams/kv_store_ai.png)
 
 **Block-by-block:**
 - **No leader** — any node can **coordinate** a request, which is why the store stays available.
@@ -1750,6 +1759,7 @@ the signal an interviewer is looking for.
 ## 22.2 HLD — architecture + flow
 
 ![Pastebin — high-level architecture (HLD)](diagrams/pastebin.svg)
+![pastebin system (paste text, get a short shareable link, optional expiry / view-once) — AI-generated draft (for review, not yet final)](diagrams/pastebin_ai.png)
 
 **Block-by-block:**
 - **Write API** — mints a **short key** (same options as the shortener: hash+base62, counter, or a
@@ -1898,6 +1908,7 @@ the signal an interviewer is looking for.
 ## 23.3 HLD — high-level architecture
 
 ![E-commerce Platform (Amazon / Flipkart) — high-level architecture (HLD)](diagrams/amazon.svg)
+![a full e-commerce platform (Amazon / Flipkart style) — AI-generated draft (for review, not yet final)](diagrams/amazon_ai.png)
 
 **Legend:** boxes are services; the store is named inside. A dashed line splits
 the **AP browse plane** (top) from the **CP order plane** (bottom).
@@ -2187,6 +2198,7 @@ the signal an interviewer is looking for.
 ### F1.2 HLD — architecture + flow
 
 ![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving.svg)
+![LLM inference serving / chatbot platform, where the crux is keeping expensive GPUs continuously busy — AI-generated draft (for review, not yet final)](diagrams/llm_serving_ai.png)
 
 ```
    Clients ─▶ API Gateway (auth, rate limit, quotas — CS13)
@@ -2312,6 +2324,7 @@ the signal an interviewer is looking for.
 ### F2.2 HLD — architecture + flow
 
 ![RAG / Semantic Search — high-level architecture (HLD)](diagrams/rag.svg)
+![RAG / semantic search system, drawn as two paths: an offline ingest path and an online query path converging at a shared LLM step — AI-generated draft (for review, not yet final)](diagrams/rag_ai.png)
 
 ```
    INGEST (offline / streaming)            QUERY (online)
@@ -2415,6 +2428,7 @@ the signal an interviewer is looking for.
 ### F3.2 HLD — architecture + flow
 
 ![Recommendation Feed — high-level architecture (HLD)](diagrams/recsys.svg)
+![recommendation feed system, a funnel narrowing from hundreds of millions of items to a final ranked list, with a training loop that keeps it fresh — AI-generated draft (for review, not yet final)](diagrams/recsys_ai.png)
 
 ```
    Request ─▶ ┌── CANDIDATE GENERATION (recall: 10^8 → 10^3) ──┐

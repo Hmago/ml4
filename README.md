@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  48 chapters · ~182 hours of content · 400+ DSA problems │
+  │  50 chapters · ~194 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -54,14 +54,14 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 07 | Introduction to Machine Learning | ★ | [07_introduction.md](content/07_introduction.md) | ~1.5 hrs | Beginner |
 | 08 | Core Concepts & Terminology | ★★★ | [08_core_concepts.md](content/08_core_concepts.md) | ~6.5 hrs | Beginner |
 | 09 | Data Preprocessing | ★★ | [09_data_preprocessing.md](content/09_data_preprocessing.md) | ~1 hr | Beginner-Intermediate |
-| 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~4 hrs | Intermediate |
-| 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~4.75 hrs | Intermediate |
-| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~4.5 hrs | Intermediate |
+| 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~5.5 hrs | Intermediate |
+| 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~5.75 hrs | Intermediate |
+| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~4.25 hrs | Intermediate |
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~4.25 hrs | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~3 hrs | Intermediate |
-| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.5 hrs | All Levels |
-| | **Core ML Total** | | | **~36.5 hrs** | |
+| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~4.25 hrs | All Levels |
+| | **Core ML Total** | | | **~39.25 hrs** | |
 
 ### Deep Learning & LLMs
 
@@ -112,13 +112,15 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
 | | **Practical & Infra Total** | | | **~12.25 hrs** | |
 
-### DSA & Coding
+### Java & Coding
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
+| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.5 hrs | Beginner-Intermediate |
+| 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~5 hrs | Intermediate |
 | 31 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [31_dsa_coding.md](content/31_dsa_coding.md) | ~8.75 hrs | Intermediate-Advanced |
-| -- | DSA Practice (400+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **DSA Total** | | | **~8.75 hrs + practice** | |
+| -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
+| | **Java & Coding Total** | | | **~19.25 hrs + practice** | |
 
 ### Interview Preparation
 
@@ -146,10 +148,10 @@ Open `index.html` in any modern browser — no build step, no server needed. Eve
 ```
   READING                         PRACTICE
   ────────────────────────        ────────────────────────
-  ▸ Sidebar navigation           ▸ 400+ DSA problems (Java)
+  ▸ Sidebar navigation           ▸ 415+ DSA problems (Java)
   ▸ Dark / light mode             ▸ In-browser code editor
   ▸ Focus mode (fullscreen)       ▸ Auto-save, timer, notes
-  ▸ Font size controls            ▸ Run code via Wandbox
+  ▸ Font size controls            ▸ Run code (auto-failover)
   ▸ Full-text search (Ctrl+K)    ▸ Filters: difficulty/company/tag
   ▸ VS Code syntax highlighting  ▸ Collapsible categories
   ▸ KaTeX math rendering         ▸ Solved-date tracking
@@ -279,20 +281,20 @@ ication   sion            ing       sionality      Learning Learning
 ### Six Learning Tracks
 
 ```
-  TRACK 1: Beginner Fast Track (~21 hours)
+  TRACK 1: Beginner Fast Track (~23 hours)
   ──────────────────────────────────────────
   Ch 07 (Intro) → Ch 08 (Core Concepts) → Ch 09 (Data) →
   Ch 10 (Supervised) → Ch 12 (Algorithms) → Ch 13 (Evaluation)
   Solid foundations. Enough for junior ML roles.
 
-  TRACK 2: Full ML Engineer (~55 hours)
+  TRACK 2: Full ML Engineer (~57 hours)
   ──────────────────────────────────────────
   Track 1 → Ch 11 (Unsupervised) → Ch 14 (Neural Nets) →
   Ch 15 (RL) → Ch 16 (Deep Learning) →
   Ch 17 / 17b / 17c (LLMs) → Ch 18 + 18b (Agents) → Ch 19 (Frameworks)
   Complete core curriculum. Strong enough for mid-level roles.
 
-  TRACK 3: LLM & Modern AI Focus (~54 hours)
+  TRACK 3: LLM & Modern AI Focus (~56 hours)
   ──────────────────────────────────────────
   Ch 07 → Ch 08 → Ch 10 (Supervised — need loss functions) →
   Ch 14 (Neural Nets) → Ch 13 (Evaluation — need metrics) →
@@ -301,7 +303,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 33 (LLM Interview Qs, Pt 1-2)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
-  TRACK 4: Google AI Engineer (~126 hours — full prep)
+  TRACK 4: Google AI Engineer (~132 hours — full prep)
   ──────────────────────────────────────────
   Ch 01 (Strategy — read first!) →
   Ch 02 (Behavioral — start STAR stories early) →

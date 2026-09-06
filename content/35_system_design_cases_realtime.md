@@ -262,6 +262,7 @@ delete the layers a given problem doesn't need and fatten the one that is the cr
 Every case study in Ch 35–37 echoes this exact shape.
 
 ![The 4-Layer Reference Architecture — Edge · Services · Data · Async](diagrams/arch_reference.svg)
+![the universal 4-layer reference architecture — AI-generated draft (for review, not yet final)](diagrams/arch_reference_ai.png)
 
 **Layer 1 · Edge** is everything between the user and your code: **GeoDNS** points the
 client at the nearest region, the **CDN** serves static assets and media from the edge
@@ -501,6 +502,7 @@ Read it top-to-bottom: the **synchronous ingest** (Layer 1) acknowledges the cal
 milliseconds; every slow step hangs off the **async backbone** (Layer 2) below.
 
 ![Notification System — high-level architecture (HLD)](diagrams/notification.svg)
+![notification system — AI-generated draft (for review, not yet final)](diagrams/notification_ai.png)
 
 **Legend:** `.q` = durable queue (Kafka topic / SQS). Boxes are stateless services unless
 they name a store. Read top-to-bottom: a request enters at LAYER 1, is acknowledged in
@@ -827,6 +829,7 @@ We use **WebSocket** (Ch 23) for the live path, with long-poll as a fallback for
 networks. Now the architecture:
 
 ![Chat / Messaging (WhatsApp / Slack) — high-level architecture (HLD)](diagrams/chat.svg)
+![chat / messaging application (WhatsApp / Slack style), using WebSocket for the live path with long-poll as a fallback for hostile networks — AI-generated draft (for review, not yet final)](diagrams/chat_ai.png)
 
 **Block by block:**
 - **Layer 1 — L4 load balancer** — does TCP/TLS pass-through (an L7 proxy that buffered every
@@ -1206,6 +1209,7 @@ bytes).** Signaling is low-volume and reliable; media is high-volume, lossy, and
 critical — they have nothing in common and must not share infrastructure.
 
 ![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)
+![video conferencing system (Zoom / Google Meet style), drawn as two clearly separate planes — AI-generated draft (for review, not yet final)](diagrams/video_conf_ai.png)
 
 **Block by block:**
 - **Meeting Service** — a stateless service owning the non-real-time control surface: creating
@@ -1532,6 +1536,7 @@ ops, assigns revision numbers, transforms concurrent ops, and broadcasts the res
 by `docId` so a document's whole live session lives on one box.
 
 ![Collaborative Editor (Google Docs) — high-level architecture (HLD)](diagrams/collab_editor.svg)
+![collaborative document editor (Google Docs style) — AI-generated draft (for review, not yet final)](diagrams/collab_editor_ai.png)
 
 **Block by block:**
 - **Collab Gateway** — holds each editor's WebSocket and **routes by `docId`** (consistent

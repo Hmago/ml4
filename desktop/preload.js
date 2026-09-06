@@ -11,6 +11,18 @@ contextBridge.exposeInMainWorld('mlnotes', {
   isDesktop: true,
   platform: process.platform,
 
+  // Local JDK execution for the DSA practice page. The renderer prefers this
+  // over the remote sandboxes when a JDK 17+ is installed: it works offline,
+  // it's much faster, and — unlike the remote sandboxes — it can create OS
+  // threads, so virtual threads and CompletableFuture examples actually run.
+  java: {
+    // Returns { available, version?, major?, path? }. Pass true to re-scan.
+    detect: (force) => ipcRenderer.invoke('java:detect', !!force),
+    // Returns { ok, compileError, runtimeError, output, killedBy, exitCode,
+    //           usedPreview, version, major } or { ok: false, error }.
+    run: (code, stdin) => ipcRenderer.invoke('java:run', { code, stdin: stdin || '' }),
+  },
+
   updater: {
     // Returns { ok: bool, version?: string, error?: string }.
     check:       () => ipcRenderer.invoke('updater:check'),

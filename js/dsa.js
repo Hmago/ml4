@@ -1749,6 +1749,217 @@ function dsaRenderTestResults(results) {
   return banner + '<div class="dsa-test-rows">' + rows + '</div>';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Remote Java execution: retry-with-backoff over a chain of free, key-less,
+// CORS-enabled compiler backends. Wandbox is primary; Compiler Explorer takes
+// over when Wandbox is down (it has returned 500 for every compiler during
+// outages). Each backend is normalised to:
+//   { compileError, runtimeError, output, killedBy, provider, usedFallback }
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DSA_RUN_TIMEOUT_MS = 25000;
+const DSA_RUN_MAX_ATTEMPTS = 3;
+const DSA_GODBOLT_COMPILER = 'java2202'; // jdk 22.0.2, supportsExecute
+
+function dsaHttpError(status) {
+  const err = new Error('API returned ' + status);
+  err.status = status;
+  return err;
+}
+
+function dsaSleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Retry transient faults only: 5xx, 429, timeouts and network/CORS failures.
+// A 4xx (other than 429) means our request is wrong, so retrying is pointless.
+function dsaIsRetriableError(err) {
+  if (!err) return false;
+  if (err.name === 'AbortError') return true;
+  if (typeof err.status === 'number') return err.status >= 500 || err.status === 429;
+  return true;
+}
+
+async function dsaRunOnWandbox(code, signal) {
+  const resp = await fetch('https://wandbox.org/api/compile.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, compiler: 'openjdk-jdk-22+36', save: false }),
+    signal
+  });
+  if (!resp.ok) throw dsaHttpError(resp.status);
+  const data = await resp.json();
+  return {
+    compileError: data.compiler_error || '',
+    runtimeError: data.program_error || '',
+    output: data.program_output || '',
+    killedBy: data.signal ? 'signal: ' + data.signal : ''
+  };
+}
+
+// Compiler Explorer returns stdout/stderr as arrays of { text } lines.
+function dsaJoinCELines(lines) {
+  if (!Array.isArray(lines)) return '';
+  return lines.map(l => (l && typeof l.text === 'string') ? l.text : '').join('\n');
+}
+
+async function dsaRunOnGodbolt(code, signal) {
+  const resp = await fetch('https://godbolt.org/api/compiler/' + DSA_GODBOLT_COMPILER + '/compile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      source: code,
+      compiler: DSA_GODBOLT_COMPILER,
+      lang: 'java',
+      allowStoreCodeDebug: false,
+      options: {
+        userArguments: '',
+        executeParameters: { args: [], stdin: '' },
+        compilerOptions: { executorRequest: true, skipAsm: true },
+        filters: { execute: true }
+      }
+    }),
+    signal
+  });
+  if (!resp.ok) throw dsaHttpError(resp.status);
+  const data = await resp.json();
+  const build = data.buildResult || {};
+
+  if (build.code !== 0) {
+    return {
+      compileError: dsaJoinCELines(build.stderr) || 'Compilation failed.',
+      runtimeError: '', output: '', killedBy: ''
+    };
+  }
+  if (data.timedOut) {
+    return {
+      compileError: '', runtimeError: '',
+      output: dsaJoinCELines(data.stdout),
+      killedBy: 'timed out'
+    };
+  }
+  const stderr = dsaJoinCELines(data.stderr);
+  return {
+    compileError: '',
+    // Exit code 0 with stderr text is just warnings, not a failure.
+    runtimeError: data.code !== 0 ? (stderr || 'Program exited with code ' + data.code) : '',
+    output: dsaJoinCELines(data.stdout),
+    killedBy: ''
+  };
+}
+
+// ── Local JDK (desktop app only) ──
+// When the Electron shell finds a JDK 17+ on the machine we run there instead
+// of a remote sandbox: it works offline, it is far faster, and it can create OS
+// threads — so virtual threads, executors and CompletableFuture examples run,
+// which the remote sandboxes cannot do at all.
+let _dsaLocalJava = null;   // null = not probed, false = unavailable, else info
+
+async function dsaLocalJavaInfo() {
+  if (_dsaLocalJava !== null) return _dsaLocalJava;
+  if (!window.mlnotes || !window.mlnotes.java) { _dsaLocalJava = false; return false; }
+  try {
+    const info = await window.mlnotes.java.detect();
+    _dsaLocalJava = info && info.available ? info : false;
+  } catch (e) {
+    _dsaLocalJava = false;
+  }
+  return _dsaLocalJava;
+}
+
+async function dsaRunOnLocalJdk(code) {
+  const res = await window.mlnotes.java.run(code, '');
+  if (!res || !res.ok) throw new Error((res && res.error) || 'Local JDK run failed.');
+  return {
+    compileError: res.compileError || '',
+    runtimeError: res.runtimeError || '',
+    output: res.output || '',
+    killedBy: res.killedBy || ''
+  };
+}
+
+const DSA_RUNNERS = [
+  { name: 'Wandbox', run: dsaRunOnWandbox },
+  { name: 'Compiler Explorer', run: dsaRunOnGodbolt }
+];
+
+// Remember whichever backend last worked, so a prolonged outage of the primary
+// doesn't cost every subsequent run a full round of failing retries.
+const DSA_RUNNER_PREF_KEY = 'ml4-dsa-runner';
+
+function dsaGetPreferredRunner() {
+  try { return localStorage.getItem(DSA_RUNNER_PREF_KEY) || ''; } catch (e) { return ''; }
+}
+
+function dsaSetPreferredRunner(name) {
+  try { localStorage.setItem(DSA_RUNNER_PREF_KEY, name); } catch (e) { /* storage unavailable */ }
+}
+
+function dsaOrderedRunners() {
+  const list = DSA_RUNNERS.slice();
+  const idx = list.findIndex(r => r.name === dsaGetPreferredRunner());
+  if (idx > 0) list.unshift(list.splice(idx, 1)[0]);
+  return list;
+}
+
+async function dsaExecuteJava(code, onStatus) {
+  const report = msg => { if (typeof onStatus === 'function') onStatus(msg); };
+
+  // Prefer a local JDK when the desktop shell offers one. A failure here is
+  // never fatal — we fall straight through to the remote sandboxes below.
+  const local = await dsaLocalJavaInfo();
+  if (local) {
+    try {
+      report('Compiling and running on your local JDK ' + local.major + '...');
+      const result = await dsaRunOnLocalJdk(code);
+      result.provider = 'Local JDK ' + local.major;
+      result.usedFallback = false;
+      result.localRun = true;
+      return result;
+    } catch (err) {
+      report('Local JDK failed — falling back to the online sandbox...');
+      await dsaSleep(300);
+    }
+  }
+
+  const runners = dsaOrderedRunners();
+  let lastErr = null;
+
+  for (let p = 0; p < runners.length; p++) {
+    const runner = runners[p];
+
+    for (let attempt = 1; attempt <= DSA_RUN_MAX_ATTEMPTS; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), DSA_RUN_TIMEOUT_MS);
+      try {
+        report(attempt === 1
+          ? 'Compiling and running on ' + runner.name + '...'
+          : 'Retrying on ' + runner.name + ' (attempt ' + attempt + ' of ' + DSA_RUN_MAX_ATTEMPTS + ')...');
+        const result = await runner.run(code, controller.signal);
+        dsaSetPreferredRunner(runner.name);
+        result.provider = runner.name;
+        result.usedFallback = runner.name !== DSA_RUNNERS[0].name;
+        return result;
+      } catch (err) {
+        lastErr = (err && err.name === 'AbortError')
+          ? new Error('Request timed out after ' + (DSA_RUN_TIMEOUT_MS / 1000) + 's')
+          : err;
+        if (!dsaIsRetriableError(err) || attempt === DSA_RUN_MAX_ATTEMPTS) break;
+        await dsaSleep(600 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 300));
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    if (p < runners.length - 1) {
+      report(runner.name + ' is unavailable — switching to ' + runners[p + 1].name + '...');
+      await dsaSleep(400);
+    }
+  }
+
+  throw lastErr || new Error('All code execution backends are unavailable.');
+}
+
 async function dsaRunCode() {
   const editor = document.getElementById('dsaCodeEditor');
   const output = document.getElementById('dsaOutput');
@@ -1756,9 +1967,10 @@ async function dsaRunCode() {
   const testWrap = document.getElementById('dsaTestResultsWrap');
   if (!editor || !output) return;
 
-  // Remove 'public' from class declaration — Wandbox saves as prog.java,
-  // but Java requires filename to match the public class name.
-  // Making the class non-public avoids the mismatch.
+  // Remove 'public' from class declaration — the remote backends save the
+  // source under a fixed filename (prog.java / example.java), but Java requires
+  // the filename to match the public class name. Making the class non-public
+  // avoids the mismatch on every backend.
   const userCode = editor.value;
   const code = userCode.replace(/public\s+(class\s+)/g, '$1');
   output.className = 'dsa-output running';
@@ -1771,31 +1983,28 @@ async function dsaRunCode() {
   let executionFailed = false;
 
   try {
-    const resp = await fetch('https://wandbox.org/api/compile.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, compiler: 'openjdk-jdk-22+36', save: false })
+    const data = await dsaExecuteJava(code, msg => {
+      output.className = 'dsa-output running';
+      output.textContent = msg;
     });
+    const note = (data.usedFallback || data.localRun) ? '(ran on ' + data.provider + ')\n\n' : '';
 
-    if (!resp.ok) throw new Error('API returned ' + resp.status);
-    const data = await resp.json();
-
-    if (data.compiler_error) {
+    if (data.compileError) {
       output.className = 'dsa-output error';
-      output.textContent = 'Compilation Error:\n' + data.compiler_error;
+      output.textContent = note + 'Compilation Error:\n' + data.compileError;
       executionFailed = true;
-    } else if (data.program_error) {
+    } else if (data.runtimeError) {
       output.className = 'dsa-output error';
-      output.textContent = 'Runtime Error:\n' + data.program_error + (data.program_output ? '\n\nOutput:\n' + data.program_output : '');
+      output.textContent = note + 'Runtime Error:\n' + data.runtimeError + (data.output ? '\n\nOutput:\n' + data.output : '');
       executionFailed = true;
-    } else if (data.signal) {
+    } else if (data.killedBy) {
       output.className = 'dsa-output error';
-      output.textContent = 'Process killed (signal: ' + data.signal + ')';
+      output.textContent = note + 'Process killed (' + data.killedBy + ')';
       executionFailed = true;
     } else {
       output.className = 'dsa-output';
-      output.textContent = data.program_output || '(No output)';
-      programOutput = data.program_output || '';
+      output.textContent = note + (data.output || '(No output)');
+      programOutput = data.output || '';
     }
 
     // ── Run automated tests if we can parse `// expected` comments ──
@@ -1832,7 +2041,12 @@ async function dsaRunCode() {
     }
   } catch (err) {
     output.className = 'dsa-output error';
-    output.textContent = 'Failed to execute code.\n\n' + err.message + '\n\nMake sure you have an internet connection.\nThe code runs on Wandbox API — it may be temporarily unavailable.';
+    output.textContent = 'Failed to execute code.\n\n'
+      + ((err && err.message) ? err.message : String(err))
+      + '\n\nTried ' + DSA_RUNNERS.map(r => r.name).join(' and ')
+      + ', ' + DSA_RUN_MAX_ATTEMPTS + ' attempts each.\n'
+      + 'Check your internet connection — otherwise these free services are\n'
+      + 'temporarily unavailable. Your code is saved locally, so just hit Run again later.';
   } finally {
     runBtn.disabled = false;
     runBtn.innerHTML = '&#9654; Run';
