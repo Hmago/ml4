@@ -1,1403 +1,549 @@
 # Chapter 15 — Reinforcement Learning
 
----
+> **Your one-hour mission:** teach a tiny robot to find treasure, understand how it
+> learns from mistakes, and connect that idea to modern language models.
 
-## What You'll Learn
+Learn the RL loop, work through one update, and recognise when RL is useful.
+Basic arithmetic is enough; Chapter 14 helps with neural networks, but their
+intuition is explained here. No algorithm zoo to memorise.
 
-After this chapter you will be able to:
-- Explain the RL loop — agent, environment, state, action, reward, policy — and how it differs from supervised and unsupervised learning
-- Model a decision problem as a Markov Decision Process and reason about discounting
-- Define the value functions ($V$, $Q$) and the Bellman equation, and compute them on small examples
-- Balance exploration and exploitation (ε-greedy, UCB, Boltzmann)
-- Describe how Q-Learning, DQN, policy gradients (REINFORCE), and actor-critic (PPO) learn
-- Explain RLHF and DPO — how RL aligns large language models
-- Decide when RL is the right tool and when it is overkill
-
----
-
-## Before You Start — Prerequisites
-
-> **This chapter builds on a few earlier ideas:** basic probability and expected value
-> (**Chapter 6 — Math for ML**), neural networks and gradient descent (**Chapter 14 — Neural
-> Networks**, needed for DQN and policy networks), and — for the RLHF section — large language
-> models (**Chapter 17 — Large Language Models**). The RL-specific terms are defined below and
-> re-explained in context as they appear, so you can start here even if those are hazy.
-
-### Key Terms (Quick Reference)
-
-Skim this once, then refer back — each term reappears with a concrete example later.
-
-| Term | Plain meaning |
-|------|---------------|
-| **Agent / Environment** | The learner that makes decisions, and the world it acts in. |
-| **State ($s$)** | A snapshot of the situation right now (a board position, sensor readings). |
-| **Action ($a$)** | A choice the agent can make (move left, steer 5°). |
-| **Reward ($r$)** | A single number scoring the *last* action — the only feedback RL gets. |
-| **Return ($G_t$)** | The *total* discounted reward from now until the episode ends. Reward is one step; return is the whole future. |
-| **Episode** | One complete run from start to a terminal state — one full game, drive, or maze attempt. |
-| **Policy ($\pi$)** | The agent's strategy: a rule mapping states to actions. |
-| **Value ($V$, $Q$)** | Expected future return — of a state ($V$) or a state-action pair ($Q$). "How good is this?" |
-| **Discount factor ($\gamma$)** | How much future reward is worth now (0–1). γ=0.9 means a reward one step later counts 90% as much — future reward is less certain, like interest in reverse. |
-| **Exploration vs exploitation** | Try something new to learn more, vs use the best option known so far. |
+| Stop | Study budget |
+|---|---:|
+| 15.1 Meet the learner | 7 min |
+| 15.2 Chasing the right reward | 8 min |
+| 15.3 Explore or exploit? | 6 min |
+| 15.4 How good is this move? | 9 min |
+| 15.5 Watch the robot learn | 10 min |
+| 15.6 Beyond the cheat sheet | 8 min |
+| 15.7 The LLM connection | 5 min |
+| 15.8 Choosing wisely, recap and recall | 7 min |
+| **Total, including examples and recall** | **60 min** |
 
 ---
 
-## 15.1 What is Reinforcement Learning?
+## 15.1 Meet the Learner
 
 ### Simple Explanation
 
-Think about how you'd train a puppy. You don't hand it a textbook — you let it try things, and
-when it does something good (sits on command) you give a treat; when it does something unwanted
-you don't. Over time the puppy works out which actions earn treats. That's **reinforcement
-learning**: an **agent** learns by *trial and error*, guided only by **rewards**, with nobody
-telling it the "right answer" — just whether what it did turned out well or badly, often only
-much later.
+Teach a puppy to sit by rewarding useful attempts, not explaining muscle movements.
+Rewarded behaviour gradually becomes more likely. **Reinforcement learning (RL)**
+gives a computer a similar setup: make choices, observe consequences, improve.
 
-> **Reinforcement Learning (RL)** is a branch of machine learning in which an agent learns to make sequential decisions by interacting with an environment, receiving reward signals, and adjusting its behaviour to maximise cumulative long-term reward.
+> **Official Definition:** Reinforcement learning studies how an agent learns a
+> policy for choosing actions to maximise expected cumulative reward through
+> interaction with an environment.
 
-Unlike supervised learning, there is no dataset of correct answers. Unlike unsupervised learning, there is an explicit objective signal. RL sits in its own quadrant: the agent generates its own data through trial and error, and the feedback it receives is delayed and scalar — a single number saying "that was good" or "that was bad," not a gradient telling it exactly how to improve.
+**Cumulative** matters: a disappointing move now might enable a better outcome
+later. Learn a strategy, not just how to chase the next treat.
 
-| Dimension | Supervised | Unsupervised | Reinforcement |
-|---|---|---|---|
-| **Signal** | Label per example | No signal | Scalar reward (delayed) |
-| **Data** | Fixed dataset | Fixed dataset | Agent generates its own |
-| **Goal** | Predict y from x | Find structure | Maximise cumulative reward |
-| **Feedback timing** | Immediate | None | Potentially many steps later |
-| **Example** | Image classification | Clustering | Game-playing AI |
+Meet our robot, **Roo**, in a tiny treasure maze:
+
+```
+  +---+---+---+
+  | S | B | G |    S = start, G = treasure
+  +---+---+---+    P = pit; B, C, D = ordinary cells
+  | C | D | P |
+  +---+---+---+
+```
+
+| Component | Meaning | In Roo's maze |
+|---|---|---|
+| **Agent** | The decision-maker | Roo's controller |
+| **Environment** | The world it acts in | Maze and its rules |
+| **State** | Information describing the current situation | Roo's cell |
+| **Action** | An available choice | Up, Down, Left, Right |
+| **Reward** | A number returned after a move | Movement cost, treasure or pit payoff |
+| **Policy** | The strategy for choosing actions | What Roo chooses in each cell |
+
+A policy can always choose one action, or assign probabilities to several.
+An **episode** is one complete attempt, from the start until treasure or the pit.
+Training repeats many episodes; one lucky success is not a learned strategy.
 
 ```mermaid
 flowchart LR
-    E["Environment"] -- "state s_t, reward r_t" --> A["Agent"]
-    A -- "action a_t" --> E
+    E["Environment: maze"] -- "Reward and next state" --> A["Agent: Roo"]
+    A -- "Action" --> E
 ```
 
-The loop is deceptively simple: observe state, take action, receive reward, repeat. Everything in RL — from Atari bots to LLM alignment — is a variation on this loop.
+For example, Roo observes S, chooses Right, receives a reward, and observes B.
+Nobody supplied a label saying "Right is correct." Roo must discover its usefulness.
 
-**Example — how the loop works (one turn of a game).** Imagine an agent learning Pac-Man:
-
-1. **Observe state:** the current screen — Pac-Man's position, the ghosts, the remaining dots.
-2. **Take action:** move *Right*.
-3. **Get reward:** +10 for eating a dot (or −500 for running into a ghost).
-4. **Repeat:** the resulting screen becomes the next state, and the loop continues.
-
-After millions of such turns the agent has learned which moves tend to lead to high scores —
-without ever being told "the correct move." It discovered a strategy purely from the reward
-signal.
-
----
-
-## 15.2 Core Components
-
-### Simple Explanation
-
-Every RL problem has the same cast of characters — once you can spot them, any RL paper or
-product makes more sense. Think of a video game: *you* are the **agent**, the *game world* is the
-**environment**, the *screen* is the **state**, your *controller inputs* are **actions**, your
-*score* is the **reward**, and your *playing strategy* is the **policy**. That's the entire
-vocabulary.
-
-> **The six primitives of any RL problem are: Agent, Environment, State, Action, Reward, and Policy.**
-
-```
-┌──────────────┬──────────────────────────────────────────────────┐
-│ Agent        │ The decision-maker. A robot arm, a game bot,    │
-│              │ an LLM generating tokens.                       │
-├──────────────┼──────────────────────────────────────────────────┤
-│ Environment  │ Everything the agent interacts with. The game   │
-│              │ board, the road, the user asking a question.    │
-├──────────────┼──────────────────────────────────────────────────┤
-│ State (s)    │ A snapshot of the world at time t. In chess:    │
-│              │ the board position. In driving: sensor readings.│
-├──────────────┼──────────────────────────────────────────────────┤
-│ Action (a)   │ What the agent can do. Discrete (left/right)   │
-│              │ or continuous (steer 23.7 degrees).             │
-├──────────────┼──────────────────────────────────────────────────┤
-│ Reward (r)   │ A scalar feedback signal. +1 for scoring,      │
-│              │ -100 for crashing, 0 for neutral steps.         │
-├──────────────┼──────────────────────────────────────────────────┤
-│ Policy (π)   │ The agent's strategy: a mapping from states to │
-│              │ actions (or action probabilities).              │
-└──────────────┴──────────────────────────────────────────────────┘
-```
-
-**Self-driving car example:**
-
-- **Agent:** the autonomous driving system
-- **Environment:** roads, other vehicles, pedestrians, weather
-- **State:** camera images, LIDAR point cloud, speed, GPS
-- **Action:** steering angle, throttle, brake pressure
-- **Reward:** +1 per second of safe driving, -1000 for collision, +50 for reaching destination
-- **Policy:** the neural network mapping sensor inputs to driving commands
-
----
-
-## 15.3 Markov Decision Processes (MDPs)
-
-### Simple Explanation
-
-An **MDP** is just the rulebook that makes an RL problem precise: what situations exist (states),
-what you can do (actions), how the world responds (transitions), and what you get paid (rewards).
-Its one big assumption — the **Markov property** — is wonderfully practical: *the present state
-tells you everything you need in order to decide.* Like a chess board, you don't need the history
-of how the pieces got there; the current position is enough to choose your next move.
-
-> **A Markov Decision Process is a mathematical framework for modelling sequential decision-making where outcomes are partly random and partly under the agent's control. It is defined by the tuple $(S, A, P, R, \gamma)$.**
-
-The components:
-
-- $S$ — set of states
-- $A$ — set of actions
-- $P(s' | s, a)$ — transition probability: given state $s$ and action $a$, what is the probability of landing in $s'$?
-- $R(s, a, s')$ — reward function
-- $\gamma \in [0, 1]$ — discount factor for future rewards
-
-The **Markov property** is the key assumption: the future depends only on the current state, not on the history of how you got there. Formally: $P(s_{t+1} | s_t, a_t) = P(s_{t+1} | s_0, a_0, s_1, a_1, \ldots, s_t, a_t)$.
-
-This may seem restrictive, but in practice you can encode relevant history into the state itself (e.g., stacking multiple video frames as DQN does for Atari).
-
-```
-MDP example — simple grid world:
-
-  ┌───┬───┬───┬───┐
-  │ S │   │   │ G │   S = Start state
-  ├───┼───┼───┼───┤   G = Goal (+10)
-  │   │ ■ │   │   │   ■ = Wall
-  ├───┼───┼───┼───┤   P = Pit (-10)
-  │   │   │ P │   │
-  └───┴───┴───┴───┘
-
-  States: each cell (12 total, minus wall = 11)
-  Actions: {Up, Down, Left, Right}
-  Transitions: deterministic (or stochastic with slip probability)
-  Reward: +10 at G, -10 at P, -0.04 per step (encourages efficiency)
-```
-
-**Example — how a transition works (stochastic grid).** Suppose the robot chooses *Up*. In a
-deterministic world it moves up with probability 1. But the floor is slippery, so really
-$P(\text{up}) = 0.8$, $P(\text{left}) = 0.1$, $P(\text{right}) = 0.1$ — it usually goes where
-intended but sometimes slips sideways. That "partly controlled, partly random" behaviour is
-exactly what the transition function $P(s'|s,a)$ captures, and it's why the agent must plan for
-bad luck rather than assume perfect control.
-
----
-
-## 15.4 Policies and Value Functions
-
-### Simple Explanation
-
-A **policy** is *what to do*; a **value function** is *how good things are*. Picture a chess coach
-watching your game: the **policy** is the move you choose, while the **value** is the coach's
-judgement — "this position is winning (+0.8)" or "you're in trouble (−0.5)." $V(s)$ scores a
-*situation*; $Q(s,a)$ scores a *situation plus a specific move*. Good value estimates are what let
-an agent act well: just pick the move with the highest $Q$.
-
-> **A policy $\pi$ maps states to actions. A value function estimates how good it is — in terms of expected cumulative reward — to be in a given state (or to take a given action in a given state).**
-
-### State-Value Function $V^\pi(s)$
-
-$$V^\pi(s) = \mathbb{E}_\pi \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \mid s_0 = s \right]$$
-
-"Starting from state $s$ and following policy $\pi$, what is my expected total discounted reward?"
-
-### Action-Value Function $Q^\pi(s, a)$
-
-$$Q^\pi(s, a) = \mathbb{E}_\pi \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \mid s_0 = s, a_0 = a \right]$$
-
-"Starting from state $s$, taking action $a$, then following $\pi$, what is my expected total discounted reward?"
-
-The relationship: $V^\pi(s) = \sum_a \pi(a|s) \cdot Q^\pi(s, a)$. The value of a state is the weighted average of the Q-values, weighted by the policy's action probabilities.
-
-**Example — how it works (computing $V$ from $Q$).** Suppose in state $s$ the agent can go Left
-or Right, with learned action-values $Q(s,\text{Left}) = 2$ and $Q(s,\text{Right}) = 10$.
-
-- A **greedy** policy always picks Right, so $V(s) = Q(s,\text{Right}) = 10$.
-- A **50/50** policy averages them: $V(s) = 0.5(2) + 0.5(10) = 6$.
-
-This is exactly $V^\pi(s) = \sum_a \pi(a|s)\,Q^\pi(s,a)$ — a state's value is the policy-weighted
-average of its action-values. A better policy (more weight on Right) yields a higher state value,
-which is precisely why *improving the policy raises $V$*.
-
-### Optimal Versions
-
-The **optimal policy** $\pi^*$ is the one that achieves the highest value in every state:
-
-$$V^*(s) = \max_\pi V^\pi(s) \qquad Q^*(s,a) = \max_\pi Q^\pi(s,a)$$
-
-If you know $Q^*$, the optimal policy is trivial: always pick $\arg\max_a Q^*(s,a)$.
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["State A (near goal)", "State B (middle)", "State C (near pit)", "State D (start)"],
-    "datasets": [
-      {
-        "label": "V*(s) — optimal value",
-        "data": [9.2, 5.8, -3.1, 4.5],
-        "backgroundColor": "rgba(99,102,241,0.7)",
-        "borderColor": "rgba(99,102,241,1)",
-        "borderWidth": 1
-      },
-      {
-        "label": "V^random(s) — random policy",
-        "data": [2.1, -0.5, -7.8, -1.2],
-        "backgroundColor": "rgba(200,200,200,0.6)",
-        "borderColor": "rgba(160,160,160,1)",
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "State Values Under Optimal vs Random Policy" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "V(s)" }, "min": -10, "max": 12 }
-    }
-  }
-}
-```
-
----
-
-## 15.5 Exploration vs Exploitation
-
-### Simple Explanation
-
-Imagine choosing a restaurant for dinner. **Exploitation** is going to your favourite place —
-reliably good. **Exploration** is trying the new spot that just opened — it might be amazing, or
-a wasted evening. If you only ever exploit, you'll never discover a better favourite; if you only
-ever explore, you never enjoy the good food you already found. Every RL agent faces this exact
-tension on every decision.
-
-> **The exploration-exploitation dilemma is the fundamental tension in RL: should the agent exploit its current best-known action, or explore other actions that might yield higher long-term reward?**
-
-Pure exploitation locks you into the first decent strategy you find. Pure exploration never capitalises on what you have learned. Every practical RL system must balance both.
-
-### Epsilon-Greedy
-
-The simplest strategy. With probability $\epsilon$, take a random action (explore). With probability $1 - \epsilon$, take the greedy action (exploit).
-
-Typically $\epsilon$ starts high (e.g., 1.0) and decays over training toward a small value (e.g., 0.05).
-
-**Example — how ε-greedy works.** An agent has tried three actions and currently estimates
-$Q(A)=5$, $Q(B)=8$, $Q(C)=3$. With $\epsilon = 0.1$:
-
-- **90% of the time** (exploit) it picks **B**, the current best.
-- **10% of the time** (explore) it picks uniformly at random among A, B, C — giving A and C a
-  chance to prove they are actually better.
-
-Early in training $\epsilon$ is near 1.0 (mostly exploring, because the estimates are still
-unreliable); by the end it decays to ~0.05 (mostly exploiting the now-trustworthy estimates).
-That decay *is* the trick: explore first, exploit later.
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0,100,200,300,400,500,600,700,800,900,1000],
-    "datasets": [
-      {
-        "label": "Epsilon (exploration rate)",
-        "data": [1.0,0.90,0.80,0.65,0.50,0.35,0.22,0.14,0.09,0.06,0.05],
-        "borderColor": "rgba(234, 88, 12, 1)",
-        "backgroundColor": "rgba(234, 88, 12, 0.1)",
-        "fill": true,
-        "tension": 0.4,
-        "pointRadius": 0
-      },
-      {
-        "label": "Exploitation rate (1 - epsilon)",
-        "data": [0.0,0.10,0.20,0.35,0.50,0.65,0.78,0.86,0.91,0.94,0.95],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "backgroundColor": "rgba(99, 102, 241, 0.1)",
-        "fill": true,
-        "tension": 0.4,
-        "pointRadius": 0
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Epsilon Decay — Gradual Shift from Exploration to Exploitation" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Rate" }, "min": 0, "max": 1.0 },
-      "x": { "title": { "display": true, "text": "Episode" } }
-    }
-  }
-}
-```
-
-### Upper Confidence Bound (UCB)
-
-UCB is smarter than epsilon-greedy: it favours actions that are both promising *and* uncertain (under-explored).
-
-$$a_t = \arg\max_a \left[ Q(a) + c \sqrt{\frac{\ln t}{N(a)}} \right]$$
-
-- $Q(a)$ — current estimated value of action $a$
-- $N(a)$ — number of times action $a$ has been tried
-- $c$ — exploration constant controlling the bonus
-- $t$ — total number of steps so far
-
-The second term is an exploration bonus that shrinks as an action is tried more. Actions tried rarely get a large bonus, driving the agent to explore them.
-
-### Boltzmann (Softmax) Exploration
-
-Pick actions with probability proportional to exponentiated Q-values:
-
-$$P(a) = \frac{e^{Q(a)/\tau}}{\sum_{a'} e^{Q(a')/\tau}}$$
-
-Temperature $\tau$ controls randomness: high $\tau$ is nearly uniform, low $\tau$ approaches greedy.
-
----
-
-## 15.6 The Bellman Equation
-
-### Simple Explanation
-
-The Bellman equation is one beautifully simple idea: **the value of where you are = the reward
-you get now + the (discounted) value of where you land next.** It's like planning a road trip by
-working backwards from the destination — once you know how good the *next* town is, you know how
-good *this* town is (its value minus the cost of the drive). This "value = immediate + future"
-recursion is the engine inside almost every RL algorithm.
-
-> **The Bellman equation expresses the value of a state as the immediate reward plus the discounted value of the successor state. It is the recursive foundation of nearly all RL algorithms.**
-
-$$V^*(s) = \max_a \left[ R(s, a) + \gamma \sum_{s'} P(s'|s,a) \, V^*(s') \right]$$
-
-For action-values:
-
-$$Q^*(s, a) = R(s, a) + \gamma \sum_{s'} P(s'|s,a) \max_{a'} Q^*(s', a')$$
-
-This recursive structure means if you know the values of all next states, you can compute the value of the current state. Algorithms like value iteration repeatedly apply this equation until convergence.
-
-### Worked Example
-
-```
-Grid world (deterministic transitions):
-
-  ┌───┬───┬───┐
-  │ A │ B │ G │   G = goal, reward +10
-  ├───┼───┼───┤   Each step costs -1
-  │ C │ D │ E │   γ = 0.9
-  └───┴───┴───┘
-
-  Compute V*(B) — one step from goal:
-    V*(B) = max_a [R + γ·V*(next)]
-    Moving Right to G: R = -1 + 10 = 9
-    V*(B) = 9 + 0.9 × 0 = 9        (goal is terminal, V*(G)=0)
-
-  Compute V*(A) — two steps from goal:
-    Best path: A → B → G
-    V*(A) = -1 + 0.9 × V*(B) = -1 + 0.9 × 9 = 7.1
-
-  Compute V*(E) — one step from goal (E → G, moving Up):
-    V*(E) = (-1 + 10) + 0.9 × 0 = 9        (same as B)
-
-  Compute V*(D) — two steps from goal:
-    Via B: V*(D) = -1 + 0.9 × V*(B) = -1 + 0.9 × 9 = 7.1
-    Via E: V*(D) = -1 + 0.9 × V*(E) = -1 + 0.9 × 9 = 7.1
-    Both paths tie → V*(D) = 7.1
-
-  The Bellman equation propagates values backward from the goal:
-  states nearer G have higher value, each step discounted by γ.
-```
-
-### Value Iteration & Policy Iteration
-
-#### Simple Explanation
-
-The Bellman equation is a *promise* about what the optimal values must satisfy — but it doesn't
-hand you those values on a plate. When you actually **know the rules of the world** (the transition
-probabilities $P(s'\mid s,a)$ and rewards $R$), you can *solve* for them with two classic
-dynamic-programming recipes. Both turn the Bellman equation into an algorithm; both need a fully
-known **MDP model**; both provably converge to the optimal policy. Think of them as "planning with
-the map in hand" — before you've ever taken a single real step.
-
-**Value Iteration** — just keep hammering the Bellman *optimality* update until the numbers stop
-moving, then read off the greedy policy at the end.
-
-> Repeat the sweep until $V$ converges:
-> $$V_{k+1}(s) = \max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V_k(s')\,\bigr]$$
-> Then extract the greedy policy once:
-> $$\pi^*(s) = \arg\max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V(s')\,\bigr]$$
-
-**Policy Iteration** — hold a policy fixed, work out exactly how good it is, then make it greedy
-w.r.t. those values, and repeat. It alternates two steps:
-
-> **(a) Policy Evaluation** — solve (or iterate) the Bellman *expectation* equations for the current
-> policy $\pi$ to get $V^\pi$:
-> $$V^\pi(s) = \sum_{s'} P(s'\mid s,\pi(s))\,\bigl[\,R(s,\pi(s),s') + \gamma\,V^\pi(s')\,\bigr]$$
-> **(b) Policy Improvement** — make the policy greedy w.r.t. those values:
-> $$\pi'(s) = \arg\max_a Q^\pi(s,a) = \arg\max_a \sum_{s'} P(s'\mid s,a)\,\bigl[\,R(s,a,s') + \gamma\,V^\pi(s')\,\bigr]$$
-> Repeat (a)→(b) until the policy stops changing — at which point it is optimal.
-
-The key trade-off: Value Iteration does **many cheap sweeps** (one `max` per state per sweep and it
-never explicitly stores a policy until the end). Policy Iteration does **fewer but heavier
-iterations** — each one includes a full policy-evaluation solve — yet it often converges in a
-*remarkably small* number of policy updates (frequently a handful), because a greedy improvement
-step is a big, decisive jump.
-
-```
-Value Iteration                          Policy Iteration
-─────────────────                        ─────────────────
- V ← 0                                     π ← arbitrary
- repeat:                                   repeat:
-   for each s:                               EVALUATE: solve V^π (Bellman
-     V(s) ← max_a Σ P[R + γV(s')]                     expectation eqs)
- until V stops changing                      IMPROVE: π(s) ← argmax_a Q^π(s,a)
- π*(s) ← argmax_a Σ P[R + γV(s')]          until π stops changing
-```
-
-| Aspect | Value Iteration | Policy Iteration |
+| Learning type | Typical feedback | Example |
 |---|---|---|
-| Core update | Bellman **optimality** (`max` every sweep) | Evaluate $V^\pi$, then greedy improve |
-| Cost per iteration | Cheap (one sweep) | Expensive (full policy evaluation each round) |
-| Iterations to converge | Many | Few (often converges in a handful of updates) |
-| Explicit policy during run? | No — extracted at the end | Yes — maintained and improved each round |
-| Needs known model $P,R$? | **Yes (model-based)** | **Yes (model-based)** |
+| Supervised | Correct answer for an input | Label an email as spam |
+| Unsupervised | No target labels; discover structure | Group similar customers |
+| Reinforcement | Rewards following decisions | Learn a route to treasure |
 
-Both give you the *same* optimal policy in the end — the choice is purely about which is cheaper
-for your problem's size and structure.
-
-The catch: both **require you to already know $P$ and $R$.** In most real problems you don't. The
-**model-free** methods in the next section drop that "known model" assumption entirely — they
-estimate values by *sampling experience* (actually acting in the world) instead of summing over a
-known transition table.
+In our story, Roo collects experience by acting. **Offline RL** instead learns
+from previously logged experience; RL does not always require collecting fresh
+data during training.
 
 ---
 
-## 15.7 Q-Learning
+## 15.2 Chasing the Right Reward
 
 ### Simple Explanation
 
-Q-Learning builds a giant **cheat sheet**: for every situation, a score for each possible move
-(its **Q-value** = "how good is this move in the long run?"). The agent plays, and after each move
-it nudges that one cell of the cheat sheet toward what it just learned — "that turned out better
-than I expected, bump it up." Do this enough and the cheat sheet becomes so accurate that acting
-well is trivial: in any state, just read off the highest-scoring move.
+Roo pays a small movement fee but earns treasure at the destination. If it only
+cares about the next fee, it misses why moving is worthwhile. We need a way to
+score the **whole journey**.
 
-> **Q-Learning is an off-policy, model-free RL algorithm that learns the optimal action-value function $Q^*$ by iteratively applying a sample-based Bellman update.**
+> **Official Definition:** A reward is one step's feedback. A return is the sum
+> of future rewards, usually discounted so later rewards receive less weight.
 
-The update rule:
+### One rulebook for every example
 
-$$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]$$
+- Every move costs **-1**, including a move into treasure or the pit.
+- Entering G gives an additional **+10**: that move's total reward is **+9**.
+- Entering P gives an additional **-10**: that move's total reward is **-11**.
+- G and P are **terminal**: the episode ends immediately on entry.
+- Walking into an outer wall leaves Roo in the same cell and still costs **-1**.
 
-Where:
-- $\alpha$ — learning rate (how fast to update)
-- $r$ — immediate reward
-- $\gamma$ — discount factor
-- $\max_{a'} Q(s', a')$ — best estimated future value from next state
-- The term in brackets is the **temporal difference (TD) error**
+Payoffs arrive on entry, never again. These rules apply throughout.
 
-Two pieces of jargon hide in that definition:
+### Discounting: how much does later count?
 
-- **Model-free** means Q-Learning never tries to learn *how the environment works* (its
-  transition or reward rules) — it learns purely from the rewards it experiences. (Model-based
-  RL, which *does* learn the rules, arrives in §15.12.)
-- **Off-policy** means the agent can learn the *optimal* policy while *following a different*
-  behaviour policy — e.g., it explores with ε-greedy yet still learns the greedy optimum. (An
-  **on-policy** method, by contrast, can only learn about the policy it actually follows.) This
-  separation of exploration from optimisation is what makes Q-Learning so powerful.
+The **discount factor**, $\gamma$ (gamma), controls future reward's weight:
 
-### Tabular Q-Learning: Grid World Example
+| Gamma | Behaviour encouraged |
+|---|---|
+| 0 | Care only about the immediate reward |
+| 0.9 | Count a reward one step later at 90% of its value |
+| Closer to 1 | Give distant rewards more weight |
 
-```
-Step-by-step Q-table update:
-
-  State=(0,0), Action=Right, arrive at (0,1), Reward=0
-  Q_old(0,0, Right) = 0.5
-  max Q(0,1, *) = 1.5
-  α = 0.1, γ = 0.9
-
-  TD Target = r + γ × max Q(s') = 0 + 0.9 × 1.5 = 1.35
-  TD Error  = 1.35 - 0.5 = 0.85
-  Q_new     = 0.5 + 0.1 × 0.85 = 0.585   ← value increased
-
-Q-Table after training:
-  State  │  Up    │ Down  │ Left  │ Right
-  ───────┼────────┼───────┼───────┼──────
-  (0,0)  │ -0.50  │  0.80 │ -1.00 │  0.90  ← Right is best
-  (0,1)  │  0.30  │  0.20 │  0.10 │  1.50  ← Right is best
-  (1,0)  │  0.40  │  0.60 │ -0.20 │  0.50
-  ...
-
-Learned policy (pick argmax from Q-table per state):
-  ┌───┬───┬───┬───┐
-  │ → │ → │ → │ ↓ │
-  ├───┼───┼───┼───┤
-  │ ↓ │ ■ │ → │ ↓ │
-  ├───┼───┼───┼───┤
-  │ → │ → │ ↑ │ G │
-  └───┴───┴───┴───┘
-```
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0,10,20,30,40,50,60,70,80,90,100],
-    "datasets": [
-      {
-        "label": "Q(start, Right) — learns it is good",
-        "data": [0.0,0.1,0.25,0.42,0.55,0.65,0.73,0.80,0.85,0.88,0.90],
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 0
-      },
-      {
-        "label": "Q(start, Left) — learns it is bad",
-        "data": [0.0,-0.05,-0.15,-0.30,-0.45,-0.55,-0.62,-0.68,-0.72,-0.75,-0.78],
-        "borderColor": "rgba(239, 68, 68, 1)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 0
-      },
-      {
-        "label": "Q(start, Down) — neutral",
-        "data": [0.0,0.02,0.05,0.08,0.10,0.12,0.13,0.14,0.14,0.15,0.15],
-        "borderColor": "rgba(200, 200, 200, 0.8)",
-        "fill": false,
-        "tension": 0.4,
-        "pointRadius": 0
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Q-Values Converging — Agent Learns Right Is Optimal" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Q-Value" }, "min": -1, "max": 1 },
-      "x": { "title": { "display": true, "text": "Training Episode" } }
-    }
-  }
-}
-```
-
-### Q-Learning Algorithm (Pseudocode)
-
-```python
-# Tabular Q-Learning
-Q = defaultdict(float)    # Q-table, initialised to 0
-
-for episode in range(num_episodes):
-    s = env.reset()
-    done = False
-    while not done:
-        # Epsilon-greedy action selection
-        if random() < epsilon:
-            a = env.action_space.sample()       # explore
-        else:
-            a = argmax(Q[s, a] for a in actions) # exploit
-
-        s_next, r, done = env.step(a)
-
-        # Q-Learning update
-        td_target = r + gamma * max(Q[s_next, a2] for a2 in actions)
-        Q[s, a] += alpha * (td_target - Q[s, a])
-
-        s = s_next
-
-    epsilon *= decay_rate  # reduce exploration over time
-```
-
-### SARSA: On-Policy TD Control
-
-#### Simple Explanation
-
-Q-Learning is an optimist: when it bootstraps the future, it assumes it will act *greedily* next
-(the $\max$), even while it's actually exploring. **SARSA** is a realist: it updates using the
-action it **actually takes next** under its current (e.g. $\varepsilon$-greedy) policy. Because it
-learns about the *very policy it follows* — exploration mistakes and all — SARSA is **on-policy**.
-
-The name is literally the transition tuple it uses: **S**tate, **A**ction, **R**eward, next
-**S**tate, next **A**ction — $(s, a, r, s', a')$.
-
-> **SARSA update** — $a'$ is the action the agent *will actually take* in $s'$ under its current policy:
-> $$Q(s,a) \leftarrow Q(s,a) + \alpha\,\bigl[\,r + \gamma\,Q(s',a') - Q(s,a)\,\bigr]$$
-
-Put the two targets side by side and the whole distinction jumps out:
+We use **gamma = 0.9**. This is an objective-setting choice, not the learning
+speed or the probability of exploring.
 
 ```
-Q-Learning (off-policy):   target = r + γ · max_a' Q(s', a')   ← assumes greedy next move
-SARSA      (on-policy):    target = r + γ ·      Q(s', a')     ← uses the move ACTUALLY taken
-                                                      ▲
-                                          a' ~ ε-greedy policy the agent follows
+Route:       S ------> B ------> G
+Rewards:          -1        +9
+
+Return from S = -1 + 0.9 x 9 = 7.1
 ```
 
-Q-Learning learns the **optimal (greedy)** policy no matter how it behaves; SARSA learns the value
-of the policy it is *behaving under*, so its estimates bake in the cost of exploration.
+Longer sequences continue the pattern: the next reward gets weight
+$\gamma^2$, then $\gamma^3$, and so on.
 
-#### Cliff Walking: the classic consequence
+**Predict first:** would adding an unnecessary step help here?
+No. It adds another movement fee and delays the positive treasure reward.
+Notice that the first reward is negative even on the best route.
 
-```
-The Cliff (reward -1 per step, -100 for falling in, then reset):
+### State and the Markov idea
 
-   S . . . . . . . . . . G      ← Q-Learning: optimal but RISKY path
-   S . . . . . . . . . . G          (hugs the cliff edge — shortest)
-   ┌───────────────────────┐
-   │ C C C C C C C C C C C │  ← the cliff (fall = -100)
-   └───────────────────────┘
+Our rulebook describes an **MDP**, or Markov Decision Process: states, actions,
+transition rules, rewards and a discount factor.
 
-   S → → → → → → → → → ↓        ← SARSA: SAFER path
-   ↑ . . . . . . . . . . ↓          (detours away from the edge)
-   ┌───────────────────────┐
-   │ C C C C C C C C C C C │
-   └───────────────────────┘
-```
+**Markov** means the current state contains the information needed to predict the
+next state and reward, given an action. Roo's cell is enough in this fixed maze.
+For a moving robot, position alone may not be enough: velocity could matter too.
+Including relevant history or velocity makes the state more informative.
 
-During $\varepsilon$-greedy training, a random step near the edge sends Q-Learning off the cliff for
-$-100$. SARSA *sees* that exploratory risk in its updates (its $a'$ sometimes IS the fatal step), so
-it learns to keep a safe distance. Result: **SARSA earns higher online returns during training**,
-even though Q-Learning's final greedy policy is technically the shortest path. As
-$\varepsilon \to 0$, both converge to the optimal policy.
-
-| Aspect | SARSA | Q-Learning |
-|---|---|---|
-| Policy type | **On-policy** | **Off-policy** |
-| TD target | $r + \gamma\,Q(s',a')$ | $r + \gamma\,\max_{a'} Q(s',a')$ |
-| $a'$ used | Action actually taken (e.g. $\varepsilon$-greedy) | Hypothetical greedy action |
-| Behavior learned | Safe policy that accounts for exploration risk | Optimal-but-riskier greedy policy |
-| When to prefer | Costly/dangerous mistakes during training (real robots, live systems) | You only care about the final optimal policy; safe to explore freely |
+Transitions need not be deterministic. On a slippery floor, choosing Up could
+occasionally move Roo sideways. RL then values an action by its **expected**
+outcome across possibilities, not by assuming every move succeeds.
 
 ---
 
-## 15.8 Deep Q-Networks (DQN)
+## 15.3 Explore or Exploit?
 
 ### Simple Explanation
 
-Q-Learning's cheat-sheet idea breaks the moment the world gets big: you can't store a row for
-every possible Atari screen (there are more of them than atoms in the universe). **DQN** swaps the
-look-up table for a **neural network** that *generalises* — instead of memorising every screen, it
-learns visual patterns ("ghost nearby → danger") and predicts Q-values even for screens it has
-never seen. It's the difference between a phone book and someone who understands how phone numbers
-work.
+Dinner presents the same dilemma: revisit your favourite restaurant, or try a new
+one that might be better? Always revisiting misses discoveries; always trying new
+places means never enjoying what you learned.
 
-> **A Deep Q-Network replaces the Q-table with a neural network that approximates $Q(s, a; \theta)$, enabling Q-learning to scale to high-dimensional state spaces like raw pixel inputs.**
+> **Official Definition:** Exploration gathers information through less-certain
+> actions. Exploitation uses current knowledge to choose a promising action.
 
-Tabular Q-learning fails when the state space is large or continuous — you cannot have a row for every possible Atari screenshot. DQN (Mnih et al., 2013/2015) was the breakthrough that showed a CNN could learn Q-values directly from pixels and achieve superhuman play on dozens of Atari games.
+Roo faces this tradeoff too. A route through C might look best after a few
+attempts, simply because Roo has not properly tried going through B.
+The best **known** option is not necessarily the best **possible** option.
 
-**Example — how it works (why a table can't cope).** An Atari frame is 210×160 pixels, each able
-to take many colours — vastly more possible screens than any table could hold. A DQN sidesteps
-this entirely: it feeds the raw pixels through convolutional layers (the same idea as §14.8) and
-outputs one Q-value per joystick action, e.g. `Left: 0.3, Right: 5.1, Fire: 4.8`. The agent picks
-Right (highest Q), and the network is trained so those predictions match the Bellman target —
-it's Q-Learning's update rule, now powered by a CNN instead of a spreadsheet.
+### Epsilon-greedy: one strategy is enough
+
+**Epsilon**, $\epsilon$, is the probability of choosing the random-action branch.
+Otherwise, choose the action with the highest current estimated value.
 
 ```
-Tabular Q-Learning:             DQN:
-─────────────────────           ─────────────────────────
-State → table lookup            State (pixels) → CNN → Q-values
+epsilon = 0.1
 
- State (0,1)                     210×160 RGB frame
-      │                                │
-      ▼                                ▼
-  Q-Table row:                  ┌─────────────────┐
-  Up:0.3 Down:0.2               │  Conv layers    │
-  Left:0.1 Right:1.5            │  FC layers      │
-                                │  Output: Q per  │
-  Works: small                  │  action         │
-  state spaces                  └─────────────────┘
-                                 Left:0.3 Right:5.1
-                                 Up:1.2   Fire:4.8
-
-                                 Works: millions of states
+90% of decisions: choose the best-known action
+10% of decisions: choose randomly from all available actions
 ```
 
-### Key DQN Innovations
+The random branch can also select the best-known action! With four actions and
+one clear best, its total selection probability is
+$0.9 + 0.1/4 = 0.925$, or **92.5%**.
+Exploring does not necessarily mean choosing a worse action.
 
-1. **Experience Replay** — Store transitions $(s, a, r, s')$ in a buffer; train on random mini-batches. Breaks correlation between consecutive samples and reuses data efficiently.
+Explore more while estimates are unreliable, then reduce epsilon as they improve.
+A little ongoing exploration helps avoid freezing on an early guess.
+Schedules do not guarantee sufficient coverage.
 
-2. **Target Network** — Use a frozen copy of the Q-network ($\theta^-$) to compute TD targets. Update $\theta^-$ periodically. This prevents the "moving target" problem where the network chases its own changing predictions.
+At **epsilon = 0 from the start**, Roo may never discover a better route.
+At **epsilon = 1 forever**, it never deliberately exploits its estimates, although
+Q-learning can still update those estimates from its random experience.
+Learning values and choosing to use them are different things.
 
-3. **Frame Stacking** — Feed 4 consecutive frames as input so the network can infer velocity and direction from a static input.
+### Bandits: the simpler cousin
 
-The loss function:
+A **multi-armed bandit** repeatedly chooses among options with unknown payoffs,
+without modelling action-dependent journeys through future states.
+Think of selecting an advert and observing whether it gets clicked.
 
-$$L(\theta) = \mathbb{E}\left[\left(r + \gamma \max_{a'} Q(s', a'; \theta^-) - Q(s, a; \theta)\right)^2\right]$$
+If ad B has the best estimated click rate after a small sample, it is sensible
+to show B often while still occasionally trying A and C. More observations may
+change the winner.
 
-```mermaid
-flowchart TD
-    S["State s (pixels)"] --> QN["Q-Network θ"]
-    QN --> A["Select action a = argmax Q"]
-    A --> ENV["Environment"]
-    ENV --> T["Transition (s,a,r,s')"]
-    T --> RB["Replay Buffer"]
-    RB --> MB["Sample mini-batch"]
-    MB --> TN["Target Network θ⁻"]
-    TN --> L["Compute TD loss"]
-    L --> QN
-```
+Bandits isolate exploration versus exploitation. Roo's maze adds another challenge:
+the current action changes which situations and rewards become reachable next.
 
 ---
 
-## 15.9 Policy Gradient Methods
+## 15.4 How Good Is This Move?
 
 ### Simple Explanation
 
-Instead of scoring every move and then picking the best (Q-Learning), **policy gradient** methods
-learn the *behaviour itself* directly: a knob-covered strategy that outputs "do this action with
-this probability." Training is like coaching from replays — after each game, whatever the agent
-did on the way to a *win* is made **more likely**, and whatever it did on the way to a *loss* is
-made **less likely**. No cheat sheet of values required; you adjust the strategy straight from
-outcomes.
+A policy tells Roo **what to do**. A value estimate tells Roo **how promising
+something is**. Think of a coach distinguishing "this position is good" from
+"that particular move is good."
 
-> **Policy gradient methods directly parameterise the policy $\pi_\theta(a|s)$ and optimise it by ascending the gradient of expected cumulative reward with respect to the policy parameters $\theta$.**
+> **Official Definition:** $V^\pi(s)$ is the expected return from state $s$ while
+> following policy $\pi$. $Q^\pi(s,a)$ is the expected return after taking action
+> $a$ in $s$, then following $\pi$.
 
-Why not just use Q-learning for everything? Two key limitations:
+You can read these as **V = situation score** and **Q = move score**.
+Both include future rewards, not just the next reward.
 
-1. **Continuous actions** — Q-learning needs $\max_a Q(s,a)$, which requires enumerating all actions. With continuous actions (steering angle, joint torque), this is intractable.
-2. **Stochastic policies** — Sometimes the optimal policy is inherently random (e.g., rock-paper-scissors). Q-learning always produces deterministic policies.
+Values depend on the strategy followed afterwards: a useful location is wasted
+if Roo keeps choosing bad moves. Below, **V\*** means the value with optimal
+choices; the star does not mean a different reward.
 
-### The Policy Gradient Theorem
+### Bellman: now plus later
 
-$$\nabla_\theta J(\theta) = \mathbb{E}_{\pi_\theta}\left[ \nabla_\theta \log \pi_\theta(a|s) \cdot G_t \right]$$
+The **Bellman idea** breaks a long journey into one move and everything after it:
 
-Where $G_t = \sum_{k=0}^{\infty} \gamma^k r_{t+k+1}$ is the return from time $t$.
-
-Interpretation: increase the probability of actions that led to high returns, decrease the probability of actions that led to low returns.
-
-**Example — how it works (up-weighting good actions).** A policy network in some state outputs
-`Left: 0.5, Right: 0.5`. The agent samples **Right**, plays on, and the episode ends with a good
-**return $G_t = +12$**. The update $\nabla_\theta \log \pi_\theta(a|s) \cdot G_t$ pushes up the
-probability of "Right" *in that state* (because $G_t$ is positive and large), so next time the
-network might output `Left: 0.4, Right: 0.6`. Had the return been negative, "Right" would have
-been pushed *down* instead. Repeat over many episodes and the policy drifts toward whatever earns
-reward.
-
-### REINFORCE Algorithm
-
-The simplest policy gradient method. It is a Monte Carlo approach — it waits until the episode ends to compute returns.
-
-```python
-# REINFORCE
-for episode in range(num_episodes):
-    trajectory = []
-    s = env.reset()
-    done = False
-
-    # 1. Collect full episode
-    while not done:
-        probs = policy_network(s)
-        a = sample(probs)
-        s_next, r, done = env.step(a)
-        trajectory.append((s, a, r))
-        s = s_next
-
-    # 2. Compute returns G_t for each step
-    G = 0
-    returns = []
-    for (s, a, r) in reversed(trajectory):
-        G = r + gamma * G
-        returns.insert(0, G)
-
-    # 3. Update policy
-    optimizer.zero_grad()
-    for (s, a, _), G_t in zip(trajectory, returns):
-        loss = -log(policy_network(s)[a]) * G_t
-        loss.backward()
-    optimizer.step()
+```
+Score of a move = reward now + gamma x value of the next state
 ```
 
-**Weakness:** High variance. The returns $G_t$ can swing wildly between episodes, making gradients noisy. This motivates actor-critic methods (Section 15.10).
+For optimal state values, choose the move with the highest score. If transitions
+are random, average over their possible outcomes first.
+
+### Work backwards from treasure
+
+Follow the same route: **S -> B -> G**.
+
+**Step 1: G is terminal.** Its future value is zero because there are no further
+moves or rewards. The pit P also has zero *future* value; entering it is still
+bad because that transition pays -11.
+
+**Step 2: B is one move from treasure.** Moving Right receives +9 and ends the episode:
+
+$$V^*(B) = 9 + 0.9 \times 0 = 9$$
+
+**Step 3: S is two moves away.** Moving Right costs -1, then reaches B:
+
+$$V^*(S) = -1 + 0.9 \times 9 = 7.1$$
+
+That is exactly the route return we calculated earlier. Bellman did not invent
+another score; it reused the score of the remaining journey.
+
+**Your turn:** Roo is in D. Should it move Up toward B, or Right into P?
+Up has score $-1 + 0.9 \times 9 = 7.1$.
+Right has score $-11 + 0.9 \times 0 = -11$.
+The immediate rewards alone do not explain the appeal of going Up; the future does.
+
+This example works backwards because we know the map. In a new environment,
+Roo does not start with the correct values. It must estimate them from experience.
+That is where Q-learning comes in.
 
 ---
 
-## 15.10 Actor-Critic Methods
+## 15.5 Watch the Robot Learn
 
 ### Simple Explanation
 
-Actor-critic uses two cooperating networks, like a **performer and a coach**. The **actor** is the
-policy — it decides what to do. The **critic** is a value function — it watches and says "that was
-better than I expected" or "worse than average." The actor adjusts using the critic's running
-feedback instead of waiting for the final score. Because the critic gives a steadier, lower-noise
-signal than raw episode returns, learning is faster and more stable than plain policy gradients.
+**Q-learning** builds a cheat sheet: one row per state, one score per action.
+After each move, Roo compares its old guess with new evidence and nudges the guess.
 
-> **Actor-critic methods combine policy gradient (actor) with a learned value function (critic). The critic reduces variance in the policy gradient estimate by providing a baseline, yielding faster and more stable learning.**
+> **Official Definition:** Q-learning is a model-free, off-policy method that
+> updates action-value estimates using observed rewards and the best estimated
+> continuation from the next state.
+
+**Model-free** means it does not need a model predicting the environment's
+transitions. It can still use a table or a neural network.
+**Off-policy** means it can explore while learning values for greedy continuation;
+its learning target need not follow the same strategy that collected the experience.
+An **on-policy** method instead targets the policy used to collect its experience.
+
+### One update, with numbers
+
+These are **imperfect estimates during training**, not the final values from
+the previous section:
+
+| Quantity | Current value |
+|---|---:|
+| Old Q(S, Right) | 2 |
+| Best current Q-value in B | 5 |
+| Reward for S to B | -1 |
+| Discount gamma | 0.9 |
+| Learning rate alpha | 0.1 |
+
+First build a **target**, our improved guess based on this transition:
 
 ```
-  ┌───────────────┐           ┌────────────────┐
-  │     ACTOR     │           │     CRITIC     │
-  │               │           │                │
-  │ Outputs π(a|s)│           │ Outputs V(s)   │
-  │ (what to do)  │           │ (how good)     │
-  └───────┬───────┘           └───────┬────────┘
-          │                           │
-          │  Takes action a           │ Computes advantage:
-          │  in environment           │ A = r + γV(s') - V(s)
-          │                           │
-          ▼                           ▼
-     Generates                   Provides signal
-     experience                  to update actor
+Target = reward + gamma x best next Q
+       = -1 + 0.9 x 5
+       = 3.5
+
+TD error = target - old estimate
+         = 3.5 - 2 = 1.5
+
+New Q = old Q + alpha x TD error
+      = 2 + 0.1 x 1.5
+      = 2.15
 ```
 
-The **advantage function** $A(s, a) = Q(s, a) - V(s)$ tells us how much better action $a$ is compared to the average. Using advantage instead of raw returns dramatically reduces variance.
+**TD** means temporal difference: learning from the difference between the current
+estimate and a reward-plus-future estimate.
+Roo moves partway toward 3.5 because this experience and its future estimates
+may be misleading.
 
-**Example — how the advantage works.** The critic estimates the current state is worth $V(s) = 5$.
-The actor takes an action; the agent receives reward $r = 2$ and lands in a state the critic
-values at $V(s') = 6$. With $\gamma = 0.9$ the advantage is:
+The compact rule is:
 
-$$A = r + \gamma V(s') - V(s) = 2 + 0.9(6) - 5 = 2.4 \;>\; 0$$
+$$Q(s,a) \leftarrow Q(s,a) + \alpha\,[\text{target} - Q(s,a)]$$
 
-A positive advantage means "that action did better than the critic expected from this state," so
-the actor makes it **more likely**. Had the advantage been negative, the action would be made less
-likely. Using this advantage in place of the raw return $G_t$ is exactly what slashes the variance
-that plagued REINFORCE.
+**Predict first:** if the target were below the old estimate, would Q rise?
+No, the TD error would be negative, so the estimate would fall.
 
-### Key Actor-Critic Algorithms
+**Terminal exception:** if the move ends the episode, the target is **just the
+reward**. There is no future Q-value to add. Moving from B into G targets +9.
 
-| Algorithm | Key Idea | Use Case |
-|---|---|---|
-| **A2C** | Advantage Actor-Critic, synchronous updates | General RL, simple baseline |
-| **A3C** | Asynchronous parallel agents | Faster wall-clock training |
-| **PPO** | Clipped surrogate objective prevents large updates | RLHF, robotics, most popular today |
-| **SAC** | Entropy-regularised, maximises reward + entropy | Continuous control, robotics |
-| **TRPO** | Trust region constraint on policy updates | Stable but computationally expensive |
+### The whole recipe
 
-### PPO — The Workhorse
-
-PPO (Schulman et al., 2017) is the most widely used RL algorithm in practice. It has long been the workhorse behind RLHF in systems like ChatGPT — though by 2025 many labs use DPO or critic-free variants such as GRPO (see §15.14). The key idea: clip the policy ratio to prevent destructively large updates.
-
-$$L^{CLIP}(\theta) = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t, \; \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t\right)\right]$$
-
-Where $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ is the probability ratio between new and old policies.
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0,50,100,150,200,250,300,350,400,450,500],
-    "datasets": [
-      {
-        "label": "REINFORCE (high variance, slow)",
-        "data": [-8,-6,-5,-3,-4,-2,-3,-1,0,-1,1],
-        "borderColor": "rgba(239, 68, 68, 0.7)",
-        "borderWidth": 1.5,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      },
-      {
-        "label": "A2C (moderate variance)",
-        "data": [-8,-5,-3,-1,0,1.5,3,4,5,5.5,6],
-        "borderColor": "rgba(234, 88, 12, 0.8)",
-        "borderWidth": 1.5,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      },
-      {
-        "label": "PPO (low variance, fast)",
-        "data": [-8,-4,-1,1,3,4.5,6,7,7.5,8,8.5],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "borderWidth": 2.5,
-        "tension": 0.4,
-        "pointRadius": 0,
-        "fill": false
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Training Curves: REINFORCE vs A2C vs PPO" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Average Reward" }, "min": -10, "max": 10 },
-      "x": { "title": { "display": true, "text": "Episode" } }
-    }
-  }
-}
+```text
+Start with a Q-table of zeros.
+For each episode:
+  Start Roo at S.
+  Until Roo reaches treasure or the pit:
+    Choose an action using epsilon-greedy.
+    Observe the reward and next state.
+    Target = reward; add gamma * best next Q only if not terminal.
+    Update Q for the state and action just experienced.
+    Continue from the next state.
 ```
+
+Three controls, three different jobs:
+
+| Control | Question it answers |
+|---|---|
+| **Alpha: learning rate** | How far should this update move my estimate? |
+| **Gamma: discount** | How much should future rewards count? |
+| **Epsilon: exploration** | How often should I choose randomly? |
+
+Act greedily by choosing the row's highest Q-value. Learning takes many experiences.
+Tabular convergence needs sufficient exploration and suitable learning rates;
+more episodes alone do not guarantee success.
 
 ---
 
-## 15.11 Multi-Armed Bandits
+## 15.6 Beyond the Cheat Sheet
 
 ### Simple Explanation
 
-"One-armed bandit" is slang for a slot machine. Now picture a whole row of them, each paying out
-at a different *unknown* rate — that's the **multi-armed bandit** problem. You have a limited
-number of pulls and want to win the most overall. The dilemma is pure exploration-vs-exploitation
-with nothing else attached: spend pulls *learning* which machine is best, or spend them *cashing
-in* on the best one found so far. There's no "next state" — just pick an arm, see a payout, repeat.
+A small maze fits in a table. A camera image has far too many possible pixel
+arrangements for a row per image. We need to generalise across situations.
 
-> **The multi-armed bandit problem is the simplest RL setting: a single state, $k$ possible actions (arms), each with an unknown reward distribution. The goal is to maximise total reward over $T$ pulls.**
+> **Official Definition:** Deep RL uses neural networks to represent value
+> functions, policies, or other learned parts of an RL system.
 
-There is no state transition — the agent just repeatedly picks an arm and observes a reward. This isolates the exploration-exploitation tradeoff in its purest form.
+### DQN: replace the table, keep the idea
 
-**Real-world bandit problems:**
+A **Deep Q-Network (DQN)** predicts Q-values with a neural network:
 
-| Domain | Arms | Reward |
-|---|---|---|
-| A/B testing | Page variants | Click-through rate |
-| Ad selection | Available ads | Revenue per impression |
-| Clinical trials | Treatments | Patient outcome |
-| Recommendation | Content items | User engagement |
-
-**Example — how it works (3 ad variants).** You're choosing which of three banner ads to show, to
-maximise clicks. After 30 impressions each:
-
-| Arm | Clicks / shows | Estimated rate |
-|---|---|---|
-| Ad A | 6 / 30 | 0.20 |
-| Ad B | 9 / 30 | 0.30 |
-| Ad C | 3 / 30 | 0.10 |
-
-Pure greed would show **B** forever. But these estimates are noisy after only 30 shows — maybe A
-is genuinely better and got unlucky. A bandit algorithm (ε-greedy, UCB, or Thompson sampling)
-keeps showing A and C *occasionally* to sharpen their estimates while mostly exploiting B. That's
-how real A/B-testing systems route traffic without freezing on an early, possibly-wrong winner.
-
-### Strategies Compared
-
-```chart
-{
-  "type": "line",
-  "data": {
-    "labels": [0,20,40,60,80,100,150,200,300,500,1000],
-    "datasets": [
-      {
-        "label": "UCB (best long-term)",
-        "data": [0,12,28,48,72,98,155,215,340,590,1195],
-        "borderColor": "rgba(34, 197, 94, 1)",
-        "borderWidth": 2,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      },
-      {
-        "label": "Epsilon-greedy (ε=0.1)",
-        "data": [0,10,24,42,62,85,135,190,300,520,1080],
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "borderWidth": 2,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      },
-      {
-        "label": "Pure exploitation (greedy)",
-        "data": [0,8,18,30,44,60,95,130,200,340,700],
-        "borderColor": "rgba(239, 68, 68, 0.7)",
-        "borderWidth": 1.5,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      },
-      {
-        "label": "Pure exploration (random)",
-        "data": [0,6,14,24,36,50,78,108,168,290,600],
-        "borderColor": "rgba(200, 200, 200, 0.8)",
-        "borderWidth": 1.5,
-        "tension": 0.3,
-        "pointRadius": 0,
-        "fill": false
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Cumulative Reward — Bandit Strategy Comparison (5 Arms)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Cumulative Reward" }, "beginAtZero": true },
-      "x": { "title": { "display": true, "text": "Pulls" } }
-    }
-  }
-}
+```
+Small maze:    state -> table row       -> Q for each action
+Camera input: state -> neural network  -> Q for each action
 ```
 
-**Thompson Sampling** is another powerful approach: maintain a Bayesian posterior over each arm's reward distribution and sample from it. Arms with high uncertainty and high expected reward get explored naturally.
+For example, outputs `Left: 2, Right: 7, Up: 3, Down: -4` suggest choosing Right
+when exploiting. Standard DQN suits discrete actions; a large state space is not
+the same problem as a continuous action space.
+
+Two ideas make learning more stable:
+
+- **Experience replay:** store past transitions and train on shuffled samples.
+  This reuses experience and reduces the strong correlation between consecutive moves.
+- **Target network:** use a separate, periodically refreshed copy of the network
+  to estimate future values. Otherwise, the answer and the target it chases both
+  keep changing together.
+
+### Learn the action directly
+
+For a robot arm, actions might be continuous joint torques. Listing every possible
+torque and comparing its Q-value is impractical.
+**Policy gradient methods** instead adjust a policy directly, making actions
+associated with better returns more likely.
+
+The policy might output action probabilities or parameters of a continuous action
+distribution. Learning from outcomes can be noisy: the same sensible action can
+be followed by good or bad luck.
+
+**Actor-critic** adds a coach:
+
+```
+Actor:  chooses the action
+Critic: estimates how good the situation is
+        -> helps judge outcomes relative to expectations
+```
+
+An **advantage** describes how much better an action is than the policy's usual
+expectation in that state. This relative feedback can reduce noise compared with
+using raw returns. The critic can also be wrong; it is learning too.
+
+**PPO** is a policy-optimisation method often used with an actor and critic.
+Its clipped training objective discourages overly large policy changes: improve
+without throwing away yesterday's useful behaviour. Clipping is not a hard
+guarantee that the whole policy cannot change too much.
+
+Remember: **Q-learning scores moves; DQN predicts scores with a network; policy
+methods learn behaviour; actor-critic adds a learned coach.**
 
 ---
 
-## 15.12 Model-Based vs Model-Free RL
+## 15.7 The LLM Connection
 
 ### Simple Explanation
 
-There are two ways to learn a new city. **Model-free** is pure trial and error: wander, remember
-which turns led somewhere good, keep no map in your head. **Model-based** is building a **map**
-first, then planning routes on it before you walk. Model-free is simpler and never "believes" a
-wrong map, but it needs a lot of wandering. Model-based can plan brilliantly from little
-experience — *if* its map is accurate; a wrong map means confidently terrible plans.
+Suppose a model gives two explanations of gravity: one full of jargon, one a child
+can follow. A person prefers the second. How can that judgement improve future answers?
 
-> **Model-free methods learn a policy or value function directly from experience without modelling environment dynamics. Model-based methods learn a model of the environment (transition and reward functions) and use it for planning.**
+> **Official Definition:** RLHF uses human feedback to construct reward signals
+> for improving a policy. Language-model training often uses a learned reward model
+> to scale human preference feedback.
 
-```
-                    RL ALGORITHMS
-                          │
-            ┌─────────────┴─────────────┐
-            ▼                           ▼
-       MODEL-FREE                  MODEL-BASED
-            │                           │
-     No model of                  Learns P(s'|s,a)
-     environment                  and R(s,a)
-            │                           │
-     ┌──────┴──────┐                    │
-     ▼             ▼              Uses model to
-  VALUE-BASED   POLICY-BASED     plan ahead
-     │             │              (e.g., Monte Carlo
-  Q-Learning    REINFORCE         tree search)
-  DQN           PPO, SAC
-                                  Examples:
-                                  AlphaGo, MuZero,
-                                  Dreamer
-```
-
-| Property | Model-Free | Model-Based |
-|---|---|---|
-| **Sample efficiency** | Low (needs lots of experience) | High (can simulate experience) |
-| **Computation** | Less per step | More per step (planning) |
-| **Asymptotic performance** | Can be excellent | Limited by model accuracy |
-| **When model is wrong** | N/A | Catastrophic — plans based on wrong dynamics |
-| **Examples** | DQN, PPO, SAC | AlphaGo, MuZero, Dreamer, World Models |
-
-**Example — how it works (a robot in a maze).** A **model-free** agent (like DQN) just tries
-moves and, after thousands of attempts, learns "from this spot, going right tends to pay off." A
-**model-based** agent first learns the maze's layout — $P(s'|s,a)$, "if I go right from here I
-arrive there" — then *imagines* paths to the exit and follows the best one, reaching the goal with
-far less real-world trial. AlphaZero is the famous case: it learns a model of the game and plans
-ahead with tree search, which is how it masters Go from self-play alone.
-
-In practice, the most impressive RL results (AlphaGo, MuZero) often combine both: model-based planning for look-ahead with model-free learning for the value estimates within the search.
-
----
-
-## 15.13 Famous RL Milestones
-
-### Simple Explanation
-
-This is RL's "greatest hits" — the moments that proved trial-and-error learning could beat the
-best humans at things once thought to need deep intuition. The pattern repeats: a game or task
-people assumed only humans could master falls to an agent that simply played millions of times and
-learned from reward. Each milestone nudged RL from toy problems toward the real world — and the
-same lineage now trains the chatbots you use every day (see §15.14).
-
-> **RL has produced some of the most dramatic demonstrations of AI capability, from mastering ancient board games to training the language models you interact with daily.**
-
-```
-Year │ Milestone                           │ Key Method
-─────┼─────────────────────────────────────┼──────────────────────
-1992 │ TD-Gammon — near-expert backgammon  │ TD learning + neural net
-2013 │ DQN — learns Atari from raw pixels  │ Deep Q-Network
-2016 │ AlphaGo — beats Lee Sedol at Go     │ MCTS + policy/value nets
-2017 │ AlphaZero — masters chess/Go/shogi  │ Self-play, zero human data
-     │ from scratch in hours               │
-2019 │ OpenAI Five — beats Dota 2 champs   │ PPO at massive scale
-2019 │ AlphaStar — Grandmaster at StarCraft│ Multi-agent league
-2020 │ MuZero — masters games without      │ Learned world model
-     │ knowing the rules                   │
-2022 │ ChatGPT — RLHF for LLM alignment   │ SFT + Reward Model + PPO
-2023 │ RT-2 — robotic manipulation from    │ Vision-Language-Action
-     │ language instructions               │
-2024 │ AlphaProof — IMO silver-medal math  │ RL + self-play (AlphaZero-like)
-2025 │ DeepSeek-R1, o-series — reasoning   │ RL from verifiable rewards
-     │ models trained with RL              │ (RLVR); GRPO, critic-free
-```
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Atari (DQN)", "Go (AlphaGo)", "Chess (AlphaZero)", "Dota 2 (OpenAI Five)", "StarCraft (AlphaStar)"],
-    "datasets": [{
-      "label": "Performance vs Best Human (%)",
-      "data": [120, 105, 115, 102, 101],
-      "backgroundColor": ["rgba(99,102,241,0.7)","rgba(34,197,94,0.7)","rgba(234,88,12,0.7)","rgba(239,68,68,0.7)","rgba(168,85,247,0.7)"],
-      "borderColor": ["rgba(99,102,241,1)","rgba(34,197,94,1)","rgba(234,88,12,1)","rgba(239,68,68,1)","rgba(168,85,247,1)"],
-      "borderWidth": 1
-    }]
-  },
-  "options": {
-    "indexAxis": "y",
-    "plugins": { "title": { "display": true, "text": "RL Milestones — Superhuman Performance (100% = Best Human)" } },
-    "scales": {
-      "x": { "title": { "display": true, "text": "% of Best Human Performance" }, "min": 0, "max": 130 }
-    }
-  }
-}
-```
-
-### AlphaGo / AlphaZero — Why It Mattered
-
-Go has roughly $10^{170}$ legal board positions — far more than atoms in the universe. Traditional game tree search is hopeless. AlphaGo combined:
-
-1. **Supervised learning** — trained a policy network on expert human games
-2. **Self-play RL** — the policy plays itself millions of times and improves
-3. **Monte Carlo Tree Search (MCTS)** — uses the learned policy and value networks to guide search
-
-AlphaZero went further: zero human data, pure self-play. It learned chess, Go, and shogi from scratch in under 24 hours and surpassed all prior AI systems. This demonstrated that RL + self-play can discover superhuman strategies without any human knowledge.
-
----
-
-## 15.14 RLHF — Training LLMs with Human Feedback
-
-### Simple Explanation
-
-A raw language model knows how to *continue text*, but not how to be *helpful, honest, and
-harmless* — it has no idea which answers humans actually prefer. **RLHF** teaches it manners using
-reward. People compare pairs of answers ("this one's better"), those preferences train a **reward
-model** that scores responses the way a human would, and then the LLM is fine-tuned (with PPO) to
-produce high-scoring answers. In short: turn human taste into a reward signal, then let RL chase
-it. This is what turns a raw model into ChatGPT or Claude.
-
-> **Reinforcement Learning from Human Feedback (RLHF) is a technique for aligning language models with human preferences by training a reward model on human comparisons and then optimising the LLM policy against that reward model using PPO.**
-
-This is the process that transforms a raw pre-trained language model (which can generate fluent but potentially harmful or unhelpful text) into a helpful assistant. It is used by ChatGPT, Claude, Gemini, and most production LLMs.
-
-**Example — how it works (one preference, end to end).** Prompt: *"Explain gravity to a 5-year-
-old."* The SFT model generates two candidate answers:
-
-- **A:** "Gravity is the curvature of spacetime described by general relativity…" (accurate, but
-  far too complex)
-- **B:** "Gravity is what pulls things down — it's why your ball falls when you drop it!"
-
-A human labels **B > A**. The **reward model** learns to score B higher (via the loss
-$-\log\sigma(r(B) - r(A))$). Later, during **PPO**, whenever the LLM produces a B-style answer the
-reward model gives it a high score, so PPO nudges the model's weights to make such answers more
-likely — while the **KL penalty** stops it from drifting so far that it forgets how to write fluent
-English. Multiply this over millions of comparisons and the model absorbs the *style* humans
-prefer.
-
-### The Three-Stage Pipeline
+Here is the **classic PPO-based recipe**, not the only possible RLHF implementation:
 
 ```mermaid
 flowchart LR
-    subgraph "Stage 1: SFT"
-        PT["Pre-trained LLM"] --> SFT["Supervised Fine-Tuning\n(prompt, ideal response) pairs"]
-    end
-    subgraph "Stage 2: Reward Model"
-        SFT --> GEN["Generate multiple responses"]
-        GEN --> RANK["Humans rank: A > B > C"]
-        RANK --> RM["Train Reward Model\nRM(prompt, response) → score"]
-    end
-    subgraph "Stage 3: RL (PPO)"
-        RM --> PPO["PPO optimises LLM\nto maximise RM score"]
-        SFT --> PPO
-        PPO --> ALIGNED["Aligned LLM"]
-    end
+    S["SFT: learn from good answers"] --> R["Reward model: learn human preferences"]
+    R --> L["RL: favour higher-scoring answers"]
 ```
 
-**Stage 1 — Supervised Fine-Tuning (SFT).** Collect high-quality (prompt, response) pairs written by human experts. Fine-tune the base LLM on these. This gives the model a good starting point — it learns the format and style of helpful responses.
+**SFT**, or supervised fine-tuning, provides demonstrations of helpful responses.
+Humans then compare candidate answers; a reward model learns to score preferred
+answers higher. RL uses those scores while discouraging excessive drift from a
+reference model. The reward model avoids asking a human to rate every training response.
 
-**Stage 2 — Reward Model Training.** Generate multiple responses to each prompt. Human annotators rank them by quality. Train a separate model to predict these rankings:
+| Approach | Feedback and learning idea |
+|---|---|
+| **Classic RLHF** | Learn a preference reward model, then optimise against its scores |
+| **DPO** | Train directly on chosen/rejected answer pairs; no separate reward model or RL rollout loop |
+| **RLVR** | Reward automatically checkable outcomes, such as a correct answer or passing tests |
 
-$$\mathcal{L}_{RM} = -\mathbb{E}\left[\log \sigma\left(r_\theta(x, y_w) - r_\theta(x, y_l)\right)\right]$$
+DPO is preference optimisation, not a requirement to run online RL.
+Verifiable rewards are useful, but an incomplete test suite can still be gamed.
+Neither preference scores nor passing a narrow check guarantee truth or safety.
 
-Where $y_w$ is the preferred response and $y_l$ is the rejected one.
-
-**Stage 3 — PPO Optimisation.** Treat the LLM as an RL agent:
-- **State:** the prompt
-- **Action:** the generated response (sequence of tokens)
-- **Reward:** the reward model's score, with a KL penalty to prevent the LLM from drifting too far from the SFT model
-
-$$R(x, y) = r_\theta(x, y) - \beta \cdot D_{KL}\left[\pi_\phi(y|x) \| \pi_{SFT}(y|x)\right]$$
-
-The KL penalty is critical — without it, the LLM will find degenerate outputs that "hack" the reward model.
-
-### Impact of RLHF
-
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Helpfulness", "Harmlessness", "Instruction Following", "Refusing Dangerous Requests", "Factual Accuracy"],
-    "datasets": [
-      {
-        "label": "Base Model (before RLHF)",
-        "data": [45, 40, 35, 20, 55],
-        "backgroundColor": "rgba(200, 200, 200, 0.6)",
-        "borderColor": "rgba(160, 160, 160, 1)",
-        "borderWidth": 1
-      },
-      {
-        "label": "After RLHF",
-        "data": [88, 90, 92, 95, 78],
-        "backgroundColor": "rgba(99, 102, 241, 0.7)",
-        "borderColor": "rgba(99, 102, 241, 1)",
-        "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "RLHF Impact — Before vs After on Key Quality Dimensions (%)" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Human Evaluation Score (%)" }, "beginAtZero": true, "max": 100 }
-    }
-  }
-}
-```
-
-### Beyond RLHF: DPO
-
-**Direct Preference Optimisation (DPO)** (Rafailov et al., 2023) skips the reward model entirely. It reparameterises the RLHF objective so you can optimise the LLM directly on preference data:
-
-$$\mathcal{L}_{DPO} = -\mathbb{E}\left[\log \sigma\left(\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{ref}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{ref}(y_l|x)}\right)\right]$$
-
-DPO is simpler to implement (no reward model, no PPO loop) and has become increasingly popular. The debate over RLHF vs DPO is active — PPO can be more powerful but DPO is easier to get right.
-
-### RL from Verifiable Rewards: GRPO & Reasoning Models (2025)
-
-The biggest RL story of 2025 wasn't alignment — it was **reasoning**. Instead of a learned reward model trained on human preferences, **RLVR (RL with Verifiable Rewards)** rewards the model for *getting the answer right* on tasks you can check automatically: math with a known answer, code that passes tests, proofs a checker validates. The reward is objective, cheap, and far harder to game than a preference model.
-
-The workhorse algorithm is **GRPO (Group Relative Policy Optimization)**, introduced with **DeepSeek-R1**. GRPO drops PPO's separate value/critic network entirely:
-
-> **GRPO** samples a *group* of completions per prompt, scores each one, and uses each completion's reward *minus the group's average* as its advantage — a group baseline that replaces PPO's learned value function (much cheaper, and a natural fit for verifiable rewards).
-
-This recipe — often **SFT → DPO → RLVR/GRPO** — produced the 2025 wave of *reasoning models* (DeepSeek-R1, OpenAI's o1/o3, and others) that "think" in long chains of thought before answering. A live research debate: how much of this is genuinely *new* reasoning versus RL sharpening abilities already latent in the pretrained base model.
+For the deeper post-training material, see [Chapter 17](#content/17_llm), sections
+3.4-3.5c. Understanding this bridge is enough here.
 
 ---
 
-## 15.15 When to Use RL
+## 15.8 Choosing Wisely, Recap and Recall
 
 ### Simple Explanation
 
-RL is a powerful but expensive, finicky tool — reach for it only when the problem genuinely needs
-it. The litmus test: are you making a *sequence* of decisions where each choice affects what
-happens next, and can you score the outcome with a reward? If yes (a game, a robot, a trading
-loop), RL shines. If you just need to map an input to a label ("is this email spam?"), RL is a
-sledgehammer for a thumbtack — plain supervised learning is faster, simpler, and more reliable.
+RL learns by trying things, often expensively. For our known maze, a map and
+shortest-path search would already solve the job!
 
-> **RL is most appropriate for sequential decision-making problems with clear reward signals and available simulators. It is overkill for pattern recognition tasks where supervised learning suffices.**
+> **Official Definition:** Model-based methods use a known or learned environment
+> model to plan; model-free methods learn values or policies without modelling
+> those dynamics.
 
-```
-USE RL WHEN:                            DO NOT USE RL WHEN:
-────────────────────────────            ──────────────────────────────
-Sequential decisions over time          Single-shot prediction
-                                        (use supervised learning)
+A model-based Roo imagines routes; a model-free Roo updates values from experience.
+Planning can save real interactions, but a wrong model can produce bad plans.
 
-Clear reward signal exists              No clear reward signal
-                                        (use unsupervised or supervised)
+| Situation | Sensible starting point |
+|---|---|
+| Predict spam from labelled emails | Supervised learning |
+| Choose an ad for immediate clicks | Consider a bandit |
+| Find a route through a fully known small maze | Search or planning |
+| Learn sequential control with measurable success and safe simulation | Consider RL |
+| Training mistakes could seriously harm people | Do not rely on unrestricted trial and error |
 
-Simulator or environment                You have abundant labelled data
-available for training                  (supervised is faster and simpler)
+### The reward is not the real goal
 
-Too complex for hand-coded rules        Training failures are
-                                        unacceptably costly
+Reward a robot for **touching boxes**, and it might repeatedly tap one without
+delivering it. **Reward hacking** means optimising the score, not the intended task.
 
-Agent must adapt to changing            Problem is stationary and
-conditions                              well-understood
-```
+Measure deliveries, inspect behaviour, and evaluate on new situations. Sparse or
+delayed rewards can make learning slow; simulators help, but real conditions may differ.
 
-**Example — how it works (two problems, two answers).**
+### Pocket recap
 
-- **Predict house prices from features** (size, location, bedrooms): one input → one number, no
-  sequence, labelled data available. → **Not RL.** Use supervised regression — it's simpler and
-  there's nothing sequential to optimise.
-- **Train a warehouse robot to pick and pack orders:** a long sequence of moves where each affects
-  the next, success is measurable (item delivered, time taken), and a simulator exists. → **RL
-  fits.** A reward (+1 delivered, −0.01 per second, −1 dropped) shapes a whole strategy that no
-  fixed label set could ever specify.
+**Policy chooses; V scores situations; Q scores moves. Bellman connects now and
+later. Q-learning updates estimates. Explore to discover; exploit to benefit.
+Reward the right goal.**
 
-**Concrete RL applications today:**
+### Six quick recall questions
 
-- **Game AI** — AlphaGo, Atari, StarCraft, Dota 2
-- **Robotics** — dexterous manipulation, locomotion, warehouse automation
-- **Autonomous vehicles** — lane changing, intersection navigation
-- **LLM alignment** — RLHF / DPO for helpful and harmless responses
-- **Chip design** — Google used RL for TPU floorplanning
-- **Recommendation systems** — sequential recommendation with long-term engagement
-- **Resource management** — data centre cooling (DeepMind reduced Google's cooling energy by 40%)
+Try answering before opening each explanation.
 
----
-
-## Key Takeaways
-
-```
-╔════════════════════════════════════════════════════════════════════╗
-║  REINFORCEMENT LEARNING — SUMMARY                                ║
-╠════════════════════════════════════════════════════════════════════╣
-║  1. RL = agent learns by trial and error, maximising reward      ║
-║  2. MDP formalises the problem: (S, A, P, R, γ)                  ║
-║  3. V(s) = value of a state; Q(s,a) = value of an action        ║
-║  4. Bellman equation: value = reward + discounted future value   ║
-║  5. Q-Learning: off-policy, model-free, learns Q* from samples  ║
-║  6. DQN: neural net replaces Q-table for high-dim states        ║
-║  7. Policy gradients: directly optimise the policy (REINFORCE)   ║
-║  8. Actor-Critic: policy (actor) + value function (critic)       ║
-║  9. PPO: clipped objective, most popular RL algorithm today      ║
-║ 10. RLHF: SFT → Reward Model → PPO, aligns LLMs to humans      ║
-║ 11. Model-based RL learns dynamics; model-free learns directly   ║
-║ 12. Exploration (try new) vs exploitation (use best known)       ║
-╚════════════════════════════════════════════════════════════════════╝
-```
-
----
-
-## Review Questions
-
-**1. What distinguishes RL from supervised and unsupervised learning?**
+**1. Why is Roo's first -1 move not necessarily bad?**
 
 <details>
 <summary>Answer</summary>
 
-RL learns from scalar reward signals obtained through interaction with an environment, not from labelled examples (supervised) or unlabelled data patterns (unsupervised). The agent generates its own data, feedback is delayed, and the goal is to maximise cumulative long-term reward rather than predict labels or find structure.
+It leads toward treasure. The route's return is -1 + 0.9 x 9 = 7.1,
+despite that immediate cost.
 </details>
 
-**2. Define the six core components of an RL problem using a robotics example.**
+**2. What is the difference between a policy, V and Q?**
 
 <details>
 <summary>Answer</summary>
 
-Agent: the robot's control policy. Environment: the physical world (objects, surfaces, gravity). State: joint angles, gripper position, camera image. Action: torques applied to each joint. Reward: +1 for successfully grasping an object, -0.01 per timestep (encourages speed), -1 for dropping the object. Policy: the neural network mapping sensor inputs to joint torques.
+Policy chooses actions. V estimates a situation's return; Q estimates a move's
+return. Both depend on the policy followed afterwards.
 </details>
 
-**3. What is the Markov property and why does it matter for MDPs?**
+**3. Does epsilon = 0.1 mean choosing a non-best action exactly 10% of the time?**
 
 <details>
 <summary>Answer</summary>
 
-The Markov property states that the future is conditionally independent of the past given the present state: $P(s_{t+1}|s_t, a_t) = P(s_{t+1}|s_0,...,s_t, a_0,...,a_t)$. It matters because it allows RL algorithms to make decisions based solely on the current state without tracking full history, making the problem tractable. When the property does not naturally hold, you can often engineer it by including relevant history in the state representation (e.g., frame stacking in DQN).
+No. The 10% random branch includes the best action too.
 </details>
 
-**4. Explain the Bellman equation intuitively and give the formula for $Q^*$.**
+**4. Old Q is 2, target is 3.5, alpha is 0.1. What is the update?**
 
 <details>
 <summary>Answer</summary>
 
-The Bellman equation says: "The value of being in a state equals the immediate reward plus the discounted value of the best next state." It is a recursive decomposition — if you know future values, you can compute present values. For optimal action-values: $Q^*(s,a) = R(s,a) + \gamma \sum_{s'} P(s'|s,a) \max_{a'} Q^*(s',a')$.
+Error = 1.5; new Q = 2 + 0.1 x 1.5 = 2.15.
+Terminal transitions target the reward alone.
 </details>
 
-**5. Why does epsilon-greedy decay epsilon over time? What would happen if it stayed at 1.0 or 0.0?**
+**5. What changes when a Q-table becomes a DQN?**
 
 <details>
 <summary>Answer</summary>
 
-Epsilon decays because early training needs exploration (discover good actions) while later training should exploit learned knowledge. At epsilon=1.0 forever, the agent acts randomly and never uses what it has learned. At epsilon=0.0 forever, the agent exploits from the start and likely gets stuck with the first decent action it finds, missing better alternatives.
+A neural network predicts Q-values instead of storing a row for every state.
+The reward-plus-future learning idea remains.
 </details>
 
-**6. What are the two key innovations in DQN that made it work, and why is each necessary?**
+**6. How does DPO differ from classic RLHF?**
 
 <details>
 <summary>Answer</summary>
 
-(1) Experience replay: stores transitions in a buffer and trains on random mini-batches, breaking temporal correlations and improving sample efficiency. Without it, consecutive correlated samples cause unstable learning. (2) Target network: a frozen copy of the Q-network used to compute TD targets, updated periodically. Without it, both the prediction and target change simultaneously, creating a "moving target" that prevents convergence.
-</details>
-
-**7. When would you choose policy gradient methods over Q-learning?**
-
-<details>
-<summary>Answer</summary>
-
-Use policy gradients when: (a) the action space is continuous (steering angles, joint torques) since Q-learning requires max over actions, (b) you want a stochastic policy (e.g., game theory settings like rock-paper-scissors), (c) the action space is very large (Q-learning must evaluate every action). Q-learning is preferred for discrete, small action spaces where it tends to be more sample-efficient.
-</details>
-
-**8. What problem does the critic solve in actor-critic methods?**
-
-<details>
-<summary>Answer</summary>
-
-The critic reduces variance in the policy gradient estimate. REINFORCE uses raw returns $G_t$ which are noisy — the same action in the same state can produce very different returns across episodes. The critic learns $V(s)$ and provides the advantage $A = r + \gamma V(s') - V(s)$ as a lower-variance signal. This makes training faster and more stable.
-</details>
-
-**9. Walk through the three stages of RLHF. Why is the reward model necessary — why not use human feedback directly during PPO?**
-
-<details>
-<summary>Answer</summary>
-
-Stage 1 (SFT): Fine-tune the base LLM on expert-written (prompt, response) pairs. Stage 2 (Reward Model): Generate multiple responses, have humans rank them, train a model to predict preferences. Stage 3 (PPO): Use the reward model as a proxy for human judgment to optimise the LLM. The reward model is necessary because PPO requires millions of reward evaluations — you cannot have humans rate every response in real-time. The reward model automates and scales human judgment.
-</details>
-
-**10. Compare model-based and model-free RL. Give one example of each and explain when you would prefer one over the other.**
-
-<details>
-<summary>Answer</summary>
-
-Model-free (e.g., DQN, PPO): learns directly from experience without modelling environment dynamics. Simpler but needs lots of data. Model-based (e.g., AlphaZero, MuZero): learns a model of how the environment works and uses it to plan ahead (simulate future trajectories). More sample-efficient but the model can be wrong, leading to poor plans. Prefer model-based when data is expensive to collect (robotics, real-world systems) and a good model can be learned. Prefer model-free when the environment is complex, hard to model accurately, and simulation is cheap (video games, LLM training).
+DPO directly learns from preference pairs. Classic RLHF trains a reward model,
+then uses RL against its scores.
 </details>
 
 ---
 
-**Previous:** [Chapter 14 — Neural Networks](14_neural_networks.md) | **Next:** [Chapter 16 — Deep Learning Reference](16_deep_learning.md)
+**Previous:** [Chapter 14 — Neural Networks](#content/14_neural_networks) | **Next:** [Chapter 16 — Deep Learning Reference](#content/16_deep_learning)

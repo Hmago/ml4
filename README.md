@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~194 hours of content · 415+ DSA problems │
+  │  50 chapters · ~189 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -59,9 +59,9 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~3.5 hrs | Intermediate |
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~4.25 hrs | Intermediate-Advanced |
-| 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~3 hrs | Intermediate |
+| 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1 hr | Intermediate |
 | ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~4.25 hrs | All Levels |
-| | **Core ML Total** | | | **~39.25 hrs** | |
+| | **Core ML Total** | | | **~37 hrs** | |
 
 ### Deep Learning & LLMs
 
@@ -137,7 +137,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~182 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~188.75 hrs reading + DSA practice** | |
 
 ---
 
@@ -287,7 +287,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 10 (Supervised) → Ch 12 (Algorithms) → Ch 13 (Evaluation)
   Solid foundations. Enough for junior ML roles.
 
-  TRACK 2: Full ML Engineer (~57 hours)
+  TRACK 2: Full ML Engineer (~55 hours)
   ──────────────────────────────────────────
   Track 1 → Ch 11 (Unsupervised) → Ch 14 (Neural Nets) →
   Ch 15 (RL) → Ch 16 (Deep Learning) →
@@ -303,7 +303,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 33 (LLM Interview Qs, Pt 1-2)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
-  TRACK 4: Google AI Engineer (~132 hours — full prep)
+  TRACK 4: Google AI Engineer (~126 hours — full prep)
   ──────────────────────────────────────────
   Ch 01 (Strategy — read first!) →
   Ch 02 (Behavioral — start STAR stories early) →
