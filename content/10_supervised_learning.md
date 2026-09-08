@@ -694,7 +694,7 @@ Real data isn't perfectly separable, so the **soft margin** allows controlled vi
 
 **Multi-class:** SVMs are binary at heart. Extend with **one-vs-rest** (one classifier per class) or **one-vs-one** (one per class pair, then vote).
 
-→ **The kernel trick, the dual formulation, and the full margin derivation: [Ch 12 §12.7](#content/12_key_algorithms).**
+→ **The kernel trick, the margin objective, and the C/gamma tradeoff: [Ch 12 §12.7](#content/12_key_algorithms).**
 
 > **Interview —** *"When would you pick an SVM over gradient boosting?"*
 > **Say:** Rarely on tabular data — boosting usually wins. SVMs remain attractive when the feature count is large relative to the sample count (text, genomics), where the maximum-margin objective generalizes well, and when the dataset is small enough that O(n²)–O(n³) training is acceptable.
@@ -1964,7 +1964,7 @@ flowchart TD
 | **Ridge / Lasso** | ★★★★★ | ★★★ | **Highest** | Regularized regression, feature selection |
 | **Neural Network** | ★ | ★★★★★ | Low | Images, text, audio — unstructured data |
 
-→ **Time and space complexity per algorithm: [Ch 12](#content/12_key_algorithms) §12.10. Hyperparameter cheat sheet: §12.11. A more detailed selection flowchart: §12.12.**
+→ **Time and space complexity per algorithm, the scaling rules, a detailed selection flowchart, and the per-algorithm hyperparameter priority order: [Ch 12 §12.10–12.11](#content/12_key_algorithms).**
 
 
 ### The Practical Workflow

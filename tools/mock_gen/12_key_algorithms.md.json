@@ -22,15 +22,15 @@
     "explanation": "Lasso's L1 penalty creates a diamond-shaped constraint region whose corners lie on coordinate axes, forcing some weights to exactly zero. Ridge's circular L2 constraint rarely produces exact zeros — it shrinks all weights but keeps all features."
   },
   {
-    "q": "In linear regression residual analysis, a curved (non-random) pattern in the residuals vs. fitted values plot most likely indicates:",
+    "q": "An OLS linear regression is fitted **with an intercept**. What must always be true of the training residuals?",
     "options": [
-      "non-linearity — the linear model is misspecified and needs polynomial features or a non-linear model",
-      "homoscedasticity — residuals have constant variance confirming the fit is correctly specified",
-      "multicollinearity — correlated predictors are producing systematic and recurring patterns in prediction errors",
-      "normally distributed errors — the curvature reflects the bell shape of a Gaussian distribution"
+      "they sum to exactly zero, which follows directly from $w_0 = \\bar{y} - w_1\\bar{x}$",
+      "they are all strictly positive whenever the fitted slope $w_1$ is positive",
+      "they are normally distributed, which the least-squares fit itself guarantees",
+      "they have a mean equal to the target's mean $\\bar{y}$ divided by the sample size"
     ],
     "answer": 0,
-    "explanation": "Random scatter around zero is the desired pattern; a systematic curve means the linear assumption is violated. The fix is to add polynomial features or use a non-linear algorithm. Homoscedasticity describes constant variance (random horizontal scatter), which is the desired outcome."
+    "explanation": "Including an intercept forces the residuals to sum to exactly zero — it falls straight out of the formula $w_0 = \\bar{y} - w_1\\bar{x}$. It makes a cheap bug check: if your training residuals do not total ~0, the intercept was suppressed, the model has not converged, or you are looking at test-set residuals. Normality of residuals is an *assumption* for inference, not something the fit guarantees."
   },
   {
     "q": "In logistic regression's One-vs-Rest (OvR) strategy for a $K$-class problem, the training procedure involves:",
@@ -253,15 +253,15 @@
     "explanation": "Without smoothing, a word absent from training spam emails gets $P(\\text{word}|\\text{spam}) = 0$, which zeroes the entire product likelihood regardless of all other words. Laplace smoothing adds $\\alpha$ to every count, ensuring no probability is exactly zero while minimally distorting the distribution."
   },
   {
-    "q": "Isotonic regression for probability calibration differs from Platt scaling in that isotonic regression:",
+    "q": "A logistic regression assigns the feature `renovated` a coefficient of $3.2$, so $e^{3.2} \\approx 24.5$. For a listing whose baseline probability of selling fast is already $0.50$, being renovated raises that probability to roughly:",
     "options": [
-      "is parametric and fits only a sigmoid function, making it prone to underfitting on large datasets",
-      "is non-parametric and more flexible, but requires more data to avoid overfitting (typically > 1,000 calibration samples)",
-      "minimizes log-loss directly on the calibration set, while Platt scaling minimizes MSE",
-      "is valid only for tree-based models, while Platt scaling applies to any classifier output"
+      "$0.99$, because a large odds ratio saturates the sigmoid at any baseline",
+      "$0.96$, because the odds go from $1.0$ to $24.5$, giving $24.5 / 25.5$",
+      "$1.00$, because the probability is multiplied by the odds ratio of $24.5$",
+      "$0.75$, because the odds ratio is halved once the baseline probability exceeds $0.5$"
     ],
     "answer": 1,
-    "explanation": "Isotonic regression fits a monotone step function with no parametric form — more flexible than Platt's two-parameter sigmoid but prone to overfitting with small calibration sets. Platt scaling fits only $A$ and $B$ in $\\sigma(Af + B)$ and works reliably with as few as 100 validation samples."
+    "explanation": "A coefficient multiplies the **odds**, not the probability. At $p = 0.5$ the odds are $1.0$; multiplying by $24.5$ gives odds of $24.5$, so $p = 24.5/25.5 = 0.961$ — under a 2x increase in probability. From a $0.01$ baseline the same coefficient takes $p$ to about $0.198$, roughly 20x. The odds ratio is constant; the effect on probability depends entirely on the starting point."
   },
   {
     "q": "In gradient boosting, the approximate rule governing the relationship between learning rate and number of trees states that:",
@@ -385,15 +385,15 @@
     "explanation": "The two margin hyperplanes are at $\\mathbf{w}^\\top\\mathbf{x} + b = +1$ and $-1$. Their perpendicular distance is $\\frac{2}{\\|\\mathbf{w}\\|}$. Minimizing $\\frac{1}{2}\\|\\mathbf{w}\\|^2$ (the SVM objective) is equivalent to maximizing this margin width."
   },
   {
-    "q": "The Minkowski distance with parameter $q = 1$ between two points in $p$ dimensions is equivalent to:",
+    "q": "In the gradient-boosting worked example (four houses, one binary feature, $\\eta = 0.5$), the SSE falls $4.25 \\rightarrow 1.25 \\rightarrow 0.50 \\rightarrow 0.3125$ but then stalls just above $0.25$. That floor exists because:",
     "options": [
-      "the Euclidean distance $\\sqrt{\\sum_j (a_j - b_j)^2}$ — the straight-line geometric distance",
-      "the Chebyshev distance $\\max_j |a_j - b_j|$ — the maximum single-dimension absolute difference",
-      "the Manhattan distance $\\sum_j |a_j - b_j|$ — the sum of absolute differences per dimension",
-      "the cosine distance $1 - \\frac{A \\cdot B}{\\|A\\|\\|B\\|}$ — measuring angular separation between vectors"
+      "the learning rate of $0.5$ caps how far the ensemble can ever move from $F_0$",
+      "squared-error loss is bounded below by the variance of the target variable",
+      "one binary feature cannot separate two houses that share the same feature value, so that residual is irreducible",
+      "depth-1 stumps cannot reduce error further once three boosting rounds have completed"
     ],
     "answer": 2,
-    "explanation": "Minkowski: $(\\sum_j |a_j - b_j|^q)^{1/q}$. With $q=1$: $\\sum_j|a_j-b_j|$ = Manhattan (city-block). With $q=2$: Euclidean (straight-line). As $q \\to \\infty$: Chebyshev (max absolute difference). Choosing the right metric can meaningfully affect KNN performance."
+    "explanation": "The ensemble converges toward the group means (2.25 and 4.25), leaving $\\pm 0.25$ inside each group. Two houses with identical features but different prices cannot be told apart by any number of trees — that residual is **irreducible**. Chasing it is exactly what overfitting looks like, which is why early stopping watches validation loss rather than training loss."
   },
   {
     "q": "Bernoulli Naive Bayes is the appropriate variant when:",
@@ -484,15 +484,15 @@
     "explanation": "High-capacity models (deep nets, unpruned trees) easily overfit when $n < 1000$. Logistic regression, Naive Bayes, and KNN (with few features) have limited model complexity, making them naturally resistant to overfitting. GBMs can work but require careful regularization and are harder to tune on small data."
   },
   {
-    "q": "A calibration method that fits a non-parametric monotonically increasing step function from model scores to probabilities is:",
+    "q": "LightGBM grows trees leaf-wise rather than level-wise. The correct way to control the resulting overfitting risk on a small dataset is to:",
     "options": [
-      "Platt scaling — a parametric method fitting a two-parameter sigmoid requiring large calibration sets",
-      "Beta calibration — uses the Beta distribution CDF to map scores to probabilities for any classifier",
-      "Isotonic regression — a non-parametric method, more flexible than Platt but prone to overfitting with fewer than ~1,000 calibration samples",
-      "Reliability binning — directly bins predictions and replaces each bin's score with its observed frequency"
+      "raise `learning_rate` so fewer trees are needed before early stopping triggers",
+      "disable `subsample` so every tree sees the complete training set each round",
+      "cap `num_leaves`, keeping it below $2^{\\text{max\\_depth}}$",
+      "increase `n_estimators` so the ensemble averages away the deep narrow branches"
     ],
     "answer": 2,
-    "explanation": "Isotonic regression fits any monotone step function with no parametric assumption — more flexible but needs a large calibration set. Platt scaling fits only two parameters ($A$, $B$) in $\\sigma(Af+B)$ and works reliably with as few as 100 samples. Choose isotonic when you have > 1,000 calibration examples."
+    "explanation": "Leaf-wise growth always splits the highest-loss leaf, so it can grow deep, narrow branches that chase a handful of rows. `num_leaves` — not `max_depth` — is the governing control in LightGBM, and the rule of thumb is to keep it below $2^{\\text{max\\_depth}}$. On a few thousand rows, level-wise XGBoost is often the safer default."
   },
   {
     "q": "The decision boundary of a logistic regression model in $p$-dimensional feature space is always:",
@@ -649,14 +649,14 @@
     "explanation": "Taking $\\partial/\\partial w_j$ of MSE $= \\frac{1}{n}\\sum(\\hat{y}_i-y_i)^2$ yields exactly $\\frac{2}{n}\\sum(\\hat{y}_i-y_i)x_{ij}$, matching the update rule. MAE produces a sign-based subgradient; cross-entropy is used for logistic regression; hinge loss is the SVM objective."
   },
   {
-    "q": "A model is considered 'well-calibrated' if, among all test predictions with assigned probability 0.7:",
+    "q": "You train an SVM on 10,000 rows, then delete every training point **except** the support vectors and retrain with the same settings. The resulting decision boundary is:",
     "options": [
-      "at least 70% of predictions rank in the top third of the predicted probability range",
-      "the model's AUC-ROC score is at least 0.70 when evaluated on those specific samples",
-      "predicted probabilities strictly increase as the true positive rate increases on the ROC curve",
-      "approximately 70% of those samples are actual positives in the ground truth labels"
+      "wider, because removing interior points increases the achievable margin",
+      "shifted toward whichever class lost the larger number of training points",
+      "undefined, because the optimizer needs points on both sides of the margin",
+      "identical, because only the support vectors determine the solution"
     ],
     "answer": 3,
-    "explanation": "Calibration means predicted probabilities match empirical frequencies: if a model assigns 0.7 to 1,000 examples, ~700 should be true positives. A reliability diagram plots this relationship — the diagonal line is perfect calibration. Well-calibrated probabilities are essential for cost-sensitive decisions (medical risk, ad bidding)."
+    "explanation": "The SVM solution depends only on the points lying on the margin. Every point comfortably on the correct side contributes nothing, so deleting them changes nothing. The practical catch is that you cannot know which points are support vectors until you have solved the problem — and solving it means building an $n \\times n$ kernel matrix, which is why training is $O(n^2)$–$O(n^3)$."
   }
 ]

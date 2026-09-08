@@ -56,7 +56,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 09 | Data Preprocessing | ★★ | [09_data_preprocessing.md](content/09_data_preprocessing.md) | ~1 hr | Beginner-Intermediate |
 | 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~5.5 hrs | Intermediate |
 | 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~5.75 hrs | Intermediate |
-| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~4.25 hrs | Intermediate |
+| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~3.5 hrs | Intermediate |
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~4.25 hrs | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~3 hrs | Intermediate |

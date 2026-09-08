@@ -615,7 +615,9 @@ For regression there is no "right or wrong," only "how far off." Every metric he
 
 ### Running Example: House Price Prediction
 
-| House | Actual ($K) | Predicted ($K) | Error ($K) |
+All values are in **$K** (thousands of US dollars).
+
+| House | Actual | Predicted | Error |
 |---|---|---|---|
 | 1 | 300 | 280 | -20 |
 | 2 | 450 | 460 | +10 |
@@ -1067,6 +1069,31 @@ Why does random often beat grid? Bergstra & Bengio (2012) showed that when only 
 
 Libraries: **Optuna**, **Hyperopt**, **scikit-optimize**, **Ray Tune**.
 
+```python
+# Optuna — tuning LightGBM. The `suggest_*` calls define the search space,
+# and Optuna's sampler decides where to look next based on past trials.
+import optuna, lightgbm as lgb
+from sklearn.model_selection import cross_val_score
+
+def objective(trial):
+    params = {
+        'n_estimators':     trial.suggest_int('n_estimators', 100, 1000),
+        'learning_rate':    trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
+        'num_leaves':       trial.suggest_int('num_leaves', 15, 127),
+        'subsample':        trial.suggest_float('subsample', 0.6, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+        'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
+    }
+    model = lgb.LGBMClassifier(**params, random_state=42, verbose=-1)
+    return cross_val_score(model, X_train, y_train, cv=5, scoring='roc_auc').mean()
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=100)
+print(f"Best AUC: {study.best_value:.4f}  params: {study.best_params}")
+```
+
+→ *Which knobs are worth searching for each algorithm:* [Ch 12 §12.11](#content/12_key_algorithms).
+
 ### Comparison
 
 | Method | Budget Required | Best When |
@@ -1397,13 +1424,45 @@ print("Brier:", brier_score_loss(y_test, probs))   # lower is better
 ```
 
 ### Fixing miscalibration
-Recalibrate *post-hoc* on a held-out set — **Platt scaling** (sigmoid), **isotonic regression** (flexible, needs more data), or **temperature scaling** (neural nets). Full methods and code are in [Ch 12 §12.14](#content/12_key_algorithms).
+
+Recalibrate *post-hoc* on a **held-out** set — never on the training data, or you just
+relearn the same distortion. All three methods below are **monotonic**, so they change
+the numbers and never the ranking: your AUC is untouched.
+
+| Method | What it fits | Use when |
+|---|---|---|
+| **Platt scaling** | A logistic regression on the model's raw scores | The reliability curve is roughly sigmoid, or data is limited |
+| **Isotonic regression** | Any non-parametric monotonically increasing function | You have > ~1,000 samples and the distortion is not sigmoid-shaped |
+| **Temperature scaling** | A single scalar $T$ dividing the logits before softmax | Neural networks. The standard fix for overconfident deep nets |
+
+```python
+from sklearn.calibration import CalibratedClassifierCV
+
+# Platt scaling (sigmoid) — safer on small data
+calibrated = CalibratedClassifierCV(base_model, method='sigmoid', cv=5)
+calibrated.fit(X_train, y_train)
+
+# Isotonic regression — more flexible, needs more data
+calibrated = CalibratedClassifierCV(base_model, method='isotonic', cv=5)
+calibrated.fit(X_train, y_train)
+```
+
+**Does it matter for you?** If the downstream consumer only *ranks* — top-N lists,
+triage queues — calibration is optional. If anything does **arithmetic** on the
+probability, it is mandatory: ads bidding (a 5% predicted CTR against a true 3% means
+you overbid every impression), expected-revenue models, medical risk scores, or
+combining several models on a shared scale.
+
+Which algorithms need this most: **Random Forest** (its output is a vote share, so it
+is under-confident at the extremes), **gradient boosting**, **SVM**, **Naive Bayes**
+(badly overconfident), and **deep nets**. Logistic regression is calibrated almost by
+construction. → *Per-algorithm detail:* [Ch 12](#content/12_key_algorithms).
 
 > **Interview cue:** "High AUC but a bad Brier score / ECE" means the model *ranks* well but its probabilities are off — recalibrate rather than retrain.
 
 > **Interview —** *"A model has AUC 0.94 but the product team says its probabilities are unusable. Explain how both can be true."*
 > **Say:** AUC measures **discrimination** — whether positives are ranked above negatives. Calibration is a different property: whether a predicted 0.8 actually occurs 80% of the time. A model can rank every case perfectly and still be systematically over- or under-confident, because **any monotonic squash of the scores leaves the ranking, and therefore the AUC, completely unchanged.** Squaring every probability would keep AUC at 0.94 and destroy calibration.
-> **They follow up with:** *"So how do you diagnose and fix it?"* — diagnose with a **reliability diagram** plus **ECE** or the **Brier score**; AUC will never reveal it. Fix post-hoc on held-out data with Platt scaling or isotonic regression ([Ch 12 §12.14](#content/12_key_algorithms)). Because those transforms are monotonic, **calibration cannot hurt your AUC** — it fixes the numbers while leaving the ordering intact. It matters whenever anything downstream does arithmetic on the probability: expected value, bidding, risk thresholds.
+> **They follow up with:** *"So how do you diagnose and fix it?"* — diagnose with a **reliability diagram** plus **ECE** or the **Brier score**; AUC will never reveal it. Fix post-hoc on held-out data with Platt scaling or isotonic regression (see above). Because those transforms are monotonic, **calibration cannot hurt your AUC** — it fixes the numbers while leaving the ordering intact. It matters whenever anything downstream does arithmetic on the probability: expected value, bidding, risk thresholds.
 
 <details>
 <summary><strong>Quick check.</strong> Of 100 predictions made with confidence 0.9, only 60 turn out positive. Is the model over- or under-confident, and what is the contribution to ECE from this bin?</summary>
