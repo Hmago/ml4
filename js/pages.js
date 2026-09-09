@@ -51,7 +51,7 @@ const ACHIEVEMENTS = [
 function renderWelcome() {
   exitFocusMode();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
   currentPage = 'welcome';
   currentIndex = -1;
   pushHash('home');
@@ -251,7 +251,7 @@ function showDashboard() {
   document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
   const realCh = chapters.filter(c => !c.section && !c.ref);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
   const data = getXP();
@@ -1499,7 +1499,7 @@ function showMotivation() {
 function renderMotivation() {
   const quote = MOTIVATION_QUOTES[motiIndex];
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
   contentEl.innerHTML = `
     <div class="moti-container">
       <div class="moti-card">
@@ -1609,7 +1609,7 @@ function showGoals() {
 
 function renderGoalsPage() {
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
   const data = getGoalsData();
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -1911,4 +1911,3 @@ function ttCellClick(day, time) {
     if (actEl) actEl.focus();
   }, 100);
 }
-

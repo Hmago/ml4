@@ -525,7 +525,7 @@ async function showDSAPractice() {
   pushHash('dsa-practice');
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
 
   // The 420KB problem index is lazy-loaded — show a spinner while it arrives.
   if (!(typeof window !== 'undefined' && window.__dsaIndexLoaded) && typeof DSA_PROBLEMS === 'undefined') {
@@ -941,7 +941,7 @@ async function showDSAProblem(id) {
   dsaTimerRunning = false;
 
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
 
   const renderMd = (md) => (typeof marked !== 'undefined')
     ? marked.parse(md)

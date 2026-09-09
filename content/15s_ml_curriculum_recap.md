@@ -295,7 +295,10 @@ The absolute-value penalty has a corner at zero — optimizer easily drives irre
 
 Combines sparsity (L1) with stability under correlated features (L2).
 
-**Dropout:** randomly zero out fraction $p$ of neurons each training forward pass. Network cannot rely on any single neuron; builds redundant representations. At inference: all neurons active, outputs scale by $(1-p)$. Typical $p$: 0.3–0.5 for dense layers, 0.1–0.2 for convolutional.
+**Dropout:** randomly zero activations during training. With PyTorch's inverted dropout,
+survivors are divided by $(1-p)$ during training; at inference dropout is disabled and no
+rescaling is needed. Choose the rate using validation rather than treating it as a fixed
+recipe.
 
 **Early Stopping:** monitor validation loss every epoch; stop when it starts increasing; save the best checkpoint. Free regularization — the simplest technique that reliably works.
 
@@ -1245,13 +1248,16 @@ Learning curve plots model performance vs training set size. If both curves plat
 
 $$z = \sum_{i=1}^n w_i x_i + b \qquad \hat{y} = f(z)$$
 
-- **Weight** $w_i$: learned importance of input $x_i$
+- **Weight** $w_i$: learned multiplier; its magnitude alone is not feature importance
 - **Bias** $b$: shifts the activation threshold
 - **Activation function** $f$: adds nonlinearity; without it, any depth collapses to a single linear layer
 
-> **Universal Approximation Theorem:** a feedforward neural network with one hidden layer and sufficient width can approximate any continuous function on a compact subset of $\mathbb{R}^n$ to arbitrary precision (given enough neurons).
+> **Universal Approximation Theorem:** with suitable nonlinear activations and sufficient
+> width, a hidden-layer network can approximate continuous functions on a compact domain.
+> This concerns representation, not guaranteed optimization or generalization.
 
-Width alone isn't enough in practice — depth enables learning compositional, hierarchical features more efficiently.
+Depth can represent some compositional functions efficiently; compare depth and width
+against the task and compute budget rather than assuming one always wins.
 
 ### Architecture Anatomy
 
@@ -1266,9 +1272,10 @@ x₂ ───┤──► [Layer 1] ──► [Layer 2] ──► ... ──►
 x₃ ───┘
 ```
 
-**Depth** (number of layers): learns more abstract hierarchical features; depth 4 LeNet → depth 50+ ResNet. Too deep → vanishing gradients (without fixes).
+**Depth** adds composed transformations and changes the optimization problem.
 
-**Width** (neurons per layer): more neurons = more patterns at that level. Too wide → overfitting; too narrow → underfitting.
+**Width** adds features per layer. Either choice can help or hurt; data, initialization,
+regularization, and optimization also affect fit.
 
 ### Activation Functions Compared
 
@@ -1276,13 +1283,15 @@ x₃ ───┘
 |---|---|---|---|
 | **ReLU** | $\max(0,z)$ | $[0,\infty)$ | Default for hidden layers; gradient=1 for z>0 |
 | **Leaky ReLU** | $z$ if $z>0$ else $\alpha z$ ($\alpha$=0.01) | ℝ | When dying ReLU (0-gradient for z<0) is a problem |
-| **ELU** | $z$ if $z>0$ else $\alpha(e^z-1)$ | ℝ | Smooth negative region; mean activations near 0 |
+| **ELU** | $z$ if $z>0$ else $\alpha(e^z-1)$ | $(-\alpha,\infty)$ for $\alpha>0$ | A saturating negative branch |
 | **Sigmoid** | $1/(1+e^{-z})$ | $(0,1)$ | Binary output layer; LSTM gates |
 | **Tanh** | $(e^z-e^{-z})/(e^z+e^{-z})$ | $(-1,1)$ | RNN hidden state; zero-centered vs sigmoid |
 | **Softmax** | $e^{z_i}/\sum_j e^{z_j}$ | $(0,1)$, sums to 1 | Multi-class output layer |
-| **GELU** | $z\cdot\Phi(z)$ | ℝ | Transformer hidden layers (BERT, GPT) |
+| **GELU** | $z\cdot\Phi(z)$ | Bounded below, unbounded above | Used in many Transformer feed-forward blocks |
 
-**Dying ReLU problem:** a neuron stuck at z<0 outputs 0 always and receives 0 gradient — never recovers. Leaky ReLU, ELU, and careful initialization prevent this.
+**Dying ReLU:** a unit inactive across the training data receives no data-gradient through
+its activation. One inactive example does not establish that it is dead. Initialization,
+learning rate, and activation choice are relevant; upstream changes can also alter activity.
 
 ### Backpropagation — Chain Rule All the Way Down
 
@@ -1290,15 +1299,20 @@ Forward pass computes $\hat{y}$ and loss $L$. Backward pass computes gradients v
 
 $$\frac{\partial L}{\partial w_1^{(1)}} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z^{(2)}} \cdot \frac{\partial z^{(2)}}{\partial a^{(1)}} \cdot \frac{\partial a^{(1)}}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial w_1^{(1)}}$$
 
-Each term is a local gradient. Error flows backward through each layer; every weight's contribution to the final loss is computed efficiently. Complexity: $O(P)$ where $P$ = number of parameters — same as one forward pass.
+Each term is a local derivative; shared paths contribute summed gradients. Backprop costs
+a small constant multiple of the forward computation, which depends on input size and
+parameter reuse—not just the number of parameters.
 
 Weight update: $w \leftarrow w - \alpha\,\partial L/\partial w$ for every weight simultaneously.
 
 ### Vanishing and Exploding Gradients
 
-**Vanishing:** sigmoid max gradient is 0.25. Multiply through 10 layers: $0.25^{10} \approx 10^{-6}$. The first layer's weights barely change — the network learns nothing in its early layers.
+**Vanishing:** ten sigmoid activation derivatives contribute at most
+$0.25^{10}\approx10^{-6}$, **ignoring weight factors**. Full gradient products include
+weights too; active ReLU derivatives of 1 do not guarantee stability.
 
-**Exploding:** weight factor > 1 multiplied across layers → loss becomes NaN.
+**Exploding:** repeated amplification can destabilize updates. NaN can also arise from
+invalid inputs or unsafe arithmetic; locate the first non-finite quantity before fixing it.
 
 | Problem | Cause | Solution |
 |---|---|---|
@@ -1306,21 +1320,19 @@ Weight update: $w \leftarrow w - \alpha\,\partial L/\partial w$ for every weight
 | Vanishing (depth) | Gradient shrinks across layers | Batch Normalization |
 | Vanishing (sequences) | Gradients over time steps | LSTM / GRU gating |
 | Vanishing (very deep) | 50+ layer networks | Residual / skip connections |
-| Exploding | Large weight products | Gradient clipping: $g \leftarrow g \cdot \min(1, \text{clip\_val}/\|g\|)$ |
+| Exploding | Excessive gradient magnitude | Consider clipping: $g \leftarrow g \min(1,c/\|g\|)$ for threshold $c$ |
 
 ### Neural Network Regularization
 
 **Dropout:**
 ```
-Training:  randomly set fraction p of neurons to 0
-           different mask each forward pass
-           forces network to build redundant pathways
+Training:  randomly zero activations with probability p
+           divide survivors by (1-p): inverted dropout
 
-Inference: all neurons active; scale by (1-p)
-           [or equivalently: scale training weights by (1-p)]
+Inference: disable dropout; no rescaling
 ```
 
-Typical p: 0.3–0.5 for dense/FC layers; 0.1–0.2 for convolutional layers; 0.1 for Transformers.
+Choose $p$ by validation; some networks need little or no dropout.
 
 **Batch Normalization:**
 
@@ -1328,9 +1340,21 @@ $$\hat{x}_i = \frac{x_i - \mu_\mathcal{B}}{\sqrt{\sigma_\mathcal{B}^2 + \epsilon
 
 Normalizes each mini-batch to $\mu=0$, $\sigma=1$; learnable scale $\gamma$ and shift $\beta$ let the network undo normalization if needed. Benefits: enables higher learning rates; reduces sensitivity to weight initialization; acts as mild regularizer.
 
+Usual BatchNorm uses batch statistics in training and running statistics in evaluation.
+`model.eval()` changes module behavior; `no_grad()` separately controls gradient recording.
+
 For Transformers → **Layer Normalization** (normalize over features, not batch). Modern LLMs → **RMSNorm** (simpler: $\hat{x}_i = x_i/\text{RMS}(x)$, no mean centering).
 
-**Weight Decay (L2):** $L_\text{total} = L_\text{data} + \lambda\sum_j w_j^2$. AdamW separates weight decay from gradient adaptation — the correct way to do L2 regularization with Adam.
+**L2 versus decay:** the loss penalty $\lambda\sum_jw_j^2$ contributes gradient $2\lambda w$.
+For plain SGD, $w_{\text{new}}=(1-2\alpha\lambda)w-\alpha\nabla L_{\text{data}}$.
+AdamW instead decouples shrinkage from adaptive gradient processing; it is not generally
+equivalent to putting an L2 penalty inside Adam.
+
+**Practice bridge:** in [Chapter 14's CPU lab](#content/14_neural_networks), follow the
+two-layer prediction from probability 0.731059 / loss 0.313262 to probability 0.786594 /
+loss 0.240043 after one update. Then train XOR with and without a hidden activation.
+For binary logit loss, outputs and float targets have matching (B,1) shapes; for common
+multiclass cross-entropy, logits are (B,C) and integer class-index targets are (B,).
 
 ### Convolutional Neural Networks (CNNs)
 
@@ -1339,6 +1363,10 @@ A **convolutional layer** slides a $k\times k$ filter over the input, computing 
 $$\text{Output}[i,j] = \sum_{m,n} W[m,n] \cdot \text{Input}[i+m,j+n]$$
 
 One filter = one feature map. Stack $F$ filters → $F$ feature maps. Hierarchical feature learning:
+
+Filters span all input channels. With biases, parameter count is
+$C_{\text{out}}(C_{\text{in}}k^2+1)$. Convolution is translation-equivariant under suitable
+conditions; pooling adds limited shift tolerance, not perfect invariance.
 
 ```
 Layer 1:  edges, gradients            (low-level spatial features)
@@ -1360,7 +1388,8 @@ Famous architectures: LeNet-5 (1998), AlexNet (2012, won ImageNet), VGG (2014, 3
 
 $$h_t = f(W_x x_t + W_h h_{t-1} + b) \qquad \hat{y}_t = g(W_y h_t + b_y)$$
 
-Problem: gradients through time multiply $W_h$ repeatedly → vanish (small $W_h$) or explode (large $W_h$) for sequences > ~20 steps.
+Problem: repeated weight and activation factors can shrink or amplify gradients through
+time. There is no universal sequence-length cutoff.
 
 **LSTM** (Long Short-Term Memory) — 3 gates control a cell state $C_t$ that acts as a gradient highway:
 
@@ -1369,9 +1398,11 @@ $$i_t = \sigma(\cdot), \quad \tilde{C}_t = \tanh(\cdot) \quad \text{(input: new 
 $$C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \quad \text{(cell state update)}$$
 $$o_t = \sigma(\cdot), \quad h_t = o_t \odot \tanh(C_t) \quad \text{(output gate + hidden state)}$$
 
-The additive cell state update $C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t$ avoids the multiplicative gradient vanishing of plain RNNs.
+The direct cell-state path multiplies old memory by the forget gate. Gate values near 1
+can preserve information longer; the architecture does not guarantee unlimited memory.
 
-**GRU** (Gated Recurrent Unit): 2 gates (update + reset), no separate cell state; ~25% fewer parameters than LSTM; similar performance on most tasks.
+**GRU** (Gated Recurrent Unit): update and reset gates, without a separate cell state.
+Often fewer parameters than a same-width LSTM; compare actual latency and task quality.
 
 Modern recommendation: use Transformer for language/sequence tasks with full data. RNN/LSTM for streaming low-latency time series (one step at a time).
 
@@ -1385,14 +1416,18 @@ $$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\rig
 
 $QK^\top$ scores relevance of every token to every other token. Divide by $\sqrt{d_k}$ to prevent dot products from growing too large (which would collapse softmax to near one-hot). Resulting weights used to take a weighted sum of Values.
 
-**Multi-head attention:** run H attention heads in parallel; each learns different relationship types (syntax, coreference, semantic). Concatenate heads → project down to model dimension.
+**Multi-head attention:** run separate projections in parallel, concatenate the heads,
+and project back to model dimension. Heads need not learn distinct named relationships.
 
-**Positional encoding:** self-attention is permutation-invariant (can't distinguish "dog bites man" from "man bites dog" without position). Add sine/cosine positional encodings to embeddings.
+**Positional information:** unmasked, position-free self-attention is
+**permutation-equivariant**: reorder input rows and output rows reorder too, rather than
+remaining identical. Positional schemes supply location information. A causal mask also
+imposes ordered visibility; parallel training does not allow access to future tokens.
 
 | Architecture | Attention | Pre-training | Best for |
 |---|---|---|---|
 | **Encoder-only (BERT)** | Bidirectional (sees all tokens) | Masked LM | Classification, NER, QA |
-| **Decoder-only (GPT)** | Causal (past only) | Next-token prediction | Generation, chatbots |
+| **Decoder-only (GPT)** | Causal (current and past) | Next-token prediction | Generation, chatbots |
 | **Encoder-Decoder (T5)** | Cross-attention between enc and dec | Span corruption / seq2seq | Translation, summarization |
 
 ### Transfer Learning
@@ -1401,16 +1436,13 @@ $QK^\top$ scores relevance of every token to every other token. Divide by $\sqrt
 **Fine-tune** on your small task-specific dataset.
 
 ```
-Small dataset + domain similar to pre-training:
-  → Freeze all early layers; retrain only the final head (classifier)
-  → Risk of overfitting; few parameters to update
+Useful source representation:
+  → Start with a frozen-backbone/head-training baseline
+  → Compare selective or full fine-tuning when justified
 
-Large dataset + domain different from pre-training:
-  → Fine-tune all layers with small learning rate
-  → Most flexible; can adapt representations fully
-
-Small dataset + very different domain:
-  → Fine-tune only last 1–2 layers; may need more pre-training data
+Large domain mismatch:
+  → Check whether the representation transfers at all
+  → Choose which layers to adapt using validation, not sample count alone
 ```
 
 ---
@@ -1419,10 +1451,10 @@ Small dataset + very different domain:
 >
 > - Without activation functions, deep networks = single linear layer regardless of depth
 > - ReLU for hidden layers (gradient=1 for z>0); Sigmoid for binary output; Softmax for multi-class
-> - Vanishing gradient: $0.25^{10} \approx 10^{-6}$; fix with ReLU, BatchNorm, skip connections, LSTM
-> - LSTM cell state $C_t$ is an additive highway — prevents multiplicative gradient decay
-> - Transformer: $\text{softmax}(QK^\top/\sqrt{d_k})V$; all tokens attend simultaneously (no sequential bottleneck)
-> - AdamW + weight decay + dropout are the standard regularization recipe for Transformers
+> - Gradient flow includes weights and activation derivatives; ReLU alone is not a stability guarantee
+> - Gated additive memory can help retain signals over time
+> - Attention mixes permitted values; training can be parallel, autoregressive generation remains sequential
+> - Match loss and target shapes; distinguish `eval()` from `no_grad()` and L2 from decoupled decay
 
 ---
 
@@ -1691,5 +1723,5 @@ Bandits are used in A/B testing (web optimisation), clinical trials (adaptive al
 | **Ch 11 — Unsupervised Learning** | K-Means: specify K, spherical only, K-Means++ init. DBSCAN: auto K, arbitrary shapes, marks noise. Silhouette $s=(b-a)/\max(a,b)$ ∈ [-1,1]; > 0.5 = good. PCA linear; t-SNE local viz only; UMAP local+global. |
 | **Ch 12 — Key Algorithms** | Normal equation: $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$ (exact, O(p³)). Lasso → exact zeros. Gradient Boosting: each tree fits residuals. XGBoost level-wise; LightGBM leaf-wise (10–30× faster for large data). |
 | **Ch 13 — Model Evaluation** | Precision = TP/(TP+FP); Recall = TP/(TP+FN); F1 = harmonic mean. **AUC-PR for imbalanced; AUC-ROC for balanced**. R² < 0 = worse than mean. Never tune on test set. TimeSeriesSplit for time-ordered data. |
-| **Ch 14 — Neural Networks** | Transformer: $\text{softmax}(QK^\top/\sqrt{d_k})V$. Vanishing: sigmoid $0.25^{10}=10^{-6}$ → fix with ReLU + BatchNorm + skip connections. LSTM cell state $C_t$ = additive highway. ReLU for hidden; Softmax for multi-class output. |
+| **Ch 14 — Neural Networks** | Trace shapes, forward pass, loss, gradients, update. Gradient flow includes weights and activations. Use raw logits with matching losses; `eval()` is separate from `no_grad()`. Attention mixes permitted values; test understanding with the CPU XOR lab. |
 | **Ch 15 — Reinforcement Learning** | Bellman: $Q^*(s,a) = R + \gamma\max_{a'}Q^*(s',a')$. Q-learning TD error: $r + \gamma\max Q(s') - Q(s,a)$. DQN: experience replay + target network. **PPO** = clipped policy ratio; backbone of RLHF. RLHF = SFT → RM → PPO + KL penalty. |

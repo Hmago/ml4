@@ -7,10 +7,11 @@
 After this chapter you will be able to:
 - Explain how an artificial neuron computes a weighted sum, applies an activation, and produces output
 - Describe input, hidden, and output layers and reason about depth vs width trade-offs
-- Choose the right activation function for every layer
+- Choose activations, output shapes, and losses for common prediction tasks
 - Walk through forward pass, loss computation, backpropagation, and weight update
-- Diagnose vanishing and exploding gradients and apply fixes
-- Apply Dropout, Batch Normalization, and weight decay to regularize a network
+- Train a small neural network on CPU and explain each line of its training loop
+- Investigate training problems using data, loss curves, and gradients rather than guessing
+- Distinguish regularization, normalization, and training-versus-inference behavior
 - Explain how CNNs extract spatial features, how RNNs model sequences, and how Transformers use self-attention
 - Initialize weights correctly (He vs Xavier) and pick a learning-rate schedule
 - Decide when deep learning beats traditional ML and when it does not
@@ -38,16 +39,32 @@ architecture becomes a specialism:
 
 | If you want… | Go to |
 |---|---|
-| The **fundamentals** — neuron, layers, activations, forward pass, backprop, regularization | **You are here** (§14.1–14.7) |
+| The **fundamentals and a working model** — neuron, layers, forward/backward passes, training, debugging | **You are here** (§14.1–14.7b) |
 | A **tour** of CNNs, RNNs, Transformers, GANs — enough to hold a conversation | **You are here** (§14.8–14.12) |
 | **Depth** on those architectures — optimizer families, normalization variants, ResNet/ViT, MoE, diffusion | [Ch 16 — Deep Learning Reference](#content/16_deep_learning) |
 | How Transformers became **ChatGPT** — tokenization, pre-training, RLHF | [Ch 17 — LLMs](#content/17_llm) |
 | Actually **shipping** a model — pipelines, monitoring, drift | [Ch 27 — Practical ML](#content/27_practical_ml) |
 | How to **evaluate** what you built | [Ch 13 — Model Evaluation](#content/13_model_evaluation) |
 
-**A note on the maths.** There are ~37 equations ahead. You do **not** need to derive any of
-them. Every one is followed by either a plain-English restatement or a worked example with
-real numbers — read the words first, and treat the symbols as shorthand you'll grow into.
+**A note on the maths.** Read the explanation, try the small numerical example, then use
+the equation as shorthand. You do not need to memorize a page of derivatives. You *will*
+learn to follow one gradient through a network and explain why a weight should increase or
+decrease. We use full-precision calculations and round only the displayed answers.
+
+### Your Learning Route
+
+This is a chapter to learn in stages, not a single sitting to endure. Length is less
+important than being able to do something new at each stopping point.
+
+| Stage | Read | Ready to move on when you can... |
+|---|---|---|
+| **1. Understand a network** | §14.1–14.4 | Trace the numbers and shapes from inputs to a prediction and loss |
+| **2. Explain learning** | §14.5 | Follow a hidden-layer gradient, update weights, and recompute the prediction |
+| **3. Train it reliably** | §14.6–14.7b | Run the CPU lab and investigate a deliberately broken experiment |
+| **4. Choose the right structure** | §14.8–14.14 | Explain what locality, memory, attention, or pretraining buys you |
+
+The detailed schedules and recipes in §14.13 are a reference to revisit during experiments.
+The essentials needed for your first training run appear **before** the architecture tour.
 
 ### Key Terms (Quick Reference)
 
@@ -56,13 +73,16 @@ example later in the chapter.
 
 | Term | Plain meaning |
 |------|---------------|
-| **Weight** ($w$) | A dial the network learns. It sets how strongly one input pushes on a neuron. Large weight = "this input matters a lot." |
+| **Weight** ($w$) | A learned multiplier controlling one input's contribution. Its magnitude alone is not feature importance: input scale and the rest of the network matter too. |
 | **Bias** ($b$) | A second dial added *after* the weighted sum. It shifts the result up or down so a neuron can fire even when every input is 0 — like the offset on a thermostat. |
 | **Activation** | The non-linear "decision" function applied to a neuron's result. It lets a network bend to fit curves instead of only straight lines. |
 | **Logit** | A raw output score *before* it becomes a probability. "Logit = 2.0" is just a number the model emits; softmax/sigmoid turns it into a probability. |
 | **Gradient** | The slope of the loss — which way, and how steeply, the error changes if you nudge a weight. Training walks *downhill* along it. |
 | **Epoch** | One full pass through the entire training dataset. |
 | **Batch** (mini-batch) | A small handful of examples (e.g. 32) seen before the weights are updated once. |
+
+Weights and biases are **parameters**, learned from data. Learning rate, batch size, and
+layer width are **hyperparameters**, choices you make about how to build or train the model.
 
 ---
 
@@ -80,6 +100,9 @@ sentence, or steer a car.
 > An **artificial neural network (ANN)** is a computational graph of parameterized functions organized into layers, where each connection carries a learnable weight. The network maps inputs to outputs by composing simple non-linear transformations, and learns by adjusting weights to minimize a loss function via gradient-based optimization.
 
 A biological neuron collects electrical signals through dendrites, processes them in the cell body, and fires an output down the axon when the combined signal exceeds a threshold. An artificial neuron does the same thing with arithmetic: multiply each input by a weight, sum everything up, add a bias, and pass the result through a non-linear activation function.
+
+This is a loose inspiration for the terminology, not a simulation of how a biological
+neuron or brain works.
 
 ```
 BIOLOGICAL NEURON                 ARTIFICIAL NEURON (PERCEPTRON)
@@ -102,13 +125,23 @@ needed before it leans "yes"). On a grey, humid morning $x_1 = 0.8$, $x_2 = 0.9$
 
 $$z = 3(0.8) + 2(0.9) - 2.5 = 2.4 + 1.8 - 2.5 = 1.7$$
 
-Pass $z$ through a sigmoid activation: $f(1.7) \approx 0.85$ → **"85% chance, yes, take the
-umbrella."** Now make the morning clear and dry ($x_1 = 0.1$, $x_2 = 0.2$): $z = 0.3 + 0.4 -
+Pass $z$ through a sigmoid activation: $f(1.7) \approx 0.85$ → **"the model estimates an
+85% probability of the 'take umbrella' label."** Now make the morning clear and dry ($x_1 = 0.1$, $x_2 = 0.2$): $z = 0.3 + 0.4 -
 2.5 = -1.8$, so $f(-1.8) \approx 0.14$ → "probably not." Same neuron, same dials — the answer
 flips only because the *evidence* changed. That is the whole job of a neuron; everything else
 in this chapter is scale and wiring.
 
-The single-neuron model is the **perceptron** (Rosenblatt, 1958). It can learn linearly separable patterns — AND, OR — but fails on XOR. Stack neurons into layers with non-linear activations and that limitation disappears: a network with one hidden layer of sufficient width can approximate any continuous function (Universal Approximation Theorem).
+That probability is the model's estimate, not a guarantee of calibration or good advice.
+Calibration asks whether predictions near 85% are actually correct about 85% of the time.
+
+The classic **perceptron** (Rosenblatt, 1958) uses a hard threshold. Our example instead uses
+a smooth sigmoid unit, like binary logistic regression. Both have a linear decision boundary
+at a fixed output threshold: they can separate AND/OR, but not XOR.
+
+With suitable nonlinear activations and enough hidden units, a network can approximate
+continuous functions on a bounded input domain (the **Universal Approximation Theorem**).
+That is a statement about **what it can represent**, not a promise that training will find
+the right weights or that the result will generalize.
 
 Real-world example: a single neuron could learn "if pixel brightness > threshold, classify as white." Stacking thousands of neurons lets you classify entire chest X-rays as pneumonia vs. healthy.
 
@@ -149,22 +182,24 @@ INPUT LAYER         HIDDEN LAYERS           OUTPUT LAYER
 | More layers (deeper) | Learns hierarchical features; each layer builds on the last | Harder to train (vanishing gradients), slower per step |
 | More neurons (wider) | More capacity per layer, captures more patterns in parallel | More parameters, higher memory, risk of overfitting |
 
-A 784 → 512 → 256 → 10 network (e.g., MNIST digit classifier) has $784 \times 512 + 512 \times 256 + 256 \times 10 = 535{,}040$ weights. Each arrow in the diagram is one learnable weight.
+A 784 → 512 → 256 → 10 network (e.g., MNIST digit classifier) has $784 \times 512 + 512 \times 256 + 256 \times 10 = 535{,}040$ weights. Add $512 + 256 + 10 = 778$ biases for **535,818 learnable parameters**. A connection contributes a weight; a non-input neuron usually has a bias too.
 
 **Example — how it works (reading a handwritten digit).** Trace one image through that
 $784 \to 512 \to 256 \to 10$ network:
 
 - **Input layer (784):** a $28\times28$ pixel image flattened into 784 brightness numbers.
-- **Hidden layer 1 (512):** each neuron scans all 784 pixels and learns to react to one small
-  pattern — a stroke, an edge, a short curve.
-- **Hidden layer 2 (256):** combines those strokes into bigger parts — "a closed loop on top,"
-  "a vertical line on the right."
+- **Hidden layer 1 (512):** combines all 784 pixel values into learned features, which might
+  respond to patterns such as strokes or curves.
+- **Hidden layer 2 (256):** combines those features into more useful representations for
+  distinguishing digits.
 - **Output layer (10):** one neuron per digit 0–9; the strongest one wins. For a handwritten
   "7," the "7" neuron lights up because it saw "a horizontal top stroke + a diagonal going
   down."
 
-You never tell the network what a stroke or loop is — it *discovers* these intermediate ideas
-on its own while learning, because that is what minimises its mistakes.
+You supply the digit labels, not labels for every hidden feature. The network learns useful
+intermediate representations. The stroke/loop story is intuition, **not a guarantee that
+each neuron has one tidy human-readable meaning**; information is often distributed across
+many neurons.
 
 ```mermaid
 graph LR
@@ -201,8 +236,8 @@ graph LR
 ```
 
 > **Interview —** *"Would you rather add depth or width to a network?"*
-> **Say:** Depth, usually. Depth builds a **hierarchy** — early layers learn simple features and later layers compose them into complex ones, so an image net goes edges → textures → shapes → objects. Width just gives you more detectors at the *same* level of abstraction. Depth reuses what earlier layers found, so it reaches the same expressive power with far fewer parameters.
-> **They follow up with:** *"So why not go extremely deep?"* — because depth is what makes training hard: vanishing gradients, and degradation where adding layers *increases* training error. That is exactly the problem **skip connections** (ResNet) solve, by giving the gradient a shortcut path back. Before residual connections, past roughly 20 layers networks got worse; after them, 100+ became routine.
+> **Say:** They solve different capacity problems. Depth composes transformations and can represent some hierarchical functions efficiently; width provides more features within a layer and can make optimization easier. I would compare validation quality and compute cost rather than assume that deeper always wins.
+> **They follow up with:** *"So why not go extremely deep?"* — longer gradient paths and harder optimization can make extra layers unhelpful. Residual connections provide shorter paths and make learning near-identity transformations easier, but neither depth nor residual connections guarantees better results on every task.
 
 <details>
 <summary><strong>Quick check.</strong> A network takes a 28×28 grayscale image, flattens it to 784 inputs, has one hidden layer of 128 neurons, and outputs 10 classes. How many learnable parameters does it have?</summary>
@@ -240,15 +275,54 @@ adds, and those kinks stack up into the curved decision boundaries real problems
 Different activations are just differently shaped kinks: ReLU is a sharp elbow, sigmoid is a
 smooth S, softmax turns a row of scores into percentages.
 
-> An **activation function** is a non-linear function applied element-wise to a neuron's pre-activation value $z$. Without it, any stack of linear layers collapses to a single linear transformation, regardless of depth.
+> Hidden-layer **activation functions** introduce nonlinearity between learned affine
+> transformations. ReLU, sigmoid, and tanh operate element-wise; **softmax operates on a
+> whole vector**, coupling its outputs into a probability distribution.
 
 Without activations, layer 2's output is $W_2(W_1 x + b_1) + b_2 = W'x + b'$ — still linear. A 100-layer network would have the same representational power as a single layer. Activations break this linearity, letting deep networks approximate arbitrarily complex functions.
+
+Strictly, a linear map plus a bias is **affine**. The important restriction here is a
+straight decision boundary, not whether we use the informal phrase "linear layer."
+
+### Why Hidden Layers Help: Build XOR Yourself
+
+XOR means "one input is on, but not both." Put its four inputs on a square:
+
+```
+  x2
+   1    (0,1): YES ----- (1,1): NO
+        |                    |
+   0    (0,0): NO  ----- (1,0): YES
+        0                    1     x1
+```
+
+No single straight line separates the two YES corners from the two NO corners.
+Adding more affine layers without activations does not change that.
+
+Two ReLU features can solve it:
+
+$$h_1 = \text{ReLU}(x_1-x_2), \qquad h_2 = \text{ReLU}(x_2-x_1), \qquad s=h_1+h_2$$
+
+| Input | $h_1$: first exceeds second | $h_2$: second exceeds first | Score $s$ | Decide YES if $s>0.5$ |
+|---|---:|---:|---:|---|
+| (0,0) | 0 | 0 | 0 | NO |
+| (0,1) | 0 | 1 | 1 | YES |
+| (1,0) | 1 | 0 | 1 | YES |
+| (1,1) | 0 | 0 | 0 | NO |
+
+Each hidden neuron makes one useful feature; the output combines them. We **hand-designed**
+these weights to demonstrate representation. Later, the lab learns a related XOR task from
+examples. Representation, successful optimization, and generalization are three separate
+questions.
 
 ### ReLU — The Default
 
 $$\text{ReLU}(z) = \max(0, z)$$
 
-Output range: $[0, \infty)$. Simple, fast, no saturation for positive inputs. Default choice for hidden layers in MLPs and CNNs. Downside: neurons receiving only negative inputs permanently output zero ("dying ReLU").
+Output range: $[0, \infty)$. Simple, fast, and unsaturated for positive inputs. A common
+hidden-layer choice in MLPs and CNNs. A unit that remains negative across the training data
+receives zero data-gradient through its ReLU and may stop contributing ("dying ReLU").
+Being negative on just one example is normal, not evidence that the unit is dead.
 
 ### Sigmoid
 
@@ -272,13 +346,16 @@ Converts a vector of raw logits into a probability distribution that sums to 1. 
 
 $$f(z) = \begin{cases} z & z > 0 \\ \alpha z & z \le 0 \end{cases}, \quad \alpha = 0.01$$
 
-Fixes dying ReLU by allowing a small gradient for negative inputs. The neuron is never completely dead.
+Provides a nonzero activation derivative on the negative side. This addresses ReLU's
+zero-slope problem, although other parts of the network can still prevent useful learning.
 
 ### GELU (Gaussian Error Linear Unit)
 
 $$\text{GELU}(z) = z \cdot \Phi(z)$$
 
-where $\Phi$ is the standard Gaussian CDF. Smooth approximation of ReLU — no hard zero cutoff. Used in BERT, GPT, and most modern Transformers. Smoother gradients lead to more stable training in very deep networks.
+where $\Phi$ is the standard Gaussian CDF. This smooth gate is used in many Transformer
+feed-forward blocks. Other models use alternatives such as SiLU and gated variants.
+Smoothness alone does not guarantee better optimization or generalization.
 
 **Example — how it works (one value through each activation).** Take a neuron whose weighted
 sum comes out to $z = -2$ in one case and $z = 3$ in another, and watch what each activation
@@ -287,35 +364,34 @@ does to those two numbers:
 | Activation | $z=-2$ | $z=3$ | What it did |
 |---|---|---|---|
 | ReLU $\max(0,z)$ | $0$ | $3$ | Killed the negative; passed the positive through unchanged |
-| Sigmoid | $0.12$ | $0.95$ | Squashed both into a 0–1 "probability" |
+| Sigmoid | $0.12$ | $0.95$ | Mapped both into (0,1); their interpretation depends on the task |
 | Tanh | $-0.96$ | $0.995$ | Squashed into −1…1, keeping the sign |
 | Leaky ReLU ($\alpha{=}0.1$) | $-0.2$ | $3$ | Like ReLU, but lets a trickle of the negative through |
 
-ReLU's output for $z=-2$ is a hard $0$ — and if a neuron's input stays negative it will output
-$0$ *forever* and stop learning (the "dying ReLU" problem). That is exactly why Leaky ReLU
-keeps a small slope on the left: the neuron can always recover.
+ReLU's output for $z=-2$ is 0, with zero derivative through this activation for this
+example. If the unit stays on that side across the data, learning can stall. Leaky ReLU
+keeps a small negative-side slope; changes in upstream layers or optimizer state can also
+change whether a unit is active.
 
 > **Interview —** *"Why does a neural network need activation functions at all?"*
 > **Say:** Without them the whole network collapses into a single linear layer, no matter how deep it is. Stacking linear maps gives you another linear map: $W_2(W_1x) = (W_2W_1)x$, and $W_2W_1$ is just one matrix. A 50-layer network with no activations has exactly the modelling power of a 1-layer one — it can only draw straight lines. The non-linearity between layers is what lets depth actually buy you anything.
-> **They follow up with:** *"So why ReLU rather than sigmoid in the hidden layers?"* — the **gradient**. Sigmoid's derivative peaks at 0.25 and is near zero once the input saturates, so gradients shrink layer after layer and early layers stop learning. ReLU's derivative is exactly 1 for positive inputs, so the signal passes through undiminished. It is also just a `max(0, x)` — far cheaper than an exponential.
+> **They follow up with:** *"So why ReLU rather than sigmoid in the hidden layers?"* — sigmoid saturates, making its local derivative tiny. ReLU has derivative 1 on the positive side and is cheap to compute. That removes one source of shrinking gradients, **not all sources**: backprop also multiplies by weights, and inactive ReLUs have zero derivative.
 
 <details>
-<summary><strong>Quick check.</strong> A 10-layer network uses sigmoid everywhere. In the best possible case, how much of the gradient reaches layer 1 — and what does that mean in practice?</summary>
+<summary><strong>Quick check.</strong> Ignore weight factors and multiply ten sigmoid activation derivatives. How large can that activation-only factor be? Would replacing sigmoid with ReLU guarantee stable gradients?</summary>
 
-Sigmoid's derivative is **at most 0.25** (it hits that only at $z = 0$; everywhere else it is
-smaller). Backprop multiplies one derivative per layer, so in the very best case:
+Sigmoid's derivative is **at most 0.25**. The product of these ten activation derivatives
+is therefore at most:
 
 $$0.25^{10} \approx 0.00000095$$
 
-Under **one millionth** of the signal survives. And that is the optimistic bound — real
-activations sit away from zero, making it far worse.
+This explains one source of vanishing gradients. It is **not an upper bound on the whole
+network gradient**, because weight factors have been omitted. For example, a scalar weight
+factor of 4 can offset an activation derivative of 0.25.
 
-In practice layer 1 essentially **never updates**. The network trains its last few layers and
-leaves the early ones near their random initialisation, which is why deep sigmoid networks
-stalled for years.
-
-**With ReLU:** the derivative is exactly 1 for positive inputs, so $1^{10} = 1$ — the gradient
-arrives intact. That single change is most of why deep networks became trainable.
+Ten positive ReLUs contribute $1^{10}=1$ through their activation derivatives, but weights
+can still shrink or amplify the signal, and negative ReLUs contribute zero. Initialization
+and architecture still matter.
 </details>
 
 ```chart
@@ -387,7 +463,7 @@ arrives intact. That single change is most of why deep networks became trainable
       },
       {
         "label": "Probabilities (after softmax)",
-        "data": [0.65, 0.24, 0.11],
+        "data": [0.66, 0.24, 0.10],
         "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(99,102,241,0.6)", "rgba(99,102,241,0.4)"],
         "borderColor": ["rgba(34,197,94,1)", "rgba(99,102,241,1)", "rgba(99,102,241,1)"], "borderWidth": 1
       }
@@ -437,7 +513,47 @@ Output weights $W^{(2)} = [1, 1]$, bias $b^{(2)} = -1$:
 $$z^{(2)} = 1(0) + 1(2.0) - 1 = 1.0 \xrightarrow{\sigma} \hat{y} = \sigma(1.0) = 0.73$$
 
 The network predicts **0.73**. Notice the first hidden neuron contributed nothing — ReLU zeroed
-its negative value — a concrete look at why "dead" neurons matter.
+its negative value **for this input**. That does not establish that it is dead across the
+dataset. We will keep this exact network for the complete backward pass in §14.5.
+
+### Read the Shapes Before Reading the Code
+
+The equations above use one input as a column vector. PyTorch commonly stores a **batch as
+rows**. The same calculation becomes `Z = X @ W.T + b`, because `nn.Linear` stores one row
+of weights per output neuron.
+
+| Quantity | One example, column notation | Batch of $B$ examples in code |
+|---|---|---|
+| Input | $x$: (2,1) | `X`: (B,2) |
+| Hidden weights / bias | $W_1$: (2,2), $b_1$: (2,1) | `weight`: (2,2), `bias`: (2,) |
+| Hidden pre-activations | $z_1$: (2,1) | `X @ W1.T + b1`: (B,2) |
+| Hidden activations | $h$: (2,1) | `relu(Z1)`: (B,2) |
+| Output weights / bias | $W_2$: (1,2), $b_2$: (1,1) | `weight`: (1,2), `bias`: (1,) |
+| Output logits | $z_2$: (1,1) | `H @ W2.T + b2`: (B,1) |
+| Binary targets | $y$: (1,1) | floating-point `y`: (B,1) |
+
+Bias broadcasting adds the same learned offset to every example's corresponding output.
+It does not create a different bias for every row.
+
+<details>
+<summary><strong>Quick check.</strong> A batch has shape (32,10), and a dense layer produces 8 features. What shapes should its stored weights, bias, and output have?</summary>
+
+Weights **(8,10)**, bias **(8,)**, output **(32,8)**. There are
+$10 \times 8 + 8 = 88$ parameters; changing batch size changes the amount of work, not the
+number of learned parameters.
+</details>
+
+<details>
+<summary><strong>Calculate it.</strong> Hidden weights are [[1,1],[-1,1]], hidden biases are zero, and the output adds the two hidden ReLU activations. What happens for [2,3] and [3,2]?</summary>
+
+For **[2,3]**, hidden pre-activations are [5,1], so the output is **6**.
+For **[3,2]**, they are [5,-1]; ReLU clips the second to zero, giving **5**.
+
+Without ReLU the two outputs would be **6 and 4**, since the combined affine function is
+$2x_2$. Swapping feature coordinates can change a linear model's answer too. This exercise
+teaches the forward pass; the **XOR example**, not sensitivity to swapping inputs, explains
+why nonlinear hidden features are needed.
+</details>
 
 ### Common Loss Functions
 
@@ -449,9 +565,9 @@ $$L = -\frac{1}{N}\sum_{i=1}^{N}\left[y_i \log(\hat{y}_i) + (1 - y_i)\log(1 - \h
 
 $$L = -\frac{1}{N}\sum_{i=1}^{N}\sum_{c=1}^{C} y_{i,c} \log(\hat{y}_{i,c})$$
 
-**What that double sum actually does — one-hot labels.** For multi-class problems the label
-is not the number `2`; it is a **one-hot vector** — all zeros except a single 1 in the true
-class's slot. Three animal classes, and the true answer is "dog":
+**What that double sum actually does — one-hot notation.** A class can be represented by
+an integer index or by a **one-hot vector**. The formula above uses the latter: all zeros
+except a single 1 in the true class's slot. Three animal classes, and the answer is "dog":
 
 ```
   class:   cat   dog   bird
@@ -479,14 +595,18 @@ The model gave the right answer 63% and is charged 0.464 for the remaining doubt
 pushes probability mass onto the correct class.
 
 > **Beginner gotcha:** most libraries do **not** want you to apply softmax yourself.
-> PyTorch's `CrossEntropyLoss` and TensorFlow's `from_logits=True` expect **raw logits** and
-> apply softmax internally, for numerical stability. Applying softmax twice is one of the most
-> common first-project bugs — training runs, loss decreases slightly, and the model never
-> learns properly.
+> PyTorch's `CrossEntropyLoss` expects **raw logits**, using a stable log-softmax calculation
+> internally; its usual class-index targets are integers, not one-hot vectors. TensorFlow's
+> `from_logits=True` also requests a logit-based loss. Feeding probabilities into a loss
+> that expects logits changes the objective and can impair learning.
 
 > **Interview —** *"Why use cross-entropy instead of mean squared error for classification?"*
 > **Say:** Two reasons, and the gradient one matters most. With a sigmoid output, MSE's gradient contains a $\hat y(1-\hat y)$ factor that goes to **zero when the model is confidently wrong** — exactly when you most need a large correction. Cross-entropy cancels that term, so the gradient becomes simply $\hat y - y$: the more wrong you are, the harder you get pushed.
-> **They follow up with:** *"Anything else?"* — cross-entropy is the right *shape* for the problem. It comes from maximum likelihood for a categorical distribution, so minimising it means maximising the probability of the observed labels. MSE treats "0.9 vs 1.0" and "0.1 vs 0.2" as equally bad, whereas cross-entropy's $-\log$ punishes confident mistakes far more steeply. MSE with sigmoid is also non-convex, so it has local minima that cross-entropy does not.
+> **They follow up with:** *"Does that make training convex?"* — no. Cross-entropy is convex
+> in the logits, and ordinary linear logistic regression has a convex objective in its
+> weights. A multilayer network parameterizes those logits nonlinearly, so its loss is
+> generally non-convex in the network's parameters. Choosing cross-entropy does not remove
+> that optimization difficulty.
 
 **Mean Squared Error** (regression):
 
@@ -494,9 +614,10 @@ $$L = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{y}_i)^2$$
 
 **Why the log? (cross-entropy intuition).** Cross-entropy rewards *confident correct* answers
 and punishes *confident wrong* ones harshly. Because $-\log(p)$ shoots toward infinity as
-$p \to 0$, telling the truth ("0.99 for the right class") costs almost nothing, while being
+$p \to 0$, assigning high probability to the observed class costs little, while being
 confidently wrong ("0.01 for the right class") is enormously expensive. That asymmetry is what
-pushes the network toward honest, well-calibrated probabilities.
+encourages fitting the observed label distribution. Finite data, model errors, and overfitting
+can still produce poorly calibrated confidence.
 
 **Example — how it works (binary cross-entropy).** A spam classifier predicts $\hat{y} = 0.9$
 ("90% spam") for an email that really is spam ($y = 1$):
@@ -508,6 +629,33 @@ If it had instead confidently said $\hat{y} = 0.1$ for that same spam email:
 $$L = -\log(0.1) = 2.303 \quad (\text{22}\times\text{ larger — punished for being confidently wrong})$$
 
 Real-world example: a speech recognition system's forward pass transforms a spectrogram through convolutional and recurrent layers to produce a probability distribution over characters. The cross-entropy loss measures how far those probabilities are from the true transcript.
+
+**Loss is not accuracy.** For a true positive, changing a probability from 0.6 to 0.9
+improves cross-entropy even though both predictions are already correct at a 0.5 threshold.
+Accuracy counts decisions; loss supplies a smoother training signal.
+
+### The Task-to-Code Contract
+
+This table separates **what the model returns during training** from **how you interpret
+it afterwards**. Here $B$ is batch size, $C$ is the number of classes or labels, and $d$ is
+the number of regression targets.
+
+| Task | Model output | Target format | Common PyTorch loss | Prediction after training |
+|---|---|---|---|---|
+| Binary classification | logits (B,1) | float 0/1, (B,1) | `BCEWithLogitsLoss` | sigmoid for probabilities; logit >= 0 for a 0.5 threshold |
+| Exclusive multiclass | logits (B,C) | class indices, (B,), `torch.long` | `CrossEntropyLoss` | argmax for class; softmax for probabilities |
+| Multilabel classification | logits (B,C) | float 0/1, (B,C) | `BCEWithLogitsLoss` | sigmoid and a threshold per label; probabilities need not sum to 1 |
+| Regression | values (B,d) | floats, matching shape | `MSELoss` or an appropriate alternative | use values directly |
+
+Example: "cat **or** dog **or** bird" is multiclass. "Contains cat **and** grass **and**
+sunlight" is multilabel. Those different questions need different output semantics.
+Thresholds may need tuning on validation data; 0.5 is a starting point, not a universal rule.
+
+**Why fused losses?** Directly computing `exp(1000)` overflows. Stable log-softmax uses
+log-sum-exp arithmetic, effectively shifting logits before exponentiation without changing
+the probabilities. Likewise, `BCEWithLogitsLoss` avoids explicitly taking `log(sigmoid(z))`
+at extreme values. Use the stable loss, rather than patching every numerical problem with
+an arbitrary epsilon.
 
 ---
 
@@ -537,7 +685,7 @@ LOSS LANDSCAPE — training walks downhill to the minimum
   └────────────────────────────────────►  weight value
 
  step rule:  weight ← weight − (learning rate) × gradient
- "−gradient" always points downhill.
+ "-gradient" is a local downhill direction.
  Tiny steps, repeated millions of times.
 ```
 
@@ -560,25 +708,33 @@ The chain rule lets you decompose the gradient through layers:
 
 $$\frac{\partial L}{\partial w_1} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z^{(2)}} \cdot \frac{\partial z^{(2)}}{\partial a^{(1)}} \cdot \frac{\partial a^{(1)}}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial w_1}$$
 
+Read that as one path from a weight to the loss. At a node used by several later
+computations, **add** the gradient contributions from those paths. The backward pass
+computes sensitivities using the current weights; the optimizer updates weights afterwards.
+A downhill direction is local: a step that is too large can still increase the loss.
+
 ### Worked Example (Single Neuron)
 
 Neuron: $z = wx + b$ with $w=2, b=1$, activation $\sigma$, input $x=1$.
 
-$$z = 2(1) + 1 = 3 \quad \Rightarrow \quad \hat{y} = \sigma(3) = 0.95$$
+$$z = 2(1) + 1 = 3 \quad \Rightarrow \quad \hat{y} = \sigma(3) \approx 0.952574$$
 
 True label $y = 0$. Binary cross-entropy loss:
 
-$$L = -[0 \cdot \log(0.95) + 1 \cdot \log(0.05)] = 3.0$$
+$$L = -\log(1-\sigma(3)) \approx 3.048587$$
 
 Backward pass:
 
-$$\frac{\partial L}{\partial \hat{y}} = \frac{1-y}{1-\hat{y}} = \frac{1}{0.05} = 20, \quad \frac{\partial \hat{y}}{\partial z} = 0.95 \times 0.05 = 0.047, \quad \frac{\partial z}{\partial w} = x = 1$$
+$$\frac{\partial L}{\partial \hat{y}} \approx 21.085537, \quad \frac{\partial \hat{y}}{\partial z} \approx 0.045177, \quad \frac{\partial z}{\partial w} = x = 1$$
 
-$$\frac{\partial L}{\partial w} = 20 \times 0.047 \times 1 = 0.95$$
+$$\frac{\partial L}{\partial w} \approx 0.952574$$
 
 Update with learning rate $\alpha = 0.1$:
 
-$$w_{\text{new}} = 2.0 - 0.1 \times 0.95 = 1.905$$
+$$w_{\text{new}} = 2.0 - 0.1 \times 0.952574 \approx 1.904743$$
+
+Here the bias gradient is also $0.952574$, since $\partial z/\partial b=1$.
+Updating it gives $b_{\text{new}} \approx 0.904743$.
 
 ### Did It Actually Learn? — One Full Cycle, Then Another
 
@@ -608,21 +764,139 @@ start; real training does this millions of times across millions of examples.
 > $$\frac{\partial L}{\partial z} = \hat{y} - y$$
 >
 > Check it against the numbers above: at step 0 we computed
-> $\frac{\partial L}{\partial \hat y} \times \frac{\partial \hat y}{\partial z} = 21.086 \times 0.045177 = 0.9526$ — and
+> $\frac{\partial L}{\partial \hat y} \times \frac{\partial \hat y}{\partial z} \approx 21.085537 \times 0.045177 \approx 0.9526$ — and
 > $\hat y - y = 0.953 - 0 = 0.953$. **Identical.** The messy $1/(1-\hat y)$ term and the
 > $\hat y(1-\hat y)$ term cancel exactly. The same cancellation happens for softmax +
 > categorical cross-entropy, which is a large part of why those pairings are the standard
 > choice: *the gradient is just the prediction error.*
 
+### The Full Journey: Our Two-Layer Network Learns
+
+Now return to the **same network from §14.4**, rather than introducing another set of
+mystery numbers:
+
+```
+x = [1, 2], true label y = 1, learning rate = 0.1
+
+W1 = [[ 0.5, -0.5],     b1 = [0, -1]
+      [ 1.0,  1.0]]
+W2 = [[1, 1]],          b2 = [-1]
+
+Hidden pre-activations: [-0.5, 2]
+After ReLU:            [0, 2]
+Output logit:           1
+Probability:            0.731059
+BCE loss:               0.313262
+```
+
+These are deliberately chosen teaching weights. They need not be the weights that a real
+training run would initialize or learn.
+
+**Step A: find the output error signal.** With sigmoid plus binary cross-entropy:
+
+$$\delta_2 = \frac{\partial L}{\partial z_2} = \hat y-y = 0.731059-1 = -0.268941$$
+
+The negative sign says "a small increase in this logit would reduce loss." The true label
+is 1, so increasing its probability is the right direction.
+
+**Step B: compute output-layer gradients.** A weight's gradient is the incoming activation
+times the output error signal:
+
+$$\nabla_{W_2} L = \delta_2[0,2] = [0,-0.537883], \qquad \nabla_{b_2}L = -0.268941$$
+
+The first output weight gets zero gradient because its input was zero. The second gets a
+larger-magnitude gradient because its input activation was 2.
+
+**Step C: pass the signal back to the hidden layer.** First multiply by the **old output
+weights**, then by the local ReLU derivatives:
+
+```
+Sensitivity to hidden outputs: delta2 * [1, 1] = [-0.268941, -0.268941]
+ReLU derivatives at [-0.5, 2]:                  [ 0,         1       ]
+Hidden pre-activation gradients:               [ 0,        -0.268941]
+```
+
+**Step D: compute the hidden weights and biases.**
+
+$$\nabla_{W_1}L =
+\begin{bmatrix}
+0(1) & 0(2)\\
+-0.268941(1) & -0.268941(2)
+\end{bmatrix}
+=
+\begin{bmatrix}
+0 & 0\\
+-0.268941 & -0.537883
+\end{bmatrix},
+\qquad \nabla_{b_1}L=[0,-0.268941]$$
+
+**Step E: update all parameters once.** Apply `new = old - 0.1 * gradient`:
+
+| Parameter | Before | Gradient | After |
+|---|---:|---:|---:|
+| Hidden neuron 1 weights / bias | [0.5,-0.5] / 0 | [0,0] / 0 | unchanged |
+| Hidden neuron 2, input 1 weight | 1 | -0.268941 | 1.026894 |
+| Hidden neuron 2, input 2 weight | 1 | -0.537883 | 1.053788 |
+| Hidden neuron 2 bias | -1 | -0.268941 | -0.973106 |
+| Output weight on hidden neuron 1 | 1 | 0 | 1 |
+| Output weight on hidden neuron 2 | 1 | -0.537883 | 1.053788 |
+| Output bias | -1 | -0.268941 | -0.973106 |
+
+**Step F: make the prediction again.** Using unrounded updated parameters:
+
+```
+Hidden activations: [0, 2.161365]
+Output logit:        1.304515
+Probability:         0.786594   (was 0.731059)
+Loss:                0.240043   (was 0.313262)
+```
+
+This is the complete mechanism: the label shaped a loss, the loss supplied gradients,
+the optimizer changed weights, and the prediction improved. The zero-gradient hidden
+neuron was inactive on this sample; for $x=[2,1]$, its pre-activation is $0.5$, so it can
+participate in learning.
+
+<details>
+<summary><strong>Predict before revealing.</strong> Why must Step C use the old output weights? Could we update the output layer immediately and then calculate hidden gradients?</summary>
+
+All derivatives must describe the **same forward computation at the same parameter
+values**. Updating midway mixes two different networks and no longer computes the gradient
+of the loss we just evaluated. Finish backprop first, then update.
+</details>
+
+### From One Example to a Mini-Batch
+
+Examples can disagree about which way a weight should move. With mean-reduced loss,
+compute their gradients at the same weights and **average before updating**.
+
+For our original, not-yet-updated network:
+
+| Example | Target | Probability | Output-bias gradient $\hat y-y$ |
+|---|---:|---:|---:|
+| [1,2] | 1 | 0.731059 | -0.268941 |
+| [2,1] | 0 | 0.817574 | +0.817574 |
+
+The mean bias gradient is $(-0.268941+0.817574)/2 = 0.274317$.
+An SGD update therefore **decreases** the output bias, unlike the first example alone.
+The second example's confident mistake outweighs the first example's smaller error.
+
+That does not mean the model ignored the first example. It optimized their combined loss.
+One step need not improve every example, and noisy mini-batch loss need not decrease
+monotonically. A batch size of 32 also does not mean 32 separate optimizer updates.
+
 > **Interview —** *"Explain backpropagation to someone who knows calculus but has never seen a neural network."*
 > **Say:** A network is a deeply nested function, and training needs to know how the final error changes if you nudge any one weight. That is a derivative, and the chain rule handles nested functions. Backprop is the chain rule applied **efficiently**: compute the error at the output, then walk backwards layer by layer, reusing the gradient you already computed for the layer above instead of recalculating it. That reuse is the whole trick — it makes the cost of all gradients roughly the same as one forward pass.
-> **They follow up with:** *"Why not just estimate each gradient numerically?"* — you could: nudge a weight, re-run the network, see how the loss changed. But that costs one forward pass **per weight**. For a model with 100 million weights that is 100 million forward passes per step, versus roughly one for backprop. It is not a better answer, it is the same answer computed billions of times faster — which is why deep learning was impractical before backprop was popularised.
+> **They follow up with:** *"Why not estimate gradients numerically?"* — finite differences
+> need extra forward evaluations per parameter and introduce approximation error.
+> Backprop shares intermediate derivatives, obtaining all gradients for a small constant
+> multiple of the forward-pass cost. Finite differences are useful for checking a tiny
+> implementation, not for training a model with millions of parameters.
 
 ### Optimizers
 
-An **optimizer** is the strategy for *how* to step downhill — how big a step to take and whether
-to build momentum. Plain SGD takes the same cautious step everywhere; smarter optimizers adapt
-the step size to the terrain so training is faster and steadier.
+An **optimizer** converts gradients into parameter updates. Plain SGD uses one learning-rate
+multiplier, but each parameter's update still depends on its own gradient. Momentum and
+adaptive methods use additional state; neither is guaranteed to win on every problem.
 
 **SGD (Stochastic Gradient Descent):** Update using gradient from a random mini-batch. Simple but can be slow and oscillate in narrow valleys.
 
@@ -632,9 +906,14 @@ $$w \leftarrow w - \alpha \nabla L$$
 
 $$v \leftarrow \beta v + \nabla L, \qquad w \leftarrow w - \alpha v$$
 
-**Adam (Adaptive Moment Estimation):** Maintains per-parameter adaptive learning rates using first and second moment estimates of the gradient. The de facto default optimizer for most deep learning. Use learning rate $\approx 3 \times 10^{-4}$.
+**Adam (Adaptive Moment Estimation):** Tracks first and second moment estimates of gradients
+to adapt updates per parameter. It is a common practical starting point. Values such as
+$10^{-3}$ or $3\times10^{-4}$ are candidates to try, not universal settings.
 
 **AdamW:** Adam with decoupled weight decay. Preferred for Transformer training because it regularizes more cleanly than Adam's L2 penalty.
+
+**The curves below are illustrative, not benchmark results or an optimizer ranking.**
+The ordering can change with the task, learning rate, training budget, and tuning.
 
 ```chart
 {
@@ -663,7 +942,7 @@ $$v \leftarrow \beta v + \nabla L, \qquad w \leftarrow w - \alpha v$$
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Optimizer Convergence — SGD vs Momentum vs Adam" } },
+    "plugins": { "title": { "display": true, "text": "Illustrative Training Curves — Not an Optimizer Ranking" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Training Loss" }, "beginAtZero": true },
       "x": { "title": { "display": true, "text": "Epoch" } }
@@ -691,13 +970,26 @@ During backpropagation through $L$ layers, the gradient for the first layer invo
 
 $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}}{\partial z^{(l)}} \cdot W^{(l)}$$
 
-**Vanishing:** Sigmoid's maximum gradient is 0.25. Through 10 layers: $0.25^{10} \approx 10^{-6}$. Early layers receive near-zero gradients and stop learning. This is why deep sigmoid networks were historically impossible to train.
+**Vanishing:** Ten sigmoid activation derivatives alone contribute at most
+$0.25^{10}\approx10^{-6}$. The full gradient also includes weight factors. Saturation and
+unhelpful weight scaling can make early-layer learning extremely slow; the activation-only
+example illustrates a mechanism, not a universal network-gradient bound.
 
 **Exploding:** If weight magnitudes push each gradient factor above 1, the product grows exponentially — a factor of just $1.5$ across 20 layers is $1.5^{20} \approx 3{,}300\times$. Weight updates become enormous, loss jumps to NaN, and training crashes. Common in RNNs processing long sequences.
 
 > **Interview —** *"Your loss suddenly becomes NaN halfway through training. Walk me through it."*
-> **Say:** NaN almost always means **exploding gradients**. One update was enormous, the weights blew up to infinity, and infinity minus infinity gives NaN — after which every subsequent value is NaN, so the damage is permanent and you must restart from a checkpoint. First fix is **gradient clipping**: cap the gradient norm at around 1.0, which bounds the step size regardless of how steep the terrain is.
-> **They follow up with:** *"What else could cause it?"* — a **learning rate that is simply too high** is the most common root cause, so I would lower it and see if the instability disappears. Beyond that: taking $\log(0)$ in a loss function (fix with a small epsilon inside the log), dividing by a zero variance, or bad input data — a single NaN or a wildly unscaled feature in one batch will propagate through everything. I would check the inputs before blaming the model.
+> **Say:** Stop and locate the **first non-finite quantity**: inputs and targets, logits,
+> loss, gradients, then parameters after the update. Possible causes include invalid data,
+> unsafe log/division operations, numerical overflow, an excessive learning rate, or exploding
+> gradients. A NaN is a symptom, not a diagnosis.
+> **They follow up with:** *"When would you clip?"* — when evidence shows excessive gradient
+> norms. Clipping can limit raw gradient magnitude; with plain SGD this also bounds the
+> gradient-driven update for a fixed learning rate. Adaptive optimizers and weight decay
+> complicate that relationship. Repair the cause, use stable losses, and restore a known-good
+> checkpoint if parameters or optimizer state were corrupted.
+
+The next chart shows **activation-derivative products only**, with weight factors omitted.
+Its flat ReLU line assumes every illustrated ReLU is active.
 
 ```chart
 {
@@ -706,14 +998,14 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
     "labels": [1,2,3,4,5,6,7,8,9,10],
     "datasets": [
       {
-        "label": "Vanishing (Sigmoid: 0.25^n)",
+        "label": "Activation-only sigmoid upper bound: 0.25^n",
         "data": [0.25,0.0625,0.0156,0.0039,0.00098,0.00024,0.00006,0.000015,0.0000038,0.00000095],
         "borderColor": "rgba(239, 68, 68, 1)",
         "backgroundColor": "rgba(239, 68, 68, 0.1)",
         "fill": true, "tension": 0.3, "pointRadius": 3, "borderWidth": 2
       },
       {
-        "label": "Stable (ReLU: gradient = 1 for z > 0)",
+        "label": "Activation-only ReLU factor: all z > 0",
         "data": [1,1,1,1,1,1,1,1,1,1],
         "borderColor": "rgba(34, 197, 94, 1)",
         "borderDash": [5,3],
@@ -722,7 +1014,7 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Gradient Magnitude vs Network Depth" } },
+    "plugins": { "title": { "display": true, "text": "Activation Factors Only — Weights Are Omitted" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Gradient Magnitude" }, "beginAtZero": true, "max": 1.1 },
       "x": { "title": { "display": true, "text": "Layers Deep" } }
@@ -735,12 +1027,45 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
 
 | Problem | Solution | Why it works |
 |---------|----------|--------------|
-| Vanishing (activation saturation) | Use ReLU | Gradient = 1 for $z > 0$, no decay |
+| Vanishing (activation saturation) | Consider ReLU-family activations | Avoids positive-side saturation; does not fix every gradient path |
 | Vanishing (deep networks) | Batch Normalization | Keeps activations in a healthy range |
-| Vanishing over time (RNNs) | LSTM / GRU gating | Cell state acts as gradient highway |
+| Vanishing over time (RNNs) | LSTM / GRU gating | Learned memory paths can preserve useful signals longer |
 | Vanishing (50+ layers) | Residual / skip connections | Gradient flows directly to early layers |
 | Exploding gradients | Gradient clipping | Scale gradient down if $\|\nabla\| >$ threshold |
-| Both | Proper weight initialization | He init (ReLU), Xavier init (sigmoid/tanh) — see §14.13 |
+| Both | Proper weight initialization | Break symmetry and choose a suitable signal scale; see the primer below |
+
+### Initialize Before You Train
+
+If hidden units have identical incoming and outgoing weights, they can receive identical
+updates and fail to specialize. Random initialization breaks that symmetry. **Zero biases
+are usually fine** when the weights already differ; "never initialize anything to zero" is
+the wrong lesson.
+
+Scale matters too. Under simplifying assumptions of independent, centered inputs and
+weights, $\operatorname{Var}(z)\approx n_{\text{in}}\operatorname{Var}(w)
+\operatorname{Var}(x)$. A sensible weight scale prevents signal magnitudes from changing
+wildly just because a layer has more inputs.
+
+| Common setting | Starting scheme | Weight variance |
+|---|---|---|
+| ReLU hidden layer | He / Kaiming | approximately $2/n_{\text{in}}$ |
+| Tanh or a roughly symmetric activation setting | Xavier / Glorot | approximately $2/(n_{\text{in}}+n_{\text{out}})$ |
+
+He scaling accounts for ReLU's effect on signal second moments; it is not a promise of
+exactly constant activation variance. Leaky ReLU needs a slope-dependent gain, and GELU
+or gated Transformer blocks may use architecture-specific initialization. Framework defaults
+are useful, but do not assume every `Linear` layer automatically uses the ideal ReLU scale.
+
+The lab initializes ReLU hidden weights with Kaiming, its linear output weights with Xavier,
+and biases with zeros. Start there; learn specialized recipes when the architecture needs them.
+
+<details>
+<summary><strong>Quick check.</strong> Can a deep ReLU network still have exploding gradients? Can zero biases still be a reasonable initialization?</summary>
+
+**Yes to both.** Positive-side ReLU derivatives do not stop large weight factors from
+amplifying gradients. Random, suitably scaled weights break hidden-unit symmetry even when
+the initial biases are zero.
+</details>
 
 ---
 
@@ -748,11 +1073,11 @@ $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}
 
 ### Simple Explanation
 
-**Regularization** is anything that stops a network from *memorising* the training data instead
-of *learning* from it (the dreaded overfitting). Picture a student who memorises last year's
-exam answers word-for-word: perfect on the practice paper, lost on the real test. Regularization
-forces the network to grasp the general idea by handicapping it just enough that brute-force
-memorisation no longer works. The three workhorses below each do this a different way.
+**Regularization** encourages solutions that generalize rather than merely fitting training
+examples. Picture a student memorizing last year's answers instead of understanding the
+subject. Dropout and weight decay can help, but too much regularization can also hurt.
+Batch normalization primarily changes **training conditioning** and has a secondary
+regularizing effect; it is not a substitute for checking generalization.
 
 ### Dropout
 
@@ -767,20 +1092,26 @@ TRAINING (dropout p=0.5):
 Full layer:    ● ● ● ● ● ● ● ●
 After drop:    ● ✗ ● ✗ ● ● ✗ ●     (✗ = zeroed out)
 
+TRAINING SCALE (inverted dropout):
+Surviving activations are divided by keep probability (1 - p).
+
 INFERENCE:
-All neurons active; outputs scaled by (1 − p) to compensate.
-(PyTorch uses inverted dropout: scales during training instead,
- so inference code requires no change.)
+Dropout is disabled; no rescaling is needed.
 ```
 
-Typical rates: 0.3-0.5 for fully connected layers, 0.1-0.2 for convolutional layers, 0.1 for Transformers. Never apply to the output layer.
+Choose the rate on validation data; some successful models need little or no dropout.
+Apply it deliberately to internal representations, not indiscriminately to final predicted
+probabilities. We use the **inverted-dropout convention** throughout, matching PyTorch.
 
 **Example — how it works.** A hidden layer outputs $[0.9, 0.4, 0.7, 0.2, 0.6, 0.8]$. With
-dropout $p=0.5$, this training step randomly zeros about half → $[0.9, 0, 0.7, 0, 0, 0.8]$; the
-*next* batch zeros a different half. The network therefore trains a slightly different
-"sub-network" every step — effectively averaging thousands of thinned networks, which is why it
-resists overfitting. At inference all neurons stay on (outputs scaled to compensate), so
-predictions are stable.
+dropout $p=0.5$ and keep mask $[1,0,1,0,0,1]$, the result is
+**$[1.8,0,1.4,0,0,1.6]$**: survivors are divided by 0.5. A new mask is sampled next time;
+the number kept is random, not necessarily exactly half.
+
+For a fixed activation $a$, its expected training output is
+$(1-p)\,a/(1-p)=a$. At inference the layer simply returns its input.
+This consistency explains the scaling; it does not mean every sampled mask gives the
+same prediction or that dropout guarantees improved accuracy.
 
 ### Batch Normalization
 
@@ -789,7 +1120,9 @@ drift to wildly different scales, which makes training jittery. Batch Norm re-ce
 layer's numbers to a tidy, consistent range every step — like a thermostat holding the room at
 a steady temperature so everything downstream behaves.
 
-> **Batch Normalization** normalizes each layer's pre-activations to zero mean and unit variance over the current mini-batch, then applies learnable scale ($\gamma$) and shift ($\beta$) parameters.
+> **Batch Normalization** normalizes features using batch statistics during training, then
+> applies learnable scale ($\gamma$) and shift ($\beta$). In a dense layer the statistics are
+> over batch rows; convolutional BatchNorm also aggregates spatial positions per channel.
 
 $$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \qquad y_i = \gamma \hat{x}_i + \beta$$
 
@@ -799,50 +1132,426 @@ Normalising gives $\hat{x} = [-1.34, -0.45, 0.45, 1.34]$ — now centred at 0 wi
 regardless of the original scale. The learnable $\gamma, \beta$ then let the network rescale if
 a different range turns out to be useful, so no representational power is lost.
 
-Benefits: enables higher learning rates, reduces sensitivity to initialization, adds mild regularization via batch statistics noise. Standard in CNNs. For Transformers, **Layer Normalization** (normalizing across features instead of across the batch) is preferred. Modern LLMs (LLaMA, Gemini) further simplify to **RMSNorm**, which skips the mean-subtraction step and normalises only by root-mean-square — slightly cheaper and empirically equivalent in quality.
+BatchNorm often improves optimization and adds noise through batch statistics. Many CNNs
+use it. Transformers commonly use **LayerNorm**, which normalizes within each token's
+features, or **RMSNorm**, which rescales by root-mean-square without subtracting the mean.
+Which variant works best depends on the architecture; none guarantees equivalent quality.
 
-**Train vs. inference — the classic gotcha.** During training, BatchNorm uses the *current mini-batch's* mean and variance. At inference you often score one example at a time, where a "batch mean" is meaningless — so BatchNorm instead applies **running (moving-average) statistics** accumulated during training. This is exactly why you must put the model in eval mode (`model.eval()` in PyTorch) before inference; forget it, and predictions leak information across whatever else happens to be in the batch. LayerNorm and RMSNorm avoid this entirely — they normalize per-example, so training and inference behave identically.
+**Train vs. inference — the classic gotcha.** In its usual configuration, BatchNorm uses
+current batch statistics during training and accumulated **running statistics** during
+evaluation. Otherwise a prediction could depend on which other examples share its batch.
+Use `model.eval()` before evaluation. LayerNorm and RMSNorm do not require running batch
+statistics, but a model containing them can still have other train/eval-dependent modules
+such as dropout.
 
-### Weight Decay (L2 Regularization)
+### L2 Regularization and Decoupled Weight Decay
 
 **Simple version:** large weights let a network make sharp, extreme, over-confident decisions —
 the hallmark of memorising noise. Weight decay adds a small "tax" on big weights, gently nudging
 them toward zero unless the data really justifies keeping them large. The result is a smoother,
 simpler model that generalises better.
 
-> **Weight decay** adds a penalty proportional to the squared magnitude of weights to the loss function, discouraging large weight values and reducing overfitting.
+> **L2 regularization** adds a squared-weight penalty to the loss. **Decoupled weight
+> decay** directly shrinks weights as part of the optimizer update. They coincide under
+> appropriate coefficient conventions for plain SGD, but not generally for adaptive Adam.
 
 $$L_{\text{total}} = L_{\text{data}} + \lambda \sum_i w_i^2$$
 
-Equivalent to shrinking every weight toward zero by a factor of $\lambda$ each update. Typical $\lambda$: $10^{-4}$ to $10^{-2}$.
+With the exact penalty written above, its derivative is $2\lambda w$. Plain SGD without
+momentum therefore gives:
 
-**Example — how it works.** Two models fit the same scattered points. Model A learns weights
+$$w_{\text{new}}=(1-2\alpha\lambda)w-\alpha\nabla_w L_{\text{data}}$$
+
+For $w=2$, $\alpha=0.1$, $\lambda=0.01$, and zero data-gradient, the new weight is
+**1.996**, not $2\times0.01$. The learning rate matters, and using
+$\lambda\lVert w\rVert^2/2$ as the loss convention removes the factor of two.
+
+**AdamW** applies a separate decay factor $(1-\alpha d)$, where $d$ is the optimizer's
+`weight_decay` setting. Putting an L2 term inside Adam's gradient instead lets
+its adaptive moment machinery act on that term too. Do not interchange these recipes or
+their coefficient conventions without thinking.
+
+**Illustrative intuition, not a theorem about weight size.** Two models fit scattered points. Model A learns weights
 like $[12, -9, 15]$ and bends wildly to pass through every training point (overfit). Model B,
 trained with weight decay, settles on $[0.8, -0.5, 1.1]$ and draws a smooth curve. The penalty
 $\lambda \sum w_i^2$ made the jagged large-weight solution *expensive*, so the optimizer
-preferred the smooth one — and Model B wins on new data.
+preferred the smoother candidate. Whether it actually wins on new data must be measured. Input
+scaling and network reparameterizations make raw weight magnitude an imperfect measure of
+functional complexity.
 
 > **Interview —** *"What does dropout do at test time?"*
 > **Say:** **Nothing** — it is turned off. Dropout only operates during training, where it randomly zeroes a fraction of activations each step so no neuron can rely on any specific other neuron. At inference you want the full network and a deterministic answer, so every unit stays active.
-> **They follow up with:** *"Then don't the activations come out larger at test time?"* — they would, which is why frameworks use **inverted dropout**: during training the surviving activations are divided by the keep probability, so the expected sum already matches the full network. That means nothing needs rescaling at test time. The practical version of this is remembering `model.eval()` in PyTorch — forget it and dropout stays on, giving you a different (and worse) answer on every call. The same switch also flips BatchNorm to its running statistics.
+> **They follow up with:** *"Why is no test-time rescaling needed?"* — inverted dropout
+> already divides surviving training activations by the keep probability. `model.eval()`
+> disables that sampling and switches usual BatchNorm to running statistics. It does **not**
+> turn off gradient tracking; use `no_grad()` separately when gradients are unnecessary.
 
 <details>
 <summary><strong>Quick check.</strong> Your training loss keeps dropping but validation loss started rising 10 epochs ago. Name three things you would try, and one you would not.</summary>
 
-That divergence is textbook **overfitting** — the model is memorising rather than generalising.
+A sustained divergence suggests **overfitting**, after checking that the losses are
+comparable and the validation data are representative.
 
 **Would try:**
-1. **Early stopping** — you already have the answer: the best model was 10 epochs ago. Roll back to it.
+1. **Early stopping** — restore the checkpoint with the best validation result, rather than assuming the last epoch is best.
 2. **Regularization** — add or increase dropout, or raise weight decay.
 3. **More data**, or data augmentation if collecting more is not an option.
 
-**Would NOT try: a bigger model.** More capacity makes memorising *easier*, which is the
-opposite of what you need. It is a common beginner reflex — "it's not working, make it
-bigger" — but capacity is only the answer when **both** losses are stuck high (underfitting).
-
-The diagnostic is the **gap**: training good and validation bad means variance, and both bad
-means bias.
+**Would not do blindly: increase model size.** First investigate data, optimization, and
+regularization. More capacity is not automatically harmful or helpful. If both losses are
+high, possibilities include insufficient capacity **and** a broken pipeline, disconnected
+gradients, or an unsuitable learning rate. Treat the curve as evidence, not a diagnosis.
 </details>
+
+---
+
+## 14.7a Your First Working Network — A CPU Learning Lab ★★★
+
+### Simple Explanation
+
+Reading a recipe is not the same as cooking. This lab first reproduces our hand calculation,
+then trains a slightly wider network to recognize XOR regions from examples. No GPU, image
+collection, or dataset download is needed.
+
+> **Learning goal:** connect a mathematical training step to autograd, then distinguish
+> a model that lacks a useful representation from a model that has learned one.
+
+### Before You Run
+
+This is **local Python code**, not code executed by the study-notes web page. Use Python
+with PyTorch installed; the CPU package is sufficient. Save the complete block below as
+`nn_learning_lab.py` and run `python nn_learning_lab.py`.
+
+For an isolated environment on Windows, for example:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+.\.venv\Scripts\python.exe nn_learning_lab.py
+```
+
+The data have two features between -1 and 1. The label is 1 when exactly one feature is
+positive: opposite quadrants share a label. A straight boundary cannot solve the whole
+problem. A hidden nonlinear representation can.
+
+| Design choice | Why it is here |
+|---|---|
+| Generated, seeded data | A small reproducible exercise, not a downloaded benchmark |
+| 1,024 training / 256 validation examples | Fit on training data; select a checkpoint using validation |
+| 2 → 16 → 1 network | Enough capacity for this small nonlinear task without a large model |
+| Raw logits + `BCEWithLogitsLoss` | Stable binary classification; no extra sigmoid in the model |
+| Explicit initialization | Kaiming hidden weights and Xavier output weights; identical starting weights in the two comparison runs |
+| A fixed learning rate | Learn the basic loop before adding schedules |
+| A second run without ReLU | Change one structural ingredient and observe what it buys |
+
+### Complete Program
+
+```python
+# Chapter 14 CPU learning lab
+from copy import deepcopy
+
+import torch
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+
+torch.set_num_threads(1)
+
+
+def worked_step():
+    model = nn.Sequential(
+        nn.Linear(2, 2, dtype=torch.float64),
+        nn.ReLU(),
+        nn.Linear(2, 1, dtype=torch.float64),
+    )
+    with torch.no_grad():
+        model[0].weight.copy_(torch.tensor([[0.5, -0.5], [1.0, 1.0]]))
+        model[0].bias.copy_(torch.tensor([0.0, -1.0]))
+        model[2].weight.copy_(torch.tensor([[1.0, 1.0]]))
+        model[2].bias.fill_(-1.0)
+
+    x = torch.tensor([[1.0, 2.0]], dtype=torch.float64)
+    y = torch.tensor([[1.0]], dtype=torch.float64)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimizer.zero_grad()
+    logits = model(x)
+    loss = criterion(logits, y)
+    loss.backward()
+    print("Before:", f"p={logits.sigmoid().item():.6f}",
+          f"loss={loss.item():.6f}")
+    print("Hidden weight gradients:", model[0].weight.grad.tolist())
+
+    analytic = model[0].weight.grad[1, 0].item()
+    with torch.no_grad():
+        original = model[0].weight[1, 0].item()
+        epsilon = 1e-6
+        model[0].weight[1, 0] = original + epsilon
+        plus = criterion(model(x), y).item()
+        model[0].weight[1, 0] = original - epsilon
+        minus = criterion(model(x), y).item()
+        model[0].weight[1, 0] = original
+    numerical = (plus - minus) / (2 * epsilon)
+    print("One gradient:", f"autograd={analytic:.6f}",
+          f"finite difference={numerical:.6f}")
+
+    optimizer.step()
+    with torch.no_grad():
+        logits = model(x)
+        print("After: ", f"p={logits.sigmoid().item():.6f}",
+              f"loss={criterion(logits, y).item():.6f}")
+
+
+def evaluate(model, x, y, criterion):
+    model.eval()
+    with torch.no_grad():
+        logits = model(x)
+        loss = criterion(logits, y).item()
+        accuracy = ((logits >= 0) == y.bool()).float().mean().item()
+    return loss, accuracy
+
+
+def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
+    if epochs < 1:
+        raise ValueError("Run at least one epoch.")
+    torch.manual_seed(7)
+    x = 2 * torch.rand(1280, 2) - 1
+    y = ((x[:, 0] > 0) != (x[:, 1] > 0)).float().unsqueeze(1)
+    train_x, val_x = x[:1024], x[1024:]
+    train_y, val_y = y[:1024], y[1024:]
+    loader = DataLoader(
+        TensorDataset(train_x, train_y), batch_size=64, shuffle=True
+    )
+    model = nn.Sequential(
+        nn.Linear(2, 16),
+        nn.ReLU() if use_relu else nn.Identity(),
+        nn.Dropout(dropout),
+        nn.Linear(16, 1),
+    )
+    nn.init.kaiming_normal_(model[0].weight, nonlinearity="relu")
+    nn.init.xavier_uniform_(model[3].weight)
+    nn.init.zeros_(model[0].bias)
+    nn.init.zeros_(model[3].bias)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    best_loss, best_epoch = float("inf"), 0
+    best_state = None
+    patience, stale_epochs = 20, 0
+    print(f"\nXOR: ReLU={use_relu}, lr={learning_rate}, dropout={dropout}")
+
+    for epoch in range(1, epochs + 1):
+        model.train()
+        total_loss = 0.0
+        for batch_x, batch_y in loader:
+            optimizer.zero_grad()
+            logits = model(batch_x)
+            loss = criterion(logits, batch_y)
+            if not torch.isfinite(loss):
+                raise FloatingPointError("Non-finite training loss: investigate.")
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * batch_x.size(0)
+
+        val_loss, val_accuracy = evaluate(model, val_x, val_y, criterion)
+        if not torch.isfinite(torch.tensor(val_loss)):
+            raise FloatingPointError("Non-finite validation loss: investigate.")
+        if val_loss < best_loss:
+            best_loss, best_epoch = val_loss, epoch
+            best_state = deepcopy(model.state_dict())
+            stale_epochs = 0
+        else:
+            stale_epochs += 1
+        if epoch == 1 or epoch % 25 == 0:
+            print(f"epoch={epoch:3d} train={total_loss / len(train_x):.4f} "
+                  f"val={val_loss:.4f} val_accuracy={val_accuracy:.3f}")
+        if stale_epochs >= patience:
+            print(f"Early stop at epoch {epoch}.")
+            break
+
+    if best_state is None:
+        raise RuntimeError("No valid checkpoint was recorded.")
+    model.load_state_dict(best_state)
+    train_loss, train_accuracy = evaluate(model, train_x, train_y, criterion)
+    val_loss, val_accuracy = evaluate(model, val_x, val_y, criterion)
+    print(f"Restored epoch {best_epoch}: train_loss={train_loss:.4f}, "
+          f"train_accuracy={train_accuracy:.3f}, val_loss={val_loss:.4f}, "
+          f"val_accuracy={val_accuracy:.3f}")
+    return model
+
+
+if __name__ == "__main__":
+    worked_step()
+    run_xor(use_relu=True)
+    run_xor(use_relu=False)
+```
+
+### What to Look For
+
+The first calculation should reproduce the mathematical example:
+
+```
+Before: p=0.731059 loss=0.313262
+Hidden weight gradients: [[0, 0], [-0.268941..., -0.537883...]]
+One gradient: autograd=-0.268941 finite difference=-0.268941
+After:  p=0.786594 loss=0.240043
+```
+
+The finite-difference comparison asks whether a tiny weight change changes loss as
+autograd predicts. We chose a point away from a ReLU kink; checking exactly at a
+nondifferentiable point requires care.
+
+In the XOR runs, watch the **validation loss and decision quality**, not just training
+loss. The nonlinear model should learn a substantially better separator than the affine
+baseline. Seeds make this exercise repeatable within a setup; exact results can vary across
+PyTorch versions and platforms. These are synthetic teaching results, not architecture
+performance claims. The affine comparison deliberately keeps the same initial weights:
+we are isolating the activation change, not finding the best initialization for every model.
+
+**One reference run of this exact program** (PyTorch 2.8 CPU, seed 7):
+
+| Model | Restored epoch | Validation loss | Validation accuracy |
+|---|---:|---:|---:|
+| With ReLU | 147 | 0.0304 | 99.6% |
+| Without ReLU | 1 | 0.6905 | 45.3% |
+
+These results describe this synthetic task and checkpoint-selection rule. They are not
+promised accuracy on new problems. The nonlinear run's logged learning curve was:
+
+```chart
+{
+  "type": "line",
+  "data": {
+    "labels": [1,25,50,75,100,125,150],
+    "datasets": [
+      {
+        "label": "Training loss (during updates)",
+        "data": [0.6566,0.0740,0.0469,0.0365,0.0305,0.0274,0.0236],
+        "borderColor": "rgba(34,197,94,1)",
+        "fill": false, "pointRadius": 3, "tension": 0
+      },
+      {
+        "label": "Validation loss (end of epoch)",
+        "data": [0.5561,0.0789,0.0520,0.0432,0.0357,0.0335,0.0311],
+        "borderColor": "rgba(99,102,241,1)",
+        "fill": false, "pointRadius": 3, "tension": 0
+      }
+    ]
+  },
+  "options": {
+    "plugins": { "title": { "display": true, "text": "CPU XOR Lab — Reference Run, Seed 7" } },
+    "scales": {
+      "x": { "title": { "display": true, "text": "Logged epoch" } },
+      "y": { "title": { "display": true, "text": "Binary cross-entropy" }, "beginAtZero": true }
+    }
+  }
+}
+```
+
+The training-loss column averages losses collected while weights were changing. Validation
+uses the fixed end-of-epoch model. The final line evaluates **both splits in evaluation
+mode at the restored checkpoint**, which is a cleaner comparison.
+
+### Six Lines You Must Be Able to Explain
+
+| Code | What it does | What it does **not** do |
+|---|---|---|
+| `optimizer.zero_grad()` | Clears gradients accumulated from earlier backward calls | Does not reset learned weights |
+| `loss.backward()` | Computes and accumulates parameter gradients | Does not update weights |
+| `optimizer.step()` | Uses gradients and optimizer state to update parameters | Does not compute a new forward pass |
+| `model.train()` | Enables training behavior in modules such as dropout and BatchNorm | Does not itself start a training loop |
+| `model.eval()` | Selects evaluation behavior for those modules | Does not disable autograd |
+| `torch.no_grad()` | Avoids recording operations for gradient computation | Does not turn dropout off |
+
+`deepcopy(model.state_dict())` also matters: a plain state-dictionary reference can continue
+to reflect changing parameter storage. Save an independent checkpoint, then restore it.
+Validation selects the checkpoint; use a separate untouched test set for an honest final
+performance estimate in a real project.
+
+### Change One Thing, Then Explain What Happened
+
+| Experiment | Predict before running | What to inspect |
+|---|---|---|
+| Remove ReLU | Extra affine layers still cannot represent all XOR regions | Compare validation loss, not just parameter count |
+| Try `learning_rate=0.0001` | Learning may be much slower within the same budget | Whether gradients exist and whether parameters actually change |
+| Try `dropout=0.3` | Training becomes noisier; generalization may improve **or worsen** | Compare equivalent evaluation-mode losses |
+| Deliberately omit `zero_grad()` in a copy | Gradients accumulate across batches | Inspect `.grad`; do not mistake accumulation for the intended batch average |
+
+Return each experiment to the baseline before changing something else. The goal is an
+explanation backed by evidence, not finding a magical default setting.
+
+---
+
+## 14.7b A Debugging Workshop — Read the Evidence ★★★
+
+### Simple Explanation
+
+A stalled model is like a car that will not move. Buying a bigger engine is premature if
+the handbrake is on. Inspect the data and training mechanism before changing architecture.
+
+> **Working rule:** a loss curve suggests hypotheses. A controlled observation distinguishes
+> them. Change one cause at a time and keep a known-good baseline.
+
+### A Small, Repeatable Investigation
+
+**First inspect examples and contracts.** Check a few input/target pairs, their shapes,
+types, ranges, and class counts. Are labels aligned with inputs? Are logits going into a
+logit-based loss? Was learned preprocessing fit on training data only?
+
+**Then try a small, clean, learnable batch.** Temporarily remove augmentation and dropout
+and see whether a sufficiently capable model can fit that batch. Failure is a useful clue,
+not automatic proof of a bug: contradictory labels, strong regularization, insufficient
+capacity, or too little optimization can also prevent a near-zero loss.
+
+**Follow one update.** Do gradients exist? Are they finite? Does `optimizer.step()` actually
+change a parameter? A `None` gradient can be expected for a frozen or unused parameter;
+an unexpected missing gradient deserves investigation.
+
+| Observation | Plausible causes | Next observation or experiment |
+|---|---|---|
+| Loss is flat | Missing update, detached graph, poor learning rate, bad labels, insufficient capacity | Inspect one gradient and parameter change; run the tiny-batch exercise |
+| Loss or weights become non-finite | Non-finite inputs, unsafe arithmetic, precision overflow, excessive updates | Find the first bad tensor; use stable losses; then investigate LR or clipping |
+| Training improves but validation worsens consistently | Overfitting, distribution mismatch, faulty validation protocol | Compare data splits and modes; restore best checkpoint; try regularization |
+| Predictions vary unexpectedly at evaluation | Dropout still active, batch-dependent statistics, nondeterministic computation | Use `eval()` and appropriate gradient context; inspect preprocessing |
+| Both losses are high | Optimization failure, poor representation, insufficient capacity, excessive regularization | Establish a simple baseline before increasing size |
+
+### Read Curves Without Overclaiming
+
+```
+Possible healthy learning:       Possible overfitting:
+loss                            loss
+ | \ train                       | \ validation
+ |  \___                         |  \___ /----
+ |   \___ validation             |   \________ train
+ +----------> epoch              +--------------> epoch
+```
+
+Validation loss can be **lower** than the logged training loss when dropout, augmentation,
+or regularization makes training harder, or when training loss was measured earlier during
+updates. Do not diagnose a problem from the sign of a gap alone.
+
+For cross-entropy, uniform predictions provide a reference loss of $\log C$ for $C$
+exclusive classes, or about 0.693 for balanced binary uniform predictions. Randomly
+initialized networks are not necessarily uniform, so a different initial loss is a clue
+to investigate—not proof of an implementation bug.
+
+<details>
+<summary><strong>Spot the mistake.</strong> A colleague calls <code>model.eval()</code>, then says, "No computation graph can be built now, so I cannot calculate gradients." What is wrong?</summary>
+
+Evaluation mode changes module behavior. Autograd is still available unless disabled
+separately. You may deliberately compute gradients in eval mode—for example, to study
+input sensitivity—while keeping dropout off and BatchNorm statistics fixed.
+</details>
+
+<details>
+<summary><strong>Choose the next step.</strong> Training loss is flat, and every optimizer step leaves the weights unchanged. Should you add two hidden layers?</summary>
+
+Not yet. Check whether the parameters are in the optimizer, whether the loss connects to
+them, whether gradients are missing or zero, and whether the update is actually called.
+Capacity cannot repair a disconnected learning loop.
+</details>
+
+**Checkpoint:** before the architecture tour, explain one full training step without
+looking, run the lab, and diagnose one deliberate mistake. Keep §14.13 nearby when you
+want more detail on schedules, early stopping, and augmentation.
 
 ---
 
@@ -863,7 +1572,10 @@ sweeping a dark wall, lighting up wherever it finds its pattern (an edge, a corn
 Stack these detectors and the early ones find edges, the middle ones combine edges into shapes,
 and the deep ones recognise whole objects.
 
-> A **Convolutional Neural Network (CNN)** is a neural network that uses convolution operations — sliding learned filters over spatial input — to automatically extract hierarchical features. The architecture exploits spatial locality and translation invariance, making it the standard for image and spatial data tasks.
+> A **Convolutional Neural Network (CNN)** uses learned local filters with shared weights.
+> Convolution is **translation-equivariant** under suitable boundary and stride conditions:
+> shift the input, and the feature map shifts correspondingly. That is different from
+> guaranteeing an unchanged final prediction.
 
 ### How Convolution Works
 
@@ -893,22 +1605,75 @@ patch            filter           row-by-row products
                                    sum = 3   → strong vertical edge
 ```
 
-A high positive number means "this patch really does look like a vertical edge." A flat patch
-(all cells equal) would sum to ~0 — no edge here. Slide that same filter across the whole image
-and you get a **feature map** that lights up along every vertical edge. Crucially, the network
-*learns* what each filter's nine numbers should be — you never hand-design them.
+A positive response means this patch matches the chosen filter's bright-left/dark-right
+pattern. Reversing the edge gives a negative response. A flat patch gives zero. In this
+demonstration we hand-picked the filter; a trained CNN learns its filter values.
 
-**Stride** = how many pixels the filter moves per step. Stride 2 halves the spatial dimensions.
+### Finish the Feature Map
 
-**Padding** = zeros added around the border. "Same" padding preserves the input size; "valid" padding (no padding) shrinks it.
+Use that same 3×3 filter on a 5×5 image, stride 1, without padding:
+
+```
+Input                         Complete feature map
+1 1 0 0 0                     3 3 0
+1 1 0 0 0                     3 3 0
+1 1 0 0 0          ->         3 3 0
+1 1 0 0 0
+1 1 0 0 0
+```
+
+The first patch has response 3, the next also has response 3, and the all-dark patch
+has response 0. The filter has not learned "a cat"; it supplies a local feature for later
+layers to combine. Learned features need not each have a neat human-readable name.
+
+**Stride** is the step between filter positions. **Padding** adds border values.
+For kernel size $k$, input width $n$, stride $s$, symmetric padding $p$, and dilation 1:
+
+$$n_{\text{out}}=\left\lfloor\frac{n+2p-k}{s}\right\rfloor+1$$
+
+Our example gives $(5-3)/1+1=3$. "Same" padding preserves size when stride is 1.
+With stride 2, odd dimensions need rounding: an input of 5 can produce 3 outputs, not
+exactly half. The formula makes the assumptions explicit.
+
+### Channels, Parameters, and Shapes
+
+A filter spans **all input channels**, not just one color plane. With $C_{\text{in}}$
+input channels and $C_{\text{out}}$ filters, a biased convolution has
+$C_{\text{out}}(C_{\text{in}}k^2+1)$ parameters.
+
+| Layer in a small digit classifier | Batch-first shape | Learnable parameters |
+|---|---|---:|
+| Grayscale input | (B,1,28,28) | 0 |
+| 32 filters, 3×3, stride 1, no padding | (B,32,26,26) | $32(1\times9+1)=320$ |
+| ReLU, then 2×2 max pool, stride 2 | (B,32,13,13) | 0 |
+| Flatten | (B,5408) | 0 |
+| Dense classifier with 10 outputs | (B,10) | $5408\times10+10=54{,}090$ |
+
+RGB input changes the convolution's count to $32(3\times9+1)=896$, not 320.
+The pooling and flattening steps change shapes, but add no learned weights.
+The dense head can still contain most of the parameters; comparing one convolution with
+one dense layer is not a comparison of complete models.
 
 > **Interview —** *"Why do CNNs beat fully-connected networks on images?"*
-> **Say:** Two structural advantages a fully-connected layer cannot express. **Weight sharing** — the same edge-detector filter slides across the whole image, so a cat in the top-left and a cat in the bottom-right are recognised by the same nine numbers. A dense layer would have to learn "cat" separately at every position. And **locality** — a filter looks at a small neighbourhood, which matches how images actually work: pixels near each other are related, pixels far apart usually are not.
-> **They follow up with:** *"Quantify it."* — on a 28×28 image, a dense layer to 128 units needs $784 \times 128 = 100{,}352$ weights (§14.2). A convolutional layer with 32 filters of size 3×3 needs $32 \times 9 = 288$ weights and covers the entire image. That is a ~350× reduction, and it generalises **better**, not worse, because the shared filters see far more training signal. On a real 224×224 photo the dense version becomes completely impractical.
+> **Say:** Locality and weight sharing are useful **inductive biases** for images.
+> A dense layer can represent image functions too, but does not build in those constraints.
+> Shared filters reuse evidence across locations rather than learning unrelated parameters
+> for every pixel position.
+> **They follow up with:** *"Quantify it."* — the grayscale 3×3 convolution above has 320
+> parameters including biases, while a 784-to-128 dense layer has 100,480. They produce
+> different representations, so this is a parameter-efficiency illustration, not proof of
+> an accuracy advantage or a fair comparison of entire networks.
 
 ### Pooling
 
-Max pooling takes the maximum value in each spatial window, reducing dimensions while preserving the strongest activations. A $2 \times 2$ max pool with stride 2 halves width and height. Adds translation invariance: a cat shifted a few pixels still produces the same pooled features.
+Max pooling takes the maximum in each spatial window. A 2×2 window with stride 2 reduces
+an even spatial dimension by half. It provides some tolerance to small shifts **within
+pooling regions**, not exact invariance to every translation. Padding, stride, and boundaries
+can change the result.
+
+The **receptive field** is the input region that can affect an output. Two stride-1 3×3
+convolutions give a 5×5 receptive field: the second combines neighboring features that
+already each summarize a 3×3 patch.
 
 ### Feature Hierarchy
 
@@ -920,8 +1685,8 @@ Layer 3: textures, corners      (mid-level)
 Layer 5: eyes, wheels, windows  (high-level)
 Layer 7: faces, cars, buildings (semantic)
 
-This hierarchy emerges automatically from training.
-You do not hand-design these features — they are learned.
+This is an illustrative interpretation of learned representations,
+not a guarantee about a particular layer or individual filter.
 ```
 
 ### Key Architectures
@@ -941,6 +1706,13 @@ The critical idea: instead of learning $y = F(x)$, learn the residual $F(x) = y 
 $$y = F(x) + x$$
 
 If the optimal transformation is close to identity, the network only needs to learn a small residual rather than the entire mapping. Gradient flows directly through the skip connection, enabling training of 152+ layer networks.
+
+The added tensors must have matching shapes. When width or resolution changes, a projection
+can make the shortcut compatible. The shortcut offers another gradient path; it does not
+guarantee that every gradient stays healthy.
+
+**Illustrative chart:** these percentages are hypothetical, not a cited benchmark.
+The point is the possibility of optimization degradation, not a universal depth threshold.
 
 ```chart
 {
@@ -963,7 +1735,7 @@ If the optimal transformation is close to identity, the network only needs to le
     ]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Deeper Networks Degrade Without Skip Connections" } },
+    "plugins": { "title": { "display": true, "text": "Illustrative Depth Experiment — Not Benchmark Accuracy" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Accuracy (%)" }, "min": 82, "max": 98 },
       "x": { "title": { "display": true, "text": "Network Depth (layers)" } }
@@ -990,7 +1762,14 @@ it already remembered. The catch: a plain RNN's memory leaks over long distances
 
 $$h_t = f(W_x x_t + W_h h_{t-1} + b)$$
 
-Standard RNNs suffer severely from vanishing gradients over long sequences. If the sentence is "Mary, who grew up in Paris and studied at the Sorbonne, loves ___", the gradient must flow back 15+ steps. Each step multiplies by $W_h$ — if its eigenvalues are less than 1, the gradient decays to near zero.
+For language, a word or token is not multiplied as text. Its integer ID indexes a learned
+**embedding vector**, which supplies $x_t$. IDs are category identifiers, not numerical
+rankings of word meanings. A batch of token embeddings commonly has shape (B,T,d):
+batch, sequence length, embedding width.
+
+Standard RNNs can struggle to learn long-range dependencies. The gradient must pass
+through repeated recurrent transformations, including both weight factors and activation
+derivatives. Their combined effect can shrink or amplify it over time.
 
 **Example — how it works (sentiment, word by word).** Feed the review "not very good" into an
 RNN one word at a time; the hidden state $h_t$ is a running summary:
@@ -1003,7 +1782,8 @@ RNN one word at a time; the hidden state $h_t$ is a running summary:
 
 The final $h_3$ feeds the output layer, which predicts *negative* sentiment. The verdict depends
 on "not" from step 1 still being remembered at step 3 — that *carrying of context* is the whole
-point of recurrence, and exactly what breaks over very long sentences without an LSTM.
+point of recurrence. The table is a human-readable interpretation, not literal text stored
+inside the hidden state. Longer sequences make retaining useful context harder.
 
 ### LSTM (Long Short-Term Memory)
 
@@ -1023,6 +1803,9 @@ Cell State Cₜ ═════════════════════�
 
 **The three gates**, each a sigmoid producing values between 0 (closed) and 1 (open):
 
+In the notation below, $[h,x]$ means concatenate vectors, and $\odot$ means multiply
+matching components—not a matrix multiplication.
+
 | Gate | Formula | Job |
 |---|---|---|
 | **Forget** | $f_t = \sigma(W_f[h_{t-1}, x_t] + b_f)$ | What to erase from memory |
@@ -1033,10 +1816,20 @@ The cell state updates as $C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t$, whe
 $\tilde{C}_t = \tanh(W_c[h_{t-1}, x_t] + b_c)$ is the candidate new content, and the hidden
 output is $h_t = o_t \odot \tanh(C_t)$.
 
-**Why this fixes vanishing gradients:** the cell state is an **additive highway**. Gradients
-flow back through multiplication by $f_t$, which the network learns to keep near 1 for anything
-worth remembering — so the signal survives many time steps instead of being squashed at every
-one (§14.6).
+**Why this helps:** along the direct cell-state path, the old memory is multiplied by the
+forget gate rather than repeatedly passing through an entire nonlinear recurrent transform.
+Learning gate values near 1 can preserve information longer. Other paths and optimization
+still matter; gates are not a guarantee of unlimited memory.
+
+**One memory coordinate, with numbers.** Old memory is 2. A forget gate of 0.8 keeps 1.6.
+An input gate of 0.5 writes half of a candidate value 0.6, adding 0.3:
+
+$$C_t=0.8(2)+0.5(0.6)=1.9,\qquad h_t=0.7\,\tanh(1.9)\approx0.669$$
+
+The output gate was 0.7. It controls what is exposed now, not a destructive replacement of
+the stored cell state. If a forget gate stayed at 0.8 with no new input for ten steps, the
+old memory's contribution would shrink by $0.8^{10}\approx0.107$. The model must learn
+when to keep its gates open.
 
 ### GRU (Gated Recurrent Unit)
 
@@ -1044,7 +1837,9 @@ one (§14.6).
 instead of three and no separate notebook. Fewer moving parts, faster to train, and usually
 about as good.
 
-> **GRU** simplifies the LSTM to two gates (update and reset) by merging the forget and input gates and eliminating the separate cell state. Fewer parameters, faster training, similar performance on many tasks.
+> **GRU** uses update and reset gates without a separate cell state. It usually has fewer
+> parameters than a same-width LSTM; actual speed and accuracy depend on the task and
+> implementation.
 
 **Update gate:** $z_t = \sigma(W_z [h_{t-1}, x_t])$
 
@@ -1058,14 +1853,17 @@ about as good.
 ├────────────┼─────────────────────┼─────────────────────┤
 │ Gates      │ 2 (update, reset)   │ 3 (forget, in, out) │
 │ Parameters │ Fewer (~25% less)   │ More                │
-│ Speed      │ Faster              │ Slower              │
+│ Step cost  │ Often cheaper       │ More gate operations│
 │ Cell state │ No (hidden only)    │ Yes (separate)      │
-│ Use when   │ Shorter sequences,  │ Long sequences,     │
-│            │ less data           │ complex dependencies│
+│ Choose by  │ Validation quality, │ Validation quality, │
+│            │ latency, memory     │ latency, memory     │
 └────────────┴─────────────────────┴─────────────────────┘
 ```
 
-Practical guidance: for most modern NLP, use a Transformer instead. RNNs/LSTMs remain useful for streaming time-series tasks (e.g., real-time speech recognition) where you process one step at a time and latency matters.
+Gate conventions vary between implementations; focus on the memory mechanism rather than
+memorizing one symbol convention. For many NLP tasks, a pretrained Transformer is a strong
+starting point. Recurrent models remain useful for streaming tasks with bounded state and
+latency constraints. There is no universal sequence length at which one family wins.
 
 ---
 
@@ -1080,7 +1878,10 @@ meaning — *all in parallel*. Unlike an RNN, which reads strictly left-to-right
 a Transformer lets any word talk directly to any other word in a single step, which is why it
 captures long-range meaning so well and trains so fast.
 
-> The **Transformer** (Vaswani et al., 2017) processes sequences using **self-attention** — a mechanism that lets each token compute a weighted combination of all other tokens' representations in parallel, without recurrence. It has replaced RNNs as the dominant architecture for NLP, and increasingly for vision and audio.
+> A **Transformer** uses attention to mix token representations, alongside feed-forward
+> transformations, residual paths, and normalization. A token attends to the positions
+> permitted by its attention mask: all positions in a bidirectional block, or current and
+> earlier positions in a causal decoder.
 
 For a thorough treatment, see [Chapter 17 — Large Language Models](#content/17_llm). Here we cover the core mechanics.
 
@@ -1093,7 +1894,10 @@ Each token is projected into three vectors using learned weight matrices:
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
 
-The $QK^\top$ dot product measures similarity between every pair of tokens. Division by $\sqrt{d_k}$ prevents the softmax from saturating. The result is a weighted sum of value vectors — each token's representation becomes a blend of information from the most relevant other tokens.
+The $QK^\top$ dot products score query-key compatibility. Under common independence and
+scale assumptions, their variance grows with $d_k$, so their typical magnitude grows with
+$\sqrt{d_k}$. Dividing by $\sqrt{d_k}$ helps control that scale; unusually large queries or
+keys can still saturate softmax. The output is a weighted sum of value vectors.
 
 **Example — how it works (Q, K, V as a search).** Picture each word issuing a tiny search query:
 
@@ -1103,31 +1907,79 @@ The $QK^\top$ dot product measures similarity between every pair of tokens. Divi
   "street," "because," "tired" score low.
 - **Softmax** turns those scores into weights that sum to 1 — say $0.85$ on "animal," a sliver
   each elsewhere.
-- The output is that weighted blend of every word's **Value**, so "it" walks away carrying ~85%
-  of "animal"'s meaning. Reference resolved — *in one step, for every word simultaneously.*
+- The output blends **Value vectors** with those weights. A coefficient of 0.85 is not
+  literally "85% of a word's meaning," nor proof that a head resolved the pronoun.
+
+This is an illustrative bidirectional attention story, not a measurement of a trained
+model. Different heads can learn useful, overlapping, or hard-to-interpret patterns.
+
+### A Tiny Attention Calculation You Can Finish
+
+Use scalar values so the arithmetic stays visible. For a query at token B, let $q=1$,
+$d_k=1$, keys be $[0,\log 2,0]$, and values be $[2,4,8]$.
+We chose $\log2\approx0.693$ so exponentiating the scores gives the simple numbers [1,2,1].
+
+| Token | Key | Value | Bidirectional weight | Causal weight for query B |
+|---|---:|---:|---:|---:|
+| A, earlier | 0 | 2 | 1/4 | 1/3 |
+| B, current | log 2 | 4 | 2/4 | 2/3 |
+| C, future | 0 | 8 | 1/4 | 0 |
+
+**Bidirectional output:** $(1/4)2+(2/4)4+(1/4)8=\mathbf{4.5}$.
+
+**Causal output:** mask C's score to $-\infty$ **before** softmax. The remaining weights
+renormalize to [1/3,2/3,0], giving $(1/3)2+(2/3)4=\mathbf{10/3}$.
+Simply zeroing the future weight after softmax without renormalizing would be a different
+calculation.
+
+Real heads use vectors, but apply the same weighted-sum idea to every value coordinate.
+During teacher-forced training, all token positions can be processed in parallel **with
+the causal mask enforced**. Generating a new autoregressive sequence still proceeds one
+new token at a time.
 
 **Multi-head attention** runs $H$ parallel attention operations with different weight matrices, then concatenates and projects the results:
 
 $$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_H)\, W^O$$
 
-The output projection $W^O$ mixes information across all heads back into a single $d_{\text{model}}$-dimensional vector. Each head captures a different type of relationship (syntactic, semantic, positional). Typical: 8–16 heads in medium models, up to 96+ in large models.
+The output projection $W^O$ mixes information across heads back into a
+$d_{\text{model}}$-dimensional vector. Separate projections allow different patterns, but
+do not require every head to learn a unique named relationship.
 
 ### Positional Encoding
 
-Self-attention is permutation-invariant — it treats "cat sat" and "sat cat" identically. Positional encodings inject order information:
+Unmasked self-attention without positional information is **permutation-equivariant**:
+reorder the input token rows, and the output rows reorder with them. That does **not** mean
+the ordered output tensors are identical. A permutation-invariant pooling operation can
+then discard order entirely.
+
+Positional information gives tokens an explicit sense of their location or relative
+offset. The statement above concerns **unmasked** attention; a causal mask itself imposes
+an ordered visibility structure and breaks arbitrary permutation symmetry.
+
+One classic way to supply positions is:
 
 $$PE(\text{pos}, 2i) = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right), \qquad PE(\text{pos}, 2i+1) = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
 
-**Modern positional encodings.** The sinusoidal scheme above is *absolute* — it stamps each position with a fixed vector. Today's LLMs almost all use **relative** schemes instead. **RoPE (Rotary Position Embedding)** rotates the query and key vectors by an angle proportional to their position, so attention depends on the *relative offset* between two tokens and extrapolates better to longer contexts — it is the default in LLaMA, Gemini, Qwen, and most open models. **ALiBi** instead adds a distance-based linear penalty straight to the attention scores. Both have largely replaced absolute sinusoidal/learned encodings in production.
+**Other positional schemes.** Learned absolute embeddings are another option.
+**RoPE** rotates query and key vectors so their dot products encode relative offsets;
+**ALiBi** adds distance-dependent score biases. Many language models use such schemes.
+Longer-context generalization still depends on the training setup and positional design,
+not merely selecting a name from this list.
+
+The diagram shows a **post-normalization-style block**; pre-normalization variants also
+exist. Stacking blocks normally introduces separate learned parameters, not an RNN-style
+loop reusing one block forever.
 
 ```mermaid
 graph TB
     A[Token Embeddings + Positional Encoding] --> B[Multi-Head Self-Attention]
     B --> C[Add & Layer Norm]
+    A --> C
     C --> D[Feed-Forward Network]
     D --> E[Add & Layer Norm]
-    E -->|Repeat N times| B
-    E --> F[Output]
+    C --> E
+    E --> F[Further blocks with separate parameters]
+    F --> G[Output]
 ```
 
 ### Encoder vs Decoder
@@ -1137,25 +1989,16 @@ graph TB
 > **They follow up with:** *"What did that cost?"* — memory and compute. Self-attention compares every token with every other token, so cost grows **quadratically** with sequence length: double the context and you quadruple the work. An RNN is linear. That quadratic term is exactly why long-context is expensive and why so much research goes into cheaper attention variants ([Ch 17](#content/17_llm)).
 
 <details>
-<summary><strong>Quick check.</strong> A 2-input network has hidden weights $W = \begin{bmatrix} 1 & 1 \\ -1 & 1\end{bmatrix}$ with biases $[0, 0]$, ReLU in the hidden layer, output weights $[1, 1]$ with bias $0$, and no output activation. What does it predict for $x = [2, 3]$?</summary>
+<summary><strong>Quick check.</strong> In the toy calculation, can a causal query at B put weight on C? Does parallel training allow it to peek at the future?</summary>
 
-**Hidden pre-activations:**
-
-$$z_1 = 1(2) + 1(3) + 0 = 5 \qquad z_2 = -1(2) + 1(3) + 0 = 1$$
-
-**ReLU** leaves both unchanged (both positive): $a = [5, 1]$.
-
-**Output:** $1(5) + 1(1) + 0 = \mathbf{6}$
-
-Now try $x = [3, 2]$ instead. You get $z_1 = 5$, $z_2 = -1$, and ReLU clips the second to **0** —
-so the output is 5, not 6. Same two numbers, different order, different answer. That asymmetry
-is the network having *learned something*, and it is only possible because of the non-linearity:
-without ReLU both cases would give 6.
+No. C is masked before softmax, giving it zero attention weight. Parallel computation
+does not remove the mask. Autoregressive generation also cannot condition on tokens that
+have not been generated yet.
 </details>
 
 | | Encoder-only (BERT) | Decoder-only (GPT) |
 |---|---|---|
-| Attention | Bidirectional (sees all tokens) | Causal (sees only past tokens) |
+| Attention | Bidirectional (sees all unmasked tokens) | Causal (sees current and past tokens) |
 | Training | Masked language modeling | Next-token prediction |
 | Best for | Classification, NER, QA | Text generation, chatbots |
 | Examples | BERT, RoBERTa, DeBERTa | GPT-4, Claude, LLaMA, Gemini |
@@ -1174,7 +2017,7 @@ without ReLU both cases would give 6.
     }]
   },
   "options": {
-    "plugins": { "title": { "display": true, "text": "Self-Attention: Where Does 'it' Look? → 'animal'" } },
+    "plugins": { "title": { "display": true, "text": "Illustrative Bidirectional Attention — Not Measured Head Behavior" } },
     "scales": {
       "y": { "title": { "display": true, "text": "Attention Weight" }, "beginAtZero": true, "max": 1.0 },
       "x": { "title": { "display": true, "text": "Token" } }
@@ -1200,7 +2043,9 @@ minutes.
 
 The process has two stages:
 
-**Stage 1 — Pre-training** (done by large labs): Train a large model on a massive dataset. ResNet on ImageNet (1.2M images). BERT on Wikipedia + BookCorpus. GPT on internet-scale text. This takes weeks of GPU/TPU time.
+**Stage 1 — Pre-training:** learn a useful representation on a source dataset or task.
+In practice you often start from an existing checkpoint rather than repeat this work.
+The dataset and compute requirements vary enormously.
 
 **Stage 2 — Fine-tuning** (done by you): Take the pre-trained model, replace or adapt the final layer(s), and train on your smaller dataset.
 
@@ -1208,37 +2053,51 @@ The process has two stages:
 ┌────────────────────────────────────────────────────────────┐
 │  Your data size / similarity       Strategy                │
 ├────────────────────────────────────────────────────────────┤
-│  Small + similar to pre-training → Feature extraction only │
-│  Small + different domain        → Fine-tune top few layers│
-│  Large + similar                 → Fine-tune all layers    │
-│  Large + different               → Fine-tune all + more LR│
+│  Small + similar domain → Try a frozen-backbone baseline   │
+│  Small + different      → Check representation quality;    │
+│                           cautiously unfreeze if useful    │
+│  More relevant labels   → Compare partial/full fine-tuning │
+│  Large domain mismatch  → Validate transfer; don't assume  │
+│                           pretrained features will suffice │
 └────────────────────────────────────────────────────────────┘
 ```
 
-Real-world example: a hospital has 500 labeled chest X-ray images — far too few to train a CNN from scratch. They take a ResNet pre-trained on ImageNet, freeze the early layers (which detect universal edges and textures), replace the final classification head, and fine-tune on their X-rays. Accuracy jumps from ~60% (random init) to ~90% (transfer learning).
+**Example, not an accuracy promise:** a team has 500 labeled chest X-rays. An existing
+image encoder plus a new classification head is a reasonable baseline to compare with
+simpler alternatives. Whether source features transfer must be evaluated with appropriate
+patient-level splits and representative data. No sample count guarantees a particular
+accuracy, and no model choice removes the need for domain-specific evaluation.
 
-In NLP, fine-tuning a pre-trained BERT model on 1,000 labeled movie reviews for sentiment classification takes minutes on a single GPU and achieves accuracy comparable to training from scratch on 100x more data.
+Likewise, a pretrained language model can help with a small sentiment dataset, but compare
+it with inexpensive baselines such as bag-of-words or TF-IDF plus a linear classifier.
 
 > **Interview —** *"Why does transfer learning work at all? The new task is different."*
-> **Say:** Because the **early layers learn features that are not task-specific**. A CNN's first layers detect edges, corners and textures — those are properties of *images*, not of ImageNet's thousand categories, so they transfer to X-rays or satellite photos unchanged. Only the last layers encode "this arrangement of shapes means golden retriever," and those are the ones you replace. You are inheriting the generic visual (or linguistic) machinery and re-learning only the final mapping.
-> **They follow up with:** *"When does it fail?"* — when the domains genuinely diverge at the low level. ImageNet features transfer poorly to audio spectrograms or medical scans in a different modality, because even the edge statistics differ. The other failure is **catastrophic forgetting**: fine-tune everything with too high a learning rate and you destroy the pre-trained features you came for. The standard defence is to freeze early layers, or use a much smaller learning rate for them than for the new head.
+> **Say:** Source training may learn features that are useful on the target task too.
+> Earlier visual features are often more general than the final classifier, but transfer
+> quality is not determined only by layer depth. Start with a baseline, then measure the
+> value of unfreezing more of the model.
+> **They follow up with:** *"When does it fail?"* — source and target may differ too much,
+> the target labels may be poor, or aggressive updates may erase useful features
+> (**catastrophic forgetting**). Freezing, smaller backbone learning rates, and careful
+> validation are tools to investigate—not guarantees that features transfer unchanged.
 
 <details>
 <summary><strong>Quick check.</strong> You have 800 labelled images of factory parts and want to classify defects. Would you train a CNN from scratch or fine-tune a pre-trained one — and which layers would you train?</summary>
 
-**Fine-tune.** 800 images is far too few to train a CNN from scratch; it would overfit almost
-immediately and land near random performance.
+**Start by evaluating transfer learning.** With 800 images, adapting a pretrained
+representation is often a better use of the data than training a large network from scratch.
+A small model can still be a useful baseline; near-random performance is not inevitable.
 
 Using the strategy table above — **small dataset, moderately different domain** — the recipe is:
 
 1. Take a ResNet (or similar) pre-trained on ImageNet.
-2. **Freeze the early layers.** Edges and textures are universal; factory parts have them too.
+2. **Start with a frozen backbone baseline.** Check whether its features transfer to these images.
 3. **Replace the classification head** with one sized to your number of defect classes.
 4. Train the head, and optionally unfreeze the last block or two with a **small** learning rate.
 
-The reasoning to say out loud: the fewer examples you have, the more of the network you should
-freeze. Every layer you unfreeze adds parameters that 800 images have to constrain — and they
-cannot.
+The reasoning to say out loud: freezing reduces the number of parameters being adapted,
+but domain mismatch may justify changing earlier features too. Compare validation results,
+keep the split appropriate to the task, and do not choose the recipe from dataset size alone.
 </details>
 
 ---
@@ -1248,9 +2107,8 @@ cannot.
 ### Simple Explanation
 
 Imagine a **counterfeiter** trying to print fake banknotes and a **detective** trying to spot
-them. Every time the detective catches a fake, the counterfeiter learns and makes better ones;
-every time a fake slips through, the detective sharpens its eye. Run this arms race long enough
-and the fakes get so good the detective can only guess 50/50. A **GAN** is exactly this: the
+them. Each uses feedback from the other to improve. The goal is to make fakes hard to
+distinguish—not a promise that competition will improve both forever. A **GAN** uses this idea: the
 **generator** is the counterfeiter (turning random noise into fake images), the
 **discriminator** is the detective, and they improve by competing.
 
@@ -1261,12 +2119,14 @@ graph LR
     Z[Random Noise z] --> G[Generator G]
     G -->|Fake sample x̂| D[Discriminator D]
     R[Real data x] --> D
-    D --> P["P(real) ∈ {0,1}"]
+    D --> P["P(real) in [0,1]"]
 ```
 
 $$\min_G \max_D \; \mathbb{E}_{x}[\log D(x)] + \mathbb{E}_{z}[\log(1 - D(G(z)))]$$
 
-At convergence, $G$ produces samples so realistic that $D$ outputs 0.5 (cannot distinguish real from fake).
+At an ideal distribution-matching equilibrium, the optimal discriminator outputs 0.5.
+Real training need not reach that equilibrium. A weak discriminator can also output 0.5,
+so that number alone is not proof of realistic or diverse generation.
 
 **Example — how it works (one training round, generating faces).**
 
@@ -1274,10 +2134,10 @@ At convergence, $G$ produces samples so realistic that $D$ outputs 0.5 (cannot d
    it's a blurry mess.
 2. The **discriminator** is shown a mix of real faces and the generator's fakes and must label
    each "real" or "fake."
-3. **Both learn from the verdict:** if a fake was caught, the generator adjusts to look more
-   realistic next time; if a fake slipped through, the discriminator adjusts to catch that tell.
-4. Repeat millions of rounds. The two networks ratchet each other upward until the fakes are
-   photorealistic — this is how StyleGAN produces faces of people who don't exist.
+3. **Alternate updates:** train D on real/fake examples; then hold D's parameters fixed while
+   backpropagating through its differentiable computation to update G.
+4. Repeat and evaluate both quality and diversity. The discriminator supplies a gradient,
+   not merely a hard real/fake verdict; successful training is not automatic.
 
 **Applications:** photorealistic faces (StyleGAN), medical-imaging augmentation for rare
 pathologies, super-resolution (SRGAN), and style transfer.
@@ -1296,31 +2156,30 @@ emerges.
 
 > **Diffusion models** learn to reverse a gradual noising process: a forward process adds Gaussian noise to data over many steps, and a neural network is trained to predict and remove that noise — generating new samples by denoising from pure noise.
 
-By the mid-2020s diffusion overtook GANs for image, audio and video generation — it trains with a
-simple regression loss instead of an adversarial min-max, avoids mode collapse, and scales
-cleanly with compute.
+Diffusion is widely used for generation and offers a denoising objective rather than a
+two-player adversarial objective. That often simplifies optimization, but does not guarantee
+perfect distribution coverage, stability, or freedom from memorization.
 
 | | GAN | Diffusion |
 |---|---|---|
 | Generation | One forward pass (fast) | Many denoising steps (slower; distillation narrows the gap) |
-| Training | Adversarial min-max (unstable) | Denoising regression (stable) |
-| Coverage | Prone to mode collapse | Covers the full distribution |
-| 2026 status | Niche / real-time uses | Dominant for image, audio & video |
+| Training | A coupled adversarial game can be difficult to balance | A denoising objective is often easier to optimize |
+| Coverage | Mode collapse is a known failure mode | Still needs evaluation for missing modes and memorization |
+| Trade-off to investigate | Fast sampling versus training challenges | Sample quality/diversity versus generation cost |
 
 → Generative models in depth — VAEs, diffusion, contrastive methods:
 [Ch 16](#content/16_deep_learning).
 
 ---
 
-## 14.13 Practical Tips: LR Schedules, Early Stopping, Augmentation & Initialization ★★
+## 14.13 Practical Reference: LR Schedules, Early Stopping & Augmentation ★★
 
 ### Simple Explanation
 
-These are the "good habits" that separate a model that works in a demo from one that works in
-production. None of them change the architecture — they're about training it sensibly: take the
-right-sized steps (learning-rate schedules), stop before you overcook it (early stopping),
-squeeze more out of the data you have (augmentation), and begin from sensible weights
-(initialization).
+The first lab used a sensible initialization, a fixed learning rate, validation, and checkpoint
+restoration. This section extends that toolkit. Return here when experiments suggest that a
+schedule or augmentation might help; you do not need every technique for every small model.
+The initialization primer is deliberately earlier, in §14.6, before the runnable lab.
 
 ### Learning Rate Schedules
 
@@ -1329,12 +2188,12 @@ inch carefully into the spot (tiny steps). A schedule lowers the learning rate t
 steps early to make fast progress, small steps late to settle precisely into the minimum.
 
 > A **learning-rate schedule** adjusts the learning rate during training according to a predefined
-> policy. A fixed rate is rarely optimal: too large at the end prevents settling into a sharp
-> minimum; too small from the start wastes the fast early phase.
+> policy or monitored signal. A fixed rate can work well; a schedule can improve how a
+> training budget is used, but introduces additional choices to evaluate.
 
-The optimal step size *changes* during training. Early on the loss landscape is rough and
-gradients are large — you want big steps. Near convergence gradients are small and the minimum is
-close — you need tiny steps to avoid overshooting.
+A larger rate may make useful early progress, while a smaller rate later may help refine a
+solution. This is intuition, not a rule that gradients always begin large or shrink smoothly.
+First establish that the data and basic training loop work at a reasonable constant rate.
 
 ```
   FIXED LR: one size for the whole run
@@ -1348,44 +2207,40 @@ close — you need tiny steps to avoid overshooting.
   late training   → small LR: fine-grained convergence
 ```
 
-**The four schedules you will actually meet:**
+**Common schedules and controls:**
 
 | Schedule | Shape | Notes |
 |---|---|---|
-| **Step decay** | Cut by a factor every $k$ epochs ($\gamma = 0.1$, $k = 30$) | Predictable; produces visible "staircase" drops in the loss curve |
+| **Step decay** | Cut by a factor every $k$ epochs | A staircase in the **learning rate**, not a guaranteed staircase in loss |
 | **Exponential decay** | $\eta_t = \eta_0 e^{-\lambda t}$ | Smooth, no sudden drops, but $\lambda$ needs tuning |
-| **Cosine annealing** | Follows a cosine from $\eta_{\max}$ down to $\eta_{\min}$ | The modern default. No decay rate to tune. Optional **warm restarts** jump back up to escape local minima |
+| **Cosine annealing** | Follows a cosine from $\eta_{\max}$ down to $\eta_{\min}$ | Choose the horizon and endpoints; optional restarts change the schedule |
 | **Linear warmup** | Ramp from ~0 up to the target over the first $w$ steps | Used *before* one of the above, not instead of it |
-| **ReduceLROnPlateau** | Drop by a factor when validation stops improving | Adaptive; the right default when you don't know the total step count |
+| **ReduceLROnPlateau** | Drop by a factor when a monitored metric stops improving | A useful adaptive option when the training horizon is uncertain |
 
-**Why warmup exists.** At initialization the weights are random, so gradients are large and
-noisy — a full-size step on step 1 can be destructively large. Warmup lets the optimizer settle
-first. It matters most for large-batch training (which lacks the natural noise of small batches)
-and for Transformers, whose layer norms are sensitive to big early updates.
+**Why warmup exists.** Some training setups are sensitive to large early updates, including
+the interaction between initialization and adaptive optimizer statistics. A gradual ramp
+can help, particularly in some large-batch or Transformer recipes. Small batches still have
+gradient noise, and warmup is not universally necessary.
 
-**What to actually use:** **linear warmup over the first 1–5% of training, then cosine decay.**
-That pairing is the dominant schedule for Transformers and LLMs, and a reasonable default
-almost everywhere else.
+**A candidate recipe:** try warmup followed by cosine decay when it fits the model and
+budget. Warmup over 1–5% of steps is an example range to investigate, not a rule for every
+network. The lab deliberately starts without a scheduler.
 
 → Optimizer families and schedule variants in depth: [Ch 16](#content/16_deep_learning).
 
 <details>
-<summary><strong>Quick check.</strong> Your loss bounces up and down without ever settling. Separately, a colleague's loss barely moves at all. What is the single most likely cause in each case?</summary>
+<summary><strong>Quick check.</strong> One loss curve oscillates and another is almost flat. Give a learning-rate hypothesis for each—and one reason not to diagnose them from the curves alone.</summary>
 
-**Both are the learning rate** — it is the first hyperparameter to suspect, and usually the
-only one that matters this much.
-
-- **Bouncing / diverging → learning rate too high.** Steps overshoot the minimum and land on
-  the far wall of the valley, over and over. Extreme cases go to NaN (§14.6).
-- **Barely moving → learning rate too low.** Steps are so small that progress is invisible
-  within your patience. Training is *working*, just uselessly slowly.
+An excessive rate can cause oscillation or divergence; a very small rate can make
+progress slow. But oscillation can also reflect noisy mini-batches, while a flat curve can
+come from missing updates, disconnected gradients, bad targets, or insufficient capacity.
+Check the mechanism before declaring that training is working but merely slow.
 
 **How to find the right one:** sweep on a **log scale** — 1e-1, 1e-2, 1e-3, 1e-4 — not linearly.
-The good range is usually just below where the loss starts diverging. For Adam, 3e-4 is a
-famously reliable starting point.
+Inspect both learning progress and stability, then compare validation behavior.
 
-The general lesson: when a network will not train, check the learning rate before touching
-architecture. Beginners often rebuild the model when one number was the problem.
+The general lesson: investigate the data and update loop, then tune one control at a time.
+Do not rebuild the architecture merely because a curve looks disappointing.
 </details>
 
 ```chart
@@ -1395,20 +2250,20 @@ architecture. Beginners often rebuild the model when one number was the problem.
     "labels": [0,5,10,15,20,25,30,35,40,45,50],
     "datasets": [
       {
-        "label": "Step Decay",
-        "data": [0.1,0.1,0.1,0.01,0.01,0.01,0.01,0.001,0.001,0.001,0.001],
+        "label": "Step Decay (every 20 epochs)",
+        "data": [0.1,0.1,0.1,0.1,0.01,0.01,0.01,0.01,0.001,0.001,0.001],
         "borderColor": "rgba(99, 102, 241, 1)",
         "fill": false, "tension": 0, "pointRadius": 0, "borderWidth": 2
       },
       {
         "label": "Cosine Annealing",
-        "data": [0.1,0.095,0.08,0.06,0.04,0.025,0.015,0.008,0.004,0.002,0.001],
+        "data": [0.1,0.097577,0.090546,0.079595,0.065796,0.0505,0.035204,0.021405,0.010454,0.003423,0.001],
         "borderColor": "rgba(234, 88, 12, 1)",
         "fill": false, "tension": 0.4, "pointRadius": 0, "borderWidth": 2
       },
       {
-        "label": "Warmup + Cosine",
-        "data": [0.001,0.05,0.1,0.09,0.07,0.05,0.035,0.02,0.01,0.004,0.001],
+        "label": "10-epoch Warmup + Cosine",
+        "data": [0.001,0.0505,0.1,0.096232,0.085502,0.069443,0.0505,0.031557,0.015498,0.004768,0.001],
         "borderColor": "rgba(34, 197, 94, 1)",
         "fill": false, "tension": 0.3, "pointRadius": 0, "borderWidth": 2
       }
@@ -1427,22 +2282,25 @@ architecture. Beginners often rebuild the model when one number was the problem.
 **ReduceLROnPlateau** is the adaptive, metric-driven alternative: watch a validation metric and,
 if it fails to improve for `patience` epochs, multiply the learning rate by a `factor`.
 
+The plot above uses a 50-epoch horizon and deliberately long 10-epoch warmup to make the
+shape visible. It illustrates schedules, not recommended settings for every model.
+
 ```python
-# PyTorch
+# Fragment: add after creating the optimizer in your training function.
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6
 )
-scheduler.step(val_loss)  # call after each epoch
+scheduler.step(val_loss)  # place after that epoch's validation evaluation
 ```
 
-It is the right default when you don't know the total number of steps in advance — though it can
-be slow to react on a noisy metric, so raise `patience` if validation fluctuates.
+It is one useful option when the number of training steps is uncertain. A noisy metric
+needs appropriate patience; a scheduler reacting to noise can make training worse.
 
 ### Early Stopping
 
 **Simple version:** like taking cookies out of the oven the moment they turn golden — leave them
-in longer ("more epochs") and they burn (overfit). You watch the validation loss and stop at its
-lowest point, then **restore the best checkpoint**.
+in longer can overcook them. Monitor validation loss, stop after a chosen period without
+improvement, then **restore the best checkpoint seen**, rather than the final weights.
 
 ```
 Epoch  Train Loss  Val Loss   Action
@@ -1462,65 +2320,23 @@ the rollback trap: [Ch 12 §12.6](#content/12_key_algorithms).
 rotate it, crop it, brighten it, and it's still a cat. You teach the model that a cat is a cat
 regardless of angle or lighting, essentially for free.
 
-Any **label-preserving** transformation works. Images: flips, rotations, crops, colour jitter,
-cutout. Text: synonym replacement, back-translation. Audio: time stretch, pitch shift, noise.
-It is the cheapest regularizer available, and when labels are scarce and expensive — medical
-imaging is the classic case — it is often the difference between a usable model and a failed
-experiment.
+Choose transformations that preserve the task's labels **and remain plausible for the
+target data**. Candidate image transformations include crops and color changes; text or
+audio transformations require similar care. A crop can remove the labeled object, a
+"synonym" can change meaning, and pitch can itself be the target. More augmented samples
+are not a substitute for representative independent examples.
 
 > **The one rule:** the transformation must not change the label. Horizontally flipping a cat
 > gives a cat; horizontally flipping a "b" gives a "d". Augmentation that breaks the label
 > teaches the model something false.
 
-### Weight Initialization
+Apply stochastic augmentation to training data, not blindly to the validation set.
+Fit any learned scaling or preprocessing on the training split only. Keep evaluation
+preprocessing consistent and appropriate to the task.
 
-**Simple version:** where you start affects where you finish. Start all weights at zero and every
-neuron stays identical forever — they all learn the same thing, which is useless. Start them too
-big or too small and signals explode or vanish. Good initialization picks a "just right" random
-scale so signals flow cleanly from the very first step.
-
-You cannot start with all weights equal to zero — every neuron would compute the same gradient and update identically (symmetry problem). Proper initialization:
-
-```
-  ALL ZEROS — what happens at layer 1:
-  ──────────────────────────────────────
-  neuron_1  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
-  neuron_2  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
-  neuron_3  output = f(0·x₁ + 0·x₂ + ... + 0·xₙ) = f(0) = 0.5
-
-  gradient for neuron_1 == neuron_2 == neuron_3
-  → all weights move by the same amount → symmetry is never broken
-  → no matter how long you train, all neurons stay identical
-
-  FIX: small random values, so neurons start at different positions
-       and their gradients diverge from the very first step.
-```
-
-**Why the specific formulas.** Beyond breaking symmetry, good initialization keeps
-**activation variance stable across layers**. Grow it layer to layer and activations explode;
-shrink it and they collapse toward zero, taking the gradients with them (§14.6). Since
-$\text{Var}(z) = n_\text{in}\cdot\text{Var}(w)\cdot\text{Var}(x)$, keeping the variance steady
-means setting $\text{Var}(w) \approx 1/n_\text{in}$. Both standard schemes are refinements of
-that one idea — **He** doubles it to $2/n_\text{in}$ to compensate for ReLU zeroing roughly half
-its inputs.
-
-```
-  VARIANCE FLOW THROUGH A DEEP ReLU NETWORK
-
-  All zeros:      [0.00, 0.00, 0.00, 0.00, 0.00]  ← dead network
-  Too large:      [1.0,  2.0,  4.0,  8.0, 16.0]   ← exploding
-  He init:        [1.0,  1.0,  1.0,  1.0,  1.0]   ← stable ✓
-```
-
-| Activation | Initialization | Variance |
-|---|---|---|
-| **ReLU, Leaky ReLU, GELU** | He / Kaiming | $2 / n_\text{in}$ |
-| **Tanh, Sigmoid** | Xavier / Glorot | $2 / (n_\text{in}+n_\text{out})$ |
-| **Linear (output layer)** | Xavier or small normal | $1 / n_\text{in}$ |
-
-**Practical rule:** He for anything ReLU-family (the vast majority of modern nets), Xavier for
-tanh/sigmoid. Frameworks pick a sensible default automatically — but knowing *why* matters when
-you are debugging a network whose loss goes to NaN or refuses to move at all.
+**Initialization reminder:** the explanation and variance assumptions are in §14.6, and
+the explicit PyTorch initialization is in §14.7a. Zero biases can be fine; hidden-unit
+symmetry and signal scale are the issues to understand.
 
 ---
 
@@ -1533,11 +2349,13 @@ language), but overkill, and often *worse*, for a tidy spreadsheet. The honest a
 I use deep learning?" is usually "it depends on your data." This section is your decision guide:
 match the tool to the data instead of reaching for the biggest hammer by default.
 
-> Deep learning excels when data is abundant, the input is unstructured (images, text, audio), and compute is available. Traditional ML (tree ensembles, linear models) often wins on structured/tabular data, small datasets, and when interpretability matters.
+> Choose a model by data structure, usable prior knowledge, validation quality, and
+> operational constraints. Pretraining can make neural approaches practical with few
+> target labels; tree ensembles and linear models remain strong, economical baselines.
 
-| Data type | Best approach |
+| Data type | Useful starting candidates |
 |---|---|
-| **Tabular / structured** | XGBoost or LightGBM — usually wins |
+| **Tabular / structured** | Linear and tree-based baselines; compare a neural model when justified |
 | **Images** | CNN or Vision Transformer |
 | **Text / NLP** | Transformer (BERT / GPT family) |
 | **Audio / speech** | Transformer (Whisper) or CNN |
@@ -1546,90 +2364,58 @@ match the tool to the data instead of reaching for the biggest hammer by default
 | **Proteins / molecules** | Graph Neural Network or Transformer |
 
 > **Interview —** *"When would you NOT use deep learning?"*
-> **Say:** Most of the time, honestly — for **tabular data**, which is the majority of business problems. Gradient-boosted trees still beat neural networks there, and they train in seconds instead of hours, need almost no tuning, handle missing values natively, and are far easier to explain. I would also avoid deep learning with **small datasets** (a few thousand rows), when I need **interpretability** for regulatory reasons, or when the latency and infrastructure cost cannot be justified.
-> **They follow up with:** *"So when is it clearly the right call?"* — when the input is **unstructured**: images, audio, language, video. There is no way to hand-engineer features that compete with learned ones on raw pixels or text. Also when I can **stand on a pre-trained model** — fine-tuning BERT on 1,000 examples beats anything classical, because I am inheriting someone else's massive training run. The honest framing is: deep learning wins where feature engineering is impossible, and loses where it is easy.
+> **Say:** When a simpler baseline meets quality, latency, cost, and interpretability
+> needs, extra complexity may not be worthwhile. Trees are strong tabular candidates;
+> linear models can also be very competitive. Neither a small dataset nor a regulatory
+> requirement automatically selects one model family.
+> **They follow up with:** *"When is deep learning attractive?"* — when learned
+> representations or useful pretrained models provide an advantage on the actual task.
+> Images, language, and audio often benefit, but I would still compare baselines and
+> evaluate the cost of deploying the result.
 
 **Example — how it works (picking a tool for two real tasks).**
 
 - **Task A — predict loan default from a 30-column spreadsheet** (income, age, credit history;
-  10,000 rows). → Use **XGBoost**. The data is structured and smallish; gradient-boosted trees
-  train in seconds, are easy to explain to regulators, and typically *beat* a neural net here.
+  10,000 rows). → Try a linear baseline and **gradient-boosted trees**. Compare validation
+  quality, calibration, fairness, and explainability; no model is automatically acceptable
+  merely because it is tree-based.
 - **Task B — detect tumours in 200,000 chest X-rays.** → Use a **CNN** (or a pretrained ViT). The
-  input is unstructured pixels with spatial patterns, the dataset is large, and only deep
-  learning extracts the hierarchy of edges → textures → lesions.
+  input has spatial structure and a pretrained representation may help. Dataset quality,
+  patient-level separation, and external evaluation still matter.
 
-Same engineer, same week — two different right answers, decided entirely by the *data*, not by
-which method is trendier.
+Same engineer, same week—different starting hypotheses, decided by evidence and constraints,
+not by which method is trendier.
 
 ### Dataset Size Considerations
 
-| Dataset size | Recommendation |
+| Situation | What to investigate |
 |---|---|
-| < 1K samples | Traditional ML almost always; DL overfits fast |
-| 1K-10K | Either; transfer learning can make DL viable |
-| 10K-1M | Both competitive; DL starts to pull ahead |
-| > 1M | Deep learning's sweet spot; scales better |
+| Few labels, useful pretrained features | Frozen-feature or fine-tuning baselines |
+| Few labels, large domain mismatch | Simpler models, label quality, representation suitability |
+| More relevant data | Whether additional capacity actually improves held-out performance |
+| Large but biased or noisy data | Data quality and evaluation design before model size |
+
+There is no universal row-count threshold where neural networks suddenly become the right
+choice. Feature dimension, task difficulty, label quality, and pretraining all change the
+sample requirements.
 
 ### Architecture Comparison
 
-```
-┌──────────────┬───────────────┬───────────────┬──────────────────┐
-│              │ CNN           │ RNN / LSTM    │ Transformer      │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Best for     │ Images, video │ Short seqs,   │ Text, long seqs, │
-│              │ spatial data  │ time series   │ vision, audio    │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Key idea     │ Local filters │ Hidden state  │ Self-attention   │
-│              │ + pooling     │ (memory)      │ (all-to-all)     │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Parallelism  │ Yes           │ No (seq.)     │ Yes (fully)      │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Long-range   │ Limited by    │ LSTM helps;   │ Excellent        │
-│ dependencies │ receptive     │ still hard    │ (direct path)    │
-│              │ field         │ past ~500     │                  │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Memory cost  │ O(1) per seq  │ O(T)          │ O(T²)            │
-├──────────────┼───────────────┼───────────────┼──────────────────┤
-│ Famous       │ ResNet, VGG,  │ Seq2Seq,      │ BERT, GPT,       │
-│ examples     │ EfficientNet  │ DeepSpeech    │ ViT, Whisper     │
-└──────────────┴───────────────┴───────────────┴──────────────────┘
-```
+| Question | CNN | RNN / LSTM | Transformer |
+|---|---|---|---|
+| What structure does it build in? | Locality and weight sharing | Sequential state updates | Content-dependent attention |
+| How does distant information connect? | Through the receptive field | Through recurrent state updates | Directly through permitted attention links |
+| Can training positions run in parallel? | Many spatial positions can | Recurrent state updates are sequential | Attention positions can, while respecting masks |
+| What is the streaming trade-off? | Depends on causal design and receptive field | Fixed-size recurrent state is possible | Autoregressive decoding commonly retains a growing KV cache |
+| What should decide the choice? | Useful locality and measured task performance | Streaming constraints and measured task performance | Useful attention/pretraining and measured task performance |
 
-```chart
-{
-  "type": "bar",
-  "data": {
-    "labels": ["CNN", "RNN/LSTM", "Transformer"],
-    "datasets": [
-      {
-        "label": "Parallelizable (5 = fully)",
-        "data": [5, 1, 5],
-        "backgroundColor": "rgba(34, 197, 94, 0.7)",
-        "borderColor": "rgba(34, 197, 94, 1)", "borderWidth": 1
-      },
-      {
-        "label": "Long-Range Dependencies (5 = best)",
-        "data": [2, 3, 5],
-        "backgroundColor": "rgba(99, 102, 241, 0.7)",
-        "borderColor": "rgba(99, 102, 241, 1)", "borderWidth": 1
-      },
-      {
-        "label": "Data Efficiency (5 = least data needed)",
-        "data": [4, 4, 2],
-        "backgroundColor": "rgba(234, 88, 12, 0.7)",
-        "borderColor": "rgba(234, 88, 12, 1)", "borderWidth": 1
-      }
-    ]
-  },
-  "options": {
-    "plugins": { "title": { "display": true, "text": "Architecture Comparison — CNN vs RNN vs Transformer" } },
-    "scales": {
-      "y": { "title": { "display": true, "text": "Rating (1-5)" }, "beginAtZero": true, "max": 5 },
-      "x": {}
-    }
-  }
-}
-```
+**Memory needs a context.** For sequence length $T$, fixed width/depth, and fixed local
+kernels, a 1D CNN's stored activations usually scale with $T$, not $O(1)$. Full RNN
+backpropagation also stores information across steps, even though streaming inference can
+retain only fixed-size recurrent state. Naive attention score storage is $O(T^2)$;
+memory-efficient implementations change what is materialized. Image CNN cost depends on
+image dimensions and channels. Do not mix training memory with streaming-inference state
+in one unexplained ranking.
 
 Self-driving cars use all three: CNNs for camera perception (object detection), LSTMs for predicting pedestrian trajectories over time, and Transformers for end-to-end planning. The right architecture depends on the data modality and problem structure.
 
@@ -1637,86 +2423,141 @@ Self-driving cars use all three: CNNs for camera perception (object detection), 
 
 ## Key Takeaways
 
-```
-╔════════════════════════════════════════════════════════════════╗
-║  NEURAL NETWORKS CHEAT SHEET                                   ║
-║  ────────────────────────────────────────────────────────────  ║
-║  Neuron = weighted sum → activation → output                   ║
-║  Layers: input → hidden (non-linear) → output (task-specific)  ║
-║  Activation: ReLU hidden, Sigmoid binary, Softmax multi-class  ║
-║  GELU for Transformers; Leaky ReLU fixes dying neurons         ║
-║  ────────────────────────────────────────────────────────────  ║
-║  Backprop = chain rule; gives dL/dw for every weight           ║
-║  Optimizers: Adam default, AdamW Transformers, SGD+mom CNNs    ║
-║  Vanishing grads → ReLU, BatchNorm, skip connections           ║
-║  Exploding grads → gradient clipping (max_norm = 1)            ║
-║  ────────────────────────────────────────────────────────────  ║
-║  CNN = local filters → pooling → hierarchy → ResNet            ║
-║  RNN/LSTM = sequential memory: hidden state + cell state       ║
-║  GRU = simpler LSTM (2 gates vs 3), often just as good         ║
-║  Transformer = self-attention (Q,K,V) + positional encoding    ║
-║  ────────────────────────────────────────────────────────────  ║
-║  Transfer learning = pre-train big, fine-tune small            ║
-║  GANs = generator vs discriminator (an adversarial game)       ║
-║  Regularize with dropout, Batch/LayerNorm, weight decay        ║
-║  Practical: LR schedules, early stopping, augmentation         ║
-║  ────────────────────────────────────────────────────────────  ║
-║  Tabular → trees   Images → CNN   Text → Transformer           ║
-╚════════════════════════════════════════════════════════════════╝
-```
+| Question | Carry this answer with you |
+|---|---|
+| What does a network compute? | Composed affine transformations and nonlinear features; task-appropriate outputs |
+| How does it learn? | Forward pass, loss, gradients, optimizer update; evaluate the changed prediction |
+| What must match? | Tensor shapes, target encoding, output semantics, and the loss API |
+| What does backprop use? | Activation derivatives **and** weights; shared paths contribute summed gradients |
+| How do we train responsibly? | Inspect data, use stable losses, compare validation behavior, restore the best checkpoint |
+| What changes at evaluation? | Dropout and usual BatchNorm behavior; autograd is controlled separately |
+| What do architectures add? | Locality, memory, attention, or reusable representations—not automatic accuracy |
+| How should we choose? | Start with a sensible baseline, change one thing, and measure the result |
 
 ---
 
 ## Review Questions
 
-**1.** You observe that 30% of your ReLU neurons have died (always output zero). What do you do?
+Try these without looking back. Explain the mechanism, not just the name of a technique.
+
+**1. Why can two affine layers without an activation still fail on XOR?**
 
 <details>
 <summary>Answer</summary>
 
-Switch to Leaky ReLU (or Parametric ReLU). Leaky ReLU allows a small gradient ($\alpha z$ where $\alpha \approx 0.01$) for negative inputs, so neurons never fully die. You might also check if your learning rate is too high (which can push many neurons into the dead zone permanently) and consider reducing it.
+Their composition is another affine map, so a fixed classification threshold still produces
+a straight boundary. XOR needs a nonlinear representation; extra affine parameters alone
+do not remove that restriction.
 </details>
 
-**2.** You need to classify handwritten digits (0-9). What architecture and what output activation?
+**2. A batch has 16 examples with 5 features. An MLP has 8 hidden units and 3 exclusive classes. How many parameters, and what are the output and target shapes?**
 
 <details>
 <summary>Answer</summary>
 
-Use a CNN — it exploits the spatial structure of images via learned filters that detect edges, curves, and digit shapes. The output layer should have 10 neurons with softmax activation, producing a probability distribution over the 10 digit classes. Cross-entropy loss for training.
+$(5\times8+8)+(8\times3+3)=75$ parameters. Logits have shape **(16,3)**.
+For the common PyTorch class-index form of `CrossEntropyLoss`, targets have shape **(16,)**
+and integer type `torch.long`. Do not apply softmax before that loss.
 </details>
 
-**3.** Compare Dropout and Batch Normalization. Can you use both?
+**3. A hidden activation is 2, output probability is 0.731059, and the binary label is 1. What is the gradient of its output weight?**
 
 <details>
 <summary>Answer</summary>
 
-Dropout randomly zeros neurons during training, preventing co-adaptation and acting as an implicit ensemble. Batch Normalization normalizes layer inputs to zero mean and unit variance, stabilizing and accelerating training. Yes, you can use both — typically apply BatchNorm before the activation and Dropout after. In practice, BatchNorm's mild regularization sometimes reduces the need for heavy dropout.
+For sigmoid plus BCE, the logit gradient is $0.731059-1=-0.268941$.
+Multiply by the incoming activation: **-0.537883**. SGD subtracts this negative gradient,
+so a weight of 1 becomes approximately **1.053788** at learning rate 0.1.
 </details>
 
-**4.** Why do Transformers need positional encoding? What happens without it?
+**4. One ReLU outputs zero for one example. Is it dead? Would using ReLU guarantee that a deep network's gradients stay stable?**
 
 <details>
 <summary>Answer</summary>
 
-Self-attention computes pairwise similarity between tokens regardless of their position — it is permutation-invariant. Without positional encoding, "the cat sat on the mat" and "mat the on sat cat the" would produce identical representations. Positional encodings (sinusoidal or learned) inject order information so the model knows which token is first, second, etc.
+One inactive sample is normal. Investigate whether the unit is inactive across relevant
+training data. ReLU removes positive-side activation saturation, but weight factors and
+other gradient paths can still cause shrinking or exploding gradients.
 </details>
 
-**5.** A GAN's generator is producing the same image regardless of input noise. What is happening?
+**5. Which operations compute gradients, update weights, change module behavior, and disable gradient recording?**
 
 <details>
 <summary>Answer</summary>
 
-This is mode collapse. The generator found a single output that reliably fools the discriminator and stopped exploring other modes of the data distribution. Fixes include: Wasserstein loss (WGAN) for smoother gradients, mini-batch discrimination so the discriminator can detect lack of diversity, progressive training (start low-res, gradually increase), or training the discriminator less aggressively so the generator gets useful gradient signal.
+`backward()` computes and accumulates gradients; `optimizer.step()` updates parameters.
+`train()`/`eval()` select module behavior. `no_grad()` disables gradient recording in its
+context. `zero_grad()` clears accumulated gradients, not the learned parameters.
 </details>
 
-**6.** For each data type, name the go-to architecture: (a) tabular data, (b) images, (c) text, (d) audio.
+**6. With inverted dropout, an activation is 2 and the drop probability is 0.5. What is its output when kept during training, its expected training output, and its evaluation output?**
 
 <details>
 <summary>Answer</summary>
 
-(a) Tabular: gradient boosted trees (XGBoost, LightGBM) — consistently outperform neural networks on structured data. (b) Images: CNN (ResNet, EfficientNet) or Vision Transformer (ViT) for large datasets. (c) Text: Transformer (BERT for understanding tasks, GPT for generation). (d) Audio: Transformer (Whisper) or CNN on mel-spectrograms. In all cases, start with a pre-trained model and fine-tune.
+When kept, $2/(1-0.5)=4$. Its expected training output is $0.5(4)+0.5(0)=2$.
+At evaluation dropout is off, so the output is 2 without additional scaling.
+</details>
+
+**7. Plain SGD has learning rate 0.1, weight 2, zero data-gradient, and loss penalty $0.01w^2$. What is the new weight? Is this automatically AdamW's update?**
+
+<details>
+<summary>Answer</summary>
+
+The penalty gradient is $2(0.01)(2)=0.04$, so the weight becomes **1.996**.
+AdamW uses a separately specified decay convention; an L2 penalty inside adaptive Adam
+is not generally equivalent to decoupled decay.
+</details>
+
+**8. A training batch produces NaN loss. Should gradient clipping always be the first fix?**
+
+<details>
+<summary>Answer</summary>
+
+No. Find the first non-finite input or intermediate quantity. Invalid inputs and unsafe
+loss arithmetic are not repaired by clipping later gradients. Clipping is relevant when
+the evidence points to excessive gradient magnitude.
+</details>
+
+**9. A 28×28 RGB image passes through 32 filters of size 3×3, stride 1, no padding, with biases. What are the output shape and parameter count?**
+
+<details>
+<summary>Answer</summary>
+
+Spatial output is 26×26 with 32 channels: **(B,32,26,26)** in PyTorch's usual layout.
+Parameters are $32(3\times3\times3+1)=\mathbf{896}$.
+</details>
+
+**10. Unmasked attention at B has weights [1/4,2/4,1/4] over A, B, C and values [2,4,8]. What changes under a causal mask?**
+
+<details>
+<summary>Answer</summary>
+
+Mask future token C before softmax. The weights become [1/3,2/3,0], and the output changes
+from 4.5 to $10/3$. Unmasked position-free self-attention is permutation-equivariant;
+it does not produce identical ordered tensors after arbitrary input reordering.
+</details>
+
+**11. You have 800 labeled factory images. Explain a starting strategy without promising a particular accuracy.**
+
+<details>
+<summary>Answer</summary>
+
+Compare a pretrained encoder plus a new head with simple baselines. Consider selective
+unfreezing with a lower backbone learning rate if validation supports it. Check domain
+match, label quality, and appropriate data splits; sample count alone does not decide.
+</details>
+
+**12. A generator always produces the same image. Meanwhile, the discriminator outputs about 0.5. Has training succeeded?**
+
+<details>
+<summary>Answer</summary>
+
+No. Repeating one image suggests mode collapse. A discriminator near 0.5 could be weak
+or poorly trained. The ideal distribution-matching result does not make that number a
+standalone quality test; inspect diversity, quality, and performance on held-out data.
 </details>
 
 ---
 
-**Previous:** [Chapter 13 — Model Evaluation & Tuning](13_model_evaluation.md) | **Next:** [Chapter 15 — Reinforcement Learning](15_reinforcement_learning.md)
+**Previous:** [Chapter 13 — Model Evaluation & Tuning](#content/13_model_evaluation) | **Next:** [Chapter 15 — Reinforcement Learning](#content/15_reinforcement_learning)

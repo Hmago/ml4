@@ -64,9 +64,9 @@ const chapters = [
 
   // ── SYSTEM DESIGN — CASE STUDIES ──
   { section: 'System Design — Case Studies' },
-  { id: '35', file: 'content/35_system_design_cases_realtime.md', title: 'Design Cases 1: Real-Time & Comms' },
-  { id: '36', file: 'content/36_system_design_cases_search_media.md', title: 'Design Cases 2: Search, Geo & Media' },
-  { id: '37', file: 'content/37_system_design_cases_scale_infra.md', title: 'Design Cases 3: Scale, Infra & Money' },
+  { id: '35', file: 'content/35_system_design_cases_realtime.md', title: 'Design Cases 1: Real-Time & Comms', caseStudy: true },
+  { id: '36', file: 'content/36_system_design_cases_search_media.md', title: 'Design Cases 2: Search, Geo & Media', caseStudy: true },
+  { id: '37', file: 'content/37_system_design_cases_scale_infra.md', title: 'Design Cases 3: Scale, Infra & Money', caseStudy: true },
 
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },
@@ -136,6 +136,7 @@ async function loadChapter(index) {
 
   const contentEl = document.getElementById('content');
   contentEl.classList.toggle('recap-view', !!ch.recap);
+  contentEl.classList.toggle('case-study-view', !!ch.caseStudy);
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
 
   try {
@@ -167,6 +168,7 @@ async function loadChapter(index) {
 
     var mathProtected = protectMath(md);
     contentEl.innerHTML = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
+    if (ch.caseStudy) formatCaseStudyContent(contentEl);
     // insertAdjacentHTML appends without re-serializing/re-parsing the chapter
     // we just rendered (which `innerHTML +=` would force).
     contentEl.insertAdjacentHTML('beforeend', renderNavButtons());
@@ -249,10 +251,111 @@ function renderNavButtons() {
 }
 
 // ─── Table of Contents (right panel) ───
+function formatCaseStudyContent(root) {
+  root.querySelectorAll('h1,h2').forEach(heading => {
+    if (!/^(?:Case \d+|F[123])\s*[—-]/.test(heading.textContent)) return;
+    heading.classList.add('case-title');
+    let next = heading.nextElementSibling;
+    if (next?.tagName !== 'BLOCKQUOTE') return;
+    const overview = document.createElement('div');
+    overview.className = 'case-overview';
+    heading.after(overview);
+    while (next?.tagName === 'BLOCKQUOTE') {
+      const following = next.nextElementSibling;
+      if (next.textContent.trim().startsWith('Google priority:')) next.classList.add('case-meta');
+      overview.appendChild(next);
+      next = following;
+    }
+  });
+
+  root.querySelectorAll('p').forEach(p => {
+    const image = p.querySelector('img');
+    if (image && p.children.length === 1) {
+      p.classList.add('case-figure');
+      p.dataset.figure = image.getAttribute('src').endsWith('_ai.png') ? 'architecture' : 'whiteboard';
+    }
+    const text = p.textContent.trim();
+    if (text.startsWith('Prerequisites:')) p.classList.add('case-prerequisites');
+    if (text === 'Mechanism diagram') p.classList.add('case-mechanism-label');
+    if (!text.startsWith('Image correction:')) return;
+    const note = document.createElement('aside');
+    note.className = 'case-image-note';
+    p.before(note);
+    let explanation = p.nextElementSibling;
+    if (explanation?.querySelector('img')) explanation = explanation.nextElementSibling;
+    note.appendChild(p);
+    if (text === 'Image correction:' && explanation?.tagName === 'P' && !explanation.querySelector('img')) {
+      note.appendChild(explanation);
+    }
+  });
+
+  root.querySelectorAll('table').forEach(table => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'case-table';
+    wrapper.tabIndex = 0;
+    wrapper.setAttribute('role', 'region');
+    wrapper.setAttribute('aria-label', `${table.querySelector('th')?.textContent || 'Study'} table; scroll horizontally if needed`);
+    const columns = table.querySelector('tr')?.children.length || 0;
+    if (columns > 3) {
+      wrapper.classList.add('case-table-wide');
+      wrapper.style.setProperty('--case-table-min-width', columns > 4 ? '960px' : '640px');
+    }
+    table.before(wrapper);
+    wrapper.appendChild(table);
+  });
+}
+
+function buildCaseStudyTOC(root, tocLinks) {
+  const label = document.createElement('div');
+  label.className = 'case-toc-current';
+  label.textContent = 'Reading: Chapter guide';
+  tocLinks.appendChild(label);
+  let group;
+  let groupCount = 0;
+  const addLink = (heading, text) => {
+    const link = document.createElement('a');
+    link.href = '#' + heading.id;
+    link.textContent = text;
+    if (heading.tagName === 'H3') link.className = 'h3';
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      let parent = heading.parentElement;
+      while (parent && parent !== root) {
+        if (parent.tagName === 'DETAILS') parent.open = true;
+        parent = parent.parentElement;
+      }
+      heading.scrollIntoView({ behavior: 'smooth' });
+    });
+    group.appendChild(link);
+  };
+  root.querySelectorAll('h1,h2,h3').forEach(heading => {
+    if (heading.closest('details')) return;
+    const startsGroup = heading.tagName === 'H1' || heading.classList.contains('case-title');
+    if (startsGroup || !group) {
+      if (!heading.id) heading.id = 'case-section-' + groupCount;
+      group = document.createElement('details');
+      group.className = 'case-toc-group';
+      group.dataset.title = groupCount === 0 ? 'Chapter guide' : heading.textContent;
+      group.open = groupCount === 0;
+      const summary = document.createElement('summary');
+      summary.textContent = group.dataset.title;
+      group.appendChild(summary);
+      tocLinks.appendChild(group);
+      groupCount++;
+      addLink(heading, 'Overview');
+    } else {
+      addLink(heading, heading.textContent.replace(/^(?:\d+|F[123])\.\d+[a-z]?\s+/, ''));
+    }
+  });
+}
+
 function buildTOC() {
+  const root = document.getElementById('content');
   const headings = document.querySelectorAll('#content h2, #content h3');
   const tocPanel = document.getElementById('tocPanel');
   const tocLinks = document.getElementById('tocLinks');
+  const caseStudy = root.classList.contains('case-study-view');
+  tocPanel.classList.toggle('case-study-toc', caseStudy);
 
   if (headings.length === 0) {
     tocPanel.classList.remove('visible');
@@ -260,6 +363,12 @@ function buildTOC() {
   }
 
   tocPanel.classList.add('visible');
+  if (caseStudy) {
+    headings.forEach((heading, i) => { heading.id = 'heading-' + i; });
+    tocLinks.replaceChildren();
+    buildCaseStudyTOC(root, tocLinks);
+    return;
+  }
   tocLinks.innerHTML = Array.from(headings).map((h, i) => {
     const id = 'heading-' + i;
     h.id = id;
@@ -1085,7 +1194,8 @@ document.addEventListener('keydown', (e) => {
   // comment box, notebook cells, etc. keep native cursor movement).
   const ae = document.activeElement;
   const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-  if (currentPage === 'chapter' && !typing) {
+  const tableScroll = ae && ae.closest('.case-table');
+  if (currentPage === 'chapter' && !typing && !tableScroll) {
     if (e.key === 'ArrowLeft') { const p = findPrevChapter(currentIndex); if (p >= 0) loadChapter(p); }
     if (e.key === 'ArrowRight') { const n = findNextChapter(currentIndex); if (n >= 0) loadChapter(n); }
   }
@@ -1168,18 +1278,20 @@ function enhanceContent() {
   });
 
   // 2. Scroll-reveal with IntersectionObserver
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('vis');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+  if (!contentEl.classList.contains('case-study-view')) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('vis');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
 
-  contentEl.querySelectorAll('h1,h2,h3,p,pre,.code-wrapper,table,ul,ol,blockquote,.katex-display,hr').forEach(el => {
-    observer.observe(el);
-  });
+    contentEl.querySelectorAll('h1,h2,h3,p,pre,.code-wrapper,table,ul,ol,blockquote,.katex-display,hr').forEach(el => {
+      observer.observe(el);
+    });
+  }
 
   // 3. Reading time — study pace (~55 words/min for technical content with diagrams)
   const words = (contentEl.textContent || '').trim().split(/\s+/).length;
@@ -1203,39 +1315,8 @@ function enhanceContent() {
   // 4. Scroll spy for TOC
   setupScrollSpy();
 
-  // 5. Mermaid diagrams — lazy-load the (large) library only if this chapter
-  // actually has a mermaid block. We render in small batches so the main
-  // thread stays responsive on chapters with many diagrams (e.g. Ch 34 has 80+,
-  // which would otherwise freeze the page for ~20 seconds).
-  if (contentEl.querySelector('code.language-mermaid')) {
-    ensureMermaid().then(() => {
-      contentEl.querySelectorAll('code.language-mermaid').forEach(block => {
-        const pre = block.parentElement;
-        const div = document.createElement('div');
-        div.className = 'mermaid';
-        div.textContent = block.textContent;
-        // Lightweight placeholder so the user sees something immediately
-        // while batches further down the page are still pending.
-        div.dataset.pendingRender = '1';
-        pre.replaceWith(div);
-      });
-      const divs = Array.from(contentEl.querySelectorAll('.mermaid'));
-      const BATCH = 4;
-      const schedule = window.requestIdleCallback
-        ? (fn) => requestIdleCallback(fn, { timeout: 250 })
-        : (fn) => setTimeout(fn, 50);
-      let i = 0;
-      (function renderBatch() {
-        const batch = divs.slice(i, i + BATCH);
-        if (batch.length) {
-          try { mermaid.init(undefined, batch); } catch (e) {}
-          batch.forEach(d => { delete d.dataset.pendingRender; });
-        }
-        i += BATCH;
-        if (i < divs.length) schedule(renderBatch);
-      })();
-    }).catch(() => {});
-  }
+  // 5. Render diagrams separately from gamification; case studies also use this in classic mode.
+  renderChapterMermaid(contentEl);
 
   // 5b. Chart.js charts
   renderCharts(contentEl);
@@ -1286,6 +1367,8 @@ document.addEventListener('fullscreenchange', () => {
 let _scrollSpyHandler = null;
 function setupScrollSpy() {
   const wrapper = document.getElementById('contentWrapper');
+  const root = document.getElementById('content');
+  const caseStudy = root.classList.contains('case-study-view');
   const tocLinks = document.querySelectorAll('#tocLinks a');
   // Remove the previous chapter's handler so scroll listeners don't accumulate
   // across navigations (each one swept every heading with getBoundingClientRect
@@ -1295,20 +1378,41 @@ function setupScrollSpy() {
     _scrollSpyHandler = null;
   }
   if (!tocLinks.length) return;
+  const headings = root.querySelectorAll(caseStudy ? 'h1,h2,h3' : 'h2,h3');
+  const groups = document.querySelectorAll('.case-toc-group');
+  const currentLabel = document.querySelector('.case-toc-current');
+  let activeGroup = null;
   let ticking = false;
   _scrollSpyHandler = () => {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
       let current = '';
-      document.querySelectorAll('#content h2, #content h3').forEach(h => {
+      headings.forEach(h => {
+        if (h.closest('details:not([open])')) return;
         if (h.getBoundingClientRect().top < 150) current = h.id;
       });
-      tocLinks.forEach(a => a.classList.toggle('spy-active', a.getAttribute('href') === '#' + current));
+      tocLinks.forEach(a => {
+        const active = a.getAttribute('href') === '#' + current;
+        a.classList.toggle('spy-active', active);
+        if (!caseStudy) return;
+        if (active) a.setAttribute('aria-current', 'location');
+        else a.removeAttribute('aria-current');
+        const group = active ? a.closest('.case-toc-group') : null;
+        if (group && group !== activeGroup) {
+          groups.forEach(item => {
+            item.classList.toggle('is-current', item === group);
+            item.open = item === group;
+          });
+          activeGroup = group;
+          if (currentLabel) currentLabel.textContent = 'Reading: ' + group.dataset.title;
+        }
+      });
       ticking = false;
     });
   };
   wrapper.addEventListener('scroll', _scrollSpyHandler, { passive: true });
+  _scrollSpyHandler();
 }
 
 
@@ -1570,6 +1674,10 @@ loadChapter = async function(index) {
     if (!interactiveMode) {
       renderCharts(document.getElementById('content'));
       addRunButtons(document.getElementById('content'));
+      if (chapters[index].caseStudy) {
+        renderChapterMermaid(document.getElementById('content'));
+        setupScrollSpy();
+      }
     }
     // Restore saved highlights
     loadHighlights(chapters[index].file);
@@ -1597,6 +1705,49 @@ function ensureMermaid() {
     mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
   });
   return _mermaidReady;
+}
+async function renderChapterMermaid(root) {
+  const blocks = Array.from(root.querySelectorAll('code.language-mermaid'));
+  if (!blocks.length) return;
+  try {
+    await ensureMermaid();
+    const diagrams = [];
+    blocks.forEach(block => {
+      if (!root.contains(block)) return;
+      const diagram = document.createElement('div');
+      diagram.className = 'mermaid';
+      diagram.textContent = block.textContent;
+      diagram.dataset.pendingRender = '1';
+      const pre = block.parentElement;
+      if (pre.parentElement.classList.contains('code-wrapper')) {
+        pre.parentElement.classList.add('diagram-wrapper');
+      }
+      pre.replaceWith(diagram);
+      diagrams.push(diagram);
+    });
+    for (let i = 0; i < diagrams.length; i += 4) {
+      const batch = diagrams.slice(i, i + 4).filter(diagram => root.contains(diagram));
+      if (batch.length) {
+        await mermaid.run({ nodes: batch });
+        batch.forEach(diagram => { delete diagram.dataset.pendingRender; });
+      }
+      if (i + 4 < diagrams.length) {
+        await new Promise(resolve => {
+          if (window.requestIdleCallback) requestIdleCallback(resolve, { timeout: 250 });
+          else setTimeout(resolve, 50);
+        });
+      }
+    }
+    if (root.classList.contains('case-study-view') && diagrams.some(diagram => root.contains(diagram)) &&
+        typeof renderPins === 'function' && currentPage === 'chapter' && chapters[currentIndex]?.caseStudy) {
+      renderPins(chapters[currentIndex].file);
+    }
+  } catch (error) {
+    console.error('Unable to render chapter diagram:', error);
+    if (blocks.some(block => root.contains(block)) || root.querySelector('.mermaid[data-pending-render]')) {
+      showToast('Diagram could not be rendered', 'Reload the chapter to try again', '!');
+    }
+  }
 }
 let _chartReady = null;
 function ensureChart() {
@@ -1660,7 +1811,7 @@ let nbCellCounter = 0;
 
 async function loadNotebook(file) {
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading notebook...</div>';
 
   try {

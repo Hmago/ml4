@@ -215,7 +215,12 @@ async function runOne(cfg, target) {
   const outPath = path.join(DIAGRAMS_DIR, `${target.svgBase}_ai.png`);
   fs.writeFileSync(outPath, bytes);
   const relOut = `diagrams/${target.svgBase}_ai.png`;
-  const newImageLine = `![${target.title} — AI-generated draft (for review, not yet final)](${relOut})`;
+  // Reuse the original HLD caption text (preserved in existingImageLine even though
+  // that old SVG has since been deleted) so regenerated images keep the finalized,
+  // "not a draft" caption style rather than reverting to draft/review wording.
+  const altMatch = target.existingImageLine && target.existingImageLine.match(/^!\[([^\]]*)\]\(/);
+  const caption = altMatch ? altMatch[1] : target.title;
+  const newImageLine = `![${caption}](${relOut})`;
   const insertResult = insertImageIntoChapter(target.chapterFile, target.existingImageLine, newImageLine, relOut);
   console.log(`[${target.id}] saved ${relOut} (${(bytes.length / 1024).toFixed(0)} KB) — ${insertResult.inserted ? 'inserted into chapter' : 'NOT inserted: ' + insertResult.reason}`);
   return { id: target.id, ok: true, outPath, insertResult };

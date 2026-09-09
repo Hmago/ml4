@@ -1,0 +1,662 @@
+[
+  {
+    "q": "A notification API first creates a Redis SETNX dedupe key, then plans to store the notification. It crashes between those steps. A retry sees the key and is suppressed. Which change fixes the lost-work failure?",
+    "options": [
+      "Commit the accepted request, tenant-scoped key, payload hash, and outbox together",
+      "Lengthen the Redis key's expiry so retries stay suppressed throughout recovery",
+      "Return 202 after SETNX succeeds and reconstruct missing work from access logs",
+      "Enqueue before storing the request and use Redis to remember successful sends"
+    ],
+    "answer": 0,
+    "explanation": "The key currently proves only that SETNX ran, not that any work survived. One transaction must commit the accepted notification, unique tenant/key identity, validated payload hash, and outbox before returning 202. The relay can then recover committed work after a crash. A longer Redis expiry makes the lost-work interval longer rather than closing the gap."
+  },
+  {
+    "q": "Notification N17 and its outbox event commit atomically, but the API crashes before returning 202. The client retries the identical payload with the same tenant-scoped idempotency key within the supported replay window. What should happen?",
+    "options": [
+      "Create N18 because the client never received confirmation that N17 existed",
+      "Delete N17's outbox event because the retry indicates publication uncertainty",
+      "Return N17's identity and current status without creating another notification",
+      "Reject the replay as a conflict because the request key is already present"
+    ],
+    "answer": 2,
+    "explanation": "A lost response does not undo a committed transaction. Looking up the same tenant/key and matching payload hash identifies the already accepted request, so the API returns N17 and its current status. The existing outbox remains responsible for publishing the work. Creating N18 would convert an ordinary network retry into a second logical notification."
+  },
+  {
+    "q": "Tenant A accepted key k7 for a message to Alice. A later request from A reuses k7 for Bob, while tenant B independently uses k7 for its own message. What should the notification API do?",
+    "options": [
+      "Accept A's changed recipient and reject B because the key already exists",
+      "Reject A's changed payload and treat B's tenant-scoped key independently",
+      "Return A's original result to both callers because their key strings match",
+      "Reject both new requests because idempotency keys must be globally unique"
+    ],
+    "answer": 1,
+    "explanation": "The unique identity is the authenticated tenant plus the caller's key, not the key string alone. A canonical payload hash detects A's attempt to change the logical request and should produce a conflict, such as 409. B has a different namespace and may create its own request. Global key dedupe would incorrectly couple tenants and could expose another tenant's result."
+  },
+  {
+    "q": "An outbox relay publishes notification event E9, loses the broker acknowledgement, and publishes E9 again. Both copies reach the channel-job consumer. Which consumer behavior preserves one logical job per notification and channel?",
+    "options": [
+      "Trust API-level request dedupe and create a fresh job for every broker delivery",
+      "Mark the outbox event published before contacting the broker on the next attempt",
+      "Acknowledge each event before creating its channel jobs to avoid duplicate work",
+      "Use a durable unique job identity and commit job creation before acknowledging"
+    ],
+    "answer": 3,
+    "explanation": "An outbox closes the acceptance-to-publication loss gap, but its relay can still publish duplicates. The consumer should make its owned database effect idempotent, for example with a unique (notificationId, channel) job and an atomic creation transaction. API dedupe does not automatically dedupe this later boundary. This still does not establish exactly-once delivery by an external provider."
+  },
+  {
+    "q": "A push provider may have accepted an attempt, but its response timed out. It supports status lookup and idempotent retries for 24 hours. The worker persisted a provider key before calling, and only one minute has passed. What is the safest recovery?",
+    "options": [
+      "Record definitive failure and generate a new provider key for the next attempt",
+      "Record UNKNOWN, reconcile status, and use the same supported key if retrying",
+      "Record device delivery because a timeout usually follows provider acceptance",
+      "Switch providers immediately and treat their acknowledgements as one attempt"
+    ],
+    "answer": 1,
+    "explanation": "The timeout cannot distinguish an unprocessed request from an accepted request whose reply was lost. Preserve UNKNOWN while querying provider status, and, if retrying, reuse the persisted key within the provider's stated guarantee. A new key discards that dedupe protection. Switching providers also crosses into a different dedupe namespace and can produce another visible notification."
+  },
+  {
+    "q": "An email provider times out after a send request. It offers neither idempotency keys nor a way to query that attempt. Your API and job database both dedupe perfectly. Which delivery guarantee is still defensible?",
+    "options": [
+      "The outcome is uncertain; retry policy must expose the duplicate-versus-loss trade-off",
+      "The email is exactly once because the original API request has one durable identity",
+      "The email definitely failed because the worker did not receive a provider response",
+      "The email is exactly once if the worker writes SENT before sending its next request"
+    ],
+    "answer": 0,
+    "explanation": "Owned database dedupe cannot reveal what an independent provider did before the connection failed. Retrying may duplicate an email; not retrying may leave it unsent. Keep the uncertainty visible and choose a documented policy appropriate to the notification class. Writing SENT locally changes a record, not the external delivery outcome."
+  },
+  {
+    "q": "A push provider such as FCM returns HTTP 200 for a notification. There is no device receipt or app-open event. Which status can the notification system honestly report from this evidence alone?",
+    "options": [
+      "Delivered to the device, because the provider acknowledged the HTTP request",
+      "Opened by the user, because a successful push is shown in the notification tray",
+      "Rendered by the operating system, because the device token passed validation",
+      "Accepted by the provider, with device receipt and opening still unconfirmed"
+    ],
+    "answer": 3,
+    "explanation": "The provider response acknowledges its acceptance boundary, not every later step. Device reception, operating-system display, and user opening are different events and may need separate supported telemetry. Calling the state SENT or provider-accepted is reasonable if the contract defines it. Marking it DELIVERED without receipt evidence turns an assumption into a false user-facing promise."
+  },
+  {
+    "q": "Marketing and password-reset notifications have separate queues, but their workers consume the same fully saturated provider quota. Reset latency remains high during campaigns. What change directly addresses this bottleneck?",
+    "options": [
+      "Add more workers to each queue while leaving shared provider admission unchanged",
+      "Give marketing jobs shorter queue leases so their workers finish retries sooner",
+      "Reserve provider capacity for urgent traffic and shape marketing at admission",
+      "Merge both queues into one FIFO so workers spend less time choosing a queue"
+    ],
+    "answer": 2,
+    "explanation": "Separate queues isolate waiting work but do not create provider throughput. Urgent traffic needs reserved downstream capacity or a scheduler that enforces its priority, while marketing is constrained to its allowed share. More workers merely contend for the same quota and can increase throttling. The reservation should exist at the actual shared bottleneck, not just in the queue names."
+  },
+  {
+    "q": "A per-user token bucket has capacity 6 and refills at 2 tokens/second. Six requests empty it at t=0. At t=1.5 seconds, four requests arrive together and are checked atomically. Each costs one token; no other requests occur. What happens?",
+    "options": [
+      "Three pass; the fourth waits at least 0.5 seconds",
+      "Two pass; the other two wait at least 1.0 second",
+      "Four pass; the bucket can borrow one future token",
+      "One passes; the other three wait at least 1.5 seconds"
+    ],
+    "answer": 0,
+    "explanation": "The refill is 1.5 x 2 = 3 tokens, below the capacity of 6. Atomic checks let exactly three requests spend those tokens; another token needs 1/2 = 0.5 seconds. Borrowing a future token would exceed the configured burst/rate policy. The result also assumes no intervening request takes the next token before the deferred request."
+  },
+  {
+    "q": "A token bucket holds 12 tokens, refills at 0.5 tokens/second, and recreates missing state as full. After a check, its state may expire during inactivity. Ignoring clock jumps and state loss, what is the shortest safe whole-second TTL that cannot reset an empty bucket early?",
+    "options": [
+      "6 seconds after the last check",
+      "12 seconds after the last check",
+      "18 seconds after the last check",
+      "24 seconds after the last check"
+    ],
+    "answer": 3,
+    "explanation": "An empty bucket needs capacity/rate = 12/0.5 = 24 seconds to refill. After that much inactivity, recreating it as full matches the natural maximum balance. A 12-second expiry would restore 12 tokens when only 6 should exist. TTL is therefore part of quota correctness, not just a memory-saving setting."
+  },
+  {
+    "q": "A rate bucket has zero tokens and a saved refill timestamp of 100 seconds. The trusted server clock steps backward to 98 seconds. Which update avoids both negative refill and later double-counting of the same elapsed interval?",
+    "options": [
+      "Use elapsed=-2, subtract refill tokens, and replace the saved timestamp with 98",
+      "Use elapsed=0 for this call but replace the saved timestamp with the value 98",
+      "Use effectiveNow=max(serverNow, savedTime) and retain the nondecreasing watermark",
+      "Use the caller's timestamp whenever it is larger than the saved server timestamp"
+    ],
+    "answer": 2,
+    "explanation": "Keeping effective time at 100 makes elapsed time zero and preserves the refill watermark. Merely clamping elapsed while saving 98 would count the interval from 98 to 100 again when the clock catches up. Caller-controlled time can manufacture refill credit. Trusted time and a nondecreasing watermark address this backward-step case, not every quota failure caused by clock jumps or lost state."
+  },
+  {
+    "q": "An initially empty notification queue receives 5,000 jobs/second for 20 seconds while workers complete 3,000/second. Arrival rate then falls to 2,000/second; service remains 3,000/second. Ignoring retries, how large is the backlog, and how long does it then take to drain?",
+    "options": [
+      "40,000 jobs; about 20 seconds to drain",
+      "40,000 jobs; about 40 seconds to drain",
+      "60,000 jobs; about 20 seconds to drain",
+      "60,000 jobs; about 60 seconds to drain"
+    ],
+    "answer": 1,
+    "explanation": "The burst builds (5,000-3,000) x 20 = 40,000 queued jobs. Afterward, only 3,000-2,000 = 1,000 jobs/second of service is available for old work, so draining takes 40 seconds. Dividing by total service rate overlooks continuing arrivals. Queue capacity and delivery deadlines must accommodate the waiting time, not only the final backlog count."
+  },
+  {
+    "q": "A marketing notification is queued at noon. The user disables marketing at 12:01, and a worker starts this job at 12:05. The product promises that opt-outs already committed before execution will be honored. Which design meets that requirement?",
+    "options": [
+      "Use the noon preference snapshot because accepting the job freezes user consent",
+      "Send the notification and hide its delivery record from the user's activity feed",
+      "Check authoritative current preferences at execution and record the suppression",
+      "Delete the user's whole notification history before continuing with this send"
+    ],
+    "answer": 2,
+    "explanation": "A queued job can wait long enough for consent or quiet-hour settings to change. Recheck sufficiently fresh authoritative preferences before the provider attempt and record a suppressed outcome when the policy no longer allows sending. The enqueue-time snapshot is tempting for speed but violates the stated execution-time contract. More precise handling of changes concurrent with the send requires an explicit product boundary."
+  },
+  {
+    "q": "An SMS provider definitively rejects a request with a retryable 429 and Retry-After: 10 seconds. The job expires in 45 seconds, and retries consume the shared quota. Which worker policy is most appropriate?",
+    "options": [
+      "Honor Retry-After, use bounded jittered retries, and stop when the job expires",
+      "Retry every 100 milliseconds until success because the original job is durable",
+      "Retry forever in the urgent lane because an accepted job cannot become expired",
+      "Increase the worker count and retry immediately to make up for the lost capacity"
+    ],
+    "answer": 0,
+    "explanation": "This response establishes a retryable rejection rather than an unknown provider outcome. Respect the provider's minimum delay, spread retries with jitter, and keep the retry schedule within the job's useful lifetime and attempt budget. On expiry, record that outcome; exhausted retry budgets can enter an alerted dead-letter path. Fast or unbounded retries amplify throttling and may deliver an already useless code."
+  },
+  {
+    "q": "A notification API documents retry protection for 48 hours, but deletes accepted-request idempotency identities after one hour. A client retries a committed request after six hours. Which change is necessary to honor the documented contract?",
+    "options": [
+      "Keep only the notification count for 48 hours and infer replays from equal totals",
+      "Retain durable request identity and payload binding for at least the replay horizon",
+      "Keep the outbox row until publication and consider later retries new notifications",
+      "Extend the provider socket timeout to six hours so the client does not retry early"
+    ],
+    "answer": 1,
+    "explanation": "Replay protection requires enough durable state to recognize the same tenant/key and distinguish a changed payload throughout the promised window. Deleting that identity at one hour can make the six-hour retry look new even if the original notification was sent. An outbox publication flag or aggregate count cannot substitute for request identity. Either retain the required state or explicitly shorten the public contract."
+  },
+  {
+    "q": "A chat service has 500 million daily active users sending 40 messages each per day. Using exactly 86,400 seconds/day, what are its daily message count and approximate average message-write rate?",
+    "options": [
+      "2 billion messages/day; about 23,100 writes/second",
+      "20 billion messages/day; about 200,000 writes/second",
+      "200 billion messages/day; about 2,310,000 writes/second",
+      "20 billion messages/day; about 231,000 writes/second"
+    ],
+    "answer": 3,
+    "explanation": "500,000,000 x 40 = 20,000,000,000 messages/day. Dividing by 86,400 gives approximately 231,481 writes/second. The 200,000 estimate is valid when explicitly approximating a day as 100,000 seconds, but it is not the requested divisor here. Peak load, read traffic, and fan-out must be estimated separately."
+  },
+  {
+    "q": "A chat workload stores 20 billion messages/day, each 200 bytes including its metadata. It retains 30 days with three full replicas. Using decimal TB and excluding indexes, media, and other overhead, how much replicated message storage is needed?",
+    "options": [
+      "120 TB for the retained replicated messages",
+      "360 TB for the retained replicated messages",
+      "1,200 TB for the retained replicated messages",
+      "3,600 TB for the retained replicated messages"
+    ],
+    "answer": 1,
+    "explanation": "The logical daily volume is 20 billion x 200 bytes = 4 TB. Thirty days is 120 TB, and three replicas require 360 TB. The 120 TB answer forgets replication. This is a payload-and-metadata baseline, not a full provisioning estimate: indexes, compaction headroom, attachments, and backups would add capacity."
+  },
+  {
+    "q": "A conversation promises one strict order for durably accepted messages. During a network partition, its current owner cannot reach the quorum needed to commit, although connected clients can still type. What may that owner safely report?",
+    "options": [
+      "Show local work as pending and withhold SENT acknowledgements until safe commit",
+      "Acknowledge both sides as SENT and reconcile their accepted sequences afterward",
+      "Acknowledge locally stored messages as SENT because the owner previously held a lease",
+      "Assign timestamp-based sequence numbers and treat missing quorum as a routing issue"
+    ],
+    "answer": 0,
+    "explanation": "The accepted-order promise depends on a safe durable commit, not merely on receiving a WebSocket frame. The disconnected side can buffer pending work without claiming that it has been accepted. Acknowledging independent writes on both sides would require weaker ordering semantics and later reconciliation. Timestamps do not restore the missing ownership and quorum guarantees."
+  },
+  {
+    "q": "Chat owner W1 pauses, its lease expires, and W2 takes ownership with a higher fencing epoch. W1 resumes and tries to append using its old epoch. What must enforce the safety boundary?",
+    "options": [
+      "The client should choose whichever owner's acknowledgement arrives more quickly",
+      "The registry should keep both owners active until their local sequence numbers match",
+      "The authoritative append path should reject W1's stale epoch before committing",
+      "The history reader should hide duplicate sequences after both owners acknowledge"
+    ],
+    "answer": 2,
+    "explanation": "A lease assignment alone cannot stop a paused old process from resuming. The commit path must validate the fencing epoch and reject writes from an obsolete owner. This keeps one authority for accepted ordering during failover. Hiding conflicts at read time is too late if two senders already received contradictory durable-acceptance promises."
+  },
+  {
+    "q": "A chat design uses a replicated ordered log as its durability authority and an asynchronous history projection. Which sequence safely allows a sender to see SENT without forcing projection completion onto the write path?",
+    "options": [
+      "Send ACK, append to the durable log, and then publish to the recipient gateway",
+      "Publish to the recipient gateway, send ACK, and project the message into history",
+      "Allocate a sequence in memory, send ACK, and replicate that sequence periodically",
+      "Commit message identity and sequence in the log, then ACK and project asynchronously"
+    ],
+    "answer": 3,
+    "explanation": "The durable append must establish both the logical message identity and its sequence before ACK. History materialization can lag if reads and recovery can still obtain committed entries from the log or a caught-up projection. An in-memory sequence or successful pub/sub publish is not durable acceptance. Otherwise an acknowledged message can disappear when its gateway crashes."
+  },
+  {
+    "q": "A device's contiguous delivery cursor is 40. It receives message 41 and messages 43 through 50, but message 42 is missing. What is the highest safe contiguous cursor before gap recovery?",
+    "options": [
+      "40, because a batch must be accepted as a single indivisible delivery",
+      "42, because that value points at the next missing message to retrieve",
+      "41, while buffering later messages and explicitly retrieving the gap",
+      "50, because the highest observed sequence summarizes the whole range"
+    ],
+    "answer": 2,
+    "explanation": "A contiguous cursor means that every required message through that sequence has arrived. The device has a complete prefix through 41, but not through 42 or 50. It may buffer later messages and fetch the gap before advancing. Using the maximum seen sequence would make a subsequent sync start after 50 and silently skip the missing message."
+  },
+  {
+    "q": "A user's phone has received every message through sequence 80, while the user's tablet has received only through 55. The tablet reconnects. Which cursor policy avoids losing tablet deliveries?",
+    "options": [
+      "Sync the tablet from its own cursor 55 and aggregate user badges separately",
+      "Sync the tablet from the phone's cursor 80 because both devices share an account",
+      "Replace both cursors with their average so each device repeats less old history",
+      "Use whichever device most recently sent a heartbeat as the user's delivery cursor"
+    ],
+    "answer": 0,
+    "explanation": "Delivery state belongs to a particular user, device, and conversation. The phone's receipt does not prove that the tablet has messages 56 through 80. A user-facing badge can aggregate device evidence under a stated rule, but that aggregation must not become another device's recovery cursor. Heartbeat recency says nothing about which messages are stored."
+  },
+  {
+    "q": "A device reconnects on Gateway B with session token S2. Later, its old socket on Gateway A closes and tries to remove the connection registry entry for session S1. Which registry design prevents that cleanup from deleting the live route?",
+    "options": [
+      "Delete the entry by user ID and let the new gateway restore it on its next heartbeat",
+      "Compare the session token atomically on renew/delete and give each device entry a TTL",
+      "Refresh one account-wide TTL whenever any device or old connection sends a heartbeat",
+      "Keep both gateway IDs permanently and route each new message to the older connection"
+    ],
+    "answer": 1,
+    "explanation": "Removal and renewal must prove ownership of the current session, not just knowledge of the user/device key. Comparing S1 with the stored S2 prevents the stale socket from deleting or extending the new route. Independent device/session expiry also prevents one live device from keeping another stale route alive. A blind delete creates avoidable delivery delays until repair."
+  },
+  {
+    "q": "A chat message commits durably, but its gateway pub/sub notification is lost. The recipient's socket stays connected for hours, so reconnect-only recovery never runs. What closes this visibility gap without making pub/sub the durable source?",
+    "options": [
+      "Advance the device cursor when publishing because the socket was recorded as online",
+      "Extend the connection registry TTL so the same route remains available for longer",
+      "Check conversation heads periodically and sync missing entries from durable history",
+      "Remove the committed message and ask the sender to create a new logical message"
+    ],
+    "answer": 2,
+    "explanation": "Durability prevents permanent data loss, but clients still need a trigger to discover missed live delivery. Periodic head checks, conversation-open sync, and reconnect sync compare the device's contiguous cursor with committed history. Recovery latency is then bounded by the chosen checking interval. Extending a registry TTL does not replay a frame that pub/sub already lost."
+  },
+  {
+    "q": "A sender's chat message commits at sequence 91, but its ACK is lost. The same sender retries the same payload and clientMsgId in the same conversation. What should the durable append protocol return?",
+    "options": [
+      "A new sequence because a retry is a new transport frame with a later arrival time",
+      "A conflict because any repeated client message ID indicates an invalid new request",
+      "Sequence 91 only if the gateway still has its original in-memory dedupe entry",
+      "The existing sequence 91 using the durable sender/conversation/clientMsgId identity"
+    ],
+    "answer": 3,
+    "explanation": "A transport retry should refer to the existing logical message. Durable dedupe keyed by sender, conversation, and clientMsgId survives gateway or owner changes and returns the committed sequence. In-memory dedupe is insufficient after a crash. The payload binding should also prevent the same identity from being reused to silently change the accepted message."
+  },
+  {
+    "q": "A very busy conversation is stored under (conversationId, dayBucket, sequence). Engineers expect the day bucket to remove its current single-writer throughput bottleneck. Which assessment is correct?",
+    "options": [
+      "It creates one active writer per historical day, multiplying today's append capacity",
+      "It bounds history partition size but does not split today's ordered append stream",
+      "It makes sequence allocation unnecessary because dates already define message order",
+      "It removes the need for backpressure because each midnight resets accumulated load"
+    ],
+    "answer": 1,
+    "explanation": "Time buckets keep a history partition from growing without bound and make retention management easier. Today's writes still enter today's bucket and the same per-conversation ordering authority. Address a live hotspot with measured batching, backpressure, or a consciously revised ordering scope. Adding historical buckets is not equivalent to parallelizing the current write stream."
+  },
+  {
+    "q": "A chat team uses Cassandra TTL to expire old message history. Read latency rises as data expires, and the team claims TTL should avoid tombstones entirely. Which explanation is accurate?",
+    "options": [
+      "TTL expiry also creates tombstones; retention layout and compatible compaction matter",
+      "TTL expiry removes data immediately from every SSTable without needing compaction",
+      "Only explicit DELETE statements create tombstones, so the problem must be elsewhere",
+      "A shorter TTL necessarily reduces tombstones because data disappears sooner on disk"
+    ],
+    "answer": 0,
+    "explanation": "Cassandra represents expired data with tombstone semantics as well as handling explicit deletions. Read and storage costs depend on how expired data is laid out and reclaimed. Time-bucketed data with an appropriate compaction strategy can help, but a short TTL is not a tombstone-elimination switch. The history replay promise must also match the chosen retention horizon."
+  },
+  {
+    "q": "A channel has 100,000 recipients and receives 20 messages/second. A proposal writes a separate inbox row for every recipient on the synchronous send path. What change removes the roughly 2 million per-recipient inbox writes/second from that path?",
+    "options": [
+      "Put all recipient inbox rows in one partition while preserving synchronous fan-out",
+      "Increase message retention so recipients need fewer inbox reads during the day",
+      "Assign each recipient a sequence and acknowledge before any message is persisted",
+      "Append once to a shared channel log and track recipient cursors for later delivery"
+    ],
+    "answer": 3,
+    "explanation": "100,000 x 20 = 2,000,000 recipient inbox writes/second in the proposed fan-out-on-write path. A shared log stores the logical channel append once per message, with cursors supporting recipient reads and recovery. It does not make all work constant: serving recipients, live fan-out, and cursor updates still cost resources. Moving rows into one partition only concentrates the original work."
+  },
+  {
+    "q": "An internal chat product needs 300 message writes/second, modest retained history, and transactional membership updates. A measured partitioned SQL design meets its latency and growth targets. Should it be rejected because large chat examples often use wide-column databases?",
+    "options": [
+      "Yes; persistent WebSocket connections are incompatible with relational transactions",
+      "No; choose from measured access patterns, invariants, and the expected growth horizon",
+      "Yes; conversation ordering requires a database that never supports multi-row commits",
+      "No; SQL automatically provides unlimited append throughput without partition planning"
+    ],
+    "answer": 1,
+    "explanation": "Storage is a workload decision rather than a rule about product categories. SQL can be a sensible starting point when its transactions, indexes, capacity, and operational model meet the stated requirements. The design still needs clear append ordering and a growth plan. The tempting large-scale template should not override measurements for a much smaller product."
+  },
+  {
+    "q": "A user has an authenticated chat socket, then loses membership in conversation C. Its client later sends SEND and SYNC requests for C. Which authorization boundary protects both new messages and history access?",
+    "options": [
+      "Check current conversation permissions on SEND and SYNC, including the history policy",
+      "Allow the requests until the socket disconnects because authentication already succeeded",
+      "Allow SYNC but reject SEND because an authenticated user may read any known conversation",
+      "Accept both requests if their conversation ID matches the server's expected ID format"
+    ],
+    "answer": 0,
+    "explanation": "Socket authentication establishes who is connected, not permanent permission to access every conversation. SEND and SYNC must enforce current authorization, with an explicit rule for any history a former member may retain or retrieve. Knowing a valid conversation ID is not authorization. Checking only at connection time leaves a long-lived permission gap after membership changes."
+  },
+  {
+    "q": "Seven participants use a full-mesh video call. Each sends its own 1.2 Mbps stream separately to every other participant, and everyone receives every remote stream. Ignoring audio and overhead, what bandwidth does each participant need?",
+    "options": [
+      "1.2 Mbps uplink and 7.2 Mbps downlink",
+      "7.2 Mbps uplink and 1.2 Mbps downlink",
+      "7.2 Mbps uplink and 7.2 Mbps downlink",
+      "8.4 Mbps uplink and 8.4 Mbps downlink"
+    ],
+    "answer": 2,
+    "explanation": "Each participant has N-1 = 6 peers, so it uploads six copies and downloads six remote streams. Each direction is 6 x 1.2 = 7.2 Mbps. Multiplying by N incorrectly includes a stream to oneself. Mesh saves media-server forwarding cost but can exceed endpoint upload capacity well before the whole meeting's aggregate traffic seems large."
+  },
+  {
+    "q": "An SFU sender uploads three independent simulcast video encodings at 0.15, 0.45, and 1.20 Mbps, plus one 0.04 Mbps audio stream. Twenty-five people join the meeting. Ignoring overhead, what is this sender's uplink while that encoding stack stays unchanged?",
+    "options": [
+      "1.84 Mbps, the sum of its uploaded video and audio rates",
+      "1.24 Mbps, only its highest uploaded video and audio rate",
+      "44.16 Mbps, its uploaded stack copied for each remote peer",
+      "46.00 Mbps, its uploaded stack copied for every meeting seat"
+    ],
+    "answer": 0,
+    "explanation": "The sender uploads 0.15+0.45+1.20+0.04 = 1.84 Mbps to the SFU. The SFU, not the sender, makes the receiver-specific forwarded copies. Counting only the highest encoding misses the simultaneous lower-resolution uploads; multiplying by participants confuses SFU with mesh. Uplink is flat in participant count only while the selected sender stack stays fixed."
+  },
+  {
+    "q": "In a 10-person SFU meeting, every receiver gets one remote speaker at 1.5 Mbps, eight remote thumbnails at 0.15 Mbps each, and nine audio streams at 0.04 Mbps each. Ignoring overhead and other paths, what are one receiver's downlink and the meeting's SFU egress?",
+    "options": [
+      "2.70 Mbps per receiver and 27.0 Mbps total egress",
+      "3.06 Mbps per receiver and 27.54 Mbps total egress",
+      "13.86 Mbps per receiver and 138.6 Mbps total egress",
+      "3.06 Mbps per receiver and 30.6 Mbps total egress"
+    ],
+    "answer": 3,
+    "explanation": "A receiver needs 1.5 + 8 x 0.15 + 9 x 0.04 = 3.06 Mbps. There are ten receivers, so server egress is 10 x 3.06 = 30.6 Mbps. The factor of nine already appears inside each receiver's remote-stream count and must not replace the ten receiving participants. Provision separately for packet overhead, relay hops, and headroom."
+  },
+  {
+    "q": "An SFU fleet serves 250,000 concurrent participants with an average selected downlink of 2 Mbps each. Using decimal units and counting only SFU-to-participant media, what aggregate egress must it sustain before overhead and spare capacity?",
+    "options": [
+      "50 Gbps of aggregate media egress",
+      "500 Gbps of aggregate media egress",
+      "2,000 Gbps of aggregate media egress",
+      "4,000 Gbps of aggregate media egress"
+    ],
+    "answer": 1,
+    "explanation": "250,000 x 2 Mbps = 500,000 Mbps = 500 Gbps. These rates are already in bits per second; multiplying by eight would incorrectly convert them again. This is a bandwidth floor, not a complete server count. Packet rate, encryption, NIC limits, TURN traffic, and failure headroom can each require additional capacity."
+  },
+  {
+    "q": "A conference product serves low-end receivers that can decode only one video stream. The product accepts a fixed composite layout and added mixing latency, and can pay for server decoding and encoding. Which topology most directly fits those constraints?",
+    "options": [
+      "An MCU that mixes the room into a single composite video for each receiver",
+      "A full mesh that sends every participant's independent video to every receiver",
+      "An SFU that forwards all independent full-resolution videos without compositing",
+      "A signaling-only service that stores membership but provides no media processing"
+    ],
+    "answer": 0,
+    "explanation": "An MCU performs the expensive decode, composite, and re-encode work on the server so a client receives a single mixed picture. The stated latency, cost, and layout concessions make that trade-off acceptable. An SFU reduces sender uplink but normally forwards separate selected streams rather than turning them into one picture. SFU is therefore not automatically best for this receiver constraint."
+  },
+  {
+    "q": "Users on a corporate network can reach HTTPS but cannot send UDP. Direct UDP and TURN-over-UDP connectivity checks fail. The conference product should remain usable, even at lower quality. What transport strategy is appropriate?",
+    "options": [
+      "Reject the call because interactive media cannot operate over a TCP connection",
+      "Send media through the signaling database until the firewall permits UDP again",
+      "Try TURN over TCP or TLS and adapt quality to its latency and congestion behavior",
+      "Retry STUN more frequently because address discovery removes the UDP restriction"
+    ],
+    "answer": 2,
+    "explanation": "UDP is preferred because it avoids transport-level in-order blocking of later packets, but it is not universally reachable. A TURN TCP/TLS relay can provide a fallback path through restrictive networks. Reliable transport can increase delay under loss, so the product may lower video quality or preserve audio only. STUN discovers addressing information; it does not override a firewall policy."
+  },
+  {
+    "q": "Two video clients learn their public-facing addresses through STUN, but direct connectivity checks still fail under restrictive NAT/firewall rules. Which additional role can TURN provide?",
+    "options": [
+      "A mixer that combines both clients' video into one newly encoded composite",
+      "A reachable relay that carries media when the peers cannot establish a direct path",
+      "An identity service that replaces meeting authorization with public IP ownership",
+      "A permanent NAT rewrite that guarantees later media can avoid relay bandwidth"
+    ],
+    "answer": 1,
+    "explanation": "STUN helps discover candidates; discovering an address does not guarantee that another peer can reach it. TURN provides an intermediate relay reachable by the clients and carries their media when necessary. That consumes relay bandwidth and may add latency, which must be budgeted. TURN is not inherently a video mixer or an authorization system."
+  },
+  {
+    "q": "An audio packet is missing with 30 ms left before playout. A NACK-triggered retransmission would take at least 80 ms to arrive. Assume that packet has no usefulness after its playout deadline. Which recovery is appropriate?",
+    "options": [
+      "Request the retransmission and hold the entire audio stream until it arrives",
+      "Increase video bitrate so audio packet loss becomes a smaller traffic fraction",
+      "Mark the call disconnected because reliable delivery can no longer be guaranteed",
+      "Use available FEC or concealment instead of waiting for this late retransmission"
+    ],
+    "answer": 3,
+    "explanation": "An 80 ms repair cannot fit into a 30 ms remaining budget. If available forward error correction can reconstruct the packet in time, use it; otherwise conceal the loss and preserve conversational timing. NACK is useful when recovery can still beat the relevant deadline. This question's explicit no-later-use assumption should not be generalized to every video reference packet."
+  },
+  {
+    "q": "A video frame misses its display deadline, but later frames may reference it for decoding. Why is 'drop every late frame without inspecting dependencies' an unsafe universal policy?",
+    "options": [
+      "A late frame always remains more important than current audio for user experience",
+      "Dropping one video frame forces the network transport to retransmit every stream",
+      "The late frame may still be a decoder reference; recovery must consider dependencies",
+      "A display deadline automatically prevents later frames from referencing that frame"
+    ],
+    "answer": 2,
+    "explanation": "Display usefulness and decoder-reference usefulness are not identical. Depending on the codec and timing, a frame that will not be shown can still affect whether subsequent frames decode correctly. Recovery may involve retaining useful references, timely repair, or requesting a refresh frame. Blind dropping can turn one late frame into a longer period of corruption or freezes."
+  },
+  {
+    "q": "A video receiver increases its jitter buffer target from 20 ms to 60 ms while network transit and codec delays remain unchanged. What is the direct trade-off?",
+    "options": [
+      "About 40 ms less interaction delay, because the network now sends packets faster",
+      "About 40 ms more interaction delay, in exchange for more arrival-time smoothing",
+      "About 80 ms more interaction delay, because every packet traverses the buffer twice",
+      "No latency change, because buffering affects frame order rather than elapsed time"
+    ],
+    "answer": 1,
+    "explanation": "The receiver deliberately waits an additional 60-20 = 40 ms before playout. That extra room can absorb variation in arrival times and reduce underruns, but it does not improve the underlying network delay. The buffer therefore trades responsiveness for smoothness. Whether 60 ms is a good setting depends on the total end-to-end latency budget."
+  },
+  {
+    "q": "A sender's available uplink falls from 3 Mbps to 0.7 Mbps, but its simulcast stack is still generating 1.8 Mbps of video plus audio. What response best preserves a usable interactive call?",
+    "options": [
+      "Keep producing every layer and let the sender queue absorb the sustained difference",
+      "Raise the jitter buffer indefinitely so receivers eventually see every generated frame",
+      "Ask only receivers to select lower layers while keeping all sender uploads unchanged",
+      "Lower or suspend sender video layers, bound queues, and preserve audio first"
+    ],
+    "answer": 3,
+    "explanation": "The congestion is on the sender's uplink, so changing only SFU subscriptions cannot remove the excess bytes before that bottleneck. Reduce generated/uploaded video, prioritize audio, and avoid building a permanently growing queue. Queuing 1.8 Mbps into a 0.7 Mbps path creates escalating delay. A lower-resolution current conversation is generally better than a high-resolution conversation far behind real time."
+  },
+  {
+    "q": "A meeting's SFU crashes. Durable meeting metadata and the signaling service remain healthy. What is the appropriate recovery model for this live-media system?",
+    "options": [
+      "Allocate a healthy SFU and coordinate media reconnection through signaling",
+      "Replay the failed SFU's old RTP packets as the authoritative current meeting state",
+      "Keep sending to the old endpoint until every missing frame has been acknowledged",
+      "Advance all participants' delivery cursors to hide the media interruption"
+    ],
+    "answer": 0,
+    "explanation": "The control plane can preserve the room identity and coordinate a new media route, including new connectivity negotiation as needed. Participants experience an interruption and resume current media on a healthy SFU. Replaying old packets is not equivalent to restoring a real-time conversation. Unlike a chat history log, media packets are normally valuable only within tight timing and dependency constraints."
+  },
+  {
+    "q": "Users can authenticate, join a room, and exchange signaling messages, but see no remote audio or video. Which diagnostic split is most useful before changing the meeting database?",
+    "options": [
+      "Treat successful signaling as proof of a healthy media path and inspect only UI rendering",
+      "Compare chat message sequence numbers with meeting IDs to find a shared ordering gap",
+      "Inspect media connectivity, selected ICE paths, loss, and SFU forwarding separately",
+      "Increase metadata replication because media packets are stored in the same join response"
+    ],
+    "answer": 2,
+    "explanation": "Signaling handles authentication, membership, and media setup, while the media path transports the actual real-time bytes. One can succeed while the other fails because of connectivity, relay, subscription, or forwarding problems. Inspect media-specific telemetry rather than inferring health from a successful join response. More database replicas will not repair a blocked media route."
+  },
+  {
+    "q": "A conference uses encrypted client-to-SFU and SFU-to-client transport, but the SFU terminates those security sessions. The product now requires media confidentiality from the SFU itself. Which change and consequence follow?",
+    "options": [
+      "Rename the existing transport end-to-end; server recording remains unchanged",
+      "Encrypt only meeting metadata; audio and video become unreadable to the SFU",
+      "Disable TURN relays; direct addressing prevents the SFU from decoding payloads",
+      "Use endpoint-held media encryption keys; server transcription needs a new trust model"
+    ],
+    "answer": 3,
+    "explanation": "Hop-by-hop encryption protects the network links but permits the terminating SFU to access media. End-to-end media encryption must keep decryption keys away from that intermediary, while still supporting necessary forwarding metadata. Recording or transcription then needs endpoint processing or an explicitly trusted participant/service with key access. A transport label or removal of TURN does not change who holds the keys."
+  },
+  {
+    "q": "A constrained sender uploads only 180p and 360p encodings. A receiver on fiber asks a forwarding-only SFU for that sender's 720p encoding. What should the SFU do?",
+    "options": [
+      "Forward an available suitable layer; higher quality needs a changed sender or processing path",
+      "Forward the 360p packets twice; duplicated packets provide the missing spatial detail",
+      "Select 720p from the receiver's bandwidth estimate even though those packets were not uploaded",
+      "Increase its egress buffer until the absent 720p encoding can be reconstructed from delay"
+    ],
+    "answer": 0,
+    "explanation": "An SFU selects among available encodings; it cannot forward a layer that does not exist. A receiver's excellent downlink does not improve the sender's constrained uplink or encoding output. The sender would need to provide a higher layer, or a separately defined processing service would need to intervene without magically recovering lost source detail. Extra copies and buffering do not create resolution."
+  },
+  {
+    "q": "In an insert-only OT example, the base text is ab. A inserts X at position 1 with operation ID A17; B inserts Y at position 1 with ID B9. Both replicas use the tie-break A17 < B9, placing the lower ID first. B reaches the server first. What should both replicas eventually show?",
+    "options": [
+      "aYXb, because server arrival order replaces the agreed operation-ID rule",
+      "aXYb, because consistent transforms honor the shared same-position tie-break",
+      "aXb, because the lower operation ID makes the competing insertion a duplicate",
+      "aYb, because the first committed insertion invalidates the other insertion"
+    ],
+    "answer": 1,
+    "explanation": "The tie-break specifies X before Y even when Y arrives first. Transforming A against B leaves X at position 1, while transforming B against A shifts Y to position 2. Both paths produce aXYb. An unconditional shift for every equal position would let the two replicas choose incompatible local orders."
+  },
+  {
+    "q": "An OT client already displays its unacknowledged local insertion when a concurrent remote operation arrives. What must its pending-operation protocol do beyond merely applying the server's coordinates to the displayed text?",
+    "options": [
+      "Apply the remote coordinates directly and wait for a full snapshot to fix any misplaced text",
+      "Discard the local insertion because a committed remote operation has higher authority",
+      "Transform only the remote operation and keep the pending local operation in its old context",
+      "Transform remote against pending local, and update pending local against the remote"
+    ],
+    "answer": 3,
+    "explanation": "The displayed document includes local work that the remote operation may not have seen. The client must transform the remote operation for that display context and update pending operations for future replay and acknowledgements. Handling only one direction leaves the queue in an obsolete coordinate frame. Matching ACKs to opIds also prevents applying an already displayed local edit twice."
+  },
+  {
+    "q": "A team compares this chapter's central-server OT design with an offline-capable sequence CRDT. Which comparison avoids turning a teaching example into a universal claim?",
+    "options": [
+      "Every OT algorithm requires one central server, while CRDTs can never use a server",
+      "CRDTs remove durability and authorization requirements because replicas can merge",
+      "Central ordering is this OT design's choice; CRDT convergence depends on its defined rules",
+      "Any text operations commute under CRDTs regardless of operation IDs or causal delivery"
+    ],
+    "answer": 2,
+    "explanation": "The chapter deliberately teaches a central OT protocol, but OT is a broader family. A sequence CRDT offers convergence for its supported operations under its identity, causal, and delivery rules, and can still be deployed with servers. Neither approach automatically supplies durable acceptance, permissions, or every desired edit semantic. 'Any operations commute' is not a usable correctness argument."
+  },
+  {
+    "q": "In an illustrative ordered-ID sequence, a, b, and c have IDs 1, 2, and 3. One client inserts X at abstract ID 0.5 and another inserts Y at abstract ID 2.5. IDs sort ascending and all elements are live. What text results after both inserts are present?",
+    "options": [
+      "XabYc",
+      "aXbYc",
+      "XaYbc",
+      "XabcY"
+    ],
+    "answer": 0,
+    "explanation": "Sorting by identity gives X:0.5, a:1, b:2, Y:2.5, c:3, so the text is XabYc. In particular, 0.5 is before a, not between a and b, and 2.5 is between b and c. The decimal values are abstract teaching labels. A real sequence CRDT needs a structured identifier scheme and its specified ordering rules."
+  },
+  {
+    "q": "A prototype sequence CRDT repeatedly inserts between neighboring numeric IDs by taking their IEEE floating-point midpoint. Why should production identifiers use a proven structured scheme instead?",
+    "options": [
+      "Midpoints make every insertion require a global document lock, even with distinct IDs",
+      "Floating-point IDs automatically preserve intent but force every deletion to roll back",
+      "Finite precision eventually exhausts gaps; identifiers also need uniqueness and tie-breaks",
+      "Structured IDs remove the need for causal handling, dedupe, and metadata reclamation"
+    ],
+    "answer": 2,
+    "explanation": "A finite floating-point type has only finitely many representable values between two neighbors. Repeated midpoint insertion eventually rounds to an existing value rather than creating a usable new position. Real schemes use extensible structured identities with a specified total order and uniqueness rules. That solves identifier construction, not the entire CRDT delivery and garbage-collection protocol."
+  },
+  {
+    "q": "A sequence CRDT replica receives deletion of element e before receiving e's insertion. The algorithm supports out-of-order delivery by retaining deletion information. What should the implementation do?",
+    "options": [
+      "Discard the deletion because e is absent from the currently visible document",
+      "Retain the deletion or dependency state so a later insertion does not resurrect e",
+      "Delete the next visible character because it probably occupies e's former position",
+      "Accept the insertion later as new content because arrival order defines the final text"
+    ],
+    "answer": 1,
+    "explanation": "The specified algorithm needs the deletion fact to remain meaningful even when its element has not arrived yet. Keeping a tombstone or equivalent dependency representation lets the later insertion resolve correctly. Some other algorithms instead require causal buffering; the protocol decides. Discarding an unfamiliar deletion can resurrect text and break convergence after all messages have arrived."
+  },
+  {
+    "q": "A collaborative editor immediately displays a local keystroke. The document owner has not yet committed the operation to its authoritative durable log. Which status and server sequence preserve an honest save contract?",
+    "options": [
+      "Show saved after local display, then replicate the operation whenever the owner is idle",
+      "Broadcast the edit as committed, acknowledge it, and persist during the next snapshot",
+      "Show saved once any other editor displays it, regardless of the authoritative log",
+      "Show pending locally; commit under valid ownership before ACK and committed broadcast"
+    ],
+    "answer": 3,
+    "explanation": "Optimistic local display gives responsive typing without proving persistence. A durable-acceptance promise should follow the authoritative log commit, with valid owner fencing and operation identity. Only afterward should the server ACK and describe the broadcast as committed. Another client's display or the next planned snapshot is not a substitute for that boundary."
+  },
+  {
+    "q": "Document owner O1 pauses, O2 takes over and commits new revisions, then O1 resumes with a stale ownership epoch. How should the collaboration service prevent two incompatible acknowledged document histories?",
+    "options": [
+      "Fence O1 at the authoritative commit path and recover O2 from committed revision state",
+      "Allow both owners to acknowledge edits and choose the longest revision list afterward",
+      "Let clients select an owner based on latency while each owner keeps its own revision counter",
+      "Use the connection registry's last heartbeat as proof that every O1 append is still valid"
+    ],
+    "answer": 0,
+    "explanation": "The owner designation must be enforced where revisions become durable. A stale epoch is rejected, and the new owner reconstructs sequence and dedupe state from committed records before continuing. A heartbeat or remembered lease cannot safely authorize a resumed old process. Selecting a longest history afterward cannot make already conflicting ACK promises true."
+  },
+  {
+    "q": "An editor commits operation op77 at revision 208, but the ACK is lost. The client reconnects and retries the same operation identity and payload. What response avoids inserting the text twice?",
+    "options": [
+      "Assign a fresh revision because the operation arrived through a new WebSocket session",
+      "Ask the client to invent a new opId so the replay is distinguishable from the lost attempt",
+      "Apply the insertion only if its text is not already present anywhere in the document",
+      "Return the existing committed revision using durable document/user/opId dedupe"
+    ],
+    "answer": 3,
+    "explanation": "The operation identity survives transport sessions and links this retry to its earlier commit. Durable dedupe returns revision 208 without applying the effect again, while a payload mismatch should be handled explicitly. Searching for matching text is not equivalent: the same text can be intentionally inserted in multiple places. A new opId would hide the fact that this is a retry."
+  },
+  {
+    "q": "A document has a durable snapshot at revision 1,200 and a committed head at revision 1,325. Each later revision contains exactly one 200-byte operation. Ignoring metadata and snapshot bytes, what log tail is needed to reconstruct the head?",
+    "options": [
+      "120 operations totaling 24,000 bytes",
+      "124 operations totaling 24,800 bytes",
+      "125 operations totaling 25,000 bytes",
+      "126 operations totaling 25,200 bytes"
+    ],
+    "answer": 2,
+    "explanation": "The snapshot already includes revision 1,200, so replay starts at 1,201 and ends at 1,325. That is 1,325-1,200 = 125 operations and 125 x 200 = 25,000 bytes. Replaying revision 1,200 again would duplicate an effect already in the snapshot. The tail must also be complete and consistent with the snapshot's revision."
+  },
+  {
+    "q": "An OT client returns with pending edits based on revision 100. The server has a snapshot at 200 and retained operations only after 200, so it cannot transform from base 100. What should happen?",
+    "options": [
+      "Return an explicit resync/rebase requirement and preserve the client's pending work",
+      "Apply the old numeric positions directly to revision 200 because a snapshot is authoritative",
+      "Discard the client's pending edits and report success because the server has newer content",
+      "Invent no-op revisions 101 through 200 and transform through that synthetic history"
+    ],
+    "answer": 0,
+    "explanation": "A snapshot gives current content but does not automatically supply the missing transformation context for an old positional edit. The server must follow an explicit recovery contract, preserving local work for rebase, recovery, or user-assisted reconciliation. If offline replay from 100 was promised, compaction was too aggressive unless equivalent context was archived. Silent success or direct old-coordinate application can lose or misplace edits."
+  },
+  {
+    "q": "Alice inserts a sentence, then Bob adds an unrelated paragraph. Alice presses Undo for her own insertion. What undo model best avoids deleting Bob's accepted work?",
+    "options": [
+      "Restore the entire document snapshot from just before Alice's insertion",
+      "Generate an inverse of Alice's operation in the current context using the editing protocol",
+      "Delete the most recent global revision because undo always reverses server order",
+      "Send Alice's old full document as a replacement because her local history is authoritative"
+    ],
+    "answer": 1,
+    "explanation": "Collaborative undo should target Alice's contribution rather than roll the whole shared document backward. The editing protocol transforms or otherwise maps the inverse into the current state, using stable identities where appropriate. Bob's unrelated paragraph then remains. Overlapping later edits still need defined undo semantics; convergence alone does not decide every human-intent question."
+  },
+  {
+    "q": "An editor's permission is revoked after opening its WebSocket but before its queued operation reaches the document commit boundary. The contract says revocation applies to later commits. What check is required?",
+    "options": [
+      "Use the socket-open authorization result until that connection naturally expires",
+      "Accept the queued operation because optimistic local display has already granted consent",
+      "Enforce current permission at commit, consistently ordered with the revocation",
+      "Broadcast first and ask other editors to ignore the operation if they notice the revocation"
+    ],
+    "answer": 2,
+    "explanation": "A long-lived authenticated connection is not a permanent write grant. The commit boundary must enforce permission under a protocol that orders the revocation and the operation consistently with the promised rule. Checking only at socket creation leaves revoked users able to write. Broadcasting first is also too late if recipients are told the change is committed."
+  },
+  {
+    "q": "One hot document has 100 active editors producing two edits/second each. Its current owner sustainably commits 150 edits/second. Sharding other documents across more owners does not change this document's ownership. Which response follows from the numbers?",
+    "options": [
+      "Keep accepting at 200/second indefinitely because other owners' spare capacity drains its queue",
+      "Address the 50-edit/second deficit with bounded backpressure and measured owner optimizations",
+      "Split this document's revision counter across owners without changing its ordering protocol",
+      "Replace OT with any CRDT and assume storage, merge, and broadcast costs immediately vanish"
+    ],
+    "answer": 1,
+    "explanation": "Input is 100 x 2 = 200 edits/second, exceeding this owner's capacity by 50 edits/second. An unbounded queue grows continuously even if unrelated document shards are idle. Batching, admission limits, or a deliberately redesigned editing protocol may help after measurement. Neither a new shard label nor the word CRDT automatically removes this document's actual persistence and fan-out costs."
+  },
+  {
+    "q": "Two users concurrently replace overlapping text. Every replica eventually displays the same merged document, but one user finds the wording unexpected. What has convergence established, and what still needs product-level semantics?",
+    "options": [
+      "It proves every user's intended wording survived, so the complaint must be a display bug",
+      "It proves the latest wall-clock edit should overwrite the rest of the accepted document",
+      "It proves no operation was durable, because a durable merge cannot surprise a user",
+      "It proves replicas agree; conflict and undo rules still determine acceptable user outcomes"
+    ],
+    "answer": 3,
+    "explanation": "Convergence is agreement on state after the required operations and dependencies have been processed. It does not prove that every concurrent human intention can be satisfied, particularly for overlapping replacement or deletion. The product must define merge, conflict presentation, and undo behavior that users can understand. Identical but surprising text is compatible with technical convergence."
+  }
+]

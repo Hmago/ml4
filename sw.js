@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v299';
+const CACHE_NAME = 'ml-notes-v306';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -77,17 +77,8 @@ const STATIC_FILES = [
   'content/34_google_top10_ml_interview.md',
   'content/34b_google_top10_ml_interview_part2.md',
 
-  // Case-study HLD diagrams (Ch 35–37) — SVG figures embedded in chapters
-  'diagrams/notification.svg', 'diagrams/notification_whiteboard.svg', 'diagrams/arch_reference.svg', 'diagrams/chat.svg', 'diagrams/video_conf.svg', 'diagrams/collab_editor.svg',
-  'diagrams/autocomplete.svg', 'diagrams/crawler.svg', 'diagrams/proximity.svg', 'diagrams/ride_hailing.svg',
-  'diagrams/news_feed.svg', 'diagrams/video_streaming.svg', 'diagrams/file_sync.svg', 'diagrams/url_shortener.svg',
-  'diagrams/rate_limiter.svg', 'diagrams/unique_id.svg', 'diagrams/topk.svg', 'diagrams/leaderboard.svg',
-  'diagrams/dist_cache.svg', 'diagrams/scheduler.svg', 'diagrams/payment.svg', 'diagrams/inventory.svg',
-  'diagrams/kv_store.svg', 'diagrams/pastebin.svg', 'diagrams/amazon.svg',
-  'diagrams/llm_serving.svg', 'diagrams/rag.svg', 'diagrams/recsys.svg',
-
   // Whiteboard rehearsal companions (hand-drawn "draw it live" sketch per case study)
-  'diagrams/chat_whiteboard.svg', 'diagrams/video_conf_whiteboard.svg', 'diagrams/collab_editor_whiteboard.svg',
+  'diagrams/notification_whiteboard.svg', 'diagrams/chat_whiteboard.svg', 'diagrams/video_conf_whiteboard.svg', 'diagrams/collab_editor_whiteboard.svg',
   'diagrams/arch_reference_whiteboard.svg', 'diagrams/autocomplete_whiteboard.svg', 'diagrams/crawler_whiteboard.svg',
   'diagrams/proximity_whiteboard.svg', 'diagrams/ride_hailing_whiteboard.svg', 'diagrams/news_feed_whiteboard.svg',
   'diagrams/video_streaming_whiteboard.svg', 'diagrams/file_sync_whiteboard.svg', 'diagrams/url_shortener_whiteboard.svg',
@@ -97,7 +88,7 @@ const STATIC_FILES = [
   'diagrams/pastebin_whiteboard.svg', 'diagrams/amazon_whiteboard.svg', 'diagrams/llm_serving_whiteboard.svg',
   'diagrams/rag_whiteboard.svg', 'diagrams/recsys_whiteboard.svg',
 
-  // AI-generated draft diagrams (review copies, inserted alongside the SVGs above)
+  // Case-study architecture diagrams (Ch 35–37) — AI-generated, final
   'diagrams/arch_reference_ai.png', 'diagrams/notification_ai.png', 'diagrams/chat_ai.png', 'diagrams/video_conf_ai.png', 'diagrams/collab_editor_ai.png',
   'diagrams/autocomplete_ai.png', 'diagrams/crawler_ai.png', 'diagrams/proximity_ai.png', 'diagrams/ride_hailing_ai.png',
   'diagrams/news_feed_ai.png', 'diagrams/video_streaming_ai.png', 'diagrams/file_sync_ai.png', 'diagrams/url_shortener_ai.png',

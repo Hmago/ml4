@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~189 hours of content · 415+ DSA problems │
+  │  50 chapters · ~193 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -58,10 +58,10 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~5.75 hrs | Intermediate |
 | 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~3.5 hrs | Intermediate |
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
-| 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~4.25 hrs | Intermediate-Advanced |
+| 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~5.75 hrs | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1 hr | Intermediate |
 | ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~4.25 hrs | All Levels |
-| | **Core ML Total** | | | **~37 hrs** | |
+| | **Core ML Total** | | | **~38.25 hrs** | |
 
 ### Deep Learning & LLMs
 
@@ -93,14 +93,37 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ### System Design — Case Studies (Design X)
 
-> End-to-end "Design X" interview walk-throughs. Mostly HLD with light, crux-only LLD; each system gets labeled ASCII architecture diagrams, a numbered data-flow, estimates, a data model, failure modes, and follow-ups. Builds on Ch 23–25; do those first.
+> **26 designs: 23 main cases and three AI cases.** Learn how to derive a design from a simple
+> baseline, quantify its limits, and handle failures—not just memorize the final architecture.
+> Mostly HLD with crux-only LLD: worked data/state examples, editable Mermaid diagrams,
+> estimates, data models, and predict-before-answer exercises. Existing PNG/whiteboard assets
+> are retained; review notes identify old details that conflict with the corrected editable
+> diagrams. Use Ch 23–25 as targeted prerequisites and start with Ch 35's shared playbook.
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 35 | Case Studies — Part 1: Real-Time & Communication (the universal "Design X" playbook + notifications, chat/WhatsApp, Zoom/Meet, Google Docs) | ★★★ | [35_system_design_cases_realtime.md](content/35_system_design_cases_realtime.md) | ~4.75 hrs | Intermediate-Advanced |
-| 36 | Case Studies — Part 2: Search, Geo, Feeds & Media (autocomplete, web crawler, maps/nearby, Uber, news feed, YouTube, Drive/Dropbox, TinyURL) | ★★★ | [36_system_design_cases_search_media.md](content/36_system_design_cases_search_media.md) | ~6.5 hrs | Intermediate-Advanced |
-| 37 | Case Studies — Part 3: Scale, Infra, Money & AI (rate limiter, Snowflake IDs, top-K, leaderboard, cache, scheduler, payments, inventory, KV store, pastebin, e-commerce platform capstone + LLM-serving/RAG/recsys + pattern matrix + cheat sheet) | ★★★ | [37_system_design_cases_scale_infra.md](content/37_system_design_cases_scale_infra.md) | ~7.25 hrs | Intermediate-Advanced |
-| | **Case Studies Total** | | | **~18.5 hrs** | |
+| 35 | Case Studies — Part 1: Real-Time & Communication (the universal "Design X" playbook + notifications, chat/WhatsApp, Zoom/Meet, Google Docs) | ★★★ | [35_system_design_cases_realtime.md](content/35_system_design_cases_realtime.md) | ~5.75 hrs | Intermediate-Advanced |
+| 36 | Case Studies — Part 2: Search, Geo, Feeds & Media (autocomplete, web crawler, maps/nearby, Uber, news feed, YouTube, Drive/Dropbox, TinyURL) | ★★★ | [36_system_design_cases_search_media.md](content/36_system_design_cases_search_media.md) | ~7.75 hrs | Intermediate-Advanced |
+| 37 | Case Studies — Part 3: Scale, Infra, Money & AI (rate limiter, Snowflake IDs, top-K, leaderboard, cache, scheduler, payments, inventory, KV store, pastebin, e-commerce platform capstone + LLM-serving/RAG/recsys + pattern matrix + cheat sheet) | ★★★ | [37_system_design_cases_scale_infra.md](content/37_system_design_cases_scale_infra.md) | ~9 hrs | Intermediate-Advanced |
+| | **Case Studies Total** | | | **~22.5 hrs** | |
+
+**Study one case at a time:** understand the user problem and smallest design, reason through
+its commit/failure boundary, then attempt the checkpoint before opening its worked answer.
+Use the case-grouped contents to move between **Architecture** (original PNG),
+**Deep Dive** (editable mechanism diagram), and **Practice** (whiteboard rehearsal and answers).
+The case-study reader uses quieter introduction panels, wrapping tables, and wider diagram areas.
+The section includes **108 chapter-quiz questions** and **208 separate mock questions**
+with explanations. Allow additional time for solving the worked checkpoints and rehearsing designs.
+
+| Learning path | Suggested order |
+|---------------|-----------------|
+| **Gentler start** | Ch 35 playbook → URL shortener (CS12) → notifications (CS1) → rate limiter (CS13) → cache (CS17) |
+| **Real-time systems** | Notifications → chat → video conferencing → collaborative editing |
+| **Correctness and money** | Notification acceptance → chat ordering → ride assignment → scheduler → payments → inventory → e-commerce capstone |
+| **AI systems** | Shared design playbook → LLM serving → RAG → recommender; revisit Ch 17c, 28, and 26 for the underlying theory |
+
+Priority ratings and numeric workloads are editorial study guidance and illustrative
+assumptions, not official company interview frequencies or measured production architectures.
 
 ### Practical & Infrastructure
 
@@ -137,7 +160,10 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~188.75 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~192.75 hrs reading + DSA practice** | |
+
+This total sums the rounded Markdown chapter estimates above; exercises and the optional
+notebook add practice time rather than a second reading of the same material.
 
 ---
 
@@ -287,14 +313,14 @@ ication   sion            ing       sionality      Learning Learning
   Ch 10 (Supervised) → Ch 12 (Algorithms) → Ch 13 (Evaluation)
   Solid foundations. Enough for junior ML roles.
 
-  TRACK 2: Full ML Engineer (~55 hours)
+  TRACK 2: Full ML Engineer (~57 hours)
   ──────────────────────────────────────────
   Track 1 → Ch 11 (Unsupervised) → Ch 14 (Neural Nets) →
   Ch 15 (RL) → Ch 16 (Deep Learning) →
   Ch 17 / 17b / 17c (LLMs) → Ch 18 + 18b (Agents) → Ch 19 (Frameworks)
   Complete core curriculum. Strong enough for mid-level roles.
 
-  TRACK 3: LLM & Modern AI Focus (~56 hours)
+  TRACK 3: LLM & Modern AI Focus (~57 hours)
   ──────────────────────────────────────────
   Ch 07 → Ch 08 → Ch 10 (Supervised — need loss functions) →
   Ch 14 (Neural Nets) → Ch 13 (Evaluation — need metrics) →
@@ -303,7 +329,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 33 (LLM Interview Qs, Pt 1-2)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
-  TRACK 4: Google AI Engineer (~126 hours — full prep)
+  TRACK 4: Google AI Engineer (~128 hours — full prep)
   ──────────────────────────────────────────
   Ch 01 (Strategy — read first!) →
   Ch 02 (Behavioral — start STAR stories early) →

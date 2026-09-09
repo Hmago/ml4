@@ -483,7 +483,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/11_unsupervised_learning.md': 350,
   'content/12_key_algorithms.md': 210,
   'content/13_model_evaluation.md': 210,
-  'content/14_neural_networks.md': 260,
+  'content/14_neural_networks.md': 340,
   'content/15_reinforcement_learning.md': 60,
   'content/15s_ml_curriculum_recap.md': 250,
   'content/16_deep_learning.md': 270,
@@ -502,9 +502,9 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/25_system_design_operations_case_studies.md': 185,
   'content/26_ml_system_design.md': 85,
   'content/26s_system_design_recap.md': 200,
-  'content/35_system_design_cases_realtime.md': 290,
-  'content/36_system_design_cases_search_media.md': 385,
-  'content/37_system_design_cases_scale_infra.md': 435,
+  'content/35_system_design_cases_realtime.md': 345,
+  'content/36_system_design_cases_search_media.md': 465,
+  'content/37_system_design_cases_scale_infra.md': 535,
   'content/27_practical_ml.md': 240,
   'content/27_practical_ml.ipynb': 240,
   'content/28_semantic_search.md': 140,
@@ -518,7 +518,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/33b_llm_interview_questions_part2.md': 260,
   'content/34_google_top10_ml_interview.md': 285,
   'content/34b_google_top10_ml_interview_part2.md': 220,
-  'README.md': 60,
+  'README.md': 65,
 /* @generated-reading-times:end */ };
 
 // Per-user self-correction: when a chapter is opened we measure its real word

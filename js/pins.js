@@ -63,7 +63,9 @@ function pinResolveAnchor(anchor) {
   const content = document.getElementById('content');
   if (!content || !anchor) return null;
   const siblings = content.querySelectorAll(anchor.tag);
-  if (siblings[anchor.index]) return siblings[anchor.index];
+  const indexed = siblings[anchor.index];
+  // A reformatted chapter can move a paragraph while leaving its old index valid.
+  if (indexed && (!anchor.text || (indexed.textContent || '').trim().substring(0, 60) === anchor.text)) return indexed;
   if (anchor.text) {
     for (const s of siblings) {
       if ((s.textContent || '').trim().substring(0, 60) === anchor.text) return s;

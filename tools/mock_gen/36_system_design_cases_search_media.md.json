@@ -1,0 +1,646 @@
+[
+  {
+    "q": "An autocomplete service uses an index for LIKE 'ca%', but must sort 120,000 matches by popularity on every hot-prefix request. What change most directly removes the measured bottleneck?",
+    "options": [
+      "Precompute bounded popular candidate lists for each prefix",
+      "Replace the anchored predicate with a substring predicate",
+      "Increase the response limit to amortize each database query",
+      "Add read replicas without changing candidate ranking work"
+    ],
+    "answer": 0,
+    "explanation": "The index can locate the prefix range; SQL is not inherently doing a table scan. Repeated ranking of a broad range is the measured problem. Precomputed candidates bound that work; replicas may add capacity but preserve its per-request cost."
+  },
+  {
+    "q": "A global autocomplete CDN caches by prefix only. Users in different locales receive the same list, and one user's search history changes the next user's order. Which boundary fixes both errors?",
+    "options": [
+      "Cache the personalized list globally with a five-second TTL",
+      "Key global candidates by context; rerank privately per user",
+      "Cache by locale alone and append history before publication",
+      "Key by snapshot alone and rerank the shared cached response"
+    ],
+    "answer": 1,
+    "explanation": "Shared candidate keys need normalized prefix, language, locale, policy and snapshot context. Personalization occurs outside that shared representation; private, no-store responses prevent one user's history influencing another user's cached output."
+  },
+  {
+    "q": "After a user's last keypress, autocomplete waits 60 ms, spends 40 ms on request-response, and takes 8 ms to render. What last-key-to-visible latency should the client report?",
+    "options": ["40 ms", "68 ms", "108 ms", "100 ms"],
+    "answer": 2,
+    "explanation": "The user-visible interval includes all three sequential stages: 60 + 40 + 8 = 108 ms. A 40 ms request measurement excludes debounce and rendering and cannot be presented as the full interaction latency."
+  },
+  {
+    "q": "An autocomplete trie is partitioned by two-character prefixes. A large fraction of requests contain only 's'. Which design avoids scattering every such request to all 's?' shards?",
+    "options": [
+      "Route 's' to an arbitrary two-character shard and use its list",
+      "Drop one-character requests without changing the product SLA",
+      "Hash every phrase independently and merge all phrase partitions",
+      "Maintain versioned one-character summaries in a routing tier"
+    ],
+    "answer": 3,
+    "explanation": "A precomputed summary for 's' represents the union of its child ranges and can answer without live fan-out. Choosing one child loses candidates; arbitrary phrase hashing makes prefix retrieval more expensive."
+  },
+  {
+    "q": "One complete autocomplete snapshot has 96 GB of logical payload. There are three full replicas, all simultaneously retaining old and new snapshots. What is the payload-only peak?",
+    "options": ["576 GB", "288 GB", "192 GB", "384 GB"],
+    "answer": 0,
+    "explanation": "Each replica retains two snapshots, so the total is 96 x 3 x 2 = 576 GB. Allocator overhead, routing metadata and other serving state require additional memory. A rolling rollout can reduce this peak."
+  },
+  {
+    "q": "Two autocomplete replicas validate snapshot v9; a third finds a checksum failure in its shadow copy. Which serving action preserves the atomic-snapshot contract?",
+    "options": [
+      "Overwrite the third replica's live trie with verified fragments",
+      "Keep its v8 pointer while healthy replicas use validated v9",
+      "Free its v8 buffer before retrying the remaining v9 download",
+      "Advertise v9 globally because two of three checksums passed"
+    ],
+    "answer": 1,
+    "explanation": "The failed replica keeps its complete old snapshot and retries the shadow load. Pointer swaps are local; they do not make an invalid copy safe. Multi-shard requests that require consistent scoring must remain version-pinned."
+  },
+  {
+    "q": "A user's preferred autocomplete phrase is ranked 35th globally for a prefix. The private reranker receives only the global top 10. Why does improving the reranking model alone not recover that phrase?",
+    "options": [
+      "The trie must store personalized scores at every shared node",
+      "The response must return all 35 phrases to every typing user",
+      "The preferred phrase is absent from the candidate pool",
+      "The CDN must keep personalized results until the next rebuild"
+    ],
+    "answer": 2,
+    "explanation": "A reranker can reorder candidates but cannot recover an absent item. Retrieve a larger M, such as 50, or include an authorized private candidate source; account for the added memory and latency while still returning only K results."
+  },
+  {
+    "q": "For top-3 autocomplete, one child contributes scores [95,70], another [85,75], and a third [80,60]. Scores are globally comparable and phrases are distinct. What should their parent retain?",
+    "options": [
+      "[95,85,75]",
+      "[95,80,70]",
+      "[85,80,75]",
+      "[95,85,80]"
+    ],
+    "answer": 3,
+    "explanation": "The global three largest scores are 95, 85 and 80. Each child's top three are sufficient for the parent's top three: an omitted child item already has at least three better items in its own subtree."
+  },
+  {
+    "q": "A crawler permits one in-flight fetch per host and a two-second delay after completion. Host H starts at 09:00:00 and completes at 09:00:06. When may H's next queued URL start?",
+    "options": ["09:00:08", "09:00:02", "09:00:06", "09:00:04"],
+    "answer": 0,
+    "explanation": "H remains busy until six seconds, then observes its two-second cooldown. A start-time-only timer would have allowed overlap while the first fetch was still running."
+  },
+  {
+    "q": "A news homepage was discovered yesterday and is now due for its hourly refresh. Its URL is present in the crawler's seen set. How should this scheduled attempt enter the frontier?",
+    "options": [
+      "Remove the URL from the seen set before following its links",
+      "Bypass discovery dedupe and enqueue the due generation once",
+      "Skip the refresh until a new external link discovers the page",
+      "Change the URL with a query parameter to bypass membership"
+    ],
+    "answer": 1,
+    "explanation": "The seen set suppresses repeated discovery, not deliberate freshness work. Scheduled recrawls use an idempotent URL/due-generation attempt id and still pass through the same host politeness gate."
+  },
+  {
+    "q": "A crawler tests 100,000 genuinely unseen URLs against a Bloom filter with a 1% false-positive rate and drops every positive without checking its backing store. What coverage loss is expected from this step?",
+    "options": [
+      "About 10 new URLs are omitted",
+      "About 100 new URLs are omitted",
+      "About 1,000 new URLs are omitted",
+      "About 10,000 new URLs are omitted"
+    ],
+    "answer": 2,
+    "explanation": "Expected false positives are 100,000 x 0.01 = 1,000. They are falsely classified as probably seen and omitted by this lossy policy. Confirming positives with an exact backing record avoids this particular coverage loss."
+  },
+  {
+    "q": "A crawler worker pauses while holding a fetch token. Its queue visibility timeout expires, but the coordinator cannot establish whether the HTTP attempt stopped. What is the safe recovery policy for that host?",
+    "options": [
+      "Start another fetch because the queue timeout proves termination",
+      "Reset nextAllowed to now and trust FIFO order to prevent overlap",
+      "Accept both completions because URL normalization removes races",
+      "Revoke old permission and wait for bounded cancellation or pause"
+    ],
+    "answer": 3,
+    "explanation": "A lease timeout does not stop an old worker or remote HTTP operation. Recovery must fence internal state and enforce or confirm a bounded fetch lifetime before readmission; if that cannot be established, pausing the host preserves the admission policy."
+  },
+  {
+    "q": "A crawler writes 'URL seen' and crashes before putting its first-fetch attempt in a durable queue. Rediscovery now skips the URL forever. Which change addresses the lost-work window?",
+    "options": [
+      "Commit the first-discovery record and durable enqueue together",
+      "Reduce the Bloom filter's false-positive rate by a factor of ten",
+      "Give every crawler worker a larger in-memory frontier buffer",
+      "Increase the robots.txt cache lifetime for already-seen hosts"
+    ],
+    "answer": 0,
+    "explanation": "The first-discovery marker and durable attempt must be committed atomically or through an equivalent recoverable journal/outbox mechanism. Otherwise the marker can suppress work that never became durable. Bloom tuning does not fix that crash ordering."
+  },
+  {
+    "q": "Host H finishes a fetch at t=10 and must wait until t=13. Its queue becomes empty; a newly discovered URL for H arrives at t=11. What should the frontier preserve?",
+    "options": [
+      "Only its URL priority, because a new queue implies a new host",
+      "The existing nextAllowed=13 even though the queue was empty",
+      "A nextAllowed=11 because no other URL was waiting at completion",
+      "The old URL's seen bit instead of the host's cooldown timestamp"
+    ],
+    "answer": 1,
+    "explanation": "Politeness belongs to the host, not the lifetime of a particular queue. Dropping nextAllowed when a queue empties lets fresh discoveries bypass the cooldown."
+  },
+  {
+    "q": "A crawler allocates 9.6 Bloom-filter bits per URL for one billion URLs. Ignoring implementation overhead and using decimal units, what bit-array capacity is required?",
+    "options": ["9.6 GB", "7.7 GB", "1.2 GB", "0.12 GB"],
+    "answer": 2,
+    "explanation": "One billion x 9.6 bits = 9.6 billion bits; divide by eight to get 1.2 billion bytes, or 1.2 GB. Exact backing URL records, frontier entries and other state are additional storage."
+  },
+  {
+    "q": "A high-priority host returns HTTP 429 with Retry-After: 60 while thousands of unrelated hosts are eligible. How should a crawler preserve throughput without violating politeness?",
+    "options": [
+      "Retry the high-priority host on a second worker during the delay",
+      "Pause the entire crawler until the high-priority host recovers",
+      "Ignore Retry-After because the host's URLs have the highest score",
+      "Delay that host's admission and continue with other eligible hosts"
+    ],
+    "answer": 3,
+    "explanation": "Priority chooses among eligible work; it does not override host admission constraints. Store the host-specific backoff and keep independent hosts progressing."
+  },
+  {
+    "q": "A 500 m nearby query sits on a cell boundary. One shop is 20 m away in the adjacent cell; another is 700 m away inside a covered coarse cell. Which result policy is correct?",
+    "options": [
+      "Cover the circle across cells, include the first shop, filter the second",
+      "Search only the center cell and include every shop indexed in that cell",
+      "Search adjacent cells and include every candidate returned by the index",
+      "Require matching cell prefixes before computing either shop's distance"
+    ],
+    "answer": 0,
+    "explanation": "Cell coverage generates a superset of candidates. Exact distance and eligibility filtering determine results. Boundary membership cannot exclude the nearby shop, and covered-cell membership cannot admit the outside-radius shop."
+  },
+  {
+    "q": "A search radius grows to 3 km, but the implementation still queries a 3x3 block of 500 m-wide cells. What change preserves complete radius results?",
+    "options": [
+      "Keep the nine cells and increase the number returned from each",
+      "Compute all cells intersecting a complete cover of the new circle",
+      "Keep the nine cells and sort their points by more precise distance",
+      "Keep the center cell and choose its first nine populated descendants"
+    ],
+    "answer": 1,
+    "explanation": "More accurate filtering cannot recover points from regions never searched. A 1.5 km-wide block cannot generally cover a 6 km-diameter circle. Coverage must follow the query geometry, not a fixed cell count."
+  },
+  {
+    "q": "An exact 5-nearest search has five candidates with kth distance 1.2 km. The smallest lower bound among unvisited regions is 0.7 km. What should it do?",
+    "options": [
+      "Stop because the requested count has already been reached",
+      "Stop after sorting the five current distances one more time",
+      "Visit the unsearched region that can still improve the answer",
+      "Discard the current candidates and restart from the center cell"
+    ],
+    "answer": 2,
+    "explanation": "An unvisited region might contain a point between 0.7 and 1.2 km and replace the current kth result. Exact search stops only when remaining lower bounds cannot improve the answer, with tie policy handled explicitly."
+  },
+  {
+    "q": "A k-nearest API breaks distance ties by ascending place id. The kth point has distance 400 m, and an unvisited cell's lower bound is also 400 m. Which stopping rule is safe without an id bound for that cell?",
+    "options": [
+      "Stop because equal distances cannot improve an ordered result",
+      "Stop if the current candidate list already contains k distinct ids",
+      "Ignore equal-distance points when they lie in a different cell",
+      "Explore equal-bound regions before declaring the result final"
+    ],
+    "answer": 3,
+    "explanation": "A point exactly 400 m away with a smaller id could displace the current kth tuple. Without an additional tie-break bound, use a strictly greater remaining distance lower bound to establish completion."
+  },
+  {
+    "q": "A moving user's location update sequence 205 moves them east; sequence 204 arrives later from a delayed network packet. Which grid update prevents the user jumping backward?",
+    "options": [
+      "Reject the older sequence and retain the latest per-user version",
+      "Accept the last packet received because arrival time is authoritative",
+      "Keep both cells permanently and return both entries in nearby results",
+      "Clear the user's TTL so either cell can win the next radius query"
+    ],
+    "answer": 0,
+    "explanation": "Arrival order is not measurement order. A per-user sequence/version prevents stale packets overwriting fresh positions; queries deduplicate transitional cross-cell copies and enforce a freshness threshold."
+  },
+  {
+    "q": "A quadtree has many tiny leaves in a city and large leaves outside it. A query circle extends beyond the leaves immediately adjacent to its center leaf. What traversal is complete?",
+    "options": [
+      "Read the center leaf plus its first eight adjacency links",
+      "Traverse all nodes whose bounding regions intersect the circle",
+      "Read one leaf at each depth and merge its closest candidate",
+      "Convert the center leaf to a fixed geohash and ignore the tree"
+    ],
+    "answer": 1,
+    "explanation": "Adaptive leaf sizes invalidate a universal nine-neighbor recipe. Pruning a node whose bounding region does not intersect the query is safe; merely limiting adjacency steps is not."
+  },
+  {
+    "q": "An S2 cover returns a coarse cell, while place records are indexed only under finer descendant cells. What must the index lookup do to avoid an empty but incorrect result?",
+    "options": [
+      "Look up only the exact coarse cell id as a stored record key",
+      "Replace the cover with whichever populated cell is closest by id",
+      "Read the indexed descendant ranges represented by the covered cell",
+      "Return no places because hierarchical cover cells cannot be queried"
+    ],
+    "answer": 2,
+    "explanation": "A region cover denotes geometry, not necessarily one exact storage key. Lookup must map covered cells to the indexed level or descendant ranges; then deduplicate and refine candidates by exact distance."
+  },
+  {
+    "q": "To reduce a dense-cell query's latency, a team returns the first 100 stored points per cell before distance sorting. The API promises exact nearest results. What is the flaw?",
+    "options": [
+      "The cap affects only response formatting, not result membership",
+      "The cap guarantees nearestness if the cell has a stable identifier",
+      "The cap is safe whenever the final response contains fewer than 100",
+      "A discarded candidate may be nearer than every retained candidate"
+    ],
+    "answer": 3,
+    "explanation": "Storage order need not correlate with distance to this query. Exactness requires paging/traversing all potentially better candidates or pruning with a valid bound. An arbitrary cap needs an explicitly approximate API contract."
+  },
+  {
+    "q": "Driver D's offer epoch 7 expires. Trip B reserves epoch 8 and commits an assignment. A delayed acceptance for trip A with epoch 7 then arrives. What must the assignment authority do?",
+    "options": [
+      "Reject A's stale epoch without changing B's committed assignment",
+      "Assign D to A because A originally reserved the driver first",
+      "Assign D to A if its old Redis SET NX returned success",
+      "Release B's driver record and retry both accepted trips later"
+    ],
+    "answer": 0,
+    "explanation": "A successful old lease acquisition is not current permission. Acceptance validates current driver/offer ownership, epoch, expiry and trip state in one durable transaction. Epoch 7 cannot overwrite epoch 8's assignment."
+  },
+  {
+    "q": "A driver acceptance transaction commits, but the success reply is lost. The driver retries the identical acceptance. Which response preserves idempotency?",
+    "options": [
+      "Create a second match event and renew the offer's original expiry",
+      "Return the already committed match for the same trip and epoch",
+      "Return the driver to AVAILABLE before replaying the reservation",
+      "Reject the committed match because the old offer is now expired"
+    ],
+    "answer": 1,
+    "explanation": "An identical committed acceptance returns its existing result. It does not create another assignment or become invalid merely because the offer timer later elapsed. Accepted assignments follow the trip lifecycle, not offer TTL."
+  },
+  {
+    "q": "A dispatcher's advisory Redis lease token is 'old'; a newer dispatcher now owns token 'new'. Which release operation avoids deleting the newer lease?",
+    "options": [
+      "GET the token, wait for a network round trip, then DEL the key",
+      "DEL the key whenever the old dispatcher receives a timeout",
+      "Atomically compare the stored token with 'old' and delete on match",
+      "Shorten the key's TTL whenever either dispatcher finishes"
+    ],
+    "answer": 2,
+    "explanation": "Comparison and deletion must be one atomic operation. A separate GET/DEL still races with replacement. This protects lease ownership but does not replace the authoritative assignment transaction."
+  },
+  {
+    "q": "A ride request takes 2 s to dispatch its first offer, waits 15 s for timeout, takes 1 s to dispatch a second offer, and gets acceptance 3 s later. What is final-match latency?",
+    "options": ["5 s", "17 s", "18 s", "21 s"],
+    "answer": 3,
+    "explanation": "Final matching includes dispatch and human waits: 2 + 15 + 1 + 3 = 21 s. The first-offer latency was 2 s; reporting that as final-match latency would hide the retries."
+  },
+  {
+    "q": "A city's location grid is healthy but its strongly consistent driver/trip authority is unavailable. A dispatcher has a successful Redis candidate lease. What is the safe action?",
+    "options": [
+      "Pause match confirmation until the authoritative transition can commit",
+      "Confirm the match and reconcile competing assignments after recovery",
+      "Treat the lease token as a durable trip record until its TTL expires",
+      "Choose the lowest-latency driver and skip consistency for this city"
+    ],
+    "answer": 0,
+    "explanation": "The grid and advisory lease do not establish durable single assignment, especially across expiry/failover. Fail closed on confirmation when the authority is unavailable; location availability does not override the ownership invariant."
+  },
+  {
+    "q": "A driver is assigned to an ongoing trip. Its earlier offer timer fires, and its latest GPS ping was lost. Which state transition is justified solely by those events?",
+    "options": [
+      "Mark the driver AVAILABLE because both ephemeral signals expired",
+      "Keep the assignment; handle stale location and lifecycle separately",
+      "Delete the trip and reconstruct it from the next driver location",
+      "Offer the driver another trip while waiting for a fresh GPS ping"
+    ],
+    "answer": 1,
+    "explanation": "Offer expiry applies to unaccepted offers, not accepted assignments. Missing GPS affects location freshness and may trigger explicit operational handling; it does not automatically release durable trip ownership."
+  },
+  {
+    "q": "A ride service commits driver=ASSIGNED and trip=MATCHED, then crashes before publishing trip.matched to its event bus. Which mechanism closes this publication gap?",
+    "options": [
+      "Increase the Redis offer TTL until event publication is likely",
+      "Publish a success notification before committing either record",
+      "Write an outbox entry in the same assignment transaction",
+      "Infer every missing match event from the driver's next GPS ping"
+    ],
+    "answer": 2,
+    "explanation": "A committed outbox entry survives the crash and can be relayed with retries. The driver, trip and event intent share one transaction; downstream consumers deduplicate by event id."
+  },
+  {
+    "q": "Two matching workers race to assign different available drivers to the same requested trip. Per-driver uniqueness alone does not detect their conflict. What additional check is needed?",
+    "options": [
+      "A longer GPS TTL shared by both driver-grid records",
+      "A larger candidate list sorted by estimated arrival time",
+      "A per-city cache entry recording the current surge price",
+      "The trip's current offer and REQUESTED state in the same transaction"
+    ],
+    "answer": 3,
+    "explanation": "The invariant is both one active trip per driver and one accepted driver per trip. Serializing the trip record and checking its current offer/state prevents separate drivers from both being confirmed for one request."
+  },
+  {
+    "q": "An author with 40,000 followers posts 10 times/day; a celebrity with 10 million followers posts twice/day. Under pure push, how many feed-entry writes do these two authors generate together?",
+    "options": ["20.4 million", "10.4 million", "40.2 million", "2.4 million"],
+    "answer": 0,
+    "explanation": "The ordinary author generates 40,000 x 10 = 400,000 writes; the celebrity generates 10,000,000 x 2 = 20,000,000. Sum per-author costs rather than multiplying a threshold-capped average."
+  },
+  {
+    "q": "A feed worker loses its Redis timeline cache just after a post.created event was durably recorded. Which source should rebuild the lost timeline data?",
+    "options": [
+      "The most recently rendered HTML feed page from any reader",
+      "Durable posts, author-ordered access paths, and follow edges",
+      "The live WebSocket messages still buffered on online clients",
+      "The last ranking-score vector without the original post ids"
+    ],
+    "answer": 1,
+    "explanation": "The feed cache is a disposable materialized view. Durable posts and social relationships let it be rebuilt; online push and rendered pages cannot substitute for authoritative data."
+  },
+  {
+    "q": "A chronological feed orders descending by (createdAt, postId). A page ends at (10:15:00, 900), and post 899 has the same timestamp. Which continuation preserves that tied item?",
+    "options": [
+      "createdAt strictly less than 10:15:00",
+      "postId strictly greater than 900 regardless of timestamp",
+      "createdAt less than the time, or equal time with postId below 900",
+      "Skip the number of entries already returned from the live sorted set"
+    ],
+    "answer": 2,
+    "explanation": "Exclusive tuple continuation retains lower-id items at the same timestamp and older items. A time-only predicate drops ties; a rank offset shifts when newer posts arrive."
+  },
+  {
+    "q": "A ranked feed recomputes engagement scores between page requests. The API must avoid repeats or omissions within one scrolling session. Which cursor contract fits?",
+    "options": [
+      "A score-only cursor applied to freshly recomputed rankings",
+      "A page number multiplied by the current live candidate count",
+      "A timestamp cursor with no policy for score changes or ties",
+      "A user-bound snapshot id and position in its fixed ordered list"
+    ],
+    "answer": 3,
+    "explanation": "Freezing candidate membership and order makes a position meaningful. Recomputed scores can move posts across a live cursor boundary. Snapshot expiry should trigger an explicit refresh, not silent reconstruction."
+  },
+  {
+    "q": "A live feed is [p5,p4,p3,p2,p1]. Page one returns p5,p4. Before page two, p6 arrives at the front. What does offset=2, limit=2 now return?",
+    "options": ["p4,p3", "p3,p2", "p6,p5", "p2,p1"],
+    "answer": 0,
+    "explanation": "The new list is [p6,p5,p4,p3,p2,p1], so indexes 2 and 3 return p4,p3. p4 repeats. A stable tuple cursor or immutable snapshot avoids using a moving rank as continuation."
+  },
+  {
+    "q": "Hybrid fan-out skips a celebrity's follower-wide writes. Later, that celebrity's recent-post cache is evicted. Which durable access path keeps feed reads efficient?",
+    "options": [
+      "A global table scanned in random post-id order on every miss",
+      "An author-keyed stream ordered by createdAt and postId",
+      "A follower-count record with the celebrity's last known score",
+      "A reader timeline populated only by live WebSocket messages"
+    ],
+    "answer": 1,
+    "explanation": "Pull and cache rebuilding need recent posts by author without scanning the full corpus. A cache is only an accelerator for that durable ordered access path."
+  },
+  {
+    "q": "A feed plan budgets 6.4 TB of id/score payload for one copy of all candidate caches. Three replicas are required. What is the replicated payload floor, before data-structure overhead?",
+    "options": ["6.4 TB", "12.8 TB", "19.2 TB", "25.6 TB"],
+    "answer": 2,
+    "explanation": "Replication triples the payload: 6.4 x 3 = 19.2 TB. Redis objects, indexes, allocator fragmentation and other metadata increase provisioned RAM beyond this floor."
+  },
+  {
+    "q": "Two authors each have 80,000 followers. One has mostly dormant followers; the other has readers refreshing hourly. Why can a follower-count-only push threshold be a poor cost estimate?",
+    "options": [
+      "Equal follower counts guarantee equal post and read traffic",
+      "The dormant author's posts require stronger database isolation",
+      "A sorted set cannot store posts from authors with equal counts",
+      "Active-reader fraction, post rate and read rate change push/pull work"
+    ],
+    "answer": 3,
+    "explanation": "Push cost scales with recipients per post, while pull cost depends on reader activity and frequency. Classify and sum workload costs; the same follower count need not imply the same optimal fan-out policy."
+  },
+  {
+    "q": "A hypothetical video produces all six renditions totaling 26.4 Mbit/s and retains a 5 Mbit/s original of the same duration. Ignoring overhead, what is total stored bitrate relative to the original alone?",
+    "options": ["6.28 times", "5.28 times", "2.00 times", "7.00 times"],
+    "answer": 0,
+    "explanation": "Outputs alone are 26.4/5 = 5.28 times the original. Retaining the original adds one, giving 6.28 times. Actual planning must use only applicable renditions and the source-resolution/bitrate mix."
+  },
+  {
+    "q": "A player downloads a 6-second segment at 2 Mbit/s over a steady 3 Mbit/s connection. It starts with 10 seconds buffered and appends the segment when fully downloaded. What buffer remains afterward?",
+    "options": ["8 seconds", "12 seconds", "14 seconds", "16 seconds"],
+    "answer": 1,
+    "explanation": "The segment contains 12 Mbit and takes four seconds to download. Playback consumes four buffered seconds, then appending adds six: 10 - 4 + 6 = 12 seconds, ignoring overhead."
+  },
+  {
+    "q": "A 720p rendition has 149 of 150 VOD segments durable; the final upload is still pending. The 360p rendition is complete. Which publication action is safe?",
+    "options": [
+      "Publish both renditions because a CDN will retry any missing object",
+      "Publish 720p first because its resolution is closer to the source",
+      "Publish the completed 360p playlist and master entry, then add 720p later",
+      "Publish a master with 720p now but delay all low-resolution segments"
+    ],
+    "answer": 2,
+    "explanation": "A public manifest must not advertise unavailable media. Progressive publication can expose a fully durable low rendition first; a new master version adds the higher rendition after its segments and playlist are ready."
+  },
+  {
+    "q": "Source keyframes occur every 5 seconds, but ABR outputs should switch at 0,4,8,... seconds. Why is cutting the encoded outputs arbitrarily every 4 seconds insufficient?",
+    "options": [
+      "ABR requires every source to have exactly the same total bitrate",
+      "CDNs reject objects whose duration differs from the source GOP",
+      "All renditions must be placed in one unsegmented output file",
+      "Encoders must create compatible random-access frames at target boundaries"
+    ],
+    "answer": 3,
+    "explanation": "A byte or timestamp cut does not create a decodable keyframe. Plan common output boundaries, decode input pre-roll when necessary, and force closed GOP/random-access points consistently across renditions."
+  },
+  {
+    "q": "An HLS master entry declares RESOLUTION=1280x720 and links to 360p/index.m3u8. What correction makes the advertised variant consistent?",
+    "options": [
+      "Point it to the matching 720p playlist and verify its bandwidth metadata",
+      "Keep the 360p path because the player ignores declared resolution",
+      "Point it to the original upload and remove the segment timeline",
+      "Duplicate the entry at every bitrate while keeping one rendition path"
+    ],
+    "answer": 0,
+    "explanation": "A variant's resolution, bandwidth and referenced media must describe the same rendition. Mislabeling can mislead selection and diagnostics; changing a folder label alone cannot alter the encoded video."
+  },
+  {
+    "q": "A small video service serves one MP4 through a CDN with HTTP byte-range support. Which claim correctly distinguishes this baseline from segmented multi-rendition ABR?",
+    "options": [
+      "The MP4 cannot be cached or resumed because it is a single object",
+      "The MP4 can cache and resume; aligned renditions add convenient quality switching",
+      "The MP4 guarantees fewer stalls because all quality choices are removed",
+      "The MP4 requires exact view counting before any bytes can be delivered"
+    ],
+    "answer": 1,
+    "explanation": "HTTP range requests support resume and seek, and CDNs can cache monolithic objects/ranges. Aligned segments across a bitrate ladder primarily enable convenient adaptation and independent media-unit delivery."
+  },
+  {
+    "q": "A player has 12 seconds buffered when all network traffic stops for 20 seconds. No more media arrives during the outage. What can ABR guarantee?",
+    "options": [
+      "Continuous playback by selecting the lowest rendition at the outage start",
+      "Continuous playback because segment files are immutable at the CDN",
+      "Playback for the buffered interval, then at least an eight-second stall",
+      "Recovery without a stall by requesting the same segment from another folder"
+    ],
+    "answer": 2,
+    "explanation": "With no bytes arriving, quality selection cannot extend already buffered playback. Twelve seconds of media covers twelve seconds of the twenty-second outage, leaving at least eight stalled seconds before download/recovery overhead."
+  },
+  {
+    "q": "A video platform wants an exact count of accepted view events and an approximate count of distinct viewers. Which aggregation choice matches those two metrics?",
+    "options": [
+      "Use HyperLogLog for exact events and raw summed counters for distinct people",
+      "Update one global database row synchronously for both metrics on each event",
+      "Use only CDN byte counts and infer both metrics from average segment size",
+      "Deduplicate and batch event counts; use a distinct-count sketch for viewers"
+    ],
+    "answer": 3,
+    "explanation": "Partitioned, deduplicated aggregation can maintain exact accepted-event totals without one global hot write. HyperLogLog estimates set cardinality, so it fits approximate unique viewers rather than exact event counts."
+  },
+  {
+    "q": "Two devices edit file v12 offline. Device A commits v13 first. Device B then submits a different block list with expectedBaseVersion=12. What is the safe metadata outcome?",
+    "options": [
+      "Reject the stale-base overwrite and preserve B's edit as a conflict copy",
+      "Assign B version 14 and silently replace A's version as the intended head",
+      "Merge block lists by lexical hash order because each block is immutable",
+      "Treat the larger client timestamp as proof that B's base is still current"
+    ],
+    "answer": 0,
+    "explanation": "A base-version predicate detects concurrent edits. The server must not silently reinterpret a stale-base request as a linear update; keeping the user's edit as a conflict copy preserves work without inventing a merge."
+  },
+  {
+    "q": "A file commit with key k9 succeeds as v21, but its response is lost. A retry has the same key and payload while the file head is already v22 from another edit. What should it return?",
+    "options": [
+      "Create v23 because every retry is a new server-side version request",
+      "Return k9's stored v21 result rather than reapplying the edit",
+      "Overwrite v22 with the old block list because the key was previously valid",
+      "Delete the uploaded blocks because the retry's original base is stale"
+    ],
+    "answer": 1,
+    "explanation": "Idempotency remembers the outcome of that request, not the current file head. A matching retry returns the stored result before rechecking the old base. Reusing k9 with a different payload must be rejected."
+  },
+  {
+    "q": "A newly uploaded durable block has refcount zero while its upload intent is live. GC and the final file commit race. What prevents a committed version referencing deleted bytes?",
+    "options": [
+      "Assume any zero-ref block is old enough to delete immediately",
+      "Delay GC by a fixed minute without coordinating with upload state",
+      "Serialize live-pin/refcount checks and deletion state in a block registry",
+      "Retry the file metadata write until the deleted block's hash reappears"
+    ],
+    "answer": 2,
+    "explanation": "Live upload pins protect uncommitted blocks. GC may mark a generation deleting only with zero refs and no live pins; commit/pin creation check the same serialized state. A fixed grace interval alone cannot cover arbitrarily long uploads."
+  },
+  {
+    "q": "Account B learns the SHA-256 hash of a block stored for account A. A global endpoint answers which hashes exist and permits GET by hash. Which design boundary is missing?",
+    "options": [
+      "A longer hash so repeated content no longer maps to the same value",
+      "A faster hash algorithm so the existence response arrives uniformly",
+      "A global sorted set so block downloads are ordered by popularity",
+      "Authorized dedupe scopes and file/version-based access checks"
+    ],
+    "answer": 3,
+    "explanation": "A content hash is an identifier, not a capability. Scope and authorization must govern existence checks, reuse and download; otherwise known hashes reveal private content presence or allow unauthorized reads."
+  },
+  {
+    "q": "File v4 and retained history v3 both reference block H. v5 no longer uses H, but v3/v4 remain available for restore. What should happen to H?",
+    "options": [
+      "Keep H because retained versions still hold references",
+      "Delete H because it is absent from the newest head",
+      "Delete H after the notification for v5 is delivered",
+      "Keep H only if its original upload intent has not expired"
+    ],
+    "answer": 0,
+    "explanation": "GC counts references from every retained file version, not just the latest head. History retention protects H independently of any upload intent; only purging those versions can release their references."
+  },
+  {
+    "q": "A sync client tracks changes across hundreds of files, each with its own version counter. What cursor lets it resume the account's committed change stream without confusing file versions?",
+    "options": [
+      "The highest version number seen on any one file in the account",
+      "A last-applied sequence from the ordered account change journal",
+      "The largest chunk hash appearing in the most recently downloaded file",
+      "The current wall-clock timestamp on the device before each network call"
+    ],
+    "answer": 1,
+    "explanation": "Per-file versions are not globally comparable. An account-ordered journal sequence tracks changes across files; the device advances it only after applying changes durably, and requests resync if its cursor predates retention."
+  },
+  {
+    "q": "A design proposes convergent encryption to make cross-user dedupe reveal nothing about known content. Why does deterministic content-derived encryption not establish that claim?",
+    "options": [
+      "Encrypted blocks necessarily become larger than the entire source file",
+      "Deterministic encryption prevents identical files from sharing any blocks",
+      "Known-content guesses can still be tested against deterministic representations",
+      "Encryption automatically disables all file permissions and version checks"
+    ],
+    "answer": 2,
+    "explanation": "Determinism preserves relationships for dedupe and can enable confirmation of guessed content. It does not by itself hide existence. Scoped dedupe, authorized checks and a separately assessed encrypted-dedupe protocol address different parts of the threat model."
+  },
+  {
+    "q": "A one-byte insertion near the start of a large uncompressed file changes almost every fixed-size chunk hash. Which expectation about content-defined chunking is defensible?",
+    "options": [
+      "It guarantees exactly one changed chunk for every edit to every file",
+      "It avoids hashing because boundaries are already stored in the filename",
+      "It merges concurrent edits automatically using the content-hash order",
+      "It often resynchronizes later boundaries, reducing transferred changed chunks"
+    ],
+    "answer": 3,
+    "explanation": "CDC chooses boundaries from content so later boundaries often survive insertions/deletions. It does not guarantee exactly one changed chunk, especially with chunk-size bounds or transformations such as compression, and it does not resolve concurrent edits."
+  },
+  {
+    "q": "A shortener must encode any unsigned 64-bit identifier without truncation using base62. What maximum code length must it allow?",
+    "options": ["11 characters", "7 characters", "8 characters", "10 characters"],
+    "answer": 0,
+    "explanation": "ceil(64/log2(62)) = 11. Seven base62 characters hold about 41.7 bits. A shorter code requires a bounded identifier range or a different mapping, not truncation of arbitrary 64-bit IDs."
+  },
+  {
+    "q": "Ten million independent uniform random codes are drawn from a seven-character base62 space of about 3.52 trillion possibilities. Approximately how many colliding pairs are expected before retries?",
+    "options": ["0.014 pairs", "14.2 pairs", "142 pairs", "1,420 pairs"],
+    "answer": 1,
+    "explanation": "Use n(n-1)/(2M): approximately 10^14/(7.04 x 10^12) = 14.2 colliding pairs. Large capacity does not mean collision-free random allocation; atomic uniqueness checks and retries remain necessary."
+  },
+  {
+    "q": "A shortener uses valid Snowflake worker/sequence allocation, then base62 encodes each ID. A reviewer says the resulting codes are therefore hard to guess. Which response is correct?",
+    "options": [
+      "Base62 removes all timestamp and sequence structure from the underlying ID",
+      "Uniqueness proves at least 128 bits of entropy in every short code",
+      "Uniqueness and unpredictability are separate; structured IDs remain guessable",
+      "Using a different base62 alphabet eliminates prediction without a key"
+    ],
+    "answer": 2,
+    "explanation": "Encoding changes representation, not entropy. Snowflake exposes structured time/worker/sequence information. Use suitably long secure random codes or a vetted keyed permutation if unpredictability matters, and do not treat short public codes as authorization."
+  },
+  {
+    "q": "A redirect service returns 302 with Cache-Control: public, max-age=600. It expects every later navigation to reach its origin for analytics. What is the problem?",
+    "options": [
+      "302 responses require a database transaction on every browser cache hit",
+      "A public cache directive changes the HTTP status into a permanent redirect",
+      "Only the response body can be cached; redirect metadata cannot be stored",
+      "Explicit freshness can make a 302 reusable without contacting the origin"
+    ],
+    "answer": 3,
+    "explanation": "Status and cache policy are separate. A 302 with explicit freshness may be cached. The tracking baseline uses 302 plus no-store; even then analytics describe observed requests/events, not a perfect census of all user clicks."
+  },
+  {
+    "q": "A short mapping expires at 18:00, but a Redis cache entry remains until 18:20. A request arrives at 18:03 and hits Redis. What keeps request-time expiry correct?",
+    "options": [
+      "Check cached expiresAt and return the documented expired response",
+      "Redirect because any live Redis entry is valid until its cache TTL",
+      "Wait for the database TTL sweeper before changing redirect behavior",
+      "Change 302 to 301 while preserving the same expired target mapping"
+    ],
+    "answer": 0,
+    "explanation": "Expiry must be included in cached records and checked on both hits and misses. Cache TTL should also be bounded by remaining lifetime, but delayed cleanup must not authorize expired redirects."
+  },
+  {
+    "q": "A custom alias and an automatically generated code both propose 'launch7' at the same instant. Which storage contract prevents either mapping from overwriting the other?",
+    "options": [
+      "Use separate alias and generated tables without a common routing rule",
+      "Use one code namespace with an atomic put-if-absent or unique constraint",
+      "Check both names in caches and insert whichever cache responds first",
+      "Insert both values and choose the latest one on each redirect request"
+    ],
+    "answer": 1,
+    "explanation": "Both creation paths compete for the same externally visible code. A common authoritative conditional insertion yields one winner; separate read-before-write checks or isolated namespaces can create ambiguous/overwritten mappings."
+  },
+  {
+    "q": "To meet a seven-character requirement, a team truncates every base62-encoded Snowflake to its final seven characters. What property has it lost?",
+    "options": [
+      "The ability to use digits and letters in a URL-safe code",
+      "The possibility of caching successful code-to-target lookups",
+      "The one-to-one relationship between full IDs and generated codes",
+      "The ability to return an HTTP redirect without a response body"
+    ],
+    "answer": 2,
+    "explanation": "Different full IDs can share the same suffix, so truncation discards uniqueness information. Allocate within the seven-character domain, or permit longer representations and retain atomic namespace checks."
+  },
+  {
+    "q": "A shortener allocates unique codes at 100 million per day and never reuses expired codes. Ignoring leap years, how many of its approximately 3.52 trillion seven-character codes are reserved after ten years?",
+    "options": [
+      "36.5 billion, about 1.0%",
+      "3.65 trillion, about 104%",
+      "1.0 trillion, about 28.4%",
+      "365 billion, about 10.4%"
+    ],
+    "answer": 3,
+    "explanation": "100 million x 365 x 10 = 365 billion reservations; 365/3520 is about 10.4%. Expired mappings still consume reservations under the no-reuse policy. This capacity calculation is distinct from random collision probability."
+  }
+]

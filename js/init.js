@@ -112,6 +112,18 @@ function isRoutableHash(hash) {
   const hashLower = hash.toLowerCase();
   return chapters.some(ch => ch.file && ch.file.replace('.md', '').toLowerCase() === hashLower);
 }
+// Match the reader TOC: scroll local anchors without replacing the chapter route.
+document.getElementById('content').addEventListener('click', (event) => {
+  if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+  if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+  const hash = link.getAttribute('href').slice(1);
+  if (isRoutableHash(hash)) return;
+  const target = document.getElementById(hash);
+  if (!target || !document.getElementById('content').contains(target)) return;
+  event.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth' });
+});
 window.addEventListener('hashchange', () => {
   if (isRoutableHash(window.location.hash.slice(1))) routeFromHash();
 });

@@ -1,29 +1,22 @@
 // tools/diagram-prompts.js
 //
-// One entry per architecture diagram in Chapters 35-37 that should get an
-// AI-generated companion image (via tools/generate-diagrams.js). Each entry's
-// `existingImageLine` must match EXACTLY one line already in `chapterFile` —
-// the script inserts the new AI image immediately after that line so both can
-// be compared side by side. `svgBase` names the output file: diagrams/<svgBase>_ai.png.
+// One entry per retained PNG architecture diagram in Chapters 35-37.
+// `svgBase` names diagrams/<svgBase>_ai.png for the optional generation workflow.
+// The chapters' editable Mermaid diagrams and current prose define the corrected
+// designs; existing PNGs are retained unchanged for manual review. Updating these
+// prompts does NOT regenerate images or remove the chapter's image-review notes.
+// `existingImageLine` preserves caption metadata and the generator's legacy SVG
+// insertion anchor. Normal regeneration replaces the existing PNG reference;
+// the old SVG files are no longer present as fresh-insertion anchors.
 //
-// PROMPT FORMAT: matches a manually-tested prompt that produced a genuinely
-// good result (verified against a bad result from a heavily "styled"/prescriptive
-// prompt with explicit layout/color/icon instructions, which the model followed
-// far less faithfully). The winning pattern is close-to-verbatim chapter prose —
-// a short "Legend:" line (when the chapter has one) plus the chapter's own
-// "Block by block:" bullets plus its "Numbered flow:" line — with NO added
-// meta-instructions about box shapes, colors, or icons. The model reliably adds
-// its own clean legend/color-coding/layer-bands/icons when given clear, complete
-// content, so over-specifying the visual style apparently just dilutes it.
+// Prompt bodies describe the corrected components, flow, assumptions, and failure
+// boundaries rather than prescribing visual styling. Keep them aligned with the
+// corresponding case, especially durable acknowledgement and ownership semantics.
 //
 // buildPrompt(target) composes the final prompt string sent to the API.
-// Most targets use the {legend, blocks[], flow} template below, matching a
-// chapter section that has a literal "Block by block:" heading in the source.
-// A few chapters (arch_reference) are written as flowing prose with NO such
-// heading — for those, `rawBody` bypasses the template entirely and is used
-// verbatim, since testing confirmed prose-as-written works at least as well
-// as the templated bullet form, and templating it would be unfaithful to the
-// source (and unnecessary).
+// Targets use rawBody; the legend/blocks/flow form remains supported for callers
+// authoring a target interactively. Never assume a generated image proves that
+// the described protocol establishes its claimed guarantees.
 
 function buildPrompt(target) {
   const opening = `Please create an engineering architectural flow diagram for ${target.title} with below data --`;
@@ -36,477 +29,221 @@ function buildPrompt(target) {
 }
 
 const DIAGRAM_TARGETS = [
-  // ─────────────────────────── Chapter 35 ───────────────────────────
   {
-    id: 'arch_reference',
-    chapterFile: 'content/35_system_design_cases_realtime.md',
-    existingImageLine: '![The 4-Layer Reference Architecture — Edge · Services · Data · Async](diagrams/arch_reference.svg)',
-    svgBase: 'arch_reference',
-    title: 'the universal 4-layer reference architecture',
-    rawBody: `Layer 1 · Edge is everything between the user and your code: GeoDNS points the client at the nearest region, the CDN serves static assets and media from the edge (theory: CDN & edge — Ch 23), the API Gateway terminates TLS and enforces authN + rate-limiting, and the L7 load balancer spreads traffic across healthy service instances (theory: load balancing — Ch 23). Layer 2 · Services are stateless microservices you can scale by adding instances — except the Realtime Gateway, which is special because it holds millions of long-lived WebSocket/gRPC connections (every real-time system in this chapter lives or dies on this box). Layer 3 · Data uses the right store per job: SQL for anything needing ACID (users, money), a wide-column store for write-heavy time-series (messages, feeds, logs), Redis for the hot cache and counters, and an object store for blobs (theory: SQL vs NoSQL, wide-column — Ch 24). Layer 4 · Async is the trick that keeps the user's request fast: every write drops an event on a message bus (Kafka), and background consumer groups do the slow work — fan-out, search indexing, media transcoding, analytics — each with retries and a dead-letter queue (theory: Kafka, DLQ, exactly-once — Ch 24).
-
-The mental shortcut: synchronous path stays in Layers 1–3 and returns in milliseconds; everything that can be late moves to Layer 4. When a design feels slow or fragile, the fix is almost always "push that work to Layer 4."`,
+    id: "arch_reference",
+    chapterFile: "content/35_system_design_cases_realtime.md",
+    existingImageLine: "![The 4-Layer Reference Architecture — Edge · Services · Data · Async](diagrams/arch_reference.svg)",
+    svgBase: "arch_reference",
+    title: "the universal 4-layer reference architecture",
+    rawBody: "The four-layer reference is a checklist of responsibilities, not a mandatory microservice deployment. Client -> edge authentication and admission -> service validating the business operation -> authoritative durable state. Return success only after the commit required by the API contract. When a committed change requires asynchronous work, write an outbox row with the business state in one transaction, or use an equivalent durable change-log mechanism. Relay committed events to workers, which implement idempotent owned effects, bounded retries and explicit dead-letter/expiry outcomes. Queues buffer work; they do not create capacity. Edge examples are a gateway, suitable L4/L7 load balancer, and CDN for cacheable content. Storage is selected by access pattern and guarantees: transactional store for invariants, partitioned append/range storage for histories, object storage for blobs, and optional caches for derived data. A small system may combine these responsibilities. Real-time gateways keep connection state; do not label all services stateless or assume every database write also needs Kafka."
   },
   {
-    id: 'notification',
-    chapterFile: 'content/35_system_design_cases_realtime.md',
-    existingImageLine: '![Notification System — high-level architecture (HLD)](diagrams/notification.svg)',
-    svgBase: 'notification',
-    title: 'notification system',
-    legend: '.q = durable queue (Kafka topic / SQS). Boxes are stateless services unless they name a store. Read top-to-bottom: a request enters at LAYER 1, is acknowledged in milliseconds, and all the slow work happens in LAYER 2.',
-    blocks: [
-      "Notification API — the only synchronous hop. It authenticates the caller, validates the payload, runs dedupe, persists an \"accepted\" record, emits one Kafka event, and returns 202 Accepted. It never talks to a provider — that's what keeps caller latency in milliseconds.",
-      'Kafka "requested" topic — the durable buffer that absorbs spikes (the 35 k/s peak) and decouples ingest from processing. If processors fall behind, messages wait here, not in RAM.',
-      'Notification Processor — the brain: it loads preferences from PostgreSQL (cached in Redis) and templates from Amazon S3, then runs quiet-hours/opt-out → channel selection → template render → per-user rate-limit (Redis) → fan-out. Stateless and horizontally scaled by Kafka partitions.',
-      "Per-channel queues + workers — isolation by channel (the bulkhead pattern): if Twilio is slow, sms.q backs up but push/email/in-app keep flowing. Each worker owns its own retry/backoff and a dead-letter queue for poison messages. The channel layer is pluggable — to add WhatsApp as a channel, register a new channel worker + template type and route to its queue; nothing upstream changes. The in-app writer persists each message to the per-user feed in Cassandra.",
-      'Delivery log + analytics — providers call back (webhooks) with delivered/bounced/opened; a Status Consumer reads the notifications.delivered topic and Apache Flink aggregates the stream into Cassandra (the cheap, 90-day-TTL delivery log) and BigQuery + Prometheus (analytics & SLO metrics).',
-      'Idempotency (dedupe) — the caller supplies an idemKey; the API does an atomic Redis SETNX on "dedupe:{idemKey}" with a 24h TTL. First writer wins; a retry sees the key already exists and returns without re-sending, which is what makes every upstream retry safe.',
-      "Rate limiting at two levels, same primitive — an atomic Redis Lua token-bucket script runs at ingest keyed by tenant_id (protects users and shared downstream providers from one noisy tenant) and again at fan-out keyed by user_id (protects one user from being spammed). Token bucket allows short bursts while capping the long-run rate.",
-      'Priority lanes — separate transactional vs marketing Kafka topics/queues, with workers draining transactional first, so a 10-million-email marketing blast can never delay a security OTP.',
-      'Fail-open vs fail-closed — if the Redis dedupe store is unavailable, marketing notifications fail-open (a rare duplicate is fine) while money/OTP notifications fail-closed (better to delay than risk a double-send).',
-    ],
+    id: "notification",
+    chapterFile: "content/35_system_design_cases_realtime.md",
+    existingImageLine: "![Notification System — high-level architecture (HLD)](diagrams/notification.svg)",
+    svgBase: "notification",
+    title: "notification system",
+    rawBody: "Corrected notification system. Producer supplies an authenticated tenant, stable idempotency key and validated payload. API checks tenant quota and atomically commits a unique (tenant_id, idemKey) request with payloadHash, notifId, accepted state, and an outbox row in its transactional database. Only after commit return 202 accepted. A matching replay returns the same notification/current state; a changed payload with the same key returns a conflict. Redis SETNX is not durable acceptance. Outbox relay publishes with retries into durable transactional/marketing queues. Processor loads preferences from PostgreSQL/cache and versioned templates from object storage, checks opt-out, quiet-hours, delivery deadline and channel choice, and creates unique durable (notifId, channel) jobs. Per-channel workers enforce user and provider quotas with atomic token buckets, and use attempt ownership, bounded retries and DLQs. Reserve urgent worker/provider capacity; separate queue names alone do not protect an OTP. In-app writes dedupe by notification identity. External attempts use provider idempotency where supported; provider success means sent/accepted, not device delivered. Lost replies remain UNKNOWN and require provider query/reconciliation or an explicit duplicate-versus-loss policy. Supported provider receipts and receiving-app telemetry update delivered/opened state; do not invent an FCM opened webhook. Durable usage events support billing. Status events feed the Cassandra TTL audit log, analytics and SLOs. Cache state is optional; inability to commit acceptance must not return success."
   },
   {
-    id: 'chat',
-    chapterFile: 'content/35_system_design_cases_realtime.md',
-    existingImageLine: '![Chat / Messaging (WhatsApp / Slack) — high-level architecture (HLD)](diagrams/chat.svg)',
-    svgBase: 'chat',
-    title: 'chat / messaging application (WhatsApp / Slack style), using WebSocket for the live path with long-poll as a fallback for hostile networks',
-    blocks: [
-      'Layer 1 — L4 load balancer — does TCP/TLS pass-through (an L7 proxy that buffered every frame would add latency and cost) and keeps a connection sticky to one box.',
-      "Layer 2 — the gateway tier (the system's heart) — each box holds ~500k live WebSockets and does nothing but terminate connections and shuttle frames. The moment a socket opens, the gateway writes an entry into the Connection Registry (which gateway holds which user) — this is what makes routing possible.",
-      'Layer 2b — stateless services — the Chat service assigns the per-conversation seqId, persists the message, and advances the delivery/read-receipt state machine (validate · seqId · persist · receipts); Presence tracks who is online.',
-      'Layer 3 — storage — messages in a wide-column store keyed by convId (write-heavy, time-ordered), per-user delivery offsets/inbox for offline sync, presence in Redis, and media in a blob store + CDN.',
-      'Layer 4 — async — everything that can be slightly late: waking offline users via push (reusing the Notification System), heavy group fan-out, and analytics.',
-      'Persist-before-ack — the server persists a message to Cassandra and assigns its seqId BEFORE acknowledging the sender, so a crash right after acking can never cause a "sent but actually lost" message.',
-      'Delivery/read-receipt state machine — each message moves through SENT (persisted) → DELIVERED (recipient device ACKed) → READ (recipient opened the chat); the state only ever advances forward, never regresses, even if a duplicate receipt arrives late.',
-      'Group fan-out model — small groups use fan-out-on-write (push a copy into every member inbox, cheap reads); a 100k-member channel instead uses a shared log + per-member read cursor (fan-out-on-read), because pushing to 100k inboxes synchronously is fatal.',
-      'Tombstone trap — deleting a message after delivery writes a Cassandra tombstone that lingers until compaction; avoid ad-hoc per-message deletes and instead give delivered messages a short TTL so Cassandra expires them in a batch.',
-    ],
+    id: "chat",
+    chapterFile: "content/35_system_design_cases_realtime.md",
+    existingImageLine: "![Chat / Messaging (WhatsApp / Slack) — high-level architecture (HLD)](diagrams/chat.svg)",
+    svgBase: "chat",
+    title: "chat / messaging application (WhatsApp / Slack style), using WebSocket for the live path with long-poll as a fallback for hostile networks",
+    rawBody: "Corrected chat architecture. Clients connect through a WebSocket-capable L4 or L7 load balancer to gateway servers. Redis holds an ephemeral per-(userId, deviceId) gatewayId and sessionToken with independent TTL; renew and delete only the current token. Route a conversation to its current fenced ordering authority. The owner deduplicates (senderId, convId, clientMsgId), assigns a sequence and commits the message and identity through a replicated ordered-log protocol before acknowledging SENT. Old owners cannot append after failover; a conversation without a safe commit quorum keeps new messages pending, while unaffected conversations operate. Materialize committed entries into bounded Cassandra/partitioned history keyed by conversation, time bucket and sequence; sync honors the projection watermark or reads the log tail. A transactional partitioned message store can combine these roles. Live routing uses the registry and best-effort per-gateway pub/sub; loss is recovered by sync on reconnect, conversation-open and periodic head checks. Each device keeps its own contiguous delivered sequence and separate read sequence. Receiving 41 and 43 cannot advance the cursor beyond 41 while 42 is missing. SENT -> DELIVERED -> READ advances only with corresponding evidence. Small groups may fan out inbox references; large rooms use one shared log and per-device cursors, with online network fan-out still required. Presence is disposable. Media uses authorized blob references, privacy-scoped dedupe and CDN. TTL expiration still creates Cassandra tombstones; retention and compaction must be planned. Do not claim SQL is impossible or simultaneous partition-side acceptance preserves strict order."
   },
   {
-    id: 'video_conf',
-    chapterFile: 'content/35_system_design_cases_realtime.md',
-    existingImageLine: '![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)',
-    svgBase: 'video_conf',
-    title: 'video conferencing system (Zoom / Google Meet style), drawn as two clearly separate planes',
-    legend: 'The non-negotiable idea: a signaling plane (control) separate from a media plane (the bytes). Signaling is low-volume and reliable; media is high-volume, lossy, and latency-critical — they have nothing in common and must not share infrastructure.',
-    blocks: [
-      'Meeting Service — a stateless service owning the non-real-time control surface: creating and scheduling meetings and authorizing joins, persisting meeting metadata in PostgreSQL (the Meeting DB).',
-      "Signaling Service — a stateless WebSocket service: it authenticates the join, tracks room membership in a Redis Room Registry, allocates an SFU for the meeting, and relays the SDP offer/answer (each side's codecs and parameters) plus ICE candidates (possible network paths).",
-      "STUN / TURN — STUN servers let a client discover its own public IP:port behind NAT; TURN servers relay media for the ~10–20% of users behind symmetric NATs that can't connect directly.",
-      'SFU (Selective Forwarding Unit) — the heart of the media plane: clients send their RTP streams up to it over UDP, and it forwards the right streams down to each participant — without decoding them. For geographically split meetings, SFUs cascade: each client hits its nearest SFU and the SFUs relay one copy between regions instead of N.',
-      'Recording Service + transcription — tap the streams in the async plane and never sit on the live path; finished recordings live in S3 (the Recording Store) and play back via CDN.',
-      'Topology choice: mesh vs MCU vs SFU — mesh (every peer sends to every peer) makes uplink explode with N and dies past ~4 participants; MCU (one server decodes, mixes, and re-encodes everyone into one stream) keeps client bandwidth flat but costs brutal server CPU; SFU (server only forwards, never decodes) keeps uplink flat AND server CPU low, which is why it wins.',
-      "Simulcast — each sender encodes 3 resolutions at once (e.g. 180p/360p/720p) and uploads all layers; the SFU forwards the right layer per receiver's bandwidth (full res to people on fiber, a thumbnail layer to someone on 3G) without ever transcoding.",
-      "Jitter buffer — on the receiver, incoming RTP packets are buffered for a few tens of milliseconds to reorder and smooth them before decoding, trading a small deliberate delay for stutter-free playback.",
-    ],
+    id: "video_conf",
+    chapterFile: "content/35_system_design_cases_realtime.md",
+    existingImageLine: "![Video Conferencing (Zoom / Google Meet) — high-level architecture (HLD)](diagrams/video_conf.svg)",
+    svgBase: "video_conf",
+    title: "video conferencing system (Zoom / Google Meet style), drawn as two clearly separate planes",
+    rawBody: "Video conferencing separates signaling responsibilities from deadline-sensitive media forwarding. Meeting service persists configuration and authorization in PostgreSQL. Signaling uses HTTPS/WebSocket for join, SDP negotiation, ICE candidates and SFU allocation; room/session routing is ephemeral Redis state. Client ICE checks select a working path: preferred direct UDP to an SFU, or TURN relay including a TCP/TLS client-to-relay leg when UDP is blocked. UDP is preferred, not the only supported path. SFU forwards selected encrypted tracks/layers without video transcoding, but packet processing and crypto still cost CPU. Sender upload is the SUM of simulcast-layer rates, independent of participant count. Receiver download is the SUM of selected incoming layers, not always one stream. Example receiver: one 1.5 Mbps speaker plus eight 0.15 Mbps thumbnails plus nine 0.04 Mbps audio streams = 3.06 Mbps. Receiver jitter buffer reorders and smooths packets, then decode/render must meet the playout deadline; reference-frame dependencies require useful recovery or refresh requests. Protect audio first. Cascaded regional SFUs reduce repeated inter-region forwarding. Optional recording subscriber taps media outside the critical live path; recordings go to object storage/CDN. For large view-only webinars, CDN HLS/DASH trades seconds of latency for broadcast scale. Mesh grows each upload with N-1; MCU trades expensive mixing for simpler receiver downloads; SFU trades server egress and receiver decoding for lower server transcoding cost. Retain explicit fallback, latency and capacity assumptions instead of universal participant/TURN percentages."
   },
   {
-    id: 'collab_editor',
-    chapterFile: 'content/35_system_design_cases_realtime.md',
-    existingImageLine: '![Collaborative Editor (Google Docs) — high-level architecture (HLD)](diagrams/collab_editor.svg)',
-    svgBase: 'collab_editor',
-    title: 'collaborative document editor (Google Docs style)',
-    legend: "The defining structure: each document is owned by a single authority node that serializes ops, assigns revision numbers, transforms concurrent ops, and broadcasts the results. Shard by docId so a document's whole live session lives on one box.",
-    blocks: [
-      "Collab Gateway — holds each editor's WebSocket and routes by docId (consistent hashing) to that document's owner, so everyone editing one doc lands on the same authority.",
-      "Document Session Server — the brain (the single per-document authority): it keeps the authoritative document and headRevision in memory, serializes incoming ops into a single order (the single-writer property is what makes Operational Transformation tractable), transforms each op against any ops the sender hadn't seen yet, assigns the next revision, broadcasts to all editors, and appends the op to a durable log.",
-      "Layer 3 — storage — an append-only op log (Apache Kafka) keyed by (docId, rev), periodic snapshots in the Document Store (Spanner/Bigtable) so you don't replay millions of ops to load a doc, blobs/assets in S3, and presence/cursors in Redis (ephemeral, TTL'd).",
-      'Layer 4 — async — compacts the log into snapshots, exports, indexes for search, and fires notifications.',
-      "Operational Transformation (concrete example) — base text \"abc\" at revision 7; user A inserts 'X' at position 0, user B concurrently inserts 'Y' at position 2. The server applies A's op first (rev 8), then transforms B's stale op against it: because A inserted before B's position, B's insert shifts right from position 2 to position 3. Both clients converge on \"XabYc\".",
-      'CRDT alternative — instead of transforming ops, give every character a stable, immutable, totally-ordered ID (e.g. a fractional position); insert/delete operations then commute (apply in any order, same result) with no central server needed, at the cost of extra per-character ID/tombstone metadata.',
-      'OT vs CRDT trade-off — OT (used by Google Docs) needs a central authority and notoriously tricky transform functions but tiny per-character metadata; CRDTs (used by Figma, Yjs) need no central server and merge offline edits naturally but carry more metadata.',
-    ],
-  },
-
-  // ─────────────────────────── Chapter 36 ───────────────────────────
-  {
-    id: 'autocomplete',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete.svg)',
-    svgBase: 'autocomplete',
-    title: 'search autocomplete / typeahead system (like Google Suggest)',
-    legend: 'boxes are stateless services unless they name a store. Read it top-to-bottom: keystrokes are answered in Layers 1-2 from RAM; Layer 4 runs continuously in the background and periodically ships a fresh index into Layer 2.',
-    blocks: [
-      'Browser (debounce + cancel) — the first optimization is on the client: wait ~60 ms after the last keystroke and cancel the in-flight request for the previous prefix, so fast typists generate ~6 requests, not 20.',
-      'Edge / CDN POP — caches the top-K for the few thousand hottest prefixes ("f", "ne", "you…"). Most autocomplete traffic is wildly skewed toward popular prefixes, so the edge absorbs a large fraction at ~5 ms.',
-      'Suggest Service — a thin stateless router: normalize the prefix, find which trie shard owns it, fetch its precomputed top-K, optionally re-rank for the user.',
-      'Trie shards — the heart. The full trie is too big for one box, so it is sharded by prefix range and held in RAM, replicated for availability. Each node carries its precomputed top-K so serving is a short walk, not a subtree scan.',
-      'Offline pipeline — Kafka streams the query logs to an aggregator that counts popularity with time decay, filters spam/PII, keeps the top-N phrases, and compiles a fresh immutable score snapshot (the trie-load artifact) that is atomically swapped in.',
-      'Precomputed top-K per node — built bottom-up offline: each node merges its own terminal phrase with its children\'s already-computed top-K into a bounded max-heap, so serving is O(prefix length) with zero ranking work at query time — it just reads a precomputed list.',
-      'Atomic snapshot swap — a new trie snapshot loads into shadow memory, gets validated, then a single pointer flips from old to new (double-buffering); readers always see either the whole old index or the whole new one, never a half-built index.',
-      'Typo tolerance — a query also checks edit-distance-1 neighbor prefixes, which may live on different shards; results are scattered, gathered, and merged by score into one global top-K.',
-    ],
+    id: "collab_editor",
+    chapterFile: "content/35_system_design_cases_realtime.md",
+    existingImageLine: "![Collaborative Editor (Google Docs) — high-level architecture (HLD)](diagrams/collab_editor.svg)",
+    svgBase: "collab_editor",
+    title: "collaborative document editor (Google Docs style)",
+    rawBody: "Corrected collaborative editor: choose central OT for this illustrated architecture; CRDT is an alternative data model, not an additional mandatory stage. Client applies a local operation optimistically and retains its opId and baseRev in a pending queue. Gateway routes docId to the current fenced document owner. For every operation the owner authorizes, deduplicates document/author/opId with payload binding, transforms against unseen operations, then durably commits transformed op, identity and revision to a replicated log. Only after commit send ACK and broadcast committed APPLY. A lost ACK and retried opId return the existing revision without inserting twice. Other clients transform remote operations and pending local operations together. Snapshot storage contains a durable document at a known committed revision; loading replays the tail. History/offline bases, lagging consumers and dedupe retention constrain reclamation. Presence/cursors are ephemeral; assets live in object storage; export/index/notification work is asynchronous. Example: base abc at rev7; A inserts X at0, commits rev8; B's insert Y at2 transforms to3, commits rev9; final XabYc at rev9. Same-position inserts use a shared operation-ID tie-break in both transform directions. The simplified position-based CRDT alternative uses a:1, b:2, c:3, X:0.5 and Y:2.5, so sorted live text is XabYc. These decimal IDs are teaching notation, not IEEE-float implementation; real structured IDs, causal rules, tombstones and offline-aware garbage collection are required. Convergence does not guarantee every conflicting human intent. Never illustrate broadcast-before-durable-append or final XabYc at revision8."
   },
   {
-    id: 'crawler',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![Web Crawler (Googlebot) — high-level architecture (HLD)](diagrams/crawler.svg)',
-    svgBase: 'crawler',
-    title: 'web crawler (Googlebot style)',
-    legend: 'double-bordered box = the stateful frontier; single boxes = stateless workers or stores. The loop is: frontier → fetch → store → parse → dedupe → frontier.',
-    blocks: [
-      'URL Frontier — the prioritized, politeness-aware queue of "what to fetch next." It is the component that is this problem.',
-      'Fetcher workers — thousands of async I/O workers that pull a URL, check robots.txt, resolve DNS (from cache), download the page within a rate limit, and write the raw bytes.',
-      'DNS & robots caches — fetching does two network round-trips before the page (DNS + robots); both are cached aggressively per host or DNS would become the bottleneck.',
-      'Content store — cheap object storage for the raw gzipped HTML, keyed by a hash of the URL; downstream consumers (indexer, dedupe) read from here.',
-      'Parser / Extractor — extracts outlinks (<a href>), the canonical URL, visible text, lastmod, and sitemaps; produces a content fingerprint.',
-      'Link graph (Bigtable) — the extracted src → [dst] edges, persisted for ranking (PageRank-style) and to prioritize what is worth crawling next.',
-      'URL dedupe (Bloom filter) — "have we already enqueued this URL?" answered in O(1) with tiny memory. New URLs go back to the frontier.',
-      'Content dedupe (sim-hash) — "is this page a near-duplicate of one we already have?" Mirrors and boilerplate are everywhere; this stops us indexing the same thing 100 times.',
-      'Two-stage frontier (the crux) — front queues sort candidate URLs by priority; a router drains them into per-host back queues (one FIFO queue per host, guaranteeing no host is fetched by two workers at once); a host min-heap, ordered by next-allowed-fetch-time, always yields whichever host is currently allowed to be polite.',
-      'Bloom filter sizing — for 30 billion URLs at a 1% false-positive rate, the seen-set needs only about 36 GB (versus multiple terabytes for a literal hash set); a false positive just means a genuinely-new URL is rarely skipped, which is an acceptable trade.',
-    ],
+    id: "autocomplete",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete.svg)",
+    svgBase: "autocomplete",
+    title: "search autocomplete / typeahead system (like Google Suggest)",
+    rawBody: "Draw an editable, clearly labeled system-design diagram for Case 5: Search Autocomplete. Separate ONLINE GLOBAL CANDIDATES, PRIVATE PERSONALIZATION, and OFFLINE INDEX BUILD lanes. Browser waits 60 ms after the last key and tags requests with a sequence; label request-response target <50 ms AFTER debounce, not <50 ms from the last key. Route normalized prefix + language + locale + safety policy + snapshot version to a shared edge/Redis candidate cache. On a miss, route an exact prefix to its owning RAM trie shard, not automatically to all shards. The snapshot precomputes top-M candidates; return K, e.g. M=50 and K=10 for personalization. Cache global candidates only; optional user-history reranking is private and its response uses Cache-Control: private, no-store. Add one-character prefix summaries when two-character ranges are split; bounded fuzzy scatter/merge is a separate path. Offline query logs feed aggregation, decay, privacy/safety filtering, and immutable versioned snapshots in object storage. Each serving replica independently loads shadow memory, validates, flips a local pointer, and drains old readers. Draw three replicas, not replication caused by the pointer flip. Memory inset: illustrative K=10 snapshot 144 GB; three replicas 432 GB; full old+new double buffering 864 GB BEFORE overhead. M=50 requires a larger artifact. Note that anchored SQL prefix lookup can use an index; precomputation avoids repeated broad-prefix ranking. Keep tier labels consistent: cache hits end at cache; snapshot loads target RAM serving."
   },
   {
-    id: 'proximity',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![Proximity / Nearby (Maps / Yelp) — high-level architecture (HLD)](diagrams/proximity.svg)',
-    svgBase: 'proximity',
-    title: 'proximity / nearby-search system (like Maps or Yelp nearby search)',
-    legend: 'the left column serves static places; the right column serves moving users. They share the same cell math but use different stores (durable index vs RAM grid).',
-    blocks: [
-      'Search service — converts a query circle into a set of cell ids, fetches candidate ids from the geo-index, then does the exact distance filter + sort in memory (cells are an over-approximation; you always refine).',
-      'Location-ingest service — only in the moving-dots variant; swallows millions of GPS pings/sec and keeps only the latest position per user (last-write-wins).',
-      'Geo-index — cellId → [placeIds]; the data structure under it is geohash, quadtree, or S2. For static data, Redis GEO or PostGIS is the usual store.',
-      'In-memory location grid — cellId → {user → position} held in sharded RAM; this is how you answer "who is near me?" without a disk write per ping.',
-      'Place store — boring metadata (name, hours), fetched after the geo-index narrows the candidate set to a few dozen ids.',
-      'Cell-indexing choice — geohash (simplest, string-prefix based, but distorts near the poles and has boundary discontinuities), quadtree (adapts by splitting only where density is high, e.g. Times Square deep, ocean shallow), or Google S2 (projects the sphere onto a cube with a Hilbert curve, sphere-correct, used by Google Maps and Foursquare at global scale).',
-      'Boundary-safe radius search — always query the center cell plus its 8 neighbors, then filter to the exact radius by real distance; never trust a single cell alone, since two points can be metres apart yet sit in different cells.',
-    ],
+    id: "crawler",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![Web Crawler (Googlebot) — high-level architecture (HLD)](diagrams/crawler.svg)",
+    svgBase: "crawler",
+    title: "web crawler (Googlebot style)",
+    rawBody: "Draw Case 6: Web Crawler with separate NEW DISCOVERY and SCHEDULED RECRAWL/RETRY entry arrows. New links pass normalization, advisory Bloom membership and an exact URL record; first-discovery record plus durable enqueue is atomic. Recrawls bypass discovery seen-set but deduplicate by URL and due-generation. Both enter priority front queues, host-owned FIFO back queues, and a min-heap of eligible idle hosts. Draw durable host state: busy token, attempt id, fetch deadline, nextAllowed. Admission atomically leases one attempt and marks the host busy; remove busy hosts from eligibility. Fetchers check robots, cache DNS, perform conditional GET, and apply bounded fetch timeouts. Completion is owner-token checked, persists result, clears busy and sets nextAllowed=max(finish+delay, Retry-After), retaining the timestamp even if the queue empties. Separate content storage, parser/link graph, near-duplicate sim-hash and new-link loop. Crash arrow: revoke old fetch permission, establish cancellation or conservative bounded timeout plus grace, then cooldown and retry; pause host if termination cannot be established. Tokens fence internal state, not arbitrary remote HTTP effects. Timeline inset: A starts at 0, completes at 3, delay 1.5, next A start >=4.5; host B can run independently. Do not claim FIFO or a bare 1.5-second timer prevents slow-fetch overlap. Bloom inset: 30 billion entries, 9.6 bits/entry at p=1%, about 36 GB plus backing records; positives are probabilistic, not proof of prior fetch."
   },
   {
-    id: 'ride_hailing',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![Ride-Hailing (Uber / Lyft) — high-level architecture (HLD)](diagrams/ride_hailing.svg)',
-    svgBase: 'ride_hailing',
-    title: 'ride-hailing system (Uber / Lyft style)',
-    legend: 'WebSocket gateway keeps driver connections open so dispatch is a push, not a poll. Layer 3 is RAM; Layer 4 is durable.',
-    blocks: [
-      "WebSocket gateway — drivers hold a persistent connection so the server can push a trip offer in milliseconds and receive accept/decline.",
-      "Location-ingest service — absorbs ~1M+ pings/sec, writes each driver's latest position into the grid cell (and moves them between cells when they cross a boundary).",
-      "Dispatch / Matching service — the brain: nearby-search the grid, rank candidates, and perform the atomic claim so a driver can't be offered to two riders.",
-      "In-memory location grid — cellId → drivers, last-write-wins, TTL'd so a driver who stops pinging ages out.",
-      "Driver availability + claim lock (Redis) — the Matching service keeps each driver's availability and the atomic claim lock in Redis; driverId → {status, currentTripId} plus a per-driver lock key. This is what prevents double-dispatch.",
-      'Trip store + surge + Kafka — durable trip state machine, per-cell surge multiplier, and an event bus that feeds ETA, analytics, payments, and notifications asynchronously.',
-      'Atomic claim (the crux) — dispatch calls a Redis SET-NX-EX lock per candidate driver (e.g. 15s TTL); only the first dispatcher to lock a driver can offer them the trip, guaranteeing no double-dispatch, and the TTL auto-releases the lock if a dispatcher crashes mid-claim.',
-      'Trip state machine — REQUESTED → MATCHED → ARRIVED → ON_TRIP → COMPLETED, with every transition explicitly whitelisted so a trip can never be billed before it started.',
-      'Fail-closed dispatch — if the Redis lock store is unreachable, city-wide dispatch deliberately pauses rather than risk offering one driver to two riders at once.',
-    ],
+    id: "proximity",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![Proximity / Nearby (Maps / Yelp) — high-level architecture (HLD)](diagrams/proximity.svg)",
+    svgBase: "proximity",
+    title: "proximity / nearby-search system (like Maps or Yelp nearby search)",
+    rawBody: "Draw Case 7: Proximity / Nearby with a query circle crossing cell boundaries. Core flow: point + radius + filters -> COMPLETE REGION COVER -> read covered index ranges/descendants -> deduplicate ids and resolve latest location versions -> exact distance/eligibility filter -> order by (distance,id). Show three index-specific cover methods: geohash enumerates intersecting rectangles at selected precision; quadtree traverses all nodes whose bounds intersect the circle; S2 uses spherical RegionCoverer and descendant/range lookup. Never label center plus eight neighbors as universal. A 3x3 grid is a conditional example only when its outer edges enclose the entire circle; cell widths vary with latitude and adaptive cells vary in size. Static places use a durable spatial index and place metadata; frequently moving points use a versioned, TTL'd RAM grid with last-sequence-wins ingestion. Include an inside-radius point across a cell edge and an outside-radius point inside a covered coarse cell. Inset local coordinates in km: query (-0.01,0); B(0.01,0)=0.02 km; A(-0.41,0)=0.40 km; C(1.80,0)=1.81 km; D(2.19,0)=2.20 km. Radius 2 includes B,A,C only. Separate exact k-NN inset: visit regions by minimum possible distance; stop only when k exist and the smallest unvisited bound is greater than kth distance; explore equality for id tie-breaking. Arbitrary per-cell candidate caps do not preserve exactness. S2 key locality is useful, not a universal distance ordering."
   },
   {
-    id: 'news_feed',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![News Feed (Twitter / Facebook) — high-level architecture (HLD)](diagrams/news_feed.svg)',
-    svgBase: 'news_feed',
-    title: 'news feed system (Twitter / Facebook style)',
-    legend: 'the Fan-out service decides push-vs-skip per post; the Feed service merges pushed + pulled at read time. The Timeline cache is a Redis sorted set per user.',
-    blocks: [
-      'Tweet service — persists the post (source of truth) and emits tweet.created to Kafka; returns to the author immediately (the fan-out is async).',
-      "Fan-out service / workers — consume post.created and, for normal authors, push the postId into each follower's feed cache. For celebrities, they skip the push (that is the whole trick).",
-      'Realtime push (optional, reuses the chat gateway) — in parallel with the async cache write, any follower who is currently connected can also get the new post pushed instantly over their open WebSocket. The timeline-cache write is the system of record; live push is a latency optimization layered on top.',
-      "Feed (read) service — on a feed request, read the user's pushed timeline cache, then pull recent posts from the few celebrities they follow, then a Ranking Service merges + ranks + paginates.",
-      'Timeline cache (Redis ZSET) — per-user sorted set postId → score (score = timestamp or a ranking score), capped to ~800 entries so memory stays bounded.',
-      'Social graph (Cassandra) — the follow edges (followers, followees), used to know who to push to and which celebrities to pull from.',
-      'Tweet store (Cassandra) — write-heavy, time-ordered durable posts; the timeline holds ids, the post bodies are fetched here (or from cache).',
-      'Why hybrid, in numbers — pure push costs O(followers) writes per post, so one celebrity posting to 100 million followers is an unservable write burst; pure pull costs O(followees) reads per timeline load, so a user following thousands is an unservable read cost; the hybrid bounds both sides by pushing only below a follower-count threshold.',
-      'Follower segmentation — LIVE (currently connected: push instantly over an open WebSocket), ACTIVE (recently active: precompute into their feed cache), PASSIVE (dormant: skip the write, rebuild lazily by pull on next visit), INACTIVE (skip entirely).',
-      'Cursor-based pagination — infinite scroll pages by the last-seen post\'s score/id, not by numeric OFFSET, so new posts arriving at the top never cause the next page to skip or duplicate items.',
-    ],
+    id: "ride_hailing",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![Ride-Hailing (Uber / Lyft) — high-level architecture (HLD)](diagrams/ride_hailing.svg)",
+    svgBase: "ride_hailing",
+    title: "ride-hailing system (Uber / Lyft style)",
+    rawBody: "Draw Case 8: Ride-Hailing, explicitly separating EPHEMERAL LOCATIONS from DURABLE ASSIGNMENTS. Driver GPS -> location ingestion -> versioned TTL RAM geo grid, about 1.25 million updates/s for five million drivers every four seconds. Rider request -> complete nearby-circle cover -> ETA ranking -> assignment authority. The geo grid and optional Redis SET NX lease are candidate/admission optimizations, NOT proof of final ownership. Show a serializable regional driver-and-trip database: driver {state,tripId,offerEpoch,expiresAt}, trip {state,currentOffer,driver}. Reserve atomically if driver available or old OFFERED state expired and trip REQUESTED without a live offer. Push offer with epoch over the WebSocket gateway. Acceptance transaction validates current driver/trip owner, epoch, unexpired offer and expected trip state; writes driver ASSIGNED, trip MATCHED and outbox; only THEN confirm. Accepted assignments do not expire with the offer timer. Decline/timeout releases only matching OFFERED owner+epoch. If advisory Redis exists, release by atomic token comparison and deletion, never unconditional DEL. Race inset: A epoch41 at t0 expires t15; acceptance handler pauses t14 before commit; B epoch42 reserves t16 and commits t17; A resumes t18 and is rejected, leaving B intact. Duplicate committed acceptance returns its result. Outbox relays trip.matched after crashes. Assignment authority unavailable -> pause confirmation. Label first-offer target 2-5 s separately from final match including human waits. Retain trip FSM and surge as a derived per-cell signal."
   },
   {
-    id: 'video_streaming',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![Video Streaming (YouTube / Netflix) — high-level architecture (HLD)](diagrams/video_streaming.svg)',
-    svgBase: 'video_streaming',
-    title: 'video streaming platform (YouTube / Netflix style)',
-    legend: 'Layer 2 turns one upload into many renditions; Layer 3 is where billions of viewers actually pull bytes, almost all from CDN.',
-    blocks: [
-      'Upload service + raw store — the creator uploads the original directly to object storage via a presigned URL (servers never proxy petabytes); metadata + an uploaded event kick off processing.',
-      'Splitter — cuts the original into GOP-aligned chunks (a few seconds each) so they can be encoded independently and in parallel (the key to fast transcode).',
-      'Encoder workers — a CPU/GPU fleet; each worker encodes one chunk into one rendition; the work is embarrassingly parallel (chunks × renditions).',
-      'Packager — assembles encoded chunks into ABR segments and writes the manifest (HLS .m3u8 / DASH .mpd) that lists every rendition and segment.',
-      'CDN (delivery) — caches segments at the edge by popularity; the vast majority of bytes are served here, close to the viewer, never touching origin.',
-      'View counter — approximate, sharded, batched counting (exact per-view at internet scale is pointless and expensive).',
-      'GOP-aligned chunking — the original is split at keyframe boundaries into independent chunks so each chunk can be encoded into every rendition in parallel across hundreds of workers, turning a multi-hour serial encode into minutes.',
-      'Aligned segments across renditions — because every rendition is cut at the exact same segment boundaries, the player can fetch segment 5 at 480p and segment 6 at 1080p and splice them with no visible glitch.',
-      'ABR control loop — runs entirely on the client: estimate current bandwidth, pick the highest rendition that fits (stepping down if the buffer runs low), fetch the next segment from that rendition\'s folder, repeat.',
-    ],
+    id: "news_feed",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![News Feed (Twitter / Facebook) — high-level architecture (HLD)](diagrams/news_feed.svg)",
+    svgBase: "news_feed",
+    title: "news feed system (Twitter / Facebook style)",
+    rawBody: "Draw Case 9: News Feed using the single event name post.created everywhere. Create post -> durable post store plus author/time/post-id access path -> committed outbox or CDC -> event bus -> hybrid fan-out policy. Ordinary authors push stable post ids into capped active-reader candidate caches; celebrity posts skip follower-wide writes but remain in the durable author stream, with a replicated recent-post cache. Read flow merges pushed candidates, pulled celebrity posts (durable author index on cache miss), and own recent posts; deduplicate by post id. Rank a bounded candidate set ONCE and store a user-bound ordered snapshot with expiry. Page one and later pages read that immutable list using (snapshotId,lastOrdinal); do not draw offsets into a changing ranking. Snapshot expiry returns refresh-required, not a silently rebuilt page. Chronological alternative inset: descending (createdAt,postId), exclusive tuple continuation handles equal timestamps; a horizon excludes newer posts, while strict fixed membership requires a snapshot. Dataset inset: 100:A@10:00:01, 101:A@10:00:02, 102:B@10:00:03, 103:celebrity@10:00:03. Page size2 -> [103,102], then [101,100] even if 104 arrives after page1. Live push/new-post indication is separate from frozen pagination. Label posts and follow edges AUTHORITATIVE; timeline cache, celebrity cache, live push and snapshots DERIVED. Memory inset 500M x800 x16B=6.4TB payload BEFORE Redis overhead/replicas. Fan-out math sums recipients for each pushed post, not min(averageFollowers,threshold). Personalized pages must not enter a shared public CDN cache."
   },
   {
-    id: 'file_sync',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![File Sync & Storage (Drive / Dropbox) — high-level architecture (HLD)](diagrams/file_sync.svg)',
-    svgBase: 'file_sync',
-    title: 'file sync and storage system (Google Drive / Dropbox style)',
-    legend: 'the two stores are the heart — a transactional metadata DB (small, hot) and a content-addressed block store (huge, immutable). Clients talk to both.',
-    blocks: [
-      "Client — the smart part: watches local files, chunks them, computes each chunk's content hash, and asks the server which chunks it doesn't already have before uploading.",
-      'Metadata service + DB — owns the map of a file: its ordered list of chunk hashes, its versions, ACLs, and dedupe refcounts. This is the source of truth for "what a file is."',
-      'Block service + block store — stores the actual bytes, content-addressed by chunkHash, write-once. Identical chunks (across files and users) map to the same key and are stored once.',
-      "Notification / sync service — when a file changes, it tells the user's other online devices to pull; offline devices catch up on reconnect.",
-      'Kafka — fans file.changed out to device-notification, thumbnailing, search, and sharing.',
-      'Content-addressed chunks — each chunk is keyed by hash(bytes), which gives automatic dedupe (identical bytes anywhere map to the same key and are stored once), integrity checking (re-hash on read), and idempotent uploads for free.',
-      'Delta sync — before uploading, the client asks the server which of its chunk hashes are already known; only the genuinely changed chunks (often just one, for a small edit to a huge file) are transferred in either direction.',
-      'Content-defined chunking — a rolling-hash boundary (instead of fixed-size cuts) keeps most chunk boundaries stable across an insertion, so inserting one byte at the front of a file does not force a full re-upload the way fixed-size chunking would.',
-    ],
+    id: "video_streaming",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![Video Streaming (YouTube / Netflix) — high-level architecture (HLD)](diagrams/video_streaming.svg)",
+    svgBase: "video_streaming",
+    title: "video streaming platform (YouTube / Netflix style)",
+    rawBody: "Draw Case 10: Video Streaming with upload/processing and playback lanes. Creator uploads original directly to object storage; durable finalization triggers PROCESSING. Planner chooses common output boundaries 0,4,8,... seconds and appropriate source decode ranges. Encoder jobs for each time span and applicable rendition decode pre-roll if necessary and force compatible closed-GOP random-access frames at shared output boundaries. Arbitrary source keyframes every five seconds cannot simply be repackaged into independently decodable four-second outputs. Validate timestamps and decodability -> write immutable versioned segments and await durability -> write completed rendition playlists -> publish public master listing READY renditions only. Progressive publication can expose complete 360p before incomplete 1080p; never advertise missing-segment URLs. Delivery: CDN master -> player picks rendition from throughput safety margin and buffer -> aligned segment downloads -> playback. ABR reduces stalls but an outage longer than buffered media or sustained throughput below the lowest rendition still stalls. Use consistent names: 640x360 -> 360p/index.m3u8; 1280x720 -> 720p/index.m3u8. Ladder inset: 0.4+0.8+1.4+2.8+5+16=26.4 Mbit/s; versus illustrative 5 Mbit/s original, outputs 5.28x and total including original 6.28x. A 1080p source excludes 4K, output sum10.4; weight real source mix. Buffer inset: 4s at2.8Mbit/s=11.2Mbit; at1.4Mbit/s download8s, starting buffer6s ->2s stall. Note monolithic MP4 supports CDN/range caching and resume. Count accepted events with deduplicated sharded batching; approximate unique-viewer sketches are a separate metric."
   },
   {
-    id: 'url_shortener',
-    chapterFile: 'content/36_system_design_cases_search_media.md',
-    existingImageLine: '![URL Shortener (TinyURL) — high-level architecture (HLD)](diagrams/url_shortener.svg)',
-    svgBase: 'url_shortener',
-    title: 'URL shortener system (TinyURL style)',
-    blocks: [
-      'Write service — turns a unique numeric ID into a base62 code and stores code→longURL.',
-      'Redirect service — the hot path: a cache-first KV lookup then an HTTP redirect.',
-      'ID generator — avoids collisions by construction.',
-      'Cache (Redis) — absorbs the 100:1 read load; the KV store is the durable backstop.',
-      'Click logging — done asynchronously so it never slows the redirect.',
-      'ID generation strategy — mint a globally-unique numeric id (Snowflake or a counter block) and base62-encode it, which avoids collisions by construction with no read-before-write; a content-hash approach (hash the long URL, check for a collision) is only needed if identical URLs should collapse to the same code.',
-      '301 vs 302 trade-off — a 301 (permanent) redirect gets cached by browsers/CDNs so repeat clicks may never reach your server (fastest, but loses per-click analytics); a 302 (temporary) is never cached, so every click hits the redirect service first (slightly slower, but full analytics).',
-    ],
-  },
-
-  // ─────────────────────────── Chapter 37 ───────────────────────────
-  {
-    id: 'rate_limiter',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter.svg)',
-    svgBase: 'rate_limiter',
-    title: 'distributed rate limiter',
-    legend: 'the limiter lives inside the API gateway, as middleware that runs before any request is routed to a backend. State lives in a sharded Redis cluster. Boxes are stateless unless they name a store.',
-    blocks: [
-      'Gateway fleet — the only place the limiter runs; co-locating it with auth and routing means zero extra network hops for the common path except the counter lookup.',
-      'Limiter middleware — resolves the KEY, fetches the matching policy (cached in-process, refreshed every few seconds), and asks the counter store one question: allow?',
-      "Redis cluster — holds the actual token buckets, sharded by KEY so the 1M ops/s spreads across nodes and one user's bucket lives on exactly one shard (no cross-node coordination per check).",
-      'Five algorithms compared — fixed window (simplest, but allows 2x the limit right at the window edge); sliding-window log (exact, but stores a timestamp per request); sliding-window counter (near-exact from just 2 numbers, the usual web default); token bucket (allows short bursts up to the bucket size, the API-limit default); leaky bucket (smooths to a fixed rate, no bursts, used for egress shaping).',
-      'Atomicity via one Lua script — the whole read-refill-check-decrement-write sequence runs as a single indivisible Redis operation, closing the race where two concurrent requests could both read "1 token left" and both be allowed.',
-      'Hybrid local + central — a fast approximate local token bucket in each gateway absorbs the firehose and survives a Redis outage; the central Redis+Lua bucket remains the authoritative count. Fail-open for ordinary traffic, fail-closed only for sensitive routes like login or payment.',
-    ],
+    id: "file_sync",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![File Sync & Storage (Drive / Dropbox) — high-level architecture (HLD)](diagrams/file_sync.svg)",
+    svgBase: "file_sync",
+    title: "file sync and storage system (Google Drive / Dropbox style)",
+    rawBody: "Draw Case 11: File Sync with a transactional METADATA AUTHORITY and an immutable BLOCK STORE. Preserve the four-chunk delta example: old [h0,h1,h2,h3], edited [h0,h1,h2a,h3], transfer only h2a when other chunks are authorized and reusable. Client creates intent with fileId, expectedBaseVersion, ordered hashes and a persistent idempotency key. Metadata authorizes file and dedupe scope, pins block generations, and returns scoped upload permissions for missing bytes. Upload only missing blocks; verify hash/length and durable finalization before AVAILABLE registry state. Final commit checks intent ownership/expiry, request digest, head==expectedBaseVersion, authorization and every block's durable AVAILABLE generation plus live pin. One transaction writes new server-assigned version, retained-version refcounts, ordered account journal/outbox and stored idempotent result, then consumes pins. Matching retries return the existing result; changed payload under same key is an error. Show stale-base branch -> preserve conflict copy, never silent overwrite. Device notification is a hint; offline replay uses lastAppliedJournalSeq across files, acknowledged after durable apply; expired history requires snapshot resync. GC inset: refcount0 is insufficient; require no live upload pins plus grace, atomically claim a specific generation DELETING, fence commit/reuse, delete only that object generation. History versions retain refs. Block keys are scoped content hashes, not global access capabilities; authorized file/version references gate downloads. Convergent encryption does not by itself hide existence of guessable content. CDC often preserves later boundaries after insertions but does not guarantee exactly one changed chunk."
   },
   {
-    id: 'unique_id',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Distributed Unique ID Generator (Snowflake) — high-level architecture (HLD)](diagrams/unique_id.svg)',
-    svgBase: 'unique_id',
-    title: 'distributed unique ID generator (Snowflake style)',
-    legend: "two deployment shapes. Embedded (a library inside each service) is the default — it has no network hop. A standalone ID service is used when clients can't embed the library.",
-    blocks: [
-      'Coordinator (ZooKeeper/etcd) — hands each generator a distinct 10-bit worker id exactly once, at boot. That is the only coordination, and it is off the hot path.',
-      'Generator — mints IDs from timestamp | worker | sequence using just its local clock and an in-memory counter, no I/O per id.',
-      "Deployment — Pattern A embeds this in every app pod; Pattern B centralizes it behind a load balancer when embedding isn't possible.",
-      'Worker id — guarantees two machines can never collide, even when they generate in the same millisecond.',
-      '64-bit layout — 1 unused sign bit + 41-bit millisecond timestamp + 10-bit machine/worker id + 12-bit per-millisecond sequence; putting the timestamp in the high bits makes ids naturally time-sortable and B-tree-insert-friendly, unlike UUIDv4\'s random scatter.',
-      'Clock-backward handling — if the local clock jumps backward (NTP correction, a paused VM resuming), a small drift makes the generator spin-wait until the clock catches up, while a large drift makes it refuse to mint ids and alert, rather than risk silently minting a duplicate.',
-    ],
+    id: "url_shortener",
+    chapterFile: "content/36_system_design_cases_search_media.md",
+    existingImageLine: "![URL Shortener (TinyURL) — high-level architecture (HLD)](diagrams/url_shortener.svg)",
+    svgBase: "url_shortener",
+    title: "URL shortener system (TinyURL style)",
+    rawBody: "Draw Case 12: URL Shortener as a compact warm-up. Create path: optional custom alias OR unique integer from managed disjoint ranges constrained below62^7 -> base62 candidate -> ATOMIC PUT-IF-ABSENT in one public code namespace -> durable mapping {target,expiresAt,createdAt} -> cache after success. Alias conflict is explicit; generated conflict retries because aliases may occupy allocated strings. Random cryptographic candidates plus conditional retries are an alternative when unpredictability matters. Do not describe Snowflake as unguessable or seven characters by default: seven base62 chars carry about41.7bits, while full63/64-bit Snowflake values may need11; truncation destroys uniqueness. Capacity inset62^7=3.52trillion,100M/day x5years=182.5B about5.2%; random100M draws have about1420 expected colliding pairs before retries. Keep capacity, collision probability and unpredictability as three separate ideas. Redirect path: GET code -> mapping cache or durable KV -> SAME expiry gate on both hit/miss -> absent/expired gives404/410, otherwise default302 + Location + Cache-Control:no-store. Internal cache TTL=min(normalTTL,expiresAt-now), and record retains expiry. Background deletion is not request-time expiry enforcement. Retain expired reservations/tombstones; no code reuse in this design. Async best-effort click events leave the redirect path. Speed-first301 with explicit bounded freshness may offload requests, and302 can also cache if headers allow; neither status guarantees perfect analytics. Do not claim one Redis key has unlimited capacity; hot mappings may use local caches/read replicas."
   },
   {
-    id: 'topk',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk.svg)',
-    svgBase: 'topk',
-    title: 'top-K / trending / heavy-hitters system, reporting the top-K most frequent keys from a firehose of events',
-    blocks: [
-      "Kafka ingest — events land in Kafka, partitioned by key so every occurrence of one key (e.g. hashtag) goes to the same stream worker (that worker sees all of that key's traffic locally, no cross-worker counting per event).",
-      'Stream worker — keeps a fixed-size Count-Min Sketch and a min-heap of its top-K, and flushes its local top-K every few seconds.',
-      'Merge — combines the per-partition heaps into a global top-K, cached in Redis for the /trending API.',
-      'Batch path (Spark) — computes the exact answer slowly and reconciles drift, the classic Lambda architecture: a fast approximate path plus a slow exact path.',
-      'Count-Min Sketch mechanics — d independent hash functions each index into a row of w counters; updating a key bumps one cell per row, and estimating reads the MINIMUM across those rows (collisions only ever inflate the estimate, so it never under-counts). Error is tunable by sizing w and d — good enough for trending, not for ad-billing.',
-    ],
-    flow: '(1) event arrives, hashed to a Kafka partition by key; (2) worker updates its Count-Min Sketch and, if the new estimate beats its heap minimum, updates its local min-heap; (3) every few seconds each worker emits its top-K; (4) the merge step unions all local heaps into the global top-K; (5) result is cached in Redis and served via the API; (6) in parallel, Spark periodically recomputes the exact answer over the same event history for reconciliation.',
+    id: "rate_limiter",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter.svg)",
+    svgBase: "rate_limiter",
+    title: "distributed rate limiter",
+    rawBody: "Distributed rate limiter: authenticated gateway resolves a trusted route/tenant policy, then asks the authoritative owner of that bucket for an atomic decision. Redis Lua obtains TIME, clamps effective time to the stored timestamp, refills up to burst B, spends one token if available, persists on allow or deny, and returns remaining tokens and computed wait. Policy inputs are validated; caller timestamps are not accepted. Expiry must not reset a partially empty bucket before its full-refill horizon. Allowed requests reach the backend; rejected requests receive 429 and a rounded-up Retry-After. Token bucket contract is B+rT, not a strict rolling-window N. Shard different keys; a hot single tenant still has contention. A healthy atomic owner is not durable consensus: Redis failover can lose spent tokens. Strict routes need durable ownership/state and fail-closed handling. Explicit fallback: centrally deducted grants preserve a total budget, or G gateways each with b non-refilling emergency tokens admit at most G*b extras per outage epoch if restart cannot recreate tokens. Unbounded fail-open has no finite overshoot bound. Label all throughput and sub-millisecond latency figures as workload assumptions."
   },
   {
-    id: 'leaderboard',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)',
-    svgBase: 'leaderboard',
-    title: 'leaderboard / ranking system',
-    blocks: [
-      'Score API — writes each update to both the durable store (Cassandra, the source of truth, survives a cache flush) and the Redis sorted set (the live ranking index).',
-      'Leaderboard API — answers all read queries directly from Redis sorted-set commands: ZREVRANK for "my rank," ZREVRANGE for "top N" and "players around me" (each O(log N)).',
-      'Failover — on a Redis failure, the sorted set is rebuilt by replaying scores from the durable store.',
-      'Skip-list + hash-map (why Redis sorted sets are fast) — a sorted set is internally a skip list (ordered, O(log N) rank lookup) plus a hash map (member to score, O(1) lookup), which is exactly why both "what is my rank" and "who is at rank r" are cheap.',
-      "Global rank across shards (the hard part) — no single shard holds every player, so an exact global rank needs a bucket-count approximation (sum, per shard, of how many players score higher) rather than a literal merge; most products give an exact rank only for the small top board and an approximate rank (\"~#12,431\") for everyone else.",
-    ],
-    flow: '(1) score event → API; (2) API issues a ZADD into Redis and persists to Cassandra; (3) reads hit Redis only: ZREVRANK for "my rank," ZREVRANGE for "top N" and "around me"; (4) on a Redis failure, a rebuild replays every score from Cassandra to reconstruct the sorted set.',
+    id: "unique_id",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Distributed Unique ID Generator (Snowflake) — high-level architecture (HLD)](diagrams/unique_id.svg)",
+    svgBase: "unique_id",
+    title: "distributed unique ID generator (Snowflake style)",
+    rawBody: "Snowflake unique ID generator: coordinator maintains renewable worker ownership plus a DURABLE highest-granted timestamp ceiling per worker. Generator uses a disjoint granted time interval, a conservative monotonic lease deadline, and a lock around the complete timestamp/sequence transition. No network call per ID, but renewal/allocation are real coordination. Bit layout: sign0, 41 timestamp milliseconds since custom epoch, 10 worker bits, 12 sequence bits. Example offset1000, worker7, sequence3 -> 4,194,332,675. Same millisecond increments sequence; after4095 wait for the next millisecond, rechecking lease. Backward clock: wait within a bound or reject and alert; reject timestamps outside grant/epoch range. Check ownership after pauses and before issuance. An expired lease does not kill a paused process; a replacement gets timestamps strictly ABOVE the old durable ceiling, even if unused. If ceiling1100, wait for1101 or use another safe worker. Grants survive lease deletion and prevent old/new allocations minting the same tuple. Coordinator outage permits issuance only within valid ownership and grant bounds, then fail-stop. 4096 IDs/ms is a bit-space ceiling, not measured throughput. IDs are k-sorted, not secret or globally monotonic; database sequences and UUIDv7 remain alternatives."
   },
   {
-    id: 'dist_cache',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)',
-    svgBase: 'dist_cache',
-    title: 'distributed cache system (designing Redis / Memcached itself)',
-    blocks: [
-      'Cache client — a library in each app server; hashes the key onto a consistent-hash ring to find its owner node, with no central coordinator on the read path.',
-      'Cache node — holds a shard of data in RAM with an eviction policy (LRU by default) and an async replica for durability/failover.',
-      'Cluster Manager (Redis Sentinel / Cluster) — watches node health and promotes a replica to primary on failover.',
-      'Miss handling — on a cache miss, the app either reads the backing database and back-fills the cache ("cache-aside") or the cache reads through to the database on its own ("read-through").',
-      'Virtual nodes — each physical cache node is placed at roughly 100 positions around the consistent-hash ring instead of just one, which smooths out load imbalance and makes rebalancing gradual when a node joins or leaves.',
-      "Hot-key mitigation (three techniques, often combined) — client-side near-cache (each app instance caches a hot key in-process for a few seconds so most reads never reach the cache node at all); key replication/fan-out (store the hot key on K nodes as key#0..key#K-1 and have readers pick a random replica, splitting load K ways); request coalescing / single-flight (on a miss, only one caller fetches from the database while every other concurrent caller waits for that one fill, preventing a stampede).",
-      'Thundering herd / cache stampede — when a very hot key expires, thousands of concurrent misses can hit the database at once; randomized TTL jitter (so hot keys do not all expire at the same instant) plus request coalescing prevents it.',
-    ],
-    flow: '(1) client library hashes the requested key onto the consistent-hash ring to find its owning node; (2) client sends GET directly to that node; (3) on a hit, return the value immediately; (4) on a miss, load from the backing database, SET the value into the cache with a TTL, then return it; (5) the Cluster Manager continuously monitors node health and promotes a replica if a primary fails.',
+    id: "topk",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk.svg)",
+    svgBase: "topk",
+    title: "top-K / trending / heavy-hitters system, reporting the top-K most frequent keys from a firehose of events",
+    rawBody: "Streaming approximate heavy hitters: events with key, event time and identity enter Kafka partitioned BY KEY, so one partition owns a key's entire count. Worker maintains a Count-Min Sketch for the window and an indexed MIN heap of UNIQUE candidate keys, capacity C >= desired K. Update d sketch cells; if key already exists, update its priority; otherwise insert if room or replace the weakest candidate under one deterministic tie order. Key-to-heap-index map changes with swaps/removals. Periodically rescore retained keys, emit candidates with window ID, watermark/version and ownership, and merge compatible partition results into approximate global top-K cached for the API. CMS estimates counts, not key identities; collision changes can leave priorities stale and rescoring cannot recover omitted candidates. Six-event example A,A,B,C,B,A at K2 without collisions ends A3,B2, never two slots for A. Exact local top-K union works under whole-key partitioning and a common total order; arbitrary event partitions can hide global winners. Tumbling windows reset sketch and candidates; one-minute panes approximate sliding60minutes with explicit memory/boundary and recall costs. CMS error epsilon*N is additive per queried key, not guaranteed ordering; batch exact results monitor drift and candidate recall. Do not label this an exact top-K algorithm."
   },
   {
-    id: 'scheduler',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Distributed Job Scheduler / Task Queue — high-level architecture (HLD)](diagrams/scheduler.svg)',
-    svgBase: 'scheduler',
-    title: 'distributed job scheduler / task queue system',
-    blocks: [
-      'Submit API — durably writes each job (so nothing is lost on a crash) along with its run_at time and state.',
-      'Leader-elected scheduler (only one instance active at a time, elected via etcd/ZooKeeper) — continuously scans a time-ordered index and promotes due jobs to READY state.',
-      'Workers — poll for ready jobs, lease one (claiming it for a bounded time window), run it, and either ack (delete) on success or retry-with-backoff on failure, after N attempts the job moves to a dead-letter queue.',
-      'Sweeper — re-queues any job whose lease expired because its worker died mid-execution, this is what makes execution at-least-once.',
-      'Leased dispatch — dequeue atomically claims one due job (e.g. Postgres SELECT ... FOR UPDATE SKIP LOCKED, or a Redis equivalent) and stamps a lease deadline; if the worker crashes and never acks before that deadline, the job becomes visible again and is redelivered elsewhere — the same idea as SQS visibility timeout.',
-      'Delayed-job structure — a sorted set keyed by run_at (simple, scales to millions of jobs, O(log N) insert) or a hierarchical timing wheel (a ring of time-slot buckets that ticks forward, O(1) insert/expire, used by Kafka and Netty for huge timer volumes).',
-    ],
-    flow: '(1) client submits a job, durably stored with run_at and PENDING state; (2) the leader-elected scheduler scans the time-ordered index and flips due jobs to READY; (3) a worker polls, leases a READY job for a bounded time, and executes it; (4) on success the worker acks and the job is deleted; on failure it is retried with backoff or sent to the dead-letter queue after N attempts; (5) if a worker crashes mid-job, the sweeper detects the expired lease and makes the job available for redelivery.',
+    id: "leaderboard",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard.svg)",
+    svgBase: "leaderboard",
+    title: "leaderboard / ranking system",
+    rawBody: "Leaderboard: authoritative writer stores each player's season MAXIMUM score and version, deduplicates (season, matchId, player), and records an outbox event in the same durable commit. A projector atomically compares version and updates the Redis sorted set plus version metadata; late v8 cannot overwrite v9. Reads use top-N, zero-based rank and clamped around-me ranges; read-your-writes requires a projection barrier or updating status. Example Ada120 atsecond200, Ben120 at250, Cleo100, Dev95, Eli90; matchM82 raises Dev to125 v9 -> Dev,Ada,Ben,Cleo,Eli. Raw ZINCRBY is not retry-idempotent. Bounded tie encoding score*B+(B-1-t) with B1,000,000, score<=1,000,000 and 0<=t<B stays below2^53 and prevents time outweighing a score point; equal composites use defined member order. If bounds do not fit, use tuple-aware indexing. Global rank sums counts ahead under the full tie order on compatible snapshots. Score-range top100 may require multiple shards if the highest has only40. Histograms are explicitly approximate. Redis is a rebuildable read model, not an uncoordinated second source of truth."
   },
   {
-    id: 'payment',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment.svg)',
-    svgBase: 'payment',
-    title: 'payment system / digital wallet',
-    legend: 'boxes are services; a store is named inside the box.',
-    blocks: [
-      'Payment API — the only synchronous hop; its first act is the idempotency check, a retry with the same key returns the stored result without moving money again.',
-      "Orchestrator — runs the multi-step saga, because we can't wrap an external gateway call in our own database transaction.",
-      'Wallet/ledger service — owns the double-entry, append-only ledger in a strongly-consistent SQL store; it is the system of record.',
-      'Gateway adapter — talks to the external payment processor (also idempotent).',
-      'Outbox (written in the same database transaction as the ledger entry) — publishes events for notifications and, crucially, for the reconciliation job.',
-      "Reconciliation job — compares our ledger against the gateway's settlement report and flags any discrepancy; that loop is the safety net that makes the whole thing trustworthy.",
-      'Double-entry ledger — every transaction writes two append-only rows that sum to zero (e.g. wallet:alice -30.00, wallet:bob +30.00); a balance is simply SUM(entries) for that account, and a correction is always a new reversing entry, never an UPDATE or DELETE.',
-      'Idempotent posting — a UNIQUE constraint on the idempotency key means a retried payment request inserts zero new rows and returns the original stored result, so a retry can never move money twice.',
-      'CP over AP — during a network partition the payment path deliberately refuses to write rather than risk a double-spend; availability is sacrificed for correctness here, the opposite trade-off from a typical cache or KV store.',
-    ],
+    id: "dist_cache",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache.svg)",
+    svgBase: "dist_cache",
+    title: "distributed cache system (designing Redis / Memcached itself)",
+    rawBody: "Distributed cache: client routes keys to generic consistent-hash owners with virtual nodes, or an explicitly different Redis Cluster hash-slot model. Replication and bounded near-caches reduce misses and hot-key reads; vnodes balance many keys, not one hot key's traffic. Database remains authoritative. Cache-aside miss uses per-key single-flight, then DB fetch and conditional fill; TTL jitter prevents synchronized expiry, while admission bounds distinct-key misses during cold restart. Stale-fill sequence: R records generationg7, reads DBv7; W commitsv8 then atomically advances fenceg8 and invalidates value; R's fill withg7 is rejected. Preserve fence independently of value and never recreate an old generation after eviction/restart. This does not remove the DB-commit-to-invalidation gap; strict freshness reads the authority or uses a stronger protocol. Versioned CDC is another measured-lag design. Size RAM and throughput independently: four nodes at200kops/s total800k before headroom, not millions. 100GB logical payload plus one full replica is200GB before overhead. A90% hit rate at1Mrps still means100kDBmisses/s, and cold-cache misses may approach all traffic. Bound pressure rather than simply adding cache nodes."
   },
   {
-    id: 'inventory',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)',
-    svgBase: 'inventory',
-    title: 'e-commerce inventory / flash-sale system',
-    blocks: [
-      'Virtual waiting room — the pressure valve: it admits a controlled rate of users and tells the rest to wait, so the inventory service never sees a million simultaneous writes.',
-      'Inventory API — does the one thing that must be perfect: an atomic reserve-decrement on a Redis counter (fast, single-threaded, naturally serialized). A successful reserve creates a time-boxed reservation (TTL) so stock is held only while the buyer pays.',
-      'Order outcome — payment success persists a durable order; a timeout releases the reserved unit back to available stock.',
-      'Apache Kafka — each confirmed order emits order events for fulfillment, analytics, and reconciliation.',
-      'Durable DB — the source of truth for orders and final stock, reconciled asynchronously with the Redis counter.',
-      'Atomic reserve-decrement (the crux) — a single indivisible operation fuses the check and the decrement, either a Redis DECRBY that un-does itself and reports sold-out if it goes negative, or a SQL `UPDATE ... SET available = available - qty WHERE available >= qty` where zero affected rows means not enough stock; this is what makes "N units sell at most N times" true even under a stampede.',
-    ],
-    flow: '(1) queue → (2) admit → (3) atomic DECR → (4) reserve with TTL → (5) pay or release → (6) order events on Kafka.',
+    id: "scheduler",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Distributed Job Scheduler / Task Queue — high-level architecture (HLD)](diagrams/scheduler.svg)",
+    svgBase: "scheduler",
+    title: "distributed job scheduler / task queue system",
+    rawBody: "Durable scheduler: submit idempotent job/occurrence to a persistent job store with run_at, state, monotonically increasing attempts, lease_until and payload. Due index or rebuildable timing wheel finds work; transactional SKIP LOCKED claim changes ready to leased, increments attempt token and returns payload. Heartbeat and ACK require current jobID, attempt token, leased state and an unexpired lease. Sweeper makes expired work ready for another attempt. Timeline job42: A claims7 at12:00:00 until:30, heartbeat:20 extends:50, expiry:51, Bclaims8, AACK7 at:52 changes zero rows. Never reset attempts/reuse jobID for different work. Queue fencing protects queue state, not an external email/payment; the effect sink dedupes stable job/occurrence identity or enforces fencing. Retrying by attempt number would not dedupe effects. Retry with backoff/jitter and DLQ. Recurrence planner atomically inserts unique(scheduleID,scheduledAt) and advancesnextFire; timezone, DST, misfire and overlap rules are explicit. Timing-wheel bucket metadata may be fixed, but timer entries require O(numberoftimers) memory. Little's Law yields concurrent execution SLOTS, not necessarily machines. Keep queue and delayed index recovery explicit."
   },
   {
-    id: 'kv_store',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store.svg)',
-    svgBase: 'kv_store',
-    title: 'distributed key-value store (Dynamo style, leaderless and highly available)',
-    blocks: [
-      'No leader — any node can coordinate a request, which is why the store stays available.',
-      "Consistent hashing + virtual nodes — place keys; each key's preference list is the next N nodes clockwise on the ring (its replicas).",
-      'Quorum reads/writes — a PUT is sent to all N replicas but only waits for W acknowledgements; a GET asks all N but waits for R responses.',
-      'Gossip — spreads membership and failure detection between nodes without a central registry.',
-      'Failure handling — when a replica is down, hinted handoff parks its writes on a stand-in node (sloppy quorum) for later replay, and anti-entropy (Merkle trees) reconciles replicas in the background.',
-      'Quorum tuning — with N replicas, requiring W write-acks and R read-responses such that W+R > N guarantees every read set overlaps the write set (e.g. N=3, W=2, R=2), so a read is guaranteed to see the latest acknowledged write; lowering W and R trades that guarantee for speed.',
-      'Conflict resolution — during a partition, two clients can write the same key on different replicas producing unordered "sibling" versions detected via vector clocks; the store resolves them with last-write-wins (simple, can silently drop a write) or by returning both siblings for the application to merge (e.g. union two shopping carts).',
-    ],
-    flow: '(1) client sends a request to any node, which acts as coordinator; (2) coordinator hashes the key to find its preference list of N replica nodes; (3) a write waits for W acks, a read waits for R responses and resolves any conflicting versions; (4) if a replica is down, hinted handoff parks its write on a stand-in; (5) a background anti-entropy process reconciles replicas that drifted out of sync.',
+    id: "payment",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment.svg)",
+    svgBase: "payment",
+    title: "payment system / digital wallet",
+    rawBody: "Payments/digital wallet: API authenticates and validates currency, integer minor units, accounts and positive amount; uniquely binds (tenant,principal,operation,key) to payloadHash and durable transactionT1. Terminal identical replay returns stored result; changed payload conflicts; PENDING/UNKNOWN returns status or resumes the same workflow. Internal same-shard transfer locks transaction and account balances in deterministic order; check funds, append balanced signed entries, UPDATE AUTHORITATIVE BALANCES, write outbox and terminal receipt in ONE ACID transaction. Example Alice5000cents: T30spends3000, commitsbalance2000; T31spends2500 must then fail. No processor HTTP while wallet locks are held. External topup uses stable provider identityT1 with supported provider dedupe window: success permits an idempotent posting stage; decline persists failure; timeout remainsUNKNOWN and is queried/reconciled, not blindly recharged. A completed or unresolved request must not fall through into another posting. Charge-before-ledger crash resumes/queryT1 or completes tracked refund; refund timeout is alsoUNKNOWN. Query and settlement use providerT1, mapped to clientkeyk1. Outbox publication may duplicate; consumers dedupe. Cross-shard transfer uses balanced local clearing legs and funds-in-transit, not an assertion of simultaneous atomic visibility. Ledger corrections are reversing entries, not edits."
   },
   {
-    id: 'pastebin',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Pastebin — high-level architecture (HLD)](diagrams/pastebin.svg)',
-    svgBase: 'pastebin',
-    title: 'pastebin system (paste text, get a short shareable link, optional expiry / view-once)',
-    blocks: [
-      'Write API — mints a short key (hash+base62, a counter, or a Snowflake id), stores the text blob in object storage (S3/GCS, fronted by a CDN for hot pastes), and writes metadata (key → blob_url, expiry, view_once) to a KV/SQL store plus cache.',
-      'Read — resolves the key in the metadata store (cache-first), checks expiry/view-once rules, then streams the blob from the CDN/object store.',
-      'TTL sweep — a background job (or object-store lifecycle rule) deletes expired blobs.',
-      "Metadata/payload separation (the one new idea over the URL shortener) — the hot path resolves only a tiny, cacheable key-to-metadata record; the large text blob itself lives in object storage plus a CDN, so the database never stores or serves multi-kilobyte bodies.",
-      'View-once as atomic delete-on-read — fetching and marking a one-time paste as consumed happens as a single conditional delete, so two simultaneous readers can never both see it.',
-    ],
-    flow: '(1) generate key; (2) blob written to object store; (3) metadata written to the DB; (4-6) read path resolves metadata, checks expiry, then streams the blob.',
-    flowLabel: 'Flow:',
+    id: "inventory",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory.svg)",
+    svgBase: "inventory",
+    title: "e-commerce inventory / flash-sale system",
+    rawBody: "Flash-sale inventory: a waiting room controls admitted load. SQL is the stock/reservation authority; Redis is optional admission/cache. One transaction claims a unique order and payload identity, conditionally decrements stock, and creates an ACTIVE reservation plus outbox. Matching retries return the same reservation; changed payloads conflict; insufficient stock produces REJECTED. ACTIVE to CONFIRMED before expiry requires verified payment success. ACTIVE to EXPIRED or RELEASED restores quantity in the same transaction, exactly once. Confirmation and expiry compete conditionally; key expiry alone never increments stock. Example initial stock 2: O17 and O18 each reserve one. If R17 expires and Carol acquires that unit, late payment P17 cannot resurrect R17: acquire a fresh reservation or complete an idempotent refund. UNKNOWN is not decline. Keep terminal records for dedupe. A Redis-authoritative alternative needs acknowledged-hold durability, safe ownership and recovery before reopening sales; reconciliation afterward cannot undo overselling. A named-seat variant has unique event/seat ownership. Distinguish stock ownership from payment/refund state."
   },
   {
-    id: 'amazon',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![E-commerce Platform (Amazon / Flipkart) — high-level architecture (HLD)](diagrams/amazon.svg)',
-    svgBase: 'amazon',
-    title: 'a full e-commerce platform (Amazon / Flipkart style)',
-    legend: 'boxes are services; the store is named inside. A dashed line splits the AP browse plane (top) from the CP order plane (bottom).',
-    blocks: [
-      'API Gateway / BFF — auth, rate-limit, routes browse vs order planes.',
-      'Catalog / Item service → MongoDB (document store) — owns the polymorphic product documents and serves the product detail page. Document store because a shirt (size, fabric, color) and a TV (screen-size, resolution, weight) share almost no attributes.',
-      'Inbound / Supplier-onboarding service — ingests seller catalogs in bulk, validates, writes the catalog document, and emits an event to Kafka.',
-      'Search-indexer consumer — reads Kafka, formats each item into a search doc, and writes it to Elasticsearch; the Search/Autocomplete service serves typeahead + full-text.',
-      'Recommendation service — a two-tower to ranking funnel, with candidates/features built offline by a Hadoop batch pipeline and near-real-time by Spark Streaming over the click/order event stream.',
-      'Serviceability / TAT service — answers "do we deliver to this pincode, and by when?" from precomputed warehouse × pincode × logistics tables, read on the product page, never computed on the hot path.',
-      'Cart + Order-Taking Service (cart held in Redis, persisted to MySQL) — the order-plane entry point.',
-      'Inventory service — atomic reserve-decrement with a quantity >= 0 constraint plus a reservation TTL.',
-      'Payment service — idempotent ledger + saga across the gateway, including the order-expiry-vs-payment-success race.',
-      'Order-processing / fulfillment — the post-payment workflow; on a terminal order state, the Archival service moves the order from MySQL to Cassandra, served later by a Historical-Order service.',
-      'Notification service — order-status updates (placed, shipped, delivered).',
-      'Two consistency regimes side by side — the browse plane runs AP (a stale price is cheaper than downtime, and price/stock get re-validated at checkout) while the order plane runs CP (reject before ever risking oversell or a double-charge).',
-      'Hot/cold order tiering — open orders (PENDING_PAYMENT through SHIPPED) stay in MySQL, small and fast; once an order reaches a terminal state (DELIVERED/CANCELLED) an Archival service copies it into Cassandra and removes it from MySQL, keeping the transactional database small forever while a separate Historical-Order service serves reads over the archive.',
-    ],
+    id: "kv_store",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store.svg)",
+    svgBase: "kv_store",
+    title: "distributed key-value store (Dynamo style, leaderless and highly available)",
+    rawBody: "Dynamo-style KV store: any node coordinates GET/PUT. Consistent hashing and vnodes locate N distinct physical failure-domain owners. Send to N, wait for W durable write acknowledgements or R read responses, then resolve version context and repair. Fixed home set A,B,C with N=3, W=R=2: v2 written to A,B overlaps a B,C read under retained-version/no-concurrent-write assumptions. W+R>N proves fixed-set overlap, not unconditional latest-value or linearizability. Partition example: only A and stand-in D can accept v2. Strict mode refuses to acknowledge two home replicas; sloppy mode accepts A,D but B,C may return v1. Concurrent version vectors produce siblings for application merge or potentially lossy LWW. Return causal context with reads and subsequent writes; simple cart union can resurrect removals. Deletion is a versioned tombstone retained until repair/offline rules make reclamation safe. Hinted handoff and Merkle anti-entropy repair after connectivity returns. Availability depends on the participation policy, not merely absence of a leader."
   },
   {
-    id: 'llm_serving',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving.svg)',
-    svgBase: 'llm_serving',
-    title: 'LLM inference serving / chatbot platform, where the crux is keeping expensive GPUs continuously busy',
-    blocks: [
-      'Gateway — does auth and rate limiting.',
-      'Safety / Moderation — applies prompt and output filters, screening the incoming prompt and the streamed tokens before they reach the user.',
-      'Prompt/response cache — short-circuits repeated or semantically-similar prompts, a huge cost saver; a cache hit streams the answer back immediately, bypassing the GPUs entirely.',
-      'Model Router — on a cache miss, picks a model by difficulty/tier/cost, sending easy queries to a small model and hard ones to a large model.',
-      'GPU inference fleet — loads weights from a Model Registry (versioned weights + LoRA adapters) and runs a continuous-batching scheduler that interleaves many concurrent sequences: a prefill phase (encode the prompt, fill the KV-cache) and a decode loop (emit one token per step, append to KV-cache, stream the token back to the client over SSE); the KV-cache lives in GPU HBM memory, paged for efficiency.',
-      'GPU Autoscaler — scales the fleet based on queue depth / tokens-per-second, not CPU utilization.',
-      'KV-cache — without it, generating each new token would require recomputing attention over every prior token (quadratic cost); the KV-cache stores past tokens\' attention keys/values in GPU memory so each new token costs only O(1) extra work, though batch-size × context-length must still fit in GPU HBM, which is what caps how many sequences can run at once.',
-      'Continuous batching — static batching forces all sequences in a batch to finish together, so a short reply sits idle waiting for a long one; continuous (in-flight) batching evicts and refills individual sequence slots every decode step, keeping the GPU close to 100% utilized regardless of how long each response runs.',
-    ],
-    flow: '(1) client request → API Gateway; (2) Safety/Moderation screens the prompt; (3) cache check, a hit streams back immediately; (4) on a miss the Model Router selects a model; (5) the continuous-batching scheduler slots the request into a live GPU batch; (6) prefill builds the KV-cache; (7) the decode loop streams tokens back one at a time, each output also moderated; (8) on completion the KV-cache slot is freed and the autoscaler adjusts fleet size based on current queue depth/throughput.',
-    flowLabel: 'Flow:',
+    id: "pastebin",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Pastebin — high-level architecture (HLD)](diagrams/pastebin.svg)",
+    svgBase: "pastebin",
+    title: "pastebin system (paste text, get a short shareable link, optional expiry / view-once)",
+    rawBody: "Pastebin extends the shortener with payload and authorization. Small text in SQL is a valid baseline. Larger payloads use a private immutable object store plus authoritative metadata: code, owner, ACL, blob version, expiry and consumed state. Finalize the object before publishing metadata; failed metadata writes leave orphans for safe cleanup. Public stable pastes may use a CDN with bounded freshness. Private/view-once content must not bypass authorization through a reusable object URL. An explicit identified retrieval checks current ACL and server-time expiry, conditionally claims unconsumed to consumed, then the API fetches the private object and streams with no-store. Example p7 expires at 12:05; Bob claims at 12:04:59 but the connection fails: one authorized retrieval attempt is spent, not guaranteed human viewing. Denied/expired/consumed requests receive no payload. HEAD and unauthenticated previews do not consume. Define in-flight expiry/revocation semantics; already delivered bytes cannot be recalled."
   },
   {
-    id: 'rag',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![RAG / Semantic Search — high-level architecture (HLD)](diagrams/rag.svg)',
-    svgBase: 'rag',
-    title: 'RAG / semantic search system, drawn as two paths: an offline ingest path and an online query path converging at a shared LLM step',
-    blocks: [
-      'Ingest (offline/streaming) — splits documents into overlapping chunks, embeds each chunk into a vector, and stores them in a vector DB / ANN index with metadata (source, ACL, timestamp) alongside each vector.',
-      'Query (online) — embeds the user question with the same embedding model, does an ANN top-k retrieval against the vector DB, reranks the results with a heavier cross-encoder for precision, keeps the best m passages, and assembles a prompt from the query plus those passages.',
-      'LLM generation — the assembled prompt is sent to the LLM, which generates a final answer citing the source passages it used.',
-      'Two-stage retrieval funnel (mirrors recommendation systems) — a cheap, fast ANN recall stage pulls roughly 100 candidates from millions of vectors, then an expensive, precise cross-encoder reranks that small set down to the best ~5; ANN trades a little recall for large speed, and reranking buys the precision back on a now-tiny set.',
-      'Freshness — a newly-added or edited document must become retrievable quickly, so ingestion incrementally upserts (and re-embeds changed chunks) rather than doing a full rebuild; a stale index otherwise silently returns wrong or outdated answers.',
-    ],
-    flow: '(1) offline: documents are chunked, embedded, and indexed into the vector DB with metadata; (2) online: user query is embedded with the same model; (3) ANN search retrieves the top-k candidate chunks; (4) a reranker reorders those candidates for precision, keeping the best m; (5) the best m passages plus the original query are assembled into a prompt; (6) the LLM generates a final answer, citing the source passages it used.',
-    flowLabel: 'Flow:',
+    id: "amazon",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![E-commerce Platform (Amazon / Flipkart) — high-level architecture (HLD)](diagrams/amazon.svg)",
+    svgBase: "amazon",
+    title: "a full e-commerce platform (Amazon / Flipkart style)",
+    rawBody: "E-commerce capstone: availability-first browse and consistency-first checkout. Begin with indexed SQL; isolate catalog, search projections and optional recommendations when measured pressure justifies it. Committed catalog changes feed search through outbox/CDC. Product pages use bounded-stale price/stock; optional ETA/recommendations fail under separate deadlines. Checkout revalidates price and obtains acceptance for a changed quote. Order O901: Mira buys two shirt-blue-M at price v17, 1999 USD cents each, shipping300 and tax0: total4298. Persist that snapshot, reservation R901 expiring12:05 and stable payment P901. Durable reserve precedes payment; definitive decline releases the hold, timeout remains PAYMENT_UNKNOWN, success must confirm a valid reservation before fulfillment. Expired holds require fresh reservation or tracked refund. A durable saga/outbox resumes partial failures without new charges. Archive only eligible versions: copy, verify checksum/durability, record read-routing manifest, conditionally delete that same hot version. Concurrent refund/version changes prevent deletion. History merges hot and cold records by ID/version. DELIVERED is not immutable forever."
   },
   {
-    id: 'recsys',
-    chapterFile: 'content/37_system_design_cases_scale_infra.md',
-    existingImageLine: '![Recommendation Feed — high-level architecture (HLD)](diagrams/recsys.svg)',
-    svgBase: 'recsys',
-    title: 'recommendation feed system, a funnel narrowing from hundreds of millions of items to a final ranked list, with a training loop that keeps it fresh',
-    blocks: [
-      'Candidate generation (recall: 10^8 → 10^3) — several cheap sources unioned together: a two-tower model embeds the user and finds nearby items via ANN, plus recent/trending, follows, and collaborative-filtering sources.',
-      'Ranking (precision: 10^3 → an ordered list) — a heavy model scores each candidate using rich user × item × context features pulled from a Feature Store, which serves both low-latency online reads and offline batch training tables.',
-      'Re-rank / policy — enforces diversity, dedupe, freshness, and business rules, producing the final served feed.',
-      'Logging → training (the loop back) — served impressions and clicks are logged, becoming training data; an offline Spark training pipeline retrains the model, publishing new versions to a Model Store, which deploys back to the ranking stage.',
-      'Why a funnel at all — scoring hundreds of millions of items per request inside a 200ms budget is impossible, so recall must be cheap and approximate (ANN) while ranking is expensive and precise on only the small surviving set; it is the exact same two-stage shape RAG retrieval uses.',
-      'Feature store as the #1 silent-killer risk — features must be computed identically for offline training (batch tables over historical logs) and online serving (low-latency reads at request time); if the two pipelines diverge even slightly, training/serving skew makes the model quietly rot without any obvious error.',
-    ],
-    flow: '(1) request triggers candidate generation, unioning multiple recall sources via ANN and heuristics; (2) candidates are scored by the ranking model using feature-store lookups; (3) re-rank/policy applies diversity and business rules; (4) the final feed is served and impressions/clicks are logged; (5) logged data feeds an offline Spark training pipeline; (6) retrained models are published to the Model Store and deployed back into the ranking stage.',
-    flowLabel: 'Flow:',
+    id: "llm_serving",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving.svg)",
+    svgBase: "llm_serving",
+    title: "LLM inference serving / chatbot platform, where the crux is keeping expensive GPUs continuously busy",
+    rawBody: "LLM serving: authenticate, enforce quota, screen input, choose model/adapter version and check a context/permission-scoped response cache. Cache hits still cross the current output gate. Misses enter a bounded queue with deadlines and KV admission for prompt PLUS maximum output. GPU fleet loads registry weights; chunked prefill protects decode deadlines, continuous batches replace finished sequences, and paged KV reduces allocation waste. Screen outputs before SSE delivery; whole-response screening changes the streaming/TTFT contract. EOS/cancellation/disconnect frees KV at safe boundaries. Example A1024 prompt/max4 output, B512/max2; B finishes step2, C256 joins after bounded prefill; A disconnects, reclaim A while C continues. Specific GQA:32 layers*8 KV heads*128 dimension*2 K/V*2 bytes=128KiB/token,4096 tokens=512MiB before other memory. Dense next-token attention still scans context O(t); caching avoids old K/V projection recomputation. Count actively decoding sequences, not open conversations. Use model/workload benchmarks, headroom and separate TTFT/inter-token budgets. Cache identity includes authorization epoch, conversation/system prompt, model/adapter, decoding settings and freshness."
+  },
+  {
+    id: "rag",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![RAG / Semantic Search — high-level architecture (HLD)](diagrams/rag.svg)",
+    svgBase: "rag",
+    title: "RAG / semantic search system, drawn as two paths: an offline ingest path and an online query path converging at a shared LLM step",
+    rawBody: "RAG splits ingest and query. Authorized source documents become stable document/version/chunk IDs, offsets, ACL metadata and embeddings. Publish a current-version manifest only when its lexical/vector index is queryable. Deletion/revocation updates authoritative gates and invalidates caches while physical cleanup may lag. Query: authenticate, permission-filtered hybrid recall, LIVE ACL/version/deletion check before text/context, rerank permitted chunks, enforce token and evidence budget, then abstain or generate with versioned citations. Recheck serving permissions and screen output. Retrieved text is untrusted evidence, not instructions. Maya asks about unopened headphones at20 days: refund/v8/c2 says30 days with receipt; v8/c3 deducts shipping unless defective. Reject superseded v7 and restricted VIP evidence despite higher similarity. Missing current evidence means allowed retry or abstention. Permission authority failure is fail-closed, not permission to use stale ACLs. Budget210ms retrieval/context +500ms generator TTFT +90ms network/slack=800ms. Quality example:20 questions,16 answerable,14 retrieved produces14 grounded answers and6 appropriate abstentions. Track retrieval, citation support, correctness and false answers separately."
+  },
+  {
+    id: "recsys",
+    chapterFile: "content/37_system_design_cases_scale_infra.md",
+    existingImageLine: "![Recommendation Feed — high-level architecture (HLD)](diagrams/recsys.svg)",
+    svgBase: "recsys",
+    title: "recommendation feed system, a funnel narrowing from hundreds of millions of items to a final ranked list, with a training loop that keeps it fresh",
+    rawBody: "Recommendation feed keeps an eligible popular/trending baseline for cold start. U42 gathers ANN700 + followed300 + trending200 candidates: union/dedup1000, eligibility600, cheap pruning500, feature fetch, heavy rank500, policy/diversity selects20. Example I17 creatorX score.81, I18 creatorX .80, I24 creatorY .73, I31 creatorZ .70: one creator per top3 yields I17,I24,I31. Allocate200ms:20 gateway +35 candidates +35 features +60 ranking +20 policy +15 serialization +15 slack; measure actual joint tails. A09:54 last-click feature is stale at10:00 under a2-minute limit: use a trained missing-value path and flag, or validated lightweight fallback within deadline. Log impression/model/feature versions. Training joins use both event time and feature availability at prediction time: imp81 at10:00 may use f12 available09:59, not a future click or f13 at10:02. Shared definitions alone do not establish point-in-time correctness. Define label maturity, new-user fallback, new-item exposure and quality guardrails for hides/reports, diversity and latency. Versioned training output feeds the ranker."
   },
 ];
 

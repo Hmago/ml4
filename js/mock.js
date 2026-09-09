@@ -105,7 +105,7 @@ async function showMockTest() {
   pushHash('mock-test');
   const rt = document.getElementById('readingTime'); if (rt) rt.remove();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view');
+  contentEl.classList.remove('chapter-view', 'case-study-view');
 
   if (typeof MOCK_DATA === 'undefined') {
     contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading question bank…</div>';
