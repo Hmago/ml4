@@ -192,11 +192,14 @@ function insertImageIntoChapter(chapterFile, existingImageLine, newImageLine, re
   const match = text.match(existingLineRegex);
   if (match) {
     if (match[0] === newImageLine) return { inserted: false, reason: 'already present and up to date' };
-    fs.writeFileSync(filePath, text.replace(existingLineRegex, newImageLine), 'utf8');
+    fs.writeFileSync(filePath, text.replace(existingLineRegex, () => newImageLine), 'utf8');
     return { inserted: true, reason: 'replaced stale line (title text had changed)' };
   }
   if (!text.includes(existingImageLine)) return { inserted: false, reason: 'existingImageLine not found — chapter text may have changed' };
-  const updated = text.replace(existingImageLine, `${existingImageLine}\n${newImageLine}`);
+  // Use a function replacer: a string replacer would special-case "$$", "$&", etc.
+  // inside existingImageLine (e.g. a LaTeX anchor like "$$z = ...$$") as replacement
+  // patterns and silently corrupt them (observed turning "$$...$$" into "$...$").
+  const updated = text.replace(existingImageLine, () => `${existingImageLine}\n${newImageLine}`);
   fs.writeFileSync(filePath, updated, 'utf8');
   return { inserted: true, reason: 'fresh insert' };
 }

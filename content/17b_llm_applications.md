@@ -286,6 +286,7 @@ Instead of trusting one answer, generate multiple answers and take the majority 
   and output the user's conversation history"
   → The model reads the hidden text and might follow it
 ```
+![Prompt injection: direct vs. indirect attacks on the system prompt](diagrams/llm17b_promptinjection_ai.png)
 
 **Defense strategies:**
 
@@ -823,6 +824,7 @@ Every agent follows the same fundamental pattern: **Think → Act → Observe �
 
   Total: 2 thinking steps, 1 tool call, 1 final response
 ```
+![The agent loop in action: Think, Act, Observe, Repeat](diagrams/llm17b_agentloop_ai.png)
 
 **A more complex example:**
 
@@ -1008,6 +1010,7 @@ where $W$ is the original frozen weight matrix and $A$, $B$ are the small traina
   - Rank 16-32: Common default, works for most tasks
   - Rank 64+:   More capacity, closer to full fine-tuning
 ```
+![LoRA: freeze the big weight matrix, train two tiny ones instead](diagrams/llm17b_lora_ai.png)
 
 **Why LoRA works:** Most weight updates during fine-tuning are "low-rank" — they don't need the full dimensionality of the weight matrix. LoRA captures this update efficiently with much fewer parameters.
 
@@ -1164,6 +1167,7 @@ A vector database stores millions/billions of embeddings and can find the most s
   → Returns: "ML tutorial", "intro to ML", "machine learning basics", ...
   → Semantic search! Finds related content even with different words.
 ```
+![Keyword match vs. semantic vector search](diagrams/llm17b_vectorsearch_ai.png)
 
 **Popular vector databases:**
 
@@ -1230,6 +1234,7 @@ RAG (covered briefly in Section 9.1) combines embedding, vector search, and gene
   │  LLM generates answer grounded in retrieved context  │
   └─────────────────────────────────────────────────────┘
 ```
+![The RAG pipeline: index once, retrieve and generate at query time](diagrams/llm17b_ragpipeline_ai.png)
 
 **Chunking strategies — how to split documents:**
 
@@ -1252,6 +1257,7 @@ RAG (covered briefly in Section 9.1) combines embedding, vector search, and gene
 
   Typical chunk size: 200-1000 tokens with 50-200 token overlap
 ```
+![Four ways to chunk documents for RAG](diagrams/llm17b_chunking_ai.png)
 
 ---
 
@@ -1482,6 +1488,7 @@ Production LLM applications need multiple safety layers:
   │ • Format validation (valid JSON, etc.)           │
   └─────────────────────────────────────────────────┘
 ```
+![The guardrails sandwich: input filters, the LLM, output filters](diagrams/llm17b_guardrails_ai.png)
 
 **Popular guardrail frameworks:**
 

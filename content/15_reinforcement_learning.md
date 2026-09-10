@@ -67,6 +67,7 @@ flowchart LR
 
 For example, Roo observes S, chooses Right, receives a reward, and observes B.
 Nobody supplied a label saying "Right is correct." Roo must discover its usefulness.
+![The reinforcement learning loop: agent, environment, action, reward](diagrams/rl_loop_ai.png)
 
 | Learning type | Typical feedback | Example |
 |---|---|---|
@@ -127,6 +128,7 @@ $\gamma^2$, then $\gamma^3$, and so on.
 **Predict first:** would adding an unnecessary step help here?
 No. It adds another movement fee and delays the positive treasure reward.
 Notice that the first reward is negative even on the best route.
+![Discounted return: later rewards count less](diagrams/rl_discount_ai.png)
 
 ### State and the Markov idea
 
@@ -175,6 +177,7 @@ The random branch can also select the best-known action! With four actions and
 one clear best, its total selection probability is
 $0.9 + 0.1/4 = 0.925$, or **92.5%**.
 Exploring does not necessarily mean choosing a worse action.
+![Explore vs. exploit: the epsilon-greedy tradeoff](diagrams/rl_explore_exploit_ai.png)
 
 Explore more while estimates are unreliable, then reduce epsilon as they improve.
 A little ongoing exploration helps avoid freezing on an early guess.
@@ -257,6 +260,7 @@ The immediate rewards alone do not explain the appeal of going Up; the future do
 This example works backwards because we know the map. In a new environment,
 Roo does not start with the correct values. It must estimate them from experience.
 That is where Q-learning comes in.
+![Bellman backward induction: value flows backward from the goal](diagrams/rl_bellman_ai.png)
 
 ---
 
@@ -346,6 +350,8 @@ Act greedily by choosing the row's highest Q-value. Learning takes many experien
 Tabular convergence needs sufficient exploration and suitable learning rates;
 more episodes alone do not guarantee success.
 
+![The Q-learning update: nudging an old estimate toward a new target](diagrams/rl_qupdate_ai.png)
+
 ---
 
 ## 15.6 Beyond the Cheat Sheet
@@ -370,6 +376,7 @@ Camera input: state -> neural network  -> Q for each action
 For example, outputs `Left: 2, Right: 7, Up: 3, Down: -4` suggest choosing Right
 when exploiting. Standard DQN suits discrete actions; a large state space is not
 the same problem as a continuous action space.
+![From table to neural network: the DQN idea](diagrams/rl_dqn_ai.png)
 
 Two ideas make learning more stable:
 
@@ -435,6 +442,7 @@ flowchart LR
 Humans then compare candidate answers; a reward model learns to score preferred
 answers higher. RL uses those scores while discouraging excessive drift from a
 reference model. The reward model avoids asking a human to rate every training response.
+![The RLHF pipeline: from demonstrations to human preferences to policy](diagrams/rl_rlhf_ai.png)
 
 | Approach | Feedback and learning idea |
 |---|---|

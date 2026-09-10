@@ -491,7 +491,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/17b_llm_applications.md': 170,
   'content/17c_llm_systems.md': 195,
   'content/18_ai_agents.md': 140,
-  'content/18b_agents_in_production.md': 130,
+  'content/18b_agents_in_production.md': 135,
   'content/19_ai_frameworks.md': 165,
   'content/20_2026_landscape.md': 125,
   'content/20s_deep_learning_llms_recap.md': 200,

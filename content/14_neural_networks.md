@@ -5,66 +5,44 @@
 ## What You'll Learn
 
 After this chapter you will be able to:
-- Explain how an artificial neuron computes a weighted sum, applies an activation, and produces output
-- Describe input, hidden, and output layers and reason about depth vs width trade-offs
-- Choose activations, output shapes, and losses for common prediction tasks
-- Walk through forward pass, loss computation, backpropagation, and weight update
-- Train a small neural network on CPU and explain each line of its training loop
-- Investigate training problems using data, loss curves, and gradients rather than guessing
-- Distinguish regularization, normalization, and training-versus-inference behavior
-- Explain how CNNs extract spatial features, how RNNs model sequences, and how Transformers use self-attention
-- Initialize weights correctly (He vs Xavier) and pick a learning-rate schedule
-- Decide when deep learning beats traditional ML and when it does not
+- Explain how a neuron computes a weighted sum, applies an activation, and produces output
+- Reason about depth vs. width, and choose activations/losses for a given task
+- Walk through forward pass, backpropagation, and a weight update by hand
+- Train a small network on CPU and explain every line of its training loop
+- Diagnose training problems using data, curves, and gradients — not guesswork
+- Explain how CNNs, RNNs, and Transformers each represent information
+- Initialize weights correctly (He vs. Xavier) and pick a learning-rate schedule
+- Decide when deep learning beats traditional ML, and when it doesn't
 
 ---
 
-## Before You Start — Prerequisites
+## Before You Start
 
-> **You'll get the most from this chapter if you've met a few ideas first:** matrix/vector
-> multiplication and derivatives ([Ch 6 — Math for ML](#content/06_math_fundamentals)), and
-> the core training vocabulary — *epoch, batch, loss, gradient descent, forward/backward
-> pass* — introduced in plain language in
-> [Ch 8 — Core Concepts](#content/08_core_concepts). Don't worry if they're fuzzy: the most
-> important terms are re-defined below and explained again in context as they appear.
+> **Prerequisites:** matrix/vector multiplication and derivatives
+> ([Ch 6 — Math for ML](#content/06_math_fundamentals)), and the training vocabulary —
+> *epoch, batch, loss, gradient descent, forward/backward pass* — from
+> [Ch 8 — Core Concepts](#content/08_core_concepts). Fuzzy on these? Don't worry — every
+> term is re-defined here as it appears, with full-precision worked examples throughout.
 
 **Markers:** ★★★ = know cold for interviews · ★★ = high priority · ★ = good to know.
-**Quick check** boxes are retrieval practice — attempt before revealing.
-**Interview** boxes give the question, what to say, and the follow-up trap.
+**Quick check** boxes are retrieval practice — attempt before revealing. **Interview** boxes
+give the question, what to say, and the follow-up trap.
 
-### How Far This Chapter Goes
+**How to read this chapter** — it's built in four stages, not one sitting. Length is less
+important than doing something new at each stopping point:
 
-This is the **foundations** chapter. It takes you from a single neuron to a working mental
-model of how every modern network trains. It deliberately stops at the point where each
-architecture becomes a specialism:
-
-| If you want… | Go to |
-|---|---|
-| The **fundamentals and a working model** — neuron, layers, forward/backward passes, training, debugging | **You are here** (§14.1–14.7b) |
-| A **tour** of CNNs, RNNs, Transformers, GANs — enough to hold a conversation | **You are here** (§14.8–14.12) |
-| **Depth** on those architectures — optimizer families, normalization variants, ResNet/ViT, MoE, diffusion | [Ch 16 — Deep Learning Reference](#content/16_deep_learning) |
-| How Transformers became **ChatGPT** — tokenization, pre-training, RLHF | [Ch 17 — LLMs](#content/17_llm) |
-| Actually **shipping** a model — pipelines, monitoring, drift | [Ch 27 — Practical ML](#content/27_practical_ml) |
-| How to **evaluate** what you built | [Ch 13 — Model Evaluation](#content/13_model_evaluation) |
-
-**A note on the maths.** Read the explanation, try the small numerical example, then use
-the equation as shorthand. You do not need to memorize a page of derivatives. You *will*
-learn to follow one gradient through a network and explain why a weight should increase or
-decrease. We use full-precision calculations and round only the displayed answers.
-
-### Your Learning Route
-
-This is a chapter to learn in stages, not a single sitting to endure. Length is less
-important than being able to do something new at each stopping point.
-
-| Stage | Read | Ready to move on when you can... |
+| Stage | Sections | Move on when you can... |
 |---|---|---|
-| **1. Understand a network** | §14.1–14.4 | Trace the numbers and shapes from inputs to a prediction and loss |
-| **2. Explain learning** | §14.5 | Follow a hidden-layer gradient, update weights, and recompute the prediction |
-| **3. Train it reliably** | §14.6–14.7b | Run the CPU lab and investigate a deliberately broken experiment |
-| **4. Choose the right structure** | §14.8–14.14 | Explain what locality, memory, attention, or pretraining buys you |
+| 1. Understand a network | §14.1–14.4 | Trace the numbers/shapes from input to a prediction and loss |
+| 2. Explain learning | §14.5 | Follow a gradient, update a weight, and recompute the prediction |
+| 3. Train it reliably | §14.6–14.7b | Run the CPU lab and diagnose a deliberately broken experiment |
+| 4. Choose the right structure | §14.8–14.14 | Explain what locality, memory, attention, or pretraining buys you |
 
-The detailed schedules and recipes in §14.13 are a reference to revisit during experiments.
-The essentials needed for your first training run appear **before** the architecture tour.
+**Going further after this chapter:** architecture depth (optimizers, ResNet/ViT, MoE,
+diffusion) → [Ch 16 — Deep Learning Reference](#content/16_deep_learning) · how Transformers
+became **ChatGPT** → [Ch 17 — LLMs](#content/17_llm) · shipping a model →
+[Ch 27 — Practical ML](#content/27_practical_ml) · evaluating what you built →
+[Ch 13 — Model Evaluation](#content/13_model_evaluation).
 
 ### Key Terms (Quick Reference)
 
@@ -90,19 +68,23 @@ layer width are **hyperparameters**, choices you make about how to build or trai
 
 ### Simple Explanation
 
-Think of a single **neuron** as a tiny voting machine that makes one decision. It takes a few
-inputs, decides how much it *trusts* each one (the **weights**), adds up the evidence, and if
-the total is convincing enough it "fires." A **neural network** is just a huge pile of these
-voting machines wired together in layers, where one layer's votes become the next layer's
-inputs. No single neuron is smart — but stacked up, they can recognise a face, translate a
-sentence, or steer a car.
+A single **neuron** is a tiny voting machine: it takes a few inputs, weighs how much to
+*trust* each one, adds up the evidence, and "fires" if the total is convincing enough. Stack
+thousands of these voting machines into layers — one layer's votes feed the next — and you
+get a **neural network**. No single neuron is smart, but stacked together they can recognize
+a face, translate a sentence, or steer a car.
 
 > An **artificial neural network (ANN)** is a computational graph of parameterized functions organized into layers, where each connection carries a learnable weight. The network maps inputs to outputs by composing simple non-linear transformations, and learns by adjusting weights to minimize a loss function via gradient-based optimization.
 
-A biological neuron collects electrical signals through dendrites, processes them in the cell body, and fires an output down the axon when the combined signal exceeds a threshold. An artificial neuron does the same thing with arithmetic: multiply each input by a weight, sum everything up, add a bias, and pass the result through a non-linear activation function.
+**Where the name comes from.** A biological neuron collects signals through dendrites, sums
+them in the cell body, and fires down the axon past a threshold. An artificial neuron copies
+the *idea*, not the biology:
 
-This is a loose inspiration for the terminology, not a simulation of how a biological
-neuron or brain works.
+- **Multiply** each input by a learned weight
+- **Sum** everything, then **add a bias**
+- **Activate** — pass the result through a non-linear function to produce the output
+
+That's the whole computation. It's a loose naming analogy, not a brain simulation.
 
 ```
 BIOLOGICAL NEURON                 ARTIFICIAL NEURON (PERCEPTRON)
@@ -117,33 +99,36 @@ BIOLOGICAL NEURON                 ARTIFICIAL NEURON (PERCEPTRON)
 ```
 
 $$z = \sum_{i=1}^{n} w_i x_i + b, \qquad \hat{y} = f(z)$$
+![Anatomy of an artificial neuron: inputs, weights, sum, bias, and activation](diagrams/nn_neuron_ai.png)
 
-**Example — how one neuron works.** Suppose a neuron decides *"should I carry an umbrella?"*
-from two inputs: $x_1$ = cloudiness and $x_2$ = humidity (each scaled 0–1). The network has
-learned weights $w_1 = 3$, $w_2 = 2$ and bias $b = -2.5$ (the bias sets how much evidence is
-needed before it leans "yes"). On a grey, humid morning $x_1 = 0.8$, $x_2 = 0.9$:
+**Worked example — "should I carry an umbrella?"** The neuron looks at two clues, each
+scaled 0–1: $x_1$ = cloudiness, $x_2$ = humidity. It has learned $w_1 = 3$, $w_2 = 2$, and
+bias $b = -2.5$ (the bias sets how much evidence it needs before leaning "yes").
 
-$$z = 3(0.8) + 2(0.9) - 2.5 = 2.4 + 1.8 - 2.5 = 1.7$$
+| Morning | $x_1, x_2$ | $z = 3x_1+2x_2-2.5$ | $f(z)$ (sigmoid) | Verdict |
+|---|---|---|---|---|
+| Grey & humid | 0.8, 0.9 | $2.4+1.8-2.5=1.7$ | $\approx 0.85$ | 85% → take the umbrella |
+| Clear & dry | 0.1, 0.2 | $0.3+0.4-2.5=-1.8$ | $\approx 0.14$ | 14% → leave it home |
 
-Pass $z$ through a sigmoid activation: $f(1.7) \approx 0.85$ → **"the model estimates an
-85% probability of the 'take umbrella' label."** Now make the morning clear and dry ($x_1 = 0.1$, $x_2 = 0.2$): $z = 0.3 + 0.4 -
-2.5 = -1.8$, so $f(-1.8) \approx 0.14$ → "probably not." Same neuron, same dials — the answer
-flips only because the *evidence* changed. That is the whole job of a neuron; everything else
-in this chapter is scale and wiring.
+Same neuron, same weights — only the *evidence* changed, and the answer flipped. That single
+computation is the entire job of a neuron; the rest of this chapter is just scale and wiring.
 
-That probability is the model's estimate, not a guarantee of calibration or good advice.
-Calibration asks whether predictions near 85% are actually correct about 85% of the time.
+> That 85% is the model's estimate, not proof it's right. **Calibration** asks a separate
+> question: are predictions near 85% actually correct about 85% of the time?
 
-The classic **perceptron** (Rosenblatt, 1958) uses a hard threshold. Our example instead uses
-a smooth sigmoid unit, like binary logistic regression. Both have a linear decision boundary
-at a fixed output threshold: they can separate AND/OR, but not XOR.
+**A little history, and its limit.** The original **perceptron** (Rosenblatt, 1958) used a
+hard on/off threshold; our example uses a smooth sigmoid instead (like logistic regression).
+Both draw a *straight* decision line — enough to separate AND/OR, but never XOR (§14.3 shows
+why, and how to fix it).
 
-With suitable nonlinear activations and enough hidden units, a network can approximate
-continuous functions on a bounded input domain (the **Universal Approximation Theorem**).
-That is a statement about **what it can represent**, not a promise that training will find
-the right weights or that the result will generalize.
+- With the right non-linear activations and enough hidden units, a network can approximate
+  any continuous function on a bounded input (the **Universal Approximation Theorem**).
+- That's a statement about what a network *can represent* — not a promise that training will
+  find those weights, or that the result will generalize.
 
-Real-world example: a single neuron could learn "if pixel brightness > threshold, classify as white." Stacking thousands of neurons lets you classify entire chest X-rays as pneumonia vs. healthy.
+**Real-world scale.** One neuron might learn "if pixel brightness > threshold, call it
+white." Stack thousands of them and you can classify a whole chest X-ray as pneumonia vs.
+healthy.
 
 ---
 
@@ -151,12 +136,15 @@ Real-world example: a single neuron could learn "if pixel brightness > threshold
 
 ### Simple Explanation
 
-A network is organised like an **assembly line**. Raw materials (your input features) enter at
-one end. Each **layer** is a station that transforms what it receives and passes it on — early
-stations spot simple things, later stations combine them into something meaningful. The
-**input layer** is the loading dock (one slot per feature), the **hidden layers** are the
-workers doing the real shaping, and the **output layer** is the shipping desk that hands you
-the final answer. "Deeper" = more stations in a row; "wider" = more workers per station.
+A network is organized like an **assembly line**: input features enter at one end, and each
+**layer** is a station that reshapes what it receives before passing it on. Early stations
+spot simple things; later stations combine them into something meaningful.
+
+- **Input layer** — the loading dock, one slot per feature
+- **Hidden layers** — workers doing the real shaping
+- **Output layer** — the shipping desk that hands you the final answer
+
+"Deeper" = more stations in a row. "Wider" = more workers per station.
 
 > A **feedforward neural network** consists of an input layer, one or more hidden layers, and an output layer. Data flows forward from input to output with no cycles. The number of hidden layers is the network's **depth**; the number of neurons per layer is its **width**.
 
@@ -196,10 +184,10 @@ $784 \to 512 \to 256 \to 10$ network:
   "7," the "7" neuron lights up because it saw "a horizontal top stroke + a diagonal going
   down."
 
-You supply the digit labels, not labels for every hidden feature. The network learns useful
-intermediate representations. The stroke/loop story is intuition, **not a guarantee that
-each neuron has one tidy human-readable meaning**; information is often distributed across
-many neurons.
+> You only supply the digit labels — not labels for hidden features like "stroke" or "curve."
+> The network learns those representations on its own. The stroke/loop story is intuition,
+> not a promise that each neuron has one tidy human-readable meaning — information is often
+> spread across many neurons.
 
 ```mermaid
 graph LR
@@ -234,6 +222,8 @@ graph LR
     H6 --> O1 & O2
     H7 --> O1 & O2
 ```
+
+![A feedforward neural network: input, hidden, and output layers](diagrams/nn_layers_ai.png)
 
 > **Interview —** *"Would you rather add depth or width to a network?"*
 > **Say:** They solve different capacity problems. Depth composes transformations and can represent some hierarchical functions efficiently; width provides more features within a layer and can make optimization easier. I would compare validation quality and compute cost rather than assume that deeper always wins.
@@ -688,6 +678,8 @@ LOSS LANDSCAPE — training walks downhill to the minimum
  "-gradient" is a local downhill direction.
  Tiny steps, repeated millions of times.
 ```
+
+![Gradient descent walking downhill on a loss landscape](diagrams/nn_backprop_ai.png)
 
 > **Backpropagation** is the algorithm that computes the gradient of the loss with respect to every weight in the network by recursively applying the chain rule of calculus, propagating error signals from the output layer back to the input layer.
 
@@ -1593,6 +1585,8 @@ IMAGE PATCH (5×5)         FILTER (3×3)          OUTPUT VALUE
 Slide filter across entire image → produces a feature map.
 ```
 
+![How a CNN filter slides across an image to build a feature hierarchy](diagrams/nn_cnn_ai.png)
+
 **Example — how it works (one convolution step).** Slide a $3\times3$ vertical-edge filter over
 a bright-left / dark-right patch. Multiply each overlapping cell, then add everything up:
 
@@ -1801,6 +1795,8 @@ Cell State Cₜ ═════════════════════�
                  ×  fₜ          +  iₜ·C̃ₜ       × oₜ
 ```
 
+![An RNN/LSTM unrolled through time with gated memory](diagrams/nn_rnn_ai.png)
+
 **The three gates**, each a sigmoid producing values between 0 (closed) and 1 (open):
 
 In the notation below, $[h,x]$ means concatenate vectors, and $\odot$ means multiply
@@ -1982,6 +1978,8 @@ graph TB
     F --> G[Output]
 ```
 
+![Transformer self-attention: Query, Key, Value](diagrams/nn_transformer_ai.png)
+
 ### Encoder vs Decoder
 
 > **Interview —** *"Why did Transformers replace RNNs for language?"*
@@ -2121,6 +2119,8 @@ graph LR
     R[Real data x] --> D
     D --> P["P(real) in [0,1]"]
 ```
+
+![A GAN: generator vs discriminator adversarial game](diagrams/nn_gan_ai.png)
 
 $$\min_G \max_D \; \mathbb{E}_{x}[\log D(x)] + \mathbb{E}_{z}[\log(1 - D(G(z)))]$$
 

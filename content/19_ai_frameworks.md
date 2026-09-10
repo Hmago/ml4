@@ -93,6 +93,7 @@ A quick map of the territory, because the framework zoo grew fast:
 ```
 
 There are 50+ tools in this space; you only need to know the dozen that show up in 80% of production stacks. We cover each below.
+![The 2026 AI framework landscape: five stacked layers from UI to MLOps](diagrams/fw19_ecosystemmap_ai.png)
 
 ---
 
@@ -387,6 +388,7 @@ print(crew.kickoff())
 - **Raw OpenAI / Claude SDK** when you want zero abstraction tax.
 
 A real warning: every agent turn in a `GroupChat` re-sends the full history. A 4-agent debate over 5 rounds = 20+ LLM calls. Multi-agent is expensive — quantify before adopting.
+![Four multi-agent frameworks, four different mental models](diagrams/fw19_multiagentmodels_ai.png)
 
 ---
 
@@ -567,6 +569,7 @@ Vanilla RAG is `chunk → embed → top-k → stuff into prompt`. By 2026, every
 | Facts are relational | **Graph RAG** | Retrieve subgraphs from a knowledge graph |
 
 You don't need all seven. Bolt them on as you hit each failure.
+![Seven upgrades that fix vanilla RAG's specific failure modes](diagrams/fw19_ragfixes_ai.png)
 
 > **Going deeper on retrieval itself:** the index internals — HNSW graph construction, IVF-PQ, BM25, and **reciprocal rank fusion (RRF)** for merging hybrid results — live in **[Ch 28 — Semantic Search](#content/28_semantic_search)**. **Semantic caching** (skipping the model entirely on similar questions) is in [Ch 17c §2.4](#content/17c_llm_systems). This section is about *which tool to pick*; those chapters are about *how it works*.
 
@@ -614,6 +617,7 @@ The build step is expensive — an LLM pass over the whole corpus to extract ent
 - **Always re-rank the shortlist on your own data.** Public benchmarks are broad; your corpus is narrow. A 50-query hand-labelled set beats the leaderboard every time.
 
 > **Interview soundbite:** "I'd shortlist from MTEB's retrieval task rather than the overall average, filter by max sequence length and dimension for my latency budget, then evaluate the top two or three on a small hand-labelled set from my own corpus — because leaderboard rank rarely survives a domain shift. Switching to a stronger embedding model and adding a reranker are the two highest-leverage RAG changes."
+![Five axes for choosing an embedding model, not just 'use OpenAI'](diagrams/fw19_embeddingaxes_ai.png)
 
 ### The production concerns nobody demos ★★★
 
@@ -784,6 +788,7 @@ with mlflow.start_run():
 ### vLLM is the default — why?
 
 **PagedAttention**: vLLM partitions the KV cache into fixed-size blocks (like OS virtual memory pages) so requests can share memory without fragmentation. Net effect: 5–10× throughput on the same GPU under concurrent load. Red Hat benchmark on identical hardware: vLLM peaked at **793 tokens/sec** vs Ollama's 41 (Ollama is a single-user/local runtime, so this is apples-to-oranges — it isn't built for concurrent serving); p99 time-to-first-token **80 ms** vs 673 ms. Stripe cut inference cost 73% migrating to vLLM.
+![The 2026 inference-server hierarchy, and vLLM's throughput lead](diagrams/fw19_servinghierarchy_ai.png)
 
 ### Hello world — Ollama (local dev)
 
@@ -887,6 +892,7 @@ ADK's strength is **enterprise scale + GCP-native**: deploy with one command, ge
 | **Direct provider API** | Whatever that provider ships | Newest features first, simplest to start, best docs |
 
 **The trade-off worth stating:** going through a cloud provider costs you *time to newest model* — a new frontier release often lands on the direct API weeks before it appears in Bedrock or Azure — and buys you compliance, a single bill, existing IAM, and private networking. Startups take the direct API; regulated enterprises take the cloud route; plenty of teams run both behind a routing layer.
+![Why enterprises call frontier models through a cloud provider, not direct](diagrams/fw19_modelaccess_ai.png)
 
 ### Data residency, air-gapped and the questions procurement will ask
 
@@ -1011,6 +1017,7 @@ The lifecycle, expanded:
   │                          Retrain ──────────────────► loop     │
   └─────────────────────────────────────────────────────────────┘
 ```
+![The MLOps lifecycle: from data to deployment, with a retrain loop](diagrams/fw19_mlopslifecycle_ai.png)
 
 ### The toolkit by stage
 
@@ -1114,6 +1121,7 @@ The interview tip every Google ML system design candidate should internalise: **
 - **Fallback cascade** — on timeout → cheaper model → different provider.
 - **Timeout budgets** — per step, per task, per session.
 - **Idempotency keys** — on tools that cost money (don't double-charge a card if the agent retries).
+![Cost levers for production LLM systems, ranked by typical impact](diagrams/fw19_costlevers_ai.png)
 
 ---
 

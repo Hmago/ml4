@@ -200,6 +200,7 @@ At 8,192 tokens: **2.5 GB per request**. An 8× reduction — and that is the en
 | 128K | 40 GB |
 
 > **Note the shape of that table.** At 128K context the KV cache (40 GB) is approaching the size of the *quantized model itself*. This is why "KV cache is bigger than the weights at long context" is now a standard interview remark, and why KV-cache quantization (§3.2) became a topic.
+![KV cache size explodes with context length, long before compute runs out](diagrams/llm17c_kvcachegrowth_ai.png)
 
 **The serving consequences of attention variants.** The mechanism of MHA, MQA and GQA lives in [Ch 17 §2.4](#content/17_llm) (MLA is newer and has no mechanism section in this book yet); what matters *here* is what each one does to that formula:
 
@@ -301,6 +302,7 @@ CONTINUOUS BATCHING — slots are refilled every step
      ╳ = sequence hits its stop token; a queued request
          takes the slot on the very next decode step.
 ```
+![Static batching wastes GPU slots; continuous batching refills them every step](diagrams/llm17c_continuousbatching_ai.png)
 
 **The mechanism.** The scheduler runs a loop at *token* granularity rather than *request* granularity:
 
@@ -367,6 +369,7 @@ PAGED — fixed blocks (e.g. 16 tokens) + a block table
   R2 block table →   B1, B4
   Free list      →   B2, B5, B6, ...   (available to ANY request)
 ```
+![PagedAttention: KV cache memory allocated in fixed blocks, like virtual-memory pages](diagrams/llm17c_pagedattention_ai.png)
 
 **Two consequences worth knowing.** First, blocks need not be contiguous, so a sequence can grow without ever needing a large free region — external fragmentation disappears. Second, **blocks can be shared**: if ten requests share the same 2,000-token system prompt, they can point at the *same* physical blocks, with copy-on-write applied only when their content diverges. That is the foundation of prefix caching (§2.4).
 
@@ -428,6 +431,7 @@ Prefix cache — structure your prompts to exploit it
   ❌ BAD:   [ timestamp ][ system prompt ][ user query ]
             └ changes every call → prefix never matches → cache always misses
 ```
+![Prefix caching only works if the stable part of the prompt comes first](diagrams/llm17c_prefixcaching_ai.png)
 
 **The single most actionable rule in this section:** put everything variable — timestamps, user IDs, session data — at the **end** of the prompt. A prefix cache only matches from the start, so one variable token at position 0 destroys the whole thing.
 
@@ -542,6 +546,7 @@ The draft model is not free: it costs roughly its own forward pass per step. So 
 | INT4 | 35 GB | 1×H100 with ~45 GB left for KV cache |
 
 That last row is the practical punchline: 4-bit quantization does not merely halve your hardware — it frees roughly 105 GB of *weight* memory, which on a single 80 GB H100 leaves about 45 GB for KV cache instead of nothing at all. That converts almost directly into **concurrency**, which is usually the bigger win.
+![Weight-only quantization speeds up decode; W8A8/FP8 is what also speeds up prefill](diagrams/llm17c_quantization_ai.png)
 
 **Say this in an interview:**
 > "Weight-only quantization like GPTQ or AWQ shrinks the bytes you stream per token, so it accelerates decode, which is bandwidth-bound — but it doesn't help prefill, because prefill is compute-bound and the matmuls still run in FP16. To speed up prefill you need the activations quantized too, W8A8 or FP8, so you actually hit the low-precision tensor cores. On H100 I'd default to FP8: it helps both phases with almost no quality loss. If I'm memory-constrained and decode-dominated, INT4 weight-only, mainly because the freed memory buys me a much bigger KV cache and more concurrency."
@@ -586,6 +591,7 @@ That last row is the practical punchline: 4-bit quantization does not merely hal
   [LoRA-A][LoRA-B][LoRA-A][LoRA-C][LoRA-B]     ~30 MB each
      R1       R2      R3       R4      R5
 ```
+![Multi-LoRA serving: one resident base model, many tiny adapters swapped in per request](diagrams/llm17c_multilora_ai.png)
 
 The subtlety that makes it work: requests using *different* adapters can sit in the **same** batch. The base-model matmul is shared across all of them; only the small low-rank adapter multiplication is per-request. So you keep continuous batching's throughput while serving many tenants.
 
@@ -658,6 +664,7 @@ Need to hit a specific latency on fixed hardware?
    └──────────────────────────────────────────────────┘
         Run 1–2 on every commit. 3 nightly. 4 continuously.
 ```
+![The four-layer evaluation stack: assertions, golden sets, judges, and online metrics](diagrams/llm17c_evalstack_ai.png)
 
 The discipline that matters most: **every production failure becomes a new case in layer 2.** That single loop is what makes the system improve instead of oscillate.
 

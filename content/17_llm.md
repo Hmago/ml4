@@ -320,6 +320,7 @@ BPE starts with individual characters and repeatedly merges the most frequent pa
 
   ... continue until you reach your desired vocabulary size (e.g., 50,000 tokens)
 ```
+![Byte Pair Encoding: merging the most frequent character pair, step by step](diagrams/llm17_tokenization_ai.png)
 
 The result: common words stay whole ("the", "and"), while rare words get split into known pieces ("un" + "like" + "ly").
 
@@ -398,6 +399,7 @@ Similar meanings → similar vectors. The model learns this during training.
 ```
 
 This means the model "understands" that king and queen are related (both royalty) but differ by gender — without anyone explicitly programming this.
+![Embedding space: similar meanings sit near each other, and relationships become arithmetic](diagrams/llm17_embeddings_ai.png)
 
 **Embedding dimension:** The length of this vector. Common sizes:
 - Small models: 768 numbers
@@ -435,6 +437,7 @@ Self-attention does this mechanically:
   "bank"'s final representation = weighted mix of all other words
   (mostly colored by "river" and "steep")
 ```
+![Self-attention resolving "bank": weighing every word to disambiguate meaning](diagrams/llm17_selfattention_ai.png)
 
 After self-attention, each word's representation contains information from the whole sentence. Context is captured.
 
@@ -553,6 +556,7 @@ Interviewers ask you to walk this ladder. Memorise the direction of each trade.
 | **Sliding-window** | unchanged per token, but bounded span | grows with W not n | task-dependent | Mistral, Gemma 2 |
 
 > **The one-liner that ties it together:** MQA, GQA and MLA attack the *number of bytes per token*; sliding-window attacks the *number of tokens*. They compose — Mistral uses GQA **and** sliding-window together.
+![KV cache size across attention variants: MHA, MQA, GQA, and MLA](diagrams/llm17_attentionvariants_ai.png)
 
 ---
 
@@ -930,6 +934,7 @@ Instead of picking a fixed number of tokens (Top-K), include the smallest set of
   Top-P ADAPTS: when the model is confident (one token dominates),
   it considers fewer options. When uncertain, it considers more.
 ```
+![Greedy vs Top-K vs Top-P: three ways to choose the next token](diagrams/llm17_decoding_ai.png)
 
 **Temperature + Top-P together:** Temperature reshapes the distribution FIRST (sharper or flatter), then Top-P selects from it. Most APIs use both together (common defaults: temperature=0.7, top_p=0.9). More detail on Temperature in Section 8.
 
@@ -999,6 +1004,7 @@ GPT-3 was trained on 300 billion tokens. At 0.75 words/token, that's 225 billion
   4. Backpropagate → update 175 billion weights
   5. Repeat billions of times
 ```
+![Pre-training: a mix of web text feeding the next-token-prediction loop](diagrams/llm17_pretraining_ai.png)
 
 **How long does this take?**
 
@@ -1197,6 +1203,7 @@ Because the model is rewarded for reasoning traces that reach correct answers, i
          baseline = mean(scores)                  → advantage
          (no critic network at all)
 ```
+![PPO vs GRPO: replacing a learned critic with a group-relative baseline](diagrams/llm17_grpo_ai.png)
 
 ### Reward hacking — the failure mode they will ask about ★★ `L2`
 
@@ -1367,6 +1374,7 @@ The original scaling laws suggested: "make models as big as possible." Chinchill
   This is why LLaMA (13B, trained on 1.4T tokens) beat GPT-3 (175B, 300B tokens).
   Data quantity and quality matter just as much as model size.
 ```
+![Chinchilla scaling: a smaller, longer-trained model beats a bigger, undertrained one](diagrams/llm17_scalinglaws_ai.png)
 
 **Emergent abilities:** Some capabilities appear suddenly above certain model sizes — they aren't present in smaller models at all:
 

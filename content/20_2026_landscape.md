@@ -91,6 +91,7 @@ As of July 2026, four labs anchor the closed-weight frontier and three more lead
 | **Qwen 3.5** | Open-weight science | mid | 88.4% | 1M | self-host |
 
 Interview tip: don't memorise these numbers — they shift monthly. Memorise the *shape* of the leaderboard: closed-weight leads by ~3–8 points on agentic and code tasks, open-weight has closed the gap on reasoning, and **everyone within ~3 points of the top means model choice is mostly about price, latency, and ecosystem**, not raw capability.
+![The July 2026 frontier lineup: three closed-weight leaders and six open-weight contenders](diagrams/land20_frontiermap_ai.png)
 
 ---
 
@@ -116,6 +117,7 @@ Plain explanation: a normal LLM is like a student who blurts the first answer th
    Empirically: doubling the thinking budget often beats doubling parameters
    on math, code, and multi-step planning — but only on those tasks.
 ```
+![Test-time compute: reasoning models spend inference tokens, not more parameters](diagrams/land20_testtimecompute_ai.png)
 
 ### Hello world — controlling thinking budget
 
@@ -210,6 +212,7 @@ When to pick **closed-weight**: top-end agent reliability, latest reasoning fron
 ```
 
 (Scores drift monthly — always cite the date.)
+![SWE-bench Verified, July 2026: from a 13% baseline to 88.7% in 18 months](diagrams/land20_swebench_ai.png)
 
 ### The dev-tool battle
 
@@ -353,6 +356,7 @@ By 2026 every major phone OS ships with on-device models:
 ```
 
 INT4 loses ~1–3% on benchmarks. **GPTQ**, **AWQ**, and **GGUF** make it practical. Frameworks: `bitsandbytes` (training), `llama.cpp` + GGUF (CPU/edge), MLC and Apple's **MLX** (Apple silicon), MediaPipe (mobile).
+![Quantization puts a 7B model in your pocket: 28 GB down to 3.5 GB](diagrams/land20_ondevice_ai.png)
 
 ### Hello world — load a 4-bit quantized model
 
@@ -417,6 +421,7 @@ The single most under-appreciated fact of 2026: **token prices fell ~150–1000�
 
    Roughly 1000× cheaper in 4.5 years for equivalent quality.
 ```
+![The cost trajectory: ~1000× cheaper tokens for equivalent quality, 2021–2026](diagrams/land20_costcurve_ai.png)
 
 **Why it matters for system design.** Architectures that were uneconomic in 2022 (agentic loops calling the LLM 30 times for one task, RAG with reranker + hybrid search, multi-agent debates) are routine in 2026. Tomorrow's affordable architecture is in the same direction.
 
@@ -527,6 +532,7 @@ The **EU AI Act** is the world's first comprehensive AI regulation. Key dates:
 | Aug 2, 2027 | High-risk AI systems in regulated products fully covered |
 
 If you build foundation models, deploy them in the EU, or sell to EU customers, this affects you. Penalties top out at €35M or 7% of global revenue. Compliance documentation, transparency about training data, copyright respect, and systemic-risk evaluation are the headline obligations for general-purpose AI.
+![The EU AI Act timeline: four dates a foundation-model provider must track](diagrams/land20_eutimeline_ai.png)
 
 ### Other 2026 regulatory milestones to know
 
@@ -598,6 +604,7 @@ Announced 2025, GA in early 2026. Designed for the inference + reasoning era:
 | Generation lift | ~10× peak vs TPU v5p; ~4× per-chip vs TPU v6e |
 
 Anthropic committed to up to **1 million Ironwood chips and >1 GW of capacity** in 2026 — a public marker of how aggressively the inference frontier is scaling.
+![Google's 2026 AI stack: Gemini models, the Enterprise Agent Platform, and TPU v7 Ironwood](diagrams/land20_googlestack_ai.png)
 
 ### Key papers from Google (interview-relevant)
 
@@ -675,6 +682,7 @@ A useful counterweight to the hype cycle. Many production systems in 2026 still 
         │
         └── Sensitive health / finance / on-device    → On-device with INT4 quantization
 ```
+![Which model for which job — the July 2026 decision tree](diagrams/land20_decisiontree_ai.png)
 
 ---
 

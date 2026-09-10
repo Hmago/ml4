@@ -53,6 +53,7 @@ After this chapter you will be able to:
 ## 18.10 What Goes Wrong in Production
 
 Building a demo agent takes an afternoon. Making it reliable in production takes months. Here are the most common failure modes and how to mitigate them.
+![The five production failure modes and their guards](diagrams/agent18b_fivefailures_ai.png)
 
 ### 1. Prompt Injection
 
@@ -107,6 +108,7 @@ Since you cannot make the model immune, the reference defence changes the *archi
 ```
 
 The quarantined model may be fully compromised by an injected instruction — it does not matter, because it cannot call anything, and only values matching a declared schema reach the privileged side. This is the same idea as parameterised SQL queries: stop trying to sanitise the payload and instead remove the channel through which it could ever become an instruction.
+![The dual-LLM (CaMeL) pattern: why a successful injection still can't do anything](diagrams/agent18b_dualllm_ai.png)
 
 **Say this in an interview:**
 > "A jailbreak attacks the vendor's safety training; prompt injection attacks my application's instructions — and for a tool-using agent, indirect injection is the real threat because the payload arrives inside content the agent reads and the user never sees it. I can't fix it in the prompt, because instructions and data share one channel. So I'd defend architecturally: least-privilege tools, human approval for irreversible actions, and where the stakes justify it a dual-LLM split where the model that reads untrusted content has no tools and passes only schema-validated fields to the model that does."
@@ -360,6 +362,7 @@ User goal ──────────► Final result   Step 1 ──► Step
 ```
 
 Use **end-to-end eval** for benchmarking models and release decisions. Use **per-step eval** for debugging and iterating on prompts or tool design.
+![End-to-end vs. per-step agent evaluation: different questions, different jobs](diagrams/agent18b_endtoendvsperstep_ai.png)
 
 ### AgentOps — what actually goes on the dashboard ★★ `L2`
 
@@ -378,6 +381,7 @@ The metrics above tell you whether an agent is *good*. These tell you whether it
 **Trace replay is the debugging primitive.** An agent failure is not one bad response — it is a *path*: this observation led to that reasoning, which chose that tool, whose output caused the next mistake. Logging only the final answer makes failures unreproducible. Store the full ordered trace — every prompt, tool call, argument, result and token count — keyed by a session ID, and make it replayable step by step.
 
 > **The loop that makes agents improve:** every trace that ends in an escalation or a bad outcome becomes a case in the offline eval suite. Without that pipeline your agent does not get better, it just gets more logged.
+![AgentOps dashboard: the signals that tell you an agent is healthy right now](diagrams/agent18b_agentops_ai.png)
 
 ### Benchmark-Style Harnesses
 
@@ -517,6 +521,7 @@ every step           agent suggests      human monitors;    gates only for    co
 ```
 
 Most production agents (2026) sit at **Supervised** or **Guarded**, not Full Autonomous. The right level depends on reversibility, blast radius, and regulatory requirements.
+![The levels-of-autonomy spectrum for production agents](diagrams/agent18b_autonomyspectrum_ai.png)
 
 ### Confidence-Threshold Escalation
 
@@ -686,6 +691,7 @@ Blanket approval prompts train users to click through. Classify instead:
 | **Irreversible / destructive** | Delete data, transfer money, deploy, email an external party | Explicit human approval, always. Never auto-approve |
 
 The classification lives on **your** side, not in the tool's self-declared annotation — a compromised or malicious server can lie about its own `destructiveHint` (§18.3).
+![Classify actions by reversibility before you decide whether to gate them](diagrams/agent18b_actionclassification_ai.png)
 
 ### Isolation levels
 
@@ -697,6 +703,7 @@ The classification lives on **your** side, not in the tool's self-declared annot
 | **Firecracker microVM** | A real VM boundary, boots in ~125 ms | Strongest practical isolation for untrusted code |
 
 **Network is the part people forget.** Filesystem isolation without network isolation still allows exfiltration — the agent reads a secret and POSTs it out. Put an **allowlist proxy** in front of every agent that executes code or browses, default-deny outbound, and log every destination.
+![Isolation levels for agent code execution, and the network gap people forget](diagrams/agent18b_isolationladder_ai.png)
 
 ### Budgets are a safety control, not just a cost control
 
@@ -742,6 +749,7 @@ An agent that loops is indistinguishable from an agent that has been hijacked in
 | **Repeated side effects** | Crash after "send email" but before the state write → resume re-sends it | **Idempotency keys** on every side-effecting call, and write the record before the effect wherever possible |
 
 That last one is the classic distributed-systems bug wearing an AI costume: at-least-once execution plus a non-idempotent action equals duplicates. If you have written a job queue, you already know the fix.
+![Three failure modes unique to long-running agents](diagrams/agent18b_longrunningfailures_ai.png)
 
 **Say this in an interview:**
 > "A long-running agent is a durable workflow, so I'd borrow from job-queue design: persist task state and checkpoint after each step so a restart resumes rather than repeats, put idempotency keys on every side-effecting tool call, re-check permissions at the point of use rather than at kickoff, and re-validate the goal against source state before each phase so it doesn't keep working a ticket a human already closed. Plus an expiry and a cancel path, because an agent nobody can stop is an incident waiting to happen."

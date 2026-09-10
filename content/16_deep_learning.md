@@ -440,6 +440,7 @@ The decay term now shrinks every weight by a fixed percentage each step, regardl
   }
 }
 ```
+![Optimizer family tree: from plain gradient descent to Adam and AdamW](diagrams/dl16_optimizers_ai.png)
 
 ---
 
@@ -612,6 +613,7 @@ Each feature gets normalized ACROSS the batch. Two learnable parameters (γ, β)
 | RMS Norm | same as Layer Norm, simpler | LLaMA, modern LLMs |
 
 **RMS Norm** skips the mean subtraction step (just divides by root-mean-square). Slightly faster, similar quality. Used in LLaMA and many modern LLMs.
+![Where each normalization method computes its statistics: Batch vs Layer vs RMS Norm](diagrams/dl16_normalization_ai.png)
 
 ---
 
@@ -785,6 +787,7 @@ Before ResNet, adding more than ~20 layers made accuracy drop. This wasn't becau
   ReLU
   output
 ```
+![Anatomy of a ResNet residual block: the skip connection that lets gradients bypass layers](diagrams/dl16_resnet_ai.png)
 
 Instead of learning a full transformation, each block only needs to learn the small **residual** (what to change). If a layer isn't useful, the shortcut lets the gradient bypass it entirely.
 
@@ -909,6 +912,7 @@ Transformers process sequences. Images aren't sequences — they're grids. ViT c
 
   Step 5: The [CLS] token's final output → classifier
 ```
+![Vision Transformer (ViT): turning an image into patch tokens](diagrams/dl16_vit_ai.png)
 
 **The advantage:** From layer 1, every patch can attend to every other patch. CNNs need many layers to "see" the whole image — a cat's tail in one corner and its face in another are only connected after many pooling steps. ViT connects them immediately.
 
@@ -1114,6 +1118,7 @@ $$q'_{m,2i} = q_{m,2i}\cos(m\theta_i) - q_{m,2i+1}\sin(m\theta_i)$$
 $$q'_{m,2i+1} = q_{m,2i}\sin(m\theta_i) + q_{m,2i+1}\cos(m\theta_i)$$
 
 where $\theta_i = 10000^{-2i/d}$. Keys are rotated identically.
+![RoPE: rotating Query and Key vectors by a position-dependent angle](diagrams/dl16_rope_ai.png)
 
 **Why it matters:** Because attention depends on relative position, RoPE generalises better to long contexts than absolute positional encodings. It is the dominant choice in 2024–2026 LLMs (LLaMA 2/3, Gemini, Mistral, Qwen).
 
@@ -1291,6 +1296,7 @@ $$L = \|\epsilon - \hat{\epsilon}\|^2$$
        Remove that noise → get slightly cleaner image
   3. After 1000 steps: clean generated image!
 ```
+![Diffusion models: forward noising and learned reverse denoising](diagrams/dl16_diffusion_ai.png)
 
 ### Text-to-Image (DALL-E, Stable Diffusion)
 
@@ -1495,6 +1501,7 @@ The core idea: each node collects information from its neighbors, combines it wi
 ```
 
 **For graph-level tasks** (e.g., "is this molecule toxic?"): average or sum all node embeddings at the end to get one graph-level vector → classify.
+![Graph neural network message passing: collect, aggregate, update](diagrams/dl16_gnn_ai.png)
 
 ### Real-World Applications
 
@@ -1550,6 +1557,7 @@ Replace each feed-forward layer in the Transformer with E expert layers + a rout
        ↓
   output = 0.4 × Expert3(x) + 0.35 × Expert17(x)
 ```
+![Mixture-of-Experts routing: a router sends each token to its top-2 experts](diagrams/dl16_moe_ai.png)
 
 **The math:**
 - Total parameters: E × (parameters per expert) → much larger model

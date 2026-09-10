@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v306';
+const CACHE_NAME = 'ml-notes-v309';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -96,6 +96,54 @@ const STATIC_FILES = [
   'diagrams/dist_cache_ai.png', 'diagrams/scheduler_ai.png', 'diagrams/payment_ai.png', 'diagrams/inventory_ai.png',
   'diagrams/kv_store_ai.png', 'diagrams/pastebin_ai.png', 'diagrams/amazon_ai.png',
   'diagrams/llm_serving_ai.png', 'diagrams/rag_ai.png', 'diagrams/recsys_ai.png',
+
+  // Chapter 14 (Neural Networks) — AI-generated educational concept diagrams
+  'diagrams/nn_neuron_ai.png', 'diagrams/nn_layers_ai.png', 'diagrams/nn_backprop_ai.png',
+  'diagrams/nn_cnn_ai.png', 'diagrams/nn_rnn_ai.png', 'diagrams/nn_transformer_ai.png', 'diagrams/nn_gan_ai.png',
+
+  // Chapter 15 (Reinforcement Learning) — AI-generated educational concept diagrams
+  'diagrams/rl_loop_ai.png', 'diagrams/rl_discount_ai.png', 'diagrams/rl_explore_exploit_ai.png',
+  'diagrams/rl_bellman_ai.png', 'diagrams/rl_qupdate_ai.png', 'diagrams/rl_dqn_ai.png', 'diagrams/rl_rlhf_ai.png',
+
+  // Chapter 16 (Deep Learning) — AI-generated educational concept diagrams
+  'diagrams/dl16_optimizers_ai.png', 'diagrams/dl16_normalization_ai.png', 'diagrams/dl16_resnet_ai.png',
+  'diagrams/dl16_vit_ai.png', 'diagrams/dl16_diffusion_ai.png', 'diagrams/dl16_moe_ai.png',
+  'diagrams/dl16_rope_ai.png', 'diagrams/dl16_gnn_ai.png',
+
+  // Chapter 17 (LLMs) — AI-generated educational concept diagrams
+  'diagrams/llm17_tokenization_ai.png', 'diagrams/llm17_embeddings_ai.png', 'diagrams/llm17_selfattention_ai.png',
+  'diagrams/llm17_pretraining_ai.png', 'diagrams/llm17_scalinglaws_ai.png', 'diagrams/llm17_decoding_ai.png',
+  'diagrams/llm17_grpo_ai.png', 'diagrams/llm17_attentionvariants_ai.png',
+
+  // Chapter 17b (LLM Applications) — AI-generated educational concept diagrams
+  'diagrams/llm17b_ragpipeline_ai.png', 'diagrams/llm17b_promptinjection_ai.png', 'diagrams/llm17b_agentloop_ai.png',
+  'diagrams/llm17b_lora_ai.png', 'diagrams/llm17b_vectorsearch_ai.png', 'diagrams/llm17b_chunking_ai.png',
+  'diagrams/llm17b_guardrails_ai.png',
+
+  // Chapter 17c (LLM Systems) — AI-generated educational concept diagrams
+  'diagrams/llm17c_kvcachegrowth_ai.png', 'diagrams/llm17c_continuousbatching_ai.png', 'diagrams/llm17c_pagedattention_ai.png',
+  'diagrams/llm17c_prefixcaching_ai.png', 'diagrams/llm17c_quantization_ai.png', 'diagrams/llm17c_multilora_ai.png',
+  'diagrams/llm17c_evalstack_ai.png',
+
+  // Chapter 18 (AI Agents) — AI-generated educational concept diagrams
+  'diagrams/agent18_functioncalling_ai.png', 'diagrams/agent18_mcpwhy_ai.png', 'diagrams/agent18_toolpoisoning_ai.png',
+  'diagrams/agent18_patterncomparison_ai.png', 'diagrams/agent18_computeruse_ai.png', 'diagrams/agent18_contextstack_ai.png',
+  'diagrams/agent18_toolbloat_ai.png',
+
+  // Chapter 18b (Agents in Production) — AI-generated educational concept diagrams
+  'diagrams/agent18b_fivefailures_ai.png', 'diagrams/agent18b_dualllm_ai.png', 'diagrams/agent18b_endtoendvsperstep_ai.png',
+  'diagrams/agent18b_agentops_ai.png', 'diagrams/agent18b_autonomyspectrum_ai.png', 'diagrams/agent18b_actionclassification_ai.png',
+  'diagrams/agent18b_isolationladder_ai.png', 'diagrams/agent18b_longrunningfailures_ai.png',
+
+  // Chapter 19 (AI Frameworks & Engineering) — AI-generated educational concept diagrams
+  'diagrams/fw19_ecosystemmap_ai.png', 'diagrams/fw19_multiagentmodels_ai.png', 'diagrams/fw19_ragfixes_ai.png',
+  'diagrams/fw19_embeddingaxes_ai.png', 'diagrams/fw19_servinghierarchy_ai.png', 'diagrams/fw19_modelaccess_ai.png',
+  'diagrams/fw19_mlopslifecycle_ai.png', 'diagrams/fw19_costlevers_ai.png',
+
+  // Chapter 20 (The 2026 AI Landscape) — AI-generated educational concept diagrams
+  'diagrams/land20_frontiermap_ai.png', 'diagrams/land20_testtimecompute_ai.png', 'diagrams/land20_swebench_ai.png',
+  'diagrams/land20_ondevice_ai.png', 'diagrams/land20_costcurve_ai.png', 'diagrams/land20_eutimeline_ai.png',
+  'diagrams/land20_googlestack_ai.png', 'diagrams/land20_decisiontree_ai.png',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 

@@ -142,6 +142,7 @@ The flow is surprisingly simple:
        │  final response    │                    │
        │◄───────────────────│                    │
 ```
+![Function calling: the model proposes, your code executes](diagrams/agent18_functioncalling_ai.png)
 
 The LLM never executes anything itself. It outputs JSON saying "call this function with these arguments," and your code actually runs the function. This is a critical safety boundary.
 
@@ -291,6 +292,7 @@ MCP solves this with a universal standard. Build one MCP server for GitHub, and 
                                                      │  (N+M integrations) │
                                                      └──────────────────────┘
 ```
+![Why MCP: from N×M custom integrations to one universal protocol](diagrams/agent18_mcpwhy_ai.png)
 
 **Adoption milestone**: By 2026 MCP had become the de facto standard for AI tool integration — with SDKs from all major model providers (OpenAI, Google, Anthropic) and tens of thousands of community MCP servers available.
 
@@ -461,6 +463,7 @@ The model reads every tool's name, description and parameter schema to decide wh
 
   The user sees a weather tool. The model sees an instruction.
 ```
+![Tool poisoning: the hidden instruction inside a tool's own description](diagrams/agent18_toolpoisoning_ai.png)
 
 **Rug pull** — the tool is benign when the user approves it, and its definition changes afterwards.
 
@@ -585,6 +588,7 @@ graph TD
 │  Use Pipeline for strict sequential workflows.               │
 └──────────────────────────────────────────────────────────────┘
 ```
+![Four agent orchestration topologies: single, router, pipeline, orchestrator-worker](diagrams/agent18_patterncomparison_ai.png)
 
 ### Hello World: Building Each Pattern in Python
 
@@ -823,6 +827,7 @@ The model receives a screenshot of the screen, reasons about what it sees, and o
 │                    (loop continues)           │
 └──────────────────────────────────────────────┘
 ```
+![Computer use: the screenshot → action → new screenshot loop](diagrams/agent18_computeruse_ai.png)
 
 ### Key Implementations
 
@@ -1017,6 +1022,7 @@ In 2026, this became a named discipline because agent context windows are comple
   │  └─────────────────────────────────────────────┘ │
   └─────────────────────────────────────────────────┘
 ```
+![The context stack: what actually goes into an agent's context window](diagrams/agent18_contextstack_ai.png)
 
 ### Practical Context Engineering Techniques
 
@@ -1042,6 +1048,7 @@ In 2026, this became a named discipline because agent context windows are comple
 | **Role-scoped toolsets** | Give each sub-agent only the tools its role needs | Also improves accuracy — fewer wrong-tool errors |
 
 **The rule of thumb:** past roughly 20–30 tools, retrieve tools instead of listing them. It is the same insight as RAG — do not put the whole corpus in the prompt, fetch the relevant part.
+![200 tools, 40,000 tokens: why agents must retrieve tools instead of listing them](diagrams/agent18_toolbloat_ai.png)
 
 ### Hello World: Context Engineering in Practice
 
