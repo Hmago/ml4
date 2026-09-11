@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v309';
+const CACHE_NAME = 'ml-notes-v313';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -100,6 +100,8 @@ const STATIC_FILES = [
   // Chapter 14 (Neural Networks) — AI-generated educational concept diagrams
   'diagrams/nn_neuron_ai.png', 'diagrams/nn_layers_ai.png', 'diagrams/nn_backprop_ai.png',
   'diagrams/nn_cnn_ai.png', 'diagrams/nn_rnn_ai.png', 'diagrams/nn_transformer_ai.png', 'diagrams/nn_gan_ai.png',
+  'diagrams/nn_vanishing_ai.png', 'diagrams/nn_init_ai.png', 'diagrams/nn_archchooser_ai.png',
+  'diagrams/nn_xor_ai.png', 'diagrams/nn_loss_ai.png', 'diagrams/nn_regularization_ai.png', 'diagrams/nn_transfer_ai.png',
 
   // Chapter 15 (Reinforcement Learning) — AI-generated educational concept diagrams
   'diagrams/rl_loop_ai.png', 'diagrams/rl_discount_ai.png', 'diagrams/rl_explore_exploit_ai.png',

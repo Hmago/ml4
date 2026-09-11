@@ -41,6 +41,69 @@ function buildPrompt(target) {
 
 const DIAGRAM_TARGETS = [
   {
+    id: "nn_xor",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "related XOR task from examples instead.",
+    svgBase: "nn_xor",
+    title: "Why a hidden layer is needed: solving XOR",
+    rawBody: "Draw a two-part illustration answering 'why does a network need a hidden layer at all?'. LEFT PANEL titled 'THE PROBLEM: XOR': a square plot with four labelled corners - (0,0) marked NO, (1,1) marked NO, (0,1) marked YES, (1,0) marked YES - using one colour for YES corners and a different colour for NO corners so the two YES corners sit on opposite diagonals. Draw three faint dashed straight lines crossing the square at different angles, each marked with a small red X, and caption the panel 'no single straight line can separate YES from NO - and stacking more straight layers just gives another straight line'. RIGHT PANEL titled 'THE FIX: TWO HIDDEN FEATURES': show two small boxes labelled 'h1 = ReLU(x1 - x2)' and 'h2 = ReLU(x2 - x1)', both feeding an output box labelled 'score s = h1 + h2, say YES if s > 0.5'. Beside them place a compact 4-row truth table with columns 'input', 'h1', 'h2', 's', 'decision' and rows: (0,0) 0 0 0 NO; (0,1) 0 1 1 YES; (1,0) 1 0 1 YES; (1,1) 0 0 0 NO. Caption the right panel 'each hidden neuron builds ONE useful feature; the output just adds them up'. Add a bottom strip: 'the hidden layer does not classify - it RE-DESCRIBES the input so a simple threshold works'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_loss",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "Real-world example: a speech recognizer's forward pass turns a spectrogram into a probability distribution over characters, and cross-entropy measures how far those probabilities sit from the true transcript.",
+    svgBase: "nn_loss",
+    title: "Why cross-entropy punishes confident wrong answers",
+    rawBody: "Draw a single clear graph of the cross-entropy penalty: x-axis labelled 'probability the model gave the CORRECT answer' running from 0 to 1, y-axis labelled 'loss = -log(p)'. Plot the curve so it is near zero at the right side and shoots steeply toward infinity as it approaches the left side. Mark two points on the curve with labelled callouts, using a real spam-filter example. Point A at p = 0.9 labelled 'said 90% spam, it WAS spam -> loss 0.105 (almost free)'. Point B at p = 0.1 labelled 'said 10% spam, it WAS spam -> loss 2.303 (22x more expensive)'. Draw a clear vertical bracket between the two loss values on the y-axis annotated '22x'. Add a short side panel with three stacked mini-bars showing loss for p = 0.95 (tiny bar, 0.051), p = 0.629 (small bar, 0.464) and p = 0.1 (very tall bar, 2.303), titled 'confidence in the RIGHT answer is cheap; confidence in the WRONG one is not'. Add a bottom caption strip: 'the steep left side is the pressure that pushes probability onto the correct class'. Clean flat educational style, one accent colour for the curve and a warning colour for the expensive point, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_regularization",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "their coefficient conventions without thinking.",
+    svgBase: "nn_regularization",
+    title: "Three ways to regularize: dropout, batch norm, weight decay",
+    rawBody: "Draw three clearly separated panels, each showing one regularization technique with its everyday analogy. PANEL 1 'DROPOUT - bench some players': show a row of 8 filled circles labelled 'training step', with 3 of them crossed out and greyed, and a note 'survivors are divided by the keep probability (inverted dropout)'; beside it a second row with 8 circles all active labelled 'at inference: dropout OFF, no rescaling'; caption 'no neuron can rely on any single other neuron'. PANEL 2 'BATCH NORM - a thermostat': show a small histogram of messy scattered values labelled 'before: drifting scale' with an arrow to a tidy bell-shaped histogram centred on zero labelled 'after: centred, unit spread', with a small formula strip 'subtract the batch mean, divide by the batch std, then rescale with learnable gamma and beta'; add a warning tag 'training uses THIS batch's statistics; evaluation uses RUNNING statistics - call model.eval()'. PANEL 3 'WEIGHT DECAY - a tax on big weights': show two small curves fitted to the same scattered points - a wild jagged curve labelled 'weights [12, -9, 15] - memorising noise' and a smooth curve labelled 'weights [0.8, -0.5, 1.1] - with weight decay'; add a formula strip 'every step multiplies the weight by (1 - 2 * lr * lambda), slightly less than 1'. Add a bottom strip: 'all three trade a little training accuracy for better behaviour on unseen data - too much of any of them hurts'. Use a distinct accent colour per panel. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_transfer",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "it with inexpensive baselines such as bag-of-words or TF-IDF plus a linear classifier.",
+    svgBase: "nn_transfer",
+    title: "Transfer learning: freeze the backbone, replace the head",
+    rawBody: "Draw a left-to-right illustration of transfer learning in two stages. STAGE 1 'PRE-TRAINED MODEL (someone else's compute)': a vertical stack of 5 layer blocks, the bottom four grouped and labelled 'BACKBONE - learned general features: edges, textures, shapes' and shaded in a calm colour, and the top block labelled 'ORIGINAL HEAD - 1000 ImageNet classes' shaded differently. Add a small note 'trained on millions of images'. Draw a large arrow to STAGE 2 'YOUR MODEL (800 factory images)': the SAME four backbone blocks, now each marked with a padlock icon and labelled 'FROZEN - weights unchanged, no gradients', and the top block REPLACED by a new differently-coloured block labelled 'NEW HEAD - your defect classes, trained from scratch'. Beside stage 2 add a small optional note with a dashed outline and an open-padlock icon: 'optional next step: unfreeze the last block or two with a MUCH smaller learning rate'. Below both stages add a compact decision strip with four cells: 'small data + similar domain -> frozen backbone'; 'small data + different domain -> check features transfer at all'; 'more labels -> compare partial vs full fine-tuning'; 'large domain mismatch -> validate, do not assume'. Add a bottom caption: 'you are reusing representations, not answers - the early layers are the general part'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_init",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "| Tanh or a roughly symmetric activation | Xavier / Glorot | $\\approx 2/(n_{\\text{in}}+n_{\\text{out}})$ — averages fan-in and fan-out |",
+    svgBase: "nn_init",
+    title: "Why weight initialization scale matters: He vs Xavier",
+    rawBody: "Draw three side-by-side vertical columns, each showing the SAME 5-layer network as a stack of 5 horizontal bars, where each bar's WIDTH represents the spread (variance) of the activations at that layer. Left column titled 'WEIGHTS TOO SMALL': bars shrink dramatically from bottom to top, ending as a sliver, captioned 'signal dies out - nothing to learn from'. Middle column titled 'WELL SCALED (He / Xavier)': all five bars are roughly the SAME width, captioned 'signal stays healthy through depth'. Right column titled 'WEIGHTS TOO LARGE': bars grow dramatically, the top one overflowing its box, captioned 'signal blows up - saturation and NaN'. Below the three columns add a compact derivation strip with three boxed steps connected by arrows: step 1 'a neuron SUMS n_in independent terms, so Var(z) = n_in * Var(w) * Var(x)'; step 2 'we want Var(z) = Var(x), so Var(w) = 1 / n_in  -> this is Xavier'; step 3 'ReLU zeroes about HALF its inputs, so double it: Var(w) = 2 / n_in  -> this is He'. Beside step 3 draw a tiny ReLU shape with its left half greyed out and a label 'half the signal discarded - that is where the 2 comes from'. Clean flat educational style, generous whitespace, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_archchooser",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "| What should decide the choice? | Useful locality and measured task performance | Streaming constraints and measured task performance | Useful attention/pretraining and measured task performance |",
+    svgBase: "nn_archchooser",
+    title: "What each architecture buys you: CNN vs RNN vs Transformer",
+    rawBody: "Draw three clearly separated panels side by side, each answering 'what does this architecture BUY you?'. Panel 1 'CNN - LOCALITY': show a small grid of pixels with a 3x3 window highlighted in one position and faint copies of the SAME window in other positions, with a label 'one filter, reused everywhere - shared weights'; underneath, a short bullet strip 'buys you: position-independent local patterns' and 'best for: images, spatial data'. Panel 2 'RNN / LSTM - MEMORY': show four word boxes in a row ('not', 'very', 'good', '...') connected left-to-right by a single arrow carrying a small suitcase icon labelled 'running state', with a label 'reads in ORDER, carries a summary forward'; underneath 'buys you: a fixed-size memory of the past' and 'best for: streaming, strict sequence order'. Panel 3 'TRANSFORMER - ATTENTION': show the same four word boxes but with many arrows connecting EVERY box directly to every other box, one arrow thicker and highlighted, labelled 'any token reaches any other in ONE step'; underneath 'buys you: direct long-range links, parallel training' and 'costs you: compute grows with the SQUARE of sequence length'. Add a single bottom strip reading 'same question, three different built-in assumptions - pick the one whose assumption matches your data'. Use one distinct accent colour per panel. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "nn_vanishing",
+    chapterFile: "content/14_neural_networks.md",
+    promptKind: "concept",
+    existingImageLine: "**Exploding:** If weight magnitudes push each gradient factor above 1, the product grows exponentially — a factor of just $1.5$ across 20 layers is $1.5^{20} \\approx 3{,}300\\times$. Weight updates become enormous, loss jumps to NaN, and training crashes. Common in RNNs processing long sequences.",
+    svgBase: "nn_vanishing",
+    title: "Vanishing vs exploding gradients through a deep network",
+    rawBody: "Draw two stacked horizontal lanes showing the SAME 6-layer network, with the backward gradient signal travelling RIGHT-TO-LEFT from the output back to layer 1. Top lane 'VANISHING': each arrow between layers is labelled with a multiplier below 1 (x0.25, x0.25, ...) and the arrow gets visibly thinner and fainter at every hop, ending as a barely visible thread at layer 1 labelled 'gradient approx 0.000001 - early layers barely learn'. Bottom lane 'EXPLODING': each arrow is labelled with a multiplier above 1 (x1.5, x1.5, ...) and the arrow gets visibly thicker and more intense at every hop, ending as a huge arrow at layer 1 labelled 'gradient approx 3300x - weights blow up, loss becomes NaN'. Between the two lanes add a small centered note: 'the gradient is a PRODUCT of per-layer factors, so small differences compound exponentially'. Add a short legend showing the healthy middle case: multipliers near 1 keep the arrow roughly constant width. Use a calm colour code: cool blue fading to nothing for vanishing, warm orange growing for exploding, neutral grey for the healthy reference. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
     id: "arch_reference",
     chapterFile: "content/35_system_design_cases_realtime.md",
     existingImageLine: "![The 4-Layer Reference Architecture — Edge · Services · Data · Async](diagrams/arch_reference.svg)",

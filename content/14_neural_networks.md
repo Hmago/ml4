@@ -56,6 +56,9 @@ example later in the chapter.
 | **Activation** | The non-linear "decision" function applied to a neuron's result. It lets a network bend to fit curves instead of only straight lines. |
 | **Logit** | A raw output score *before* it becomes a probability. "Logit = 2.0" is just a number the model emits; softmax/sigmoid turns it into a probability. |
 | **Gradient** | The slope of the loss — which way, and how steeply, the error changes if you nudge a weight. Training walks *downhill* along it. |
+| $\partial L/\partial w$ | Read the $\partial$ as "a tiny change in": *how much the loss $L$ moves when weight $w$ is nudged*. That single number **is** the gradient for that weight. $\nabla L$ is just all of them collected into one list. |
+| Superscript $^{(l)}$ | "Belonging to layer $l$" — $W^{(2)}$ is layer 2's weight matrix, **not** $W$ squared. |
+| $\delta$ (delta) | The error signal handed backwards *to* a layer during backpropagation — "how wrong were the numbers arriving here?" |
 | **Epoch** | One full pass through the entire training dataset. |
 | **Batch** (mini-batch) | A small handful of examples (e.g. 32) seen before the weights are updated once. |
 
@@ -185,9 +188,8 @@ $784 \to 512 \to 256 \to 10$ network:
   down."
 
 > You only supply the digit labels — not labels for hidden features like "stroke" or "curve."
-> The network learns those representations on its own. The stroke/loop story is intuition,
-> not a promise that each neuron has one tidy human-readable meaning — information is often
-> spread across many neurons.
+> The network learns those representations on its own. The stroke/loop story is intuition;
+> in practice information is spread across many neurons rather than one tidy neuron each.
 
 ```mermaid
 graph LR
@@ -226,8 +228,8 @@ graph LR
 ![A feedforward neural network: input, hidden, and output layers](diagrams/nn_layers_ai.png)
 
 > **Interview —** *"Would you rather add depth or width to a network?"*
-> **Say:** They solve different capacity problems. Depth composes transformations and can represent some hierarchical functions efficiently; width provides more features within a layer and can make optimization easier. I would compare validation quality and compute cost rather than assume that deeper always wins.
-> **They follow up with:** *"So why not go extremely deep?"* — longer gradient paths and harder optimization can make extra layers unhelpful. Residual connections provide shorter paths and make learning near-identity transformations easier, but neither depth nor residual connections guarantees better results on every task.
+> **Say:** They solve different problems. Depth *composes* transformations and represents hierarchical functions efficiently; width adds more features within a layer and often makes optimization easier. I'd compare validation quality and compute cost rather than assume deeper wins.
+> **They follow up with:** *"So why not go extremely deep?"* — longer gradient paths make optimization harder, so extra layers can stop helping. Residual connections shorten those paths (§14.8), but neither depth nor skip connections guarantees a better result.
 
 <details>
 <summary><strong>Quick check.</strong> A network takes a 28×28 grayscale image, flattens it to 784 inputs, has one hidden layer of 128 neurons, and outputs 10 classes. How many learnable parameters does it have?</summary>
@@ -271,8 +273,8 @@ smooth S, softmax turns a row of scores into percentages.
 
 Without activations, layer 2's output is $W_2(W_1 x + b_1) + b_2 = W'x + b'$ — still linear. A 100-layer network would have the same representational power as a single layer. Activations break this linearity, letting deep networks approximate arbitrarily complex functions.
 
-Strictly, a linear map plus a bias is **affine**. The important restriction here is a
-straight decision boundary, not whether we use the informal phrase "linear layer."
+(Strictly, "linear layer" means *affine* — a linear map plus a bias. The restriction that
+matters is the straight decision boundary.)
 
 ### Why Hidden Layers Help: Build XOR Yourself
 
@@ -300,25 +302,34 @@ $$h_1 = \text{ReLU}(x_1-x_2), \qquad h_2 = \text{ReLU}(x_2-x_1), \qquad s=h_1+h_
 | (1,0) | 1 | 0 | 1 | YES |
 | (1,1) | 0 | 0 | 0 | NO |
 
-Each hidden neuron makes one useful feature; the output combines them. We **hand-designed**
-these weights to demonstrate representation. Later, the lab learns a related XOR task from
-examples. Representation, successful optimization, and generalization are three separate
-questions.
+Each hidden neuron makes one useful feature; the output combines them. These weights were
+**hand-designed** to show what a hidden layer *can represent* — the lab in §14.7a learns a
+related XOR task from examples instead.
+![Why a hidden layer is needed: solving XOR](diagrams/nn_xor_ai.png)
 
 ### ReLU — The Default
 
 $$\text{ReLU}(z) = \max(0, z)$$
 
-Output range: $[0, \infty)$. Simple, fast, and unsaturated for positive inputs. A common
-hidden-layer choice in MLPs and CNNs. A unit that remains negative across the training data
-receives zero data-gradient through its ReLU and may stop contributing ("dying ReLU").
-Being negative on just one example is normal, not evidence that the unit is dead.
+Output range: $[0, \infty)$. Simple, fast, and unsaturated for positive inputs — the common
+hidden-layer choice in MLPs and CNNs. Its derivative is **1** when $z>0$ and **0** when $z<0$,
+which is exactly why it does not shrink gradients on the positive side. A unit that stays
+negative across the *whole* dataset therefore receives zero gradient and can stop
+contributing ("dying ReLU"); being negative on one example is normal.
 
 ### Sigmoid
 
 $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
 
 Output range: $(0, 1)$. Useful for binary classification output layers and LSTM gates (where you need a 0-to-1 probability or gate value). Saturates at extremes — gradients approach zero for large $|z|$.
+
+Its derivative has an unusually tidy form, worth memorising because §14.5 and §14.6 both use it:
+
+$$\sigma'(z) = \sigma(z)\bigl(1 - \sigma(z)\bigr)$$
+
+Write $s = \sigma(z)$ and this is $s(1-s)$, an upside-down parabola that peaks at $s = 0.5$:
+$0.5 \times 0.5 = \mathbf{0.25}$. **So a sigmoid can never pass back more than a quarter of the
+gradient it receives** — the root of the vanishing-gradient problem in §14.6.
 
 ### Tanh
 
@@ -336,16 +347,24 @@ Converts a vector of raw logits into a probability distribution that sums to 1. 
 
 $$f(z) = \begin{cases} z & z > 0 \\ \alpha z & z \le 0 \end{cases}, \quad \alpha = 0.01$$
 
-Provides a nonzero activation derivative on the negative side. This addresses ReLU's
-zero-slope problem, although other parts of the network can still prevent useful learning.
+Provides a nonzero activation derivative ($\alpha$) on the negative side, so a unit that
+drifts negative can still recover.
 
 ### GELU (Gaussian Error Linear Unit)
 
 $$\text{GELU}(z) = z \cdot \Phi(z)$$
 
-where $\Phi$ is the standard Gaussian CDF. This smooth gate is used in many Transformer
-feed-forward blocks. Other models use alternatives such as SiLU and gated variants.
-Smoothness alone does not guarantee better optimization or generalization.
+$\Phi(z)$ is the standard Gaussian CDF — plainly, *the chance that a random draw from a
+standard bell curve lands below $z$*. That makes GELU a **soft gate** on $z$:
+
+| If $z$ is... | $\Phi(z)$ is... | So GELU keeps... |
+|---|---|---|
+| large positive | $\to 1$ | nearly all of $z$ |
+| near zero | $\approx 0.5$ | about half of $z$ |
+| large negative | $\to 0$ | nearly none of $z$ |
+
+Same job as ReLU, faded smoothly instead of a hard elbow. Used in many Transformer
+feed-forward blocks; SiLU and gated variants are common alternatives.
 
 **Example — how it works (one value through each activation).** Take a neuron whose weighted
 sum comes out to $z = -2$ in one case and $z = 3$ in another, and watch what each activation
@@ -358,10 +377,8 @@ does to those two numbers:
 | Tanh | $-0.96$ | $0.995$ | Squashed into −1…1, keeping the sign |
 | Leaky ReLU ($\alpha{=}0.1$) | $-0.2$ | $3$ | Like ReLU, but lets a trickle of the negative through |
 
-ReLU's output for $z=-2$ is 0, with zero derivative through this activation for this
-example. If the unit stays on that side across the data, learning can stall. Leaky ReLU
-keeps a small negative-side slope; changes in upstream layers or optimizer state can also
-change whether a unit is active.
+ReLU's output for $z=-2$ is 0 — and so is its derivative, so nothing flows back through it
+*for this example*. Leaky ReLU keeps a small negative-side slope instead.
 
 > **Interview —** *"Why does a neural network need activation functions at all?"*
 > **Say:** Without them the whole network collapses into a single linear layer, no matter how deep it is. Stacking linear maps gives you another linear map: $W_2(W_1x) = (W_2W_1)x$, and $W_2W_1$ is just one matrix. A 50-layer network with no activations has exactly the modelling power of a 1-layer one — it can only draw straight lines. The non-linearity between layers is what lets depth actually buy you anything.
@@ -370,18 +387,16 @@ change whether a unit is active.
 <details>
 <summary><strong>Quick check.</strong> Ignore weight factors and multiply ten sigmoid activation derivatives. How large can that activation-only factor be? Would replacing sigmoid with ReLU guarantee stable gradients?</summary>
 
-Sigmoid's derivative is **at most 0.25**. The product of these ten activation derivatives
-is therefore at most:
+Sigmoid's derivative $s(1-s)$ peaks at **0.25** (see above), so ten of them multiply to at most:
 
 $$0.25^{10} \approx 0.00000095$$
 
-This explains one source of vanishing gradients. It is **not an upper bound on the whole
-network gradient**, because weight factors have been omitted. For example, a scalar weight
-factor of 4 can offset an activation derivative of 0.25.
+That is one source of vanishing gradients — under a millionth of the signal survives. It is
+**not** a bound on the whole network gradient: weight factors are omitted here, and a weight
+of 4 cancels an activation derivative of 0.25.
 
-Ten positive ReLUs contribute $1^{10}=1$ through their activation derivatives, but weights
-can still shrink or amplify the signal, and negative ReLUs contribute zero. Initialization
-and architecture still matter.
+Ten *positive* ReLUs contribute $1^{10}=1$, so no — swapping to ReLU removes this particular
+shrinking multiplier, but not the weight factors, and negative ReLUs contribute zero.
 </details>
 
 ```chart
@@ -500,11 +515,11 @@ $$z^{(1)} = \begin{bmatrix} 0.5(1) - 0.5(2) \\ 1.0(1) + 1.0(2) \end{bmatrix} + \
 
 Output weights $W^{(2)} = [1, 1]$, bias $b^{(2)} = -1$:
 
-$$z^{(2)} = 1(0) + 1(2.0) - 1 = 1.0 \xrightarrow{\sigma} \hat{y} = \sigma(1.0) = 0.73$$
+$$z^{(2)} = 1(0) + 1(2.0) - 1 = 1.0 \xrightarrow{\ \sigma\ } \hat{y} = \sigma(1.0) = \frac{1}{1+e^{-1}} = \frac{1}{1.367879} = 0.731059$$
 
-The network predicts **0.73**. Notice the first hidden neuron contributed nothing — ReLU zeroed
-its negative value **for this input**. That does not establish that it is dead across the
-dataset. We will keep this exact network for the complete backward pass in §14.5.
+The network predicts **0.731**. Notice the first hidden neuron contributed nothing — ReLU
+zeroed its negative value **for this input**, which does not make it dead across the dataset.
+We keep this exact network for the complete backward pass in §14.5.
 
 ### Read the Shapes Before Reading the Code
 
@@ -522,8 +537,7 @@ of weights per output neuron.
 | Output logits | $z_2$: (1,1) | `H @ W2.T + b2`: (B,1) |
 | Binary targets | $y$: (1,1) | floating-point `y`: (B,1) |
 
-Bias broadcasting adds the same learned offset to every example's corresponding output.
-It does not create a different bias for every row.
+Bias broadcasting adds the *same* learned offset to every row — it is not a per-example bias.
 
 <details>
 <summary><strong>Quick check.</strong> A batch has shape (32,10), and a dense layer produces 8 features. What shapes should its stored weights, bias, and output have?</summary>
@@ -540,9 +554,8 @@ For **[2,3]**, hidden pre-activations are [5,1], so the output is **6**.
 For **[3,2]**, they are [5,-1]; ReLU clips the second to zero, giving **5**.
 
 Without ReLU the two outputs would be **6 and 4**, since the combined affine function is
-$2x_2$. Swapping feature coordinates can change a linear model's answer too. This exercise
-teaches the forward pass; the **XOR example**, not sensitivity to swapping inputs, explains
-why nonlinear hidden features are needed.
+$2x_2$. (This exercise drills the forward pass; the **XOR example** is what shows *why*
+nonlinear hidden features are needed.)
 </details>
 
 ### Common Loss Functions
@@ -606,8 +619,7 @@ $$L = \frac{1}{N}\sum_{i=1}^{N}(y_i - \hat{y}_i)^2$$
 and punishes *confident wrong* ones harshly. Because $-\log(p)$ shoots toward infinity as
 $p \to 0$, assigning high probability to the observed class costs little, while being
 confidently wrong ("0.01 for the right class") is enormously expensive. That asymmetry is what
-encourages fitting the observed label distribution. Finite data, model errors, and overfitting
-can still produce poorly calibrated confidence.
+encourages fitting the observed label distribution.
 
 **Example — how it works (binary cross-entropy).** A spam classifier predicts $\hat{y} = 0.9$
 ("90% spam") for an email that really is spam ($y = 1$):
@@ -618,7 +630,8 @@ If it had instead confidently said $\hat{y} = 0.1$ for that same spam email:
 
 $$L = -\log(0.1) = 2.303 \quad (\text{22}\times\text{ larger — punished for being confidently wrong})$$
 
-Real-world example: a speech recognition system's forward pass transforms a spectrogram through convolutional and recurrent layers to produce a probability distribution over characters. The cross-entropy loss measures how far those probabilities are from the true transcript.
+Real-world example: a speech recognizer's forward pass turns a spectrogram into a probability distribution over characters, and cross-entropy measures how far those probabilities sit from the true transcript.
+![Why cross-entropy punishes confident wrong answers](diagrams/nn_loss_ai.png)
 
 **Loss is not accuracy.** For a true positive, changing a probability from 0.6 to 0.9
 improves cross-entropy even though both predictions are already correct at a 0.5 threshold.
@@ -638,14 +651,13 @@ the number of regression targets.
 | Regression | values (B,d) | floats, matching shape | `MSELoss` or an appropriate alternative | use values directly |
 
 Example: "cat **or** dog **or** bird" is multiclass. "Contains cat **and** grass **and**
-sunlight" is multilabel. Those different questions need different output semantics.
-Thresholds may need tuning on validation data; 0.5 is a starting point, not a universal rule.
+sunlight" is multilabel. Those are different questions and need different output semantics.
+Thresholds may need tuning on validation data; 0.5 is a starting point, not a rule.
 
 **Why fused losses?** Directly computing `exp(1000)` overflows. Stable log-softmax uses
-log-sum-exp arithmetic, effectively shifting logits before exponentiation without changing
-the probabilities. Likewise, `BCEWithLogitsLoss` avoids explicitly taking `log(sigmoid(z))`
-at extreme values. Use the stable loss, rather than patching every numerical problem with
-an arbitrary epsilon.
+log-sum-exp arithmetic, effectively shifting logits before exponentiation without changing the
+probabilities; `BCEWithLogitsLoss` likewise avoids `log(sigmoid(z))` at extreme values. Use the
+stable loss instead of patching numerical problems with an epsilon.
 
 ---
 
@@ -700,33 +712,55 @@ The chain rule lets you decompose the gradient through layers:
 
 $$\frac{\partial L}{\partial w_1} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z^{(2)}} \cdot \frac{\partial z^{(2)}}{\partial a^{(1)}} \cdot \frac{\partial a^{(1)}}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial w_1}$$
 
-Read that as one path from a weight to the loss. At a node used by several later
-computations, **add** the gradient contributions from those paths. The backward pass
-computes sensitivities using the current weights; the optimizer updates weights afterwards.
-A downhill direction is local: a step that is too large can still increase the loss.
+Read that as one path from a weight to the loss. Where a node feeds several later
+computations, **add** the contributions from those paths. The backward pass measures
+sensitivities at the *current* weights; the optimizer updates afterwards. Downhill is only a
+local direction — too large a step can still increase the loss.
 
 ### Worked Example (Single Neuron)
 
-Neuron: $z = wx + b$ with $w=2, b=1$, activation $\sigma$, input $x=1$.
+Neuron: $z = wx + b$ with $w=2, b=1$, activation $\sigma$, input $x=1$, true label $y = 0$.
 
-$$z = 2(1) + 1 = 3 \quad \Rightarrow \quad \hat{y} = \sigma(3) \approx 0.952574$$
+**Forward pass** — compute, squash, score:
 
-True label $y = 0$. Binary cross-entropy loss:
+$$z = 2(1) + 1 = 3 \quad \Rightarrow \quad \hat{y} = \sigma(3) = \frac{1}{1+e^{-3}} = 0.952574$$
 
-$$L = -\log(1-\sigma(3)) \approx 3.048587$$
+$$L = -\bigl[y\log\hat y + (1-y)\log(1-\hat y)\bigr] \;\xrightarrow{\ y=0\ }\; -\log(1-\hat y) = -\log(0.047426) = 3.048587$$
 
-Backward pass:
+The neuron said "95% yes" when the answer was **no**, so the loss is large. Good — we want a
+big correction.
 
-$$\frac{\partial L}{\partial \hat{y}} \approx 21.085537, \quad \frac{\partial \hat{y}}{\partial z} \approx 0.045177, \quad \frac{\partial z}{\partial w} = x = 1$$
+**Backward pass — the three rules first.** The chain rule needs one derivative per link.
+Here they are *as formulas*, so that no number below appears out of thin air:
 
-$$\frac{\partial L}{\partial w} \approx 0.952574$$
+| Link | Rule | Where it comes from |
+|---|---|---|
+| $\partial L/\partial \hat y$ | $\dfrac{1-y}{1-\hat y} - \dfrac{y}{\hat y}$, which is $\dfrac{1}{1-\hat y}$ when $y=0$ | derivative of $-\log(1-\hat y)$ |
+| $\partial \hat y/\partial z$ | $\sigma(z)\bigl(1-\sigma(z)\bigr)$ | the sigmoid derivative from §14.3 |
+| $\partial z/\partial w$ | $x$ | in $z = wx + b$, nudging $w$ moves $z$ by $x$ |
+
+**Now substitute the forward-pass numbers into those three rules:**
+
+$$\frac{\partial L}{\partial \hat y} = \frac{1}{1 - 0.952574} = \frac{1}{0.047426} = 21.085537$$
+
+$$\frac{\partial \hat y}{\partial z} = 0.952574 \times (1 - 0.952574) = 0.952574 \times 0.047426 = 0.045177$$
+
+$$\frac{\partial z}{\partial w} = x = 1$$
+
+**Multiply the chain** — that is the whole of backpropagation for this neuron:
+
+$$\frac{\partial L}{\partial w} = 21.085537 \times 0.045177 \times 1 = 0.952574$$
+
+Notice the two big/small factors nearly cancel. The huge $21.09$ says "the loss is very
+sensitive to the prediction"; the tiny $0.045$ says "but the saturated sigmoid barely responds
+to $z$." Their product is a moderate, usable gradient.
 
 Update with learning rate $\alpha = 0.1$:
 
-$$w_{\text{new}} = 2.0 - 0.1 \times 0.952574 \approx 1.904743$$
+$$w_{\text{new}} = 2.0 - 0.1 \times 0.952574 = 1.904743$$
 
-Here the bias gradient is also $0.952574$, since $\partial z/\partial b=1$.
-Updating it gives $b_{\text{new}} \approx 0.904743$.
+The bias gradient is also $0.952574$, since $\partial z/\partial b = 1$, giving
+$b_{\text{new}} = 0.904743$.
 
 ### Did It Actually Learn? — One Full Cycle, Then Another
 
@@ -756,11 +790,14 @@ start; real training does this millions of times across millions of examples.
 > $$\frac{\partial L}{\partial z} = \hat{y} - y$$
 >
 > Check it against the numbers above: at step 0 we computed
-> $\frac{\partial L}{\partial \hat y} \times \frac{\partial \hat y}{\partial z} \approx 21.085537 \times 0.045177 \approx 0.9526$ — and
-> $\hat y - y = 0.953 - 0 = 0.953$. **Identical.** The messy $1/(1-\hat y)$ term and the
-> $\hat y(1-\hat y)$ term cancel exactly. The same cancellation happens for softmax +
-> categorical cross-entropy, which is a large part of why those pairings are the standard
-> choice: *the gradient is just the prediction error.*
+> $\frac{\partial L}{\partial \hat y} \times \frac{\partial \hat y}{\partial z} = 21.085537 \times 0.045177 = 0.9526$ — and
+> $\hat y - y = 0.953 - 0 = 0.953$. **Identical**, and you can see exactly why in the formulas:
+>
+> $$\underbrace{\frac{1}{1-\hat y}}_{\partial L/\partial \hat y} \times \underbrace{\hat y(1-\hat y)}_{\partial \hat y/\partial z} = \hat y \quad (\text{the } (1-\hat y) \text{ terms cancel}) \;=\; \hat y - 0$$
+>
+> The same cancellation happens for softmax + categorical cross-entropy, which is a large
+> part of why those pairings are the standard choice: *the gradient is just the prediction
+> error.*
 
 ### The Full Journey: Our Two-Layer Network Learns
 
@@ -781,8 +818,20 @@ Probability:            0.731059
 BCE loss:               0.313262
 ```
 
-These are deliberately chosen teaching weights. They need not be the weights that a real
-training run would initialize or learn.
+These are deliberately chosen teaching weights, not ones a real training run would produce.
+
+One update is six steps. Here is the whole loop before we walk it number by number:
+
+```mermaid
+graph LR
+    A["Forward pass<br/>x = [1,2] → ŷ = 0.731"] --> B["Loss<br/>BCE = 0.313"]
+    B --> C["A. Output error<br/>δ₂ = ŷ - y = -0.269"]
+    C --> D["B. Output grads<br/>∇W₂ = δ₂ × hidden"]
+    D --> E["C. Send signal back<br/>× old W₂, × ReLU slope"]
+    E --> F["D. Hidden grads<br/>∇W₁ = δ₁ × input"]
+    F --> G["E. Update everything<br/>w ← w - 0.1 ∇"]
+    G --> H["F. Predict again<br/>ŷ = 0.787, loss 0.240"]
+```
 
 **Step A: find the output error signal.** With sigmoid plus binary cross-entropy:
 
@@ -872,9 +921,9 @@ The mean bias gradient is $(-0.268941+0.817574)/2 = 0.274317$.
 An SGD update therefore **decreases** the output bias, unlike the first example alone.
 The second example's confident mistake outweighs the first example's smaller error.
 
-That does not mean the model ignored the first example. It optimized their combined loss.
-One step need not improve every example, and noisy mini-batch loss need not decrease
-monotonically. A batch size of 32 also does not mean 32 separate optimizer updates.
+That does not mean the model ignored the first example — it optimized their *combined* loss.
+One step need not improve every example, and mini-batch loss is noisy rather than
+monotonically falling.
 
 > **Interview —** *"Explain backpropagation to someone who knows calculus but has never seen a neural network."*
 > **Say:** A network is a deeply nested function, and training needs to know how the final error changes if you nudge any one weight. That is a derivative, and the chain rule handles nested functions. Backprop is the chain rule applied **efficiently**: compute the error at the output, then walk backwards layer by layer, reusing the gradient you already computed for the layer above instead of recalculating it. That reuse is the whole trick — it makes the cost of all gradients roughly the same as one forward pass.
@@ -899,13 +948,13 @@ $$w \leftarrow w - \alpha \nabla L$$
 $$v \leftarrow \beta v + \nabla L, \qquad w \leftarrow w - \alpha v$$
 
 **Adam (Adaptive Moment Estimation):** Tracks first and second moment estimates of gradients
-to adapt updates per parameter. It is a common practical starting point. Values such as
-$10^{-3}$ or $3\times10^{-4}$ are candidates to try, not universal settings.
+to adapt updates per parameter — the usual practical starting point. Try $10^{-3}$ or
+$3\times10^{-4}$.
 
 **AdamW:** Adam with decoupled weight decay. Preferred for Transformer training because it regularizes more cleanly than Adam's L2 penalty.
 
-**The curves below are illustrative, not benchmark results or an optimizer ranking.**
-The ordering can change with the task, learning rate, training budget, and tuning.
+**The curves below are illustrative, not an optimizer ranking** — the ordering changes with
+task, learning rate, and tuning budget.
 
 ```chart
 {
@@ -963,25 +1012,25 @@ During backpropagation through $L$ layers, the gradient for the first layer invo
 $$\frac{\partial L}{\partial w_1} \propto \prod_{l=1}^{L} \frac{\partial a^{(l)}}{\partial z^{(l)}} \cdot W^{(l)}$$
 
 **Vanishing:** Ten sigmoid activation derivatives alone contribute at most
-$0.25^{10}\approx10^{-6}$. The full gradient also includes weight factors. Saturation and
-unhelpful weight scaling can make early-layer learning extremely slow; the activation-only
-example illustrates a mechanism, not a universal network-gradient bound.
+$0.25^{10}\approx10^{-6}$ (§14.3). The full gradient also includes weight factors, so this
+illustrates a mechanism rather than a universal bound — but saturation plus unhelpful weight
+scaling really can make early-layer learning glacially slow.
 
 **Exploding:** If weight magnitudes push each gradient factor above 1, the product grows exponentially — a factor of just $1.5$ across 20 layers is $1.5^{20} \approx 3{,}300\times$. Weight updates become enormous, loss jumps to NaN, and training crashes. Common in RNNs processing long sequences.
+![Vanishing vs exploding gradients through a deep network](diagrams/nn_vanishing_ai.png)
 
 > **Interview —** *"Your loss suddenly becomes NaN halfway through training. Walk me through it."*
 > **Say:** Stop and locate the **first non-finite quantity**: inputs and targets, logits,
 > loss, gradients, then parameters after the update. Possible causes include invalid data,
 > unsafe log/division operations, numerical overflow, an excessive learning rate, or exploding
 > gradients. A NaN is a symptom, not a diagnosis.
-> **They follow up with:** *"When would you clip?"* — when evidence shows excessive gradient
-> norms. Clipping can limit raw gradient magnitude; with plain SGD this also bounds the
-> gradient-driven update for a fixed learning rate. Adaptive optimizers and weight decay
-> complicate that relationship. Repair the cause, use stable losses, and restore a known-good
-> checkpoint if parameters or optimizer state were corrupted.
+> **They follow up with:** *"When would you clip?"* — when gradient norms are demonstrably
+> excessive. Clipping caps raw gradient magnitude (and with plain SGD, the resulting update),
+> but adaptive optimizers complicate that. Fix the cause, use stable losses, and restore a
+> known-good checkpoint if parameters or optimizer state were corrupted.
 
-The next chart shows **activation-derivative products only**, with weight factors omitted.
-Its flat ReLU line assumes every illustrated ReLU is active.
+The chart below plots **activation derivatives only** — weight factors are omitted, and the
+flat ReLU line assumes every illustrated ReLU is active.
 
 ```chart
 {
@@ -1028,28 +1077,47 @@ Its flat ReLU line assumes every illustrated ReLU is active.
 
 ### Initialize Before You Train
 
-If hidden units have identical incoming and outgoing weights, they can receive identical
-updates and fail to specialize. Random initialization breaks that symmetry. **Zero biases
-are usually fine** when the weights already differ; "never initialize anything to zero" is
-the wrong lesson.
+If hidden units have identical incoming and outgoing weights they receive identical updates
+and never specialize. Random initialization breaks that symmetry. **Zero biases are usually
+fine** once the weights differ — "never initialize anything to zero" is the wrong lesson.
 
-Scale matters too. Under simplifying assumptions of independent, centered inputs and
-weights, $\operatorname{Var}(z)\approx n_{\text{in}}\operatorname{Var}(w)
-\operatorname{Var}(x)$. A sensible weight scale prevents signal magnitudes from changing
-wildly just because a layer has more inputs.
+Scale matters too, and the usual recipes fall out of one line of algebra rather than folklore.
+A neuron sums $n_{\text{in}}$ independent, centered terms, and variances of independent terms
+**add**:
+
+$$\operatorname{Var}(z)\approx n_{\text{in}}\operatorname{Var}(w)\operatorname{Var}(x)$$
+
+We want the signal neither to grow nor to shrink layer after layer — that is, we want
+$\operatorname{Var}(z)\approx\operatorname{Var}(x)$. Cancel $\operatorname{Var}(x)$ from both
+sides and solve for the only thing we control:
+
+$$n_{\text{in}}\operatorname{Var}(w) = 1 \quad\Longrightarrow\quad \operatorname{Var}(w)=\frac{1}{n_{\text{in}}}$$
+
+That is the **Xavier/Glorot** idea. **He/Kaiming** adds one correction: ReLU zeroes roughly
+half its inputs, so it forwards about *half* the variance. Doubling the weight variance
+compensates:
+
+$$\operatorname{Var}(w)=\frac{2}{n_{\text{in}}}$$
+
+So the mysterious "2" in He initialization is simply *undoing ReLU throwing half the signal
+away*.
+
+One wrinkle: the derivation above only balanced the **forward** signal, using $n_{\text{in}}$.
+Backpropagation pushes gradients the other way, through $n_{\text{out}}$. Xavier splits the
+difference by averaging the two, which is why its denominator is $(n_{\text{in}}+n_{\text{out}})/2$:
 
 | Common setting | Starting scheme | Weight variance |
 |---|---|---|
-| ReLU hidden layer | He / Kaiming | approximately $2/n_{\text{in}}$ |
-| Tanh or a roughly symmetric activation setting | Xavier / Glorot | approximately $2/(n_{\text{in}}+n_{\text{out}})$ |
+| ReLU hidden layer | He / Kaiming | $\approx 2/n_{\text{in}}$ — forward-signal balance, doubled for ReLU |
+| Tanh or a roughly symmetric activation | Xavier / Glorot | $\approx 2/(n_{\text{in}}+n_{\text{out}})$ — averages fan-in and fan-out |
+![Why weight initialization scale matters: He vs Xavier](diagrams/nn_init_ai.png)
 
-He scaling accounts for ReLU's effect on signal second moments; it is not a promise of
-exactly constant activation variance. Leaky ReLU needs a slope-dependent gain, and GELU
-or gated Transformer blocks may use architecture-specific initialization. Framework defaults
-are useful, but do not assume every `Linear` layer automatically uses the ideal ReLU scale.
+These are approximations, not guarantees of constant activation variance. Leaky ReLU needs a
+slope-dependent gain, and GELU or gated Transformer blocks often use architecture-specific
+recipes — do not assume every `Linear` layer defaults to the ideal ReLU scale.
 
 The lab initializes ReLU hidden weights with Kaiming, its linear output weights with Xavier,
-and biases with zeros. Start there; learn specialized recipes when the architecture needs them.
+and biases with zeros.
 
 <details>
 <summary><strong>Quick check.</strong> Can a deep ReLU network still have exploding gradients? Can zero biases still be a reasonable initialization?</summary>
@@ -1068,8 +1136,8 @@ the initial biases are zero.
 **Regularization** encourages solutions that generalize rather than merely fitting training
 examples. Picture a student memorizing last year's answers instead of understanding the
 subject. Dropout and weight decay can help, but too much regularization can also hurt.
-Batch normalization primarily changes **training conditioning** and has a secondary
-regularizing effect; it is not a substitute for checking generalization.
+Batch normalization primarily improves **training conditioning**, with a secondary
+regularizing effect — it is not a substitute for checking generalization.
 
 ### Dropout
 
@@ -1091,19 +1159,18 @@ INFERENCE:
 Dropout is disabled; no rescaling is needed.
 ```
 
-Choose the rate on validation data; some successful models need little or no dropout.
-Apply it deliberately to internal representations, not indiscriminately to final predicted
-probabilities. We use the **inverted-dropout convention** throughout, matching PyTorch.
+Choose the rate on validation data — some successful models need little or no dropout. Apply
+it to internal representations, not to final predicted probabilities. We use the
+**inverted-dropout convention** throughout, matching PyTorch.
 
 **Example — how it works.** A hidden layer outputs $[0.9, 0.4, 0.7, 0.2, 0.6, 0.8]$. With
-dropout $p=0.5$ and keep mask $[1,0,1,0,0,1]$, the result is
-**$[1.8,0,1.4,0,0,1.6]$**: survivors are divided by 0.5. A new mask is sampled next time;
-the number kept is random, not necessarily exactly half.
+dropout $p=0.5$ and keep mask $[1,0,1,0,0,1]$, the result is **$[1.8,0,1.4,0,0,1.6]$** —
+survivors divided by 0.5. A new mask is sampled next time, and the number kept is random, not
+exactly half.
 
-For a fixed activation $a$, its expected training output is
-$(1-p)\,a/(1-p)=a$. At inference the layer simply returns its input.
-This consistency explains the scaling; it does not mean every sampled mask gives the
-same prediction or that dropout guarantees improved accuracy.
+For a fixed activation $a$, the expected training output is $(1-p)\times a/(1-p)=a$ — the same
+as at inference, which is exactly why the scaling exists. (Any *individual* sampled mask still
+gives a different answer.)
 
 ### Batch Normalization
 
@@ -1118,23 +1185,28 @@ a steady temperature so everything downstream behaves.
 
 $$\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}, \qquad y_i = \gamma \hat{x}_i + \beta$$
 
-**Example — how it works.** Suppose one neuron's pre-activations across a mini-batch are
-$x = [2, 4, 6, 8]$. The mean is $\mu_B = 5$ and variance $\sigma_B^2 = 5$ (std $\approx 2.24$).
-Normalising gives $\hat{x} = [-1.34, -0.45, 0.45, 1.34]$ — now centred at 0 with unit spread,
-regardless of the original scale. The learnable $\gamma, \beta$ then let the network rescale if
-a different range turns out to be useful, so no representational power is lost.
+**Example — how it works.** One neuron's pre-activations across a mini-batch: $x = [2,4,6,8]$.
 
-BatchNorm often improves optimization and adds noise through batch statistics. Many CNNs
-use it. Transformers commonly use **LayerNorm**, which normalizes within each token's
-features, or **RMSNorm**, which rescales by root-mean-square without subtracting the mean.
-Which variant works best depends on the architecture; none guarantees equivalent quality.
+| Step | Calculation | Result |
+|---|---|---|
+| 1. Mean | $(2{+}4{+}6{+}8)/4$ | $\mu_B = 5$ |
+| 2. Deviations | $x - \mu_B$ | $[-3,-1,1,3]$ |
+| 3. Variance | $(9{+}1{+}1{+}9)/4$ | $\sigma_B^2 = 5$, so std $= \sqrt5 \approx 2.24$ |
+| 4. Normalize | each deviation $\div\,2.24$ | $\hat x = [-1.34,-0.45,0.45,1.34]$ |
 
-**Train vs. inference — the classic gotcha.** In its usual configuration, BatchNorm uses
-current batch statistics during training and accumulated **running statistics** during
-evaluation. Otherwise a prediction could depend on which other examples share its batch.
-Use `model.eval()` before evaluation. LayerNorm and RMSNorm do not require running batch
-statistics, but a model containing them can still have other train/eval-dependent modules
-such as dropout.
+Now centred at 0 with unit spread, whatever the original scale. The learnable $\gamma,\beta$
+then let the network rescale if a different range is useful, so no representational power is
+lost.
+
+BatchNorm often improves optimization and adds a little noise via batch statistics; many CNNs
+use it. Transformers commonly use **LayerNorm** (normalizes within each token's features) or
+**RMSNorm** (rescales by root-mean-square without subtracting the mean).
+
+**Train vs. inference — the classic gotcha.** BatchNorm uses the *current batch's* statistics
+during training but accumulated **running statistics** during evaluation — otherwise a
+prediction would depend on which other examples happened to share its batch. Always call
+`model.eval()` before evaluating. LayerNorm and RMSNorm need no running statistics, but
+dropout still makes `eval()` necessary.
 
 ### L2 Regularization and Decoupled Weight Decay
 
@@ -1149,27 +1221,27 @@ simpler model that generalises better.
 
 $$L_{\text{total}} = L_{\text{data}} + \lambda \sum_i w_i^2$$
 
-With the exact penalty written above, its derivative is $2\lambda w$. Plain SGD without
-momentum therefore gives:
+Work the update out rather than memorising it. Differentiating the penalty gives
+$\partial(\lambda w^2)/\partial w = 2\lambda w$, so plain SGD without momentum does:
 
-$$w_{\text{new}}=(1-2\alpha\lambda)w-\alpha\nabla_w L_{\text{data}}$$
+$$w_{\text{new}} = w - \alpha\bigl(\nabla_w L_{\text{data}} + 2\lambda w\bigr) = \underbrace{(1-2\alpha\lambda)w}_{\text{shrink}} - \underbrace{\alpha\nabla_w L_{\text{data}}}_{\text{learn}}$$
 
-For $w=2$, $\alpha=0.1$, $\lambda=0.01$, and zero data-gradient, the new weight is
-**1.996**, not $2\times0.01$. The learning rate matters, and using
-$\lambda\lVert w\rVert^2/2$ as the loss convention removes the factor of two.
+Every step therefore multiplies the weight by a number slightly below 1 — hence "decay." For
+$w=2$, $\alpha=0.1$, $\lambda=0.01$, and zero data-gradient: $(1-0.002)\times2 =$ **1.996**,
+*not* $2\times0.01$. The learning rate is part of the shrink factor, and the common
+$\tfrac{\lambda}{2}\lVert w\rVert^2$ convention exists purely to cancel that factor of two.
 
 **AdamW** applies a separate decay factor $(1-\alpha d)$, where $d$ is the optimizer's
 `weight_decay` setting. Putting an L2 term inside Adam's gradient instead lets
 its adaptive moment machinery act on that term too. Do not interchange these recipes or
 their coefficient conventions without thinking.
+![Three ways to regularize: dropout, batch norm, weight decay](diagrams/nn_regularization_ai.png)
 
 **Illustrative intuition, not a theorem about weight size.** Two models fit scattered points. Model A learns weights
 like $[12, -9, 15]$ and bends wildly to pass through every training point (overfit). Model B,
 trained with weight decay, settles on $[0.8, -0.5, 1.1]$ and draws a smooth curve. The penalty
 $\lambda \sum w_i^2$ made the jagged large-weight solution *expensive*, so the optimizer
-preferred the smoother candidate. Whether it actually wins on new data must be measured. Input
-scaling and network reparameterizations make raw weight magnitude an imperfect measure of
-functional complexity.
+preferred the smoother candidate — though whether it wins on new data must still be measured.
 
 > **Interview —** *"What does dropout do at test time?"*
 > **Say:** **Nothing** — it is turned off. Dropout only operates during training, where it randomly zeroes a fraction of activations each step so no neuron can rely on any specific other neuron. At inference you want the full network and a deterministic answer, so every unit stays active.
@@ -1189,10 +1261,10 @@ comparable and the validation data are representative.
 2. **Regularization** — add or increase dropout, or raise weight decay.
 3. **More data**, or data augmentation if collecting more is not an option.
 
-**Would not do blindly: increase model size.** First investigate data, optimization, and
-regularization. More capacity is not automatically harmful or helpful. If both losses are
-high, possibilities include insufficient capacity **and** a broken pipeline, disconnected
-gradients, or an unsuitable learning rate. Treat the curve as evidence, not a diagnosis.
+**Would not do blindly: increase model size.** Investigate data, optimization, and
+regularization first. If *both* losses are high the cause could be insufficient capacity —
+but equally a broken pipeline, disconnected gradients, or a bad learning rate. Treat the
+curve as evidence, not a diagnosis.
 </details>
 
 ---
@@ -1205,14 +1277,13 @@ Reading a recipe is not the same as cooking. This lab first reproduces our hand 
 then trains a slightly wider network to recognize XOR regions from examples. No GPU, image
 collection, or dataset download is needed.
 
-> **Learning goal:** connect a mathematical training step to autograd, then distinguish
-> a model that lacks a useful representation from a model that has learned one.
+> **Learning goal:** connect a mathematical training step to autograd, then tell apart a model
+> that lacks a useful representation from one that has learned it.
 
 ### Before You Run
 
-This is **local Python code**, not code executed by the study-notes web page. Use Python
-with PyTorch installed; the CPU package is sufficient. Save the complete block below as
-`nn_learning_lab.py` and run `python nn_learning_lab.py`.
+This is **local Python code**, not code run by the study-notes web page. Save the block below
+as `nn_learning_lab.py` and run `python nn_learning_lab.py`; the CPU PyTorch package suffices.
 
 For an isolated environment on Windows, for example:
 
@@ -1223,8 +1294,8 @@ python -m venv .venv
 ```
 
 The data have two features between -1 and 1. The label is 1 when exactly one feature is
-positive: opposite quadrants share a label. A straight boundary cannot solve the whole
-problem. A hidden nonlinear representation can.
+positive, so opposite quadrants share a label — a straight boundary cannot solve it, but a
+hidden nonlinear representation can.
 
 | Design choice | Why it is here |
 |---|---|
@@ -1238,6 +1309,14 @@ problem. A hidden nonlinear representation can.
 
 ### Complete Program
 
+Three functions, three different jobs. Know the shape before you read 138 lines:
+
+| Function | What it does | What to watch |
+|---|---|---|
+| `worked_step()` | Replays the §14.5 hand calculation once, in PyTorch | The printed numbers should match the chapter **exactly** |
+| `evaluate()` | Scores a model with dropout off and gradients disabled | Every validation number below comes from here |
+| `run_xor()` | Trains the real network — early stopping, best-checkpoint restore | Validation loss, and how badly the no-ReLU run does |
+
 ```python
 # Chapter 14 CPU learning lab
 from copy import deepcopy
@@ -1246,15 +1325,18 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-torch.set_num_threads(1)
+torch.set_num_threads(1)  # single-threaded: slower, but repeatable run to run
 
 
+# ── Part 1: reproduce the §14.5 hand calculation ──────────────────────────
 def worked_step():
+    # float64 so the printed digits line up with the chapter's arithmetic.
     model = nn.Sequential(
         nn.Linear(2, 2, dtype=torch.float64),
         nn.ReLU(),
         nn.Linear(2, 1, dtype=torch.float64),
     )
+    # The exact teaching weights from §14.4 — not a real initialization.
     with torch.no_grad():
         model[0].weight.copy_(torch.tensor([[0.5, -0.5], [1.0, 1.0]]))
         model[0].bias.copy_(torch.tensor([0.0, -1.0]))
@@ -1263,16 +1345,20 @@ def worked_step():
 
     x = torch.tensor([[1.0, 2.0]], dtype=torch.float64)
     y = torch.tensor([[1.0]], dtype=torch.float64)
+    # Raw logits in, no sigmoid on the model — the §14.4 task-to-code contract.
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-    optimizer.zero_grad()
-    logits = model(x)
-    loss = criterion(logits, y)
-    loss.backward()
+    optimizer.zero_grad()          # clear old gradients; does NOT touch weights
+    logits = model(x)              # forward pass
+    loss = criterion(logits, y)    # the single "how wrong" number
+    loss.backward()                # fills .grad everywhere; does NOT update
     print("Before:", f"p={logits.sigmoid().item():.6f}",
           f"loss={loss.item():.6f}")
     print("Hidden weight gradients:", model[0].weight.grad.tolist())
 
+    # Sanity-check ONE gradient by brute force: nudge the weight a hair each
+    # way and measure how the loss actually moved. If autograd's chain rule is
+    # right, the two numbers agree. This is the §14.5 derivation, verified.
     analytic = model[0].weight.grad[1, 0].item()
     with torch.no_grad():
         original = model[0].weight[1, 0].item()
@@ -1281,44 +1367,52 @@ def worked_step():
         plus = criterion(model(x), y).item()
         model[0].weight[1, 0] = original - epsilon
         minus = criterion(model(x), y).item()
-        model[0].weight[1, 0] = original
+        model[0].weight[1, 0] = original   # always restore before continuing
     numerical = (plus - minus) / (2 * epsilon)
     print("One gradient:", f"autograd={analytic:.6f}",
           f"finite difference={numerical:.6f}")
 
-    optimizer.step()
+    optimizer.step()               # NOW the weights change
     with torch.no_grad():
         logits = model(x)
         print("After: ", f"p={logits.sigmoid().item():.6f}",
               f"loss={criterion(logits, y).item():.6f}")
 
 
+# ── Part 2: honest scoring ────────────────────────────────────────────────
 def evaluate(model, x, y, criterion):
-    model.eval()
-    with torch.no_grad():
+    model.eval()                   # dropout off, BatchNorm uses running stats
+    with torch.no_grad():          # separate switch: stop recording gradients
         logits = model(x)
         loss = criterion(logits, y).item()
+        # logit >= 0 is exactly probability >= 0.5, without calling sigmoid.
         accuracy = ((logits >= 0) == y.bool()).float().mean().item()
     return loss, accuracy
 
 
+# ── Part 3: learn XOR from examples ───────────────────────────────────────
 def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
     if epochs < 1:
         raise ValueError("Run at least one epoch.")
     torch.manual_seed(7)
+    # Label is 1 when the two features have OPPOSITE signs — XOR by quadrant.
     x = 2 * torch.rand(1280, 2) - 1
     y = ((x[:, 0] > 0) != (x[:, 1] > 0)).float().unsqueeze(1)
-    train_x, val_x = x[:1024], x[1024:]
+    train_x, val_x = x[:1024], x[1024:]   # validation never trains the model
     train_y, val_y = y[:1024], y[1024:]
     loader = DataLoader(
         TensorDataset(train_x, train_y), batch_size=64, shuffle=True
     )
+    # Identity instead of ReLU = the controlled experiment. Everything else,
+    # including the seed and the initial weights, stays identical.
     model = nn.Sequential(
         nn.Linear(2, 16),
         nn.ReLU() if use_relu else nn.Identity(),
         nn.Dropout(dropout),
         nn.Linear(16, 1),
     )
+    # Kaiming for the ReLU layer (the 2/n_in from §14.6), Xavier for the
+    # linear output, zero biases — the weights differ, so symmetry is broken.
     nn.init.kaiming_normal_(model[0].weight, nonlinearity="relu")
     nn.init.xavier_uniform_(model[3].weight)
     nn.init.zeros_(model[0].bias)
@@ -1327,17 +1421,19 @@ def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     best_loss, best_epoch = float("inf"), 0
     best_state = None
-    patience, stale_epochs = 20, 0
+    patience, stale_epochs = 20, 0   # stop after 20 epochs with no improvement
     print(f"\nXOR: ReLU={use_relu}, lr={learning_rate}, dropout={dropout}")
 
     for epoch in range(1, epochs + 1):
-        model.train()
+        model.train()              # dropout back on for training
         total_loss = 0.0
         for batch_x, batch_y in loader:
+            # The four lines of §14.5, once per mini-batch.
             optimizer.zero_grad()
             logits = model(batch_x)
             loss = criterion(logits, batch_y)
             if not torch.isfinite(loss):
+                # Fail loudly at the FIRST bad number, per §14.7b.
                 raise FloatingPointError("Non-finite training loss: investigate.")
             loss.backward()
             optimizer.step()
@@ -1348,6 +1444,8 @@ def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
             raise FloatingPointError("Non-finite validation loss: investigate.")
         if val_loss < best_loss:
             best_loss, best_epoch = val_loss, epoch
+            # deepcopy, not a reference — otherwise this "checkpoint" keeps
+            # changing as training continues. See §14.7a.
             best_state = deepcopy(model.state_dict())
             stale_epochs = 0
         else:
@@ -1361,6 +1459,7 @@ def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
 
     if best_state is None:
         raise RuntimeError("No valid checkpoint was recorded.")
+    # Go back to the best epoch — the last epoch is rarely the best one.
     model.load_state_dict(best_state)
     train_loss, train_accuracy = evaluate(model, train_x, train_y, criterion)
     val_loss, val_accuracy = evaluate(model, val_x, val_y, criterion)
@@ -1372,8 +1471,8 @@ def run_xor(use_relu=True, learning_rate=0.01, dropout=0.0, epochs=150):
 
 if __name__ == "__main__":
     worked_step()
-    run_xor(use_relu=True)
-    run_xor(use_relu=False)
+    run_xor(use_relu=True)    # the real thing
+    run_xor(use_relu=False)   # same everything, minus the nonlinearity
 ```
 
 ### What to Look For
@@ -1387,16 +1486,13 @@ One gradient: autograd=-0.268941 finite difference=-0.268941
 After:  p=0.786594 loss=0.240043
 ```
 
-The finite-difference comparison asks whether a tiny weight change changes loss as
-autograd predicts. We chose a point away from a ReLU kink; checking exactly at a
-nondifferentiable point requires care.
+The finite-difference comparison asks whether a tiny weight change moves the loss the way
+autograd predicts. We picked a point away from a ReLU kink.
 
-In the XOR runs, watch the **validation loss and decision quality**, not just training
-loss. The nonlinear model should learn a substantially better separator than the affine
-baseline. Seeds make this exercise repeatable within a setup; exact results can vary across
-PyTorch versions and platforms. These are synthetic teaching results, not architecture
-performance claims. The affine comparison deliberately keeps the same initial weights:
-we are isolating the activation change, not finding the best initialization for every model.
+In the XOR runs, watch the **validation loss and decision quality**, not just training loss.
+The nonlinear model should learn a substantially better separator than the affine baseline.
+Both runs deliberately start from the *same* initial weights, so the only thing being tested
+is the activation. (Exact numbers can vary across PyTorch versions and platforms.)
 
 **One reference run of this exact program** (PyTorch 2.8 CPU, seed 7):
 
@@ -1405,8 +1501,8 @@ we are isolating the activation change, not finding the best initialization for 
 | With ReLU | 147 | 0.0304 | 99.6% |
 | Without ReLU | 1 | 0.6905 | 45.3% |
 
-These results describe this synthetic task and checkpoint-selection rule. They are not
-promised accuracy on new problems. The nonlinear run's logged learning curve was:
+Note the second row: without a nonlinearity the model never gets past chance, exactly as the
+XOR argument in §14.3 predicted. The nonlinear run's logged learning curve was:
 
 ```chart
 {
@@ -1453,10 +1549,9 @@ mode at the restored checkpoint**, which is a cleaner comparison.
 | `model.eval()` | Selects evaluation behavior for those modules | Does not disable autograd |
 | `torch.no_grad()` | Avoids recording operations for gradient computation | Does not turn dropout off |
 
-`deepcopy(model.state_dict())` also matters: a plain state-dictionary reference can continue
-to reflect changing parameter storage. Save an independent checkpoint, then restore it.
-Validation selects the checkpoint; use a separate untouched test set for an honest final
-performance estimate in a real project.
+`deepcopy(model.state_dict())` also matters: a plain state-dictionary reference keeps pointing
+at changing parameter storage. Save an independent checkpoint, then restore it. Validation
+selects that checkpoint; keep a separate untouched test set for the final estimate.
 
 ### Change One Thing, Then Explain What Happened
 
@@ -1488,14 +1583,13 @@ the handbrake is on. Inspect the data and training mechanism before changing arc
 types, ranges, and class counts. Are labels aligned with inputs? Are logits going into a
 logit-based loss? Was learned preprocessing fit on training data only?
 
-**Then try a small, clean, learnable batch.** Temporarily remove augmentation and dropout
-and see whether a sufficiently capable model can fit that batch. Failure is a useful clue,
-not automatic proof of a bug: contradictory labels, strong regularization, insufficient
-capacity, or too little optimization can also prevent a near-zero loss.
+**Then try a small, clean, learnable batch.** Temporarily remove augmentation and dropout and
+see whether the model can fit ~10 examples to near-zero loss. Failure is a strong clue, though
+contradictory labels, heavy regularization, or too few steps can cause it too.
 
 **Follow one update.** Do gradients exist? Are they finite? Does `optimizer.step()` actually
-change a parameter? A `None` gradient can be expected for a frozen or unused parameter;
-an unexpected missing gradient deserves investigation.
+change a parameter? (A `None` gradient is expected for a frozen parameter — anywhere else,
+investigate.)
 
 | Observation | Plausible causes | Next observation or experiment |
 |---|---|---|
@@ -1520,10 +1614,9 @@ Validation loss can be **lower** than the logged training loss when dropout, aug
 or regularization makes training harder, or when training loss was measured earlier during
 updates. Do not diagnose a problem from the sign of a gap alone.
 
-For cross-entropy, uniform predictions provide a reference loss of $\log C$ for $C$
-exclusive classes, or about 0.693 for balanced binary uniform predictions. Randomly
-initialized networks are not necessarily uniform, so a different initial loss is a clue
-to investigate—not proof of an implementation bug.
+For cross-entropy, uniform predictions give a reference loss of $\log C$ for $C$ exclusive
+classes — about 0.693 for balanced binary. A very different loss at step 0 is a clue worth
+investigating, not automatic proof of a bug.
 
 <details>
 <summary><strong>Spot the mistake.</strong> A colleague calls <code>model.eval()</code>, then says, "No computation graph can be built now, so I cannot calculate gradients." What is wrong?</summary>
@@ -1549,11 +1642,21 @@ want more detail on schedules, early stopping, and augmentation.
 
 ## 14.8 CNNs — Convolutional Neural Networks ★★
 
-> **Heads-up — the next five sections are guided tours.** CNNs, RNNs/LSTMs, Transformers,
-> transfer learning, and GANs are each huge topics (with dedicated chapters elsewhere). Here we
-> build just enough intuition to recognise each architecture and know when to reach for it. For
-> depth, see [Ch 16 — Deep Learning Reference](#content/16_deep_learning) and
+> **Heads-up — the next five sections are guided tours.** Each is a huge topic with its own
+> chapter elsewhere; here we build just enough intuition to recognise it and know when to
+> reach for it. Depth: [Ch 16 — Deep Learning](#content/16_deep_learning) ·
 > [Ch 17 — Large Language Models](#content/17_llm).
+
+Read the map first — if you know what each one *buys* you, the sections stop being five
+lookalike walls of theory:
+
+| § | Architecture | The one thing it buys you |
+|---|---|---|
+| 14.8 | **CNN** | **Locality** — one filter reused everywhere, so a pattern is found wherever it sits |
+| 14.9 | **RNN / LSTM** | **Memory** — a running summary carried forward through a sequence |
+| 14.10 | **Transformer** | **Attention** — any token reaches any other in one step, in parallel |
+| 14.11 | **Transfer learning** | **Reuse** — start from features someone else already learned |
+| 14.12 | **GAN** | **Adversarial pressure** — a built-in critic that keeps grading the generator |
 
 ### Simple Explanation
 
@@ -1599,9 +1702,9 @@ patch            filter           row-by-row products
                                    sum = 3   → strong vertical edge
 ```
 
-A positive response means this patch matches the chosen filter's bright-left/dark-right
-pattern. Reversing the edge gives a negative response. A flat patch gives zero. In this
-demonstration we hand-picked the filter; a trained CNN learns its filter values.
+A positive response means this patch matches the filter's bright-left/dark-right pattern.
+Reversing the edge gives a negative response; a flat patch gives zero. We hand-picked this
+filter — a trained CNN learns its filter values.
 
 ### Finish the Feature Map
 
@@ -1616,18 +1719,26 @@ Input                         Complete feature map
 1 1 0 0 0
 ```
 
-The first patch has response 3, the next also has response 3, and the all-dark patch
-has response 0. The filter has not learned "a cat"; it supplies a local feature for later
-layers to combine. Learned features need not each have a neat human-readable name.
+The first patch has response 3, the next also 3, and the all-dark patch 0. The filter has not
+learned "a cat"; it supplies a local feature for later layers to combine.
 
 **Stride** is the step between filter positions. **Padding** adds border values.
 For kernel size $k$, input width $n$, stride $s$, symmetric padding $p$, and dilation 1:
 
 $$n_{\text{out}}=\left\lfloor\frac{n+2p-k}{s}\right\rfloor+1$$
 
-Our example gives $(5-3)/1+1=3$. "Same" padding preserves size when stride is 1.
-With stride 2, odd dimensions need rounding: an input of 5 can produce 3 outputs, not
-exactly half. The formula makes the assumptions explicit.
+**Where that comes from** — read the formula one piece at a time:
+
+| Piece | What it accounts for |
+|---|---|
+| $n + 2p$ | the width you actually slide across, once padding adds $p$ to each side |
+| $-\,k$ | the filter's own width — its left edge must stop $k$ short of the end |
+| $\div\,s$ | you cross that remaining travel $s$ pixels at a time |
+| $+\,1$ | counts the starting position itself |
+| $\lfloor\;\rfloor$ | a partial step doesn't count |
+
+Our example: $(5-3)/1+1=3$. "Same" padding preserves size at stride 1; at stride 2 the floor
+matters, so an input of 5 gives 3 outputs, not exactly half.
 
 ### Channels, Parameters, and Shapes
 
@@ -1643,10 +1754,9 @@ $C_{\text{out}}(C_{\text{in}}k^2+1)$ parameters.
 | Flatten | (B,5408) | 0 |
 | Dense classifier with 10 outputs | (B,10) | $5408\times10+10=54{,}090$ |
 
-RGB input changes the convolution's count to $32(3\times9+1)=896$, not 320.
-The pooling and flattening steps change shapes, but add no learned weights.
-The dense head can still contain most of the parameters; comparing one convolution with
-one dense layer is not a comparison of complete models.
+RGB input changes the convolution's count to $32(3\times9+1)=896$, not 320. Pooling and
+flattening change shapes but add no learned weights — and note the dense head still holds most
+of the parameters.
 
 > **Interview —** *"Why do CNNs beat fully-connected networks on images?"*
 > **Say:** Locality and weight sharing are useful **inductive biases** for images.
@@ -1654,16 +1764,14 @@ one dense layer is not a comparison of complete models.
 > Shared filters reuse evidence across locations rather than learning unrelated parameters
 > for every pixel position.
 > **They follow up with:** *"Quantify it."* — the grayscale 3×3 convolution above has 320
-> parameters including biases, while a 784-to-128 dense layer has 100,480. They produce
-> different representations, so this is a parameter-efficiency illustration, not proof of
-> an accuracy advantage or a fair comparison of entire networks.
+> parameters including biases, while a 784-to-128 dense layer has 100,480. That is a
+> parameter-efficiency illustration, not a claim about accuracy.
 
 ### Pooling
 
-Max pooling takes the maximum in each spatial window. A 2×2 window with stride 2 reduces
-an even spatial dimension by half. It provides some tolerance to small shifts **within
-pooling regions**, not exact invariance to every translation. Padding, stride, and boundaries
-can change the result.
+Max pooling takes the maximum in each spatial window. A 2×2 window with stride 2 halves an
+even spatial dimension and gives some tolerance to small shifts *within* each pooling region —
+not exact invariance to every translation.
 
 The **receptive field** is the input region that can affect an output. Two stride-1 3×3
 convolutions give a 5×5 receptive field: the second combines neighboring features that
@@ -1679,8 +1787,7 @@ Layer 3: textures, corners      (mid-level)
 Layer 5: eyes, wheels, windows  (high-level)
 Layer 7: faces, cars, buildings (semantic)
 
-This is an illustrative interpretation of learned representations,
-not a guarantee about a particular layer or individual filter.
+Illustrative — no guarantee that a given layer or filter does exactly this.
 ```
 
 ### Key Architectures
@@ -1699,14 +1806,18 @@ The critical idea: instead of learning $y = F(x)$, learn the residual $F(x) = y 
 
 $$y = F(x) + x$$
 
-If the optimal transformation is close to identity, the network only needs to learn a small residual rather than the entire mapping. Gradient flows directly through the skip connection, enabling training of 152+ layer networks.
+If the optimal transformation is close to identity, the network only needs to learn a small residual rather than the entire mapping.
 
-The added tensors must have matching shapes. When width or resolution changes, a projection
-can make the shortcut compatible. The shortcut offers another gradient path; it does not
-guarantee that every gradient stays healthy.
+**Why the gradient survives:** differentiate $y = F(x) + x$ and you get $\partial y/\partial x = F'(x) + 1$.
+That **+1** is a clean path with no shrinking multiplier, so even if $F'(x)$ is tiny the
+gradient still reaches earlier layers — which is what makes 152-layer networks trainable
+(compare §14.6, where every factor was a chance to shrink).
 
-**Illustrative chart:** these percentages are hypothetical, not a cited benchmark.
-The point is the possibility of optimization degradation, not a universal depth threshold.
+The added tensors must have matching shapes; when width or resolution changes, a projection
+makes the shortcut compatible.
+
+**Illustrative chart** — hypothetical percentages showing that *plain* deep networks can
+degrade with depth, not a cited benchmark or a universal depth threshold.
 
 ```chart
 {
@@ -1756,14 +1867,13 @@ it already remembered. The catch: a plain RNN's memory leaks over long distances
 
 $$h_t = f(W_x x_t + W_h h_{t-1} + b)$$
 
-For language, a word or token is not multiplied as text. Its integer ID indexes a learned
-**embedding vector**, which supplies $x_t$. IDs are category identifiers, not numerical
-rankings of word meanings. A batch of token embeddings commonly has shape (B,T,d):
+For language, a token is not multiplied as text: its integer ID indexes a learned **embedding
+vector**, which supplies $x_t$. A batch of token embeddings commonly has shape (B,T,d) —
 batch, sequence length, embedding width.
 
-Standard RNNs can struggle to learn long-range dependencies. The gradient must pass
-through repeated recurrent transformations, including both weight factors and activation
-derivatives. Their combined effect can shrink or amplify it over time.
+Standard RNNs struggle with long-range dependencies because the gradient must pass through
+the *same* recurrent transform at every step — the §14.6 multiplication problem, now stretched
+across time instead of depth.
 
 **Example — how it works (sentiment, word by word).** Feed the review "not very good" into an
 RNN one word at a time; the hidden state $h_t$ is a running summary:
@@ -1776,8 +1886,8 @@ RNN one word at a time; the hidden state $h_t$ is a running summary:
 
 The final $h_3$ feeds the output layer, which predicts *negative* sentiment. The verdict depends
 on "not" from step 1 still being remembered at step 3 — that *carrying of context* is the whole
-point of recurrence. The table is a human-readable interpretation, not literal text stored
-inside the hidden state. Longer sequences make retaining useful context harder.
+point of recurrence. (The table is a human-readable gloss; the hidden state stores numbers,
+not words.)
 
 ### LSTM (Long Short-Term Memory)
 
@@ -1812,20 +1922,20 @@ The cell state updates as $C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t$, whe
 $\tilde{C}_t = \tanh(W_c[h_{t-1}, x_t] + b_c)$ is the candidate new content, and the hidden
 output is $h_t = o_t \odot \tanh(C_t)$.
 
-**Why this helps:** along the direct cell-state path, the old memory is multiplied by the
-forget gate rather than repeatedly passing through an entire nonlinear recurrent transform.
-Learning gate values near 1 can preserve information longer. Other paths and optimization
-still matter; gates are not a guarantee of unlimited memory.
+**Why this helps:** along the direct cell-state path, the old memory is *multiplied by the
+forget gate* rather than repeatedly squeezed through an entire nonlinear recurrent transform.
+Gate values near 1 preserve information for many steps — but gates are learned, not a
+guarantee of unlimited memory.
 
 **One memory coordinate, with numbers.** Old memory is 2. A forget gate of 0.8 keeps 1.6.
 An input gate of 0.5 writes half of a candidate value 0.6, adding 0.3:
 
 $$C_t=0.8(2)+0.5(0.6)=1.9,\qquad h_t=0.7\,\tanh(1.9)\approx0.669$$
 
-The output gate was 0.7. It controls what is exposed now, not a destructive replacement of
-the stored cell state. If a forget gate stayed at 0.8 with no new input for ten steps, the
-old memory's contribution would shrink by $0.8^{10}\approx0.107$. The model must learn
-when to keep its gates open.
+The output gate was 0.7 — it controls what is *exposed* now, without destroying the stored
+cell state. If a forget gate stayed at 0.8 with no new input for ten steps, the old memory's
+contribution would shrink to $0.8^{10}\approx0.107$. The model must learn when to keep its
+gates open.
 
 ### GRU (Gated Recurrent Unit)
 
@@ -1890,10 +2000,19 @@ Each token is projected into three vectors using learned weight matrices:
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
 
-The $QK^\top$ dot products score query-key compatibility. Under common independence and
-scale assumptions, their variance grows with $d_k$, so their typical magnitude grows with
-$\sqrt{d_k}$. Dividing by $\sqrt{d_k}$ helps control that scale; unusually large queries or
-keys can still saturate softmax. The output is a weighted sum of value vectors.
+The $QK^\top$ dot products score query-key compatibility, and the output is a weighted sum of
+the value vectors.
+
+**Why divide by $\sqrt{d_k}$?** Four steps, using the same variance argument as §14.6:
+
+| Step | What happens |
+|---|---|
+| 1 | A dot product **sums $d_k$ independent products** |
+| 2 | Variances of independent terms add, so spread grows with $d_k$ — typical *size* with $\sqrt{d_k}$ |
+| 3 | At $d_k = 64$, raw scores run about $\sqrt{64} = 8\times$ larger than at $d_k = 1$ |
+| 4 | Softmax fed scores that big saturates to near-one-hot, and its gradient collapses |
+
+Dividing by $\sqrt{d_k}$ undoes step 3 and puts the scores back on a workable scale.
 
 **Example — how it works (Q, K, V as a search).** Picture each word issuing a tiny search query:
 
@@ -1903,11 +2022,11 @@ keys can still saturate softmax. The output is a weighted sum of value vectors.
   "street," "because," "tired" score low.
 - **Softmax** turns those scores into weights that sum to 1 — say $0.85$ on "animal," a sliver
   each elsewhere.
-- The output blends **Value vectors** with those weights. A coefficient of 0.85 is not
-  literally "85% of a word's meaning," nor proof that a head resolved the pronoun.
+- The output blends **Value vectors** with those weights.
 
-This is an illustrative bidirectional attention story, not a measurement of a trained
-model. Different heads can learn useful, overlapping, or hard-to-interpret patterns.
+This is an illustrative story, not a measurement of a trained model: a weight of 0.85 is not
+literally "85% of a word's meaning," and real heads learn overlapping, often
+hard-to-interpret patterns.
 
 ### A Tiny Attention Calculation You Can Finish
 
@@ -1928,43 +2047,41 @@ renormalize to [1/3,2/3,0], giving $(1/3)2+(2/3)4=\mathbf{10/3}$.
 Simply zeroing the future weight after softmax without renormalizing would be a different
 calculation.
 
-Real heads use vectors, but apply the same weighted-sum idea to every value coordinate.
-During teacher-forced training, all token positions can be processed in parallel **with
-the causal mask enforced**. Generating a new autoregressive sequence still proceeds one
-new token at a time.
+Real heads use vectors, but apply this same weighted-sum idea to every value coordinate.
+During teacher-forced training all positions compute in parallel **with the causal mask
+enforced**; generating new text still proceeds one token at a time.
 
 **Multi-head attention** runs $H$ parallel attention operations with different weight matrices, then concatenates and projects the results:
 
 $$\text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_H)\, W^O$$
 
 The output projection $W^O$ mixes information across heads back into a
-$d_{\text{model}}$-dimensional vector. Separate projections allow different patterns, but
-do not require every head to learn a unique named relationship.
+$d_{\text{model}}$-dimensional vector. Separate projections let heads specialise, but nothing
+forces each one to learn a tidy, nameable relationship.
 
 ### Positional Encoding
 
-Unmasked self-attention without positional information is **permutation-equivariant**:
-reorder the input token rows, and the output rows reorder with them. That does **not** mean
-the ordered output tensors are identical. A permutation-invariant pooling operation can
-then discard order entirely.
-
-Positional information gives tokens an explicit sense of their location or relative
-offset. The statement above concerns **unmasked** attention; a causal mask itself imposes
-an ordered visibility structure and breaks arbitrary permutation symmetry.
+Attention is a weighted **sum**, and a sum does not care about order — so plain unmasked
+self-attention sees "dog bites man" and "man bites dog" as the same bag of tokens. (Formally
+it is *permutation-equivariant*: shuffle the input rows and the output rows shuffle with
+them.) **Positional encoding** fixes this by stamping each token with its location *before*
+attention runs. A causal mask also imposes an order, so decoders are not entirely order-blind
+to begin with.
 
 One classic way to supply positions is:
 
 $$PE(\text{pos}, 2i) = \sin\!\left(\frac{\text{pos}}{10000^{2i/d}}\right), \qquad PE(\text{pos}, 2i+1) = \cos\!\left(\frac{\text{pos}}{10000^{2i/d}}\right)$$
 
+Each dimension $i$ is a wave of a different wavelength, so every position gets a unique
+"fingerprint" of sine/cosine values — and nearby positions get similar ones.
+
 **Other positional schemes.** Learned absolute embeddings are another option.
 **RoPE** rotates query and key vectors so their dot products encode relative offsets;
-**ALiBi** adds distance-dependent score biases. Many language models use such schemes.
-Longer-context generalization still depends on the training setup and positional design,
-not merely selecting a name from this list.
+**ALiBi** adds distance-dependent score biases. Long-context behaviour depends on the whole
+training setup, not just which name you pick.
 
-The diagram shows a **post-normalization-style block**; pre-normalization variants also
-exist. Stacking blocks normally introduces separate learned parameters, not an RNN-style
-loop reusing one block forever.
+The diagram shows a **post-normalization** block; pre-normalization variants are also common.
+Each stacked block has its own parameters — it is not one block reused in a loop.
 
 ```mermaid
 graph TB
@@ -1984,7 +2101,7 @@ graph TB
 
 > **Interview —** *"Why did Transformers replace RNNs for language?"*
 > **Say:** Two reasons, and the first is the one that changed everything. **Parallelism** — an RNN must process token 1 before token 2 before token 3, so training time scales with sequence length and cannot use a GPU fully. A Transformer sees the whole sequence at once, so all positions compute simultaneously. That alone made training on internet-scale text feasible. Second, **direct long-range access**: in an RNN, information from token 1 reaching token 500 must survive 499 sequential updates. Self-attention connects any two tokens in **one step**, regardless of distance.
-> **They follow up with:** *"What did that cost?"* — memory and compute. Self-attention compares every token with every other token, so cost grows **quadratically** with sequence length: double the context and you quadruple the work. An RNN is linear. That quadratic term is exactly why long-context is expensive and why so much research goes into cheaper attention variants ([Ch 17](#content/17_llm)).
+> **They follow up with:** *"What did that cost?"* — memory and compute. Self-attention compares every token with every other, so cost grows **quadratically** with sequence length: double the context, quadruple the work. An RNN is linear. That quadratic term is exactly why long context is expensive and why so much research targets cheaper attention ([Ch 17](#content/17_llm)).
 
 <details>
 <summary><strong>Quick check.</strong> In the toy calculation, can a causal query at B put weight on C? Does parallel training allow it to peek at the future?</summary>
@@ -2041,9 +2158,8 @@ minutes.
 
 The process has two stages:
 
-**Stage 1 — Pre-training:** learn a useful representation on a source dataset or task.
-In practice you often start from an existing checkpoint rather than repeat this work.
-The dataset and compute requirements vary enormously.
+**Stage 1 — Pre-training:** learn a useful representation on a large source dataset. In
+practice you start from an existing checkpoint rather than repeat this work.
 
 **Stage 2 — Fine-tuning** (done by you): Take the pre-trained model, replace or adapt the final layer(s), and train on your smaller dataset.
 
@@ -2060,31 +2176,28 @@ The dataset and compute requirements vary enormously.
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Example, not an accuracy promise:** a team has 500 labeled chest X-rays. An existing
-image encoder plus a new classification head is a reasonable baseline to compare with
-simpler alternatives. Whether source features transfer must be evaluated with appropriate
-patient-level splits and representative data. No sample count guarantees a particular
-accuracy, and no model choice removes the need for domain-specific evaluation.
+**Example, not an accuracy promise:** a team has 500 labeled chest X-rays. An existing image
+encoder plus a new classification head is a reasonable baseline to compare against simpler
+alternatives — with patient-level splits, since no sample count guarantees an accuracy.
 
 Likewise, a pretrained language model can help with a small sentiment dataset, but compare
 it with inexpensive baselines such as bag-of-words or TF-IDF plus a linear classifier.
+![Transfer learning: freeze the backbone, replace the head](diagrams/nn_transfer_ai.png)
 
 > **Interview —** *"Why does transfer learning work at all? The new task is different."*
-> **Say:** Source training may learn features that are useful on the target task too.
-> Earlier visual features are often more general than the final classifier, but transfer
-> quality is not determined only by layer depth. Start with a baseline, then measure the
-> value of unfreezing more of the model.
+> **Say:** The source task teaches features that are useful on the target too — edges,
+> textures, and grammar are not task-specific. Earlier layers are usually more general than
+> the final classifier, though how much transfers is something you measure, not assume.
 > **They follow up with:** *"When does it fail?"* — source and target may differ too much,
 > the target labels may be poor, or aggressive updates may erase useful features
-> (**catastrophic forgetting**). Freezing, smaller backbone learning rates, and careful
-> validation are tools to investigate—not guarantees that features transfer unchanged.
+> (**catastrophic forgetting**). Freezing and smaller backbone learning rates help, but do
+> not guarantee features transfer unchanged.
 
 <details>
 <summary><strong>Quick check.</strong> You have 800 labelled images of factory parts and want to classify defects. Would you train a CNN from scratch or fine-tune a pre-trained one — and which layers would you train?</summary>
 
 **Start by evaluating transfer learning.** With 800 images, adapting a pretrained
-representation is often a better use of the data than training a large network from scratch.
-A small model can still be a useful baseline; near-random performance is not inevitable.
+representation usually beats training a large network from scratch.
 
 Using the strategy table above — **small dataset, moderately different domain** — the recipe is:
 
@@ -2093,9 +2206,9 @@ Using the strategy table above — **small dataset, moderately different domain*
 3. **Replace the classification head** with one sized to your number of defect classes.
 4. Train the head, and optionally unfreeze the last block or two with a **small** learning rate.
 
-The reasoning to say out loud: freezing reduces the number of parameters being adapted,
-but domain mismatch may justify changing earlier features too. Compare validation results,
-keep the split appropriate to the task, and do not choose the recipe from dataset size alone.
+The reasoning to say out loud: freezing reduces the number of parameters being adapted, but
+domain mismatch may justify changing earlier features too. Compare validation results rather
+than choosing the recipe from dataset size alone.
 </details>
 
 ---
@@ -2106,7 +2219,7 @@ keep the split appropriate to the task, and do not choose the recipe from datase
 
 Imagine a **counterfeiter** trying to print fake banknotes and a **detective** trying to spot
 them. Each uses feedback from the other to improve. The goal is to make fakes hard to
-distinguish—not a promise that competition will improve both forever. A **GAN** uses this idea: the
+distinguish. A **GAN** uses this idea: the
 **generator** is the counterfeiter (turning random noise into fake images), the
 **discriminator** is the detective, and they improve by competing.
 
@@ -2124,9 +2237,9 @@ graph LR
 
 $$\min_G \max_D \; \mathbb{E}_{x}[\log D(x)] + \mathbb{E}_{z}[\log(1 - D(G(z)))]$$
 
-At an ideal distribution-matching equilibrium, the optimal discriminator outputs 0.5.
-Real training need not reach that equilibrium. A weak discriminator can also output 0.5,
-so that number alone is not proof of realistic or diverse generation.
+At an ideal distribution-matching equilibrium, the optimal discriminator outputs 0.5 — it can
+do no better than a coin flip. A weak discriminator also outputs 0.5, though, so that number
+alone proves nothing about sample quality.
 
 **Example — how it works (one training round, generating faces).**
 
@@ -2136,16 +2249,15 @@ so that number alone is not proof of realistic or diverse generation.
    each "real" or "fake."
 3. **Alternate updates:** train D on real/fake examples; then hold D's parameters fixed while
    backpropagating through its differentiable computation to update G.
-4. Repeat and evaluate both quality and diversity. The discriminator supplies a gradient,
-   not merely a hard real/fake verdict; successful training is not automatic.
+4. Repeat and evaluate both quality and diversity. The discriminator supplies a *gradient*,
+   not merely a hard real/fake verdict.
 
-**Applications:** photorealistic faces (StyleGAN), medical-imaging augmentation for rare
-pathologies, super-resolution (SRGAN), and style transfer.
+**Applications:** photorealistic faces (StyleGAN), medical-imaging augmentation for rare pathologies, super-resolution (SRGAN), and style transfer.
 
 **Challenges:**
-- **Mode collapse:** $G$ learns to produce only one type of output that fools $D$
-- **Training instability:** If $D$ becomes too strong too quickly, $G$ gets no useful gradient signal
-- **Evaluation difficulty:** No single loss metric reliably measures generation quality; FID and IS are common proxies
+- **Mode collapse:** $G$ produces only one type of output that fools $D$
+- **Training instability:** if $D$ gets too strong too fast, $G$ receives no useful gradient
+- **Evaluation difficulty:** no single loss measures generation quality; FID and IS are proxies
 
 ### GANs vs. Diffusion Models
 
@@ -2156,9 +2268,9 @@ emerges.
 
 > **Diffusion models** learn to reverse a gradual noising process: a forward process adds Gaussian noise to data over many steps, and a neural network is trained to predict and remove that noise — generating new samples by denoising from pure noise.
 
-Diffusion is widely used for generation and offers a denoising objective rather than a
-two-player adversarial objective. That often simplifies optimization, but does not guarantee
-perfect distribution coverage, stability, or freedom from memorization.
+Diffusion swaps the two-player adversarial objective for a plain denoising one, which usually
+makes optimization far easier — though it still needs checking for mode coverage and
+memorization.
 
 | | GAN | Diffusion |
 |---|---|---|
@@ -2176,10 +2288,9 @@ perfect distribution coverage, stability, or freedom from memorization.
 
 ### Simple Explanation
 
-The first lab used a sensible initialization, a fixed learning rate, validation, and checkpoint
-restoration. This section extends that toolkit. Return here when experiments suggest that a
-schedule or augmentation might help; you do not need every technique for every small model.
-The initialization primer is deliberately earlier, in §14.6, before the runnable lab.
+The first lab already used sensible initialization, a fixed learning rate, validation, and
+checkpoint restoration. This section extends that toolkit — come back when experiments suggest
+a schedule or augmentation might help. (The initialization primer sits earlier, in §14.6.)
 
 ### Learning Rate Schedules
 
@@ -2191,9 +2302,8 @@ steps early to make fast progress, small steps late to settle precisely into the
 > policy or monitored signal. A fixed rate can work well; a schedule can improve how a
 > training budget is used, but introduces additional choices to evaluate.
 
-A larger rate may make useful early progress, while a smaller rate later may help refine a
-solution. This is intuition, not a rule that gradients always begin large or shrink smoothly.
-First establish that the data and basic training loop work at a reasonable constant rate.
+A larger rate makes useful early progress; a smaller rate later helps refine the solution.
+First establish that the data and training loop work at a reasonable constant rate.
 
 ```
   FIXED LR: one size for the whole run
@@ -2217,30 +2327,26 @@ First establish that the data and basic training loop work at a reasonable const
 | **Linear warmup** | Ramp from ~0 up to the target over the first $w$ steps | Used *before* one of the above, not instead of it |
 | **ReduceLROnPlateau** | Drop by a factor when a monitored metric stops improving | A useful adaptive option when the training horizon is uncertain |
 
-**Why warmup exists.** Some training setups are sensitive to large early updates, including
-the interaction between initialization and adaptive optimizer statistics. A gradual ramp
-can help, particularly in some large-batch or Transformer recipes. Small batches still have
-gradient noise, and warmup is not universally necessary.
+**Why warmup exists.** Early in training, adaptive optimizers have barely any gradient
+statistics, so a full-size step can wreck a fresh initialization. Ramping up gives those
+statistics time to settle — which is why large-batch and Transformer recipes rely on it, and
+small runs often do not need it.
 
-**A candidate recipe:** try warmup followed by cosine decay when it fits the model and
-budget. Warmup over 1–5% of steps is an example range to investigate, not a rule for every
-network. The lab deliberately starts without a scheduler.
+**A candidate recipe:** warmup over 1–5% of steps, then cosine decay. The lab deliberately
+starts without a scheduler.
 
 → Optimizer families and schedule variants in depth: [Ch 16](#content/16_deep_learning).
 
 <details>
 <summary><strong>Quick check.</strong> One loss curve oscillates and another is almost flat. Give a learning-rate hypothesis for each—and one reason not to diagnose them from the curves alone.</summary>
 
-An excessive rate can cause oscillation or divergence; a very small rate can make
-progress slow. But oscillation can also reflect noisy mini-batches, while a flat curve can
-come from missing updates, disconnected gradients, bad targets, or insufficient capacity.
-Check the mechanism before declaring that training is working but merely slow.
+An excessive rate can cause oscillation or divergence; a very small rate can make progress
+slow. But oscillation can also just be noisy mini-batches, and a flat curve can come from
+missing updates, disconnected gradients, or bad targets.
 
-**How to find the right one:** sweep on a **log scale** — 1e-1, 1e-2, 1e-3, 1e-4 — not linearly.
-Inspect both learning progress and stability, then compare validation behavior.
-
-The general lesson: investigate the data and update loop, then tune one control at a time.
-Do not rebuild the architecture merely because a curve looks disappointing.
+**How to find the right one:** sweep on a **log scale** — 1e-1, 1e-2, 1e-3, 1e-4 — not
+linearly. Tune one control at a time; don't rebuild the architecture because a curve looks
+disappointing.
 </details>
 
 ```chart
@@ -2282,8 +2388,8 @@ Do not rebuild the architecture merely because a curve looks disappointing.
 **ReduceLROnPlateau** is the adaptive, metric-driven alternative: watch a validation metric and,
 if it fails to improve for `patience` epochs, multiply the learning rate by a `factor`.
 
-The plot above uses a 50-epoch horizon and deliberately long 10-epoch warmup to make the
-shape visible. It illustrates schedules, not recommended settings for every model.
+The plot uses a 50-epoch horizon and a deliberately long 10-epoch warmup to make the shapes
+visible — it illustrates schedules, not recommended settings.
 
 ```python
 # Fragment: add after creating the optimizer in your training function.
@@ -2293,8 +2399,8 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 scheduler.step(val_loss)  # place after that epoch's validation evaluation
 ```
 
-It is one useful option when the number of training steps is uncertain. A noisy metric
-needs appropriate patience; a scheduler reacting to noise can make training worse.
+Useful when the total number of training steps is uncertain — but give it enough `patience`,
+since a scheduler that reacts to metric noise makes training worse.
 
 ### Early Stopping
 
@@ -2320,23 +2426,19 @@ the rollback trap: [Ch 12 §12.6](#content/12_key_algorithms).
 rotate it, crop it, brighten it, and it's still a cat. You teach the model that a cat is a cat
 regardless of angle or lighting, essentially for free.
 
-Choose transformations that preserve the task's labels **and remain plausible for the
-target data**. Candidate image transformations include crops and color changes; text or
-audio transformations require similar care. A crop can remove the labeled object, a
-"synonym" can change meaning, and pitch can itself be the target. More augmented samples
-are not a substitute for representative independent examples.
+Choose transformations that preserve the label **and** stay plausible for the target data: a
+crop can remove the labeled object, a "synonym" can change meaning, and pitch can itself be
+the thing you are predicting.
 
 > **The one rule:** the transformation must not change the label. Horizontally flipping a cat
 > gives a cat; horizontally flipping a "b" gives a "d". Augmentation that breaks the label
 > teaches the model something false.
 
-Apply stochastic augmentation to training data, not blindly to the validation set.
-Fit any learned scaling or preprocessing on the training split only. Keep evaluation
-preprocessing consistent and appropriate to the task.
+Apply stochastic augmentation to training data only, and fit any learned scaling on the
+training split.
 
-**Initialization reminder:** the explanation and variance assumptions are in §14.6, and
-the explicit PyTorch initialization is in §14.7a. Zero biases can be fine; hidden-unit
-symmetry and signal scale are the issues to understand.
+**Initialization reminder:** the variance reasoning is in §14.6, and the explicit PyTorch
+initialization is in §14.7a.
 
 ---
 
@@ -2364,24 +2466,22 @@ match the tool to the data instead of reaching for the biggest hammer by default
 | **Proteins / molecules** | Graph Neural Network or Transformer |
 
 > **Interview —** *"When would you NOT use deep learning?"*
-> **Say:** When a simpler baseline meets quality, latency, cost, and interpretability
-> needs, extra complexity may not be worthwhile. Trees are strong tabular candidates;
-> linear models can also be very competitive. Neither a small dataset nor a regulatory
-> requirement automatically selects one model family.
+> **Say:** When a simpler baseline already meets the quality, latency, cost, and
+> interpretability bar. Trees are strong on tabular data, and linear models are often
+> competitive — neither a small dataset nor a regulatory requirement automatically picks a
+> model family.
 > **They follow up with:** *"When is deep learning attractive?"* — when learned
-> representations or useful pretrained models provide an advantage on the actual task.
-> Images, language, and audio often benefit, but I would still compare baselines and
-> evaluate the cost of deploying the result.
+> representations or pretrained models give a real edge, which images, language, and audio
+> usually do. I would still compare baselines and price the deployment.
 
 **Example — how it works (picking a tool for two real tasks).**
 
 - **Task A — predict loan default from a 30-column spreadsheet** (income, age, credit history;
-  10,000 rows). → Try a linear baseline and **gradient-boosted trees**. Compare validation
-  quality, calibration, fairness, and explainability; no model is automatically acceptable
-  merely because it is tree-based.
+  10,000 rows). → Try a linear baseline and **gradient-boosted trees**, then compare validation
+  quality, calibration, fairness, and explainability.
 - **Task B — detect tumours in 200,000 chest X-rays.** → Use a **CNN** (or a pretrained ViT). The
-  input has spatial structure and a pretrained representation may help. Dataset quality,
-  patient-level separation, and external evaluation still matter.
+  input has spatial structure and a pretrained representation helps — though data quality and
+  patient-level split separation still decide whether it works.
 
 Same engineer, same week—different starting hypotheses, decided by evidence and constraints,
 not by which method is trendier.
@@ -2395,9 +2495,8 @@ not by which method is trendier.
 | More relevant data | Whether additional capacity actually improves held-out performance |
 | Large but biased or noisy data | Data quality and evaluation design before model size |
 
-There is no universal row-count threshold where neural networks suddenly become the right
-choice. Feature dimension, task difficulty, label quality, and pretraining all change the
-sample requirements.
+There is no universal row-count threshold at which neural networks become the right choice —
+feature dimension, task difficulty, label quality, and pretraining all move the line.
 
 ### Architecture Comparison
 
@@ -2408,31 +2507,121 @@ sample requirements.
 | Can training positions run in parallel? | Many spatial positions can | Recurrent state updates are sequential | Attention positions can, while respecting masks |
 | What is the streaming trade-off? | Depends on causal design and receptive field | Fixed-size recurrent state is possible | Autoregressive decoding commonly retains a growing KV cache |
 | What should decide the choice? | Useful locality and measured task performance | Streaming constraints and measured task performance | Useful attention/pretraining and measured task performance |
+![What each architecture buys you: CNN vs RNN vs Transformer](diagrams/nn_archchooser_ai.png)
 
-**Memory needs a context.** For sequence length $T$, fixed width/depth, and fixed local
-kernels, a 1D CNN's stored activations usually scale with $T$, not $O(1)$. Full RNN
-backpropagation also stores information across steps, even though streaming inference can
-retain only fixed-size recurrent state. Naive attention score storage is $O(T^2)$;
-memory-efficient implementations change what is materialized. Image CNN cost depends on
-image dimensions and channels. Do not mix training memory with streaming-inference state
-in one unexplained ranking.
+**Memory needs a context.** Quote *training* memory and *streaming-inference* state
+separately — they are different numbers. For sequence length $T$: a 1D CNN's stored
+activations scale with $T$; RNN backpropagation also stores state across steps even though
+streaming inference keeps a fixed-size state; naive attention storage is $O(T^2)$, which
+memory-efficient kernels reduce.
 
-Self-driving cars use all three: CNNs for camera perception (object detection), LSTMs for predicting pedestrian trajectories over time, and Transformers for end-to-end planning. The right architecture depends on the data modality and problem structure.
+Self-driving cars use all three: CNNs for camera perception, LSTMs for pedestrian-trajectory
+prediction, and Transformers for end-to-end planning.
 
 ---
 
 ## Key Takeaways
 
-| Question | Carry this answer with you |
-|---|---|
-| What does a network compute? | Composed affine transformations and nonlinear features; task-appropriate outputs |
-| How does it learn? | Forward pass, loss, gradients, optimizer update; evaluate the changed prediction |
-| What must match? | Tensor shapes, target encoding, output semantics, and the loss API |
-| What does backprop use? | Activation derivatives **and** weights; shared paths contribute summed gradients |
-| How do we train responsibly? | Inspect data, use stable losses, compare validation behavior, restore the best checkpoint |
-| What changes at evaluation? | Dropout and usual BatchNorm behavior; autograd is controlled separately |
-| What do architectures add? | Locality, memory, attention, or reusable representations—not automatic accuracy |
-| How should we choose? | Start with a sensible baseline, change one thing, and measure the result |
+```
+NEURAL NETWORKS — WHAT TO REMEMBER
+═══════════════════════════════════════════════════════════════════
+
+WHAT A NETWORK IS
+  • One neuron = multiply by weights, add a bias, apply a
+    non-linear activation:  z = sum(w*x) + b,  output = f(z).
+  • Without activations, stacked layers collapse to ONE linear
+    map — 100 layers would still draw only a straight boundary.
+  • XOR is the proof: no straight line separates it, but two
+    ReLU features (x1-x2 and x2-x1) solve it. A hidden layer
+    doesn't classify — it RE-DESCRIBES the input.
+  • Depth composes features; width adds features per layer.
+  • Params per dense layer = (in x out) + out. Forgetting the
+    biases is the classic slip.
+
+CHOOSING ACTIVATIONS AND LOSSES
+  • ReLU is the hidden-layer default (derivative 1 or 0). GELU
+    for Transformers. Sigmoid/softmax belong at the OUTPUT.
+  • Sigmoid derivative s(1-s) peaks at 0.25 — it can never pass
+    back more than a quarter of the gradient it receives.
+  • Match the loss to the task: binary -> BCEWithLogits;
+    exclusive multiclass -> CrossEntropy (class indices, long);
+    multilabel -> BCEWithLogits per label; regression -> MSE.
+  • Feed RAW LOGITS to fused losses. Applying softmax yourself
+    changes the objective and hurts numerical stability.
+  • Cross-entropy collapses to -log(p assigned to the true
+    class). Confident-and-wrong is punished brutally: p=0.9
+    costs 0.105, p=0.1 costs 2.303 — 22x more.
+
+HOW LEARNING ACTUALLY HAPPENS
+  • Loop: forward -> loss -> backward -> update. zero_grad()
+    clears; backward() fills .grad; step() changes weights.
+  • Backprop = the chain rule applied efficiently, reusing the
+    layer above's gradient instead of recomputing it.
+  • THE shortcut: for sigmoid+BCE and softmax+cross-entropy the
+    whole chain collapses to  dL/dz = yhat - y.  The gradient is
+    literally the prediction error. That's why they're paired.
+  • A weight's gradient = incoming activation x outgoing error
+    signal. Zero input activation => zero gradient.
+  • Finish the whole backward pass BEFORE updating — mixing in
+    new weights mid-way computes the gradient of a different net.
+  • Mini-batch = average the gradients, then take ONE step.
+
+WHAT BREAKS, AND WHY
+  • The gradient is a PRODUCT of per-layer factors, so it decays
+    or explodes exponentially: 0.25^10 ~ 1e-6;  1.5^20 ~ 3300x.
+  • Init scale follows from Var(z) = n_in * Var(w) * Var(x).
+    Want the signal preserved => Var(w) = 1/n_in. ReLU discards
+    about half of it => Var(w) = 2/n_in, which is He. That is
+    where the mysterious "2" comes from. Xavier balances the
+    backward pass too, using 2/(n_in + n_out).
+  • Random init breaks hidden-unit symmetry; ZERO BIASES ARE FINE.
+  • Fixes: ReLU-family, BatchNorm, LSTM/GRU gates, residual
+    connections, gradient clipping, sane initialization.
+  • NaN is a symptom, not a diagnosis. Find the FIRST non-finite
+    tensor before reaching for clipping.
+
+TRAINING IT WELL
+  • Dropout zeroes units during training and divides survivors
+    by (1-p); it is OFF at inference with no rescaling.
+  • BatchNorm uses THIS batch's stats while training and RUNNING
+    stats at eval — call model.eval(). (eval() does not disable
+    autograd; no_grad() is a separate switch.)
+  • Weight decay multiplies each weight by (1 - 2*lr*lambda)
+    every step. AdamW decouples it; L2-inside-Adam is not equal.
+  • Early stopping: restore the BEST checkpoint (deepcopy it),
+    not the last epoch's weights.
+  • Augment only the training split, and never in a way that
+    changes the label ("b" flipped is "d").
+  • Debug in this order: inspect the data, overfit ~10 examples,
+    then follow a single gradient. Capacity cannot repair a
+    disconnected learning loop.
+
+WHAT EACH ARCHITECTURE BUYS YOU
+  • CNN — LOCALITY. One filter reused everywhere; output size is
+    floor((n + 2p - k)/s) + 1. Filters span ALL input channels.
+  • ResNet — a GRADIENT HIGHWAY. d(F(x)+x)/dx = F'(x) + 1; that
+    +1 has no shrinking factor, so 152 layers stay trainable.
+  • RNN/LSTM — MEMORY. A running state carried forward; gates
+    let a fact sit untouched across many steps.
+  • Transformer — ATTENTION. softmax(QK^T / sqrt(dk)) * V. Any
+    token reaches any other in ONE step and positions train in
+    parallel; cost grows with the SQUARE of sequence length.
+    Divide by sqrt(dk) or the softmax saturates. Causal masking
+    happens BEFORE softmax, and the weights renormalize.
+  • Transfer learning — REUSE. Freeze the backbone, replace the
+    head; unfreeze the last blocks with a much smaller LR.
+  • GAN — ADVERSARIAL PRESSURE. Watch for mode collapse; a
+    discriminator at 0.5 may just be weak.
+
+CHOOSING, AND STAYING HONEST
+  • Tabular data: start with linear + gradient-boosted trees.
+    Deep learning earns its place on images, text, and audio —
+    usually via pretraining, not raw size.
+  • There is no row-count threshold where neural nets "win".
+  • Loss is not accuracy; a curve is evidence, not a diagnosis.
+  • Baseline first, change ONE thing, measure on validation,
+    and keep a separate untouched test set for the final number.
+```
 
 ---
 
@@ -2475,9 +2664,9 @@ so a weight of 1 becomes approximately **1.053788** at learning rate 0.1.
 <details>
 <summary>Answer</summary>
 
-One inactive sample is normal. Investigate whether the unit is inactive across relevant
-training data. ReLU removes positive-side activation saturation, but weight factors and
-other gradient paths can still cause shrinking or exploding gradients.
+One inactive sample is normal — check whether the unit is inactive across the *training data*.
+ReLU removes positive-side saturation, but weight factors can still shrink or explode
+gradients.
 </details>
 
 **5. Which operations compute gradients, update weights, change module behavior, and disable gradient recording?**
@@ -2534,8 +2723,7 @@ Parameters are $32(3\times3\times3+1)=\mathbf{896}$.
 <summary>Answer</summary>
 
 Mask future token C before softmax. The weights become [1/3,2/3,0], and the output changes
-from 4.5 to $10/3$. Unmasked position-free self-attention is permutation-equivariant;
-it does not produce identical ordered tensors after arbitrary input reordering.
+from 4.5 to $10/3$.
 </details>
 
 **11. You have 800 labeled factory images. Explain a starting strategy without promising a particular accuracy.**
@@ -2544,8 +2732,8 @@ it does not produce identical ordered tensors after arbitrary input reordering.
 <summary>Answer</summary>
 
 Compare a pretrained encoder plus a new head with simple baselines. Consider selective
-unfreezing with a lower backbone learning rate if validation supports it. Check domain
-match, label quality, and appropriate data splits; sample count alone does not decide.
+unfreezing with a lower backbone learning rate if validation supports it — sample count
+alone does not decide.
 </details>
 
 **12. A generator always produces the same image. Meanwhile, the discriminator outputs about 0.5. Has training succeeded?**
@@ -2553,9 +2741,8 @@ match, label quality, and appropriate data splits; sample count alone does not d
 <details>
 <summary>Answer</summary>
 
-No. Repeating one image suggests mode collapse. A discriminator near 0.5 could be weak
-or poorly trained. The ideal distribution-matching result does not make that number a
-standalone quality test; inspect diversity, quality, and performance on held-out data.
+No. Repeating one image is classic **mode collapse**, and a discriminator sitting at 0.5 may
+simply be weak. Inspect diversity and quality on held-out data instead.
 </details>
 
 ---
