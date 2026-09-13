@@ -485,7 +485,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/13_model_evaluation.md': 210,
   'content/14_neural_networks.md': 365,
   'content/15_reinforcement_learning.md': 60,
-  'content/15s_ml_curriculum_recap.md': 250,
+  'content/15s_ml_curriculum_recap.md': 155,
   'content/16_deep_learning.md': 270,
   'content/17_llm.md': 280,
   'content/17b_llm_applications.md': 170,

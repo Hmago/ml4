@@ -791,7 +791,13 @@ function _flashMatch(root, needle) {
     range.setEnd(e.node, e.offset);
     const marks = _wrapFlash(range);
     if (marks.length) {
-      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Jump straight to the match instead of animating. `.content-wrapper` sets
+      // scroll-behavior: smooth, and a chapter can be 100,000px tall, so a smooth
+      // scroll to a deep match ran for several seconds — long enough that the
+      // 2.3s flash timer below removed the highlight before the scroll arrived,
+      // and the user never saw what they had clicked. 'instant' overrides the
+      // inherited CSS scroll-behavior.
+      marks[0].scrollIntoView({ behavior: 'instant', block: 'center' });
       setTimeout(() => _unwrapFlash(marks), 2300);   // matches the 2.2s CSS fade
       return true;
     }
@@ -1217,18 +1223,34 @@ function setupScrollProgress() {
   if (_scrollProgressBound) return;   // bind once for the app's lifetime
   _scrollProgressBound = true;
   let ticking = false;
-  // Throttle to one layout read+write per frame; passive lets the browser
-  // keep scrolling without waiting on the handler.
+  // The scrollable range is cached instead of read every frame. Reading
+  // scrollHeight/clientHeight right after writing bar.style.width forced a
+  // synchronous layout of the entire chapter on each scroll frame — some
+  // chapters render over 100,000px tall, so that alone sustained scroll jank.
+  // A ResizeObserver refreshes the cache whenever the viewport or the rendered
+  // chapter actually changes size.
+  let range = -1;
+  const remeasure = () => { range = wrapper.scrollHeight - wrapper.clientHeight; };
+  const contentEl = document.getElementById('content');
+  if (typeof ResizeObserver === 'function') {
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(wrapper);
+    if (contentEl) ro.observe(contentEl);
+  }
+  window.addEventListener('resize', remeasure);
+  // Throttle to one write per frame; passive lets the browser keep scrolling
+  // without waiting on the handler.
   wrapper.addEventListener('scroll', () => {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
-      const scrollHeight = wrapper.scrollHeight - wrapper.clientHeight;
-      const progress = scrollHeight > 0 ? (wrapper.scrollTop / scrollHeight) * 100 : 0;
-      bar.style.width = progress + '%';
       ticking = false;
+      if (range < 0) remeasure();
+      const progress = range > 0 ? (wrapper.scrollTop / range) * 100 : 0;
+      bar.style.width = progress + '%';
     });
   }, { passive: true });
+  remeasure();
 }
 
 // ─── Enhanced Content ───
@@ -1378,20 +1400,55 @@ function setupScrollSpy() {
     _scrollSpyHandler = null;
   }
   if (!tocLinks.length) return;
-  const headings = root.querySelectorAll(caseStudy ? 'h1,h2,h3' : 'h2,h3');
+  const allHeadings = Array.from(root.querySelectorAll(caseStudy ? 'h1,h2,h3' : 'h2,h3'));
   const groups = document.querySelectorAll('.case-toc-group');
   const currentLabel = document.querySelector('.case-toc-current');
   let activeGroup = null;
   let ticking = false;
+
+  // Heading positions are measured once per layout instead of on every scroll
+  // frame. Sweeping getBoundingClientRect across 150+ headings forced a
+  // synchronous layout on each frame, which pinned large chapters near 20fps
+  // (median frame ~48ms). Anything that changes the document height — mermaid
+  // and chart rendering, images, toggling a <details> — moves scrollHeight and
+  // invalidates the cache, so it is re-measured then.
+  let ids = [];
+  let tops = [];
+  let wrapperTop = 0;
+  let measuredHeight = -1;
+  function measure() {
+    wrapperTop = wrapper.getBoundingClientRect().top;
+    const scrollTop = wrapper.scrollTop;
+    ids.length = 0;
+    tops.length = 0;
+    for (const h of allHeadings) {
+      // A heading inside a collapsed <details> is display:none, so its rect is
+      // all zeros — it would otherwise read as "pinned to the top of the page".
+      if (h.closest('details:not([open])')) continue;
+      ids.push(h.id);
+      tops.push(h.getBoundingClientRect().top - wrapperTop + scrollTop);
+    }
+    measuredHeight = wrapper.scrollHeight;
+  }
+
+  let lastCurrent = null;
   _scrollSpyHandler = () => {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
+      ticking = false;
+      if (wrapper.scrollHeight !== measuredHeight) measure();
+      // Equivalent to the old `rect.top < 150` test, derived from cached offsets
+      // so the frame performs no layout read at all.
+      const limit = wrapper.scrollTop + 150 - wrapperTop;
       let current = '';
-      headings.forEach(h => {
-        if (h.closest('details:not([open])')) return;
-        if (h.getBoundingClientRect().top < 150) current = h.id;
-      });
+      for (let i = 0; i < tops.length; i++) {
+        if (tops[i] < limit) current = ids[i];
+      }
+      // The loop below writes to every TOC link (150+ on big chapters) and
+      // dirties style each time — only run it when the active heading changes.
+      if (current === lastCurrent) return;
+      lastCurrent = current;
       tocLinks.forEach(a => {
         const active = a.getAttribute('href') === '#' + current;
         a.classList.toggle('spy-active', active);
@@ -1408,7 +1465,6 @@ function setupScrollSpy() {
           if (currentLabel) currentLabel.textContent = 'Reading: ' + group.dataset.title;
         }
       });
-      ticking = false;
     });
   };
   wrapper.addEventListener('scroll', _scrollSpyHandler, { passive: true });
@@ -1761,48 +1817,100 @@ function ensureChart() {
 }
 
 // ─── Render Chart.js charts ───
+// Chart containers are created immediately so the page keeps its final layout,
+// but each chart is only drawn once it scrolls near the viewport. Some chapters
+// embed 21 charts; drawing them all up front cost roughly 1.5s of the
+// navigation (Chart.js resolves computed styles per chart, which dominated the
+// CPU profile of 06_math_fundamentals.md) and most sit far below the fold.
+let _chartObserver = null;
+const _chartConfigs = new WeakMap();   // chart container -> its parsed config
+
+// Apply the current theme's colours to a chart config just before it is drawn.
+function _applyChartTheme(config) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  const textColor = isDark ? '#e6edf3' : '#1f2328';
+  if (!config.options) config.options = {};
+  if (!config.options.plugins) config.options.plugins = {};
+  if (!config.options.plugins.legend) config.options.plugins.legend = {};
+  if (!config.options.plugins.legend.labels) config.options.plugins.legend.labels = {};
+  config.options.plugins.legend.labels.color = textColor;
+  if (!config.options.plugins.title) config.options.plugins.title = {};
+  config.options.plugins.title.color = textColor;
+  if (!config.options.scales) config.options.scales = {};
+  for (const axis of ['x', 'y']) {
+    if (!config.options.scales[axis]) config.options.scales[axis] = {};
+    if (!config.options.scales[axis].ticks) config.options.scales[axis].ticks = {};
+    config.options.scales[axis].ticks.color = textColor;
+    if (!config.options.scales[axis].grid) config.options.scales[axis].grid = {};
+    config.options.scales[axis].grid.color = gridColor;
+    if (config.options.scales[axis].title) config.options.scales[axis].title.color = textColor;
+  }
+  config.options.responsive = true;
+  config.options.maintainAspectRatio = true;
+  return config;
+}
+
 function renderCharts(root) {
-  const blocks = root.querySelectorAll('code.language-chart');
-  if (blocks.length === 0) return;
-  // Lazy-load chart.js only for chapters that actually embed a chart.
-  ensureChart().then(() => {
-  blocks.forEach(block => {
+  // Convert any chart code blocks that have not been converted yet. On a re-run
+  // (theme / interactive toggle) this finds nothing, because the blocks are
+  // already containers.
+  root.querySelectorAll('code.language-chart').forEach(block => {
     const pre = block.parentElement;
     const wrapper = pre.parentElement?.classList.contains('code-wrapper') ? pre.parentElement : pre;
+    let config;
     try {
-      const config = JSON.parse(block.textContent);
-      const container = document.createElement('div');
-      container.className = 'chart-container';
-      const canvas = document.createElement('canvas');
-      container.appendChild(canvas);
-      wrapper.replaceWith(container);
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-      const textColor = isDark ? '#e6edf3' : '#1f2328';
-      if (!config.options) config.options = {};
-      if (!config.options.plugins) config.options.plugins = {};
-      if (!config.options.plugins.legend) config.options.plugins.legend = {};
-      if (!config.options.plugins.legend.labels) config.options.plugins.legend.labels = {};
-      config.options.plugins.legend.labels.color = textColor;
-      if (!config.options.plugins.title) config.options.plugins.title = {};
-      config.options.plugins.title.color = textColor;
-      if (!config.options.scales) config.options.scales = {};
-      for (const axis of ['x', 'y']) {
-        if (!config.options.scales[axis]) config.options.scales[axis] = {};
-        if (!config.options.scales[axis].ticks) config.options.scales[axis].ticks = {};
-        config.options.scales[axis].ticks.color = textColor;
-        if (!config.options.scales[axis].grid) config.options.scales[axis].grid = {};
-        config.options.scales[axis].grid.color = gridColor;
-        if (config.options.scales[axis].title) config.options.scales[axis].title.color = textColor;
-      }
-      config.options.responsive = true;
-      config.options.maintainAspectRatio = true;
-      new Chart(canvas, config);
+      config = JSON.parse(block.textContent);
     } catch (e) {
       console.warn('Chart.js parse error:', e);
+      return;
     }
+    const container = document.createElement('div');
+    container.className = 'chart-container';
+    container.appendChild(document.createElement('canvas'));
+    _chartConfigs.set(container, config);
+    wrapper.replaceWith(container);
   });
-  }).catch(() => {});
+
+  // (Re)observe every container still waiting to be drawn. enhanceContent() runs
+  // again on a theme or interactive-mode toggle, so re-observing here is what
+  // keeps charts that were still pending at that moment from being stranded as
+  // empty boxes. It also recovers any container the observer missed earlier.
+  const pending = Array.from(root.querySelectorAll('.chart-container'))
+    .filter(c => c.dataset.chartDrawn !== '1' && _chartConfigs.has(c));
+  if (_chartObserver) { _chartObserver.disconnect(); _chartObserver = null; }
+  if (!pending.length) return;
+
+  const draw = (container) => {
+    if (container.dataset.chartDrawn === '1') return;
+    container.dataset.chartDrawn = '1';
+    // chart.js (~200KB) is still only fetched for chapters that embed a chart.
+    ensureChart().then(() => {
+      const canvas = container.querySelector('canvas');
+      if (!canvas || !canvas.isConnected) return;   // chapter changed before we got here
+      try {
+        new Chart(canvas, _applyChartTheme(_chartConfigs.get(container)));
+      } catch (e) {
+        console.warn('Chart.js render error:', e);
+      }
+    }).catch(() => {});
+  };
+
+  if (typeof IntersectionObserver !== 'function') {
+    pending.forEach(draw);
+    return;
+  }
+  // Observe against the scroll container, not the viewport, so the 600px margin
+  // is a real pre-load band around the scroller rather than being clipped by it.
+  const scroller = document.getElementById('contentWrapper');
+  _chartObserver = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      obs.unobserve(entry.target);
+      draw(entry.target);
+    });
+  }, { root: scroller || null, rootMargin: '600px 0px' });
+  pending.forEach(c => _chartObserver.observe(c));
 }
 
 

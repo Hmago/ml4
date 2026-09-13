@@ -78,7 +78,16 @@ function pinResolveAnchor(anchor) {
 function renderPins(file) {
   const content = document.getElementById('content');
   if (!content) return;
+  const list = (typeof getComments === 'function') ? (getComments()[file] || []) : [];
   let layer = document.getElementById('pinsLayer');
+  // Fast path: this chapter has no notes. Bail out before creating the layer or
+  // calling getBoundingClientRect below — that forced-layout read cost ~140ms on
+  // every navigation into a large chapter even with zero notes saved.
+  if (!list.length) {
+    if (layer) layer.innerHTML = '';
+    updatePinCountBadge(0);
+    return;
+  }
   if (!layer) {
     layer = document.createElement('div');
     layer.id = 'pinsLayer';
@@ -86,15 +95,17 @@ function renderPins(file) {
     content.appendChild(layer);
   }
   layer.innerHTML = '';
-  if (typeof getComments !== 'function') { updatePinCountBadge(0); return; }
-  const list = (getComments()[file] || []);
   const contentRect = content.getBoundingClientRect();
-  let shown = 0;
   let stackOffset = 0; // vertical stack slot for unanchored comments
+
+  // Resolve every anchor and read every rect FIRST, then build the DOM. Doing
+  // the reads and the appendChild writes in one interleaved loop forced a fresh
+  // layout on each iteration (read → write → read → …).
+  const placed = [];
   list.forEach((c, idx) => {
     if (!c) return;
-    let top;
     const target = c.anchor ? pinResolveAnchor(c.anchor) : null;
+    let top;
     if (target) {
       const rect = target.getBoundingClientRect();
       top = (rect.top - contentRect.top) + (rect.height * (c.anchor.offsetY || 0));
@@ -104,6 +115,11 @@ function renderPins(file) {
       top = 16 + stackOffset * 38;
       stackOffset++;
     }
+    placed.push({ c, idx, top });
+  });
+
+  const frag = document.createDocumentFragment();
+  for (const { c, idx, top } of placed) {
     const btn = document.createElement('button');
     btn.className = 'pin' + (c.resolved ? ' pin-resolved' : '') + (c.anchor ? '' : ' pin-unanchored');
     btn.style.top = top + 'px';
@@ -115,10 +131,10 @@ function renderPins(file) {
       e.stopPropagation();
       jumpToCommentAndFlash(file, idx);
     });
-    layer.appendChild(btn);
-    shown++;
-  });
-  updatePinCountBadge(shown);
+    frag.appendChild(btn);
+  }
+  layer.appendChild(frag);
+  updatePinCountBadge(placed.length);
 }
 
 // Scroll to the comment-{idx} entry at the bottom, flash it. If the current

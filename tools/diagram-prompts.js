@@ -41,6 +41,105 @@ function buildPrompt(target) {
 
 const DIAGRAM_TARGETS = [
   {
+    id: "rev_mlmap",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![Machine learning versus traditional programming, and the four types of ML](diagrams/rev_mlmap_ai.png)",
+    svgBase: "rev_mlmap",
+    title: "What machine learning is, and its four types",
+    rawBody: "Draw a three-part orientation poster. PART 1 'THE INVERSION' on the left: two stacked flow strips. Top strip 'TRADITIONAL PROGRAMMING': boxes 'RULES' plus 'INPUT' feeding an arrow into 'OUTPUT', annotated 'a human writes the logic'. Bottom strip 'MACHINE LEARNING': boxes 'INPUT' plus 'OUTPUT (labels)' feeding an arrow into 'RULES (the model)', annotated 'the algorithm discovers the logic'. PART 2 'THE FAMILY TREE' in the middle: four clean nested rounded rectangles, largest to smallest, labelled 'ARTIFICIAL INTELLIGENCE - goal: appear smart', 'MACHINE LEARNING - learns from data', 'DEEP LEARNING - neural networks', 'GENERATIVE AI - makes new content'. Beside it a short note 'classical ML uses hand-designed features; deep learning learns its own'. PART 3 'FOUR TYPES' on the right: four small stacked cards, each with a title, the learning signal, and one flagship example. Card 1 'SUPERVISED - features plus labels - Gmail spam filter'. Card 2 'UNSUPERVISED - features only, find hidden structure - customer segmentation'. Card 3 'SELF-SUPERVISED - data labels itself, e.g. hide a word and predict it - GPT and BERT pre-training'. Card 4 'REINFORCEMENT - a scalar reward from trial and error - AlphaGo, RLHF'. Add a bottom strip: 'about 80% of real project time is collecting and cleaning data, not modelling'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_biasvariance",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![Underfitting, the sweet spot, and overfitting — the bias-variance tradeoff](diagrams/rev_biasvariance_ai.png)",
+    svgBase: "rev_biasvariance",
+    title: "Underfitting, the sweet spot, and overfitting",
+    rawBody: "Draw two connected panels about the bias-variance tradeoff. TOP PANEL: three small scatter plots side by side, each showing the SAME scattered data points with a fitted curve. Left 'UNDERFITTING - HIGH BIAS': a straight line missing the obvious curve of the data, labelled 'too simple; train error HIGH, test error HIGH'. Middle 'GOOD FIT - BALANCED': a smooth curve following the trend, labelled 'train error LOW, test error LOW', marked with a green tick and the words 'the goal'. Right 'OVERFITTING - HIGH VARIANCE': a wildly wiggling curve passing exactly through every point, labelled 'memorised the noise; train error NEAR ZERO, test error HIGH'. BOTTOM PANEL: a classic tradeoff graph with x-axis 'model complexity' and y-axis 'error'. Plot three curves: 'bias squared' falling from high to low, 'variance' rising from low to high, and 'TOTAL TEST ERROR' as a U-shaped curve. Mark the bottom of the U with a vertical dashed line labelled 'sweet spot'. Shade and label the left region 'UNDERFIT' and the right region 'OVERFIT'. Add a formula strip under the graph: 'Total Error = Bias^2 + Variance + Irreducible Noise'. Add a bottom caption: 'more data reduces variance; it does NOT reduce bias - for that you need a better model or better features'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_lr",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![How the learning rate changes gradient descent](diagrams/rev_lr_ai.png)",
+    svgBase: "rev_lr",
+    title: "Choosing a learning rate, and what each optimizer does",
+    rawBody: "Draw two panels about gradient descent. LEFT PANEL 'THE LEARNING RATE': three small identical U-shaped loss curves side by side, each with a ball descending in dotted steps. (a) 'TOO SMALL': many tiny steps still far from the bottom, labelled 'learns, but wastes the whole budget'. (b) 'JUST RIGHT': a handful of well-sized steps reaching the minimum, marked with a green tick. (c) 'TOO LARGE': steps that overshoot the valley and bounce up the far wall, growing bigger each time, labelled 'diverges; loss can become NaN'. Under them a short strip: 'tune it on a LOG scale: 0.1, 0.01, 0.001, 0.0001 - not linearly'. RIGHT PANEL 'THE OPTIMIZERS': a single contour map of a long narrow valley, with three labelled coloured paths from the same starting point to the minimum. Path 1 'SGD' zig-zags slowly across the valley walls. Path 2 'SGD + MOMENTUM' zig-zags less and travels further per step, annotated 'builds velocity along consistent directions'. Path 3 'ADAM' takes a direct, smooth route, annotated 'adapts the step size per parameter; try 1e-3 or 3e-4'. Add a small note beside the legend: 'AdamW decouples weight decay from the gradient - the default for Transformers'. Add a bottom caption: 'the update is always the same shape: weight = weight - learning_rate x gradient'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_leakage",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![Data leakage: fit preprocessing on the training split only](diagrams/rev_leakage_ai.png)",
+    svgBase: "rev_leakage",
+    title: "Data leakage: the split comes first",
+    rawBody: "Draw a two-lane comparison of preprocessing order. TOP LANE marked with a large red cross and the header 'WRONG - SILENT LEAKAGE': a single block 'ALL DATA' flowing into 'SCALE / IMPUTE / ENCODE (fit on everything)' and only THEN into a split into 'TRAIN' and 'TEST', annotated in red 'the scaler already saw the test set, so test scores are optimistic and you will not find out until production'. BOTTOM LANE marked with a large green tick and the header 'RIGHT - SPLIT FIRST': a block 'ALL DATA' flowing first into a split into 'TRAIN' and 'TEST'; the TRAIN branch goes into a box 'fit_transform(train)' which produces a small saved object labelled 'fitted scaler / imputer / encoder'; a dashed arrow carries that SAME fitted object across to the TEST branch, which only gets 'transform(test)', annotated 'test data is never used to learn any parameter, not even a mean'. Add a right-hand side panel titled 'OTHER LEAKS THAT LOOK FINE' with four short bullets: 'target leakage - a feature that is a proxy for the label, e.g. total_payments when predicting default'; 'temporal leak - random splits on time-ordered data let the model see the future'; 'group leak - the same patient or user in both train and test'; 'duplicate rows across the split'. Add a bottom caption: 'if a result looks too good, suspect leakage before celebrating'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_ensembles",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![Bagging, boosting and stacking compared](diagrams/rev_ensembles_ai.png)",
+    svgBase: "rev_ensembles",
+    title: "Bagging vs boosting vs stacking",
+    rawBody: "Draw three side-by-side panels comparing ensemble methods. PANEL 1 'BAGGING - reduces VARIANCE (Random Forest)': one dataset feeding several arrows into three or four small tree icons drawn in PARALLEL, each labelled 'trained on a different bootstrap sample'; their outputs converge into one box 'VOTE / AVERAGE'. Notes: 'trees are independent, so it parallelises'; 'each split also considers only a random subset of features'; 'fixes: overfitting, high variance'. PANEL 2 'BOOSTING - reduces BIAS (XGBoost, LightGBM)': three or four small tree icons drawn in SEQUENCE, connected left to right, where each is labelled 'fits the RESIDUAL ERRORS of the one before'; show the running error shrinking under each step. Notes: 'sequential, so it does not parallelise across trees'; 'sensitive to noisy labels and needs a learning rate'; 'fixes: underfitting, high bias'. PANEL 3 'STACKING - learns how to combine': three DIFFERENT base model icons (a tree, a linear model, a small neural network) all feeding their predictions upward into one box labelled 'META-LEARNER (often logistic regression) trained on out-of-fold predictions'. Note: 'the strongest option in competitions, and the most complex to maintain'. Add a bottom strip contrasting them: 'bagging averages away the noise in the predictions; boosting keeps attacking whatever the ensemble still gets wrong'. Use one distinct accent colour per panel. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_clustering",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![Clustering algorithms compared: which shapes each one can find](diagrams/rev_clustering_ai.png)",
+    svgBase: "rev_clustering",
+    title: "Clustering algorithms compared: which shapes each one can find",
+    rawBody: "Draw a comparison grid answering 'which clustering algorithm handles which data shape?'. Across the top, four dataset thumbnails drawn as scatter plots: (a) 'BLOBS - three round, evenly sized clusters', (b) 'CRESCENTS - two interlocking moon shapes', (c) 'RINGS - one circle inside another', (d) 'BLOBS + NOISE - clusters with scattered stray dots between them'. Down the left, four algorithm rows: 'K-MEANS', 'HIERARCHICAL (Ward)', 'DBSCAN', 'GMM'. Fill each cell with a clear green tick or red cross plus two or three words. K-Means: tick on blobs, cross on crescents, cross on rings, cross on noise ('forces every point into a cluster'). Hierarchical Ward: tick on blobs, cross on crescents, cross on rings, partial on noise. DBSCAN: tick on blobs, tick on crescents, tick on rings, tick on noise ('labels outliers as noise'). GMM: tick on blobs ('and elongated, via full covariance'), cross on crescents, cross on rings, cross on noise. Add a right-hand column headed 'PICK IT WHEN' with one short line per row: K-Means 'round clusters, you know K, millions of points'; Hierarchical 'you want a dendrogram and do NOT know K; under about 10k points'; DBSCAN 'odd shapes and real outliers; you do not know K'; GMM 'you want soft probabilities, not hard labels'. Add a bottom strip: 'K-Means assumes round, similar-sized clusters - that assumption, not the algorithm, is what usually fails'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_dimreduction",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![PCA vs t-SNE vs UMAP](diagrams/rev_dimreduction_ai.png)",
+    svgBase: "rev_dimreduction",
+    title: "PCA vs t-SNE vs UMAP",
+    rawBody: "Draw three side-by-side panels comparing dimensionality reduction methods, each showing the same high-dimensional dataset reduced to 2D. PANEL 1 'PCA - LINEAR': a scatter plot with two clear arrows drawn through it labelled 'PC1 - direction of greatest variance' and 'PC2 - next, at right angles'. Facts listed below: 'linear projection onto orthogonal axes'; 'fast, deterministic, and REVERSIBLE'; 'distances and global structure are meaningful'; 'use for: compression, denoising, speeding up a downstream model'; 'breaks when: the structure is curved or non-linear'. PANEL 2 't-SNE - LOCAL ONLY': a scatter plot showing several tight, well-separated islands of points. Facts: 'non-linear, optimised for neighbourhoods'; 'SLOW, and a different random seed gives a different picture'; 'cluster SIZES and the GAPS BETWEEN CLUSTERS are not meaningful'; 'use for: visual exploration of clusters, nothing else'; 'never feed its output into another model'. PANEL 3 'UMAP - LOCAL PLUS GLOBAL': a scatter plot with tight clusters that are also sensibly positioned relative to each other. Facts: 'non-linear, graph based'; 'much faster than t-SNE and can transform NEW points'; 'keeps more of the global arrangement'; 'use for: visualisation and as a preprocessing step'; 'still sensitive to its n_neighbors setting'. Add a bottom strip: 'PCA answers how much variance did I keep; t-SNE and UMAP answer what groups exist - do not read distances off a t-SNE plot'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_regularization",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![L1 versus L2 regularization, and why Lasso produces exact zeros](diagrams/rev_regularization_ai.png)",
+    svgBase: "rev_regularization",
+    title: "L1 vs L2 regularization: why Lasso zeroes features",
+    rawBody: "Draw the classic geometric comparison of L1 and L2 regularization, as two side-by-side plots on the same axes labelled w1 and w2. LEFT PLOT 'L1 - LASSO': a DIAMOND (rotated square) centred on the origin representing the constraint region, with a set of concentric ellipses representing the loss contours coming in from the upper right. Show the ellipses first touching the diamond exactly at a CORNER on the w2 axis, marked with a dot and annotated 'touches at a CORNER, so w1 = 0 exactly'. Caption: 'corners sit ON the axes, so the solution lands on them - features are removed entirely'. Facts listed below: 'penalty = lambda times the sum of |w|'; 'gives EXACT zeros, so it doubles as feature selection'; 'use when: many features and you believe few matter'. RIGHT PLOT 'L2 - RIDGE': a CIRCLE centred on the origin with the same loss contours touching it on a smooth curved edge, away from either axis, marked with a dot and annotated 'touches on a smooth edge, so both weights are small but NON-ZERO'. Caption: 'a circle has no corners, so nothing is ever driven exactly to zero'. Facts: 'penalty = lambda times the sum of w squared'; 'shrinks all weights together; handles correlated features well'; 'use when: most features carry a little signal'. Add a bottom strip: 'Elastic Net = both penalties; sklearn uses C = 1 / lambda, so a SMALL C means MORE regularization'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_confusion",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![The confusion matrix and every metric derived from it](diagrams/rev_confusion_ai.png)",
+    svgBase: "rev_confusion",
+    title: "The confusion matrix and the metrics derived from it",
+    rawBody: "Draw a labelled 2x2 confusion matrix as the centrepiece, using a cancer-screening example with real numbers. Columns are 'ACTUAL: positive' and 'ACTUAL: negative'; rows are 'PREDICTED: positive' and 'PREDICTED: negative'. Fill the cells: True Positive = 90 ('correctly caught'), False Positive = 15 ('false alarm - TYPE I ERROR'), False Negative = 10 ('MISSED a real case - TYPE II ERROR', highlighted in a warning colour), True Negative = 885 ('correctly cleared'). Around the matrix draw arrows to four metric cards, each with its formula, its worked value from these numbers, and the question it answers. Card 1 'PRECISION = TP / (TP + FP) = 90/105 = 0.857' - 'when I say positive, how often am I right?'. Card 2 'RECALL = TP / (TP + FN) = 90/100 = 0.900' - 'of all the real positives, how many did I catch?'. Card 3 'F1 = harmonic mean = 0.878' - 'one number when you need both; punishes imbalance between them'. Card 4 'ACCURACY = (TP + TN) / all = 975/1000 = 0.975' - marked with a warning icon and the note 'looks great, but a model that always says NEGATIVE would score 0.900 here - accuracy LIES on imbalanced data'. Add a bottom strip with the tradeoff: 'cancer screening - a miss is deadly, so maximise RECALL; spam filtering - a lost real email is worse than a spam that gets through, so maximise PRECISION'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_roc_pr",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![ROC versus precision-recall curves, and when each one misleads](diagrams/rev_roc_pr_ai.png)",
+    svgBase: "rev_roc_pr",
+    title: "ROC vs precision-recall curves",
+    rawBody: "Draw two curve plots side by side, then a verdict strip. LEFT PLOT 'ROC CURVE': x-axis 'False Positive Rate', y-axis 'True Positive Rate (Recall)'. Draw a diagonal dashed line labelled 'random guessing, AUC = 0.5' and a good curve bowing toward the top-left corner, with the area under it shaded and labelled 'AUC-ROC = 0.93'. Mark the top-left corner 'perfect classifier'. Note below: 'threshold-free measure of RANKING quality - given one positive and one negative at random, the chance the model scores the positive higher'. RIGHT PLOT 'PRECISION-RECALL CURVE': x-axis 'Recall', y-axis 'Precision'. Draw a curve starting high on the left and falling toward the right, area shaded, labelled 'AUC-PR = 0.41'. Draw a horizontal dashed baseline low down labelled 'baseline = the positive class rate, here 0.01'. Note below: 'ignores true negatives entirely, which is exactly why it stays honest when negatives dominate'. Between or below them add a highlighted warning box: 'THE SAME MODEL scored 0.93 and 0.41. With 1% positives, a flood of false positives barely moves the False Positive Rate, so ROC still looks excellent while precision has collapsed.' Add a bottom verdict strip with two cells: 'BALANCED CLASSES -> ROC-AUC is fine' and 'RARE POSITIVES: fraud, disease, click-through -> use AUC-PR'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "rev_rl",
+    chapterFile: "content/15s_ml_curriculum_recap.md",
+    promptKind: "concept",
+    existingImageLine: "![The reinforcement learning loop, and the main families of algorithm](diagrams/rev_rl_ai.png)",
+    svgBase: "rev_rl",
+    title: "The reinforcement learning loop and its algorithm families",
+    rawBody: "Draw two panels. TOP PANEL 'THE LOOP': a clean cycle between two big boxes, 'AGENT' on the left and 'ENVIRONMENT' on the right. An arrow from agent to environment is labelled 'ACTION a'. Two arrows return from environment to agent, labelled 'STATE s-prime' and 'REWARD r'. Under the agent box add 'goal: maximise the TOTAL DISCOUNTED future reward, not the next reward'. Beside the loop put a small formula card: 'return = r + gamma*r-next + gamma^2*r-after... where gamma near 0 is short-sighted and gamma near 1 is far-sighted'. Add a small side note 'the Markov property: the future depends only on the CURRENT state, not the whole history'. BOTTOM PANEL 'THE FAMILIES': three columns. Column 1 'VALUE-BASED (Q-Learning, DQN)': 'learns how good is each action in each state, then acts greedily'; 'off-policy, model-free'; 'DQN adds experience replay to break correlation, plus a target network for stability'; 'best for: discrete action sets'. Column 2 'POLICY-BASED (REINFORCE, PPO)': 'learns the action policy directly'; 'handles CONTINUOUS actions'; 'PPO clips the policy ratio so one update cannot be destructive'; 'best for: robotics, continuous control'. Column 3 'ACTOR-CRITIC (A2C, PPO)': 'an actor chooses, a critic scores'; 'combines both, lower variance than pure policy gradients'. Add a bottom strip on the exploration tradeoff: 'epsilon-greedy: start near 1.0 and explore, decay toward 0.05 and exploit. RLHF = supervised fine-tune, then a reward model, then PPO with a KL penalty to stop reward hacking.' Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
     id: "nn_xor",
     chapterFile: "content/14_neural_networks.md",
     promptKind: "concept",

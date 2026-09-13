@@ -1,1727 +1,892 @@
 # ML Curriculum — Quick Revision
 
-> This is a condensed revision recap of **Chapters 07–15** (the ML Curriculum group). Use it to skim key ideas before an interview or exam instead of re-reading every chapter in full. Formulas, decision rules, algorithm comparisons, and "must-know" flashcard facts are preserved; worked examples, full proofs, and deep coding walkthroughs live in the source chapters. Start here; go deeper in the originals for anything that feels fuzzy.
+> Condensed revision for **Chapters 07–15**. Skim this before an interview instead of re-reading 113,000 words of source chapters. Formulas, decision rules, comparison tables and must-know facts are preserved; worked examples, proofs and coding walkthroughs stay in the originals.
+
+**How to use it:** **Part 1** is the decision layer — pick an algorithm, pick a metric, avoid a trap. **Part 2** is the chapter-by-chapter refresher. If you only have 20 minutes, read Part 1 and the one-page recap at the end.
 
 ---
 
 ## Contents
 
-- [Ch 07 — Introduction to ML](#ch-07--introduction-to-ml)
-- [Ch 08 — Core Concepts & Terminology](#ch-08--core-concepts--terminology)
-- [Ch 09 — Data Preprocessing](#ch-09--data-preprocessing)
-- [Ch 10 — Supervised Learning](#ch-10--supervised-learning)
-- [Ch 11 — Unsupervised Learning](#ch-11--unsupervised-learning)
-- [Ch 12 — Key Algorithms Deep Dive](#ch-12--key-algorithms-deep-dive)
-- [Ch 13 — Model Evaluation & Tuning](#ch-13--model-evaluation--tuning)
-- [Ch 14 — Neural Networks & Deep Learning](#ch-14--neural-networks--deep-learning)
-- [Ch 15 — Reinforcement Learning](#ch-15--reinforcement-learning)
-- [One-page cheat recap](#one-page-cheat-recap)
+**Part 1 — Decision Guides** · master algorithm selection · supervised comparison · unsupervised comparison · metric selection · validation & tuning · the 12 traps
+
+**Part 2 — Chapter by Chapter** · Ch 07 Introduction · Ch 08 Core Concepts · Ch 09 Preprocessing · Ch 10 Supervised · Ch 11 Unsupervised · Ch 12 Key Algorithms · Ch 13 Evaluation · Ch 14 Neural Networks · Ch 15 Reinforcement Learning · One-page cheat recap
+
+> Use the **☰ chapter guide** panel to jump between these sections.
 
 ---
 
+# Part 1 — Decision Guides
+
+## Master algorithm selection
+
+Start from the data, not from the algorithm you like.
+
+```mermaid
+graph TD
+    A[New ML problem] --> B{Do you have<br/>labels?}
+
+    B -->|No| C{What do you<br/>want to find?}
+    C -->|Groups| C1{Clusters round<br/>and similar-sized?}
+    C1 -->|Yes, and you know K| C2[K-Means]
+    C1 -->|Odd shapes, or noise matters| C3[DBSCAN / HDBSCAN]
+    C1 -->|Want soft probabilities| C4[GMM]
+    C -->|Fewer dimensions| C5{Need it as model input?}
+    C5 -->|Yes| C6[PCA if linear<br/>UMAP if not]
+    C5 -->|Just a 2D picture| C7[t-SNE or UMAP]
+    C -->|Odd ones out| C8[Isolation Forest<br/>LOF if local]
+
+    B -->|Yes| D{What kind of data?}
+    D -->|Images, audio, video| D1[CNN / Vision Transformer]
+    D -->|Text, sequences| D2[Transformer<br/>BERT or GPT family]
+    D -->|Tabular| E{What matters most?}
+
+    E -->|Must explain it| E1[Logistic / Linear Regression<br/>or one Decision Tree]
+    E -->|Best accuracy| E2{Many categorical<br/>features?}
+    E2 -->|Yes| E3[CatBoost]
+    E2 -->|No| E4[XGBoost / LightGBM]
+    E -->|Fast baseline| E5[Logistic Regression]
+    E -->|Under 1k rows| E6[SVM or KNN]
+
+    D -->|Reward, not labels| F[Reinforcement Learning<br/>see Ch 15]
+```
+
+> **The honest default for tabular data:** a linear baseline first, then gradient boosting. Deep learning wins on images, text and audio — not on spreadsheets.
+
+## Supervised algorithms compared
+
+| Algorithm | Task | It assumes | Use when | Breaks when | Handles noise | Boundary | Scalability | Interpretable | Real-world example |
+|---|---|---|---|---|---|---|---|---|---|
+| **Logistic Regression** | Classification | Log-odds linear in features | Need calibrated probabilities + a fast baseline | Boundary is curved (XOR-like) | Sensitive — unbounded score | Linear hyperplane | Excellent | High | Credit scoring, CTR prediction |
+| **Linear Regression** | Regression | Linearity, independent errors, constant variance, no multicollinearity | Interpretable numeric baseline | Multicollinearity → unstable weights | Poor — squared error chases outliers | Hyperplane | Excellent | High | House-price baseline |
+| **Ridge / Lasso / Elastic Net** | Regression | As above + shrinkage helps | Many or correlated features; Lasso to select | $\lambda$ mistuned either way | Same as linear | Hyperplane | Excellent | High | Genomics, high-dim regression |
+| **KNN** | Both | Nearby points share a label | Small data, any boundary shape, no training time | High dimensions, or unscaled features | Poor — one bad neighbour flips a vote | Follows local density | Poor — $O(nd)$ per query | Medium | Item-based recommendations |
+| **Decision Tree** | Both | Classes split by axis-aligned rectangles | Every decision must be explainable | Diagonal boundaries; unbounded depth | Fair — splits on order, not magnitude | Axis-aligned boxes | Good | Very high | Loan approval rules |
+| **Random Forest** | Both | Decorrelated trees average out noise | Strong default with little tuning | One feature dominates every split | Robust — bagging dilutes outliers | Piecewise rectangles | Excellent (parallel) | Low | Churn prediction |
+| **XGBoost / LightGBM** | Both | Sequential learners shrink residual error | Maximum tabular accuracy | No early stopping → chases noise | Sensitive — residuals amplify bad labels | Sharpest piecewise rectangles | Good (sequential) | Low | Kaggle tabular, fraud, ranking |
+| **CatBoost** | Both | As above, plus ordered target statistics | Many high-cardinality categoricals | Very wide numeric-only data | Sensitive, but ordered boosting helps | Symmetric trees | Good | Low | E-commerce with city/brand IDs |
+| **SVM** | Classification (SVR) | A wide margin exists in input or kernel space | High-dim sparse data with clear margin | $n$ large ($O(n^2)$–$O(n^3)$); unscaled | Sensitive near the margin; soft `C` helps | Linear or kernel-shaped | Poor past ~50k rows | Low | Text classification, bioinformatics |
+| **Naive Bayes** | Classification | Features conditionally independent given class | Text baseline; tiny data; need speed | Features heavily correlated | Robust — probabilities average out | Probabilistic, not geometric | Excellent | Medium | Spam filtering |
+| **Neural Network** | Both | Enough data to learn its own features | Images, audio, text, huge datasets | Small tabular data — trees beat it | Depends on regularization | Arbitrary | Good (needs GPU) | Very low | Vision, speech, LLMs |
+
+## Unsupervised algorithms compared
+
+| Algorithm | Task | It assumes | Use when | Breaks when | Needs K? | Handles noise | Cluster shape | Scalability | Real-world example |
+|---|---|---|---|---|---|---|---|---|---|
+| **K-Means** | Clustering | Round, equal-size, equal-density blobs | Fast default; millions of points | Elongated, unequal or non-convex clusters | Yes | No — forces every point in | Spherical | Excellent | Customer segmentation |
+| **K-Medoids (PAM)** | Clustering | As K-Means, but centre is a real point | Non-Euclidean metric; outliers you can't drop | Past ~10k points | Yes | Robust | Spherical, any metric | Poor | Clustering by edit distance |
+| **Hierarchical (Ward)** | Clustering | Data is genuinely nested | You want a dendrogram and don't know K | No real hierarchy; past ~10k points | No — cut the tree | No | Depends on linkage | Poor — $O(n^3)$ | Taxonomy building |
+| **DBSCAN** | Clustering | Dense regions split by sparse ones | Odd shapes + real outliers to flag | Clusters have very different densities | No | **Yes** — labels noise | Arbitrary | Good | Geospatial hotspots |
+| **HDBSCAN** | Clustering | Dense regions, density may vary | Same as DBSCAN but density varies | Uniformly dense data, no real gaps | No | **Yes** | Arbitrary, multi-density | Good | Anomaly-rich sensor data |
+| **Spectral** | Clustering | Clusters connected in a similarity graph | Non-convex but connected (interlocking moons) | Badly built graph; large $n$ | Yes | No | Manifold / graph-connected | Poor | Image segmentation |
+| **GMM** | Clustering | Data is a mixture of Gaussians | Need soft probabilistic membership | Strongly non-Gaussian clusters | Yes | No | Elliptical | Moderate | Speaker identification |
+| **PCA** | Dim. reduction | Structure is linear; variance = information | Fast linear reduction; need `transform()` | Curved structure; forgot to scale | Pick #PCs | N/A | Linear only | Excellent | Compression, denoising |
+| **Kernel PCA** | Dim. reduction | Linear *after* the kernel map | Known nonlinear manifold, small $n$ | Wrong kernel; large $n$ | Pick #PCs | N/A | Kernel-defined | Poor | Spirals, concentric shapes |
+| **t-SNE** | Visualization | Only local neighbourhoods matter | A one-off 2D plot for a slide | You read distances or gaps off it | N/A | N/A | Nonlinear | Poor past ~50k | Exploring embeddings |
+| **UMAP** | Both | Data lies on a locally connected manifold | Visualization **and** features; faster than t-SNE | Very small $n$; over-tuned neighbours | N/A | N/A | Nonlinear | Good | Single-cell genomics |
+| **Autoencoder** | Dim. reduction | A network can learn a compressed code | Complex nonlinear structure, lots of data | Small data; needs tuning and compute | Pick code size | N/A | Nonlinear | Slow to train, fast at inference | Image / signal compression |
+| **Isolation Forest** | Anomaly | Anomalies are few and globally unusual | Default detector; high-dim; need speed | Density varies — misses local outliers | N/A | Detects them | N/A | Excellent | Fraud, intrusion detection |
+| **Local Outlier Factor** | Anomaly | "Unusual" is relative to local neighbours | Anomalies only odd versus their neighbourhood | Large $n$; badly chosen $k$ | N/A | Detects them | N/A | Poor past ~10k | Network monitoring |
+| **Apriori** | Association | Frequent itemsets are rare enough to prune | Small catalog; want visible pruning | Dense data with long frequent patterns | N/A | N/A | N/A | Moderate | Market basket analysis |
+| **FP-Growth** | Association | Transactions share prefixes worth compressing | Large-scale transactions; need speed | FP-tree exceeds memory | N/A | N/A | N/A | Good | Retail recommendations |
+
+## Metric selection
+
+| Situation | Use | Not this | Why |
+|---|---|---|---|
+| Balanced classification | ROC-AUC, accuracy, F1 | — | All behave sensibly |
+| **Imbalanced** (fraud, disease) | **AUC-PR**, recall, F2 | Accuracy, ROC-AUC | 99.9% accuracy catches zero fraud; ROC stays flattered by true negatives |
+| False alarms are costly (spam) | **Precision**, F0.5 | Recall alone | A lost real email beats a spam getting through |
+| Misses are costly (cancer) | **Recall**, F2 | Precision alone | A missed case is fatal; a false alarm is a re-test |
+| Ranking quality, threshold-free | ROC-AUC | Accuracy | Accuracy needs a fixed threshold |
+| Regression, outliers matter | **RMSE**, MSE | MAE | Squared error punishes big misses |
+| Regression, outliers are noise | **MAE**, Huber | RMSE | Linear penalty ignores extremes |
+| Regression, want "% variance explained" | R² | RMSE alone | R² is unit-free and comparable |
+| Clustering, no labels | Silhouette + Elbow + Davies-Bouldin | One metric alone | Each can be fooled; agreement is the signal |
+
+## Validation & tuning
+
+| Strategy | Use when | Note |
+|---|---|---|
+| **K-Fold** (K=5 or 10) | Default; regression or balanced classes | The standard choice |
+| **Stratified K-Fold** | **Always** for classification | Keeps class ratio per fold |
+| **GroupKFold** | Repeated entities (patients, users) | Stops the same entity spanning splits |
+| **TimeSeriesSplit** | Time-ordered data | Train always precedes test; never shuffle |
+| **LOOCV** | Under ~100 samples | N× cost, high variance |
+| Grid search | Small grids (≤ ~30 combos) | Exhaustive, predictable |
+| **Random search** | Larger spaces | Usually beats grid at equal budget — only 1–2 params matter, and random varies them all |
+| **Bayesian (Optuna)** | Expensive training runs | Learns where to look; fewest trials |
+
+## The 12 traps
+
+| # | Trap | Fix |
+|---|---|---|
+| 1 | Scaling or encoding **before** splitting | Split first; `fit` on train, `transform` both |
+| 2 | Accuracy on imbalanced data | AUC-PR, recall, F1 |
+| 3 | Tuning on the test set | Validation tunes; test is read **once** |
+| 4 | Random split on time-series | `TimeSeriesSplit` |
+| 5 | Same entity in train and test | `GroupKFold` |
+| 6 | Target leakage (a feature encodes the answer) | Ask "would I know this at prediction time?" |
+| 7 | Label-encoding nominal categories | One-hot or target encoding — otherwise `blue > red` |
+| 8 | One-hot on 10,000 zip codes | Target / frequency encoding, or embeddings |
+| 9 | Unscaled features for KNN, SVM, K-Means, NN | Standardize |
+| 10 | Reading cluster sizes and gaps off a t-SNE plot | They are meaningless — use it for groups only |
+| 11 | Dropping every row with a missing value | Impute; add a missingness indicator if MNAR |
+| 12 | Comparing models on different splits | Same folds, same seed, or the comparison is noise |
+
+---
+
+# Part 2 — Chapter by Chapter
+
 ## Ch 07 — Introduction to ML
 
-> 💡 **In a sentence —** ML inverts traditional programming — instead of writing explicit rules, you supply labeled examples and let an algorithm discover the mapping from input to output.
+> 💡 **In a sentence —** ML inverts traditional programming: instead of writing rules, you supply labelled examples and let an algorithm discover the mapping.
 
-### What ML Actually Is
+![Machine learning versus traditional programming, and the four types of ML](diagrams/rev_mlmap_ai.png)
 
-> **Machine Learning is a subfield of AI in which algorithms learn patterns from data instead of being explicitly programmed with rules.** — Arthur Samuel (1959): "gives computers the ability to learn without being explicitly programmed."
+### The inversion
 
-```
-Traditional Programming          Machine Learning
-─────────────────────            ─────────────────────
-Rules + Input → Output           Input + Output → Rules
-(human writes the logic)         (algorithm discovers it)
-```
+Traditional programming takes **rules + input → output**; ML takes **input + output → rules**. A hand-written spam filter needs hundreds of `if "free prize" then spam` rules; an ML filter learns them from 10,000 labelled emails, and adapts to new tactics by adding data rather than code.
 
-A spam filter the traditional way: an engineer writes hundreds of `if "free prize" in email → spam` rules. An ML spam filter: show it 10,000 labeled (email, spam/not-spam) pairs; it learns the rules automatically. When new spam tactics emerge, you just add more training data — no rule rewriting.
+**The nesting:** AI ⊃ Machine Learning ⊃ Deep Learning ⊃ Generative AI. Classical ML needs **hand-designed features**; deep learning **learns its own** from raw pixels, waveforms or tokens.
 
-### The AI Family Tree
-
-```
-┌──────────────────────────────────────────────┐
-│  ARTIFICIAL INTELLIGENCE  (goal: appear smart)│
-│  ┌──────────────────────────────────────────┐ │
-│  │  MACHINE LEARNING  (learned from data)   │ │
-│  │  ┌──────────────────────────────────┐    │ │
-│  │  │  DEEP LEARNING  (neural nets)    │    │ │
-│  │  │  ┌──────────────────────────┐    │    │ │
-│  │  │  │  GENERATIVE AI           │    │    │ │
-│  │  │  │  (makes new content)     │    │    │ │
-│  │  │  └──────────────────────────┘    │    │ │
-│  │  └──────────────────────────────────┘    │ │
-│  └──────────────────────────────────────────┘ │
-└──────────────────────────────────────────────┘
-```
-
-Key distinction: Classical ML needs **hand-designed features** (a human decides which features to extract); Deep Learning **learns its own features** from raw pixels, audio waveforms, or text tokens.
-
-### The Four Types of ML
+### The four types
 
 | Type | Input | Learning signal | Flagship example |
 |---|---|---|---|
-| **Supervised** | Features + labels (X, y) | Human-labeled targets | Gmail spam filter |
-| **Unsupervised** | Features only (X) | Hidden structure | Customer segmentation |
-| **Self-supervised** | Raw data only (X) | Labels generated from data itself | GPT / BERT pre-training |
-| **Reinforcement** | Environment state | Scalar reward via trial-and-error | AlphaGo, ChatGPT RLHF |
+| **Supervised** | Features + labels | Human-labelled targets | Gmail spam filter |
+| **Unsupervised** | Features only | Hidden structure | Customer segmentation |
+| **Self-supervised** | Raw data only | Labels generated from the data itself | GPT / BERT pre-training |
+| **Reinforcement** | Environment state | Scalar reward from trial and error | AlphaGo, RLHF |
 
-Self-supervised is the secret behind LLMs: take a sentence, hide one word, predict it. Repeat on billions of sentences. No human annotation required — the data labels itself.
+Self-supervision is the trick behind LLMs: hide a word, predict it, repeat across billions of sentences — no annotation needed.
 
-### When to Use ML vs When NOT To
+### When ML is the wrong tool
 
-**Use ML when:**
-- Problem is too complex for hand-coded rules (image recognition, speech)
-- Rules change frequently (spam tactics evolve, fraud patterns shift)
-- Problem involves large volumes of data with hidden patterns
-- You can accept probabilistic, "usually correct" answers
+| Use ML when | Do **not** use ML when |
+|---|---|
+| Rules are too complex to hand-code (vision, speech) | A simple rule works (`age >= 18`) |
+| Rules change often (spam, fraud) | You have < a few hundred examples |
+| Large data with hidden patterns | Every decision must be 100% explainable |
+| "Usually correct" is acceptable | Errors are catastrophic and data is unreliable |
 
-**Do NOT use ML when:**
-- A simple rule works (if age >= 18 → adult)
-- Very little data (< a few hundred examples → rule-based or prior knowledge)
-- Every decision must be 100% explainable (some legal/medical contexts)
-- The cost of errors is catastrophic and training data is unreliable
+### The 7-step workflow
 
-### The 7-Step ML Workflow
+1. **Define the problem** — metric, task type, what "good enough" means
+2. **Collect data** — databases, APIs, scraping, labelling
+3. **Explore & clean** — missing values, outliers, imbalance
+4. **Feature engineering** — scale, encode, create, decompose
+5. **Split & train** — train/val/test; fit; tune
+6. **Evaluate** — held-out metrics
+7. **Deploy & monitor** — serve, log, watch for drift
 
-```
-STEP 1 — DEFINE THE PROBLEM
-         Metric? Binary clf? Regression? What's "good enough"?
-
-STEP 2 — COLLECT DATA
-         Databases, APIs, web scraping, crowdsourced labeling
-
-STEP 3 — EXPLORE & CLEAN (EDA)
-         Missing values, outliers, class imbalance, distributions
-
-STEP 4 — FEATURE ENGINEERING
-         Normalize, encode, create ratios, decompose dates
-
-STEP 5 — SPLIT & TRAIN
-         Train/Val/Test split; fit model; tune hyperparameters
-
-STEP 6 — EVALUATE
-         Metrics on held-out test set; is it good enough?
-
-STEP 7 — DEPLOY & MONITOR
-         Serve as REST API; log predictions; detect data drift
-```
-
-> **The 80% rule:** practitioners spend ~80% of their time on Steps 2–4 (data collection, cleaning, feature engineering) and only ~10–20% on actual modeling. Model selection rarely matters as much as data quality.
-
-### Classical ML vs Deep Learning — Decision Guide
-
-```
-Use CLASSICAL ML when:                Use DEEP LEARNING when:
-───────────────────────               ────────────────────────────
-Tabular/structured data               Images, audio, text, video
-< 100K training examples              Millions of examples available
-Need interpretability                 Cutting-edge accuracy matters
-Limited compute budget                GPUs / TPUs available
-Quick iteration required              Data is raw / unstructured
-```
-
-Surprising fact: on tabular data, Gradient Boosting (XGBoost, LightGBM) still wins most Kaggle competitions — even in the deep learning era. Deep learning's edge is almost entirely in unstructured data.
+> **The 80% rule:** roughly 80% of real project time goes to steps 2–4, and only 10–20% to modelling. Data quality beats model choice almost every time.
 
 ---
 
 > ✅ **Must-remember**
 >
-> - ML = Input + Output → Rules (inverted vs traditional programming)
-> - AI ⊃ ML ⊃ Deep Learning ⊃ Generative AI (Russian nesting dolls)
-> - 4 types: supervised (labels), unsupervised (structure), self-supervised (self-labeling), RL (reward)
-> - 80% of data-science time is data preparation, not modeling
-> - For tabular data, gradient boosting usually beats deep learning
+> - ML = Input + Output → Rules (the inversion)
+> - AI ⊃ ML ⊃ Deep Learning ⊃ Generative AI
+> - Four types: supervised, unsupervised, self-supervised, reinforcement
+> - 80% of the work is data preparation
+> - On tabular data, gradient boosting still beats deep learning
 
 ---
 
 ## Ch 08 — Core Concepts & Terminology
 
-> 💡 **In a sentence —** This chapter is the vocabulary of ML training — features, loss functions, gradient descent, optimizers, the bias-variance tradeoff, and regularization — the plumbing behind every model.
+> 💡 **In a sentence —** The vocabulary of training — features, losses, gradient descent, optimizers, bias-variance and regularization — the plumbing under every model.
 
-### Features, Labels, Splits
+### Vocabulary
 
-**Feature** ($x$): a measurable input variable (age, pixel value, word count). Feature types: continuous (height), discrete (number of rooms), categorical/nominal (color), ordinal (rating 1–5), binary (spam/not-spam), temporal (timestamp).
-
-**Label** ($y$): the target output being predicted. Regression: continuous number. Classification: discrete category.
+**Parameters** are learned from data (weights $w$, biases $b$). **Hyperparameters** are chosen by you (learning rate, depth, batch size, $\lambda$). Parameters come from optimization; hyperparameters come from search.
 
 | Split | Purpose | Typical size |
 |---|---|---|
-| **Training** | Fit model parameters | 60–80% |
-| **Validation** | Tune hyperparameters; model selection | 10–20% |
-| **Test** | Final unbiased performance estimate | 10–20% |
+| **Training** | Fit parameters | 60–80% |
+| **Validation** | Tune hyperparameters, select model | 10–20% |
+| **Test** | Final unbiased estimate — read once | 10–20% |
 
-Rules: small data (<10K) → 70/15/15; medium (100K) → 80/10/10; large (>1M) → 98/1/1 (1% of 1M = 10K test samples, plenty).
+Small data (<10k) → 70/15/15 · medium (100k) → 80/10/10 · large (>1M) → 98/1/1, since 1% of a million is still 10,000 test rows.
 
-**Parameters** = numbers *inside* the model, learned from data (weights $w$, biases $b$).  
-**Hyperparameters** = settings *you* choose before training (learning rate $\alpha$, number of layers, batch size, regularization strength $\lambda$).
+**Epoch** = one full pass over the data. **Batch** = the rows behind one weight update. **Iteration** = one forward + backward pass. Iterations per epoch = ⌈dataset ÷ batch⌉.
 
-Parameters are found by optimization. Hyperparameters are found by search (grid, random, Bayesian).
-
-### The Training Loop (6 Lines of Math)
+### The training loop
 
 ```
-FOR each mini-batch (X_batch, y_batch):
-  STEP 1 — FORWARD PASS:    ŷ = f(X_batch; W)
-  STEP 2 — COMPUTE LOSS:    L = loss(ŷ, y_batch)
-  STEP 3 — BACKWARD PASS:   compute ∂L/∂W via chain rule
-  STEP 4 — UPDATE WEIGHTS:  W ← W − α × ∂L/∂W
-  REPEAT until convergence
+FOR each mini-batch:
+  1. FORWARD   ŷ = f(X; W)
+  2. LOSS      L = loss(ŷ, y)
+  3. BACKWARD  ∂L/∂W via the chain rule
+  4. UPDATE    W ← W − α · ∂L/∂W
 ```
 
-**Epoch** = one complete pass through the entire training dataset.  
-**Batch (mini-batch)** = the subset of training data used for one weight update.  
-**Iteration** = one forward + backward pass on one batch.  
-Iterations per epoch = ⌈dataset_size / batch_size⌉.
-
-### Loss Functions
+### Loss functions
 
 | Loss | Task | Formula | Key property |
 |---|---|---|---|
-| **MAE** | Regression | $\frac{1}{n}\sum|\hat{y}-y|$ | Robust to outliers |
-| **MSE** | Regression | $\frac{1}{n}\sum(\hat{y}-y)^2$ | Penalizes large errors heavily |
-| **RMSE** | Reporting | $\sqrt{\text{MSE}}$ | Same units as target; most reported |
-| **Huber** | Regression | MSE if $|e|<\delta$ else MAE-scaled | Best of both worlds |
-| **Binary Cross-Entropy** | Binary clf | $-[y\log\hat{y}+(1-y)\log(1-\hat{y})]$ | Pair with sigmoid |
-| **Categorical CE** | Multi-class | $-\sum_i y_i\log\hat{y}_i$ | Pair with softmax |
-| **KL Divergence** | Distribution matching | $\sum P\log(P/Q)$ | VAEs, knowledge distillation, RLHF |
-| **Hinge** | Binary clf (SVM) | $\max(0, 1 - y\hat{y})$ | Max-margin classifiers |
+| **MAE** | Regression | $\frac{1}{n}\sum \lvert \hat{y}-y \rvert$ | Robust to outliers |
+| **MSE** | Regression | $\frac{1}{n}\sum(\hat{y}-y)^2$ | Punishes large errors hard |
+| **RMSE** | Reporting | $\sqrt{\text{MSE}}$ | Same units as the target |
+| **Huber** | Regression | MSE inside $\delta$, MAE outside | Both worlds |
+| **Binary cross-entropy** | Binary | $-[y\log\hat{y}+(1-y)\log(1-\hat{y})]$ | Pair with sigmoid |
+| **Categorical cross-entropy** | Multi-class | $-\sum_i y_i\log\hat{y}_i$ | Pair with softmax |
+| **KL divergence** | Matching distributions | $\sum P\log(P/Q)$ | VAEs, distillation, RLHF |
+| **Hinge** | Binary (SVM) | $\max(0, 1-y\hat{y})$ | Max-margin |
 
-> Cross-entropy punishes **confident wrong answers severely**: predicting 0.01 when truth is 1 costs $-\log(0.01) \approx 4.6$; predicting 0.9 costs $-\log(0.9) \approx 0.1$. This logarithmic penalty drives networks toward calibrated confident predictions.
+> Cross-entropy punishes **confident and wrong** brutally: predicting 0.01 when the truth is 1 costs $-\log(0.01)\approx4.6$; predicting 0.9 costs $\approx0.1$.
 
-### Gradient Descent — Core Intuition
+### Bias, variance, and the Goldilocks problem
 
-The loss surface is a hilly landscape over weight space. Gradient descent walks downhill by repeatedly subtracting the gradient:
+![Underfitting, the sweet spot, and overfitting — the bias-variance tradeoff](diagrams/rev_biasvariance_ai.png)
+
+$$\text{Total Error} = \underbrace{\text{Bias}^2}_{\text{underfitting}} + \underbrace{\text{Variance}}_{\text{overfitting}} + \underbrace{\text{Noise}}_{\text{irreducible}}$$
+
+| Symptom | Train | Val | Diagnosis | Fix |
+|---|---|---|---|---|
+| Both low | 60% | 59% | **Underfit / high bias** | Bigger model, better features, less regularization |
+| Close and high | 91% | 89% | **Just right** | Ship it |
+| Big gap | 99.8% | 63% | **Overfit / high variance** | More data, regularization, dropout, simpler model |
+
+More data reduces **variance**; it does not reduce **bias** — for that you need a better model or better features.
+
+### Gradient descent and optimizers
+
+![How the learning rate changes gradient descent](diagrams/rev_lr_ai.png)
 
 $$W_{\text{new}} = W_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial W}$$
 
-The gradient $\partial L/\partial W$ is a vector pointing uphill (direction of steepest increase). We subtract it to go downhill. $\alpha$ (learning rate) controls step size.
-
-**Learning rate effects:**
-```
-Too small (α=0.00001): correct direction, glacially slow
-Just right (α=0.001):  smooth convergence ✓
-Too large (α=10):      overshoots the minimum, diverges
-```
-
-**Three variants:**
-
-| Variant | Examples per update | Noise | Use |
-|---|---|---|---|
-| Batch GD | All N | Smooth; exact gradient | Convex problems with small data |
-| SGD (stochastic) | 1 | Very noisy; can escape local minima | Rarely used bare |
-| **Mini-batch GD** | 32–512 | Balanced; GPU-friendly | **De-facto standard** |
-
-Mini-batch size 32–256 is typical. Larger batch → less noisy gradient but needs more memory; smaller → noisier but can escape local minima better.
-
-### Optimizers
-
-**SGD (baseline):** $w \leftarrow w - \alpha g$
-
-**SGD + Momentum** (adds "rolling ball" physics):
-$$v \leftarrow \beta v + g \qquad w \leftarrow w - \alpha v \quad (\beta \approx 0.9)$$
-Momentum carries the optimizer through narrow valleys and over small bumps.
-
-**Adam** (Adaptive Moment Estimation):
-$$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t \quad \text{(1st moment)}$$
-$$v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2 \quad \text{(2nd moment)}$$
-$$\hat{m} = m_t/(1-\beta_1^t); \quad \hat{v} = v_t/(1-\beta_2^t) \quad \text{(bias-corrected)}$$
-$$w \leftarrow w - \alpha\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}$$
-
-Adam defaults: $\alpha=0.001$, $\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-8}$.
-
-Each parameter gets its own adaptive learning rate — frequently-updated features get smaller rates (prevents overshooting), rarely-updated features get larger rates (encourages learning).
-
-**AdamW** = Adam + decoupled weight decay. Preferred for Transformers and LLMs (GPT, BERT, T5).
-
-**Rule of thumb:** Start with Adam (lr=0.001). SGD + Momentum if tuning for final 1% of accuracy. AdamW for Transformers.
-
-### Weight Initialization
-
-Poor initialization → vanishing (all weights near zero → all activations near zero → gradients near zero) or exploding gradients.
-
-| Scheme | Formula | Use with |
+| Variant | Rows per update | Character |
 |---|---|---|
-| **Xavier / Glorot** | $W \sim U\!\left[-\sqrt{6/(n_\text{in}+n_\text{out})},\,\sqrt{6/(n_\text{in}+n_\text{out})}\right]$ | Tanh, sigmoid activations |
-| **He (Kaiming)** | $W \sim \mathcal{N}(0,\, 2/n_\text{in})$ | ReLU and its variants |
+| Batch GD | All N | Exact gradient, smooth, slow |
+| SGD | 1 | Very noisy; rarely used bare |
+| **Mini-batch** | 32–512 | The de-facto standard |
 
-Xavier preserves gradient variance for tanh/sigmoid; He accounts for the fact that ReLU kills half its inputs (hence the ×2 factor in the variance).
+**SGD + momentum:** $v \leftarrow \beta v + g$, $w \leftarrow w - \alpha v$ ($\beta\approx0.9$) — carries through narrow valleys.
 
-> **Rule:** He initialization for ReLU networks; Xavier for sigmoid/tanh. Batch Normalization reduces sensitivity to initialization.
+**Adam:** tracks first and second moments of the gradient, bias-corrects both, and gives every parameter its own step size:
 
-### Overfitting, Underfitting, the Goldilocks Problem
+$$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t, \qquad v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2$$
 
-```
-UNDERFITTING              JUST RIGHT               OVERFITTING
-(High Bias)               (Balanced)               (High Variance)
-─────────────────         ─────────────────         ─────────────────
-Train acc: 60%            Train acc: 91%            Train acc: 99.8%
-Val   acc: 59%            Val   acc: 89% ← GOAL     Val   acc: 63%
-Both curves low           Close together            Large gap
-Model too simple          Captures real pattern     Memorizes training data
-```
+$$\hat{m} = \frac{m_t}{1-\beta_1^t}, \quad \hat{v} = \frac{v_t}{1-\beta_2^t}, \qquad w \leftarrow w - \alpha\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}$$
 
-### The Bias-Variance Decomposition
+Defaults $\alpha=0.001$, $\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-8}$. **AdamW** decouples weight decay — the default for Transformers.
 
-$$\text{Total Error} = \underbrace{\text{Bias}^2}_{\text{underfitting}} + \underbrace{\text{Variance}}_{\text{overfitting}} + \underbrace{\text{Irreducible Noise}}_{\text{inherent randomness}}$$
+> **Rule of thumb:** start with Adam at `lr=0.001`. Switch to SGD + momentum when chasing the last 1% on vision benchmarks. Tune the learning rate on a **log** scale.
 
-- **Bias²**: error from wrong model assumptions. Simple models: high bias (straight line fitting a curve).
-- **Variance**: sensitivity to fluctuations in training data. Complex models: high variance (tiny change in training data → very different model).
-- **Irreducible noise**: sensor noise, labeling errors — no model can eliminate this.
+**Schedules:** step decay · cosine annealing · warmup then decay (Transformers, prevents destructive early updates) · OneCycleLR.
 
-You cannot drive both bias and variance to zero simultaneously with a fixed dataset. The tradeoff: adding complexity reduces bias but increases variance.
+### Initialization
 
-### Learning Rate Schedules
+| Scheme | Variance | Use with |
+|---|---|---|
+| **Xavier / Glorot** | $2/(n_\text{in}+n_\text{out})$ | Tanh, sigmoid |
+| **He / Kaiming** | $2/n_\text{in}$ | ReLU family |
 
-A fixed learning rate is rarely optimal. Common schedules:
+ReLU discards roughly half its inputs, so He doubles the variance to compensate — that is the entire origin of the "2".
 
-- **Step decay:** halve LR every N epochs
-- **Cosine annealing:** $\eta_t = \eta_\text{min} + \frac{1}{2}(\eta_\text{max}-\eta_\text{min})(1+\cos(\pi t/T))$ — smooth decay, easy restart
-- **Warmup + decay:** start with small LR, ramp up for first few thousand steps, then decay (used in Transformers — prevents large early updates before embeddings stabilize)
-- **OneCycleLR (super-convergence):** one cycle up then down; trains in fewer epochs with larger max LR
+### Regularization
 
-General rule: higher LR early (fast progress on loss plateau) → lower LR later (fine-grained convergence).
-
-### Regularization Techniques
-
-**L2 (Ridge):** $L = L_{\text{data}} + \lambda\sum_i w_i^2$
-
-Adds a smooth quadratic penalty. All weights shrink toward (but not exactly to) zero. Handles collinear features by spreading weight. Best when all features contribute.
-
-**L1 (Lasso):** $L = L_{\text{data}} + \lambda\sum_i |w_i|$
-
-The absolute-value penalty has a corner at zero — optimizer easily drives irrelevant weights to *exactly* zero. Built-in feature selection. Best when few features truly matter.
-
-**Elastic Net:** $L = L_{\text{data}} + \lambda_1\sum|w_i| + \lambda_2\sum w_i^2$
-
-Combines sparsity (L1) with stability under correlated features (L2).
-
-**Dropout:** randomly zero activations during training. With PyTorch's inverted dropout,
-survivors are divided by $(1-p)$ during training; at inference dropout is disabled and no
-rescaling is needed. Choose the rate using validation rather than treating it as a fixed
-recipe.
-
-**Early Stopping:** monitor validation loss every epoch; stop when it starts increasing; save the best checkpoint. Free regularization — the simplest technique that reliably works.
-
-```
-val loss
-  │       ← best checkpoint here
-  │      ╱
-  │─────╱         ← save this
-  │    ╱
-  │───────────────────────────── epoch
-    ↑ stop here (val loss rising = overfitting)
-```
-
-> Rule: L1 if you want feature selection (many irrelevant features exist). L2 if features are correlated or all contribute. Dropout for neural networks. Early stopping always.
+| Method | What it does | Best when |
+|---|---|---|
+| **L2 / Ridge** | Shrinks all weights, none to exactly zero | Features correlated; all contribute |
+| **L1 / Lasso** | Drives some weights to **exactly** zero | Few features matter; want selection |
+| **Elastic Net** | Both | Correlated features **and** want selection |
+| **Dropout** | Randomly zeroes activations while training; survivors divided by $(1-p)$; off at inference | Neural networks |
+| **Early stopping** | Stop when validation loss rises; restore the **best** checkpoint | Always — the cheapest regularizer there is |
 
 ---
 
 > ✅ **Must-remember**
 >
-> - Parameters learned from data; hyperparameters set by you
-> - Training loop: forward → loss → backward → update; repeat per mini-batch
-> - Total Error = Bias² + Variance + Noise; complex models trade bias for variance
-> - Adam (lr=0.001) is the default optimizer; AdamW for Transformers
-> - L1 → exact zeros (Lasso, feature selection); L2 → shrinks all (Ridge, handles collinearity)
-> - Early stopping is the simplest regularizer: monitor val loss, save best checkpoint
+> - Parameters are learned; hyperparameters are chosen
+> - Loop: forward → loss → backward → update
+> - Total Error = Bias² + Variance + Noise
+> - Adam (lr=0.001) default; AdamW for Transformers
+> - L1 → exact zeros; L2 → shrink everything
+> - He init for ReLU, Xavier for tanh/sigmoid
 
 ---
 
 ## Ch 09 — Data Preprocessing
 
-> 💡 **In a sentence —** Data preprocessing is 80% of the job — clean, well-encoded, appropriately scaled data beats any algorithm upgrade, and bad preprocessing silently destroys models.
+> 💡 **In a sentence —** Clean, well-encoded, properly scaled data beats any algorithm upgrade — and bad preprocessing destroys models silently.
 
-### The 6-Step Preprocessing Pipeline
+![Data leakage: fit preprocessing on the training split only](diagrams/rev_leakage_ai.png)
+
+### The golden rule
 
 ```
-Raw Data
-  ──► 1. Handle Missing Values   (impute or drop strategically)
-  ──► 2. Remove Duplicates        (identical rows fool training)
-  ──► 3. Handle Outliers          (IQR or Z-score detection)
-  ──► 4. Encode Categoricals      (OHE, ordinal, target encoding)
-  ──► 5. Scale/Normalize Features (standardize or min-max)
-  ──► 6. Feature Engineering      (create new, remove useless)
-  ──► Clean Features ✓
+WRONG:  scaler.fit(all_data)    → test statistics leak into training
+RIGHT:  scaler.fit(X_train)     → transform train and test separately
 ```
 
-### Missing Values
+Fitting on everything is **silent** leakage: your test metrics look great and production disagrees. The same applies to imputers, encoders and feature statistics.
 
-Three root causes with very different implications:
+### Missing values
 
-| Type | Meaning | Risk | Strategy |
-|---|---|---|---|
-| **MCAR** (Missing Completely At Random) | Random glitch; no pattern | Low | Drop row or impute mean |
-| **MAR** (Missing At Random) | Depends on other observed data | Moderate | Model-based imputation |
-| **MNAR** (Missing Not At Random) | Depends on the missing value itself | High — biased | Add indicator column; use domain knowledge |
-
-**Imputation strategies:**
-
-| Strategy | When to use |
-|---|---|
-| Drop row | < 5% missing; MCAR; row has little predictive value |
-| Fill mean | Symmetric continuous; no outliers |
-| Fill median | Skewed distribution or outliers present (robust) |
-| Fill mode | Categorical features |
-| Add indicator column | Missingness is informative (MNAR) |
-| Drop column | > 30–40% missing and low predictive value |
-
-```python
-# Median imputation — robust to outliers
-from sklearn.impute import SimpleImputer
-imp = SimpleImputer(strategy='median')
-X_train_imp = imp.fit_transform(X_train)   # fit on train only!
-X_test_imp  = imp.transform(X_test)        # apply to test
-```
-
-### Outlier Detection
-
-**IQR (Interquartile Range) Method:**
-
-$$IQR = Q3 - Q1$$
-$$\text{Lower fence} = Q1 - 1.5 \times IQR \qquad \text{Upper fence} = Q3 + 1.5 \times IQR$$
-
-Values outside these fences are flagged as outliers. Robust — unaffected by extreme values themselves.
-
-**Z-score method:**
-
-$$Z = \frac{x - \mu}{\sigma} \qquad |Z| > 3 \Rightarrow \text{likely outlier}$$
-
-Assumes approximately normal distribution. Modified Z-score uses median absolute deviation (MAD) for robustness.
-
-**Outlier handling options:** remove row (only if genuine measurement error), cap/winsorize (replace with fence value), transform (log transforms compress extreme values), keep (if the extreme value is a valid rare event).
-
-### Encoding Categorical Features
-
-| Method | When to use | Pitfall |
+| Type | Meaning | Strategy |
 |---|---|---|
-| **Label Encoding** | Ordinal data only (Small=0, Med=1, Large=2) | Creates fake ordering for nominal data |
-| **One-Hot Encoding** | Nominal, low-cardinality (< ~20 categories) | Adds many columns for high-cardinality; multicollinearity (drop one column) |
-| **Ordinal Encoding** | Ordered categories; manually specify order | Must define order correctly |
-| **Target Encoding** | High-cardinality (cities, zip codes, user IDs) | Leakage risk; compute on training split only |
-| **Frequency Encoding** | High-cardinality; fast alternative | Doesn't encode target relationship |
-| **Hashing Trick** | Very-high-cardinality; online learning | Collisions possible |
-| **Embeddings** | Neural networks; dense learned representation | Needs enough data per category |
+| **MCAR** | Random glitch, no pattern | Drop the row, or impute the mean |
+| **MAR** | Depends on other observed columns | Model-based imputation |
+| **MNAR** | Depends on the missing value itself | Add an indicator column; use domain knowledge |
 
-> For 10,000 unique zip codes: one-hot → 10,000 new columns (memory disaster). Target encoding → 1 column with learned signal. Always compute target encoding statistics from **training fold only** to avoid leakage.
+| Strategy | Use when |
+|---|---|
+| Drop row | < 5% missing and MCAR |
+| Mean | Symmetric, no outliers |
+| **Median** | Skewed or outlier-heavy (robust) |
+| Mode | Categorical |
+| Indicator column | Missingness itself is informative |
+| Drop column | > 30–40% missing and low value |
 
-### Feature Scaling
+### Outliers
 
-**Why it matters:** algorithms that use distances (KNN, K-Means) or gradient descent (linear models, neural nets, SVM) are sensitive to feature scale. A feature in millions (salary) will dominate one in units (age) without scaling.
+$$IQR = Q3 - Q1, \qquad \text{fences} = Q1 - 1.5\,IQR \ \text{ to } \ Q3 + 1.5\,IQR$$
 
-**Min-Max Normalization** — scales to [0, 1]:
+Z-score: $\lvert Z \rvert > 3$, assuming roughly normal data. Options: remove (genuine error only), winsorize to the fence, log-transform, or keep it if the extreme is a real rare event.
 
-$$X_{\text{scaled}} = \frac{X - X_{\min}}{X_{\max} - X_{\min}}$$
+### Encoding categoricals
 
-Use for: neural networks (pixel values), KNN, K-Means. Sensitive to outliers (one 300-cm-tall person distorts the entire scale).
+| Method | Use when | Pitfall |
+|---|---|---|
+| **Label** | Ordinal only | Invents an order for nominal data |
+| **One-hot** | Nominal, < ~20 categories | Explodes on high cardinality |
+| **Ordinal** | Ordered, order specified by you | Must get the order right |
+| **Target** | High cardinality (city, zip, user) | Leakage — fit on the training fold only |
+| **Frequency** | High cardinality, fast | Ignores the target relationship |
+| **Hashing** | Very high cardinality, online | Collisions |
+| **Embeddings** | Neural networks | Needs enough data per category |
 
-**Standardization (Z-score)** — transforms to mean=0, std=1:
+10,000 zip codes one-hot → 10,000 columns. Target-encoded → one column carrying real signal.
 
-$$X_{\text{scaled}} = \frac{X - \mu}{\sigma}$$
+### Scaling
 
-Use for: linear models, SVM, PCA, most sklearn estimators. Robust to moderate outliers. **Default choice** when unsure.
+| Scaler | Formula | Use for | Weakness |
+|---|---|---|---|
+| **Min-max** | $(X-X_{\min})/(X_{\max}-X_{\min})$ | Neural nets, KNN, K-Means | One extreme value distorts everything |
+| **Standard (Z-score)** | $(X-\mu)/\sigma$ | Linear models, SVM, PCA — **the default** | Assumes roughly symmetric data |
+| **Robust** | Median and IQR | Heavy outliers | Ignores the tails by design |
 
-**Robust Scaler** — uses median and IQR instead of mean/std. Best for heavy outliers.
+Distance-based (KNN, K-Means, SVM) and gradient-based (linear, neural) algorithms **need** scaling. Trees do not.
 
-> **CRITICAL — The Golden Rule of Scaling:**
-> ```
-> WRONG: scaler.fit(X_all_data)   → test statistics leak into training
-> RIGHT: scaler.fit(X_train)      → transform X_train and X_test separately
-> ```
-> Fitting on all data is silent data leakage — your test metrics will be optimistically biased.
+### Feature engineering & selection
 
-### Feature Engineering
+Log-transform right-skewed values (price, income, counts) · decompose dates into month, weekday, hour, is_weekend · build ratios like `price_per_sqft` · bin continuous into ordinal.
 
-**Transformations:** log for right-skewed data (house prices, income, counts); Box-Cox; square root.
-
-**Date decomposition:** from one datetime column → year, month, day_of_week, hour, is_weekend, is_holiday, days_since_event.
-
-**Interaction terms:** multiply or divide features; e.g., `price_per_sqft = price / sqft`.
-
-**Binning:** convert continuous to ordinal (age → "young/middle/senior").
-
-### Feature Selection — When to Remove Features
-
-Remove: near-zero variance features (same value in 99% of rows), highly correlated features (keep one from each correlated pair), features with no correlation to the target.
-
-Methods: filter (correlation, chi-squared, mutual information), wrapper (recursive feature elimination — RFE), embedded (Lasso, tree feature importances).
-
-### Feature Selection in Practice
-
-Three tiers of feature selection:
-
-**Filter methods** (model-agnostic, fast): variance threshold (remove near-constant columns), Pearson correlation (remove features correlated > 0.95 with another), mutual information / chi-squared score (rank features by dependency on target). Run before fitting any model.
-
-**Wrapper methods** (fit model, measure impact): Recursive Feature Elimination (RFE) — fit model, remove weakest feature, refit, repeat. Slow but accurate. Best for moderate feature counts (< 500).
-
-**Embedded methods** (regularization inside model training): Lasso drives irrelevant feature weights to exactly zero during training. Tree-based feature importance (Random Forest, XGBoost) ranks features by impurity reduction or permutation importance. Fastest for high-dimensional data.
-
-### Top 5 Preprocessing Mistakes
-
-1. **Scaling before splitting** → test statistics leak into training → inflated metrics
-2. **Dropping all rows with missing values** → lose massive signal if MNAR; shrinks dataset
-3. **OHE for high-cardinality features** → 1,000 cities → 1,000 columns (memory/overfitting)
-4. **Not handling outliers before scaling** → one extreme value distorts min-max for everyone
-5. **Label encoding nominal data** → algorithm "learns" `blue > red` because 2 > 1
+| Tier | Methods | Cost |
+|---|---|---|
+| **Filter** | Variance threshold, correlation > 0.95, mutual information | Fast, model-agnostic |
+| **Wrapper** | Recursive Feature Elimination | Slow, accurate, < ~500 features |
+| **Embedded** | Lasso zeros; tree importances | Fastest for high dimensions |
 
 ---
 
 > ✅ **Must-remember**
 >
-> - IQR fence: $Q1-1.5 \times IQR$ to $Q3+1.5 \times IQR$; Z-score: $|Z|>3$
-> - One-hot for nominal; ordinal for ordered; target encoding for high-cardinality
-> - Fit scaler on **training data only**, then transform both train and test
-> - Log-transform right-skewed targets/features before modeling
-> - Feature engineering (combining, decomposing, transforming) often matters more than model choice
+> - Fit every transformer on **training data only**
+> - IQR fence $Q1-1.5\,IQR$ to $Q3+1.5\,IQR$; Z-score $\lvert Z \rvert > 3$
+> - One-hot nominal · ordinal for ordered · target encoding for high cardinality
+> - Median imputation is the robust default
+> - Scale for KNN/SVM/K-Means/NN; trees don't care
 
 ---
 
 ## Ch 10 — Supervised Learning
 
-> 💡 **In a sentence —** Supervised learning trains a mapping $f: X \rightarrow y$ from labeled examples — classification (discrete output) or regression (continuous output) — and the choice of algorithm depends on data size, interpretability needs, and the shape of the decision boundary.
+> 💡 **In a sentence —** Learn $f: X \rightarrow y$ from labelled examples; the algorithm you pick depends on data size, interpretability needs, and the shape of the boundary.
 
-### Classification vs Regression
+> 📊 The full algorithm comparison lives in **Part 1 → Supervised algorithms compared**. This section covers the mechanics.
 
-```
-             SUPERVISED LEARNING
-                      │
-          ┌───────────┴────────────┐
-          ▼                        ▼
-    CLASSIFICATION             REGRESSION
-    Discrete output            Continuous output
-    Loss: Cross-Entropy        Loss: MSE / MAE
-    Metrics: F1, AUC, Acc      Metrics: RMSE, MAE, R²
-```
+### Classification vs regression
 
-Classification subtypes:
-- **Binary**: one sigmoid output → threshold at 0.5 (adjustable per domain cost)
-- **Multi-class**: softmax, K outputs that sum to 1 (only one class can be true at once)
-- **Multi-label**: K independent sigmoid outputs — multiple labels can all be true (movie can be action AND comedy)
+| | Classification | Regression |
+|---|---|---|
+| Output | Discrete label | Continuous number |
+| Loss | Cross-entropy | MSE / MAE |
+| Metrics | F1, AUC, accuracy | RMSE, MAE, R² |
 
-### Data Splitting and Leakage
+Subtypes: **binary** (one sigmoid, threshold at 0.5) · **multi-class** (softmax, K outputs summing to 1, exactly one true) · **multi-label** (K independent sigmoids — a film can be action *and* comedy).
 
-Why three splits, not two: training to fit → validation to tune → **test to honestly report**. Tuning on the test set inflates metrics; the test set must be invisible until the final report.
+### Logistic regression
 
-**K-fold cross-validation:** split into K folds; each fold serves as val once; average K scores gives more reliable estimate than one val split. K=5 is default; K=10 for small datasets.
+$$z = w_0 + \sum_i w_i x_i, \qquad \hat{y} = \sigma(z) = \frac{1}{1+e^{-z}}$$
 
-**Always use Stratified K-fold for classification** — preserves class distribution per fold. Without stratification, a fold could have zero examples of a rare class.
+The boundary at $z=0$ is always a **straight hyperplane** — it cannot model XOR without engineered features. Multi-class via **One-vs-Rest (OvR)**, which trains K binary models, or **softmax / multinomial**, one unified model whose K outputs sum to 1.
 
-**Common data leakage patterns:**
-```
-1. Scaling/encoding on ALL data before splitting
-   → test statistics contaminate training (silent!)
+**Threshold tuning:** lower it → more positives flagged → ↑recall ↓precision (cancer screening). Raise it → ↑precision ↓recall (spam).
 
-2. Feature engineering on the full dataset
-   → e.g., computing "average salary by city" includes test labels
+### KNN
 
-3. Random train/test split on time series
-   → model "sees" the future during training
+Lazy — no training, stores everything. Predict by majority vote (or average) of the K nearest points. Distances: Euclidean (default), Manhattan (high-dim sparse), cosine (text).
 
-4. Same entity duplicated in both train and test
-   → model memorizes individual examples
-```
+K=1 gives a jagged overfit boundary; K=N always predicts the majority. Rule of thumb $K=\sqrt{n}$, odd for binary. **Must scale features.** Cost $O(nd)$ per query — impractical past ~100k rows.
 
-### Logistic Regression
+### Decision trees
 
-The go-to classification baseline — interpretable, fast, well-calibrated probability outputs.
+At each node, pick the (feature, threshold) that most reduces impurity:
 
-$$z = w_0 + \sum_{i=1}^n w_i x_i \qquad \hat{y} = \sigma(z) = \frac{1}{1+e^{-z}}$$
+$$\text{Gini} = 1 - \sum_c p_c^2, \qquad \text{Entropy} = -\sum_c p_c \log_2 p_c$$
 
-Properties of sigmoid: outputs $\in (0,1)$; $\sigma(0)=0.5$; decision boundary at $z=0$ is always a linear hyperplane. Cannot model XOR or any non-linear boundary without feature engineering.
+$$\text{Information Gain} = \text{Entropy}(\text{parent}) - \sum_k \frac{\lvert S_k \rvert}{\lvert S \rvert}\,\text{Entropy}(S_k)$$
 
-Multiclass extension: **One-vs-Rest (OvR)** trains K binary classifiers (fast, common); **Softmax/Multinomial** trains one unified model with $P(k|x) = e^{z_k}/\sum_j e^{z_j}$.
+Both impurity measures peak at maximum uncertainty and hit zero on a pure node; they agree over 98% of the time, and Gini is faster (no logarithm). Key knobs: `max_depth` (5–10), `min_samples_leaf`, `max_features`.
 
-Threshold tuning: lower threshold → more positives flagged (↑ Recall, ↓ Precision, ideal for cancer detection); raise it → stricter (↑ Precision, ↓ Recall, ideal for spam filter where false positives lose real mail).
+Fully interpretable, no scaling needed, handles mixed types — but high variance, and it overfits without pruning.
 
-### K-Nearest Neighbours (KNN)
+### SVM
 
-Stores all training data. At prediction time: find K nearest training points by distance; majority vote (classification) or average (regression). No explicit training step ("lazy learner").
+Finds the **maximum-margin** hyperplane; only the nearest points (support vectors) matter. The **kernel trick** maps data into a higher-dimensional space implicitly:
 
-**Distance metrics:** Euclidean ($\sqrt{\sum(x_i-y_i)^2}$, default), Manhattan ($\sum|x_i-y_i|$, better for high-dim sparse), Cosine (angle between vectors, NLP).
+$$K_{\text{RBF}}(x,z) = \exp(-\gamma\lVert x-z\rVert^2)$$
 
-**K selection:** K=1 → jagged, overfitting boundary. K=N → always predicts the majority class. Rule of thumb: K=√n, always odd for binary classification.
-
-**Must scale features** — a feature in thousands dominates a binary feature entirely.
-
-Complexity: O(nd) per prediction, O(1) training, O(nd) memory. Impractical beyond ~100K samples or high dimensions.
-
-### Decision Trees — Split Mechanics
-
-At each node, try every (feature, threshold) pair; pick the one that maximally reduces impurity:
-
-$$\text{Gini}(S) = 1 - \sum_{c=1}^C p_c^2 \qquad \text{Entropy}(S) = -\sum_{c=1}^C p_c \log_2 p_c$$
-
-$$\text{Information Gain} = \text{Entropy}(\text{parent}) - \sum_k \frac{|S_k|}{|S|} \text{Entropy}(S_k)$$
-
-Both metrics peak at maximum uncertainty (uniform distribution) and reach zero for pure nodes. In practice, Gini and Entropy produce identical trees > 98% of the time. Gini is faster (no logarithm).
-
-Key hyperparameters: `max_depth` (depth 5–10 prevents overfitting), `min_samples_leaf` (prevents tiny over-specific leaves), `max_features` (for randomized trees).
-
-**Strengths:** fully interpretable; no feature scaling needed; handles mixed types; fast predictions.  
-**Weaknesses:** high variance (small data change → very different tree); prone to overfit without pruning.
-
-### SVM (Support Vector Machine)
-
-Finds the hyperplane with maximum margin between the classes. Only the nearest training points (support vectors) influence the boundary.
-
-```
-     × × ×             × × ×
-      × ×              × × ×
-       Margin ←→         ←→ ← Support vectors
-      ○ ○                ○ ○ ○
-     ○ ○ ○              ○ ○ ○
-```
-
-**Kernel trick:** implicitly maps data to higher-dimensional space where classes are linearly separable, without computing the transformation explicitly.
-
-$$K_{\text{RBF}}(x,z) = \exp\!\left(-\gamma\|x-z\|^2\right) \quad \text{(most popular)}$$
-
-$\gamma$ large → tight/wiggly boundary (overfit); $\gamma$ small → smooth boundary (underfit).  
-$C$ large → hard margin (few misclassified, overfit risk); $C$ small → soft margin (allows some errors, better generalization).
-
-SVM training: O(n² to n³) — impractical beyond ~50K samples. Use linear SVM or logistic regression for large datasets.
+Large $\gamma$ → wiggly, overfit. Small $\gamma$ → smooth, underfit. Large $C$ → hard margin. Small $C$ → soft margin, better generalization. Training is $O(n^2)$–$O(n^3)$, so use linear SVM or logistic regression past ~50k rows.
 
 ### Naive Bayes
 
-$$P(y|x_1,...,x_n) \propto P(y)\prod_{i=1}^n P(x_i|y)$$
+$$P(y \mid x_1 \ldots x_n) \propto P(y)\prod_i P(x_i \mid y)$$
 
-"Naive" because it assumes features are conditionally independent given the class — an almost-never-true assumption that empirically works very well for text. **Laplace smoothing**: add 1 to every count to avoid zero-probability for unseen words: $P(w|c) = (count(w,c)+1)/(count(c)+|V|)$.
+"Naive" = features assumed conditionally independent given the class — almost never true, yet excellent on text. **Laplace smoothing** adds 1 to every count so an unseen word can't zero the whole product.
 
-### Ensemble Methods — Bagging and Boosting
+### Ensembles
 
-**Random Forest (Bagging):**
-```
-N training examples
-  → B bootstrap samples (sample N rows with replacement)
-  → train B independent decision trees IN PARALLEL
-  → each split: try only √p features at random
-  → prediction: majority vote (clf) / average (reg)
-EFFECT: REDUCES VARIANCE
-```
+![Bagging, boosting and stacking compared](diagrams/rev_ensembles_ai.png)
 
-The key insight: averaging many trees reduces variance (like averaging noisy measurements). But if trees are identical, averaging doesn't help. Random feature subsets **decorrelate the trees** — each tree is different and their errors partially cancel.
-
-Key hyperparameters: `n_estimators` (200–500 usually enough), `max_depth`, `max_features` (√p for clf, p/3 for reg), `min_samples_leaf`. OOB (out-of-bag) score uses the ~37% of samples not drawn per tree as a free validation estimate.
-
-**Gradient Boosting:**
-
-Each new tree fits the **pseudo-residuals** (negative gradient of loss w.r.t. current ensemble predictions):
-
-```
-F₀ = mean(y)
-For m = 1, 2, ..., M:
-    rᵢ = −∂L(yᵢ, Fₘ₋₁(xᵢ))/∂Fₘ₋₁(xᵢ)   ← pseudo-residuals
-    Train tree hₘ on {(xᵢ, rᵢ)}
-    Fₘ = Fₘ₋₁ + η·hₘ                       ← η = learning rate
-EFFECT: REDUCES BIAS
-```
-
-Small learning rate (0.05–0.1) + more trees + early stopping = dominant regularization.
-
-| Library | Growth strategy | Key advantage |
+| Property | **Bagging** (Random Forest) | **Boosting** (XGBoost) |
 |---|---|---|
-| **XGBoost** | Level-wise (full depth first) | Regularized, GPU, early Kaggle champion |
-| **LightGBM** | Leaf-wise (deepest leaf first) | 10–30× faster on large data |
-| **CatBoost** | Symmetric (balanced) trees | Native categorical handling, no preprocessing |
+| Trees built | In parallel | Sequentially |
+| Each tree fits | A bootstrap sample | The previous ensemble's residuals |
+| Reduces | **Variance** | **Bias** |
+| Noisy labels | Robust | Hurts — residuals amplify them |
+| Overfit risk | Low | Higher; needs early stopping |
+| Key knob | `max_features` (√p) decorrelates trees | Learning rate 0.05–0.1 + more trees |
 
-**Bagging vs Boosting comparison:**
+Averaging only helps if the trees differ — that is why Random Forest samples a random **feature** subset at each split. OOB score uses the ~37% of rows left out of each bootstrap as free validation.
 
-| Property | Bagging (Random Forest) | Boosting (XGBoost) |
+Gradient boosting fits each new tree to the negative gradient of the loss (the pseudo-residuals), then adds it scaled by the learning rate $\eta$.
+
+| Library | Growth | Advantage |
 |---|---|---|
-| Trees built | Parallel | Sequential |
-| Reduces | Variance | Bias |
-| Sensitive to noise? | No (robust) | Yes (noisy labels hurt) |
-| Overfit risk | Low | Higher (needs careful tuning) |
-| Speed | Parallelizable | Sequential; LightGBM compensates |
+| **XGBoost** | Level-wise | Regularized, GPU, battle-tested |
+| **LightGBM** | Leaf-wise | 10–30× faster on large data |
+| **CatBoost** | Symmetric | Native categoricals, fast inference |
 
-### Algorithm Selection for Supervised Learning
+### Class imbalance — the 99% trap
 
-| Situation | First Choice | Why |
+At 0.1% fraud, always predicting "legitimate" scores 99.9% accuracy and catches nothing.
+
+| Fix | How | Best for |
 |---|---|---|
-| Regulatory/interpretability required | Logistic Regression or Decision Tree | Fully explainable coefficients |
-| Quick baseline | Logistic Regression | Minutes to fit; calibrated probabilities |
-| Text classification | Logistic Regression or Naive Bayes | Sparse linear models dominate |
-| Structured tabular, max accuracy | XGBoost or LightGBM | State of the art for tabular data |
-| Many categorical features | CatBoost | Native categorical handling |
-| Very small dataset (<1K) | SVM or KNN | Effective in low-data regimes |
-| High-dimensional sparse (NLP) | Logistic Regression or SVM (linear) | Efficient with sparse features |
-| Images, audio, video | CNN (deep learning) | Needs learned spatial features |
-
-### Quick Comparison Table
-
-| Algorithm | Task | It assumes | Breaks when | Decision boundary | Handles outliers? | Scalability | Use when |
-|---|---|---|---|---|---|---|---|
-| Logistic Regression | Classification | Log-odds are linear in the features | True boundary is curved (XOR-like patterns) | Linear (hyperplane) | Sensitive — unbounded linear score | Excellent | Need calibrated probabilities, interpretability, a fast baseline |
-| KNN | Classification / Regression | Nearby points share a label | High dimensions, or features left unscaled | Arbitrary — follows local density | No — one noisy neighbor flips the vote | Poor — O(n·d) per query, no training | Small dataset, any boundary shape, no time to train |
-| Decision Tree | Classification / Regression | Classes separable by axis-aligned rectangles | Boundary is diagonal/curved, or depth unbounded | Axis-aligned rectangles | Fairly robust — splits on order, not magnitude | Good — O(n log n) per level | Must explain every decision to a stakeholder |
-| Random Forest | Classification / Regression | Many decorrelated trees average out noise | One feature dominates every split (keeps ρ high) | Piecewise-rectangular, smoother than one tree | Robust — bagging dilutes any single outlier | Excellent — trees train in parallel | Strong low-tuning-effort default for tabular data |
-| Gradient Boosting (XGBoost/LightGBM) | Classification / Regression | Residual error shrinks via sequential weak learners | No early stopping (chases noise) | Piecewise-rectangular, sharpest of the tree family | Sensitive without care — residuals amplify large errors | Good — sequential, but each tree is fast | Maximum accuracy needed on tabular data |
-| SVM | Classification (SVR for regression) | Classes separable by a wide margin (input or kernel space) | n is large (O(n²)–O(n³) training), or features unscaled | Linear, or kernel-defined nonlinear (e.g. RBF) | Sensitive near the margin; soft-margin `C` trades this off | Poor beyond ~10K–100K rows | High-dimensional sparse data (text) with a clear margin |
-| Naive Bayes | Classification | Features are conditionally independent given the class | Features are heavily correlated/redundant | N/A (probabilistic scoring, not geometric) | Robust — probabilistic averaging dilutes extremes | Excellent — O(np), trivially parallel | Text classification, fast baseline on small data |
-| Linear Regression | Regression | Linearity, independent errors, homoscedasticity, no multicollinearity | Any assumption violated (esp. multicollinearity → unstable weights) | N/A — fits a hyperplane to continuous y | Sensitive — squared error punishes large residuals | Excellent — closed-form for small p | Interpretable regression baseline |
-| Ridge / Lasso / Elastic Net | Regression (regularized) | Same as Linear Regression, plus shrinkage improves generalization | λ mistuned — too high underfits, too low doesn't regularize | N/A | Same sensitivity as Linear Regression | Excellent | Many/correlated features; Lasso for built-in feature selection |
-
-### Class Imbalance — The 99% Trap
-
-In fraud detection (0.1% fraud), spam filtering, or medical diagnosis, a model that always predicts the majority class gets 99.9% accuracy but catches nothing.
-
-**Solutions:**
-
-| Approach | How it works | Best for |
-|---|---|---|
-| **Adjust threshold** | Lower decision boundary to catch more positives | Any model with probability outputs |
-| **Class weight** | Multiply loss by $N_\text{neg}/N_\text{pos}$ for minority class | Sklearn `class_weight='balanced'` |
-| **SMOTE (oversample)** | Synthesize new minority class points by interpolating between neighbors | Small minority class |
-| **Undersample** | Randomly remove majority class rows | Very large majority class |
-| **Ensemble approaches** | BalancedRandomForest, EasyEnsemble | Robust to imbalance |
-
-Always use Stratified K-fold and AUC-PR (not accuracy or AUC-ROC) to evaluate imbalanced models.
+| **Adjust threshold** | Move the decision boundary | Any probabilistic model |
+| **Class weights** | Scale minority loss by $N_\text{neg}/N_\text{pos}$ | `class_weight='balanced'` |
+| **SMOTE** | Synthesize minority points between neighbours | Small minority class |
+| **Undersample** | Drop majority rows | Very large majority |
+| **Balanced ensembles** | BalancedRandomForest, EasyEnsemble | Robust default |
 
 ---
 
 > ✅ **Must-remember**
 >
-> - Classification predicts discrete labels; regression predicts continuous values — both learn $f: X \rightarrow y$ from labeled pairs.
-> - Prevent leakage: split first, then fit scalers/encoders on **train only**; use Stratified K-fold for imbalanced classes.
-> - Linear baselines (Logistic Regression, Linear/Ridge/Lasso) are interpretable and fast — always try one before reaching for complex models.
-> - Trees overfit alone → ensemble them: **Bagging** (Random Forest, parallel, cuts variance) vs **Boosting** (XGBoost/LightGBM, sequential, cuts bias).
-> - SVM maximizes the margin (kernel trick for non-linear boundaries); KNN is lazy and distance-based, so scale features first.
-> - Class-imbalance "99% trap": never trust raw accuracy — use AUC-PR / F1, class weights, or SMOTE.
+> - Bagging cuts **variance** (parallel); boosting cuts **bias** (sequential)
+> - Logistic regression draws a straight boundary — always
+> - KNN and SVM need scaled features; trees do not
+> - Gini ≈ entropy in practice; Gini is cheaper
+> - Imbalance: never trust accuracy — use AUC-PR, class weights, or SMOTE
+> - Stratified K-Fold for every classification problem
 
 ---
 
 ## Ch 11 — Unsupervised Learning
 
-> 💡 **In a sentence —** Unsupervised learning discovers hidden structure in unlabeled data — grouping similar examples, compressing representations, detecting anomalies, or finding associations — no labels required.
+> 💡 **In a sentence —** Find hidden structure in unlabelled data — groups, compressed representations, anomalies, or co-occurring items.
 
-### The Curse of Dimensionality
+> 📊 The full algorithm comparison lives in **Part 1 → Unsupervised algorithms compared**.
 
-As the number of dimensions $d$ grows:
-- Volume of the feature space grows exponentially ($2^d$ for binary; scales with $r^d$ for hyperspheres)
-- Points become increasingly equidistant — distance metrics lose meaning
-- A nearest-neighbor in 1000 dimensions might be no closer than a random point
+### The curse of dimensionality
 
-$$\lim_{d \to \infty} \frac{\text{dist}_{\max} - \text{dist}_{\min}}{\text{dist}_{\min}} \to 0 \quad \text{(all distances converge)}$$
+As dimensions grow, volume grows exponentially and points become equidistant — so distance itself stops meaning anything:
 
-Consequence: KNN accuracy degrades, K-Means clusters become arbitrary, density estimates break. Rule of thumb: need 5–10× more data per added dimension.
+$$\lim_{d \to \infty} \frac{\text{dist}_{\max} - \text{dist}_{\min}}{\text{dist}_{\min}} \to 0$$
 
-Remedy: PCA/UMAP to reduce dimensions first; feature selection; regularization.
+KNN degrades, K-Means clusters turn arbitrary, density estimates break. Rough rule: you need 5–10× more data per added dimension. Remedy with PCA/UMAP, feature selection, or regularization.
 
-### K-Means Clustering
+### Clustering
 
-Minimize within-cluster sum of squares (WCSS/inertia):
+![Clustering algorithms compared: which shapes each one can find](diagrams/rev_clustering_ai.png)
 
-$$J = \sum_{k=1}^{K}\sum_{\mathbf{x}_i \in C_k}\|\mathbf{x}_i - \boldsymbol{\mu}_k\|^2$$
+**K-Means** minimizes within-cluster sum of squares $J = \sum_k \sum_{x_i \in C_k} \lVert x_i - \mu_k \rVert^2$ by alternating "assign to nearest centroid" and "recompute centroids". **K-Means++** seeds centroids far apart (probability $\propto D(x)^2$) and is the sklearn default. Cost $O(nKId)$ — very fast. Restart it several times and keep the lowest inertia, since it lands in local optima.
 
-**Algorithm (Lloyd's):**
-```
-1. Initialize K centroids (K-Means++ preferred)
-2. Assign each point to nearest centroid
-3. Recompute centroids as cluster means
-4. Repeat 2–3 until centroids stop moving
-```
+**Hierarchical** builds a dendrogram you can cut at any height, so K is chosen after the fact. Linkage decides the character:
 
-**K-Means++ initialization:** first centroid random; each subsequent centroid chosen with probability $\propto D(\mathbf{x})^2$ where $D$ is distance to nearest existing centroid. Spreads centroids apart; prevents bad initializations; is the sklearn default.
-
-**Assumptions (when K-Means fails):**
-```
-✓ Works:   Spherical clusters of similar size and density
-✗ Fails:   Elongated clusters, varying density, non-convex shapes,
-            very different cluster sizes, many outliers
-```
-
-**Complexity:** O(nKId) where I = iterations — fast; scales to millions of points. Reinitialize K-Means several times and keep the best result (lowest inertia), since it can get stuck in local optima.
-
-### Hierarchical Clustering
-
-Build a tree (dendrogram) of all merge decisions. Cut at any height to get K clusters — you don't need to specify K before running.
-
-**Linkage criteria** (how to measure distance between two clusters):
-
-| Linkage | Distance measure | Behavior |
+| Linkage | Measures | Behaviour |
 |---|---|---|
-| Single | min(dist of any pair) | Chaining effect; elongated clusters |
-| Complete | max(dist of any pair) | Compact, equal-sized clusters |
-| Average | mean of all pairs | Compromise between single and complete |
-| **Ward's** | minimize increase in within-cluster variance | Best general default; compact clusters |
+| Single | Nearest pair | Chaining; long straggly clusters |
+| Complete | Farthest pair | Compact, equal-sized |
+| Average | Mean of all pairs | A compromise |
+| **Ward's** | Increase in within-cluster variance | Best general default |
 
-Complexity: O(n³) time, O(n²) space — impractical beyond ~10K samples. For large data: use K-Means or DBSCAN.
+Cost $O(n^3)$ time and $O(n^2)$ memory — impractical past ~10k rows.
 
-### DBSCAN (Density-Based Spatial Clustering)
+**DBSCAN** takes $\varepsilon$ (radius) and `minPts`. A **core point** has ≥ minPts neighbours within $\varepsilon$; a **border point** is within $\varepsilon$ of a core; everything else is **noise**. Clusters are connected core regions — so it finds K itself, handles arbitrary shapes, and flags outliers. Its weakness is varying density, which **HDBSCAN** fixes by extracting stable clusters from a hierarchy.
 
-Parameters: $\varepsilon$ (radius) and `minPts` (min neighbors for a core point).
+**Spectral** builds a similarity graph, takes the bottom K eigenvectors of the Laplacian $L = D - W$, and runs K-Means in that embedding — which untangles interlocking rings K-Means cannot touch. $O(n^3)$ naive.
 
-```
-CORE POINT:   ≥ minPts neighbors within ε radius
-BORDER POINT: within ε of a core point, but < minPts neighbors itself
-NOISE POINT:  not within ε of any core point (outlier)
-```
+**GMM** models each cluster as a Gaussian with its own mean, covariance and weight, fitted by **EM**, giving every point a **soft** membership probability. K-Means is just GMM with spherical covariance and hard assignment. Choose K with BIC or AIC.
 
-Clusters = connected regions of core points. DBSCAN naturally:
-- Finds the number of clusters automatically
-- Handles arbitrary shapes (crescent, rings, XOR-like)
-- Marks isolated points as noise (good for anomaly detection)
+### Evaluating clusters
 
-**Weakness:** struggles with clusters of varying density (all clusters must satisfy the same ε/minPts).  
-**HDBSCAN** fixes this: builds a cluster hierarchy; extracts stable clusters regardless of density variation. Use `min_cluster_size` instead of ε.
+$$s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))} \in [-1, 1]$$
 
-### Spectral Clustering
+where $a$ = mean distance within the cluster (cohesion) and $b$ = mean distance to the nearest other cluster (separation). Average $s > 0.70$ is strong, $> 0.50$ reasonable, $< 0.25$ means there probably aren't real clusters.
 
-1. Build a similarity graph from the data (edges = RBF kernel similarities)
-2. Compute the graph Laplacian $L = D - W$ (degree matrix minus adjacency)
-3. Take the bottom K eigenvectors of L — this is the "spectral embedding"
-4. Run K-Means in the K-dimensional embedding space
+Pair it with the **Elbow method** (inertia vs K, look for the bend) and **Davies-Bouldin** (lower is better). Use at least two — each can be fooled alone.
 
-**Why it works:** eigenvectors of the Laplacian encode cluster membership in a space where linear separation is easy. Can detect non-convex shapes (interlocking rings, concentric circles) that K-Means misses entirely.
+### Dimensionality reduction
 
-**Cost:** O(n³) naive — slow for large data; approximations exist (Nyström, landmark spectral clustering).
+![PCA vs t-SNE vs UMAP](diagrams/rev_dimreduction_ai.png)
 
-### GMM (Gaussian Mixture Model)
+**PCA:** centre the data, compute the covariance matrix, eigendecompose, project onto the top-k eigenvectors. Pick k from a scree plot or at ≥95% cumulative variance. Linear, fast, deterministic, reversible, and it can `transform()` new points.
 
-$$p(\mathbf{x}) = \sum_{k=1}^{K}\pi_k\,\mathcal{N}(\mathbf{x}|\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$$
+**t-SNE** preserves local neighbourhoods only — its `perplexity` sets the effective neighbourhood size, cluster **sizes and the gaps between them carry no meaning**, results shift with the seed, and it cannot transform new points. Use it for a picture, never as model input.
 
-Each cluster is modeled as a Gaussian with its own mean, covariance, and mixing weight $\pi_k$.  
-**Soft assignment**: every point belongs to every cluster with a probability (responsibility vector). More flexible than K-Means (which has hard assignments and spherical clusters only).
+**UMAP** keeps local structure plus more of the global arrangement, runs far faster, scales to millions, and *can* transform new data — so it works both as visualization and as features.
 
-Fit with **EM algorithm**: E-step (compute responsibilities), M-step (update $\mu_k$, $\Sigma_k$, $\pi_k$ using weighted sums). Repeat until convergence.
+### Anomalies, associations, self-supervision
 
-Use **BIC or AIC** to select the number of components K: BIC favors simpler models (penalizes parameters more).
+**Isolation Forest** builds random trees; anomalies get isolated in fewer splits, so a short path = high anomaly score. **Local Outlier Factor** judges each point against its local neighbourhood instead.
 
-K-Means is a special case of GMM: spherical covariances ($\Sigma_k = \sigma^2 I$), hard assignments.
-
-### Cluster Evaluation Metrics
-
-**Silhouette Score:**
-
-$$s(i) = \frac{b(i) - a(i)}{\max(a(i),\,b(i))} \in [-1,\,1]$$
-
-where $a(i)$ = mean distance to same-cluster points (cohesion), $b(i)$ = mean distance to nearest other cluster (separation).
-
-- $s \approx +1$: well-clustered; $s \approx 0$: on cluster boundary; $s < 0$: likely assigned to wrong cluster
-- Average $s > 0.70$ → strong; $> 0.50$ → reasonable; $< 0.25$ → probably no meaningful clusters
-
-**Elbow Method:** plot inertia vs K; the "elbow" is where additional clusters stop providing much benefit. Subjective; use with Silhouette to confirm.
-
-**Davies-Bouldin Index:** $DB = \frac{1}{K}\sum_i\max_{j\neq i}\frac{s_i+s_j}{d_{ij}}$ — **lower is better**. Penalizes clusters that are wide relative to inter-cluster distance.
-
-> Always combine at least two metrics: Elbow (visual) + Silhouette (quantitative) + Davies-Bouldin (adversarial view).
-
-### Dimensionality Reduction
-
-| Method | Linear? | What it preserves | Best for | Scalability |
-|---|---|---|---|---|
-| **PCA** | Yes | Global variance (direction of most spread) | Feature reduction, preprocessing | Very fast O(min(n,p)²×max(n,p)) |
-| **t-SNE** | No | Local neighbor relationships | 2D / 3D visualization only | Slow O(n²); use on ≤ 50K points |
-| **UMAP** | No | Local structure + some global | Visualization + downstream ML | Medium; faster than t-SNE |
-| **Autoencoder** | No | Learned compressed representation | Complex non-linear structure | Slow to train; fast at inference |
-
-**PCA in detail:**
-1. Center data: $\tilde{X} = X - \bar{X}$
-2. Compute covariance matrix: $C = \frac{1}{n-1}\tilde{X}^\top\tilde{X}$
-3. Eigendecompose: $C = V\Lambda V^\top$ — columns of $V$ are principal components
-4. Project: $Z = \tilde{X}V_k$ (keep top k columns by eigenvalue)
-
-Scree plot: plot each PC's explained variance; choose k at the "elbow" or where cumulative variance ≥ 95%.
-
-**t-SNE vs UMAP:**
-```
-t-SNE:  perplexity controls local neighborhood size
-        slow (O(n log n) with Barnes-Hut, O(n²) exact)
-        cannot add new points after training
-        NOT suitable for downstream ML features
-
-UMAP:   n_neighbors + min_dist parameters
-        faster; scales to millions of points
-        can transform new points after training
-        preserves more global structure than t-SNE
-        CAN be used as preprocessing for ML
-```
-
-### Association Rules (Unsupervised)
-
-Market basket analysis: find items that co-occur frequently.
-
-$$\text{Support}(A \Rightarrow B) = \frac{\text{count}(A \cup B)}{N}$$
-$$\text{Confidence}(A \Rightarrow B) = \frac{\text{count}(A \cup B)}{\text{count}(A)}$$
 $$\text{Lift}(A \Rightarrow B) = \frac{\text{Confidence}(A \Rightarrow B)}{\text{Support}(B)}$$
 
-Lift > 1 means A and B co-occur more often than by chance. Algorithms: **Apriori** (level-wise candidate generation), **FP-Growth** (frequent-pattern tree, 10–100× faster than Apriori).
+Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by level; **FP-Growth** compresses into a tree and runs 10–100× faster.
 
-### Anomaly Detection
-
-**Isolation Forest:** builds random trees that isolate each point. Anomalies need fewer splits (shorter path = more isolated = higher anomaly score). No need to label anomalies during training.
-
-**Use cases:** fraud detection, network intrusion, manufacturing defect detection, equipment failure prediction.
-
-### Self-Supervised Learning
-
-Creates labels from the data's own structure — no human annotation.
-
-- **BERT:** mask 15% of tokens randomly; train model to predict the masked words
-- **GPT:** predict the next token given all previous tokens (autoregressive)
-- **SimCLR:** create two augmented views of each image; train model to agree on both views (contrastive)
-
-The resulting representations transfer powerfully to downstream tasks. Pre-train on 100B tokens → fine-tune on 1K labeled examples → outperforms full supervised on 1M labels.
-
-### Algorithm Selection Guide
-
-| Goal | Situation | Pick | Why |
-|---|---|---|---|
-| Clustering | Know K; expect spherical/globular clusters | K-Means (++ init) | Fast, scales to millions |
-| Clustering | Know K; expect overlapping/elliptical clusters | GMM | Soft assignment via EM, elliptical covariance |
-| Clustering | Don't know K; need noise flagged | DBSCAN (HDBSCAN if density varies) | Auto-discovers K, arbitrary shape, marks outliers |
-| Clustering | Don't know K; want the full merge structure | Hierarchical (Ward's linkage) | Dendrogram shows every K at once, no noise handling |
-| Clustering | Clusters connected but non-convex (e.g. interlocking moons) | Spectral Clustering | Graph Laplacian embedding, then K-Means |
-| Dim. reduction | Linear structure; need it fast and as ML features | PCA | Closed-form, fast, deterministic |
-| Dim. reduction | Nonlinear structure; need features for a downstream model | UMAP or Autoencoder | UMAP has `transform()`; Autoencoder for complex/large data |
-| Dim. reduction | Nonlinear structure; need a 2D plot only | t-SNE (or UMAP) | Best local-neighbor visualization; never feed to a model |
-| Anomaly detection | General purpose, high-D, need speed | Isolation Forest | Default choice; fast, scales well |
-| Anomaly detection | Density varies across regions (local outliers) | Local Outlier Factor | Judges "unusual" relative to local neighbors |
-| Association rules | Small-medium data; want visible pruning steps | Apriori | Simple, level-wise, easy to reason about |
-| Association rules | Large-scale transactions; need speed | FP-Growth | 2 scans, no candidate generation, 10-100x faster |
-
-### Quick Comparison Table
-
-| Algorithm | Task | It assumes | Breaks when | K needed? | Handles noise? | Cluster shape | Scalability | Use when |
-|---|---|---|---|---|---|---|---|---|
-| K-Means | Clustering | Spherical, equal-size, equal-density blobs | Clusters are elongated, unequal, or non-convex | Yes | No | Spherical | Excellent | Fast default when clusters are naturally round and similar-sized |
-| K-Medoids (PAM) | Clustering | Same as K-Means, but centre is a real point (any metric) | Same shape limits; also slow past ~10K | Yes | Robust to them | Spherical, any metric | Poor (>10K) | Non-Euclidean distance, or outliers you can't remove |
-| Hierarchical | Clustering | Data is genuinely nested | There is no hierarchy — it builds one anyway | No (cut tree) | No | Depends on linkage | Poor (>10K) | Want the full dendrogram / a genuine nested taxonomy |
-| DBSCAN | Clustering | Dense regions split by sparse ones; one global density | Clusters have very different densities | No | Yes | Arbitrary | Good | Arbitrary shapes + need noise/outliers flagged |
-| HDBSCAN | Clustering | Dense regions; density may vary | Data is uniformly dense with no real gaps | No | Yes | Arbitrary, multi-density | Good | Same as DBSCAN, but density varies across clusters |
-| Spectral Clustering | Clustering | Clusters are connected in the similarity graph | Graph is badly built, or n is large | Yes | No | Graph-connected / manifold | Poor (>10K dense) | Clusters connected but non-convex (e.g. interlocking moons) |
-| GMM | Clustering | Data came from a mixture of Gaussians | Clusters are strongly non-Gaussian | Yes | No | Elliptical | Moderate | Need soft/probabilistic cluster membership |
-| PCA | Dim. reduction | Structure is linear; variance = information | Structure is curved, or you forgot to scale | Choose # PCs | N/A | Linear only | Excellent | Fast linear feature reduction; need `transform()` for new data |
-| Kernel PCA | Dim. reduction | Structure is linear *after* the kernel map | Wrong kernel, or n is large | Choose # PCs | N/A | Nonlinear (kernel-defined) | Poor (>10K) | Known nonlinear manifold (circles, spirals) on small-medium n |
-| t-SNE | Visualization | Only local neighbourhoods matter | You read distance or size between blobs | N/A | N/A | Nonlinear | Poor (>50K) | One-off 2D plot for a slide/report — never as ML input |
-| UMAP | Dim. red. / viz | Data lies on a manifold, locally connected | Very small n, or over-tuned neighbours | N/A | N/A | Nonlinear | Good | Visualization or features, faster than t-SNE, scales further |
-| Isolation Forest | Anomaly det. | Anomalies are few, different, globally unusual | Density varies — local outliers are missed | N/A | Detects them | N/A | Excellent | Default anomaly detector, high-D, need speed |
-| Local Outlier Factor | Anomaly det. | "Unusual" is relative to local neighbours | n is large, or k is badly chosen | N/A | Detects them | N/A | Poor (>10K) | Anomalies only "weird" relative to their local neighborhood |
-| Apriori | Assoc. rules | Frequent itemsets are rare enough to prune | Data is dense with long frequent patterns | N/A | N/A | N/A | Moderate | Small catalog, want visible/interpretable pruning steps |
-| FP-Growth | Assoc. rules | Transactions share prefixes worth compressing | The FP-tree exceeds memory | N/A | N/A | N/A | Good | Large-scale transactions, need speed |
+**Self-supervised learning** manufactures labels from the data's own structure — BERT masks 15% of tokens and predicts them, GPT predicts the next token, SimCLR forces two augmented views of an image to agree. Pre-train on billions of tokens, fine-tune on a thousand labels, and beat fully supervised training on a million.
 
 ---
 
 > ✅ **Must-remember**
 >
-> - K-Means: specify K, spherical only, fast; K-Means++ prevents bad centroids; uses inertia
-> - DBSCAN: auto K, arbitrary shapes, marks noise; HDBSCAN for varying density
-> - Silhouette > 0.5 is reasonable; use Elbow + Silhouette + Davies-Bouldin together
-> - PCA: linear, global variance, use scree plot for k; fit on train only
-> - t-SNE: local only, visualization only; UMAP: local + global, faster, use for features too
-> - Self-supervised = labels from data structure; powers BERT, GPT, SimCLR
-> - No single K/algorithm fits everything: match the assumption (shape, density, linearity) to the data, not the other way round
+> - K-Means: you pick K, spherical only, K-Means++ seeding, restart it
+> - DBSCAN: finds K itself, any shape, flags noise; HDBSCAN when density varies
+> - Silhouette > 0.5 is reasonable; combine with Elbow and Davies-Bouldin
+> - PCA is linear and reversible; t-SNE is a picture only; UMAP does both
+> - Match the **assumption** (shape, density, linearity) to the data
 
 ---
 
 ## Ch 12 — Key Algorithms Deep Dive
 
-> 💡 **In a sentence —** This chapter opens up the "black box" of each major algorithm — the mathematics, the assumptions, and the hyperparameters that matter — so you can confidently tune and debug models.
+> 💡 **In a sentence —** The mathematics, assumptions and hyperparameters inside each major algorithm — enough to tune and debug rather than guess.
 
-### Linear Regression — Two Routes to Fit
+### Linear regression — two routes
 
-$$\hat{\mathbf{y}} = \mathbf{X}\mathbf{w} = w_0 + w_1x_1 + \cdots + w_px_p$$
+**Normal equation** (closed form, exact): $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$. Needs $X^\top X$ invertible (fails on collinear features) and costs $O(np^2 + p^3)$ — impractical past a few thousand features.
 
-**Ordinary Least Squares (Normal Equation)** — closed-form, exact:
+**Gradient descent** (iterative): works at any scale, supports regularization naturally, allows online learning.
 
-$$\mathbf{w}^* = (X^\top X)^{-1} X^\top \mathbf{y}$$
+**Five assumptions**, each of which breaks the coefficients when violated: linearity · independent observations · homoscedasticity (constant error variance) · normally distributed errors (needed for p-values) · no multicollinearity.
 
-One-shot solution. Requirements: $X^\top X$ must be invertible (fails for collinear features); complexity O(np² + p³) — impractical when p > a few thousand.
+### Regularization geometry
 
-**Gradient Descent** — iterative, scalable:
+![L1 versus L2 regularization, and why Lasso produces exact zeros](diagrams/rev_regularization_ai.png)
 
-$$w_j \leftarrow w_j - \frac{2\eta}{n}\sum_{i=1}^n(\hat{y}_i - y_i)x_{ij}$$
-
-Works for any size dataset, naturally supports regularization, allows online learning.
-
-**Five assumptions (violation → unreliable coefficient estimates):**
-```
-1. LINEARITY           y is linear in the features
-2. INDEPENDENCE        observations are independent (violated: time series)
-3. HOMOSCEDASTICITY    constant error variance (violated: variance grows with ŷ)
-4. NORMALITY           errors are normally distributed (needed for CIs/p-values)
-5. NO MULTICOLLINEARITY features are not highly correlated (Ridge fixes this)
-```
-
-**Regularized variants:**
-
-| Method | Penalty | Effect on weights | Best when |
+| Method | Penalty | Effect | Best when |
 |---|---|---|---|
-| **Ridge (L2)** | $\lambda\sum w_j^2$ | Shrinks all; none to exactly zero | Many features, all contribute; correlated features |
-| **Lasso (L1)** | $\lambda\sum|w_j|$ | Drives some to exactly zero | Few features matter; built-in feature selection |
-| **Elastic Net** | $\lambda_1\sum|w_j|+\lambda_2\sum w_j^2$ | Sparse + stable | Correlated features + need feature selection |
+| **Ridge (L2)** | $\lambda\sum w_j^2$ | Shrinks all, none to zero | Correlated features; all contribute |
+| **Lasso (L1)** | $\lambda\sum \lvert w_j \rvert$ | Drives some to **exactly** zero | Few features matter |
+| **Elastic Net** | Both | Sparse **and** stable | Correlated features + want selection |
 
-```
-λ = 0        → no regularization → standard OLS (may overfit)
-λ = small    → light regularization
-λ = optimal  → best bias-variance tradeoff (find via cross-validation)
-λ → ∞        → all weights → 0 → model always predicts the mean (extreme underfit)
-```
+The constraint region is a **diamond** for L1 and a **circle** for L2. The diamond's corners sit on the axes, so the solution lands on one and a weight becomes exactly zero. A circle has no corners, so nothing ever does.
 
-### Logistic Regression — Full Mechanics
+$\lambda = 0$ is plain OLS; $\lambda \to \infty$ shrinks everything to zero and predicts the mean. Find it by cross-validation. In sklearn, `C = 1/\lambda` — **small C means more regularization.**
 
-Sigmoid function and its derivative:
+### Logistic regression mechanics
 
-$$\sigma(z) = \frac{1}{1+e^{-z}} \qquad \sigma'(z) = \sigma(z)\bigl(1-\sigma(z)\bigr) \leq 0.25$$
+$$\sigma(z) = \frac{1}{1+e^{-z}}, \qquad \sigma'(z) = \sigma(z)(1-\sigma(z)) \le 0.25$$
 
-Loss: Binary cross-entropy — a convex function with a single global minimum. Gradient descent is guaranteed to find the optimal solution (no local minima issue unlike neural nets).
+Binary cross-entropy is **convex** in the weights here, so gradient descent reaches the global optimum — unlike a neural network. That 0.25 ceiling on the derivative is exactly why sigmoid causes vanishing gradients when stacked deep.
 
-The maximum gradient of sigmoid is 0.25 (at z=0) — this is why sigmoid is prone to vanishing gradients in deep networks.
+### Trees and forests
 
-**Multiclass strategies:**
+CART is greedy and binary: pick the best split, recurse, stop at `max_depth` or `min_samples_leaf`. Gini ranges 0 (pure) to $(K-1)/K$ (uniform); for binary it is $2p(1-p)$, maxing at 0.5. Prune via depth, leaf size, `min_impurity_decrease`, or cost-complexity $\alpha$.
 
-- **OvR (One-vs-Rest):** train K binary classifiers; pick class with highest probability. Fast; works for any binary classifier.
-- **Softmax (Multinomial):** one model, K outputs; $P(y=k|x) = e^{z_k}/\sum_j e^{z_j}$; probabilities sum to 1; more principled.
-
-**C parameter (inverse of λ):** large C → less regularization (may overfit); small C → strong regularization (underfit). `C=1.0` is sklearn default.
-
-### Decision Trees — CART Deep Dive
-
-**CART (Classification and Regression Trees):** greedy algorithm, binary splits, recursively applied.
-
-```
-        (feature ≤ threshold)?
-              /          \
-           YES             NO
-      (sub-tree)       (sub-tree)
-           ↓                ↓
-      ... until max_depth or min_samples_leaf reached
-```
-
-**Gini impurity intuition:** probability of misclassifying a randomly chosen sample if it were labeled according to class distribution.
-
-$$G = 1 - \sum_{c}p_c^2 \quad \text{Range: 0 (pure) to } \frac{K-1}{K} \text{ (uniform)}$$
-
-For binary: $G = 2 \times p(1-p)$, maximum 0.5 at p=0.5.
-
-**Pruning:** reduce max_depth; increase min_samples_leaf; use min_impurity_decrease. Alternatively, post-hoc cost-complexity pruning (alpha parameter in sklearn).
-
-### Random Forest — Why Averaging Helps
-
-N uncorrelated models with individual accuracy $p$ and pairwise correlation $\rho$:
+Why averaging works — for $n$ trees with pairwise correlation $\rho$:
 
 $$\text{Ensemble Variance} = \rho\sigma^2 + \frac{1-\rho}{n}\sigma^2 \xrightarrow[n\to\infty]{} \rho\sigma^2$$
 
-If trees were identical ($\rho=1$): no reduction. If perfectly uncorrelated ($\rho=0$): variance → 0 as n → ∞. Random feature subsets reduce $\rho$ — each tree's errors are partially independent.
+Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Tune `n_estimators` 200–500, `max_features` √p (classification) or p/3 (regression), `max_depth` 3–15, `min_samples_leaf` 1–20.
 
-**Tuning Random Forest:**
-```
-n_estimators:    200–500 (more = better, diminishing returns after ~200)
-max_features:    √p for classification; p/3 for regression (controls correlation)
-max_depth:       3–15 (None = full tree; deeper = lower bias, higher variance)
-min_samples_leaf: 1–20 (higher = smoother, more regularized)
-```
+### The boosting family
 
-OOB score uses ~36.8% of samples not selected per tree as a free validation estimate — no need for a separate validation split when using Random Forest.
+**XGBoost** adds second-order Taylor expansion (Newton, not just gradient), explicit L1+L2 on tree structure, column subsampling, a weighted quantile sketch for split finding, and GPU support.
 
-### Gradient Boosting Family
+**LightGBM** grows **leaf-wise** (always split the leaf with the biggest loss reduction) rather than level-wise — deeper, more focused trees and 10–30× the speed past ~100k rows.
 
-**XGBoost innovations over vanilla gradient boosting:**
-- Second-order Taylor expansion of loss (Newton-Raphson, not just first-order gradient)
-- Explicit L1 + L2 regularization on tree structure
-- Column subsampling per tree and per level
-- Weighted quantile sketch for efficient split finding
-- GPU acceleration
+**CatBoost** uses ordered boosting so categorical target statistics can't leak, and symmetric trees that make inference $O(\text{depth})$.
 
-**LightGBM leaf-wise growth vs XGBoost level-wise:**
-```
-Level-wise (XGBoost):          Leaf-wise (LightGBM):
-Grow all leaves at each level  Grow the leaf with max loss reduction
-More balanced trees            Deeper but more focused trees
-Better for small data          10-30x faster on large data (>100K rows)
-```
+### Naive Bayes variants
 
-**CatBoost ordered boosting:** uses ordered statistics to prevent target leakage when encoding categoricals. Symmetric trees make predictions O(depth) instead of O(leaves) — fast inference.
-
-### KNN Practical Details
-
-Prediction cost O(n × d) per query — K-D trees or ball trees reduce to O(d log n) for low dimensions. Use brute force for d > ~20 (tree advantage disappears).
-
-**When KNN excels:** small dataset, local patterns matter, no clear parametric form, recommendation systems (item-based CF).
-
-**When KNN fails:** high dimensions, large n, need prediction speed, features on different scales.
-
-### Naive Bayes Variants
-
-| Type | Feature distribution assumed | Best for |
+| Variant | Assumed distribution | Best for |
 |---|---|---|
-| **Gaussian NB** | $P(x_i|y) = \mathcal{N}(\mu_{iy}, \sigma_{iy}^2)$ | Continuous features |
-| **Multinomial NB** | Multinomial (word counts) | Text classification (term counts) |
-| **Bernoulli NB** | Bernoulli (word present/absent) | Text classification (binary features) |
-| **Complement NB** | Modified complement classes | Imbalanced text classification |
+| **Gaussian** | Normal per feature | Continuous features |
+| **Multinomial** | Counts | Text with term counts |
+| **Bernoulli** | Present / absent | Text with binary features |
+| **Complement** | Modified complement classes | Imbalanced text |
 
 ---
 
 > ✅ **Must-remember**
 >
-> - Normal equation: $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$ — exact but O(p³); use for small p
-> - Lasso → exact zeros (feature selection); Ridge → all shrunk (correlated features ok)
-> - Gini: $1-\sum p_c^2$; entropy: $-\sum p_c\log_2 p_c$; nearly identical in practice
-> - Random Forest: √p features per split; OOB score is free validation; n_estimators 200–500
-> - Gradient Boosting: sequential residual fitting; LightGBM faster; CatBoost for categoricals
-> - XGBoost / LightGBM are the starting point for any tabular ML competition
+> - Normal equation $(X^\top X)^{-1}X^\top y$ — exact but $O(p^3)$
+> - L1 diamond has corners → exact zeros; L2 circle has none
+> - sklearn's `C` = 1/λ, so small C = **more** regularization
+> - Sigmoid derivative caps at 0.25 → vanishing gradients when deep
+> - Random Forest works by **decorrelating** trees, not just averaging
+> - XGBoost/LightGBM/CatBoost are the tabular starting point
 
 ---
 
 ## Ch 13 — Model Evaluation & Tuning
 
-> 💡 **In a sentence —** Choosing the wrong evaluation metric is worse than choosing the wrong model — a perfect-accuracy classifier that never catches fraud is failing catastrophically while looking great on paper.
+> 💡 **In a sentence —** Picking the wrong metric is worse than picking the wrong model — a 99.9%-accurate classifier that never catches fraud looks excellent and is useless.
 
-### The Confusion Matrix
+> 📊 The metric picker lives in **Part 1 → Metric selection**.
 
-```
-                      PREDICTED POSITIVE   PREDICTED NEGATIVE
-ACTUAL POSITIVE            TP                    FN
-ACTUAL NEGATIVE            FP                    TN
-```
+### The confusion matrix
 
-- **TP (True Positive):** correctly flagged positive — we want these high
-- **TN (True Negative):** correctly dismissed negative — we want these high
-- **FP (False Positive / Type I Error):** false alarm — costly in spam filtering (deletes real mail)
-- **FN (False Negative / Type II Error):** miss — costly in medical diagnosis (misses cancer)
+![The confusion matrix and every metric derived from it](diagrams/rev_confusion_ai.png)
 
-The relative cost of FP vs FN is domain-specific and determines which metric to optimize.
+$$\text{Precision} = \frac{TP}{TP+FP}, \qquad \text{Recall} = \frac{TP}{TP+FN}, \qquad \text{F1} = \frac{2PR}{P+R}$$
 
-### Classification Metrics — All Formulas
+$$\text{Specificity} = \frac{TN}{TN+FP}, \qquad F_\beta = (1+\beta^2)\frac{PR}{\beta^2 P + R}$$
 
-$$\text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}$$
+**FP (Type I)** is a false alarm — costly in spam filtering. **FN (Type II)** is a miss — costly in cancer screening. Which one hurts more is a domain decision, and it picks your metric: $F_2$ weights recall double, $F_{0.5}$ weights precision double.
 
-$$\text{Precision} = \frac{TP}{TP+FP} \quad \text{"of all I flagged positive, what fraction truly were?"}$$
+### ROC vs precision-recall
 
-$$\text{Recall (Sensitivity, TPR)} = \frac{TP}{TP+FN} \quad \text{"of all true positives, what fraction did I catch?"}$$
+![ROC versus precision-recall curves, and when each one misleads](diagrams/rev_roc_pr_ai.png)
 
-$$\text{Specificity (TNR)} = \frac{TN}{TN+FP} \quad \text{"of all true negatives, what fraction did I correctly dismiss?"}$$
+**ROC-AUC** plots recall against false-positive rate across every threshold. Its intuition: pick a random positive and a random negative — AUC is the probability the model scores the positive higher.
 
-$$\text{F1} = \frac{2 \times P \times R}{P + R} = \frac{2\,TP}{2\,TP + FP + FN}$$
-
-$$F_\beta = (1+\beta^2)\frac{P \times R}{\beta^2 P + R}$$
-
-$F_2$: recall weighted 2× more (cancer detection). $F_{0.5}$: precision weighted 2× more (spam filter).
-
-**Why accuracy fails for imbalanced data:** 99.9% of transactions are legitimate. A model that predicts "not fraud" for every transaction gets 99.9% accuracy but catches zero fraud.
-
-**Precision-Recall tradeoff:**
-```
-threshold = 0.3 (low):  more positives predicted → ↑ Recall, ↓ Precision
-threshold = 0.5:        default balance
-threshold = 0.8 (high): fewer positives predicted → ↑ Precision, ↓ Recall
-```
-
-### ROC Curve and AUC
-
-The ROC curve plots TPR (Recall) vs FPR at every possible threshold.
-
-```
-TPR (Recall)
-  1.0 ─────────────────────────── Perfect Classifier
-      │    ╭────────────────────
-      │   ╱
-      │  ╱  ← typical good model
-      │ ╱
-  0.5 │/ ← random (diagonal line; AUC = 0.5)
-      │
-  0.0 ───────────────────── FPR
-      0.0                  1.0
-```
-
-**AUC = area under the ROC curve.**
-
-| AUC | Interpretation |
+| AUC | Reading |
 |---|---|
-| 1.0 | Perfect classifier |
+| 1.0 | Perfect |
 | 0.9–0.99 | Excellent |
 | 0.8–0.9 | Good |
 | 0.7–0.8 | Fair |
-| 0.5 | Random guessing |
-| < 0.5 | Worse than random (flip predictions!) |
+| 0.5 | Random |
+| < 0.5 | Worse than random — flip the predictions |
 
-> **AUC intuition:** randomly sample one positive and one negative; AUC = probability the model assigns a higher score to the positive. AUC is threshold-independent — one number summarizes the model across all operating points.
+**The catch:** with 1% positives, a flood of false positives barely moves the false-positive rate, so ROC still looks great while precision collapses. Use **AUC-PR** for rare positives — its baseline is the prevalence (0.01), not 0.5.
 
-**AUC-PR (Precision-Recall AUC):** better metric for **imbalanced datasets** (rare disease, fraud). The random baseline for PR curves = prevalence (e.g., 1% for fraud), not 0.5 like ROC.
+### Regression metrics
 
-**ROC vs PR choice table:**
-```
-Balanced classes (50/50 or 60/40) → ROC-AUC
-Imbalanced (fraud, cancer, anomaly) → AUC-PR
-Care about both classes equally → ROC-AUC
-Care about minority class quality → AUC-PR
-```
-
-### Regression Metrics
-
-| Metric | Formula | Interpretation | Outlier sensitivity |
+| Metric | Formula | Reads as | Outlier sensitivity |
 |---|---|---|---|
-| **MAE** | $\frac{1}{n}\sum|y_i-\hat{y}_i|$ | Average error; same units as target | Low (linear penalty) |
-| **MSE** | $\frac{1}{n}\sum(y_i-\hat{y}_i)^2$ | Squared units; penalizes big errors | High (quadratic) |
-| **RMSE** | $\sqrt{\text{MSE}}$ | Same units; most commonly reported | High |
-| **R²** | $1 - SS_\text{res}/SS_\text{tot}$ | Fraction of variance explained [0,1] | Moderate |
-| **MAPE** | $\frac{1}{n}\sum|(y_i-\hat{y}_i)/y_i|$ | Percentage error; unit-free | Low (fails at $y=0$) |
+| **MAE** | $\frac{1}{n}\sum \lvert y-\hat{y} \rvert$ | Average error, target units | Low |
+| **MSE** | $\frac{1}{n}\sum(y-\hat{y})^2$ | Squared units | High |
+| **RMSE** | $\sqrt{\text{MSE}}$ | Target units — most reported | High |
+| **R²** | $1 - SS_\text{res}/SS_\text{tot}$ | Fraction of variance explained | Moderate |
+| **MAPE** | $\frac{1}{n}\sum \lvert (y-\hat{y})/y \rvert$ | Percentage, unit-free | Low; undefined at $y=0$ |
 
-$R^2 = 1.0$: perfect fit. $R^2 = 0.0$: model is equivalent to always predicting the mean. $R^2 < 0$: model worse than predicting the mean (yes, this does happen).
+$R^2 = 0$ means the model equals always predicting the mean; **$R^2 < 0$ means worse than the mean**, and it happens. If RMSE ≫ MAE, a few huge errors dominate — go look at them.
 
-If RMSE >> MAE, you have a few very large errors dominating — investigate those samples.
+### Learning-curve diagnosis
 
-### Cross-Validation Strategies
-
-| Strategy | When to use | Notes |
+| Pattern | Meaning | Fix |
 |---|---|---|
-| **K-Fold (K=5 or 10)** | Default; regression or balanced classification | Standard choice |
-| **Stratified K-Fold** | Always for classification | Preserves class distribution per fold |
-| **LOOCV (K=N)** | Tiny datasets (< 100 samples) | N× more expensive; high variance |
-| **Repeated K-Fold** | Extra stability needed | Run K-fold multiple times, average |
-| **TimeSeriesSplit** | Time-ordered data | Train always before test in time; never shuffle |
+| Train 97%, val 68% — big gap | High variance | More data, regularization, simpler model |
+| Train 72%, val 70% — both low | High bias | More features, bigger model, less regularization |
+| Both plateau together | More data won't help | Change the model |
 
-**TimeSeriesSplit — the expanding window pattern:**
-```
-Fold 1: train [1..100]    test [101..120]
-Fold 2: train [1..120]    test [121..140]
-Fold 3: train [1..140]    test [141..160]
-```
+### Tuning
 
-Never shuffle time series data before splitting — information from the future would "leak" into training.
-
-### Hyperparameter Tuning Methods
-
-| Method | How it works | When to use |
-|---|---|---|
-| **Grid Search** | Try all combinations exhaustively | Small grids (3 params × 3 values = 27 combos) |
-| **Random Search** | Sample randomly from distributions | Larger spaces; better coverage of key params |
-| **Bayesian Optimization** | Surrogate model (GP) learns which regions to try; balances exploitation vs exploration | Expensive evaluations; want best results with fewest trials |
-
-**Why random search often beats grid search:** typically only 1–2 hyperparameters matter for any given model. Grid search wastes budget at fixed values for the unimportant ones; random search varies all parameters every trial.
-
-**Bayesian optimization tools:** Optuna (state of the art, easy to use), Hyperopt, scikit-optimize.
-
-```python
-# Optuna example (Bayesian optimization)
-import optuna
-def objective(trial):
-    lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
-    n_est = trial.suggest_int('n_estimators', 100, 1000)
-    model = XGBClassifier(learning_rate=lr, n_estimators=n_est)
-    return cross_val_score(model, X_train, y_train, cv=5).mean()
-study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=100)
-```
-
-### Learning Curve Diagnosis
-
-```
-HIGH VARIANCE (overfitting)      HIGH BIAS (underfitting)
-────────────────────────         ─────────────────────────
-Train: 97%, Val: 68%             Train: 72%, Val: 70%
-Large gap between curves         Both curves low; close together
-Fix: add data; regularize;       Fix: more features; bigger model;
-     dropout; simpler model           less regularization
-```
-
-Learning curve plots model performance vs training set size. If both curves plateau (high bias): more data won't help — change the model. If gap persists (high variance): more data helps until gap closes.
-
-### 8 Common Evaluation Mistakes
-
-1. **Data leakage** — fit preprocessing on all data; **always split first**
-2. **Evaluating on training data** — perfect score means nothing; use held-out data
-3. **Accuracy on imbalanced data** — 99% accuracy on 1% fraud class = predicts nothing
-4. **No stratified splits** for classification — fold with 0% positive class is useless
-5. **Tuning on the test set** — it becomes a second training set; report once only
-6. **Ignoring confidence intervals** — two models within CI margin are tied
-7. **Shuffling time series before splitting** — future leaks into past; optimistic metrics
-8. **Comparing models evaluated on different splits** — splits must be identical for fair comparison
+Grid search is exhaustive and fine for small grids. **Random search usually wins at equal budget** because only 1–2 hyperparameters typically matter, and random varies all of them every trial instead of wasting runs on fixed values. **Bayesian optimization** (Optuna) builds a surrogate model to decide where to look next — best when each training run is expensive.
 
 ---
 
 > ✅ **Must-remember**
 >
-> - Precision = "alarm reliability" TP/(TP+FP); Recall = "coverage" TP/(TP+FN)
-> - F1 = harmonic mean of P and R; penalizes extreme imbalance between them
-> - ROC-AUC for balanced; AUC-PR for imbalanced/rare positives
-> - R² = 0 means model = mean predictor; R² < 0 means worse than mean
-> - Always Stratified K-Fold for classification; TimeSeriesSplit for time-ordered data
-> - Random search often outperforms grid search with same compute budget
+> - Precision = alarm reliability; recall = coverage; F1 = their harmonic mean
+> - ROC-AUC for balanced, **AUC-PR for rare positives**
+> - R² < 0 means worse than predicting the mean
+> - Stratified K-Fold for classification; TimeSeriesSplit for time
+> - Random search beats grid search at equal compute
+> - The test set is read **once**
 
 ---
 
-## Ch 14 — Neural Networks & Deep Learning
+## Ch 14 — Neural Networks
 
-> 💡 **In a sentence —** Neural networks compose many nonlinear transformations layer by layer, learning hierarchical features from raw inputs — the magic is in depth and the math is mostly matrix multiply + nonlinearity + chain rule.
+> 💡 **In a sentence —** Stack simple units — multiply, add a bias, bend with a non-linearity — and learn the weights by walking downhill on the loss.
 
-### The Artificial Neuron
+> 📖 Chapter 14 is the deepest chapter in the curriculum; this is the skeleton. Full derivations and a runnable CPU lab live in [the chapter itself](#content/14_neural_networks).
 
-$$z = \sum_{i=1}^n w_i x_i + b \qquad \hat{y} = f(z)$$
+### The neuron and why depth needs non-linearity
 
-- **Weight** $w_i$: learned multiplier; its magnitude alone is not feature importance
-- **Bias** $b$: shifts the activation threshold
-- **Activation function** $f$: adds nonlinearity; without it, any depth collapses to a single linear layer
+![Anatomy of an artificial neuron: inputs, weights, sum, bias, and activation](diagrams/nn_neuron_ai.png)
 
-> **Universal Approximation Theorem:** with suitable nonlinear activations and sufficient
-> width, a hidden-layer network can approximate continuous functions on a compact domain.
-> This concerns representation, not guaranteed optimization or generalization.
+$$z = \sum_i w_i x_i + b, \qquad \hat{y} = f(z)$$
 
-Depth can represent some compositional functions efficiently; compare depth and width
-against the task and compute budget rather than assuming one always wins.
+Without an activation, stacked layers collapse: $W_2(W_1x + b_1) + b_2$ is just one affine map, so a 100-layer network still draws a straight boundary. The **Universal Approximation Theorem** says one hidden layer with enough width can approximate any continuous function on a bounded domain — a statement about what a network *can represent*, not a promise that training will find it.
 
-### Architecture Anatomy
+![Why a hidden layer is needed: solving XOR](diagrams/nn_xor_ai.png)
 
-```
-INPUT LAYER      HIDDEN LAYERS              OUTPUT LAYER
-────────────     ─────────────────────      ─────────────────
-One node         Each neuron connects       Binary: 1 sigmoid
-per feature      to all previous layer      Multi-class: K softmax
-                 neurons (fully connected)  Regression: 1 linear
-x₁ ───┐
-x₂ ───┤──► [Layer 1] ──► [Layer 2] ──► ... ──► ŷ
-x₃ ───┘
-```
+XOR proves it. No straight line separates it, but two ReLU features — $h_1 = \text{ReLU}(x_1-x_2)$ and $h_2 = \text{ReLU}(x_2-x_1)$, scored as $h_1+h_2$ — solve it exactly. **A hidden layer doesn't classify; it re-describes the input so a simple threshold works.**
 
-**Depth** adds composed transformations and changes the optimization problem.
-
-**Width** adds features per layer. Either choice can help or hurt; data, initialization,
-regularization, and optimization also affect fit.
-
-### Activation Functions Compared
+### Activations
 
 | Activation | Formula | Range | Use where |
 |---|---|---|---|
-| **ReLU** | $\max(0,z)$ | $[0,\infty)$ | Default for hidden layers; gradient=1 for z>0 |
-| **Leaky ReLU** | $z$ if $z>0$ else $\alpha z$ ($\alpha$=0.01) | ℝ | When dying ReLU (0-gradient for z<0) is a problem |
-| **ELU** | $z$ if $z>0$ else $\alpha(e^z-1)$ | $(-\alpha,\infty)$ for $\alpha>0$ | A saturating negative branch |
-| **Sigmoid** | $1/(1+e^{-z})$ | $(0,1)$ | Binary output layer; LSTM gates |
-| **Tanh** | $(e^z-e^{-z})/(e^z+e^{-z})$ | $(-1,1)$ | RNN hidden state; zero-centered vs sigmoid |
-| **Softmax** | $e^{z_i}/\sum_j e^{z_j}$ | $(0,1)$, sums to 1 | Multi-class output layer |
-| **GELU** | $z\cdot\Phi(z)$ | Bounded below, unbounded above | Used in many Transformer feed-forward blocks |
+| **ReLU** | $\max(0,z)$ | $[0,\infty)$ | Hidden-layer default; derivative 1 or 0 |
+| **Leaky ReLU** | $z$ or $\alpha z$ | ℝ | When units die at zero gradient |
+| **Sigmoid** | $1/(1+e^{-z})$ | $(0,1)$ | Binary output; LSTM gates |
+| **Tanh** | $(e^z-e^{-z})/(e^z+e^{-z})$ | $(-1,1)$ | RNN hidden state; zero-centred |
+| **Softmax** | $e^{z_i}/\sum_j e^{z_j}$ | Sums to 1 | Multi-class output |
+| **GELU** | $z\cdot\Phi(z)$ | Smooth gate | Transformer feed-forward blocks |
 
-**Dying ReLU:** a unit inactive across the training data receives no data-gradient through
-its activation. One inactive example does not establish that it is dead. Initialization,
-learning rate, and activation choice are relevant; upstream changes can also alter activity.
+Sigmoid's derivative $s(1-s)$ **peaks at 0.25** — it can never pass back more than a quarter of the gradient it receives.
 
-### Backpropagation — Chain Rule All the Way Down
+### Backprop, in one shortcut
 
-Forward pass computes $\hat{y}$ and loss $L$. Backward pass computes gradients via chain rule:
+Backprop is the chain rule applied efficiently: compute the error at the output, then walk backwards reusing the gradient from the layer above. The result worth memorising — for **sigmoid + BCE** and **softmax + cross-entropy**, the whole chain collapses to
 
-$$\frac{\partial L}{\partial w_1^{(1)}} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z^{(2)}} \cdot \frac{\partial z^{(2)}}{\partial a^{(1)}} \cdot \frac{\partial a^{(1)}}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial w_1^{(1)}}$$
+$$\frac{\partial L}{\partial z} = \hat{y} - y$$
 
-Each term is a local derivative; shared paths contribute summed gradients. Backprop costs
-a small constant multiple of the forward computation, which depends on input size and
-parameter reuse—not just the number of parameters.
+The gradient is literally the prediction error. That cancellation is why those pairings are standard. A weight's gradient is then *incoming activation × outgoing error signal*, so a zero activation contributes zero gradient.
 
-Weight update: $w \leftarrow w - \alpha\,\partial L/\partial w$ for every weight simultaneously.
+Feed **raw logits** to fused losses (`BCEWithLogitsLoss`, `CrossEntropyLoss`) — applying softmax yourself changes the objective and breaks numerical stability.
 
-### Vanishing and Exploding Gradients
+### When training breaks
 
-**Vanishing:** ten sigmoid activation derivatives contribute at most
-$0.25^{10}\approx10^{-6}$, **ignoring weight factors**. Full gradient products include
-weights too; active ReLU derivatives of 1 do not guarantee stability.
+![Vanishing vs exploding gradients through a deep network](diagrams/nn_vanishing_ai.png)
 
-**Exploding:** repeated amplification can destabilize updates. NaN can also arise from
-invalid inputs or unsafe arithmetic; locate the first non-finite quantity before fixing it.
+The gradient is a **product** of per-layer factors, so it decays or explodes exponentially: ten sigmoids contribute at most $0.25^{10}\approx10^{-6}$, while a factor of 1.5 across 20 layers is $\approx3{,}300\times$.
 
-| Problem | Cause | Solution |
+| Problem | Fix |
+|---|---|
+| Saturating activations | ReLU family |
+| Deep networks | Batch Normalization |
+| Long sequences | LSTM / GRU gating |
+| 50+ layers | Residual / **skip connections**: $\partial(F(x)+x)/\partial x = F'(x)+1$ |
+| Exploding | Gradient clipping — **after** finding the first non-finite tensor |
+
+### Regularizing a network
+
+![Dropout, batch normalization and weight decay compared](diagrams/nn_regularization_ai.png)
+
+**Dropout** zeroes units while training and divides survivors by $(1-p)$; it is **off** at inference with no rescaling. **BatchNorm** uses the current batch's statistics while training but **running** statistics at evaluation — so `model.eval()` matters (and it does *not* disable autograd; `no_grad()` is separate). Transformers use **LayerNorm** (normalize across each token's features) and modern LLMs often **RMSNorm** (rescale by root-mean-square, no mean subtraction). **Weight decay** multiplies each weight by $(1-2\alpha\lambda)$ each step; AdamW decouples it, and an L2 term inside Adam is **not** equivalent.
+
+### Architectures
+
+![What each architecture buys you: CNN vs RNN vs Transformer](diagrams/nn_archchooser_ai.png)
+
+| Architecture | Buys you | Key detail |
 |---|---|---|
-| Vanishing (activations) | Sigmoid/tanh squash gradients | Use ReLU family |
-| Vanishing (depth) | Gradient shrinks across layers | Batch Normalization |
-| Vanishing (sequences) | Gradients over time steps | LSTM / GRU gating |
-| Vanishing (very deep) | 50+ layer networks | Residual / skip connections |
-| Exploding | Excessive gradient magnitude | Consider clipping: $g \leftarrow g \min(1,c/\|g\|)$ for threshold $c$ |
+| **CNN** | **Locality** — one filter reused everywhere | Output size $\lfloor (n+2p-k)/s \rfloor + 1$; filters span all channels |
+| **ResNet** | A **gradient highway** | $y = F(x)+x$; the $+1$ has no shrinking factor |
+| **RNN / LSTM** | **Memory** — a running state | Gates let a fact sit untouched across steps |
+| **Transformer** | **Attention** — any token to any other in one step | $\text{softmax}(QK^\top/\sqrt{d_k})V$; cost grows with $T^2$ |
+| **Transfer learning** | **Reuse** — someone else's compute | Freeze the backbone, replace the head |
 
-### Neural Network Regularization
+Divide attention scores by $\sqrt{d_k}$ or softmax saturates. Causal masking happens **before** softmax, and the remaining weights renormalize. Attention is a weighted **sum**, so it is order-blind by itself — **positional encoding** (sinusoidal, learned, RoPE or ALiBi) stamps each token with its location before attention runs.
 
-**Dropout:**
-```
-Training:  randomly zero activations with probability p
-           divide survivors by (1-p): inverted dropout
-
-Inference: disable dropout; no rescaling
-```
-
-Choose $p$ by validation; some networks need little or no dropout.
-
-**Batch Normalization:**
-
-$$\hat{x}_i = \frac{x_i - \mu_\mathcal{B}}{\sqrt{\sigma_\mathcal{B}^2 + \epsilon}} \qquad y_i = \gamma\hat{x}_i + \beta$$
-
-Normalizes each mini-batch to $\mu=0$, $\sigma=1$; learnable scale $\gamma$ and shift $\beta$ let the network undo normalization if needed. Benefits: enables higher learning rates; reduces sensitivity to weight initialization; acts as mild regularizer.
-
-Usual BatchNorm uses batch statistics in training and running statistics in evaluation.
-`model.eval()` changes module behavior; `no_grad()` separately controls gradient recording.
-
-For Transformers → **Layer Normalization** (normalize over features, not batch). Modern LLMs → **RMSNorm** (simpler: $\hat{x}_i = x_i/\text{RMS}(x)$, no mean centering).
-
-**L2 versus decay:** the loss penalty $\lambda\sum_jw_j^2$ contributes gradient $2\lambda w$.
-For plain SGD, $w_{\text{new}}=(1-2\alpha\lambda)w-\alpha\nabla L_{\text{data}}$.
-AdamW instead decouples shrinkage from adaptive gradient processing; it is not generally
-equivalent to putting an L2 penalty inside Adam.
-
-**Practice bridge:** in [Chapter 14's CPU lab](#content/14_neural_networks), follow the
-two-layer prediction from probability 0.731059 / loss 0.313262 to probability 0.786594 /
-loss 0.240043 after one update. Then train XOR with and without a hidden activation.
-For binary logit loss, outputs and float targets have matching (B,1) shapes; for common
-multiclass cross-entropy, logits are (B,C) and integer class-index targets are (B,).
-
-### Convolutional Neural Networks (CNNs)
-
-A **convolutional layer** slides a $k\times k$ filter over the input, computing dot products:
-
-$$\text{Output}[i,j] = \sum_{m,n} W[m,n] \cdot \text{Input}[i+m,j+n]$$
-
-One filter = one feature map. Stack $F$ filters → $F$ feature maps. Hierarchical feature learning:
-
-Filters span all input channels. With biases, parameter count is
-$C_{\text{out}}(C_{\text{in}}k^2+1)$. Convolution is translation-equivariant under suitable
-conditions; pooling adds limited shift tolerance, not perfect invariance.
-
-```
-Layer 1:  edges, gradients            (low-level spatial features)
-Layer 3:  textures, corners, curves   (mid-level composition)
-Layer 5:  eyes, wheels, faces         (high-level semantics)
-```
-
-**Key architectural components:**
-- **Stride:** pixels skipped per convolution step — larger stride = smaller output
-- **Padding:** add zeros around border to control output size
-- **Pooling:** downsample feature maps (max pool: take max in each region — keeps strongest activation)
-- **Skip connections (ResNet):** $y = F(x) + x$ — adds input directly to output; gradient highway; enables training of 100–1000 layer networks
-
-Famous architectures: LeNet-5 (1998), AlexNet (2012, won ImageNet), VGG (2014, 3×3 stacks), ResNet (2015, skip connections), EfficientNet (2019, compound scaling).
-
-### RNNs, LSTMs, GRUs
-
-**RNN:** hidden state carries context across time steps:
-
-$$h_t = f(W_x x_t + W_h h_{t-1} + b) \qquad \hat{y}_t = g(W_y h_t + b_y)$$
-
-Problem: repeated weight and activation factors can shrink or amplify gradients through
-time. There is no universal sequence-length cutoff.
-
-**LSTM** (Long Short-Term Memory) — 3 gates control a cell state $C_t$ that acts as a gradient highway:
-
-$$f_t = \sigma(\cdot) \quad \text{(forget: what to erase from }C_{t-1}\text{)}$$
-$$i_t = \sigma(\cdot), \quad \tilde{C}_t = \tanh(\cdot) \quad \text{(input: new candidate content)}$$
-$$C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \quad \text{(cell state update)}$$
-$$o_t = \sigma(\cdot), \quad h_t = o_t \odot \tanh(C_t) \quad \text{(output gate + hidden state)}$$
-
-The direct cell-state path multiplies old memory by the forget gate. Gate values near 1
-can preserve information longer; the architecture does not guarantee unlimited memory.
-
-**GRU** (Gated Recurrent Unit): update and reset gates, without a separate cell state.
-Often fewer parameters than a same-width LSTM; compare actual latency and task quality.
-
-Modern recommendation: use Transformer for language/sequence tasks with full data. RNN/LSTM for streaming low-latency time series (one step at a time).
-
-### The Transformer and Self-Attention
-
-$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V$$
-
-- **Q (Query):** "what am I looking for?"
-- **K (Key):** "what do I contain?"
-- **V (Value):** "what content do I carry if selected?"
-
-$QK^\top$ scores relevance of every token to every other token. Divide by $\sqrt{d_k}$ to prevent dot products from growing too large (which would collapse softmax to near one-hot). Resulting weights used to take a weighted sum of Values.
-
-**Multi-head attention:** run separate projections in parallel, concatenate the heads,
-and project back to model dimension. Heads need not learn distinct named relationships.
-
-**Positional information:** unmasked, position-free self-attention is
-**permutation-equivariant**: reorder input rows and output rows reorder too, rather than
-remaining identical. Positional schemes supply location information. A causal mask also
-imposes ordered visibility; parallel training does not allow access to future tokens.
-
-| Architecture | Attention | Pre-training | Best for |
+| | Encoder-only (BERT) | Decoder-only (GPT) | Encoder-decoder (T5) |
 |---|---|---|---|
-| **Encoder-only (BERT)** | Bidirectional (sees all tokens) | Masked LM | Classification, NER, QA |
-| **Decoder-only (GPT)** | Causal (current and past) | Next-token prediction | Generation, chatbots |
-| **Encoder-Decoder (T5)** | Cross-attention between enc and dec | Span corruption / seq2seq | Translation, summarization |
-
-### Transfer Learning
-
-**Pre-train** on massive data (ImageNet, Wikipedia+Books) → model learns rich general representations.  
-**Fine-tune** on your small task-specific dataset.
-
-```
-Useful source representation:
-  → Start with a frozen-backbone/head-training baseline
-  → Compare selective or full fine-tuning when justified
-
-Large domain mismatch:
-  → Check whether the representation transfers at all
-  → Choose which layers to adapt using validation, not sample count alone
-```
+| Attention | Bidirectional | Causal | Cross-attention |
+| Pre-training | Masked LM | Next token | Span corruption |
+| Best for | Classification, NER, QA | Generation, chat | Translation, summarization |
 
 ---
 
 > ✅ **Must-remember**
 >
-> - Without activation functions, deep networks = single linear layer regardless of depth
-> - ReLU for hidden layers (gradient=1 for z>0); Sigmoid for binary output; Softmax for multi-class
-> - Gradient flow includes weights and activation derivatives; ReLU alone is not a stability guarantee
-> - Gated additive memory can help retain signals over time
-> - Attention mixes permitted values; training can be parallel, autoregressive generation remains sequential
-> - Match loss and target shapes; distinguish `eval()` from `no_grad()` and L2 from decoupled decay
+> - No activation ⇒ any depth collapses to one linear layer
+> - Sigmoid derivative caps at 0.25; ReLU is 1 or 0
+> - Sigmoid+BCE and softmax+CE both give $\partial L/\partial z = \hat{y} - y$
+> - He init = $2/n_\text{in}$ because ReLU discards half the signal
+> - `eval()` ≠ `no_grad()`; AdamW ≠ L2-inside-Adam
+> - CNN = locality · RNN = memory · Transformer = attention
 
 ---
 
 ## Ch 15 — Reinforcement Learning
 
-> 💡 **In a sentence —** An RL agent learns to take good actions by trial-and-error — it interacts with an environment, receives reward signals, and adjusts its behavior to maximize cumulative future reward, with no labeled dataset required.
+> 💡 **In a sentence —** An agent learns by doing — it acts, receives reward, and adjusts to maximize cumulative future reward, with no labelled dataset anywhere.
 
-### The RL Framework
+![The reinforcement learning loop, and the main families of algorithm](diagrams/rev_rl_ai.png)
 
-```
-┌─────────────────────────────────────────────────────┐
-│                                                     │
-│   ┌─────────┐  action a_t   ┌───────────────────┐  │
-│   │  AGENT  │──────────────►│  ENVIRONMENT      │  │
-│   │ (policy)│               │  (world / game /  │  │
-│   └─────────┘◄──────────────│   simulator)      │  │
-│                state s_t,   └───────────────────┘  │
-│                reward r_t                           │
-└─────────────────────────────────────────────────────┘
-```
+### The framework
 
-| Component | Supervised Learning | Reinforcement Learning |
+| | Supervised | Reinforcement |
 |---|---|---|
-| Learning signal | Label per example | Scalar reward (delayed, sparse) |
-| Data source | Fixed labeled dataset | Agent generates its own by interacting |
-| Feedback timing | Immediate | Often delayed (end of episode) |
-| Goal | Predict y for each x | Maximize cumulative reward $G_t$ |
+| Signal | A label per example | A scalar reward, often delayed |
+| Data | Fixed labelled set | The agent generates its own |
+| Goal | Predict $y$ for each $x$ | Maximize cumulative return $G_t$ |
 
-**Six RL primitives:**
-- **Agent**: the learner/decision-maker
-- **Environment**: everything the agent interacts with
-- **State** $s$: current situation (what the agent observes)
-- **Action** $a$: what the agent can do
-- **Reward** $r$: scalar feedback signal (immediate)
-- **Policy** $\pi$: the agent's strategy mapping states to actions (or action probabilities)
+An **MDP** is the tuple $(S, A, P, R, \gamma)$ — states, actions, transition probabilities, rewards, discount. The **Markov property** says the future depends only on the current state, which is what makes RL tractable; when it doesn't hold, engineer the state to carry history (DQN stacks four frames).
 
-**Episode**: a complete trajectory from start to terminal state. **Return** $G_t = \sum_{k=0}^\infty \gamma^k r_{t+k+1}$ = sum of discounted future rewards.
+**Return** $G_t = \sum_k \gamma^k r_{t+k+1}$. The discount $\gamma$ sets the horizon: 0 is myopic, 0.9 counts a reward ten steps out at ~0.35×, 0.99 is far-sighted.
 
-### Markov Decision Processes (MDPs)
+### Value functions and Bellman
 
-Formal framework for RL problems. Defined by the tuple $(S, A, P, R, \gamma)$:
-- $S$: state space
-- $A$: action space
-- $P(s'|s,a)$: state transition probability
-- $R(s,a,s')$: reward function
-- $\gamma \in [0,1]$: discount factor
+$$V^\pi(s) = \mathbb{E}_\pi\left[\sum_t \gamma^t r_{t+1} \,\Big|\, s_0 = s\right], \qquad V^\pi(s) = \sum_a \pi(a \mid s) Q^\pi(s,a)$$
 
-**Markov property:** $P(s_{t+1}|s_t,a_t) = P(s_{t+1}|s_0,...,s_t,a_0,...,a_t)$
+$$Q^*(s,a) = R(s,a) + \gamma\sum_{s'}P(s' \mid s,a)\max_{a'}Q^*(s',a')$$
 
-The future depends only on the current state — full history is irrelevant (given current state). This is what makes RL computationally tractable. When it doesn't hold naturally, engineer state to include relevant history (frame stacking in DQN).
+"What I earn now, plus the best discounted value of where I land." Once you know $Q^*$, the optimal policy is just $\pi^*(s) = \arg\max_a Q^*(s,a)$.
 
-**Discount factor intuition:**
-```
-γ = 0.0: myopic — only care about next immediate reward
-γ = 0.9: reward 10 steps later counts as 0.9^10 ≈ 0.35 times immediate
-γ = 0.99: far-sighted — patient, cares about long-term outcomes
-γ = 1.0: undiscounted — all future rewards equal (only for episodic tasks)
-```
+### Exploration vs exploitation
 
-### Value Functions and Bellman Equations
+| Strategy | Mechanism |
+|---|---|
+| **ε-greedy** | Random action with probability ε; decay 1.0 → 0.05 |
+| **UCB** | $\arg\max_a [Q(a) + c\sqrt{\ln t / N(a)}]$ — bonus shrinks as an action is tried |
+| **Boltzmann** | Sample $\propto e^{Q(a)/\tau}$; $\tau \to 0$ greedy, $\tau \to \infty$ uniform |
 
-**State-value function** under policy $\pi$:
+### The algorithm families
 
-$$V^\pi(s) = \mathbb{E}_\pi\!\left[\sum_{t=0}^\infty \gamma^t r_{t+1}\,\bigg|\,s_0=s\right]$$
+**Q-Learning** — off-policy, model-free, the TD workhorse:
 
-**Action-value (Q) function** under policy $\pi$:
+$$Q(s,a) \leftarrow Q(s,a) + \alpha\underbrace{\left[r + \gamma\max_{a'}Q(s',a') - Q(s,a)\right]}_{\text{TD error, i.e. surprise}}$$
 
-$$Q^\pi(s,a) = \mathbb{E}_\pi\!\left[\sum_{t=0}^\infty \gamma^t r_{t+1}\,\bigg|\,s_0=s,\,a_0=a\right]$$
+Positive TD error means it went better than expected. Off-policy means it learns the optimal $Q$ while behaving ε-greedily.
 
-Key relationship: $V^\pi(s) = \sum_a \pi(a|s)\,Q^\pi(s,a)$
+**DQN** replaces the impossible Q-table (Atari has ~$10^{56}$ states) with a CNN, and adds the two tricks that make it stable: **experience replay** (sample random past transitions to break temporal correlation) and a **target network** (a frozen copy for TD targets, so you aren't chasing a moving target).
 
-**Bellman Optimality Equations:**
+**Policy gradients** optimize $\pi_\theta$ directly: $\nabla_\theta J = \mathbb{E}[\nabla_\theta \log\pi_\theta(a_t \mid s_t)\, G_t]$ — raising the log-probability of actions that led to high returns. This handles **continuous** action spaces where argmax over Q is impossible. REINFORCE does it per episode, with high variance.
 
-$$V^*(s) = \max_a\!\left[R(s,a) + \gamma\sum_{s'}P(s'|s,a)\,V^*(s')\right]$$
+**Actor-critic** pairs an actor (the policy) with a critic (a value estimate), and uses the **advantage** $A(s_t,a_t) = r_t + \gamma V(s_{t+1}) - V(s_t)$ instead of the raw return — cutting variance by asking "was this action better than expected *here*" rather than "was this a good episode".
 
-$$Q^*(s,a) = R(s,a) + \gamma\sum_{s'}P(s'|s,a)\max_{a'}Q^*(s',a')$$
-
-Intuition: "the value of being here = what I earn now + the best discounted value of where I land." Once you know $Q^*$, the optimal policy is trivially $\pi^*(s) = \arg\max_a Q^*(s,a)$.
-
-### Exploration vs Exploitation
-
-The central dilemma: use the best known action (exploit) vs. try new actions to discover better ones (explore).
-
-**ε-greedy:** with probability ε take a random action (explore); with probability 1-ε take the greedy action (exploit). Decay ε from 1.0 → 0.05 over training: explore early, exploit later.
-
-**UCB (Upper Confidence Bound):**
-
-$$a_t = \arg\max_a\left[Q(a) + c\sqrt{\frac{\ln t}{N(a)}}\right]$$
-
-Exploration bonus shrinks as action $a$ is tried more ($N(a)$ grows). Principled; provably efficient for multi-armed bandit problems.
-
-**Boltzmann/Softmax exploration:** $P(a) = e^{Q(a)/\tau}/\sum_{a'}e^{Q(a')/\tau}$ — temperature $\tau$ controls randomness; $\tau \to 0$ = greedy, $\tau \to \infty$ = uniform.
-
-### Q-Learning — The TD Learning Workhorse
-
-Off-policy, model-free: learns the optimal Q function without knowing the environment dynamics.
-
-$$Q(s,a) \leftarrow Q(s,a) + \alpha\underbrace{\left[r + \gamma\max_{a'}Q(s',a') - Q(s,a)\right]}_{\text{TD error (surprise)}}$$
-
-- TD error > 0: outcome was better than expected → increase Q(s,a)
-- TD error < 0: outcome was worse than expected → decrease Q(s,a)
-- **Off-policy:** can learn optimal Q while following any behavior policy (e.g., ε-greedy)
-- **Model-free:** doesn't learn $P(s'|s,a)$ or $R(s,a)$ explicitly
-
-Convergence guaranteed for tabular Q-learning with proper learning rate decay and sufficient exploration.
-
-### Deep Q-Network (DQN)
-
-Q-table requires storing Q(s,a) for every state-action pair. For Atari: $|\text{states}| \approx 10^{56}$ — impossible. Solution: use a neural network (CNN) as a function approximator:
-
-$$Q(s,a;\theta) \approx Q^*(s,a)$$
-
-**Two key innovations that make DQN stable:**
-
-1. **Experience Replay:** store transitions $(s_t, a_t, r_t, s_{t+1})$ in a replay buffer. Sample random mini-batches to break temporal correlations. Without it: consecutive correlated samples create feedback loops → training diverges.
-
-2. **Target Network:** a frozen copy $\theta^-$ of the online network, updated every $C$ steps: $\theta^- \leftarrow \theta$. Use $\theta^-$ for TD targets:
-$$\mathcal{L} = \mathbb{E}\!\left[\left(r + \gamma\max_{a'}Q(s',a';\theta^-) - Q(s,a;\theta)\right)^2\right]$$
-Without it: both prediction and target change simultaneously → "chasing a moving target" → divergence.
-
-DQN milestones: 2013 Atari paper trained on raw pixels (84×84 grayscale), frame stacking (last 4 frames) for velocity/motion perception, reward clipping ±1.
-
-### Policy Gradient Methods
-
-Instead of estimating Q, directly optimize the policy $\pi_\theta(a|s)$:
-
-$$\nabla_\theta J(\theta) = \mathbb{E}_{\pi_\theta}\!\left[\nabla_\theta \log\pi_\theta(a_t|s_t) \cdot G_t\right]$$
-
-Actions that led to high returns ($G_t > 0$) have their log-probability increased; bad actions decrease. Works naturally for **continuous action spaces** (where you can't take argmax over Q) and stochastic policies.
-
-**REINFORCE (Monte Carlo policy gradient):** collect full episode, compute returns $G_t$ from end. High variance (same action in same state → very different $G_t$ depending on rest of episode).
-
-### Actor-Critic Methods and PPO
-
-**Actor-Critic:** two cooperating networks:
-- **Actor** $\pi_\theta(a|s)$: the policy (what action to take)
-- **Critic** $V_\phi(s)$: estimates state value (how good is this state?)
-
-**Advantage function:** $A(s_t,a_t) = r_t + \gamma V(s_{t+1}) - V(s_t)$
-
-Using advantage instead of raw return $G_t$ dramatically reduces variance. The critic provides a "baseline" — instead of asking "was this a good episode?" we ask "was this action better than expected given this state?".
-
-**PPO (Proximal Policy Optimization):** clips the policy update to prevent destructively large steps:
-
-$$L^\text{CLIP}(\theta) = \mathbb{E}\!\left[\min\!\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_\text{old}}(a|s)}\hat{A},\;\text{clip}\!\left(\frac{\pi_\theta(a|s)}{\pi_{\theta_\text{old}}(a|s)},\,1-\varepsilon,\,1+\varepsilon\right)\hat{A}\right)\right]$$
-
-The clip prevents ratio $\pi_\theta/\pi_{\theta_\text{old}}$ from getting too large. No trust-region constraint needed (unlike TRPO) — simpler to implement, slightly less efficient but more stable.
-
-PPO is one of the most widely deployed RL algorithms: Gymnasium (formerly OpenAI Gym), robotics, game AI, **RLHF**.
-
-### RLHF — Reinforcement Learning from Human Feedback
-
-The pipeline that transforms a raw language model into ChatGPT/Claude/Gemini:
-
-```
-STAGE 1 — SUPERVISED FINE-TUNING (SFT):
-  Base LLM + (prompt, ideal response) pairs written by human experts
-  → fine-tune LLM to follow instructions and preferred format
-
-STAGE 2 — REWARD MODEL TRAINING:
-  Generate multiple responses to same prompt
-  Humans rank them: response A > B > C
-  Train reward model: RM(prompt, response) → scalar score
-  Loss: -log σ(r(y_w) - r(y_l))   [preferred y_w > rejected y_l]
-
-STAGE 3 — PPO OPTIMIZATION:
-  Treat LLM as RL policy; reward = RM score − β·KL_penalty
-  PPO updates LLM to maximize expected reward
-  KL penalty prevents "reward hacking" (drifting far from SFT model)
-```
-
-$$R(x,y) = r_\theta(x,y) - \beta \cdot D_{\text{KL}}\bigl[\pi_\phi(y|x) \,\|\, \pi_{\text{SFT}}(y|x)\bigr]$$
-
-The KL penalty is essential — without it, the LLM finds degenerate outputs that score high on the reward model (which is an imperfect proxy) but are actually low-quality.
-
-**DPO (Direct Preference Optimization):** skips the reward model; reparameterizes the RLHF objective so the LLM is trained directly on preference pairs. Simpler implementation; widely used.
-
-**GRPO / RLVR (2025):** RL with *verifiable* rewards (math/code correctness), optimized with **GRPO** — critic-free, group-relative (advantage = reward − group mean), from DeepSeek-R1. Powers the reasoning models (DeepSeek-R1, OpenAI o1/o3). Modern post-training stack: SFT → DPO → RLVR.
-
-### Model-Based vs Model-Free RL
-
-| Property | Model-Free (DQN, PPO, SAC) | Model-Based (AlphaZero, MuZero) |
-|---|---|---|
-| Learns | Q or $\pi$ from experience | Environment dynamics $P(s'|s,a)$ |
-| Sample efficiency | Low (needs many interactions) | High (simulates before acting) |
-| Accuracy risk | None of wrong model | Plans fail if model inaccurate |
-| Best for | Complex environments hard to model; cheap simulation | Expensive real-world data; well-structured games |
-
-### Multi-Armed Bandit — RL Lite
-
-The simplest RL setting: K slot machines (arms) each with unknown reward distribution. Pull an arm, observe reward, decide what to pull next. No state or transition dynamics — just pure exploration vs exploitation.
-
-**ε-greedy bandit:** maintain $Q(a)$ = estimated mean reward for each arm. With probability ε: pull random arm (explore); with 1-ε: pull arm with highest $Q(a)$ (exploit). Update: $Q(a) \leftarrow Q(a) + \frac{1}{N(a)}[r - Q(a)]$ where $N(a)$ is number of times arm $a$ was pulled.
-
-**UCB1:** adds uncertainty bonus $\sqrt{2\ln t / N(a)}$ to $Q(a)$. Never ignores any arm forever; pulls under-tried arms even if their current mean looks low.
-
-Bandits are used in A/B testing (web optimisation), clinical trials (adaptive allocation), and recommendation systems.
-
-### Famous RL Milestones
-
-```
-1992: TD-Gammon — backgammon at human level (TD learning + NN)
-2013: DQN — human-level Atari from raw pixels
-2016: AlphaGo — beats Lee Sedol (MCTS + policy/value nets + RL from self-play)
-2017: AlphaZero — masters chess, shogi, Go from zero human data via self-play
-2019: OpenAI Five — beats Dota 2 world champions (PPO at massive scale)
-2020: MuZero — masters games without knowing the rules (learns dynamics)
-2022: ChatGPT — RLHF aligns LLM to human preferences at scale
-2024: AlphaProof — IMO silver-medal performance in mathematical reasoning
-2025: DeepSeek-R1 / OpenAI o-series — RL from verifiable rewards (GRPO) unlocks reasoning models
-```
-
-**When to use RL — the litmus test:**
-- Sequential decisions where each choice affects future options → RL ✓
-- Clear reward signal exists (score, task completion) → RL ✓
-- Simulator or cheap interaction available → RL ✓
-- Single-shot prediction with labeled data → use supervised learning instead
-- No clear reward signal → use unsupervised or supervised instead
-
-### Algorithm Selection Guide
-
-| Situation | Pick | Why |
-|---|---|---|
-| Know the environment's rules (P, R) exactly | Value / Policy Iteration | Solves exactly via dynamic programming — no learning needed |
-| Discrete actions, small/tabular state, rules unknown | Q-Learning (SARSA if training mistakes are costly) | Off-policy TD learning from sampled experience |
-| Discrete actions, high-dimensional state (pixels) | DQN | Neural net generalizes Q-values across similar states |
-| Continuous actions, or the optimal policy is inherently stochastic | Policy Gradient / Actor-Critic (PPO) | Q-learning's argmax is intractable over continuous actions |
-| No state at all — just reward per choice (ads, page variants) | Multi-Armed Bandit (ε-greedy / UCB / Thompson) | Pure explore-exploit, no transition dynamics to model |
-| Cheap, accurate simulator available (board games, robotics sim) | Model-Based (AlphaZero / MuZero) | Plans ahead instead of only reacting to experience |
-| Aligning an LLM to human preferences | RLHF (SFT → Reward Model → PPO) or DPO | Turns human preference into a reward signal RL can optimize |
-
-### Quick Comparison Table
-
-| Method | Task | It assumes | Breaks when | On/off-policy | Sample efficiency | Scalability | Use when |
-|---|---|---|---|---|---|---|---|
-| Q-Learning | Discrete control (tabular) | State space small enough for a table; Markov property holds | State/action space is large or continuous (table explodes) | Off-policy | Low-moderate — needs many episodes | Poor beyond small discrete state spaces | Small discrete grid-world / tabular problems |
-| SARSA | Discrete control (tabular) | Same as Q-Learning, but tolerates on-policy exploration cost | You only care about the final greedy policy, not training-time safety | On-policy | Low-moderate | Poor beyond small discrete state spaces | Mistakes during training are costly/dangerous (real robots, live systems) |
-| DQN | Discrete control, high-dim state (e.g. pixels) | A neural net can generalize Q-values across similar states | Action space is continuous, or replay/target-net omitted (unstable) | Off-policy | Low — needs millions of frames | Good — scales to large/high-dim state spaces | Discrete actions, raw high-dimensional input (Atari-style) |
-| REINFORCE (Policy Gradient) | Any action space, incl. continuous | Sampling full episodes gives an unbiased gradient of expected return | Episodes are long/high-variance (noisy gradients) | On-policy | Low — high variance, needs many episodes | Moderate | Continuous actions, or an inherently stochastic optimal policy |
-| Actor-Critic (A2C / PPO) | Any action space | A learned critic is a lower-variance baseline than raw returns | Clip ratio mis-set, or critic estimates are poor early on | On-policy (PPO/A2C); SAC is off-policy | Moderate | Good — PPO is the most widely deployed RL algorithm today | Default modern choice; robotics, game AI, RLHF |
-| Model-Based (AlphaZero / MuZero) | Planning + control, esp. games/simulators | A learned/known environment model is accurate enough to plan with | The model is wrong — plans confidently fail | N/A — uses search + self-play | High — simulates instead of acting | Good in simulators; poor where real data is the only signal | Cheap accurate simulator exists; real-world data is expensive |
-| Multi-Armed Bandit (ε-greedy / UCB) | Stateless action selection | No state/transition dynamics — just K arms with unknown rewards | The problem actually has sequential state (a bandit ignores it) | N/A | High for its narrow scope | Excellent | A/B testing, ad selection, clinical trials — no state, pure explore/exploit |
+**PPO** clips the policy ratio so a single update can never be destructive. It is the workhorse of modern RL and the backbone of **RLHF**: supervised fine-tune → train a reward model → PPO with a KL penalty that stops the policy drifting into reward hacking.
 
 ---
 
 > ✅ **Must-remember**
 >
-> - MDP = (S, A, P, R, γ); Markov property: future depends only on current state
-> - Bellman: $Q^*(s,a) = R + \gamma\,\mathbb{E}[\max_{a'} Q^*(s',a')]$
-> - Q-Learning: TD error = $r + \gamma\max Q(s',a') - Q(s,a)$; off-policy, model-free
-> - DQN: experience replay (breaks correlation) + target network (stabilizes training)
-> - PPO: clipped policy ratio prevents destructive large updates; workhorse of modern RL
-> - RLHF = SFT → Reward Model → PPO with KL penalty; KL prevents reward hacking
-> - ε-greedy: start ε=1.0 (full exploration) → decay to 0.05 (mostly exploit)
+> - MDP = $(S, A, P, R, \gamma)$; the future depends only on the current state
+> - $Q^*(s,a) = R + \gamma\,\mathbb{E}[\max_{a'}Q^*(s',a')]$
+> - TD error = $r + \gamma\max Q(s',a') - Q(s,a)$; off-policy, model-free
+> - DQN = experience replay + target network
+> - Policy gradients handle continuous actions; PPO clips the update
+> - RLHF = SFT → reward model → PPO + KL penalty
 
 ---
 
 ## One-page cheat recap
 
-| Chapter | Single most important fact / formula |
+| Chapter | The single thing to remember |
 |---|---|
-| **Ch 07 — Intro to ML** | ML = Input + Output → Rules. AI ⊃ ML ⊃ Deep Learning ⊃ Gen AI. For tabular data, gradient boosting (XGBoost/LightGBM) beats deep learning. 80% of time is data prep. |
-| **Ch 08 — Core Concepts** | Total Error = **Bias² + Variance + Noise**. Training loop: forward → loss → backprop → $w \leftarrow w - \alpha\,\partial L/\partial w$. Adam (lr=0.001) is default. L1→zeros (feature selection); L2→shrinks all (Ridge). |
-| **Ch 09 — Data Preprocessing** | **Fit scaler on training data ONLY**, then transform test. IQR fence: $Q1-1.5\cdot IQR$ to $Q3+1.5\cdot IQR$. OHE for nominal; target encoding for high-cardinality. Scaling before splitting = silent leakage. |
-| **Ch 10 — Supervised Learning** | Bagging (Random Forest) **reduces variance**; Boosting (XGBoost) **reduces bias**. Logistic Regression = linear boundary + calibrated probs. Always Stratified K-fold for classification. K=√n for KNN. |
-| **Ch 11 — Unsupervised Learning** | K-Means: specify K, spherical only, K-Means++ init. DBSCAN: auto K, arbitrary shapes, marks noise. Silhouette $s=(b-a)/\max(a,b)$ ∈ [-1,1]; > 0.5 = good. PCA linear; t-SNE local viz only; UMAP local+global. |
-| **Ch 12 — Key Algorithms** | Normal equation: $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$ (exact, O(p³)). Lasso → exact zeros. Gradient Boosting: each tree fits residuals. XGBoost level-wise; LightGBM leaf-wise (10–30× faster for large data). |
-| **Ch 13 — Model Evaluation** | Precision = TP/(TP+FP); Recall = TP/(TP+FN); F1 = harmonic mean. **AUC-PR for imbalanced; AUC-ROC for balanced**. R² < 0 = worse than mean. Never tune on test set. TimeSeriesSplit for time-ordered data. |
-| **Ch 14 — Neural Networks** | Trace shapes, forward pass, loss, gradients, update. Gradient flow includes weights and activations. Use raw logits with matching losses; `eval()` is separate from `no_grad()`. Attention mixes permitted values; test understanding with the CPU XOR lab. |
-| **Ch 15 — Reinforcement Learning** | Bellman: $Q^*(s,a) = R + \gamma\max_{a'}Q^*(s',a')$. Q-learning TD error: $r + \gamma\max Q(s') - Q(s,a)$. DQN: experience replay + target network. **PPO** = clipped policy ratio; backbone of RLHF. RLHF = SFT → RM → PPO + KL penalty. |
+| **07 — Intro** | ML = Input + Output → Rules. AI ⊃ ML ⊃ DL ⊃ GenAI. 80% of the work is data prep. Gradient boosting still beats deep learning on tabular data. |
+| **08 — Core Concepts** | Total Error = **Bias² + Variance + Noise**. Loop: forward → loss → backward → $w \leftarrow w - \alpha\,\partial L/\partial w$. Adam lr=0.001 default. L1 → zeros, L2 → shrinks. |
+| **09 — Preprocessing** | **Fit on train only.** IQR fence $Q1-1.5\,IQR$ to $Q3+1.5\,IQR$. One-hot nominal, target-encode high cardinality. Scaling before splitting is silent leakage. |
+| **10 — Supervised** | Bagging cuts **variance**, boosting cuts **bias**. Logistic regression = straight boundary + calibrated probabilities. Stratified K-Fold always. $K=\sqrt{n}$ for KNN. |
+| **11 — Unsupervised** | K-Means: you pick K, round clusters only. DBSCAN: finds K, any shape, flags noise. Silhouette > 0.5 is reasonable. PCA linear; t-SNE picture-only; UMAP both. |
+| **12 — Key Algorithms** | $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$, exact but $O(p^3)$. L1's diamond corners give exact zeros. Boosting fits residuals. LightGBM leaf-wise = 10–30× faster. |
+| **13 — Evaluation** | Precision = TP/(TP+FP); Recall = TP/(TP+FN). **AUC-PR when positives are rare.** R² < 0 = worse than the mean. Never tune on test. TimeSeriesSplit for time. |
+| **14 — Neural Networks** | No activation ⇒ one linear layer. Sigmoid+BCE and softmax+CE both give $\partial L/\partial z = \hat{y}-y$. He init = $2/n_\text{in}$. CNN locality · RNN memory · Transformer attention. |
+| **15 — Reinforcement** | $Q^*(s,a) = R + \gamma\max_{a'}Q^*(s',a')$. DQN = replay + target network. **PPO** clips the policy ratio. RLHF = SFT → RM → PPO + KL penalty. |
+
+---
+
+**Previous:** [Chapter 15 — Reinforcement Learning](#content/15_reinforcement_learning) | **Next:** [Chapter 16 — Deep Learning Reference](#content/16_deep_learning)
