@@ -1,7 +1,8 @@
 // tools/diagram-prompts.js
 //
-// One entry per retained PNG architecture diagram in Chapters 35-37, plus a set of
-// educational "concept" diagrams for Chapter 14 (Neural Networks).
+// One entry per retained PNG architecture diagram in Chapters 35-37, plus sets of
+// educational "concept" diagrams for the ML curriculum chapters (07-15, 15s recap)
+// and the deep-learning / LLM / agents chapters (16-20).
 // `svgBase` names diagrams/<svgBase>_ai.png for the optional generation workflow.
 // The chapters' editable Mermaid diagrams and current prose define the corrected
 // designs; existing PNGs are retained unchanged for manual review. Updating these
@@ -1111,6 +1112,1031 @@ const DIAGRAM_TARGETS = [
     title: "Which model for which job — the July 2026 decision tree",
     promptKind: "concept",
     rawBody: "Draw one flowchart with a single root question box at the top left reading 'What's the task?', branching into exactly eleven labeled decision arrows, each ending in a result box, using EXACTLY these eleven task→answer pairs, in this exact order top to bottom, and no others. 1. 'Real-time mobile autocomplete' → 'Gemini Nano / Apple Foundation (on-device)'. 2. 'High-QPS classification at scale' → 'Gemini 3.5 Flash / GPT-5.6 mini / open-weight Qwen 3.5'. 3. 'Complex code generation, formal specs' → 'Claude Opus 4.8 (extended thinking) or GPT-5.6'. 4. 'PhD-level science reasoning' → 'Gemini 3.5 Pro or Claude Opus 4.8 (thinking)'. 5. 'Long document analysis (>1M tokens)' → 'Llama 4 Scout (10M ctx) or Gemini 3.5 Pro (2M)'. 6. 'Browser / desktop automation' → 'Claude Computer Use, OpenAI Operator'. 7. 'Voice agent (real-time)' → 'GPT-4o Realtime or Gemini Live or ElevenLabs'. 8. 'Image generation (production)' → 'Imagen 4, DALL-E 3, FLUX 1.1 Pro'. 9. 'Video with sync audio' → 'Veo 3.1'. 10. 'Privacy / sovereignty / bulk inference' → 'Self-host DeepSeek V4-Pro / Llama 4 / Qwen 3.5'. 11. 'Sensitive health / finance / on-device' → 'On-device with INT4 quantization'. Friendly flat educational illustration style, clean labeled flowchart with a single root box and eleven branching arrows to result boxes, bold readable labels, soft colors, no photorealism, uncluttered. Reproduce every label exactly as written; do not round, recompute, invent a twelfth branch, reorder the eleven given, merge any two branches, or change any task or answer wording."
+  },
+  // --- Core ML curriculum concept diagrams (Chapters 07-13) ---
+  // These chapters had no PNG illustrations. Each target anchors on a verbatim
+  // line already present in the chapter, so the generated image is inserted
+  // immediately after it; no existing content is replaced.
+  {
+    id: "intro07_why_now",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "## Why Does ML Matter?",
+    svgBase: "intro07_why_now",
+    title: "Why machine learning took off",
+    rawBody: "Draw a two-layer explainer poster titled 'Why ML matters now'. TOP LAYER 'WHERE YOU MEET ML EVERY DAY': eight compact cards in a grid labelled exactly 'Healthcare - cancer detection in X-rays, drug discovery', 'Finance - credit card fraud, loan approval, trading', 'Transport - self-driving cars, Google Maps ETAs', 'Entertainment - Netflix, Spotify, YouTube recommendations', 'Shopping - Amazon product recs, dynamic pricing', 'Language - Google Translate, ChatGPT, voice assistants', 'Security - Face unlock, spam filters, deepfake detection', and 'Science - weather forecasts, protein folding (AlphaFold)'. BOTTOM LAYER 'WHY NOW? THREE FORCES': three large pillars feeding into one central box 'modern ML breakthrough'. Pillar 1 'DATA - internet, sensors, phones; oceans of labeled data'. Pillar 2 'COMPUTE - GPUs and TPUs made huge models affordable'. Pillar 3 'ALGORITHMS - deep learning and transformers cracked hard problems'. Add a bottom caption: 'ML matters because messy real-world patterns now have enough data, compute, and algorithms to learn from examples.' Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "intro07_deep_features",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "> **Takeaway:** Classical ML needs **hand-designed features**. Deep Learning **invents its own**.",
+    svgBase: "intro07_deep_features",
+    title: "Deep learning builds features layer by layer",
+    rawBody: "Draw a vertical stacked-layers diagram titled 'Deep Learning learns features automatically'. At the top, show a simple icon labelled 'RAW INPUT - pixel grid of a cat photo'. Under it, draw five connected layer boxes descending from concrete to abstract. Box 1 label 'Layer 1: edges, colors, light/dark' with tiny edge strokes. Box 2 label 'Layer 2: corners, curves, textures'. Box 3 label 'Layer 3: fur, stripes, patches'. Box 4 label 'Layer 4: eyes, ears, whiskers'. Box 5 label 'Layer 5: whole-cat concept'. End with an output card labelled 'OUTPUT: cat (98% confident)'. Add a left side bracket spanning the first two layers labelled 'low-level features' and a right side bracket near the top concept labelled 'high-level features'. Add two contrast callouts: 'Classical ML: human designs the features first' and 'Deep Learning: the network discovers features from millions of examples'. Add a small note: 'Deep means many layers, often 50 to 1,000 of them.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the layers."
+  },
+  {
+    id: "intro07_genai_flip",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "> **Takeaway:** Classical ML **shrinks** inputs into labels. Generative AI **expands** prompts into artifacts.",
+    svgBase: "intro07_genai_flip",
+    title: "Discriminative ML shrinks, generative AI expands",
+    rawBody: "Draw two wide side-by-side panels comparing directions of information flow. LEFT PANEL 'DISCRIMINATIVE ML - many bits in to few bits out': four rows with large input cards shrinking into tiny label cards. Row labels: 'photo -> cat', 'email -> spam', 'audio clip -> Hello, world', and 'X-ray scan -> tumor: yes'. RIGHT PANEL 'GENERATIVE AI - few bits in to many bits out': four rows with small prompt cards expanding into rich artifact cards. Row labels: 'astronaut cat on Mars -> a full photorealistic image', 'write a haiku about tea -> a full three-line poem', 'fix the bug in this function -> a full patched code block', and 'draft a product launch email -> a full formatted email'. Between panels, place a pivot label 'the direction flips'. Add a small technology note inside the generative panel: 'Transformers, invented at Google in 2017, handle long sequences and scale predictably with more data and parameters'. Bottom caption: 'Classical ML classifies or labels information; Generative AI produces new text, images, code, and audio.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every date exactly as written; do not round, recompute, invent extra items, or reorder the examples."
+  },
+  {
+    id: "intro07_vocab_flow",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "## Key ML Vocabulary",
+    svgBase: "intro07_vocab_flow",
+    title: "How core ML vocabulary connects",
+    rawBody: "Draw a vocabulary flow map showing how the ten core ML terms fit together. Start with a large container labelled 'Dataset - collection of examples'. Inside it, show one row split into two regions: 'Features - size_sqft, bedrooms, age_yrs, neighborhood' and 'Label - price'. Under the dataset, split into three boxes labelled 'Training set - examples the model learns from - 80%', 'Validation set - held-out examples used to tune the model - 10%', and 'Test set - final held-out examples used to report results - 10%'. From Training, draw an arrow to 'Training algorithm adjusts parameters - internal dials'. From Validation, draw an arrow labelled 'tune hyperparameters'. From Test, draw an arrow labelled 'report once'. All three feed toward a central box 'Model - the trained thing that makes predictions'. Add a loss gauge beside training labelled 'Loss - a number measuring how wrong the model is'. End with a final arrow from Model to 'Inference - using a trained model to make a new prediction'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every percentage exactly as written; do not round, recompute, invent extra items, or reorder the split."
+  },
+  {
+    id: "intro07_workflow_loop",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "## The Machine Learning Workflow",
+    svgBase: "intro07_workflow_loop",
+    title: "The seven-step ML workflow loop",
+    rawBody: "Draw a circular seven-step workflow, not a straight pipeline. Use seven numbered boxes connected clockwise, with the last box looping back to earlier boxes if the model is not good enough. Box 1 'Define Problem - What problem? What metric of success? accuracy, revenue, latency'. Box 2 'Collect Data - databases, APIs, logs, scraping, manual labeling'. Box 3 'Explore and Clean - plot distributions, spot outliers, fix missing values, remove duplicates'. Box 4 'Feature Engineer - normalize, encode categoricals, extract, combine'. Box 5 'Split and Train - train / validation / test split; fit model; tune hyperparameters'. Box 6 'Evaluate - measure on test set; good enough for production?'. Box 7 'Deploy and Monitor - ship to production, monitor drift, retrain as the world changes'. Place a highlighted band behind steps 2, 3, and 4 labelled 'about 80% of data-science time'. Place a tiny tag near step 5 labelled 'only about 10% picking and training the model'. Bottom caption: 'Modeling is glamorous; data plumbing is the job.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number and percentage exactly as written; do not round, recompute, invent extra steps, or reorder the workflow."
+  },
+  {
+    id: "intro07_use_ml_decision",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "## When to Use Machine Learning?",
+    svgBase: "intro07_use_ml_decision",
+    title: "When ML is the right tool",
+    rawBody: "Draw a decision-board poster with two main columns and a lower chooser strip. LEFT COLUMN header 'USE ML when...' with five green cards: 'problem is too complex for hand-written rules', 'lots of relevant data', 'pattern evolves over time - spam, prices, fashion', 'humans can do it intuitively but cannot explain how - image/speech recognition', and 'tolerance for some error'. RIGHT COLUMN header 'DON'T use ML when...' with five red cards: 'a simple rule works - if x > 5 then ...', 'very little data, or no labels', 'need to fully explain every decision - law, medicine', 'a wrong answer is catastrophic and errors cannot be tolerated', and 'deterministic problem with a known formula'. LOWER STRIP 'CLASSICAL ML OR DEEP LEARNING?': left mini-column 'CLASSICAL ML - tabular rows of features, small-to-medium dataset (<100K rows), interpretability, limited compute; examples XGBoost, LightGBM, Random Forests, SVMs'. right mini-column 'DEEP LEARNING - images, audio, text, video; huge dataset with millions of examples; cutting-edge accuracy; GPUs or TPUs; examples CNNs, Transformers, Diffusion models, LLMs'. Bottom caption: 'On tabular data, Gradient Boosting still usually wins.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every threshold and item exactly as written; do not round, recompute, invent extra cards, or reorder the columns."
+  },
+  {
+    id: "intro07_no_free_lunch",
+    chapterFile: "content/07_introduction.md",
+    promptKind: "concept",
+    existingImageLine: "## No Free Lunch — Why No Algorithm Wins Everywhere",
+    svgBase: "intro07_no_free_lunch",
+    title: "No Free Lunch and baselines",
+    rawBody: "Draw a two-panel teaching diagram about why every ML project starts simple. LEFT PANEL 'NO SWISS ARMY KNIFE': show five tool cards matched to problem types, with a warning that no card wins everywhere. Cards: 'XGBoost / LightGBM - wins on tabular, structured data', 'CNNs - win on images', 'Transformers - win on text and sequences', 'Naive Bayes - wins on simple text with little data', and 'KNN - wins on some low-dimensional problems'. Add a theorem badge 'Wolpert & Macready, 1997: averaged over all possible problems, every optimization algorithm performs identically'. RIGHT PANEL 'BASELINE HIERARCHY': draw five ascending steps labelled '1. Naive baseline - regression predicts the mean; classification predicts majority class', '2. Single feature - use only the most correlated feature', '3. Linear model - Linear / Logistic Regression', '4. Gradient boosting - XGBoost / LightGBM on raw features', and '5. Your fancy model - deep learning, ensembles, etc.'. Add arrows from step 5 back to steps 3 and 4 labelled 'complexity must buy real signal'. Bottom caption: 'If the fancy model barely beats a simple baseline, it is not worth it.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every date and step number exactly as written; do not round, recompute, invent extra steps, or reorder the hierarchy."
+  },
+  {
+    id: "core08_features_labels",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.2 Features and Labels ★★",
+    svgBase: "core08_features_labels",
+    title: "Features are clues, labels are answers",
+    rawBody: "Draw a three-panel concept map titled 'Features X and Labels y'. PANEL 1 'THE GUESSING GAME': show a fruit covered by a question mark, with clue cards labelled 'colour', 'size', and 'sweet or sour' feeding into a model; a final answer card says 'label = strawberry'. PANEL 2 'HOUSE EXAMPLES': show the same feature vector feeding two different tasks. Row 1 label '[SqFt=1500, Beds=3, Age=10] -> Price = $250,000 (regression)'. Row 2 label '[SqFt=1500, Beds=3, Age=10] -> Sold in 30 days? (classification)'. Add the callout 'the task is defined by the label you choose, not by the data'. PANEL 3 'FEATURE TYPES': seven small cards labelled 'continuous numerical', 'discrete numerical', 'categorical nominal', 'ordinal', 'binary', 'temporal', and 'text / image'. Attach a warning tag to 'temporal': 'hour 23 and hour 0 are one hour apart; encode cyclical features with sin/cos'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra feature types, or reorder the panels."
+  },
+  {
+    id: "core08_split_exam",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.3 Training, Validation & Test Sets ★★",
+    svgBase: "core08_split_exam",
+    title: "Train validation test as an exam",
+    rawBody: "Draw an exam analogy diagram for train, validation, and test sets. TOP PANEL 'THE EXAM MODEL': three study objects in sequence. Object 1 'Textbook with answers -> Training set: the model learns from it'. Object 2 'Practice test -> Validation set: tune while studying'. Object 3 'Real exam once -> Test set: final real-world score'. Put a bold rule underneath: 'never peek at the real exam while studying'. MIDDLE PANEL 'FULL DATASET 100%': a horizontal bar split into 'Training 70%', 'Validation 15%', and 'Test 15%', with arrows to labels 'teach the model', 'tune the model', and 'measure FINAL performance untouched'. RIGHT PANEL 'HOW TO SPLIT': three rows labelled '< 10K rows: 70 / 15 / 15, or cross-validation', '10K - 1M rows: 80 / 10 / 10', and '> 1M rows: 98 / 1 / 1'. Add a note beside the last row: '1% of 1M is still 10,000 rows - plenty'. Bottom caption: 'You need a holdout large enough to measure reliably, not a fixed percentage.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number and split exactly as written; do not round, recompute, invent extra split rules, or reorder them."
+  },
+  {
+    id: "core08_leakage_traps",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.4 Data Leakage — The Cardinal Sin ★★★",
+    svgBase: "core08_leakage_traps",
+    title: "Data leakage hides as success",
+    rawBody: "Draw a warning poster titled 'Leakage = your model saw the answer key'. TOP STRIP 'WHAT YOU SEE': a dashboard card reads 'Test accuracy: 99% - Ship it!' with a green check. An arrow points to 'Deploy to production'. TOP STRIP continues into 'WHAT IS ACTUALLY HAPPENING': a broken production card reads 'Real accuracy: 61% - shortcut gone'. CENTER PANEL 'FOUR WAYS IT SNEAKS IN': four red-bordered cards. Card 1 'Target leakage - predicting diabetes with takes_insulin'. Card 2 'Temporal leakage - predicting Wednesday stock price after Friday data lands in training'. Card 3 'Group leakage - same patient's two X-rays split across train and test'. Card 4 'Preprocessing leakage - scaling the whole dataset before splitting'. BOTTOM LANE 'SAFE PREPROCESSING ORDER': 'split first' -> 'fit on train only' -> 'transform train and test' -> 'Pipeline makes leakage structurally impossible'. Add a final rule card: 'if a feature would not exist at prediction time, it is leakage'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra leakage types, or reorder the four cards."
+  },
+  {
+    id: "core08_training_loop",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.7 The Training Loop ★★★",
+    svgBase: "core08_training_loop",
+    title: "One training step end to end",
+    rawBody: "Draw two connected panels about one ML training step. LEFT PANEL 'THE LOOP': a circular flow of five stations. Station 1 'FORWARD PASS - feed inputs X through the model; compute predictions yhat = f(X)'. Station 2 'COMPUTE LOSS - compare yhat against true labels y; one number: how wrong are we?'. Station 3 'BACKWARD PASS - chain rule gives a gradient for every weight'. Station 4 'UPDATE WEIGHTS - W = W - alpha * gradient; nudge downhill'. Station 5 decision diamond 'Loss still improving?' with arrow 'yes - next batch' back to station 1 and arrow 'no - STOP, keep the best weights'. RIGHT PANEL 'ONE HOUSE-SALE STEP': stacked cards labelled 'start: w=0, b=0, size=25, y=1', 'prediction: yhat=0.5', 'loss=0.693', 'gradients: dw=-12.5, db=-0.5', 'learning rate=0.01', 'new weights: w=0.125, b=0.005', and 're-check: yhat approx 0.958, loss about 0.043'. Bottom caption: 'training updates weights; inference only runs the forward pass.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number and step exactly as written; do not round, recompute, invent extra stations, or reorder the loop."
+  },
+  {
+    id: "core08_loss_picker",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "### Loss Comparison at a Glance",
+    svgBase: "core08_loss_picker",
+    title: "Choosing the right loss function",
+    rawBody: "Draw a decision-map poster titled 'Pick the loss that matches the target'. LEFT BRANCH 'REGRESSION - predicting a number': four cards. 'MAE - low outlier sensitivity; target has real outliers; want a robust fit'. 'MSE - high outlier sensitivity; big errors must be punished; clean data'. 'RMSE - reporting; same ranking as MSE; error in original units'. 'Huber - medium outlier sensitivity; MSE smoothness with MAE robustness; threshold delta = 1.0 usual default'. Add a mini example beside MAE: '50K, 10K, 60K -> MAE = $40,000 average error'. RIGHT BRANCH 'CLASSIFICATION - predicting a class': five cards. 'Binary CE - 2-class, pair with sigmoid, labels 0 / 1'. 'Categorical CE - K-class, pair with softmax, one correct class out of K'. 'Sparse CE - K-class, large K, integer labels save memory'. 'KL Divergence - distribution matching, distillation, VAEs, RL policies'. 'Hinge - binary, linear score, SVMs, margin-based classifiers'. Add a warning callout: 'confident wrong answers are expensive: 0.01 -> loss 4.605'. Bottom caption: 'Picking a loss is picking what the model is allowed to care about.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number and loss name exactly as written; do not round, recompute, invent extra losses, or reorder the branches."
+  },
+  {
+    id: "core08_generalization_shift",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.12 Generalization — The Actual Goal ★★",
+    svgBase: "core08_generalization_shift",
+    title: "Generalization depends on the same distribution",
+    rawBody: "Draw three connected panels about why training score is not the goal. LEFT PANEL 'TRAINING DATA IS NOT REALITY': two model cards. Card A 'Model A: Training accuracy 99.9%, Test accuracy 65% - memorized, useless in the real world'. Card B 'Model B: Training accuracy 92%, Test accuracy 91% - generalized, works on new data'. CENTER PANEL 'GENERALIZATION GAP': show a simple ruler labelled 'test error - training error'; mark 'Model A gap = 34.9 points' and 'Model B gap = 1 point'. RIGHT PANEL 'WHEN THE SAME-DISTRIBUTION ASSUMPTION BREAKS': three shift cards. 'Covariate shift - inputs P(X) moved: daylight photos -> night / rain photos'. 'Label shift - class balance P(y) moved: fraud 1% -> 8% during a holiday'. 'Concept drift - relationship P(y|X) moved: cheap flight meant £50 in 2019, £120 in 2026'. Add a bottom operations strip: 'No amount of regularization fixes distribution shift; monitor input distribution and live metric, alert when they move, retrain on a schedule.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra shift types, or reorder the panels."
+  },
+  {
+    id: "core08_threshold_calibration",
+    chapterFile: "content/08_core_concepts.md",
+    promptKind: "concept",
+    existingImageLine: "## 8.16 Probability, Thresholds & Calibration ★★",
+    svgBase: "core08_threshold_calibration",
+    title: "Probabilities need thresholds and calibration",
+    rawBody: "Draw a three-panel flow titled 'A model outputs a number, not a decision'. TOP PANEL 'RAW SCORES TO PROBABILITIES': show 'Input: photo of a furry animal' flowing to logits labelled 'Cat = 3.2, Dog = 1.1, Bird = -0.5', then through 'softmax' to probabilities labelled 'Cat = 0.87, Dog = 0.12, Bird = 0.01', then to 'argmax -> CAT (87% confident)'. Add a sum tag '0.87 + 0.12 + 0.01 = 1.0'. MIDDLE PANEL '0.5 IS A CHOICE, NOT A LAW': three threshold cards. 'Cancer screening - low threshold, e.g. 0.1, favour recall'. 'Spam filtering - high threshold, e.g. 0.9, favour precision'. '1% fraud rate - low threshold; at 0.5 the model may never predict fraud and still score 99% accuracy'. BOTTOM PANEL 'CALIBRATION CHECK': a reliability table with rows 'Predicted 10% -> actual 10%', '30% -> 31%', '50% -> 49%', '70% -> 70%', and '90% -> 91%'. Beside it, an overconfidence warning: 'a 95% safe score that is really 72% safe gets people hurt'. Footer fixes: 'temperature scaling, Platt scaling, or isotonic regression on a held-out set - no retraining.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra classes, or reorder the panels."
+  },
+  {
+    id: "prep09_pipeline",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "## The Data Preprocessing Pipeline",
+    svgBase: "prep09_pipeline",
+    title: "The data preprocessing pipeline",
+    rawBody: "Draw a vertical workflow poster for the data preprocessing pipeline. TITLE strip 'Raw Data to Clean, Ready Data'. Start at top with one messy table card labelled 'RAW DATA (messy): missing values, duplicates, outliers, text categories, different scales'. Then six numbered rounded boxes in one downward column: '1. Handle Missing Values - fill in or remove empty values', '2. Remove Duplicates - duplicate rows and irrelevant columns', '3. Handle Outliers - deal with extreme unusual values', '4. Encode Categorical Features - convert text categories to numbers', '5. Scale/Normalize Features - bring numbers to the same range', '6. Feature Engineering - create useful features and remove useless ones'. Use arrows from one box to the next. At bottom show a clean table card labelled 'CLEAN DATA - ready for modeling'. Add a side badge 'data prep is about 80% of the work'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra steps, or reorder the six steps."
+  },
+  {
+    id: "prep09_missing_values",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "### What to Do About Missing Values",
+    svgBase: "prep09_missing_values",
+    title: "Choosing a missing-value strategy",
+    rawBody: "Draw a two-panel decision guide for missing values. LEFT PANEL 'WHY IS IT MISSING?': three stacked cards labelled 'MCAR - Missing Completely At Random - sensor glitch', 'MAR - Missing At Random - older people less likely to share income', and 'MNAR - Missing Not At Random - sickest patients left the study'. RIGHT PANEL 'WHAT SHOULD I DO?': start with a warning icon 'Missing Value Detected!' and split into two branches. Branch 1 'Few rows missing? (< 5%)' points to 'delete those rows'. Branch 2 'Many rows missing? (> 30%)' points to 'consider dropping the column'. Under a box labelled 'Can you fill it in?' show 'Numerical symmetric -> MEAN', 'Numerical with outliers -> MEDIAN', 'Categorical -> MODE', and 'Advanced -> predict missing values using a model'. Add two worked mini-cards: 'Age: [25, ?, 30, 28, ?] -> median=28' and 'City: [NY, ?, London, NY, ?] -> mode=NY'. Add a final badge 'Sometimes missing IS informative: add Income_was_missing=1'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra branches, or change the thresholds."
+  },
+  {
+    id: "prep09_outliers",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "### How to Find Outliers",
+    svgBase: "prep09_outliers",
+    title: "Finding outliers with IQR and Z-score",
+    rawBody: "Draw two side-by-side panels for outlier detection. LEFT PANEL 'IQR RULE': show a number line with the sorted data '10, 15, 18, 20, 22, 25, 27, 28, 35, 100'. Mark Q1=18, Q3=28, and IQR=10. Under the number line draw the three-step calculation as labelled boxes: 'Lower Bound = Q1 - 1.5 x IQR = 3', 'Upper Bound = Q3 + 1.5 x IQR = 43', and a red flag over '100 > 43 -> OUTLIER'. RIGHT PANEL 'Z-SCORE RULE': show a bell curve centered at 'Mean=50' with tick marks for standard deviations. Place 'Value=95' far to the right with label 'Z = (95 - 50) / 10 = 4.5'. Add a rule banner '|Z| > 3 -> likely an outlier'. Bottom strip: 'outliers may be typos, errors, or real rare events - detect first, decide second'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra values, or change the rules."
+  },
+  {
+    id: "prep09_encoding",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "## Step 3: Encoding Categorical Features ★★",
+    svgBase: "prep09_encoding",
+    title: "Encoding categorical features",
+    rawBody: "Draw a four-column comparison board titled 'Encoding turns words into numbers'. COLUMN 1 'LABEL ENCODING': show Color red, blue, green, red, blue becoming 0, 1, 2, 0, 1; add green note 'GOOD FOR ordinal data: Small=0, Medium=1, Large=2' and red note 'BAD FOR nominal data - model may think blue > red'. COLUMN 2 'ONE-HOT ENCODING': show rows red, blue, green becoming three binary columns 'Color_red', 'Color_blue', 'Color_green' with one 1 per row; add warning '100 cities = 100 new columns'. COLUMN 3 'ORDINAL ENCODING': show Size Small->0, Medium->1, Large->2, XLarge->3 and label 'natural order only'. COLUMN 4 'HIGH-CARDINALITY ALTERNATIVES': four compact cards 'Target Encoding - category to mean target', 'Frequency Encoding - category to count', 'Hashing - fixed bins', 'Embedding - dense learned representation'. Add a tiny usage bar: 'Label 15%, One-Hot 45%, Ordinal 20%, Target 20%'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra encoders, or change the examples."
+  },
+  {
+    id: "prep09_scaling_choice",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "### Which to Use?",
+    svgBase: "prep09_scaling_choice",
+    title: "Min-Max versus standardization",
+    rawBody: "Draw a two-column chooser comparing feature scaling methods. LEFT COLUMN 'MIN-MAX NORMALIZATION (0-1)': show an age ruler from 20 to 60 squeezed into 0.00 to 1.00, with five labelled mappings '20 -> 0.00', '30 -> 0.25', '40 -> 0.50', '50 -> 0.75', '60 -> 1.00'. Add a 'Use when' list: 'values need [0,1]', 'neural networks (images)', 'KNN', 'K-means'. RIGHT COLUMN 'STANDARDIZATION (Z-SCORE)': show a centered bell curve labelled 'mean=0, std=1' and five score mappings from the chapter: '60 -> -1.27', '70 -> -0.63', '80 -> 0.00', '90 -> 0.63', '100 -> 1.27'. Add a 'Use when' list: 'data has outliers', 'approximately normal distribution', 'linear models', 'SVM', 'most common choice'. Add bottom caption: 'scaling changes units, not the underlying examples'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra methods, or swap the recommendations."
+  },
+  {
+    id: "prep09_feature_engineering",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "Feature engineering is the art of **creating new, more useful features** from existing ones.",
+    svgBase: "prep09_feature_engineering",
+    title: "Turning raw features into useful signals",
+    rawBody: "Draw an 'ingredients to recipe' feature-engineering board. Use five horizontal transformation lanes, each with a raw-feature card on the left, an arrow labelled 'engineer', and useful-feature cards on the right. LANE 1: 'Date: 2024-01-15' becomes 'Year: 2024', 'Month: 1 (January)', 'DayOfWeek: 1 (Monday)', 'IsWeekend: 0'. LANE 2: 'Birth Year: 1990' plus 'Current Year: 2024' becomes 'Age: 34' and 'AgeGroup: Young Adult'. LANE 3: 'Latitude: 40.7' plus 'Longitude: -74.0' becomes 'DistanceToCityCenter: 5.2 km'. LANE 4: 'Name: John Smith' becomes 'HasMiddleName: 0' and 'NameLength: 10'. LANE 5: 'Price: 100' becomes 'LogPrice: 4.6' and 'PriceBin: low / medium / high'. Add a bottom strip: 'good features make the pattern easier for the model to see'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every date, number, and label exactly as written; do not round, recompute, invent extra lanes, or reorder the five examples."
+  },
+  {
+    id: "prep09_feature_selection",
+    chapterFile: "content/09_data_preprocessing.md",
+    promptKind: "concept",
+    existingImageLine: "### Feature Selection — Removing Useless Features ★★",
+    svgBase: "prep09_feature_selection",
+    title: "Removing useless or duplicate features",
+    rawBody: "Draw a pruning dashboard titled 'Removing bad features improves models'. TOP ROW: three diagnosis cards. Card 1 'LOW VARIANCE' says 'almost always the same value' and example 'Country=USA when 99% are USA'. Card 2 'HIGH CORRELATION WITH ANOTHER FEATURE' says 'two features say the same thing' and example 'height_cm and height_inches'. Card 3 'NOT CORRELATED WITH TARGET' says 'feature has nothing to do with the target' and example 'favorite color for predicting house price'. BOTTOM ROW: a horizontal feature-importance bar chart using the chapter's values: 'UserID 0.01', 'Favorite Color 0.02', 'Country (99% same) 0.03' in red labelled 'drop'; 'Height (cm) 0.85' and 'Height (inches) 0.85' in yellow labelled 'keep one'; 'Age 0.42' and 'Income 0.78' in green labelled 'keep'. Add footer 'drop useless features; remove duplicates; keep predictive signal'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra features, or change the keep/drop labels."
+  },
+  {
+    id: "sup10_label_splits",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 10.4 The Training Pipeline: Train / Val / Test Splits",
+    svgBase: "sup10_label_splits",
+    title: "Choosing leakage-safe supervised splits",
+    rawBody: "Draw a three-column warning board titled 'Your labels dictate how you split'. COLUMN 1 'IMBALANCED CLASSES': show a red 'WRONG: Random split' card and a green 'RIGHT: Stratified split / StratifiedKFold' card; note 'a random 10% test set of a 1%-positive dataset may contain almost no positives'. COLUMN 2 'TIME-ORDERED DATA': red card 'WRONG: Random split' and green card 'RIGHT: Time-based split - train on the past, test on the future'; note 'random lets the model see the future to predict the past'. COLUMN 3 'REPEATED ENTITIES': red card 'WRONG: Random split by row' and green card 'RIGHT: Group split by patient / user / device'; note 'same patient in train and test measures memorisation, not learning'. Add a bottom mini-case: 'hospital readmission: each patient has 3-8 visit records, random-by-row AUC=0.94 is not trustworthy; fix with GroupKFold'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra split types, or reorder the three cases."
+  },
+  {
+    id: "sup10_log_odds",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### Logistic Regression ★★★",
+    svgBase: "sup10_log_odds",
+    title: "Logistic regression as log-odds",
+    rawBody: "Draw two connected panels explaining logistic regression. LEFT PANEL 'SCORECARD TO PROBABILITY': show a scorecard for spam detection with rows 'bias w0=-3.0', 'has_word_FREE +0.8', 'has_word_MONEY +1.2', 'num_links +0.3', 'is_known_sender -0.5'. Under it show the worked email 'FREE=1, MONEY=1, links=5, known=0' flowing into 'z = -3.0 + 0.8 + 1.2 + 1.5 + 0 = 0.5', then into an S-shaped sigmoid curve labelled 'sigmoid squeezes any score to 0-1', ending at 'probability=0.622 -> SPAM at threshold 0.5'. RIGHT PANEL 'WHAT A WEIGHT MEANS': show 'odds = P / (1-P)' and a small card 'P=0.75 -> odds=3'. Highlight 'MONEY weight +1.2' with label 'adds +1.2 to log-odds, not probability' and 'multiplies odds by e^1.2 approximately 3.3'. Bottom warning: 'say odds, not percent'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra features, or change the threshold."
+  },
+  {
+    id: "sup10_knn_scaling",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### K-Nearest Neighbors (KNN) ★",
+    svgBase: "sup10_knn_scaling",
+    title: "KNN depends on feature scale",
+    rawBody: "Draw a split-screen KNN lesson with the same five training students and the same query point. TITLE 'Same K=3, same metric, opposite answer'. LEFT PANEL 'RAW NUMBERS - questions drown out hours': show query Q at '30 hours, 520 questions'. Draw nearest-neighbor rank cards '1 B distance 29.73 Fail', '2 A distance 32.02 Fail', '3 E distance 60.21 Pass', then a red verdict '3-NN: Fail, Fail, Pass -> predicts Fail'. Add a side calculation 'questions term up to 680^2 = 462,400; hours term up to 25^2 = 625; roughly 740 times more'. RIGHT PANEL 'AFTER MIN-MAX SCALING': show ranges 'hours 5-35, questions 460-1,200' and Q at '(0.833, 0.081)'. Rank cards '1 E distance 0.185 Pass', '2 C distance 0.518 Pass', '3 B distance 0.734 Fail', then green verdict '3-NN: Pass, Pass, Fail -> predicts Pass'. Bottom caption: 'for KNN, scaling is part of the definition of near'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra neighbours, or reorder the ranks."
+  },
+  {
+    id: "sup10_tree_purity",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 10.7 Decision Tree Splits: Gini vs Entropy ★★",
+    svgBase: "sup10_tree_purity",
+    title: "How trees choose the purest split",
+    rawBody: "Draw a decision-tree split explainer in three stacked panels. TOP PANEL 'PURITY MEASURES': show two small curves over class mix from 0% to 100%, both zero at pure nodes and both peaking at 50/50. Label the peak 'Gini 0.50' and 'Entropy 1.00 bit'. Add three composition badges: '100/0 -> 0.00 and 0.00 bits', '70/30 -> 0.42 and 0.88 bits', '50/50 -> maximum uncertainty'. MIDDLE PANEL 'PARENT NODE': show '20 emails: 8 spam, 12 legitimate' and 'parent Gini=0.48'. BOTTOM PANEL 'TRY TWO QUESTIONS': Candidate A 'contains free?' splits into 'Yes: 7 spam, 1 legit' and 'No: 1 spam, 11 legit', with 'weighted Gini 0.1792, gain 0.3008, CHOSEN'. Candidate B 'sent after midnight?' shows 'weighted Gini 0.4600, gain 0.0200'. Add note 'A wins by a factor of 15; the tree brute-forces splits and keeps the biggest impurity drop'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra candidates, or change the winner."
+  },
+  {
+    id: "sup10_shap_explanations",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 10.10 Feature Importance & Model Explainability (SHAP)",
+    svgBase: "sup10_shap_explanations",
+    title: "Global importance versus SHAP explanations",
+    rawBody: "Draw three connected panels answering 'what does the model care about?' versus 'why this prediction?'. PANEL 1 'IMPURITY IMPORTANCE - GLOBAL': horizontal bars for a house-price model: 'Square Feet 0.42', 'Location 0.28', '# Bedrooms 0.16', 'Age 0.09', '# Bathrooms 0.05'. Add warning 'biased toward high-cardinality features: a random ID with 10,000 unique values can look important'. PANEL 2 'PERMUTATION IMPORTANCE - GLOBAL': show baseline accuracy '88%' and shuffled-feature cards: 'Shuffle Square Feet -> 61%, importance 27%', 'Location -> 74%, importance 14%', '# Bedrooms -> 82%, importance 6%', 'Age -> 86%, importance 2%', '# Bathrooms -> 87%, importance 1%'. PANEL 3 'SHAP - LOCAL': draw a waterfall for one house: 'Base $250,000', '+ Square Feet $40,000', '+ Location $35,000', '- Age $15,000', '+ Bedrooms $8,000', '+ Bathrooms $2,000', ending 'Final prediction $320,000'. Bottom strip 'feature importance is global; SHAP explains one individual decision and sums back to the prediction'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra features, or change the totals."
+  },
+  {
+    id: "sup10_imbalance_trap",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 10.11 Class Imbalance: The 99% Trap",
+    svgBase: "sup10_imbalance_trap",
+    title: "The class imbalance accuracy trap",
+    rawBody: "Draw a four-panel infographic about imbalanced classification. PANEL 1 'THE TRAP': show a fraud dataset with '9,900 legitimate transactions (99%)' and '100 fraudulent transactions (1%)'. A lazy model card says 'ALWAYS predict legitimate', with a shiny but misleading badge 'Accuracy = 99.0%' and a red badge 'Fraud recall = 0%'. PANEL 2 'SEVERITY LEVELS': four stacked bars labelled exactly 'Mild 60/40 - 80/20', 'Moderate 80/20 - 95/5', 'Severe 95/5 - 99/1', 'Extreme 99/1+'. PANEL 3 'FORCE THE RARE CLASS TO MATTER': class-weight scale with 'weight_fraud = 50' and 'weight_legit approximately 0.51', labelled 'one missed fraud counts like missing about 100 legitimate classifications'. PANEL 4 'PICK THE RIGHT OPERATING POINT': compare 'Default threshold 0.5' to 'Better threshold 0.1' and show confusion matrix numbers 'TP 85, FN 15, FP 300, TN 9600', with 'Recall 85%' and 'Precision 22%'. Bottom strip 'use precision, recall, F1, and AUC-PR; accuracy is terrible here'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra severity levels, or change the confusion matrix."
+  },
+  {
+    id: "sup10_churn_pipeline",
+    chapterFile: "content/10_supervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 10.13 Case Study: Churn Model for YouTube Premium ★★★",
+    svgBase: "sup10_churn_pipeline",
+    title: "YouTube Premium churn pipeline",
+    rawBody: "Draw a left-to-right nine-step supervised-learning pipeline for a YouTube Premium churn model. Use nine numbered boxes with arrows: '1. Framing - binary P(churn), retention offer, KPI incremental retention by A/B test', '2. Label - churn within 30 days and no re-subscribe within 7 days', '3. Features - 90 days history, observable before outcome window', '4. Split - train Jan 2023-Sep 2023, val Oct 2023, test Nov 2023', '5. Models - base rate about 3%, Logistic Regression, LightGBM', '6. Imbalance - scale_pos_weight=30, PR-AUC not accuracy', '7. Evaluation - ranking plus calibration', '8. Threshold - offer_cost $2, incremental_LTV $12, retention_lift 25%', '9. Production - daily batch scoring, CRM, suppression list, monitor PSI > 0.2 and PR-AUC drop > 5 pp'. Add side callout 'default 0.5 threshold is a business decision made by accident'. Add bottom caption 'only two of the nine boxes are about the model; the rest make the evaluation honest and useful'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every date, number, and step exactly as written; do not round, recompute, invent extra steps, or reorder the nine boxes."
+  },
+  {
+    id: "unsup11_curse_distance",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### Why Distances Break Down",
+    svgBase: "unsup11_curse_distance",
+    title: "Why distances break in high dimensions",
+    rawBody: "Draw a two-panel explainer of the curse of dimensionality. LEFT PANEL 'SPACE EXPLODES': show five stacked mini-shapes labeled '1D line: 10 points suffice', '2D square: 10^2 = 100 points', '3D cube: 10^3 = 1,000 points', '10D: 10^10 = 10 billion points', '100D: 10^100 - more than atoms in the universe'. Each shape grows more empty. RIGHT PANEL 'DISTANCES LOSE MEANING': a high-dimensional cloud where arrows from one query point to several neighbors are nearly same length, with callout 'with 1,000 features, nearest is barely closer than farthest'. Add red warning cards 'KNN', 'K-Means', 'DBSCAN' connected to 'nearby stops being meaningful'. BOTTOM STRIP 'REMEDIES': five tiles 'feature selection', 'PCA / UMAP', 'regularization', 'collect more data', 'domain knowledge'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_kmeans_loop",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### The Algorithm Step by Step",
+    svgBase: "unsup11_kmeans_loop",
+    title: "K-Means assign and recenter loop",
+    rawBody: "Draw a four-step loop for K-Means. STEP 1 'initialize K centroids' showing scattered points with three star centroids, note 'randomly or via K-Means++'. STEP 2 'assign each point to nearest centroid' showing points colored into three clusters. STEP 3 'recompute centroids as cluster means' with arrows moving each star to center of its colored group. STEP 4 'repeat until convergence' with a circular arrow back to STEP 2 and status labels 'centroids stop moving' and 'assignments stable'. Add a side panel 'ASSUMES' with four cards: 'spherical clusters', 'similar size', 'similar density', 'K known'. Add a bottom guarantee strip: 'inertia J never increases' -> 'finite halt' -> 'local optimum, not global'. Add a small K-Means++ callout: 'spreads centroids apart' and '2-10x faster convergence; default in scikit-learn'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_dbscan_points",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### Three Point Types",
+    svgBase: "unsup11_dbscan_points",
+    title: "DBSCAN core border and noise points",
+    rawBody: "Draw a labeled DBSCAN neighborhood scene. CENTER: a scatter plot with one dashed circle labeled 'radius epsilon' around a dense point. Mark three symbol types with a legend: 'CORE POINT: >= minPts neighbors within epsilon - forms the backbone', 'BORDER POINT: < minPts neighbors within epsilon, but within epsilon of a core point - edge of cluster', 'NOISE POINT: not within epsilon of any core point - outlier'. Use two dense irregular clusters and two isolated points. RIGHT PANEL 'HAND TRACE: epsilon = 2, minPts = 3' with rows 'P1, P2, P4: count 4 -> core', 'P3: count 5 -> core', 'P8, P9, P10: count 3 -> core', 'P5: count 2 -> border reached by P3', 'P6, P7: count 2 -> noise'. Add a warning strip: 'proximity alone builds nothing; reachability flows only through core points'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_gmm_em",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### The EM Algorithm (Intuition)",
+    svgBase: "unsup11_gmm_em",
+    title: "GMM soft assignments with EM",
+    rawBody: "Draw a two-layer diagram of a Gaussian Mixture Model trained by EM. TOP PANEL 'SOFT ASSIGNMENT': show three overlapping elliptical Gaussian clouds labelled 'Cluster 1', 'Cluster 2', 'Cluster 3'. Place three sample points with stacked probability bars exactly labeled 'Point A: 0.95 / 0.03 / 0.02', 'Point B: 0.35 / 0.40 / 0.25', 'Point C: 0.05 / 0.70 / 0.25', and note 'each probability vector sums to 1'. BOTTOM PANEL 'EM LOOP': box 'E-step: compute responsibilities' -> box 'M-step: update mean, covariance, mixing weight' -> box 'log-likelihood improves' -> arrow back to E-step. Side comparison: 'K-Means: hard assignment, spherical' versus 'GMM: probabilities, elliptical full covariance'. Add a warning card 'monotonic convergence to a local optimum, not the global one; seed means with k-means'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_silhouette_mislabel",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### Worked Example — Silhouette by Hand",
+    svgBase: "unsup11_silhouette_mislabel",
+    title: "Silhouette reveals a misplaced point",
+    rawBody: "Draw two connected panels about Silhouette Score. LEFT PANEL 'WHAT EACH POINT ASKS': one point inside its assigned cluster with arrow 'a(i): mean distance to same cluster - compactness' and another arrow to nearest other cluster 'b(i): mean distance to nearest neighboring cluster - separation'. Add a formula card 's(i) = (b(i) - a(i)) / max(a(i), b(i)); range -1 to 1'. RIGHT PANEL 'READING THE SCALE': three vertical badges '+1: well inside its cluster', '0: on the boundary', '<0: likely wrong cluster'. BOTTOM WORKED EXAMPLE: show six labeled points A to F in two clusters, with F highlighted red. Table row labels: 'A: 0.879', 'B: 0.841', 'C: 0.841', 'D: 0.648', 'E: 0.636', 'F: -0.367'. Add caption 'mean silhouette 0.580 hides the misplaced point; moving F raises it to 0.753'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_anomaly_global_local",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 11.15 Anomaly Detection ★★",
+    svgBase: "unsup11_anomaly_global_local",
+    title: "Global versus local anomaly detection",
+    rawBody: "Draw a three-column anomaly detection comparison. LEFT COLUMN 'LEARN NORMAL' shows many ordinary transactions or sensor readings in a blue cloud and a red outlier outside, labelled 'anomalies are rare; types change over time'. MIDDLE COLUMN 'ISOLATION FOREST - global unusual' shows random axis-aligned cuts isolating a red point in 'path length approx 2' while dense normal points need 'path length approx 12'; add label 'score near 1 = anomaly; score near 0.5 = normal'. RIGHT COLUMN 'LOCAL OUTLIER FACTOR - normal is relative' shows a dense blue cluster, a sparse orange cluster labelled 'LOF approx 1.03, also normal', and a red diamond near the dense cluster labelled 'LOF = 3.7'. Add bottom decision strip: 'choose Isolation Forest when anomalies are few and different' and 'choose LOF when density varies by region'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "unsup11_collapse_prevention",
+    chapterFile: "content/11_unsupervised_learning.md",
+    promptKind: "concept",
+    existingImageLine: "### The Collapse Problem ★★★",
+    svgBase: "unsup11_collapse_prevention",
+    title: "Preventing representational collapse",
+    rawBody: "Draw a three-panel contrastive learning collapse explainer. LEFT PANEL 'THE TASK': one image x splits into 'augmentation 1: crop + flip' and 'augmentation 2: color jitter + blur', both through the same 'encoder f' into embeddings 'z1' and 'z2'; pull them together with label 'same image -> pull together' and show different images pushed apart. MIDDLE PANEL 'THE FAILURE': every input maps to one identical dot labelled 'constant vector'; add red caption 'training loss near zero, linear probe at chance: representational collapse'. RIGHT PANEL 'THREE FIXES': stacked cards 'Negatives: SimCLR, MoCo - push apart different images; SimCLR uses batches of 4096+', 'Asymmetry: BYOL - EMA teacher, predictor head, stop-gradient', 'Regularisation: Barlow Twins, VICReg - penalise correlated or low-variance dimensions'. Add small temperature tag 'InfoNCE temperature tau typically 0.05-0.1; low tau focuses on hardest negatives'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_linear_maple",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.2 Linear Regression ★★★",
+    svgBase: "algo12_linear_maple",
+    title: "Linear regression on Maple Street",
+    rawBody: "Draw a two-panel linear regression explainer using Maple Street. LEFT PANEL 'HONEST ACCOUNTANT': show four points A, B, C, D on a scatter plot, x-axis 'size in hundreds of sq ft', y-axis 'price in 1,000s', with best-fit line labelled 'price = 10 + 18 x size'. Annotate slope 'each extra 100 sq ft adds $18,000' and intercept 'w0 = 10'. Mark Unit E at x = 22, follow up to the line, and label 'prediction = 406 -> $406,000'. RIGHT PANEL 'RESIDUAL CHECK': table-like four rows 'A: predicted 190, actual 200, residual +10', 'B: 280, 250, -30', 'C: 370, 400, +30', 'D: 460, 450, -10'. Add a balance scale caption 'residuals sum to exactly zero when an intercept is included'. Bottom warning card 'multicollinearity damages interpretation, not prediction; VIF above 10 is serious; Ridge stabilizes correlated coefficients'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_logistic_odds",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.3 Logistic Regression ★★★",
+    svgBase: "algo12_logistic_odds",
+    title: "Logistic regression odds and sigmoid",
+    rawBody: "Draw a three-panel logistic regression explainer. LEFT PANEL 'LINEAR SCORE TO PROBABILITY': show weighted-sum box 'z = w0 + w1 x1 + ...' feeding into an S-shaped sigmoid curve, with labels 'z = 0 -> p = 0.5' and 'default threshold 0.5'. MIDDLE PANEL 'MAPLE STREET UNIT E': three feature cards 'pro_photos = 3', 'renovated = 1', 'walk_score = 0.4' flowing into weights 'w0 = -2.1, photos = 1.8, renovated = 3.2, walk = 4.5', then result 'z = 8.3' and 'P(sells fast) = 0.9998 -> SELLS FAST'. RIGHT PANEL 'ODDS, NOT PROBABILITY': show coefficient table '+0.69 -> odds x2.0', '-0.69 -> odds x0.5', 'renovated weight 3.2 -> odds x24.5'. Add three probability examples '0.01 -> 0.198', '0.50 -> 0.961', '0.90 -> 0.995'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_tree_gini_pruning",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.4 Decision Trees ★★★",
+    svgBase: "algo12_tree_gini_pruning",
+    title: "Decision tree impurity and pruning",
+    rawBody: "Draw a two-panel decision tree teaching diagram. LEFT PANEL 'PICK THE SPLIT BY IMPURITY REDUCTION': parent box '100 listings: 30 fast, 70 slow; Gini = 0.42' branches on '3 or more pro photos?' to left leaf 'fewer than 3: 60 listings, 5 fast, 55 slow; Gini = 0.153' and right leaf '3 or more: 40 listings, 25 fast, 15 slow; Gini = 0.469'. Under the branches show 'weighted Gini = 0.280' and 'Gini reduction = 0.14'. RIGHT PANEL 'WHY PRUNE': contrast 'Depth 3: general rules that work on new data' with 'Depth 20: one leaf per training listing, memorizes noise'. Add pre-pruning controls as small knobs: 'max_depth 5-10', 'min_samples_leaf 10', 'min_samples_split 20', 'max_leaf_nodes 50'. Bottom caption 'Gini and entropy produce near-identical trees; Gini skips the logarithm'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_forest_oob",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.5 Random Forest ★★★",
+    svgBase: "algo12_forest_oob",
+    title: "Random forest OOB validation",
+    rawBody: "Draw a three-column Random Forest diagram. LEFT COLUMN 'BOOTSTRAP ROWS': original row strip 1 to 10 feeds three tree samples; show duplicates in each sample and an OOB tag, with caption 'each tree sees ~63.2% unique rows; ~36.8% are out-of-bag'. MIDDLE COLUMN 'RANDOM FEATURE SUBSETS': at each split, only a subset of features is available; card says 'classification max_features = sqrt(p)' and 'regression default = 1.0; try p/3 to decorrelate'. Show some trees forced not to use dominant 'pro_photos' at the root, creating genuine disagreement. RIGHT COLUMN 'OOB VOTE': for 'Listing #10', show 'Tree 1: Fast', 'Tree 2: Slow', 'Tree 3: Fast' -> 'OOB prediction: Fast (2 vs 1)'. Add warning strip 'MDI importance is biased toward high-cardinality features; use permutation importance for reporting'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_boosting_residuals",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.6 Gradient Boosting ★★★",
+    svgBase: "algo12_boosting_residuals",
+    title: "Gradient boosting fits residuals",
+    rawBody: "Draw a layered Gradient Boosting residual diagram. TOP STRIP 'ONE SMALL CORRECTION AT A TIME': target 100 flows through four sequential trees labelled 'Tree 1 predicts 70 -> residual 30', 'Tree 2 predicts 22 -> residual 8', 'Tree 3 predicts 6 -> residual 2', 'Tree 4 predicts 1.5 -> residual 0.5', then final box '70 + 22 + 6 + 1.5 = 99.5'. MIDDLE PANEL 'MAPLE STREET WITH eta = 0.5': show stumps moving halfway each round and an SSE line '4.25 -> 1.25 -> 0.50 -> 0.3125 -> floor at 0.25'. Label 'learning rate is a brake'. BOTTOM PANEL 'EARLY STOPPING': validation loss best at 'round 150', halt after 'round 160' with 'early_stopping_rounds = 10', then arrow back to 'use best_iteration = 150'. Add warning 'training loss keeps falling forever; validation decides when to stop'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_svm_kernel",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.7 Support Vector Machines ★★",
+    svgBase: "algo12_svm_kernel",
+    title: "SVM margins and kernels",
+    rawBody: "Draw a three-panel SVM diagram. LEFT PANEL 'MAXIMUM MARGIN': two classes separated by a central decision boundary with parallel margin lines; highlight only the points touching the margins as 'support vectors'. Add label 'only support vectors define the hyperplane'. Under it show 'margin width = 2 / ||w||' and 'smaller ||w|| = wider corridor'. MIDDLE PANEL 'SOFT MARGIN C': compare 'Small C (0.01): wide margin, some errors allowed, more regularization' versus 'Large C (1000): narrow margin, few errors allowed, less regularization, can overfit outliers'. RIGHT PANEL 'KERNEL TRICK': show non-separable 2D points mapped to 'x3 = x1^2 + x2^2' where a flat plane separates them; note 'RBF kernel does this implicitly, in infinite dimensions'. Bottom cost strip 'kernel matrix is n x n; training O(n^2)-O(n^3); dies above ~50K rows; scale features mandatory'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "algo12_naive_bayes_smoothing",
+    chapterFile: "content/12_key_algorithms.md",
+    promptKind: "concept",
+    existingImageLine: "## 12.9 Naive Bayes ★★",
+    svgBase: "algo12_naive_bayes_smoothing",
+    title: "Naive Bayes Laplace smoothing",
+    rawBody: "Draw a four-step Naive Bayes spam-filter diagram. STEP 1 'PRIORS': two class boxes 'Spam: 2 emails -> P(spam) = 2/5 = 0.4' and 'Ham: 3 emails -> P(ham) = 3/5 = 0.6'. STEP 2 'COUNT WORDS': vocabulary card 'V = 11', token totals 'spam tokens = 6', 'ham tokens = 8', with word rows 'free: spam 2, ham 0' and 'money: spam 1, ham 0'. STEP 3 'LAPLACE SMOOTHING alpha = 1': show 'P(free|spam) = 0.1765', 'P(free|ham) = 0.0526', 'P(money|spam) = 0.1176', 'P(money|ham) = 0.0526'. STEP 4 'SCORE EMAIL: free money': bars 'spam score 0.008305' and 'ham score 0.001662'; final 'P(spam | free money) = 83.3%'. Add red warning 'without smoothing, ham collapses to exactly zero; trust ranking, not calibrated probability'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "eval13_regression_errors",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "### Running Example: House Price Prediction",
+    svgBase: "eval13_regression_errors",
+    title: "Regression metrics punish errors differently",
+    rawBody: "Draw a two-row teaching poster about regression metrics using the house price example. TOP ROW: a table with five columns labelled 'House', 'Actual', 'Predicted', and 'Error', showing exactly: House 1 actual 300 predicted 280 error -20; House 2 450 460 +10; House 3 200 230 +30; House 4 500 480 -20; House 5 350 400 +50. Label the table 'all values are in $K'. BOTTOM ROW: five metric cards connected to the errors. Card 1 'MAE = $26,000' with note 'average absolute miss; robust to outliers'. Card 2 'MSE = 860 in K^2' with a red callout 'House 5 contributes 2500; Houses 1-4 combined contribute 1800'. Card 3 'RMSE approx $29,300' with note 'back in original units; RMSE is always >= MAE'. Card 4 'R2 = 0.925' with note '92.5% of variation explained; unitless'. Card 5 'MAPE approx 8.4%' with warning 'fails when actual values are near zero'. Add a bottom caption: 'choose based on whether one huge miss should hurt more than many tiny ones'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra houses, or reorder the five houses."
+  },
+  {
+    id: "eval13_cv_split_chooser",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "## 13.7 Cross-Validation ★★★",
+    svgBase: "eval13_cv_split_chooser",
+    title: "Choosing the right cross-validation split",
+    rawBody: "Draw a four-panel cross-validation chooser. PANEL 1 'K-FOLD removes split luck': show 5 horizontal rows for '5-Fold Cross-Validation (1000 samples)', each row made of five blocks where one moving block says 'TEST 200' and the other four say 'TRAIN 200'. Under it show 'Scores: [0.88, 0.91, 0.87, 0.90, 0.89]' and 'Mean = 0.89 +/- 0.015'; add 'typical K = 5 or K = 10'. PANEL 2 'STRATIFIED K-FOLD for imbalanced classification': show 'Dataset: 95% Not Fraud, 5% Fraud (1000 samples)'; a red mini-list 'Regular K-Fold: 3%, 8%, 1% fraud' and a green mini-list 'Stratified K-Fold: 5%, 5%, 5% fraud'. PANEL 3 'GROUP K-FOLD for repeated entities': draw '30 X-rays from 10 patients (3 scans each)' with patient_7 scan_1 and scan_3 in train and patient_7 scan_2 in test crossed out; beside it show all patient_7 scans on one side with a green tick. PANEL 4 'TIME SERIES SPLIT': draw expanding train windows, each followed by a later test block, plus warning 'NEVER shuffle time series data'. Bottom rule: 'ask what unit is actually independent? That unit is what you split on'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra folds, or reorder the panels."
+  },
+  {
+    id: "eval13_nested_cv",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "### Nested Cross-Validation — Tuning Without Cheating",
+    svgBase: "eval13_nested_cv",
+    title: "Nested cross-validation prevents tuning leakage",
+    rawBody: "Draw a nested-loop diagram showing how to tune hyperparameters without contaminating performance estimates. OUTER PANEL titled 'OUTER loop - estimates performance': show five large fold cards left to right; in each card one block is labelled 'held out outer fold' and the remaining four blocks go downward into an inner loop. INNER PANEL inside each outer card titled 'INNER loop - selects hyperparameters': show small CV arrows trying configurations, picking 'best settings', then returning upward to 'train with those settings' and finally 'score on outer fold'. Add a red crossed-out shortcut labelled 'WRONG: same CV loop picks hyperparameters and reports performance' with warning 'reported number is optimistic'. Add a note beside the loops: 'inner loop never sees the outer test fold, so tuning cannot contaminate the estimate'. Add a cost meter at the bottom: '5 outer x 5 inner x 20 configurations = 500 fits' and label it 'multiplicative cost'. Add a practical strip: 'use nested CV to report a trustworthy number or compare modelling approaches; simple alternative is train, validation, test, with test touched exactly once'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra loops, or change the stated fit count."
+  },
+  {
+    id: "eval13_hyperparameter_search",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "## 13.8 Hyperparameter Tuning ★★",
+    svgBase: "eval13_hyperparameter_search",
+    title: "Grid, random, and Bayesian search",
+    rawBody: "Draw a three-column comparison of hyperparameter tuning methods, with a small header strip separating 'PARAMETERS (learned)' from 'HYPERPARAMETERS (set by you)'. In the header list learned examples 'neural net weights', 'decision tree splits', 'SVM support vectors', 'regression coefficients'; list hyperparameter examples 'learning rate 0.001', 'number of trees 100', 'max depth 5', 'regularization strength 0.1', 'batch size 32', 'dropout rate 0.3'. COLUMN 1 'GRID SEARCH': draw a 3 by 3 table for learning rate [0.001, 0.01, 0.1] and max depth [3, 5, 10], with a star on 'lr=0.01, depth=5 -> accuracy = 0.91'; add warning '5 hyperparameters with 5 values each = 3,125 combinations; with 5-fold CV = 15,625 fits'. COLUMN 2 'RANDOM SEARCH': draw nine scattered dots instead of a rigid grid, labelled '9 trials; explores 9 unique lr values and 9 unique depth values'. COLUMN 3 'BAYESIAN OPTIMIZATION': draw loop 'random points -> surrogate model -> acquisition function -> next point', with callouts 'exploitation: high predicted performance' and 'exploration: high uncertainty', ending at 'Trial 5: lr=0.018 -> acc=0.93'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra methods, or reorder the three methods."
+  },
+  {
+    id: "eval13_learning_curves",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "The gap between training and validation curves is the diagnostic signal.",
+    svgBase: "eval13_learning_curves",
+    title: "Learning curves diagnose bias and variance",
+    rawBody: "Draw two large learning-curve plots side by side with x-axis 'training size' and y-axis 'Score'. LEFT PLOT 'HIGH VARIANCE (overfitting)': draw a solid train curve near 'Train approx 0.97' and a dashed validation curve near 'Val approx 0.68', with a bracket labelled 'LARGE GAP'. Under it write 'Train great, val poor' and fix cards 'more data', 'regularization', 'dropout', 'simpler model', 'early stopping'. Add an interview callout 'Training 0.98, validation 0.72 -> 26-point gap'. RIGHT PLOT 'HIGH BIAS (underfitting)': draw train and validation curves low and close together, labelled 'Train approx 0.72' and 'Val approx 0.70', with a bracket labelled 'BOTH LOW'. Under it write 'Cannot learn the pattern' and fix cards 'more features', 'bigger/deeper model', 'less regularization', 'train longer'. Add a small bottom example strip: 'healthy variance fix: train falls 0.99 to 0.91 while validation rises 0.62 to 0.88; gap narrows 0.37 to 0.03; collect more data'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra curve types, or swap the diagnoses."
+  },
+  {
+    id: "eval13_model_comparison_uncertainty",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "### Is Model B Actually Better Than Model A?",
+    svgBase: "eval13_model_comparison_uncertainty",
+    title: "Comparing models needs uncertainty",
+    rawBody: "Draw a two-panel decision diagram titled 'Model A scores 91.0%, Model B scores 92.0% - ship B? Not yet'. LEFT PANEL 'BOOTSTRAP CONFIDENCE INTERVALS': show a test set being resampled with replacement '1,000 times', then two horizontal interval bars. Bar A: 'Model A: 0.910 (95% CI 0.887 - 0.933)'. Bar B: 'Model B: 0.920 (95% CI 0.898 - 0.942)'. Shade the overlap and label it 'intervals overlap heavily; the 1-point gap is well inside the noise'. RIGHT PANEL 'MCNEMAR TEST - SAME ROWS': draw a 2 by 2 table with columns 'B correct' and 'B wrong', rows 'A correct' and 'A wrong'. Fill cells exactly: 800, 'b = 15', 'c = 35', 150. Dim the agree cells and highlight only b and c with note 'only disagreements matter'. Add formula strip 'chi^2 = (|15-35| - 1)^2 / 50 = 361 / 50 = 7.22' and verdict '7.22 > 3.84, p < 0.05, 1 degree of freedom; B fixes 35 of A's mistakes while breaking only 15 successes'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra cells, or change the verdict."
+  },
+  {
+    id: "eval13_calibration_reliability",
+    chapterFile: "content/13_model_evaluation.md",
+    promptKind: "concept",
+    existingImageLine: "### Reliability Diagram",
+    svgBase: "eval13_calibration_reliability",
+    title: "Calibration checks probability honesty",
+    rawBody: "Draw a three-panel calibration explainer. LEFT PANEL 'AUC ranks; calibration tells probability truth': show a model output card saying '90% sure' and a question 'right about 90% of the time?'; add note 'a model can have high AUC and terrible calibration'. CENTER PANEL 'RELIABILITY DIAGRAM': draw axes x-axis 'mean predicted probability' and y-axis 'fraction positive per bin', a diagonal line labelled 'ideal: y = x', and several points sagging below the line. Label below-diagonal points 'OVER-confident'. RIGHT PANEL 'MEASURE AND FIX': show two metric cards 'ECE: lower is better; 0 = perfectly calibrated' and 'Brier score: rewards calibration and sharpness'. Under them show three monotonic fix cards: 'Platt scaling - logistic regression on raw scores; limited data or roughly sigmoid curve', 'Isotonic regression - non-parametric monotonic function; > ~1,000 samples and not sigmoid-shaped', and 'Temperature scaling - single scalar T before softmax; neural networks'. Add bottom warning strip: 'fix post-hoc on a held-out set; monotonic methods change numbers, never ranking, so AUC is untouched'. Add mini example: '100 predictions at confidence 0.9; only 60 positive -> gap 0.30; ECE contribution 0.30 if whole test set'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra calibration methods, or change the below-diagonal meaning."
+  },
+  // --- Deep Learning & LLMs concept diagrams (Ch 16-20, the 20s recap, and the 00p playbook) ---
+  // Top-ups for chapters that already had images, plus first coverage for the
+  // recap and playbook. Each anchors on a verbatim line already in the chapter,
+  // so the image is inserted after it; no existing image is replaced.
+  {
+    id: "dlrev_bertgpt",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params. BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params.",
+    svgBase: "dlrev_bertgpt",
+    title: "BERT vs GPT: encoder-only vs decoder-only architectures",
+    rawBody: "Draw a two-column comparison poster titled 'BERT vs GPT - Encoder-Only vs Decoder-Only'. LEFT COLUMN 'BERT (Encoder-Only)': a stack of transformer blocks with arrows pointing in BOTH directions between every token position, labelled 'Bidirectional attention - sees ALL tokens, before and after'. Below it: 'Pre-training: MLM (fill-in-the-blank) + NSP'. Below that: 'Best for: understanding, classification, NER, Q&A'. Below that: 'Examples: BERT-base (110M), RoBERTa, DeBERTa'. Add a small spec card: 'BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params' and 'BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params'. RIGHT COLUMN 'GPT (Decoder-Only)': the same stack of transformer blocks but arrows point ONLY backward from each token to earlier tokens, labelled 'Causal attention - sees PAST tokens only'. Below it: 'Pre-training: next-token prediction'. Below that: 'Best for: generation, chat, code'. Below that: 'Examples: GPT-3/4, LLaMA, Claude, Mistral'. Add a bottom caption spanning both columns: 'the full Transformer block is the same shape either way: Input -> Self-Attention -> Add and Norm -> FFN -> Add and Norm -> Output; the FFN stores about two-thirds of the parameters and factual knowledge, attention handles token relationships'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_rlhf",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "1. SFT: fine-tune on ~10K high-quality (prompt, response) pairs.",
+    svgBase: "dlrev_rlhf",
+    title: "RLHF pipeline: SFT, reward model, PPO+KL, and DPO",
+    rawBody: "Draw a horizontal three-stage pipeline titled 'RLHF - Reinforcement Learning from Human Feedback' with a fourth box below showing the simpler alternative. STAGE 1 box 'SFT': 'fine-tune on about 10K high-quality (prompt, response) pairs', with an icon of a small labelled dataset feeding into a base model. Arrow to STAGE 2 box 'REWARD MODEL': 'human raters rank 4-9 responses per prompt' and 'objective: push the winning response's score and the losing response's score apart'. Arrow to STAGE 3 box 'PPO + KL CONSTRAINT': 'reward = reward-model score MINUS a penalty for drifting from the SFT model' and 'the KL penalty term prevents reward hacking while keeping the model grounded'. Show the policy model as a character on a leash tied back to the SFT model, illustrating the KL constraint. Below the three-stage pipeline, draw a SEPARATE simpler box labelled 'DPO - Direct Preference Optimization (the shortcut)': 'skips the reward model entirely', 'directly fine-tunes on (prompt, chosen, rejected) triples with one loss', 'simpler, more stable, comparable quality', 'used by LLaMA 3, Zephyr'. Connect it to the main pipeline with a dashed arrow labelled 'same goal, fewer moving parts'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dlrev_decoding",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "Temperature=0 for code/factual Q&A. Temperature=0.7–1.0 for creative tasks.",
+    svgBase: "dlrev_decoding",
+    title: "Decoding strategies: greedy, beam, top-K, top-P, temperature",
+    rawBody: "Draw a two-part poster on LLM decoding strategies. TOP PART: four small icons side by side, each showing a probability bar chart over candidate next-tokens. (1) 'GREEDY': highlights only the single tallest bar, labelled 'always picks argmax; deterministic; can loop - the the the...'. (2) 'BEAM SEARCH (width B)': highlights B separate paths branching out, labelled 'keeps the top-B sequences; better for translation and summarisation'. (3) 'TOP-K SAMPLING': highlights the top K bars with the rest greyed out, labelled 'samples from the top-K tokens only, renormalised; K=50 is a common default'. (4) 'TOP-P (NUCLEUS) SAMPLING': highlights a variable-width set of bars whose heights sum past a threshold line, labelled 'includes the smallest set of tokens whose cumulative probability is at least P (typically 0.9); adapts to confidence'. BOTTOM PART: a horizontal temperature dial with four marked stops and a row of example outputs under each: '0 - Deterministic (greedy)', '0.7 - Natural, varied - good default', '1.0 - Sample directly from the distribution', '2.0 - Wild, often incoherent'. Add a caption: 'use temperature=0 for code and factual Q&A; use 0.7 to 1.0 for creative tasks'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_chinchilla",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "LLaMA (13B, 1.4T tokens) outperformed GPT-3 (175B, 300B tokens). Data quality and quantity matter as much as scale.",
+    svgBase: "dlrev_chinchilla",
+    title: "Scaling laws: Kaplan power laws and the Chinchilla rule",
+    rawBody: "Draw a two-panel poster on LLM scaling laws. LEFT PANEL 'KAPLAN SCALING LAWS (2020)': three small downward power-law curves side by side, x-axes labelled 'parameters N', 'data D', and 'compute C', each y-axis labelled 'loss', captioned 'loss falls as a power law in each - this justified the push to ever-larger models'. RIGHT PANEL 'CHINCHILLA (Hoffmann et al., 2022)': a large banner in the middle stating 'Training tokens is approximately 20 times parameters', with a balance scale icon weighing 'MODEL SIZE' against 'TRAINING DATA' for a FIXED compute budget. Below the scale, two model cards for direct comparison: card 1 'LLaMA: 13B parameters, 1.4T tokens' with a green tick, and card 2 'GPT-3: 175B parameters, 300B tokens' with a red cross, captioned 'LLaMA outperformed GPT-3 despite far fewer parameters - data quality and quantity matter as much as scale'. Add a bottom strip titled 'EMERGENT ABILITIES': a step-function curve (flat then a sudden jump, not a smooth ramp) labelled 'chain-of-thought reasoning appears around 60B parameters; few-shot in-context learning appears at 100B+ parameters - these are sudden thresholds, not smooth improvements'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_bandwidth",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "**Bandwidth ceiling:** max tok/s = per-GPU bandwidth ÷ bytes of weights **per GPU**. A 70B FP16 (140 GB) sharded over 2×H100 → 70 GB each ÷ 3.35 TB/s ≈ **48 tok/s** for one stream. At INT4 (35 GB) on one GPU ≈ **96 tok/s**. Always state the shard count.",
+    svgBase: "dlrev_bandwidth",
+    title: "Prefill vs decode and the bandwidth ceiling formula",
+    rawBody: "Draw a two-panel poster on LLM inference bottlenecks. LEFT PANEL 'PREFILL vs DECODE': two columns. Column 'PREFILL': icon of the whole prompt being processed in parallel, labelled 'compute-bound (the math units are the limit)', 'sets TTFT (time to first token)', 'helped by chunked prefill, prefix caching, W8A8/FP8'. Column 'DECODE': icon of tokens being generated one at a time in a slow drip, labelled 'memory-bandwidth-bound (moving weights is the limit)', 'sets TPOT/ITL (time per output token)', 'helped by batching, weight-only quantisation, speculative decoding, GQA'. RIGHT PANEL 'THE BANDWIDTH CEILING FORMULA': a large formula banner 'max tokens/second = per-GPU memory bandwidth divided by bytes of weights per GPU'. Below it, a worked example with two labelled GPU icons: 'A 70B model in FP16 is 140 GB, sharded over 2xH100 -> 70 GB per GPU divided by 3.35 TB/s of bandwidth is approximately 48 tokens/second for one stream'. Beside it a second GPU icon: 'the same model quantised to INT4 is 35 GB on ONE GPU -> approximately 96 tokens/second'. Add a caption: 'always state the shard count when quoting a throughput number'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_toolcalling",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "The LLM outputs structured JSON specifying which function to call + arguments. Your code executes the function. The LLM never executes anything directly — **critical security boundary**.",
+    svgBase: "dlrev_toolcalling",
+    title: "Function calling: the LLM never executes tools directly",
+    rawBody: "Draw a security-focused flow diagram titled 'Function Calling - the LLM Never Executes Anything'. Five sequential boxes connected by numbered arrows, looping back to the start: (1) 'APP sends the message plus tool schemas to the LLM'. (2) 'LLM outputs a tool_call as structured JSON specifying which function to call and its arguments' - draw this box with a small padlock-crossed icon and the caption 'the LLM only ever produces text/JSON here - it cannot reach out and run anything itself'. (3) 'APP receives the JSON and validates it against the registered tool list'. (4) 'APP executes the actual function/tool and gets a result' - draw a clear wall/boundary line between box 2 and box 4 labelled 'CRITICAL SECURITY BOUNDARY - your code is the only thing that ever executes'. (5) 'APP sends the result back to the LLM, which produces the final answer'. Add a side panel 'TOOL DESIGN BEST PRACTICES' listing: 'specific names', 'precise descriptions (the model reads these)', 'typed parameters with constraints', 'return structured JSON, not prose', 'handle errors gracefully', 'keep each tool focused on one action'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dlrev_mcp",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "**Architecture**: Host (your app) → MCP Clients → MCP Servers (GitHub, DB, Slack…) over JSON-RPC 2.0. Replaces N×M custom integrations with N+M.",
+    svgBase: "dlrev_mcp",
+    title: "MCP architecture: hosts, clients, servers, and three primitives",
+    rawBody: "Draw an architecture diagram titled 'MCP - Model Context Protocol (USB-C for AI)'. Show three layers left to right: 'HOST (your app)' connects through 'MCP CLIENTS' which connect over 'JSON-RPC 2.0' to multiple 'MCP SERVERS' drawn as separate boxes labelled 'GitHub', 'Database', 'Slack'. Above the diagram add two small comparison icons: LEFT 'BEFORE MCP' showing a tangled web of lines connecting every app directly to every tool, labelled 'N times M custom integrations'; RIGHT 'WITH MCP' showing the same apps and tools each connecting only to the middle protocol layer, labelled 'N plus M integrations'. Below the main diagram, draw a three-card row titled 'THE THREE PRIMITIVES': card 1 'TOOLS - functions (verbs) - model-controlled'; card 2 'RESOURCES - data (nouns) - app-controlled'; card 3 'PROMPTS - templated workflows (recipes) - user-controlled'. Add a small footer note: 'transports: stdio for local/dev (server as a subprocess) vs Streamable HTTP with SSE for remote/production; 97 million installs and 10,000+ servers by March 2026'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_vllm",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "**vLLM PagedAttention**: partitions KV cache into fixed-size blocks (like OS virtual memory pages); eliminates fragmentation; 2–10× more concurrent users on same GPU. Red Hat benchmark: vLLM 793 tok/s vs Ollama 41; p99 TTFT 80ms vs 673ms. Stripe saved 73% migrating to vLLM.",
+    svgBase: "dlrev_vllm",
+    title: "vLLM and PagedAttention versus Ollama benchmarks",
+    rawBody: "Draw a two-panel poster on vLLM and PagedAttention. LEFT PANEL 'PAGEDATTENTION': an illustration of a KV cache split into small fixed-size blocks scattered across GPU memory, next to a labelled analogy 'like OS virtual memory pages', with a caption 'eliminates fragmentation; 2 to 10 times more concurrent users on the same GPU'. Show a BEFORE strip with a memory bar full of wasted gaps labelled 'fragmented, contiguous allocation' and an AFTER strip with a memory bar packed tightly with small blocks labelled 'paged, reusable blocks'. RIGHT PANEL 'RED HAT BENCHMARK': a bar chart comparing two serving stacks: 'vLLM: 793 tokens/second' as a tall bar versus 'Ollama: 41 tokens/second' as a short bar. Below it a second small comparison: 'p99 TTFT - vLLM 80ms vs Ollama 673ms'. Add a caption banner: 'Stripe saved 73% migrating to vLLM' and a footer strip: 'most teams use Ollama for dev, vLLM for production'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_reasoning",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "> A **reasoning model** allocates additional compute *at inference time* — generating hidden \"thinking\" tokens before the final answer — so accuracy on hard problems scales with thinking budget, not parameters alone.",
+    svgBase: "dlrev_reasoning",
+    title: "Reasoning models and test-time compute budgets",
+    rawBody: "Draw a two-panel poster on reasoning models and test-time compute. TOP PANEL: two side-by-side flow strips. Strip 1 'NORMAL LLM': 'Input -> one forward pass -> Output', labelled 'cost: fixed'. Strip 2 'REASONING MODEL': 'Input -> think... think... think... (1K to 100K+ hidden tokens) -> Output', labelled 'cost: scales with task difficulty'. Caption between them: 'a reasoning model allocates additional compute at inference time, generating hidden thinking tokens before the final answer, so accuracy on hard problems scales with thinking budget, not parameters alone'. BOTTOM PANEL, two columns: LEFT 'WHEN REASONING HELPS' listing 'math', 'formal logic', 'complex code with specs', 'scientific analysis with multiple hypotheses', 'multi-step planning'. RIGHT 'SKIP REASONING FOR' listing 'simple Q&A', 'creative writing', 'high-throughput classification', 'real-time voice'. Add a warning banner across the bottom: 'cost trap - reasoning models charge for the hidden tokens too; a single high-effort call can be 10 to 50 times the cost of a normal call'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dlrev_swebench",
+    chapterFile: "content/20s_deep_learning_llms_recap.md",
+    promptKind: "concept",
+    existingImageLine: "Scaffold gap: Augment Code at 72% with Opus 4.6 vs Cursor at 65.7% with Sonnet 4.6 — same model family, better harness wins.",
+    svgBase: "dlrev_swebench",
+    title: "SWE-bench Verified progress and the scaffold gap",
+    rawBody: "Draw a two-panel poster on coding-agent progress. TOP PANEL: a rising progress curve titled 'SWE-bench Verified' with the x-axis 'late 2023 to July 2026' and the y-axis 'percent solved', starting near 'approximately 13%' and climbing to 'approximately 88.7%' at the right end. Beside the curve, list 'FOUR COMPOUNDING FACTORS' as four stacked contributing arrows feeding into the climb: '(1) stronger base models', '(2) test-time compute / reasoning', '(3) better scaffolds - file IO, test runners, diff review, persistent state', '(4) RL on agentic traces'. BOTTOM PANEL titled 'THE SCAFFOLD GAP': two bars side by side using the SAME underlying model family. Bar 1 'Augment Code with Opus 4.6: 72%'. Bar 2 'Cursor with Sonnet 4.6: 65.7%'. Add a caption underneath: 'same model family, better harness wins - the scaffold (tool use, testing, review loop) is as important as the model itself'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "dl16x_backprop",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "Every weight moved in the direction that reduces the loss. That's ONE training step. Repeat thousands of times.",
+    svgBase: "dl16x_backprop",
+    title: "Backpropagation: forward pass then backward pass through a tiny network",
+    rawBody: "Draw a two-panel diagram of backpropagation through a tiny network with 2 inputs, 2 hidden ReLU neurons, and 1 sigmoid output. LEFT PANEL 'FORWARD PASS', arrows left to right: inputs x1=0.5, x2=0.3 feed hidden neurons via weights W11=0.4, W12=0.2, W21=0.3, W22=0.5, giving h1 = ReLU(0.26) = 0.26 and h2 = ReLU(0.30) = 0.30; then via v1=0.6, v2=0.8 to z=0.396, y_hat = sigmoid(0.396) = 0.598; loss L = -log(0.598) = 0.514 against true y=1. RIGHT PANEL 'BACKWARD PASS', same boxes with arrows reversed right to left, showing gradients flowing back: dL/dy_hat = -1.672, combined dL/dz = -0.401, dL/dv1 = -0.104, dL/dv2 = -0.120, dL/dh1 = -0.241, dL/dh2 = -0.321, with a note 'h2 gets more blame - stronger connection v2=0.8'. Under both panels add captions: 'chain rule: multiply local gradients along the path back to each weight' and 'weight update: new weight = old weight - learning rate x gradient'. Add a banner across the bottom: 'ONE training step - repeat thousands of times'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dl16x_lstmgru",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "**Practical note:** For new projects, prefer Transformers. LSTMs/GRUs remain useful when you must process tokens *one at a time* at low latency (e.g., real-time streaming ASR, embedded systems).",
+    svgBase: "dl16x_lstmgru",
+    title: "LSTM vs GRU: three gates and a cell state versus two gates",
+    rawBody: "Draw a side-by-side comparison of LSTM and GRU gating for recurrent networks. LEFT PANEL 'LSTM - 3 GATES': a horizontal highway line labelled 'cell state Ct - the gradient highway' running left to right, with three gate boxes feeding it: 'forget gate ft (sigmoid) - erases old memory', 'input gate it (sigmoid) + candidate Ct-tilde (tanh) - writes new memory', 'output gate ot (sigmoid) - reads memory into hidden state ht'. Add the captions 'Ct = ft*Ct-1 + it*Ct-tilde' and 'ht = ot*tanh(Ct)', plus a note 'when ft is near 1, gradients flow across many steps nearly unchanged'. RIGHT PANEL 'GRU - 2 GATES': no separate cell state, just hidden state ht passed forward, with two gate boxes: 'update gate zt - blends old vs new state' and 'reset gate rt - controls how much past is exposed'. Add the caption 'ht = (1-zt)*ht-1 + zt*h-tilde-t' and a note 'when zt is near 0, hidden state is copied unchanged'. BOTTOM STRIP, a small comparison table: 'Gates: LSTM=3 (forget, input, output) vs GRU=2 (update, reset)', 'Parameters: LSTM has about 33% more per unit than GRU', 'Separate cell state: LSTM=Yes, GRU=No', 'Prefer LSTM for long sequences and complex dependencies; prefer GRU for shorter sequences and less data'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dl16x_unet",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "Originally designed for medical images (where labeled data is very scarce). Now used for: satellite image analysis, self-driving car road segmentation, industrial inspection.",
+    svgBase: "dl16x_unet",
+    title: "U-Net: encoder shrinks, decoder expands, skip connections bridge them",
+    rawBody: "Draw the U-Net architecture in its classic U shape. LEFT DOWNWARD ARM labelled 'ENCODER (shrinks, learns WHERE things are)': a stack of shrinking boxes at resolutions '572x572 -> 284x284 -> 142x142 -> 71x71 -> 35x35', each downward arrow annotated '2 convolutions + max pooling'. BOTTOM OF THE U: the smallest 35x35 box labelled 'bottleneck'. RIGHT UPWARD ARM labelled 'DECODER (expands, predicts label per pixel)': a mirrored stack of growing boxes '35x35 -> 71x71 -> 142x142 -> 284x284 -> output', each upward arrow annotated 'upsample + 2 convolutions'. Draw horizontal dashed bridge arrows connecting each encoder level directly across to the matching decoder level at the same resolution, labelled 'skip connections - pass fine-grained location info the decoder needs'. Below the U, three small contrasting labels: 'image classification - one label for the whole image', 'object detection - one box per object', 'semantic segmentation - one label per pixel (this diagram's job)'. Bottom caption: 'used for medical images, satellite analysis, self-driving road segmentation, industrial inspection'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dl16x_gan",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "GANs remain competitive for **video generation** and real-time applications where single-pass synthesis matters.",
+    svgBase: "dl16x_gan",
+    title: "GAN training loop and its most common failure: mode collapse",
+    rawBody: "Draw the GAN adversarial training loop plus its main failure mode in two stacked panels. TOP PANEL 'GENERATOR VS DISCRIMINATOR': a box 'noise z ~ N(0,I)' with an arrow into 'Generator G', producing 'fake sample x-hat = G(z)'; a separate box 'real sample x ~ p_data'; both fake and real samples feed into a box 'Discriminator D', with two output arrows labelled 'D(x) -> P(real)' and 'D(G(z)) -> P(fake is real)'. Add two callouts: 'G wants D(G(z)) -> 1 (fool the discriminator)' and 'D wants D(x) -> 1 and D(G(z)) -> 0 (catch the fakes)'. BOTTOM PANEL 'MODE COLLAPSE - the most common failure': on the left, the label 'true distribution: cats, dogs, birds, horses...' over four distinct icons; on the right, 'mode-collapsed generator' producing five identical cat icons in a row labelled 'cat, cat, cat, cat, cat... (one output, always)'. Caption underneath: 'symptom: output looks identical regardless of noise z; FID score is high'. Add a small side note box: 'WGAN replaces JS divergence with the Earth Mover (Wasserstein) distance and uses a critic instead of a classifier, giving smoother gradients and more stable training'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dl16x_mamba",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "In practice the strongest recipe is a **hybrid**: interleave a few attention layers (for precise recall) with many SSM layers (for cheap long-range mixing). **Jamba** (Mamba + Transformer + MoE) is a well-known example. Reach for SSMs when sequences are **very long** and you care about throughput and flat memory more than exact needle-in-a-haystack recall.",
+    svgBase: "dl16x_mamba",
+    title: "Transformer versus State-Space Models: quadratic attention versus a linear scan",
+    rawBody: "Draw a two-row comparison of how Transformers and State-Space Models (SSMs/Mamba) process a long sequence of tokens. TOP ROW labelled 'TRANSFORMER': show every token box connected to every other token box with a dense mesh of crossing arrows, captioned 'O(n^2) compute and memory - at 1M tokens that is a trillion pairwise scores' and 'KV cache grows with context'. BOTTOM ROW labelled 'SSM / MAMBA': show tokens feeding one at a time into a single small fixed-size box labelled 'hidden state ht', with one arrow scanning left to right through the sequence, captioned 'ht = A*ht-1 + B*xt, yt = C*ht' and 'O(n) time, O(1) state per step - flat memory'. Inside the Mamba box, add a highlighted inset labelled 'SELECTIVE SCAN: B, C and the step size are input-dependent, so the model chooses per token what to store and what to skip - a hardware-aware parallel scan keeps this fast on GPUs'. BOTTOM STRIP, a small comparison: 'Random look-back recall: Transformer=excellent, SSM=weaker', 'Best at: Transformer=in-context recall and reasoning, SSM=very long streams, audio, genomics', and a final note 'hybrids like Jamba interleave a few attention layers with many SSM layers'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "dl16x_traincurves",
+    chapterFile: "content/16_deep_learning.md",
+    promptKind: "concept",
+    existingImageLine: "## 7.2 Reading Training Curves",
+    svgBase: "dl16x_traincurves",
+    title: "Reading training curves: five patterns and what each one means",
+    rawBody: "Draw a 2x3 grid of five small loss-curve panels for reading training curves, each with x-axis 'training step / epoch' and y-axis 'loss', plotting a solid train-loss line and a dashed val-loss line. PANEL 1 'GOOD TRAINING': both lines decrease smoothly together with a small gap. PANEL 2 'OVERFITTING': train loss keeps decreasing toward zero, but val loss dips then curves back UP, captioned 'Action: add dropout/weight decay, get more data, use early stopping'. PANEL 3 'UNDERFITTING': both lines level off early at a high value, close together, captioned 'Action: bigger model, more epochs, higher learning rate'. PANEL 4 'LEARNING RATE TOO HIGH': train loss oscillates wildly up and down, never settling, captioned 'Action: multiply learning rate by 0.1, add warmup'. PANEL 5 'LEARNING RATE TOO LOW': train loss is nearly flat and barely moving, captioned 'Action: multiply learning rate by 10'. In the 6th cell, draw a legend explaining 'solid line = train loss, dashed line = val loss'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_transformerblock",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "After 12-96 of these blocks, the final representation is rich enough to predict the next token accurately.",
+    svgBase: "llm17x_transformerblock",
+    title: "The full Transformer block: attention, skip connections, and the feed-forward network",
+    rawBody: "Draw the full Transformer block as a single vertical pipeline of stacked boxes with arrows flowing top to bottom, in this exact order: 'Input', 'Self-Attention: each token looks at all others, gathers context', 'Add and Normalize: add input back in (skip connection), normalize', 'Feed-Forward Network: two linear layers with a nonlinearity', 'Add and Normalize: again', 'Output (enriched representation, ready for next layer)'. Draw one curved skip-connection arrow looping from the 'Input' box around the Self-Attention box into the first 'Add and Normalize' box, and a second curved arrow looping from before the Feed-Forward box around it into the second 'Add and Normalize' box. Add a side caption next to the pipeline: '12 to 96 of these blocks are stacked; after all of them the representation is rich enough to predict the next token accurately'. Add three small callouts pointing at the Feed-Forward box: 'expand: e.g. 4096 -> 16384', 'activate: GeLU or SiLU', 'compress: 16384 -> 4096', plus a note 'the feed-forward network holds roughly 2/3 of the model's total parameters and stores factual knowledge, while attention handles relationships between tokens'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_causalmask",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "Not all LLMs attend to all tokens. There are two major patterns:",
+    svgBase: "llm17x_causalmask",
+    title: "Causal attention masks versus bidirectional attention masks",
+    rawBody: "Draw two side-by-side 5x5 attention-mask grids for 5 tokens (rows = query token, columns = key token it can see; 1 = can attend, 0 = masked out). LEFT GRID titled 'CAUSAL (MASKED) ATTENTION - used by GPT, LLaMA, Claude': fill it as a lower-triangular pattern exactly: row0 '1 0 0 0 0', row1 '1 1 0 0 0', row2 '1 1 1 0 0', row3 '1 1 1 1 0', row4 '1 1 1 1 1'; caption underneath 'each token can only attend to tokens BEFORE it and itself - future tokens don't exist yet during generation'. RIGHT GRID titled 'BIDIRECTIONAL ATTENTION - used by BERT, RoBERTa': fill the entire 5x5 grid with 1s; caption underneath 'each token can attend to ALL tokens in the sequence - better for understanding tasks but cannot be used for text generation'. Below both grids add a summary line: 'causal = generation (GPT-style); bidirectional = understanding (BERT-style)'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_rewardmodel",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "The important consequence: **once trained, the reward model can score any new response without a human in the loop.** That is what makes the next stage possible at all — you have converted expensive human judgement into a cheap automatic signal.",
+    svgBase: "llm17x_rewardmodel",
+    title: "Training the RLHF reward model from ranked human preferences",
+    rawBody: "Draw the RLHF reward-model training stage as a horizontal four-step pipeline with arrows left to right. STEP 1 box: 'SFT model generates 4-9 responses for each prompt'. STEP 2 box: 'human labellers RANK the responses (A is better than B), not score them out of 10'. STEP 3 box: 'reward model: Input (prompt, response) -> Output a single scalar quality score'. STEP 4 box: 'training objective pushes the winning response's score above the losing response's score'. Draw a looping arrow from step 4 back into step 3 labelled 'repeat until the reward model reliably reorders held-out preference pairs'. Add a final highlighted box to the right of the pipeline: 'once trained, the reward model scores ANY new response with no human in the loop - this converts expensive human judgement into a cheap automatic signal', with an arrow pointing onward to a box labelled 'used in Stage 3: RL fine-tuning with PPO'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_dpo",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "**The key insight:** Instead of training a reward model and then doing RL, DPO directly updates the language model using preference pairs.",
+    svgBase: "llm17x_dpo",
+    title: "RLHF's three stages versus DPO's single training stage",
+    rawBody: "Draw two side-by-side vertical pipelines contrasting RLHF and DPO, both starting from the same box 'Collect preference data (response A > response B)'. LEFT PIPELINE titled 'RLHF - 3 stages': arrow down to 'Stage 1: SFT', arrow down to 'Stage 2: train a reward model on the preferences', arrow down to 'Stage 3: use RL (PPO) to optimize the LLM against the reward model'; label the whole pipeline '3 separate training stages - complex and unstable'. RIGHT PIPELINE titled 'DPO - 1 stage': arrow down to a single box 'directly fine-tune the LLM using a loss function that increases P(good_response) and decreases P(bad_response), with a KL penalty keeping it close to the original model'; label the whole pipeline '1 training stage - simpler and more stable'. Beneath both pipelines add a checklist box titled 'why DPO is popular': 'simpler to implement (no RL, no reward model)', 'more stable training', 'used by LLaMA 3, Zephyr, and many open-source models', 'results comparable to RLHF'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_archcompare",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "The Transformer paper introduced an encoder-decoder architecture, but modern LLMs have diverged into three families:",
+    svgBase: "llm17x_archcompare",
+    title: "Encoder-only, decoder-only, and encoder-decoder LLM architectures",
+    rawBody: "Draw three side-by-side architecture boxes comparing the three LLM family shapes. BOX 1 titled 'ENCODER-ONLY (BERT, RoBERTa, DeBERTa)': a single block 'Bidirectional Transformer Encoder' with every token connected to every other token, captioned 'Input -> Representation', 'best for understanding tasks: classification, NER, search, Q&A', 'cannot generate new text'. BOX 2 titled 'DECODER-ONLY (GPT, LLaMA, Claude, Mistral)': a single block 'Causal (left-to-right) Transformer Decoder' with arrows only pointing forward between tokens, captioned 'Input -> Next Token', 'best for generation tasks: chatbots, writing, code generation', 'the dominant architecture today - almost all modern LLMs are decoder-only'. BOX 3 titled 'ENCODER-DECODER (T5, BART, mBART)': two connected blocks 'Encoder (bidirectional)' feeding into 'Decoder (causal)', captioned 'Input text -> Output text', 'best for translation, summarization, seq-to-seq tasks'. Below the three boxes add a numbered list titled 'why decoder-only won': '1. simpler to scale - one stack instead of two', '2. pre-training is straightforward - just predict next token', '3. few-shot prompting works naturally', '4. same architecture handles both understanding and generation', '5. scaling laws show decoder-only models are more efficient per parameter'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17x_timeline",
+    chapterFile: "content/17_llm.md",
+    promptKind: "concept",
+    existingImageLine: "## 16.2 Historical Timeline",
+    svgBase: "llm17x_timeline",
+    title: "LLM history from the Transformer paper to today's frontier models",
+    rawBody: "Draw a horizontal timeline banner from 2017 to 2026, one labelled tick per year, with short milestone bullets under each tick reproduced exactly: '2017: Attention Is All You Need - Transformer invented'; '2018: GPT-1 (117M), BERT (340M), ELMo'; '2019: GPT-2 (1.5B), RoBERTa, T5'; '2020: GPT-3 (175B) - few-shot learning; Kaplan et al. scaling laws'; '2021: Codex -> GitHub Copilot; Chinchilla scaling laws - train longer, not bigger'; '2022: ChatGPT/InstructGPT - RLHF; PaLM (540B); Stable Diffusion'; '2023: GPT-4 multimodal; LLaMA open-source; Mixtral 8x7B MoE goes mainstream'; '2024: GPT-4o omni; LLaMA 3 (8B/70B/405B); Gemini 1.5 - 1M token context; OpenAI o1 reasoning'; '2025: GPT-5 series; Claude 4 family; LLaMA 4 - MoE, 10M context; DeepSeek R1 open-source reasoning'; '2026: Claude Opus 4.8/Sonnet 5 - 1M context; Gemini 3.5 Pro; GPT-5.6 (Sol) flagship'. Draw the timeline as a single rising arrow from left to right suggesting escalating capability. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17bx_cot_reasoning",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "**Why it works:** The model generates its reasoning before the answer. Each token it generates gives it more \"thinking space.\" The final answer is conditioned on correctly-reasoned intermediate steps.",
+    svgBase: "llm17bx_cot_reasoning",
+    title: "Chain-of-thought: reasoning tokens before the answer",
+    rawBody: "Draw two side-by-side panels contrasting prompting styles for the same math word problem: a store buys apples for $0.50 each and sells them for $0.80 each, and sold 200 apples - what is the profit? LEFT PANEL titled 'WITHOUT CHAIN-OF-THOUGHT': show a speech-bubble prompt going straight into an LLM icon and out to an answer bubble reading '$45' with a red X and the label 'wrong - jumped straight to a guess'. RIGHT PANEL titled 'WITH CHAIN-OF-THOUGHT': show the same prompt but with the added instruction 'Think step by step', flowing into the LLM which now produces a visible chain of three reasoning boxes before the final answer: 'Step 1: Profit per apple = $0.80 - $0.50 = $0.30', 'Step 2: Total profit = $0.30 x 200 = $60', 'The profit is $60' with a green check mark and the label 'correct - reasoning generated before the answer'. Add a connecting caption underneath both panels: 'each generated token gives the model more thinking space; the final answer is conditioned on the reasoning that came before it'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "llm17bx_tree_of_thoughts",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "Chain-of-thought follows a single reasoning path. **Tree of Thoughts** explores multiple paths simultaneously, like a chess player considering different moves.",
+    svgBase: "llm17bx_tree_of_thoughts",
+    title: "Tree of Thoughts: exploring many reasoning paths",
+    rawBody: "Draw two connected panels contrasting reasoning strategies for the puzzle: use the numbers 1, 5, 6, 7 to make 24 using plus, minus, multiply and divide. LEFT PANEL titled 'CHAIN-OF-THOUGHT - ONE PATH': a single straight line of boxes reading '1 + 5 = 6' then '6 x 6 = 36' then a dead-end stop sign labelled 'stuck - no way back'. RIGHT PANEL titled 'TREE OF THOUGHTS - MANY PATHS': draw a branching tree starting from a root box '{1, 5, 6, 7}' splitting into three child branches labelled '5 + 1 = 6 leads to {6, 6, 7}', '7 - 1 = 6 leads to {5, 6, 6}', '6 x 1 = 6 leads to {5, 6, 7}'; from each child draw further branches, some ending in red X marks labelled 'evaluate, prune bad branches' and at least one branch ending in a green check mark labelled 'found a path that reaches 24 using (7 - 1) x (6 - 2)'. Add a caption at the bottom: 'chain-of-thought follows a single reasoning path like a hiker on one trail; tree of thoughts explores multiple paths simultaneously like a chess player considering different moves, then prunes the bad ones'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17bx_self_consistency",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "**Key insight:** Different reasoning paths can lead to different answers. The correct answer tends to appear more often than any specific wrong answer.",
+    svgBase: "llm17bx_self_consistency",
+    title: "Self-consistency: majority vote across reasoning paths",
+    rawBody: "Draw a single panel illustrating self-consistency prompting for the question: a train leaves at 3:00 PM going 60 mph, and another leaves at 4:00 PM going 80 mph - when does the second catch up? Show the SAME prompt fanning out into five separate reasoning-path boxes labelled 'Path A', 'Path B', 'Path C', 'Path D', 'Path E', each ending in an answer bubble: Path A = '6:00 PM' marked with a red X, Path B = '7:00 PM' marked with a green check, Path C = '7:00 PM' marked with a green check, Path D = '7:00 PM' marked with a green check, Path E = '6:30 PM' marked with a red X. Below the five bubbles, draw a funnel or tally box labelled 'MAJORITY VOTE' collecting the five answers into a tally: '7:00 PM: 3 votes', '6:00 PM: 1 vote', '6:30 PM: 1 vote', with a large final answer box reading '7:00 PM (3 out of 5) - correct' and a star icon. Add a caption: 'different reasoning paths can reach different answers; the correct answer tends to appear more often than any single specific wrong answer'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "llm17bx_structured_output",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "For applications that need machine-readable output (JSON, XML, SQL), you can't just hope the LLM formats it correctly. Structured output techniques guarantee valid formats.",
+    svgBase: "llm17bx_structured_output",
+    title: "Structured output: JSON mode and schema enforcement",
+    rawBody: "Draw a three-part vertical diagram about forcing structured output from an LLM. TOP: two contrasting speech bubbles - left labelled 'WITHOUT JSON MODE' showing broken, cut-off output text ending mid-field, with a red X for 'invalid, unparseable'; right labelled 'WITH JSON MODE' showing a clean, fully closed object with a name field and an age field, with a green check for 'always parseable'. MIDDLE: a box titled 'JSON SCHEMA ENFORCEMENT' showing a schema definition with three fields: name as string (required), age as integer (required), skills as an array of strings, and an arrow pointing to a matching valid output object, labelled 'missing fields, wrong types, or extra fields are prevented'. BOTTOM: a strip titled 'CONSTRAINED DECODING - HOW IT WORKS' showing a token-by-token checklist: a box 'inside a JSON string value' with arrows to 'ALLOW letters, numbers, punctuation' and 'BLOCK curly braces and square brackets'; next to it a box 'just finished a key-value pair' with arrows to 'ALLOW comma or closing brace' and 'BLOCK everything else'. Caption underneath: 'this is called grammar-based sampling - the model can only choose from tokens that are valid at that position in the schema'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17bx_full_ft_vs_peft",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "When prompting isn't enough, fine-tune the model on your own data.",
+    svgBase: "llm17bx_full_ft_vs_peft",
+    title: "Full fine-tuning vs parameter-efficient fine-tuning",
+    rawBody: "Draw two contrasting panels comparing fine-tuning approaches for a large language model, both starting from the same base model icon. LEFT PANEL titled 'FULL FINE-TUNING': show the entire model block shaded solid to mean all parameters updated, with bullet labels 'best quality', 'requires massive GPU memory - same as pre-training', 'creates a full copy of the model for each use case, 10 to 100 GB per use case', 'risk of catastrophic forgetting - model forgets general knowledge'. RIGHT PANEL titled 'PARAMETER-EFFICIENT FINE-TUNING (PEFT)': show the same model block mostly greyed out and frozen with only a tiny highlighted sliver labelled 'small trainable adapter', with bullet labels 'nearly as good quality', 'requires much less GPU memory', 'adapter weights are tiny, 10 to 100 MB versus 10 to 100 GB', 'less forgetting - most of the model stays frozen'. Add a bottom caption: 'PEFT updates only a small fraction of parameters instead of all of them, trading a little quality for a massive drop in memory and storage cost per use case'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17bx_context_window_budget",
+    chapterFile: "content/17b_llm_applications.md",
+    promptKind: "concept",
+    existingImageLine: "The context window limits how much text the model can \"see\" at once.",
+    svgBase: "llm17bx_context_window_budget",
+    title: "Context window as a shared token budget",
+    rawBody: "Draw a horizontal stacked bar labelled '128K CONTEXT WINDOW' divided into four proportionally-sized segments from left to right: 'system prompt, about 500 tokens', 'conversation history, about 5,000 tokens', 'retrieved documents, about 10,000 tokens', 'current question, about 200 tokens', with a bracket under the filled portion reading 'total used: about 15,700 tokens' and the remaining empty grey portion of the bar labelled 'unused headroom, well within 128K'. Below this, draw a second contrasting bar or icon: a stack of documents labelled '1,000-page document: 1000 pages x 500 words per page = 500,000 words = approximately 667,000 tokens', crossed out with a red X and the label 'will NOT fit in any context window', with an arrow pointing to a small database icon labelled 'must use RAG instead - retrieve only the relevant chunks'. Add a caption at the bottom: 'the context window is a shared budget - system prompt, history, retrieved documents and the question all compete for the same tokens'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "llm17cx_prefill_vs_decode",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "Prefill is the mirror image. Those 2,000 tokens are processed as one large matrix multiplication, so the GPU's math units are saturated and bandwidth is not the constraint. Prefill is **compute-bound**.",
+    svgBase: "llm17cx_prefill_vs_decode",
+    title: "Prefill vs decode: two opposite bottlenecks",
+    rawBody: "Draw two stacked panels showing the two phases of LLM inference for the prompt: Summarise this contract, followed by 2,000 tokens of contract text. TOP PANEL 'PHASE 1: PREFILL': show 2,000 token boxes labelled t1 through t2000 all feeding into the model AT ONCE in parallel via converging arrows into one big matrix-multiply icon, with output arrows to 'fills the KV cache' and 'emits the FIRST token'. Label this panel 'Bottleneck: COMPUTE (the GPU math units)' and 'Determines: TTFT (time to first token)'. BOTTOM PANEL 'PHASE 2: DECODE': show a sequential chain of single token boxes t2001 then t2002 then t2003 then dots then t2200, each one reading the entire model's weights from a memory icon before producing one output token. Label this panel 'Bottleneck: MEMORY BANDWIDTH' and 'Determines: TPOT (time per output token)'. Below both panels add a numeric strip: 'Llama-3-70B in FP16 = 140 GB, needs 2 H100s, each streams 70 GB per token at 3350 GB/s, giving about 48 tokens per second per stream' and 'quantized to INT4 = 35 GB, fits on 1 H100, giving about 96 tokens per second'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "llm17cx_chunked_prefill",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "**Why it exists.** Prefill and decode compete for the same GPU. A single 100K-token prefill can occupy the device for seconds. Every user currently mid-answer sees their tokens simply stop arriving. Your mean TPOT looks fine; your P99 is a disaster. This is one of the most common causes of \"it's usually smooth but sometimes it just hangs\".",
+    svgBase: "llm17cx_chunked_prefill",
+    title: "Chunked prefill interleaves slices with decode steps",
+    rawBody: "Draw two stacked timeline panels comparing GPU scheduling with and without chunked prefill for a 100K-token prompt. TOP PANEL 'WITHOUT CHUNKED PREFILL': a row of small boxes labelled 'D', 'D', 'D' (decode steps for other users) interrupted by one giant solid block labelled 'PREFILL - 100K tokens', followed by more 'D' boxes; draw a bracket under the giant block reading 'every decoding user stalls here'. BOTTOM PANEL 'WITH CHUNKED PREFILL, chunk = 512 tokens': a row of equal-sized small boxes each labelled 'D+p1', 'D+p2', 'D+p3', 'D+p4', continuing with dots to 'D+pN', then 'D', 'D'; annotate that each step does a slice of prefill AND a decode step together, so streams keep flowing and TTFT degrades gracefully. Add a caption strip at the bottom: 'total prefill takes slightly longer and the big request's own TTFT gets marginally worse; in exchange everyone else's P99 TPOT stops collapsing - in vLLM this is the enable-chunked-prefill flag, with chunk size as the tunable knob'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17cx_speculative_decoding",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "**Why it exists.** Decode is memory-bandwidth-bound (§1.1), so a forward pass that verifies 5 candidate tokens costs almost exactly the same as one that produces 1. If the guesses are usually right, you get several tokens for the price of one weight read.",
+    svgBase: "llm17cx_speculative_decoding",
+    title: "Speculative decoding: draft, verify, accept",
+    rawBody: "Draw a horizontal pipeline diagram for speculative decoding. LEFT: a small icon labelled 'DRAFT MODEL - small, fast, 10 to 20 times smaller than target' proposing a row of four candidate tokens in sequence labelled 'guess 1', 'guess 2', 'guess 3', 'guess 4' (draft length gamma = 4). MIDDLE: an arrow into a large icon labelled 'TARGET MODEL - verifies all 4 guesses in ONE forward pass'. RIGHT: show the verification outcome as the four guesses with the first two marked green check 'accepted', the third marked green check 'accepted', and the fourth marked red X 'first mistake - rejected, target's own token used instead'; label this 'keep every token up to the first mistake'. Below the pipeline, add a small table titled 'expected tokens per verification step, draft length gamma = 4' with rows: 'acceptance 0.9 gives 4.10 tokens per step, excellent', 'acceptance 0.8 gives 3.36 tokens per step, strong win', 'acceptance 0.7 gives 2.77 tokens per step, solid', 'acceptance 0.5 gives 1.94 tokens per step, marginal', 'acceptance 0.3 gives 1.43 tokens per step, net loss'. Add a caption: 'mathematically lossless - the output distribution is identical to what the big model would have produced alone; it is a pure latency optimisation'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "llm17cx_distill_quantize_prune",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "**Why it exists.** Candidates reach for quantization reflexively because it is the easiest. But \"make this model cheaper to serve\" has three answers, and the strongest response compares them.",
+    svgBase: "llm17cx_distill_quantize_prune",
+    title: "Quantize, distill or prune: three ways to shrink a model",
+    rawBody: "Draw a decision-flow diagram titled 'QUANTIZE, DISTILL OR PRUNE?'. At the top, a comparison table with three columns 'QUANTIZATION', 'DISTILLATION', 'PRUNING' and three rows: 'cost to apply' (minutes to hours, no training data / full training run on a student model / hours plus fine-tuning to recover), 'typical gain' (2 to 4 times smaller / 5 to 10 times smaller / 1.5 to 2 times, structured), 'reversible?' (yes, just reload FP16 / no, it is a new model / no). Below the table, draw a top-to-bottom decision flow with three decision boxes connected by arrows: box 1 'need it cheaper, NO training budget?' leading to 'QUANTIZE - FP8 first, INT4 if memory-bound - start here always'; box 2 'still too expensive, and the task is NARROW?' leading to 'DISTIL - a 7B student on your specific task often matches a 70B teacher'; box 3 'need to hit a specific latency on fixed hardware?' leading to 'STRUCTURED PRUNING - drop whole heads or layers, then fine-tune'. Add a caption: 'quantize first because it costs nothing and is reversible; distillation is the bigger lever when the task is narrow; pruning is reached for last because unstructured sparsity often needs hardware support to become real speedup'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17cx_judge_biases",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "**Why it exists.** Human evaluation is accurate and far too slow and expensive to run on every change. Exact-match metrics like BLEU and ROUGE do not work for open-ended generation. A judge model correlates reasonably with human preference and runs in minutes.",
+    svgBase: "llm17cx_judge_biases",
+    title: "LLM-as-judge and its three biases",
+    rawBody: "Draw a diagram titled 'LLM-AS-JUDGE: THREE BIASES' with three side-by-side cards. CARD 1 'POSITION BIAS': two answer boxes labelled 'Response A (shown first)' and 'Response B (shown second)' with the judge's arrow pointing toward Response A regardless of content, labelled 'the judge favours whichever response is shown first'; mitigation note below: 'run both orders, average; discard non-transitive pairs'. CARD 2 'VERBOSITY BIAS': a short correct answer box and a long rambling answer box, with the judge's arrow pointing to the long one and a label 'longer answers score higher regardless of quality'; mitigation note: 'length-controlled comparison; penalise or normalise for length'. CARD 3 'SELF-PREFERENCE BIAS': a judge model icon next to two answer boxes, one written by 'the same model family as the judge' and one by 'a different model family', with the judge's arrow favouring its own family; mitigation note: 'use a different family as judge; validate against human labels'. At the bottom add a strip with two extra rules: 'pairwise beats absolute - ask which of two is better, not score this one to ten' and 'calibrate the judge - hand-label 50 to 100 examples and measure agreement before trusting it'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "llm17cx_cost_arithmetic",
+    chapterFile: "content/17c_llm_systems.md",
+    promptKind: "concept",
+    existingImageLine: "Interviewers ask you to do this arithmetic out loud. Practise it once and it becomes free marks.",
+    svgBase: "llm17cx_cost_arithmetic",
+    title: "Capacity and cost: the arithmetic worked example",
+    rawBody: "Draw a vertical five-step arithmetic flow titled 'CAPACITY AND COST - WORKED EXAMPLE' for a chat feature at 1,000,000 requests per day, averaging 500 input tokens and 200 output tokens. STEP 1 'TOKEN VOLUME': box reading 'input = 1,000,000 x 500 = 500 million tokens per day' and 'output = 1,000,000 x 200 = 200 million tokens per day'. STEP 2 'API COST' at $5 per million input tokens and $25 per million output tokens: box reading '(500 x $5) + (200 x $25) = $2,500 + $5,000 = $7,500 per day, about $225k per month'. STEP 3 'SELF-HOSTING': box reading 'sustained output rate = 200 million tokens divided by 86,400 seconds is about 2,315 output tokens per second' then 'a 70B model with continuous batching on an 8xH100 node delivers a few thousand output tokens per second, so roughly 2 nodes for headroom' then 'at $2 per GPU-hour: 2 nodes x 8 GPUs x $2 x 730 hours is about $23k per month'. STEP 4 'THE HONEST ANSWER': box reading 'self-hosting looks about 10 times cheaper, but add engineering headcount, peak capacity for a 3x peak-to-mean traffic ratio, and the quality gap versus a frontier model'. STEP 5 'THE CHEAPEST WIN FIRST': box reading 'if 30 percent of traffic hits a prefix or semantic cache, you cut 30 percent of the bill with a day of work and no new infrastructure'. Connect all five steps with downward arrows in sequence. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "agent18x_reactloop",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "Each step has three parts: **Thought** (reasoning), **Action** (tool call), **Observation** (result). The model sees all previous steps when deciding the next one.",
+    svgBase: "agent18x_reactloop",
+    title: "The ReAct loop: Thought, Action, Observation, repeat",
+    rawBody: "Draw a five-step vertical flow of the ReAct (Reasoning + Acting) loop, based on the paper by Yao et al., 2022. Title at top: 'ReAct: Thought -> Action -> Observation, repeat'. Show five stacked boxes connected by downward arrows using the example trace 'What is the population of the capital of France?': box 1 'Thought: I need to find the capital of France first, then look up its population.', box 2 'Action: search(capital of France)', box 3 'Observation: The capital of France is Paris.', box 4 'Thought: Now I need to find the population of Paris.', box 5 'Action: search(population of Paris 2025)' leading to 'Observation: approximately 2.1 million' and a final box 'Answer: The population of Paris, the capital of France, is approximately 2.1 million.'. Draw a loop-back arrow from the final Observation box up to a new Thought box, labelled 'repeat until done', to show the cyclical nature. Add a side caption: 'each step has three parts - Thought (reasoning), Action (tool call), Observation (result) - the model sees all previous steps when deciding the next one'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18x_nativetooluse",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "Modern models are trained on tool use directly, so the model emits a structured call as a first-class output rather than text you have to parse.",
+    svgBase: "agent18x_nativetooluse",
+    title: "Prompted ReAct vs. model-native tool calling",
+    rawBody: "Draw a two-column comparison poster titled 'Prompted ReAct vs. Model-native Tool Use'. LEFT COLUMN header 'Prompted ReAct (2022-23)': box 'How the call is expressed: free text the app parses with regex', box 'Failure mode: parse errors, malformed formats', box 'Reasoning: forced into the prompt as text', box 'Multiple calls: one at a time, sequentially'. RIGHT COLUMN header 'Model-native tool use (2026)': box 'How the call is expressed: structured call in the API response', box 'Failure mode: schema-validated by the provider', box 'Reasoning: often an internal reasoning pass, optionally surfaced', box 'Multiple calls: parallel calls in a single response'. Draw a horizontal arrow between the two columns labelled 'the model shifted from emitting parseable text to emitting a first-class structured call'. Below both columns add a shared banner box spanning the full width: 'What still transfers: the conceptual loop - observe, reason, act, observe - is exactly what a native tool-calling agent does; only the implementation changed'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18x_mcpprimitives",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "Think of it this way: **Tools** are verbs (actions), **Resources** are nouns (data), **Prompts** are recipes (pre-built workflows).",
+    svgBase: "agent18x_mcpprimitives",
+    title: "MCP's three server primitives, plus two client callbacks",
+    rawBody: "Draw a diagram titled 'MCP's Three Server Primitives, Plus Two Client Callbacks'. Top section, three side-by-side cards under the label 'SERVER PRIMITIVES (live on the MCP server)': card 1 'Tools - verbs (actions) - model-controlled: the LLM decides when to call - examples: search_issues, run_query, send_message', card 2 'Resources - nouns (data) - application-controlled: the app decides what to show - examples: file contents, database rows, API responses', card 3 'Prompts - recipes (pre-built workflows) - user-controlled: the user selects which to use - examples: Summarize this PR, Review this code'. Below, a divider line labelled 'client-side capabilities a server can call back into'. Two more cards: 'Sampling - the server asks the host LLM to generate a completion, so a server can be agentic without shipping its own model; the host keeps control of model choice and approval' and 'Elicitation (added 2025) - the server asks the user for structured input mid-task, e.g. which repository?, instead of guessing'. Use small icons: a wrench for Tools, a document for Resources, a scroll for Prompts. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18x_a2avsmcp",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "Over 150 organizations support A2A as of April 2026, including Google, Microsoft, AWS, Salesforce, SAP, and IBM. It is maintained by the Linux Foundation under Apache 2.0.",
+    svgBase: "agent18x_a2avsmcp",
+    title: "A2A vs. MCP: agent-to-agent vs. agent-to-tool",
+    rawBody: "Draw a diagram titled 'A2A vs. MCP: Agent-to-Agent vs. Agent-to-Tool'. Show two labelled boxes side by side, 'Agent A' and 'Agent B', each containing an inner box 'LLM + Tools'. Draw a horizontal double-headed arrow directly connecting Agent A and Agent B, labelled 'A2A protocol (agent-to-agent): discover, delegate tasks, coordinate'. Below each agent box, draw a downward arrow labelled 'MCP (agent-to-tool)' connecting to a small server icon: under Agent A a box 'GitHub Server', under Agent B a box 'Slack Server'. Add a caption banner across the top: 'MCP connects agents to tools and data; A2A connects agents to other agents - they are complementary'. Below the diagram add a feature list box for 'A2A v1.0 (early 2026)': 'Agent Cards - JSON metadata describing what an agent can do', 'Signed Agent Cards - cryptographic verification that a card was issued by the domain owner', 'Tasks - structured work units exchanged between agents', 'Transport - HTTP, SSE, JSON-RPC 2.0'. Add a footer stat: 'Over 150 organizations support A2A as of April 2026, including Google, Microsoft, AWS, Salesforce, SAP, and IBM; maintained by the Linux Foundation under Apache 2.0'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18x_skillsvstools",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "In practice, production agents combine both. The agent reasons freely to understand the user's intent, then invokes a skill for the structured part.",
+    svgBase: "agent18x_skillsvstools",
+    title: "Skills vs. tools: when to lock in the steps",
+    rawBody: "Draw a two-column comparison titled 'Skills vs. Tools: When to Lock In the Steps'. LEFT COLUMN 'Tool': 'Scope: single function', 'Who decides the steps: the LLM decides', 'Determinism: varies - the LLM might call it differently', 'Example: search_flights(origin, dest, date)', 'When to use: simple, atomic operations'. RIGHT COLUMN 'Skill': 'Scope: multi-step workflow', 'Who decides the steps: predefined by the developer', 'Determinism: high - same steps every time', 'Example: Book a flight - search -> compare -> select -> book -> confirm', 'When to use: complex workflows where reliability matters'. Below the two columns, draw a decision panel split in two: left side 'Use SKILLS when: the workflow is well-defined and does not change; reliability is critical (financial transactions, data mutations); you have debugged the workflow and know it works; the sequence of steps is always the same' and right side 'Use FREE-FORM REASONING when: the task is novel or ambiguous; the steps depend on intermediate results; you need the model's judgment to adapt'. Add a bottom caption: 'in practice, production agents combine both - reason freely to understand intent, then invoke a skill for the structured part'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18x_agentmemory",
+    chapterFile: "content/18_ai_agents.md",
+    promptKind: "concept",
+    existingImageLine: "Without memory, every conversation starts from scratch. The user has to re-explain their preferences, re-share context, and repeat themselves. Memory transforms a forgetful tool into a capable assistant that learns and improves over time.",
+    svgBase: "agent18x_agentmemory",
+    title: "Agent memory hierarchy: short-term, long-term, state",
+    rawBody: "Draw a three-tier vertical hierarchy titled 'Agent Memory Hierarchy'. TIER 1 'Short-term (within a conversation)': three boxes 'Context window - messages so far', 'Tool results - search results, API responses', 'Scratchpad - agent's working notes'. TIER 2 'Long-term (across conversations)': four boxes 'Vector DB - semantic search over past interactions', 'Summarized memory - compressed conversation history', 'User profile - preferences, facts about the user', 'Knowledge base - documents, FAQs, procedures'. TIER 3 'State (for multi-step tasks)': three boxes 'Checkpoints - save/restore agent state mid-task', 'Database-backed state - persistent task progress', 'Graph state - LangGraph nodes, edges, values'. Draw downward arrows from Tier 1 to Tier 2 to Tier 3 showing increasing durability, labelled 'increasing persistence, decreasing immediacy'. Add a bottom caption banner: 'without memory, every conversation starts from scratch - the user must re-explain preferences and repeat themselves; memory turns a forgetful tool into a capable assistant that learns over time'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_jailbreakvsinjection",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "Interviewers use these interchangeably to see whether you will. They are different attacks with different victims:",
+    svgBase: "agent18bx_jailbreakvsinjection",
+    title: "Jailbreak vs. prompt injection: different victims",
+    rawBody: "Draw a two-column comparison titled 'Jailbreak vs. Prompt Injection: Different Attacks, Different Victims'. LEFT COLUMN 'Jailbreak': 'Target: the model vendor's safety training', 'Attacker: usually the user themselves', 'Goal: make the model produce content it was trained to refuse', 'Your exposure: reputational, content-policy'. RIGHT COLUMN 'Prompt injection': 'Target: your application's instructions', 'Attacker: usually a third party, via content the agent reads', 'Goal: make the agent take an action you did not authorise', 'Your exposure: data loss, unauthorised actions, exfiltration'. Below the two columns, draw a warning banner spanning the width: 'For an agent with tools, indirect prompt injection is the far more dangerous of the two - the payload arrives inside a web page, a PDF, a calendar invite or a RAG chunk, the user never sees it, and it scales to every document the agent touches'. Add a small footer note: 'instructions and data travel in the same channel - a system prompt is guidance, not a security boundary'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_benchmarkharness",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "A benchmark harness provides a fixed set of tasks with automated graders, so results are reproducible and comparable across agent versions.",
+    svgBase: "agent18bx_benchmarkharness",
+    title: "Anatomy of a benchmark-style eval harness",
+    rawBody: "Draw a circular flow diagram titled 'Anatomy of a Benchmark-Style Eval Harness'. Boxes connected by arrows in sequence: 'Task dataset' -> 'Task N' -> 'Agent runs task (all tool calls recorded)' -> 'Automated grader checks final state' -> a branch point splitting into 'Pass' and 'Fail', both arrows rejoining into 'Aggregate metrics: success rate, avg steps, cost per task, latency'. Beside the main flow, add two labelled reference cards for canonical benchmarks: 'SWE-bench - real GitHub issues; grader checks whether the agent's code patch passes the repo's test suite' and 'tau-bench - tool-use tasks with a simulated environment; grader checks final state of the environment, e.g. did the file get created with the right content?'. Add a caption: 'a benchmark harness provides a fixed set of tasks with automated graders, so results are reproducible and comparable across agent versions'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_llmjudgepitfalls",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "When there is no deterministic grader (open-ended writing, research tasks, multi-step reasoning), use a separate LLM to score the agent's output against a rubric.",
+    svgBase: "agent18bx_llmjudgepitfalls",
+    title: "Five pitfalls of LLM-as-judge scoring",
+    rawBody: "Draw a diagram titled 'Five Pitfalls of LLM-as-Judge Scoring'. At the top show a simple flow: 'Agent output' -> 'Judge LLM' (guided from below by 'Rubric / criteria: specificity, accuracy, completeness, relevance') -> 'Score (0-5) + Rationale'. Below, arrange five pitfall cards in a grid, each with a name, description and mitigation: 'Verbosity bias - judge prefers longer answers regardless of quality - mitigate: explicitly penalize unnecessary length in the rubric', 'Self-preference / model bias - a GPT-4o judge rates GPT-4o outputs higher - mitigate: use a different model family as judge, or average across two judges', 'Position bias - judge scores option A higher when it appears first - mitigate: swap ordering and average both scores', 'Rubric drift - judge interprets the same rubric differently across runs - mitigate: include calibration examples (few-shot anchors) in the judge prompt', 'Hallucinated justifications - judge fabricates reasons that do not reflect the actual output - mitigate: require the judge to quote specific spans from the agent output'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_confidenceescalation",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "Rather than gating every action, agents can escalate selectively when their confidence in the correct action is low.",
+    svgBase: "agent18bx_confidenceescalation",
+    title: "Confidence-threshold escalation to a human",
+    rawBody: "Draw a decision-flow diagram titled 'Confidence-Threshold Escalation'. Top box 'Agent plans action' with an arrow down to 'Confidence score (from model logprobs, classifier, or self-assessment prompt)'. From there, split into two branches: left branch labelled 'High' leading to a box 'Proceed automatically'; right branch labelled 'Low / uncertain' leading to a box 'Escalate to human' containing example text 'I'm not sure whether to delete record #4421 or archive it. Which do you prefer?'. Below the diagram add an implementation note box: 'after the agent produces a planned action, run a secondary prompt: On a scale of 1-5, how confident are you that this action is correct and safe? If below 4, explain the uncertainty. If the self-assessed score is below threshold, route to human review'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_interruptresume",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "When an agent is paused for human review, its full state must be persisted so it can resume exactly where it left off after approval.",
+    svgBase: "agent18bx_interruptresume",
+    title: "Interrupt and resume: how a paused agent keeps state",
+    rawBody: "Draw a vertical flow diagram titled 'HITL Interrupt / Resume Flow'. Sequence of boxes connected by arrows: 'Agent running' -> 'Step N-1 complete' -> 'Approval gate triggered' -> 'Serialize agent state (messages, tool history, variables, step counter)' -> 'Checkpoint store (DB / Redis)' -> 'Notify human reviewer via Review UI' showing the example message 'Agent proposes: DELETE /prod/users/4421'. From the Review UI box, split into two branches: 'Approve' leading down to 'Resume from checkpoint -> execute action', and 'Deny / Edit' leading down to 'Inject feedback into context -> agent re-plans'. Both branches converge into a final box 'Continue agent loop'. Add a caption: 'when an agent is paused for human review, its full state must be persisted so it can resume exactly where it left off after approval'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "agent18bx_budgetguards",
+    chapterFile: "content/18b_agents_in_production.md",
+    promptKind: "concept",
+    existingImageLine: "An agent that loops is indistinguishable from an agent that has been hijacked into looping. Hard-cap all four, per task:",
+    svgBase: "agent18bx_budgetguards",
+    title: "Hard budgets as a safety control, not a cost control",
+    rawBody: "Draw a diagram titled 'Hard Budgets as a Safety Control, Not Just a Cost Control'. Show four labelled gauge/dial icons in a row, each with a stop condition: 'Token budget -> stop at N tokens', 'Step budget -> stop after N tool calls', 'Time budget -> stop after N seconds', 'Cost budget -> stop at $N'. Draw an arrow from all four gauges converging into one box: 'Escalate to a human rather than failing silently'. Add a warning banner above the gauges: 'An agent that loops is indistinguishable from an agent that has been hijacked into looping'. Add a footer caption: 'budgets are enforced per task, hard-capped on all four dimensions at once'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_langgraph_loop",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "LangGraph 1.0's headline features are **durable state** (the graph picks up where it left off after a crash), **built-in persistence** (resume agent runs days later), and **first-class human-in-the-loop pauses** for approvals — all things you'd otherwise hack together yourself.",
+    svgBase: "fw19x_langgraph_loop",
+    title: "LangGraph's stateful loop: durable state and human-in-the-loop",
+    rawBody: "Draw a state-graph diagram illustrating LangGraph's agent workflow. Show four boxes in a cycle connected by arrows: 'START' -> 'draft' -> 'review' -> a diamond decision node labelled 'approved?'. From the decision node draw two arrows: one labelled 'yes' going to 'END', one labelled 'no' looping back to 'draft'. Around the graph, draw three annotation callouts pointing at the whole diagram: 'DURABLE STATE - the graph picks up where it left off after a crash', 'BUILT-IN PERSISTENCE - resume agent runs days later', and 'HUMAN-IN-THE-LOOP PAUSE - a pause icon on the review node with a small person icon approving or rejecting'. Add a caption strip underneath: 'LangGraph 1.0 vs a plain LangChain chain: cycles, branching, durable state, and human approval pauses are first-class'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_dspy_compile",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "The big idea: give DSPy 20 labelled examples and an evaluator, and it will search prompt-instruction + demonstration combinations to maximise your metric.",
+    svgBase: "fw19x_dspy_compile",
+    title: "DSPy compiles a signature into an optimized prompt",
+    rawBody: "Draw a left-to-right pipeline showing how DSPy turns a task into a compiled prompt. Box 1 'SIGNATURE' containing text 'email: str -> intent: str' labelled 'you declare WHAT you want, not the wording'. Arrow to Box 2 'MODULE' labelled 'dspy.ChainOfThought(ClassifyEmail)'. Arrow to Box 3 'OPTIMIZER (MIPROv2)' labelled '20 labelled examples + an evaluator go in'. Show the optimizer box with a small loop icon looping through several candidate prompt cards fanned out below it, each card showing different instruction wording, with a magnifying glass over the one with the highest score. Arrow from the optimizer to Box 4 'COMPILED PROMPT (classifier.json)' labelled 'reusable, versioned artifact'. Add a bottom caption: 'The big idea: give DSPy labelled examples and an evaluator, and it searches prompt-instruction and demonstration combinations to maximise your metric - reported 10-40% quality gains over hand-written prompts'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_lora_finetune",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "LoRA freezes the base model and trains tiny rank-decomposition matrices on attention layers. Fewer than 1% of parameters trained, ~90% memory savings, near-equivalent quality.",
+    svgBase: "fw19x_lora_finetune",
+    title: "LoRA freezes the base model and trains tiny adapters",
+    rawBody: "Draw a side-by-side comparison of full fine-tuning versus LoRA fine-tuning of a large language model. LEFT PANEL 'FULL FINE-TUNING': a large stack of rectangular layers all shaded solid and labelled 'ALL weights trainable', with a big red label 'high memory, expensive'. RIGHT PANEL 'LoRA FINE-TUNING': the same stack of layers but shown greyed out and locked with padlock icons, labelled 'base model FROZEN', and next to each attention layer draw two small thin rank-decomposition matrices labelled 'A' and 'B' in a bright color, labelled 'tiny trainable adapters injected into attention layers'. Below the right panel add a stat strip: 'Fewer than 1% of parameters trained -> about 90% memory savings -> near-equivalent quality'. Add a third small box below both panels labelled 'QLoRA' with an arrow pointing to the right panel, captioned 'same recipe, base model loaded in 4-bit -> fine-tune a 7B model on a single 24 GB GPU'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_promptpatterns",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "Few-shot is the single biggest quality lever after model choice. Almost always worth trying.",
+    svgBase: "fw19x_promptpatterns",
+    title: "Four prompt-engineering patterns, from zero-shot to structured output",
+    rawBody: "Draw a four-panel grid comparing prompt engineering patterns. Panel 1 'ZERO-SHOT': an icon of a single instruction arrow straight to the model, labelled 'describe the task, no examples - works on strong models for common tasks, fails on niche taxonomies'. Panel 2 'FEW-SHOT': two to eight small example cards feeding into the model before the real question, labelled 'show 2-8 examples - the single biggest quality lever after model choice'. Panel 3 'CHAIN-OF-THOUGHT': a winding dotted path of thought bubbles leading to a final answer bubble, labelled 'ask for reasoning before the answer - trades latency and tokens for accuracy on multi-step problems'. Panel 4 'STRUCTURED OUTPUT': a model box feeding into a rigid schema template box with locked fields 'label' and 'confidence', labelled 'constrain to a JSON schema - eliminates parser failures'. Underneath all four panels add a caption strip listing 'The big four prompt sins: doing too much in one call, no examples on non-obvious tasks, burying instructions in the middle of long context, treating prompts as throwaway strings instead of versioning them like code'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_graphrag",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "**GraphRAG** — for questions vanilla RAG structurally cannot answer.",
+    svgBase: "fw19x_graphrag",
+    title: "GraphRAG answers global and multi-hop questions vanilla RAG cannot",
+    rawBody: "Draw two stacked pipelines contrasting vanilla RAG with GraphRAG. TOP PIPELINE 'VANILLA RAG': boxes 'query' -> 'top-k similar chunks' -> 'answer', with a red X and the label 'fails when the answer is spread across many chunks - cannot answer global questions like (what are the main themes across these 500 documents?) or multi-hop questions like (which of our suppliers is affected by the port closure?)'. BOTTOM PIPELINE 'GRAPHRAG': boxes 'documents' -> 'extract entities and relations' -> 'knowledge graph' -> 'cluster into communities' -> 'pre-summarise each community', then a second row 'query' -> 'traverse graph / read community summaries' -> 'answer'. Add a small warning icon on the GraphRAG build step labelled 'expensive - an LLM pass over the whole corpus, then community detection and summarisation'. Add a bottom caption: 'Use GraphRAG when the corpus is stable and questions are global or relational; for find-the-passage questions, vanilla RAG plus a reranker wins on cost and latency'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "fw19x_owasp",
+    chapterFile: "content/19_ai_frameworks.md",
+    promptKind: "concept",
+    existingImageLine: "The standard vocabulary for LLM risk. You are expected to recognise the list and name the top entry:",
+    svgBase: "fw19x_owasp",
+    title: "OWASP Top 10 risks for LLM applications",
+    rawBody: "Draw a numbered vertical list styled like a top-10 countdown poster titled 'OWASP TOP 10 FOR LLM APPLICATIONS'. List all ten entries in order with their ID and short label: 'LLM01 - Prompt injection (still number one)', 'LLM02 - Sensitive information disclosure', 'LLM03 - Supply chain (models, adapters, MCP servers)', 'LLM04 - Data and model poisoning', 'LLM05 - Improper output handling', 'LLM06 - Excessive agency', 'LLM07 - System prompt leakage', 'LLM08 - Vector and embedding weaknesses', 'LLM09 - Misinformation', 'LLM10 - Unbounded consumption'. Put a bold highlighted ribbon on LLM01 labelled 'TOP RISK'. Draw a callout box next to LLM05 with an arrow, labelled 'the one engineers under-rate: model output is untrusted, user-controlled data - treat it like XSS or SQL injection, never eval it'. Add a bottom caption: 'The standard vocabulary for LLM risk - recognise the list and name the top entry'. Reproduce every number and label exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_openweight",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "The single biggest 2025–2026 story: open-weight models closed the capability gap on closed-weight ones. Almost every flagship is now a **sparse Mixture-of-Experts (MoE)** — a giant total parameter count, only a small slice active per token.",
+    svgBase: "land20x_openweight",
+    title: "The open-weight race: sparse MoE models close the gap",
+    rawBody: "Draw a comparison poster styled as six model cards for the 2026 open-weight race, all under the heading 'OPEN-WEIGHT MODELS - SPARSE MIXTURE-OF-EXPERTS ERA'. Card 1 'DeepSeek V4-Pro': '1.6T total / 49B active, 1M context, MIT license, sweet spot: reasoning, coding, raw benchmarks, 83.7% SWE-bench'. Card 2 'Llama 4 Maverick': '400B / 17B active, 1M context, Meta custom license with 700M MAU clause, sweet spot: general-purpose, multilingual'. Card 3 'Llama 4 Scout': '109B / 17B active, 10M context (industry largest), Meta custom license, sweet spot: long-context RAG'. Card 4 'Qwen 3.5': '397B / 17B active, 1M context, Apache 2.0, sweet spot: science and tool-use, 88.4% GPQA Diamond'. Card 5 'Mistral Large 3': '675B / 41B active, 1M context, Apache 2.0, sweet spot: tool-use, multilingual'. Card 6 'Gemma 4 31B': '31B dense, 256K context, Apache 2.0, sweet spot: self-host on 1 H100, code'. Under each card show a small chip icon sized to show total vs active parameters, a large outline with a small filled slice. Add a caption strip: 'The single biggest 2025-2026 story: open-weight models closed the capability gap on closed-weight ones - almost every flagship is now a sparse Mixture-of-Experts, a giant total parameter count with only a small slice active per token'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_multimodal",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "By 2026, generation went from a research demo to a product category.",
+    svgBase: "land20x_multimodal",
+    title: "2026 multimodal generation: image, video and voice leaders",
+    rawBody: "Draw three side-by-side columns under the title '2026 MULTIMODAL GENERATION'. Column 1 'IMAGE': list 'DALL-E 3 / GPT-Image-1 (OpenAI) - native in ChatGPT, strong text rendering', 'Imagen 4 (Google DeepMind) - high photorealism, in Gemini app', 'Midjourney v7 - aesthetic leader', 'FLUX 1.1 Pro / FLUX dev (Black Forest Labs) - open-weight, fast', 'Stable Diffusion 3.5 (Stability AI) - open-weight workhorse'. Column 2 'VIDEO': list 'Sora 2 (OpenAI) - up to 60-second clips, physics-realistic, handles backflips on a paddleboard', 'Veo 3.1 (Google DeepMind) - up to 1-minute, synchronised audio with dialogue and SFX, 4K', 'Kling 2.0 (Kuaishou) - strong human motion', 'Runway Gen-4 - editor-friendly camera and character control', 'Seedance 2 (ByteDance) - fast, low cost'. Column 3 'VOICE': list 'GPT-4o voice / Realtime API - speech-to-speech, about 300 ms latency', 'Gemini Live - real-time bidirectional audio and screen-share', 'ElevenLabs Conversational - production voice agents', 'Sesame - high-fidelity expressive voice'. At the bottom of the voice column add an arrow diagram: old pipeline 'STT -> LLM -> TTS (high latency, lost prosody)' crossed out, replaced by new pipeline 'one model end-to-end (hears tone, interrupts naturally, responds in about 300 ms)'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_computeruse",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "The 2026 breakthrough category. Claude Computer Use jumped from 14% to **44% on OSWorld** in 18 months. OpenAI's **Operator** runs cloud-hosted browsers; **Project Mariner** is Google's browser agent; OpenAI's **Codex desktop** controls your Mac directly.",
+    svgBase: "land20x_computeruse",
+    title: "Computer-use agents: screenshot-act loop and where it fits",
+    rawBody: "Draw two connected panels about computer-use agents. TOP PANEL: a circular loop diagram titled 'THE COMPUTER-USE LOOP' with four steps in a cycle: 'screenshot of the screen' -> 'LLM decides next action' -> 'mouse_move / left_click / type' -> 'sandboxed VM executes and returns a new screenshot' -> back to the first step. Label the loop 'each step is a screenshot plus one LLM call - a 30-step flow takes 60-120 seconds and costs $0.10-$0.50'. Add a stat banner above the loop: 'Claude Computer Use jumped from 14% to 44% on OSWorld in 18 months'. Name the products alongside the loop: 'OpenAI Operator (cloud-hosted browser)', 'Project Mariner (Google browser agent)', 'Codex desktop (controls your Mac directly)'. BOTTOM PANEL: a two-column fit table titled 'WHERE IT FITS'. Left column 'RIGHT FIT': 'legacy software with no API', 'one-off automation across many apps', 'QA-automating a flaky internal tool', 'internal back-office data entry'. Right column 'WRONG FIT': 'high-QPS production traffic', 'latency-sensitive UX', 'anything with a public API - use the API', 'anything where mis-clicks have high blast radius'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_longcontext",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "Context windows scaled fast: **8K (GPT-3.5, 2022) → 32K (GPT-4) → 200K (Claude 3) → 1M (Gemini 1.5 / Claude 4) → 10M (Llama 4 Scout, 2025)**.",
+    svgBase: "land20x_longcontext",
+    title: "The long-context era: how far windows scaled, and its limits",
+    rawBody: "Draw a horizontal timeline titled 'CONTEXT WINDOWS SCALED FAST' with five milestones left to right, each as a labelled marker with a growing bar beneath it: '8K (GPT-3.5, 2022)', '32K (GPT-4)', '200K (Claude 3)', '1M (Gemini 1.5 / Claude 4)', '10M (Llama 4 Scout, 2025)'. Make each bar visibly taller than the last to show the scale jump. Below the timeline, draw a warning callout titled 'LOST-IN-THE-MIDDLE STILL EXISTS' showing a long horizontal token strip with the middle section faded/greyed out and the label 'attention degrades on tokens buried in the middle - a 2M-token window is a canvas, not an invitation to paint every pixel'. Add a two-column comparison table beneath titled 'LONG-CONTEXT vs RAG'. Left column 'LONG-CONTEXT WINS': 'one-shot analysis of a single big document', 'large few-shot examples', 'conversation memory inside a session', 'code analysis over a whole repo'. Right column 'RAG WINS': 'querying a knowledge base of thousands of docs', 'when freshness matters', 'per-user data with ACLs', 'when precision retrieval beats stuffing'. Add a final caption: '2026 best practice: use both - retrieve top-50 with hybrid search and reranking, then let the model reason over it inside a 1M-token window'. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_contextstack",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "If 2024 was about prompt engineering, 2026 is about context engineering. The wording of the user-facing prompt is one slice of the context window; the rest determines 80% of an AI application's quality.",
+    svgBase: "land20x_contextstack",
+    title: "The context engineering stack: six layers a model sees",
+    rawBody: "Draw a vertically stacked diagram titled 'THE CONTEXT STACK' with six horizontal bands, top to bottom, each labelled with its name and a short tag on the right edge: '1. System prompt (persona, rules, tool specs) - static, dev-set', '2. Retrieved documents (RAG) - dynamic, per-query', '3. Tool results (API calls, code execution, search) - dynamic, per-step', '4. Conversation history - growing, per-turn', '5. Structured memory (user prefs, summaries) - persistent, compressed', '6. User message - the actual question - current turn'. Draw a downward arrow beneath the stack into a box labelled 'LLM generates response'. Beside the stack, list the seven techniques as small tag icons: 'RAG', 'Tool use', 'Conversation summarisation', 'Memory systems', 'Context caching (about 90% cheaper repeat tokens)', 'Structured layout (XML/JSON tags beat flat prose)', 'Attention anchoring (critical instruction just before generation)'. Add a bottom caption: 'If 2024 was prompt engineering, 2026 is context engineering - the user-facing prompt is one slice of the window; the rest determines most of an AI application quality'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "land20x_classicalml",
+    chapterFile: "content/20_2026_landscape.md",
+    promptKind: "concept",
+    existingImageLine: "A useful counterweight to the hype cycle. Many production systems in 2026 still run **classical ML** because it's faster, cheaper, more debuggable, and good enough.",
+    svgBase: "land20x_classicalml",
+    title: "What's not new: classical ML still wins these production jobs",
+    rawBody: "Draw a two-column poster titled 'WHAT IS NOT NEW - AND STILL WINS'. Left column headed 'USE CASE', right column headed 'CLASSICAL WINNER', with five paired rows connected by short arrows: 'Click-through-rate prediction at web scale' -> 'Gradient-boosted trees (XGBoost / LightGBM)', 'Tabular fraud detection' -> 'XGBoost + feature engineering', 'Recommender candidate generation' -> 'Two-tower retrieval + ANN', 'Time-series forecasting' -> 'Prophet, classical statsmodels, lightweight transformers', 'Search ranking' -> 'LambdaMART + neural rerankers, not LLMs'. Draw a small trophy icon next to each classical winner. Add a bottom quote box: 'Start with the simplest classical approach that solves the problem, measure baseline quality, and only add an LLM where the marginal quality justifies the latency and cost - jumping straight to a Transformer is a 2024 red flag in 2026 interviews'. Clean flat educational style, clearly readable labels, no photorealism, no code."
+  },
+  {
+    id: "play00_fieldmap",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "If you can sketch this on a whiteboard, you can answer 80% of \"how does an LLM work end-to-end\" interview questions.",
+    svgBase: "play00_fieldmap",
+    title: "The 90-second training vs inference field map",
+    rawBody: "Draw one wide poster split into two labeled halves side by side. LEFT HALF header 'TRAINING TIME': a left-to-right chain of four boxes 'Data' -> 'Tokenise (BPE)' -> 'Pretrain (next-token)' -> 'Post-train (SFT -> RLHF/DPO -> RLAIF)'. Below the chain a small 'Compute' card listing exactly these three items: 'TPU v7 / H100 / B200', 'Megatron / FSDP / DeepSpeed', 'Mixed precision (BF16)'. RIGHT HALF header 'INFERENCE TIME': a box '[LLM]' with an arrow to 'Reason / generate', which loops through a box 'Tools / RAG / Computer-use' and back into '[LLM]' with a circular arrow showing this is iterative. Below it a small 'Compute' card listing exactly these four items: 'vLLM / SGLang', 'PagedAttention', 'KV-cache reuse', 'Speculative decoding'. Draw a single connecting arrow from the last training box across the middle divider into the '[LLM]' box, labeled 'trained weights deployed'. Add a bottom caption banner reading exactly: 'Sketch this on a whiteboard and you can answer 80% of how does an LLM work end-to-end interview questions.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every label exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "play00_modeltree",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "**Default for prototyping**: Gemini 3 Flash (cheap, fast, multimodal) or Claude Sonnet 4.6.",
+    svgBase: "play00_modeltree",
+    title: "Which model? An eleven-branch decision tree",
+    rawBody: "Draw one flowchart with a single root question box at the top left reading 'What's the task?', branching into exactly eleven labeled decision arrows, each ending in a result box, using EXACTLY these eleven task-to-answer pairs, in this exact order top to bottom, and no others. 1. 'Real-time mobile autocomplete' -> 'Gemini Nano / Apple Foundation'. 2. 'High-QPS classification' -> 'Gemini 3 Flash / GPT-5 mini / open-weight Qwen 3.5 self-host'. 3. 'Complex code, multi-file refactor' -> 'Claude Opus 4.7 + extended thinking (via Claude Code / Cursor)'. 4. 'Browser / desktop automation' -> 'Claude Computer Use, OpenAI Operator'. 5. 'PhD-level science reasoning' -> 'Gemini 3.1 Pro or Opus 4.7 thinking'. 6. 'Long document (>1M tokens)' -> 'Llama 4 Scout (10M) / Gemini 3.1 Pro (2M)'. 7. 'Real-time voice' -> 'GPT-4o Realtime / Gemini Live / ElevenLabs Conversational'. 8. 'Image gen (production)' -> 'Imagen 4 / DALL-E 3 / FLUX 1.1 Pro'. 9. 'Video gen with audio' -> 'Veo 3.1'. 10. 'Bulk inference, cost dominates' -> 'Self-host DeepSeek V4 / Qwen 3.5'. 11. 'Sensitive data / sovereign' -> 'On-device or self-host open-weight'. Add a small footer banner below the tree reading 'Default for prototyping: Gemini 3 Flash or Claude Sonnet 4.6'. Friendly flat educational illustration style, clean labeled flowchart with a single root box and eleven branching arrows to result boxes, bold readable labels, soft colors, no photorealism, uncluttered. Reproduce every label exactly as written; do not round, recompute, invent a twelfth branch, reorder the eleven given, merge any two branches, or change any task or answer wording."
+  },
+  {
+    id: "play00_sftdpo",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "### SFT → DPO → RLHF — when each pays off",
+    svgBase: "play00_sftdpo",
+    title: "SFT to DPO to RLHF, cost versus payoff ladder",
+    rawBody: "Draw a five-step vertical ladder diagram, one rung per alignment stage, ordered bottom to top from cheapest/foundational to most complex, each rung a box with three lines: the stage name, its cost, and its payoff, using exactly these five rungs and no others. Rung 1 (bottom) 'SFT (Supervised) - teach format, basic capability' - cost 'Cheap' - payoff 'Always. Skip and you have no foundation.'. Rung 2 'DPO - align with preferences, no reward model' - cost 'Medium' - payoff 'Often enough; what most teams ship.'. Rung 3 'RLHF (PPO + reward model) - strongest alignment but complex' - cost 'High' - payoff 'Worth it for top-of-leaderboard chasing.'. Rung 4 'RLAIF - AI feedback replaces humans' - cost 'Medium' - payoff 'Scales when human labels are scarce.'. Rung 5 (top) 'Constitutional AI - self-critique against principles' - cost 'Low-Medium' - payoff 'Anthropic-style; less labelling.'. Draw an upward arrow along the left side of the ladder labeled 'increasing alignment strength and complexity' and a small side note 'RLAIF and Constitutional AI are alternate branches off SFT, not strictly after RLHF'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every label exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "play00_levers",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "### Levers in priority order",
+    svgBase: "play00_levers",
+    title: "Nine LLM serving cost and latency levers, ranked",
+    rawBody: "Draw a horizontal ranked bar chart titled 'LLM SERVING LEVERS, HIGHEST IMPACT FIRST', with exactly nine bars stacked top to bottom in this exact order, each bar labeled with the lever name and annotated to its right with its typical impact, and no others. 1. 'Prompt caching' - '50-90% cost cut on shared prefixes'. 2. 'Model routing' - '30-80% cost cut'. 3. 'Batching' - '50% via async batch APIs'. 4. 'Streaming' - 'better TTFT, no cost change'. 5. 'PagedAttention (vLLM)' - '5-10x throughput'. 6. 'Speculative decoding' - '2-3x faster, no quality loss'. 7. 'KV-cache reuse' - 'multi-turn cost cut'. 8. 'Quantization (INT8/INT4)' - '2-8x memory'. 9. 'Smaller embedder' - '5-10x retrieval cost cut'. Make bar length roughly reflect the impact magnitude where a number is given. Add a small caption strip below the chart reading 'Cut cost in this order: prompt cache -> model routing -> batch API -> quantize -> smaller embedder.' Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every number exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "play00_ragfix",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "### RAG failure modes → fixes",
+    svgBase: "play00_ragfix",
+    title: "RAG failure modes mapped to their fixes",
+    rawBody: "Draw a three-column matrix titled 'RAG FAILURE MODES -> FIXES' with column headers 'Symptom', 'Likely cause', and 'Fix', and exactly seven rows, in this exact order and no others. Row 1 'Retrieves wrong docs' / 'Query and corpus use different vocabulary' / 'HyDE - generate hypothetical answer, embed that'. Row 2 'Misses exact-match (IDs, error codes)' / 'Pure vector search' / 'Hybrid search (vector + BM25)'. Row 3 'Top-5 by similarity is not top-5 by meaning' / 'No reranker' / 'Add cross-encoder rerank of top 20 to 3'. Row 4 'Chunk meaningless on its own' / 'Bad chunking' / 'Contextual chunks - prepend doc summary'. Row 5 'Wrong answer despite right docs retrieved' / 'Lost-in-the-middle' / 'Put critical content at end; structured tags'. Row 6 'LLM hallucinates citations' / 'No grounding instructions' / 'Quote the document; cite source; if unknown, say so'. Row 7 'Slow at scale' / 'Re-embedding on every query' / 'Cache embeddings; serve via ANN index (HNSW)'. Use a small warning icon on the 'Likely cause' cell and a green check icon on the 'Fix' cell for each row. Add a bottom caption: 'first win is almost always adding a reranker'. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every label exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
+  },
+  {
+    id: "play00_diagnose",
+    chapterFile: "content/00p_dl_llm_playbook.md",
+    promptKind: "concept",
+    existingImageLine: "## P10. Diagnostics — When Things Break",
+    svgBase: "play00_diagnose",
+    title: "Five things breaking, and the fastest fixes",
+    rawBody: "Draw a five-column diagnostic poster titled 'WHEN THINGS BREAK - FIRST FIXES', one column per root problem box at the top, each followed underneath by its own short ranked list of fixes, using exactly these five columns and no others. Column 1 root box 'My LLM hallucinates', fixes below in order: 'add RAG if none', 'move retrieved docs to end of prompt, add cite-source instruction', 'add reranker / hybrid search', 'try contextual chunking', 'reasoning model with extended thinking for hard cases'. Column 2 root box 'My agent loops forever', fixes: 'set a max-step budget (10-25)', 'add a timeout per step', 'trace every tool call', 'rewrite unclear tool error messages and docstrings', 'add a reasoning model or split into a graph'. Column 3 root box 'My model is slow', fixes: 'stream plus prompt caching plus smaller model for simple queries', 'speculative decoding', 'continuous batching and PagedAttention for tail latency', 'parallel tool calls for multi-step agents'. Column 4 root box 'My fine-tune got worse', fixes: 'mix 10-30% general data back in', 'lower learning rate to 5e-5', 'reduce epochs, add held-out eval', 'increase LoRA rank or add more data'. Column 5 root box 'My RAG is mediocre', fixes numbered 1 to 5: '1 add a reranker (5-15% gain)', '2 hybrid search', '3 better embedder', '4 smarter chunking', '5 query rewriting'. Give each column a distinct accent color. Clean flat educational style, clearly readable labels, no photorealism, no code. Reproduce every label exactly as written; do not round, recompute, invent extra items, or reorder the ones given."
   },
 ];
 

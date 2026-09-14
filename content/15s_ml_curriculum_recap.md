@@ -10,7 +10,7 @@
 
 **Part 1 — Decision Guides** · master algorithm selection · supervised comparison · unsupervised comparison · metric selection · validation & tuning · the 12 traps
 
-**Part 2 — Chapter by Chapter** · Ch 07 Introduction · Ch 08 Core Concepts · Ch 09 Preprocessing · Ch 10 Supervised · Ch 11 Unsupervised · Ch 12 Key Algorithms · Ch 13 Evaluation · Ch 14 Neural Networks · Ch 15 Reinforcement Learning · One-page cheat recap
+**Part 2 — Chapter by Chapter** · notation legend · Ch 07 Introduction · Ch 08 Core Concepts · Ch 09 Preprocessing · Ch 10 Supervised · Ch 11 Unsupervised · Ch 12 Key Algorithms · Ch 13 Evaluation · Ch 14 Neural Networks · Ch 15 Reinforcement Learning · One-page cheat recap
 
 > Use the **☰ chapter guide** panel to jump between these sections.
 
@@ -138,6 +138,28 @@ graph TD
 
 # Part 2 — Chapter by Chapter
 
+> 🔤 **Notation used throughout Part 2** — every formula below is built from these symbols. When a section adds a symbol of its own, it is defined where it first appears.
+
+| Symbol | Read it as | Meaning |
+|---|---|---|
+| $x$, $X$ | "input", "the input matrix" | One example's features; $X$ is all $N$ examples stacked as rows |
+| $y$ | "the truth" | The actual answer — the label you are trying to predict |
+| $\hat{y}$ | "y-hat", "the prediction" | What the model *says* the answer is. The gap $\hat{y}-y$ is the error |
+| $z$ | "the score", "the logit" | The **raw, unsquashed** number a linear unit produces: $z = w\cdot x + b$. It runs from $-\infty$ to $+\infty$ and is **not** a probability until you push it through $\sigma$ or softmax |
+| $w$, $\mathbf{w}$, $W$ | "weight(s)" | The learned multipliers — one per feature. $W$ is a whole layer's worth |
+| $b$ | "bias" | The learned constant added after the weighted sum; it shifts the boundary off the origin |
+| $\sigma(\cdot)$ | "sigmoid" | The squashing function $1/(1+e^{-z})$ that maps any score to $(0,1)$ |
+| $L$ | "the loss" | A single number scoring how wrong the model is. Training = make $L$ small |
+| $g$ | "the gradient" | $\partial L/\partial w$ — which way, and how steeply, the loss climbs. You step the **opposite** way |
+| $\alpha$ | "the learning rate" | How big a step to take. Also written `lr` |
+| $\lambda$ | "lambda" | Regularization strength — how hard to punish large weights |
+| $N$, $n$ | "the row count" | Number of training examples |
+| $p$, $d$ | — | Number of features / dimensions |
+| $n_\text{in}$, $n_\text{out}$ | "fan-in / fan-out" | How many connections enter and leave a layer |
+| $K$ | — | Number of classes (classification) or clusters (K-Means) |
+
+> **The one sentence that ties them together:** a model turns $x$ into a score $z$, squashes it into a prediction $\hat{y}$, compares it to the truth $y$ to get a loss $L$, and then nudges every weight $w$ against the gradient $g$ by a step of size $\alpha$.
+
 ## Ch 07 — Introduction to ML
 
 > 💡 **In a sentence —** ML inverts traditional programming: instead of writing rules, you supply labelled examples and let an algorithm discover the mapping.
@@ -255,6 +277,12 @@ More data reduces **variance**; it does not reduce **bias** — for that you nee
 
 ![How the learning rate changes gradient descent](diagrams/rev_lr_ai.png)
 
+**What each optimizer actually does** — all three solve the same problem, "which way do I step, and how far?", with increasing cleverness:
+
+- **SGD** — step straight down the gradient of the current mini-batch, same step size for every weight. Because each batch is a noisy sample of the data, the path zig-zags. Simple, memory-free, and still the best final accuracy on vision benchmarks — if you are willing to tune it.
+- **SGD + momentum** — remember the direction you have been travelling and keep some of it, like a ball rolling downhill. Zig-zags across a narrow valley cancel out while the consistent downhill direction accumulates, so it moves faster and gets shaken around less by noise.
+- **Adam** — give **every single weight its own learning rate**, automatically. Weights whose gradients have been large get smaller steps; weights that rarely move get larger ones. That is why Adam works out of the box on almost anything and why it is the default first choice.
+
 $$W_{\text{new}} = W_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial W}$$
 
 | Variant | Rows per update | Character |
@@ -263,7 +291,11 @@ $$W_{\text{new}} = W_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial W}$$
 | SGD | 1 | Very noisy; rarely used bare |
 | **Mini-batch** | 32–512 | The de-facto standard |
 
+![Optimizer family tree: from plain gradient descent to Adam and AdamW](diagrams/dl16_optimizers_ai.png)
+
 **SGD + momentum:** $v \leftarrow \beta v + g$, $w \leftarrow w - \alpha v$ ($\beta\approx0.9$) — carries through narrow valleys.
+
+Here $g$ is the current gradient, $v$ is the running **velocity** (the accumulated direction of travel), and $\beta$ is how much of it survives each step. At $\beta=0.9$ a step is roughly the average of the last ten gradients, so one odd batch can no longer knock you off course.
 
 **Adam:** tracks first and second moments of the gradient, bias-corrects both, and gives every parameter its own step size:
 
@@ -271,20 +303,43 @@ $$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t, \qquad v_t = \beta_2 v_{t-1} + (1-\bet
 
 $$\hat{m} = \frac{m_t}{1-\beta_1^t}, \quad \hat{v} = \frac{v_t}{1-\beta_2^t}, \qquad w \leftarrow w - \alpha\frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon}$$
 
+Reading it in words: $m_t$ is the **average gradient** (the direction — momentum by another name) and $v_t$ is the **average squared gradient** (the size, regardless of sign). Both start at zero, which drags them down early on, so $\hat{m}$ and $\hat{v}$ divide that bias out. The final step divides direction by size — so a weight with consistently huge gradients gets scaled down, and a rarely-updated weight gets scaled up. $\epsilon$ only exists to stop a division by zero.
+
 Defaults $\alpha=0.001$, $\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-8}$. **AdamW** decouples weight decay — the default for Transformers.
 
 > **Rule of thumb:** start with Adam at `lr=0.001`. Switch to SGD + momentum when chasing the last 1% on vision benchmarks. Tune the learning rate on a **log** scale.
 
-**Schedules:** step decay · cosine annealing · warmup then decay (Transformers, prevents destructive early updates) · OneCycleLR.
+### Learning-rate schedules
+
+A **schedule** changes $\alpha$ *during* training instead of holding it fixed. The reason: one value cannot serve the whole run. Early on you want big steps to cross the landscape quickly; late on you want small steps to settle into the minimum instead of bouncing around it. A schedule is simply a rule for shrinking $\alpha$ over time.
+
+| Schedule | What it does to $\alpha$ | Use when |
+|---|---|---|
+| **Step decay** | Multiply by 0.1 at fixed epochs (e.g. 30, 60, 90) | Classic CNN training; easy to reason about |
+| **Cosine annealing** | Glide smoothly from the starting value down to ~0 along a cosine curve | The modern default; no cliff edges to tune |
+| **Warmup → decay** | Ramp **up** from ~0 over the first few hundred steps, then decay | **Transformers.** Early gradients are large and the Adam moment estimates are still garbage, so full-size first steps can wreck the weights |
+| **OneCycleLR** | One big rise then a long fall, with momentum moving opposite | Fast training on a fixed budget ("super-convergence") |
+| **ReduceLROnPlateau** | Cut $\alpha$ only when validation loss stops improving | You don't know the right schedule; let the metric decide |
+
+> **If you remember one thing:** high LR early to explore, low LR late to converge — and Transformers additionally need a **warmup** at the very start.
 
 ### Initialization
+
+![Why weight initialization scale matters: He vs Xavier](diagrams/nn_init_ai.png)
+
+**Why this matters at all.** You have to seed the weights with *something* before training starts, and the choice is not cosmetic:
+
+- **All zeros fails completely.** Every neuron in a layer would compute the same output and receive the same gradient, so they would stay identical forever — a 512-unit layer would learn exactly as much as a 1-unit layer. Random values **break that symmetry**.
+- **The scale then decides whether training works.** Each layer multiplies the signal by its weights. If the weights are slightly too small, the signal shrinks a bit per layer and, over 50 layers, vanishes to zero. Slightly too large and it explodes to `NaN`. The fix is to pick a variance that keeps the signal roughly the same size as it passes through each layer.
+
+That is the entire job of these schemes — choose the right random **spread**:
 
 | Scheme | Variance | Use with |
 |---|---|---|
 | **Xavier / Glorot** | $2/(n_\text{in}+n_\text{out})$ | Tanh, sigmoid |
 | **He / Kaiming** | $2/n_\text{in}$ | ReLU family |
 
-ReLU discards roughly half its inputs, so He doubles the variance to compensate — that is the entire origin of the "2".
+When a layer's input and output widths are similar, Xavier's $2/(n_\text{in}+n_\text{out})$ is simply $\approx 1/n_\text{in}$. He keeps that shape and **doubles it** to $2/n_\text{in}$, because ReLU zeroes out roughly half its inputs and so halves the signal variance — the extra factor of 2 puts it back. Tanh and sigmoid pass everything through, so they need no such compensation. That is the entire origin of the "2".
 
 ### Regularization
 
@@ -305,7 +360,7 @@ ReLU discards roughly half its inputs, so He doubles the variance to compensate 
 > - Total Error = Bias² + Variance + Noise
 > - Adam (lr=0.001) default; AdamW for Transformers
 > - L1 → exact zeros; L2 → shrink everything
-> - He init for ReLU, Xavier for tanh/sigmoid
+> - He init ($2/n_\text{in}$) for ReLU; Xavier for tanh/sigmoid — He is double Xavier's scale because ReLU drops half the signal
 
 ---
 
@@ -326,11 +381,15 @@ Fitting on everything is **silent** leakage: your test metrics look great and pr
 
 ### Missing values
 
-| Type | Meaning | Strategy |
-|---|---|---|
-| **MCAR** | Random glitch, no pattern | Drop the row, or impute the mean |
-| **MAR** | Depends on other observed columns | Model-based imputation |
-| **MNAR** | Depends on the missing value itself | Add an indicator column; use domain knowledge |
+The three-letter codes describe **why** a value is missing — and that reason decides what you are allowed to do about it. Guess wrong and your imputation quietly biases the model.
+
+| Type | Full form | Meaning | Everyday example | Strategy |
+|---|---|---|---|---|
+| **MCAR** | **M**issing **C**ompletely **A**t **R**andom | Pure chance. Missingness has nothing to do with any column, present or absent | A sensor dropped packets for an hour; a page of forms got soaked | Drop the row, or impute the mean — safe, since the remaining data is still representative |
+| **MAR** | **M**issing **A**t **R**andom | Missingness is explained by **other columns you do have** | Younger users skip the "income" field far more often — and you *have* the age column | Model-based imputation: predict the missing value from the columns that explain it (kNN/iterative imputer) |
+| **MNAR** | **M**issing **N**ot **A**t **R**andom | Missingness depends on the **hidden value itself** | High earners refuse to state their salary — the very people you can't see are the ones you most need | Add a `was_missing` indicator column; use domain knowledge. You cannot impute your way out of this one |
+
+> ⚠️ "At Random" is a misleading name: **MAR is not random**, it is *predictable from what you have*. Only **MCAR** is genuinely random. If missingness itself carries signal (MNAR), keep the indicator column — it is often one of the strongest features in the model.
 
 | Strategy | Use when |
 |---|---|
@@ -343,9 +402,30 @@ Fitting on everything is **silent** leakage: your test metrics look great and pr
 
 ### Outliers
 
+An **outlier** is a point far from the bulk of the data. There are two standard ways to draw that line, and they fail in opposite situations.
+
+**1. The IQR fence** — rank the data, take the middle 50%, and fence off anything far outside it:
+
 $$IQR = Q3 - Q1, \qquad \text{fences} = Q1 - 1.5\,IQR \ \text{ to } \ Q3 + 1.5\,IQR$$
 
-Z-score: $\lvert Z \rvert > 3$, assuming roughly normal data. Options: remove (genuine error only), winsorize to the fence, log-transform, or keep it if the extreme is a real rare event.
+$Q1$ and $Q3$ are the 25th and 75th percentiles, so $IQR$ is the width of the middle half. This is what a box plot draws. It makes **no assumption about the shape** of the distribution, which is why it is the safer default.
+
+**2. The Z-score** — measure each point as *"how many standard deviations from the mean is it?"*:
+
+$$Z = \frac{x - \mu}{\sigma}, \qquad \text{flag if } \lvert Z \rvert > 3$$
+
+So $Z = 2$ means "two standard deviations above average". The threshold of **3** comes from the normal distribution: only about **0.3%** of normally distributed data sits beyond ±3σ, so anything out there is genuinely unusual.
+
+> ⚠️ **The catch:** the Z-score uses the mean and standard deviation — and both are themselves dragged around by the very outliers you are hunting. On **skewed** data (income, prices, counts) it flags far too much at one tail and misses the other. Use the IQR fence, or log-transform first.
+
+**Once you've found one, you have four options — and deleting is rarely the right one:**
+
+| Option | What you do | Choose it when |
+|---|---|---|
+| **Keep it** | Nothing | The extreme is real and matters — fraud, a genuine outage, a luxury sale. Deleting these deletes the signal |
+| **Remove** | Drop the row | You can prove it is a data error — a human age of 200, a negative price |
+| **Winsorize (cap)** | Pull the value in to the fence value | You want to blunt its influence without losing the row |
+| **Transform** | Apply `log1p` / square root | The whole column is right-skewed; this compresses the long tail so nothing is an outlier any more |
 
 ### Encoding categoricals
 
@@ -386,7 +466,8 @@ Log-transform right-skewed values (price, income, counts) · decompose dates int
 > ✅ **Must-remember**
 >
 > - Fit every transformer on **training data only**
-> - IQR fence $Q1-1.5\,IQR$ to $Q3+1.5\,IQR$; Z-score $\lvert Z \rvert > 3$
+> - MCAR = Missing Completely At Random · MAR = explained by other columns · MNAR = depends on the hidden value itself
+> - IQR fence $Q1-1.5\,IQR$ to $Q3+1.5\,IQR$; Z-score $\lvert Z \rvert > 3$ (normal data only)
 > - One-hot nominal · ordinal for ordered · target encoding for high cardinality
 > - Median imputation is the robust default
 > - Scale for KNN/SVM/K-Means/NN; trees don't care
@@ -413,6 +494,16 @@ Subtypes: **binary** (one sigmoid, threshold at 0.5) · **multi-class** (softmax
 
 $$z = w_0 + \sum_i w_i x_i, \qquad \hat{y} = \sigma(z) = \frac{1}{1+e^{-z}}$$
 
+Reading it symbol by symbol: $x_i$ is feature $i$ of one example, $w_i$ is its learned weight and $w_0$ is the bias. Their weighted sum $z$ is the **logit** — a raw score from $-\infty$ to $+\infty$ that is *not* a probability. The sigmoid $\sigma$ squashes it into $(0,1)$ to give $\hat{y}$, the predicted probability of the positive class. The truth $y$ is 0 or 1.
+
+| $z$ | $\hat{y} = \sigma(z)$ | Reads as |
+|---|---|---|
+| $-4$ | 0.02 | Almost certainly class 0 |
+| $0$ | 0.50 | Perfectly undecided — this is the boundary |
+| $+4$ | 0.98 | Almost certainly class 1 |
+
+Despite the name it is a **classifier**: it is "regression" because it fits a linear $z$, and "logistic" because of the squashing step. What is linear in the features is the **log-odds**: $z = \log\frac{\hat{y}}{1-\hat{y}}$, so a weight $w_i$ means "one unit more of $x_i$ multiplies the odds by $e^{w_i}$".
+
 The boundary at $z=0$ is always a **straight hyperplane** — it cannot model XOR without engineered features. Multi-class via **One-vs-Rest (OvR)**, which trains K binary models, or **softmax / multinomial**, one unified model whose K outputs sum to 1.
 
 **Threshold tuning:** lower it → more positives flagged → ↑recall ↓precision (cancer screening). Raise it → ↑precision ↓recall (spam).
@@ -431,6 +522,8 @@ $$\text{Gini} = 1 - \sum_c p_c^2, \qquad \text{Entropy} = -\sum_c p_c \log_2 p_c
 
 $$\text{Information Gain} = \text{Entropy}(\text{parent}) - \sum_k \frac{\lvert S_k \rvert}{\lvert S \rvert}\,\text{Entropy}(S_k)$$
 
+Here $p_c$ is the fraction of rows at that node belonging to class $c$, $S$ is the set of rows arriving at the node, and $S_k$ is the subset sent down child branch $k$ — so $\lvert S_k\rvert/\lvert S\rvert$ just weights each child by how many rows it received. **Impurity** means "how mixed are the classes here": 0 when every row shares one label, maximum when they are evenly split.
+
 Both impurity measures peak at maximum uncertainty and hit zero on a pure node; they agree over 98% of the time, and Gini is faster (no logarithm). Key knobs: `max_depth` (5–10), `min_samples_leaf`, `max_features`.
 
 Fully interpretable, no scaling needed, handles mixed types — but high variance, and it overfits without pruning.
@@ -439,13 +532,17 @@ Fully interpretable, no scaling needed, handles mixed types — but high varianc
 
 Finds the **maximum-margin** hyperplane; only the nearest points (support vectors) matter. The **kernel trick** maps data into a higher-dimensional space implicitly:
 
-$$K_{\text{RBF}}(x,z) = \exp(-\gamma\lVert x-z\rVert^2)$$
+$$K_{\text{RBF}}(x,x') = \exp\left(-\gamma\lVert x-x'\rVert^2\right)$$
 
-Large $\gamma$ → wiggly, overfit. Small $\gamma$ → smooth, underfit. Large $C$ → hard margin. Small $C$ → soft margin, better generalization. Training is $O(n^2)$–$O(n^3)$, so use linear SVM or logistic regression past ~50k rows.
+$x$ and $x'$ are **two data points** and $\lVert x-x'\rVert$ is the distance between them, so the kernel is just a similarity score that decays as points get further apart. $\gamma$ sets how fast it decays — how far a single training point's influence reaches.
+
+Large $\gamma$ → wiggly, overfit. Small $\gamma$ → smooth, underfit. $C$ is the penalty for misclassifying a training point: large $C$ → hard margin. Small $C$ → soft margin, better generalization. Training is $O(n^2)$–$O(n^3)$, so use linear SVM or logistic regression past ~50k rows.
 
 ### Naive Bayes
 
 $$P(y \mid x_1 \ldots x_n) \propto P(y)\prod_i P(x_i \mid y)$$
+
+Read it as: the probability of class $y$ **given** the observed features is proportional to how common that class is overall, times how likely each feature is within it. $\propto$ means "proportional to" — the denominator is the same for every class, so you can skip it and simply pick the largest score.
 
 "Naive" = features assumed conditionally independent given the class — almost never true, yet excellent on text. **Laplace smoothing** adds 1 to every count so an unseen word can't zero the whole product.
 
@@ -515,7 +612,7 @@ KNN degrades, K-Means clusters turn arbitrary, density estimates break. Rough ru
 
 ![Clustering algorithms compared: which shapes each one can find](diagrams/rev_clustering_ai.png)
 
-**K-Means** minimizes within-cluster sum of squares $J = \sum_k \sum_{x_i \in C_k} \lVert x_i - \mu_k \rVert^2$ by alternating "assign to nearest centroid" and "recompute centroids". **K-Means++** seeds centroids far apart (probability $\propto D(x)^2$) and is the sklearn default. Cost $O(nKId)$ — very fast. Restart it several times and keep the lowest inertia, since it lands in local optima.
+**K-Means** minimizes within-cluster sum of squares $J = \sum_k \sum_{x_i \in C_k} \lVert x_i - \mu_k \rVert^2$ by alternating "assign to nearest centroid" and "recompute centroids". In that formula $C_k$ is cluster $k$, $\mu_k$ is its centroid (the mean of its members), and $J$ — called the **inertia** — is the total squared distance from every point to its own centroid, so smaller is tighter. **K-Means++** seeds centroids far apart (each new seed is picked with probability $\propto D(x)^2$, where $D(x)$ is the distance from $x$ to the nearest seed already chosen) and is the sklearn default. Cost $O(nKId)$ for $n$ points, $K$ clusters, $I$ iterations and $d$ dimensions — very fast. Restart it several times and keep the lowest inertia, since it lands in local optima.
 
 **Hierarchical** builds a dendrogram you can cut at any height, so K is chosen after the fact. Linkage decides the character:
 
@@ -530,7 +627,7 @@ Cost $O(n^3)$ time and $O(n^2)$ memory — impractical past ~10k rows.
 
 **DBSCAN** takes $\varepsilon$ (radius) and `minPts`. A **core point** has ≥ minPts neighbours within $\varepsilon$; a **border point** is within $\varepsilon$ of a core; everything else is **noise**. Clusters are connected core regions — so it finds K itself, handles arbitrary shapes, and flags outliers. Its weakness is varying density, which **HDBSCAN** fixes by extracting stable clusters from a hierarchy.
 
-**Spectral** builds a similarity graph, takes the bottom K eigenvectors of the Laplacian $L = D - W$, and runs K-Means in that embedding — which untangles interlocking rings K-Means cannot touch. $O(n^3)$ naive.
+**Spectral** builds a similarity graph, takes the bottom K eigenvectors of the Laplacian $L = D - W$ — where $W$ holds the pairwise similarities and $D$ is the diagonal matrix of row sums (each node's total connection strength) — and runs K-Means in that embedding, which untangles interlocking rings K-Means cannot touch. $O(n^3)$ naive.
 
 **GMM** models each cluster as a Gaussian with its own mean, covariance and weight, fitted by **EM**, giving every point a **soft** membership probability. K-Means is just GMM with spherical covariance and hard assignment. Choose K with BIC or AIC.
 
@@ -580,7 +677,7 @@ Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by le
 
 ### Linear regression — two routes
 
-**Normal equation** (closed form, exact): $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$. Needs $X^\top X$ invertible (fails on collinear features) and costs $O(np^2 + p^3)$ — impractical past a few thousand features.
+**Normal equation** (closed form, exact): $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$. Read it as: $X$ is the feature matrix ($n$ rows × $p$ columns), $\mathbf{y}$ is the column of true targets, $X^\top$ is $X$ **transposed** (flipped so rows become columns), $(\cdot)^{-1}$ is the matrix inverse, and $\mathbf{w}^*$ is the single best set of weights — solved in one shot, no iteration. Needs $X^\top X$ invertible (fails on collinear features) and costs $O(np^2 + p^3)$ — impractical past a few thousand features.
 
 **Gradient descent** (iterative): works at any scale, supports regularization naturally, allows online learning.
 
@@ -614,7 +711,7 @@ Why averaging works — for $n$ trees with pairwise correlation $\rho$:
 
 $$\text{Ensemble Variance} = \rho\sigma^2 + \frac{1-\rho}{n}\sigma^2 \xrightarrow[n\to\infty]{} \rho\sigma^2$$
 
-Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Tune `n_estimators` 200–500, `max_features` √p (classification) or p/3 (regression), `max_depth` 3–15, `min_samples_leaf` 1–20.
+where $\sigma^2$ is a single tree's variance and $\rho$ is how correlated any two trees are. Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Tune `n_estimators` 200–500, `max_features` √p (classification) or p/3 (regression), `max_depth` 3–15, `min_samples_leaf` 1–20.
 
 ### The boosting family
 
@@ -660,6 +757,8 @@ $$\text{Precision} = \frac{TP}{TP+FP}, \qquad \text{Recall} = \frac{TP}{TP+FN}, 
 
 $$\text{Specificity} = \frac{TN}{TN+FP}, \qquad F_\beta = (1+\beta^2)\frac{PR}{\beta^2 P + R}$$
 
+The four counts: **TP** = predicted positive and it was (true positive), **FP** = predicted positive and it wasn't, **TN** = predicted negative and it was, **FN** = predicted negative but it was actually positive. $P$ and $R$ are shorthand for precision and recall. In $F_\beta$, $\beta$ is how many times more you care about recall than precision.
+
 **FP (Type I)** is a false alarm — costly in spam filtering. **FN (Type II)** is a miss — costly in cancer screening. Which one hurts more is a domain decision, and it picks your metric: $F_2$ weights recall double, $F_{0.5}$ weights precision double.
 
 ### ROC vs precision-recall
@@ -689,7 +788,7 @@ $$\text{Specificity} = \frac{TN}{TN+FP}, \qquad F_\beta = (1+\beta^2)\frac{PR}{\
 | **R²** | $1 - SS_\text{res}/SS_\text{tot}$ | Fraction of variance explained | Moderate |
 | **MAPE** | $\frac{1}{n}\sum \lvert (y-\hat{y})/y \rvert$ | Percentage, unit-free | Low; undefined at $y=0$ |
 
-$R^2 = 0$ means the model equals always predicting the mean; **$R^2 < 0$ means worse than the mean**, and it happens. If RMSE ≫ MAE, a few huge errors dominate — go look at them.
+$R^2 = 0$ means the model equals always predicting the mean; **$R^2 < 0$ means worse than the mean**, and it happens. ($SS_\text{res}$ is the squared error your model leaves behind; $SS_\text{tot}$ is the squared error of just predicting the mean — so $R^2$ is the fraction of that baseline error you removed.) If RMSE ≫ MAE, a few huge errors dominate — go look at them.
 
 ### Learning-curve diagnosis
 
@@ -818,6 +917,8 @@ Divide attention scores by $\sqrt{d_k}$ or softmax saturates. Causal masking hap
 
 ### The framework
 
+> 🔤 **RL uses its own alphabet.** $s$ = state (the situation right now) · $a$ = action (what the agent does) · $r$ = reward (the scalar score that follows) · $\pi$ = policy (the agent's strategy: which action in which state) · $\gamma$ = discount (how much future reward is worth today) · $G_t$ = return (total discounted reward from time $t$ onward) · $V(s)$ = how good a state is · $Q(s,a)$ = how good an action is in a state · a $^*$ superscript means "optimal", a $^\pi$ superscript means "under policy $\pi$", and $s'$ / $a'$ mean "the next state / next action".
+
 | | Supervised | Reinforcement |
 |---|---|---|
 | Signal | A label per example | A scalar reward, often delayed |
@@ -833,6 +934,8 @@ An **MDP** is the tuple $(S, A, P, R, \gamma)$ — states, actions, transition p
 $$V^\pi(s) = \mathbb{E}_\pi\left[\sum_t \gamma^t r_{t+1} \,\Big|\, s_0 = s\right], \qquad V^\pi(s) = \sum_a \pi(a \mid s) Q^\pi(s,a)$$
 
 $$Q^*(s,a) = R(s,a) + \gamma\sum_{s'}P(s' \mid s,a)\max_{a'}Q^*(s',a')$$
+
+$\mathbb{E}_\pi[\cdot]$ means "the average over everything that could happen if you follow policy $\pi$" — necessary because the environment is random, so a state has no single fixed payoff. The second form says a state's value is the average of its actions' values, weighted by how often the policy picks each.
 
 "What I earn now, plus the best discounted value of where I land." Once you know $Q^*$, the optimal policy is just $\pi^*(s) = \arg\max_a Q^*(s,a)$.
 

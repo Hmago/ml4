@@ -98,6 +98,7 @@ mechanics, the knobs, and the failure modes.
 ---
 
 ## 12.2 Linear Regression ★★★
+![Linear regression on Maple Street](diagrams/algo12_linear_maple_ai.png)
 
 > **In one line:** the honest accountant — it adds up each feature's contribution and shows its working.
 
@@ -243,6 +244,7 @@ def linear_regression_gd(X, y, lr=0.01, epochs=1000):
 ---
 
 ## 12.3 Logistic Regression ★★★
+![Logistic regression odds and sigmoid](diagrams/algo12_logistic_odds_ai.png)
 
 > **In one line:** the odds-maker — the same weighted sum, squashed into a probability.
 
@@ -420,6 +422,7 @@ maximum-likelihood fits in the same exponential family.
 ---
 
 ## 12.4 Decision Trees ★★★
+![Decision tree impurity and pruning](diagrams/algo12_tree_gini_pruning_ai.png)
 
 > **In one line:** the interrogator — it plays Twenty Questions until it is confident enough to commit.
 
@@ -556,6 +559,7 @@ without the variance.
 ---
 
 ## 12.5 Random Forest ★★★
+![Random forest OOB validation](diagrams/algo12_forest_oob_ai.png)
 
 > **In one line:** the committee — hundreds of over-confident interrogators, averaged into something sensible.
 
@@ -670,6 +674,7 @@ print(f"OOB Score: {rf.oob_score_:.3f}")     # free validation estimate
 ---
 
 ## 12.6 Gradient Boosting ★★★
+![Gradient boosting fits residuals](diagrams/algo12_boosting_residuals_ai.png)
 
 > **In one line:** the perfectionist — it fixes its own mistakes, one small correction at a time.
 
@@ -893,6 +898,7 @@ print(f"Best iteration: {model.best_iteration_}")   # roll back to this
 ---
 
 ## 12.7 Support Vector Machines ★★
+![SVM margins and kernels](diagrams/algo12_svm_kernel_ai.png)
 
 > **In one line:** the border guard — it draws the widest possible no-man's-land between the two sides.
 
@@ -1107,6 +1113,7 @@ works below ~20 meaningful features; above that, reduce first (PCA) or switch mo
 ---
 
 ## 12.9 Naive Bayes ★★
+![Naive Bayes Laplace smoothing](diagrams/algo12_naive_bayes_smoothing_ai.png)
 
 > **In one line:** the tally clerk — it counts clues and multiplies them, cheerfully pretending they are unrelated.
 

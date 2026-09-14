@@ -142,6 +142,7 @@ $$\frac{3350 \text{ GB/s}}{35 \text{ GB}} \approx 96 \text{ tokens/sec}$$
 > **Watch the units in an interview.** Candidates routinely divide total model bytes by *one* GPU's bandwidth and quote a number that is 2–8× too pessimistic. Always state how many GPUs the weights are sharded across.
 
 Prefill is the mirror image. Those 2,000 tokens are processed as one large matrix multiplication, so the GPU's math units are saturated and bandwidth is not the constraint. Prefill is **compute-bound**.
+![Prefill vs decode: two opposite bottlenecks](diagrams/llm17cx_prefill_vs_decode_ai.png)
 
 **When each one matters.**
 
@@ -385,6 +386,7 @@ PAGED — fixed blocks (e.g. 16 tokens) + a block table
 **In one line:** slice a huge prompt into fixed-size chunks and interleave those chunks with ongoing decode steps, so one enormous prompt cannot freeze everybody else's stream.
 
 **Why it exists.** Prefill and decode compete for the same GPU. A single 100K-token prefill can occupy the device for seconds. Every user currently mid-answer sees their tokens simply stop arriving. Your mean TPOT looks fine; your P99 is a disaster. This is one of the most common causes of "it's usually smooth but sometimes it just hangs".
+![Chunked prefill interleaves slices with decode steps](diagrams/llm17cx_chunked_prefill_ai.png)
 
 **Picture.**
 
@@ -447,6 +449,7 @@ Prefix cache — structure your prompts to exploit it
 **In one line:** a small fast model guesses the next few tokens, the big model verifies them all in a single forward pass, and you keep every token up to the first mistake.
 
 **Why it exists.** Decode is memory-bandwidth-bound (§1.1), so a forward pass that verifies 5 candidate tokens costs almost exactly the same as one that produces 1. If the guesses are usually right, you get several tokens for the price of one weight read.
+![Speculative decoding: draft, verify, accept](diagrams/llm17cx_speculative_decoding_ai.png)
 
 > The mechanism and the basic diagram are in [Ch 29 §24.9](#content/29_gpus_tpus_infrastructure). What follows is the part interviewers push on: **the maths of whether it is worth it.**
 
@@ -607,6 +610,7 @@ The subtlety that makes it work: requests using *different* adapters can sit in 
 **In one line:** three different ways to make a model smaller, and they fail in different places — so the choice depends on whether you are short of memory, bandwidth or budget.
 
 **Why it exists.** Candidates reach for quantization reflexively because it is the easiest. But "make this model cheaper to serve" has three answers, and the strongest response compares them.
+![Quantize, distill or prune: three ways to shrink a model](diagrams/llm17cx_distill_quantize_prune_ai.png)
 
 | | **Quantization** | **Distillation** | **Pruning** |
 |---|---|---|---|
@@ -675,6 +679,7 @@ The discipline that matters most: **every production failure becomes a new case 
 **In one line:** use a strong model to grade outputs when there is no exact answer — but know the three ways it is systematically wrong, or you will optimise straight into them.
 
 **Why it exists.** Human evaluation is accurate and far too slow and expensive to run on every change. Exact-match metrics like BLEU and ROUGE do not work for open-ended generation. A judge model correlates reasonably with human preference and runs in minutes.
+![LLM-as-judge and its three biases](diagrams/llm17cx_judge_biases_ai.png)
 
 **The three biases — name all three and the mitigation:**
 
@@ -970,6 +975,7 @@ Academic benchmarks don't always reflect real-world usefulness. **Chatbot Arena*
 ## 5.2 Capacity & Cost — A Worked Example
 
 Interviewers ask you to do this arithmetic out loud. Practise it once and it becomes free marks.
+![Capacity and cost: the arithmetic worked example](diagrams/llm17cx_cost_arithmetic_ai.png)
 
 **The scenario.** A chat feature: 1,000,000 requests/day, averaging 500 input tokens and 200 output tokens.
 

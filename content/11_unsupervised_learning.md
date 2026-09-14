@@ -79,6 +79,7 @@ Finding your friend along a single street is easy; finding them somewhere in a w
 Add one feature and you add an entire axis. The volume of the space grows exponentially, but your dataset does not. With enough dimensions, every point becomes roughly equidistant from every other point, and distance-based algorithms (KNN, K-Means, DBSCAN) lose their discriminative power.
 
 ### Why Distances Break Down
+![Why distances break in high dimensions](diagrams/unsup11_curse_distance_ai.png)
 
 Consider $n$ points uniformly distributed in a $d$-dimensional unit hypercube. The ratio of the maximum to minimum pairwise distance converges to 1 as $d \to \infty$:
 
@@ -195,6 +196,7 @@ Imagine dropping a handful of magnets onto a scatter of iron filings: each filin
 The algorithm is dead simple. Place K center points (centroids). Assign every data point to its nearest centroid. Move each centroid to the mean of its assigned points. Repeat until nothing changes. That is the entire algorithm.
 
 ### The Algorithm Step by Step
+![K-Means assign and recenter loop](diagrams/unsup11_kmeans_loop_ai.png)
 
 ```
   STEP 1: Initialize K centroids (randomly or via K-Means++)
@@ -448,6 +450,7 @@ That is the whole idea. A cluster is a **crowded region**, not a ball around a c
 K-Means forces you to choose K and assumes round clusters. DBSCAN says: "clusters are dense regions separated by sparse regions." It figures out how many clusters exist, finds them regardless of shape, and explicitly marks outliers as noise.
 
 ### Three Point Types
+![DBSCAN core border and noise points](diagrams/unsup11_dbscan_points_ai.png)
 
 ```
   CORE POINT (●):  ≥ minPts neighbors within radius ε
@@ -919,6 +922,7 @@ assignment hides that risk; a soft one lets you act on it.
 | Model selection | Elbow / Silhouette | BIC / AIC |
 
 ### The EM Algorithm (Intuition)
+![GMM soft assignments with EM](diagrams/unsup11_gmm_em_ai.png)
 
 1. **E-step (Expectation):** Given current parameters, compute the probability that each point belongs to each Gaussian ("responsibilities").
 2. **M-step (Maximization):** Given responsibilities, update each Gaussian's mean, covariance, and mixing weight to maximize likelihood.
@@ -1123,6 +1127,7 @@ One such point is noise. **Many** of them means the clustering itself is wrong �
 </details>
 
 ### Worked Example — Silhouette by Hand
+![Silhouette reveals a misplaced point](diagrams/unsup11_silhouette_mislabel_ai.png)
 
 Six points, already assigned to two clusters. Everything below is rounded to
 **3 decimals**.
@@ -1781,6 +1786,7 @@ PCA is a linear autoencoder with one hidden layer and no activation function. A 
 ---
 
 ## 11.15 Anomaly Detection ★★
+![Global versus local anomaly detection](diagrams/unsup11_anomaly_global_local_ai.png)
 
 #### Simple Explanation
 
@@ -2155,6 +2161,7 @@ task); contrastive and self-distillation dominate vision, where reconstructing e
 wastes effort on texture nobody needs.
 
 ### The Collapse Problem ★★★
+![Preventing representational collapse](diagrams/unsup11_collapse_prevention_ai.png)
 
 This is the question interviewers reach for, because it separates people who *used* SimCLR
 from people who understand it.

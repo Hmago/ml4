@@ -173,6 +173,7 @@ The supervised-learning–specific point is narrow but important: **the loss mus
 ---
 
 ## 10.4 The Training Pipeline: Train / Val / Test Splits
+![Choosing leakage-safe supervised splits](diagrams/sup10_label_splits_ai.png)
 
 You wouldn't judge a chef by the one dish they've rehearsed a thousand times — you'd ask for something new. Models need the same honest test: a set to learn from, a set to make tuning decisions against, and a final set kept sealed for one unbiased grade.
 
@@ -245,6 +246,7 @@ Five algorithms cover almost every classification problem you'll meet. This sect
 > **How to read an algorithm entry.** Columns 3 and 5 are the same fact stated twice — *an algorithm breaks precisely when its assumption stops being true of your data.* That is the whole game, and it is why "which algorithm is best?" has no answer without seeing the data ([Ch 8 §8.5](#content/08_core_concepts), inductive bias). Each entry below repeats its assumption on an **Assumes:** line, so you can find it fast.
 
 ### Logistic Regression ★★★
+![Logistic regression as log-odds](diagrams/sup10_log_odds_ai.png)
 
 #### Simple Explanation
 
@@ -329,6 +331,7 @@ So `MONEY` with `w = +1.2` means: seeing that word multiplies the odds of spam b
 ---
 
 ### K-Nearest Neighbors (KNN) ★
+![KNN depends on feature scale](diagrams/sup10_knn_scaling_ai.png)
 
 #### Simple Explanation
 
@@ -775,6 +778,7 @@ it wins and how it fails without memorising either.
 ---
 
 ## 10.7 Decision Tree Splits: Gini vs Entropy ★★
+![How trees choose the purest split](diagrams/sup10_tree_purity_ai.png)
 
 At each node the tree asks: *"which feature, at which threshold, gives the best split?"* It tries them all and keeps the one producing the **purest** children. So everything hinges on how you measure purity.
 
@@ -1573,6 +1577,7 @@ Decision trees, Random Forests, and Gradient Boosting all work for regression �
 ---
 
 ## 10.10 Feature Importance & Model Explainability (SHAP)
+![Global importance versus SHAP explanations](diagrams/sup10_shap_explanations_ai.png)
 
 #### Simple Explanation
 
@@ -1750,6 +1755,7 @@ Two things to do: **drop the ID** (it's also a leakage risk, §8.4), and switch 
 ---
 
 ## 10.11 Class Imbalance: The 99% Trap
+![The class imbalance accuracy trap](diagrams/sup10_imbalance_trap_ai.png)
 
 Picture a smoke detector that stays silent no matter what. In a building that almost never catches fire, it looks 99.9% "accurate" — and it is also completely worthless. That is the trap of imbalanced data: when one class dominates, a lazy model can post sky-high accuracy while missing every one of the rare cases you actually built it to catch.
 
@@ -1998,6 +2004,7 @@ For any new supervised learning problem, follow this sequence:
 
 
 ## 10.13 Case Study: Churn Model for YouTube Premium ★★★
+![YouTube Premium churn pipeline](diagrams/sup10_churn_pipeline_ai.png)
 
 End-to-end worked example walking the full ML pipeline that a Google interviewer expects.
 

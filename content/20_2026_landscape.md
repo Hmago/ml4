@@ -165,6 +165,7 @@ print(msg.content)
 ## 20.3 The Open-Weight Race
 
 The single biggest 2025–2026 story: open-weight models closed the capability gap on closed-weight ones. Almost every flagship is now a **sparse Mixture-of-Experts (MoE)** — a giant total parameter count, only a small slice active per token.
+![The open-weight race: sparse MoE models close the gap](diagrams/land20x_openweight_ai.png)
 
 | Model | Total / Active | Context | License | Sweet spot |
 |---|---|---|---|---|
@@ -251,6 +252,7 @@ Expect questions like *"How would you build a coding agent?"* or *"Why did SWE-b
 ## 20.5 Multimodal Generation — Images, Video, Voice
 
 By 2026, generation went from a research demo to a product category.
+![2026 multimodal generation: image, video and voice leaders](diagrams/land20x_multimodal_ai.png)
 
 ### Image generation
 
@@ -294,6 +296,7 @@ The shift: 2024 voice was `STT → LLM → TTS` (high latency, lost prosody). 20
 > **Computer-use agent**: an AI that drives a real computer — looking at the screen, moving a mouse, typing, clicking — to complete tasks intended for humans (filling forms, navigating browsers, operating apps).
 
 The 2026 breakthrough category. Claude Computer Use jumped from 14% to **44% on OSWorld** in 18 months. OpenAI's **Operator** runs cloud-hosted browsers; **Project Mariner** is Google's browser agent; OpenAI's **Codex desktop** controls your Mac directly.
+![Computer-use agents: screenshot-act loop and where it fits](diagrams/land20x_computeruse_ai.png)
 
 ### Hello world — Anthropic computer use
 
@@ -432,6 +435,7 @@ The single most under-appreciated fact of 2026: **token prices fell ~150–1000�
 ## 20.9 The Long-Context Era
 
 Context windows scaled fast: **8K (GPT-3.5, 2022) → 32K (GPT-4) → 200K (Claude 3) → 1M (Gemini 1.5 / Claude 4) → 10M (Llama 4 Scout, 2025)**.
+![The long-context era: how far windows scaled, and its limits](diagrams/land20x_longcontext_ai.png)
 
 **Lost-in-the-middle still exists.** Attention degrades on tokens buried in the middle of long contexts. A 2M-token window is a canvas, not an invitation to paint every pixel.
 
@@ -460,6 +464,7 @@ A 2026 best practice: **use both.** Retrieve top-50 with hybrid search and reran
 > **Context engineering**: the systematic design of everything a model sees at inference — system prompt, retrieved docs (RAG), tool outputs, conversation history, structured memory, layout — to maximise task quality.
 
 If 2024 was about prompt engineering, 2026 is about context engineering. The wording of the user-facing prompt is one slice of the context window; the rest determines 80% of an AI application's quality.
+![The context engineering stack: six layers a model sees](diagrams/land20x_contextstack_ai.png)
 
 ### The context stack
 
@@ -642,6 +647,7 @@ If a candidate cites *MMLU* or *HumanEval* as a quality signal in 2026, it's a y
 ## 20.14 What's NOT New — and Still Wins
 
 A useful counterweight to the hype cycle. Many production systems in 2026 still run **classical ML** because it's faster, cheaper, more debuggable, and good enough.
+![What's not new: classical ML still wins these production jobs](diagrams/land20x_classicalml_ai.png)
 
 | Use case | Classical winner |
 |---|---|

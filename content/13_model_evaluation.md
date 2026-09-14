@@ -614,6 +614,7 @@ For regression there is no "right or wrong," only "how far off." Every metric he
 > **Regression metrics** quantify how far a model's continuous predictions deviate from actual values, each with a different sensitivity to error magnitude and interpretation.
 
 ### Running Example: House Price Prediction
+![Regression metrics punish errors differently](diagrams/eval13_regression_errors_ai.png)
 
 All values are in **$K** (thousands of US dollars).
 
@@ -789,6 +790,7 @@ MAPE is intuitive ("we're off by about 8.4%") but fails when actual values are n
 ---
 
 ## 13.7 Cross-Validation ★★★
+![Choosing the right cross-validation split](diagrams/eval13_cv_split_chooser_ai.png)
 
 > **Cross-validation** is a resampling procedure that partitions data into multiple train/test splits, trains and evaluates the model on each split, and averages the results to produce a more reliable performance estimate than a single split.
 
@@ -918,6 +920,7 @@ split on.
 </details>
 
 ### Nested Cross-Validation — Tuning Without Cheating
+![Nested cross-validation prevents tuning leakage](diagrams/eval13_nested_cv_ai.png)
 
 If you use the same CV loop to pick hyperparameters *and* to report performance, the
 reported number is optimistic: you chose the settings that happened to suit those
@@ -988,6 +991,7 @@ flowchart TD
 ---
 
 ## 13.8 Hyperparameter Tuning ★★
+![Grid, random, and Bayesian search](diagrams/eval13_hyperparameter_search_ai.png)
 
 ### Simple Explanation
 Some settings a model figures out on its own; others you have to dial in yourself before training even begins — how deep a tree may grow, how big each learning step is. Those knobs are the hyperparameters, and there is no formula that hands you the best combination. Tuning is the organized search for the settings that make validation performance the best.
@@ -1112,6 +1116,7 @@ When a model underperforms, you face a fork in the road: is it too simple to cap
 > **Learning curves** plot training and validation performance as a function of training set size or training epochs, revealing whether a model suffers from high bias (underfitting) or high variance (overfitting).
 
 The gap between training and validation curves is the diagnostic signal.
+![Learning curves diagnose bias and variance](diagrams/eval13_learning_curves_ai.png)
 
 ```
   HIGH VARIANCE                 HIGH BIAS
@@ -1265,6 +1270,7 @@ In practice, never rely on a single metric. Report a dashboard:
 ```
 
 ### Is Model B Actually Better Than Model A?
+![Comparing models needs uncertainty](diagrams/eval13_model_comparison_uncertainty_ai.png)
 
 Model A scores 91.0%, Model B scores 92.0%. Ship B? **Not yet** — you have two point
 estimates and no idea whether that gap is signal or noise.
@@ -1390,6 +1396,7 @@ A model can *rank* cases perfectly (great AUC) yet still lie about its confidenc
 Accuracy and AUC never check this. Boosted trees and SVMs push scores toward the extremes, and deep nets are notoriously overconfident; logistic regression is calibrated almost by construction.
 
 ### Reliability Diagram
+![Calibration checks probability honesty](diagrams/eval13_calibration_reliability_ai.png)
 Bin predictions by confidence, then plot the mean predicted probability (x) against the actual positive rate (y). Perfect calibration lies on the diagonal; points **below** the line mean the model is over-confident.
 
 ```

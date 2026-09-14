@@ -43,6 +43,7 @@ This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks
 ```
 
 If you can sketch this on a whiteboard, you can answer 80% of "how does an LLM work end-to-end" interview questions.
+![The 90-second training vs inference field map](diagrams/play00_fieldmap_ai.png)
 
 ---
 
@@ -109,6 +110,7 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 ```
 
 **Default for prototyping**: Gemini 3 Flash (cheap, fast, multimodal) or Claude Sonnet 4.6.
+![Which model? An eleven-branch decision tree](diagrams/play00_modeltree_ai.png)
 
 ---
 
@@ -206,6 +208,7 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 | Quant for QLoRA | NF4 (4-bit) | ~75% memory cut |
 
 ### SFT → DPO → RLHF — when each pays off
+![SFT to DPO to RLHF, cost versus payoff ladder](diagrams/play00_sftdpo_ai.png)
 
 | Stage | What it does | Cost | Pay off |
 |---|---|---|---|
@@ -238,6 +241,7 @@ SFTTrainer(
 ## P6. LLM Serving — Cost / Latency / Quality
 
 ### Levers in priority order
+![Nine LLM serving cost and latency levers, ranked](diagrams/play00_levers_ai.png)
 
 | Lever | Typical impact | Where it lives |
 |---|---|---|
@@ -321,6 +325,7 @@ Add ~20–40% on top for **KV cache** at production batch sizes. A single H100 (
 ```
 
 ### RAG failure modes → fixes
+![RAG failure modes mapped to their fixes](diagrams/play00_ragfix_ai.png)
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
@@ -443,6 +448,7 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 ---
 
 ## P10. Diagnostics — When Things Break
+![Five things breaking, and the fastest fixes](diagrams/play00_diagnose_ai.png)
 
 ### "My LLM hallucinates"
 

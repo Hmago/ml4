@@ -607,6 +607,7 @@ Each of the 12-96 layers in an LLM is a "Transformer block":
 ```
 
 After 12-96 of these blocks, the final representation is rich enough to predict the next token accurately.
+![The full Transformer block: attention, skip connections, and the feed-forward network](diagrams/llm17x_transformerblock_ai.png)
 
 ### Key Components Inside the Transformer Block
 
@@ -804,6 +805,7 @@ Self-attention treats all tokens equally — it has no built-in notion of "first
 ### Causal (Masked) Attention vs. Bidirectional Attention
 
 Not all LLMs attend to all tokens. There are two major patterns:
+![Causal attention masks versus bidirectional attention masks](diagrams/llm17x_causalmask_ai.png)
 
 ```
   CAUSAL (MASKED) ATTENTION — Used by GPT, LLaMA, Claude
@@ -1091,6 +1093,7 @@ The training objective pushes the winning response's score above the loser's:
 $$L = -\log\!\left(\sigma(s_{\text{win}} - s_{\text{lose}})\right)$$
 
 The important consequence: **once trained, the reward model can score any new response without a human in the loop.** That is what makes the next stage possible at all — you have converted expensive human judgement into a cheap automatic signal.
+![Training the RLHF reward model from ranked human preferences](diagrams/llm17x_rewardmodel_ai.png)
 
 > Note the labellers **rank** rather than score. Humans are reliable at "A is better than B" and unreliable at "this is a 7 out of 10", so the data collection is designed around comparisons.
 
@@ -1122,6 +1125,7 @@ The KL term penalises drifting too far from the Stage 1 model. Without it the po
 RLHF is effective but complex — it requires training a separate reward model and using reinforcement learning. **DPO** is a simpler alternative that achieves similar results.
 
 **The key insight:** Instead of training a reward model and then doing RL, DPO directly updates the language model using preference pairs.
+![RLHF's three stages versus DPO's single training stage](diagrams/llm17x_dpo_ai.png)
 
 ```
   RLHF pipeline:
@@ -1597,6 +1601,7 @@ Google's multimodal model designed from the ground up to handle text, images, au
 ## 4.7 Architecture Comparison — Encoder vs. Decoder vs. Encoder-Decoder
 
 The Transformer paper introduced an encoder-decoder architecture, but modern LLMs have diverged into three families:
+![Encoder-only, decoder-only, and encoder-decoder LLM architectures](diagrams/llm17x_archcompare_ai.png)
 
 ```
   ENCODER-ONLY (BERT, RoBERTa, DeBERTa)
@@ -1922,6 +1927,7 @@ Understanding the key papers helps you understand WHY things are the way they ar
 ---
 
 ## 16.2 Historical Timeline
+![LLM history from the Transformer paper to today's frontier models](diagrams/llm17x_timeline_ai.png)
 
 ```
   2017 │ "Attention Is All You Need" — Transformer invented

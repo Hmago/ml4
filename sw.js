@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v318';
+const CACHE_NAME = 'ml-notes-v319';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -105,8 +105,12 @@ const STATIC_FILES = [
   'diagrams/nn_vanishing_ai.png', 'diagrams/nn_init_ai.png', 'diagrams/nn_archchooser_ai.png',
   'diagrams/nn_xor_ai.png', 'diagrams/nn_loss_ai.png', 'diagrams/nn_regularization_ai.png', 'diagrams/nn_transfer_ai.png',
 
-  // NOTE: the ML Curriculum recap diagrams (diagrams/rev_*_ai.png) are deliberately
-  // NOT precached — they add ~13 MB to an already large install. The fetch handler's
+  // NOTE: the ML Curriculum recap diagrams (diagrams/rev_*_ai.png, ~13 MB), the
+  // core-curriculum concept diagrams for Ch 07-13 (diagrams/{intro07,core08,prep09,
+  // sup10,unsup11,algo12,eval13}_*_ai.png, ~62 MB) and the Deep Learning & LLMs
+  // top-ups (diagrams/{dlrev,dl16x,llm17x,llm17bx,llm17cx,agent18x,agent18bx,fw19x,
+  // land20x,play00}_*_ai.png, ~78 MB) are deliberately NOT precached — together they
+  // would add ~153 MB to an already large install. The fetch handler's
   // stale-while-revalidate branch caches them on first view instead.
 
   // Chapter 15 (Reinforcement Learning) — AI-generated educational concept diagrams

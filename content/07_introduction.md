@@ -46,6 +46,7 @@ Both definitions point at the same idea: **the programmer supplies examples, not
 ---
 
 ## Why Does ML Matter?
+![Why machine learning took off](diagrams/intro07_why_now_ai.png)
 
 You interact with ML every day — usually without noticing.
 
@@ -198,6 +199,7 @@ Nobody tells the network what an edge looks like or what makes a whisker. It dis
 This automatic feature-learning is the single idea behind every modern breakthrough: ImageNet (2012), AlphaGo (2016), Face ID, voice assistants, self-driving cars, and today's LLMs.
 
 > **Takeaway:** Classical ML needs **hand-designed features**. Deep Learning **invents its own**.
+![Deep learning builds features layer by layer](diagrams/intro07_deep_features_ai.png)
 
 ---
 
@@ -230,6 +232,7 @@ The underlying technology is the same deep neural networks — but specifically 
 Why is this the center of the AI gold rush? For about 60 years, computers could only **process** or **classify** information we fed them. Generative models **produce new information** — text, images, code, audio — at human or super-human quality. That single capability shift is what's reshaping jobs, education, creative industries, and public debate about AI.
 
 > **Takeaway:** Classical ML **shrinks** inputs into labels. Generative AI **expands** prompts into artifacts.
+![Discriminative ML shrinks, generative AI expands](diagrams/intro07_genai_flip_ai.png)
 
 ### Quick comparison table
 
@@ -249,6 +252,7 @@ Why is this the center of the AI gold rush? For about 60 years, computers could 
 ---
 
 ## Key ML Vocabulary
+![How core ML vocabulary connects](diagrams/intro07_vocab_flow_ai.png)
 
 These ten terms appear in every chapter that follows. Pin them down now.
 
@@ -464,6 +468,7 @@ After reading the sections above, use this table to cement the differences at a 
 ---
 
 ## The Machine Learning Workflow
+![The seven-step ML workflow loop](diagrams/intro07_workflow_loop_ai.png)
 
 > **The ML Workflow is the end-to-end process of turning a business problem into a deployed model — define, collect, clean, engineer features, train, evaluate, deploy, monitor.**
 
@@ -572,6 +577,7 @@ size │ bed │ age │ zip    │ schools │ lot  │ PRICE (label)
 ---
 
 ## When to Use Machine Learning?
+![When ML is the right tool](diagrams/intro07_use_ml_decision_ai.png)
 
 > **Use ML when the rules are too complex to hand-code, the data is plentiful, and some error is tolerable. Otherwise, a simple rule or formula is usually better.**
 
@@ -621,6 +627,7 @@ size │ bed │ age │ zip    │ schools │ lot  │ PRICE (label)
 ---
 
 ## No Free Lunch — Why No Algorithm Wins Everywhere
+![No Free Lunch and baselines](diagrams/intro07_no_free_lunch_ai.png)
 
 ### Simple Explanation
 

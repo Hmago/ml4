@@ -137,6 +137,7 @@ Ask the model to "think step by step." This dramatically improves performance on
 ```
 
 **Why it works:** The model generates its reasoning before the answer. Each token it generates gives it more "thinking space." The final answer is conditioned on correctly-reasoned intermediate steps.
+![Chain-of-thought: reasoning tokens before the answer](diagrams/llm17bx_cot_reasoning_ai.png)
 
 ---
 
@@ -215,6 +216,7 @@ This is the foundation of **AI agents** — LLMs that can use tools, search the 
 ## 5.9 Tree of Thoughts (ToT)
 
 Chain-of-thought follows a single reasoning path. **Tree of Thoughts** explores multiple paths simultaneously, like a chess player considering different moves.
+![Tree of Thoughts: exploring many reasoning paths](diagrams/llm17bx_tree_of_thoughts_ai.png)
 
 ```
   Problem: "24 game — use 1, 5, 6, 7 to make 24 using +, -, ×, ÷"
@@ -262,6 +264,7 @@ Instead of trusting one answer, generate multiple answers and take the majority 
 ```
 
 **Key insight:** Different reasoning paths can lead to different answers. The correct answer tends to appear more often than any specific wrong answer.
+![Self-consistency: majority vote across reasoning paths](diagrams/llm17bx_self_consistency_ai.png)
 
 **When to use:** Math, logic, factual questions — anywhere there's one right answer. Not useful for creative writing (no "right" answer).
 
@@ -630,6 +633,7 @@ Useful for structured generation where you need precise control.
 ## 8.6 Structured Output — Forcing Specific Formats
 
 For applications that need machine-readable output (JSON, XML, SQL), you can't just hope the LLM formats it correctly. Structured output techniques guarantee valid formats.
+![Structured output: JSON mode and schema enforcement](diagrams/llm17bx_structured_output_ai.png)
 
 **JSON Mode (API-level):**
 
@@ -950,6 +954,7 @@ The LLM decides WHEN to use a tool and WHICH one to use, based on the conversati
 ## 9.4 Fine-Tuning for Custom Behavior ★★★
 
 When prompting isn't enough, fine-tune the model on your own data.
+![Full fine-tuning vs parameter-efficient fine-tuning](diagrams/llm17bx_full_ft_vs_peft_ai.png)
 
 **When to fine-tune vs. when to use prompting:**
 
@@ -1323,6 +1328,7 @@ LLMs charge per token. **Prices drop rapidly — always check current pricing (a
 ## 13.4 Context Window — Practical Implications
 
 The context window limits how much text the model can "see" at once.
+![Context window as a shared token budget](diagrams/llm17bx_context_window_budget_ai.png)
 
 ```
   GPT-4 with 128K context can fit:

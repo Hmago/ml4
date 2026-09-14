@@ -90,6 +90,7 @@ Answer: The population of Paris, the capital of France, is approximately 2.1 mil
 ```
 
 Each step has three parts: **Thought** (reasoning), **Action** (tool call), **Observation** (result). The model sees all previous steps when deciding the next one.
+![The ReAct loop: Thought, Action, Observation, repeat](diagrams/agent18x_reactloop_ai.png)
 
 ### When to Use an Agent vs a Simple Prompt
 
@@ -226,6 +227,7 @@ if response.choices[0].message.tool_calls:
 Early agents wrapped tool use in an explicit **ReAct** loop: you prompted the model to emit "Thought / Action / Observation" as *text*, then parsed it. That was a workaround for models not trained to call tools.
 
 Modern models are trained on tool use directly, so the model emits a structured call as a first-class output rather than text you have to parse.
+![Prompted ReAct vs. model-native tool calling](diagrams/agent18x_nativetooluse_ai.png)
 
 | | **Prompted ReAct** (2022–23) | **Model-native tool use** (2026) |
 |---|---|---|
@@ -329,6 +331,7 @@ MCP servers expose three types of capabilities:
 | **Prompts** | Templated message workflows | User-controlled (user selects which to use) | "Summarize this PR", "Review this code" |
 
 Think of it this way: **Tools** are verbs (actions), **Resources** are nouns (data), **Prompts** are recipes (pre-built workflows).
+![MCP's three server primitives, plus two client callbacks](diagrams/agent18x_mcpprimitives_ai.png)
 
 Those three are *server* primitives. The protocol also defines two **client-side** capabilities a server can call back into:
 
@@ -787,6 +790,7 @@ A2A v1.0 (early 2026) introduced:
 - **Transport**: HTTP, SSE, JSON-RPC 2.0
 
 Over 150 organizations support A2A as of April 2026, including Google, Microsoft, AWS, Salesforce, SAP, and IBM. It is maintained by the Linux Foundation under Apache 2.0.
+![A2A vs. MCP: agent-to-agent vs. agent-to-tool](diagrams/agent18x_a2avsmcp_ai.png)
 
 ### Trade-off: More Agents = More Cost + Latency
 
@@ -882,6 +886,7 @@ Use **free-form reasoning** when:
 - You need the model's judgment to adapt
 
 In practice, production agents combine both. The agent reasons freely to understand the user's intent, then invokes a skill for the structured part.
+![Skills vs. tools: when to lock in the steps](diagrams/agent18x_skillsvstools_ai.png)
 
 ```python
 # Pseudo-code: Agent with skills
@@ -978,6 +983,7 @@ result = app.invoke({"messages": [new_message]}, config)
 ### Why Memory Matters
 
 Without memory, every conversation starts from scratch. The user has to re-explain their preferences, re-share context, and repeat themselves. Memory transforms a forgetful tool into a capable assistant that learns and improves over time.
+![Agent memory hierarchy: short-term, long-term, state](diagrams/agent18x_agentmemory_ai.png)
 
 ---
 

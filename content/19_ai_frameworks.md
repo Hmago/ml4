@@ -180,6 +180,7 @@ print(app.invoke({"topic": "attention", "draft": "", "approved": False}))
 ```
 
 LangGraph 1.0's headline features are **durable state** (the graph picks up where it left off after a crash), **built-in persistence** (resume agent runs days later), and **first-class human-in-the-loop pauses** for approvals — all things you'd otherwise hack together yourself.
+![LangGraph's stateful loop: durable state and human-in-the-loop](diagrams/fw19x_langgraph_loop_ai.png)
 
 ### LangSmith — the debugging layer
 
@@ -285,6 +286,7 @@ print(classify(email="My order arrived broken, I want my money back.").intent)
 ### Compiling a prompt with MIPROv2
 
 The big idea: give DSPy 20 labelled examples and an evaluator, and it will search prompt-instruction + demonstration combinations to maximise your metric.
+![DSPy compiles a signature into an optimized prompt](diagrams/fw19x_dspy_compile_ai.png)
 
 ```python
 trainset = [dspy.Example(email=e, intent=i).with_inputs("email") for e, i in labelled_data]
@@ -422,6 +424,7 @@ print(summariser(long_text, max_length=80)[0]["summary_text"])
 ### Hello world — LoRA fine-tuning with TRL + PEFT
 
 LoRA freezes the base model and trains tiny rank-decomposition matrices on attention layers. Fewer than 1% of parameters trained, ~90% memory savings, near-equivalent quality.
+![LoRA freezes the base model and trains tiny adapters](diagrams/fw19x_lora_finetune_ai.png)
 
 ```python
 from datasets import load_dataset
@@ -479,6 +482,7 @@ Answer:
 ```
 
 Few-shot is the single biggest quality lever after model choice. Almost always worth trying.
+![Four prompt-engineering patterns, from zero-shot to structured output](diagrams/fw19x_promptpatterns_ai.png)
 
 ### Chain-of-Thought (CoT) — ask for reasoning before the answer
 
@@ -578,6 +582,7 @@ You don't need all seven. Bolt them on as you hit each failure.
 Three variants worth more than the one-line entries above.
 
 **GraphRAG** — for questions vanilla RAG structurally cannot answer.
+![GraphRAG answers global and multi-hop questions vanilla RAG cannot](diagrams/fw19x_graphrag_ai.png)
 
 Vector RAG retrieves the *k* chunks most similar to the query. That fails on **global** questions ("what are the main themes across these 500 documents?") because no single chunk contains the answer, and on **multi-hop** questions ("which of our suppliers is affected by the port closure?") where the answer requires joining facts that live in different documents.
 
@@ -915,6 +920,7 @@ ADK's strength is **enterprise scale + GCP-native**: deploy with one command, ge
 ### OWASP Top 10 for LLM Applications
 
 The standard vocabulary for LLM risk. You are expected to recognise the list and name the top entry:
+![OWASP Top 10 risks for LLM applications](diagrams/fw19x_owasp_ai.png)
 
 | ID | Risk | Where it is covered here |
 |---|---|---|

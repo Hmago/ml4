@@ -109,6 +109,7 @@ Each row = one example / data point / observation    What we predict
 ---
 
 ## 8.2 Features and Labels ★★
+![Features are clues, labels are answers](diagrams/core08_features_labels_ai.png)
 
 ### Features (X) — The Inputs
 
@@ -160,6 +161,7 @@ choose, not by the data.
 ---
 
 ## 8.3 Training, Validation & Test Sets ★★
+![Train validation test as an exam](diagrams/core08_split_exam_ai.png)
 
 ### Simple Explanation — The Exam Model
 
@@ -217,6 +219,7 @@ them to training instead.
 ---
 
 ## 8.4 Data Leakage — The Cardinal Sin ★★★
+![Data leakage hides as success](diagrams/core08_leakage_traps_ai.png)
 
 ### Simple Explanation
 
@@ -413,6 +416,7 @@ it.
 ---
 
 ## 8.7 The Training Loop ★★★
+![One training step end to end](diagrams/core08_training_loop_ai.png)
 
 This is the most important section in the chapter. Understand the training loop and you understand
 how machine learning actually works.
@@ -839,6 +843,7 @@ Once a prediction clears the margin (`y·ŷ ≥ 1`) the loss is exactly zero —
 confidence. Rare in modern deep learning, still standard in classical SVMs.
 
 ### Loss Comparison at a Glance
+![Choosing the right loss function](diagrams/core08_loss_picker_ai.png)
 
 | Loss | Task | Pair with | Outlier sensitivity | When to use |
 |---|---|---|---|---|
@@ -1541,6 +1546,7 @@ score and reality: why it opens, how to read it, and how to close it.
 ---
 
 ## 8.12 Generalization — The Actual Goal ★★
+![Generalization depends on the same distribution](diagrams/core08_generalization_shift_ai.png)
 
 Everything in Part C follows from one idea, so we start with it rather than end with it.
 
@@ -2351,6 +2357,7 @@ score didn't drop at all, your λ isn't doing anything.
 ---
 
 ## 8.16 Probability, Thresholds & Calibration ★★
+![Probabilities need thresholds and calibration](diagrams/core08_threshold_calibration_ai.png)
 
 ### Simple Explanation
 

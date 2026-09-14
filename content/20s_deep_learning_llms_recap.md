@@ -194,6 +194,7 @@ $W^O$ mixes information from all heads. Typical: 8 heads (BERT-base), 96 heads (
 | Examples | BERT-base (110M), RoBERTa, DeBERTa | GPT-3/4, LLaMA, Claude, Mistral |
 
 BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params. BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params.
+![BERT vs GPT: encoder-only vs decoder-only architectures](diagrams/dlrev_bertgpt_ai.png)
 
 The full Transformer block: Input → Self-Attention → Add&Norm → FFN → Add&Norm → Output. FFN stores ~2/3 of parameters and factual knowledge. Attention handles token relationships.
 
@@ -217,6 +218,7 @@ Context window determines maximum sequence length: 4K (GPT-3) → 8K (LLaMA 2) �
 
 **RLHF (★★★)**:
 1. SFT: fine-tune on ~10K high-quality (prompt, response) pairs.
+![RLHF pipeline: SFT, reward model, PPO+KL, and DPO](diagrams/dlrev_rlhf_ai.png)
 2. Reward Model: train on human rankings; objective: push $s_\text{win} - s_\text{lose}$ apart via $L = -\log\sigma(s_\text{win}-s_\text{lose})$.
 3. PPO + KL constraint: $R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$. KL term prevents reward hacking while keeping the model grounded.
 
@@ -399,6 +401,7 @@ KL is always ≥ 0. Used to measure how much a policy drifts from its SFT baseli
 | 2.0 | Wild, often incoherent |
 
 Temperature=0 for code/factual Q&A. Temperature=0.7–1.0 for creative tasks.
+![Decoding strategies: greedy, beam, top-K, top-P, temperature](diagrams/dlrev_decoding_ai.png)
 
 **Autoregressive loop**: one token per forward pass; KV cache stores past keys/values so each step is $O(1)$ not $O(N)$.
 
@@ -445,6 +448,7 @@ This justified the push to ever-larger models.
 > **Training tokens ≈ 20 × parameters**
 
 LLaMA (13B, 1.4T tokens) outperformed GPT-3 (175B, 300B tokens). Data quality and quantity matter as much as scale.
+![Scaling laws: Kaplan power laws and the Chinchilla rule](diagrams/dlrev_chinchilla_ai.png)
 
 **Emergent abilities**: chain-of-thought reasoning appears around 60B parameters; few-shot in-context learning at 100B+. These are not smooth improvements — they appear suddenly at thresholds.
 
@@ -624,6 +628,7 @@ FP16→INT8: <1% quality loss. FP16→INT4: 1–3% loss. Methods: GPTQ (GPU infe
 | Helped by | Chunked prefill, prefix caching, W8A8/FP8 | Batching, weight-only quantization, speculative decoding, GQA |
 
 **Bandwidth ceiling:** max tok/s = per-GPU bandwidth ÷ bytes of weights **per GPU**. A 70B FP16 (140 GB) sharded over 2×H100 → 70 GB each ÷ 3.35 TB/s ≈ **48 tok/s** for one stream. At INT4 (35 GB) on one GPU ≈ **96 tok/s**. Always state the shard count.
+![Prefill vs decode and the bandwidth ceiling formula](diagrams/dlrev_bandwidth_ai.png)
 
 ### KV cache — the formula to memorise
 
@@ -731,6 +736,7 @@ Observe (context, results) → Think (LLM reasons) → Act (tool call / API)
 ### Function Calling / Tool Use
 
 The LLM outputs structured JSON specifying which function to call + arguments. Your code executes the function. The LLM never executes anything directly — **critical security boundary**.
+![Function calling: the LLM never executes tools directly](diagrams/dlrev_toolcalling_ai.png)
 
 ```
 App → (message + tool schemas) → LLM
@@ -751,6 +757,7 @@ All major providers (OpenAI, Anthropic, Google) follow the same pattern: define 
 > **MCP** is an open protocol (Anthropic, 2024) standardising how LLM apps connect to tools, data, and services — "USB-C for AI." 97M installs by March 2026; 10,000+ servers.
 
 **Architecture**: Host (your app) → MCP Clients → MCP Servers (GitHub, DB, Slack…) over JSON-RPC 2.0. Replaces N×M custom integrations with N+M.
+![MCP architecture: hosts, clients, servers, and three primitives](diagrams/dlrev_mcp_ai.png)
 
 **Three primitives**:
 | Primitive | What | Who controls |
@@ -1029,6 +1036,7 @@ Production:      vLLM (DEFAULT) — PagedAttention, 5–10× throughput
 ```
 
 **vLLM PagedAttention**: partitions KV cache into fixed-size blocks (like OS virtual memory pages); eliminates fragmentation; 2–10× more concurrent users on same GPU. Red Hat benchmark: vLLM 793 tok/s vs Ollama 41; p99 TTFT 80ms vs 673ms. Stripe saved 73% migrating to vLLM.
+![vLLM and PagedAttention versus Ollama benchmarks](diagrams/dlrev_vllm_ai.png)
 
 **Most teams**: Ollama for dev, vLLM for prod.
 
@@ -1110,6 +1118,7 @@ OPEN-WEIGHT (sparse MoE era):
 ### Reasoning Models & Test-Time Compute
 
 > A **reasoning model** allocates additional compute *at inference time* — generating hidden "thinking" tokens before the final answer — so accuracy on hard problems scales with thinking budget, not parameters alone.
+![Reasoning models and test-time compute budgets](diagrams/dlrev_reasoning_ai.png)
 
 ```
 Normal LLM:     Input → [one forward pass] → Output (cost: fixed)
@@ -1141,6 +1150,7 @@ All flagship open models in 2026 are **sparse MoE** — large total parameter co
 SWE-bench Verified scores late-2023 → July 2026: ~13% → **88.7%**. Four compounding factors: (1) stronger base models, (2) test-time compute / reasoning, (3) better scaffolds (file IO, test runners, diff review, persistent state), (4) RL on agentic traces.
 
 Scaffold gap: Augment Code at 72% with Opus 4.6 vs Cursor at 65.7% with Sonnet 4.6 — same model family, better harness wins.
+![SWE-bench Verified progress and the scaffold gap](diagrams/dlrev_swebench_ai.png)
 
 **Dev-tool landscape**: Claude Code (terminal agent, multi-file refactors), Cursor (IDE, tight feedback loops), Windsurf (IDE, multi-file Cascade), GitHub Copilot (enterprise), Devin (async cloud agent), Codex CLI (OpenAI-native terminal).
 

@@ -71,6 +71,7 @@ Has_Pet: "yes", 1, "Y", True  →    Has_Pet: 1, 1, 1, 1
 ---
 
 ## The Data Preprocessing Pipeline
+![The data preprocessing pipeline](diagrams/prep09_pipeline_ai.png)
 
 ```
 Raw Data
@@ -135,6 +136,7 @@ MNAR  │ Missing Not At Random — missing for a reason!
 ```
 
 ### What to Do About Missing Values
+![Choosing a missing-value strategy](diagrams/prep09_missing_values_ai.png)
 
 ```
    Missing Value Detected!
@@ -216,6 +218,7 @@ Data: [160, 162, 155, 158, 163, 161, 350, 159]
 ```
 
 ### How to Find Outliers
+![Finding outliers with IQR and Z-score](diagrams/prep09_outliers_ai.png)
 
 **Method 1: IQR (Interquartile Range)**
 
@@ -276,6 +279,7 @@ $$Z = \frac{\text{value} - \text{mean}}{\text{standard deviation}}$$
 ---
 
 ## Step 3: Encoding Categorical Features ★★
+![Encoding categorical features](diagrams/prep09_encoding_ai.png)
 
 ### Simple Explanation
 Computers only understand numbers, not words like "red" or "small."
@@ -418,6 +422,7 @@ $$X_{\text{scaled}} = \frac{X - \text{mean}}{\text{std deviation}}$$
 ```
 
 ### Which to Use?
+![Min-Max versus standardization](diagrams/prep09_scaling_choice_ai.png)
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -475,6 +480,7 @@ $$X_{\text{scaled}} = \frac{X - \text{mean}}{\text{std deviation}}$$
 
 ### Simple Explanation
 Feature engineering is the art of **creating new, more useful features** from existing ones.
+![Turning raw features into useful signals](diagrams/prep09_feature_engineering_ai.png)
 It's like being a chef — you take raw ingredients and transform them into something tastier!
 
 ### Examples
@@ -502,6 +508,7 @@ Price: 100               →    LogPrice: 4.6  ← handles skewed data
 ```
 
 ### Feature Selection — Removing Useless Features ★★
+![Removing useless or duplicate features](diagrams/prep09_feature_selection_ai.png)
 
 ```
 Removing bad features IMPROVES models!

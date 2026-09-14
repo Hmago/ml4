@@ -60,8 +60,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~5.75 hrs | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1 hr | Intermediate |
-| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~4.25 hrs | All Levels |
-| | **Core ML Total** | | | **~38.25 hrs** | |
+| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.25 hrs | All Levels |
+| | **Core ML Total** | | | **~37.25 hrs** | |
 
 ### Deep Learning & LLMs
 
@@ -162,7 +162,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~197.5 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~196.5 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

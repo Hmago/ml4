@@ -276,6 +276,7 @@ $$v_{2}^{\text{new}} = 0.8 - 0.1 \times (-0.120) = 0.812$$
 $$W_{11}^{\text{new}} = 0.4 - 0.1 \times (-0.121) = 0.412$$
 
 Every weight moved in the direction that reduces the loss. That's ONE training step. Repeat thousands of times.
+![Backpropagation: forward pass then backward pass through a tiny network](diagrams/dl16x_backprop_ai.png)
 
 ---
 
@@ -887,6 +888,7 @@ U-Net gets its name from its shape — an encoder that shrinks the image, a deco
 **Why skip connections matter:** The encoder learns "where things are" but loses spatial detail (from pooling). The decoder needs that spatial detail to label pixels precisely. Skip connections pass the fine-grained location information directly to the decoder.
 
 Originally designed for medical images (where labeled data is very scarce). Now used for: satellite image analysis, self-driving car road segmentation, industrial inspection.
+![U-Net: encoder shrinks, decoder expands, skip connections bridge them](diagrams/dl16x_unet_ai.png)
 
 ---
 
@@ -1019,6 +1021,7 @@ When $z_t \approx 0$ the hidden state is copied unchanged (gradient flows unmodi
 | When to prefer | Long sequences, complex dependencies | Shorter sequences, less data |
 
 **Practical note:** For new projects, prefer Transformers. LSTMs/GRUs remain useful when you must process tokens *one at a time* at low latency (e.g., real-time streaming ASR, embedded systems).
+![LSTM vs GRU: three gates and a cell state versus two gates](diagrams/dl16x_lstmgru_ai.png)
 
 ---
 
@@ -1460,6 +1463,7 @@ Wasserstein distance provides a **smooth, meaningful gradient** even when distri
 | Current dominance | Largely replaced for image gen | Dominant (2022–present) |
 
 GANs remain competitive for **video generation** and real-time applications where single-pass synthesis matters.
+![GAN training loop and its most common failure: mode collapse](diagrams/dl16x_gan_ai.png)
 
 ---
 
@@ -1604,6 +1608,7 @@ Early SSMs (S4) used *fixed* $A, B, C$ for every token, so they couldn't decide 
 | Best at | in-context recall, reasoning | very long streams, audio, genomics |
 
 In practice the strongest recipe is a **hybrid**: interleave a few attention layers (for precise recall) with many SSM layers (for cheap long-range mixing). **Jamba** (Mamba + Transformer + MoE) is a well-known example. Reach for SSMs when sequences are **very long** and you care about throughput and flat memory more than exact needle-in-a-haystack recall.
+![Transformer versus State-Space Models: quadratic attention versus a linear scan](diagrams/dl16x_mamba_ai.png)
 
 ---
 
@@ -1711,6 +1716,7 @@ If your model gives different results on the same data each run, you have unset 
 ---
 
 ## 7.2 Reading Training Curves
+![Reading training curves: five patterns and what each one means](diagrams/dl16x_traincurves_ai.png)
 
 ```
   SCENARIO 1: Good training
