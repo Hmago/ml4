@@ -81,34 +81,28 @@ A note on why this chapter weights things the way it does. Every Java construct 
 
 Answer these before reading on. They are diagnostic, not a test — each one maps to a section, so a wrong answer tells you exactly where to slow down.
 
+1. What does `new Integer[3]` contain? *(§38.2)*
+2. `List<Integer> l = Arrays.asList(1,2,3); l.add(4);` — what happens? *(§38.2)*
+3. Why is building a string with `s += c` inside a loop a bug? *(§38.3)*
+4. You need a stack. `Stack` or `ArrayDeque`? *(§38.4)*
+5. What's wrong with `(a, b) -> a - b` as a comparator? *(§38.5)*
+6. `Integer a = 127, b = 127; a == b` → ? And at 128? *(§38.6)*
+7. Why does `int mid = (lo + hi) / 2;` break on large arrays? *(§38.6)*
+8. You override `equals` but not `hashCode`, then use the object as a `HashMap` key. What happens? *(§38.7)*
+
 <details>
-<summary><strong>Rust check.</strong> Eight questions. Score yourself, then use the table below to decide what to skip.</summary>
+<summary><strong>Answers.</strong> Score yourself, then use the table below to decide what to skip.</summary>
 
-**1. What does `new Integer[3]` contain? (§38.2)**
-Three `null`s — not three zeros. Only *primitive* arrays get a zero default. This is why `int[]` and `Integer[]` are not interchangeable.
-
-**2. `List<Integer> l = Arrays.asList(1,2,3); l.add(4);` — what happens? (§38.2)**
-`UnsupportedOperationException`. `Arrays.asList` returns a **fixed-size** view backed by the array. You can `set`, but never `add` or `remove`.
-
-**3. Why is building a string with `s += c` inside a loop a bug? (§38.3)**
-`String` is immutable, so each `+=` allocates and copies a whole new string — $O(n^2)$ overall. Use `StringBuilder` for $O(n)$.
-
-**4. You need a stack. `Stack` or `ArrayDeque`? (§38.4)**
-`ArrayDeque`. `java.util.Stack` extends `Vector`, so every operation is synchronized, and — the part that actually bites — iterating it yields *bottom-to-top*, the opposite of what you'd expect.
-
-**5. What's wrong with `(a, b) -> a - b` as a comparator? (§38.5)**
-It overflows. If `a = 2_000_000_000` and `b = -2_000_000_000`, the subtraction wraps negative and the order inverts. Use `Integer.compare(a, b)`.
-
-**6. `Integer a = 127, b = 127; a == b` → ? And at 128? (§38.6)**
-`true`, then `false`. Java caches boxed integers in −128..127, so `==` accidentally works on small values and fails on large ones — code that passes small test cases and fails the real input.
-
-**7. Why does `int mid = (lo + hi) / 2;` break on large arrays? (§38.6)**
-`lo + hi` can exceed `Integer.MAX_VALUE` and wrap negative, so `mid` becomes negative and you index out of bounds. Write `lo + (hi - lo) / 2`.
-
-**8. You override `equals` but not `hashCode`, then use the object as a `HashMap` key. What happens? (§38.7)**
-Lookups fail. `HashMap` finds the bucket by `hashCode` first, so two "equal" objects land in different buckets and `get` returns `null` for a key you just inserted.
-
----
+| # | Answer | § |
+|---|---|---|
+| 1 | Three `null`s, not three zeros. Only **primitive** arrays zero-fill — which is why `int[]` and `Integer[]` are not interchangeable. | 38.2 |
+| 2 | `UnsupportedOperationException`. `asList` returns a **fixed-size view** backed by the array: `set` works, `add`/`remove` never do. | 38.2 |
+| 3 | `String` is immutable, so every `+=` allocates and copies the whole string — $O(n^2)$. `StringBuilder` is $O(n)$. | 38.3 |
+| 4 | `ArrayDeque`. `Stack` extends `Vector`, so every method is synchronized — and it iterates **bottom-to-top**, the opposite of pop order. | 38.4 |
+| 5 | It overflows. With `a = 2_000_000_000` and `b = -2_000_000_000` the subtraction wraps negative and the order inverts. Use `Integer.compare(a, b)`. | 38.5 |
+| 6 | `true`, then `false`. Boxed integers are cached in −128..127, so `==` accidentally works small and fails large — passes your tests, fails the real input. | 38.6 |
+| 7 | `lo + hi` can exceed `Integer.MAX_VALUE` and wrap negative, so `mid` goes negative and you index out of bounds. Write `lo + (hi - lo) / 2`. | 38.6 |
+| 8 | Lookups fail. `HashMap` picks the bucket by `hashCode` first, so two "equal" objects land in different buckets and `get` returns `null`. | 38.7 |
 
 | Score | What to do |
 |---|---|
@@ -119,7 +113,12 @@ Lookups fail. `HashMap` finds the bucket by `hashCode` first, so two "equal" obj
 </details>
 
 > **Interview —** *"You've been away from Java for a while. How current are you?"*
-> **Say:** Name the delta precisely rather than apologising for it — that you left around Java 11, and that the material change since is records, sealed types with pattern matching, and virtual threads in Java 21, plus scoped values finalising in 25 and structured concurrency still in preview. Then say what that *means*: data modelling got terser and exhaustively checkable, and thread-per-request became viable again, which removes most of the motivation for reactive stacks.
+>
+> **Say:**
+> - Name the delta precisely rather than apologising for it — you left around **Java 11**.
+> - The material change since: **records**, **sealed types + pattern matching**, **virtual threads** (Java 21), plus scoped values finalising in 25 and structured concurrency still in preview.
+> - Then say what it *means*: data modelling got terser and exhaustively checkable, and thread-per-request became viable again — which removes most of the motivation for reactive stacks.
+>
 > **They follow up with:** *"So what would you use virtual threads for?"* — I/O-bound request handling, where blocking code on a virtual thread is now both simpler and about as scalable as an async pipeline. Not CPU-bound work, which is still bounded by core count.
 
 ---
@@ -130,7 +129,13 @@ If you only reactivate one thing before opening [Ch 31](#content/31_dsa_coding),
 
 The good news is that arrays are the part of the language that changed least. Everything below worked identically in Java 8. You are not learning; you are re-loading.
 
-### Simple Explanation
+**In this section**
+
+- Declaration and defaults — and why `new Integer[3]` is three `null`s, not three zeros
+- 2-D as an array-of-arrays: jagged rows, `deepToString`, the direction-array idiom
+- `Arrays.sort`'s two hidden algorithms, the copy/fill toolbox, and `Arrays.asList`'s two traps
+
+#### Simple Explanation
 
 Think of an array as a row of numbered lockers, all the same size, bolted to a wall. Because they are identical and adjacent, the caretaker can jump straight to locker 47 without walking past the first 46 — that is what makes `a[i]` instant.
 
@@ -158,32 +163,28 @@ System.out.println(linearSearch(new int[]{3, 7, 1, 9, 4}, 9));
 
 Write `linearSearch({3, 7, 1, 9, 4}, 9)` and it will not compile.
 
-Also: `length` is a **field** on arrays (`a.length`), a **method** on `String` (`s.length()`), and a different method on collections (`list.size()`). Three spellings for one idea. You will type the wrong one at least twice this week; the compiler catches all three, so it costs seconds, not correctness.
+One spelling trap, three forms of the same idea:
+
+- `a.length` — a **field** on arrays (no parentheses)
+- `s.length()` — a **method** on `String`
+- `list.size()` — a different method again on collections
+
+You will type the wrong one at least twice this week. The compiler catches all three, so it costs seconds, not correctness.
 
 ### Default values, and why `new Integer[3]` is a trap
 
 A freshly allocated array is *always* zero-filled — for the appropriate meaning of zero.
 
 ```java
-int[] a = new int[5];         // 0
-double[] d = new double[3];   // 0.0
-boolean[] b = new boolean[3]; // false
-char[] c = new char[3];       // '\u0000'
-String[] s = new String[3];   // null
-Integer[] boxed = new Integer[3];  // null — NOT 0
-```
+int[] a = new int[5];              // [0, 0, 0, 0, 0]
+double[] d = new double[3];        // [0.0, 0.0, 0.0]
+boolean[] b = new boolean[3];      // [false, false, false]
+char[] c = new char[3];            // ['\u0000', '\u0000', '\u0000']
+String[] s = new String[3];        // [null, null, null]
+Integer[] boxed = new Integer[3];  // [null, null, null] — NOT 0
 
-Real output from the verified run:
-
-```
-new int[5]       [0, 0, 0, 0, 0]
-{1, 2, 3}        [1, 2, 3]
-new int[]{4,5,6} [4, 5, 6]
-double[3]        [0.0, 0.0, 0.0]
-boolean[3]       [false, false, false]
-String[3]        [null, null, null]
-Integer[3]       [null, null, null]
-sum Integer[3]   NullPointerException
+// int sum = 0;
+// for (Integer x : boxed) sum += x;   -> NullPointerException
 ```
 
 That last line is the whole point. `Integer` is a *reference* type, so `new Integer[3]` is three null pointers wearing a numeric costume. The instant you do `sum += x` the JVM unboxes `null` and throws. In DSA code this shows up when someone reaches for `Integer[]` so they can pass a comparator to `Arrays.sort` — and then forgets that the array starts empty in a different sense than `int[]` does.
@@ -223,31 +224,25 @@ int[][] grid = new int[3][4];
 for (int r = 0; r < grid.length; r++)
     for (int c = 0; c < grid[0].length; c++)
         grid[r][c] = r * 4 + c;
+// grid.length = 3 (rows), grid[0].length = 4 (cols)
+// deepToString -> [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
 
 int[][] jag = new int[3][];      // rows unallocated (null)
-jag[0] = new int[]{1};
-jag[1] = new int[]{1, 2};
-jag[2] = new int[]{1, 2, 3};
+jag[0] = new int[]{1};           // [1]
+jag[1] = new int[]{1, 2};        // [1, 2]
+jag[2] = new int[]{1, 2, 3};     // [1, 2, 3] — rows may differ in length
 
 int[][] lit = {{1, 2, 3}, {4, 5, 6}};
 
 int[][] fill = new int[2][3];
 for (int[] row : fill) Arrays.fill(row, -1);   // must go row by row
+// fill -> [[-1, -1, -1], [-1, -1, -1]]
 ```
 
-```
-rows grid.length    = 3
-cols grid[0].length = 4
-deepToString [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-  row len=1 [1]
-  row len=2 [1, 2]
-  row len=3 [1, 2, 3]
-literal 2-D  [[1, 2, 3], [4, 5, 6]]
-row-wise fill [[-1, -1, -1], [-1, -1, -1]]
-boolean[2][2] [[false, false], [false, false]]
-```
+Two consequences worth internalising:
 
-Two consequences worth internalising. First, `new int[3][]` gives you three `null` rows — a **jagged** array, which is how you represent triangular DP tables, adjacency lists and Pascal's triangle without wasting space. Second, `Arrays.fill(grid, -1)` does **not** work: it would try to write `-1` into slots that hold `int[]` references. You must loop the rows, as above.
+- **`new int[3][]` gives you three `null` rows** — a *jagged* array. That is how you represent triangular DP tables, adjacency lists and Pascal's triangle without wasting space.
+- **`Arrays.fill(grid, -1)` does not work.** It would try to write `-1` into slots that hold `int[]` references. You must loop the rows, as above.
 
 For grid traversal, the direction-array idiom is worth having in muscle memory, because it turns four near-identical bounds checks into one loop:
 
@@ -262,7 +257,12 @@ for (int[] d : DIRS) {
 ```
 
 > **Interview —** *"Walk me through how a 2-D array is laid out in Java, and how that differs from C."*
-> **Say:** In C, `int a[3][4]` is one contiguous block of 12 ints and the compiler does the index arithmetic. In Java, `int[3][4]` is one array of three references plus three separate 4-element arrays — four objects on the heap, not one. That means rows can have different lengths (jagged arrays are legal and useful), and it means row-major traversal is meaningfully faster than column-major because each row is contiguous but rows are not contiguous with each other.
+>
+> **Say:**
+> - In C, `int a[3][4]` is **one contiguous block** of 12 ints and the compiler does the index arithmetic.
+> - In Java, `int[3][4]` is one array of three *references* plus three separate 4-element arrays — **four objects on the heap**, not one.
+> - Two consequences: rows can have different lengths (jagged arrays are legal and useful), and row-major traversal is meaningfully faster than column-major, because each row is contiguous but rows are not contiguous with each other.
+>
 > **They follow up with:** *"So does loop order matter for performance?"* — Yes. Iterating `for r { for c { grid[r][c] } }` walks each row linearly and is cache-friendly; swapping the loops jumps between separately allocated rows on every step and thrashes the cache. Same $O(mn)$, materially different wall clock.
 
 ### Sorting: two algorithms hiding behind one name
@@ -283,16 +283,10 @@ int[] a = {5, 2, 9, 1, 7};
 Arrays.sort(a);                          // [1, 2, 5, 7, 9]
 
 Integer[] boxed = {5, 2, 9, 1, 7};
-Arrays.sort(boxed, (x, y) -> Integer.compare(y, x));
+Arrays.sort(boxed, (x, y) -> Integer.compare(y, x));   // [9, 7, 5, 2, 1]
 
 int[] p = {9, 8, 7, 3, 2, 1};
-Arrays.sort(p, 1, 4);                    // range is [from, to)
-```
-
-```
-sort          [1, 2, 5, 7, 9]
-sort desc     [9, 7, 5, 2, 1]
-sort(p,1,4)   [9, 3, 7, 8, 2, 1]
+Arrays.sort(p, 1, 4);                    // [9, 3, 7, 8, 2, 1] — range is [from, to)
 ```
 
 Note the range form sorts the half-open interval `[1, 4)` — indices 1, 2, 3 — and leaves the rest untouched. Half-open intervals are the Java convention everywhere (`substring`, `copyOfRange`, `subList`, `subMap`), which is one fewer thing to remember.
@@ -300,26 +294,20 @@ Note the range form sorts the half-open interval `[1, 4)` — indices 1, 2, 3 �
 ### Copy, fill, and the rest of the `Arrays` toolbox
 
 ```java
-Arrays.fill(f, -1);                      // whole array
-int[] grown  = Arrays.copyOf(a, 8);      // pads with 0
-int[] slice  = Arrays.copyOfRange(a, 1, 4);
+int[] a = {1, 2, 5, 7, 9};
+
+Arrays.fill(f, -1);                      // [-1, -1, -1, -1, -1] — whole array
+int[] grown  = Arrays.copyOf(a, 8);      // [1, 2, 5, 7, 9, 0, 0, 0] — pads with 0
+int[] slice  = Arrays.copyOfRange(a, 1, 4);   // [2, 5, 7]
 System.arraycopy(a, 0, dst, 1, 5);       // src, srcPos, dst, dstPos, n
-int[] copy   = a.clone();                // shallow, 1-D only
-Arrays.binarySearch(a, 7);               // array MUST be sorted
+                                         // dst -> [0, 1, 2, 5, 7, 9, 0]
+int[] alias  = a;  alias[0] = 99;        // a is now [99, ...] — same object
+int[] copy   = a.clone();                // independent — but shallow, 1-D only
+Arrays.binarySearch(a, 7);               // 3  — array MUST be sorted
+Arrays.binarySearch(a, 6);               // -4 — absent: -(insertionPoint) - 1
 ```
 
-```
-fill          [-1, -1, -1, -1, -1]
-copyOf(a,8)   [1, 2, 5, 7, 9, 0, 0, 0]
-copyOfRange   [2, 5, 7]
-arraycopy     [0, 1, 2, 5, 7, 9, 0]
-bsearch(7)    3
-bsearch(6)    -4
-alias shares  [99, 2, 5, 7, 9]
-clone is deep [1, 2, 5, 7, 9]
-```
-
-Three things to bank from that output:
+Three things to bank from that:
 
 - **`binarySearch` returns a negative number when the key is absent**, specifically `-(insertionPoint) - 1`. Here `6` would belong at index 3, so you get `-4`. That encoding is deliberate: `-result - 1` gives you the insertion point, which is how you implement "find the smallest element greater than x" in one call.
 - **`clone()` on `int[]` is a real copy; on `int[][]` it is not.** `grid.clone()` copies the row *references*, so both grids share rows. For a deep copy, clone each row.
@@ -335,14 +323,14 @@ System.out.println(Arrays.toString(a));   // [1, 2, 3]
 System.out.println(Arrays.deepToString(grid));  // for 2-D
 ```
 
-An array's inherited `toString()` prints its type descriptor and identity hash, which tells you nothing:
+An array's inherited `toString()` prints its type descriptor and identity hash, which tells you nothing — and `Arrays.toString` on a 2-D array is just as useless, because it calls `toString` on each *row*:
 
-```
-toString     [[I@4b67cf4d, [I@7ea987ac, [I@12a3a380]
-deepToString [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+```java
+Arrays.toString(grid);      // [[I@4b67cf4d, [I@7ea987ac, [I@12a3a380]
+Arrays.deepToString(grid);  // [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
 ```
 
-(The hex values differ on every run — they are identity hash codes.) Note that `Arrays.toString` on a 2-D array is just as useless as plain `println`, because it calls `toString` on each *row*. For anything nested, `deepToString`.
+(The hex values differ on every run — they are identity hash codes.) For anything nested, `deepToString`.
 
 Equality follows exactly the same split, and for exactly the same reason:
 
@@ -351,21 +339,13 @@ int[] a = {1, 2, 3}, b = {1, 2, 3};
 a == b                  // false — different objects
 a.equals(b)             // false — Object.equals is identity
 Arrays.equals(a, b)     // true  — element-wise
+Arrays.equals(x, y)     // false — 2-D: compares row references
 Arrays.deepEquals(x, y) // true  — element-wise, recursive
+Arrays.compare(a, b)    // -1 — lexicographic (Java 9+)
+Arrays.mismatch(a, b)   // 2  — index of first difference, or -1
 ```
 
-```
-a == b             false
-a.equals(b)        false
-Arrays.equals(a,b) true
-equals 2-D         false
-deepEquals 2-D     true
-compare            -1
-mismatch index     2
-Arrays.hashCode == true
-```
-
-Arrays never override `equals` or `hashCode`. That is why **an array is a terrible `HashMap` key** — two arrays with identical contents hash differently, so `map.get(equalContentArray)` returns `null`. Use `Arrays.hashCode(a)` explicitly, wrap in a `List<Integer>`, or key on a `String` built from the contents. `Arrays.compare` (lexicographic, Java 9+) and `Arrays.mismatch` (index of first difference, or `-1`) are newer and occasionally save you a loop.
+Arrays never override `equals` or `hashCode`. That is why **an array is a terrible `HashMap` key** — two arrays with identical contents hash differently, so `map.get(equalContentArray)` returns `null`. Use `Arrays.hashCode(a)` explicitly, wrap in a `List<Integer>`, or key on a `String` built from the contents.
 
 ### `Arrays.asList` — read this twice
 
@@ -381,29 +361,18 @@ And because it is a window, changes go both ways: write through the list and the
 
 ```java
 List<Integer> fixed = Arrays.asList(1, 2, 3);
-fixed.set(0, 99);   // fine
+fixed.set(0, 99);   // fine -> [99, 2, 3]
 fixed.add(4);       // UnsupportedOperationException
 fixed.remove(0);    // UnsupportedOperationException
 
 Integer[] backing = {1, 2, 3};
 List<Integer> view = Arrays.asList(backing);
-view.set(0, 42);
-// backing[0] is now 42
+view.set(0, 42);    // backing[0] is now 42 — writes through
 
 int[] prim = {1, 2, 3};
-List<int[]> wrong = Arrays.asList(prim);   // ONE element!
-```
+List<int[]> wrong = Arrays.asList(prim);   // size 1! one element, an int[]
 
-```
-set works        [99, 2, 3]
-add              UnsupportedOperationException
-remove           UnsupportedOperationException
-writes through   backing[0] = 42
-asList(int[])    size = 1, element is int[]
-boxed().toList() size = 3 [1, 2, 3]
-plain loop       [1, 2, 3]
-wrapped          [1, 2, 3, 4]
-List.of set      UnsupportedOperationException
+List.of(1, 2, 3).set(0, 9);   // UnsupportedOperationException — fully immutable
 ```
 
 **Gotcha two** is the one that produces wrong answers rather than exceptions. `asList` is generic — `<T> List<T> asList(T... a)`. An `int[]` is not a `T[]`, because `T` cannot be a primitive. So the compiler infers `T = int[]` and hands you a `List<int[]>` **of size 1**. Your "list of three numbers" is a list containing one array. It compiles cleanly and silently does the wrong thing.
@@ -430,27 +399,24 @@ The mutability ladder is worth memorising as three rungs:
 That third form is the one you actually want most of the time: `new ArrayList<>(Arrays.asList(...))` gives you a genuinely mutable list seeded with literals.
 
 > **Interview —** *"`Arrays.asList(arr)` — what does it return and what can you do with it?"*
-> **Say:** A fixed-size `List` view backed by that array. `get` and `set` work and `set` writes through to the array; `add` and `remove` throw `UnsupportedOperationException` because the backing array can't resize. And if you pass an `int[]` rather than an `Integer[]`, generic inference gives you a `List<int[]>` with one element, which is a silent bug rather than an error.
+>
+> **Say:**
+> - A **fixed-size `List` view** backed by that array.
+> - `get` and `set` work, and `set` writes through to the array.
+> - `add` and `remove` throw `UnsupportedOperationException`, because the backing array can't resize.
+> - Pass an `int[]` rather than an `Integer[]` and generic inference gives you a `List<int[]>` with **one** element — a silent bug rather than an error.
+>
 > **They follow up with:** *"How is that different from `List.of`?"* — `List.of` is fully immutable (even `set` throws), rejects nulls, and copies its input rather than viewing it, so later changes to the source array aren't visible. `asList` is a mutable-element view; `List.of` is a frozen snapshot.
 
 ### Converting between shapes
 
-You need six conversions. Here they are, verified:
+The four conversions you need, verified:
 
 ```java
-Integer[] boxed = IntStream.of(prim).boxed().toArray(Integer[]::new);
+Integer[] boxed = IntStream.of(prim).boxed().toArray(Integer[]::new);  // [3, 1, 2]
 int[] back      = Stream.of(boxed).mapToInt(Integer::intValue).toArray();
 int[] fromList  = list.stream().mapToInt(Integer::intValue).toArray();
-String[] arr    = words.toArray(new String[0]);
-```
-
-```
-int[] -> Integer[]  [3, 1, 2]
-Integer[] -> int[]  [3, 1, 2]
-List -> int[]       [3, 1, 2]
-List -> String[]    [a, b]
-manual loop         [3, 1, 2]
-int[] -> List       [3, 1, 2]
+String[] arr    = words.toArray(new String[0]);                        // [a, b]
 ```
 
 `toArray(new String[0])` looks wasteful but is not: since Java 6 the zero-length form is *faster* than `toArray(new String[list.size()])`, because the JVM can allocate the correctly sized array without first zero-filling a caller-supplied one. Pass the zero-length array. It is also the only way to get a typed array out — bare `toArray()` returns `Object[]`, which will not cast.
@@ -482,16 +448,10 @@ public class Main {
         System.out.println(Arrays.toString(nums));   // [4, 9, 1, 7, 3]
 
         int[] pre = prefixSums(new int[]{2, 4, 6, 8});
-        System.out.println(Arrays.toString(pre));    // [0,2,6,12,20]
-        System.out.println("sum a[1..2] = " + (pre[3] - pre[1]));
+        System.out.println(Arrays.toString(pre));    // [0, 2, 6, 12, 20]
+        System.out.println("sum a[1..2] = " + (pre[3] - pre[1]));   // 10
     }
 }
-```
-
-```
-[4, 9, 1, 7, 3]
-[0, 2, 6, 12, 20]
-sum a[1..2] = 10
 ```
 
 `reverseInPlace` mutates the caller's array and returns `void` — that works because Java passes the *reference* by value. The method cannot make `nums` point somewhere else, but it can absolutely rewrite what `nums` points at. Half of all "in-place" DSA problems depend on exactly this.
@@ -519,7 +479,13 @@ sum a[1..2] = 10
 
 `char[]` shows up 119 times in [Ch 31](#content/31_dsa_coding) and `StringBuilder` 57 times — and those two numbers together tell you the whole strategy. In DSA Java you rarely manipulate a `String`. You *convert it to a `char[]`*, work on the array, and *build the answer with a `StringBuilder`*. Strings are the input and output format; arrays are the working format.
 
-### Simple Explanation
+**In this section**
+
+- Why `s += c` in a loop is $O(n^2)$, measured — and the `StringBuilder` working set that replaces it
+- The `String` → `char[]` → mutate → `new String` round trip that unlocks half the string problems
+- Char arithmetic, the `int[26]` frequency array, and the three `split`/`trim` traps
+
+#### Simple Explanation
 
 A Java `String` is carved in stone. Not "conventionally treated as read-only" — genuinely, structurally unchangeable. Every method that looks like it edits a string (`toUpperCase`, `replace`, `trim`, `substring`, `+`) actually carves a brand-new stone and hands it back, leaving the original untouched.
 
@@ -534,20 +500,14 @@ It is terrible for building things one character at a time. Appending a characte
 ```java
 static String withConcat(int n) {
     String s = "";
-    for (int i = 0; i < n; i++) s += 'x';   // O(n^2)
+    for (int i = 0; i < n; i++) s += 'x';   // O(n^2)  -> 142 ms at n = 50,000
     return s;
 }
 static String withBuilder(int n) {
     StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < n; i++) sb.append('x');   // O(n)
+    for (int i = 0; i < n; i++) sb.append('x');   // O(n)  ->   4 ms at n = 50,000
     return sb.toString();
 }
-```
-
-```
-n = 50000, same result = true
-s += c         142 ms
-StringBuilder  4 ms
 ```
 
 Thirty-five times slower at $n = 50{,}000$, and the gap **widens quadratically** — at $n = 500{,}000$ the concat version takes roughly a hundred times longer again, while `StringBuilder` takes ten. (Absolute milliseconds vary by machine; the ratio is the point.)
@@ -572,38 +532,34 @@ The loop body is not $O(1)$. Each `out += c` allocates a new string and copies t
 ```java
 StringBuilder sb = new StringBuilder("hello");
 sb.append(" world");                 // hello world
-sb.append('!').append(42);           // chainable, any type
-sb.insert(0, ">> ");
-sb.setCharAt(3, 'H');
-sb.deleteCharAt(sb.length() - 1);
-sb.delete(0, 3);                     // [from, to)
-sb.charAt(0);
-sb.indexOf("world");
-new StringBuilder("abc").reverse();
-sb.setLength(0);                     // clear and reuse
+sb.append('!').append(42);           // hello world!42  — chainable, any type
+sb.insert(0, ">> ");                 // >> hello world!42
+sb.setCharAt(3, 'H');                // >> Hello world!42
+sb.deleteCharAt(sb.length() - 1);    // >> Hello world!4
+sb.delete(0, 3);                     // Hello world!4   — [from, to)
+sb.charAt(0);                        // H
+sb.length();                         // 13
+sb.indexOf("world");                 // 6
+new StringBuilder("abc").reverse();  // cba
+sb.setLength(5);                     // Hello — truncate
+sb.setLength(0);                     // clear and reuse (keeps capacity)
 ```
 
-```
-append        hello world
-chained       hello world!42
-insert(0)     >> hello world!42
-setCharAt(3)  >> Hello world!42
-deleteCharAt  >> Hello world!4
-delete(0,3)   Hello world!4
-charAt(0)     H
-length        13
-indexOf       6
-reverse       cba
-setLength(5)  Hello
-cleared len   0
-```
+Notes that matter in practice:
 
-Notes that matter in practice. `append` is overloaded for every primitive plus `Object`, so `sb.append(42)` needs no conversion. `reverse()` is in-place and returns `this`, which makes `new StringBuilder(s).reverse().toString()` the standard one-liner for reversing a string. `setLength(0)` clears the builder while **keeping the allocated capacity**, which is the right way to reuse one builder across a loop of test cases. And if you know the final size, `new StringBuilder(n)` pre-allocates and skips the growth copies entirely.
-
-Do not use `StringBuffer`. It is the synchronised ancestor of `StringBuilder` and every method pays for a lock you do not need. If you see it in old code, that is the only reason it is there.
+- **`append` is overloaded** for every primitive plus `Object`, so `sb.append(42)` needs no conversion.
+- **`reverse()` is in-place and returns `this`**, which makes `new StringBuilder(s).reverse().toString()` the standard one-liner for reversing a string.
+- **`setLength(0)` clears the builder while keeping the allocated capacity** — the right way to reuse one builder across a loop of test cases.
+- **`new StringBuilder(n)` pre-allocates** if you know the final size, skipping the growth copies entirely.
+- **Do not use `StringBuffer`.** It is the synchronised ancestor of `StringBuilder` and every method pays for a lock you do not need. If you see it in old code, that is the only reason it is there.
 
 > **Interview —** *"Why does every string-building answer use `StringBuilder`?"*
-> **Say:** Because `String` is immutable, so `+=` in a loop is $O(n^2)$ — each append copies the whole accumulated string. `StringBuilder` wraps a growable `char[]` and doubles capacity on overflow, giving amortised $O(1)$ appends and an $O(n)$ build. It also avoids allocating $n$ garbage strings, which matters for GC pressure as much as for time.
+>
+> **Say:**
+> - `String` is immutable, so `+=` in a loop is $O(n^2)$ — each append copies the whole accumulated string.
+> - `StringBuilder` wraps a growable `char[]` and doubles capacity on overflow, giving amortised $O(1)$ appends and an $O(n)$ build.
+> - It also avoids allocating $n$ garbage strings, which matters for GC pressure as much as for time.
+>
 > **They follow up with:** *"Is `s = a + b + c` also a problem?"* — No. That's one expression; since Java 9 `javac` compiles it to a single `invokedynamic` that builds the result in one pass. The quadratic behaviour only appears when the concatenation is spread across loop iterations.
 
 ### `char[]` — the conversion that unlocks everything
@@ -614,12 +570,6 @@ Arrays.sort(c);
 new String(c);          // ehllo
 String.valueOf(c);      // ehllo
 Arrays.toString(c);     // [e, h, l, l, o]
-```
-
-```
-new String(c)    ehllo
-String.valueOf   ehllo
-Arrays.toString  [e, h, l, l, o]
 ```
 
 `toCharArray()` gives you a **fresh, mutable copy** — sorting it does not disturb the original string. That round trip (`String` → `char[]` → mutate → `new String(...)`) is *the* standard move for anagram grouping, in-place reversal, sorting characters, and anything else where you need write access.
@@ -635,6 +585,10 @@ This is the single most common string idiom in interview Java, and it is worth b
 A `char` is a 16-bit unsigned integer. Arithmetic on it promotes to `int`. So `c - 'a'` maps `'a'`→0, `'b'`→1, … `'z'`→25 — a perfect index into a 26-slot array.
 
 ```java
+'c' - 'a'           // 2
+(char)('a' + 2)     // c   — cast back to build a char from an index
+'7' - '0'           // 7   — same trick for digits
+
 public static boolean isAnagram(String a, String b) {
     if (a.length() != b.length()) return false;
     int[] freq = new int[26];
@@ -645,15 +599,8 @@ public static boolean isAnagram(String a, String b) {
     for (int f : freq) if (f != 0) return false;
     return true;
 }
-```
-
-```
-'c' - 'a'        2
-(char)('a' + 2)  c
-'7' - '0'        7
-banana a/b/n     3/1/2
-listen/silent    true
-rat/car          false
+// isAnagram("listen", "silent") -> true
+// isAnagram("rat",    "car")    -> false
 ```
 
 Note the single-pass trick: increment for `a`, decrement for `b`, then assert all zeros. One array, one loop, $O(n)$ time and $O(1)$ space — because 26 is a constant, no matter how long the strings get. Say "$O(1)$ space, since the alphabet is fixed at 26" out loud; it is exactly the observation the interviewer is listening for.
@@ -661,39 +608,36 @@ Note the single-pass trick: increment for `a`, decrement for `b`, then assert al
 The same pattern generalises: `'0'` for digits, `128` slots for ASCII, `'A'` with a 52-slot array for mixed case. Going the other way, `(char)('a' + k)` builds a character from an index. If the alphabet isn't fixed — full Unicode, arbitrary keys — swap `int[26]` for a `HashMap<Character, Integer>` and accept the constant-factor hit.
 
 > **Interview —** *"Check whether two strings are anagrams."*
-> **Say:** Length check first as a cheap reject, then a single `int[26]` frequency array — increment on the first string, decrement on the second, and verify every slot is zero. $O(n)$ time, $O(1)$ space. The sort-both-strings approach is a valid answer too but it's $O(n \log n)$, so I'd only offer it if the alphabet weren't bounded.
+>
+> **Say:**
+> - Length check first, as a cheap reject.
+> - Then a single `int[26]` frequency array — increment on the first string, decrement on the second, verify every slot is zero.
+> - $O(n)$ time, $O(1)$ space. The sort-both-strings approach is valid too, but it's $O(n \log n)$ — I'd only offer it if the alphabet weren't bounded.
+>
 > **They follow up with:** *"What if the input is Unicode, not lowercase ASCII?"* — Then `int[26]` breaks and I'd use a `HashMap<Integer, Integer>` keyed on code point, iterating with `codePointAt` rather than `charAt` so surrogate pairs count as one character.
 
 ### The rest of the `String` API you actually use
 
-```
-trim       [Hello, DSA world]
-strip      [Hello, DSA world]
-isBlank    true
-isEmpty    true
-repeat     ababab
-substring  cdefg
-subToEnd   fgh
-indexOf    4
-split      [a, b, , c]
-trailing   [a, b] len=2
-limit -1   [a, b, , ] len=4
-split(".")  len=3 vs regex-dot len=0
-join       a-b-c
-join list  x,y
-chars sum  294
-distinct   3
+```java
+"  Hello  ".trim();            // "Hello"  — code points <= U+0020 only
+"  Hello  ".strip();           // "Hello"  — Unicode-aware (Java 11)
+"   ".isBlank();               // true     — empty or all whitespace
+"".isEmpty();                  // true
+"ab".repeat(3);                // ababab
+"abcdefgh".substring(2, 7);    // cdefg    — [from, to)
+"abcdefgh".substring(5);       // fgh
+"abcdefgh".indexOf("ef");      // 4
+String.join("-", "a", "b", "c");   // a-b-c
+"abc".chars().distinct().count();  // 3
 ```
 
-Three of those lines are traps.
+Three traps live in `split` and `trim`:
 
-**`split` takes a regex, not a literal.** `"a.b.c".split(".")` returns an **empty array**, because `.` matches every character. You need `split("\\.")`. Same for `|`, `+`, `*`, `(`, `)` and `$`.
+- **`split` takes a regex, not a literal.** `"a.b.c".split(".")` returns an **empty array**, because `.` matches every character. You need `split("\\.")`. Same for `|`, `+`, `*`, `(`, `)` and `$`.
+- **`split` silently drops trailing empty strings.** `"a,b,,".split(",")` gives you 2 elements, not 4. Pass a negative limit — `split(",", -1)` — when the empty tail is meaningful, e.g. parsing CSV.
+- **`trim` and `strip` are not synonyms.** `trim` (ancient) removes anything with a code point ≤ U+0020; `strip` (Java 11) is Unicode-aware and removes anything `Character.isWhitespace` considers whitespace, including non-breaking spaces. Default to `strip` in new code.
 
-**`split` silently drops trailing empty strings.** `"a,b,,".split(",")` gives you 2 elements, not 4. Pass a negative limit — `split(",", -1)` — when the empty tail is meaningful, e.g. parsing CSV.
-
-**`trim` and `strip` are not synonyms.** `trim` (ancient) removes anything with a code point ≤ U+0020; `strip` (Java 11) is Unicode-aware and removes anything `Character.isWhitespace` considers whitespace, including non-breaking spaces. Default to `strip` in new code.
-
-The genuinely new-since-2022-ish conveniences are small but pleasant: `isBlank()` (empty or all whitespace), `repeat(n)`, `chars()` (an `IntStream` of code units — handy for `.distinct().count()`), and `lines()`.
+The genuinely new-since-2022-ish conveniences are small but pleasant: `isBlank()`, `repeat(n)`, `chars()` (an `IntStream` of code units — handy for `.distinct().count()`), and `lines()`.
 
 ### `equals` vs `==`, the string pool, and `compareTo`
 
@@ -704,19 +648,18 @@ String c = new String("hello");
 String d = "hel" + "lo";        // constant-folded at compile time
 String part = "hel";
 String e = part + "lo";         // built at runtime
-```
 
-```
-a == b          true
-a == c          false
-a.equals(c)     true
-a == d          true
-a == e          false
-a == e.intern() true
-apple vs banana -1
-banana vs apple 1
-app vs apple    -2
-app vs app      0
+a == b            // true  — both are the pooled literal
+a == c            // false — new String() forces a fresh object
+a.equals(c)       // true
+a == d            // true  — javac folded "hel" + "lo" into the literal
+a == e            // false — assembled at runtime
+a == e.intern()   // true  — intern() returns the canonical pooled instance
+
+"apple".compareTo("banana")    // -1 — first differing chars, 'a' - 'b'
+"banana".compareTo("apple")    //  1
+"app".compareTo("apple")       // -2 — one is a prefix: LENGTH difference
+"app".compareTo("app")         //  0
 ```
 
 String literals live in the **string pool**, an interned table in the heap, so every occurrence of `"hello"` in your program is the *same object* — hence `a == b` is `true`. `new String("hello")` explicitly forces a fresh object, so `a == c` is `false`. And `d` is `true` because `"hel" + "lo"` is a compile-time constant that `javac` folds into the literal `"hello"`, whereas `e` is assembled at runtime into a new object. `intern()` looks the runtime-built string up in the pool and hands back the canonical instance.
@@ -747,6 +690,12 @@ Six types cover essentially every data-structures problem you will be asked: `Ar
 
 The API barely moved between Java 8 and today. What *did* change is a handful of `Map` default methods that collapse four lines of ceremony into one. Those are worth relearning deliberately, because clunky map code is the most visible tell that someone has been away.
 
+**In this section**
+
+- The three `Map` idioms that replace `containsKey`-then-`put`: `getOrDefault`, `merge`, `computeIfAbsent`
+- Why `ArrayDeque` replaces both `Stack` and `LinkedList`, and the sharp edges on `PriorityQueue`
+- `TreeMap`'s navigation methods, a free LRU cache, and a decision table to pick between all seven
+
 ```mermaid
 flowchart TD
     A["What do I need?"] --> B{"Key-value?"}
@@ -772,29 +721,26 @@ Because the copy happens rarely and each copy is proportional to the size at tha
 > **`ArrayList`** is a resizable-array implementation of `List` with $O(1)$ indexed access and amortised $O(1)$ append.
 
 ```java
-list.get(2);                    // O(1)
-list.add(40);                   // amortised O(1)
-list.add(0, 5);                 // O(n) — shifts everything
-list.remove(0);                 // removes INDEX 0
+List<Integer> list = new ArrayList<>(List.of(10, 20, 30, 40, 50));
+list.get(2);                       // 30 — O(1)
+list.add(60);                      // amortised O(1)
+list.add(0, 5);                    // [5, 10, 20, ...] — O(n), shifts everything
+list.remove(0);                    // removes INDEX 0
 list.remove(Integer.valueOf(30));  // removes VALUE 30
+list.contains(40);                 // true  — O(n)
+list.indexOf(40);                  // 2
+Collections.sort(list);            // ascending
+Collections.reverse(list);         // in place
+Collections.max(list);             // 50
+
+for (Integer n : list) list.remove(n);   // ConcurrentModificationException
+list.removeIf(n -> n % 2 == 0);          // the fix — one O(n) pass
 ```
 
-```
-built        [10, 20, 30, 40, 50]
-get(2)       30
-add(0, 5)    [5, 10, 20, 30, 40, 50]
-remove(0)    [10, 20, 30, 40, 50]
-remove(30)   [10, 20, 40, 50]
-contains 40  true
-indexOf 40   2
-sorted       [20, 40, 50, 99]
-reversed     [99, 50, 40, 20]
-max / min    99 / 20
-for-each remove ConcurrentModificationException
-removeIf     [1, 3]
-```
+Two landmines in there:
 
-Two landmines in there. `remove(int)` and `remove(Object)` are different overloads, so on a `List<Integer>` the literal `list.remove(1)` deletes **index** 1, while `list.remove(Integer.valueOf(1))` deletes the **value** 1. And mutating a list while a for-each loop is iterating it throws `ConcurrentModificationException` — the fix is `removeIf(predicate)`, or an explicit `Iterator` with `it.remove()`.
+- **`remove(int)` and `remove(Object)` are different overloads.** On a `List<Integer>`, the literal `list.remove(1)` deletes **index** 1, while `list.remove(Integer.valueOf(1))` deletes the **value** 1.
+- **Mutating a list while a for-each loop is iterating throws `ConcurrentModificationException`.** The fix is `removeIf(predicate)`, or an explicit `Iterator` with `it.remove()`.
 
 If you know the final size, `new ArrayList<>(1000)` pre-allocates capacity and skips every growth copy. Note that this sets *capacity*, not *size* — the list is still empty.
 
@@ -817,6 +763,7 @@ for (String w : text.split(" ")) {
 // 2026 — how you'd write it now
 Map<String, Integer> counts = new HashMap<>();
 for (String w : text.split(" ")) counts.merge(w, 1, Integer::sum);
+// both -> {lazy=1, quick=1, the=3}
 ```
 
 **Grouping into buckets:**
@@ -828,17 +775,7 @@ groups.get(k).add(v);
 
 // 2026 — how you'd write it now
 groups.computeIfAbsent(k, x -> new ArrayList<>()).add(v);
-```
-
-```
-2022 count     {lazy=1, quick=1, the=3}
-getOrDefault   {lazy=1, quick=1, the=3}
-merge          {lazy=1, quick=1, the=3}
-2022 group     {a=[apple, avocado], b=[beet]}
-computeIfAbsent {a=[apple, avocado], b=[beet]}
-merge to null  {}
-get missing    null
-putIfAbsent    null -> 7
+// both -> {a=[apple, avocado], b=[beet]}
 ```
 
 Same answers, a third of the code, and — for `computeIfAbsent` — one hash lookup instead of three.
@@ -890,32 +827,31 @@ A deque ("deck") is a queue you can push and pop at *both* ends. That sounds lik
 ```java
 Deque<Integer> stack = new ArrayDeque<>();  // LIFO
 stack.push(1); stack.push(2); stack.push(3);
+// stack  -> [3, 2, 1]   prints TOP first
 stack.peek();  // 3
-stack.pop();   // 3
+stack.pop();   // 3, leaving [2, 1]
 
 Queue<Integer> q = new ArrayDeque<>();      // FIFO
 q.offer(1); q.offer(2); q.offer(3);
-q.peek();  // 1
-q.poll();  // 1
-```
+// q      -> [1, 2, 3]
+q.peek();      // 1
+q.poll();      // 1, leaving [2, 3]
 
-```
-ArrayDeque stack [3, 2, 1]
-peek             3
-pop              3
-after pop        [2, 1]
-ArrayDeque queue [1, 2, 3]
-poll             1
-after poll       [2, 3]
-legacy Stack     [1, 2, 3]
-legacy pop       3
-peek on empty    null
-poll on empty    null
-pop on empty     NoSuchElementException
-offer(null)      NullPointerException
-both ends        [1, 2, 3]
-first / last     1 / 3
-pollLast         3 -> [1, 2]
+Stack<Integer> legacy = new Stack<>();      // don't
+legacy.push(1); legacy.push(2); legacy.push(3);
+// legacy -> [1, 2, 3]   prints BOTTOM first
+legacy.pop();  // 3
+
+// both ends
+Deque<Integer> d = new ArrayDeque<>(List.of(1, 2, 3));
+d.peekFirst(); d.peekLast();   // 1 / 3
+d.pollLast();                  // 3, leaving [1, 2]
+
+// empty and null behaviour
+stack.peek();      // null
+stack.poll();      // null
+stack.pop();       // NoSuchElementException
+stack.offer(null); // NullPointerException
 ```
 
 Look carefully at the two `toString` lines. Push 1, 2, 3 onto an `ArrayDeque` and it prints `[3, 2, 1]` — top first, exactly the mental model of a stack. Push the same values onto a `java.util.Stack` and it prints `[1, 2, 3]` — **bottom first**. `Stack` extends `Vector`, so iteration follows insertion order rather than pop order. Print a `Stack` while debugging and you are reading it upside down.
@@ -924,7 +860,10 @@ That is the second-worst thing about `java.util.Stack`. The worst is that every 
 
 **But [Ch 31](#content/31_dsa_coding) uses `Stack` in places** — it appears 48 times there, against 41 for `ArrayDeque`. That is normal; a lot of DSA material predates the advice. Read both, write `ArrayDeque`.
 
-Two behavioural details that bite. The `pop` / `element` / `removeFirst` family **throws** `NoSuchElementException` on an empty deque, while the `poll` / `peek` / `offer` family **returns `null` or `false`** instead. And `ArrayDeque` **rejects `null` elements**, because `null` is its "empty" sentinel. If you genuinely need nulls in a queue, use `LinkedList`, which also implements `Deque`.
+Two behavioural details that bite:
+
+- **Two method families, two failure modes.** `pop` / `element` / `removeFirst` **throw** `NoSuchElementException` on an empty deque; `poll` / `peek` / `offer` return **`null` or `false`** instead.
+- **`ArrayDeque` rejects `null` elements**, because `null` is its "empty" sentinel. If you genuinely need nulls in a queue, use `LinkedList`, which also implements `Deque`.
 
 The method-name table is worth one pass, because the same operation has three names:
 
@@ -938,7 +877,13 @@ The method-name table is worth one pass, because the same operation has three na
 | Look at back | — | — | `peekLast()` |
 
 > **Interview —** *"You need a stack in Java. What do you use?"*
-> **Say:** `Deque<Integer> stack = new ArrayDeque<>();` — `push`, `pop`, `peek`. `java.util.Stack` is legacy: it extends `Vector`, so every method is synchronized and you pay for a lock you don't need, and because it inherits `Vector`'s iteration order it prints and iterates bottom-to-top, which is the opposite of pop order and a real debugging hazard. `ArrayDeque` is a circular buffer, so no node allocation and much better cache behaviour than `LinkedList` too.
+>
+> **Say:**
+> - `Deque<Integer> stack = new ArrayDeque<>();` — then `push`, `pop`, `peek`.
+> - `java.util.Stack` is legacy: it extends `Vector`, so every method is synchronized and you pay for a lock you don't need.
+> - Worse, it inherits `Vector`'s iteration order, so it prints and iterates **bottom-to-top** — the opposite of pop order, and a real debugging hazard.
+> - `ArrayDeque` is a circular buffer, so no node allocation and much better cache behaviour than `LinkedList` too.
+>
 > **They follow up with:** *"When would you still use `LinkedList`?"* — When I need `null` elements, which `ArrayDeque` forbids, or when I genuinely need a `List` and a `Deque` view of the same object. For pure stack or queue work, essentially never.
 
 ### `PriorityQueue` — a binary heap with sharp edges
@@ -953,10 +898,14 @@ The trade-off worth internalising: the heap knows its *minimum* instantly and kn
 
 ```java
 PriorityQueue<Integer> min = new PriorityQueue<>();          // min-heap
+min.addAll(List.of(9, 1, 5, 3));
+min.peek();       // 1
+// min             -> [1, 3, 9, 5]   HEAP order, not sorted
+// repeated poll() -> 1 3 5 9
 
 // max-heap — both correct
 PriorityQueue<Integer> max =
-        new PriorityQueue<>(Comparator.reverseOrder());
+        new PriorityQueue<>(Comparator.reverseOrder());      // peek() -> 9
 PriorityQueue<Integer> max2 =
         new PriorityQueue<>((a, b) -> Integer.compare(b, a));
 
@@ -964,24 +913,11 @@ PriorityQueue<Integer> max2 =
 PriorityQueue<Integer> broken = new PriorityQueue<>((a, b) -> b - a);
 ```
 
-```
-min peek     1
-min drain    1 3 5 9
-max peek     9
-max (compare) 9
-toString     [1, 3, 9, 5]   <- heap order
-b - a        294967296  (overflowed)
-compare      -1
-task poll    Task[name=a, pri=1]
-kth largest  7
-remove(9)    true, size now 3
-```
+Three sharp edges:
 
-**The `b - a` trap, concretely.** With `a = 2_000_000_000` and `b = -2_000_000_000`, `b - a` should be −4,000,000,000 — but that does not fit in an `int`, so it wraps to **+294,967,296**. Positive means "b is greater", so your comparator reports the exact opposite of the truth, and the heap silently returns wrong answers on large inputs while passing every small test. `Integer.compare(b, a)` cannot overflow. Use it every time; the subtraction form saves you nothing.
-
-**`toString` prints heap order, not sorted order.** The output above shows `[1, 3, 9, 5]` — only the *root* is guaranteed to be the minimum. Iterating a `PriorityQueue` gives you array order too. The only way to get sorted output is to `poll` repeatedly, which drains it.
-
-**`contains` and `remove(Object)` are $O(n)$.** The heap has no index, so both do a linear scan. If you need "remove an arbitrary element from a priority queue" — a real requirement in Dijkstra with decrease-key — the standard workaround is **lazy deletion**: push the updated entry and skip stale ones when you pop.
+- **The `b - a` trap, concretely.** With `a = 2_000_000_000` and `b = -2_000_000_000`, `b - a` should be −4,000,000,000 — but that does not fit in an `int`, so it wraps to **+294,967,296**. Positive means "b is greater", so your comparator reports the exact opposite of the truth, and the heap silently returns wrong answers on large inputs while passing every small test. `Integer.compare(b, a)` cannot overflow — use it every time.
+- **`toString` prints heap order, not sorted order.** The comment above shows `[1, 3, 9, 5]` — only the *root* is guaranteed to be the minimum. Iterating a `PriorityQueue` gives you array order too. The only way to get sorted output is to `poll` repeatedly, which drains it.
+- **`contains` and `remove(Object)` are $O(n)$.** The heap has no index, so both do a linear scan. If you need "remove an arbitrary element from a priority queue" — a real requirement in Dijkstra with decrease-key — the standard workaround is **lazy deletion**: push the updated entry and skip stale ones when you pop.
 
 The two patterns you will actually write:
 
@@ -1005,28 +941,27 @@ The top-k idiom is counter-intuitive enough to be worth stating: to find the k *
 
 `TreeMap` is a red-black tree: everything is $O(\log n)$ rather than $O(1)$, and in exchange the keys are **kept in sorted order**. That extra structure buys you a family of navigation methods that turn several classic problems into three lines.
 
-```
-map            {10=ten, 20=twenty, 30=thirty, 40=forty}
-firstKey       10
-lastKey        40
-floorKey(25)   20
-floorKey(20)   20
-ceilingKey(25) 30
-ceilingKey(20) 20
-higherKey(20)  30
-lowerKey(20)   10
-floorKey(5)    null
-headMap(30)    {10=ten, 20=twenty}
-tailMap(30)    {30=thirty, 40=forty}
-subMap(15,35)  {20=twenty, 30=thirty}
-pollFirstEntry 10=ten
-descendingMap  {40=forty, 30=thirty, 20=twenty}
-set            [1, 5, 9, 14]
-floor(8)       5
-ceiling(8)     9
-headSet(9)     [1, 5]
-subSet(2,10)   [5, 9]
-descending     [14, 9, 5, 1]
+```java
+TreeMap<Integer, String> map = new TreeMap<>();   // {10=ten, 20=twenty, 30=thirty, 40=forty}
+map.firstKey();        // 10
+map.lastKey();         // 40
+map.floorKey(25);      // 20      — greatest key <= 25
+map.ceilingKey(25);    // 30      — smallest key >= 25
+map.higherKey(20);     // 30      — strictly greater
+map.lowerKey(20);      // 10      — strictly smaller
+map.floorKey(5);       // null    — nothing qualifies: ALWAYS null-check
+map.headMap(30);       // {10=ten, 20=twenty}
+map.tailMap(30);       // {30=thirty, 40=forty}
+map.subMap(15, 35);    // {20=twenty, 30=thirty}
+map.pollFirstEntry();  // 10=ten  — reads and removes
+map.descendingMap();   // {40=forty, 30=thirty, 20=twenty}
+
+TreeSet<Integer> set = new TreeSet<>(List.of(1, 5, 9, 14));
+set.floor(8);          // 5
+set.ceiling(8);        // 9
+set.headSet(9);        // [1, 5]
+set.subSet(2, 10);     // [5, 9]
+set.descendingSet();   // [14, 9, 5, 1]
 ```
 
 Note the inclusive/exclusive split precisely, because it is the only part people get wrong:
@@ -1046,7 +981,13 @@ All four navigation methods return `null` when nothing qualifies — `floorKey(5
 These are the right tool for calendar-booking problems ("does this interval overlap anything?" → `floorKey(start)` and `ceilingKey(start)`), for "find the closest value", for range-sum-with-updates, and for sliding-window-median. `TreeSet` gives you the same navigation (`floor`, `ceiling`, `higher`, `lower`, `headSet`, `subSet`) on a plain set of values.
 
 > **Interview —** *"Design a calendar that books meetings and rejects overlaps."*
-> **Say:** A `TreeMap<Integer, Integer>` from start time to end time. For a candidate `[s, e)`, check `floorKey(s)` — the latest meeting starting at or before `s` — and reject if its end is greater than `s`. Then check `ceilingKey(s)` — the next meeting after `s` — and reject if it starts before `e`. Two $O(\log n)$ lookups, and the tree keeps everything ordered for free.
+>
+> **Say:**
+> - A `TreeMap<Integer, Integer>` from start time to end time.
+> - For a candidate `[s, e)`, check `floorKey(s)` — the latest meeting starting at or before `s` — and reject if its end is greater than `s`.
+> - Then check `ceilingKey(s)` — the next meeting after `s` — and reject if it starts before `e`.
+> - Two $O(\log n)$ lookups, and the tree keeps everything ordered for free.
+>
 > **They follow up with:** *"Why not a sorted `ArrayList` with binary search?"* — Lookup would still be $O(\log n)$, but insertion becomes $O(n)$ because you shift the tail. `TreeMap` gives $O(\log n)$ for both.
 
 ### `LinkedHashMap` — order, and a free LRU cache
@@ -1065,21 +1006,20 @@ static class LRU<K, V> extends LinkedHashMap<K, V> {
         return size() > cap;
     }
 }
+
+// LinkedHashMap keeps insertion order : {c=3, a=1, b=2}
+// plain HashMap does not              : {a=1, b=2, c=3}
+
+LRU<Integer, String> cache = new LRU<>(3);   // keys [1, 2, 3]
+cache.get(1);        // keys [2, 3, 1] — 1 moves to the most-recent end
+cache.put(4, "d");   // keys [3, 1, 4] — over capacity, evicts eldest (2)
 ```
 
-```
-LinkedHashMap {c=3, a=1, b=2}
-HashMap       {a=1, b=2, c=3}
-cache         [1, 2, 3]
-after get(1)  [2, 3, 1]
-after put(4)  [3, 1, 4]
-```
-
-Read the last three lines as a story. The cache holds 1, 2, 3. A `get(1)` moves key 1 to the most-recent end — the order becomes `[2, 3, 1]`. Then inserting 4 exceeds the capacity, `removeEldestEntry` returns `true`, and the JVM evicts the **eldest by access**, which is now 2. Result: `[3, 1, 4]`. That is textbook LRU behaviour with no eviction logic written by you.
+Read those last three lines as a story. The cache holds 1, 2, 3. A `get(1)` moves key 1 to the most-recent end — the order becomes `[2, 3, 1]`. Then inserting 4 exceeds the capacity, `removeEldestEntry` returns `true`, and the JVM evicts the **eldest by access**, which is now 2. Result: `[3, 1, 4]`. That is textbook LRU behaviour with no eviction logic written by you.
 
 It's worth knowing for the "implement an LRU cache" question — but say up front that you know the built-in exists, then implement it manually with a `HashMap` plus your own doubly linked list, because the manual version is what they're actually testing.
 
-Also note the first two lines: `LinkedHashMap` preserved the `c, a, b` insertion order while `HashMap` printed `a, b, c`. `HashMap` order is an accident of hashing — deterministic for a given JDK and key set, but not something to rely on. If your output needs an order, wrap in a `TreeMap` or sort the keys.
+Also note the two comment lines above: `LinkedHashMap` preserved the `c, a, b` insertion order while `HashMap` printed `a, b, c`. `HashMap` order is an accident of hashing — deterministic for a given JDK and key set, but not something to rely on. If your output needs an order, wrap in a `TreeMap` or sort the keys.
 
 ### Decision table
 
@@ -1119,7 +1059,12 @@ Also note the first two lines: `LinkedHashMap` preserved the `c, a, b` insertion
 </details>
 
 > **Interview —** *"What's the difference between `HashMap` and `TreeMap`, and when would you pick each?"*
-> **Say:** `HashMap` is a bucket array giving $O(1)$ average operations with no ordering; `TreeMap` is a red-black tree giving $O(\log n)$ operations with keys kept sorted. I default to `HashMap` and switch to `TreeMap` only when I need order — sorted iteration, or the navigation methods like `floorKey` and `ceilingKey` for range and nearest-neighbour queries.
+>
+> **Say:**
+> - `HashMap` is a bucket array: $O(1)$ average operations, no ordering.
+> - `TreeMap` is a red-black tree: $O(\log n)$ operations, keys kept sorted.
+> - I default to `HashMap` and switch to `TreeMap` only when I need order — sorted iteration, or the navigation methods like `floorKey` and `ceilingKey` for range and nearest-neighbour queries.
+>
 > **They follow up with:** *"Is `HashMap` ever worse than $O(1)$?"* — Yes. With many colliding keys a bucket degrades, though since Java 8 a bucket past eight entries converts to a red-black tree, so the worst case is $O(\log n)$ rather than $O(n)$. It also rehashes the whole table when load exceeds 0.75, which is $O(n)$ for that one insert — amortised away, but worth pre-sizing if you know the count.
 
 ---
@@ -1127,6 +1072,12 @@ Also note the first two lines: `LinkedHashMap` preserved the `c, a, b` insertion
 ## 38.5 Comparators and Lambdas — The Java 8 Skill DSA Actually Needs ★★★
 
 Here is the number that should shape how you spend the next hour. Across [Ch 31](#content/31_dsa_coding) and its 400+ problems, the arrow `->` appears **327 times**. `stream()` appears **once**. Lambdas in DSA Java are, almost without exception, **comparators** — and comparators are where a rusty Java developer loses points, because the two failure modes both produce *plausible-looking wrong answers* rather than compiler errors.
+
+**In this section**
+
+- The comparator contract, and why a broken one is *silent* below 32 elements
+- The two failure modes: `a - b` overflow, and `.reversed()` reversing more than you meant
+- Sorting `int[][]` rows and `PriorityQueue` entries — the two shapes you'll write most
 
 ### Lambda refresher — you knew this, it's just cold
 
@@ -1150,9 +1101,8 @@ Comparator<Task> old = new Comparator<Task>() {
 
 // 2026 — how you'd write it now
 Comparator<Task> now = Comparator.comparingInt(Task::prio);
+// both give the identical verdict on every pair
 ```
-
-Both produce the identical verdict — verified, `anon == lambda? : true` below.
 
 ### The Comparator contract, and the exception that proves it matters
 
@@ -1171,22 +1121,26 @@ Here is a comparator that a reasonable person writes and that is quietly illegal
 ```java
 static final Comparator<Integer> FUZZY =
     (a, b) -> Math.abs(a - b) <= 2 ? 0 : Integer.compare(a, b);
+
+// compare(1,3) = 0,  compare(3,5) = 0,  but compare(1,5) = -1
 ```
 
-It says `1` ties `3`, and `3` ties `5`, but `1 < 5`. That is a broken equality relation. Sorting arrays of increasing size with it:
+It says `1` ties `3`, and `3` ties `5`, but `1 < 5`. That is a broken equality relation. Sorting arrays of increasing size with it gives three different failures:
 
-```
-compare(1,3) = 0, compare(3,5) = 0, compare(1,5) = -1
-n =   8 -> finished. first 8 = [3, 4, 11, 16, 26, 28, 27, 41]
-n =  31 -> finished. first 8 = [0, 3, 1, 4, 3, 8, 8, 11]
-n = 200 -> IllegalArgumentException
-            Comparison method violates its general contract!
-```
+| $n$ | What `Arrays.sort` does | Result |
+|---|---|---|
+| 8 | binary insertion sort — no checking | **finishes**, `[3, 4, 11, 16, 26, 28, 27, 41]` — note 28 before 27 |
+| 31 | binary insertion sort — no checking | **finishes**, `[0, 3, 1, 4, 3, 8, 8, 11]` — nonsense |
+| 200 | TimSort merge phase detects it | `IllegalArgumentException: Comparison method violates its general contract!` |
 
-Read those three lines in order, because the *shape* of that output is the whole lesson. At $n = 8$ the sort finished happily and gave you `28` before `27`. At $n = 31$ it finished and gave you nonsense. Only at $n = 200$ did it throw. `Arrays.sort` on objects uses binary insertion sort below 32 elements and TimSort above it, and only TimSort's merge phase detects the contradiction. **Your small test case cannot find this bug.** That is precisely why it shows up in production and in the large hidden test, never in the example the interviewer gave you.
+Read that table top to bottom, because the *shape* of it is the whole lesson. At $n = 8$ the sort finished happily and gave you `28` before `27`. At $n = 31$ it finished and gave you nonsense. Only at $n = 200$ did it throw. `Arrays.sort` on objects uses binary insertion sort below 32 elements and TimSort above it, and only TimSort's merge phase detects the contradiction. **Your small test case cannot find this bug.** That is precisely why it shows up in production and in the large hidden test, never in the example the interviewer gave you.
 
 > **Interview —** *"Have you ever seen 'Comparison method violates its general contract'?"*
-> **Say:** Yes — it means the comparator isn't a valid total order, usually because it returns 0 for things that aren't actually interchangeable, or because it overflows. TimSort raises it during merging, so it only appears on inputs of at least 32 elements, which is why it survives unit tests and dies in production.
+>
+> **Say:**
+> - It means the comparator isn't a valid total order — usually because it returns `0` for things that aren't actually interchangeable, or because it overflows.
+> - TimSort raises it during merging, so it only appears on inputs of at least 32 elements — which is why it survives unit tests and dies in production.
+>
 > **They follow up with:** *"How would you fix it without changing the business rule?"* — extract a canonical key first (bucket the value, e.g. `v / 3`), then compare the keys. That makes "close enough" a genuine equivalence relation instead of a fuzzy one.
 
 ### The subtraction trap
@@ -1202,30 +1156,21 @@ If `a` is near `Integer.MAX_VALUE` and `b` is near `Integer.MIN_VALUE`, their tr
 ```java
 int big = 2_000_000_000;
 int small = -2_000_000_000;
-System.out.println("big - small      = " + (big - small));
-System.out.println("Integer.compare  = " + Integer.compare(big, small));
+
+big - small                    // -294967296  — four billion doesn't fit in an int
+Integer.compare(big, small)    // 1           — cannot overflow
 
 Integer[] bad  = { big, small, 0 };
 Integer[] good = { big, small, 0 };
-Arrays.sort(bad,  (a, b) -> a - b);
-Arrays.sort(good, Integer::compare);
-```
-
-Real output:
-
-```
-big - small      = -294967296
-Integer.compare  = 1
-sorted (a - b)   : [2000000000, -2000000000, 0]
-sorted (compare) : [-2000000000, 0, 2000000000]
+Arrays.sort(bad,  (a, b) -> a - b);      // [2000000000, -2000000000, 0]  WRONG
+Arrays.sort(good, Integer::compare);     // [-2000000000, 0, 2000000000]  right
 ```
 
 `2000000000 - (-2000000000)` is four billion, which does not fit in an `int`, so it wraps to `-294967296` and the sort leaves the array in the order you see. Note carefully what did **not** happen: no exception. With 64 wide-ranged values it still doesn't throw — it just hands back an unsorted array:
 
-```
-(a-b)   [-2147483585, 62, 2147483586, -2147483588]
-compare [-2147483648, -2147483645, -2147483642, -2147483639]
-(a - b) sorted? : false
+```java
+// (a - b)  -> [-2147483585, 62, 2147483586, -2147483588]   sorted? false
+// compare  -> [-2147483648, -2147483645, -2147483642, -2147483639]
 ```
 
 Same rule for `long` (`Long.compare`) and `double` (`Double.compare`, which additionally handles `NaN` and `-0.0` — subtraction on doubles yields `NaN` for some pairs, and `NaN` compared to anything is meaningless).
@@ -1242,34 +1187,35 @@ Because `String.length()` returns a non-negative `int` bounded by the array size
 
 `Comparator.comparing(keyExtractor)` says "sort by this field", `thenComparing` adds a tiebreaker, `reversed` flips direction. Chained, they read like a `SORT BY` clause.
 
-Two things are not obvious. First, `comparing` boxes: `Comparator.comparing(Task::prio)` extracts an `int`, boxes it, and unboxes it again on every comparison — $O(n \log n)$ pointless allocations. `comparingInt`, `comparingLong` and `comparingDouble` are primitive-specialised and do none of that. Second, and this one bites: **`.reversed()` reverses the entire chain built so far**, not just the last key. It is a method on the finished comparator, not on the clause you just added.
+Two things are not obvious:
+
+- **`comparing` boxes.** `Comparator.comparing(Task::prio)` extracts an `int`, boxes it, and unboxes it again on every comparison — $O(n \log n)$ pointless allocations. `comparingInt`, `comparingLong` and `comparingDouble` are primitive-specialised and do none of that.
+- **`.reversed()` reverses the entire chain built so far**, not just the last key. It is a method on the finished comparator, not on the clause you just added.
 
 ```java
-List<Task> ts = new ArrayList<>(Arrays.asList(
+List<Task> ts = new ArrayList<>(List.of(
     new Task("build", 2), new Task("test", 1),
     new Task("apply", 2), new Task("zip", 1)));
 
 ts.sort(Comparator.comparing(Task::name));
+// [apply/2, build/2, test/1, zip/1]
+
 ts.sort(Comparator.comparingInt(Task::prio).thenComparing(Task::name));
+// [test/1, zip/1, apply/2, build/2]
+
 ts.sort(Comparator.comparingInt(Task::prio)
                   .thenComparing(Task::name).reversed());
+// [build/2, apply/2, zip/1, test/1]   <- names DESCENDING too
+
 ts.sort(Comparator.comparingInt(Task::prio).reversed()
                   .thenComparing(Task::name));
+// [apply/2, build/2, test/1, zip/1]   <- only prio descending
+
+Comparator<String> nullSafe = Comparator.nullsFirst(Comparator.naturalOrder());
+// sorting [pear, null, fig] with it -> [null, fig, pear]
 ```
 
-Real output (`name/prio`):
-
-```
-by name         : [apply/2, build/2, test/1, zip/1]
-prio, then name : [test/1, zip/1, apply/2, build/2]
-whole reversed  : [build/2, apply/2, zip/1, test/1]
-prio desc, name : [apply/2, build/2, test/1, zip/1]
-same verdict?   : true
-anon == lambda? : true
-nullsFirst      : [null, fig, pear]
-```
-
-Compare the third and fourth lines. `whole reversed` put the names in *descending* order too (`build` before `apply`); `prio desc, name` kept names ascending. If you want only the primary key descending, call `.reversed()` on that key before chaining.
+Compare the third and fourth calls. The first `.reversed()` put the names in *descending* order too (`build` before `apply`); the second kept names ascending. If you want only the primary key descending, call `.reversed()` on that key before chaining.
 
 | You want | Write |
 |---|---|
@@ -1301,25 +1247,19 @@ int[] prim = { 5, 1, 9, 3 };
 // 1. box into Integer[] and sort that
 Integer[] boxed = new Integer[prim.length];
 for (int i = 0; i < prim.length; i++) boxed[i] = prim[i];
-Arrays.sort(boxed, Comparator.reverseOrder());
+Arrays.sort(boxed, Comparator.reverseOrder());   // [9, 5, 3, 1]
 
 // 2. sort an index array by looking into the data
 int[] a = { 50, 10, 40, 20 };
 Integer[] order = { 0, 1, 2, 3 };
-Arrays.sort(order, (i, j) -> Integer.compare(a[i], a[j]));
+Arrays.sort(order, (i, j) -> Integer.compare(a[i], a[j]));   // [1, 3, 2, 0]
 
 // 3. sort ascending, then reverse in place
 int[] asc = a.clone();
 Arrays.sort(asc);
 for (int i = 0, j = asc.length - 1; i < j; i++, j--) {
     int t = asc[i]; asc[i] = asc[j]; asc[j] = t;
-}
-```
-
-```
-boxed desc    : [9, 5, 3, 1]
-index order   : [1, 3, 2, 0]
-sort+reverse  : [50, 40, 20, 10]
+}                                                // [50, 40, 20, 10]
 ```
 
 Option 3 is what to reach for in an interview when you just need descending order: it stays on primitives, so it keeps the $O(n)$ memory win and avoids $n$ boxed allocations. Option 2 is the idiom when you must recover the *original positions* after sorting. One aside worth knowing: `Arrays.sort(int[])` uses dual-pivot quicksort with an adversarial $O(n^2)$ worst case, while boxing to `Integer[]` switches you to TimSort's guaranteed $O(n \log n)$.
@@ -1333,17 +1273,14 @@ Ninety percent of the comparators you write in [Ch 31](#content/31_dsa_coding) d
 ```java
 int[][] intervals = { {8, 10}, {1, 9}, {2, 3}, {15, 18} };
 Arrays.sort(intervals, (x, y) -> Integer.compare(x[0], y[0]));
+// by start : [[1, 9], [2, 3], [8, 10], [15, 18]]
 Arrays.sort(intervals, Comparator.comparingInt(r -> r[1]));
+// by end   : [[2, 3], [1, 9], [8, 10], [15, 18]]
 
 int[][] jobs = { {2, 9}, {1, 5}, {2, 3}, {1, 8} };
 Arrays.sort(jobs, Comparator.<int[]>comparingInt(r -> r[0])
                             .thenComparing(r -> -r[1]));
-```
-
-```
-by start : [[1, 9], [2, 3], [8, 10], [15, 18]]
-by end   : [[2, 3], [1, 9], [8, 10], [15, 18]]
-2 keys   : [[1, 8], [1, 5], [2, 9], [2, 3]]
+// 2 keys   : [[1, 8], [1, 5], [2, 9], [2, 3]]
 ```
 
 Sort by `[0]` for merge-intervals; sort by `[1]` for the greedy activity-selection family. Note the explicit `Comparator.<int[]>comparingInt(...)` in the two-key case — once you chain, inference loses the row type and needs the witness.
@@ -1351,21 +1288,16 @@ Sort by `[0]` for merge-intervals; sort by `[1]` for the greedy activity-selecti
 For heaps, `PriorityQueue` is a **min-heap by default**. The comparator is passed to the constructor, not to a sort call:
 
 ```java
-PriorityQueue<Integer> min = new PriorityQueue<>();
-PriorityQueue<Integer> max = new PriorityQueue<>(Comparator.reverseOrder());
+PriorityQueue<Integer> min = new PriorityQueue<>();                        // peek() -> 1
+PriorityQueue<Integer> max = new PriorityQueue<>(Comparator.reverseOrder());  // peek() -> 9
 
 PriorityQueue<int[]> byDist =
     new PriorityQueue<>((a, b) -> Integer.compare(a[1], b[1]));
 byDist.add(new int[] {0, 7});
 byDist.add(new int[] {1, 2});
 byDist.add(new int[] {2, 5});
-```
-
-```
-min-heap peek = 1
-max-heap peek = 9
-closest node  = 1 at dist 2
-PQ toString   = [[I@2626b418, [I@5a07e868, [I@76ed5528]
+byDist.peek();   // {1, 2} — closest node is 1, at dist 2
+// byDist -> [[I@2626b418, [I@5a07e868, ...]  arrays have no useful toString
 ```
 
 That last line is a free bonus lesson: arrays have no useful `toString`, so printing a `PriorityQueue<int[]>` while debugging shows you identity hashes. Use `Arrays.deepToString` on a copied array instead. And note that iterating or printing a `PriorityQueue` does **not** give you sorted order — the heap is only ordered enough to know its minimum. Only repeated `poll()` yields sorted output.
@@ -1379,16 +1311,18 @@ for (String s : "a b a c a b d".split(" ")) freq.merge(s, 1, Integer::sum);
 List<Map.Entry<String, Integer>> es = new ArrayList<>(freq.entrySet());
 es.sort(Map.Entry.<String, Integer>comparingByValue().reversed()
         .thenComparing(Map.Entry.comparingByKey()));
-```
-
-```
-by count desc : [a=3, b=2, c=1, d=1]
+// [a=3, b=2, c=1, d=1]
 ```
 
 `Map.Entry.comparingByValue()` and `comparingByKey()` save you writing `e -> e.getValue()` by hand, and the `thenComparing(comparingByKey())` makes the result deterministic when counts tie — worth doing, because `HashMap` iteration order is not something you should rely on. See §38.4 for why.
 
 > **Interview —** *"Top K frequent elements. Which is better — sort the entries, or use a heap?"*
-> **Say:** Sorting all $m$ distinct keys is $O(m \log m)$. A size-$K$ min-heap is $O(m \log K)$, which wins when $K \ll m$ — and it's the answer they're fishing for. If $K$ is close to $m$, sorting is simpler and no worse. Bucket sort by frequency gets you $O(n)$ when counts are bounded by $n$.
+>
+> **Say:**
+> - Sorting all $m$ distinct keys is $O(m \log m)$.
+> - A size-$K$ min-heap is $O(m \log K)$, which wins when $K \ll m$ — and it's the answer they're fishing for.
+> - If $K$ is close to $m$, sorting is simpler and no worse. Bucket sort by frequency gets you $O(n)$ when counts are bounded by $n$.
+>
 > **They follow up with:** *"Which way does the heap comparator point?"* — a **min**-heap on frequency. You push everything and evict the smallest whenever size exceeds $K$, so what survives is the K largest.
 
 ---
@@ -1396,6 +1330,13 @@ by count desc : [a=3, b=2, c=1, d=1]
 ## 38.6 The Traps That Silently Break DSA Answers ★★★
 
 This is the section to read twice. Every trap below shares one property: **it compiles, it runs, and it gives you an answer that is wrong.** No stack trace, no red squiggle. In an interview that means you write a solution, walk through the example, get the right output, submit — and fail the hidden tests. There are exactly three families:
+
+**In this section**
+
+- Identity vs value: the Integer cache, and the autoboxing NPE on a missing key
+- Arithmetic that wraps: `(lo + hi) / 2`, `Math.abs(MIN_VALUE)`, and negative modulo
+- Structure changing under you: `ConcurrentModificationException`, mutable keys, array covariance
+- A one-page **trap summary table** at the end — the part to re-read before an interview
 
 ```mermaid
 graph TD
@@ -1420,21 +1361,21 @@ This is the perfect interview failure: your example uses small numbers and passe
 > Java guarantees that `Integer.valueOf(i)` returns a cached, shared instance when $-128 \le i \le 127$; outside that range a new object may be allocated on every call.
 
 ```java
-Integer a = 127, b = 127;
-Integer c = 128, d = 128;
+Integer a = 127,  b = 127;
+Integer c = 128,  d = 128;
 Integer lo = -128, lo2 = -128;
 Integer un = -129, un2 = -129;
-Long l1 = 127L, l2 = 127L, l3 = 128L, l4 = 128L;
-```
+Long l1 = 127L, l2 = 127L;
+Long l3 = 128L, l4 = 128L;
 
-```
-127 == 127      : true
-128 == 128      : false
-128 .equals 128 : true
--128 == -128    : true
--129 == -129    : false
-valueOf 127 twice: true
-Long 127/128    : true false
+a == b          // true  — both come from the cache
+c == d          // false — two distinct objects
+c.equals(d)     // true
+lo == lo2       // true  — bottom of the cache
+un == un2       // false — one below it
+l1 == l2        // true
+l3 == l4        // false
+Integer.valueOf(127) == Integer.valueOf(127)   // true
 ```
 
 `Long`, `Short`, `Byte` and `Character` cache the same range. `Boolean` caches both values. `Double` and `Float` cache **nothing** — `Double d1 = 1.0, d2 = 1.0; d1 == d2` is always `false`.
@@ -1448,6 +1389,8 @@ static int countMatches(List<Integer> xs, Integer target) {
     for (Integer x : xs) if (x == target) c++;
     return c;
 }
+// small values -> 2   (correct, by accident)
+// large values -> 0   (WRONG)
 
 // 2026 — value comparison that can't be fooled by the cache.
 static int countFixed(List<Integer> xs, Integer target) {
@@ -1455,22 +1398,26 @@ static int countFixed(List<Integer> xs, Integer target) {
     for (Integer x : xs) if (Objects.equals(x, target)) c++;
     return c;
 }
-```
-
-```
-countMatches small: 2
-countMatches large: 0
-fixed        small: 2
-fixed        large: 2
+// small values -> 2, large values -> 2
 ```
 
 Identical logic, identical types, and the buggy one returns `0` the moment the values exceed 127.
 
-**How to avoid it forever:** never write `==` between two things whose static type is a wrapper. If either side is a primitive `int`, `==` is fine — Java unboxes the other side and compares numerically. If both sides are `Integer`, use `.equals` or `Objects.equals` (which also survives `null`). Better still, keep your hot data in `int[]` and `int` locals, which is what [Ch 31](#content/31_dsa_coding) does throughout.
+**How to avoid it forever:**
+
+- Never write `==` between two things whose static type is a wrapper.
+- If **either** side is a primitive `int`, `==` is fine — Java unboxes the other side and compares numerically.
+- If **both** sides are `Integer`, use `.equals` or `Objects.equals` (which also survives `null`).
+- Better still, keep your hot data in `int[]` and `int` locals, which is what [Ch 31](#content/31_dsa_coding) does throughout.
 
 > **Interview —** *"Why does `Integer a = 128, b = 128; a == b` print false when the same code with 127 prints true?"*
-> **Say:** Autoboxing goes through `Integer.valueOf`, which returns shared cached instances for −128 to 127. Inside that range both references point at the same object, so `==` is accidentally right; outside it you get two objects and a reference comparison that's wrong. The comparison was never correct — the cache just hid it.
-> **They follow up with:** *"Can you rely on 128 always being false?"* — no. The upper bound is tunable with `-XX:AutoBoxCacheMax`, and the spec only *guarantees* caching within −128..127. Anything outside that is implementation-defined, which is another reason never to use `==` on wrappers.
+>
+> **Say:**
+> - Autoboxing goes through `Integer.valueOf`, which returns shared cached instances for −128 to 127.
+> - Inside that range both references point at the same object, so `==` is accidentally right; outside it you get two objects and a reference comparison that's wrong.
+> - The comparison was never correct — the cache just hid it.
+>
+> **They follow up with:** *"Can you rely on 128 always being false?"* — No. The upper bound is tunable with `-XX:AutoBoxCacheMax`, and the spec only *guarantees* caching within −128..127. Anything outside that is implementation-defined, which is another reason never to use `==` on wrappers.
 
 <details>
 <summary><strong>Quick check.</strong> <code>Map&lt;String,Integer&gt; m; if (m.get("a") == m.get("b"))</code> — safe or not?</summary>
@@ -1487,15 +1434,10 @@ Map<String, Integer> m = new HashMap<>();
 m.put("a", 1);
 
 // 2022 — silently assumes the key is present
-int x = m.get("missing");           // NullPointerException
+int x = m.get("missing");           // NullPointerException — null.intValue()
 
 // 2026 — state the default
-int y = m.getOrDefault("missing", 0);
-```
-
-```
-m.get(missing) -> NullPointerException
-getOrDefault   : 0
+int y = m.getOrDefault("missing", 0);   // 0
 ```
 
 `getOrDefault` is the fix for reads. For accumulate-into-a-map, `merge(key, 1, Integer::sum)` and `computeIfAbsent(key, k -> new ArrayList<>())` remove the null check entirely — see §38.4.
@@ -1512,25 +1454,24 @@ The midpoint calculation `(lo + hi) / 2` is correct mathematics and incorrect Ja
 int lo = 1_500_000_000, hi = 2_000_000_000;
 
 // 2022 — the textbook version
-int midBad = (lo + hi) / 2;
+int midBad = (lo + hi) / 2;        // -397483648  — the sum overflowed
 
 // 2026 — the only version to ever type again
-int mid = lo + (hi - lo) / 2;
+int mid = lo + (hi - lo) / 2;      // 1750000000
+int alt = (lo + hi) >>> 1;         // 1750000000  — what the JDK itself uses
 ```
 
-```
-MAX_VALUE       = 2147483647
-MAX_VALUE + 1   = -2147483648
-MIN_VALUE - 1   = 2147483647
--MIN_VALUE      = -2147483648
-Math.abs(MIN)   = -2147483648
-100k * 100k int = 1410065408
-cast one to long= 10000000000
-Math.addExact   -> ArithmeticException: integer overflow
+The wrapping rules behind it, all verified:
 
-(lo + hi) / 2   = -397483648
-lo+(hi-lo)/2    = 1750000000
->>> 1 unsigned  = 1750000000
+```java
+Integer.MAX_VALUE                 //  2147483647
+Integer.MAX_VALUE + 1             // -2147483648  — wraps, no warning
+Integer.MIN_VALUE - 1             //  2147483647
+-Integer.MIN_VALUE                // -2147483648  — still negative!
+Math.abs(Integer.MIN_VALUE)       // -2147483648  — still negative!
+100_000 * 100_000                 //  1410065408  — int overflow
+100_000L * 100_000                // 10000000000  — cast ONE operand first
+Math.addExact(Integer.MAX_VALUE, 1)  // ArithmeticException: integer overflow
 ```
 
 Three lines there deserve a pause. `-Integer.MIN_VALUE` is still `Integer.MIN_VALUE`, and so is `Math.abs(Integer.MIN_VALUE)` — the negative range has one more value than the positive range, so any `Math.abs(hash) % buckets` is one adversarial hash away from a negative index. And `100_000 * 100_000` wraps to `1410065408`; casting **one operand** to `long` before the multiply fixes it, casting the *result* does not.
@@ -1540,30 +1481,31 @@ Three lines there deserve a pause. `-Integer.MIN_VALUE` is still `Integer.MIN_VA
 Reach for `long` when a sum, product, or prefix-sum could exceed roughly $2 \times 10^9$, and for `Math.addExact` / `multiplyExact` when you would rather crash than be wrong — they throw `ArithmeticException` instead of wrapping, which is exactly right for a `Reverse Integer`-style problem. [Ch 31](#content/31_dsa_coding) has a dedicated overflow-prevention section; this is the groundwork for it.
 
 > **Interview —** *"Walk me through your binary search template."*
-> **Say:** `int mid = lo + (hi - lo) / 2;` — and say *why* out loud, that `lo + hi` can exceed `Integer.MAX_VALUE`. It takes four seconds and it is one of the cheapest signals of seniority available in a coding round.
-> **They follow up with:** *"What if `lo` can be negative?"* — then `hi - lo` can overflow instead, and you want `(lo + hi) >>> 1` or promote to `long`. In array-index binary search `lo >= 0` always, so the standard form is safe.
+>
+> **Say:**
+> - `int mid = lo + (hi - lo) / 2;`
+> - And say *why* out loud: `lo + hi` can exceed `Integer.MAX_VALUE`. It takes four seconds and it is one of the cheapest signals of seniority available in a coding round.
+>
+> **They follow up with:** *"What if `lo` can be negative?"* — Then `hi - lo` can overflow instead, and you want `(lo + hi) >>> 1` or promote to `long`. In array-index binary search `lo >= 0` always, so the standard form is safe.
 
 ### Trap 4 — `remove(int)` vs `remove(Object)`
 
 `List<Integer>` has two `remove` methods: `remove(int index)` from `List`, and `remove(Object o)` from `Collection`. An `int` literal picks the *index* overload. Overload resolution prefers the exact primitive match over boxing, so `list.remove(1)` deletes position 1, not the value 1.
 
 ```java
-List<Integer> list = new ArrayList<>(Arrays.asList(10, 20, 30, 40));
+List<Integer> list  = new ArrayList<>(List.of(10, 20, 30, 40));
+List<Integer> list2 = new ArrayList<>(List.of(10, 20, 30, 40));
 
 // 2022 — reads like "remove the value 1"; deletes index 1
-list.remove(1);
+list.remove(1);                    // [10, 30, 40] — deleted 20 BY POSITION
 
 // 2026 — say which one you mean
-list2.remove(Integer.valueOf(20));
+list2.remove(Integer.valueOf(20)); // [10, 30, 40] — deleted 20 BY VALUE
+
+list.remove(7);                    // IndexOutOfBoundsException on a 3-element list
 ```
 
-```
-remove(1)       : [10, 30, 40]
-remove(obj 20)  : [10, 30, 40]
-remove(7)       -> IndexOutOfBoundsException
-```
-
-Both calls happened to delete `20` here — the first by position, the second by value. The third shows the tell: `remove(7)` on a 3-element list throws `IndexOutOfBoundsException` rather than doing nothing, proving it was never looking for the *value* 7. **Fix:** always `remove(Integer.valueOf(v))` when you mean the value. This is only ambiguous for `List<Integer>`; `List<String>` has no such problem.
+Both of the first two calls happened to delete `20` here — one by position, one by value. The third shows the tell: `remove(7)` throws `IndexOutOfBoundsException` rather than doing nothing, proving it was never looking for the *value* 7. **Fix:** always `remove(Integer.valueOf(v))` when you mean the value. This is only ambiguous for `List<Integer>`; `List<String>` has no such problem.
 
 ### Trap 5 — mutating a collection while iterating
 
@@ -1577,17 +1519,10 @@ for (Integer n : nums) {
 
 // 2026 — either of these
 Iterator<Integer> it = list.iterator();
-while (it.hasNext()) if (it.next() % 2 == 0) it.remove();
+while (it.hasNext()) if (it.next() % 2 == 0) it.remove();   // [1, 3, 5]
 
-list.removeIf(n -> n % 2 == 0);
-map.entrySet().removeIf(e -> e.getValue() % 2 == 1);
-```
-
-```
-for-each remove -> ConcurrentModificationException
-Iterator.remove : [1, 3, 5]
-removeIf        : [1, 3, 5]
-map removeIf    : {b=2}
+list.removeIf(n -> n % 2 == 0);                             // [1, 3, 5]
+map.entrySet().removeIf(e -> e.getValue() % 2 == 1);        // {b=2}
 ```
 
 `removeIf` is the one-liner and it is $O(n)$ on `ArrayList` — repeated `list.remove(i)` inside a loop is $O(n^2)$ because every removal shifts the tail. Note that detection is best-effort: removing the second-to-last element can leave `hasNext()` returning `false` early, so the loop exits silently with a wrong result instead of throwing.
@@ -1600,16 +1535,13 @@ map removeIf    : {b=2}
 Map<Key, String> map = new HashMap<>();
 Key k = new Key(1);
 map.put(k, "one");
-k.id = 99;                       // the entry is now unreachable
-```
+map.get(k);            // "one"
 
-```
-before mutate   : one
-after  mutate   : null
-get(new Key(1)) : null
-containsKey(k)  : false
-size still      : 1
-map contents    : {Key(99)=one}
+k.id = 99;             // the entry is now unreachable
+map.get(k);            // null
+map.get(new Key(1));   // null
+map.containsKey(k);    // false — for the very object you are holding
+map.size();            // 1     — but iteration still prints {Key(99)=one}
 ```
 
 Look at the last two lines together: `containsKey(k)` is `false` for the very object you are holding, yet iterating the map prints it. That is a memory leak with a friendly face. **Fix:** make keys immutable — `final` fields, no setters. This is exactly what records give you for free ([Ch 38b](#content/38b_java_modern)). The same rule applies to `HashSet` elements and to anything in a `TreeMap` whose `compareTo` reads a mutable field.
@@ -1620,12 +1552,8 @@ Look at the last two lines together: `containsKey(k)` is `false` for the very ob
 
 ```java
 Object[] objs = new String[2];
-objs[0] = Integer.valueOf(1);        // compiles fine
-```
-
-```
-Object[] o = new String[]; o[0] = 1
-  -> java.lang.ArrayStoreException: java.lang.Integer
+objs[0] = Integer.valueOf(1);   // compiles fine
+                                // -> java.lang.ArrayStoreException: java.lang.Integer
 ```
 
 Generics learned from this. `List<String>` is **not** a `List<Object>` — the assignment is rejected at compile time, so there is no runtime check to fail. That invariance is why you need wildcards, which is where §38.7 picks up.
@@ -1634,34 +1562,48 @@ Generics learned from this. `List<String>` is **not** a `List<Object>` — the a
 
 If you have been writing Python, this one will get you. Java truncates division **toward zero**; Python floors it. So `-7 / 2` is `-3` in Java and `-4` in Python. And Java's `%` takes the sign of the **dividend**, so `-7 % 2` is `-1`, not `1`.
 
-```
--7 / 2          = -3
--7 % 2          = -1
--7 % 3          = -1
-Math.floorDiv   = -4
-Math.floorMod   = 2
-wrap wrong      = -2
-wrap right      = 3
-hash of -3      = 2
+```java
+-7 / 2                     // -3  — truncates toward zero (Python gives -4)
+-7 % 2                     // -1  — sign of the DIVIDEND
+-7 % 3                     // -1
+Math.floorDiv(-7, 2)       // -4  — Python-style
+Math.floorMod(-7, 2)       //  2  — always in [0, n)
+Math.floorMod(-3, 5)       //  2  — safe hash bucketing
+
+// circular indexing, i = 1, k = 3, n = 5
+arr[(i - k) % n];               // index -2 -> ArrayIndexOutOfBoundsException
+arr[Math.floorMod(i - k, n)];   // index  3 -> correct
 ```
 
-This bites in exactly two places, and both are common. Circular-array indexing: `arr[(i - k) % n]` throws `ArrayIndexOutOfBoundsException` the moment `i < k`. Hash bucketing: `table[hash % size]` goes negative whenever `hashCode()` does. **Fix for both:** `Math.floorMod(x, n)`, which for positive `n` always returns a result $r$ with $0 \le r < n$. The manual equivalent is `((x % n) + n) % n` if you want to show your work.
+This bites in exactly two places, and both are common:
+
+- **Circular-array indexing.** `arr[(i - k) % n]` throws `ArrayIndexOutOfBoundsException` the moment `i < k`.
+- **Hash bucketing.** `table[hash % size]` goes negative whenever `hashCode()` does.
+
+**Fix for both:** `Math.floorMod(x, n)`, which for positive `n` always returns a result $r$ with $0 \le r < n$. The manual equivalent is `((x % n) + n) % n` if you want to show your work.
 
 ### Trap 9 — `char` arithmetic promotes to `int`
 
 Any arithmetic on `char` promotes both operands to `int`. So `'a' + 1` is the number `98`, and if you concatenate it into a string you get `"98"`, not `"b"`. You need an explicit cast back.
 
-```
-'a' + 1         = 98
-(char)('a' + 1) = b
-ch += 1         = b
-'c' - 'a'       = 2
-"" + 'a' + 'b'   = ab
-'a' + 'b'       = 195
-count of 'a'    = 3
+```java
+'a' + 1              // 98   — an int, not a char
+(char)('a' + 1)      // b    — cast back
+'c' - 'a'            // 2    — the promotion you actually want
+"" + 'a' + 'b'       // ab   — leading "" forces string concatenation
+'a' + 'b'            // 195  — plain integer addition
+
+char ch = 'a';
+ch += 1;             // b    — compound assignment has an IMPLICIT narrowing cast
+// ch = ch + 1;      // does NOT compile — int cannot be assigned to char
 ```
 
-Two subtleties worth banking. Compound assignment `ch += 1` contains an *implicit narrowing cast*, so it compiles while `ch = ch + 1` does not. And `"" + 'a' + 'b'` gives `"ab"` because the leading empty string forces string concatenation left-to-right, whereas `'a' + 'b'` is plain integer addition — `195`. The one promotion you *want* is `c - 'a'`, the 26-bucket frequency-array index used all over [Ch 31](#content/31_dsa_coding).
+Two subtleties worth banking:
+
+- **Compound assignment `ch += 1` contains an implicit narrowing cast**, so it compiles while `ch = ch + 1` does not.
+- **`"" + 'a' + 'b'` gives `"ab"`** because the leading empty string forces string concatenation left-to-right, whereas `'a' + 'b'` is plain integer addition — `195`.
+
+The one promotion you *want* is `c - 'a'`, the 26-bucket frequency-array index used all over [Ch 31](#content/31_dsa_coding).
 
 ### Trap summary
 
@@ -1684,6 +1626,12 @@ Two subtleties worth banking. Compound assignment `ch += 1` contains an *implici
 
 ## 38.7 Generics, equals/hashCode, and Iteration ★★
 
+**In this section**
+
+- What erasure removes at runtime, and the four things you therefore cannot write
+- `equals`/`hashCode` as one contract — and the exact failure signature when you break it
+- `Comparable` vs `Comparator`, plus the `Node` class you'll type forty times in [Ch 31](#content/31_dsa_coding)
+
 ### Type erasure and what it costs you
 
 #### Simple Explanation
@@ -1697,13 +1645,8 @@ C# made the other choice and reified its generics. Java's decision buys perfect 
 ```java
 List<String> a = new ArrayList<>();
 List<Integer> b = new ArrayList<>();
-System.out.println("same runtime class: " + (a.getClass() == b.getClass()));
-```
-
-```
-same runtime class: true
-class name        : java.util.ArrayList
-instanceof List   : true
+a.getClass() == b.getClass()   // true — both are java.util.ArrayList
+a instanceof List              // true — but `instanceof List<String>` won't compile
 ```
 
 Same object, same class. Four consequences follow directly:
@@ -1731,18 +1674,13 @@ You cannot write `new T[n]`. The standard trick is to allocate `Object[]` and ca
 static <T> T[] naiveArray(int n) {
     return (T[]) new Object[n];   // compiles; blows up at the caller
 }
+
+Object[] ok  = naiveArray(3);     // fine — 3 elements
+String[] bad = naiveArray(3);     // ClassCastException:
+                                  //   [Ljava.lang.Object; cannot be cast to [Ljava.lang.String;
 ```
 
-The cast inside the method is erased to nothing, so the method itself is fine. The **caller** is where the compiler inserted a real `checkcast`:
-
-```
-as Object[]       : 3
-as String[]       -> ClassCastException
-  class [Ljava.lang.Object;
-  cannot be cast to class [Ljava.lang.String;
-```
-
-Assigning the result to `Object[]` works; assigning it to `String[]` throws. Hence the two workarounds that actually hold up:
+The cast inside the method is erased to nothing, so the method itself is fine. The **caller** is where the compiler inserted a real `checkcast` — so assigning the result to `Object[]` works and assigning it to `String[]` throws. Hence the two workarounds that actually hold up:
 
 ```java
 // 1. keep Object[] internal and cast only on the way out
@@ -1750,7 +1688,7 @@ static final class BoxObj<T> {
     private final Object[] data;
     BoxObj(int n) { data = new Object[n]; }
     @SuppressWarnings("unchecked")
-    T get(int i) { return (T) data[i]; }
+    T get(int i) { return (T) data[i]; }   // get(0) -> "hi"
     void set(int i, T v) { data[i] = v; }
 }
 
@@ -1758,13 +1696,8 @@ static final class BoxObj<T> {
 @SuppressWarnings("unchecked")
 static <T> T[] arrayOf(T sample, int n) {
     return (T[]) java.lang.reflect.Array
-            .newInstance(sample.getClass(), n);
+            .newInstance(sample.getClass(), n);   // a real String[]
 }
-```
-
-```
-BoxObj.get(0)     : hi
-reflect array     : [x, x, x] String[]
 ```
 
 Option 1 is how `ArrayList` itself is written — its source declares `Object[] elementData`. Option 2 produces a real `String[]`, which matters only when the array escapes to code that checks its component type. In DSA work you will rarely need either: use `List<T>` and move on.
@@ -1779,14 +1712,14 @@ static <T extends Comparable<T>> T maxOf(List<T> xs) {
     for (T x : xs) if (x.compareTo(best) > 0) best = x;
     return best;
 }
+// maxOf(List.of(3, 9, 1))              -> 9
+// maxOf(List.of("fig", "plum", "ash")) -> plum
 ```
 
-```
-maxOf ints        : 9
-maxOf strings     : plum
-```
+Wildcards handle the other direction. The mnemonic is **PECS — Producer Extends, Consumer Super**:
 
-Wildcards handle the other direction. The mnemonic is **PECS — Producer Extends, Consumer Super**. If a parameter *produces* values you read out, use `? extends T`: you can read them as `T` but cannot add anything, because you don't know the exact subtype. If it *consumes* values you write in, use `? super T`: you can add a `T` safely, but reading gives you only `Object`.
+- **Producer → `? extends T`.** The parameter *produces* values you read out. You can read them as `T` but cannot add anything, because you don't know the exact subtype.
+- **Consumer → `? super T`.** The parameter *consumes* values you write in. You can add a `T` safely, but reading gives you only `Object`.
 
 ```java
 static double sum(List<? extends Number> src) {     // producer: read
@@ -1794,15 +1727,13 @@ static double sum(List<? extends Number> src) {     // producer: read
     for (Number x : src) t += x.doubleValue();
     return t;
 }
+// sum(List.of(1, 2, 3))       -> 6.0
+// sum(List.of(1.5, 2.5))      -> 4.0
+
 static void fill(List<? super Integer> dst, int n) { // consumer: write
     for (int i = 0; i < n; i++) dst.add(i);
 }
-```
-
-```
-sum(List<Integer>): 6.0
-sum(List<Double>) : 4.0
-fill(List<Number>): [0, 1, 2, 3]
+// fill(new ArrayList<Number>(), 4) -> [0, 1, 2, 3]
 ```
 
 Without `? extends`, `sum` would accept `List<Number>` only, and you could not pass a `List<Integer>` — because generics are invariant (Trap 7, §38.6). This is why `Comparator` is declared `Comparator<? super T>` everywhere in the JDK: a `Comparator<Object>` is perfectly good for sorting `String`s.
@@ -1828,14 +1759,11 @@ static final class PointBad {
         return x == p.x && y == p.y;
     }
 }
-```
-
-```
-equals says equal : true
-map.get(same pt)  : null
-size after re-put : 2
-HashSet dedupes?  : 2
-List.contains     : true
+// a.equals(b)        -> true   (equals says they're the same point)
+// list.contains(b)   -> true   (linear scan, calls equals — fine)
+// map.get(b)         -> null   (hash lookup — BROKEN)
+// map.size() after re-putting the "same" key -> 2
+// new HashSet<>(List.of(a, b)).size()        -> 2 (no dedupe)
 ```
 
 Read that carefully. `equals` says the two points are equal. `List.contains` — which does a linear scan and calls `equals` — agrees. But `map.get` returns `null`, re-putting the "same" key grows the map to 2, and `HashSet` fails to deduplicate. Every hash-based structure is broken; every linear structure is fine. That asymmetry is the diagnostic signature.
@@ -1845,21 +1773,20 @@ Adding one method fixes all of it:
 ```java
 // 2026 — equals + hashCode, from the same fields.
 @Override public int hashCode() { return Objects.hash(x, y); }
-```
-
-```
-map.get(same pt)  : origin-ish
-size after re-put : 1
-HashSet dedupes?  : 1
-Objects.hash(1,2) : 994
-Objects.equals nul: true
+// map.get(b)   -> "origin-ish"
+// map.size()   -> 1
+// HashSet size -> 1
 ```
 
 `Objects.hash(...)` is a varargs helper that combines fields with the classic `31 * result + field` polynomial; `Objects.equals(a, b)` is null-safe on both sides. Use them and stop hand-rolling. Better still: in modern Java a **record generates both `equals` and `hashCode` from its components**, correctly, and makes the fields final so they cannot drift — which also closes Trap 6. Records are covered in [Ch 38b](#content/38b_java_modern).
 
 > **Interview —** *"Why must equal objects have equal hash codes?"*
-> **Say:** Because `HashMap` uses the hash to choose a bucket before it ever calls `equals`. If two equal objects hash differently they land in different buckets, so the equality check never happens and lookup returns `null` for a key that is definitely present.
-> **They follow up with:** *"Can two unequal objects share a hash code?"* — yes, and they must be allowed to: there are more possible objects than `int` values. That's a collision, handled by chaining (and, since Java 8, by converting the bucket to a red-black tree once it holds more than eight entries in a table of at least 64 buckets).
+>
+> **Say:**
+> - `HashMap` uses the hash to choose a bucket **before** it ever calls `equals`.
+> - If two equal objects hash differently they land in different buckets, so the equality check never happens and lookup returns `null` for a key that is definitely present.
+>
+> **They follow up with:** *"Can two unequal objects share a hash code?"* — Yes, and they must be allowed to: there are more possible objects than `int` values. That's a collision, handled by chaining (and, since Java 8, by converting the bucket to a red-black tree once it holds more than eight entries in a table of at least 64 buckets).
 
 ### `Comparable` vs `Comparator`, and the `Node` you'll write forty times
 
@@ -1887,14 +1814,11 @@ static final class Node implements Comparable<Node> {
     }
     @Override public int hashCode() { return Objects.hash(val, freq); }
 }
-```
-
-```
-natural order     : [1:2, 2:5, 3:5]
-supplied order    : [2:5, 3:5, 1:2]
-PQ natural drain  : 1:2 2:5 3:5
-PQ max-heap peek  : 3:5
-TreeSet natural   : [1:2, 2:5, 3:5]
+// natural order (freq, then val) : [1:2, 2:5, 3:5]
+// a supplied Comparator          : [2:5, 3:5, 1:2]
+// new PriorityQueue<Node>() drains 1:2  2:5  3:5   — no comparator needed
+// reverseOrder() max-heap peek   : 3:5
+// TreeSet keeps all three (compareTo never falsely returns 0)
 ```
 
 `Integer.compare` rather than `freq - o.freq` (§38.5). The `val` tiebreaker means `compareTo` returns `0` only when `equals` does, so the `TreeSet` keeps all three nodes instead of silently dropping one. And because `Node` is `Comparable`, `new PriorityQueue<Node>()` needs no comparator — that is the Huffman-coding idiom in one line. For a max-heap, `new PriorityQueue<>(Comparator.reverseOrder())`.
@@ -1918,11 +1842,7 @@ static final class Countdown implements Iterable<Integer> {
         };
     }
 }
-```
-
-```
-after it.remove   : [1:2]
-custom Iterable   : 3 2 1
+// for (int n : new Countdown(3))  ->  3 2 1
 ```
 
 `Iterator.remove()` is the only sanctioned way to delete during iteration (§38.6, Trap 5). It is optional — immutable collections such as those from `List.of` throw `UnsupportedOperationException` — but every mutable JDK collection supports it. On an `ArrayList` each removal is still $O(n)$ because of the shift, so removing many elements one by one is $O(n^2)$; `removeIf` does it in a single $O(n)$ pass and is the better default.
@@ -1934,8 +1854,13 @@ The same class of failure as Trap 6, but through `compareTo` rather than `hashCo
 </details>
 
 > **Interview —** *"When would you implement `Comparable` instead of passing a `Comparator`?"*
-> **Say:** When the type has one ordering that is genuinely intrinsic — version numbers, timestamps, priorities — and you want it to work in a `TreeMap` or a bare `PriorityQueue` without callers supplying anything. Anything context-dependent, or any second ordering, is a `Comparator`. And `Comparable` is a commitment: it's part of your public API and it must stay consistent with `equals`.
-> **They follow up with:** *"What if the natural order disagrees with equals?"* — then `TreeSet` and `HashSet` disagree about duplicates. `BigDecimal` is the standard example: `new BigDecimal("1.0").equals(new BigDecimal("1.00"))` is `false`, but `compareTo` returns `0`, so a `TreeSet` holds one of them and a `HashSet` holds both.
+>
+> **Say:**
+> - When the type has one ordering that is genuinely intrinsic — version numbers, timestamps, priorities — and you want it to work in a `TreeMap` or a bare `PriorityQueue` without callers supplying anything.
+> - Anything context-dependent, or any *second* ordering, is a `Comparator`.
+> - And `Comparable` is a commitment: it's part of your public API and it must stay consistent with `equals`.
+>
+> **They follow up with:** *"What if the natural order disagrees with equals?"* — Then `TreeSet` and `HashSet` disagree about duplicates. `BigDecimal` is the standard example: `new BigDecimal("1.0").equals(new BigDecimal("1.00"))` is `false`, but `compareTo` returns `0`, so a `TreeSet` holds one of them and a `HashSet` holds both.
 
 ---
 

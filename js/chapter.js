@@ -76,10 +76,11 @@ const chapters = [
   { id: '29',  file: 'content/29_gpus_tpus_infrastructure.md', title: 'GPUs, TPUs & AI Infrastructure' },
   { id: '30',  file: 'content/30_google_ml_ecosystem.md', title: 'Google ML Ecosystem (TPUs, JAX, Vertex AI)' },
 
-  // ── JAVA & CODING ──
-  { section: 'Java & Coding' },
+  // ── LANGUAGES & CODING ──
+  { section: 'Languages & Coding' },
   { id: '38', file: 'content/38_java_refresher.md', title: 'Java Refresher — Core & DSA Toolkit' },
   { id: '38b', file: 'content/38b_java_modern.md', title: 'Modern Java — Language, Concurrency & Ecosystem' },
+  { id: '39', file: 'content/39_python_refresher.md', title: 'Python Refresher — Core & FastAPI' },
   { id: '31', file: 'content/31_dsa_coding.md', title: 'DSA & ML Coding (Java)' },
 
   // ── INTERVIEW PREP ──

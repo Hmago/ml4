@@ -135,15 +135,16 @@ assumptions, not official company interview frequencies or measured production a
 | 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
 | | **Practical & Infra Total** | | | **~12.25 hrs** | |
 
-### Java & Coding
+### Languages & Coding
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.5 hrs | Beginner-Intermediate |
+| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.75 hrs | Beginner-Intermediate |
 | 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~5 hrs | Intermediate |
+| 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~2.75 hrs | Beginner-Intermediate |
 | 31 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [31_dsa_coding.md](content/31_dsa_coding.md) | ~8.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Java & Coding Total** | | | **~19.25 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~22.25 hrs + practice** | |
 
 ### Interview Preparation
 
@@ -160,7 +161,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~192.75 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~195.75 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.
