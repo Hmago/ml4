@@ -129,11 +129,12 @@ assumptions, not official company interview frequencies or measured production a
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
+| 40 | Python for ML & AI — Libraries, Models & Azure LLMs | ★★★ | [40_python_ml_ai.md](content/40_python_ml_ai.md) | ~1.75 hrs | Beginner-Intermediate |
 | 27 | Practical ML — From Zero to Production | ★★ | [27_practical_ml.md](content/27_practical_ml.md) | ~4 hrs | Beginner-Advanced |
 | 28 | Building Semantic Search (Text, Images, Metadata) | ★★ | [28_semantic_search.md](content/28_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
 | 29 | GPUs, TPUs & AI Infrastructure | ★★ | [29_gpus_tpus_infrastructure.md](content/29_gpus_tpus_infrastructure.md) | ~3.25 hrs | Intermediate-Advanced |
 | 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
-| | **Practical & Infra Total** | | | **~12.25 hrs** | |
+| | **Practical & Infra Total** | | | **~14 hrs** | |
 
 ### Languages & Coding
 
@@ -161,7 +162,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~195.75 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~197.5 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

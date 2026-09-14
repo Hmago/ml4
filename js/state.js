@@ -507,6 +507,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/37_system_design_cases_scale_infra.md': 535,
   'content/27_practical_ml.md': 240,
   'content/27_practical_ml.ipynb': 240,
+  'content/40_python_ml_ai.md': 110,
   'content/28_semantic_search.md': 140,
   'content/29_gpus_tpus_infrastructure.md': 190,
   'content/30_google_ml_ecosystem.md': 165,

@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v317';
+const CACHE_NAME = 'ml-notes-v318';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -63,6 +63,7 @@ const STATIC_FILES = [
   'content/35_system_design_cases_realtime.md',
   'content/36_system_design_cases_search_media.md',
   'content/37_system_design_cases_scale_infra.md',
+  'content/40_python_ml_ai.md',
   'content/27_practical_ml.md',
   'content/27_practical_ml.ipynb',
   'content/28_semantic_search.md',

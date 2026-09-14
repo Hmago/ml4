@@ -70,6 +70,7 @@ const chapters = [
 
   // ── PRACTICAL & INFRASTRUCTURE ──
   { section: 'Practical & Infrastructure' },
+  { id: '40',  file: 'content/40_python_ml_ai.md', title: 'Python for ML & AI (Libraries + Azure LLMs)' },
   { id: '27',  file: 'content/27_practical_ml.md', title: 'Practical ML: Zero to Production' },
   { id: '27b', file: 'content/27_practical_ml.ipynb', title: 'Practical ML Notebook', notebook: true },
   { id: '28',  file: 'content/28_semantic_search.md', title: 'Building Semantic Search' },
@@ -2138,6 +2139,8 @@ async function runPythonCode(code, outputEl) {
       'anthropic': 'Anthropic SDK',
       'cohere': 'Cohere SDK',
       'google': 'Google GenAI SDK',
+      'azure': 'Azure SDK',
+      'tiktoken': 'tiktoken',
       // Inference / serving (server-only)
       'vllm': 'vLLM',
       'ollama': 'Ollama',
