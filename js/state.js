@@ -554,7 +554,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/38_java_refresher.md': 345,
   'content/38b_java_modern.md': 295,
   'content/39_python_refresher.md': 160,
-  'content/31_dsa_coding.md': 560,
+  'content/31_dsa_coding.md': 825,
   'content/32_interview_questions.md': 240,
   'content/33_llm_interview_questions.md': 240,
   'content/33b_llm_interview_questions_part2.md': 260,

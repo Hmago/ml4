@@ -1,5 +1,5 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v320';
+const CACHE_NAME = 'ml-notes-v321';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
@@ -156,6 +156,10 @@ const STATIC_FILES = [
   'diagrams/land20_frontiermap_ai.png', 'diagrams/land20_testtimecompute_ai.png', 'diagrams/land20_swebench_ai.png',
   'diagrams/land20_ondevice_ai.png', 'diagrams/land20_costcurve_ai.png', 'diagrams/land20_eutimeline_ai.png',
   'diagrams/land20_googlestack_ai.png', 'diagrams/land20_decisiontree_ai.png',
+
+  // Chapter 31 (DSA & ML Coding) — AI-generated DP concept diagrams
+  'diagrams/dsa31_dp_parents_ai.png', 'diagrams/dsa31_dp_pipeline_ai.png', 'diagrams/dsa31_dp_knapsack_ai.png',
+  'diagrams/dsa31_dp_lcs_ai.png', 'diagrams/dsa31_dp_mcm_ai.png', 'diagrams/dsa31_dp_table_walk_ai.png',
 ];
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 
