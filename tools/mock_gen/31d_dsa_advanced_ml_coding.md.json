@@ -1,0 +1,233 @@
+[
+  {
+    "q": "What is the time complexity of building a Segment Tree from an array of n elements?",
+    "options": [
+      "$O(n)$",
+      "$O(n \\log n)$",
+      "$O(\\log n)$",
+      "$O(n^2)$"
+    ],
+    "answer": 0,
+    "explanation": "Building a segment tree initialises ~4n nodes each in O(1), giving O(n) total. This is faster than querying n ranges individually."
+  },
+  {
+    "q": "In the sliding-window maximum problem using a Monotonic Deque, what is the amortised work per element across all windows?",
+    "options": [
+      "$O(1)$ amortised: each element is enqueued and dequeued at most once",
+      "$O(\\log n)$: the deque performs binary-search comparisons",
+      "O(k) per element where k is the window size, due to rebuilding",
+      "$O(n)$ amortised: the deque may be fully rebuilt each step"
+    ],
+    "answer": 0,
+    "explanation": "Each element enters and leaves the deque exactly once across the entire array, giving amortised O(1) per element and O(n) overall."
+  },
+  {
+    "q": "In the gradient-descent weight update w = w - lr * grad, what does lr represent?",
+    "options": [
+      "Learning rate: scales the step size in the direction of steepest descent",
+      "L2 regularisation coefficient penalising large weight values",
+      "Momentum term accumulating an exponential moving average of past gradients",
+      "Batch-size normalisation factor adjusting gradient magnitude"
+    ],
+    "answer": 0,
+    "explanation": "lr (alpha) is the learning rate controlling step size. Regularisation, momentum, and batch-size normalisation are separate hyperparameters or techniques."
+  },
+  {
+    "q": "In Bellman-Ford, how many edge-relaxation passes over all edges guarantee correct shortest paths in a V-vertex graph?",
+    "options": [
+      "V - 1 passes",
+      "V passes",
+      "E passes in total",
+      "log V passes"
+    ],
+    "answer": 0,
+    "explanation": "A shortest path in a V-vertex graph spans at most V-1 edges, so V-1 full relaxation passes suffice. A V-th pass that still relaxes an edge indicates a negative cycle."
+  },
+  {
+    "q": "In a K-Means clustering implementation from scratch, which condition signals convergence?",
+    "options": [
+      "Every cluster contains exactly n/k data points",
+      "Centroids stop moving (change by less than epsilon) between successive iterations",
+      "The total within-cluster variance increases by less than epsilon",
+      "Each data point switches to a different cluster at least once per iteration"
+    ],
+    "answer": 1,
+    "explanation": "K-Means converges when centroid positions are stable. Cluster size uniformity or tracking variance increases are not standard convergence criteria."
+  },
+  {
+    "q": "What is the time complexity of a range-sum query on a Segment Tree with n elements?",
+    "options": [
+      "$O(1)$ with precomputed prefix sums only",
+      "$O(\\log n)$ â€” at most O(log n) nodes are visited",
+      "$O(n)$ â€” the entire tree may need to be traversed",
+      "$O(n \\log n)$ â€” each level of the tree is scanned"
+    ],
+    "answer": 1,
+    "explanation": "A segment tree range query visits O(log n) nodes because at each level the query splits into at most two sub-queries, capping total visited nodes at 4 log n."
+  },
+  {
+    "q": "In a Fenwick Tree (BIT), what operation moves from index i to its next responsible ancestor during an UPDATE traversal?",
+    "options": [
+      "Subtract (i & -i) from i",
+      "Add (i & -i) to i",
+      "Right-shift i by 1 bit",
+      "XOR i with (i & -i)"
+    ],
+    "answer": 1,
+    "explanation": "During BIT update, adding (i & -i) moves to the next index whose range covers position i. Subtracting (i & -i) is used in PREFIX-SUM queries, not updates."
+  },
+  {
+    "q": "What is the time complexity of the Floyd-Warshall all-pairs shortest-path algorithm?",
+    "options": [
+      "$O(V \\cdot E)$",
+      "$O(V^2 + E)$",
+      "$O(V^3)$",
+      "$O(E \\log V)$"
+    ],
+    "answer": 2,
+    "explanation": "Floyd-Warshall uses three nested loops each ranging over V vertices, giving O(V^3). It computes shortest paths between every pair of vertices including through intermediate nodes."
+  },
+  {
+    "q": "When should you prefer a Fenwick Tree (BIT) over a Segment Tree?",
+    "options": [
+      "When range-maximum or range-minimum queries are the primary operation needed",
+      "When lazy propagation is required for bulk range updates",
+      "When only prefix-sum and point-update are needed, for simpler constant-factor-faster code",
+      "When the array grows dynamically and its size is not known at build time"
+    ],
+    "answer": 2,
+    "explanation": "A Fenwick tree is simpler and faster in practice for point update + prefix sum. Segment trees are required for range max/min or lazy-propagation range update operations."
+  },
+  {
+    "q": "What key advantage does an ArrayDeque provide over a regular Queue in the sliding-window maximum problem?",
+    "options": [
+      "ArrayDeque enables O(1) random-access by index to inspect any element currently in the window",
+      "ArrayDeque automatically evicts out-of-window elements when new elements are added to the back",
+      "ArrayDeque allows O(1) removal from BOTH front and back, enabling window-boundary and dominance eviction",
+      "ArrayDeque eliminates index tracking by comparing element values directly, reducing memory per node"
+    ],
+    "answer": 2,
+    "explanation": "The deque removes from the front when elements fall outside the window and from the back when a new larger element makes smaller ones redundant. Both are O(1) only with a deque."
+  },
+  {
+    "q": "Which algorithm correctly detects a negative-weight cycle in a directed weighted graph?",
+    "options": [
+      "Dijkstra with a visited set and re-relaxation check on previously finalised vertices",
+      "DFS tracking the cumulative signed edge weight along each current recursion-stack path",
+      "Bellman-Ford: if any edge can still be relaxed after V-1 full passes, a negative cycle is reachable",
+      "Kahn's topological sort on the condensed strongly-connected components"
+    ],
+    "answer": 2,
+    "explanation": "After V-1 Bellman-Ford passes, a successful V-th relaxation proves a negative cycle exists. Dijkstra cannot handle negative edges at all."
+  },
+  {
+    "q": "What does Integer.bitCount(12) return in Java?",
+    "options": [
+      "4",
+      "3",
+      "2",
+      "1"
+    ],
+    "answer": 2,
+    "explanation": "12 in binary is 1100, which has exactly 2 set bits. Integer.bitCount returns the count of 1-bits in the standard 32-bit integer representation."
+  },
+  {
+    "q": "In an N-Queens backtracking solution, which three constraints must all be free before placing a queen at (row, col)?",
+    "options": [
+      "Only column needs to be free; we place one queen per row so rows are assumed clear",
+      "Column and the main-diagonal direction only; anti-diagonals are verified after backtracking",
+      "Column, main-diagonal (row-col value), and anti-diagonal (row+col value) are all unoccupied",
+      "Column and row are both free; diagonals are checked only after all queens are placed"
+    ],
+    "answer": 2,
+    "explanation": "Three sets track occupied columns, (row-col) values (main diagonals), and (row+col) values (anti-diagonals). All three must be unoccupied for a valid queen placement."
+  },
+  {
+    "q": "In gradient descent for binary logistic regression, what is the gradient of cross-entropy loss with respect to weight w_j (averaged over n samples)?",
+    "options": [
+      "(1/n) * sum_i (y_i - y_hat_i) * x_ij  [label minus prediction]",
+      "(1/n) * sum_i x_ij  [ignores prediction error]",
+      "(1/n) * sum_i (y_hat_i - y_i) * x_ij  [prediction minus label]",
+      "(1/n) * sum_i (y_i^2 - y_hat_i^2) * x_ij"
+    ],
+    "answer": 2,
+    "explanation": "The gradient is (1/n)*sum(prediction - label)*feature. The sign is prediction minus label, so weights are reduced when the model predicts too high."
+  },
+  {
+    "q": "In a KNN implementation from scratch, why is feature normalization essential before computing Euclidean distances?",
+    "options": [
+      "Normalization prevents integer overflow in Java int arithmetic",
+      "Normalization converts categorical features to numerical values automatically",
+      "Without normalization, high-magnitude features dominate the distance, biasing neighbour selection",
+      "Normalization is required for the heap-based top-k selection to produce correct results"
+    ],
+    "answer": 2,
+    "explanation": "Euclidean distance is scale-sensitive. A feature in [0,1000] will overshadow one in [0,1], making the large-scale feature almost solely determine which neighbours are nearest."
+  },
+  {
+    "q": "Which problem CANNOT be solved optimally with a greedy algorithm and requires dynamic programming?",
+    "options": [
+      "Activity selection: maximise non-overlapping intervals by earliest finish time",
+      "Fractional knapsack: maximise value with divisible items",
+      "Minimum spanning tree via Kruskal's edge-weight greedy",
+      "0/1 Knapsack: maximise value where each item is taken or left whole"
+    ],
+    "answer": 3,
+    "explanation": "The 0/1 knapsack fails greedy because locally picking the best value/weight item may block a globally superior combination. The other three have provably greedy-optimal structures."
+  },
+  {
+    "q": "Which loss function is minimised in linear regression trained with gradient descent, as implemented in the chapter Java code?",
+    "options": [
+      "Binary cross-entropy: -sum(y_i * log(y_hat_i) + (1-y_i)*log(1-y_hat_i))",
+      "Hinge loss: max(0, 1 - y_i * y_hat_i)",
+      "Categorical cross-entropy for k output classes",
+      "Mean Squared Error (MSE): (1/n) * sum_i (y_i - y_hat_i)^2"
+    ],
+    "answer": 3,
+    "explanation": "Linear regression minimises MSE. Binary cross-entropy is for logistic regression; hinge loss for SVMs; categorical cross-entropy for multi-class softmax classifiers."
+  },
+  {
+    "q": "In a Segment Tree with lazy propagation, what is the purpose of the lazy array?",
+    "options": [
+      "Stores the original input array values for O(1) point queries without any tree traversal",
+      "Caches previously computed query results to avoid redundant computation",
+      "Re-balances the segment tree structure whenever a subtree becomes skewed by many updates",
+      "Defers pending range-update tags to child nodes, applying them only when those children are next accessed"
+    ],
+    "answer": 3,
+    "explanation": "Lazy propagation avoids updating every node in a range immediately. A lazy tag marks a pending update that is pushed down to children when they are queried or updated."
+  },
+  {
+    "q": "In the self-attention formula Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) * V, what is the time complexity with respect to sequence length n?",
+    "options": [
+      "$O(n \\log n)$ from the softmax normalisation across positions",
+      "$O(n \\cdot d_k)$ since only query-key dot products scale with d_k",
+      "$O(d_k^2 / n)$ amortised across multiple attention heads",
+      "$O(n^2 \\cdot d_k)$ from computing all n x n pairwise query-key products"
+    ],
+    "answer": 3,
+    "explanation": "The QK^T computation yields an n x n matrix via n^2 dot products each costing O(d_k), giving O(n^2 * d_k). This quadratic scaling with sequence length is the main bottleneck of standard attention."
+  },
+  {
+    "q": "In a brute-force KNN implementation, what is the time complexity of computing distances from a query point to all n training samples with d features each?",
+    "options": [
+      "$O(d)$ â€” only the query point's features are scanned",
+      "$O(n \\log n)$ â€” distances are sorted to find the k nearest",
+      "$O(n + d)$ â€” linear pass over samples plus feature-dimension overhead",
+      "$O(n \\cdot d)$ â€” each of n distance computations requires d multiplications and additions"
+    ],
+    "answer": 3,
+    "explanation": "Computing one Euclidean distance takes O(d) work; repeating for all n training samples gives O(n*d) total. Sorting to find top-k adds O(n log n) separately."
+  },
+  {
+    "q": "In the chapter Java implementation of logistic regression, which mathematical operation maps the raw linear output to a predicted probability?",
+    "options": [
+      "ReLU: max(0, w^T x + b)",
+      "Softmax applied to a vector of class scores",
+      "Hard threshold: return 1 if w^T x + b > 0.5, else 0",
+      "Sigmoid: 1 / (1 + exp(-(w^T x + b)))"
+    ],
+    "answer": 3,
+    "explanation": "Logistic regression applies sigmoid to squash the linear combination into [0,1] as a probability. ReLU is a neural-net activation; softmax is for multi-class; a hard threshold gives 0/1, not a probability."
+  }
+]

@@ -1,0 +1,79 @@
+[
+  {
+    "q": "What is the auxiliary space complexity of DFS on a V-vertex graph using an explicit stack?",
+    "options": [
+      "$O(V)$",
+      "$O(E)$",
+      "$O(V + E)$",
+      "$O(V^2)$"
+    ],
+    "answer": 0,
+    "explanation": "The explicit DFS stack holds at most O(V) vertices in the worst case (a linear chain). The visited set is also O(V). Graph storage is not counted as DFS auxiliary space."
+  },
+  {
+    "q": "With both path compression and union by rank, what is the amortised cost per Union-Find operation?",
+    "options": [
+      "$O(\\alpha(n))$ where $\\alpha$ is the inverse Ackermann function (near-constant)",
+      "(\\\\log n)$ -- with path compression alone, not union by rank",
+      "(\\\\log \\\\log n)$ -- with union by rank alone, not path compression",
+      "(1)$ strictly -- independent of all inputs and operations"
+    ],
+    "answer": 0,
+    "explanation": "The combination of path compression and union by rank gives amortised O(alpha(n)). alpha(n) is NOT bounded by a constant, so O(1) strictly is incorrect."
+  },
+  {
+    "q": "What is the time complexity of Kahn's topological-sort algorithm on a graph with V vertices and E edges?",
+    "options": [
+      "$O(V^2)$",
+      "$O(V + E)$",
+      "$O(E \\log V)$",
+      "$O(V \\log V)$"
+    ],
+    "answer": 1,
+    "explanation": "Kahn's algorithm processes each vertex and each edge exactly once in BFS order, giving O(V+E) time."
+  },
+  {
+    "q": "What correctly detects a cycle in a directed graph during DFS?",
+    "options": [
+      "Reaching a node already in the global visited set",
+      "Reaching a node that is still on the current recursion stack (grey node)",
+      "Encountering a node whose in-degree is zero",
+      "Reaching a node with an empty adjacency list"
+    ],
+    "answer": 1,
+    "explanation": "In directed graphs, a back edge (to a grey node on the current stack) signals a cycle. Reaching a completed (black) node is a forward or cross edge, not a cycle."
+  },
+  {
+    "q": "What is the relationship between BFS traversal and shortest paths in an unweighted graph?",
+    "options": [
+      "BFS gives shortest paths in undirected graphs only; it fails for directed graphs",
+      "BFS may miss shorter paths if the adjacency list is not sorted by some key",
+      "BFS gives the minimum number of nodes visited, not the minimum number of edges",
+      "BFS yields the shortest path in edge count from the source to every reachable vertex"
+    ],
+    "answer": 3,
+    "explanation": "BFS explores nodes level by level; the first time any vertex is reached is via the fewest edges. This holds for both directed and undirected unweighted graphs."
+  },
+  {
+    "q": "Which statement about topological sort is TRUE?",
+    "options": [
+      "Every DAG has exactly one valid topological ordering",
+      "Any directed graph with edges has a valid topological sort",
+      "DFS-based topological sort uses a min-heap to select the next vertex",
+      "Topological sort is only defined for directed acyclic graphs (DAGs)"
+    ],
+    "answer": 3,
+    "explanation": "Topological sort requires a DAG; any cycle makes it impossible. The ordering is generally not unique â€” multiple valid linearisations can exist for a given DAG."
+  },
+  {
+    "q": "Which statement about Dijkstra's algorithm is INCORRECT?",
+    "options": [
+      "It requires all edge weights to be non-negative; any negative weight causes incorrect results",
+      "It greedily expands the lowest-cost unvisited vertex via a priority queue",
+      "With a binary heap it achieves O((V+E) log V) time where V is vertices and E is edges",
+      "It correctly finds shortest paths when negative edge weights are present, provided no negative cycle exists"
+    ],
+    "answer": 3,
+    "explanation": "Dijkstra fails on negative edges even without negative cycles: once a vertex is finalised it is not re-examined, so a later negative edge could yield a shorter path. Use Bellman-Ford for negative weights."
+  }
+]

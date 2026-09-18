@@ -82,7 +82,10 @@ const chapters = [
   { id: '38', file: 'content/38_java_refresher.md', title: 'Java Refresher — Core & DSA Toolkit' },
   { id: '38b', file: 'content/38b_java_modern.md', title: 'Modern Java — Language, Concurrency & Ecosystem' },
   { id: '39', file: 'content/39_python_refresher.md', title: 'Python Refresher — Core & FastAPI' },
-  { id: '31', file: 'content/31_dsa_coding.md', title: 'DSA & ML Coding (Java)' },
+  { id: '31', file: 'content/31_dsa_foundations.md', title: 'DSA: Foundations & Search (Java)' },
+  { id: '31b', file: 'content/31b_dsa_graphs.md', title: 'DSA: Graphs (Java)' },
+  { id: '31c', file: 'content/31c_dynamic_programming.md', title: 'Dynamic Programming (Java)' },
+  { id: '31d', file: 'content/31d_dsa_advanced_ml_coding.md', title: 'DSA: Advanced Patterns & ML Coding (Java)' },
 
   // ── INTERVIEW PREP ──
   { section: 'Interview Prep' },

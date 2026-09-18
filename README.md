@@ -143,9 +143,12 @@ assumptions, not official company interview frequencies or measured production a
 | 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.75 hrs | Beginner-Intermediate |
 | 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~5 hrs | Intermediate |
 | 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~2.75 hrs | Beginner-Intermediate |
-| 31 | DSA — Trees, Graphs & ML Coding (Java) | ★★★ | [31_dsa_coding.md](content/31_dsa_coding.md) | ~8.75 hrs | Intermediate-Advanced |
+| 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~3.75 hrs | Intermediate |
+| 31b | DSA: Graphs (Java) | ★★★ | [31b_dsa_graphs.md](content/31b_dsa_graphs.md) | ~1.5 hrs | Intermediate |
+| 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~5.75 hrs | Intermediate-Advanced |
+| 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~2.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Languages & Coding Total** | | | **~22.25 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~27.25 hrs + practice** | |
 
 ### Interview Preparation
 

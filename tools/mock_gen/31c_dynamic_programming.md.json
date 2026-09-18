@@ -1,0 +1,90 @@
+[
+  {
+    "q": "In a 0/1 Knapsack DP using a single 1-D dp[0..W] array, in which direction must the inner weight loop iterate?",
+    "options": [
+      "Right to left: from W down to item weight",
+      "Left to right: from item weight up to W",
+      "Bidirectional with early termination at W/2",
+      "Either direction; results are identical"
+    ],
+    "answer": 0,
+    "explanation": "Iterating right-to-left ensures each item is counted at most once (0/1 constraint). Left-to-right lets the same item be reused, solving unbounded knapsack instead."
+  },
+  {
+    "q": "Which recurrence correctly computes Edit Distance dp[i][j] (Levenshtein)?",
+    "options": [
+      "dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + 1, regardless of whether characters match",
+      "dp[i][j] = dp[i-1][j-1] if s1[i]==s2[j], else 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])",
+      "dp[i][j] = dp[i-1][j-1] + cost where cost = (s1[i]!=s2[j] ? 1 : 0), ignoring delete/insert ops",
+      "dp[i][j] = max(dp[i-1][j], dp[i][j-1]) + 1, maximising over the two adjacent cells"
+    ],
+    "answer": 1,
+    "explanation": "Edit distance considers three operations: delete (dp[i-1][j]+1), insert (dp[i][j-1]+1), and substitute/match (dp[i-1][j-1]+cost). Take the minimum of the three."
+  },
+  {
+    "q": "Which approach correctly solves the Word Break problem (can string s be segmented into dictionary words)?",
+    "options": [
+      "Greedy: repeatedly match the longest dictionary prefix at each position",
+      "1-D DP: dp[i] = true if any dp[j] is true and s[j..i-1] is in the dictionary",
+      "Two pointers expanding from left and right simultaneously",
+      "Sorting dictionary words by length before scanning"
+    ],
+    "answer": 1,
+    "explanation": "Word Break is a classic DP problem. Greedy fails (e.g., 'catsandog' with {cats,cat,and,sand,dog}). dp[i] encodes whether s[0..i-1] can be segmented."
+  },
+  {
+    "q": "What is the correct House Robber DP recurrence for dp[i] (max money robbing up to and including house i)?",
+    "options": [
+      "dp[i] = max(dp[i-2], dp[i-1] + nums[i])",
+      "dp[i] = max(dp[i-1], dp[i-2] + nums[i])",
+      "dp[i] = dp[i-1] + dp[i-2]",
+      "dp[i] = min(dp[i-1], dp[i-2] + nums[i])"
+    ],
+    "answer": 1,
+    "explanation": "At house i: either skip it (best remains dp[i-1]) or rob it and add to dp[i-2] (the non-adjacent best). Option A swaps these two cases incorrectly."
+  },
+  {
+    "q": "In the 2-D DP for Longest Common Subsequence, what is dp[i][j] when s1[i] != s2[j]?",
+    "options": [
+      "dp[i][j] = 0 -- reset because characters at i and j do not match",
+      "dp[i][j] = dp[i-1][j-1] -- diagonal cell, same as when characters match",
+      "dp[i][j] = max(dp[i-1][j], dp[i][j-1])",
+      "dp[i][j] = dp[i-1][j] + dp[i][j-1] -- sum of both adjacent LCS values"
+    ],
+    "answer": 2,
+    "explanation": "When characters differ, LCS ignores either s1[i] or s2[j]: max(dp[i-1][j], dp[i][j-1]). Adding them (option D) would double-count common subsequences."
+  },
+  {
+    "q": "In a bitmask DP for TSP with n cities, what is the total number of distinct (current-city, visited-mask) states?",
+    "options": [
+      "(n^2)$ -- quadratic, only for all-pairs city comparisons without bitmask",
+      "(2^n)$ -- exponential, counting only the visited-city bitmask, not the current city",
+      "(n \\\\cdot 2^n)$ -- n current-city choices times 2^n bitmask subsets",
+      "(n^n)$ -- super-exponential, far exceeds the actual DP state count"
+    ],
+    "answer": 2,
+    "explanation": "TSP bitmask DP has n choices for current city and 2^n possible visited subsets, giving n*2^n distinct states. With O(n) transitions per state total time is O(n^2 * 2^n)."
+  },
+  {
+    "q": "Which algorithm achieves $O(n \\log n)$ time for the Longest Increasing Subsequence problem?",
+    "options": [
+      "Two pointers tracking the last two values of the growing LIS, like Fibonacci pair update",
+      "2-D DP table comparing all element pairs, dp[i][j] = LIS ending at i using elements up to j",
+      "Greedy with a HashMap storing the count of each previously seen value",
+      "Patience sort / tails[] array: binary-search each element into tails[], where tails[i] holds the smallest tail of any LIS of length i+1"
+    ],
+    "answer": 3,
+    "explanation": "The O(n log n) LIS maintains tails[i] = smallest ending element of all length-(i+1) LIS. Binary search finds each element's position in O(log n). The 2-D DP is O(n^2)."
+  },
+  {
+    "q": "Which recurrence correctly implements unbounded coin change (count total ways to make amount A, each coin reusable)?",
+    "options": [
+      "dp[a] = max(dp[a], dp[a-coin]+1) for each coin",
+      "Outer loop over amounts, inner over coins: dp[a] += dp[a-coin] if a >= coin",
+      "dp[a] = dp[a-1] + dp[a-2] (Fibonacci-style with 2 denominations)",
+      "Outer loop over coins, inner over amounts from coin to A: dp[a] += dp[a-coin]"
+    ],
+    "answer": 3,
+    "explanation": "Iterating coins in the outer loop and amounts in the inner loop counts combinations (not permutations). Reversing the loop order counts permutations instead."
+  }
+]

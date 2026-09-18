@@ -1,0 +1,266 @@
+[
+  {
+    "q": "What is the time complexity of inserting an element into a max-heap of size n?",
+    "options": [
+      "$O(\\log n)$",
+      "$O(n)$",
+      "$O(1)$",
+      "$O(n \\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "Heap insertion uses sift-up, traversing at most O(log n) levels. O(1) describes peek (find-min/max), not insert."
+  },
+  {
+    "q": "Which sorting algorithm is BOTH stable and guarantees worst-case $O(n \\log n)$ time?",
+    "options": [
+      "Merge sort -- O(n log n) worst-case and stable",
+      "Quicksort -- O(n log n) average but O(n^2) worst-case",
+      "Heapsort -- O(n log n) worst-case but not stable",
+      "Introsort -- hybrid of quicksort and heapsort"
+    ],
+    "answer": 0,
+    "explanation": "Merge sort is always O(n log n) and stable. Quicksort degrades to O(n^2) worst-case and is typically not stable in standard partitioning."
+  },
+  {
+    "q": "What is the average-case time complexity of Java HashMap.containsKey()?",
+    "options": [
+      "$O(1)$",
+      "$O(\\log n)$",
+      "$O(n)$",
+      "$O(n \\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "HashMap uses hash-based bucket lookup so containsKey is O(1) average. O(n) is the degenerate case with extreme hash collisions."
+  },
+  {
+    "q": "Which operation on a singly-linked list runs in O(1) time given a direct reference to a node?",
+    "options": [
+      "Inserting a new node immediately after the referenced node",
+      "Finding the middle node using slow and fast pointer traversal",
+      "Reversing the entire list by relinking all next-pointers",
+      "Searching for a specific value by scanning from the head node"
+    ],
+    "answer": 0,
+    "explanation": "Inserting after a known node redirects two next-pointers in constant time. Middle-finding, reversal, and search all require O(n) traversal."
+  },
+  {
+    "q": "What is the time complexity of Floyd's tortoise-and-hare cycle-detection algorithm on a linked list of n nodes?",
+    "options": [
+      "$O(n)$",
+      "$O(n \\log n)$",
+      "$O(n^2)$",
+      "$O(\\log n)$"
+    ],
+    "answer": 0,
+    "explanation": "Floyd's algorithm traverses the list at most twice (detect cycle then find entry point), so total work is O(n)."
+  },
+  {
+    "q": "When performing iterative inorder BST traversal with an explicit stack, what action occurs first in each loop iteration?",
+    "options": [
+      "Push all left descendants of current onto the stack before processing any",
+      "Push the root then immediately descend into the right subtree",
+      "Pop and visit the top node before touching any left subtree",
+      "Push right child before left child to mirror post-order"
+    ],
+    "answer": 0,
+    "explanation": "Iterative inorder repeatedly descends left (pushing each node) until reaching null, then pops to visit, then moves to the right child."
+  },
+  {
+    "q": "Which fundamental property distinguishes a max-heap from a BST?",
+    "options": [
+      "A max-heap only guarantees parent >= each child; siblings have no ordering requirement",
+      "A max-heap supports O(log n) search, whereas a BST supports O(1) search",
+      "Max-heap inorder traversal always produces a sorted sequence like BST inorder",
+      "A max-heap requires a complete binary tree; a BST is always a complete binary tree"
+    ],
+    "answer": 0,
+    "explanation": "Heaps enforce only the parent-child relationship. BSTs enforce left-subtree < node < right-subtree at every level, enabling O(log n) search that heaps cannot provide."
+  },
+  {
+    "q": "What key correctness property does the merge step in merge sort guarantee about its output?",
+    "options": [
+      "The merged subarray is fully sorted and preserves relative order of equal elements (stable)",
+      "The pivot element is placed in its exact final sorted position after partition",
+      "The recursion depth is bounded to O(log n) by splitting at the median",
+      "All duplicate elements are removed and merged before the merge step completes"
+    ],
+    "answer": 0,
+    "explanation": "The merge step combines two sorted halves into one fully sorted array, and equal elements from the left half precede those from the right, making it stable."
+  },
+  {
+    "q": "In Java, which collection class implements a min-heap with O(log n) offer and poll operations?",
+    "options": [
+      "TreeMap<Integer, Integer>",
+      "PriorityQueue<Integer>",
+      "LinkedList<Integer> with manual ordering",
+      "ArrayDeque<Integer>"
+    ],
+    "answer": 1,
+    "explanation": "Java PriorityQueue is a binary min-heap (by default) with O(log n) offer/poll. TreeMap is a sorted red-black tree; ArrayDeque and LinkedList are not heaps."
+  },
+  {
+    "q": "In Java's LinkedList, which operation has O(n) time complexity?",
+    "options": [
+      "addFirst(E e) - insert at head",
+      "get(int index) - retrieve element by position",
+      "addLast(E e) - insert at tail",
+      "removeFirst() - remove the head element"
+    ],
+    "answer": 1,
+    "explanation": "LinkedList.get(index) traverses from head in O(n). addFirst, addLast, and removeFirst all manipulate head/tail pointers directly and run in O(1)."
+  },
+  {
+    "q": "What is the time complexity of inserting a word of length L into a Trie with a 26-character alphabet?",
+    "options": [
+      "$O(n)$ where n is the total number of words already stored",
+      "$O(L)$",
+      "$O(L \\log n)$",
+      "$O(26 \\cdot n)$"
+    ],
+    "answer": 1,
+    "explanation": "Trie insertion creates or traverses exactly L nodes. The constant branching factor (26) does not affect asymptotic complexity."
+  },
+  {
+    "q": "Which invariant does a Monotonic Decreasing Stack maintain from bottom to top?",
+    "options": [
+      "The global minimum is always at the top",
+      "Elements are in strictly decreasing order from bottom to top",
+      "Elements are in strictly increasing order from bottom to top",
+      "The stack mirrors the original array segment in reverse"
+    ],
+    "answer": 1,
+    "explanation": "A monotonic decreasing stack pops elements smaller than the incoming value before pushing, so the sequence from bottom to top is strictly decreasing."
+  },
+  {
+    "q": "In the variable-size sliding-window pattern, which event triggers moving the right pointer?",
+    "options": [
+      "The window already satisfies the constraint and we seek a smaller valid window",
+      "The current window does not yet satisfy the constraint, so we expand to include more elements",
+      "The left pointer has caught up to the right pointer",
+      "The window contains more than k distinct elements and must shrink"
+    ],
+    "answer": 1,
+    "explanation": "The right pointer expands the window until the constraint is satisfied. Once satisfied, the left pointer contracts to find the optimum (e.g., minimum length window)."
+  },
+  {
+    "q": "What is the time complexity of finding the k-th largest element in a stream of n elements using a min-heap of size k?",
+    "options": [
+      "$O(k \\log k)$ â€” initial heap setup cost",
+      "$O(n \\log k)$ â€” each of n elements may cause a heap operation",
+      "$O(n \\log n)$ â€” equivalent to full sort",
+      "$O(k \\log n)$ â€” only k elements are retained"
+    ],
+    "answer": 1,
+    "explanation": "Each of the n elements is either discarded or triggers an O(log k) heap insert/pop. Total: O(n log k). O(k log k) is only the initial setup."
+  },
+  {
+    "q": "Under which pivot-selection scenario does Quicksort degrade to $O(n^2)$ time?",
+    "options": [
+      "When the array length is not a power of two",
+      "When the pivot always ends up at the minimum or maximum position after partitioning",
+      "When there are more than n/2 duplicate elements in the array",
+      "When the input array is in uniformly random order"
+    ],
+    "answer": 1,
+    "explanation": "Quicksort is O(n^2) when partitioning consistently produces one empty part and one of size n-1, which happens when the pivot is always the extreme element."
+  },
+  {
+    "q": "What is the auxiliary space complexity of merge sort when sorting an n-element array?",
+    "options": [
+      "$O(1)$ â€” merge sort sorts in-place",
+      "$O(\\log n)$ â€” only the call stack contributes",
+      "$O(n)$ â€” a temporary merge buffer of size n is required",
+      "$O(n \\log n)$ â€” proportional to total comparisons performed"
+    ],
+    "answer": 2,
+    "explanation": "Merge sort requires a temporary array of size n for the merge step. The call stack adds O(log n) but the merge buffer dominates, giving O(n) auxiliary space."
+  },
+  {
+    "q": "In a balanced BST (e.g., Java TreeSet backed by a red-black tree), what is the time complexity for search, insert, and delete?",
+    "options": [
+      "$O(1)$ amortised for all three operations",
+      "$O(n)$ worst case for all three operations",
+      "$O(\\log n)$ for all three operations",
+      "$O(\\sqrt{n})$ average case for all three operations"
+    ],
+    "answer": 2,
+    "explanation": "A balanced BST maintains height O(log n), so search, insert, and delete each traverse at most O(log n) nodes."
+  },
+  {
+    "q": "What is the O(1)-space approach to checking whether a singly-linked list is a palindrome?",
+    "options": [
+      "Copy all node values to an auxiliary array, then compare with inward two-pointer scan",
+      "Push all values onto a stack, then traverse again comparing each stack pop to the current node",
+      "Use slow/fast pointers to find the midpoint, reverse the second half in-place, then compare",
+      "Count total nodes then recurse with a depth offset to compare symmetrically"
+    ],
+    "answer": 2,
+    "explanation": "Slow/fast pointer finds the middle (O(1) space), in-place reversal of the second half avoids extra storage, and the two-pointer comparison runs in O(n) time and O(1) space."
+  },
+  {
+    "q": "Which data structure supports O(log n) insert, O(log n) delete-by-value, and O(log n) find-minimum simultaneously?",
+    "options": [
+      "Java HashSet (hash-based, O(1) contains but no ordering or min-query)",
+      "Sorted array with binary search",
+      "Java TreeSet (balanced BST / red-black tree)",
+      "Java PriorityQueue (binary heap with O(1) peek but O(n) arbitrary delete)"
+    ],
+    "answer": 2,
+    "explanation": "TreeSet provides O(log n) add, remove(value), and first() (minimum). PriorityQueue has O(1) peek but O(n) arbitrary-value deletion; sorted arrays have O(n) insertion."
+  },
+  {
+    "q": "What time complexity does the sliding-window approach achieve for Longest Substring Without Repeating Characters?",
+    "options": [
+      "$O(n^2)$ â€” nested loop checks each window exhaustively",
+      "$O(n \\log n)$ â€” due to balanced-BST character set operations",
+      "$O(n)$ â€” each character is added and removed from the window at most once",
+      "$O(n \\cdot |\\Sigma|)$ where |Sigma| is the alphabet size"
+    ],
+    "answer": 2,
+    "explanation": "Each character enters and leaves the window exactly once, giving O(n) total work. HashMap or array lookups are O(1), not O(log n)."
+  },
+  {
+    "q": "In Java, how do you correctly sort a primitive int[] array in descending order?",
+    "options": [
+      "Arrays.sort(arr, (a,b)->b-a) directly on int[] -- lambda comparator for primitive arrays",
+      "Arrays.sort(arr, Comparator.reverseOrder()) directly on int[] -- reverseOrder with primitive array",
+      "Arrays.sort(arr) then Collections.reverse(arr) -- reverse primitive array in-place",
+      "Convert to Integer[] (box), then Arrays.sort(boxed, (x,y)->y-x) with a lambda comparator"
+    ],
+    "answer": 3,
+    "explanation": "Arrays.sort with a Comparator only works on Object arrays (Integer[]). Collections.reverse needs a List. You must box to Integer[] to use a lambda comparator."
+  },
+  {
+    "q": "If a stack is implemented with two queues using O(1) push, what is the time complexity of pop?",
+    "options": [
+      "$O(1)$",
+      "$O(\\log n)$",
+      "$O(\\sqrt{n})$",
+      "$O(n)$"
+    ],
+    "answer": 3,
+    "explanation": "With O(1) push (enqueue to active queue), pop must transfer all but the last element to the auxiliary queue to expose the top, costing O(n) per pop operation."
+  },
+  {
+    "q": "In linked-list problems, what is the primary purpose of the fast/slow pointer technique beyond cycle detection?",
+    "options": [
+      "Enabling O(1) deletion of the tail node without a tail pointer",
+      "Eliminating the need to reverse the list when checking palindromes",
+      "Detecting cycles in O(log n) steps rather than O(n), since the fast pointer doubles speed",
+      "Finding the middle node in one pass without knowing the total list length in advance"
+    ],
+    "answer": 3,
+    "explanation": "When the fast pointer (2 steps) reaches the end, the slow pointer (1 step) is at the middle. This one-pass middle-finding is the core use; palindrome checking also builds on it."
+  },
+  {
+    "q": "Which property of a BST ensures that inorder traversal always yields a fully sorted sequence?",
+    "options": [
+      "The tree is always complete with all levels fully filled except possibly the last level",
+      "The left child is strictly smaller than its immediate parent node only, not necessarily grandparents",
+      "The tree height is always O(log n) for n nodes, which automatically forces sorted inorder output",
+      "For every node, ALL keys in its entire left subtree are smaller and ALL keys in its entire right subtree are larger"
+    ],
+    "answer": 3,
+    "explanation": "The full BST invariant applies recursively to the whole subtree, not just the immediate children. This guarantees inorder (left-root-right) visits nodes in strictly ascending order."
+  }
+]

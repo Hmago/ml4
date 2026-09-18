@@ -20,7 +20,7 @@ After this chapter you will be able to:
 
 > ▶ **Most code blocks here are live.** Press **Run** and they execute in your browser. Everything up to §39.8 runs for real — the outputs in the comments were captured from an actual run. The §39.8 blocks need a server runtime, so they show a "copy this locally" note instead.
 
-> **Companion chapters:** [Ch 38 — Java Refresher](#content/38_java_refresher) does the same job for Java, and [Ch 31 — DSA & ML Coding](#content/31_dsa_coding) is the algorithm practice. This chapter is the **fast brush-up**: enough to write clean Python in an interview and to talk credibly about a Python API service.
+> **Companion chapters:** [Ch 38 — Java Refresher](#content/38_java_refresher) does the same job for Java, and [Ch 31 — DSA & ML Coding](#content/31_dsa_foundations) is the algorithm practice. This chapter is the **fast brush-up**: enough to write clean Python in an interview and to talk credibly about a Python API service.
 
 ---
 
@@ -1275,4 +1275,4 @@ Two related facts worth adding: dependency results are **cached per request**, s
 
 ---
 
-**Next:** [Ch 38 — Java Refresher](#content/38_java_refresher) for the same treatment in Java, or [Ch 31 — DSA & ML Coding](#content/31_dsa_coding) to start solving problems.
+**Next:** [Ch 38 — Java Refresher](#content/38_java_refresher) for the same treatment in Java, or [Ch 31 — DSA & ML Coding](#content/31_dsa_foundations) to start solving problems.

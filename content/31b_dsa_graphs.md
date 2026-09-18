@@ -976,7 +976,6 @@ private boolean dfs(char[][] board, String word, int r, int c, int idx) {
 
 ---
 
-
 ---
 
 **Previous:** [Chapter 31 — DSA: Foundations & Search](#content/31_dsa_foundations) | **Next:** [Chapter 31c — Dynamic Programming](#content/31c_dynamic_programming)

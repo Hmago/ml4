@@ -20,7 +20,7 @@ After this chapter you will be able to:
 **Quick check** boxes are retrieval practice — attempt before revealing.
 **Interview** boxes give the question, what to say, and the follow-up trap.
 
-> **This is the "catch me up" half.** Its companion, [Ch 38 — Java Refresher: Core & DSA Toolkit](#content/38_java_refresher), reloads the fundamentals you need for algorithm work — arrays, strings, collections, comparators and the traps. If your immediate goal is a coding interview, read that one and [Ch 31](#content/31_dsa_coding) first; this chapter is what you need to be *employable on a 2026 codebase*.
+> **This is the "catch me up" half.** Its companion, [Ch 38 — Java Refresher: Core & DSA Toolkit](#content/38_java_refresher), reloads the fundamentals you need for algorithm work — arrays, strings, collections, comparators and the traps. If your immediate goal is a coding interview, read that one and [Ch 31](#content/31_dsa_foundations) first; this chapter is what you need to be *employable on a 2026 codebase*.
 
 > ⚠️ **On running the code.** The in-app runner compiles against **JDK 22**, so records, sealed types, pattern matching and sequenced collections all execute normally. Two categories do not: anything that starts a **thread** (the sandbox forbids OS threads) and anything still in **preview** at Java 22 — scoped values, which finalised in Java 25, and structured concurrency, which is *still* in preview as of Java 25 (JEP 505, fifth preview). Those blocks are marked read-only, with their behaviour described inline.
 
@@ -810,7 +810,7 @@ Whenever `computeDefault()` is expensive or has side effects. `orElse` evaluates
 
 ## 38b.5 Streams — What You Half-Remember, Corrected ★★
 
-Be honest about where this belongs. Streams are close to irrelevant for algorithm interviews: across the 400-plus Java problems in [Ch 31](#content/31_dsa_coding), `stream()` appears exactly **once**. Under time pressure a `for` loop is faster to write, faster to debug and easier to talk through. But open any backend repository written since 2018 and streams are everywhere. So learn this for the job, not for the whiteboard.
+Be honest about where this belongs. Streams are close to irrelevant for algorithm interviews: across the 400-plus Java problems in [Ch 31](#content/31_dsa_foundations), `stream()` appears exactly **once**. Under time pressure a `for` loop is faster to write, faster to debug and easier to talk through. But open any backend repository written since 2018 and streams are everywhere. So learn this for the job, not for the whiteboard.
 
 #### Simple Explanation
 
@@ -1906,4 +1906,4 @@ Fix it in the **compact constructor**: `tags = List.copyOf(tags);` — this both
 
 ---
 
-**Next:** [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_coding) to put the language to work, or revisit [Ch 21 — OO Design & SOLID (Java)](#content/21_design_fundamentals) now that sealed types and records change how you'd model several of those patterns.
+**Next:** [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_foundations) to put the language to work, or revisit [Ch 21 — OO Design & SOLID (Java)](#content/21_design_fundamentals) now that sealed types and records change how you'd model several of those patterns.

@@ -19,7 +19,7 @@ After this chapter you will be able to:
 **Quick check** boxes are retrieval practice — attempt before revealing.
 **Interview** boxes give the question, what to say, and the follow-up trap.
 
-> **This chapter is the on-ramp to [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_coding).** Chapter 31 is 400+ problems deep and assumes Java fluency; it explains the language in only three places. Everything here exists to close that gap. The *modern* language — records, sealed types, pattern matching, virtual threads, Spring Boot 3 — lives in the companion chapter, [Ch 38b — Modern Java](#content/38b_java_modern).
+> **This chapter is the on-ramp to [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_foundations).** Chapter 31 is 400+ problems deep and assumes Java fluency; it explains the language in only three places. Everything here exists to close that gap. The *modern* language — records, sealed types, pattern matching, virtual threads, Spring Boot 3 — lives in the companion chapter, [Ch 38b — Modern Java](#content/38b_java_modern).
 
 ---
 
@@ -71,11 +71,11 @@ The two chapters exist for two different jobs, and the right order depends on yo
 
 | Your goal | Read |
 |---|---|
-| Grind DSA and pass a coding interview | **This chapter**, then [Ch 31](#content/31_dsa_coding). §38b is optional. |
+| Grind DSA and pass a coding interview | **This chapter**, then [Ch 31](#content/31_dsa_foundations). §38b is optional. |
 | Return to backend work on a modern codebase | Skim §38.6 for the traps, then all of [Ch 38b](#content/38b_java_modern) |
-| Both | This chapter → [Ch 38b](#content/38b_java_modern) → [Ch 31](#content/31_dsa_coding) |
+| Both | This chapter → [Ch 38b](#content/38b_java_modern) → [Ch 31](#content/31_dsa_foundations) |
 
-A note on why this chapter weights things the way it does. Every Java construct in [Ch 31](#content/31_dsa_coding) and its 400+ problems was counted. `int[]` appears **2,799** times; `ArrayList` 165; `ArrayDeque`, `Deque` and `Queue` together over 180; lambdas 327. `stream()` appears **once**, and `Optional` **once**. So arrays, collections and comparators get the space here, and streams are covered in [Ch 38b](#content/38b_java_modern) where they actually belong — in backend code.
+A note on why this chapter weights things the way it does. Every Java construct in [Ch 31](#content/31_dsa_foundations) and its 400+ problems was counted. `int[]` appears **2,799** times; `ArrayList` 165; `ArrayDeque`, `Deque` and `Queue` together over 180; lambdas 327. `stream()` appears **once**, and `Optional` **once**. So arrays, collections and comparators get the space here, and streams are covered in [Ch 38b](#content/38b_java_modern) where they actually belong — in backend code.
 
 ### Rust check
 
@@ -106,7 +106,7 @@ Answer these before reading on. They are diagnostic, not a test — each one map
 
 | Score | What to do |
 |---|---|
-| **7–8** | Skim §38.2–38.5 for the tables, read §38.6 properly, go to [Ch 31](#content/31_dsa_coding) |
+| **7–8** | Skim §38.2–38.5 for the tables, read §38.6 properly, go to [Ch 31](#content/31_dsa_foundations) |
 | **4–6** | Normal for a four-year gap. Read the chapter in order; you'll move fast. |
 | **0–3** | Read every section and type the examples out rather than reading them. |
 
@@ -125,7 +125,7 @@ Answer these before reading on. They are diagnostic, not a test — each one map
 
 ## 38.2 Arrays — The Workhorse ★★★
 
-If you only reactivate one thing before opening [Ch 31](#content/31_dsa_coding), make it this. The token `int[]` appears **2,799 times** across that chapter and its 400+ problems. Nothing else comes close. Interview Java is, to a first approximation, *array Java* — with a hash map bolted on when you need one.
+If you only reactivate one thing before opening [Ch 31](#content/31_dsa_foundations), make it this. The token `int[]` appears **2,799 times** across that chapter and its 400+ problems. Nothing else comes close. Interview Java is, to a first approximation, *array Java* — with a hash map bolted on when you need one.
 
 The good news is that arrays are the part of the language that changed least. Everything below worked identically in Java 8. You are not learning; you are re-loading.
 
@@ -386,7 +386,7 @@ for (int v : prim) list.add(v);
 List<Integer> list = IntStream.of(prim).boxed().toList();
 ```
 
-Both are fine. In an interview under time pressure, honestly, write the loop — it needs no imports, no one ever questions it, and [Ch 31](#content/31_dsa_coding) uses `stream()` exactly once in 400+ problems. Know the stream form so you can read it; reach for the loop so you can write it fast.
+Both are fine. In an interview under time pressure, honestly, write the loop — it needs no imports, no one ever questions it, and [Ch 31](#content/31_dsa_foundations) uses `stream()` exactly once in 400+ problems. Know the stream form so you can read it; reach for the loop so you can write it fast.
 
 The mutability ladder is worth memorising as three rungs:
 
@@ -477,7 +477,7 @@ public class Main {
 
 ## 38.3 Strings and `char[]` ★★★
 
-`char[]` shows up 119 times in [Ch 31](#content/31_dsa_coding) and `StringBuilder` 57 times — and those two numbers together tell you the whole strategy. In DSA Java you rarely manipulate a `String`. You *convert it to a `char[]`*, work on the array, and *build the answer with a `StringBuilder`*. Strings are the input and output format; arrays are the working format.
+`char[]` shows up 119 times in [Ch 31](#content/31_dsa_foundations) and `StringBuilder` 57 times — and those two numbers together tell you the whole strategy. In DSA Java you rarely manipulate a `String`. You *convert it to a `char[]`*, work on the array, and *build the answer with a `StringBuilder`*. Strings are the input and output format; arrays are the working format.
 
 **In this section**
 
@@ -858,7 +858,7 @@ Look carefully at the two `toString` lines. Push 1, 2, 3 onto an `ArrayDeque` an
 
 That is the second-worst thing about `java.util.Stack`. The worst is that every single method is `synchronized`, so you pay for a lock in single-threaded code. It has been soft-deprecated in the Javadoc for years, and the recommended replacement is named explicitly: `ArrayDeque`.
 
-**But [Ch 31](#content/31_dsa_coding) uses `Stack` in places** — it appears 48 times there, against 41 for `ArrayDeque`. That is normal; a lot of DSA material predates the advice. Read both, write `ArrayDeque`.
+**But [Ch 31](#content/31_dsa_foundations) uses `Stack` in places** — it appears 48 times there, against 41 for `ArrayDeque`. That is normal; a lot of DSA material predates the advice. Read both, write `ArrayDeque`.
 
 Two behavioural details that bite:
 
@@ -1071,7 +1071,7 @@ Also note the two comment lines above: `LinkedHashMap` preserved the `c, a, b` i
 
 ## 38.5 Comparators and Lambdas — The Java 8 Skill DSA Actually Needs ★★★
 
-Here is the number that should shape how you spend the next hour. Across [Ch 31](#content/31_dsa_coding) and its 400+ problems, the arrow `->` appears **327 times**. `stream()` appears **once**. Lambdas in DSA Java are, almost without exception, **comparators** — and comparators are where a rusty Java developer loses points, because the two failure modes both produce *plausible-looking wrong answers* rather than compiler errors.
+Here is the number that should shape how you spend the next hour. Across [Ch 31](#content/31_dsa_foundations) and its 400+ problems, the arrow `->` appears **327 times**. `stream()` appears **once**. Lambdas in DSA Java are, almost without exception, **comparators** — and comparators are where a rusty Java developer loses points, because the two failure modes both produce *plausible-looking wrong answers* rather than compiler errors.
 
 **In this section**
 
@@ -1268,7 +1268,7 @@ Option 3 is what to reach for in an interview when you just need descending orde
 
 #### Simple Explanation
 
-Ninety percent of the comparators you write in [Ch 31](#content/31_dsa_coding) do one of two jobs: order the rows of an `int[][]`, or order entries inside a `PriorityQueue`. An `int[][]` in Java is an array of `int[]` **objects**, not a rectangular block — which is exactly why `Arrays.sort(intervals, cmp)` works at all. The outer array is an object array, so it takes a comparator, and your comparator receives two `int[]` rows.
+Ninety percent of the comparators you write in [Ch 31](#content/31_dsa_foundations) do one of two jobs: order the rows of an `int[][]`, or order entries inside a `PriorityQueue`. An `int[][]` in Java is an array of `int[]` **objects**, not a rectangular block — which is exactly why `Arrays.sort(intervals, cmp)` works at all. The outer array is an object array, so it takes a comparator, and your comparator receives two `int[]` rows.
 
 ```java
 int[][] intervals = { {8, 10}, {1, 9}, {2, 3}, {15, 18} };
@@ -1408,7 +1408,7 @@ Identical logic, identical types, and the buggy one returns `0` the moment the v
 - Never write `==` between two things whose static type is a wrapper.
 - If **either** side is a primitive `int`, `==` is fine — Java unboxes the other side and compares numerically.
 - If **both** sides are `Integer`, use `.equals` or `Objects.equals` (which also survives `null`).
-- Better still, keep your hot data in `int[]` and `int` locals, which is what [Ch 31](#content/31_dsa_coding) does throughout.
+- Better still, keep your hot data in `int[]` and `int` locals, which is what [Ch 31](#content/31_dsa_foundations) does throughout.
 
 > **Interview —** *"Why does `Integer a = 128, b = 128; a == b` print false when the same code with 127 prints true?"*
 >
@@ -1478,7 +1478,7 @@ Three lines there deserve a pause. `-Integer.MIN_VALUE` is still `Integer.MIN_VA
 
 `(lo + hi) >>> 1` also works — unsigned right shift treats the wrapped sum as the 33-bit value it morally is. It's correct and it's what the JDK uses, but `lo + (hi - lo) / 2` says what it means, so prefer that.
 
-Reach for `long` when a sum, product, or prefix-sum could exceed roughly $2 \times 10^9$, and for `Math.addExact` / `multiplyExact` when you would rather crash than be wrong — they throw `ArithmeticException` instead of wrapping, which is exactly right for a `Reverse Integer`-style problem. [Ch 31](#content/31_dsa_coding) has a dedicated overflow-prevention section; this is the groundwork for it.
+Reach for `long` when a sum, product, or prefix-sum could exceed roughly $2 \times 10^9$, and for `Math.addExact` / `multiplyExact` when you would rather crash than be wrong — they throw `ArithmeticException` instead of wrapping, which is exactly right for a `Reverse Integer`-style problem. [Ch 31](#content/31_dsa_foundations) has a dedicated overflow-prevention section; this is the groundwork for it.
 
 > **Interview —** *"Walk me through your binary search template."*
 >
@@ -1603,7 +1603,7 @@ Two subtleties worth banking:
 - **Compound assignment `ch += 1` contains an implicit narrowing cast**, so it compiles while `ch = ch + 1` does not.
 - **`"" + 'a' + 'b'` gives `"ab"`** because the leading empty string forces string concatenation left-to-right, whereas `'a' + 'b'` is plain integer addition — `195`.
 
-The one promotion you *want* is `c - 'a'`, the 26-bucket frequency-array index used all over [Ch 31](#content/31_dsa_coding).
+The one promotion you *want* is `c - 'a'`, the 26-bucket frequency-array index used all over [Ch 31](#content/31_dsa_foundations).
 
 ### Trap summary
 
@@ -1630,7 +1630,7 @@ The one promotion you *want* is `c - 'a'`, the 26-bucket frequency-array index u
 
 - What erasure removes at runtime, and the four things you therefore cannot write
 - `equals`/`hashCode` as one contract — and the exact failure signature when you break it
-- `Comparable` vs `Comparator`, plus the `Node` class you'll type forty times in [Ch 31](#content/31_dsa_coding)
+- `Comparable` vs `Comparator`, plus the `Node` class you'll type forty times in [Ch 31](#content/31_dsa_foundations)
 
 ### Type erasure and what it costs you
 
@@ -1794,7 +1794,7 @@ Adding one method fixes all of it:
 
 The contract mirror-images `equals`: `compareTo` should return `0` exactly when `equals` returns `true`. If it doesn't, `TreeMap` and `TreeSet` — which order by `compareTo` and ignore `equals` entirely — will disagree with `HashSet` about whether two elements are duplicates.
 
-Here is the shape you will write over and over in [Ch 31](#content/31_dsa_coding), with the tiebreaker that makes it deterministic:
+Here is the shape you will write over and over in [Ch 31](#content/31_dsa_foundations), with the tiebreaker that makes it deterministic:
 
 ```java
 static final class Node implements Comparable<Node> {
@@ -2003,4 +2003,4 @@ The general rule: several JDK methods return *views* rather than copies — `sub
 
 ---
 
-**Next:** [Ch 38b — Modern Java: Language, Concurrency & Ecosystem](#content/38b_java_modern) for records, sealed types, pattern matching and virtual threads — or go straight to [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_coding) and start solving.
+**Next:** [Ch 38b — Modern Java: Language, Concurrency & Ecosystem](#content/38b_java_modern) for records, sealed types, pattern matching and virtual threads — or go straight to [Ch 31 — DSA & ML Coding (Java)](#content/31_dsa_foundations) and start solving.

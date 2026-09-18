@@ -853,7 +853,7 @@ error, and compare with exact sampled/batch results.
 | A | A:3, B:2 |
 
 **Prerequisites:** [Ch 24: sketches, partitioning and event-time windows](#content/24_system_design_data_distributed),
-[Ch 31: heaps](#content/31_dsa_coding).
+[Ch 31: heaps](#content/31_dsa_foundations).
 [Contents](#chapter37-toc) · [Previous: IDs](#cs14) · [Next: leaderboard](#cs16)
 
 ## 15.2 Architecture

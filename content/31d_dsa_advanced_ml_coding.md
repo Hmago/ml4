@@ -1129,7 +1129,7 @@ This is your cheat sheet. When you read a problem, scan for keywords. The keywor
 +------------------------------------+-------------------------+------------------------------------------+
 ```
 
-> **If the pattern comes back "Dynamic Programming", don't stop there.** Go one level deeper and name the *parent* (§18.15): which of the six is it, and what is the one change? "It's DP" buys you nothing in an interview; "it's 0/1 knapsack with `max` swapped for `||`" buys you the whole solution.
+> **If the pattern comes back "Dynamic Programming", don't stop there.** Go one level deeper and name the *parent* (§18.15 in the [Dynamic Programming chapter](#content/31c_dynamic_programming)): which of the six is it, and what is the one change? "It's DP" buys you nothing in an interview; "it's 0/1 knapsack with `max` swapped for `||`" buys you the whole solution.
 
 ---
 
@@ -1580,7 +1580,6 @@ Output: forward(X) returns a 3x2 matrix — each row is a weighted average of th
 ║    single-head self-attention (scale by sqrt(dk))                   ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
-
 
 ---
 

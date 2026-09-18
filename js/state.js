@@ -173,6 +173,35 @@
   localStorage.setItem('ml4-migration-resequence-v3', 'done');
 })();
 
+// ─── Migration v4: Chapter 31 split into four chapters (31/31b/31c/31d) ───
+// "DSA & ML Coding" grew to 288 KB (mostly Dynamic Programming); split into
+// Foundations & Search, Graphs, Dynamic Programming, and Advanced Patterns &
+// ML Coding. Prior read/quiz/comment/highlight progress against the single
+// old file is carried onto the first of the four new files so it isn't lost.
+(function migrateChapterPathsV4() {
+  if (localStorage.getItem('ml4-migration-dsa-split-v4') === 'done') return;
+  var remap = {
+    'content/31_dsa_coding.md': 'content/31_dsa_foundations.md',
+  };
+  var storeKeys = ['ml4-read','ml4-quiz-scores','ml4-quiz-history','ml4-chapter-track','ml4-comments','ml4-highlights','ml4-strikes'];
+  storeKeys.forEach(function(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      var obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+      var changed = false;
+      var out = {};
+      Object.keys(obj).forEach(function(k) {
+        if (remap[k] && !obj[remap[k]]) { out[remap[k]] = obj[k]; changed = true; }
+        else { out[k] = obj[k]; }
+      });
+      if (changed) localStorage.setItem(key, JSON.stringify(out));
+    } catch(e) {}
+  });
+  localStorage.setItem('ml4-migration-dsa-split-v4', 'done');
+})();
+
 // ─── State ───
 let currentIndex = -1;
 let readChapters = JSON.parse(localStorage.getItem('ml4-read') || '{}');
@@ -554,7 +583,10 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/38_java_refresher.md': 345,
   'content/38b_java_modern.md': 295,
   'content/39_python_refresher.md': 160,
-  'content/31_dsa_coding.md': 825,
+  'content/31_dsa_foundations.md': 230,
+  'content/31b_dsa_graphs.md': 95,
+  'content/31c_dynamic_programming.md': 350,
+  'content/31d_dsa_advanced_ml_coding.md': 160,
   'content/32_interview_questions.md': 240,
   'content/33_llm_interview_questions.md': 240,
   'content/33b_llm_interview_questions_part2.md': 260,

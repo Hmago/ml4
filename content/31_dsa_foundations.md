@@ -166,11 +166,18 @@ Output: 3  (nums becomes [1, 2, 3, _, _])
 
 ### Pattern 3: Prefix Sum
 
-Compute any subarray sum in O(1) after O(n) preprocessing: `sum(i, j) = prefix[j+1] - prefix[i]`.
+**Idea:** precompute a running total once, so any range sum afterward is just one subtraction — no more re-summing the same elements over and over.
+
+**When to use:** you're asked for a **sum (or count) over a range/subarray**, especially **repeatedly** across many ranges, or the problem says "subarray sum equals K." If you catch yourself writing a nested loop that re-adds overlapping elements, that's the signal to switch to prefix sum.
+
+`prefix[i]` = sum of all elements *before* index `i`. To get the sum of `nums[i..j]` (inclusive), subtract what came before `i` from what came before `j+1`:
 
 ```
 Array:     [3, 1, 4, 1, 5, 9]
-Prefix:  [0, 3, 4, 8, 9, 14, 23]    ← always start with 0
+Prefix:  [0, 3, 4, 8, 9, 14, 23]    ← prefix[0] = 0 (empty), always start with 0
+
+sum(1, 3) = nums[1]+nums[2]+nums[3] = 1+4+1 = 6
+          = prefix[4] - prefix[1]  =  9  -  3  = 6      ✓
 ```
 
 ```java
@@ -2350,7 +2357,6 @@ Output: ["eat", "oath"]
 | 6 | Maximum XOR of Two Numbers | Medium | Binary Trie | Bit-by-bit greedy |
 
 ---
-
 
 ---
 

@@ -2158,7 +2158,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_parents",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![The six DP parents, each with a worked miniature: identify the parent, then name the change](diagrams/dsa31_dp_parents_ai.png)",
     svgBase: "dsa31_dp_parents",
@@ -2167,7 +2167,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_pipeline",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![Fibonacci of 5 solved four ways: the call tree, the memo, the table, and two variables](diagrams/dsa31_dp_pipeline_ai.png)",
     svgBase: "dsa31_dp_pipeline",
@@ -2176,7 +2176,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_knapsack",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![The 0/1 knapsack table filled in for weights 1,3,4,5 and capacity 7, with one cell derived](diagrams/dsa31_dp_knapsack_ai.png)",
     svgBase: "dsa31_dp_knapsack",
@@ -2185,7 +2185,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_lcs",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![The LCS table for abcde against ace, with the backtracking path, plus the reverse-string trick](diagrams/dsa31_dp_lcs_ai.png)",
     svgBase: "dsa31_dp_lcs",
@@ -2194,7 +2194,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_mcm",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![Bracketing changes the cost: (AB)C costs 4500 while A(BC) costs 27000](diagrams/dsa31_dp_mcm_ai.png)",
     svgBase: "dsa31_dp_mcm",
@@ -2203,7 +2203,7 @@ const DIAGRAM_TARGETS = [
   },
   {
     id: "dsa31_dp_table_walk",
-    chapterFile: "content/31_dsa_coding.md",
+    chapterFile: "content/31c_dynamic_programming.md",
     promptKind: "concept",
     existingImageLine: "![0/1 versus unbounded knapsack on the same input: previous row means once, same row means many times](diagrams/dsa31_dp_table_walk_ai.png)",
     svgBase: "dsa31_dp_table_walk",
