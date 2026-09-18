@@ -85,6 +85,43 @@ function sessionHeaders(cfg, correlationId) {
 
 async function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
 
+// The Designer endpoints are reached over a link that, from some networks,
+// refuses or stalls most connection attempts (observed: roughly 1 in 5 connects
+// succeed, and a successful TCP connect can take ~14s, past undici's 10s
+// default connect timeout). Without retries the script aborts with a bare
+// "fetch failed" even though the captured credentials are perfectly valid, and
+// a whole token window gets burned re-running it by hand. Retry every network
+// step on transport errors only — an HTTP response, including 4xx, is returned
+// to the caller so real auth failures still surface immediately.
+const NET_ATTEMPTS = 20;
+const NET_BACKOFF_MS = 2000;
+const NET_BACKOFF_MAX_MS = 10000;
+
+function networkErrorCode(err) {
+  return (err && err.cause && (err.cause.code || err.cause.message)) || (err && err.code) || (err && err.message) || String(err);
+}
+
+function isRetriableNetworkError(err) {
+  const blob = `${networkErrorCode(err)} ${(err && err.message) || ''}`;
+  return /UND_ERR|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|EPIPE|socket hang up|terminated|fetch failed|network/i.test(blob);
+}
+
+async function fetchWithRetry(url, options, label) {
+  let lastErr;
+  for (let attempt = 1; attempt <= NET_ATTEMPTS; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetriableNetworkError(err) || attempt === NET_ATTEMPTS) break;
+      const wait = Math.min(NET_BACKOFF_MS * attempt, NET_BACKOFF_MAX_MS);
+      console.log(`    ${label}: ${networkErrorCode(err)} — retrying (${attempt}/${NET_ATTEMPTS - 1}) in ${wait / 1000}s`);
+      await sleep(wait);
+    }
+  }
+  throw new Error(`${label}: ${networkErrorCode(lastErr)} after ${NET_ATTEMPTS} attempts`);
+}
+
 // Step 1: kick off generation. Returns the initial poll cursor + interval.
 async function startGeneration(cfg, prompt, correlationId) {
   const body = {
@@ -102,11 +139,11 @@ async function startGeneration(cfg, prompt, correlationId) {
     },
     persist: true,
   };
-  const res = await fetch(`${cfg.apiBase}/generate.ashx?intent=image`, {
+  const res = await fetchWithRetry(`${cfg.apiBase}/generate.ashx?intent=image`, {
     method: 'POST',
     headers: sessionHeaders(cfg, correlationId),
     body: JSON.stringify(body),
-  });
+  }, 'generate.ashx');
   if (!res.ok) throw new Error(`generate.ashx failed: ${res.status} ${res.statusText} — ${await res.text().catch(() => '')}`);
   const json = await res.json();
   const pr = json.polling_response;
@@ -120,10 +157,10 @@ async function pollUntilDone(cfg, cursor, intervalMs, correlationId) {
   let currentCursor = cursor;
   while (Date.now() < deadline) {
     await sleep(intervalMs);
-    const res = await fetch(`${cfg.apiBase}/Poll.ashx?cursor=${encodeURIComponent(currentCursor)}`, {
+    const res = await fetchWithRetry(`${cfg.apiBase}/Poll.ashx?cursor=${encodeURIComponent(currentCursor)}`, {
       method: 'GET',
       headers: sessionHeaders(cfg, correlationId),
-    });
+    }, 'Poll.ashx');
     if (!res.ok) throw new Error(`Poll.ashx failed: ${res.status} ${res.statusText}`);
     const json = await res.json();
     const status = json.polling_response && json.polling_response.polling_status;
@@ -154,7 +191,7 @@ function extractAndStripFileToken(rawUrl) {
 
 async function fetchImageBytes(cfg, imageUrl) {
   const { fileToken: perImageFileToken, strippedUrl } = extractAndStripFileToken(imageUrl);
-  const res = await fetch(strippedUrl, {
+  const res = await fetchWithRetry(strippedUrl, {
     method: 'GET',
     headers: {
       accept: '*/*',
@@ -169,7 +206,7 @@ async function fetchImageBytes(cfg, imageUrl) {
       'sec-fetch-mode': 'cors',
       'sec-fetch-site': 'cross-site',
     },
-  });
+  }, 'document.ashx');
   if (!res.ok) {
     const bodyText = await res.text().catch(() => '');
     throw new Error(`document.ashx fetch failed: ${res.status} ${res.statusText} | url=${strippedUrl} | usedPerImageToken=${!!perImageFileToken} | body=${bodyText.slice(0, 300)}`);

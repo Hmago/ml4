@@ -7,13 +7,13 @@
 // ═══════════════════════════════════════════════════════════
 
 function getDSAProgress() {
-  return JSON.parse(localStorage.getItem('ml4-dsa') || '{}');
+  return safeParseObject(localStorage.getItem('ml4-dsa'), {});
 }
 function saveDSAProgress(data) {
   localStorage.setItem('ml4-dsa', JSON.stringify(data));
 }
 function getCustomDSAProblems() {
-  return JSON.parse(localStorage.getItem('ml4-dsa-custom') || '[]');
+  return safeParseArray(localStorage.getItem('ml4-dsa-custom'), []);
 }
 function saveCustomDSAProblems(list) {
   localStorage.setItem('ml4-dsa-custom', JSON.stringify(list));

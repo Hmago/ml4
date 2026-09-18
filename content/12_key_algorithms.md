@@ -835,6 +835,7 @@ inversely with the learning rate.
 ```
 
 ### XGBoost vs LightGBM vs CatBoost
+![The boosting family: XGBoost, LightGBM and CatBoost](diagrams/algo12_boosting_family_ai.png)
 
 | | Its trick | Why it matters | Reach for it when |
 |---|---|---|---|

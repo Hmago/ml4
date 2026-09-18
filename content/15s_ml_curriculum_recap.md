@@ -714,6 +714,7 @@ $$\text{Ensemble Variance} = \rho\sigma^2 + \frac{1-\rho}{n}\sigma^2 \xrightarro
 where $\sigma^2$ is a single tree's variance and $\rho$ is how correlated any two trees are. Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Tune `n_estimators` 200–500, `max_features` √p (classification) or p/3 (regression), `max_depth` 3–15, `min_samples_leaf` 1–20.
 
 ### The boosting family
+![The boosting family: XGBoost, LightGBM and CatBoost](diagrams/rev_boostingfamily_ai.png)
 
 **XGBoost** adds second-order Taylor expansion (Newton, not just gradient), explicit L1+L2 on tree structure, column subsampling, a weighted quantile sketch for split finding, and GPU support.
 

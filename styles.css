@@ -3454,6 +3454,17 @@ details.dsa-filter-dd[open] > summary .caret { transform: rotate(180deg); }
   flex-wrap: wrap;
 }
 
+/* ─── Section contribution to the overall ring ─── */
+.db-prog-share-num {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.db-prog-share-num strong {
+  font-weight: 700;
+  color: var(--accent);
+}
+.db-prog-share-num.is-done strong { color: var(--success); }
+
 @media (max-width: 768px) {
   .db-progress-grid { grid-template-columns: 1fr 1fr; }
 }

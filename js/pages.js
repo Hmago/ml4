@@ -60,13 +60,16 @@ function renderWelcome() {
 
   document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
 
-  const realCh = chapters.filter(c => !c.section && !c.ref);
+  // Notebooks excluded: 27b is chapter 27 re-rendered as runnable cells, so
+  // counting it would inflate the denominator and make this tile disagree with
+  // the dashboard hero, which excludes it.
+  const realCh = chapters.filter(c => !c.section && !c.ref && !c.notebook);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
   const chReadPct = realCh.length > 0 ? Math.round((readCount / realCh.length) * 100) : 0;
   const data = getXP();
-  const quizScores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
+  const quizScores = safeParseObject(localStorage.getItem('ml4-quiz-scores'), {});
   const quizzesDone = Object.keys(quizScores).length;
-  const dsaProgress = (typeof getDSAProgress === 'function') ? getDSAProgress() : JSON.parse(localStorage.getItem('ml4-dsa') || '{}');
+  const dsaProgress = (typeof getDSAProgress === 'function') ? getDSAProgress() : safeParseObject(localStorage.getItem('ml4-dsa'), {});
   const dsaSolved = Object.values(dsaProgress).filter(p => p.solved).length;
   const dsaAll = typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : [];
   const dsaByDiff = (diff) => dsaAll.filter(p => p.difficulty === diff).length;
@@ -86,7 +89,7 @@ function renderWelcome() {
   const totalStudyMinsHero = (study.totalMinutes || 0) + Math.floor(trackedSecsForHero / 60);
   const studyHrs = Math.round(totalStudyMinsHero / 60 * 10) / 10;
   // Next chapter to read: lowest-indexed unread. Falls back to null if all done.
-  const nextUnreadIdx = chapters.findIndex(c => !c.section && !c.ref && !readChapters[c.file]);
+  const nextUnreadIdx = chapters.findIndex(c => !c.section && !c.ref && !c.notebook && !readChapters[c.file]);
   const nextUnread = nextUnreadIdx >= 0 ? chapters[nextUnreadIdx] : null;
   // Pick a random quote of the day for the home page
   const welcomeQuote = (typeof MOTIVATION_QUOTES !== 'undefined' && MOTIVATION_QUOTES.length > 0)
@@ -252,38 +255,51 @@ function showDashboard() {
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
   contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
-  const realCh = chapters.filter(c => !c.section && !c.ref);
+  // Every dashboard stat reads user data out of localStorage. A single corrupt
+  // value used to throw part-way through building the template, leaving the page
+  // blank with no way out — the export/reset controls live *on* this page. The
+  // catch below swaps in a minimal recovery panel instead.
+  try {
+  // Notebooks are excluded everywhere: 27b is chapter 27's content re-rendered
+  // as runnable cells, so counting it would double-bill both the hours and the
+  // chapter count. computePaceStats() and getReviewQueue() filter it the same
+  // way — keeping these three in sync is what stops the hero from reporting
+  // "100% complete" and "48 of 49" at the same time.
+  const realCh = chapters.filter(c => !c.section && !c.ref && !c.notebook);
   const readCount = realCh.filter(c => readChapters[c.file]).length;
   const data = getXP();
-  const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
-  const totalQuizzes = Object.keys(scores).length;
-  const avgScore = totalQuizzes > 0 ? Math.round(Object.values(scores).reduce((a,b)=>a+b,0) / totalQuizzes) : 0;
+  const scores = safeParseObject(localStorage.getItem('ml4-quiz-scores'), {});
+  const scoreVals = Object.values(scores).filter(v => typeof v === 'number' && isFinite(v));
+  const totalQuizzes = scoreVals.length;
+  const avgScore = totalQuizzes > 0 ? Math.round(scoreVals.reduce((a,b)=>a+b,0) / totalQuizzes) : 0;
 
   // Reading-time estimates come from chapterEstMinutes() (state.js): the live
   // measured word count when the chapter has been opened, else the generated
-  // baseline. The Practical-ML notebook is the same content as ch 27 rendered as
-  // runnable cells, so it is skipped here to avoid double-counting the hours.
+  // baseline.
   // Memoized per render: this dashboard calls it across three separate loops
   // (hero totals, section breakdown, chapter table) over the same chapter list,
   // and the underlying lookup re-parses localStorage JSON on every call.
   const estMinutesCache = {};
   const estMinutes = (file) => estMinutesCache[file] ?? (estMinutesCache[file] = chapterEstMinutes(file));
   let totalMinutesAll = 0; let completedMinutes = 0; let remainingHours = 0;
-  realCh.forEach(c => { if (c.notebook) return; const m = estMinutes(c.file); totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
+  realCh.forEach(c => { const m = estMinutes(c.file); totalMinutesAll += m; if (readChapters[c.file]) completedMinutes += m; else remainingHours += m; });
   const totalH = (totalMinutesAll / 60).toFixed(1); const remainH = (remainingHours / 60).toFixed(1);
   const doneH = (completedMinutes / 60).toFixed(1);
 
-  // Completion % is weighted by each chapter's estimated study time
-  // (not a raw "chapters read / total chapters" count) — so a 9-hour
-  // chapter contributes much more than a 1-hour one.
+  // Two different progress measures, each paired with its own label:
+  //  • pct        — weighted by estimated study time (drives the ring)
+  //  • chapterPct — plain chapters-read count (drives the "X of Y" bar)
+  // The bar used to be filled with `pct` while labelled with a raw count, so
+  // "24 of 49" could render as a 15% bar.
   const pct = totalMinutesAll > 0 ? Math.round(completedMinutes / totalMinutesAll * 100) : 0;
+  const chapterPct = realCh.length > 0 ? Math.round(readCount / realCh.length * 100) : 0;
   const ringR = 62;
   const circumference = 2 * Math.PI * ringR;
   const offset = circumference - (pct / 100) * circumference;
   const xpProgress = getLevelXP(data.xp);
   const quizHist = getQuizHistory();
   const chTrack = getChapterTrack();
-  const totalAttempts = Object.values(quizHist).reduce((s,h) => s + (h.attempts||0), 0);
+  const totalAttempts = Object.values(quizHist).reduce((s,h) => s + ((h && h.attempts) || 0), 0);
   // Make sure "Started" and pace/ETA math have a real start date even if
   // ml4-study was cleared mid-session (the first-visit init only re-seeds on a
   // full reload). Derives + persists the earliest from chapter-track/activity.
@@ -298,14 +314,14 @@ function showDashboard() {
   const studyHrs = (totalStudyMins / 60).toFixed(1);
   const startDate = study.startDate ? new Date(study.startDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : 'Not started';
   const completionDate = study.completionDate ? new Date(study.completionDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : (pct === 100 ? 'Today' : 'In progress');
-  const bestQuiz = Object.values(scores).length > 0 ? Math.max(...Object.values(scores)) : 0;
-  const worstQuiz = Object.values(scores).length > 0 ? Math.min(...Object.values(scores)) : 0;
-  const passedQuizzes = Object.values(scores).filter(s => s >= 70).length;
+  const bestQuiz = totalQuizzes > 0 ? Math.max(...scoreVals) : 0;
+  const passedQuizzes = scoreVals.filter(s => s >= 70).length;
   const allComments = getComments();
-  const totalComments = Object.values(allComments).reduce((s, arr) => s + arr.reduce((s2, c) => s2 + 1 + (c.replies ? c.replies.length : 0), 0), 0);
-  const resolvedComments = Object.values(allComments).reduce((s, arr) => s + arr.filter(c => c.resolved).length, 0);
-  const openComments = Object.values(allComments).reduce((s, arr) => s + arr.filter(c => !c.resolved).length, 0);
-  const chaptersWithComments = Object.keys(allComments).filter(k => allComments[k].length > 0).length;
+  const commentLists = Object.values(allComments).filter(Array.isArray);
+  const totalComments = commentLists.reduce((s, arr) => s + arr.reduce((s2, c) => s2 + 1 + (c && Array.isArray(c.replies) ? c.replies.length : 0), 0), 0);
+  const resolvedComments = commentLists.reduce((s, arr) => s + arr.filter(c => c && c.resolved).length, 0);
+  const openComments = commentLists.reduce((s, arr) => s + arr.filter(c => c && !c.resolved).length, 0);
+  const chaptersWithComments = Object.keys(allComments).filter(k => Array.isArray(allComments[k]) && allComments[k].length > 0).length;
 
   // ─── Personalized pace & ETA ───
   const pace = computePaceStats();
@@ -345,11 +361,17 @@ function showDashboard() {
       ? '<span class="db-rev-score" style="color:' + (sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--accent)' : '#f59e0b') + '">' + sc + '%</span>'
       : '<span class="db-rev-score db-rev-untested">not tested</span>';
     const fileEsc = it.file.replace(/'/g, "\\'");
+    // A chapter whose quiz was removed can still carry historical scores; send
+    // it to a re-read instead of a quiz that will only toast "No quiz yet".
+    const hasQuiz = (typeof chapterHasQuiz !== 'function') || chapterHasQuiz(it.file);
+    const actionBtn = hasQuiz
+      ? '<button class="db-rev-btn" onclick="retakeQuiz(\'' + fileEsc + '\')">Review &rarr;</button>'
+      : '<button class="db-rev-btn" onclick="loadChapter(' + idx + ')">Re-read &rarr;</button>';
     return '<div class="db-rev-row">' +
       '<span class="db-rev-when' + (overdue ? ' due' : '') + '">' + whenStr + '</span>' +
       '<a class="db-rev-title" href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + escapeHTML(it.id + ' · ' + it.title) + '</a>' +
       scoreBadge +
-      '<button class="db-rev-btn" onclick="retakeQuiz(\'' + fileEsc + '\')">Review &rarr;</button>' +
+      actionBtn +
     '</div>';
   }).join('');
   const reviewBody = review.items.length === 0
@@ -509,7 +531,7 @@ function showDashboard() {
                 <span>Chapter progress</span>
                 <span class="db-hero-progress-count">${readCount} of ${realCh.length}</span>
               </div>
-              <div class="db-hero-progress-bar"><div class="db-hero-progress-fill" style="width:${pct}%"></div></div>
+              <div class="db-hero-progress-bar"><div class="db-hero-progress-fill" style="width:${chapterPct}%"></div></div>
             </div>
             <div class="db-hero-level">
               <div class="db-hero-level-top">
@@ -647,12 +669,12 @@ function showDashboard() {
           <div class="db-stat-row">
             <span class="db-stat-icon">${ico.palette}</span>
             <span class="db-stat-label">Total highlights</span>
-            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-highlights')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
+            <span class="db-stat-value">${countStoredEntries(safeParseObject(localStorage.getItem('ml4-highlights'), {}))}</span>
           </div>
           <div class="db-stat-row">
             <span class="db-stat-icon">${ico.strike}</span>
             <span class="db-stat-label">Total strikethroughs</span>
-            <span class="db-stat-value">${Object.values(JSON.parse(localStorage.getItem('ml4-strikes')||'{}')).reduce((s,a)=>s+a.length,0)}</span>
+            <span class="db-stat-value">${countStoredEntries(safeParseObject(localStorage.getItem('ml4-strikes'), {}))}</span>
           </div>
         </div>
       </div>
@@ -695,6 +717,17 @@ function showDashboard() {
             const sPct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
             const estH = s.estMin >= 60 ? Math.floor(s.estMin/60) + 'h ' + s.estMin%60 + 'm' : s.estMin + 'm';
             const barColor = sPct === 100 ? 'var(--success)' : 'var(--accent)';
+            // Share of the headline ring this section accounts for. Both figures
+            // use totalMinutesAll — the same denominator the hero ring uses — and
+            // every chapter sits under exactly one section divider, so the earned
+            // values across all cards sum to the overall completion percentage.
+            const sharePct = totalMinutesAll > 0 ? s.estMin / totalMinutesAll * 100 : 0;
+            const earnedPct = totalMinutesAll > 0 ? s.doneMin / totalMinutesAll * 100 : 0;
+            const shareStr = sharePct.toFixed(1);
+            const earnedStr = earnedPct.toFixed(1);
+            const contribDone = s.estMin > 0 && s.doneMin >= s.estMin;
+            const contribTitle = s.name + ' is ' + shareStr + '% of the whole curriculum by estimated study time. ' +
+              'You have earned ' + earnedStr + ' of those ' + shareStr + ' points toward the ' + pct + '% overall figure.';
             return '<div class="db-prog-card">' +
               '<div class="db-prog-head">' +
                 '<span class="db-prog-name">' + s.name + '</span>' +
@@ -705,11 +738,18 @@ function showDashboard() {
                 '<span>' + s.done + '/' + s.total + ' chapters</span>' +
                 '<span>' + estH + ' est.</span>' +
                 (s.bestScore >= 0 ? '<span>Best quiz: ' + s.bestScore + '%</span>' : '') +
+                (s.total > 0
+                  ? '<span class="db-prog-share-num' + (contribDone ? ' is-done' : '') + '" title="' + escapeHTML(contribTitle) + '">' +
+                      '<strong>' + earnedStr + '%</strong> of ' + shareStr + '% overall</span>'
+                  : '') +
               '</div>' +
             '</div>';
           }).join('');
         })()}
         </div>
+        <p class="db-pace-note">Each card's last figure is its share of the ${pct}% ring, weighted by estimated
+        study time &mdash; earned out of what that section is worth. The available shares add up to 100%, and the
+        earned figures add up to ${pct}%.</p>
       </div>
 
       <!-- ─── Quick References (playbook + cheat sheet) ─── -->
@@ -799,6 +839,9 @@ function showDashboard() {
             const quizScoreColor = quizScore >= 90 ? 'var(--success)' : quizScore >= 70 ? 'var(--accent)' : quizScore >= 0 ? '#f59e0b' : '';
             const fileEsc = c.file.replace(/'/g,"\\'");
             const titleEsc = c.title.replace(/'/g,"\\'");
+            // Only offer a quiz where questions actually exist — otherwise the
+            // button navigates away from the dashboard just to say "No quiz yet".
+            const hasQuiz = (typeof chapterHasQuiz !== 'function') || chapterHasQuiz(c.file);
             const showProgress = spentMin > 0 || isRead;
             const progPct = isRead ? 100 : timePct;
 
@@ -823,7 +866,7 @@ function showDashboard() {
                   ? '<span class="ch-quiz-score" style="color:' + quizScoreColor + ';" title="Best ' + quizScore + '% · ' + qh.attempts + ' attempt' + (qh.attempts > 1 ? 's' : '') + '">' + quizScore + '%</span>'
                   : '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-actions">' +
-                '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="' + (qh ? 'Retake quiz' : 'Take quiz') + '">↺ Quiz</button>' +
+                (hasQuiz ? '<button class="ch-btn ch-btn-accent" onclick="retakeQuiz(\'' + fileEsc + '\')" title="' + (qh ? 'Retake quiz' : 'Take quiz') + '">↺ Quiz</button>' : '') +
                 ((!isRef && (isRead || qh || ct.seconds)) ? '<button class="ch-btn ch-btn-danger" onclick="resetChapter(\'' + fileEsc + '\', \'' + titleEsc + '\')" title="Reset progress" aria-label="Reset progress for ' + titleEsc + '">↺</button>' : '') +
               '</td>' +
             '</tr>';
@@ -860,7 +903,7 @@ function showDashboard() {
         <summary class="db-collapse-summary">${ico.zap} DSA Practice Progress</summary>
         <div class="db-collapse-body">
         ${(() => {
-          const dsaProg = JSON.parse(localStorage.getItem('ml4-dsa') || '{}');
+          const dsaProg = safeParseObject(localStorage.getItem('ml4-dsa'), {});
           const dsaAll = typeof getAllDSAProblems === 'function' ? getAllDSAProblems() : (typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : []);
           const dsaTotal = dsaAll.length;
           const dsaSolved = Object.values(dsaProg).filter(p => p.solved).length;
@@ -945,6 +988,34 @@ function showDashboard() {
   // Desktop-only: wire up the updater card's buttons and subscribe to push
   // events from electron-updater. Safe no-op when running in a browser.
   if (typeof setupDesktopUpdater === 'function') setupDesktopUpdater();
+
+  // QUIZ_DATA is lazy-loaded, so chapterHasQuiz() optimistically reported "yes"
+  // for everything on a cold render. Pull it in and repaint once, so the Quiz
+  // and Review buttons settle on the truth. The __quizDataLoaded guard in
+  // ensureQuizData plus the currentPage check prevent a render loop.
+  if (typeof QUIZ_DATA === 'undefined' && typeof ensureQuizData === 'function') {
+    ensureQuizData()
+      .then(() => { if (currentPage === 'dashboard') showDashboard(); })
+      .catch(() => {});
+  }
+  } catch (err) {
+    console.error('[ml4] Dashboard render failed', err);
+    contentEl.innerHTML = `
+      <div class="db">
+        <div class="db-header"><div><h1 class="db-title">Dashboard unavailable</h1>
+          <p class="db-subtitle">Some saved data could not be read.</p></div></div>
+        <div class="db-section">
+          <p class="db-empty">The dashboard could not be built from your saved progress — a stored value
+          is probably corrupt. Your chapters and notes are unaffected and still readable from the sidebar.</p>
+          <p class="db-empty"><code>${escapeHTML(String((err && err.message) || err))}</code></p>
+          <div class="db-action-row" style="margin-top:16px;">
+            <button class="db-btn db-btn--accent" onclick="exportUserData()">Export a backup first</button>
+            <button class="db-danger-btn" onclick="resetAppData()">Reset Progress</button>
+            <button class="db-danger-btn db-danger-btn--critical" onclick="deleteEverything()">Delete ALL Data</button>
+          </div>
+        </div>
+      </div>`;
+  }
 }
 
 // ─── Total origin storage estimate ───
@@ -971,7 +1042,22 @@ function updateStorageEstimate() {
 // rolling 5-quiz average to smooth the noise. Reuses the lazy Chart.js loader
 // (ensureChart) already used by in-chapter charts. No-ops if the canvas is
 // absent or there are too few attempts.
+// Live chart handle. It must live at module scope, NOT on the canvas element:
+// showDashboard() rebuilds `content` via innerHTML, so every render produces a
+// brand-new canvas whose own property is empty. Keying off the element leaked a
+// Chart instance (plus its resize observers, still bound to a detached canvas)
+// on every dashboard visit, Gamify toggle and quiz reset.
+var _quizTrendChart = null;
+
+function _destroyQuizTrendChart() {
+  if (_quizTrendChart) {
+    try { _quizTrendChart.destroy(); } catch (e) {}
+    _quizTrendChart = null;
+  }
+}
+
 function renderQuizTrendChart() {
+  _destroyQuizTrendChart();
   const canvas = document.getElementById('quizTrendChart');
   if (!canvas || typeof ensureChart !== 'function') return;
   const qh = getQuizHistory();
@@ -979,7 +1065,8 @@ function renderQuizTrendChart() {
   Object.entries(qh).forEach(([file, h]) => {
     const ch = (typeof chapters !== 'undefined') ? chapters.find(c => c.file === file) : null;
     const title = ch ? (ch.id + ' · ' + ch.title) : file;
-    (h && h.scores || []).forEach(s => { if (s && s.date) pts.push({ t: new Date(s.date).getTime(), pct: s.pct, title }); });
+    const rows = (h && Array.isArray(h.scores)) ? h.scores : [];
+    rows.forEach(s => { if (s && s.date) pts.push({ t: new Date(s.date).getTime(), pct: s.pct, title }); });
   });
   if (pts.length < 2) return;
   pts.sort((a, b) => a.t - b.t);
@@ -993,9 +1080,14 @@ function renderQuizTrendChart() {
   const txt = isDark ? '#e6edf3' : '#1f2328';
   const grid = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   ensureChart().then(() => {
-    if (!document.getElementById('quizTrendChart')) return; // navigated away
-    if (canvas._chart) canvas._chart.destroy();
-    canvas._chart = new Chart(canvas, {
+    // Re-query: the dashboard may have re-rendered (new canvas) or navigated
+    // away entirely while Chart.js was downloading.
+    const live = document.getElementById('quizTrendChart');
+    if (!live) return;
+    _destroyQuizTrendChart();
+    const stale = (typeof Chart.getChart === 'function') ? Chart.getChart(live) : null;
+    if (stale) { try { stale.destroy(); } catch (e) {} }
+    _quizTrendChart = new Chart(live, {
       type: 'line',
       data: {
         labels,
@@ -1200,16 +1292,39 @@ function updaterInstall() {
 
 // ─── Backup & Restore: export / import all user data as JSON ───
 // Covers: progress, scores, XP, study time, DSA code, notes, highlights, custom problems, preferences
+//
+// This list documents the known stores, but it is NOT the source of truth for
+// what gets exported — collectML4StorageKeys() enumerates every `ml4-` key at
+// runtime. A hardcoded whitelist silently dropped stores added later (mock-test
+// history, DSA view prefs), and because importing wipes *all* `ml4-` keys first,
+// anything missing from the backup was destroyed by restoring it.
 const ML4_STORAGE_KEYS = [
   'ml4-read', 'ml4-quiz-scores', 'ml4-quiz-history', 'ml4-chapter-track',
   'ml4-xp', 'ml4-study', 'ml4-goals', 'ml4-comments', 'ml4-highlights', 'ml4-strikes',
-  'ml4-dsa', 'ml4-dsa-custom', 'ml4-activity', 'ml4-chapter-words',
+  'ml4-dsa', 'ml4-dsa-custom', 'ml4-dsa-view', 'ml4-dsa-collapsed',
+  'ml4-mock-history', 'ml4-activity', 'ml4-chapter-words',
   'ml4-theme', 'ml4-fontsize', 'ml4-interactive', 'ml4-sidebar'
 ];
 
+// Every `ml4-` key currently in localStorage, union the known list above.
+// Migration flags (`ml4-migration-*`, `ml4-pins-merged-v1`, …) are included on
+// purpose: a backup taken from an up-to-date install restores them so the
+// one-time migrations stay done, while an older backup that predates them
+// legitimately re-triggers the upgrade on reload.
+function collectML4StorageKeys() {
+  const keys = new Set(ML4_STORAGE_KEYS);
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('ml4-') === 0) keys.add(k);
+    }
+  } catch (e) { /* private mode / disabled storage */ }
+  return Array.from(keys);
+}
+
 function exportUserData() {
   const data = {};
-  ML4_STORAGE_KEYS.forEach(key => {
+  collectML4StorageKeys().forEach(key => {
     const v = localStorage.getItem(key);
     if (v !== null) data[key] = v; // raw stringified JSON; restoring is byte-identical
   });
@@ -1294,9 +1409,14 @@ function resetAppData() {
     'ml4-comments', 'ml4-highlights', 'ml4-strikes',
     'ml4-sidebar', 'ml4-fontsize', 'ml4-theme', 'ml4-interactive',
     'ml4-dsa-view', 'ml4-dsa-collapsed', 'ml4-dsa-custom',
-    'ml4-migration-content-v1',
   ]);
-  Object.keys(localStorage).filter(k => k.startsWith('ml4') && !preserve.has(k)).forEach(k => localStorage.removeItem(k));
+  // One-time schema migrations must stay "done" — the preserved stores above
+  // are already in the current key format, so re-running them is pure risk.
+  const isMigrationFlag = (k) => k.indexOf('ml4-migration-') === 0 ||
+    k === 'ml4-pins-merged-v1' || k === 'ml4-dsa-collapse-clean-v2';
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('ml4') && !preserve.has(k) && !isMigrationFlag(k))
+    .forEach(k => localStorage.removeItem(k));
   readChapters = {};
   // Stop timer if running
   if (timerRunning) { clearInterval(timerInterval); timerRunning = false; timerSeconds = 0;
@@ -1349,8 +1469,8 @@ async function retakeQuiz(file) {
 // Clear only the quiz-related stores. Leaves read status, DSA progress,
 // highlights, comments, XP, and everything else untouched.
 function resetQuizData() {
-  const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
-  const history = JSON.parse(localStorage.getItem('ml4-quiz-history') || '{}');
+  const scores = safeParseObject(localStorage.getItem('ml4-quiz-scores'), {});
+  const history = safeParseObject(localStorage.getItem('ml4-quiz-history'), {});
   const chaptersTaken = Object.keys(scores).length;
   const totalAttempts = Object.values(history).reduce((s, h) => s + (h && h.attempts ? h.attempts : 0), 0);
   const summary = chaptersTaken > 0

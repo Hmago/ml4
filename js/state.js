@@ -397,8 +397,43 @@ function applyInteractiveMode() {
   updateXPDisplay();
 }
 
+// ─── Safe storage reads ───
+// Every dashboard/welcome stat is derived from localStorage. A single malformed
+// value used to throw mid-render, which left `content` empty with no way back —
+// the reset controls live *on* the dashboard. These helpers degrade to the
+// default instead, so one corrupt key costs one widget, not the whole page.
+function safeParseObject(raw, fallback) {
+  if (raw == null) return fallback;
+  try {
+    const v = JSON.parse(raw);
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return fallback;
+    return v;
+  } catch (e) { return fallback; }
+}
+function safeParseArray(raw, fallback) {
+  if (raw == null) return fallback;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : fallback;
+  } catch (e) { return fallback; }
+}
+// Object-of-arrays stores (comments/highlights/strikes): total the entries
+// without assuming every value survived intact.
+function countStoredEntries(store) {
+  return Object.values(store || {}).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
+}
+
 // ─── Gamification: XP + Levels + Streaks ───
-function getXP() { return JSON.parse(localStorage.getItem('ml4-xp') || '{"xp":0,"streak":0,"lastDate":"","achievements":[]}'); }
+function getXP() {
+  const d = safeParseObject(localStorage.getItem('ml4-xp'), {});
+  return {
+    xp: typeof d.xp === 'number' && isFinite(d.xp) ? d.xp : 0,
+    streak: typeof d.streak === 'number' && isFinite(d.streak) ? d.streak : 0,
+    lastDate: typeof d.lastDate === 'string' ? d.lastDate : '',
+    lastActive: d.lastActive,
+    achievements: Array.isArray(d.achievements) ? d.achievements : [],
+  };
+}
 function saveXP(data) { localStorage.setItem('ml4-xp', JSON.stringify(data)); updateXPDisplay(); }
 
 // ─── Study Time Tracker ───
@@ -407,7 +442,12 @@ function saveXP(data) { localStorage.setItem('ml4-xp', JSON.stringify(data)); up
 // wherever "Time Studied" is displayed. "sessions" and "lastActivityAt" are
 // shared between both sources via _markStudyActivity() below.
 function getStudyData() {
-  return JSON.parse(localStorage.getItem('ml4-study') || '{"totalMinutes":0,"sessions":0,"startDate":"","completionDate":""}');
+  const d = safeParseObject(localStorage.getItem('ml4-study'), {});
+  if (typeof d.totalMinutes !== 'number' || !isFinite(d.totalMinutes)) d.totalMinutes = 0;
+  if (typeof d.sessions !== 'number' || !isFinite(d.sessions)) d.sessions = 0;
+  if (typeof d.startDate !== 'string') d.startDate = '';
+  if (typeof d.completionDate !== 'string') d.completionDate = '';
+  return d;
 }
 function saveStudyData(d) { localStorage.setItem('ml4-study', JSON.stringify(d)); }
 
@@ -669,8 +709,12 @@ function getReviewQueue() {
   realCh.forEach(c => {
     const read = !!readChapters[c.file];
     const h = qh[c.file];
-    const hasScores = h && h.scores && h.scores.length;
+    const hasScores = !!(h && Array.isArray(h.scores) && h.scores.length);
     if (!read && !hasScores) return; // not started — not in the review system yet
+    // A read chapter that ships no quiz can never be cleared from the queue —
+    // its "Review" button only ever toasts "No quiz yet". Skip it rather than
+    // leaving a permanently-due item the user can't action.
+    if (!hasScores && typeof chapterHasQuiz === 'function' && !chapterHasQuiz(c.file)) return;
     let lastDate, lastScore, intervalDays, tested;
     if (hasScores) {
       const sc = h.scores;
@@ -752,11 +796,11 @@ function getStorageStats() {
 }
 
 // ─── Quiz Tracking (per chapter) ───
-function getQuizHistory() { return JSON.parse(localStorage.getItem('ml4-quiz-history') || '{}'); }
+function getQuizHistory() { return safeParseObject(localStorage.getItem('ml4-quiz-history'), {}); }
 function saveQuizHistory(h) { localStorage.setItem('ml4-quiz-history', JSON.stringify(h)); }
 
 // ─── Per-Chapter Tracking (start date, completed date, time spent) ───
-function getChapterTrack() { return JSON.parse(localStorage.getItem('ml4-chapter-track') || '{}'); }
+function getChapterTrack() { return safeParseObject(localStorage.getItem('ml4-chapter-track'), {}); }
 function saveChapterTrack(t) { localStorage.setItem('ml4-chapter-track', JSON.stringify(t)); }
 let activeChapterFile = null;
 let activeChapterOpenedAt = null;   // Date.now() of the current running segment, or null while paused

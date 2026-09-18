@@ -1493,6 +1493,19 @@ function ensureQuizData() {
   return _quizDataPromise;
 }
 
+// True when this chapter actually has quiz questions. QUIZ_DATA is lazy-loaded,
+// so before ensureQuizData() resolves we optimistically answer `true` — callers
+// that gate UI on this should kick off a load and re-render (see showDashboard).
+// Without this, chapters that ship no questions still offered a "Quiz" button
+// and sat permanently "due" in the spaced-repetition queue with no way to clear.
+function chapterHasQuiz(file) {
+  if (!file) return false;
+  if (typeof QUIZ_DATA === 'undefined') return true; // not loaded yet — don't hide anything
+  const key = file.replace(/^content\//, '');
+  const q = QUIZ_DATA[key] || QUIZ_DATA[file];
+  return !!(q && q.length);
+}
+
 function startQuiz(file) {
   ensureQuizData().then(() => {
     const key = file.replace(/^content\//, '');
@@ -2312,7 +2325,7 @@ function addRunButtons(contentEl) {
 
 // ─── Comments System ───
 // Stored separately: ml4-comments (NOT deleted by reset)
-function getComments() { return JSON.parse(localStorage.getItem('ml4-comments') || '{}'); }
+function getComments() { return safeParseObject(localStorage.getItem('ml4-comments'), {}); }
 function saveComments(c) { localStorage.setItem('ml4-comments', JSON.stringify(c)); }
 
 function renderComments(file) {
