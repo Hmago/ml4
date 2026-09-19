@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~193 hours of content · 415+ DSA problems │
+  │  50 chapters · ~203 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -143,12 +143,12 @@ assumptions, not official company interview frequencies or measured production a
 | 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.75 hrs | Beginner-Intermediate |
 | 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~5 hrs | Intermediate |
 | 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~2.75 hrs | Beginner-Intermediate |
-| 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~3.75 hrs | Intermediate |
-| 31b | DSA: Graphs (Java) | ★★★ | [31b_dsa_graphs.md](content/31b_dsa_graphs.md) | ~1.5 hrs | Intermediate |
+| 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~7.25 hrs | Intermediate |
+| 31b | DSA: Graphs (Java) | ★★★ | [31b_dsa_graphs.md](content/31b_dsa_graphs.md) | ~2.5 hrs | Intermediate |
 | 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~5.75 hrs | Intermediate-Advanced |
-| 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~2.75 hrs | Intermediate-Advanced |
+| 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~4.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Languages & Coding Total** | | | **~27.25 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~33.75 hrs + practice** | |
 
 ### Interview Preparation
 
@@ -165,7 +165,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~196.5 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~203 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.
@@ -359,10 +359,11 @@ ication   sion            ing       sionality      Learning Learning
   For experienced engineers focusing on design rounds.
   Prerequisite: ML fundamentals (Track 1 or equivalent).
 
-  TRACK 6: DSA Grind (~9 hours reading + practice)
+  TRACK 6: DSA Grind (~16.5 hours reading + practice)
   ──────────────────────────────────────────
-  Ch 31 (DSA theory — all 27 sections, Big-O through DP) →
+  Ch 31 / 31b / 31c / 31d (DSA theory, Big-O through DP) →
   DSA Practice (start with Easy, progress to Medium/Hard)
+  Short on time? Ch 31's "Speed run" track is a ~90-minute first pass.
   Target: 2 problems/day for 12 weeks = 168 problems.
   Focus order: Arrays → Trees → Graphs → DP → Sliding Window.
 ```

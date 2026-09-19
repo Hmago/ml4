@@ -2614,6 +2614,16 @@ The six parents cover most DP you will be asked. These three do not fit the fami
 
 **How to spot it:** the words *hold, buy, sell, cooldown, at most k times, must wait* — anything where "what am I allowed to do now" depends on what you did before.
 
+**Walkthrough:** `prices = [2, 4, 1]`, `k = 2` (at most 2 buy/sell round trips).
+
+```
+day 0, price 2:  buy it   -> now HOLDING, profit so far  0 - 2 = -2
+day 1, price 4:  sell it  -> now NOT holding, profit so far -2 + 4 = 2
+day 2, price 1:  nothing beats the 2 we already locked in, so do nothing
+
+Best: buy on day 0, sell on day 1 -> profit 2
+```
+
 ```
 States for buy/sell with at most k transactions:
 
@@ -2677,6 +2687,18 @@ public int maxProfit(int k, int[] prices) {
 
 Why 20? Because `2^20 ≈ 10^6` states is fine and `2^25` is not. If you see a tiny `n` next to a question that smells exponential, bitmask DP is the intended answer.
 
+**Walkthrough:** `cost = [[9,2,7],[6,4,3],[5,8,1]]` (rows = workers, columns = tasks).
+
+```
+mask 000 (no task assigned yet)                 -> cost 0
+assign task 1 to worker 0  -> mask 010          -> cost 2
+assign task 0 to worker 1  -> mask 011          -> cost 2 + 6 = 8
+assign task 2 to worker 2  -> mask 111 (done)   -> cost 8 + 1 = 9   <- best found
+
+Bit i of mask = 1 means "task i is already given to someone".
+Count of set bits in mask = how many workers are done = which worker goes next.
+```
+
 ```java
 // Assign n tasks to n workers, minimising total cost.
 // cost[i][j] = cost of worker i doing task j
@@ -2710,6 +2732,16 @@ public int minCostAssignment(int[][] cost) {
 **The signature:** "count numbers between A and B with property P", where the bounds are up to `10^18` so you cannot loop.
 
 **The state:** `dp[position][tight][started][property]` — walk the number digit by digit, where `tight` means you are still hugging the upper bound's prefix.
+
+**Walkthrough:** `N = 25`, property = "no two adjacent digits equal".
+
+```
+Fix the tens digit first (it can only be 0, 1, or 2 — N starts with 2):
+  tens = 2 -> units can be 0..5 (still <= 25), but NOT 2 again
+             12 -> different digits, OK        22 -> same digit, REJECTED
+  tens = 1 -> units can be 0..9 freely, just not 1 again
+             10, 12, 13, ... all OK; 11 REJECTED
+```
 
 ```java
 // Count integers in [0, N] with no two adjacent equal digits (sketch)

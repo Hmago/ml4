@@ -583,16 +583,16 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/38_java_refresher.md': 345,
   'content/38b_java_modern.md': 295,
   'content/39_python_refresher.md': 160,
-  'content/31_dsa_foundations.md': 230,
-  'content/31b_dsa_graphs.md': 95,
-  'content/31c_dynamic_programming.md': 350,
-  'content/31d_dsa_advanced_ml_coding.md': 160,
+  'content/31_dsa_foundations.md': 440,
+  'content/31b_dsa_graphs.md': 155,
+  'content/31c_dynamic_programming.md': 355,
+  'content/31d_dsa_advanced_ml_coding.md': 280,
   'content/32_interview_questions.md': 240,
   'content/33_llm_interview_questions.md': 240,
   'content/33b_llm_interview_questions_part2.md': 260,
   'content/34_google_top10_ml_interview.md': 285,
   'content/34b_google_top10_ml_interview_part2.md': 220,
-  'README.md': 65,
+  'README.md': 70,
 /* @generated-reading-times:end */ };
 
 // Per-user self-correction: when a chapter is opened we measure its real word
