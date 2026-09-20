@@ -55,16 +55,31 @@ it is plain HTML/CSS/vanilla JS rendered in the browser.
   (`ml4-read`, `ml4-xp`, `ml4-theme`, …). `state.js` runs one-time **migrations**
   keyed by `ml4-migration-*` — when renaming/renumbering chapters, follow the
   existing migration pattern instead of breaking saved progress.
-- **PWA:** `sw.js` precaches all assets and has a `CACHE_NAME` version string
-  (e.g. `ml-notes-v219`). The app force-checks for SW updates on every load.
+- **PWA:** `sw.js` installs a **tiny app shell only** (`STATIC_FILES`, ~0.65 MB:
+  `index.html`, `styles.css`, the seven `js/*.js` files, manifest and icons) and
+  has a `CACHE_NAME` version string (e.g. `ml-notes-v325`). The app force-checks
+  for SW updates on every load, so anything in `STATIC_FILES` is re-downloaded on
+  **every** deploy — which is why content must stay out of it. Chapter markdown,
+  `js/data/*.js` bundles and every diagram are cached by the fetch handler's
+  stale-while-revalidate branches on first view; `WARM_ON_IDLE` in `sw.js` warms
+  the markdown in the background, and only on a connection that can afford it
+  (skipped on `saveData` and on 2g/3g). Guard it with
+  `node tools/check-sw-precache.js --check`.
 
 ## Conventions & gotchas
 
 - **Adding or renaming a chapter touches several files together:** the `chapters`
-  array (`js/chapter.js`), `STATIC_FILES` in `sw.js`, the TOC table in `README.md`,
-  and the `CHAPTER_MINUTES` list in `js/state.js` (then run
+  array (`js/chapter.js`), `WARM_ON_IDLE` in `sw.js` (**not** `STATIC_FILES` —
+  that is the app shell only), the TOC table in `README.md`, and the
+  `CHAPTER_MINUTES` list in `js/state.js` (then run
   `tools/update-reading-times.js`). Add quiz/mock content via `quizzes.js` and a
   `tools/mock_gen/` fragment.
+- **Never add images, chapter markdown or `js/data/*.js` to `STATIC_FILES`.**
+  That list is downloaded in full before the service worker activates. It once
+  grew to 217 entries / ~150 MB (115 PNGs were ~136 MB of it), which saturated 4G
+  links for minutes and timed the page out on mobile. Run
+  `node tools/check-sw-precache.js --check` — it fails on content entries or a
+  payload over 2 MB.
 - **Bump `CACHE_NAME` in `sw.js`** whenever you change shipped assets, or users
   get stale cached files after deploy.
 - **Never hand-edit generated files:** `mock_questions.js`, the `dsa_problems_*`

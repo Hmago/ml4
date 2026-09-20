@@ -161,34 +161,31 @@ if ('serviceWorker' in navigator) {
 }
 
 // ─── Warm caches during idle ───
-// Prime the service-worker cache for the DSA index and every chapter so the
-// first search and the first DSA open have nothing left to download.
-// Important: we deliberately do NOT keep the chapter markdown in JS memory
+// Content warming is owned by the service worker (sw.js `warmContent`), which
+// skips files it already has and refuses to run on a metered or slow link.
+// The page only nudges it.
+//
+// This used to `fetch()` every chapter from the page instead. That was actively
+// harmful on mobile: the .md fetch handler is stale-while-revalidate, so even a
+// fully-cached chapter still hit the network to revalidate — roughly 5 MB of
+// redundant requests on *every* page load, competing with the page's own.
+//
+// We also deliberately do NOT keep chapter markdown in JS memory
 // (`cachedContent`) here. Pre-populating ~3MB of strings across 30+ chapters
 // was contributing to memory pressure on iOS PWAs (per-process RAM is tight)
 // and a contributing factor to "Loading…" hangs on the biggest chapters.
-// The SW cache persists across sessions, so the first open of any chapter
-// is still instant on repeat visits — we just don't pay a JS-heap cost for
-// chapters the user never opens this session.
 (function warmCachesWhenIdle() {
+  // Don't prefetch anything on a metered or slow connection.
+  const conn = navigator.connection;
+  const cheapConnection = !conn
+    || (!conn.saveData && !['slow-2g', '2g', '3g'].includes(conn.effectiveType));
+
   const warm = () => {
+    if (!cheapConnection) return;
     if (typeof ensureDsaIndex === 'function') ensureDsaIndex().catch(() => {});
-    if (typeof chapters !== 'undefined') {
-      // Stagger fetches in small batches so we don't open 30+ parallel
-      // connections (iOS in particular limits concurrent fetches per origin).
-      const targets = chapters.filter(ch => !ch.section && ch.file && !ch.notebook).map(ch => ch.file);
-      const BATCH = 4;
-      let idx = 0;
-      const next = () => {
-        if (idx >= targets.length) return;
-        const slice = targets.slice(idx, idx + BATCH);
-        idx += BATCH;
-        Promise.allSettled(
-          slice.map(f => fetch(f).then(r => (r.ok ? r.blob() : null)).catch(() => null))
-        ).then(next);
-      };
-      next();
-    }
+    navigator.serviceWorker?.ready
+      .then(reg => reg.active && reg.active.postMessage({ type: 'warm-content' }))
+      .catch(() => {});
   };
   if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 8000 });
   else setTimeout(warm, 3000);

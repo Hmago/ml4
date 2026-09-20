@@ -1,10 +1,20 @@
 // Service Worker for ML Study Notes PWA
-const CACHE_NAME = 'ml-notes-v324';
+const CACHE_NAME = 'ml-notes-v325';
 
 // Detect base path dynamically (works on both localhost:8000 and github.io/ml4/)
 const BASE = self.registration.scope;
 
-// Files to cache for offline use (relative to scope)
+// ── What the service worker installs up front ──────────────────────────────
+// KEEP THIS LIST TINY. It is downloaded in full before the worker activates,
+// and on a mobile connection every byte here competes with the page's own
+// requests. A previous version listed 217 entries totalling ~150 MB (115 PNG
+// diagrams alone were ~136 MB of it), which saturated 4G links for minutes and
+// made the page time out on first load and after every CACHE_NAME bump.
+//
+// Everything else — chapter markdown, the big js/data/*.js bundles, and every
+// diagram — is cached by the fetch handler's stale-while-revalidate branches on
+// first view, and warmed in the background by WARM_ON_IDLE below when the
+// connection can afford it. Do not move content back into this list.
 const STATIC_FILES = [
   '',
   'index.html',
@@ -16,14 +26,15 @@ const STATIC_FILES = [
   'js/mock.js',
   'js/pins.js',
   'js/init.js',
-  'js/data/quizzes.js',
-  'js/data/mock_questions.js',
-  'js/data/dsa_problems_index.js',
-  'js/data/dsa_problems_full.js',
-  'js/data/search_index.js',
   'manifest.json',
   'icon-192.svg',
   'icon-512.svg',
+];
+
+// Warmed in the background AFTER activation, and only on a connection that can
+// afford it (see shouldWarm() below). Losing this costs nothing but a slower
+// first open of a chapter the user has not visited yet.
+const WARM_ON_IDLE = [
   'README.md',
   'content/00p_dl_llm_playbook.md',
   'content/00_quick_reference_cheat_sheet.md',
@@ -81,89 +92,8 @@ const STATIC_FILES = [
   'content/33b_llm_interview_questions_part2.md',
   'content/34_google_top10_ml_interview.md',
   'content/34b_google_top10_ml_interview_part2.md',
-
-  // Whiteboard rehearsal companions (hand-drawn "draw it live" sketch per case study)
-  'diagrams/notification_whiteboard.svg', 'diagrams/chat_whiteboard.svg', 'diagrams/video_conf_whiteboard.svg', 'diagrams/collab_editor_whiteboard.svg',
-  'diagrams/arch_reference_whiteboard.svg', 'diagrams/autocomplete_whiteboard.svg', 'diagrams/crawler_whiteboard.svg',
-  'diagrams/proximity_whiteboard.svg', 'diagrams/ride_hailing_whiteboard.svg', 'diagrams/news_feed_whiteboard.svg',
-  'diagrams/video_streaming_whiteboard.svg', 'diagrams/file_sync_whiteboard.svg', 'diagrams/url_shortener_whiteboard.svg',
-  'diagrams/rate_limiter_whiteboard.svg', 'diagrams/unique_id_whiteboard.svg', 'diagrams/topk_whiteboard.svg',
-  'diagrams/leaderboard_whiteboard.svg', 'diagrams/dist_cache_whiteboard.svg', 'diagrams/scheduler_whiteboard.svg',
-  'diagrams/payment_whiteboard.svg', 'diagrams/inventory_whiteboard.svg', 'diagrams/kv_store_whiteboard.svg',
-  'diagrams/pastebin_whiteboard.svg', 'diagrams/amazon_whiteboard.svg', 'diagrams/llm_serving_whiteboard.svg',
-  'diagrams/rag_whiteboard.svg', 'diagrams/recsys_whiteboard.svg',
-
-  // Case-study architecture diagrams (Ch 35–37) — AI-generated, final
-  'diagrams/arch_reference_ai.png', 'diagrams/notification_ai.png', 'diagrams/chat_ai.png', 'diagrams/video_conf_ai.png', 'diagrams/collab_editor_ai.png',
-  'diagrams/autocomplete_ai.png', 'diagrams/crawler_ai.png', 'diagrams/proximity_ai.png', 'diagrams/ride_hailing_ai.png',
-  'diagrams/news_feed_ai.png', 'diagrams/video_streaming_ai.png', 'diagrams/file_sync_ai.png', 'diagrams/url_shortener_ai.png',
-  'diagrams/rate_limiter_ai.png', 'diagrams/unique_id_ai.png', 'diagrams/topk_ai.png', 'diagrams/leaderboard_ai.png',
-  'diagrams/dist_cache_ai.png', 'diagrams/scheduler_ai.png', 'diagrams/payment_ai.png', 'diagrams/inventory_ai.png',
-  'diagrams/kv_store_ai.png', 'diagrams/pastebin_ai.png', 'diagrams/amazon_ai.png',
-  'diagrams/llm_serving_ai.png', 'diagrams/rag_ai.png', 'diagrams/recsys_ai.png',
-
-  // Chapter 14 (Neural Networks) — AI-generated educational concept diagrams
-  'diagrams/nn_neuron_ai.png', 'diagrams/nn_layers_ai.png', 'diagrams/nn_backprop_ai.png',
-  'diagrams/nn_cnn_ai.png', 'diagrams/nn_rnn_ai.png', 'diagrams/nn_transformer_ai.png', 'diagrams/nn_gan_ai.png',
-  'diagrams/nn_vanishing_ai.png', 'diagrams/nn_init_ai.png', 'diagrams/nn_archchooser_ai.png',
-  'diagrams/nn_xor_ai.png', 'diagrams/nn_loss_ai.png', 'diagrams/nn_regularization_ai.png', 'diagrams/nn_transfer_ai.png',
-
-  // NOTE: the ML Curriculum recap diagrams (diagrams/rev_*_ai.png, ~13 MB), the
-  // core-curriculum concept diagrams for Ch 07-13 (diagrams/{intro07,core08,prep09,
-  // sup10,unsup11,algo12,eval13}_*_ai.png, ~62 MB) and the Deep Learning & LLMs
-  // top-ups (diagrams/{dlrev,dl16x,llm17x,llm17bx,llm17cx,agent18x,agent18bx,fw19x,
-  // land20x,play00}_*_ai.png, ~78 MB) are deliberately NOT precached — together they
-  // would add ~153 MB to an already large install. The fetch handler's
-  // stale-while-revalidate branch caches them on first view instead.
-
-  // Chapter 15 (Reinforcement Learning) — AI-generated educational concept diagrams
-  'diagrams/rl_loop_ai.png', 'diagrams/rl_discount_ai.png', 'diagrams/rl_explore_exploit_ai.png',
-  'diagrams/rl_bellman_ai.png', 'diagrams/rl_qupdate_ai.png', 'diagrams/rl_dqn_ai.png', 'diagrams/rl_rlhf_ai.png',
-
-  // Chapter 16 (Deep Learning) — AI-generated educational concept diagrams
-  'diagrams/dl16_optimizers_ai.png', 'diagrams/dl16_normalization_ai.png', 'diagrams/dl16_resnet_ai.png',
-  'diagrams/dl16_vit_ai.png', 'diagrams/dl16_diffusion_ai.png', 'diagrams/dl16_moe_ai.png',
-  'diagrams/dl16_rope_ai.png', 'diagrams/dl16_gnn_ai.png',
-
-  // Chapter 17 (LLMs) — AI-generated educational concept diagrams
-  'diagrams/llm17_tokenization_ai.png', 'diagrams/llm17_embeddings_ai.png', 'diagrams/llm17_selfattention_ai.png',
-  'diagrams/llm17_pretraining_ai.png', 'diagrams/llm17_scalinglaws_ai.png', 'diagrams/llm17_decoding_ai.png',
-  'diagrams/llm17_grpo_ai.png', 'diagrams/llm17_attentionvariants_ai.png',
-
-  // Chapter 17b (LLM Applications) — AI-generated educational concept diagrams
-  'diagrams/llm17b_ragpipeline_ai.png', 'diagrams/llm17b_promptinjection_ai.png', 'diagrams/llm17b_agentloop_ai.png',
-  'diagrams/llm17b_lora_ai.png', 'diagrams/llm17b_vectorsearch_ai.png', 'diagrams/llm17b_chunking_ai.png',
-  'diagrams/llm17b_guardrails_ai.png',
-
-  // Chapter 17c (LLM Systems) — AI-generated educational concept diagrams
-  'diagrams/llm17c_kvcachegrowth_ai.png', 'diagrams/llm17c_continuousbatching_ai.png', 'diagrams/llm17c_pagedattention_ai.png',
-  'diagrams/llm17c_prefixcaching_ai.png', 'diagrams/llm17c_quantization_ai.png', 'diagrams/llm17c_multilora_ai.png',
-  'diagrams/llm17c_evalstack_ai.png',
-
-  // Chapter 18 (AI Agents) — AI-generated educational concept diagrams
-  'diagrams/agent18_functioncalling_ai.png', 'diagrams/agent18_mcpwhy_ai.png', 'diagrams/agent18_toolpoisoning_ai.png',
-  'diagrams/agent18_patterncomparison_ai.png', 'diagrams/agent18_computeruse_ai.png', 'diagrams/agent18_contextstack_ai.png',
-  'diagrams/agent18_toolbloat_ai.png',
-
-  // Chapter 18b (Agents in Production) — AI-generated educational concept diagrams
-  'diagrams/agent18b_fivefailures_ai.png', 'diagrams/agent18b_dualllm_ai.png', 'diagrams/agent18b_endtoendvsperstep_ai.png',
-  'diagrams/agent18b_agentops_ai.png', 'diagrams/agent18b_autonomyspectrum_ai.png', 'diagrams/agent18b_actionclassification_ai.png',
-  'diagrams/agent18b_isolationladder_ai.png', 'diagrams/agent18b_longrunningfailures_ai.png',
-
-  // Chapter 19 (AI Frameworks & Engineering) — AI-generated educational concept diagrams
-  'diagrams/fw19_ecosystemmap_ai.png', 'diagrams/fw19_multiagentmodels_ai.png', 'diagrams/fw19_ragfixes_ai.png',
-  'diagrams/fw19_embeddingaxes_ai.png', 'diagrams/fw19_servinghierarchy_ai.png', 'diagrams/fw19_modelaccess_ai.png',
-  'diagrams/fw19_mlopslifecycle_ai.png', 'diagrams/fw19_costlevers_ai.png',
-
-  // Chapter 20 (The 2026 AI Landscape) — AI-generated educational concept diagrams
-  'diagrams/land20_frontiermap_ai.png', 'diagrams/land20_testtimecompute_ai.png', 'diagrams/land20_swebench_ai.png',
-  'diagrams/land20_ondevice_ai.png', 'diagrams/land20_costcurve_ai.png', 'diagrams/land20_eutimeline_ai.png',
-  'diagrams/land20_googlestack_ai.png', 'diagrams/land20_decisiontree_ai.png',
-
-  // Chapter 31 (DSA & ML Coding) — AI-generated DP concept diagrams
-  'diagrams/dsa31_dp_parents_ai.png', 'diagrams/dsa31_dp_pipeline_ai.png', 'diagrams/dsa31_dp_knapsack_ai.png',
-  'diagrams/dsa31_dp_lcs_ai.png', 'diagrams/dsa31_dp_mcm_ai.png', 'diagrams/dsa31_dp_table_walk_ai.png',
 ];
+
 const STATIC_ASSETS = STATIC_FILES.map(f => BASE + f);
 
 // CDN assets — cache on first use
@@ -173,27 +103,73 @@ const CDN_PATTERNS = [
   'unpkg.com',
 ];
 
-// Install — cache all static assets
+// Install — cache the (tiny) app shell. Deliberately NOT atomic: cache.addAll()
+// rejects the whole batch if a single request fails, which on a flaky mobile
+// link used to abort the install and then retry every URL again. allSettled
+// means one dropped request costs one file, not the entire install.
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        // Cache what we can, skip failures (some files may not exist yet)
-        return Promise.allSettled(STATIC_ASSETS.map(url => cache.add(url)));
-      });
-    })
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(STATIC_ASSETS.map(url => cache.add(url)))
+    )
   );
   self.skipWaiting();
 });
 
-// Activate — clean up old caches
+// Is this connection one we can afford to prefetch on? Bail out on metered or
+// slow links — the whole point of the shell-only install is to leave a mobile
+// connection free for the page's own requests.
+function shouldWarm() {
+  const c = self.navigator && self.navigator.connection;
+  if (!c) return true;                                   // unknown: assume fine
+  if (c.saveData) return false;                          // user asked us not to
+  if (['slow-2g', '2g', '3g'].includes(c.effectiveType)) return false;
+  return true;
+}
+
+// Warm the chapter markdown in the background, well after activation, a few
+// files at a time. Anything that fails is simply left for the fetch handler to
+// cache on first view.
+async function warmContent() {
+  if (!shouldWarm()) return;
+  const cache = await caches.open(CACHE_NAME);
+  const urls = WARM_ON_IDLE.map(f => BASE + f);
+  const BATCH = 3;
+  for (let i = 0; i < urls.length; i += BATCH) {
+    if (!shouldWarm()) return;                           // connection may have changed
+    await Promise.allSettled(
+      urls.slice(i, i + BATCH).map(async url => {
+        if (await cache.match(url)) return;              // already have it
+        return cache.add(url);
+      })
+    );
+  }
+}
+
+// Activate — clean up old caches, then warm content in the background.
+// The warm-up is awaited inside waitUntil so the browser keeps this worker
+// alive long enough to finish it; it does not block page fetches, since
+// clients.claim() has already happened and the fetch handler is independent.
+// Any warming cut short simply resumes on the next visit — warmContent skips
+// whatever is already cached.
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => new Promise(resolve => setTimeout(resolve, 5000)))   // let the page load first
+      .then(() => warmContent())
+      .catch(() => {})
   );
   self.clients.claim();
+});
+
+// Allow the page to ask for a content warm-up (e.g. on a repeat visit where no
+// install/activate happened). The worker still decides whether the connection
+// can afford it, and skips anything already cached.
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'warm-content') {
+    event.waitUntil(warmContent().catch(() => {}));
+  }
 });
 
 // Fetch — serve from cache first, fall back to network
