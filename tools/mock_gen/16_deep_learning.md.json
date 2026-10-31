@@ -22,7 +22,7 @@
     "explanation": "In Adam+L2, the weight-decay gradient is divided by Adam's adaptive denominator √v̂. Heavily-updated weights have large v̂, so the denominator shrinks their L2 term — the very weights most needing regularization get the least. AdamW applies decay separately outside the adaptive scaling."
   },
   {
-    "q": "Modern LLM pre-training on NVIDIA A100 and H100 GPUs predominantly uses BF16 rather than FP16. Which hardware property makes BF16 safer for large-scale training?",
+    "q": "Modern LLM pre-training on NVIDIA and TPU hardware predominantly uses BF16 rather than FP16. Which numeric property makes BF16 safer for large-scale training?",
     "options": [
       "BF16 provides higher mantissa precision than FP16, making it more accurate for weight accumulation steps",
       "BF16 shares the same 8-bit exponent range as FP32, eliminating the overflow risk that causes NaN in FP16 training",
@@ -30,7 +30,7 @@
       "BF16 has a built-in loss-scaling mechanism that prevents tiny gradients from rounding to zero automatically"
     ],
     "answer": 1,
-    "explanation": "FP16 has only 5 exponent bits, limiting its range to ~65,504 — large activations overflow to NaN. BF16 allocates 8 exponent bits (same as FP32), giving the same dynamic range at half the memory. The tradeoff is less mantissa precision, which rarely matters for training gradient updates."
+    "explanation": "FP16 has only 5 exponent bits, limiting its range to ~65,504 — large activations overflow to Inf/NaN and tiny gradients underflow, which is why FP16 training needs loss scaling. BF16 allocates 8 exponent bits (same as FP32), giving FP32's dynamic range at half the memory, so it needs no loss scaling. The tradeoff is less mantissa precision, which rarely matters for training; FP32 master weights still absorb the small updates."
   },
   {
     "q": "VGG replaces each 5×5 convolutional layer with two stacked 3×3 layers. Which advantage does this substitution NOT provide compared to a single 5×5 layer?",
@@ -44,15 +44,15 @@
     "explanation": "Two stacked 3×3 layers have the same 5×5 effective receptive field — not a larger one. The genuine gains are more non-linearity (two ReLUs), fewer parameters, and a cleaner, uniform modular design. The receptive field is equivalent, not expanded."
   },
   {
-    "q": "Adam initializes its first moment m = 0 and second moment v = 0. At step t=1 with β₁=0.9, the bias-corrected estimate is m̂ = m/(1−0.9). What is the approximate effect of this correction?",
+    "q": "Adam starts with m = v = 0. At step t=1 with gradient 0.2, β₁=0.9 and β₂=0.999, the raw moments are m = 0.02 and v = 0.00004. Without bias correction, how would the first update compare with the corrected one?",
     "options": [
-      "It reduces the update by 90% to account for the unusually large gradient magnitude seen in the first step",
-      "It inflates the estimate by a factor of ~10, compensating for the zero-initialization that would otherwise make early updates too small",
-      "It sets the effective learning rate to exactly 0.001 regardless of the gradient magnitude at step 1",
-      "It constrains the update magnitude to stay within one standard deviation of the initial random weight values, preventing over-correction on the very first optimizer step"
+      "About 10× too small, because m is understated 10× by its zero initialization and nothing offsets it",
+      "Identical, because m and v are understated by the same factor, so their ratio is unchanged by correction",
+      "About 3× too large, because v is understated 1000× under a square root while m is understated only 10×",
+      "About 100× too large, because v is understated 1000× while m is understated only 10× in the ratio"
     ],
-    "answer": 1,
-    "explanation": "At t=1, 1−β₁^t = 1−0.9 = 0.1, so m̂ = m/0.1 = 10×m. Without bias correction the near-zero initial m would make the first update far too small. The correction inflates the estimate to its true expected magnitude and naturally fades to negligible effect after ~1000 steps."
+    "answer": 2,
+    "explanation": "Uncorrected, m/√v = 0.02/√0.00004 = 0.02/0.00632 ≈ 3.16, versus the corrected m̂/√v̂ = 0.2/√0.04 = 1. So the raw first step would be ~3.16 × lr instead of exactly lr (0.001). The ratio is inflated by (1−β₁ᵗ)/√(1−β₂ᵗ) = 0.1/0.0316 ≈ 3.2 because v's 1000× understatement sits under a square root (option D forgets the root). Bias correction exists to stop the early steps being oversized — not undersized, as is often claimed — which is also why learning-rate warmup is still used with Adam."
   },
   {
     "q": "Norm-based gradient clipping scales the entire gradient vector when ‖g‖ > max_norm, while element-wise clipping clips each component independently. What key property does norm-based clipping preserve that element-wise clipping does not?",
@@ -77,7 +77,7 @@
     "explanation": "If the identity is optimal, H(x)=x means F(x)=0. Learning to output approximately zero is far easier than learning a precise identity mapping from random initialization. This reformulation lets deep networks bypass useless layers, which is why ResNet-152 trained successfully when plain 56-layer networks degraded."
   },
   {
-    "q": "Vision Transformer (ViT) requires far more training data than CNNs of similar capacity to reach comparable accuracy. Which architectural property causes this data hunger?",
+    "q": "Vision Transformer (ViT) needs more training data (or much stronger augmentation) than CNNs of similar capacity to reach comparable accuracy. Which architectural property causes this data hunger?",
     "options": [
       "ViT's learned positional embeddings have significantly more parameters than CNN pooling operations and require substantially more labeled examples to converge to useful representations",
       "ViT applies attention globally from the very first layer, creating quadratic memory that limits useful batch sizes",
@@ -85,7 +85,7 @@
       "ViT's patch projection discards within-patch spatial structure that CNNs preserve through overlapping convolutions"
     ],
     "answer": 2,
-    "explanation": "CNNs hardcode translation equivariance (same filter everywhere) and local connectivity (nearby pixels matter more). These priors mean even a few hundred examples convey spatial structure. ViT has no such inductive bias — it must discover from data alone that adjacent patches are related, requiring orders of magnitude more examples."
+    "explanation": "CNNs hardcode translation equivariance (same filter everywhere) and local connectivity (nearby pixels matter more), so even modest datasets convey spatial structure. ViT has no such inductive bias — it must discover from data that adjacent patches are related. The original ViT leaned on very large pre-training sets, but DeiT later showed ImageNet-1k alone is enough when strong augmentation, regularization and distillation stand in for the missing priors."
   },
   {
     "q": "Focal Loss is defined as FL = −(1−pₜ)^γ × log(pₜ). What happens to Focal Loss when the focusing parameter γ is set to exactly 0?",
@@ -220,17 +220,6 @@
     "explanation": "Each head produces a dᵥ-dimensional output; concatenating h heads gives h×dᵥ. W^O ∈ ℝ^(h·dᵥ × d_model) projects this back to d_model and, crucially, allows the model to learn how to mix and integrate signals from all heads into a coherent representation. Without it, the output tensor has the wrong dimension for all subsequent operations."
   },
   {
-    "q": "Byte Pair Encoding (BPE) constructs a vocabulary for language models through an iterative process. Which description correctly characterizes that process?",
-    "options": [
-      "BPE splits text at Unicode codepoint boundaries and retains only codepoints that appear in at least N documents",
-      "BPE counts all adjacent symbol pairs in the corpus and repeatedly merges the most frequent pair into a new token",
-      "BPE applies mutual information ranking to select the character n-grams that best predict the following word",
-      "BPE trains a small neural LM on characters and promotes subsequences with high log-probability to vocabulary tokens"
-    ],
-    "answer": 1,
-    "explanation": "BPE starts with individual characters (or bytes) as the vocabulary. At each step, it counts every adjacent pair of symbols in the corpus, merges the most frequent pair into a single new symbol, and repeats until the vocabulary reaches the target size. Common words become single tokens; rare or novel words are represented as sequences of subword pieces."
-  },
-  {
     "q": "GPT's causal (autoregressive) self-attention mask sets certain attention logits to −∞ before the softmax operation. What is the resulting effect on the attention weights of those masked positions?",
     "options": [
       "After softmax, masked positions have exactly zero weight, so each token aggregates only past (and current) token values",
@@ -253,28 +242,6 @@
     "explanation": "ReLU outputs max(0, z): if z ≤ 0, output = 0 and the gradient ∂ReLU/∂z = 0. If a neuron's weights evolve so that z is always negative for every training example, it never fires, never receives a gradient, and its weights never update — it is 'dead.' The chapter notes this happens when negative gradients permanently push z into negative territory."
   },
   {
-    "q": "In LoRA fine-tuning, the weight update is ΔW = B×A where W₀ ∈ ℝ^(4096×4096), B ∈ ℝ^(4096×8), and A ∈ ℝ^(8×4096). How many trainable parameters does one such LoRA module contain?",
-    "options": [
-      "16,777,216 — matching the full matrix, because B and A together must span the same capacity as W₀",
-      "32,768 — only B is trained; A is fixed at its random initialization and contributes no trainable parameters",
-      "65,536 — both A and B are trained, contributing 4096×8 + 8×4096 parameters in total",
-      "64 — only the r×r bottleneck product BA occupies trainable memory at the rank-8 intersection"
-    ],
-    "answer": 2,
-    "explanation": "Both matrices are trained: A has r×d = 8×4096 = 32,768 parameters, and B has d×r = 4096×8 = 32,768 parameters, totaling 65,536 — 256× fewer than the 16.8M in W₀. At inference, B×A is precomputed and added to W₀, yielding a standard weight matrix with zero runtime overhead."
-  },
-  {
-    "q": "In RLHF's PPO fine-tuning stage, the reward signal is R_total = R_reward_model − β × D_KL(π ‖ π_SFT). What specific failure does the KL penalty term prevent?",
-    "options": [
-      "It prevents the policy from collapsing to output only the single highest-reward response for every prompt",
-      "It stops the policy from generating outputs that score highly on the reward model through reward hacking while being useless to humans",
-      "It ensures the reward model and policy model share gradient updates, maintaining their quality proportionally",
-      "It blocks the policy from memorizing the SFT training examples verbatim to avoid overfitting to demonstration data"
-    ],
-    "answer": 1,
-    "explanation": "Without the KL term, the policy is free to exploit the reward model — generating gibberish or adversarially crafted text that gets high scores from the imperfect reward model without being genuinely helpful. The KL penalty keeps the policy close to the SFT baseline, ensuring outputs remain human-comprehensible even as they improve."
-  },
-  {
     "q": "The VAE encoder outputs a distribution (μ, σ) rather than a point z. Training requires gradients to flow back through the sampling step. The reparameterization trick achieves this by:",
     "options": [
       "Replacing the continuous sample with the closest discrete vocabulary token so gradients can propagate through embeddings",
@@ -284,17 +251,6 @@
     ],
     "answer": 2,
     "explanation": "You cannot backpropagate through a random node in the computation graph. By writing z = μ + σ × ε and treating ε as external noise (not part of the graph), z becomes a deterministic differentiable function of μ and σ. Gradients flow through z back to μ and σ normally, allowing the encoder to learn the optimal posterior distribution."
-  },
-  {
-    "q": "In RLHF Stage 2, the reward model is trained on human preference rankings using the loss L = −log(σ(s_win − s_lose)). What behavior does this loss function drive?",
-    "options": [
-      "The winning response score is pushed strictly above the losing response score on every preference pair",
-      "The reward model outputs probability distributions over all candidate responses summing to exactly 1.0",
-      "Score differences greater than 5 are clipped to prevent the reward model from over-penalizing poor responses",
-      "The losing response score is driven toward −∞ to make the reward model a hard binary classifier"
-    ],
-    "answer": 0,
-    "explanation": "σ(s_win − s_lose) is the probability that the reward model correctly ranks the winning response higher. Minimizing −log of this probability is equivalent to maximizing that probability — which means pushing s_win above s_lose. Unlike a hard binary classifier, the sigmoid keeps gradients smooth and bounded even for large score gaps."
   },
   {
     "q": "The VAE training objective is ELBO = L_reconstruction − D_KL(q(z|x) ‖ p(z)). What role does the KL divergence term specifically play in shaping the learned latent space?",
@@ -333,12 +289,12 @@
     "q": "Compared to GANs, diffusion models have a significant practical disadvantage for real-time applications. What is it?",
     "options": [
       "Diffusion models require a labeled dataset for conditioning, making them unsuitable for purely generative tasks",
-      "Generating a sample requires 50–1000 sequential UNet forward passes, making inference far slower than a GAN's single pass",
+      "Generating a sample requires 20–1000 sequential denoiser forward passes, far slower than a GAN's single pass",
       "Diffusion models must retain all 1000 intermediate noisy images in GPU memory simultaneously during generation",
       "The text encoder must be re-run for every denoising step, creating linear latency growth with the number of steps"
     ],
     "answer": 1,
-    "explanation": "GANs generate in a single generator forward pass — milliseconds on modern hardware. Diffusion models must iteratively denoise from pure Gaussian noise through 50–1000 sequential steps, each requiring a full UNet evaluation. This latency gap explains ongoing research into DDIM, consistency models, and distillation methods to accelerate diffusion inference."
+    "explanation": "A GAN generates in a single generator forward pass. A classic diffusion model must iteratively denoise from pure noise through many sequential steps (1000 for DDPM, 20–50 with DDIM-style samplers), each a full denoiser evaluation. Closing this gap is why flow matching (straighter paths, fewer steps), consistency models and distillation exist — including adversarial diffusion distillation (SDXL-Turbo, 1–4 steps), which is where GAN-style losses mostly survive today alongside autoencoder/tokenizer training. Image and video generation are now dominated by diffusion/flow transformers, not GANs."
   },
   {
     "q": "Standard GAN training is equivalent to minimizing Jensen-Shannon (JS) divergence between pdata and pG. Why does this cause training instability early in training?",
@@ -451,17 +407,6 @@
     "explanation": "G is a cumulative running sum — it never decreases. For a weight updated at every step, G → ∞ and α/√G → 0. This is AdaGrad's documented failure mode for long-horizon training: weights that receive frequent gradient signal eventually stop learning entirely. RMSProp fixes this by replacing the cumulative sum with a decaying exponential average."
   },
   {
-    "q": "In prompt tuning, 'soft prompt' tokens are prepended to the input and only these tokens are trained. How do soft prompt tokens fundamentally differ from regular vocabulary tokens?",
-    "options": [
-      "Soft prompt tokens are drawn from a fixed set of instruction keywords that the frozen model was explicitly taught to interpret",
-      "Soft prompt tokens must include a [SOFT] delimiter token that the model's attention mechanism uses to separate prompt from input",
-      "Soft prompt tokens are continuous learned embedding vectors not tied to any vocabulary entry, optimized directly by gradient descent",
-      "Soft prompt tokens are hard-coded copies of the most similar few-shot examples retrieved from the training set"
-    ],
-    "answer": 2,
-    "explanation": "Unlike real tokens, soft prompt embeddings are not constrained to correspond to any vocabulary word. They are free-floating vectors in ℝ^d, initialized randomly (or from real word embeddings) and updated via gradient descent while the entire language model remains frozen. Tuning ~100–1000 such parameters can match adapter-layer performance at large model scales."
-  },
-  {
     "q": "The Huber loss switches from MSE behavior for small errors to MAE behavior for large errors (those exceeding threshold δ). What is the main practical motivation for applying MAE to large errors rather than MSE?",
     "options": [
       "MSE is not differentiable at the minimum, requiring a smooth MAE transition to ensure stable gradient-based optimization",
@@ -484,28 +429,6 @@
     "explanation": "AdaGrad's G = Σ(∇w)² grows without bound. RMSProp's EMA 'forgets' old gradient history through the 0.99 decay factor, keeping E[g²] from growing unboundedly. This prevents α/√(E[g²]) from collapsing to zero, allowing the effective learning rate to remain non-negligible for as long as training proceeds — the chapter's stated advantage over AdaGrad."
   },
   {
-    "q": "For a product team that needs to update an LLM's knowledge with new documents every week, RAG is preferred over weekly fine-tuning. What is the decisive practical advantage?",
-    "options": [
-      "RAG constrains outputs to exact phrasings from retrieved documents, preventing the model from hallucinating paraphrases",
-      "RAG eliminates inference latency by pre-computing all possible responses and caching them in the vector database",
-      "RAG requires only 10–100 labeled examples per update cycle, far fewer than fine-tuning needs for reliable performance",
-      "Documents can be added, updated, or removed in the vector store without any retraining or weight updates to the LLM"
-    ],
-    "answer": 3,
-    "explanation": "Fine-tuning bakes knowledge into model weights — updating it requires a new training run. RAG externalizes knowledge to a retrieval database that can be modified instantly. The LLM's weights never change; only the retrieved context changes at query time. This makes RAG the natural choice for time-sensitive or frequently-updated information, with the added benefit of being able to cite sources."
-  },
-  {
-    "q": "After LoRA fine-tuning, the chapter describes deploying the adapted model with 'zero extra compute' compared to the base model. How is this achieved?",
-    "options": [
-      "The A matrix is discarded after training completes since it is always initialized to zero and does not hold any learned adaptation signal that would improve the deployed model's forward pass",
-      "B×A is precomputed offline and merged directly into W₀ before deployment, yielding a standard dense layer identical in structure to the original",
-      "LoRA adapters are quantized to 4-bit integers at deployment time, reducing their memory footprint to near-zero compared to activations",
-      "The LoRA adapters are cached in the key-value cache during autoregressive generation, so they add cost only at the first token"
-    ],
-    "answer": 1,
-    "explanation": "Because W₀, B, and A are all constants at deployment time, the product B×A is a fixed matrix that can be computed once and added directly to W₀. The deployed model is W_eff = W₀ + B×A — structurally identical to the original base model, with no adapter modules present at inference time and no extra computation per forward pass."
-  },
-  {
     "q": "Dropout was first applied in a major vision model in AlexNet (2012). In which phase is dropout active, and in which phase is it disabled?",
     "options": [
       "Active only during the forward pass of training; disabled at inference so predictions are consistent and deterministic",
@@ -525,7 +448,7 @@
       "RoPE uses the same set of frequencies as sinusoidal encoding but applies them multiplicatively, which avoids frequency aliasing at long range"
     ],
     "answer": 2,
-    "explanation": "After rotating qₘ and kₙ by angles mθᵢ and nθᵢ respectively, their dot product becomes a function of (m−n)θᵢ only. The model never needs to reason about absolute positions it has not seen — only relative distances, which repeat naturally at any length. This property is why RoPE (used in LLaMA, Gemini, Mistral) extrapolates better than learned absolute embeddings."
+    "explanation": "After rotating qₘ and kₙ by angles mθᵢ and nθᵢ respectively, their dot product becomes a function of (m−n)θᵢ only. The model never needs to reason about absolute positions it has not seen — only relative distances, which repeat naturally at any length. This property is why RoPE (used in Llama, Gemma, Qwen and Mistral) extrapolates better than learned absolute embeddings."
   },
   {
     "q": "BERT reads text bidirectionally while GPT reads only left to right (causally). Which application scenario directly benefits from BERT's bidirectional attention?",
@@ -583,15 +506,15 @@
     "explanation": "Norm clipping scales the entire gradient vector uniformly by a single factor: direction is preserved, only magnitude shrinks. Element-wise clipping truncates each component independently: a large component at +5 is reduced to +c, but a small component at +0.01 is unchanged. The resulting direction differs from the true gradient direction, potentially pointing the optimizer in an unhelpful direction."
   },
   {
-    "q": "Mixtral-8x7B uses MoE with 8 total experts and top-2 routing, giving it ~46B total parameters. Approximately how many parameters are active during a single token's forward pass?",
+    "q": "Mixtral-8x7B routes each token to the top 2 of 8 experts and has ~46.7B total parameters. Approximately how many parameters are active per token, and why is the total not 8 × 7B = 56B?",
     "options": [
-      "~46B — all expert parameters are evaluated because their outputs are needed for the router's scoring function",
-      "~12B — only 2 of 8 experts process each token; the non-expert attention and norm parameters are always active",
-      "~6B — MoE architectures are tuned to activate exactly 1/8 of total parameters regardless of the routing count",
-      "~3B — top-2 routing with gradient checkpointing only keeps the two expert activations in memory at once"
+      "~46.7B active — every expert runs on every token, and the router only reweights their outputs afterwards",
+      "~11.7B active — exactly 2/8 of the total, since every layer in the network is replicated per expert",
+      "~5.8B active — top-2 routing activates one expert's worth of parameters split evenly across two experts",
+      "~12.9B active — only the FFN layers are split into experts; attention, embeddings and norms are shared"
     ],
-    "answer": 1,
-    "explanation": "With 8 experts and 2 activated per token, 2/8 = 25% of expert-layer parameters are active. The attention, layer norm, and embedding parameters (non-expert layers) are always active. Combined, this gives ~12B active parameters per token — providing the compute cost of a 12B model while the model has the representational capacity of a ~46B model."
+    "answer": 3,
+    "explanation": "MoE replicates only the feed-forward blocks. Attention, embeddings and normalization exist once, so they are counted once in the total (46.7B, not 56B) and are paid for on every token. Active parameters = shared layers + 2 of 8 FFN experts ≈ 12.9B, so the model costs roughly a 13B dense model per token while holding ~47B parameters. Option B's 2/8 × 46.7B ≈ 11.7B misses exactly this shared portion. DeepSeek-V3 follows the same logic at larger scale: 671B total, ~37B active."
   },
   {
     "q": "The first neural network debugging step described in the chapter is to overfit a single training batch (~32 examples). If the loss fails to approach zero after 100+ steps, what does this indicate?",
@@ -702,5 +625,159 @@
     ],
     "answer": 1,
     "explanation": "Unlike weight decay or dropout, which act on parameters and activations, label smoothing changes the target distribution the model is trained against. It discourages the network from driving logits infinitely apart, which is a constraint on outputs rather than on weights."
+  },
+  {
+    "q": "Muon has been used to pre-train large models such as Kimi K2 (as MuonClip) and GLM-4.5. What does Muon do to each weight-matrix update that AdamW does not?",
+    "options": [
+      "Divides every element by a running RMS of its own past gradients, giving each scalar weight its own step size",
+      "Orthogonalizes each 2-D weight matrix's momentum update with a Newton–Schulz iteration, equalizing directions",
+      "Factors the second-moment estimate into separate row and column statistics, so optimizer state grows sublinearly",
+      "Takes only the sign of an interpolated momentum, so every element moves by exactly the same magnitude per step"
+    ],
+    "answer": 1,
+    "explanation": "Muon keeps a single momentum buffer and, for every 2-D weight matrix, replaces the raw update with an approximately orthogonal matrix computed by a few Newton–Schulz iterations. This equalizes the update's singular values, so a few dominant directions cannot swamp the rest. It applies only to hidden-layer matrices — embeddings, the output head, norms and biases are still trained with AdamW. Option A is Adam/RMSProp-style scaling, C is Adafactor and D is Lion."
+  },
+  {
+    "q": "A team swaps AdamW for the Lion optimizer on an existing training recipe. Which hyperparameter change does Lion typically require?",
+    "options": [
+      "A 3–10× smaller learning rate and larger weight decay, because sign-based updates have a fixed per-element size",
+      "A 3–10× larger learning rate and no weight decay, because Lion's update shrinks as its momentum stabilizes",
+      "The same learning rate but double the warmup steps, because Lion has no bias correction for its two buffers",
+      "A larger batch and an ε of 1e-3, because Lion divides by a second-moment estimate that is noisy at small batch"
+    ],
+    "answer": 0,
+    "explanation": "Lion keeps one momentum buffer and steps by the sign of an interpolated momentum, so every element moves by ±lr — a larger update norm than AdamW's at the same learning rate. The usual fix is a learning rate 3–10× smaller with a correspondingly larger weight decay (keeping lr × λ similar). It also saves memory: one state buffer instead of AdamW's two. Adafactor saves memory differently — it factors the second-moment matrix into row and column statistics, giving sublinear optimizer memory (used for T5 and PaLM)."
+  },
+  {
+    "q": "Many recent LLM pre-training runs use a warmup–stable–decay (WSD) learning-rate schedule instead of cosine decay. What is its main practical advantage?",
+    "options": [
+      "It removes the warmup phase entirely, so training can start at the full learning rate without instability",
+      "LR stays flat for most of training and decays only at the end, so total steps need not be fixed in advance",
+      "It decays the learning rate continuously from step one, so the model converges sooner than under cosine",
+      "It cycles the learning rate up and down every epoch, so the model repeatedly escapes sharp local minima"
+    ],
+    "answer": 1,
+    "explanation": "WSD warms up, holds the learning rate constant for most of training, then decays in a short final phase (roughly the last 10–20% of steps). Cosine decay must know the horizon in advance because the shape of the curve depends on the total step count. With WSD you can keep training from a stable-phase checkpoint, or branch several short decay runs off it, without committing to a final length up front."
+  },
+  {
+    "q": "FP8 training on Hopper and Blackwell GPUs uses two 8-bit formats, E4M3 and E5M2. How are they typically assigned?",
+    "options": [
+      "E5M2 for weights and activations because of its extra range; E4M3 for gradients because of its extra precision",
+      "E4M3 for optimizer states and master weights; E5M2 only for the scalar loss at the end of the forward pass",
+      "E4M3 (more precision) for forward weights and activations; E5M2 (more range) for backward-pass gradients",
+      "The two formats are interchangeable, so the choice is made per layer to balance rounding error across the net"
+    ],
+    "answer": 2,
+    "explanation": "E4M3 spends more bits on the mantissa (precision) and E5M2 on the exponent (range). Forward weights and activations have a modest dynamic range and benefit from precision, while gradients span many orders of magnitude and need range. Master weights and optimizer state stay in higher precision. DeepSeek-V3 was trained largely in FP8 using fine-grained block-wise scaling factors, and Blackwell adds FP4 (NVFP4) tensor cores. Loss scaling is an FP16 requirement; BF16 does not need it because it shares FP32's 8-bit exponent."
+  },
+  {
+    "q": "ConvNeXt (2022) is often cited in the \"CNN vs ViT\" debate. What did it show?",
+    "options": [
+      "That pure CNNs cannot match vision transformers on ImageNet once pre-training data exceeds 100M images",
+      "That adding one self-attention layer at the end of a ResNet is enough to match a full ViT's accuracy",
+      "That convolutions are redundant inside ViTs, so patch embeddings should become plain linear projections",
+      "That a ResNet modernized with ViT-era design choices matches Swin Transformer accuracy as a pure CNN"
+    ],
+    "answer": 3,
+    "explanation": "ConvNeXt took a standard ResNet and applied transformer-era design choices one at a time — 7×7 depthwise convolutions, LayerNorm instead of BatchNorm, GELU, an inverted bottleneck, fewer activations and norms, and a modern training recipe. The result, still a pure CNN, matched Swin Transformer accuracy and throughput. Much of ViT's apparent advantage came from the recipe and design details rather than attention itself, so CNNs remain competitive — especially at small data and on edge hardware."
+  },
+  {
+    "q": "DETR (DEtection TRansformer) removes two hand-designed components that classic YOLO-style detectors depend on. Which two, and what replaces them?",
+    "options": [
+      "Anchor boxes and non-maximum suppression; a fixed set of predicted boxes is matched one-to-one by Hungarian matching",
+      "The CNN backbone and the classification head; a single ViT regresses box coordinates directly from raw pixel patches",
+      "The box regression loss and the IoU metric; boxes are predicted as segmentation masks and converted afterwards",
+      "Image resizing and data augmentation; the transformer learns scale invariance from its positional encodings alone"
+    ],
+    "answer": 0,
+    "explanation": "DETR frames detection as set prediction: a transformer decoder turns N learned object queries into N box predictions, and Hungarian matching assigns each ground-truth object to exactly one prediction during training. Because the loss already penalizes duplicates, there are no anchors to tune and no NMS step at inference. RT-DETR is the real-time variant that competes with YOLO on speed. DETR still uses a CNN backbone, so option B is wrong."
+  },
+  {
+    "q": "Segment Anything (SAM) and SAM 2 are \"promptable\" segmentation models. What does SAM 2 add over SAM?",
+    "options": [
+      "Text-only prompting, replacing clicks and boxes with natural-language class names passed through CLIP",
+      "Video support, using a memory module that carries the prompted object's features forward across frames",
+      "Closed-set semantic labels, so every mask now comes with one of the 1,000 ImageNet class names attached",
+      "3-D point-cloud input, so the same prompts can segment objects in LiDAR scans as well as in photographs"
+    ],
+    "answer": 1,
+    "explanation": "SAM takes an image plus a prompt — a click, a box or a rough mask — and returns a segmentation mask, generalizing zero-shot to objects it never saw labelled. SAM 2 extends this to video: a memory module stores features of the prompted object from earlier frames, so a single click can track and segment it through the clip, including after occlusion."
+  },
+  {
+    "q": "DINOv2 and MAE both pre-train vision transformers without labels. Which description correctly distinguishes them?",
+    "options": [
+      "DINOv2 contrasts each image against thousands of negatives; MAE predicts the rotation applied to each input",
+      "DINOv2 predicts the caption paired with each image; MAE reconstructs the full image from its single CLS token",
+      "DINOv2 has a student match an EMA teacher, no negatives; MAE masks ~75% of patches and reconstructs them",
+      "DINOv2 masks ~75% of patches and reconstructs pixels; MAE has a student match an EMA teacher, no negatives"
+    ],
+    "answer": 2,
+    "explanation": "DINOv2 is self-distillation: a student network sees augmented crops and learns to match the output of a teacher whose weights are an exponential moving average of the student — no labels and no negative pairs — producing strong frozen features for retrieval, depth and segmentation. MAE (masked autoencoder) hides about 75% of image patches; the encoder sees only the visible patches, which makes pre-training cheap, and a light decoder reconstructs the missing pixels. Option D swaps the two."
+  },
+  {
+    "q": "Flow matching (rectified flow), used by Stable Diffusion 3 and FLUX, interpolates x_t = (1−t)·x₀ + t·ε. What does the network learn, and why does it help sampling?",
+    "options": [
+      "The noise ε along a curved variance-preserving path, which needs ~1000 steps to integrate accurately",
+      "A discriminator score between x_t and x₀, so the generator is updated adversarially at every noise level",
+      "The clean image x₀ in one shot, so sampling takes a single step with no ODE solver or noise schedule",
+      "The velocity ε − x₀ along a straight path, which an ODE solver can follow accurately in far fewer steps"
+    ],
+    "answer": 3,
+    "explanation": "Along the straight-line interpolation x_t = (1−t)·x₀ + t·ε, the time derivative is the constant ε − x₀, so the network regresses that velocity. Generation integrates the learned velocity field from noise back to data. Because the paths are close to straight, an ODE solver can take large steps without drifting — far fewer than the curved trajectories of classic DDPM need. SD3 and FLUX pair this objective with transformer backbones."
+  },
+  {
+    "q": "Classifier-free guidance computes ε̂ = ε_uncond + w·(ε_cond − ε_uncond). What happens as the guidance scale w is raised from 1 toward the typical 5–8 range?",
+    "options": [
+      "Samples follow the prompt more literally but are less diverse, as output is pushed away from unconditional",
+      "Samples become more diverse but follow the prompt less, as the conditional term is gradually averaged out",
+      "Sampling gets faster, since a higher w lets the sampler skip the unconditional pass on most denoising steps",
+      "Output quality is unchanged; w only rescales the noise prediction, which the sampler then renormalizes"
+    ],
+    "answer": 0,
+    "explanation": "At w = 1 the formula reduces to the plain conditional prediction. Larger w extrapolates beyond it, away from what the model would draw with no prompt, so images adhere more strongly to the text at the cost of diversity (and, at very high w, oversaturated artifacts). It is \"classifier-free\" because one model, trained with the condition randomly dropped, supplies both predictions — at the cost of two forward passes per step."
+  },
+  {
+    "q": "DeepSeek-V3 (671B total, ~37B active per token) balances its MoE experts without the usual auxiliary load-balancing loss. How?",
+    "options": [
+      "Each token is routed to experts in strict round-robin order, so every expert receives exactly the same load",
+      "A per-expert bias is added to the routing scores and nudged up or down according to that expert's recent load",
+      "Overloaded experts are duplicated onto extra GPUs during training, so imbalance no longer slows each step",
+      "The router is frozen after warmup, so the initial random assignment stays balanced for the rest of training"
+    ],
+    "answer": 1,
+    "explanation": "An auxiliary balancing loss works, but its gradient competes with the language-modelling objective. DeepSeek-V3 instead adds a bias to each expert's routing score that is used only for top-k selection; after each step the bias is lowered for overloaded experts and raised for underloaded ones. It also uses many fine-grained routed experts plus an always-on shared expert. For scale comparison, gpt-oss-120b has ~117B total and ~5.1B active parameters."
+  },
+  {
+    "q": "A model pre-trained with RoPE at a 4K context must serve 32K-token inputs. What do Position Interpolation, NTK-aware scaling and YaRN have in common?",
+    "options": [
+      "They replace RoPE with ALiBi at inference, since its linear distance penalty extrapolates with no retraining",
+      "They chunk the 32K input into 4K windows processed independently, then merge outputs with a learned gate",
+      "They rescale RoPE's rotation frequencies so long positions map into the trained range, with little fine-tuning",
+      "They add a second learned absolute position table for positions past 4K, trained from scratch on long text"
+    ],
+    "answer": 2,
+    "explanation": "Positions beyond the training length produce rotation angles the model never saw. Position Interpolation linearly squeezes positions into the trained range; NTK-aware scaling changes the RoPE base so high-frequency (local) dimensions are barely touched while low-frequency ones are stretched; YaRN interpolates per frequency band and adjusts the attention temperature. All three rescale frequencies rather than change the architecture, and a short fine-tune on long data recovers most of the quality."
+  },
+  {
+    "q": "Mamba-2 introduced \"state-space duality\" (SSD). What does that duality establish, and why does it matter for training?",
+    "options": [
+      "An SSM equals a convolution with a fixed kernel, so it can be trained efficiently with FFTs on plain CPUs",
+      "An SSM equals a stack of LSTM gates, so existing cuDNN recurrent kernels can be reused to train it directly",
+      "An SSM equals full softmax attention, so it inherits attention's exact recall at no additional compute cost",
+      "An SSM can be computed as a structured, masked linear-attention matmul, so it trains faster on tensor cores"
+    ],
+    "answer": 3,
+    "explanation": "SSD shows that a selective SSM with a scalar-times-identity state matrix computes the same thing as a form of masked linear attention with a structured (semiseparable) mask. Most of the work can then be expressed as large matrix multiplications, which GPU tensor cores execute far faster than Mamba-1's scan — Mamba-2 trains several times faster and supports larger states. It does not give SSMs attention's exact recall (option C), which is why production models such as Nemotron-H and Granite 4.0 remain hybrids."
+  },
+  {
+    "q": "Which statement about the current deep-learning framework landscape is accurate?",
+    "options": [
+      "TensorFlow Lite is now LiteRT, and Keras 3 can run the same model code on JAX, TensorFlow or PyTorch backends",
+      "Keras 3 runs only on TensorFlow, and on-device deployment moved from TensorFlow Lite to ONNX Runtime Mobile",
+      "PyTorch 2 dropped eager mode in favour of torch.compile, so every model must be compiled before it can train",
+      "Flax's Linen API replaced the older NNX API, and JAX no longer exposes automatic differentiation via jax.grad"
+    ],
+    "answer": 0,
+    "explanation": "Google renamed TensorFlow Lite to LiteRT for on-device inference. Keras 3 is multi-backend — the same Keras model can run on JAX, TensorFlow or PyTorch. PyTorch 2 added torch.compile as an opt-in speed-up while eager mode remains the default. In the JAX ecosystem, Flax NNX is the current API (succeeding Linen), and jax.grad remains the core of autodiff."
   }
 ]

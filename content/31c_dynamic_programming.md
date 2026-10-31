@@ -6,6 +6,38 @@
 
 ---
 
+## Start Here
+
+### Pick a track — this is the longest chapter in the sequence
+
+| Track | Time | Read this | Good for |
+|-------|------|-----------|----------|
+| **Speed run** | ~70 min | All of §18.15 (identification + the pipeline + the six parents), then just the **parent** of each family — skip the children on the first pass | First pass; you will already recognise most problems |
+| **Mastery** | ~6 hr | Everything. The children are where the interview variants live, and each one is only a paragraph once you know its parent | Real preparation |
+| **Refresh** | ~15 min | §18.20 The DP Cheat Sheet, then the Recognition Triggers table in §18.15 | The night before |
+
+> **Do not read this chapter front to back on a first pass.** The six parents are the whole map; the ~40 children are variations you look up once you can name the parent. Learn to *identify*, then derive.
+
+### How to read this chapter
+
+Each family is taught the same way, and the two lines that matter most are always together:
+
+| Line | What it gives you |
+|------|-------------------|
+| **Recognition** | the phrasing that tells you it is this problem |
+| **Parent + Change** | which of the six it is, and the *one* thing that differs |
+| **State / Recurrence / Base** | the three sentences you say out loud before coding |
+| **Java** | the code, once you already know what it will say |
+| `> **Trap:**` | the mistake that silently produces a wrong table |
+
+Dry runs open with the call and its answer, state the **invariant** that holds after every row, and close with why the last cell is the answer — the same format used in [chapter 31](#content/31_dsa_foundations).
+
+### The prerequisite that is genuinely required
+
+**You must be comfortable with plain recursion first.** DP is recursion that remembers; if writing the recursion is the hard part, that is the thing to practise, not tables. Recursion and the call-tree dry-run format are covered in [chapter 31 §18.9](#content/31_dsa_foundations). Backtracking — recursion's other child — is [chapter 31d §18.21](#content/31d_dsa_advanced_ml_coding).
+
+---
+
 ## Table of Contents
 
 | Part | Topic | Sections |
@@ -366,6 +398,19 @@ public int climbStairs(int n) {
 **Recurrence:** `dp[i] = max(dp[i-1], dp[i-2] + nums[i])` — skip this house, or rob it plus the best from two back.
 **Base:** `dp[0] = nums[0]`, `dp[1] = max(nums[0], nums[1])`.
 
+**DRY RUN — `rob([2, 7, 9, 3, 1])` → `12`**
+*invariant: `dp[i]` is the best haul from houses `0..i`, whether or not house `i` was robbed*
+
+| i | nums[i] | skip it → `dp[i-1]` | rob it → `dp[i-2] + nums[i]` | dp[i] |
+|---|---------|---------------------|------------------------------|-------|
+| 0 | 2 | — | — | 2 |
+| 1 | 7 | 2 | **7** | 7 |
+| 2 | 9 | 7 | **2 + 9 = 11** | 11 |
+| 3 | 3 | **11** | 7 + 3 = 10 | 11 |
+| 4 | 1 | 11 | **11 + 1 = 12** | **12** |
+
+*ends right: every house is either robbed or skipped, and we took the better of those two for every prefix — so `dp[n-1]` is the best over the whole street. Houses 0, 2 and 4 give 2 + 9 + 1 = 12.*
+
 ```java
 public int rob(int[] nums) {
     if (nums.length == 1) return nums[0];
@@ -547,7 +592,7 @@ Step-by-step tails array:
 Answer: tails.size() = 4
 ```
 
-> **Careful:** `tails` is *not* a valid LIS — only its **length** is meaningful. If asked to print the actual subsequence, keep parent pointers alongside.
+> **Trap:** `tails` is *not* a valid LIS — only its **length** is meaningful. If asked to print the actual subsequence, keep parent pointers alongside.
 
 **Practice:** [Longest Increasing Subsequence →](#dsa-problem-longest-increasing-subsequence)
 
@@ -670,6 +715,8 @@ public boolean wordBreak(String s, List<String> wordDict) {
 
 **Problem List — Parent 1: Linear / Pick-Skip:**
 
+**Start with these five:** Climbing Stairs · House Robber · Maximum Subarray · Longest Increasing Subsequence · Word Break. Between them they cover every combine-operator in the family.
+
 | #   | Problem                          | Difficulty | Change from the parent        |
 |-----|----------------------------------|------------|-------------------------------|
 | 1   | Climbing Stairs (LC 70)          | Easy       | Combine with `+` (count ways) |
@@ -689,6 +736,28 @@ public boolean wordBreak(String s, List<String> wordDict) {
 | 15  | Best Sightseeing Pair (LC 1014)  | Medium     | Carry best `a[i]+i` seen so far |
 
 ---
+### 60-second recall
+
+<details>
+<summary>1. What are the two questions that decide whether a problem is DP at all?</summary>
+
+Is there a <strong>choice</strong> at each step (two or more recursive calls), and is the answer a <strong>min, max, count, or is-it-possible</strong>? Both must be true. One call in a straight chain is just recursion.
+</details>
+
+<details>
+<summary>2. You have written the recursion and it is too slow. What are the next two lines, exactly?</summary>
+
+At the top of the function, <code>if (t[i][j] != -1) return t[i][j];</code> and at the bottom, <code>return t[i][j] = ...</code>. That is the whole of memoisation — the recursion itself does not change.
+</details>
+
+<details>
+<summary>3. Why bother converting a working memoised solution into a table?</summary>
+
+Only to remove the recursion stack. The time complexity is identical; a deep input can overflow the stack, and the table cannot. In an interview a correct memoised solution beats a half-finished table every time.
+</details>
+
+---
+
 ## 18.16 Parents 2 & 3 — The Knapsack Family
 
 This is the family that pays the most rent. One recursion, learned properly, generates a dozen interview problems — and the differences between them are so small you can name each one in a single line.
@@ -732,7 +801,7 @@ flowchart TD
     style FG fill:#ff8c69,stroke:#333,color:#000
 ```
 
-> **If items can be cut into fractions, stop — it's greedy, not DP.** Sort by value-per-weight and fill. Interviewers use this as a trap.
+> **Trap — fractional items are not DP.** If items can be cut into fractions, stop: it is greedy. Sort by value-per-weight and fill. Interviewers use this as a trap.
 
 #### Step 1 — The recursion (base condition + choice diagram)
 
@@ -808,9 +877,10 @@ public int knapsack(int[] wt, int[] val, int W, int n) {
 // Time: O(n * W)  Space: O(n * W), no stack
 ```
 
-```
-wt = [1,3,4,5], val = [1,4,5,7], W = 7
+**DRY RUN — `knapsack(wt = [1,3,4,5], val = [1,4,5,7], W = 7)` → `9`**
+*invariant: `dp[i][j]` = the best value using only the first `i` items within capacity `j`*
 
+```
               j →   0   1   2   3   4   5   6   7
   i=0 (none)        0   0   0   0   0   0   0   0     ← base: no items
   i=1 (1kg, ₹1)     0   1   1   1   1   1   1   1
@@ -825,6 +895,8 @@ wt = [1,3,4,5], val = [1,4,5,7], W = 7
       exclude → dp[2][7] = 5
       max = 9  ✓
 ```
+
+*ends right: each row adds exactly one item and only ever reads the row above, so by the last row every item has been offered once and no item can have been used twice.*
 
 #### Step 4 — Space optimisation
 
@@ -843,7 +915,7 @@ public int knapsack(int[] wt, int[] val, int W) {
 // Time: O(n * W)  Space: O(W)
 ```
 
-> **The single most important loop-direction rule in DP:** in **0/1** knapsack iterate capacity **backwards** (so each item is used at most once); in **unbounded** knapsack iterate **forwards** (so an item can be reused). Getting this backwards is the most common silent wrong-answer in the whole family.
+> **Trap — the single most important loop direction in DP.** In **0/1** knapsack iterate capacity **backwards** (so each item is used at most once); in **unbounded** knapsack iterate **forwards** (so an item can be reused). Getting this backwards is the most common silent wrong-answer in the whole family.
 
 **Example:** `weight = [1, 3, 4, 5]`, `value = [1, 4, 5, 7]`, `capacity = 7` → `9`
 
@@ -969,7 +1041,7 @@ public int countSubsets(int[] arr, int sum) {
 // Time: O(n * sum)  Space: O(n * sum) → O(sum) with a backwards 1D loop
 ```
 
-> **Zero trap — worth knowing, it's a real interview follow-up.** Many write-ups (including the classic notes) initialise the *whole first column* to 1: `dp[i][0] = 1 for all i`. That is wrong as soon as the array contains `0`, because `{0}` and `{}` are two different subsets that both sum to 0. Initialise **only `dp[0][0] = 1`** and let the loop start at `j = 0` — then zeros are counted correctly and you need no `2^(number of zeros)` patch afterwards.
+> **Trap — zeros in the array.** Worth knowing; it is a real interview follow-up. Many write-ups (including the classic notes) initialise the *whole first column* to 1: `dp[i][0] = 1 for all i`. That is wrong as soon as the array contains `0`, because `{0}` and `{}` are two different subsets that both sum to 0. Initialise **only `dp[0][0] = 1`** and let the loop start at `j = 0` — then zeros are counted correctly and you need no `2^(number of zeros)` patch afterwards.
 >
 > Check it: `arr = [0, 1]`, `sum = 1` → correct answer 2 (`{1}` and `{0,1}`). The `dp[i][0] = 1` version returns 1.
 
@@ -1178,7 +1250,7 @@ public int change(int amount, int[] coins) {
 // Time: O(n * amount)  Space: O(amount)
 ```
 
-> **Loop order decides what you count.** Coins outside / amount inside counts **combinations** (`1+2` and `2+1` are the same) — that's Coin Change II on LeetCode. Swap them (amount outside, coins inside) and you count **permutations** (they're different) — that's Combination Sum IV. Same table, opposite meaning. Say which one you're computing.
+> **Trap — loop order decides what you count.** Coins outside / amount inside counts **combinations** (`1+2` and `2+1` are the same) — that's Coin Change II on LeetCode. Swap them (amount outside, coins inside) and you count **permutations** (they're different) — that's Combination Sum IV. Same table, opposite meaning. Say which one you're computing.
 
 **Example:** `amount = 5`, `coins = [1,2,3]` → `5`  (`2+3`, `1+1+3`, `1+2+2`, `1+1+1+2`, `1+1+1+1+1`)
 
@@ -1190,17 +1262,24 @@ public int change(int amount, int[] coins) {
 
 **The change:** `max` becomes `min`, and taking a coin costs `+1`.
 
+**DRY RUN — `coinChange([1, 3, 4], amount = 6)` → `2`**
+*invariant: `dp[i]` = the fewest coins that make exactly `i`, or "infinity" if `i` cannot be made*
+
 ```
 Coins = [1, 3, 4], Amount = 6
 
 dp:  [0, 1, 2, 1, 1, 2, 2]
       0  1  2  3  4  5  6
+      ↑
+  base: zero coins make amount 0
 
 dp[5] = min(dp[5-1]+1, dp[5-3]+1, dp[5-4]+1)
       = min(dp[4]+1,   dp[2]+1,   dp[1]+1)
       = min(2,         3,         2)
       = 2     (coin 4 + coin 1)
 ```
+
+*ends right: every amount is built only from strictly smaller amounts that are already final, so `dp[amount]` cannot be improved afterwards. Amount 6 = 3 + 3, two coins.*
 
 ```java
 public int coinChange(int[] coins, int amount) {
@@ -1218,7 +1297,7 @@ public int coinChange(int[] coins, int amount) {
 // Time: O(amount * coins.length)  Space: O(amount)
 ```
 
-> **The sentinel trap:** if you use `Integer.MAX_VALUE` as infinity, `dp[i - coin] + 1` **overflows to a negative number** and silently produces a wrong answer. Use `amount + 1` (as above) or `Integer.MAX_VALUE - 1` with an explicit guard. This is the single most common bug in min-coin code.
+> **Trap — the infinity sentinel.** If you use `Integer.MAX_VALUE` as infinity, `dp[i - coin] + 1` **overflows to a negative number** and silently produces a wrong answer. Use `amount + 1` (as above) or `Integer.MAX_VALUE - 1` with an explicit guard. This is the single most common bug in min-coin code.
 
 **Example:** `coins = [1, 3, 4]`, `amount = 6` → `2`
 
@@ -1344,6 +1423,8 @@ public boolean canPartition(int[] nums) {
 
 **Problem List — Parents 2 & 3: The Knapsack Family:**
 
+**Start with these five:** Partition Equal Subset Sum · Target Sum · Coin Change · Coin Change II · Perfect Squares. The first two are 0/1, the last three are unbounded — do them in that order and the loop-direction rule sticks.
+
 | #   | Problem                          | Difficulty | Parent → change                       |
 |-----|----------------------------------|------------|---------------------------------------|
 | 1   | Partition Equal Subset Sum (416) | Medium     | 0/1 → boolean, target = sum/2         |
@@ -1362,6 +1443,28 @@ public boolean canPartition(int[] nums) {
 | 14  | Number of Dice Rolls (LC 1155)   | Medium     | Bounded-count knapsack (faces per die)|
 
 ---
+### 60-second recall
+
+<details>
+<summary>1. 0/1 or unbounded — how does the recurrence show you which?</summary>
+
+After taking an item, 0/1 looks at the <strong>previous row</strong> (<code>dp[i-1][...]</code>) because the item is used up; unbounded stays on the <strong>same row</strong> (<code>dp[i][...]</code>) because it may be taken again. In the 1D version that is backwards versus forwards over capacity.
+</details>
+
+<details>
+<summary>2. The question asks "how many ways" instead of "maximum value". What changes?</summary>
+
+The combine operator, the return type and the base cell — <code>max</code> becomes <code>+</code>, <code>int</code> value becomes a count, and the empty-input base becomes 1 (there is exactly one way to do nothing). The loops do not change at all.
+</details>
+
+<details>
+<summary>3. Coin Change counts combinations but you wanted permutations. What is wrong?</summary>
+
+The loop order. Coins outside and amount inside counts combinations; amount outside and coins inside counts permutations. Same table, opposite meaning — say which one you are computing.
+</details>
+
+---
+
 ## 18.17 Parents 4 & 5 — The LCS String Family and Grid DP
 
 ### Parent 4: Longest Common Subsequence (LCS)
@@ -1441,17 +1544,20 @@ public int longestCommonSubsequence(String text1, String text2) {
 // Time: O(m * n)  Space: O(m * n) → O(min(m,n)) if you only need the length
 ```
 
-```
-text1 = "abcde", text2 = "ace"
+**DRY RUN — `longestCommonSubsequence("abcde", "ace")` → `3`**
+*invariant: `dp[i][j]` = the LCS length of the first `i` characters of one string and the first `j` of the other*
 
-      ""  a  c  e
-  ""   0  0  0  0
-  a    0  1  1  1
-  b    0  1  1  1
-  c    0  1  2  2
-  d    0  1  2  2
-  e    0  1  2 [3] ← LCS = "ace"
 ```
+      ""  a  c  e
+  ""   0  0  0  0      ← base: an empty string shares nothing
+  a    0  1  1  1      'a' matches 'a' → 1 + the diagonal (0)
+  b    0  1  1  1      no match → carry the better of ↑ and ←
+  c    0  1  2  2      'c' matches 'c' → 1 + diagonal (1)
+  d    0  1  2  2
+  e    0  1  2 [3]     'e' matches 'e' → 1 + diagonal (2)   ← answer
+```
+
+*ends right: every pair of prefixes has been answered, and the bottom-right cell is the pair that uses both whole strings. The matching cells spell "ace".*
 
 **Example:** `text1 = "abcde"`, `text2 = "ace"` → `3`
 
@@ -1838,21 +1944,29 @@ public boolean isMatch(String s, String p) {
 
 > Grid DP is really Parent 1 in two dimensions: the same "where could I have come from?" question, asked of two neighbours instead of one.
 
+![Grid DP: the same table twice, once counting with plus and once costing with min](diagrams/dsa31c_grid_ai.png)
+
 #### Unique Paths
 
 **State:** `dp[i][j]` = number of ways to reach `(i, j)` from the top-left moving only right or down.
 **Recurrence:** `dp[i][j] = dp[i-1][j] + dp[i][j-1]`.
 **Base:** first row and first column are all 1.
 
-```
-Grid: 3 x 4
+**DRY RUN — `uniquePaths(3, 4)` → `10`**
+*invariant: every filled cell holds the number of distinct routes from the top-left corner to it*
 
-  dp:  1   1   1   1
+```
+  dp:  1   1   1   1     ← base row: only one way along the top edge
        1   2   3   4
-       1   3   6  [10]  ← answer
+       1   3   6  [10]   ← answer
+       ↑
+  base column: only one way straight down
 
-  Each cell = cell above + cell to the left
+  every other cell = the cell above + the cell to the left
+  e.g. the 6 = 3 (above) + 3 (left)
 ```
+
+*ends right: a route into the bottom-right cell must arrive from above or from the left, and those two counts are already final — so their sum counts every route exactly once.*
 
 ```java
 public int uniquePaths(int m, int n) {
@@ -2039,6 +2153,8 @@ public int uniquePaths(int m, int n) {
 
 **Problem List — Parents 4 & 5: Strings and Grids:**
 
+**Start with these five:** Longest Common Subsequence · Edit Distance · Longest Palindromic Subsequence · Unique Paths · Minimum Path Sum.
+
 | #   | Problem                          | Difficulty | Parent → change                        |
 |-----|----------------------------------|------------|----------------------------------------|
 | 1   | Longest Common Subseq (LC 1143)  | Medium     | The parent itself                      |
@@ -2063,6 +2179,28 @@ public int uniquePaths(int m, int n) {
 | 20  | Cherry Pickup (LC 741)           | Hard       | Two walkers → 3D state                 |
 
 ---
+### 60-second recall
+
+<details>
+<summary>1. The input is two strings and the answer is about matching them. What is the parent?</summary>
+
+LCS, without exception. Edit Distance, Shortest Common Supersequence, Distinct Subsequences and Wildcard Matching are all LCS with a different combine step or an extra branch.
+</details>
+
+<details>
+<summary>2. You are given one string and asked for the longest palindromic subsequence. Where is the second string?</summary>
+
+It is the same string reversed. A palindrome matches its own reverse, so <code>LCS(s, reverse(s))</code> is the answer — the classic "hidden second input" trick.
+</details>
+
+<details>
+<summary>3. Why is grid DP just Parent 1 in disguise?</summary>
+
+Both ask "where could I have come from?". Linear DP asks it of one or two earlier cells; grid DP asks it of the cell above and the cell to the left. Swap <code>+</code> for <code>min</code> and the same table answers a cost question instead of a counting one.
+</details>
+
+---
+
 ## 18.18 Parent 6 — MCM / Partition DP
 
 This is the family people find hardest, and it is the one with the **most rigid template**. Once you can fill in four blanks, every problem in it collapses into the same twenty lines of code.
@@ -2109,7 +2247,7 @@ int solve(int[] arr, int i, int j) {
 Answer those four questions and you have written the problem. **Blank ④ is the only thing you actually have to think about per problem** — the other three are boilerplate.
 
 
-> **Two legal k-schemes — pick one and stay consistent:**
+> **Trap — two legal k-schemes; pick one and stay consistent.**
 > ```
 > Scheme A:  k = i   .. j-1    →  subproblems (i, k) and (k+1, j)
 > Scheme B:  k = i+1 .. j      →  subproblems (i, k-1) and (k, j)
@@ -2208,7 +2346,23 @@ public int matrixMultiplicationDP(int[] arr) {
 // Time: O(n^3)  Space: O(n^2)
 ```
 
-> **Fill order is the one new idea in partition DP.** Prefix DP fills left to right; partition DP fills **short intervals first**. If your table comes out full of zeros or `MAX_VALUE`, you almost certainly looped `i` and `j` directly instead of looping over length.
+> **Trap — fill order is the one new idea in partition DP.** Prefix DP fills left to right; partition DP fills **short intervals first**. If your table comes out full of zeros or `MAX_VALUE`, you almost certainly looped `i` and `j` directly instead of looping over length.
+
+**DRY RUN — `matrixMultiplication({40, 20, 30, 10, 30})` → `26000`**
+*matrices: `A1 = 40×20`, `A2 = 20×30`, `A3 = 30×10`, `A4 = 10×30`*
+*invariant: when an interval is computed, every strictly shorter interval inside it is already final — which is exactly why you must fill by length*
+
+| length | interval | cuts tried (k) | cost of each | best |
+|--------|----------|----------------|--------------|------|
+| 1 | `A1`, `A2`, `A3`, `A4` | none — nothing to multiply | — | **0** each |
+| 2 | `A1·A2` | — | 40×20×30 | **24000** |
+| 2 | `A2·A3` | — | 20×30×10 | **6000** |
+| 2 | `A3·A4` | — | 30×10×30 | **9000** |
+| 3 | `A1..A3` | k=1 → 0 + 6000 + 8000 = **14000**; k=2 → 24000 + 0 + 12000 = 36000 | | **14000** |
+| 3 | `A2..A4` | k=2 → 0 + 9000 + 18000 = 27000; k=3 → 6000 + 0 + 6000 = **12000** | | **12000** |
+| 4 | `A1..A4` | k=1 → 0 + 12000 + 24000 = 36000; k=2 → 24000 + 9000 + 36000 = 69000; k=3 → 14000 + 0 + 12000 = **26000** | | **26000** |
+
+*ends right: the full interval tried every possible last cut, and each side of every cut was already solved optimally — so the minimum over the cuts is the optimum for the whole chain.*
 
 **Example:** `arr = {40, 20, 30, 10, 30}` → `26000`
 
@@ -2588,6 +2742,8 @@ public int maxCoins(int[] nums) {
 
 **Problem List — Parent 6: MCM / Partition DP:**
 
+**Start with these three:** Palindrome Partitioning II · Burst Balloons · Minimum Cost to Cut a Stick. MCM problems are rarer than the other five parents — recognising one is worth more than grinding many.
+
 | #   | Problem                          | Difficulty | ④ Cost of the cut                     |
 |-----|----------------------------------|------------|---------------------------------------|
 | 1   | Matrix Chain Multiplication      | Hard       | `arr[i-1]*arr[k]*arr[j]`              |
@@ -2604,6 +2760,28 @@ public int maxCoins(int[] nums) {
 | 12  | Stone Game (LC 877 / 1140)       | Medium     | Two-player: `max` over what you take  |
 
 ---
+### 60-second recall
+
+<details>
+<summary>1. Which words in a question point at MCM rather than any other parent?</summary>
+
+Cut, bracket, split, merge, burst, partition — anything where <em>where you divide</em> changes the cost. The state is an interval <code>dp[i][j]</code>, not a prefix.
+</details>
+
+<details>
+<summary>2. Your interval DP table is full of zeros. What did you do?</summary>
+
+Looped <code>i</code> and <code>j</code> directly instead of looping over interval <strong>length</strong>. Partition DP needs every shorter interval solved before the longer one that contains it.
+</details>
+
+<details>
+<summary>3. What is the one sentence that defines an MCM recurrence?</summary>
+
+"Try every cut <code>k</code>, pay for the left side, the right side, and the cost of joining them — then keep the cheapest." Everything else is what "the cost of joining" means in that specific problem.
+</details>
+
+---
+
 ## 18.19 Beyond the Six Parents — State Machine, Bitmask & Space Optimisation
 
 The six parents cover most DP you will be asked. These three do not fit the family tree, appear regularly at Google, and each has its own recognisable shape.
@@ -2613,6 +2791,8 @@ The six parents cover most DP you will be asked. These three do not fit the fami
 **The signature:** at every step you are in exactly one of a small number of **named states**, and the question defines the legal transitions between them. The six LeetCode stock problems look different and are all the same machine with the knobs turned.
 
 **How to spot it:** the words *hold, buy, sell, cooldown, at most k times, must wait* — anything where "what am I allowed to do now" depends on what you did before.
+
+![State machine DP: three boxes and four arrows solve all six stock problems](diagrams/dsa31c_statemachine_ai.png)
 
 **Walkthrough:** `prices = [2, 4, 1]`, `k = 2` (at most 2 buy/sell round trips).
 
@@ -2794,6 +2974,45 @@ Iterating backwards means `dp[j - wt]` still holds the *previous* item's value �
 
 > **Say it out loud in the interview:** "This is O(n·W) space; since each row only reads the row above, I can compress to O(W) by iterating capacity backwards. I'll keep the 2D version if we need to reconstruct the actual items." That one sentence demonstrates the whole pipeline.
 
+**Problem List — Beyond the Six Parents:**
+
+**Start with these four:** Best Time to Buy and Sell Stock with Cooldown · Best Time to Buy and Sell Stock IV · Partition to K Equal Sum Subsets · Shortest Path Visiting All Nodes. The first two are the same machine twice; the last two are the same mask twice.
+
+| # | Problem | Difficulty | Variant | Key insight |
+|---|---------|-----------|---------|-------------|
+| 1 | Best Time to Buy/Sell Stock (121) | Easy | State machine, k = 1 | Two states, one pass |
+| 2 | Best Time to Buy/Sell Stock II (122) | Medium | State machine, k = ∞ | Take every rise |
+| 3 | Best Time to Buy/Sell with Cooldown (309) | Medium | State machine + 1 state | Add a "just sold" box |
+| 4 | Best Time to Buy/Sell with Fee (714) | Medium | State machine | Subtract fee on the sell arrow |
+| 5 | Best Time to Buy/Sell Stock IV (188) | Hard | State machine + counter | `dp[k][holding]`, loop k backwards |
+| 6 | Partition to K Equal Sum Subsets (698) | Hard | Bitmask | Mask = which elements are placed |
+| 7 | Shortest Path Visiting All Nodes (847) | Hard | Bitmask + BFS | State = (node, visited mask) |
+| 8 | Find the Shortest Superstring (943) | Hard | Bitmask + overlap | Travelling-salesman shape |
+| 9 | Count Numbers with Unique Digits (357) | Medium | Digit DP (or maths) | Position by position |
+| 10 | Numbers With Repeated Digits (1012) | Hard | Digit DP | Count the complement |
+
+---
+
+### 60-second recall
+
+<details>
+<summary>1. When is a state machine the right model?</summary>
+
+When "what am I allowed to do now" depends on what you just did — hold, sell, cooldown, at most k times. Name the states and the legal transitions, and the recurrence is those arrows written down.
+</details>
+
+<details>
+<summary>2. A problem smells exponential but n is 18. What does that tell you?</summary>
+
+Bitmask DP. The subset of things already used <em>is</em> the state, and 2^18 is about 260,000 states — perfectly affordable. A suspiciously small n next to an exponential-sounding question is the tell.
+</details>
+
+<details>
+<summary>3. When can you compress a 2D table to one row, and when can you not?</summary>
+
+When each row only ever reads the row immediately above. You cannot when the recurrence reaches further back, or when you must reconstruct the actual answer afterwards — backtracking needs the whole table.
+</details>
+
 ---
 
 ## 18.20 The DP Cheat Sheet
@@ -2854,11 +3073,11 @@ Iterating backwards means `dp[j - wt]` still holds the *previous* item's value �
 | Egg drop (naive / binary-search k) | O(e·f^2) / O(e·f·log f) | O(e·f) |
 | Bitmask | O(2^n · n) | O(2^n) |
 
-> **Pseudo-polynomial warning:** knapsack's `O(n·W)` is *not* polynomial in the input size — `W` is a value, not a count. With `W = 10^9` the table is impossible, and the intended solution is something else (greedy, meet-in-the-middle, or a different state). Interviewers use huge capacities deliberately.
+> **Trap — pseudo-polynomial.** Knapsack's `O(n·W)` is *not* polynomial in the input size — `W` is a value, not a count. With `W = 10^9` the table is impossible, and the intended solution is something else (greedy, meet-in-the-middle, or a different state). Interviewers use huge capacities deliberately.
 
 ### The 60-Second DP Opening
 
-When you recognise a DP problem, narrate in this order. It maps exactly to how you'll be graded.
+When you recognise a DP problem, narrate in this order. It maps exactly to how you'll be graded. (This is the DP-specific script — the general one is in [chapter 31d §18.33](#content/31d_dsa_advanced_ml_coding), and chapter 31 ends with a condensed "what to say in the room" checklist.)
 
 1. **"There's a choice here, and we want a min/max/count — so this is DP."**
 2. **"The parent is <one of the six>, with <the one change>."**

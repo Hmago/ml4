@@ -291,7 +291,7 @@ $$W_{\text{new}} = W_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial W}$$
 | SGD | 1 | Very noisy; rarely used bare |
 | **Mini-batch** | 32–512 | The de-facto standard |
 
-![Optimizer family tree: from plain gradient descent to Adam and AdamW](diagrams/dl16_optimizers_ai.png)
+![Optimizer family tree: from plain gradient descent to Adam and AdamW](diagrams/dl16_optimizers_ai.webp)
 
 **SGD + momentum:** $v \leftarrow \beta v + g$, $w \leftarrow w - \alpha v$ ($\beta\approx0.9$) — carries through narrow valleys.
 

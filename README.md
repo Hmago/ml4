@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~203 hours of content · 415+ DSA problems │
+  │  50 chapters · ~208 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -67,7 +67,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 16 | Deep Learning — Complete Reference | ★★★ | [16_deep_learning.md](content/16_deep_learning.md) | ~4.5 hrs | Advanced |
+| 16 | Deep Learning — Complete Reference | ★★★ | [16_deep_learning.md](content/16_deep_learning.md) | ~9.25 hrs | Advanced |
 | 17 | LLMs — How They Work (Transformer, training, families) | ★★★ | [17_llm.md](content/17_llm.md) | ~4.75 hrs | Intermediate-Advanced |
 | 17b | LLMs — How You Use Them (prompting, RAG, tools, safety) | ★★★ | [17b_llm_applications.md](content/17b_llm_applications.md) | ~2.75 hrs | Intermediate |
 | 17c | LLM Systems — Serving, Scaling & Measuring | ★★★ | [17c_llm_systems.md](content/17c_llm_systems.md) | ~3.25 hrs | Advanced |
@@ -75,8 +75,8 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 18b | Agents in Production (failures, evals, sandboxing) | ★★★ | [18b_agents_in_production.md](content/18b_agents_in_production.md) | ~2.25 hrs | Advanced |
 | 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~2.75 hrs | Intermediate-Advanced |
 | 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~2 hrs | Intermediate |
-| ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~3.25 hrs | All Levels |
-| | **Deep Learning & LLMs Total** | | | **~28 hrs** | |
+| ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~3.5 hrs | All Levels |
+| | **Deep Learning & LLMs Total** | | | **~33 hrs** | |
 
 ### System Design
 
@@ -145,10 +145,10 @@ assumptions, not official company interview frequencies or measured production a
 | 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~2.75 hrs | Beginner-Intermediate |
 | 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~7.25 hrs | Intermediate |
 | 31b | DSA: Graphs (Java) | ★★★ | [31b_dsa_graphs.md](content/31b_dsa_graphs.md) | ~2.5 hrs | Intermediate |
-| 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~5.75 hrs | Intermediate-Advanced |
+| 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~6.5 hrs | Intermediate-Advanced |
 | 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~4.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Languages & Coding Total** | | | **~33.75 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~34.5 hrs + practice** | |
 
 ### Interview Preparation
 
@@ -165,7 +165,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~203 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~208 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.
@@ -318,14 +318,14 @@ ication   sion            ing       sionality      Learning Learning
   Ch 10 (Supervised) → Ch 12 (Algorithms) → Ch 13 (Evaluation)
   Solid foundations. Enough for junior ML roles.
 
-  TRACK 2: Full ML Engineer (~57 hours)
+  TRACK 2: Full ML Engineer (~61 hours)
   ──────────────────────────────────────────
   Track 1 → Ch 11 (Unsupervised) → Ch 14 (Neural Nets) →
   Ch 15 (RL) → Ch 16 (Deep Learning) →
   Ch 17 / 17b / 17c (LLMs) → Ch 18 + 18b (Agents) → Ch 19 (Frameworks)
   Complete core curriculum. Strong enough for mid-level roles.
 
-  TRACK 3: LLM & Modern AI Focus (~57 hours)
+  TRACK 3: LLM & Modern AI Focus (~61 hours)
   ──────────────────────────────────────────
   Ch 07 → Ch 08 → Ch 10 (Supervised — need loss functions) →
   Ch 14 (Neural Nets) → Ch 13 (Evaluation — need metrics) →
@@ -334,7 +334,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 33 (LLM Interview Qs, Pt 1-2)  +  ★ Playbook
   Fastest path to modern AI fluency.
 
-  TRACK 4: Google AI Engineer (~128 hours — full prep)
+  TRACK 4: Google AI Engineer (~132 hours — full prep)
   ──────────────────────────────────────────
   Ch 01 (Strategy — read first!) →
   Ch 02 (Behavioral — start STAR stories early) →
@@ -359,7 +359,7 @@ ication   sion            ing       sionality      Learning Learning
   For experienced engineers focusing on design rounds.
   Prerequisite: ML fundamentals (Track 1 or equivalent).
 
-  TRACK 6: DSA Grind (~16.5 hours reading + practice)
+  TRACK 6: DSA Grind (~17.25 hours reading + practice)
   ──────────────────────────────────────────
   Ch 31 / 31b / 31c / 31d (DSA theory, Big-O through DP) →
   DSA Practice (start with Easy, progress to Medium/Hard)

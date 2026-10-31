@@ -25,28 +25,35 @@ The same seven lines, every time, so you always know where to look. **Nothing as
 | **Problem** | one sentence, plus a tiny example with its answer |
 | **Brute force** | the obvious way, and the exact reason it is too slow |
 | **Key idea** | the single observation that kills the brute force |
-| **Dry run** | that idea happening, one step per row, on the tiny example |
+| **Dry run** | that idea happening on the tiny example, one line per step |
 | **Java** | the code — read last, when you already know what it will say |
 | **Cost** | time and space, one line |
 | **Trap** | the mistake that silently produces a wrong answer |
 
 ### How to read a dry run
 
-Every dry run opens with the call and the answer — so you are never in suspense — then walks one step per row.
+A dry run is the code run by hand on a tiny example, one line per step. Here is one for the easiest problem there is — *find the largest number*:
 
-> **DRY RUN — `maxSubArray([-2, 1, -3, 4])` → 4**
-> *invariant: `current` is the best sum of a run that ends exactly at `i`*
+> **Dry run — `[3, 7, 2, 9]` → `9`**
+> *We track:* `best` = the biggest number seen so far.
 >
-> | i | nums[i] | extend (`current + nums[i]`) | start fresh (`nums[i]`) | current | best |
-> |---|---------|------------------------------|-------------------------|---------|------|
-> | 0 | -2 | — | — | -2 | -2 |
-> | 1 | 1 | -1 | **1** | 1 | 1 |
-> | 2 | -3 | **-2** | -3 | -2 | 1 |
-> | 3 | 4 | 2 | **4** | 4 | **4** |
+> | Step | Number | Bigger than `best`? | `best` |
+> |------|--------|---------------------|--------|
+> | 1 | 3 | — (first number) | 3 |
+> | 2 | 7 | **yes** | 7 |
+> | 3 | 2 | no | 7 |
+> | 4 | 9 | **yes** | **9** |
 >
-> *ends right: every run must end somewhere, and we checked every possible ending.*
+> **Why it works:** every number was compared with `best`, so nothing bigger was missed.
 
-Three things are always there: the **invariant** (what stays true after every row), **bold** on the branch that was taken, and an *ends right* line explaining why the loop's last state is the answer. Where the shape of the data matters more than the numbers — windows, stacks, pointers — you get a picture strip instead; where the code recurses, you get a call tree.
+| Part | What it tells you |
+|------|-------------------|
+| **Title** | the input, and the answer |
+| *We track* | what the variables mean, in plain words |
+| **Steps** | one line each; **bold** marks the choice that was taken |
+| **Why it works** | one sentence on why the last step gives the answer |
+
+Arrays, lists, windows and pointers are drawn as **pictures** instead (letters under the numbers mark where each pointer is); code that calls itself is drawn as a **call tree**.
 
 ### The nine templates
 
@@ -131,7 +138,7 @@ lookup  search   loop    sort      loops           tations
 | O(log n) | 3 | 7 | 10 | 20 | Binary search |
 | O(n) | 10 | 100 | 1,000 | 1,000,000 | Single scan |
 | O(n log n) | 33 | 664 | 9,966 | 19,931,568 | Merge sort |
-| O(n^2) | 100 | 10,000 | 1,000,000 | 10^12 TLE! | Nested loops |
+| O(n^2) | 100 | 10,000 | 1,000,000 | 10^12 — too slow | Nested loops |
 | O(2^n) | 1,024 | 10^30 | -- | -- | Subsets |
 | O(n!) | 3.6M | -- | -- | -- | Permutations |
 
@@ -161,7 +168,7 @@ A judge (and an interviewer's patience) runs roughly **10^8 simple operations pe
 
 > **Trap — the hidden O(n) inside a loop.** `s += c` in Java builds a whole new String every time, turning an innocent loop into O(n^2). Use `StringBuilder`. The same goes for `list.remove(0)` on an `ArrayList` and `list.contains()` inside a loop.
 
-> **Trap — recursion is not free space.** Depth-d recursion holds d stack frames, so a DFS on a 100,000-node skewed tree is O(n) space and can genuinely StackOverflow. Say "O(h) stack space" when you describe a tree solution.
+> **Trap — recursion is not free space.** Recursion `d` levels deep holds `d` stack frames, so a DFS on a 100,000-node skewed tree is O(n) space and can genuinely StackOverflow. For trees, say "O(h) stack space", where `h` is the tree's height.
 
 > **Trap — quoting the average as though it were the worst.** HashMap is O(1) *average*, O(n) worst. Quicksort is O(n log n) *average*, O(n^2) worst. Name both; interviewers listen for it.
 
@@ -177,22 +184,25 @@ At least 40% of interview problems are array or string problems, and strings in 
 
 ### Pattern 1: Two Pointers (Converging)
 
-**Problem.** A **sorted** array and a target. Find the two values that add up to the target. `[2, 7, 11, 15]`, target `9` → indices `[0, 1]`.
+**Problem.** A **sorted** array and a target. Find the two values that add up to the target. `[2, 7, 11, 15]`, target `9` → indices `[0, 1]` (0-based here; the linked LeetCode version counts from 1, so it expects `[1, 2]`).
 
 **Brute force.** Try every pair — O(n^2). At n = 100,000 that is 10^10 operations, far past the 10^8 budget.
 
-**Key idea.** Put one finger on the smallest value and one on the largest. That pair is the **largest sum this left finger can ever make**. So if the sum is too big, no partner for the right value exists — retire it and step right inward. If the sum is too small, no partner for the left value exists — step left outward. Every move eliminates a whole row or column of the pair table, so one pass is enough. *Sorted order is the entire reason this is safe.*
+**Key idea.** Put `left` on the smallest value and `right` on the largest, then compare their sum with the target. **Too big?** `left` already holds the smallest value still in play, so `nums[right]` is too big with *every* possible partner — drop it with `right--`. **Too small?** `right` already holds the largest value still in play, so `nums[left]` is too small with every possible partner — drop it with `left++`. Each step throws away one value that provably cannot be in the answer, so one pass is enough. *Sorted order is the entire reason this is safe.*
 
-**DRY RUN — `twoSumSorted([2, 7, 11, 15], 9)` → `[0, 1]`**
-*invariant: the answer, if it exists, is always still between `left` and `right`*
+**Dry run — `[2, 7, 11, 15]`, target `9` → `[0, 1]`**
+*We track:* `L` = left pointer, `R` = right pointer, `x` = ruled out.
 
-| left | right | sum | vs 9 | what that proves | move |
-|------|-------|-----|------|------------------|------|
-| 0 → 2 | 3 → 15 | 17 | too big | 15 is too big for **any** partner | `right--` |
-| 0 → 2 | 2 → 11 | 13 | too big | 11 is too big for **any** partner | `right--` |
-| 0 → 2 | 1 → 7 | 9 | **equal** | found it | return `[0, 1]` |
+```
+position     0   1   2   3
+value        2   7  11  15
 
-*ends right: each step discards a value that provably cannot be in the answer, so nothing is missed.*
+step 1       L           R    2 + 15 = 17  too big → 15 can't pair with anything; R moves left
+step 2       L       R   x    2 + 11 = 13  too big → same for 11; R moves left
+step 3       L   R   x   x    2 +  7 =  9  match   → answer [0, 1]
+```
+
+**Why it works:** every step rules out one number that can't be in the answer, so the real pair is never skipped.
 
 ```java
 // Two-sum on sorted array — O(n) time, O(1) space
@@ -239,80 +249,87 @@ public int maxArea(int[] height) {
 
 **Key idea.** Give the two pointers *jobs* rather than positions. A **reader** visits every element in turn. A **writer** marks the last slot of the finished answer. The reader always moves; the writer only moves when the reader finds something new, and then the new value is copied back onto the writer's slot. Everything at or before `write` is permanently correct.
 
-**DRY RUN — `removeDuplicates([1, 1, 2, 2, 3])` → `3`**
-*invariant: `nums[0..write]` holds the unique values found so far, in order*
+**Dry run — `[1, 1, 2, 2, 3]` → `3`**
+*We track:* `W` = writer (the last unique value kept so far), `R` = reader.
 
-| read | nums[read] | vs nums[write] | action | array after | write |
-|------|-----------|----------------|--------|-------------|-------|
-| 1 | 1 | `== 1` | duplicate — reader moves on | `[1, 1, 2, 2, 3]` | 0 |
-| 2 | 2 | `!= 1` | **new value** — write it | `[1, 2, 2, 2, 3]` | 1 |
-| 3 | 2 | `== 2` | duplicate — reader moves on | `[1, 2, 2, 2, 3]` | 1 |
-| 4 | 3 | `!= 2` | **new value** — write it | `[1, 2, 3, 2, 3]` | 2 |
+```
+             1   1   2   2   3
+step 1       W   R                R's 1 = W's 1  → duplicate, R moves on
+             1   1   2   2   3
+step 2       W       R            R's 2 is new   → W moves right, copy 2 there
+             1   2   2   2   3
+step 3           W       R        R's 2 = W's 2  → duplicate, R moves on
+             1   2   2   2   3
+step 4           W           R    R's 3 is new   → W moves right, copy 3 there
+             1   2   3   2   3
+done                 W            R is finished  → unique count = W's position + 1 = 3
+```
 
-*ends right: the reader saw every element, so every unique value was offered to the writer exactly once. `write = 2`, so the answer is `write + 1 = 3` and `[1, 2, 3]` sits at the front.*
+**Why it works:** the reader looks at every number once, and only new values are copied to the front.
 
 ```java
 // Remove duplicates from sorted array — O(n) time, O(1) space
 public int removeDuplicates(int[] nums) {
     if (nums.length == 0) return 0;
-    int slow = 0;                                    // the writer
-    for (int fast = 1; fast < nums.length; fast++) { // the reader
-        if (nums[fast] != nums[slow]) {
-            nums[++slow] = nums[fast];               // advance first, then write
+    int write = 0;
+    for (int read = 1; read < nums.length; read++) {
+        if (nums[read] != nums[write]) {
+            nums[++write] = nums[read];              // advance first, then write
         }
     }
-    return slow + 1;                                 // a count, not an index
+    return write + 1;                                // a count, not an index
 }
 ```
 
 **Cost.** O(n) time, O(1) space.
 
-> **Trap:** return `slow + 1`, not `slow`. `slow` is the last written *index*; the count is one more. The same off-by-one appears in Move Zeroes and Remove Element.
+> **Trap:** return `write + 1`, not `write`. `write` is the last written *index*; the count is one more. The same off-by-one appears in Move Zeroes and Remove Element.
 
 **Practice:** [Remove Duplicates from Sorted Array →](#dsa-problem-remove-duplicates-sorted-array)
 
 ### Pattern 3: Prefix Sum
 
-**Problem.** Answer sum-over-a-range questions without re-adding the range each time. The interview version: *how many subarrays of `nums` add up to exactly `k`?* `[1, 1, 1]`, `k = 2` → `2`.
+**Problem.** How many **subarrays** — unbroken stretches — of `nums` add up to exactly `k`? `[1, 1, 1]`, `k = 2` → `2` (the first two 1s, and the last two). The tool behind it — a prefix sum — answers any sum-over-a-range question with a single subtraction.
 
 **Brute force.** For every start, walk every end and keep a running sum — O(n^2). Fine at n = 1,000, dead at n = 100,000.
 
-**Key idea.** Add everything up **once**, front to back, keeping the running total at each position. Then the sum of any range is a single subtraction: *(everything up to the end) − (everything before the start)*.
+**Step 1 — the tool: running totals.** Add the numbers up **once**, front to back, and write down the total so far. Call it `prefix`, where `prefix[i]` = the sum of the **first `i` numbers**. So `prefix[0] = 0` (nothing added yet), and `prefix` is one box longer than `nums`.
 
 ![A prefix array turns every range sum into a single subtraction](diagrams/dsa31_prefix_ai.png)
 
-```
-Array:     [3, 1, 4, 1, 5, 9]
-Prefix:  [0, 3, 4, 8, 9, 14, 23]    ← starts with 0, meaning "nothing added yet"
+| i | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|---|
+| `nums[i]` | 3 | 1 | 4 | 1 | 5 | 9 | |
+| `prefix[i]` — sum of the first `i` numbers | 0 | 3 | 4 | 8 | 9 | 14 | 23 |
 
-sum(1..3) = nums[1]+nums[2]+nums[3] = 1+4+1 = 6
-          = prefix[4] - prefix[1]   =   9  -  3  = 6      ✓
-```
+Now the sum of any stretch is one subtraction. Sum of positions 1 to 3 = `1 + 4 + 1` = **6**. With the table: (first 4 numbers) − (first 1 number) = `prefix[4] − prefix[1]` = `9 − 3` = **6** ✓. In general:
 
-**The twist that solves the interview version.** You want `prefix[end] − prefix[start] == k`. Rearrange it: `prefix[start] == prefix[end] − k`. So while scanning, you do not need the starts at all — you only need to know **how many earlier prefixes had the value `sum − k`**. That is a hashmap lookup, and the O(n^2) collapses to O(n).
+> sum of positions `i` to `j` = `prefix[j + 1] − prefix[i]`  *(the `+ 1` is because `prefix` starts with the extra 0)*
 
-**DRY RUN — `subarraySum([1, 1, 1], 2)` → `2`**
-*invariant: `seen` holds how many times each running total has occurred so far, including the empty prefix*
+**Step 2 — the twist: count the stretches that add up to `k`.** Walk left to right keeping `sum` = the running total so far. A stretch that **ends here** adds up to `k` exactly when some **earlier** running total was `sum − k` — because (total now) − (total then) = `k`. So keep a hashmap `seen`: running total → how many times it has appeared. At each step add `seen[sum − k]` to the answer. One pass, O(n).
 
-| num | running sum | looking for `sum - 2` | how many seen | count | `seen` after |
-|-----|-------------|----------------------|---------------|-------|--------------|
-| — | 0 | — | — | 0 | `{0: 1}` |
-| 1 | 1 | -1 | 0 | 0 | `{0:1, 1:1}` |
-| 1 | 2 | 0 | **1** | 1 | `{0:1, 1:1, 2:1}` |
-| 1 | 3 | 1 | **1** | 2 | `{0:1, 1:1, 2:1, 3:1}` |
+**Dry run — `[1, 1, 1]`, `k = 2` → `2`**
+*We track:* the running total, and every running total seen so far (starting with 0).
 
-*ends right: every subarray has exactly one end index, and at each end we counted every valid start.*
+| Number | Running total | Look for an earlier total of (total − 2) | Result |
+|--------|---------------|------------------------------------------|--------|
+| (start) | 0 | — | remember 0 |
+| 1 | 1 | −1 | not seen → count stays 0 |
+| 1 | 2 | 0 | **seen once** → found `[1, 1]` at positions 0–1 → count **1** |
+| 1 | 3 | 1 | **seen once** → found `[1, 1]` at positions 1–2 → count **2** |
+
+**Why it works:** every stretch ends at some number, and at each number we counted every start that makes the sum `k`.
 
 ```java
 // Subarray sum equals K — O(n) time, O(n) space
 public int subarraySum(int[] nums, int k) {
-    Map<Integer, Integer> prefixCount = new HashMap<>();
-    prefixCount.put(0, 1);                  // the empty prefix has sum 0, and it counts
+    Map<Integer, Integer> seen = new HashMap<>();   // running total → how many times seen
+    seen.put(0, 1);                                 // the starting total 0, before any number
     int sum = 0, count = 0;
     for (int num : nums) {
         sum += num;
-        count += prefixCount.getOrDefault(sum - k, 0);
-        prefixCount.merge(sum, 1, Integer::sum);
+        count += seen.getOrDefault(sum - k, 0);
+        seen.merge(sum, 1, Integer::sum);
     }
     return count;
 }
@@ -320,7 +337,7 @@ public int subarraySum(int[] nums, int k) {
 
 **Cost.** O(n) time, O(n) space.
 
-> **Trap:** forgetting `prefixCount.put(0, 1)`. Without it every subarray that starts at index 0 is missed — and the bug is invisible on most test cases.
+> **Trap:** forgetting `seen.put(0, 1)`. Without it every stretch that starts at position 0 is missed — and the bug is invisible on most test cases.
 
 > **When to reach for it:** the question mentions a sum or a count over a range, *especially* repeatedly. If you catch yourself writing a nested loop that re-adds overlapping elements, stop and build a prefix array.
 
@@ -334,19 +351,19 @@ public int subarraySum(int[] nums, int k) {
 
 **Key idea.** Walk the array once and, at each position, answer exactly one question: *is the best run that ends **here** made by extending the previous run, or by starting fresh at me?* If the previous running sum is negative it can only hurt, so you drop it. Keep `best` separately, because the best run may have ended long ago.
 
-**DRY RUN — `maxSubArray([-2, 1, -3, 4, -1, 2])` → `5`**
-*invariant: `current` = best sum of a run ending exactly at `i`; `best` = best run seen anywhere*
+**Dry run — `[-2, 1, -3, 4, -1, 2]` → `5`**
+*We track:* "run here" = the best sum of a run that ends at this number; "best" = the best run anywhere so far.
 
-| i | nums[i] | extend (`current + nums[i]`) | start fresh (`nums[i]`) | current | best |
-|---|---------|------------------------------|-------------------------|---------|------|
-| 0 | -2 | — | — | -2 | -2 |
-| 1 | 1 | -1 | **1** | 1 | 1 |
-| 2 | -3 | **-2** | -3 | -2 | 1 |
-| 3 | 4 | 2 | **4** | 4 | 4 |
-| 4 | -1 | **3** | -1 | 3 | 4 |
-| 5 | 2 | **5** | 2 | 5 | **5** |
+| Number | Extend the run, or start fresh? | Run here | Best |
+|--------|---------------------------------|----------|------|
+| -2 | first number | -2 | -2 |
+| 1 | extend −2 + 1 = −1, or fresh **1** | 1 | 1 |
+| -3 | extend **1 − 3 = −2**, or fresh −3 | -2 | 1 |
+| 4 | extend −2 + 4 = 2, or fresh **4** | 4 | 4 |
+| -1 | extend **4 − 1 = 3**, or fresh −1 | 3 | 4 |
+| 2 | extend **3 + 2 = 5**, or fresh 2 | 5 | **5** |
 
-*ends right: every run ends at some index, and we computed the best run for every possible ending.*
+**Why it works:** every run ends at some number, and we found the best run for every possible ending.
 
 ```java
 // Kadane's — O(n) time, O(1) space
@@ -374,19 +391,27 @@ public int maxSubArray(int[] nums) {
 
 **Key idea.** Grow three regions at once: `0`s at the front, `2`s at the back, and a scanner in between. `low` marks the end of the `0`s, `high` marks the start of the `2`s, and `mid` is the value you are currently looking at. Sending a value to the front is safe because it came from already-scanned territory — but a value swapped in **from the back has never been looked at**, so `mid` must stay put and re-examine it.
 
-**DRY RUN — `sortColors([2, 0, 2, 1, 1, 0])` → `[0, 0, 1, 1, 2, 2]`**
-*invariant: `[0..low)` is all 0s, `[low..mid)` is all 1s, `(high..end]` is all 2s, and `[mid..high]` is unexamined*
+**Dry run — `[2, 0, 2, 1, 1, 0]` → `[0, 0, 1, 1, 2, 2]`**
+*We track:* `L` = where the next 0 goes, `M` = the number being checked, `H` = where the next 2 goes. Each step shows the array **before** the move.
 
-| nums[mid] | rule | swap | array after | low | mid | high |
-|-----------|------|------|-------------|-----|-----|------|
-| 2 | send to the back, **don't advance mid** | `mid ↔ high` | `[0, 0, 2, 1, 1, 2]` | 0 | 0 | 4 |
-| 0 | send to the front, advance both | `low ↔ mid` | `[0, 0, 2, 1, 1, 2]` | 1 | 1 | 4 |
-| 0 | send to the front, advance both | `low ↔ mid` | `[0, 0, 2, 1, 1, 2]` | 2 | 2 | 4 |
-| 2 | send to the back, **don't advance mid** | `mid ↔ high` | `[0, 0, 1, 1, 2, 2]` | 2 | 2 | 3 |
-| 1 | already where it belongs | — | `[0, 0, 1, 1, 2, 2]` | 2 | 3 | 3 |
-| 1 | already where it belongs | — | `[0, 0, 1, 1, 2, 2]` | 2 | 4 | 3 |
+```
+              2    0    2    1    1    0
+step 1      L,M                        H    M sees 2 → swap with H, H moves left (M stays: the new 0 is unchecked)
+              0    0    2    1    1    2
+step 2      L,M                   H         M sees 0 → swap with L; L and M move right
+              0    0    2    1    1    2
+step 3           L,M              H         M sees 0 → swap with L; L and M move right
+              0    0    2    1    1    2
+step 4                L,M         H         M sees 2 → swap with H; H moves left
+              0    0    1    1    2    2
+step 5                L,M    H              M sees 1 → already in place; M moves right
+              0    0    1    1    2    2
+step 6                  L  M,H              M sees 1 → M moves right
+              0    0    1    1    2    2
+done                    L    H    M         M is past H → nothing left to check, sorted
+```
 
-*ends right: `mid > high` means the unexamined region is empty, so all three regions are complete.*
+**Why it works:** everything left of `L` is 0, everything right of `H` is 2, and `M` checks every number in between.
 
 ```java
 // Sort Colors — O(n) time, O(1) space
@@ -429,23 +454,30 @@ Prefix sum for **any** subarray sum or count. Kadane for the **maximum** subarra
 A **subarray** is contiguous, so windows, prefix sums and two pointers apply. A **subsequence** may skip elements, which almost always means dynamic programming (§18.15 in chapter 31c). Misreading this one word sends you down the wrong chapter.
 </details>
 
-### Two habits worth keeping
-
-- **Strings are arrays.** `s.toCharArray()` the moment you need to mutate; `StringBuilder` the moment you need to append in a loop.
-- **"Can I sort first?"** should be one of your first three thoughts. Sorting costs O(n log n) and frequently unlocks a two-pointer or greedy solution — which is cheaper than the O(n^2) you were about to write.
-
 ### Key Problems — Detailed Solutions
 
 <details>
 <summary><strong>3Sum</strong> — Medium</summary>
 
-**Problem:** Given an integer array `nums`, find all unique triplets `[nums[i], nums[j], nums[k]]` such that `i != j != k` and `nums[i] + nums[j] + nums[k] == 0`.
+**Problem:** Given an integer array `nums`, return every triplet `[nums[i], nums[j], nums[k]]` that adds up to `0`, where `i`, `j` and `k` are three **different** positions. Each triplet of values may appear only once in the answer — even if it can be built from different positions. Order does not matter.
 
 **Example:**
-Input: nums = [-1, 0, 1, 2, -1, -4]
+```
+Input:  nums = [-1, 0, 1, 2, -1, -4]
 Output: [[-1, -1, 2], [-1, 0, 1]]
+```
 
-**Approach:** Sort the array. Fix one element, then use two pointers on the remaining portion to find pairs that sum to the negative of the fixed element. Skip duplicates at each level.
+**Walk-through:** sort, then fix one number and find a pair that cancels it.
+```
+sorted: [-4, -1, -1, 0, 1, 2]
+
+fix -4 → need a pair summing to  4 in [-1, -1, 0, 1, 2]  → none (biggest pair is 1 + 2 = 3)
+fix -1 → need a pair summing to  1 in [-1, 0, 1, 2]      → (-1, 2) ✓   (0, 1) ✓
+fix -1 → same value as the last fix → skip, or we'd find the same triplets again
+fix  0 → need a pair summing to  0 in [1, 2]             → none
+```
+
+**Approach:** Sort. Fix `nums[i]`, then run converging two pointers (Pattern 1) on the part to its right, looking for a pair that sums to `-nums[i]`. Skip any value equal to the one just before it — at the fixed position and at both pointers — so no triplet is found twice.
 
 **Java:**
 ```java
@@ -468,7 +500,6 @@ public List<List<Integer>> threeSum(int[] nums) {
     }
     return res;
 }
-// Time: O(n^2)  Space: O(1) excluding output
 ```
 
 **Complexity:** O(n^2) time, O(1) space (excluding output)
@@ -477,13 +508,24 @@ public List<List<Integer>> threeSum(int[] nums) {
 <details>
 <summary><strong>Product of Array Except Self</strong> — Medium</summary>
 
-**Problem:** Given an integer array `nums`, return an array `answer` where `answer[i]` is the product of all elements except `nums[i]`. You must not use division and run in O(n).
+**Problem:** Given an integer array `nums`, return an array `answer` where `answer[i]` is the product of every element **except** `nums[i]`. No division allowed, and it must run in O(n).
 
 **Example:**
-Input: nums = [1, 2, 3, 4]
-Output: [24, 12, 8, 6]
+```
+Input:  nums = [1, 2, 3, 4]
+Output: [24, 12, 8, 6]          e.g. answer[1] = 1 × 3 × 4 = 12
+```
 
-**Approach:** Two passes. First pass (left to right) builds prefix products. Second pass (right to left) multiplies in suffix products. Each element gets the product of everything before it times everything after it.
+**Walk-through:** "everything except me" = (everything on my left) × (everything on my right).
+```
+i:              0          1          2          3
+nums:           1          2          3          4
+left product:   1          1          1·2 = 2    1·2·3 = 6     (1 = nothing on the left)
+right product:  2·3·4 = 24 3·4 = 12   4          1             (1 = nothing on the right)
+answer:         24         12         8          6             left × right
+```
+
+**Approach:** One pass left → right writes each position's left product into `ans`. A second pass right → left multiplies in a running right product. No division, and no extra array.
 
 **Java:**
 ```java
@@ -500,7 +542,6 @@ public int[] productExceptSelf(int[] nums) {
     }
     return ans;
 }
-// Time: O(n)  Space: O(1) excluding output
 ```
 
 **Complexity:** O(n) time, O(1) space (output array not counted)
@@ -509,13 +550,24 @@ public int[] productExceptSelf(int[] nums) {
 <details>
 <summary><strong>Trapping Rain Water</strong> — Hard</summary>
 
-**Problem:** Given `n` non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.
+**Problem:** Each number is the height of a bar of width 1. After it rains, how many units of water are trapped between the bars?
 
 **Example:**
-Input: height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
+```
+Input:  height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
 Output: 6
+```
 
-**Approach:** Two pointers from both ends. Track leftMax and rightMax. Water at any position = min(leftMax, rightMax) - height[i]. Process the side with the smaller max since that determines the water level.
+**Walk-through:** `█` = bar, `~` = trapped water. Water above a bar = **min(tallest bar to its left, tallest bar to its right) − its own height**.
+```
+                       █
+           █  ~  ~  ~  █  █  ~  █
+     █  ~  █  █  ~  █  █  █  █  █  █
+  0  1  2  3  4  5  6  7  8  9 10 11     ← index
+  0  0  1  0  1  2  1  0  0  1  0  0     ← water above each bar   (total 6)
+```
+
+**Approach:** Two pointers, one at each end, each remembering the tallest bar seen on its side. Always settle the side with the **shorter** bar: the other side is known to have a wall at least that tall, so this bar's water depends only on its own side's tallest bar. Add that water and step inward.
 
 **Java:**
 ```java
@@ -535,7 +587,6 @@ public int trap(int[] height) {
     }
     return water;
 }
-// Time: O(n)  Space: O(1)
 ```
 
 **Complexity:** O(n) time, O(1) space
@@ -588,15 +639,15 @@ You are expected to be able to explain the mechanism in 30 seconds: hash the key
 
 **Key idea.** Turn the question inside out. Instead of hunting for *two* numbers, stand on one number and ask: *"the partner I need is exactly `target - me` — have I already walked past it?"* There is only ever one possible partner, and a hashmap answers "have I seen this" instantly. One pass, no pairs.
 
-**DRY RUN — `twoSum([2, 7, 11, 15], 9)` → `[0, 1]`**
-*invariant: `seen` holds every value to the left of `i`, mapped to its index*
+**Dry run — `[2, 7, 11, 15]`, target `9` → `[0, 1]`**
+*We track:* `seen` = numbers already passed → their position.
 
-| i | nums[i] | partner needed | already in `seen`? | action |
-|---|---------|----------------|--------------------|--------|
-| 0 | 2 | 9 − 2 = 7 | no | remember `2 → 0` |
-| 1 | 7 | 9 − 7 = 2 | **yes, at index 0** | return `[0, 1]` |
+| Number (position) | Partner needed | Partner in `seen`? | Action |
+|-------------------|----------------|--------------------|--------|
+| 2 (0) | 9 − 2 = 7 | no | remember 2 at position 0 |
+| 7 (1) | 9 − 7 = 2 | **yes, at position 0** | answer `[0, 1]` |
 
-*ends right: every pair has a right-hand element, and when we stand on it the left-hand one is already in the map.*
+**Why it works:** for any pair, when we reach the second number, the first one is already in `seen`.
 
 ```java
 // Two Sum — O(n) time, O(n) space
@@ -623,18 +674,18 @@ public int[] twoSum(int[] nums, int target) {
 
 **Brute force.** Sort both strings and compare — O(n log n). Correct, but beatable.
 
-**Key idea.** An anagram has nothing to do with order, only with **how many of each letter**. So count up for the first string and count down for the second in the same pass; if every counter lands back on zero, the multisets are identical. For lowercase a–z, a 26-slot array beats a HashMap outright — no hashing, no boxing.
+**Key idea.** An anagram has nothing to do with order, only with **how many of each letter**. So count up for the first string and count down for the second in the same pass; if every counter lands back on zero, both strings have the same letters in the same amounts. For lowercase a–z, a 26-slot array beats a HashMap outright — no hashing, no boxing.
 
-**DRY RUN — `isAnagram("abb", "bab")` → `true`**
-*invariant: `count[c]` = (times `c` appeared in `s` so far) − (times it appeared in `t` so far)*
+**Dry run — `"abb"` vs `"bab"` → `true`**
+*We track:* one counter per letter — +1 when it appears in the first string, −1 when it appears in the second.
 
-| i | `+` from s | `−` from t | count[a] | count[b] |
-|---|-----------|------------|----------|----------|
-| 0 | a | b | 1 | -1 |
-| 1 | b | a | 0 | 0 |
-| 2 | b | b | 0 | 0 |
+| Step | +1 (first string) | −1 (second string) | Counters after |
+|------|-------------------|--------------------|----------------|
+| 1 | a | b | a = 1, b = −1 |
+| 2 | b | a | a = 0, b = 0 |
+| 3 | b | b | a = 0, b = 0 |
 
-*ends right: all counters are zero, so every letter appeared equally often in both — which is the definition of an anagram.*
+**Why it works:** every counter ended at zero, so each letter appears equally often in both strings.
 
 ```java
 // Valid Anagram — O(n) time, O(1) space (26 counters)
@@ -660,7 +711,7 @@ public boolean isAnagram(String s, String t) {
 
 **Problem.** Group a list of words so anagrams sit together. `["eat", "tea", "tan", "ate", "nat", "bat"]` → `[["eat","tea","ate"], ["tan","nat"], ["bat"]]`.
 
-**Brute force.** Compare every word against every other word — O(n^2) comparisons, each one itself O(k).
+**Brute force.** Compare every word against every other word — O(n^2) comparisons, each costing O(k) for words of length `k`.
 
 **Key idea.** Stop comparing items to each other. Instead, **transform each item into a key that every member of its group produces and nobody else does** — then the map does the grouping for free. For anagrams that key is the word's letters in sorted order: `eat`, `tea` and `ate` all become `aet`.
 
@@ -692,9 +743,7 @@ public List<List<String>> groupAnagrams(String[] strs) {
 
 ### Pattern 4: Hashmap as the Window's Memory
 
-A map paired with two pointers is the workhorse of substring problems — the map remembers what is currently inside the window (or where each character was last seen), so the window can be repaired in O(1) instead of rescanned.
-
-That combination is a pattern in its own right and is taught in full, with a dry run, in **§18.8 Sliding Window**. The thing to carry forward from here is only this: *the map is the window's memory.*
+A map paired with two pointers is the workhorse of substring problems: the map remembers what is inside the window, so the window can be repaired in O(1) instead of rescanned. Taught in full, with a dry run, in **§18.8 Sliding Window**.
 
 ### HashSet: Membership Without Order
 
@@ -702,32 +751,31 @@ That combination is a pattern in its own right and is taught in full, with a dry
 
 **Brute force.** Sort, then scan for runs — O(n log n). The interviewer will ask for O(n).
 
-**Key idea.** Put everything in a set so "does `x` exist?" is free. Now the trick: **only start counting from a number that begins a run** — that is, a number whose predecessor `n - 1` is missing. Numbers in the middle of a run are skipped entirely, so each run is walked exactly once. The inner `while` loop looks like it makes this O(n^2), but across the whole array it does at most n steps in total.
+**Key idea.** Put everything in a set so "does `x` exist?" is free. Now the trick: **only start counting from a number that begins a run** — that is, a number `x` whose predecessor `x − 1` is missing. Numbers in the middle of a run are skipped entirely, so each run is walked exactly once. The inner `while` loop looks like it makes this O(n^2), but across the whole array it does at most n steps in total.
 
-**DRY RUN — `longestConsecutive([100, 4, 200, 1, 3, 2])` → `4`**
-*invariant: we only ever count upward from a genuine run start*
+**Dry run — `[100, 4, 200, 1, 3, 2]` → `4`**
 
-| n | is `n − 1` in the set? | start a run? | walk forward | run length | longest |
-|---|----------------------|--------------|--------------|------------|---------|
-| 100 | 99 — no | **yes** | 101? no | 1 | 1 |
-| 4 | 3 — yes | no, skip | — | — | 1 |
-| 200 | 199 — no | **yes** | 201? no | 1 | 1 |
-| 1 | 0 — no | **yes** | 2 ✓ 3 ✓ 4 ✓ 5 ✗ | 4 | **4** |
-| 3 | 2 — yes | no, skip | — | — | 4 |
-| 2 | 1 — yes | no, skip | — | — | 4 |
+| Number | Is (number − 1) in the set? | Walk up | Run length |
+|--------|-----------------------------|---------|------------|
+| 100 | 99? no → a run starts here | 101? no | 1 |
+| 4 | 3? **yes** → middle of a run, skip | — | — |
+| 200 | 199? no → a run starts here | 201? no | 1 |
+| 1 | 0? no → a run starts here | 2 ✓ 3 ✓ 4 ✓ 5 ✗ | **4** ← longest |
+| 3 | 2? **yes** → skip | — | — |
+| 2 | 1? **yes** → skip | — | — |
 
-*ends right: every run has exactly one start, and we walked every start to its end.*
+**Why it works:** every run has exactly one start, and we walked each start to its end exactly once.
 
 ```java
 // Longest Consecutive Sequence — O(n) time, O(n) space
 public int longestConsecutive(int[] nums) {
     Set<Integer> set = new HashSet<>();
-    for (int n : nums) set.add(n);
+    for (int x : nums) set.add(x);
     int longest = 0;
-    for (int n : set) {
-        if (!set.contains(n - 1)) {          // this guard is what keeps it O(n)
+    for (int x : set) {
+        if (!set.contains(x - 1)) {          // this guard is what keeps it O(n)
             int len = 1;
-            while (set.contains(n + len)) len++;
+            while (set.contains(x + len)) len++;
             longest = Math.max(longest, len);
         }
     }
@@ -737,7 +785,7 @@ public int longestConsecutive(int[] nums) {
 
 **Cost.** O(n) time, O(n) space.
 
-> **Trap:** dropping the `!set.contains(n - 1)` guard. The answer stays correct and the complexity quietly becomes O(n^2) — the exact failure the interviewer is testing for. Also iterate the **set**, not the array, so duplicates don't re-walk the same run.
+> **Trap:** dropping the `!set.contains(x - 1)` guard. The answer stays correct and the complexity quietly becomes O(n^2) — the exact failure the interviewer is testing for. Also iterate the **set**, not the array, so duplicates don't re-walk the same run.
 
 **Practice:** [Longest Consecutive Sequence →](#dsa-problem-longest-consecutive-sequence)
 
@@ -774,16 +822,27 @@ Because complexity counts *total* work, not nesting depth. In Longest Consecutiv
 <details>
 <summary><strong>LRU Cache</strong> — Medium</summary>
 
-**Problem:** Design a data structure that supports `get(key)` and `put(key, value)` in O(1) time. When capacity is exceeded, evict the least recently used key.
+**Problem:** Build a cache with a fixed capacity. `get(key)` returns the value (or `-1` if missing); `put(key, value)` adds or updates. Both must be O(1). When the cache is full, adding a new key first throws out the **least recently used** key — the one nobody has read or written for the longest time.
 
 **Example:**
+```java
 LRUCache cache = new LRUCache(2);
 cache.put(1, 1); cache.put(2, 2);
 cache.get(1);       // returns 1
 cache.put(3, 3);    // evicts key 2
 cache.get(2);       // returns -1 (not found)
+```
 
-**Approach:** Combine a HashMap (O(1) lookup) with a doubly linked list (O(1) insert/remove). On access, move the node to the front. On capacity overflow, remove from the tail.
+**Walk-through:** keys listed oldest-used → newest-used.
+```
+put(1,1)   [1]
+put(2,2)   [1, 2]
+get(1)     [2, 1]      returns 1 — reading 1 makes it the newest
+put(3,3)   [1, 3]      full, so the oldest (2) is evicted
+get(2)     [1, 3]      returns -1 — 2 is gone
+```
+
+**Approach:** A HashMap finds any key in O(1); a doubly linked list keeps keys in order of last use, so "move to newest" and "drop the oldest" are O(1) too. Java's `LinkedHashMap` with `accessOrder = true` is exactly that pair, built in — just override `removeEldestEntry` to evict once the size passes capacity.
 
 **Java:**
 ```java
@@ -804,7 +863,6 @@ class LRUCache extends LinkedHashMap<Integer, Integer> {
         return size() > cap;
     }
 }
-// Time: O(1) for both get and put  Space: O(capacity)
 ```
 
 **Complexity:** O(1) time per operation, O(capacity) space
@@ -859,16 +917,19 @@ public class ListNode {
 
 ![Fast and slow pointers: the runner analogy, the meeting point, and the cycle entrance](diagrams/dsa31_fastslow_ai.png)
 
-**DRY RUN — `findMiddle(1 → 2 → 3 → 4 → 5)` → node `3`**
-*invariant: `fast` has always travelled exactly twice as far as `slow`*
+**Dry run — `1 → 2 → 3 → 4 → 5` → node `3`**
+*We track:* `S` = slow (1 step at a time), `F` = fast (2 steps at a time).
 
-| step | slow | fast | loop test |
-|------|------|------|-----------|
-| start | 1 | 1 | continue |
-| 1 | 2 | 3 | continue |
-| 2 | 3 | 5 | `fast.next == null` → **stop** |
+```
+          1 → 2 → 3 → 4 → 5
+start     S,F
+          1 → 2 → 3 → 4 → 5
+step 1        S   F
+          1 → 2 → 3 → 4 → 5
+step 2            S       F     F can't take two more steps → stop; S is the middle
+```
 
-*ends right: `fast` covered 4 edges, `slow` covered 2 — half of 4. `slow` is the middle.*
+**Why it works:** F always travels twice as far as S, so when F reaches the end, S is halfway.
 
 ```java
 // Find middle — O(n) time, O(1) space
@@ -888,18 +949,31 @@ public ListNode findMiddle(ListNode head) {
 
 **Key idea.** On a straight road the fast walker simply finishes. On a loop it *cannot* finish — so it must eventually lap the slow one. **If they ever stand on the same node, a cycle exists.** Then the second, stranger half: reset one walker to the head, move both at the **same** speed, and they meet exactly at the cycle's entrance.
 
-**DRY RUN — `detectCycleStart(1 → 2 → 3 → 4 → 5 → 6 → 3)` → node `3`**
+**Dry run — a cycle back to `3` → node `3`**
 
-| phase | step | slow | fast | note |
-|-------|------|------|------|------|
-| find | 0 | 1 | 1 | both at the head |
-| find | 1 | 2 | 3 | |
-| find | 2 | 3 | 5 | |
-| find | 3 | 4 | 3 | fast wrapped around the loop |
-| find | 4 | **5** | **5** | same node → a cycle exists |
-| locate | reset | 1 | 5 | slow goes back to the head, both now move 1 step |
-| locate | 1 | 2 | 6 | |
-| locate | 2 | **3** | **3** | the cycle entrance |
+```
+1 → 2 → 3 → 4 → 5 → 6
+        ↑           │
+        └───────────┘      6 points back to 3
+```
+
+**Part 1 — slow moves 1 step, fast moves 2, until they meet:**
+
+| Step | Slow | Fast | What happens |
+|------|------|------|--------------|
+| start | 1 | 1 | both at the head |
+| 1 | 2 | 3 | |
+| 2 | 3 | 5 | |
+| 3 | 4 | 3 | fast went 5 → 6 → back to 3 |
+| 4 | **5** | **5** | they meet → there **is** a cycle |
+
+**Part 2 — slow goes back to the head; now both move 1 step:**
+
+| Step | Slow | Fast | What happens |
+|------|------|------|--------------|
+| start | 1 | 5 | |
+| 1 | 2 | 6 | |
+| 2 | **3** | **3** | they meet again — at the cycle's start |
 
 ```java
 // Detect cycle start — O(n) time, O(1) space
@@ -932,17 +1006,18 @@ public ListNode detectCycleStart(ListNode head) {
 
 **Key idea.** Walk the list once and flip each arrow to point backwards. The catch: the instant you overwrite `curr.next`, the rest of the list becomes unreachable — so **save the next node first**. That is why this needs exactly three references: `prev`, `curr`, and a temporary `next`.
 
-**DRY RUN — `reverseList(1 → 2 → 3)` → `3 → 2 → 1`**
-*invariant: `prev` heads the reversed part, `curr` heads the not-yet-touched part*
+**Dry run — `1 → 2 → 3` → `3 → 2 → 1`**
+*We track:* the reversed part (`prev` is its head) and the part still to do (`curr` is its head).
 
-| prev | curr | `next` saved | arrow flipped | list so far |
-|------|------|--------------|---------------|-------------|
-| null | 1 | 2 | `1 → null` | `1` \| `2 → 3` |
-| 1 | 2 | 3 | `2 → 1` | `2 → 1` \| `3` |
-| 2 | 3 | null | `3 → 2` | `3 → 2 → 1` \| — |
-| 3 | null | — | — | done |
+```
+            reversed part      still to do
+start       (empty)            1 → 2 → 3
+step 1      1                  2 → 3          take 1, point it at the reversed part
+step 2      2 → 1              3              take 2, point it at 1
+step 3      3 → 2 → 1          (empty)        take 3, point it at 2 → done, new head is 3
+```
 
-*ends right: `curr` is null, so every node was flipped, and `prev` is the last node reached — the new head.*
+**Why it works:** each step moves one node from "still to do" to the front of "reversed", so when nothing is left, the whole list is reversed.
 
 ```java
 public ListNode reverseList(ListNode head) {
@@ -1007,17 +1082,23 @@ public ListNode mergeTwoLists(ListNode l1, ListNode l2) {
 
 **Key idea.** You cannot count from the end — but you can hold two pointers a **fixed gap apart**. Send the leader `n + 1` nodes ahead; when the leader falls off the end, the follower is sitting exactly one node *before* the target, which is precisely where you need to be in order to unlink it. Starting from a dummy makes deleting the head no different from deleting anything else.
 
-**DRY RUN — `removeNthFromEnd(1 → 2 → 3 → 4 → 5, n = 2)` → `1 → 2 → 3 → 5`**
-*invariant: `fast` is always `n + 1` nodes ahead of `slow`*
+**Dry run — `1 → 2 → 3 → 4 → 5`, `n = 2` → `1 → 2 → 3 → 5`**
+*We track:* `D` = dummy (a fake node before the head), `S` = slow, `F` = fast.
 
-| move | fast | slow |
-|------|------|------|
-| open the gap: 3 steps from dummy | 3 | dummy |
-| walk together | 4 | 1 |
-| walk together | 5 | 2 |
-| walk together | null → **stop** | **3** |
+```
+          D → 1 → 2 → 3 → 4 → 5 → null
+gap       S           F                 F starts n + 1 = 3 nodes ahead of S
+          D → 1 → 2 → 3 → 4 → 5 → null
+step 1        S           F
+          D → 1 → 2 → 3 → 4 → 5 → null
+step 2            S           F
+          D → 1 → 2 → 3 → 4 → 5 → null
+step 3                S           F     F is off the end → stop
+```
 
-*ends right: `slow` stopped one node before the target, so `slow.next = slow.next.next` unlinks node 4.*
+S stopped at `3`, right before `4` (2nd from the end) → `S.next = S.next.next` unlinks it: `1 → 2 → 3 → 5`.
+
+**Why it works:** the gap never changes, so when F is off the end, S is exactly one node before the target.
 
 ```java
 public ListNode removeNthFromEnd(ListNode head, int n) {
@@ -1061,13 +1142,24 @@ Palindrome Linked List (find middle, reverse the second half, compare), Reorder 
 <details>
 <summary><strong>Reorder List</strong> — Medium</summary>
 
-**Problem:** Reorder a linked list from L0 -> L1 -> ... -> Ln to L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...
+**Problem:** Rearrange a linked list **in place** so it goes first, last, second, second-last, third, … Change the links, not the node values.
 
 **Example:**
-Input: 1 -> 2 -> 3 -> 4 -> 5
+```
+Input:  1 -> 2 -> 3 -> 4 -> 5
 Output: 1 -> 5 -> 2 -> 4 -> 3
+```
 
-**Approach:** Three steps: (1) Find middle using slow/fast pointers, (2) Reverse the second half, (3) Merge the two halves by interleaving.
+**Walk-through:** three moves you already know.
+```
+1 -> 2 -> 3 -> 4 -> 5
+
+1. find the middle (fast/slow)   first half: 1 -> 2 -> 3      second half: 4 -> 5
+2. reverse the second half                                    5 -> 4
+3. take one from each, in turn   1 -> 5 -> 2 -> 4 -> 3
+```
+
+**Approach:** Fast/slow pointers to split at the middle (Pattern 1), reverse the second half (Pattern 2), then weave the two halves together one node at a time.
 
 **Java:**
 ```java
@@ -1093,7 +1185,6 @@ public void reorderList(ListNode head) {
         first = tmp1; second = tmp2;
     }
 }
-// Time: O(n)  Space: O(1)
 ```
 
 **Complexity:** O(n) time, O(1) space
@@ -1132,23 +1223,23 @@ That sounds trivial, and then it quietly solves a whole family of problems — b
 
 **Brute force.** For each element scan rightwards until you find something bigger — O(n^2), and it re-scans the same stretch over and over.
 
-**Key idea.** Walk the array once, keeping a pile of elements that are **still waiting for an answer**. Here is the observation that makes it work: if a new arrival is *shorter* than the one waiting, it cannot answer that question either, so it just joins the pile — which means **the pile is always in decreasing order**. When someone taller arrives, they are the answer for everyone shorter at the top of the pile, and those people leave permanently. Each element joins once and leaves once, so the total work is O(n).
+**Key idea.** Walk the array once, keeping a pile of elements that are **still waiting for an answer**. Here is the observation that makes it work: if a new arrival is *smaller* than the one on top of the pile, it cannot answer that one either, so it just joins the pile — which means **the pile is always in decreasing order**. When a bigger value arrives, it is the answer for every smaller value on top of the pile, and those leave permanently. Each element joins once and leaves once, so the total work is O(n).
 
 ![A monotonic stack is a queue of people waiting for someone taller](diagrams/dsa31_monostack_ai.png)
 
-**DRY RUN — `nextGreaterElement([2, 1, 4, 3, 5])` → `[4, 4, 5, 5, -1]`**
-*invariant: the stack always holds values in decreasing order — everyone still waiting*
+**Dry run — `[2, 1, 4, 3, 5]` → `[4, 4, 5, 5, -1]`**
+*We track:* a pile of numbers still waiting for a bigger number (written bottom → top, so the top is on the right).
 
-| i | value | vs stack top | who gets answered | stack after (values) | answers so far |
-|---|-------|--------------|-------------------|----------------------|----------------|
-| 0 | 2 | empty | — | `[2]` | `[_, _, _, _, _]` |
-| 1 | 1 | 1 < 2 → just wait | — | `[2, 1]` | `[_, _, _, _, _]` |
-| 2 | 4 | 4 > 1, then 4 > 2 | **1 and 2 both get 4** | `[4]` | `[4, 4, _, _, _]` |
-| 3 | 3 | 3 < 4 → just wait | — | `[4, 3]` | `[4, 4, _, _, _]` |
-| 4 | 5 | 5 > 3, then 5 > 4 | **3 and 4 both get 5** | `[5]` | `[4, 4, 5, 5, _]` |
-| end | — | 5 still waiting | nobody is taller | — | `[4, 4, 5, 5, -1]` |
+| Number | Pile before | What happens | Answers so far |
+|--------|-------------|--------------|----------------|
+| 2 | empty | 2 waits | `[_, _, _, _, _]` |
+| 1 | `[2]` | 1 < 2 → 1 waits too | `[_, _, _, _, _]` |
+| 4 | `[2, 1]` | 4 > 1 → **1's answer is 4**; 4 > 2 → **2's answer is 4**; 4 waits | `[4, 4, _, _, _]` |
+| 3 | `[4]` | 3 < 4 → 3 waits | `[4, 4, _, _, _]` |
+| 5 | `[4, 3]` | 5 > 3 → **3's answer is 5**; 5 > 4 → **4's answer is 5**; 5 waits | `[4, 4, 5, 5, _]` |
+| (end) | `[5]` | 5 never found a bigger number → −1 | `[4, 4, 5, 5, -1]` |
 
-*ends right: anything left on the stack never found a bigger element, which is exactly what `-1` means.*
+**Why it works:** a number leaves the pile the moment its first bigger number arrives — and anything still waiting at the end has no bigger number at all.
 
 ```java
 public int[] nextGreaterElement(int[] nums) {
@@ -1175,16 +1266,16 @@ public int[] nextGreaterElement(int[] nums) {
 
 ### Pattern 2: Min Stack
 
-**Problem.** A stack that also reports its minimum — `push`, `pop`, `top` and `getMin` all in O(1). 
+**Problem.** A stack that also reports its minimum — `push`, `pop`, `top` and `getMin` all in O(1). `push(-2), push(0), push(-3), getMin()` → `-3`; then `pop(), getMin()` → `-2`.
 
 **Brute force.** Scan the whole stack on every `getMin` — O(n), and it fails the requirement.
 
 **Key idea.** You cannot recompute the minimum after a pop, so **store it in advance**. Every element records the minimum *as it was when that element was pushed*. Popping then throws away that record too, and the previous minimum is exposed automatically — no recomputation ever happens.
 
-**DRY RUN — `push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()`**
-*invariant: `minStack.peek()` is the minimum of everything currently in `stack`*
+**Dry run — `push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()`**
+*We track:* a second stack, `minStack`, whose top is always the current minimum. Stacks are written bottom → top, so the top is on the right.
 
-| call | stack | minStack | returns |
+| Call | stack | minStack | Returns |
 |------|-------|----------|---------|
 | `push(-2)` | `[-2]` | `[-2]` | — |
 | `push(0)` | `[-2, 0]` | `[-2, -2]` | — (0 > -2, so repeat the old min) |
@@ -1216,9 +1307,13 @@ class MinStack {
 
 ### Pattern 3: Queue From Two Stacks
 
+**Problem.** Build a first-in-first-out queue — `push`, `pop`, `peek`, `empty` — using only two stacks. `push(1), push(2), peek()` → `1`; then `pop()` → `1`.
+
 **Key idea.** A stack reverses order. Reverse it **twice** and you are back to the original order — which is a queue. Pour the input stack into an output stack only when the output stack runs dry, so each element is moved at most once across its whole lifetime: amortised O(1).
 
 ```
+stacks written bottom → top (top on the right)
+
 push(1): in=[1]              out=[]
 push(2): in=[1,2]            out=[]
 peek():  pour in → out       out=[2,1]  in=[]   → top of out is 1, the oldest  ✓
@@ -1244,19 +1339,19 @@ class MyQueue {
 
 **Problem.** Is a string of brackets valid? `"{[]}"` → `true`, `"([)]"` → `false`.
 
-**Key idea.** A closing bracket must match **the most recent still-open bracket** — which is the definition of a stack. Push every opener; on a closer, the thing on top must be its partner. This is why `"([)]"` fails while `"()[]"` passes: the counts are identical, only the *order* differs, and only a stack notices.
+**Key idea.** A closing bracket must match **the most recent still-open bracket** — which is exactly what sits on top of a stack. Push every opener; on a closer, the top must be its partner.
 
-**DRY RUN — `isValid("{[]}")` → `true`**
+**Dry run — `"{[]}"` → `true`**
 
-| char | rule | stack after |
-|------|------|-------------|
+| char | rule | stack after (top on the right) |
+|------|------|--------------------------------|
 | `{` | opener → push | `[{]` |
 | `[` | opener → push | `[{, []` |
 | `]` | closer → top is `[` ✓ pop | `[{]` |
 | `}` | closer → top is `{` ✓ pop | `[]` |
 | end | stack empty → **valid** | — |
 
-*and the counter-example:* `"([)]"` — push `(`, push `[`, then `)` arrives and the top is `[`, not `(` → **false** on the third character.
+*and the counter-example:* `"([)]"` has the same bracket counts as a valid string — but push `(`, push `[`, then `)` arrives and the top is `[`, not `(` → **false**. Only the order is wrong, and only a stack notices.
 
 ```java
 public boolean isValid(String s) {
@@ -1328,7 +1423,7 @@ Because each index is pushed exactly once and popped at most once. The inner loo
 | `Arrays.sort()` | O(n log n) | O(n log n) | O(n) | Yes* | Always, unless told otherwise |
 | Merge sort | O(n log n) | O(n log n) | O(n) | Yes | Stability matters; linked lists; external data |
 | Quick sort | O(n log n) | O(n^2) | O(log n) | No | In-place, cache-friendly, average case |
-| Counting sort | O(n + k) | O(n + k) | O(k) | Yes | Values are small integers in a known range |
+| Counting sort | O(n + k) | O(n + k) | O(k) | Yes | Values are small integers from 0 to `k` |
 
 \* Java uses dual-pivot quicksort for primitives (unstable, but primitives are indistinguishable so it does not matter) and TimSort for objects (stable). Knowing this one line is worth saying out loud.
 
@@ -1338,7 +1433,7 @@ Because each index is pushed exactly once and popped at most once. The inner loo
 {
   "type": "bar",
   "data": {
-    "labels": ["Bubble O(n^2)", "Insertion O(n^2)", "Merge O(n log n)", "Quick O(n log n)", "Counting O(n+k)", "Radix O(d*n)"],
+    "labels": ["Bubble O(n^2)", "Insertion O(n^2)", "Merge O(n log n)", "Quick O(n log n)", "Counting O(n+k), k = max value", "Radix O(d*n), d = digits"],
     "datasets": [{
       "label": "Relative speed for n=10,000",
       "data": [100000000, 50000000, 132877, 132877, 10000, 40000],
@@ -1357,31 +1452,34 @@ Because each index is pushed exactly once and popped at most once. The inner loo
 
 **Key idea.** A single element is already sorted. So split until everything is a single element, then **merge sorted pieces back together** — and merging two sorted lists is easy, because the smallest remaining value is always at the front of one of them. All the real work happens on the way back up.
 
-**DRY RUN — `mergeSort([5, 2, 8, 1, 9])` → `[1, 2, 5, 8, 9]`**
-*read the call tree downward (splitting), then the merges upward (the actual sorting)*
+**Dry run — `[5, 2, 8, 1, 9]` → `[1, 2, 5, 8, 9]`**
 
 ```
-mergeSort([5, 2, 8, 1, 9])
-├── mergeSort([5, 2, 8])
-│   ├── mergeSort([5, 2])
-│   │   ├── [5]                      single element — already sorted
-│   │   └── [2]                      single element — already sorted
-│   │   └── merge → [2, 5]
-│   └── [8]
-│   └── merge [2,5] + [8] → [2, 5, 8]
-└── mergeSort([1, 9])
-    ├── [1]   └── [9]
-    └── merge → [1, 9]
-    
-final merge [2,5,8] + [1,9]:
-    take 1 (from right)  → [1]
-    take 2 (from left)   → [1, 2]
-    take 5 (from left)   → [1, 2, 5]
-    take 8 (from left)   → [1, 2, 5, 8]
-    right side is empty → append the rest → [1, 2, 5, 8, 9]
+1. Split in half until every piece has one number:
+
+                 [5, 2, 8, 1, 9]
+              [5, 2, 8]      [1, 9]
+            [5, 2]   [8]    [1]   [9]
+           [5]  [2]
+
+2. Merge pieces back together, bottom up:
+
+   [5] + [2]           → [2, 5]
+   [2, 5] + [8]        → [2, 5, 8]
+   [1] + [9]           → [1, 9]
+   [2, 5, 8] + [1, 9]  → [1, 2, 5, 8, 9]
+
+3. How one merge works — compare the two front numbers, take the smaller:
+
+   left [2, 5, 8]   right [1, 9]
+   1 vs 2 → take 1          [1]
+   2 vs 9 → take 2          [1, 2]
+   5 vs 9 → take 5          [1, 2, 5]
+   8 vs 9 → take 8          [1, 2, 5, 8]
+   left is empty → add the rest of right   [1, 2, 5, 8, 9]
 ```
 
-*ends right: every merge takes two sorted pieces and returns one sorted piece, so the top of the tree is the whole array, sorted.*
+**Why it works:** each merge turns two sorted pieces into one sorted piece, so the last merge gives the whole array, sorted.
 
 <details>
 <summary><strong>Java — merge sort</strong> (worth reading once, rarely worth writing in an interview)</summary>
@@ -1421,18 +1519,18 @@ private void merge(int[] arr, int left, int mid, int right) {
 
 **The interview payoff:** if you only want the **Kth largest** element, you do not need both sides. Partition tells you which side the answer is in, so you recurse into **one** — halving the work each time, which averages to O(n) instead of O(n log n).
 
-**DRY RUN — `partition([3, 6, 2, 8, 4])` with pivot `4` (the last element)**
-*invariant: everything before the boundary `i` is smaller than the pivot*
+**Dry run — `[3, 6, 2, 8, 4]`, pivot `4` (the last number)**
+*We track:* numbers smaller than 4 are collected to the **left of the bar `│`**.
 
-| j | arr[j] | `< 4`? | action | array after | boundary `i` |
-|---|--------|--------|--------|-------------|--------------|
-| 0 | 3 | yes | swap into the boundary (no-op here) | `[3, 6, 2, 8, 4]` | 1 |
-| 1 | 6 | no | leave it in the "bigger" zone | `[3, 6, 2, 8, 4]` | 1 |
-| 2 | 2 | yes | swap `arr[1] ↔ arr[2]` | `[3, 2, 6, 8, 4]` | 2 |
-| 3 | 8 | no | leave it | `[3, 2, 6, 8, 4]` | 2 |
-| end | — | — | swap the pivot into the boundary | `[3, 2, 4, 8, 6]` | return **2** |
+```
+look at 3:  smaller → it stays in the left zone       [ 3 │ 6  2  8 ]  4
+look at 6:  bigger  → leave it                        [ 3 │ 6  2  8 ]  4
+look at 2:  smaller → swap it into the left zone      [ 3  2 │ 6  8 ]  4
+look at 8:  bigger  → leave it                        [ 3  2 │ 6  8 ]  4
+finally:    put the pivot at the bar                  [ 3  2  4  8  6 ]     4 is at position 2
+```
 
-*ends right: `{3, 2}` are all below index 2, `{8, 6}` are all above it, and `4` will never move again — it is in its final sorted place.*
+**Why it works:** everything left of the bar is smaller than 4 and everything right of it is bigger, so 4 is now in its final sorted position.
 
 ```java
 // Lomuto partition — the version to write in an interview
@@ -1476,9 +1574,9 @@ private int quickSelect(int[] a, int lo, int hi, int t) {
 Comparison sorts cannot beat O(n log n). But if you are not comparing — if the values are small integers, or you only care about frequency — you can do better.
 
 ```
-arr = [4, 2, 2, 8, 3, 3, 1]
+arr = [4, 2, 2, 8, 3, 3, 1]          (largest value k = 8)
 
-count how many of each value:  1→1, 2→2, 3→2, 4→1, 8→1
+count how many of each value:  value 1 ×1, 2 ×2, 3 ×2, 4 ×1, 8 ×1
 read the counts back in order: 1, 2, 2, 3, 3, 4, 8          O(n + k), no comparisons
 ```
 
@@ -1560,13 +1658,16 @@ The version that wins interviews is bigger than that, though. **Binary search is
 
 **Key idea.** Compare the middle element to the target. If the middle is too small, **every element to its left is also too small** — half the array is gone in one comparison. Repeat on what remains.
 
-**DRY RUN — `binarySearch([-1, 0, 3, 5, 9, 12], 9)` → `4`**
-*invariant: if the target exists, it is inside `[lo, hi]`*
+**Dry run — `[-1, 0, 3, 5, 9, 12]`, target `9` → `4`**
+*We track:* `L` = low end, `H` = high end, `M` = middle. The target, if present, is always between `L` and `H`.
 
-| lo | hi | mid | nums[mid] | vs 9 | what that proves | new range |
-|----|----|----|-----------|------|------------------|-----------|
-| 0 | 5 | 2 | 3 | too small | indices 0–2 are all too small | `lo = 3` |
-| 3 | 5 | 4 | 9 | **equal** | found | return `4` |
+```
+position     0   1   2   3   4   5
+value       -1   0   3   5   9  12
+
+step 1       L       M           H    3 < 9 → 9 must be right of M; L moves to M + 1
+step 2                   L   M   H    9 = 9 → found at position 4
+```
 
 ```java
 public int binarySearch(int[] nums, int target) {
@@ -1601,17 +1702,21 @@ Sorted: [ 1,  3,  3,  3,  5,  7 ]
               ↑ first yes = index 1 = where 3 starts
 ```
 
-**DRY RUN — `bisectLeft([1, 3, 3, 3, 5, 7], 3)` → `1`**
-*invariant: the border lives inside `[lo, hi]`; `hi` starts **past the end** so "no yes at all" is representable*
+**Dry run — `[1, 3, 3, 3, 5, 7]`, find where `3` starts → `1`**
+*We track:* `L`, `M`, `H` as before. `H` starts one **past the end** (position 6), in case no value is ≥ 3.
 
-| lo | hi | mid | nums[mid] | `≥ 3`? | new range |
-|----|----|----|-----------|--------|-----------|
-| 0 | 6 | 3 | 3 | yes | `hi = 3` — mid might itself be the border, so keep it |
-| 0 | 3 | 1 | 3 | yes | `hi = 1` |
-| 0 | 1 | 0 | 1 | no | `lo = 1` |
-| 1 | 1 | — | — | — | `lo == hi` → **return 1** |
+```
+position      0    1    2    3    4    5    6
+value         1    3    3    3    5    7  end
+≥ 3 ?         N    Y    Y    Y    Y    Y
 
-*ends right: the range shrank to one position, and everything below it answered "no" while everything from it answered "yes".*
+step 1        L              M              H   Y → the first Y is at M or left of it; H = M
+step 2        L    M         H                  Y → H = M
+step 3      L,M    H                            N → the first Y is right of M; L = M + 1
+done             L,H                            L meets H → the first Y is position 1
+```
+
+**Why it works:** everything left of `L` is N and everything from `H` on is Y, so when they meet, that spot is the first Y.
 
 ```java
 // first index where nums[i] >= target
@@ -1645,28 +1750,28 @@ First occurrence = `bisectLeft(target)`. Last occurrence = `bisectRight(target) 
 
 ### Template 3: Binary Search on the Answer (the real power)
 
-**Problem.** Koko eats bananas. `piles = [3, 6, 7, 11]`, and she has `h = 8` hours. At speed `s` she clears one pile per hour at most, taking `ceil(pile / s)` hours. **What is the slowest speed that still finishes in time?** → `4`.
+**Problem.** Koko eats bananas. `piles = [3, 6, 7, 11]`, and she has `h = 8` hours. She picks a speed `s` = **bananas per hour**. Each hour she eats from one pile only — up to `s` bananas; if the pile has fewer, she finishes it and waits for the next hour. So a pile takes `ceil(pile / s)` hours. **What is the slowest speed that still finishes every pile within `h` hours?** → `4`.
 
 **Brute force.** Try every speed from 1 upward and stop at the first that works — O(max pile × n). With piles up to 10^9, hopeless.
 
 **Key idea.** There is no sorted array here — but there *is* a sorted structure. The candidate answers are the speeds 1…11, and feasibility is **monotonic**: if speed 4 finishes in time, so does 5, 6, 7… So the speeds show the same `N N N Y Y Y` shape as before, and you binary search the **answer itself**.
 
 **The three-question checklist** — if all three are yes, binary search the answer:
-1. Is the answer a number in a range I can bound? *(speeds 1 to max-pile)*
+1. Is the answer a number in a range I can bound? *(speeds 1 to the largest pile)*
 2. Can I write `feasible(x)` — a yes/no check for one candidate? *(simulate the hours)*
 3. Is feasibility monotonic — once yes, always yes? *(a faster speed never takes longer)*
 
-**DRY RUN — `minEatingSpeed([3, 6, 7, 11], h = 8)` → `4`**
-*invariant: the slowest workable speed is inside `[lo, hi]`*
+**Dry run — `piles = [3, 6, 7, 11]`, `h = 8` → `4`**
+*We track:* the range of speeds that could still be the answer.
 
-| lo | hi | mid (speed) | hours needed | ≤ 8? | new range |
-|----|----|-------------|--------------|------|-----------|
-| 1 | 11 | 6 | 1+1+2+2 = **6** | yes | `hi = 6` — maybe slower still works |
-| 1 | 6 | 3 | 1+2+3+4 = **10** | no | `lo = 4` — 3 and below are all too slow |
-| 4 | 6 | 5 | 1+2+2+3 = **8** | yes | `hi = 5` |
-| 4 | 5 | 4 | 1+2+2+3 = **8** | yes | `hi = 4` → `lo == hi` → **return 4** |
+| Speeds left | Try speed | Hours needed (one pile per hour) | Result |
+|-------------|-----------|----------------------------------|--------|
+| 1 … 11 | 6 | 1 + 1 + 2 + 2 = **6** | ≤ 8 ✓ works → try slower: 1 … 6 |
+| 1 … 6 | 3 | 1 + 2 + 3 + 4 = **10** | > 8 ✗ too slow → try faster: 4 … 6 |
+| 4 … 6 | 5 | 1 + 2 + 2 + 3 = **8** | ✓ works → try slower: 4 … 5 |
+| 4 … 5 | 4 | 1 + 2 + 2 + 3 = **8** | ✓ works → only 4 is left → **answer 4** |
 
-*ends right: speed 4 works and speed 3 does not, so 4 is the slowest workable speed.*
+**Why it works:** speed 4 works and speed 3 does not, so 4 is the slowest speed that works.
 
 ```java
 // Koko Eating Bananas — O(n * log(maxPile))
@@ -1686,7 +1791,7 @@ private boolean canFinish(int[] piles, int speed, int h) {
 }
 ```
 
-**Cost.** O(n log(max)) — a `feasible` check costs O(n), and there are log(max) of them.
+**Cost.** O(n log(max)), where `max` is the largest pile — a `feasible` check costs O(n), and there are log(max) of them.
 
 > **Remember the shape, not the problem.** The identical template solves Split Array Largest Sum, Capacity To Ship Packages In D Days, Minimum Days to Make m Bouquets, and Minimise Max Distance. Only `feasible()` changes.
 
@@ -1719,13 +1824,24 @@ Because at every midpoint **one half is guaranteed to be properly sorted** — c
 <details>
 <summary><strong>Search in Rotated Sorted Array</strong> — Medium</summary>
 
-**Problem:** Given a sorted array that has been rotated at some pivot, search for a target in O(log n). Array has no duplicates.
+**Problem:** A sorted array was **rotated** — cut at some point and the two pieces swapped, e.g. `[0, 1, 2, 4, 5, 6, 7]` → `[4, 5, 6, 7, 0, 1, 2]`. Return the index of `target`, or `-1`, in O(log n). No duplicates.
 
 **Example:**
-Input: nums = [4, 5, 6, 7, 0, 1, 2], target = 0
+```
+Input:  nums = [4, 5, 6, 7, 0, 1, 2], target = 0
 Output: 4
+```
 
-**Approach:** Standard binary search with one extra check: determine which half is sorted. If target falls within the sorted half, search there; otherwise search the other half.
+**Walk-through:**
+```
+[4, 5, 6, 7, 0, 1, 2]    target 0
+
+lo=0 hi=6 mid=3 (7)   left half 4..7 is sorted; 0 is not in 4..7   → go right   lo = 4
+lo=4 hi=6 mid=5 (1)   left half 0..1 is sorted; 0 is in 0..1       → go left    hi = 4
+lo=4 hi=4 mid=4 (0)   found → return 4
+```
+
+**Approach:** Cut a rotated array anywhere and **at least one half is still normally sorted** (check `nums[lo] <= nums[mid]`). If the target lies inside that sorted half's range, search there; otherwise search the other half. Everything else is plain binary search.
 
 **Java:**
 ```java
@@ -1744,7 +1860,6 @@ public int search(int[] nums, int target) {
     }
     return -1;
 }
-// Time: O(log n)  Space: O(1)
 ```
 
 **Complexity:** O(log n) time, O(1) space
@@ -1816,21 +1931,25 @@ public int maxSumSubarray(int[] nums, int k) {
 
 **Key idea.** Keep a window that is **always valid**. Move `right` one step at a time. If the new character is already inside the window, jump `left` to just past that character's previous position — the window is valid again in O(1), with no backwards scanning and no re-checking. The answer is the widest the window ever got.
 
-**DRY RUN — `lengthOfLongestSubstring("abcabcbb")` → `3`**
-*invariant: `s[left..right]` never contains a repeat*
+**Dry run — `"abcabcbb"` → `3`**
+*We track:* the window `[ ]` — a stretch with no repeated letter.
 
-| right | char | last seen at | left moves to | window | len | best |
-|-------|------|--------------|---------------|--------|-----|------|
-| 0 | a | — | 0 | `a` | 1 | 1 |
-| 1 | b | — | 0 | `ab` | 2 | 2 |
-| 2 | c | — | 0 | `abc` | 3 | **3** |
-| 3 | a | 0 — **inside** | 1 | `bca` | 3 | 3 |
-| 4 | b | 1 — **inside** | 2 | `cab` | 3 | 3 |
-| 5 | c | 2 — **inside** | 3 | `abc` | 3 | 3 |
-| 6 | b | 4 — **inside** | 5 | `cb` | 2 | 3 |
-| 7 | b | 6 — **inside** | 7 | `b` | 1 | 3 |
+```
+          a  b  c  a  b  c  b  b      ← the string
+          0  1  2  3  4  5  6  7      ← position
 
-*ends right: `left` only ever moves forward, so each character is entered once and left once — n steps in, n steps out, O(n).*
+add a    [a]                        length 1 ← best
+add b    [a  b]                     length 2 ← best
+add c    [a  b  c]                  length 3 ← best
+add a       [b  c  a]               length 3         a repeats → left jumps past position 0
+add b          [c  a  b]            length 3         b repeats → left jumps past position 1
+add c             [a  b  c]         length 3         c repeats → left jumps past position 2
+add b                   [c  b]      length 2         b repeats → left jumps past position 4
+add b                         [b]   length 1         b repeats → left jumps past position 6
+best = 3
+```
+
+**Why it works:** the left edge only ever moves forward, so each letter enters the window once and leaves once — one pass, O(n).
 
 ```java
 public int lengthOfLongestSubstring(String s) {
@@ -1881,19 +2000,19 @@ That third row is worth memorising: "exactly K distinct" has no clean single-pas
 
 ### Minimum Window Substring — the shortest dialect
 
-**Problem.** Smallest window of `s` containing every character of `t` (with multiplicity). `s = "ADOBECODEBANC"`, `t = "ABC"` → `"BANC"`.
+**Problem.** Smallest window of `s` containing every character of `t`, counting repeats (if `t` has two A's, the window needs two A's). `s = "ADOBECODEBANC"`, `t = "ABC"` → `"BANC"`.
 
 **Key idea.** Two counters, not one map comparison. `need` says how many of each character are required; `have` counts **how many distinct characters have reached their required quota**. When `have == need.size()` the window is valid, so you shrink from the left — recording as you go — until it breaks again.
 
-**DRY RUN (checkpoints) — `minWindow("ADOBECODEBANC", "ABC")` → `"BANC"`**
+**Dry run (key moments) — `s = "ADOBECODEBANC"`, `t = "ABC"` → `"BANC"`**
 
-| when | window | valid? | what happens |
-|------|--------|--------|--------------|
-| right = 5 (`C`) | `ADOBEC` (6) | yes | record **6**; dropping `A` breaks it → shrink stops |
-| right = 10 (`A`) | `DOBECODEBA` (10) | yes | shrink down to `CODEBA` (6) — not shorter; dropping `C` breaks it |
-| right = 12 (`C`) | `ODEBANC` (7) | yes | shrink: `EBANC` (5) → record; `BANC` (4) → **record**; dropping `B` breaks it |
+| Right edge reaches | Window | Has A, B and C? | What happens |
+|--------------------|--------|-----------------|--------------|
+| position 5 (`C`) | `ADOBEC` (6) | yes | shortest so far: **6**; dropping `A` would break it → stop shrinking |
+| position 10 (`A`) | `DOBECODEBA` (10) | yes | shrink down to `CODEBA` (6) — not shorter; dropping `C` would break it |
+| position 12 (`C`) | `ODEBANC` (7) | yes | shrink to `EBANC` (5), then `BANC` (4) → shortest: **4**; dropping `B` would break it |
 
-*ends right: every valid window was shrunk to its minimum before being broken, so the smallest one cannot have been missed.*
+**Why it works:** every valid window is shrunk as far as it can go before it breaks, so the shortest one can't be missed.
 
 ```java
 public String minWindow(String s, String t) {
@@ -1929,16 +2048,16 @@ public String minWindow(String s, String t) {
 
 **Problem.** You may replace at most `k` characters. What is the longest run of a single repeated letter you can create? `"AABABBA"`, `k = 1` → `4`.
 
-**Key idea.** For any window, the cheapest plan is to keep the most frequent letter and replace all the others. So the window is valid exactly when `windowSize − maxFreq <= k`. Nothing else needs tracking.
+**Key idea.** For any window, the cheapest plan is to keep its most frequent letter and replace all the others. If `maxFreq` is that letter's count, the window needs `windowSize − maxFreq` replacements — so it is valid exactly when `windowSize − maxFreq <= k`. Nothing else needs tracking.
 
-```
-s = "ABAB", k = 2
+**Dry run — `"ABAB"`, `k = 2` → `4`**
 
-right=0 'A': size 1, maxFreq 1 → need 0 replacements  ≤ 2  valid
-right=1 'B': size 2, maxFreq 1 → need 1               ≤ 2  valid
-right=2 'A': size 3, maxFreq 2 → need 1               ≤ 2  valid
-right=3 'B': size 4, maxFreq 2 → need 2               ≤ 2  valid → answer 4
-```
+| Add | Window | Replacements needed (size − most common letter's count) | ≤ 2? |
+|-----|--------|----------------------------------------------------------|------|
+| A | `A` | 1 − 1 = 0 | ✓ |
+| B | `AB` | 2 − 1 = 1 | ✓ |
+| A | `ABA` | 3 − 2 = 1 | ✓ |
+| B | `ABAB` | 4 − 2 = 2 | ✓ → the whole string works → **4** |
 
 ```java
 public int characterReplacement(String s, int k) {
@@ -2018,6 +2137,16 @@ public class TreeNode {
 
 **Choosing a walk takes two seconds:** anything about a **path, a height, or a subtree** → depth-first. Anything about a **level, a row, or the nearest thing** → breadth-first. Anything on a **BST where the answer is about order** → inorder, because inorder on a BST comes out sorted.
 
+**Reading tree inputs.** Trees are written the LeetCode way: values **level by level, left to right**, with `null` for a missing child. So `[3, 9, 20, null, null, 15, 7]` means:
+
+```
+      3
+     / \
+    9   20          9 has no children (null, null);
+       /  \         20's children are 15 and 7
+      15   7
+```
+
 ### Pattern 1: DFS Recursion — the leap of faith (90% of tree problems)
 
 **Problem.** How deep is the tree? `[3, 9, 20, null, null, 15, 7]` → `3`.
@@ -2034,17 +2163,16 @@ ReturnType solve(TreeNode node) {
 }
 ```
 
-**DRY RUN — `maxDepth([3, 9, 20, null, null, 15, 7])` → `3`**
-*read it down (the calls) and then up (the returns — where the work happens)*
+**Dry run — `[3, 9, 20, null, null, 15, 7]` → `3`**
+*Rule:* a node's depth = 1 + the deeper of its two children (a missing child counts as 0). Work from the bottom up.
 
 ```
-maxDepth(3)
-├── maxDepth(9)                    leaf → 1 + max(0, 0) = 1
-└── maxDepth(20)
-    ├── maxDepth(15)               leaf → 1
-    └── maxDepth(7)                leaf → 1
-    └── returns 1 + max(1, 1) = 2
-└── returns 1 + max(1, 2) = 3
+      3
+     / \           9  → 1 + max(0, 0) = 1     (leaf)
+    9   20         15 → 1                     (leaf)
+       /  \        7  → 1                     (leaf)
+      15   7       20 → 1 + max(1, 1) = 2
+                   3  → 1 + max(1, 2) = 3     ← answer
 ```
 
 ```java
@@ -2060,21 +2188,30 @@ public int maxDepth(TreeNode root) {
 
 **The variation worth learning: when the answer is not what you return.**
 
-**Problem.** The diameter — the longest path between any two nodes, measured in edges. For `1(2(4,5), 3)` → `3`, the path `4 → 2 → 1 → 3`.
+**Problem.** The diameter — the longest path between any two nodes, measured in edges. `[1, 2, 3, 4, 5]` (1 has children 2 and 3; 2 has children 4 and 5) → `3`, the path `4 → 2 → 1 → 3`.
 
 **Key idea.** The recursion must return the **depth** (that is what a parent needs), but the answer you want is the **best path through some node**, which may be buried in the middle of the tree. So return one thing and quietly record another: at every node, `left + right` is the longest path bending at that node — keep the maximum in a field.
 
-**DRY RUN — `diameterOfBinaryTree(1(2(4, 5), 3))` → `3`**
+**Dry run — `[1, 2, 3, 4, 5]` → `3`**
+*We track:* each node returns its depth to its parent, and we separately remember the longest path seen.
 
 ```
-depth(4) → returns 1                    path through 4 = 0 + 0 = 0   diameter = 0
-depth(5) → returns 1                    path through 5 = 0           diameter = 0
-depth(2): left=1, right=1               path through 2 = 1 + 1 = 2   diameter = 2
-          returns 1 + max(1,1) = 2
-depth(3) → returns 1                    path through 3 = 0           diameter = 2
-depth(1): left=2, right=1               path through 1 = 2 + 1 = 3   diameter = 3  ← answer
-          returns 1 + max(2,1) = 3      (the returned 3 is a depth, not the answer)
+        1
+       / \
+      2   3
+     / \
+    4   5
 ```
+
+| Node | Depth of left, right child | Longest path bending here (left + right) | Returns its depth (1 + bigger) |
+|------|----------------------------|------------------------------------------|--------------------------------|
+| 4 | 0, 0 | 0 | 1 |
+| 5 | 0, 0 | 0 | 1 |
+| 2 | 1, 1 | 2 | 2 |
+| 3 | 0, 0 | 0 | 1 |
+| 1 | 2, 1 | **3** ← longest | 3 |
+
+**Why it works:** every path bends at exactly one highest node, and we checked the bend at every node. The answer is the biggest number in the "path" column, not what the root returns.
 
 ```java
 private int diameter = 0;
@@ -2099,15 +2236,15 @@ private int depth(TreeNode n) {
 
 **Key idea.** A queue naturally visits nodes in level order, but it does not tell you where one level ends. The fix is one line: **snapshot `queue.size()` before the inner loop**. At that instant the queue holds exactly the current level and nothing else, so looping that many times processes precisely one level.
 
-**DRY RUN — `levelOrder([3, 9, 20, null, null, 15, 7])` → `[[3], [9, 20], [15, 7]]`**
-*invariant: at the top of each outer loop, the queue holds exactly one complete level*
+**Dry run — `[3, 9, 20, null, null, 15, 7]` → `[[3], [9, 20], [15, 7]]`**
+*We track:* a queue of nodes waiting to be visited. At the start of each level it holds exactly that level.
 
-| queue at loop start | size snapshot | level collected | children enqueued |
-|---------------------|---------------|-----------------|-------------------|
+| Queue at the start | Take this many | This level | Children added to the queue |
+|--------------------|----------------|------------|-----------------------------|
 | `[3]` | 1 | `[3]` | 9, 20 |
 | `[9, 20]` | 2 | `[9, 20]` | 15, 7 |
 | `[15, 7]` | 2 | `[15, 7]` | none |
-| `[]` | — | — | loop ends |
+| `[]` | — | — | queue empty → done |
 
 ```java
 public List<List<Integer>> levelOrder(TreeNode root) {
@@ -2140,19 +2277,28 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 
 ### BSTs: the range, not the parent
 
-**Problem.** Is this a valid binary search tree? `[5, 1, 4, null, null, 3, 6]` → `false`.
+**Problem.** Is this a valid binary search tree? `[5, 4, 6, null, null, 3, 7]` → `false`.
 
-**The wrong idea everybody tries first.** "Check each node against its parent." That passes the tree above — `4` is correctly to the right of `5`'s... no. Look again: `4` sits in `5`'s **right subtree**, so it must be greater than 5, and it is not. A local parent check misses it entirely.
+```
+      5
+     / \
+    4   6
+       / \
+      3   7
+```
+
+**The wrong idea everybody tries first.** "Check each node against its parent." Here every such check passes — `3` is correctly smaller than its parent `6`. But `3` sits in `5`'s **right subtree**, so it must be greater than 5, and it is not. A parent-only check never sees that.
 
 **Key idea.** A BST node is not constrained by its parent — it is constrained by **every ancestor**. Going left tightens the upper bound; going right tightens the lower bound. So pass a `(min, max)` range down and check membership.
 
-**DRY RUN — `isValidBST([5, 1, 4, null, null, 3, 6])` → `false`**
+**Dry run — `[5, 4, 6, null, null, 3, 7]` → `false`**
+*We track:* the range each node must fit in — going left lowers the ceiling, going right raises the floor.
 
 ```
-validate(5, min=-∞, max=+∞)        -∞ < 5 < +∞           ✓
-├── validate(1, -∞, 5)             -∞ < 1 < 5            ✓  (leaf)
-└── validate(4, 5, +∞)             is 4 > 5?             ✗  ← FAILS HERE
-                                    everything right of 5 must exceed 5
+node 5   the root               → anything goes            ✓
+node 4   left of 5              → must be < 5              ✓
+node 6   right of 5             → must be > 5              ✓
+node 3   right of 5, left of 6  → must be between 5 and 6  ✗  3 is not > 5 → not a BST
 ```
 
 ```java
@@ -2175,7 +2321,7 @@ private boolean validate(TreeNode node, long min, long max) {
 
 ### Lowest Common Ancestor
 
-**Problem.** Given two nodes, find their deepest shared ancestor.
+**Problem.** Given two nodes `p` and `q`, find their **lowest common ancestor** — the deepest node that has both of them below it (a node counts as below itself). In the BST below: LCA(`3`, `5`) → `4`; LCA(`0`, `5`) → `2`; LCA(`2`, `8`) → `6`.
 
 ```mermaid
 graph TD
@@ -2222,7 +2368,7 @@ public TreeNode lcaBST(TreeNode root, TreeNode p, TreeNode q) {
 
 ### Serialize / Deserialize
 
-**Problem.** Turn a tree into a string and back.
+**Problem.** Turn a tree into a string, and turn that string back into the exact same tree. `[1, 2, 3]` → `"1,2,null,null,3,null,null,"` → `[1, 2, 3]`.
 
 **Key idea.** A preorder list of values is *not* enough — `[1, 2]` could be two different trees. The fix is to **write down the nulls too**. Once every absent child is marked, the preorder sequence describes exactly one tree, and rebuilding is just reading the tokens in the same order: a value means "make a node, then fill its left, then its right"; a `null` means "stop, nothing here."
 
@@ -2297,13 +2443,31 @@ Because constraints come from *every* ancestor, not just the immediate one. A no
 <details>
 <summary><strong>Binary Tree Maximum Path Sum</strong> — Hard</summary>
 
-**Problem:** Given a binary tree, find the maximum path sum. A path goes from any node to any node along parent-child connections. The path must contain at least one node.
+**Problem:** Find the largest sum along any path in the tree. A path is a chain of connected nodes: it can start and end anywhere, it need not pass through the root, and it uses each node at most once (so it can bend at one node, but never fork).
 
 **Example:**
-Input: root = [-10, 9, 20, null, null, 15, 7]
+```
+Input:  root = [-10, 9, 20, null, null, 15, 7]
 Output: 42  (path: 15 -> 20 -> 7)
+```
 
-**Approach:** DFS with a global variable tracking the best path sum seen. At each node, compute the max gain from left and right children (clamped to 0 to discard negative paths). Update the global max with left + right + node.val. Return node.val + max(left, right) upward since a path through a parent can only go through one child.
+**Walk-through:** each node asks its children *"how much can you add going down?"* — a negative answer counts as 0 (just don't go that way).
+```
+      -10
+      /  \
+     9    20
+         /  \
+        15   7
+
+node   gain from left   gain from right   path bending here       returns up
+  9         0                 0            9                       9
+ 15         0                 0           15                      15
+  7         0                 0            7                       7
+ 20        15                 7           15 + 20 + 7 = 42  ← best 20 + 15 = 35
+-10         9                35           9 - 10 + 35 = 34        (root)
+```
+
+**Approach:** The same "return one value, record another" trick as Diameter (§18.9). A node returns its best **one-sided** downward path (a parent can extend only one side), and records the best path that **bends** at it: left gain + its value + right gain.
 
 **Java:**
 ```java
@@ -2319,7 +2483,6 @@ private int dfs(TreeNode node) {
     maxSum = Math.max(maxSum, left + right + node.val);
     return node.val + Math.max(left, right);
 }
-// Time: O(n)  Space: O(h)
 ```
 
 **Complexity:** O(n) time, O(h) space
@@ -2375,19 +2538,19 @@ int out  = minHeap.poll();   // O(log n)
 
 *(the illustration walks the same idea with k = 3; the dry run below uses k = 2)*
 
-**DRY RUN — `findKthLargest([3, 2, 1, 5, 6, 4], k = 2)` → `5`**
-*invariant: the heap holds the 2 largest values seen so far, smallest of them on top*
+**Dry run — `[3, 2, 1, 5, 6, 4]`, `k = 2` → `5`**
+*We track:* a min-heap holding the 2 biggest numbers so far; its top (written first) is the smaller of the two.
 
-| arrives | heap after offer | over size 2? | evicted | the 2 best so far |
-|---------|------------------|--------------|---------|-------------------|
-| 3 | `[3]` | no | — | `{3}` |
-| 2 | `[2, 3]` | no | — | `{2, 3}` |
-| 1 | `[1, 2, 3]` | yes | **1** | `{2, 3}` |
-| 5 | `[2, 3, 5]` | yes | **2** | `{3, 5}` |
-| 6 | `[3, 5, 6]` | yes | **3** | `{5, 6}` |
-| 4 | `[4, 5, 6]` | yes | **4** | `{5, 6}` |
+| Number arrives | Heap after adding it | More than 2? → remove the top | Heap now |
+|----------------|----------------------|-------------------------------|----------|
+| 3 | `[3]` | no | `[3]` |
+| 2 | `[2, 3]` | no | `[2, 3]` |
+| 1 | `[1, 2, 3]` | yes → remove **1** | `[2, 3]` |
+| 5 | `[2, 3, 5]` | yes → remove **2** | `[3, 5]` |
+| 6 | `[3, 5, 6]` | yes → remove **3** | `[5, 6]` |
+| 4 | `[4, 5, 6]` | yes → remove **4** | `[5, 6]` |
 
-*ends right: the heap holds exactly the 2 largest, and its top is the smaller of them — the 2nd largest, `5`.*
+**Why it works:** the heap always keeps the 2 biggest numbers, and its top is the smaller of them — the 2nd largest, `5`.
 
 ```java
 public int findKthLargest(int[] nums, int k) {
@@ -2412,16 +2575,17 @@ public int findKthLargest(int[] nums, int k) {
 
 **Problem.** Merge `k` sorted lists into one. `[[1,4,5], [1,3,4], [2,6]]` → `[1,1,2,3,4,4,5,6]`.
 
-**Brute force.** Concatenate everything and sort — O(N log N), throwing away the sortedness you were given. Or merge two at a time — O(N·k).
+**Brute force.** Concatenate everything and sort — O(N log N), where `N` is the total number of values across all lists, throwing away the sortedness you were given. Or merge two at a time — O(N·k).
 
 **Key idea.** The next smallest element overall **must be at the head of one of the k lists** — nowhere else is reachable. So you only ever need to answer "which of these k heads is smallest?", and a heap of size k answers that in O(log k). Pop the winner, push that list's next node, repeat.
 
 ```
-lists = [[1,4,5], [1,3,4], [2,6]]     heap holds one head per list
+lists:  a = [1, 4, 5]   b = [1, 3, 4]   c = [2, 6]
+the heap holds one head per list; "1a" means "the 1 from list a"
 
-heap {1a, 1b, 2c} → pop 1a → output 1        push 4a → heap {1b, 2c, 4a}
-heap {1b, 2c, 4a} → pop 1b → output 1, 1     push 3b → heap {2c, 3b, 4a}
-heap {2c, 3b, 4a} → pop 2c → output 1, 1, 2  push 6c → heap {3b, 4a, 6c}
+heap {1a, 1b, 2c} → pop 1a → output 1        push a's next, 4a → heap {1b, 2c, 4a}
+heap {1b, 2c, 4a} → pop 1b → output 1, 1     push b's next, 3b → heap {2c, 3b, 4a}
+heap {2c, 3b, 4a} → pop 2c → output 1, 1, 2  push c's next, 6c → heap {3b, 4a, 6c}
 …keep popping the smallest head…            → 1, 1, 2, 3, 4, 4, 5, 6
 ```
 
@@ -2446,22 +2610,22 @@ public ListNode mergeKLists(ListNode[] lists) {
 
 ### Pattern 3: Two Heaps (Running Median)
 
-**Problem.** Numbers arrive one at a time; report the median at any moment.
+**Problem.** Numbers arrive one at a time; report the median at any moment. Add `1`, `2` → median `1.5`; add `3` → median `2`.
 
 **Brute force.** Keep a sorted list and insert into position — O(n) per insert.
 
 **Key idea.** The median only depends on the **middle**, so split the data into a smaller half and a larger half and keep the two halves facing each other: a **max**-heap holding the smaller half (its largest on top) and a **min**-heap holding the larger half (its smallest on top). The median is now always at one or both tops. Keep the two sizes within one of each other and the answer is O(1) to read.
 
-**DRY RUN — `addNum(1), addNum(2), findMedian(), addNum(3), findMedian()`**
-*invariant: every value in `small` ≤ every value in `large`, and `small.size()` is equal to or one more than `large.size()`*
+**Dry run — add 1, add 2, median?, add 3, median?**
+*We track:* `small` = the lower half (biggest on top), `large` = the upper half (smallest on top); both written top first. `small` may hold one extra.
 
-| call | small (max-heap) | large (min-heap) | why | returns |
-|------|------------------|------------------|-----|---------|
-| `addNum(1)` | `[1]` | `[]` | first value | — |
-| `addNum(2)` | `[1]` | `[2]` | 2 pushed through `small`, its max moved across | — |
-| `findMedian()` | `[1]` | `[2]` | sizes equal → average the two tops | **1.5** |
-| `addNum(3)` | `[2, 1]` | `[3]` | 3 crossed over, then `large` rebalanced one back | — |
-| `findMedian()` | `[2, 1]` | `[3]` | `small` is bigger → its top is the median | **2** |
+| Call | small | large | What happens |
+|------|-------|-------|--------------|
+| add 1 | `[1]` | `[]` | 1 enters `small`, moves to `large`; `large` is now bigger, so 1 moves back |
+| add 2 | `[1]` | `[2]` | 2 enters `small`; `small`'s biggest (2) moves to `large`; sizes equal |
+| median? | `[1]` | `[2]` | sizes equal → average the two tops → **1.5** |
+| add 3 | `[2, 1]` | `[3]` | 3 enters `small`, moves to `large` (`[2, 3]`); `large` is bigger, so its smallest (2) moves back |
+| median? | `[2, 1]` | `[3]` | `small` has one extra → its top → **2** |
 
 ```java
 class MedianFinder {
@@ -2531,7 +2695,7 @@ It is O(n) — the heap has no index for arbitrary elements. If you need to remo
 
 **Simple explanation.** A trie is a dictionary filed by shared beginnings. Every word is a path of letters from the root, and words that start the same way share the same path — so `app`, `apple` and `apex` all travel down the same `a → p` corridor before parting.
 
-**Problem.** Support `insert(word)`, `search(word)` and `startsWith(prefix)`.
+**Problem.** Support `insert(word)`, `search(word)` and `startsWith(prefix)`. After `insert("apple")`: `search("apple")` → `true`, `search("app")` → `false` (not a whole word), `startsWith("app")` → `true`.
 
 **Brute force.** A `HashSet<String>`. Exact `search` is O(1), which is great — but `startsWith` has to test every stored word against the prefix. With ten million words in the dictionary, that is ten million comparisons for a single keystroke.
 

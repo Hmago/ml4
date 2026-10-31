@@ -40,7 +40,7 @@ Key insight: gradients are cheap to reuse from the forward pass. Dead ReLU probl
 | SGD | No | No | Simple problems |
 | SGD+Momentum | No | Yes | CNNs (often beats Adam) |
 | AdaGrad | Yes | No | Sparse data, short training |
-| RMSProp | Yes (decaying avg) | No | RNNs |
+| RMSProp | Yes (decaying avg) | No | Historically RNNs; superseded by Adam |
 | Adam | Yes | Yes | General deep learning |
 | AdamW | Yes | Yes | **Transformers, LLMs (standard)** |
 
@@ -54,6 +54,10 @@ Bias correction: $\hat{m} = m/(1-0.9^t)$, $\hat{v} = v/(1-0.999^t)$.
 
 **AdamW** separates weight decay: $w \leftarrow w - \alpha \frac{\hat{m}}{\sqrt{\hat{v}}+\epsilon} - \alpha\lambda w$. This is correct regularisation for Transformers; plain Adam+L2 underdoes regularisation on frequently-updated weights.
 
+**Bias-correction trap:** at step 1 the *uncorrected* update $m/\sqrt{v}$ is ~3.2× **too large** (peaking ~6.5× near step 10), not too small — $v$ is understated 1000× and sits under a square root.
+
+**Beyond AdamW (2024–26):** **Muon** orthogonalises the momentum of each 2-D weight matrix (Kimi K2, GLM-4.5; ~2× compute efficiency reported); **Adafactor** factors the second moment to save memory (T5, PaLM); **Lion** steps by the sign of momentum (one state buffer, smaller LR).
+
 #### Loss Functions
 
 - **MSE** — regression, sensitive to outliers. **MAE** — robust. **Huber** — smooth small, robust large.
@@ -61,7 +65,7 @@ Bias correction: $\hat{m} = m/(1-0.9^t)$, $\hat{v} = v/(1-0.999^t)$.
 - **Categorical cross-entropy**: $L = -\sum_i y_i \log\hat{y}_i$ (one-hot $y_i$)
 - **Focal Loss** (imbalanced): $FL = -(1-p_t)^\gamma \log(p_t)$. With $\gamma=2$, easy examples contribute $<0.003\times$ weight. Used in object detection (RetinaNet).
 - **Triplet Loss** (similarity): $L = \max(0, d(A,P) - d(A,N) + \text{margin})$. Used in face recognition.
-- **NT-Xent** (contrastive, SimCLR): pull positive pairs together, push all negatives apart.
+- **NT-Xent** (contrastive, SimCLR): softmax over $\exp(\text{sim}/\tau)$ — pick your partner view out of the whole batch; low τ = sharper. (See Part 4.)
 
 #### Normalisation
 
@@ -78,7 +82,7 @@ LayerNorm formula: $\text{LN}(x) = \gamma \cdot \frac{x-\mu}{\sqrt{\sigma^2+\eps
 
 **Gradient clipping (norm clipping):** if $\|g\| > 1.0$, scale $g \leftarrow g \times 1.0/\|g\|$. Preserves direction; prevents exploding gradients. PyTorch: `clip_grad_norm_(params, 1.0)`. Standard for Transformers and RNNs.
 
-**Mixed precision (BF16):** Forward/backward in 16-bit; weight updates in 32-bit. BF16 has the same exponent range as FP32, eliminating overflow. Training is 2–4× faster, uses half the memory. Standard for all modern LLM training.
+**Mixed precision (BF16):** matmuls in 16-bit, FP32 master weights and optimiser state. BF16 has FP32's exponent range, so **no loss scaling** (FP16 needs it). Gives 2×+ faster matmuls and halves *activation* memory — weights + Adam state stay ~16 bytes/param. **FP8** (E4M3 forward, E5M2 gradients, block-wise scaling — DeepSeek-V3) is the 2025–26 frontier.
 
 #### Regularisation
 
@@ -90,7 +94,7 @@ LayerNorm formula: $\text{LN}(x) = \gamma \cdot \frac{x-\mu}{\sqrt{\sigma^2+\eps
 
 **Label smoothing**: replace one-hot targets with $(1-\epsilon)\cdot \mathbf{1}_y + \epsilon/C$. Prevents the model from driving logits to $\pm\infty$ trying to achieve 100% probability on training labels. Improves calibration; $\epsilon=0.1$ is a common default.
 
-**Batch size interaction**: large batches have sharp loss landscapes (can generalise poorly) even if they converge faster. Fix: scale LR linearly with batch size (linear scaling rule) and warm up for 5–10% of training steps.
+**Batch size interaction**: large batches have sharp loss landscapes (can generalise poorly) even if they converge faster. Fix: scale LR linearly with batch size (linear scaling rule) and warm up for 1–5% of training steps.
 
 #### Learning Rate Schedules
 
@@ -100,11 +104,12 @@ The LR schedule matters as much as the optimiser:
 |----------|-------|---------|
 | Constant | flat | Quick experiments only |
 | Step decay | drops every N epochs | CNNs on ImageNet |
-| Cosine annealing | smooth cosine curve | **Standard for LLMs** |
+| Cosine annealing | smooth cosine curve | Standard when the total length is fixed |
 | Linear warmup + decay | ramp up, then fall | All large-model training |
 | OneCycleLR | one big spike | Fast convergence on smaller models |
+| **Warmup–stable–decay (WSD)** | flat, then a short final decay | **Long / open-ended LLM pre-training** — branch a decay at any checkpoint |
 
-LLMs use: linear warmup for 1–2% of steps (prevents large early updates when gradients are noisy), then cosine decay to near-zero. Why warmup? Early steps have high gradient variance; a high LR at step 0 can permanently damage the initialisation.
+LLMs use: linear warmup for 1–2% of steps (prevents large early updates when gradients are noisy), then cosine decay — or WSD when the run length isn't fixed. Why warmup? Early steps have high gradient variance; a high LR at step 0 can permanently damage the initialisation.
 
 ---
 
@@ -113,26 +118,26 @@ LLMs use: linear warmup for 1–2% of steps (prevents large early updates when g
 #### CNN Architecture Evolution
 
 ```
-LeNet (1998) ──► AlexNet (2012) ──► VGG (2014) ──► ResNet (2015) ──► EfficientNet (2019) ──► ViT (2020)
+LeNet (1998) ──► AlexNet (2012) ──► VGG (2014) ──► ResNet (2015) ──► EfficientNet (2019) ──► ViT (2020) ──► ConvNeXt (2022)
 5 layers        8 layers           16-19 layers    18-152 layers    Compound scale      Patch-based
-(MNIST)         (ImageNet rev)      (3×3 only)      (skip conn.)     (balanced 3D)       Transformer
+(MNIST)         (ImageNet rev)      (3×3 only)      (skip conn.)     (balanced 3D)       Transformer         (modern CNN ≈ ViT)
 ```
 
-**ResNet skip connections** (★★★): Each block learns the *residual* $F(x)$, and the output is $F(x) + x$. Solves vanishing gradients — gradient can flow unchanged through the shortcut. Enabled 152-layer networks.
+**ResNet skip connections** (★★★): Each block learns the *residual* $F(x)$, and the output is $F(x) + x$. Fixes an **optimization** problem — deeper plain nets had *higher training error* even with BatchNorm; now "do nothing" is easy ($F=0$) and the gradient always has a direct path of 1. Enabled 152-layer networks.
 
 **EfficientNet compound scaling**: depth $\propto 1.2^\phi$, width $\propto 1.1^\phi$, resolution $\propto 1.15^\phi$. Balanced scaling — achieved state-of-the-art with 8× fewer parameters.
 
-**ViT (Vision Transformer)**: Chop $224\times224$ into $16\times16$ patches → 196 tokens → standard Transformer. Each patch attends to all others from layer 1. Needs large pre-training data ($>100M$ images); CNNs are more data-efficient.
+**ViT (Vision Transformer)**: Chop $224\times224$ into $16\times16$ patches → 196 tokens → standard Transformer. Each patch attends to all others from layer 1. Lacks a CNN's locality bias: the original ViT needed 300M-image pre-training, but **DeiT** matched CNNs on ImageNet-1k alone with strong augmentation + distillation.
 
 #### Object Detection & Segmentation
 
-**YOLO**: divides image into $7\times7$ grid; each cell predicts bounding boxes + classes in ONE forward pass. Non-Maximum Suppression (NMS) removes overlapping boxes. IOU = Area(Overlap)/Area(Union) > 0.5 → same object.
+**YOLO**: divides image into $7\times7$ grid; each cell predicts bounding boxes + classes in ONE forward pass. Non-Maximum Suppression (NMS) removes overlapping boxes. IOU = Area(Overlap)/Area(Union) > 0.5 → same object. **DETR** frames detection as set prediction with one-to-one matching — no anchors, no NMS (RT-DETR is real-time).
 
-**U-Net**: Encoder shrinks (learns *what*), decoder expands (predicts per pixel), skip connections bridge them (give the decoder fine-grained spatial info). Designed for medical images; used for satellite, road segmentation, etc.
+**U-Net**: Encoder shrinks (learns *what*), decoder expands (predicts per pixel), skip connections bridge them (give the decoder fine-grained spatial info). Designed for medical images; used for satellite, road segmentation, etc. **SAM / SAM 2**: promptable "segment anything" from a click or box, no task training; SAM 2 tracks through video.
 
 ---
 
-### Part 3: Attention & Transformers
+### Part 3: Sequence Models & Transformers
 
 #### LSTM & GRU
 
@@ -166,20 +171,20 @@ Each token creates Q (what am I looking for?), K (what do I offer?), V (what do 
 
 **Multi-Head Attention**:
 $$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1,\ldots,\text{head}_h)W^O, \quad \text{head}_i = \text{Attention}(QW^Q_i,KW^K_i,VW^V_i)$$
-$W^O$ mixes information from all heads. Typical: 8 heads (BERT-base), 96 heads (GPT-3).
+$W^O$ mixes information from all heads. Typical: 12 heads (BERT-base), 96 heads (GPT-3).
 
 **GQA/MQA**: Standard MHA caches one K,V set per head. **Multi-Query Attention (MQA)**: all heads share one K,V — 32× less KV cache memory. **Grouped-Query Attention (GQA)**: groups of heads share K,V — sweet spot (LLaMA 2 70B, LLaMA 3, Mistral).
 
 #### Positional Encodings (★★★)
 
-| Method | Used By | Relative Pos? | Extrapolates? |
+| Method | Used By | Relative Pos? | Longer than training? |
 |--------|---------|--------------|--------------|
-| Sinusoidal | Original Transformer | Partially | Yes (fixed) |
+| Sinusoidal | Original Transformer | Partially | Defined for any length; degrades in practice |
 | Learned | BERT, GPT-2 | No | No (truncates) |
-| **RoPE** | **LLaMA, Gemini, Mistral** | **Yes** | **Good** |
-| ALiBi | BLOOM, MPT | Yes | Excellent |
+| **RoPE** | **Llama, Gemma, Qwen, Mistral** | **Yes** | **With scaling (PI / NTK / YaRN)** |
+| ALiBi | BLOOM, MPT | Yes | Good — designed for it |
 
-**RoPE**: rotates Q and K by a position-dependent angle before $QK^T$. The dot product depends only on relative distance $m-n$, not absolute position. Dominant in 2024–2026 LLMs.
+**RoPE**: rotates Q and K by a position-dependent angle before $QK^T$. The dot product depends only on relative distance $m-n$, not absolute position. Dominant in 2024–2026 LLMs. Extend context by rescaling the frequencies (Position Interpolation, NTK-aware, YaRN) plus a short fine-tune.
 
 **Sinusoidal**: $PE(\text{pos}, 2i) = \sin(\text{pos}/10000^{2i/d})$; $PE(\text{pos}, 2i+1) = \cos(...)$.
 
@@ -189,11 +194,11 @@ $W^O$ mixes information from all heads. Typical: 8 heads (BERT-base), 96 heads (
 |--|------|-----|
 | Architecture | Encoder-only | Decoder-only |
 | Attention | **Bidirectional** (sees all tokens) | **Causal** (sees past only) |
-| Pre-training | MLM (fill-in-the-blank) + NSP | Next-token prediction |
+| Pre-training | MLM (fill-in-the-blank); NSP was dropped (RoBERTa) | Next-token prediction |
 | Best for | Understanding, classification, NER, Q&A | Generation, chat, code |
 | Examples | BERT-base (110M), RoBERTa, DeBERTa | GPT-3/4, LLaMA, Claude, Mistral |
 
-BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params. BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params.
+BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params. BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params. **T5 (encoder-decoder)**: span-corruption pre-training, text-to-text — translation, summarisation; Whisper uses the same shape for speech. In 2026 every large LLM is decoder-only; encoders power embeddings and rerankers.
 ![BERT vs GPT: encoder-only vs decoder-only architectures](diagrams/dlrev_bertgpt_ai.png)
 
 The full Transformer block: Input → Self-Attention → Add&Norm → FFN → Add&Norm → Output. FFN stores ~2/3 of parameters and factual knowledge. Attention handles token relationships.
@@ -212,30 +217,16 @@ Context window determines maximum sequence length: 4K (GPT-3) → 8K (LLaMA 2) �
 
 ---
 
-### Part 4: Fine-Tuning & Alignment
+### Part 4: Representation Learning
 
-**LoRA (★★★)**: Freeze $W_0$; learn low-rank update $\Delta W = BA$ where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times d}$, $r \ll d$. For $d=4096$, $r=8$: 65K trainable params vs 16.7M — 256× fewer. At inference, merge: $W_\text{eff} = W_0 + BA$. Zero extra latency. Applied to Q,V (and optionally K, FFN). QLoRA loads base model in 4-bit + trains LoRA adapters: fine-tune a 7B model on a single 24GB GPU.
+Learn embeddings without labels, then reuse them for search, zero-shot classification and multimodal encoders.
 
-**RLHF (★★★)**:
-1. SFT: fine-tune on ~10K high-quality (prompt, response) pairs.
-![RLHF pipeline: SFT, reward model, PPO+KL, and DPO](diagrams/dlrev_rlhf_ai.png)
-2. Reward Model: train on human rankings; objective: push $s_\text{win} - s_\text{lose}$ apart via $L = -\log\sigma(s_\text{win}-s_\text{lose})$.
-3. PPO + KL constraint: $R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$. KL term prevents reward hacking while keeping the model grounded.
-
-**DPO (★★★)**: Skips the reward model. Directly fine-tunes LLM on (prompt, chosen, rejected) triples with a single loss that increases P(chosen) and decreases P(rejected), with implicit KL regularisation. Simpler, more stable, comparable quality. Used by LLaMA 3, Zephyr.
-
-#### Full Fine-Tuning Landscape
-
-| Method | Trainable Params | VRAM (7B) | Use case |
-|--------|-----------------|-----------|---------|
-| Full fine-tuning | 100% | 80–160 GB | When you have multi-GPU and large high-quality dataset |
-| LoRA (r=16) | ~0.1–0.5% | 16–24 GB | **Standard choice for most tasks** |
-| QLoRA (4-bit + LoRA) | ~0.1–0.5% | **8–12 GB** | Single consumer GPU (RTX 4090) |
-| Prompt tuning | <0.01% | Base model VRAM | Very quick adapt, lower quality |
-| Prefix tuning | ~0.1% | Base model VRAM | Between prompt and LoRA |
-| Adapter layers | ~1% | Close to LoRA | Legacy; LoRA preferred |
-
-**LoRA hyperparams that matter**: rank $r$ (try 8, 16, 32 — higher rank = more expressiveness but more params), alpha $\alpha$ (scale = $\alpha/r$, usually set $\alpha = 2r$), target modules (q_proj, v_proj at minimum; add k_proj, o_proj, gate_proj, up_proj, down_proj for more capacity). Too low a rank underfits domain-specific tasks; too high approaches full fine-tuning cost.
+- **Triplet loss** (faces, similarity): $\max(0,\, d(A,P) - d(A,N) + \text{margin})$ — zero once the negative is far enough.
+- **SimCLR / NT-Xent**: two augmented views of each image; a softmax over $\exp(\text{sim}/\tau)$ across the batch must pick the partner. Needs big batches (more negatives).
+- **CLIP**: image + text encoders on 400M pairs; maximise the diagonal of the $N \times N$ similarity matrix → zero-shot classification with prompts like "a photo of a {class}".
+- **SigLIP**: independent **sigmoid** per image–text pair instead of a batch-wide softmax — no huge batches needed; the vision encoder in PaliGemma and Gemma 3.
+- **DINO / DINOv2**: student matches a slow-moving (EMA) teacher; centering + sharpening prevent collapse — **no negatives**. Strong frozen features.
+- **MAE**: hide 75% of patches, reconstruct them; the encoder sees only the visible 25%.
 
 ---
 
@@ -243,22 +234,28 @@ Context window determines maximum sequence length: 4K (GPT-3) → 8K (LLaMA 2) �
 
 **VAE**: Encoder outputs $\mu, \sigma$ (a distribution, not a point). Reparameterisation trick: $z = \mu + \sigma \cdot \epsilon$, $\epsilon \sim \mathcal{N}(0,1)$ — makes sampling differentiable. Loss = reconstruction + $D_{KL}(q(z|x) \| p(z))$. Organised latent space enables smooth interpolation.
 
-**Diffusion**: Fixed forward process adds noise 1000 steps ($x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1-\bar\alpha_t}\epsilon$). UNet trained to predict the added noise $\hat\epsilon$ given $x_t$ and step $t$. At generation: start from pure noise, run 1000 reverse denoising steps. Text conditioning via cross-attention. Dominant for image gen (Stable Diffusion, DALL-E). Stable training; strong mode coverage.
+**Diffusion**: Fixed forward process adds noise 1000 steps ($x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1-\bar\alpha_t}\epsilon$). A denoiser (U-Net, now usually a Transformer — DiT) is trained to predict the added noise $\hat\epsilon$ given $x_t$ and step $t$. Generation runs it backwards from pure noise. Production: VAE **latent** space + text cross-attention + **classifier-free guidance** $\hat\epsilon = \epsilon_u + w(\epsilon_c - \epsilon_u)$, $w\approx5$–8 + 20–50-step samplers. Stable training; strong mode coverage.
+
+**Flow matching / rectified flow**: learn the **velocity** $\epsilon - x_0$ along a straight line $x_t = (1-t)x_0 + t\epsilon$ — plain regression. Straighter paths → fewer sampling steps (1–4 after rectification/distillation). Used by Stable Diffusion 3 and FLUX.
 
 **GAN**: $\min_G \max_D \mathbb{E}[\log D(x)] + \mathbb{E}[\log(1-D(G(z)))]$. Mode collapse: generator finds one or few outputs that fool D. WGAN replaces JS divergence with Wasserstein (Earth Mover's) distance — smooth gradients even when distributions don't overlap. WGAN-GP adds gradient penalty for Lipschitz constraint.
 
 | Aspect | GAN | Diffusion |
 |--------|-----|-----------|
-| Speed | Single forward pass (fast) | 50–1000 steps (slow) |
+| Speed | Single forward pass (fast) | 20–1000 steps (1–4 when distilled) |
 | Stability | Notoriously unstable | Stable |
 | Mode coverage | Drops modes | Strong |
-| Dominance | Largely replaced for images | Dominant (2022–present) |
+| 2026 role | A loss for sharpening VAEs/tokenizers and distilling fast samplers (SDXL-Turbo) | Dominant for image **and** video |
 
-**CLIP** (contrastive): trains image + text encoder jointly on 400M pairs; matching pairs have high cosine similarity. Enables zero-shot classification: embed image, compare to text prompts "a photo of a cat", pick highest similarity.
+---
 
-**MoE**: Replace FFN with E experts + router. Route top-K experts per token. Mixtral 8x7B: 47B total / 13B active — quality of 47B, cost of 13B. Routing challenge: load-balancing loss prevents all tokens routing to same experts.
+### Part 6: Scaling & Specialised Architectures
 
-**GNN**: Message passing — each node aggregates neighbour features, applies a small neural net to update. After K rounds, nodes know their K-hop neighbourhood. Used in: drug discovery, social networks, Google Maps ETAs, AlphaFold.
+**MoE**: Replace FFN with E experts + router; route each token to its top-k. Mixtral 8x7B: 46.7B total / 12.9B active (only FFNs are replicated). 2024–26 designs use many small experts + a shared expert (DeepSeek-V3: 671B total / 37B active) and **auxiliary-loss-free** balancing (a per-expert routing bias). Compute ≈ active params; **memory** must still hold every expert.
+
+**SSM / Mamba**: linear recurrence $h_t = Ah_{t-1} + Bx_t$ → $O(n)$ time, fixed-size state (no KV cache). Mamba makes $A,B$ input-dependent (selective). Weaker at exact recall, so production models are **hybrids**: Jamba, Nemotron-H, Granite 4.0, Qwen3-Next (Gated DeltaNet + attention).
+
+**GNN**: Message passing — each node aggregates neighbour features, applies a small neural net to update. After K rounds, nodes know their K-hop neighbourhood. Used in: drug discovery, social networks, Google Maps ETAs, AlphaFold. Keep them 2–3 layers deep — more causes **over-smoothing** (all nodes converge to the same value). GraphSAGE samples neighbours → inductive, scales to billions of nodes.
 
 ---
 
@@ -282,16 +279,16 @@ Context window determines maximum sequence length: 4K (GPT-3) → 8K (LLaMA 2) �
 | Sequences (streaming) | LSTM/GRU |
 | Graphs | GNN |
 | Tabular | XGBoost first |
-| Image generation | Diffusion |
-| Self-supervised image | SimCLR / CLIP |
+| Image / video generation | Diffusion or flow matching |
+| Self-supervised image | DINOv2 / MAE; image + text: CLIP / SigLIP |
 
 > ✅ **Must-remember**
 >
 > - **Backprop** = chain rule, one backward pass computes ALL gradients.
 > - **AdamW** = correct optimizer for Transformers; separates weight decay from gradient update.
-> - **ResNet skip connections** solved very deep training; **LoRA** does PEFT with <1% trainable params.
-> - **RLHF**: SFT → Reward Model → PPO+KL; **DPO** is the simpler alternative.
-> - **Diffusion** is dominant for image generation; **GANs** risk mode collapse.
+> - **ResNet skip connections** fixed an *optimization* problem, not overfitting — the gradient always has a direct path.
+> - **The 2026 LLM block** = RMSNorm (pre-norm) + RoPE + attention (GQA) + MoE feed-forward.
+> - **Diffusion / flow matching** dominate image and video generation; **GANs** risk mode collapse and now serve mainly as a sharpening/distillation loss.
 > - **Focal Loss** for class imbalance; **Triplet Loss** for similarity learning.
 > - **Activation functions**: ReLU is default for CNNs; **GeLU/SiLU** for Transformers/LLMs (smooth gradient prevents dead units); Sigmoid only for binary output gates; Softmax at output layer for classification.
 > - **Vanishing gradient** flow in order of vulnerability: plain RNN (worst) < LSTM/GRU < ResNet < pre-LN Transformer (best).
@@ -434,6 +431,33 @@ $$R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$$
 **Stage 3b — DPO (alternative)**: directly optimise on (prompt, chosen, rejected) pairs; no reward model needed; simpler and more stable; used by LLaMA 3, Zephyr.
 
 **Constitutional AI (Anthropic)**: model self-critiques against written principles without per-example human labels.
+
+---
+
+### Fine-Tuning & Alignment — LoRA, RLHF, DPO (★★★)
+
+**LoRA (★★★)**: Freeze $W_0$; learn low-rank update $\Delta W = BA$ where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times d}$, $r \ll d$. For $d=4096$, $r=8$: 65K trainable params vs 16.7M — 256× fewer. At inference, merge: $W_\text{eff} = W_0 + BA$. Zero extra latency. Applied to Q,V (and optionally K, FFN). QLoRA loads base model in 4-bit + trains LoRA adapters: fine-tune a 7B model on a single 24GB GPU.
+
+**RLHF (★★★)**:
+1. SFT: fine-tune on ~10K high-quality (prompt, response) pairs.
+![RLHF pipeline: SFT, reward model, PPO+KL, and DPO](diagrams/dlrev_rlhf_ai.png)
+2. Reward Model: train on human rankings; objective: push $s_\text{win} - s_\text{lose}$ apart via $L = -\log\sigma(s_\text{win}-s_\text{lose})$.
+3. PPO + KL constraint: $R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$. KL term prevents reward hacking while keeping the model grounded.
+
+**DPO (★★★)**: Skips the reward model. Directly fine-tunes LLM on (prompt, chosen, rejected) triples with a single loss that increases P(chosen) and decreases P(rejected), with implicit KL regularisation. Simpler, more stable, comparable quality. Used by LLaMA 3, Zephyr.
+
+#### Fine-Tuning Methods Compared
+
+| Method | Trainable Params | VRAM (7B) | Use case |
+|--------|-----------------|-----------|---------|
+| Full fine-tuning | 100% | 80–160 GB | When you have multi-GPU and large high-quality dataset |
+| LoRA (r=16) | ~0.1–0.5% | 16–24 GB | **Standard choice for most tasks** |
+| QLoRA (4-bit + LoRA) | ~0.1–0.5% | **8–12 GB** | Single consumer GPU (RTX 4090) |
+| Prompt tuning | <0.01% | Base model VRAM | Very quick adapt, lower quality |
+| Prefix tuning | ~0.1% | Base model VRAM | Between prompt and LoRA |
+| Adapter layers | ~1% | Close to LoRA | Legacy; LoRA preferred |
+
+**LoRA hyperparams that matter**: rank $r$ (try 8, 16, 32 — higher rank = more expressiveness but more params), alpha $\alpha$ (scale = $\alpha/r$, usually set $\alpha = 2r$), target modules (q_proj, v_proj at minimum; add k_proj, o_proj, gate_proj, up_proj, down_proj for more capacity). Too low a rank underfits domain-specific tasks; too high approaches full fine-tuning cost.
 
 ---
 
@@ -1367,7 +1391,7 @@ Penalties: up to €35M or 7% global revenue. Headline obligations for foundatio
 
 | Chapter | Single most important fact/formula |
 |---------|-----------------------------------|
-| **Ch 16 — Deep Learning** | $\text{Attention}(Q,K,V) = \text{softmax}(QK^T/\sqrt{d_k})V$; **AdamW** = correct optimizer for Transformers; **ResNet skip** solved deep training; **LoRA** $W_\text{eff}=W_0+BA$ trains <1% of params; **RLHF** = SFT → RM → PPO+KL. |
+| **Ch 16 — Deep Learning** | $\text{Attention}(Q,K,V) = \text{softmax}(QK^T/\sqrt{d_k})V$; **AdamW** = correct optimizer for Transformers; **ResNet skip** solved deep training; **RMSNorm + RoPE** in every modern LLM; **flow matching** (SD3, FLUX) = fewer sampling steps; **MoE**: compute ≈ active params, memory = all params. |
 | **Ch 17 — LLMs** | **Chinchilla rule**: training tokens ≈ 20× params (data matters as much as scale); **KV cache** + Flash Attention reduce generation from $O(N^2)$ to $O(N)$ memory; DPO replaces 3-stage RLHF with one direct preference loss; INT4 quantisation fits 70B on a consumer GPU with <3% quality loss. |
 | **Ch 18 — AI Agents** | An agent = LLM in an observe→think→act loop with tools. **MCP** = N+M (not N×M) integrations via Tools/Resources/Prompts primitives. **A2A** = agent-to-agent cross-org. Critical security rule: the LLM never executes tools directly — your code does. |
 | **Ch 19 — Frameworks** | **vLLM** (PagedAttention, 2–10× throughput) is the 2026 default inference server; **TGI is in maintenance mode**. Hybrid search beats pure vector; reranking is the #1 RAG quality lever; prompt caching is the #1 cost lever. LangGraph for production agents; LlamaIndex for data-heavy RAG. |

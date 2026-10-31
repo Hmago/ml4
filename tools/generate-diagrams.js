@@ -216,16 +216,17 @@ async function fetchImageBytes(cfg, imageUrl) {
 }
 
 // Inserts (or updates) the AI-image markdown line right after the existing
-// SVG line. Idempotent by PNG PATH, not by exact line text — matching on the
+// SVG line. Idempotent by IMAGE PATH, not by exact line text — matching on the
 // full line (including the title) would create a duplicate every time a
 // prompt's `title` is edited, since the old line would no longer match the
 // newly-composed one. Instead: find any existing line pointing at the same
-// `diagrams/<svgBase>_ai.png`, and replace it in place if the text differs;
-// otherwise insert fresh after the SVG line.
+// `diagrams/<svgBase>_ai.png` — or its converted `.webp` (tools/png-to-webp.py) —
+// and replace it in place if the text differs; otherwise insert fresh after the SVG line.
 function insertImageIntoChapter(chapterFile, existingImageLine, newImageLine, relOut) {
   const filePath = path.join(REPO_ROOT, chapterFile);
   const text = fs.readFileSync(filePath, 'utf8');
-  const existingLineRegex = new RegExp(`^!\\[[^\\]]*\\]\\(${relOut.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)$`, 'm');
+  const base = relOut.replace(/\.png$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const existingLineRegex = new RegExp(`^!\\[[^\\]]*\\]\\(${base}\\.(?:png|webp)\\)$`, 'm');
   const match = text.match(existingLineRegex);
   if (match) {
     if (match[0] === newImageLine) return { inserted: false, reason: 'already present and up to date' };
@@ -263,6 +264,7 @@ async function runOne(cfg, target) {
   const newImageLine = `![${caption}](${relOut})`;
   const insertResult = insertImageIntoChapter(target.chapterFile, target.existingImageLine, newImageLine, relOut);
   console.log(`[${target.id}] saved ${relOut} (${(bytes.length / 1024).toFixed(0)} KB) — ${insertResult.inserted ? 'inserted into chapter' : 'NOT inserted: ' + insertResult.reason}`);
+  console.log(`[${target.id}] shrink it for the web: python tools/png-to-webp.py ${relOut}`);
   return { id: target.id, ok: true, outPath, insertResult };
 }
 
