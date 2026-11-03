@@ -18,6 +18,8 @@
 
 ## Ch 21 — Object-Oriented Design, SOLID & Design Patterns
 
+![Ch 21 revision sheet: 12 cards for the five SOLID principles (S, O, L, I, D), Composition over Inheritance, the three pattern families (Creational, Structural, Behavioral), Law of Demeter, race-condition fixes and deadlock (lock in one fixed order); a must-remember strip (5 SOLID principles, 3 pattern families, 5 concurrency pitfalls, lock lowest ID first); and a Pick-by-question table mapping needs to Builder, Adapter, Decorator, Observer, Strategy and Command.](diagrams/sdrev_info_ch21_ood_ai.png)
+
 > 💡 **In a sentence —** Good OO design means each class has one clear job, dependencies flow toward abstractions, and proven patterns handle the recurring problems so you don't reinvent pasta.
 
 ---
@@ -73,7 +75,7 @@ class OrderService {
 | **YAGNI** | Don't build OAuth + SAML when they just asked for email + password |
 | **Composition > Inheritance** | Prefer HAS-A over IS-A; behaviour via interfaces |
 | **Law of Demeter** | `customer.charge(100)` not `customer.getWallet().getCard().charge(100)` |
-| **SoC** | Separate presentation, business logic, data access |
+| **SoC** (Separation of Concerns) | Separate presentation, business logic, data access |
 
 ---
 
@@ -127,6 +129,9 @@ CompletableFuture
   .supplyAsync(() -> userService.getUser(id))
   .thenCompose(u -> orderService.getOrders(u.getId()))
   .exceptionally(ex -> fallback());
+
+// Java 21+: virtual threads make plain blocking code cheap for I/O-heavy fan-out
+ExecutorService vt = Executors.newVirtualThreadPerTaskExecutor();
 ```
 
 **Concurrency pitfalls table:**
@@ -147,7 +152,7 @@ CompletableFuture
 >
 > - **SRP test:** "What does this class do?" — if you say "AND", split it.
 > - **LSP test:** Can you swap the subtype everywhere the base type is used without breaking tests?
-> - **DIP = Dependency Injection** — inject abstractions, never `new ConcreteImpl()` in business logic.
+> - **DIP is the principle, Dependency Injection the usual technique** — inject abstractions, never `new ConcreteImpl()` in business logic.
 > - **Deadlock prevention = consistent lock ordering** (always lock lowest ID first).
 > - **Builder** is the right answer for objects with many optional params.
 > - **Strategy = lambda in Java 8+** — `ShoppingCart cart = new ShoppingCart(price -> price * 0.85);`
@@ -155,6 +160,8 @@ CompletableFuture
 ---
 
 ## Ch 22 — Engineering Tools (Kafka, Redis, Spark, K8s & More)
+
+![Ch 22 revision sheet: a four-jobs band (1 Ingest: Kafka, CDC; 2 Store: S3, Postgres; 3 Process: Spark, Flink; 4 Serve: Redis, Elastic) above 12 tier-badged tool cards with one rule each (Docker multi-stage ~20 MB vs 1 GB, Kubernetes, probes, requests vs limits, Kafka, Outbox + CDC, Redis/Valkey, Spark shuffle, Flink, PostgreSQL + PgBouncer, Cassandra QUORUM, Elasticsearch), a must-remember strip (acks=all + min.insync.replicas=2, 6,000 connections to ~100 via PgBouncer, HPA scale-down 5 min, AQE default since Spark 3.2) and a Pick-by-question table (Kafka, RabbitMQ, Flink, Spark, Elasticsearch, Cassandra).](diagrams/sdrev_info_ch22_tools_ai.png)
 
 > 💡 **In a sentence —** Every infrastructure tool exists to solve one of four jobs — Ingest, Store, Process, Serve — and knowing the tier priority tells you what to learn first.
 
@@ -218,7 +225,7 @@ CompletableFuture
 | **Pod** | Smallest unit — one or more containers that live/die together |
 | **Deployment** | "Keep N replicas, rolling-update on change" |
 | **Service** | Stable internal address + load balancer in front of pods |
-| **Ingress** | External HTTP routing → Service |
+| **Ingress** | External HTTP routing → Service (Gateway API is the newer successor) |
 | **ConfigMap / Secret** | Config injected into pods (out of the image) |
 | **StatefulSet** | Ordered pods with stable IDs + persistent volumes (for Kafka, DBs) |
 
@@ -261,7 +268,7 @@ CompletableFuture
 ```
 
 **Key config knobs:**
-- `acks=all` + `min.insync.replicas=2` → durable writes (tolerates 1 broker loss)
+- `acks=all` + `min.insync.replicas=2` (with replication factor 3) → durable writes (tolerates 1 broker loss)
 - `acks=1` → only leader acks (faster, can lose on failover)
 - **Compaction** → keep only latest value per key (state stores, changelogs)
 - **Retention** → by time or by size; Kafka is a log, not a queue
@@ -272,11 +279,11 @@ CompletableFuture
 |---|---|---|---|
 | Model | Durable log, replayable | Broker queue, consume+ack | Managed queue |
 | Throughput | Millions/sec | ~50K/sec/node | Unlimited (managed) |
-| Ordering | Per partition | Per queue | FIFO queue |
+| Ordering | Per partition | Per queue | Best-effort; strict only in FIFO queues |
 | Retention | Days/weeks (configurable) | Until consumed | 14 days max |
 | Best for | Streaming, replay, analytics | Complex routing | Simple decoupling |
 
-**Outbox + CDC:** atomically write to DB + outbox table in one transaction; a relay (or Debezium reading WAL) publishes to Kafka. No dual-write hazard.
+**Outbox + CDC (change data capture):** atomically write to DB + outbox table in one transaction; a relay (or Debezium reading the write-ahead log, WAL) publishes to Kafka. No dual-write hazard.
 
 ---
 
@@ -308,14 +315,14 @@ read(key):
 - **Single-threaded core** — `KEYS *` on a large keyspace blocks everyone. Use `SCAN`.
 - **Eviction:** `allkeys-lru` for pure cache; `noeviction` errors on writes (use as datastore only).
 - **Redlock** distributed locks have correctness caveats under network partitions. Use etcd/ZK for critical locks.
-- **2026 ecosystem:** Redis changed to SSPL license → Linux Foundation forked **Valkey** (BSD). AWS/GCP now default to Valkey. Redis 8 reverted to AGPL.
+- **2026 ecosystem:** in 2024 Redis moved from BSD to a dual RSALv2/SSPL licence (not OSI open source) → the Linux Foundation forked **Valkey** (BSD). AWS/GCP now default to Valkey. Redis 8 (2025) added **AGPLv3** as an open-source licence option.
 - **Cache stampede** = many requests rebuild the same expired key at once → add TTL jitter + single-flight lock.
 
 ---
 
 ### Kubernetes Networking & StatefulSets
 
-**How Pods talk to each other:** Every Pod gets its own IP (flat network via CNI: Calico, Flannel, Cilium). A **Service** gives a stable virtual IP backed by kube-proxy IPVS rules that round-robin to healthy Pods. **DNS:** `servicename.namespace.svc.cluster.local` — Pods just use the short name `svc-name`.
+**How Pods talk to each other:** Every Pod gets its own IP (flat network via CNI — Container Network Interface — plugins: Calico, Flannel, Cilium). A **Service** gives a stable virtual IP; kube-proxy rules (iptables by default, nftables/IPVS optional) or Cilium's eBPF spread connections across the ready Pods behind it. **DNS:** `servicename.namespace.svc.cluster.local` — Pods in the same namespace just use the short name `servicename`.
 
 **Service types:**
 
@@ -340,23 +347,23 @@ resources:
 ```
 Tip: set CPU request < limit (headroom for bursts); keep memory request ≈ limit (unpredictable OOMs are worse than throttle).
 
-**HPA (Horizontal Pod Autoscaler):** scales Deployment replicas based on CPU, memory, or custom metrics (e.g., Kafka consumer lag via KEDA). Min/max replicas set bounds. Scale-out is fast (~seconds); scale-in is conservative (5-min default cooldown to prevent flapping).
+**HPA (Horizontal Pod Autoscaler):** scales Deployment replicas based on CPU, memory, or custom metrics (e.g., Kafka consumer lag via KEDA). Min/max replicas set bounds. Scale-out is fast (~seconds); scale-in is conservative (5-min default scale-down stabilization window to prevent flapping).
 
-**Pod Disruption Budgets (PDB):** guarantee `minAvailable` pods stay running during rolling updates and node drains. Essential for Kafka brokers and ZK quorums — you never want all replicas down simultaneously.
+**Pod Disruption Budgets (PDB):** guarantee `minAvailable` pods stay running during *voluntary* disruptions — node drains, cluster upgrades, autoscaler scale-down. (A Deployment's own rolling update is limited by `maxUnavailable`/`maxSurge`, not by the PDB.) Essential for Kafka brokers and ZK quorums — you never want all replicas down simultaneously.
 
 ---
 
 ### Apache Flink (Tier 2 — Streaming)
 
-> Flink is the successor to micro-batch Spark Streaming. True record-at-a-time, sub-second latency, exactly-once semantics.
+> Flink is the go-to engine when micro-batch Spark streaming is too slow: true record-at-a-time processing, millisecond latency, exactly-once state.
 
 **Flink vs Spark Structured Streaming:**
 
 | | Spark Structured Streaming | Apache Flink |
 |--|--------------------------|--------------|
-| Model | Micro-batch (default 100ms–5s) | True streaming record-at-a-time |
-| Latency | 100ms–5s | <10ms end-to-end |
-| State management | Limited | First-class; RocksDB backend |
+| Model | Micro-batch (by default) | True streaming record-at-a-time |
+| Latency | ~100ms–seconds | Milliseconds |
+| State management | Supported (RocksDB store), less flexible | First-class; RocksDB backend |
 | Exactly-once | Yes (batch boundaries) | Yes (Chandy-Lamport checkpoints) |
 | Native ML | SparkML | PyFlink; external models |
 
@@ -413,20 +420,20 @@ Tip: set CPU request < limit (headroom for bursts); keep memory request ≈ limi
    apps    ▶  Kafka       ▶  S3 + Iceberg ▶  Spark/dbt   ▶  Snowflake
    DBs     ▶  CDC/Flink   ▶  = LAKEHOUSE  ▶  Flink/Ray   ▶  Redis/PG
 
-  ┌── OBSERVE: Prometheus + Grafana + OTel   PROVISION: Terraform ──┘
+  └── OBSERVE: Prometheus + Grafana + OTel   PROVISION: Terraform ─┘
 ```
 
 **Two paths:**
 - **Batch path** (default): data lands in lakehouse → Spark/dbt transform on schedule → warehouse → BI
 - **Streaming path** (when seconds matter): Kafka → Flink → Redis/DB → live dashboard
 
-**Parquet** = columnar file format; 10–30× compression; predicate pushdown reads only relevant columns. Standard for lakehouses.
+**Parquet** = columnar file format: a query reads only the columns it needs (column pruning) and skips row groups using min/max stats (predicate pushdown) — often 10–100× less data scanned than CSV/JSON. Standard for lakehouses.
 
 **Iceberg/Delta** = open table formats on S3. Add: ACID transactions on object storage, time travel, schema evolution, row-level deletes.
 
-**Prometheus + Grafana:** pull-based scraping; PromQL for rate/percentile queries; alert on **symptoms users feel** (latency, error rate = golden signals), not internal metrics. **OpenTelemetry** (OTel) is the 2026 standard: instrument once, send to any backend.
+**Prometheus + Grafana:** pull-based scraping; PromQL for rate/percentile queries; alert on **symptoms users feel** (latency, errors — two of the four golden signals), not internal metrics. **OpenTelemetry** (OTel) is the 2026 standard: instrument once, send to any backend.
 
-**Terraform:** declarative IaC (`terraform plan` → review diff → `terraform apply`). Remote state in S3 + DynamoDB lock. Never hand-edit resources Terraform owns.
+**Terraform:** declarative IaC (`terraform plan` → review diff → `terraform apply`). Remote state in S3/GCS with a lock (S3 now locks natively via `use_lockfile`, Terraform 1.10+; the older DynamoDB lock is deprecated). Never hand-edit resources Terraform owns.
 
 ---
 
@@ -472,7 +479,7 @@ Tip: set CPU request < limit (headroom for bursts); keep memory request ≈ limi
 **Replication types:**
 - **Physical (WAL streaming):** byte-for-byte copy; hot standby reads; must be same major version
 - **Logical:** row-level change events; selective (per-table); cross-version; foundation of CDC (Debezium)
-- **Synchronous replication:** zero RPO; adds 1ms intra-AZ, 30–100ms cross-region (unacceptable for OLTP cross-region)
+- **Synchronous replication:** zero RPO (no committed data lost); adds ~1 ms across AZs in one region, 30–100 ms cross-region (unacceptable for OLTP cross-region)
 
 ---
 
@@ -503,12 +510,12 @@ CREATE TABLE messages (
 
 **Inverted index:** stores `word → [list of documents]` instead of `document → words`. Searching "headphones" jumps straight to the matching doc list — no scanning.
 
-**BM25:** modern relevance ranking that dampens TF growth (repeated word isn't 100× more relevant) and normalises document length. Default in Elasticsearch since v6.
+**BM25:** modern relevance ranking that dampens TF growth (repeated word isn't 100× more relevant) and normalises document length. Default in Elasticsearch since 5.0 (Lucene 6).
 
 **Key gotchas:**
 - Not a system of record — keep source of truth in Postgres, index into ES
-- Shard count is fixed at index creation; resharding = full reindex
-- JVM GC pauses can cause latency spikes; avoid high-cardinality label usage (user IDs as field values)
+- Primary shard count is fixed at index creation; changing it needs the `_split`/`_shrink` APIs (by whole factors) or a full reindex
+- JVM GC pauses can cause latency spikes; avoid **mapping explosion** — never use user IDs or other unbounded values as field *names*
 
 ---
 
@@ -526,6 +533,8 @@ CREATE TABLE messages (
 
 ## Ch 23 — System Design Pt 1: Foundations & Protocols
 
+![Ch 23 revision sheet: 12 cards with one rule each (scaling, percentiles, Little's Law L = lambda x W, fan-out p99 to p99.9, hedged requests, Amdahl 10% serial caps at 10x, TCP vs UDP, L4 vs L7, rate limiting, circuit breaker, caching stampede/avalanche, CDN pull vs push), a must-remember numbers block (99.9% = 8.76 h/yr, 99.99% = 52.6 min/yr, 99.999% = 5.26 min/yr, 500 QPS x 0.020 s x 1.5 = 15 connections, TLS 1.2/1.3/QUIC = 3/2/1 RTT, cache tiers 100 ns to 50 ms) and a Pick-by-question API table (WebSocket, SSE, gRPC, GraphQL, REST with weaknesses).](diagrams/sdrev_info_ch23_foundations_ai.png)
+
 > 💡 **In a sentence —** The foundations of every scalable system are a handful of laws about queues and tails, plus protocol knowledge to pick the right transport for each job.
 
 ---
@@ -535,9 +544,9 @@ CREATE TABLE messages (
 **Vertical vs Horizontal Scaling:**
 
 ```
-  VERTICAL (scale UP)           HORIZONTAL (scale OUT)
-  ───────────────────           ─────────────────────
-  Bigger server (CPU/RAM)        Add more boxes + LB
+  VERTICAL (scale UP)             HORIZONTAL (scale OUT)
+  ───────────────────             ──────────────────────
+  Bigger server (CPU/RAM)         Add more boxes + LB
   Simple; hardware ceiling        Near-infinite ceiling
   Single point of failure         Resilient to node loss
 ```
@@ -554,7 +563,7 @@ CREATE TABLE messages (
   99.999%(5 9s)  ≈ 5.26 minutes
 ```
 
-**Latency vs Throughput:** latency = how long one request takes; throughput = how many per second. Independent. Always quote **p50/p95/p99** — never "average."
+**Latency vs Throughput:** latency = how long one request takes; throughput = how many per second. Distinct metrics — a system can have high throughput *and* bad latency (they are linked by Little's Law below). Always quote **p50/p95/p99** — never "average."
 
 **Little's Law:**
 ```
@@ -564,9 +573,9 @@ CREATE TABLE messages (
   Pool sizing: 500 QPS × 0.020s × 1.5 safety = 15 connections/instance
 ```
 
-**Tail-latency amplification:** fan out to 10 backends, each p99=100ms → user p99 ≈ p999 of one backend. Fan-out of 100 → your p99 becomes that backend's p99.99.
+**Tail-latency amplification:** a fanned-out request waits for the *slowest* backend. Fan out to 10 backends → the user's p99 ≈ one backend's p99.9 (1 − 0.99¹⁰ ≈ 9.6% of requests hit at least one backend's slow 1%). Fan out to 100 → the user's p99 ≈ one backend's p99.99.
 
-> Fix: **hedged requests** (Jeff Dean) — issue to replica A; if no response by p95, send to replica B; use whichever answers first. p99 collapses toward p50 at ~5% extra RPS.
+> Fix: **hedged requests** (Jeff Dean, "The Tail at Scale") — issue to replica A; if no response by p95, send to replica B; use whichever answers first. p99 drops sharply — any request still waiting at p95 gets a second, usually fast, chance — for only ~5% extra requests.
 
 **Amdahl's Law:** speedup ≤ 1/(s + (1−s)/N). With 10% serial work, cap is **10× regardless of cores**. Find and shrink the serial choke point (usually a shared DB, global lock, or auth service).
 
@@ -575,14 +584,15 @@ CREATE TABLE messages (
 ### Protocol Stack
 
 ```
-  OSI Layer    TCP/IP Layer    Examples
-  ─────────    ────────────    ────────
+  OSI Layer     TCP/IP Layer   Examples
+  ─────────     ────────────   ────────
   7. App                       HTTP, gRPC, DNS
   6. Pres       Application    TLS, JSON
   5. Session                   (cookies)
   4. Transport  Transport      TCP, UDP, QUIC
   3. Network    Internet       IP (v4/v6), ICMP
   2. Data Link  Link           Ethernet, Wi-Fi
+  1. Physical                  copper, fibre, radio
 ```
 
 **TCP vs UDP:**
@@ -597,11 +607,11 @@ CREATE TABLE messages (
 
 **Rule:** if a missing packet ruins meaning → TCP. If a missing packet is just a skipped frame → UDP.
 
-**TLS handshake evolution:**
+**TLS handshake evolution** (RTT = one round trip; over TCP add 1 RTT for the TCP handshake first):
 ```
-  TLS 1.2  → 2 RTT before first HTTP byte
-  TLS 1.3  → 1 RTT (0-RTT on resumption)
-  QUIC/HTTP3 → 1 RTT cold, 0-RTT resumed (handshake fused with transport)
+  TCP + TLS 1.2 → 1 + 2 = 3 RTT before the first HTTP byte
+  TCP + TLS 1.3 → 1 + 1 = 2 RTT (TLS 0-RTT on resumption)
+  QUIC/HTTP3    → 1 RTT cold, 0-RTT resumed (handshake fused with transport)
 ```
 
 ---
@@ -646,7 +656,7 @@ gRPC streaming patterns:
 
 **Why HTTP/2 matters for gRPC:** a single TCP connection carries many concurrent streams (one per gRPC call). No connection-per-request overhead. Multiplexing means a slow RPC doesn't block a fast one (unlike HTTP/1 pipelining). Header compression (HPACK) reduces overhead. This is why Google uses gRPC for nearly all internal service communication.
 
-**Protobuf schema evolution rules:** always add fields with new field numbers; never reuse or remove field numbers (the binary format encodes field numbers, not names). Mark deprecated fields `reserved`.
+**Protobuf schema evolution rules:** add new fields with new field numbers; never reuse a field number or change a field's type (the binary format encodes field numbers, not names). When you delete a field, mark its number (and name) `reserved` so nobody reuses it.
 
 ---
 
@@ -676,8 +686,9 @@ Real systems use **both layered:** L4 LB (Anycast IP) → fleet of L7 proxies.
 **Circuit breaker:**
 ```
   CLOSED ──(failures > threshold)──▶ OPEN
-    ▲                                  │ cooldown
-    └────(successes)────── HALF-OPEN ◀─┘
+     ▲                                │ cooldown expires
+     │                                ▼
+     └──(trial request succeeds)─ HALF-OPEN ──(trial fails)──▶ back to OPEN
 ```
 Fail fast when downstream is unhealthy; let it recover.
 
@@ -715,14 +726,14 @@ Fail fast when downstream is unhealthy; let it recover.
                                        Cache MISS → origin pull → cache → serve
 ```
 
-**Anycast routing:** CDN uses BGP anycast — all PoPs share the same IP; routers automatically send traffic to the nearest one. Users get geographic proximity without any DNS magic from the application.
+**Anycast routing:** many CDNs (Cloudflare, Google Cloud CDN, Fastly) use BGP anycast — all PoPs advertise the same IP; internet routing automatically sends each user to the nearest one. Users get proximity without any DNS magic from the application.
 
 **Push vs Pull:**
 
 | | Pull CDN | Push CDN |
 |--|---------|---------|
 | Model | First request → origin; cached on edge | You proactively upload assets to edge |
-| Best for | Dynamic content, long-tail URLs | Static files (fonts, installers) you control |
+| Best for | Web assets that change often; long-tail URLs (only popular content stays cached) | Large, rarely-changing files you control (video, installers) |
 | Cache invalidation | TTL + `Cache-Control: max-age=31536000, immutable` | Manual purge API |
 
 **What to CDN:** JS/CSS/images (long TTL + content-hash filenames), video chunks (HLS segments), API responses for public-read data (short TTL), DDoS absorption (edge drops bad traffic before origin).
@@ -732,7 +743,7 @@ Fail fast when downstream is unhealthy; let it recover.
   Cache-Control: max-age=3600           → CDN and browser cache for 1 hour
   Cache-Control: no-cache               → always revalidate (not no-store!)
   Cache-Control: s-maxage=3600          → CDN only, 1 hour
-  Cache-Control: immutable              → never revalidate (for content-hashed assets)
+  Cache-Control: immutable              → no revalidation while fresh (content-hashed assets)
   Vary: Accept-Encoding                 → separate cache entry per encoding
 ```
 
@@ -747,8 +758,8 @@ Fail fast when downstream is unhealthy; let it recover.
 **DNS-based load balancing:**
 - **Round-robin:** multiple A records returned; browser picks one. Simple but no health checks.
 - **Weighted routing:** e.g., Route 53 weighted records for gradual traffic shifting.
-- **Latency-based routing:** Route 53 / Cloud DNS returns the closest region's IP.
-- **Geo-routing:** return different IPs based on user's country (data sovereignty, low latency).
+- **Latency-based routing:** Route 53 returns the IP of the region with the lowest measured latency to the user.
+- **Geo-routing:** return different IPs based on user's country (data sovereignty, low latency) — Route 53 / Cloud DNS geolocation policies.
 
 **GeoDNS + Anycast** together is how CDNs and large-scale systems (Cloudflare, Fastly) route traffic globally without per-request intelligence at the origin.
 
@@ -761,12 +772,14 @@ Fail fast when downstream is unhealthy; let it recover.
 > - **L4 vs L7:** L4 routes by IP/port; L7 routes by URL/header.
 > - **Idempotency key** is mandatory for any non-idempotent HTTP call that will be retried.
 > - **Token bucket** allows bursts; sliding window is most accurate for rate limiting.
-> - **Hedged requests** collapse p99 toward p50 at ~5% extra RPS cost.
+> - **Hedged requests** cut p99 sharply at ~5% extra request cost.
 > - **CDN + anycast:** always the first answer for static asset performance. Push CDN for known assets; pull CDN for long-tail URLs.
 
 ---
 
 ## Ch 24 — System Design Pt 2: Data & Distributed Systems
+
+![Ch 24 revision sheet: a six-step scaling ladder (index, bigger box, read replicas + PgBouncer, cache, partition, shard) flagged 'Most apps stop here' at steps 3-4; 12 cards with one rule each (SQL vs NoSQL, isolation/SSI and write skew, expand-contract, replication, sharding, CAP, PACELC, consistency models, fencing tokens, messaging, exactly-once, Kappa); a must-remember numbers block (3 nodes f=1 / 5 nodes f=2, N=3 W=2 R=2, sync ~1 ms in-region vs 30-100 ms cross-region, TrueTime epsilon <= ~7 ms, S3 11 nines, backfill in 10K batches); and a Pick-by-question table (Raft 2f+1, quorum W + R > N, consistent hashing ~1/N keys move, Bloom filter ~10 bits/key = 1% FP, Saga, Outbox + CDC).](diagrams/sdrev_info_ch24_data_distributed_ai.png)
 
 > 💡 **In a sentence —** Pick your database by access pattern, scale it up the ladder one rung at a time, and let theory (CAP/PACELC, Raft, consistent hashing) tell you exactly which bugs you'll hit and why.
 
@@ -784,19 +797,19 @@ Fail fast when downstream is unhealthy; let it recover.
 | Scaling | Vertical easy; horizontal hard | Partitioned by design |
 | Best fit | Relational data with invariants | Known access pattern at huge scale |
 
-**Modern truth:** the dichotomy is dying. Postgres has JSONB, pgvector, full-text. Cassandra/DynamoDB added multi-key transactions. **Pick by access pattern, not by camp.**
+**Modern truth:** the dichotomy is dying. Postgres has JSONB, pgvector, full-text. DynamoDB and MongoDB added multi-item / multi-document ACID transactions. **Pick by access pattern, not by camp.**
 
 **NoSQL family tree:**
 
 ```
-  KEY-VALUE   → { key → value }     Redis, DynamoDB         sessions, caches
+  KEY-VALUE   → { key → value }      Redis, DynamoDB          sessions, caches
   DOCUMENT    → JSON blobs           MongoDB, Firestore       user profiles, orders
   WIDE-COLUMN → sparse row+columns   Cassandra, Bigtable      write-heavy, time-series
   GRAPH       → nodes + edges        Neo4j, Neptune           social graphs, fraud rings
   TIME-SERIES → timestamp + metrics  InfluxDB, TimescaleDB    monitoring, IoT
-  SEARCH      → inverted index       Elasticsearch             full-text, log search
-  VECTOR      → embeddings + ANN     pgvector, Qdrant          RAG, semantic search
-  OLAP/Colmr  → columnar analytics   BigQuery, Snowflake       dashboards, GROUP BY billions
+  SEARCH      → inverted index       Elasticsearch            full-text, log search
+  VECTOR      → embeddings + ANN     pgvector, Qdrant         RAG, semantic search
+  OLAP        → columnar analytics   BigQuery, Snowflake      dashboards, GROUP BY billions
 ```
 
 ---
@@ -806,7 +819,7 @@ Fail fast when downstream is unhealthy; let it recover.
 **ACID** (relational databases):
 - **Atomicity:** all-or-nothing (WAL + rollback)
 - **Consistency:** declared invariants always hold
-- **Isolation:** concurrent txns don't step on each other; levels: Read Committed → Repeatable Read → Serializable (SSI in Postgres)
+- **Isolation:** concurrent txns don't step on each other; levels: Read Committed → Repeatable Read → Serializable (SSI — Serializable Snapshot Isolation — in Postgres)
 - **Durability:** committed writes survive crashes (`fsync` to WAL before ack)
 
 **Isolation anomalies and fixes:**
@@ -836,15 +849,17 @@ Fail fast when downstream is unhealthy; let it recover.
   5. Table partitioning       (by date/range)
   6. Sharding / NewSQL        (last resort)
 ```
+Ch 24's general "escape ladder" adds a **cache (Redis)** after read replicas and ends with multi-region: vertical → read replicas → cache → split DBs by feature → shard by key → multi-region. Most apps stop at replicas + cache.
 
 **N+1 query:** ORM loads N rows then 1 query per row = N+1 round trips. Fix: JOIN, `WHERE id IN (...)` batch, or DataLoader pattern.
 
 **Schema migrations at scale — expand-contract:**
 ```
-  1. EXPAND:    ADD COLUMN (nullable, instant metadata change)
-  2. BACKFILL:  copy old→new in 10K batches
+  1. EXPAND:    ADD COLUMN (nullable, instant metadata change);
+                app starts writing BOTH old and new columns
+  2. BACKFILL:  copy old→new in 10K batches (dual-writes keep new rows filled)
   3. MIGRATE:   flip reads to new column
-  4. CONTRACT:  DROP old column
+  4. CONTRACT:  stop writing the old column, then DROP it
   Never ship in one big ALTER — it blocks writes on large tables.
 ```
 
@@ -857,10 +872,10 @@ Fail fast when downstream is unhealthy; let it recover.
 | Mode | Durability | Throughput | Use |
 |------|-----------|------------|-----|
 | **Async** | May lose seconds of data | Highest | Postgres default |
-| **Semi-sync** | Small loss window | High | MySQL Group Replication |
+| **Semi-sync** | Small loss window | High | MySQL semi-sync replication (≥1 replica acks receipt) |
 | **Sync** | Zero RPO | Lower | Cross-AZ HA; NOT cross-region |
 
-> **The trap:** sync replication cross-region adds 30–100 ms to every write. Use sync within AZ, async cross-region.
+> **The trap:** sync replication cross-region adds 30–100 ms to every write. Use sync within a region (across AZs, ~1 ms), async cross-region.
 
 **Sharding strategies:**
 
@@ -910,8 +925,8 @@ Fail fast when downstream is unhealthy; let it recover.
 
 **Logical clocks (no global clock in distributed systems):**
 - **Lamport timestamps:** total order consistent with causality
-- **Vector clocks:** per-node counters; detects true concurrent updates (used by DynamoDB, Riak)
-- **TrueTime (Spanner):** atomic clocks + GPS, exposes bounded uncertainty ~7ms; commit-waits out the window → external consistency
+- **Vector clocks:** per-node counters; detects true concurrent updates (used by Amazon's original Dynamo design and Riak; the DynamoDB service itself uses last-writer-wins)
+- **TrueTime (Spanner):** atomic clocks + GPS, exposes bounded uncertainty (ε ≤ ~7 ms); commit-waits out the window → external consistency
 
 ---
 
@@ -932,7 +947,7 @@ Fail fast when downstream is unhealthy; let it recover.
 
 Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
 
-**Consistent Hashing:** map keys and servers to a ring. Adding/removing a server reshuffles only `1/N` keys. Virtual nodes (vnodes) smooth load. Used in Cassandra, DynamoDB, Memcached, every CDN.
+**Consistent Hashing:** map keys and servers to a ring. Adding/removing one of N servers moves only ~`1/N` of the keys. Virtual nodes (vnodes) smooth load. Used in Cassandra, DynamoDB, Memcached clients, Akamai's CDN.
 
 **Quorum math (N, W, R):**
 ```
@@ -1018,9 +1033,9 @@ Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
   On failure: compensating transactions undo previous steps
   
   Example: Order Saga
-    1. Create Order (OrderService)       ✓
+    1. Create Order (OrderService)          ✓
     2. Reserve Inventory (InventoryService) ✓
-    3. Process Payment (PaymentService)   ✗ FAILS
+    3. Process Payment (PaymentService)     ✗ FAILS
     → Execute compensating txns:
        Cancel inventory reservation
        Cancel order
@@ -1035,7 +1050,7 @@ Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
 | Visibility | Hard to trace | Easy to trace and monitor |
 | Failure handling | Distributed (complex) | Centralised (easier to retry) |
 
-**Rule:** Use **orchestration** (Temporal, Apache Conductor) for long-running multi-step workflows with complex compensation. Use **choreography** for simpler 2–3 step flows.
+**Rule:** Use **orchestration** (Temporal, Cadence) for long-running multi-step workflows with complex compensation. Use **choreography** for simpler 2–3 step flows.
 
 **Outbox + CDC (revisited):**
 ```
@@ -1065,7 +1080,7 @@ Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
 > ✅ **Must-remember**
 >
 > - **Isolation levels:** Read Committed (Postgres default); Serializable (SSI) is only level that prevents write skew.
-> - **Scaling ladder:** index → cache → replicas → PgBouncer → shard. Most apps live at rung 2–3.
+> - **Scaling ladder:** index → bigger box → read replicas (+PgBouncer) → cache → partition → shard. Most apps stop at replicas + cache.
 > - **CAP:** in a partition, CP refuses; AP serves possibly stale. "CA" doesn't exist.
 > - **Raft:** 2f+1 nodes for f failures; leader elected by majority; never even numbers.
 > - **Outbox + CDC:** reliable DB-to-Kafka without dual-write; use Debezium to read WAL.
@@ -1075,6 +1090,8 @@ Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
 ---
 
 ## Ch 25 — System Design Pt 3: Operations & Case Studies
+
+![Ch 25 revision sheet: the 8-step interview path (Clarify, Estimate, API, Data, High-level, Deep dive, Bottlenecks, Trade-offs) above 12 cards with one rule each (redundancy, RTO vs RPO, retries with backoff + jitter, cascade defences, error budget, symptom-based alerting, OAuth + PKCE, JWT, mTLS, logs/metrics/traces with OpenTelemetry, four golden signals, SLI to SLO to SLA); a must-remember numbers block (SLO 99.9% over 30 days = 43.2 min, 14.4x burn for 1 h = 2% page, 1x for 3 days = 10% ticket, retry budget <= 10% of RPS, timeouts connect 1 s / read 3-10 s, 10^9 requests/day = ~12K RPS); and a Pick-by-question deployment table (Rolling, Blue/Green, Canary, Shadow, Feature flag with rollback and cost).](diagrams/sdrev_info_ch25_operations_ai.png)
 
 > 💡 **In a sentence —** Production reliability is error budgets + blameless postmortems + layered security + the three observability pillars, with an 8-step interview framework and an Instagram worked example to tie it all together.
 
@@ -1103,10 +1120,10 @@ Used in: etcd, Consul, CockroachDB, TiKV, MongoDB replica sets, Kafka KRaft.
 
 **Retry strategies:**
 ```
-  Naive retry:         1s, 1s, 1s …       thundering herd ✗
-  Exponential backoff: 1s, 2s, 4s, 8s …  calms the herd ✓
-  + Jitter:            ± random 50%       desynchronises clients ✓✓
-  + Cap + max attempts                    essential ✓✓✓
+  Naive retry:          1s, 1s, 1s …       thundering herd ✗
+  Exponential backoff:  1s, 2s, 4s, 8s …   calms the herd ✓
+  + Jitter:             ± random 50%       desynchronises clients ✓✓
+  + Cap + max attempts                     essential ✓✓✓
 ```
 
 **Cascading failure chain & defences:**
@@ -1130,11 +1147,11 @@ Error budgets turn "should we ship?" from politics into math.
 
 **OAuth 2.0 flow (Authorization Code + PKCE):**
 ```
-  1. Client generates code_verifier + code_challenge = SHA256(verifier)
+  1. Client generates code_verifier + code_challenge = BASE64URL(SHA256(verifier))
   2. Browser → /authorize?code_challenge=...
   3. User logs in & consents → redirect with ?code=AUTH_CODE
   4. Client → /token POST  (code + code_verifier)
-  5. Server checks: SHA256(code_verifier) == stored challenge
+  5. Server checks: BASE64URL(SHA256(code_verifier)) == stored challenge
   6. Returns access_token (short) + refresh_token (long)
 ```
 A stolen auth code is useless without the original verifier. Always use PKCE for SPAs and mobile apps.
@@ -1146,7 +1163,7 @@ A stolen auth code is useless without the original verifier. Always use PKCE for
 | Layer | How | Tools |
 |-------|-----|-------|
 | **In transit** | TLS 1.3+ everywhere | HTTPS, gRPC-TLS, DB TLS |
-| **At rest** | Disk-level or envelope encryption | AWS KMS, GCP Secret Manager |
+| **At rest** | Disk-level or envelope encryption | AWS KMS, Google Cloud KMS |
 | **End-to-end** | Only endpoints decrypt | Signal protocol |
 | **Passwords** | Slow hashes with salt | bcrypt, scrypt, Argon2id |
 
@@ -1160,16 +1177,16 @@ A stolen auth code is useless without the original verifier. Always use PKCE for
   Broken auth    → MFA, short-lived tokens, bcrypt passwords
 ```
 
-**mTLS (mutual TLS):** both sides present certs. Standard in zero-trust (Google BeyondCorp). Service mesh (Envoy sidecar) terminates mTLS automatically — apps see plain HTTP. Identity is **cryptographic**, not subnet-based.
+**mTLS (mutual TLS):** both sides present certs. Standard in zero-trust architectures (Google's internal services use ALTS, its own mutual-authentication protocol). Service mesh (Envoy sidecar) terminates mTLS automatically — apps see plain HTTP. Identity is **cryptographic**, not subnet-based.
 
 **STRIDE threat modelling:**
 ```
-  S poofing     → authentication, MFA
-  T ampering    → integrity (HMAC, signatures, TLS)
-  R epudiation  → audit logs, signed events
-  I disclosure  → encryption, access controls
-  D denial      → rate limits, autoscaling, shedding
-  E elevation   → RBAC, least privilege
+  S poofing                → authentication, MFA
+  T ampering               → integrity (HMAC, signatures, TLS)
+  R epudiation             → audit logs, signed events
+  I nformation disclosure  → encryption, access controls
+  D enial of service       → rate limits, autoscaling, shedding
+  E levation of privilege  → RBAC, least privilege
 ```
 
 ---
@@ -1178,9 +1195,9 @@ A stolen auth code is useless without the original verifier. Always use PKCE for
 
 **Three pillars:**
 ```
-  LOGS    — discrete events: "user 42 logged in at T"
-  METRICS — aggregates:      "requests/sec = 1200"
-  TRACES  — request lifelines:"svc A→B→C, 12ms total"
+  LOGS    — discrete events:    "user 42 logged in at T"
+  METRICS — aggregates:         "requests/sec = 1200"
+  TRACES  — request lifelines:  "svc A→B→C, 12ms total"
 ```
 
 **Google SLI/SLO/SLA:**
@@ -1195,6 +1212,7 @@ A stolen auth code is useless without the original verifier. Always use PKCE for
 **Four Golden Signals (Google SRE):** Latency, Traffic, Errors, Saturation. Alert on these, not on internal CPU metrics.
 
 **RED** (for request-driven services): Rate, Errors, Duration.
+
 **USE** (for resources): Utilization, Saturation, Errors.
 
 **Distributed tracing:** propagate `trace_id` in HTTP headers (`traceparent`); each service attaches spans. Identifies which service in a fan-out was slow.
@@ -1247,14 +1265,14 @@ A stolen auth code is useless without the original verifier. Always use PKCE for
 ### The 8-Step Interview Framework
 
 ```
-  1. CLARIFY    — functional & non-functional reqs, scale numbers
-  2. ESTIMATE   — QPS, storage/year, bandwidth (back-of-envelope)
-  3. API        — define the 3-5 most important endpoints
-  4. DATA       — entities, schemas, choose the data store
-  5. HIGH-LEVEL — boxes & arrows: client → LB → service → cache → DB
-  6. DEEP DIVE  — pick the 2 hardest components, design them well
+  1. CLARIFY     — functional & non-functional reqs, scale numbers
+  2. ESTIMATE    — QPS, storage/year, bandwidth (back-of-envelope)
+  3. API         — define the 3-5 most important endpoints
+  4. DATA        — entities, schemas, choose the data store
+  5. HIGH-LEVEL  — boxes & arrows: client → LB → service → cache → DB
+  6. DEEP DIVE   — pick the 2 hardest components, design them well
   7. BOTTLENECKS — identify, then mitigate (cache? shard? queue?)
-  8. TRADE-OFFS — name what you sacrificed; reason about CAP/PACELC
+  8. TRADE-OFFS  — name what you sacrificed; reason about CAP/PACELC
 ```
 
 **Back-of-envelope cheat sheet:**
@@ -1284,12 +1302,12 @@ Key lesson: network >> memory >> CPU. Batch + sequential >> random.
 
 | Step | Answer |
 |------|--------|
-| **Clarify** | 1B URLs/day, 10:1 read:write, redirect in <10ms, 5-year retention |
-| **Estimate** | 11K writes/s, 110K reads/s; 500B × 5yr = 2.5TB storage (base62 IDs) |
+| **Clarify** | 1B new URLs/day, 10:1 read:write, redirect in <10ms, 5-year retention |
+| **Estimate** | 1B ÷ 86,400 ≈ 11.6K writes/s → ~116K reads/s. 5 years: 1B × 365 × 5 ≈ 1.8T URLs × ~500 B ≈ 0.9 PB. 7 base62 chars = 62⁷ ≈ 3.5T IDs (enough) |
 | **API** | `POST /shorten` → `{short_url}`; `GET /{code}` → 301/302 redirect |
-| **Data** | `urls` table: code (PK), long_url, created_at, ttl — Postgres (simple KV fits) |
-| **High-level** | Client → CDN/LB → App servers → Redis cache (hot codes) → Postgres |
-| **Deep-dive** | ID generation: base62(random 7 chars) or hash first 7 chars of MD5(long_url); collision check insert-or-retry. Cache: code → long_url in Redis, TTL 24h. |
+| **Data** | `urls`: code (PK) → long_url, created_at, expires_at — a pure key-value lookup; at ~0.9 PB use a sharded KV store (Bigtable / DynamoDB / Cassandra), not one Postgres box |
+| **High-level** | Client → CDN/LB → App servers → Redis cache (hot codes) → KV store |
+| **Deep-dive** | ID generation: unique counter (Snowflake / pre-allocated ID ranges) → base62 = no collisions. Or random/hash 7 chars + insert-if-absent retry — collisions grow as the space fills (~1.8T of 3.5T used by year 5). Cache: code → long_url in Redis, TTL 24h. |
 | **Bottleneck** | 301 (permanent) vs 302 (temporary): 301 = browser caches, no repeat hits but can't track clicks. 302 = every click hits your servers, accurate analytics. |
 | **Trade-offs** | 301 scales better; 302 gives analytics. Pick based on business need. |
 
@@ -1297,11 +1315,11 @@ Key lesson: network >> memory >> CPU. Batch + sequential >> random.
 
 | Step | Answer |
 |------|--------|
-| **Clarify** | 500M daily users, median 100 followers, 1–10 photos/day, feed freshness < 5 min |
-| **Estimate** | ~1M photo uploads/day; 500M × 20 feed reads/day = 10B reads/day ≈ 116K RPS |
-| **Fan-out strategies** | Push on write (precompute feed at upload time → fast read); Pull on read (compute at request time → slow read). Instagram uses **hybrid:** push for regular users, pull for celebrities (>10M followers). |
-| **Deep-dive** | Feed stored as sorted set in Redis keyed by user_id+timestamp. Object store (S3) for photos. CDN for image delivery. Graph DB or Postgres adjacency list for follow relationships. |
-| **Bottleneck** | Celebrity (10M followers) upload → 10M fan-out writes in seconds → spike. Fix: async Kafka queue; pull celebrity posts at read time (mixed strategy). |
+| **Clarify** | 500M daily active users, ~2 photo uploads per user per week, very read-heavy, feed p99 < 200 ms; feeds may lag uploads by seconds |
+| **Estimate** | 500M × 2 ÷ 7 ≈ 143M uploads/day ≈ 1,650/s. Reads: 500M × 5 sessions × 30 photos = 75B photo views/day ≈ 870K/s. New photos: 143M × ~500 KB ≈ 70 TB/day |
+| **Fan-out strategies** | Push on write (precompute feed at upload time → fast read); Pull on read (compute at request time → slow read). Instagram uses **hybrid:** push for normal users (< 10K followers), pull for big accounts at read time. |
+| **Deep-dive** | Feed = one Redis sorted set per user (member = photo_id, score = time + ranking signal). Photos in object store (S3) served via CDN. Graph DB or Postgres adjacency list for follow relationships. |
+| **Bottleneck** | Celebrity (10M followers) upload → 10M fan-out writes in seconds → spike. Fix: async fan-out workers fed by Kafka; pull celebrity posts at read time (hybrid). |
 | **Key lesson** | The fan-out strategy is the core design decision. Always ask: read-heavy or write-heavy? Push-on-write optimises reads; pull-on-read is simpler but slower. |
 
 ---
@@ -1320,12 +1338,18 @@ Key lesson: network >> memory >> CPU. Batch + sequential >> random.
 
 **SLO-based alerting (burn-rate alerting — Google SRE):**
 ```
-  SLO = 99.9%; budget = 0.1% over 30 days = 43.2 min
-  
-  Burn rate > 1x = spending budget at exactly the rate that burns it in 30 days
-  Burn rate > 14.4x for 1h = burning 1 hour's worth in 5 min → page immediately
-  Fast burn: high burn rate, short window (15min); catches acute incidents
-  Slow burn: moderate rate, long window (6h); catches slow leaks
+  SLO = 99.9%; budget = 0.1% over 30 days (720 h) = 43.2 min
+
+  Burn rate = how fast you spend the budget vs "exactly on schedule"
+  1×  = the whole budget is gone after exactly 30 days
+
+  Rule              Budget used                 Action
+  14.4× for 1 h     14.4 × 1 h ÷ 720 h = 2%     page (fast burn)
+  6× for 6 h        6 × 6 h ÷ 720 h = 5%        page
+  1× for 3 days     1 × 72 h ÷ 720 h = 10%      ticket (slow burn)
+
+  Pair each long window with a short one (e.g. 1 h + 5 min) so the
+  alert clears as soon as the burn stops.
 ```
 
 This is the Google SRE approach to avoiding alert fatigue while catching both fast and slow reliability degradations.
@@ -1345,6 +1369,8 @@ This is the Google SRE approach to avoiding alert fatigue while catching both fa
 ---
 
 ## Ch 26 — ML System Design (Google)
+
+![Ch 26 revision sheet: the six-step playbook with interview minutes (Problem 5, Metrics 5, Data 8, Model 10, Serving 10, Monitoring 7) above 12 cards with one rule each (label choice, offline vs online gap, guardrails, implicit vs explicit labels, selection bias, feature store, popularity baseline, two-tower retrieval + ANN, position bias, compression with INT8 ~4x smaller, three drift types, A/B testing); a must-remember numbers block (funnel 800M to ~1,000 to ~100 to ~25, p99 300 ms = 10 + 20 + 40 + 10 + ~220, cache hit 80-95% gives 5-20x less load, rollout shadow to 1% to 5% to 25% to 100%, champion 99% / challenger 1%, retrain ranking daily and retrieval weekly); and a Pick-by-question offline-metric table (PR-AUC, NDCG@k, log loss/calibration, precision/recall, perplexity/LLM-as-judge).](diagrams/sdrev_info_ch26_ml_design_ai.png)
 
 > 💡 **In a sentence —** ML system design is a six-step story: Frame → Metrics → Data → Model → Serve → Monitor — and every step has a specific set of traps that distinguish practitioners from people who've only trained models.
 
@@ -1372,7 +1398,9 @@ Mnemonic: **"Please Make Data, Model Smartly, Monitor"** → Problem · Metrics 
 **The most important decision — choosing the label:**
 
 > Optimize for **clicks** → thumbnails of screaming faces (clickbait).
+>
 > Optimize for **raw watch time** → 3-hour drone videos.
+>
 > **Fix:** composite label — `click AND meaningful-watch AND positive-signal`, weighted to balance engagement with satisfaction.
 
 **Soundbite:** *"Optimizing the wrong label is how recommendation systems get good at making users miserable. I'd predict a composite engagement-and-satisfaction signal, not raw clicks."*
@@ -1420,12 +1448,12 @@ Mnemonic: **"Please Make Data, Model Smartly, Monitor"** → Problem · Metrics 
 | **Context** (when/where) | the moment | `time_of_day`, `device`, `session_depth` |
 | **Cross** (chemistry) | interactions | `user × category affinity` |
 
-Cross features win: "this user's click-rate *on cooking videos*" predicts far better than overall click-rate + category separately. Google's Wide & Deep + DCN learn these automatically.
+Cross features win: "this user's click-rate *on cooking videos*" predicts far better than overall click-rate + category separately. Google's Wide & Deep was built to capture these (its wide side uses hand-picked crosses); DCN learns them automatically.
 
 **Training-serving skew = #1 silent killer:**
 > Training computes a feature in Python/batch; serving computes it in C++/real-time — differently. Model silently falls apart live.
 
-**Fix — Feature Store** (e.g., Vertex AI Feature Store): one shared definition, served both batch (for training) and online (for inference) with point-in-time correctness. Training and serving physically cannot drift apart.
+**Fix — Feature Store** (e.g., Vertex AI Feature Store): one shared definition, served both batch (for training) and online (for inference) with point-in-time correctness. Training and serving read the same feature code, so the "two implementations" skew disappears.
 
 ```
   Slow-cooked features (overnight): 30-day watch rate, user embeddings
@@ -1439,19 +1467,19 @@ Cross features win: "this user's click-rate *on cooking videos*" predicts far be
 
 **Always start with a baseline:** sort by popularity — no ML. If ML can't beat that, don't use ML.
 
-**The multi-stage funnel (Google's standard):**
+**The multi-stage funnel (Google's standard)** — typical latency per stage (the p99 budget is in Step 5):
 
 ```
   800M items → RETRIEVAL → ~1,000 → RANKING → ~100 → RE-RANK → ~25 shown
-               two-tower            DCN                diversity
-               + ANN                multi-task         freshness
-               ~10ms                ~20ms              safety ~10ms
+               two-tower            DCN              diversity
+               + ANN                multi-task       freshness
+               ~10ms                ~20ms            safety ~10ms
 ```
 
 **Two-tower (dual-encoder) retrieval:**
 - One tower encodes user, one encodes item → both into 128-dim embeddings
 - Train so relevant pairs land close together
-- **Item embeddings are precomputed offline.** At request time: embed user (one forward pass) → ANN lookup → top ~1,000 in single-digit ms
+- **Item embeddings are precomputed offline.** At request time: embed user (one forward pass) → ANN (approximate nearest neighbour) lookup → top ~1,000 in single-digit ms
 
 **Wide & Deep / DCN-v2:**
 - **Wide** side memorises specific feature crosses ("fans of X also love Y")
@@ -1492,16 +1520,17 @@ Cross features win: "this user's click-rate *on cooking videos*" predicts far be
 |---|---|
 | **HNSW** | Graph-based, very high recall, memory-hungry |
 | **FAISS** | Flexible library (IVF, PQ); GPU; billion-scale |
-| **ScaNN** (Google) | Anisotropic quantization for max-inner-product; best speed/accuracy for Google workloads; searches 800M vectors in < 5ms |
+| **ScaNN** (Google) | Anisotropic quantization for max-inner-product; best speed/accuracy for Google workloads (StreamFlix example: 800M vectors in < 5ms) |
 
-**Caching:** 80–95% hit rate on hot item embeddings cuts backend load ~10×. Short TTL on feeds; invalidate on explicit user action.
+**Caching:** an 80–95% hit rate on hot item embeddings cuts backend load 5–20× (90% hit → 10×). Short TTL on feeds; invalidate on explicit user action.
 
 **Model compression — the Google playbook:**
 1. Train the best possible **teacher** model (ignoring cost)
 2. **Distill** into a smaller **student** that hits the latency budget
 3. **Quantise** (FP32 → INT8, ~4× smaller, < 1% accuracy loss)
 4. **Prune** (remove near-zero weights)
-A 10B-param teacher's quality ships as a 50M-param student running in 5ms.
+
+Result: a 10B-param teacher's quality can ship as a 50M-param student running in 5ms.
 
 ---
 
@@ -1511,7 +1540,7 @@ A 10B-param teacher's quality ships as a 50M-param student running in 5ms.
 
 | Drift type | What changes | How to detect |
 |---|---|---|
-| **Data drift** | Input feature distributions shift | PSI / KS test on feature distributions |
+| **Data drift** | Input feature distributions shift | PSI (Population Stability Index) / KS (Kolmogorov–Smirnov) test on feature distributions |
 | **Concept drift** | "What's a good recommendation" shifts | Watch offline metrics on fresh labels |
 | **Prediction drift** | Score distribution changes (often signals a broken pipeline) | Monitor score distribution daily |
 
@@ -1548,7 +1577,7 @@ A 10B-param teacher's quality ships as a 50M-param student running in 5ms.
   → Challenger loses → investigate why offline metric gain didn't transfer
 ```
 
-**Model registry (Vertex AI, MLflow, Sagemaker):** every trained model is versioned with its training data fingerprint, hyperparameters, evaluation metrics, and lineage (which dataset → which model). Enables:
+**Model registry (Vertex AI, MLflow, SageMaker):** every trained model is versioned with its training data fingerprint, hyperparameters, evaluation metrics, and lineage (which dataset → which model). Enables:
 - Reproducible model serving (know exactly what trained that model)
 - Rollback to previous champion in minutes
 - Audit trail for regulated industries
@@ -1566,6 +1595,8 @@ A 10B-param teacher's quality ships as a 50M-param student running in 5ms.
 **The rule:** you need both offline (NDCG, PR-AUC) and online (CTR, watch time, retention) metrics. Never ship a model that improved offline but hasn't been validated online at ≥1% canary for at least 48 hours.
 
 ---
+
+**Same playbook, new worlds** — the twist each domain adds:
 
 | Domain | Key twist |
 |--------|-----------|
@@ -1590,11 +1621,13 @@ A 10B-param teacher's quality ships as a 50M-param student running in 5ms.
 
 ## One-Page Cheat Recap
 
+![One-page system-design cheat sheet: six chapter tiles (21 OO Design, 22 Eng Tools, 23 Foundations, 24 Data & Distributed, 25 Operations, 26 ML System Design), each with two key rules (e.g. said AND? split the class; liveness probe = own process only; name CAP/PACELC in the first 60 s; most apps stop at replicas + cache; budget spent means freeze features; feature store kills training-serving skew); a must-remember numbers block (5 nines = 5.26 min/year, Raft 2f+1 nodes, W + R > N, acks=all + min.insync.replicas=2, hedging ~5% extra requests, 8 steps Clarify to Trade-offs); and a Pick-by-question table of what to say first (deadlock, slow Spark job, scaling a database, auth, offline evaluation, shipping a CTR win).](diagrams/sdrev_info_cheat_recap_ai.png)
+
 | Chapter | Single most important fact / heuristic |
 |---------|---------------------------------------|
 | **Ch 21** — OO Design | **SRP test:** if you say "AND" describing a class, split it. **DIP test:** if business logic does `new ConcreteImpl()`, inject an abstraction instead. Deadlock prevention = consistent lock ordering. |
 | **Ch 22** — Eng Tools | **Tier 1 is non-negotiable.** K8s liveness probe = process health only (never downstream). Kafka `acks=all + min.insync.replicas=2` for durability. Redis = sub-ms speed layer, NOT source of truth. Spark shuffle = enemy; broadcast small tables; let AQE help. |
-| **Ch 23** — Foundations | **Name the trade-off in the first 60 seconds:** CAP/PACELC placement signals seniority instantly. 5 nines = 5.26 min/year downtime. Token bucket allows bursts; sliding window is most accurate. Hedged requests collapse p99 toward p50 at ~5% extra RPS. |
-| **Ch 24** — Data & Distributed | **Scaling ladder:** index → cache → replicas → PgBouncer → shard. Most apps live at rung 2–3. CAP: "CA" doesn't exist. Raft needs 2f+1 nodes. Quorum: W+R > N = strong consistency. Outbox+CDC for reliable DB-to-event propagation without dual-write. |
+| **Ch 23** — Foundations | **Name the trade-off in the first 60 seconds:** CAP/PACELC placement signals seniority instantly. 5 nines = 5.26 min/year downtime. Token bucket allows bursts; sliding window is most accurate. Hedged requests cut p99 sharply for ~5% extra requests. |
+| **Ch 24** — Data & Distributed | **Scaling ladder:** index → bigger box → read replicas (+PgBouncer) → cache → partition → shard. Most apps stop at replicas + cache. CAP: "CA" doesn't exist. Raft needs 2f+1 nodes. Quorum: W+R > N = strong consistency. Outbox+CDC for reliable DB-to-event propagation without dual-write. |
 | **Ch 25** — Operations | **Error budget = contract:** budget spent → freeze features. 8-step interview framework: Clarify → Estimate → API → Data → High-level → Deep-dive → Bottlenecks → Trade-offs. Never say "eventually consistent" without a concrete staleness window. mTLS+PKCE are Google-style auth primitives. |
 | **Ch 26** — ML System Design | **Label choice is the most consequential decision** in the whole system — composite signal beats raw clicks. Feature store eliminates training-serving skew (#1 cause of "great offline, terrible live"). Offline split by time not random. Guardrails beat raw metrics. |

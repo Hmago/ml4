@@ -26,8 +26,9 @@ not reproduce a particular company's production architecture.
 
 > **How this differs from Ch 25:** Ch 25 sketched a reusable framework and one worked
 > example (Instagram). This chapter turns that framework into a repeatable *method*
-> (Part A) and then goes far deeper on four systems Ch 25 never touched. Where Ch 25
-> gave a 5-line "WhatsApp chat" sketch, here is the full treatment.
+> (Part A) and then goes far deeper on four systems Ch 25 only sketched or skipped. Where Ch 25
+> gave a short "WhatsApp chat" sketch and notification building blocks, here is the
+> full end-to-end treatment.
 
 ## What you'll learn
 
@@ -106,42 +107,48 @@ study in Ch 35–37 is just this playbook applied to a new prompt.
 
 ## A.1 The 8-step framework
 
+![Infographic of the 8-step Design X interview loop (about 45 minutes): a clockwise ring of cards Clarify ~5m, Estimate ~4m, API ~3m, Data ~5m, HLD ~8m, Deep-dive ~10m, Bottleneck ~6m, Trade-offs ~4m, each with its senior-signal rule, and an orange arrow from step 8 back to step 1 for a new constraint; the five clarifying-question buckets (Functional, Scale, Consistency, Latency & Availability with 99.9% ≈ 8.8 h/yr down, Cost & Ops); a Pick-by-Question table (chat → ordering + delivery semantics, video conferencing → latency + bandwidth, notification system → delivery guarantees + priority lanes); CAP/PACELC one-liners and the time-budget trap.](diagrams/case35_info_design_loop_ai.png)
+
 ```
         THE 8-STEP "DESIGN X" LOOP   (≈45 min on the whiteboard)
 
-   ┌─────────────────────────────────────────────────────────────┐
+   ┌───────────────────────────────────────────────────────────────┐
    │ 1. CLARIFY     scope it; nail functional reqs + NFR numbers   │ ~5m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 2. ESTIMATE    QPS, storage/yr, bandwidth, connections, RAM   │ ~4m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 3. API         the 3–5 endpoints / message types that matter  │ ~3m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 4. DATA        entities → schema sketch → store per entity    │ ~5m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 5. HLD         boxes & arrows: edge → services → data → async │ ~8m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 6. DEEP-DIVE   the 1–2 CRUX components, code/algorithm level  │ ~10m
-   ├─────────────────────────────────────────────────────────────┤
+   ├───────────────────────────────────────────────────────────────┤
    │ 7. BOTTLENECK  find the breakpoint; cache / shard / queue it  │ ~6m
-   ├─────────────────────────────────────────────────────────────┤
-   │ 8. TRADE-OFFS  name what you sacrificed; CAP / PACELC out loud │ ~4m
-   └─────────────────────────────────────────────────────────────┘
+   ├───────────────────────────────────────────────────────────────┤
+   │ 8. TRADE-OFFS  name what you gave up; CAP / PACELC out loud   │ ~4m
+   └───────────────────────────────────────────────────────────────┘
         ▲ loop back to step 1 whenever the interviewer adds a constraint
 ```
 
 **Block by block:**
 - **(1) Clarify** turns a vague prompt into a bounded problem — you write functional
-  requirements and, critically, *non-functional* ones as numbers (scale, latency, consistency).
+  requirements (what it does) and, critically, *non-functional requirements* (**NFRs** — how
+  well it must do it) as numbers (scale, latency, consistency).
 - **(2) Estimate** is the back-of-envelope math that justifies every later choice; without it
   you cannot argue "this needs sharding."
 - **(3) API** pins down the contract — the 3–5 calls (or, for real-time systems, *message
   types*) that define the system.
 - **(4) Data** picks the right store per entity and the shard key.
-- **(5) HLD** is the big layered diagram (the bulk of the score).
-- **(6) Deep-dive** is where you spend the most time: drop to code level on the *one* component
-  that is the heart of this problem.
+- **(5) HLD** (high-level design) is the big layered diagram (the bulk of the score).
+- **(6) Deep-dive** is where you spend the most time: drop to code level — the **LLD**
+  (low-level design) — on the *one* component that is the heart of this problem.
 - **(7) Bottleneck** stress-tests the design — "where does this break at 10×?"
 - **(8) Trade-offs** is the senior close: name what you gave up and the condition to revisit it.
+  Two common lenses: **CAP** — during a network partition a replicated store must choose
+  consistency or availability — and **PACELC** — *else* (no partition) it still trades
+  latency against consistency.
 
 | Step | You produce | Time | Senior signal |
 |------|-------------|------|---------------|
@@ -170,7 +177,8 @@ questions is itself a graded signal: it shows you know what *varies* between des
      • Read-heavy or write-heavy? What's the read:write ratio?
 
    SCALE       — how big? (turn every answer into a number)
-     • DAU / MAU? Actions per user per day? Peak vs average?
+     • DAU / MAU (daily / monthly active users)? Actions per user
+       per day? Peak vs average?
      • Object sizes (a message? a photo? a video minute?)
      • Concurrent connections (for real-time systems)?
      • Growth horizon — design for today's 10× or 100×?
@@ -182,7 +190,8 @@ questions is itself a graded signal: it shows you know what *varies* between des
 
    LATENCY & AVAILABILITY — how fast, how reliable?
      • p50 / p95 / p99 targets for the hot path?
-     • Availability target (99.9% = 8.7h/yr down, 99.99% = 52m/yr)?
+       (p95 = the latency that 95% of requests beat)
+     • Availability target (99.9% ≈ 8.8 h/yr down, 99.99% ≈ 53 min/yr)?
      • Is degraded service acceptable, or must it be all-or-nothing?
 
    COST & OPS  — what can we spend?
@@ -199,6 +208,8 @@ Y" keeps you moving while showing you saw the fork.
 
 ## A.3 Back-of-envelope estimation refresher
 
+![Infographic on back-of-envelope estimation using the global-chat example: 500 M DAU × 40 msgs = 20 billion msgs/day ÷ 10^5 s = 200k writes/s × 3 peak = 600k writes/s (partitioned store); 20 billion × 200 B = 4 TB/day × 365 = 1.46 PB/yr (retention plan); 500 M DAU × 20% online = 100 M connections (sharded connection tier); a powers-of-2 inset; a log-scale latency ladder from L1 cache 0.5 ns to US↔Europe 150 ms with a ≈1.5 million × bracket versus 100 ns memory; key formulas (QPS, peak, storage, bandwidth) and the trap that 3 copies of 1.46 PB = 4.38 PB.](diagrams/case35_info_estimation_ai.png)
+
 You cannot justify sharding, caching, or a queue without numbers. The whole skill is
 arithmetic to **one significant figure**. Two tricks make it fast.
 
@@ -214,7 +225,8 @@ capacity constraint.
 ```
 
 **Trick 2 — "a day is about 10^5 seconds."** Exactly 86,400 s, but 10^5 is close enough
-and turns division into subtracting exponents.
+and turns division into subtracting exponents. **QPS** below means queries (requests) per
+second.
 
 ```
    QPS        = (users × actions/user/day) ÷ 86,400  ≈ ( … ) ÷ 10^5
@@ -230,11 +242,12 @@ and turns division into subtracting exponents.
 ```
    DAU                  500,000,000        (5 × 10^8)
    Messages/user/day    40
-   ── messages/day      2 × 10^10  (20 B)        [5e8 × 40]
+   ── messages/day      2 × 10^10  (20 billion)  [5e8 × 40]
    Average write QPS    2e10 / 1e5  = 2 × 10^5   = 200,000 writes/s
    Peak write QPS (3×)  ≈ 600,000 writes/s
-   Read:write           assume ~1:1 for this simplified 1:1 workload, so
-                        reads ≈ another 200k/s average  → ~400k ops/s total
+   Read:write           assume ~1:1 (in a one-to-one chat each message is
+                        read about once) → reads ≈ another 200k/s average
+                        → ~400k ops/s total
    Bytes per message    ~200 B (text + metadata)
    Storage/day          2e10 × 200 B = 4 × 10^12 = 4 TB/day
    Storage/year         4 TB × 365   ≈ 1.46 PB/year (text only)
@@ -254,8 +267,9 @@ copies of 1.46 PB require 4.38 PB before indexes, compaction space, backups, or 
 The 200k average uses a rounded day; dividing by 86,400 gives about 231k/s. Either estimate
 is usable if the approximation and peak/headroom factors remain consistent.
 
-**Historical latency reference** (Jeff Dean's table, also in Ch 25): use the relative
-orders of magnitude to reason, not these hardware-era numbers as current benchmarks:
+**Historical latency reference** (adapted from Jeff Dean's well-known table; later updated
+versions differ in some entries): use the relative orders of magnitude to reason, not these
+hardware-era numbers as current benchmarks:
 
 ```
    L1 cache reference                      0.5  ns
@@ -274,9 +288,9 @@ orders of magnitude to reason, not these hardware-era numbers as current benchma
    Round trip US ↔ Europe          150,000,000  ns = 150 ms
 ```
 
-Two takeaways: **(1) network ≫ memory ≫ CPU** — a cross-continent round trip is ~300,000×
-a memory reference, so a chatty design that makes many sequential remote calls is doomed;
-batch and parallelize. **(2) sequential ≫ random** — one big sequential read beats many
+Two takeaways: **(1) network ≫ memory ≫ CPU** — a cross-continent round trip (150 ms) is
+~1.5 million× a memory reference (100 ns), so a chatty design that makes many sequential
+remote calls is doomed; batch and parallelize. **(2) sequential ≫ random** — one big sequential read beats many
 small random ones, which is *why* log-structured stores (Cassandra, Kafka) win for
 write-heavy workloads.
 
@@ -303,6 +317,8 @@ the editable Mermaid, current prose, and pseudocode define the intended design. 
 image is not evidence for a guarantee such as "exactly once" or "no double assignment."
 
 ## A.4 The 4-layer reference architecture
+
+![Infographic of the 4-layer reference skeleton and the 45-minute interview: a client arrow into four colour-coded bands (Layer 1 Edge: GeoDNS · CDN · API Gateway · L7 LB; Layer 2 Services: stateless + Realtime Gateway; Layer 3 Data: SQL · Wide-column · Redis · Object store; Layer 4 Async: outbox/CDC → bus → consumers + DLQ) with a 'response after required commit' arrow; an 8-segment 45-minute clock (0–5 clarify … 41–45 trade-offs); a Junior/Senior/Staff rubric for requirements, estimation, failure and trade-offs; do/don't lists and the trap that writing the database and Kafka separately is not atomic.](diagrams/case35_info_reference_arch_interview_ai.png)
 
 These four responsibilities are a **checklist, not a mandatory deployment topology**.
 A small service can implement them in one process plus a database. Split components only
@@ -349,9 +365,15 @@ A system-design interview is a *conversation you lead*, not an exam you complete
 silence. Manage the clock visibly. Here is the minute map most strong candidates follow.
 
 ```
-   Minute     0--5    5--9    9--12   12--17   17--25   25--35   35--41   41--45
-   Activity   clarify estimate API    data     HLD      deep-dive limits   trade-offs
-   Output     scope   numbers contract model   diagram  mechanism failures decisions
+   Minute   Activity     Output
+   0–5      clarify      scope
+   5–9      estimate     numbers
+   9–12     API          contract
+   12–17    data         model
+   17–25    HLD          diagram
+   25–35    deep-dive    mechanism
+   35–41    limits       failures
+   41–45    trade-offs   decisions
 ```
 
 **How to read the timeline:** spend the first ~12 minutes on *framing* (clarify,
@@ -436,6 +458,8 @@ calls out the *system-specific* red flags on top of these universal ones.
 > quotas behind one governed pipe, so no team can spam users and one provider's bad day can't take
 > the other channels down.
 
+![Case at a glance for a notification system: hard part, requirements (one POST /v1/notify, push · email · SMS · in-app, preferences + quiet hours, transactional p95 < 5 s) and scale (100 M users × 10/day = 1 billion/day, ≈11,600/s average, ≈35,000/s peak, SMS ≈1,750/s, delivery log 300 GB/day → 27 TB over 90 days); architecture Producer → Notification API → one transaction (request + outbox) with 202 Accepted back → outbox relay → Kafka requested → Processor → push.q/email.q/sms.q/in-app → channel workers → FCM/APNs · SES · Twilio and Cassandra in-app feed, with SENT → DELIVERED/OPENED and timeout → UNKNOWN → reconcile; key decisions table and failure modes.](diagrams/case35_info_notification_ai.png)
+
 Imagine the single piece of software at a company that every other team wants to use:
 "send my user a message." Search wants to send "your package shipped." Growth wants "we
 miss you." Security wants "new login from Chrome." A **notification system** is the shared
@@ -471,7 +495,8 @@ Prerequisite: [Ch 24, §10.10 — outbox/CDC](#content/24_system_design_data_dis
 
 **Functional**
 - Accept a "send" request from many internal services.
-- Deliver across channels: **push (APNs/FCM), email, SMS, in-app**.
+- Deliver across channels: **push (APNs = Apple Push Notification service, FCM = Firebase
+  Cloud Messaging), email, SMS, in-app**.
 - Respect **per-user preferences** (opt-outs, channel choice, quiet hours, timezone).
 - **Templates** with localization/variables.
 - **Dedupe** identical notifications; **schedule** future/digest sends.
@@ -481,7 +506,8 @@ ML that decides *who* to notify (that's a different system that calls us).
 
 **Non-functional**
 - **Scale:** assume 100 M users, ~10 notifications/user/day.
-- **Latency:** transactional (OTP, security) p95 < 5 s end-to-end; marketing may lag minutes.
+- **Latency:** transactional (one-time passcodes (OTP), security alerts) p95 < 5 s end-to-end;
+  marketing may lag minutes.
 - **Delivery:** durable accepted work with at-least-once processing; dedupe at each owned
   boundary. Never silently drop transactional work: expire or dead-letter it with an
   explicit terminal state and alert when its delivery deadline cannot be met.
@@ -516,12 +542,12 @@ Priorities/lanes? Acceptable delay per class? Which providers? Do we need delive
 ```
    Users                100,000,000
    Notifs / user / day  10
-   ── total/day         1,000,000,000  (1 B)              [users × rate]
+   ── total/day         1,000,000,000  (1 billion)        [users × rate]
    Avg QPS              1e9 / 86,400  ≈ 11,600 / s        [day ≈ 10^5 s]
    Peak (3×)            ≈ 35,000 / s
    Channel mix          70% push, 15% in-app, 10% email, 5% SMS
    SMS QPS (peak)       0.05 × 35,000 ≈ 1,750 / s  → provider quota matters!
-   Delivery log         1 B/day × 300 B ≈ 300 GB/day  → 90-day TTL ≈ 27 TB
+   Delivery log         1e9/day × 300 B ≈ 300 GB/day  → 90-day TTL ≈ 27 TB
 ```
 
 Lesson the numbers teach: **SMS volume is small but expensive & quota-limited**; **push is
@@ -549,8 +575,10 @@ milliseconds, and all the slow work happens in LAYER 2.
 
 **Block by block:**
 - **Notification API** — authenticates the caller and atomically commits the request,
-  tenant-scoped idempotency identity, and outbox row before `202 Accepted`. The relay publishes
-  later; Redis may cache status but is not the acceptance authority. It never calls a provider.
+  tenant-scoped idempotency identity, and outbox row before `202 Accepted`. (An **outbox**
+  row is a "still to publish" record written in the *same* database transaction; a separate
+  **relay** process publishes it to Kafka later, retrying until that succeeds.) Redis may
+  cache status but is not the acceptance authority. It never calls a provider.
 - **Kafka "requested" topic** — the durable buffer that absorbs spikes (the 35 k/s peak) and
   decouples ingest from processing. If processors fall behind, messages wait here, not in RAM.
 - **Notification Processor** — the brain: it loads preferences from **PostgreSQL** (cached in
@@ -861,6 +889,8 @@ worker and downstream quota capacity, not just a differently named Kafka topic.
 > server currently holds each user, ordering messages per conversation, and a store-and-forward
 > inbox — the machinery that turns a bare "send" into an ordered, eventually-delivered event.
 
+![Case at a glance for chat/messaging: hard part (100 M open sockets, ordered ✓ / ✓✓ / blue ✓✓ even offline), requirements (p95 < 500 ms in-region, per-conversation order, at-least-once + dedupe) and scale (500 M DAU × 40 = 20 billion msgs/day, 200k writes/s, peak ≈ 600k/s, 100 M sockets ÷ 500k ≈ 200 gateways, ≈2 TB RAM, ≈1.46 PB/yr); architecture Phone A → Gateway-A → fenced conversation owner (dedupe + seqId) → replicated ordered log (seq 41) → Cassandra history with ACK ✓ after commit, owner → Connection Registry (Redis) → pub/sub gw:Gateway-B → Gateway-B → Phone B, offline branch to inbox + push (Case 1), SYNC from cursor 40 → 41..head; state machine PENDING → SENT ✓ → DELIVERED ✓✓ → READ ✓✓ (blue); key decisions and failure modes.](diagrams/case35_info_chat_ai.png)
+
 Texting *feels* trivial — type, hit send, it appears on your friend's phone. The magic you
 don't see is everything that makes it feel instant and reliable: a connection that stays
 open for hours so a message can be **pushed** to you the instant it arrives (no refreshing);
@@ -870,7 +900,7 @@ little **✓ → ✓✓ → blue ✓✓** that tells you it was sent, delivered,
 that **holds your messages while your phone is off** and syncs them when you wake up. At
 large-product scale, the design is about persistent connections, routing, ordering, and
 store-and-forward. Our **illustrative workload** below is 500 M daily users sending 40
-messages each: **20 B messages/day**, not a claim about a particular product.
+messages each: **20 billion messages/day**, not a claim about a particular product.
 
 ### Start Simple
 
@@ -913,7 +943,7 @@ Prerequisite: [Ch 24 — ownership, consensus, and consistency](#content/24_syst
 server-side full-text search of E2E content.
 
 **Non-functional**
-- **Scale:** ~2 B registered users, ~500 M DAU, ~20 B messages/day; ~100 M concurrent connections.
+- **Scale:** ~2 billion registered users, ~500 M DAU, ~20 billion messages/day; ~100 M concurrent connections.
 - **Latency:** online→online delivery p95 < 500 ms in-region.
 - **Ordering:** **per-conversation** ordering guaranteed; no global order needed.
 - **Durability:** preserve every accepted message for the promised retention/history window;
@@ -945,7 +975,7 @@ Reuse the A.3 worked example (this *is* the global-chat estimate):
 ```
    DAU                  500,000,000
    Messages/user/day    40
-   ── messages/day      2 × 10^10  (20 B)             [5e8 × 40]
+   ── messages/day      2 × 10^10  (20 billion)       [5e8 × 40]
    Avg write QPS        2e10 / 1e5  = 200,000 / s
    Peak write QPS (3×)  ≈ 600,000 / s
    Reads ≈ writes       simplified 1:1 assumption → ~400k ops/s total
@@ -953,7 +983,7 @@ Reuse the A.3 worked example (this *is* the global-chat estimate):
    Conns per gateway    assume 500 k for sizing; benchmark the actual stack
    ── gateway boxes     100 M / 500 k ≈ 200 (×2–3 for headroom ≈ 500)
    RAM per connection   ~10–30 KB (TLS + buffers) → 100M×20KB ≈ 2 TB fleet
-   Message size         ~200 B text → 20 B/day × 200 B = 4 TB/day
+   Message size         ~200 B text → 2e10/day × 200 B = 4 TB/day
    Storage/year         4 TB × 365 ≈ 1.46 PB (text; media in blob store)
 ```
 
@@ -972,7 +1002,7 @@ moment. Your options:
 |-----------|--------------|------------------|
 | **Short polling** | client asks "anything new?" every Ns | wasteful, laggy — ❌ |
 | **Long polling** | request hangs until data or timeout | OK fallback, header overhead |
-| **SSE** | server→client event stream over HTTP | viable with a separate POST send path; two channels to manage |
+| **SSE** (Server-Sent Events) | server→client event stream over HTTP | viable with a separate POST send path; two channels to manage |
 | **WebSocket** | one TCP conn, full-duplex frames | ✅ the default for chat |
 
 We use **WebSocket** (Ch 23) for the live path, with long-poll as a fallback for hostile
@@ -995,9 +1025,10 @@ suggestion still creates tombstones; compaction and the retention contract matte
   gateway writes an entry into the **Connection Registry** (which gateway holds which user) —
   this is what makes routing possible.
 - **Layer 2b — conversation ownership and services** — route a conversation to one
-  **fenced writer**. Leadership, message identity, and sequence assignment use an authoritative
-  replicated append protocol; an expired writer cannot append. Receipt and presence services
-  do not need a global sequencer.
+  **fenced writer** (each new owner receives a higher epoch number, and the log rejects any
+  append carrying an older epoch). Leadership, message identity, and sequence assignment
+  use an authoritative replicated append protocol; an expired writer cannot append. Receipt
+  and presence services do not need a global sequencer.
 - **Layer 3 — storage** — the replicated ordered log is the acceptance authority, with
   **wide-column history keyed by conversation and time bucket** as a range-read projection.
   Track its applied watermark: sync either waits for that watermark or reads the durable
@@ -1086,7 +1117,7 @@ the current writes of one hot conversation across multiple active writers.
 ## 2.7 Failures and Trade-offs
 
 ```
-  What dies                     →  What the user sees / what we do
+  What dies                      →  What the user sees / what we do
   ───────────────────────────────────────────────────────────────────
   A gateway box crashes          →  its clients' sockets drop; clients
                                     reconnect (jittered) to another box;
@@ -1271,8 +1302,8 @@ Cross-user plaintext-hash dedupe does not follow automatically from E2E encrypti
 - *"Ordering across a user's devices?"* — per-conversation `seqId` is the single source of
   truth; every device renders by `seqId`, so they agree.
 
-**Red flags that sink candidates:** using HTTP polling for the live path; **no connection
-registry or equivalent routing mechanism; choosing storage without an access pattern;
+**Red flags that sink candidates:** using HTTP polling for the live path; no **connection
+registry** or equivalent routing mechanism; choosing storage without an access pattern;
 promising **global** message ordering (unnecessary for this product);
 fan-out-on-write to a 100 k-member group on the hot path; forgetting offline users entirely
 (no inbox, no push); acking before persisting (a crash then "loses" a sent message).
@@ -1343,6 +1374,8 @@ recipients. Moving work to reads does not make the delivered bytes disappear.
 > server CPU to reduce client downloads. An SFU forwards selected tracks and keeps upload
 > independent of participant count, at the cost of server egress and client decoding.
 
+![Case at a glance for video conferencing: hard part (not request/response; UDP media inside a < 200 ms mouth-to-ear budget), requirements and scale (720p ≈ 1.5 Mbps = B, mesh uplink (N-1)·B gives 10.5 Mbps at N=8, SFU uplink ≈ 2 Mbps flat in N, N=50 → 2,450 stream-forwards, 10 M × 3.06 Mbps ≈ 30.6 Tbps); architecture split into a signaling plane (Client → Meeting Service → PostgreSQL; Client → Signaling Service ⇄ Room Registry in Redis) and a media plane (Sender A uploads 720p/360p/180p simulcast to an SFU that forwards without decoding to fiber laptop 720p, wifi 360p, 3G phone 180p; STUN/TURN detour when UDP is blocked; recording → S3 → CDN); a latency budget 20+25+5+25+40+20 = 135 ms leaving 65 ms headroom; key decisions and failure modes.](diagrams/case35_info_video_conf_ai.png)
+
 This case needs two toolboxes: REST, load balancers, and a database are useful for meeting
 metadata and authorization; they are not the main mechanism for continuous media delivery.
 A video call is **continuous real-time media**: dozens of streams of audio and video flowing
@@ -1368,7 +1401,8 @@ Prerequisite: [Ch 23 — UDP/TCP, NAT, and head-of-line blocking](#content/23_sy
 
 ## 3.0 Interview Focus
 
-- Do you realize it is **NOT request/response** — real-time media over **UDP/RTP**, not TCP/HTTP?
+- Do you realize it is **NOT request/response** — real-time media over **UDP/RTP** (RTP =
+  Real-time Transport Protocol, the timestamped packet format for audio/video), not TCP/HTTP?
 - Do you **separate the signaling plane (control) from the media plane (audio/video)**?
 - Do you handle **NAT traversal** (STUN / TURN / ICE) so two home users can connect at all?
 - Do you know the **topologies — mesh vs MCU vs SFU** — and *why SFU wins at scale*?
@@ -1463,8 +1497,12 @@ a workload assumption, and UDP is preferred rather than the only possible transp
   **room membership** in a Redis **Room Registry**, **allocates an SFU** for the meeting, and
   relays the **SDP offer/answer** (each side's codecs and parameters) plus **ICE candidates**
   (possible network paths).
-- **STUN / TURN** — **STUN** servers let a client discover its own public IP:port behind NAT;
+- **STUN / TURN** — a home router's **NAT** (network address translation) hides many devices
+  behind one public IP, so outsiders cannot simply dial a laptop. **STUN** servers let a client
+  discover its own public IP:port behind NAT;
   **TURN** relays provide working paths through restrictive NAT/firewall configurations.
+  **ICE** (Interactive Connectivity Establishment) gathers these candidate addresses and tests
+  pairs until one works.
   Measure the actual relay fraction and provision its bandwidth; it is not a universal
   percentage or a property determined by NAT type alone.
 - **SFU (Selective Forwarding Unit)** — the heart of the media plane: clients send their RTP
@@ -1486,12 +1524,13 @@ a workload assumption, and UDP is preferred rather than the only possible transp
      and pick a working path — prefer direct UDP; use TURN, including a
      TCP/TLS client-to-relay leg, when required by the network.
   5. Media flows: client ─UDP RTP/SRTP▶ SFU (audio + video, e.g. 3
-     simulcast layers 180p/360p/720p). Encrypted hop-by-hop (SRTP).
+     simulcast layers 180p/360p/720p). SRTP = RTP encrypted hop-by-hop.
   6. SFU forwards each sender's stream to the other participants,
      choosing a simulcast LAYER per receiver (their bandwidth + whether
      they show that sender large or as a thumbnail). Active speaker → hi-res.
   7. Receiver: jitter buffer reorders/de-jitters RTP → decode → render.
-     On loss/congestion it asks the SFU to drop to a lower layer.
+     Its loss/arrival feedback lowers the SFU's bandwidth estimate for
+     this receiver, so the SFU switches it to a lower layer.
 ```
 
 The sequence shows the two planes cooperating: steps **1–4** are *signaling* (reliable
@@ -1537,7 +1576,7 @@ its playout budget, otherwise conceal/drop it and request a refresh frame when n
 ## 3.7 Failures and Trade-offs
 
 ```
-  What dies / degrades          →  What the user sees / what we do
+  What dies / degrades           →  What the user sees / what we do
   ───────────────────────────────────────────────────────────────────
   SFU node crashes               →  call freezes briefly; signaling moves
                                     the room to a new SFU; clients re-ICE
@@ -1553,6 +1592,11 @@ its playout budget, otherwise conceal/drop it and request a refresh frame when n
                                     participants re-join the nearest healthy SFU
 ```
 
+**Terms in the table:** **FEC** (forward error correction) sends a little redundant data
+so a receiver can rebuild a lost packet without asking; a **NACK** (negative acknowledgement)
+asks for one specific lost packet to be resent — useful only if it can still arrive before
+its playout deadline.
+
 **Trade-offs called out:** we **prefer UDP over TCP** — TCP's reliable, in-order delivery
 causes **head-of-line blocking**, where one lost packet stalls everything; for live media a
 slightly-glitchy-now can beat perfect-but-late. If UDP is blocked, a TURN TCP/TLS fallback
@@ -1561,7 +1605,8 @@ the call. [RFC 8835 §3.4](https://www.rfc-editor.org/rfc/rfc8835.html#section-3
 support for these relay modes. We
 choose **SFU over MCU** — we give up server-side mixing (and the single tiny downstream it
 buys low-end clients) to keep server CPU low, latency minimal, and layouts flexible. We choose
-**SFU over mesh** — we pay for media servers to keep each user's uplink flat at one stream.
+**SFU over mesh** — we pay for media servers to keep each user's uplink flat at one
+simulcast stack, whatever the participant count.
 
 ## 3.8 Deep Dive
 
@@ -1593,10 +1638,10 @@ call** and count the streams — this single comparison is the whole case study.
         │     ╱  ╲     │           Uplink/user  = (N-1)·B = 4.5 Mbps
         │   ╱      ╲   │           Downlink/user = (N-1)·B = 4.5 Mbps
         D ◀───────────▶ C          No server cost — but uplink explodes
-                                    with N. Dead past ~4 participants.
+                                   with N. Dead past ~4 participants.
 ```
 
-**MCU — one server decodes everyone, MIXES one picture, sends it back:**
+**MCU (Multipoint Control Unit) — one server decodes everyone, MIXES one picture, sends it back:**
 
 ```
         A ──▶┐                      Server DECODES all N, composites into
@@ -1614,7 +1659,7 @@ call** and count the streams — this single comparison is the whole case study.
         B ──▶┤   ┌───────┐  ──▶ A   to the SFU. It forwards each
         C ──▶┼──▶│  SFU  │  ──▶ B   sender's chosen layer to the others.
         D ──▶┘   │forward│  ──▶ C   Uplink/user = SUM(layer rates), flat in N
-                 │ only  │  ──▶ D   Downlink/user = (N-1)·B
+                 │ only  │  ──▶ D   Downlink/user = Σ chosen layers ≤ (N-1)·B
                  └───────┘          Full all-to-all egress = N·(N-1) streams;
                                     NO decode → cheap CPU, low latency.
 ```
@@ -1627,8 +1672,9 @@ call** and count the streams — this single comparison is the whole case study.
 | **MCU**  | 1·B | 1·B | very high (decode+mix+encode) | medium | +mixing |
 | **SFU**  | sum of sent layers | sum of selected layers; (N-1)·B if all full-size | forwarding, crypto, packet processing | workload-dependent | low |
 
-**Why SFU wins:** the constrained resource at home is **uplink**, and only SFU (and MCU) keep
-it **flat at one stream regardless of N** — but MCU pays for that with crippling server CPU
+**Why SFU wins:** the constrained resource at home is **uplink**, and only SFU and MCU keep
+it **flat regardless of N** — one simulcast stack (SFU) or one stream (MCU) — but MCU pays
+for that with crippling server CPU
 (decode + mix + encode every meeting) and extra latency, while SFU just **forwards packets**.
 SFU also keeps **per-stream flexibility**: because it never mixes, each receiver can pick its
 own layout and the server can send a different quality to each.
@@ -1653,9 +1699,11 @@ a fast receiver cannot recover a high-resolution layer that a constrained sender
 spaced. The receiver buffers them for a few tens of milliseconds to **reorder and smooth**
 (de-jitter) before decoding — trading a tiny, deliberate latency for stutter-free playback.
 
-**A note on encryption:** by default media is **SRTP hop-by-hop** (encrypted client↔SFU), so
-the SFU forwards ciphertext but *could* see plaintext. True **end-to-end encryption** (e.g.,
-WebRTC *insertable streams*) keeps the SFU blind — it can still forward, but recording and
+**A note on encryption:** by default media is **SRTP hop-by-hop** (encrypted client↔SFU,
+then re-protected SFU↔receiver). The SFU terminates each hop's encryption, so it does not
+decode the video but *could* read the media. True **end-to-end encryption** (e.g., WebRTC
+**Encoded Transform** — formerly "insertable streams" — with SFrame-style frame encryption)
+keeps the SFU blind — it can still forward, but recording and
 server-side transcription become much harder, so it's an opt-in mode.
 
 ## 3.9 Follow-ups
@@ -1667,9 +1715,11 @@ server-side transcription become much harder, so it's an opt-in mode.
   and writes MP4 to blob storage; or record raw tracks and compose offline.
 - *"Screen share?"* — a separate video track: high resolution, low frame-rate, often a higher
   simulcast priority than the camera.
-- *"How does it pick quality?"* — receiver-side **bandwidth estimation** (e.g., transport-wide
-  congestion control) tells the SFU which simulcast layer to forward.
-- *"E2E encryption?"* — insertable streams keep the SFU blind; you lose server recording/captions.
+- *"How does it pick quality?"* — **bandwidth estimation** per receiver: with transport-wide
+  congestion control (TWCC) the receiver reports packet arrival times, the SFU estimates that
+  receiver's downlink, and it picks which simulcast layer to forward.
+- *"E2E encryption?"* — Encoded Transform (formerly insertable streams) keeps the SFU blind;
+  you lose server recording/captions.
 
 **Design pitfalls:** assuming reliable HTTP request/response is the only media-delivery
 mechanism; omitting restricted-network fallbacks; routing media through ordinary API handlers;
@@ -1737,13 +1787,15 @@ The sender's fixed simulcast stack does not grow with receiver count, but SFU eg
 > instantly and everyone to converge on the exact same text, *so that* two of us can type in the
 > same sentence at once without overwriting each other or seeing garbled output.
 >
-> **For example —** I insert "X" at the start of a line at the same instant a teammate inserts "Y"
-> three characters in; the server transforms the later edit so we both land on the same "XabYc",
-> not two divergent copies.
+> **For example —** in the line "abc", I insert "X" at the start at the same instant a teammate
+> inserts "Y" after the first two characters; the server transforms the later edit so we both
+> land on the same "XabYc", not two divergent copies.
 >
 > **Why it matters —** naive whole-document last-write-wins loses edits. This example uses
 > server-authoritative OT; a CRDT is an alternative data model, not an extra box that every
 > OT design must also deploy.
+
+![Case at a glance for a collaborative editor: hard part (concurrent edits at the same spot must converge), requirements (instant local echo, remote edits < 100–200 ms, never lose an acked edit) and scale (~10^8–10^9 docs, 5 M sessions × 2 ops/s = 10^7 ops/s, 20 ops/s per doc, 5,000-editor hot doc, 10^8 × 50 KB ≈ 5 TB snapshots); architecture Editor A ins(0,'X') → Xabc and Editor B ins(2,'Y') → abYc → Collab Gateway (route by docId) → fenced doc owner rev 7 → 8 → 9 transforming ins(2,'Y') → ins(3,'Y') → 1 commit to the replicated op log → 2 ACK + broadcast, both editors showing XabYc ✓; Redis cursors, snapshot store and async compaction/search/notifications; a CRDT inset sorting X 0.5, a 1.0, b 2.0, Y 2.5, c 3.0 into XabYc; key decisions and failure modes.](diagrams/case35_info_collab_editor_ai.png)
 
 Picture three people typing into the *same* document at the same time. Each person's screen
 must update instantly as they type (no lag — typing has to feel local), everyone must see
@@ -1752,7 +1804,8 @@ showing the exact same text**, with nobody's keystrokes lost or scrambled. The v
 **concurrency**: if I insert a letter at position 5 *while* you delete the character at
 position 2, my "position 5" now points at the wrong place. Naively applying both edits gives
 three *different* documents. The whole field exists to solve that one problem, and it has two
-famous answers — **Operational Transformation (OT)** and **CRDTs** — which is exactly what an
+famous answers — **Operational Transformation (OT)** and **CRDTs** (Conflict-free Replicated
+Data Types) — which is exactly what an
 interviewer wants you to compare.
 
 ### Start Simple
@@ -1830,7 +1883,8 @@ support required? Undo semantics (per-user or global)? Do we keep full edit hist
                             a 5,000-editor "viral doc" = the hot-doc stress case
    Storage/doc              snapshot (~50 KB typical) + op log since snapshot;
                             compact to a new snapshot every N ops
-   Doc snapshots            10^8 docs × 50 KB ≈ 5 TB (modest; logs compacted)
+   Doc snapshots            10^8 docs × 50 KB ≈ 5 TB (≈ 50 TB at 10^9 docs;
+                            modest either way; logs compacted)
 ```
 
 The number that matters is **per-document**, not global: each doc has a single ordering
@@ -1929,7 +1983,7 @@ history no longer require it; archive older history separately if the product pr
 ## 4.7 Failures and Trade-offs
 
 ```
-  What dies / degrades          →  What the user sees / what we do
+  What dies / degrades           →  What the user sees / what we do
   ───────────────────────────────────────────────────────────────────
   Document owner node crashes    →  reload doc on a new node from snapshot +
                                     op-log tail; clients reconnect and resync
@@ -2004,9 +2058,9 @@ Worked example — base `"abc"` at rev 7, two concurrent inserts:
         ▼                                     ▼
         ┌──────────── SERVER (the authority) ──────────────┐
         │ head = 7                                         │
-        │ recv a (base7 == head): commit head=8; bcast a  │
+        │ recv a (base7 == head): commit head=8; bcast a   │
         │ recv b (base7, head=8 ⇒ missed a): TRANSFORM     │
-        │   b' = T(b, a): a.pos 0 ≤ b.pos 2 ⇒ shift +1     │
+        │   b' = T(b, a): a.pos 0 < b.pos 2 ⇒ shift +1     │
         │      = ins(3,'Y'); commit head=9; bcast b'       │
         └──────────────────────────────────────────────────┘
         ▼                                     ▼
@@ -2198,8 +2252,8 @@ continues, depending on the design. State exactly which guarantee is affected.
   the **sent → delivered → read** state machine; a **contiguous per-device offset** for sync;
   fenced ordering ownership and shared-log fan-out for big groups.
 - **Video:** **signaling ≠ media**; prefer **UDP/SRTP**, with TURN TCP/TLS fallback;
-  **STUN/TURN** for NAT; **SFU beats MCU and mesh** because it keeps uplink flat at one stream
-  with no server transcode; **simulcast** + jitter buffer adapt to bad networks.
+  **STUN/TURN** for NAT; **SFU beats MCU and mesh** because it keeps uplink flat at one
+  simulcast stack with no server transcode; **simulcast** + jitter buffer adapt to bad networks.
 - **Docs:** model edits as an **op stream with revisions**; **optimistic local apply** for
   instant typing; reconcile pending operations with a complete **OT** protocol or the chosen
   **CRDT** rules. Persist operation identity/revision before ACK; convergence is not magic intent preservation.

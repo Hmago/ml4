@@ -36,7 +36,7 @@ Parts 1–2.
 - A **payment system / ledger** done with the rigor money demands — idempotency,
   double-entry, saga, and "correctness over availability."
 - **Flash-sale inventory** without overselling; a **Dynamo-style KV store** with
-  tunable quorums; **Pastebin** as a 40-line variant of the URL shortener.
+  tunable quorums; **Pastebin** as a small variant of the URL shortener.
 - The **AI bridge**: LLM inference serving (KV-cache, continuous batching,
   streaming), RAG / semantic search, and a recommendation feed — each pointing
   back to the ML chapters (Ch 26, Ch 28).
@@ -101,6 +101,8 @@ their case-specific caveats apply equally to the retained PNGs.
 > **Why it matters —** on one box a limiter is one counter; across a fleet it's a distributed-
 > counter race — a healthy atomic owner prevents double-spending tokens, while outages,
 > failover, and local fallback budgets require their own accuracy contract.
+
+![Case at a Glance infographic for Case 13, Distributed Rate Limiter: the hard part (a distributed-counter race where two requests spend the last token), requirements (N requests per window per KEY, free 10 rps / paid 1000 rps tiers, 429 + Retry-After, < 1 ms p99, ~1 M requests/s), scale (1,000,000 checks/s, 10 M keys × 100 B ≈ 1 GB, 10–20 Redis shards, 0.3 ms same-AZ hop), an architecture of Client → API Gateway (Auth + Limiter middleware with policy cache, fed by Policy store via pub/sub) → EVAL token_bucket.lua on the Redis owner shard (one atomic read-refill-compare-spend step using Redis TIME) → ALLOW → Backend or DENY → 429, a worked bucket (B = 3, r = 2 tokens/s: 3 calls → 0, .200 → 0.4 DENY wait 0.3 s Retry-After 1, .500 → 1.0 ALLOW), a key-decisions table (token bucket, Lua on owner shard, shard by KEY with 16,384 slots, fail-open default, emergency budget 20 × 2 = 40) and three failure modes.](diagrams/case37_info_rate_limiter_ai.png)
 
 Imagine the **bouncer standing at the door of every API** at a large company.
 Its job sounds trivial — "cap each client's traffic" — and
@@ -177,8 +179,10 @@ consistent-hash cluster — Ch 24).
 100 gateways must share a tenant's allowance; move the decision to one atomic
 owner per key; pay a network hop and choose an outage policy. If the actual
 requirement is **at most 100 in any 60 seconds**, use an atomic sliding-window
-log, not this burst-capable bucket. A token bucket admits at most `B + rT`
-over an interval of length T, starting full, while state and time are reliable.
+log, not this burst-capable bucket. A token bucket with burst size **B** (its
+capacity) and refill rate **r** (tokens per second) admits at most `B + rT`
+requests in any interval of **T** seconds — B saved up plus rT refilled —
+while state and time are reliable.
 
 **Worked bucket:** `tenant:atlas/search`, `B=3`, `r=2 tokens/s`, starts full at
 12:00:00.000. Three simultaneous calls leave 0; at .200 it refills to 0.4 and
@@ -200,6 +204,7 @@ any request is routed to a backend. State lives in a sharded Redis cluster.
 ![Distributed Rate Limiter — high-level architecture (HLD)](diagrams/rate_limiter_ai.png)
 
 **Legend:** boxes are stateless unless they name a store; `──▶` = request flow.
+
 **Block-by-block:**
 - **Gateway fleet** — the only place the limiter runs; co-locating it with auth and routing
   means **zero extra network hops** for the common path except the counter lookup.
@@ -305,8 +310,8 @@ sequenceDiagram
 This is the component that *is* the problem. Two parts: pick the right
 **algorithm**, then make it **atomic and distributed**.
 
-**Part 1 — the five algorithms, compared.** (Theory lives in Ch 23,
-*Rate limiting*; here we apply it and add the sliding-window *counter*.)
+**Part 1 — the five algorithms, compared.** (Theory, including the
+sliding-window *counter* and *log*, lives in Ch 23, *Rate limiting*; here we apply it.)
 
 ```
  FIXED WINDOW                      SLIDING WINDOW LOG
@@ -383,13 +388,14 @@ key gives a single source of truth, but at the cost of a network hop and a hard
 dependency. The spectrum:
 
 ```
-   CENTRALIZED (Redis+Lua)         LOCAL + SYNC (gossip/periodic)
-   ───────────────────────         ──────────────────────────────
-   every node → one shard          each node keeps its OWN bucket of
-   atomic while owner is healthy   independently refills/reconciles.
-   + accurate to the request       + survives Redis outage, ~0 latency
-   - +0.3ms hop, hard dependency   - OVER-ADMITS during the sync gap
-   - hot shard for whale keys         - bound needs N, rates, grants, and a finite outage duration
+   CENTRALIZED (Redis+Lua)          LOCAL + SYNC (gossip/periodic)
+   ───────────────────────          ──────────────────────────────
+   every node → one owner shard     each node keeps its OWN bucket and
+   atomic while owner is healthy    refills/reconciles independently
+   + accurate to the request        + survives Redis outage, ~0 latency
+   - +0.3 ms hop, hard dependency   - OVER-ADMITS during the sync gap
+   - hot shard for whale keys       - overshoot bound needs node count,
+                                      rates, grants AND a finite outage
 ```
 Two-tier choices are different protocols. **Centrally granted tokens** are
 deducted before a gateway spends them; this saves calls without inventing tokens,
@@ -407,8 +413,11 @@ when their total bursts/rates are bounded; uneven traffic can underutilize them.
 - *"Exact global limit across regions?"* — route a KEY's checks to a **single
   home shard** (consistent hashing) and accept cross-region latency, or accept
   per-region limits that sum to the global cap.
-- *"Distributed without Redis?"* — gossip local counts, or a sidecar like
-  Envoy's global rate-limit service; same central-vs-local trade-off.
+- *"Distributed without Redis?"* — give each of N nodes a local bucket with
+  `limit/N`, or gossip local counts; same central-vs-local trade-off. (Envoy's
+  *global* rate limiting does not remove the store: each proxy calls an external
+  gRPC rate-limit service, whose reference implementation keeps counters in
+  Redis; Envoy's *local* rate-limit filter is the per-proxy bucket.)
 - *"Queue instead of reject?"* — that's a **leaky bucket**: hold the request in
   a bounded queue and drain at rate `r`; good for egress shaping, bad for
   user-facing latency.
@@ -471,6 +480,8 @@ recreates emergency tokens also breaks the bound.
 >
 > **Why it matters —** UUIDv4 fragments indexes and auto-increment is a SPOF; spending 64 bits
 > wisely gives uniqueness, rough time-ordering, and zero coordination on the hot path.
+
+![Case at a Glance infographic for Case 14, Distributed Unique IDs (Snowflake): the hard part (unique, time-sorted IDs with no per-ID coordination, safe across backward clock jumps and restarts), requirements (64-bit, globally unique, k-sorted, sub-microsecond, uniqueness beats availability), scale (2^41 ms ≈ 69.7 years, 1024 workers, 4096 IDs/ms = 4.096 M IDs/s per worker, fleet ceiling ≈ 4.2 B IDs/s), the 64-bit layout bar (sign 0 | 41-bit timestamp bits 62–22 | 10-bit worker 21–12 | 12-bit sequence 11–0), Coordinator (ZooKeeper/etcd: worker-id lease + durable highest_granted_ts) feeding a generator whose nextId() checks lease → clock → sequence → pack, producing 4,194,332,675 = (1000, 7, 3); key decisions (Snowflake vs UUIDv4/DB sequence, timestamp in high bits, lease + durable grant 1100 → 1101, 11 + 11 = 2048 × 2048, 5 DC + 5 worker still 1024) and three failure modes.](diagrams/case37_info_snowflake_ids_ai.png)
 
 Every row your company writes — every tweet, message, order, log line — needs a
 **unique id**. On one database, `AUTO_INCREMENT` solves it for free. But once
@@ -549,8 +560,8 @@ bits are acceptable; a database sequence is not inherently an unfixable SPOF.
 Decode with `id >> 22 = 1000`, `(id >> 12) & 1023 = 7`,
 `id & 4095 = 3`. This is numeric ordering, **not secrecy** or global event order.
 
-**Prerequisites:** [Ch 24: consensus and leases](#content/24_system_design_data_distributed),
-[Ch 25: clocks and unique IDs](#content/25_system_design_operations_case_studies).
+**Prerequisites:** [Ch 24: consensus, leases and clocks](#content/24_system_design_data_distributed),
+[Ch 25: unique-ID schemes](#content/25_system_design_operations_case_studies).
 [Contents](#chapter37-toc) · [Previous: limiter](#cs13) · [Next: Top-K](#cs15)
 
 ## 14.3 Architecture
@@ -621,8 +632,10 @@ uniqueness unless they are encoded into the ID or enforce disjoint allocations.
 - **Measure throughput:** 4.096 M IDs/s is the sequence-space ceiling, not
   a performance promise. Generators also provide locality and failure isolation.
 - **Worker-id exhaustion:** 1024 ids cap the fleet. If you outgrow it, **rebalance
-  the bit fields** (more machine bits, fewer sequence bits) or scope worker ids
-  per data center (5 bits DC + 5 bits worker).
+  the bit fields** (more machine bits, fewer sequence bits — e.g. 11 + 11 gives
+  2048 workers × 2048 IDs/ms). Splitting the same 10 bits as 5 DC + 5 worker
+  lets each data center allocate its own 32 ids without a global coordinator,
+  but it is still 1024 in total — it simplifies allocation, it adds no capacity.
 - **Clock as the bottleneck:** generation rate is gated by `now_ms()` and the
   sequence; on a machine with a slow/coarse clock, the spin-to-next-ms path can
   throttle. Wall time encodes the timestamp; a monotonic clock with bounded
@@ -638,14 +651,14 @@ uniqueness unless they are encoded into the ID or enforce disjoint allocations.
   ─────────────────────────────────────────────────────────────────────
   Coordinator (ZK) down      →  mint only until the conservative local lease
                                 deadline or grant end; then fail-stop
-  Clock jumps BACKWARD        →  uniqueness risk! refuse to mint until the
-   (NTP correction, VM pause)    clock catches up to last_ts; alert if the
+  Clock jumps BACKWARD       →  uniqueness risk! refuse to mint until the
+   (NTP correction, VM pause)   clock catches up to last_ts; alert if the
                                 gap is large (see §14.8)
   Old owner pauses/resumes   →  recheck lease before issuance; expired or
                                 uncertain ownership stops the process
   Worker reused/restarted    →  start above its durable timestamp ceiling;
                                 do not reset sequence in an old time range
-  Sequence overflow in 1 ms   →  >4096/ms → spin to next ms (back-pressure)
+  Sequence overflow in 1 ms  →  >4096/ms → spin to next ms (back-pressure)
 ```
 **Trade-offs called out:** Snowflake gives up **strict global monotonicity**
 (IDs are only *k-sorted* — two machines in the same ms interleave) in exchange
@@ -681,11 +694,11 @@ and safe allocation across clock changes and worker restarts.
 ```
   64-bit Snowflake ID   (sign bit 0 → always positive; fits a Java long)
   ┌─┬──────────────────────────────────────┬───────────┬─────────────┐
-  │0│       41-bit TIMESTAMP (ms)           │ 10-bit    │  12-bit     │
-  │ │   ms since a CUSTOM epoch (~70 yrs)   │ MACHINE   │  SEQUENCE   │
+  │0│       41-bit TIMESTAMP (ms)          │ 10-bit    │  12-bit     │
+  │ │   ms since a CUSTOM epoch (~70 yrs)  │ MACHINE   │  SEQUENCE   │
   └─┴──────────────────────────────────────┴───────────┴─────────────┘
-   63 62                                  22 21       12 11           0
-    ▲              ▲                            ▲             ▲
+  63 62                                  22 21       12 11          0
+   ▲               ▲                             ▲            ▲
   sign       high bits dominate the         1024 nodes   4096 ids per
   (unused)   sort order → TIME-SORTABLE   (5 DC+5 wkr?)  ms per machine
 ```
@@ -699,35 +712,147 @@ whose randomness scatters inserts across the whole index and shreds cache).
 EPOCH = 1577836800000          # 2020-01-01 in ms; our custom epoch
 def make_id(ts, worker, seq):
     return ((ts - EPOCH) << 22) | (worker << 12) | seq
-    #          41 bits  ──┘  10 bits ─┘   12 bits ┘
+    #        41 bits ─┘        10 bits ─┘    12 bits ┘
     #  << 22 = 10(machine)+12(sequence) bits to the left of timestamp
 ```
 
 **Clock-skew handling — the part that actually breaks in production.** A
 machine's clock can jump **backward** (NTP correction, leap second, a paused
-VM resuming). If `now_ms() < last_ts`, naively continuing could **re-mint a
-timestamp+sequence already used → a duplicate**. The safe policy:
+VM resuming). If `wall_now_ms() < last_ts`, naively continuing could **re-mint a
+timestamp+sequence already used → a duplicate**. The safe policy, as a complete
+program (a fake clock replaces the OS clocks so the run is deterministic; the
+lease is reduced to a monotonic deadline):
+
 ```python
-def next_id(self):
-    with self.lock:                       # protect the ENTIRE transition
-        self.assert_safe_lease()          # monotonic deadline minus margin
-        ts = wall_now_ms()
-        if ts < self.last_ts:
-            if self.last_ts - ts > MAX_TOLERATED_MS:
-                raise ClockMovedBackwards(self.last_ts - ts)
-            ts = self.wait_until(self.last_ts)  # checks lease while waiting
-        seq = self.seq + 1 if ts == self.last_ts else 0
-        if seq == 4096:
-            ts = self.wait_until(self.last_ts + 1)
-            seq = 0
-        if not self.grant_start <= ts <= self.grant_end:
-            raise TimestampGrantExhausted()     # obtain next safe grant
-        if not 0 <= ts - EPOCH < (1 << 41):
-            raise EpochOutOfRange()
-        self.assert_safe_lease()          # also after rollover/clock waits
-        self.last_ts, self.seq = ts, seq
-        return make_id(ts, self.worker_id, seq)
+import threading
+
+EPOCH = 1577836800000          # 2020-01-01 in ms; our custom epoch
+MAX_TOLERATED_MS = 10          # backward step we will wait out; larger → refuse
+
+
+class ClockMovedBackwards(Exception): pass
+class TimestampGrantExhausted(Exception): pass
+class EpochOutOfRange(Exception): pass
+class LeaseNotSafe(Exception): pass
+
+
+class FakeClock:               # deterministic stand-in for the OS clocks
+    def __init__(self, wall_ms):
+        self.wall = wall_ms    # wall-clock ms: encoded in the ID, can jump back
+        self.mono = 0          # monotonic ms: measures the lease deadline
+
+    def tick(self, ms=1):
+        self.wall += ms
+        self.mono += ms
+
+
+CLOCK = FakeClock(EPOCH)
+
+
+def wall_now_ms():
+    return CLOCK.wall
+
+
+def make_id(ts, worker, seq):
+    return ((ts - EPOCH) << 22) | (worker << 12) | seq
+
+
+def decode(id_):               # (ms offset, worker, sequence)
+    return id_ >> 22, (id_ >> 12) & 1023, id_ & 4095
+
+
+class SnowflakeGenerator:
+    def __init__(self, worker_id, grant_start, grant_end, lease_deadline, margin_ms=50):
+        self.lock = threading.Lock()
+        self.worker_id = worker_id
+        self.grant_start, self.grant_end = grant_start, grant_end   # durable grant
+        self.safe_deadline = lease_deadline - margin_ms             # monotonic ms
+        self.last_ts, self.seq = -1, 0
+
+    def assert_safe_lease(self):
+        if CLOCK.mono >= self.safe_deadline:
+            raise LeaseNotSafe()
+
+    def wait_until(self, target_ms):
+        while True:
+            self.assert_safe_lease()
+            now = wall_now_ms()
+            if now >= target_ms:
+                return now
+            CLOCK.tick(1)                 # a real generator sleeps/spins here
+
+    def next_id(self):
+        with self.lock:                       # protect the ENTIRE transition
+            self.assert_safe_lease()          # monotonic deadline minus margin
+            ts = wall_now_ms()
+            if ts < self.last_ts:
+                if self.last_ts - ts > MAX_TOLERATED_MS:
+                    raise ClockMovedBackwards(self.last_ts - ts)
+                ts = self.wait_until(self.last_ts)  # checks lease while waiting
+            seq = self.seq + 1 if ts == self.last_ts else 0
+            if seq == 4096:
+                ts = self.wait_until(self.last_ts + 1)
+                seq = 0
+            if not self.grant_start <= ts <= self.grant_end:
+                raise TimestampGrantExhausted()     # obtain next safe grant
+            if not 0 <= ts - EPOCH < (1 << 41):
+                raise EpochOutOfRange()
+            self.assert_safe_lease()          # also after rollover/clock waits
+            self.last_ts, self.seq = ts, seq
+            return make_id(ts, self.worker_id, seq)
+
+
+def main():
+    gen = SnowflakeGenerator(worker_id=7, grant_start=EPOCH + 1000,
+                             grant_end=EPOCH + 1100, lease_deadline=10_000)
+    CLOCK.wall = EPOCH + 1000
+    ids = [gen.next_id() for _ in range(4)]
+    print(f"4 ids at offset 1000 -> 4th id {ids[-1]:,} = {decode(ids[-1])}")
+
+    CLOCK.wall -= 3                                   # NTP steps back 3 ms
+    print(f"clock back 3 ms -> waits, then {decode(gen.next_id())}")
+
+    CLOCK.tick(1)                                     # offset 1001
+    for _ in range(4096):
+        last = gen.next_id()
+    print(f"4096 ids at offset 1001 -> last {decode(last)}")
+    print(f"4097th id -> spins to next ms {decode(gen.next_id())}")
+
+    CLOCK.wall = EPOCH + 950                          # large backward jump
+    try:
+        gen.next_id()
+    except ClockMovedBackwards as e:
+        print(f"clock back {e} ms -> ClockMovedBackwards (refuse + alert)")
+
+    CLOCK.wall = EPOCH + 1101                         # past the durable grant
+    try:
+        gen.next_id()
+    except TimestampGrantExhausted:
+        print("offset 1101 > grant end 1100 -> TimestampGrantExhausted")
+
+    CLOCK.mono = 9_950                                # deadline minus margin
+    try:
+        gen.next_id()
+    except LeaseNotSafe:
+        print("lease safety deadline reached -> LeaseNotSafe (fail-stop)")
+
+
+if __name__ == "__main__":
+    main()
 ```
+
+**Output:**
+
+```
+4 ids at offset 1000 -> 4th id 4,194,332,675 = (1000, 7, 3)
+clock back 3 ms -> waits, then (1000, 7, 4)
+4096 ids at offset 1001 -> last (1001, 7, 4095)
+4097th id -> spins to next ms (1002, 7, 0)
+clock back 52 ms -> ClockMovedBackwards (refuse + alert)
+offset 1101 > grant end 1100 -> TimestampGrantExhausted
+lease safety deadline reached -> LeaseNotSafe (fail-stop)
+```
+
 Three defenses in one function: **small backward drift → spin and wait**;
 **large backward jump → refuse and alert** (better to stall id generation than
 to mint duplicates that corrupt data forever); **sequence rollover → block to
@@ -761,7 +886,7 @@ negative IDs in languages with signed longs); assuming Snowflake IDs are secret.
 **Building blocks reused:** consensus / coordination (ZooKeeper, etcd, leases) —
 **Ch 24**; B-tree index locality and why sortable keys matter — **Ch 24**; the
 sketch of this scheme — **Ch 25** (*distributed unique IDs*); monotonic clocks &
-NTP — **Ch 25**.
+NTP — **Ch 24** (*time, clocks, and ordering*).
 
 <a id="practice-14"></a>
 
@@ -809,6 +934,8 @@ in-memory sequence is not a restart protocol.
 > **Why it matters —** you can't keep a counter for billions of distinct keys; trading a little
 > accuracy (a sketch) for fixed memory is the whole point.
 
+![Case at a Glance infographic for Case 15, Top-K / Trending / Heavy Hitters: the hard part (billions of distinct keys, trade accuracy for fixed memory), requirements (top-K over a named window, refreshed every few seconds, bounded RAM, exact only via batch), scale (1 M events/s = 3.6 B/hour, ~10^9 keys/day, exact map ≈ 16 GB vs Count-Min Sketch 4 × 2^20 × 8 B = 32 MiB, over-count bound ≈ 9,332 events/hour), an architecture of Events → Kafka (partition by key) → three stream workers (Count-Min Sketch + top-C candidates) → rescore/emit window/version → Merge (same window) → Redis global top-K → /trending API with a dashed Spark batch (exact) reconcile path, a CMS inset (rows h1–h4, cells 12, 7, 19, 9 → estimate = MIN = 7), a key-decisions table and three failure modes (duplicate heap key, X = 60 + 60 = 120 hidden by A = 100 and B = 100, mixed windows).](diagrams/case37_info_top_k_heavy_hitters_ai.png)
+
 "What are the **top 10 trending hashtags right now**?" "Which **100 URLs** got
 the most ad clicks this hour?" "Who are the **heavy hitters** flooding our API?"
 These are all the same problem: a **firehose of events** streams past, and you
@@ -841,18 +968,19 @@ fine for a small stream; key cardinality outgrows the assigned RAM; use a CMS
 and a **keyed, unique candidate heap**; accept count error and candidate-recall
 error, and compare with exact sampled/batch results.
 
-**Six events, K=2:** with no collisions in this tiny illustration:
+**Six events, K=2, candidate capacity 2:** keys A, B and D; no hash
+collisions in this tiny illustration:
 
 | Event in window 12:00–13:00 | Candidate keys and estimated counts |
 |---|---|
 | A | A:1 |
 | A | A:2 — update A, do not insert a second A |
 | B | A:2, B:1 |
-| C | A:2, B:1 — fixed tie rule retains B over C |
+| D | A:2, B:1 — heap full; tie broken by key order (B < D) keeps B, drops D:1 |
 | B | A:2, B:2 |
 | A | A:3, B:2 |
 
-**Prerequisites:** [Ch 24: sketches, partitioning and event-time windows](#content/24_system_design_data_distributed),
+**Prerequisites:** [Ch 24: probabilistic structures, partitioning and event-time windows](#content/24_system_design_data_distributed),
 [Ch 31: heaps](#content/31_dsa_foundations).
 [Contents](#chapter37-toc) · [Previous: IDs](#cs14) · [Next: leaderboard](#cs16)
 
@@ -903,14 +1031,15 @@ count, so the min is the tightest over-estimate).
 
 ```
   COUNT-MIN SKETCH   (d=4 rows × w columns of counters)
-            col →   0     1     2     3    ...   w-1
-   h1(x) ─▶ [    ][  12 ][    ][    ] ...........[    ]
-   h2(x) ─▶ [  7 ][    ][    ][    ] ...........[    ]
-   h3(x) ─▶ [    ][    ][  19 ][    ] ...........[    ]
-   h4(x) ─▶ [    ][    ][    ][  9 ] ...........[    ]
+    col →      0     1     2     3    ...      w-1
+   h1(x) ─▶ [    ][ 12 ][    ][    ] ........ [    ]
+   h2(x) ─▶ [  7 ][    ][    ][    ] ........ [    ]
+   h3(x) ─▶ [    ][    ][ 19 ][    ] ........ [    ]
+   h4(x) ─▶ [    ][    ][    ][  9 ] ........ [    ]
 
    update(x):    for each row i:  cell[i][ h_i(x) mod w ] += 1
    estimate(x):  MIN over rows of cell[i][ h_i(x) mod w ]
+                 for this x: MIN(12, 7, 19, 9) = 7
                  (never under-counts; over-counts only on hash collisions)
 ```
 The sketch tells you *how often* a key appeared, but **not which keys are
@@ -975,8 +1104,9 @@ late corrections need versioned output rather than silently mixing windows.
   instead); forgetting **windowing/decay** so "trending" really means
   "all-time"; merging partitions by *summing sketches* but then trusting exact
   counts (you can sum CMS arrays cell-wise, but the result is still approximate).
-- **Building blocks:** Count-Min Sketch & probabilistic structures — **Ch 24**;
-  Kafka partitioning & stream processing (Flink/Beam) — **Ch 24**; Lambda /
+- **Building blocks:** the Count-Min Sketch itself is introduced in this case (Ch 23 only
+  uses one inside W-TinyLFU); Bloom filters & other probabilistic structures —
+  **Ch 24**; Kafka partitioning & stream processing (Flink/Beam) — **Ch 24**; Lambda /
   Kappa batch-vs-stream reconciliation — **Ch 24**; heaps — **Ch 31 (DSA)**.
 
 <a id="practice-15"></a>
@@ -1021,6 +1151,8 @@ Even key partitioning cannot remove CMS collision or candidate-recall error.
 >
 > **Why it matters —** rank / top-N / around-me queries are exactly what a sorted set is built for;
 > the durable scores live in Cassandra behind it.
+
+![Case at a Glance infographic for Case 16, Leaderboard / Ranking: the hard part (top-N, my rank and around-me for 50 M players under retries and out-of-order updates), requirements, scale (50 M × 10 updates/day = 500 M writes/day ≈ 6k/s, peak ~20k/s, 100k+ reads/s, 1.6 GB payload, plan 6–10 GB), an architecture of Score API → Dedupe (season, match, player) → Durable scores + version + outbox (one commit) → Projector (apply only if newer) → Redis sorted set → Leaderboard API with ZREVRANGE 0 99 / ZREVRANK / ZREVRANGE r−2 r+2 queries and a dashed 'Redis lost → rebuild' path, a worked board (#1 Dev 125 v9, #2 Ada 120 at 200 s, #3 Ben 120 at 250 s, #4 Cleo 100, #5 Eli 90; around Ben), tie encoding score × 1,000,000 + (999,999 − t) with max 1,000,000,999,999 < 2^53, a key-decisions table (global rank 7 + 5 + 2 + 1 = 15) and three failure modes.](diagrams/case37_info_leaderboard_ai.png)
 
 A **game leaderboard** looks easy — sort users by score — until you notice the
 queries it must answer **in milliseconds, live, for 50 million players**:
@@ -1110,12 +1242,15 @@ Redis implements a sorted set as a **skip list** (ordered, O(log N) rank) plus a
 both "where does this member rank?" and "who is at rank r?" quickly:
 
 ```
-   ZADD   lb:global  9500  "alice"      add/update score        O(log N)
-   ZREVRANK lb:global "alice"           alice's 0-based rank     O(log N)
-   ZREVRANGE lb:global 0 99  WITHSCORES top-100 (high→low)  O(log N + 100)
-   ZREVRANGE lb:global  r-2  r+2        the 5 around rank r      O(log N + 5)
-   ZINCRBY  lb:global  +50  "alice"     atomic bump, NOT retry-idempotent
+   ZADD      lb:global 9500 "alice"      add/update score      O(log N)
+   ZREVRANK  lb:global "alice"           alice's 0-based rank  O(log N)
+   ZREVRANGE lb:global 0 99 WITHSCORES   top-100 (high→low)    O(log N + 100)
+   ZREVRANGE lb:global r-2 r+2           the 5 around rank r   O(log N + 5)
+   ZINCRBY   lb:global 50 "alice"        atomic bump, NOT retry-idempotent
 ```
+Since Redis 6.2, `ZRANGE lb:global 0 99 REV WITHSCORES` is the preferred
+spelling of `ZREVRANGE` (deprecated, still supported); ranks are unchanged.
+
 **Ties:** Redis orders equal scores **lexicographically by member**. To enforce
 "earliest wins," bound a season's tie space. With integer scores
 `0 <= score <= 1,000,000` and reach-second `0 <= t < B=1,000,000`, encode
@@ -1213,6 +1348,8 @@ create a separate double-counting bug.
 > **Why it matters —** the real design is spreading keys with consistent hashing (so adding a node
 > doesn't reshuffle everything) and surviving a hot key that would melt one shard.
 
+![Case at a Glance infographic for Case 17, Distributed Cache: the hard part (spread keys without reshuffling; survive hot keys, stampedes and cold restarts), requirements (get/set/delete, sharded, eviction; best-effort copy, DB authoritative), scale (1 M reads/s at > 90% hits → DB ~100k/s; 100 GB ÷ 32 GB → 4 nodes memory floor; 4 × 200k = 800k ops/s not enough; ceil(1M / 140k) = 8 nodes at 70%), a consistent-hash ring (A, B, C, D clockwise, keyA owned by B, keyB owned by C, new node E on the D→A arc so only D→E keys move, ~100 vnodes per node) beside a cache-aside sequence (1 GET k, 2 miss, 3 read k from Database, 4 SET k, v, TTL; membership/failover manager publishes ring ownership), a key-decisions table (consistent hashing, cache-aside, hot-key near cache and key#0..key#K−1, generation fence g7/g8, allkeys-lru vs noeviction) and three failure modes (cold restart DB 100k/s → 1 M/s, stampede → single-flight + TTL jitter, node crash).](diagrams/case37_info_distributed_cache_ai.png)
+
 A **distributed cache** is a giant, fast, in-memory key→value layer that sits
 between your services and your database, turning **10 ms database reads into
 0.3 ms memory reads** and absorbing the read firehose so the DB survives. The
@@ -1251,9 +1388,13 @@ after a cache miss. At .010 writer W commits v8 and invalidates the cache.
 At .020 R fills v7 **after** that invalidation. "Delete after write" alone
 does not prevent this race.
 
-Keep the fence after deleting the value; a fill is conditional on the same
-generation. Fence eviction/restart must create a **new generation**, not reuse
-g7. This reduces stale fills; the DB-commit-to-invalidation gap still exists,
+**Fix — a generation fence:** keep a small per-key counter (the *generation*)
+in the cache. On a miss the reader records the generation it saw (g7); every
+writer's invalidation deletes the value **and** bumps the generation (g7 → g8)
+atomically; a fill succeeds only if the generation is still the one the reader
+recorded, so R's v7 fill is rejected. Keep the fence after deleting the value;
+if the fence itself is evicted or the node restarts, start a **new generation**,
+never reuse g7. This reduces stale fills; the DB-commit-to-invalidation gap still exists,
 so strict-freshness reads use the authority. Versioned CDC updates are another
 choice, with measured lag rather than a claim of linearizable caching.
 
@@ -1270,7 +1411,7 @@ choice, with measured lag rather than a claim of linearizable caching.
 **Block-by-block:**
 - **Cache client** — a library in each app server; hashes the key onto a **consistent-hash ring**
   to find its owner node — there's no central coordinator on the read path.
-- **Cache node** — holds a shard in RAM with an **eviction policy** (LRU default) and an **async replica**.
+- **Cache node** — holds a shard in RAM with an **eviction policy** (usually LRU) and an **async replica**.
 - **Membership/failover manager** — publishes ring ownership and promotes replicas
   in this **generic cache** design. Actual **Redis Cluster** uses 16,384 hash
   slots, slot migration and cluster failover; **Sentinel** monitors/promotes
@@ -1307,16 +1448,19 @@ owned by the **next node clockwise**, so adding/removing a node only moves
 `~1/N` of keys:
 
 ```
-          ┌─────── hash ring (0 … 2^32) ───────┐
-          │                                       │
-     A ●                                            ● B
-          │     ● keyA → owned by B (next CW)      │
-          │          ● keyB → owned by C           │
-     D ●                                            ● C
-          │   Add node E between D and A:           │
-          └── only keys in the D→E arc move ────────┘
- Virtual nodes: place each physical node at ~100 ring spots → even load
- + lets you weight bigger nodes with more vnodes.
+   hash ring 0 … 2^32−1 drawn as a loop, read CLOCKWISE: A → B → C → D → A
+
+      A ●──────────── keyA ────────────● B
+        │                              │
+        E  ← new node on the D→A arc   keyB
+        │                              │
+      D ●──────────────────────────────● C
+
+   keyA sits on the A→B arc → owned by B (the next node clockwise)
+   keyB sits on the B→C arc → owned by C
+   Add node E on the D→A arc: only keys on the D→E arc move (A → E)
+   Virtual nodes: place each physical node at ~100 ring spots → even load,
+   and give bigger nodes more vnodes to weight them.
 ```
 **Virtual nodes** (each physical node placed at many ring positions) smooth out
 load imbalance and make rebalancing gradual.
@@ -1347,8 +1491,10 @@ requests for the **same** key; it cannot collapse a million distinct cold keys.
 - **Cache vs source of truth:** the cache is **allowed to be stale and to lose
 data** on a node crash — that's why the DB is authoritative and the cache is
 rebuildable.
-- **Eviction:** **LRU** is the default; **LFU** (or W-TinyLFU) wins for stable
-hot sets where recency lies (Ch 23).
+- **Eviction:** **LRU** is the usual choice; **LFU** (or W-TinyLFU) wins for stable
+hot sets where recency lies (Ch 23). Memcached evicts LRU-style by default;
+Redis must be configured for it (e.g. `maxmemory-policy allkeys-lru`) — its
+default `noeviction` rejects writes when memory is full.
 - **Replication:** async replicas trade a small staleness/loss window for read
 scale and fast failover; sync replication costs write latency.
 - **Red flags:** `hash % N` sharding (reshuffle storm on scale-out); no hot-key
@@ -1401,6 +1547,8 @@ database outage. Extra RAM alone does not solve the refill throughput problem.
 > **Why it matters —** at-least-once + idempotent workers + a durable job store with leased
 > dispatch is what turns "run it later" into a real guarantee.
 
+![Case at a Glance infographic for Case 18, Job Scheduler / Task Queue: the hard part (never lose a job, fire delayed/cron jobs on time, safe redelivery), requirements (immediate/delayed/cron, retry with backoff, DLQ; at-least-once, durable, dispatch-lag SLO), scale (100 M jobs/day ≈ 1,200/s, peak ~5k/s; Little's Law 5,000 × 0.2 s = 1,000 slots; 50 machines busy, ~72 at 70%; 100 GB/day), an architecture of Submit API → Durable job store with a leader-elected scheduler promoting due jobs, and a state machine READY → LEASED (worker leases attempt n, 30 s, SKIP LOCKED) → DONE (ACK with token n), LEASED → READY on lease expiry (sweeper) or fail → backoff, LEASED → DLQ after N attempts, a job-42 trace (A claims attempt 7, heartbeat to :50, B claims attempt 8 at :51, A's late ACK at :52 → 0 rows), a key-decisions table and three failure modes.](diagrams/case37_info_job_scheduler_ai.png)
+
 Almost every backend needs to **run work later or in the background**: send this
 email in 5 minutes, generate this report nightly at 02:00, retry this webhook,
 process this video. A **distributed job scheduler / task queue** accepts jobs,
@@ -1436,7 +1584,7 @@ A heartbeat at :20 extends it to :50. After a pause, the sweeper makes it ready
 at :51 and B claims attempt 8. A's late acknowledgement at :52 **must affect
 zero rows**; it no longer owns the current attempt.
 
-**Prerequisites:** [Ch 24: queues, leases and SKIP LOCKED](#content/24_system_design_data_distributed),
+**Prerequisites:** [Ch 24: queues, leases and fencing](#content/24_system_design_data_distributed),
 [Ch 25: retries and idempotency](#content/25_system_design_operations_case_studies).
 [Contents](#chapter37-toc) · [Previous: cache](#cs17) · [Next: payments](#cs19)
 
@@ -1524,6 +1672,7 @@ now?" query. Two standard structures:
 (a) SORTED SET BY run_at  (Redis ZSET; simple, scales to millions)
       ZADD delayed <run_at_ts> <job_id>
       due = ZRANGEBYSCORE delayed -inf now   → promote these to READY
+            (Redis ≥ 6.2 spelling: ZRANGE delayed -inf now BYSCORE)
       O(log N) insert, O(log N + m) to pull m due jobs.
 
 (b) HIERARCHICAL TIMING WHEEL  (for huge timer volumes, e.g. Kafka)
@@ -1607,6 +1756,8 @@ number would be wrong because retries intentionally have different attempts.
 > an immutable ledger, transactional balance maintenance and durable idempotency
 > protect local posting. External settlement still has pending/unknown states.
 
+![Case at a Glance infographic for Case 19, Payments / Digital Wallet: the hard part (never double-charge, lose a deposit or create money), with the Alice 5,000¢ example (T30 spends 3,000 → 2,000; T31 wants 2,500 → insufficient funds), requirements (top-up/pay/transfer/refund, Idempotency-Key, Σ entries = 0, no overdraft, CP, append-only ledger), scale (10,000 txn/s → 20,000 entries/s; avg 2k/s → 172.8 M txns/day, 345.6 M entries/day ≈ 69 GB/day; peak bound ≈ 346 GB/day), an architecture of Client → Payment API (durable idempotency claim) → Orchestrator (saga) → Gateway adapter → External processor, the Orchestrator posting to a Wallet/ledger SQL box (transactions, ledger entries, balances, outbox in one ACID transaction; card_clearing −10000 / wallet:alice +10000 / Σ = 0), outbox → Kafka → Notifications and Reconciliation job (plus settlement report from the processor), saga states (PENDING → CHARGED → CONFIRMED, PENDING → FAILED, CHARGED → COMPENSATE: refund → REVERSED; timeout = UNKNOWN → re-query), a key-decisions table and three failure modes.](diagrams/case37_info_payments_wallet_ai.png)
+
 This is the design where **eventually consistent spend authorization** is a
 wrong answer. Statements, notifications and settlement can lag; deciding
 whether funds are spendable cannot rely on a stale cache. A bug is not a stale tweet —
@@ -1642,9 +1793,10 @@ rest?
 - Every state-changing call takes an **`Idempotency-Key`**.
 - Multi-currency optional (state it as a stretch; keep one currency in the core).
 
-**Out of scope:** the **fraud-detection model itself** and KYC/onboarding — though the payment
-flow does call a thin **Fraud Service** for a risk check before moving money (shown in §19.3) —
-and the card-network internals (we integrate a **gateway** — Stripe/Adyen — as a black box).
+**Out of scope:** the **fraud-detection model itself** and KYC/onboarding — though a real
+orchestrator calls a thin **Fraud Service** for an approve/deny risk check before charging
+(one extra box before the gateway call in §19.3) — and the card-network internals (we
+integrate a **gateway** — Stripe/Adyen — as a black box).
 
 **Non-functional**
 - **Correctness:** **no double-spend, no lost money, books always balance**
@@ -1706,6 +1858,7 @@ the locked balance, T31 would incorrectly read 5,000.
 ![Payment System / Digital Wallet — high-level architecture (HLD)](diagrams/payment_ai.png)
 
 **Legend:** boxes are services; a store is named inside the box.
+
 **Block-by-block:**
 - **Payment API** — the synchronous entry point; its first stateful step is
   durable idempotency lookup/claim. A completed matching request replays its
@@ -1732,9 +1885,9 @@ A **card top-up** of Alice's wallet, end to end:
       └─ absent → create durable txn T1=PENDING (unique scope+key)
 3. Orchestrator → Gateway.charge(card, 10000 USD cents, provider_key=T1)
       provider scope/window must support safe retry of that same identity
-4a. charge OK → post LEDGER (one ACID DB txn in the wallet):
-          DEBIT  card_clearing  -100.00   T1
-          CREDIT wallet:alice   +100.00   T1     (Σ = 0)
+4a. charge OK → post LEDGER (one ACID DB txn in the wallet; amounts in cents):
+          DEBIT  card_clearing  -10000   T1
+          CREDIT wallet:alice   +10000   T1     (Σ = 0; = $100.00)
           update authoritative balances in cents in this transaction
           set T1 = CONFIRMED; write OUTBOX event; store result under scope+k1
 4b. definitive decline → T1 = FAILED; no ledger entries; return error
@@ -1783,8 +1936,10 @@ dedupe window, reconcile by transaction identity instead of blindly resending.
 serialize writes to that account, or split incoming credits into **sub-ledgers**
 that roll up. Addition commutes, but dedupe, balances and spending limits still
 need authoritative enforcement; split credits do not make independent debits safe.
-- **Balance reads** scale via the derived **balance cache / materialized view**;
-the **authoritative** number is always `SUM(entries)`, recomputable on demand.
+- **Balance reads** scale via the derived **balance cache / materialized view**
+(display only). The **authoritative** number is the locked balance row, updated
+in the same transaction as the entries, so it always equals `SUM(entries)` and
+can be recomputed and audited from the ledger on demand.
 - **Throughput is not the hard part** at 10k/s; **write correctness and lock
 contention on hot accounts** are. Keep transactions short; use row-level locks
 or optimistic concurrency (Ch 24) on the debited account.
@@ -1852,15 +2007,15 @@ the **saga** that spans the external gateway.
 **Double-entry, in one picture.** Every transaction writes entries that **sum to
 zero** — money is conserved, never created:
 ```
-txn T1 — "Alice pays Bob $30"
+txn T2 — "Alice pays Bob $30" (amounts in integer cents)
  ┌──────────────────┬──────────┬──────┐
- │ account          │  amount  │ txn  │
+ │ account          │ amount ¢ │ txn  │
  ├──────────────────┼──────────┼──────┤
- │ wallet:alice     │  -30.00  │ T1   │   debit  (money leaves)
- │ wallet:bob       │  +30.00  │ T1   │   credit (money arrives)
+ │ wallet:alice     │  -3000   │ T2   │   debit  (money leaves)
+ │ wallet:bob       │  +3000   │ T2   │   credit (money arrives)
  └──────────────────┴──────────┴──────┘
                       Σ = 0  ← invariant checked on every commit
- balance(x) = SUM(amount) WHERE account = x          (pure function)
+ balance(x) = SUM(amount_minor) WHERE account = x    (pure function)
  APPEND-ONLY: a mistake is fixed by a NEW reversing entry, never an UPDATE.
 ```
 
@@ -1941,8 +2096,9 @@ constraint at the API *and* a matching key passed to the gateway.
 - *"Cross-currency / cross-bank transfer?"* — saga with an FX step; each leg is
 its own balanced posting; compensations reverse partial progress.
 - *"How do you know it's right?"* — **reconciliation**: nightly compare ledger
-totals to the gateway/bank settlement; any drift becomes a flagged reversing
-entry. Plus the invariant `Σ entries = 0` checked continuously.
+totals to the gateway/bank settlement; any drift becomes a tracked exception,
+fixed by a balanced corrective entry only after it is investigated. Plus the
+invariant `Σ entries = 0` checked continuously.
 - *"Exactly-once?"* — the **ledger insert is exactly-once** (unique key);
 messaging around it is at-least-once + idempotent consumers.
 
@@ -2003,7 +2159,9 @@ not that funds were credited. Reusing k1 with a changed amount is rejected.
 > **Why it matters —** the entire problem is making "check stock and decrement" one atomic op on a
 > single hot SKU under brutal contention, then holding stock just long enough to pay.
 
-A **flash sale** — 1,000 PlayStations at midnight, a concert on-sale, a
+![Case at a Glance infographic for Case 20, Inventory / Flash Sale: the hard part (1 M buyers, 100 units, check-and-decrement must be one atomic durable step) with the stock-2 example (O17 → R17 ACTIVE, O18 → 0 left, retry O17 → same R17), requirements (reserve, confirm, release; no oversell, payment timeout = UNKNOWN), scale (1 M concurrent buyers, 100 units, ~1 M checkout attempts in seconds, 5-minute hold, invariant available + active + confirmed = stock), an architecture of 1 M buyers → Virtual waiting room → Inventory API (optional Redis DECRBY admission gate) → Durable SQL one transaction (INSERT reservation with unique order_id, decrement only if available ≥ qty, + outbox; 0 rows → sold out), Inventory API → Payment (CS19) → conditional CONFIRM / EXPIRE / RELEASE, outbox → Kafka order events → Fulfillment and Reconciliation, reservation states (ACTIVE → CONFIRMED / EXPIRED + restore stock / RELEASED; EXPIRED → LATE_PAYMENT → fresh hold or refund), a key-decisions table and three failure modes.](diagrams/case37_info_flash_sale_inventory_ai.png)
+
+A **flash sale** — 100 PlayStations at midnight, a concert on-sale, a
 Black-Friday doorbuster — is a **concurrency stress test disguised as shopping**.
 A million people press "Buy" in the same second on a product with **100 units in
 stock**. The one thing you absolutely cannot do is **oversell**: sell unit #101.
@@ -2227,6 +2385,8 @@ zero rows and Carol could not have acquired that unit.
 > handling. Strict `W+R>N` overlap assumes a fixed home replica set; sloppy
 > quorums deliberately relax that assumption.
 
+![Case-at-a-glance infographic for Case 21, the Dynamo-style key-value store. The Hard Part is staying writable during partitions (AP) with PUT cart:alice v2 to home set {A, B, C}, N = 3, W = 2, R = 2. Requirements are get/put, versioned delete and per-request tunable consistency, and the Scale card shows 1 M ops/s and 10 TB x N = 3 = 30 TB on ~30-40 nodes. The Architecture runs Client -> any node as coordinator (no leader) -> hash ring + vnodes preference list -> home set Nodes A/B/C (PUT waits for W = 2 acks, GET for R = 2), with a dashed stand-in Node D for hinted handoff and a gossip / read-repair / Merkle anti-entropy background strip. A quorum trace shows R1 v2, R2 v2, R3 v1, with the write and read sets overlapping at R2, which returns v2 and read-repairs R3. A Key Decisions table covers quorum, strict vs sloppy, version vectors [2,0,0] vs [0,1,0], tombstones and tuning, followed by failure modes and the trap of quoting W + R > N without naming the replica set.](diagrams/case37_info_dynamo_kv_store_ai.png)
+
 "Design a key-value store like **Amazon Dynamo / Cassandra**" is the canonical
 **distributed-systems** interview — it forces you to assemble consistent hashing,
 replication, quorums, conflict resolution, and failure handling into one
@@ -2265,7 +2425,7 @@ is reachable. Sloppy mode can acknowledge v2 on `{A,D}`. A reader reaching
 `{B,C}` sees v1, even though the configured numbers still say W+R=4>3.
 The two successful sets are not subsets of the same three-node universe.
 
-**Prerequisites:** [Ch 24: quorum, vector clocks, WAL and anti-entropy](#content/24_system_design_data_distributed),
+**Prerequisites:** [Ch 24: quorum, vector clocks, WAL and hinted handoff](#content/24_system_design_data_distributed),
 [CS19: contrast with authoritative spending](#cs19).
 [Contents](#chapter37-toc) · [Previous: inventory](#cs20) · [Next: Pastebin](#cs22)
 
@@ -2278,8 +2438,9 @@ The two successful sets are not subsets of the same three-node universe.
 **Block-by-block:**
 - **No leader** — any node can **coordinate** a request, which is why the store stays available.
 - **Consistent hashing + virtual nodes** (Ch 24) — place keys; each key's **preference list** is
-  the next **N distinct physical failure-domain owners** in the preference
-  list, skipping virtual nodes on the same machine. Vnodes are not independent replicas.
+  the first **N distinct physical nodes** met walking clockwise from the key's
+  position (ideally in different failure domains), skipping further virtual
+  nodes of a machine already chosen. Vnodes are not independent replicas.
 - **Quorum reads/writes** — a **PUT** is sent to all N but only waits for **W** acks; a **GET**
   asks all N but waits for **R**.
 - **Gossip** — spreads membership and failure detection without a central registry.
@@ -2323,8 +2484,8 @@ acknowledged write" claim. Overlap alone is not linearizability.**
  │  v2 ✓  │  v2 ✓  │  v1    │   write acked by R1,R2; R3 not yet updated
  └────────┴────────┴────────┘
  read picks any 2, say {R2,R3}:  sees v2 (R2) and v1 (R3) → returns v2
-     (newest), and READ-REPAIRS R3 → v2.   The overlap node (R2) is the
-     overlap: every size-2 subset of this FIXED home set intersects the write set.
+     (newest), and READ-REPAIRS R3 → v2.   R2 is the overlap: every 2-replica
+     read set from this FIXED home set {R1,R2,R3} meets the write set {R1,R2}.
  Tuning:  W=1,R=1 (W+R=2≤3) → fast, may read stale (eventual).
           W=3,R=1 → durable slow writes, fast reads.   Pick per operation.
 ```
@@ -2374,8 +2535,8 @@ availability that the chosen quorum cannot provide; ignoring concurrent-write co
 exactly-once or linearizable while also offering sloppy quorum; no
 anti-entropy/read-repair (replicas drift forever).
 - **Building blocks:** consistent hashing + vnodes, quorum N/W/R, vector clocks,
-gossip, hinted handoff, Merkle anti-entropy, CAP/PACELC — all **Ch 24**;
-LSM-tree/WAL storage engine under each node — **Ch 24**.
+gossip, hinted handoff, CAP/PACELC — all **Ch 24**; Merkle-tree anti-entropy
+and read-repair — introduced in this case; LSM-tree/WAL storage engine under each node — **Ch 24**.
 
 <a id="practice-21"></a>
 
@@ -2418,6 +2579,8 @@ without identifying the participating replica set is not a consistency proof.
 >
 > **Why it matters —** it's the URL shortener with a text blob instead of a redirect — reuse that
 > design and isolate the big blob from the metadata.
+
+![Case-at-a-glance infographic for Case 22, Pastebin, a URL shortener that stores a text blob instead of a redirect. The Hard Part is enforcing ACL, expiry and view-once before serving bytes, shown with the worked example: paste p7, reader Bob, expires 12:05, claimed at 12:04:59 for one attempt. The Scale card shows 10 M pastes/day = 120 writes/s, reads ~10x = 1,200/s, and 10 M x 10 KB = 100 GB/day of blobs. The Architecture has a write lane (Client -> Write API + key gen (base62 / counter / Snowflake) -> private object store p7/v1 and metadata DB + cache) and a read lane (Read API -> ACL + server-time expiry gate -> CAS consumed false -> true -> fetch blob with service access -> stream no-store). Denied, expired or consumed requests get no payload, and a CDN is used only for public pastes with TTL <= paste expiry. A Key Decisions table and failure modes (orphan blob cleanup, link scanners/HEAD, reusable CDN URL bypass) follow, with the footer 'Authorize and consume before you fetch the blob.'](diagrams/case37_info_pastebin_ai.png)
 
 Pastebin is **"a URL shortener whose value is a blob of text instead of a
 redirect."** You paste code/text, get a short link, and anyone with the link can
@@ -2566,6 +2729,8 @@ weaker "one request" meaning. Never solve it by handing out a reusable CDN URL.
 > **Why it matters —** the capstone is recognizing "AP on the way in, CP at the till" and composing
 > designs you've already built (search, recsys, inventory, payment, notifications).
 
+![Case-at-a-glance infographic for Case 23, the e-commerce platform capstone: two products glued at the cart, AP on the way in and CP at the till. The Hard Part card shows order O901: 2 x 1,999 + 300 shipping = 4,298 cents, hold R901 until 12:05, payment P901. The Scale card shows 100 M DAU x 10 views = 12k views/s, a sale peak of ~120k/s, 10 M orders/day = 120/s, 10k+ checkouts/s on one SKU, and a catalog of 500 M x ~2 KB = 1 TB. The Architecture is split by a dashed line. The browse plane (AP, < 200 ms) has Gateway/BFF -> browse services: Catalog (MongoDB + cache), Search (Elasticsearch, CS5), Recs (F3), Serviceability/TAT (precomputed). The order plane (CP) runs Cart (Redis) + Order (MySQL) -> Inventory reserve (CS20) -> Payment saga (CS19) -> Fulfillment -> outbox -> Notifications, with Archive -> Cassandra. A Key Decisions table (AP/CP split, document store for shirt vs TV, precomputed delivery ETA, atomic reserve, hot/cold tiering copy -> verify -> manifest -> conditional delete) and failure modes (PAYMENT_UNKNOWN, query P901, payment after hold expiry) follow.](diagrams/case37_info_ecommerce_platform_ai.png)
+
 This is the **capstone** — not one hard idea but **a dozen wired together**. An
 e-commerce platform is really **two products glued at the cart**: a
 **browse/search experience** that must stay **fast and always-on** even when a
@@ -2631,7 +2796,7 @@ or global? Stock per-warehouse or global? Do we own logistics or integrate a
  DAU                  100 M; ~10 page views each → 1 B views/day ≈ 12k/s
  Peak (sale events)   ~10×  → ~120k/s reads on browse/search
  Orders               assume 10% of 100M DAU place one order/day
-                      → ~10 M orders/day ≈ 120/s (not 1% of undefined sessions)
+                      → ~10 M orders/day ≈ 120/s
                       flash-sale bursts → 10k+ checkout attempts/s on ONE SKU
  Catalog              500 M items × ~2 KB doc ≈ 1 TB catalog (document store)
  Search index         500 M docs → sharded Elasticsearch (tens of shards)
@@ -2689,7 +2854,7 @@ the **AP browse plane** (top) from the **CP order plane** (bottom).
   **near-real-time** by **Spark Streaming** over the click/order event stream.
 - **Serviceability / TAT service** — answers "**do we deliver to this pincode,
   and by when?**" from **precomputed** warehouse × pincode × logistics tables
-  (see 23.6/23.8); read on the PDP, **never** computed on the hot path.
+  (see 23.6); read on the PDP, **never** computed on the hot path.
 - **Cart + Order-Taking Service** (cart held in Redis, persisted to **MySQL**) — the
   order-plane entry point.
 - **Inventory service** — atomic durable reservation+decrement, then
@@ -2837,9 +3002,9 @@ fix fuses **check + decrement** into one atomic, constraint-guarded operation:
 ```sql
 -- This statement is INSIDE CS20's reservation-create transaction:
 UPDATE inventory
-   SET quantity = quantity - :qty
- WHERE sku = :sku AND quantity >= :qty;   -- 1 row → reserved; 0 rows → SOLD OUT
--- table guard:  quantity INT NOT NULL CHECK (quantity >= 0)
+   SET available = available - :qty
+ WHERE sku = :sku AND available >= :qty;  -- 1 row → reserved; 0 rows → SOLD OUT
+-- table guard:  available INT NOT NULL CHECK (available >= 0)
 -- The reservation row and outbox commit with this decrement.
 -- Confirmation and expiry are competing conditional transitions.
 -- Payment timeout is UNKNOWN, not an unconditional stock-release command.
@@ -2858,15 +3023,15 @@ corrections and retention/legal holds can follow. Choose an eligibility boundary
 (e.g. 90 days after terminal state and no open support/financial workflow), then
 tier if measurements justify the added complexity:
 ```
-        OPEN + RECENT orders                  ELIGIBLE HISTORICAL VERSIONS
+        OPEN + RECENT orders                 ELIGIBLE HISTORICAL VERSIONS
    ┌────────────────────┐    Archival svc    ┌──────────────────────┐
    │ MySQL (OLTP, ACID) │ ──(CDC / sweep)──▶ │ Cassandra (archive)  │
-   │ transactional hot │ copy/verify/route  │ read-mostly snapshots │
-   │ working set       │ ◀── ── ── ── ── ── │ versioned, partitioned│
-   └─────────┬──────────┘                    └──────────┬───────────┘
-             │ live order ops                            │ history reads
-             ▼                                           ▼
-        Order service                        Historical-Order service
+   │ transactional hot  │ copy/verify/route  │ read-mostly          │
+   │ working set        │ ◀── ── ── ── ── ── │ versioned snapshots  │
+   └──────────┬─────────┘                    └───────────┬──────────┘
+              │ live order ops                           │ history reads
+              ▼                                          ▼
+        Order service                         Historical-Order service
 ```
 - The **Archival service** copies `(order_id, version)` idempotently to an
   archive partitioned by user/time bucket; verifies payload checksum and
@@ -2972,6 +3137,8 @@ retrieval, feature freshness, latency budgets.
 > **Why it matters —** serving LLMs is a GPU-utilization problem, not a CPU one — batching,
 > KV-cache, and token streaming are what make it economical.
 
+![Case-at-a-glance infographic for F1, LLM inference serving: keep GPUs full, don't recompute the past, stream through a safety gate. The Hard Part card breaks down TTFT 500 ms = 50 gateway/cache + 150 queue + 250 prefill + 50 output gate. The Scale card shows 20% of 10,000 chats x 30 tok/s = 60,000 tok/s; 2k tok/s x 70% = 1,400 tok/s per GPU; ceil(60,000 / 1,400) = 43 GPU equivalents; all 10,000 decoding = 300,000 tok/s -> 60-150 GPUs; and KV 128 KiB/token x 4,096 = 512 MiB. The Architecture runs Clients -> Gateway (auth, rate limit, quotas) -> Safety -> scoped Cache -> Model router -> GPU fleet with a continuous-batching scheduler (prefill -> KV cache, decode 1 token/step, paged KV in HBM), fed by a model registry and a GPU autoscaler on queue depth / tok/s, then -> Output gate (screens cache hits too) -> SSE stream. A continuous-batching strip shows step 1 [A1, B1] -> step 2 [A2, B2 = EOS] free B -> admit C -> [A, C]. A Key Decisions table and failure modes follow (OOM -> token-budget admission, 4k + 8k = 12,288 tokens = 1.5 GiB; disconnect frees KV; cross-tenant cache hit), with the trap that the KV cache does not make decode O(1).](diagrams/case37_info_llm_serving_ai.png)
+
 Serving a chatbot is **not** a normal request/response service: a single request
 **streams tokens for seconds**, runs on **scarce, expensive GPUs**, and its cost
 is dominated by **GPU memory and throughput**, not CPU. The design is about
@@ -2983,15 +3150,16 @@ is dominated by **GPU memory and throughput**, not CPU. The design is about
 - **Functional:** chat completion with **token streaming**; multiple models
   (small/cheap vs large/smart); **prompt/response caching**; per-user rate limits
   and quotas; safety filter.
-- **Estimate:** 10,000 **simultaneously decoding** sequences at 30 tok/s demand
-  300,000 tok/s; 10,000 merely open conversations do not. For an illustrative
+- **Estimate (upper bound):** if all 10,000 sequences decode **simultaneously**
+  at 30 tok/s, they demand 300,000 tok/s; 10,000 merely open conversations do not. For an illustrative
   7B-class model on 80-GiB GPUs, suppose a measured workload of ~2k prompt tokens,
   ~256 output tokens and the chosen precision/batch mix achieves 2k–5k output
-  tok/s per serving GPU equivalent: the arithmetic gives **60–150 just for
-  decode at full utilization**, not a model-independent fleet recommendation.
+  tok/s per serving GPU equivalent: 300k ÷ 5k = 60 to 300k ÷ 2k = 150, i.e.
+  **60–150 GPU equivalents just for decode at full utilization**, not a model-independent fleet recommendation.
   Include prefill interference, tensor-parallel group size, headroom, failures
   and tail latency in the actual benchmark.
-- **Worked planning point:** 20% active means 60k tok/s. At measured 2k tok/s
+- **Worked planning point (the user-story load):** 20% of 10,000 = 2,000 active
+  × 30 tok/s = 60k tok/s. At measured 2k tok/s per GPU
   and 70% target utilization, `ceil(60k/(2000*0.7)) = 43` GPU equivalents
   before extra prefill/failure capacity. KV memory and latency may require more.
 
@@ -3035,13 +3203,13 @@ cannot fit; do not advertise unlimited context then discover OOM mid-batch.
            ▼
    MODEL ROUTER  (pick model by difficulty / tier / cost)
            ▼
-   ┌──────────────── GPU INFERENCE FLEET ────────────────┐  ◀─ MODEL REGISTRY (weights · versions · adapters)
+   ┌──────────────── GPU INFERENCE FLEET ─────────────────┐  ◀─ MODEL REGISTRY (weights · versions · adapters)
    │  Continuous-batching scheduler (in-flight batching)  │
    │   • PREFILL: encode prompt → fill KV-cache           │
    │   • DECODE loop: 1 token/step, append to KV-cache,   │
-   │                  output gate → client SSE           │
+   │                  output gate → client SSE            │
    │   • KV-cache in GPU HBM, paged (vLLM PagedAttention) │
-   └───────────────┬─────────────────────────────────────┘
+   └───────────────┬──────────────────────────────────────┘
                    ▼
    GPU AUTOSCALER (scale on queue depth / tokens-per-s, not CPU%)
 ```
@@ -3106,7 +3274,7 @@ not just the prompt already seen.
 **Continuous (in-flight) batching** + **paged KV-cache** are the two ideas that
 turned LLM serving from "one request per GPU" into high-throughput multiplexing.
 Model internals (attention, quantization, speculative decoding) live in
-**Ch 17** and accelerator details in **Ch 29**.
+**Ch 17 / 17c** and accelerator details in **Ch 29**.
 
 ### F1.4 Trade-offs and Follow-ups
 
@@ -3124,7 +3292,7 @@ Model internals (attention, quantization, speculative decoding) live in
   autoscaling only on CPU; omitting the chosen streaming/output-screening contract;
   and budgeting GPUs without the actual model, context, and workload.
 - **Building blocks:** ML serving, latency budget, model funnel — **Ch 26**;
-  LLM internals, quantization, speculative decoding — **Ch 17**; GPUs/TPUs,
+  LLM internals, quantization, speculative decoding — **Ch 17 / 17c**; GPUs/TPUs,
   HBM, autoscaling accelerators — **Ch 29**; gateway rate limiting — **CS13**;
   SSE streaming — **Ch 35 (chat)**.
 
@@ -3169,6 +3337,8 @@ keeping a disconnected stream decoding burns both token budget and GPU memory.
 >
 > **Why it matters —** the hard parts are retrieval quality and freshness (chunk → embed → index →
 > retrieve → rerank), not the LLM call itself.
+
+![Case-at-a-glance infographic for F2, RAG / semantic search: retrieval quality, freshness and permissions are the hard part, and only current, authorized document chunks may become evidence. Maya's headphone-return question is answered 'yes, 30-day rule; return shipping deducted unless defective.' The Scale card shows 10 M docs x ~10 chunks = 100 M chunks; 100 M x 768 dims x 4 B = 307.2 GB; ~100 candidates -> rerank -> top ~5; and context 750 + 250 + 500 = 1,500 tokens. The Requirements card shows 800 ms = 210 retrieval + 500 LLM TTFT + 90 headroom. The Architecture has an ingest lane (Docs -> chunk (overlap) + embed -> Vector DB (ANN) + metadata + version manifest) feeding a query lane: authenticated query -> embed -> lexical + ANN recall (~100) -> red live ACL / version / deletion gate -> rerank -> top ~5 -> LLM (F1) with a 1,500-token prompt -> answer + citations or abstain. A candidates table shows refund/v8/c2 0.89 and refund/v8/c3 0.84 accepted, refund/v7/c2 0.91 superseded and vip/v3/c4 0.94 restricted. A Key Decisions table (two-stage funnel, hybrid recall, live gate, recall@k tuning, abstain: 14 grounded + 6 abstentions) and failure modes follow.](diagrams/case37_info_rag_semantic_search_ai.png)
 
 **Retrieval-Augmented Generation** grounds an LLM in **your** documents: instead
 of hoping the model memorized a fact, you **retrieve** the relevant passages and
@@ -3232,14 +3402,19 @@ Measure the actual joint tail and reduce rerank depth if it violates the budget.
    INGEST (offline / streaming)            QUERY (online)
    ────────────────────────────            ──────────────
    Docs ─▶ chunk ─▶ embed ─▶ VECTOR DB     Query ─▶ embed ─▶ ANN search top-k
-            (overlap)  (model)  (ANN index)         │           (vector DB)
-                          │                          ▼
-              metadata + access tags        CHECK live ACL/version/deletion
-              stored alongside vectors                             │ RERANK; keep best m
-                                                      ▼
-                                          Build prompt = query + m passages
-                                                      ▼
-                                          LLM (F1) ─▶ answer + CITATIONS
+         (overlap) (model)  (ANN index)                    (in the vector DB)
+                                 │                                  │
+                      metadata + access tags                        ▼
+                      stored alongside vectors     CHECK live ACL / version / deletion
+                                                                    │
+                                                                    ▼
+                                                   RERANK; keep best m passages
+                                                                    │
+                                                                    ▼
+                                                   Build prompt = query + m passages
+                                                                    │
+                                                                    ▼
+                                                   LLM (F1) ─▶ answer + CITATIONS
 ```
 **Block-by-block:**
 - **Ingest** — splits documents into overlapping **chunks**, **embeds** each into a vector, and
@@ -3355,12 +3530,14 @@ to a revoked document even before its vector row is physically deleted.
 > **For example —** for each request, candidate generation cuts 10^8 items to ~1,000 via ANN, then
 > a ranking model scores those and applies business rules — all within the latency budget.
 >
-> **Why it matters —** you can't score 800 M items per request, so recsys is a funnel; the infra
+> **Why it matters —** you can't score 10^8 (100 M) items per request, so recsys is a funnel; the infra
 > crux is the feature store and the online/offline split.
 
+![Case-at-a-glance infographic for F3, the recommendation feed: a funnel for latency, point-in-time features for correctness. The Hard Part card shows the policy example: serve I17 (0.81), I24 (0.73), I31 (0.70) and skip I18 (0.80) because creator X is already in the top 3. The Scale card shows 100 M DAU x 10 loads = 1 B requests/day = 12k/s average, ~40k/s peak; x ~500 scored = ~6 M scorings/s (~20 M/s peak); and 200 ms = 20 + 35 + 35 + 60 + 20 + 15 + 15. The Architecture is a funnel: 10^8 catalog -> ANN 700 + follows 300 + trending 200 -> union 1,000 -> eligible 600 -> cheap prune 500 -> heavy rank 500 -> policy -> 20. A feature store (online ms reads / offline training tables) feeds heavy rank, and a training loop runs serve + log impressions -> point-in-time join -> Spark train -> model store -> deploy new model back to heavy rank. A timeline marks 09:59 f12 available as allowed and the 10:01 click and 10:02 f13 as not allowed in imp-81's training features. A Key Decisions table (funnel, one feature definition, point-in-time join, stale 09:54 feature with a 2-min limit -> trained missing path, cold start) and failure modes follow.](diagrams/case37_info_recommendation_feed_ai.png)
+
 "Design the feed / recommendations" (YouTube home, app store, shopping) is the
-classic ML-system question. You can't score **800 million items** for every user
-in 100 ms, so recsys is a **funnel**: cheaply **generate candidates** (thousands)
+classic ML-system question. You can't score **10^8 (100 million) items** for
+every user inside a 200-ms budget, so recsys is a **funnel**: cheaply **generate candidates** (thousands)
 → expensively **rank** them (hundreds) → apply business rules → serve. The infra
 crux is the **feature store** and the **online/offline split**. Modeling depth
 (two-tower, wide-and-deep, metrics, drift) lives in **Ch 26**.
@@ -3424,14 +3601,14 @@ fetch exceeds 35 ms, use a tested lightweight ranker/trending fallback.
 
 ```
    Request ─▶ ┌── CANDIDATE GENERATION (recall: 10^8 → 10^3) ──┐
-              │  several sources, unioned:                      │
-              │   • two-tower ANN (user emb → item ANN)         │
-              │   • recent/trending, follows, collaborative     │
+              │  several sources, unioned:                     │
+              │   • two-tower ANN (user emb → item ANN)        │
+              │   • recent/trending, follows, collaborative    │
               └───────────────────┬────────────────────────────┘
                                   ▼
               ┌── RANKING (precision: 10^3 → ordered) ──┐
-              │  cheap prune, heavy model scores 500     │◀── FEATURE STORE
-              │  user × item × context features          │    (online: low-lat
+              │  cheap prune, heavy model scores 500    │◀── FEATURE STORE
+              │  user × item × context features         │    (online: low-lat
               └───────────────────┬─────────────────────┘     reads; offline:
                                   ▼                            train tables)
               RE-RANK / policy: diversity, dedupe, freshness, business rules
@@ -3545,6 +3722,8 @@ version logging and missing-feature behavior together reduce skew.
 
 # Part G — Pattern Library
 
+![Map infographic for Part G, the pattern library for all 26 designs (CS1-CS23 + F1-F3). It has 12 numbered pattern tiles, each with a one-line trigger and case badges: fan-out push vs pull (CS9, CS1, CS2), WebSocket/SSE/polling (CS2, CS4, F1), geo-index (CS7, CS8), consistent hashing + vnodes (~1/N keys remap; CS17, CS21), idempotency/dedupe (CS19, CS20, CS23), token/leaky bucket (CS13, CS6), shard by key (CS9, CS19, CS21), CQRS/read models (CS9, CS16, CS5), outbox + CDC (CS19, CS20, CS23), Bloom/Count-Min (CS15, CS6, CS17), quorum N/W/R (CS21) and two-stage funnel (F3, F2, CS5). An 'Also name' strip lists SFU, OT/CRDT, WAL, lease, durable reservation, cache-aside + stampede guard, bulkhead, hot/cold tiering and Lambda. A 'Pick by question' table maps six interview prompts to patterns. The recipes are News Feed = fan-out + CQRS + shard-by-user + cache-aside; Payments = idempotency + WAL/ledger + outbox + saga; KV store = consistent hashing + quorum + vector clocks + WAL. A 'When NOT' strip reads: token bucket != exact rolling count, sketch != billing totals, cache != spend authority, saga != simultaneous multi-shard visibility.](diagrams/case37_info_pattern_library_ai.png)
+
 Here is the synthesis. Across all 26 designs in Ch 35/36/37, **the same dozen or
 so patterns recur** — interviewers reward you for *naming the pattern* and
 *recognizing when it applies*, not for re-deriving it each time. This matrix maps
@@ -3584,7 +3763,7 @@ A few more that show up repeatedly and earn senior signal when named:
 | **Lease / visibility timeout** | Recover abandoned work/ownership | CS18 Scheduler, CS14 worker allocation | Expiry permits reassignment; old owners need fail-stop/token checks. A lease does not kill a paused process |
 | **Durable reservation + expiry transition** | Hold a scarce resource during a multi-step action | CS20 Inventory/tickets, CS23 checkout | Atomic create+decrement; confirm competes with expire/release; stock restored exactly once. Key TTL alone releases nothing |
 | **Two-stage funnel (recall→rank)** | Too many candidates to score precisely | F3 Recsys, F2 RAG retrieval, CS5 autocomplete | Cheap approximate recall (ANN) → expensive precise rank on a small set |
-| **Cache-aside + stampede guard** | Hot read path in front of a slow store | CS17 Cache, CS9 Feed, CS5, Instagram | 90%+ hit rate offloads the DB; single-flight + TTL jitter stops herd on expiry |
+| **Cache-aside + stampede guard** | Hot read path in front of a slow store | CS17 Cache, CS9 Feed, CS5 Autocomplete, CS12 URL Shortener | 90%+ hit rate offloads the DB; single-flight + TTL jitter stops herd on expiry |
 | **Bulkhead / isolation** | One slow dependency must not sink the rest | CS1 per-channel queues, CS3 media vs signaling, CS23 browse vs checkout | Bound resources and deadlines per dependency; optional enrichment failure does not block core checkout state |
 | **Versioned hot/cold tiering** | Historical reads/index size exceed hot-store budget | CS23 orders | Copy, verify, record route, then conditionally delete the same eligible version; do not archive solely because a state is terminal |
 | **Lambda (batch + stream)** | Need both real-time *and* exact answers | CS15 Top-K, CS9 analytics, F3 logging | Fast approximate stream path + slow exact batch path that reconciles |

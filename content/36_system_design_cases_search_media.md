@@ -1,5 +1,7 @@
 # Chapter 36 — System Design Case Studies — Part 2: Search, Geo, Feeds & Media
 
+![Map infographic of Chapter 36's eight system-design cases in learning-path order — 12 URL Shortener (warm-up, start here), 5 Autocomplete, 6 Web Crawler, 7 Nearby, 8 Ride-Hailing, 9 News Feed, 10 Video Streaming, 11 File Sync — each with its LLD crux, plus the 11-step scaffold (framing to follow-ups), the baseline → bottleneck → invariant method, and a 'pick by question' table of recurring patterns (precompute, Bloom/sim-hash/HyperLogLog/count-min, in-memory last-write-wins vs durable atomic, CDN + immutable segments, region cover + refine).](diagrams/case36_info_chapter_map_ai.png)
+
 Part 1 (Ch 35) tackled the **real-time and communication** systems — notifications,
 chat, video conferencing, collaborative editing. This part takes on the systems that
 **find, locate, rank, and stream**: the read-heavy, data-intensive workhorses of the
@@ -10,8 +12,9 @@ scale or collapses at the first viral moment.
 
 Each case study uses the same worked scaffold so you can
 reason under interview pressure: framing → what's tested → clarify → estimate →
-architecture → critical path → data model → scaling → failure modes → the LLD crux →
-follow-ups. The URL shortener at the end is a deliberately tight **warm-up** that shows
+architecture → critical path → data model → scaling → failure modes → the LLD
+(low-level design) crux → follow-ups. The URL shortener at the end is a deliberately
+tight **warm-up** that shows
 the scaffold in miniature.
 
 > These case studies use the universal "Design X" playbook from **Ch 35 Part A** — the
@@ -81,6 +84,8 @@ are assumptions to explain a decision; revise them when the workload changes.
 > **Why it matters —** an indexed SQL prefix lookup is a valid baseline; ranking many matches
 > at hundreds of thousands of QPS motivates precomputed candidates in a sharded RAM index.
 
+![Case-at-a-glance infographic for search autocomplete: top-K completions of a prefix in under 50 ms at ~1,000,000 QPS peak (5 B searches/day × ~6 requests = 3e10/day, avg ≈ 350,000 QPS; 100 M phrases → 1.2 B nodes × 120 B ≈ 144 GB → 32 shards × 4.5 GB, ×3 replicas = 432 GB, 864 GB double-buffered); an online lane Browser (60 ms debounce) → Edge cache → Suggest Service → RAM trie shards → optional private rerank, fed by an offline lane Query logs → Kafka → Aggregator → immutable snapshot (load shadow → validate → flip pointer); the 'ne' node holding topK netflix, news, nearby, nest, new york; key decisions and failure modes.](diagrams/case36_info_autocomplete_ai.png)
+
 You start typing **"ne"** into the search box and, before your finger leaves the key,
 a list drops down: *netflix, news, nearby restaurants, nest…* That is **autocomplete**
 (a.k.a. **typeahead**): given the few characters typed so far (a **prefix**), instantly
@@ -142,7 +147,7 @@ spell-correction; ad ranking; voice input. We design only the *suggestion* servi
    Searches / day          5,000,000,000   (5 B)
    Keystrokes that fire     ~6 per search   (debounced; not every key)
    ── autocomplete req/day  3.0e10  (30 B)
-   Avg QPS                  3e10 / 86,400  ≈ 350,000 / s     [day ≈ 10^5 s]
+   Avg QPS                  3e10 / 86,400  ≈ 350,000 / s     [86,400 s/day]
    Peak (3×)                ≈ 1,000,000 / s   → must be RAM/cache served
    Write path (query logs)  5 B/day → OFFLINE pipeline, NOT the serving path
    Distinct phrases kept    ~100 M "head + torso" queries (drop the long tail)
@@ -187,6 +192,9 @@ The offline pipeline publishes snapshots to serving replicas, not to the persona
   compiles a fresh immutable **score snapshot** (the trie-load artifact) that is **atomically swapped** in.
 
 ## 5.4 Request Walkthrough
+
+Two letters recur below: **K** = completions shown to the user (≈10) and **M** = candidates
+stored per prefix (M ≥ K; M = 50 leaves room for private reranking).
 
 Typing **"ne"** (after "n", "ne" debounced into a single live request):
 ```
@@ -298,14 +306,18 @@ The examples use M=K=10; personalization's M=50 needs a larger candidate artifac
         (root)
           │ n
           ▼
-       [ n ]   topK: net, new, news, nfl, ...
+       [ n ]   topK: netflix, news, nfl, nba, nearby, ...
           │ e
           ▼
        [ ne ]  topK: netflix, news, nearby, nest, new york, ...
-       ├── t ─▶ [ net ]  topK: netflix, net worth, nettv, ...
+       ├── t ─▶ [ net ]  topK: netflix, net worth, network, ...
        │          ├ f ▶ [ netf ] topK: netflix, netflix login, ...
-       │          └ w ▶ [ netw ] topK: net worth, network, ...
+       │          └ w ▶ [ netw ] topK: network, networking, ...
        └── w ─▶ [ new ]  topK: news, new york, new movie, ...
+
+  A parent's list = the best K of its children's lists (plus its own
+  phrase). "net worth" continues with a space, so it sits under
+  "net ", not "netw".
 
   Per-node layout:
     children : map<char, node*>             // one entry per next letter
@@ -395,7 +407,7 @@ drain completes. A failed checksum leaves that replica on the old version.
 time** without a latency/candidate bound; assuming an unindexed query plan; **no offline/online split** (ranking
 on the serving box); one **giant unsharded** trie that can't fit RAM; no caching of hot
 prefixes; rebuilding the index **in place** (serving a half-built trie); forgetting the
-**client debounce** (4× the traffic for nothing).
+**client debounce** (~20 requests per query instead of ~6 — over 3× the traffic for nothing).
 
 **Building blocks reused (theory lives elsewhere):** trie / prefix index and the
 **inverted-index** mindset — **Ch 25** (*Search building blocks*); **Redis** caching and
@@ -424,8 +436,10 @@ M=K=2. The `net` branch contributes `[netflix]`, `new` contributes `[news,new yo
 and `nes` contributes `[nest]`. At 12:01 a user's private history favors `nest`.
 
 **Predict:** what does node `ne` contain, and can reranking just those two return `nest`?
+
 **Solve:** the last key is at t=0; debounce is 60 ms, request 35 ms, rendering 5 ms.
 When are suggestions visible?
+
 **Check:** a new replica snapshot fails validation during a three-replica double-buffered
 rollout. What remains served, and what RAM budget does the 144 GB model require?
 
@@ -457,11 +471,13 @@ snapshots require **144×3×2 = 864 GB** before overhead; a rolling rollout chan
 > anyone's site.
 >
 > **For example —** starting from a few seed URLs, the crawler follows links across tens of
-> billions of pages, re-fetching a news homepage hourly but a static PDF monthly — and never
-> hammering one host faster than its `robots.txt` allows.
+> billions of pages, re-fetching a news homepage hourly but a static PDF monthly — obeying each
+> site's `robots.txt` rules and never hammering one host faster than its per-host rate limit.
 >
 > **Why it matters —** the design hinges on the URL frontier (what to fetch next, how fast per
 > host) and dedupe (seen URLs and seen content), not on "download a page."
+
+![Case-at-a-glance infographic for a web crawler: ~30 B pages at ≈ 11,600 pages/s avg (35,000 peak, ≈ 2.2 GB/s ≈ 18 Gbps), 450 TB of gzip HTML, and a 36 GB Bloom filter (9.6 bits/URL, ~7 hashes) instead of ≈ 3 TB of URL bytes; an architecture loop URL Frontier (priority front queues, per-host back queues, host heap by nextAllowed) → Fetchers (DNS + robots caches) → Content store → Parser → URL dedupe → back to the frontier as new URLs, with content dedupe, link graph and crawl metadata whose due recrawls bypass the seen-set; a host timeline busy → completion → +1.5 s → eligible; key decisions and failure modes.](diagrams/case36_info_web_crawler_ai.png)
 
 A **web crawler** (a.k.a. spider, or "Googlebot") is the program that walks the web: start
 from a few seed URLs, download each page, **extract the links** on it, and follow those
@@ -509,7 +525,7 @@ JavaScript (assume a separate headless-render tier if needed); the search front-
 
 **Non-functional**
 - **Scale:** crawl ~**30 B pages**, refresh on a rolling schedule (billions/day).
-- **Throughput:** thousands of pages/sec aggregate; **politeness-bounded per domain**.
+- **Throughput:** ~10⁴ pages/sec aggregate (§6.2); **politeness-bounded per domain**.
 - **Robustness:** survive worker crashes, bad HTML, slow servers, traps; **resumable**.
 - **Efficiency:** don't re-download unchanged pages; don't store duplicate content.
 
@@ -525,14 +541,16 @@ raw HTML? Politeness limits — fixed RPS or adaptive to the host's response tim
    ── crawl rate            30e9 / (30 × 86,400) ≈ 11,600 pages / s avg
    Peak (3×)                ≈ 35,000 pages / s
    Avg page size (HTML)     ~64 KB raw → ~15 KB gzipped
-   Download bandwidth       35,000 × 64 KB ≈ 2.2 GB/s  (≈ 18 Gbps) sustained
+   Download bandwidth       peak 35,000 × 64 KB ≈ 2.2 GB/s  (≈ 18 Gbps)
+                            avg  11,600 × 64 KB ≈ 0.74 GB/s (≈ 6 Gbps)
    Raw HTML stored (gzip)   30e9 × 15 KB ≈ 450 TB  (object store, cheap)
    Seen-URL set             ~ 30 B+ URLs → a hashed/Bloom membership set
    Links per page           ~ 30 outlinks → frontier churn is huge
 ```
 
 **What the numbers teach:** the **seen-URL set** (tens of billions of entries) is the
-memory problem — a plain hash set of full URLs would be many terabytes of RAM, so we reach
+memory problem — a plain hash set of full URLs would be terabytes of RAM (30 B × ~100 B
+per URL ≈ 3 TB before hash-table overhead), so we reach
 for a **Bloom filter** (Ch 24). Bandwidth is large but linear; **storage of raw HTML is
 cheap** in an object store. The real engineering is **scheduling and politeness**, not raw
 throughput.
@@ -565,6 +583,8 @@ or stores. The loop is: **frontier → fetch → store → parse → dedupe → 
 - **URL dedupe (Bloom filter)** — "have we already enqueued this URL?" answered in O(1) with
   tiny memory (Ch 24). New URLs go back to the frontier.
 - **Content dedupe (sim-hash)** — "is this page a near-duplicate of one we already have?"
+  Sim-hash folds the page's **shingles** (overlapping runs of k words) into a 64-bit
+  fingerprint; near-identical pages differ in only a few bits (§6.8).
   Mirrors and boilerplate are everywhere; this stops us indexing the same thing 100×.
 
 ## 6.4 Request Walkthrough
@@ -576,7 +596,7 @@ One crawl cycle, end to end:
         └─ if robots DISALLOWS → drop, record, move on
   3. Host gate: no other attempt in flight; nextAllowed has passed.
      Keep host busy through completion; then wait another 1.5 s.
-  4. HTTP GET (conditional: If-Modified-Since / ETag)
+  4. HTTP GET (conditional: If-Modified-Since / If-None-Match + ETag)
         ├─ 304 Not Modified → bump next-recrawl time, done (cheap!)
         └─ 200 OK → write raw gzip HTML to Content store
   5. Parser extracts 30 outlinks + canonical + lastmod; computes a
@@ -606,9 +626,10 @@ Notice the efficiency levers: **step 4** (conditional GET → 304 avoids a downl
 | Crawl metadata | `url → lastCrawl, changeFreq, nextDue` | Wide-column (Bigtable/Cassandra) | Drives re-crawl scheduling |
 | Link graph | `srcUrl → [dstUrl]` | Bigtable | Web-graph edges for ranking (PageRank) & crawl prioritization |
 
-**Why a Bloom filter for seen-URLs?** A 30 B-entry hash set of full URLs is tens of TB of
-RAM. A Bloom filter holds the same membership test in a few **tens of GB** with a tunable,
-false-positive rate. In the default flow, confirm a positive against the backing URL record;
+**Why a Bloom filter for seen-URLs?** A 30 B-entry hash set of full URLs is terabytes of
+RAM (≈ 3 TB of URL bytes alone). A Bloom filter holds the same membership test in
+**~36 GB** at a 1% false-positive rate (§6.8), and the rate is tunable.
+In the default flow, confirm a positive against the backing URL record;
 an alternative best-effort crawler can drop positives if lost coverage is explicitly acceptable.
 Bloom filters have no false negatives for correctly inserted entries; a false positive is
 "probably seen" for an actually new URL, not proof that it was fetched.
@@ -620,7 +641,8 @@ Bloom filters have no false negatives for correctly inserted entries; a false po
   "1 req/1.5 s to site.com" if two machines crawl it independently.
 - **Politeness is the throughput ceiling, not bandwidth.** A big site can absorb more; a
   small blog cannot. **Adaptive rate** = base delay scaled by the host's observed latency and
-  HTTP 429/503 signals.
+  HTTP 429/503 signals. (`Crawl-delay` is a non-standard `robots.txt` extension outside
+  RFC 9309: some crawlers honour it, Googlebot ignores it — so the crawler owns the rate.)
 - **DNS is a hidden bottleneck** → cache aggressively; pre-resolve; run your own resolvers.
 - **Hot domains** (a few huge sites = a big share of the web) get **dedicated** fetcher pools
   so they don't starve the long tail.
@@ -682,20 +704,20 @@ solution (Mercator-style) is a **two-stage queue system**: *front queues* sort b
    New URL ─▶ [ Prioritizer ]  score by importance (PageRank-ish,
                   │             freshness need, depth, source)
                   ▼
-        ┌──────── FRONT QUEUES (by priority) ────────┐
-        │  F1 (highest) │ F2 │ F3 │ ... │ Fn (lowest) │
-        └──────┬─────────────────────────────────────┘
+        ┌──────── FRONT QUEUES (by priority) ──────────┐
+        │  F1 (highest) │ F2 │ F3 │ ... │ Fn (lowest)  │
+        └──────┬───────────────────────────────────────┘
                │  a biased picker pulls more from high-priority
                ▼
-        ┌──────── BACK QUEUES (one per active host) ──┐
+        ┌──────── BACK QUEUES (one per active host) ───┐
         │  B[siteA] │ B[siteB] │ B[siteC] │ ...        │
         │  FIFO per host; a host maps to exactly ONE   │
         └──────┬───────────────────────────────────────┘
                │
                ▼
         ┌──────────────────────────────────────────────┐
-        │  HOST HEAP (min-heap by nextFetchTime)        │
-        │  (siteB, t=10:00:01) (siteA, t=10:00:02) ...  │
+        │  HOST HEAP (min-heap by nextFetchTime)       │
+        │  (siteB, t=10:00:01) (siteA, t=10:00:02) ... │
         └──────┬───────────────────────────────────────┘
                ▼
         Owner admits one attempt when idle and nextAllowed ≤ now.
@@ -825,8 +847,10 @@ finishes at **10:00:03**. B starts at **10:00:00.1**, finishes at **10:00:00.6**
 Our policy is one in-flight fetch per host plus **1.5 s after completion**.
 
 **Predict:** may A start `/b` at 10:00:01.5? When are A and B next eligible?
+
 **Solve:** `/b` starts at 10:00:04.5, then its worker crashes. Its bounded fetch deadline
 is 10:00:09.5; assume cancellation is confirmed then and grace is zero. Earliest retry?
+
 **Check:** `A/a` is due again at 11:00, but is in the seen set. Should we drop it?
 
 <details>
@@ -860,6 +884,8 @@ scheduler messages. The seen set blocks rediscovery loops, not freshness work.
 >
 > **Why it matters —** "nearby" needs a spatial index (geohash / quadtree / S2), not a `WHERE`
 > scan — choosing and tuning that index is the entire problem.
+
+![Case-at-a-glance infographic for proximity / nearby search: 200 M places × ~1 KB = 200 GB, 1 B queries/day ≈ 11,600 QPS (35k peak), and a moving variant of 50 M users ÷ 10 s = 5,000,000 writes/s; a 3×3 cell grid where a 2 km circle around 'me' spills into neighbour cells (a point across the boundary inside the circle is kept, a point in a covered cell outside the circle is dropped); a static lane Client → Search service (cover circle → cell ids) → Geo-index (Redis GEO / PostGIS) → Place store → exact haversine filter and sort, and a moving lane GPS pings → Location ingest → RAM grid (LWW, TTL); key decisions including geohash vs quadtree vs S2 and exact k-NN stopping; failure modes.](diagrams/case36_info_proximity_nearby_ai.png)
 
 "Show me coffee shops **within 2 km**." "Which of my friends are **nearby**?" These are
 **proximity search** problems, and they all reduce to one question: *given a point on Earth
@@ -932,7 +958,8 @@ enough? Global, so we must handle the poles / antimeridian?*
 **What the numbers teach:** for **static places**, reads dominate and a precomputed geo-index
 in a database (or Redis GEO) is plenty. For **moving dots**, the **write rate explodes**
 (millions/sec) — you cannot durably persist every GPS ping; you keep the latest position in
-an **in-memory grid** with last-write-wins, and only checkpoint occasionally. That split
+an **in-memory grid** with last-write-wins (**LWW** — a newer ping simply overwrites the
+older one), and only checkpoint occasionally. That split
 (static index vs live grid) is the senior insight here.
 
 ## 7.3 Architecture
@@ -978,7 +1005,8 @@ grid).
   6. Sort by true distance, take top N, return with distances
 ```
 The key idea is **steps 2–3 are cheap and approximate** (range-scan a few cells), and
-**steps 5–6 are exact but operate on a tiny candidate set**. You never compute distance to
+**steps 5–6 are exact but operate on a tiny candidate set** (*haversine* = the great-circle
+distance between two latitude/longitude points on a sphere). You never compute distance to
 200 M places for a local query; the number of candidates depends on density, cover size,
 and filters, and can be far more than a few dozen in a stadium.
 
@@ -1089,15 +1117,19 @@ cover across boundaries and refine, never rely on prefix alone.
    A quadtree adapts to density: split a node into NW NE SW SE only
    when it holds > capacity points. Sparse areas stay shallow.
 
-      whole map (root)
-        split (too many)
-      ┌────────┬────────┐
-      │  NW    │  NE     │   NE is dense → split again:
-      │ (few)  │  ┌──┬──┐ │      ┌──┬──┐
-      ├────────┤  │  │  │ │      │  │  │   each leaf holds ≤ capacity
-      │  SW    │  ├──┼──┤ │      └──┴──┘   points; deep where crowded,
-      │ (few)  │  │  │  │ │                shallow where empty
-      └────────┴──└──┴──┘─┘
+      whole map (root): too many points → split into 4
+
+      ┌───────────────┬───────┬───────┐
+      │               │ NE.NW │ NE.NE │   NE is dense → split
+      │       NW      │       │       │   again into 4 children
+      │     (few)     ├───────┼───────┤
+      │               │ NE.SW │ NE.SE │   each leaf holds
+      │               │       │       │   ≤ capacity points:
+      ├───────────────┼───────┴───────┤   deep where crowded,
+      │               │               │   shallow where empty
+      │       SW      │       SE      │
+      │     (few)     │     (few)     │
+      └───────────────┴───────────────┘
 ```
 Query: traverse from the root and visit **every node whose bounding region intersects the
 circle**; adjacent leaves alone may not reach its full radius. Adaptivity makes dense areas
@@ -1114,7 +1146,7 @@ ranges. Use geometry, not integer closeness, to prove coverage.
    ordered by a Hilbert space-filling curve so that
    "close on Earth" ≈ "close in the 64-bit id space".
 
-   level ~12 ≈ 3 km cell ... level ~16 ≈ 150 m cell.
+   level 12 ≈ 2 km cell (~5 km²) ... level 16 ≈ 150 m cell.
    A radius query = a small SET of S2 cells that COVER the circle
    (s2.RegionCoverer) — then exact-distance refine.
 ```
@@ -1148,7 +1180,7 @@ distance ties. Finding k candidates in the first cell does not establish nearest
 | Neighbor math | prefix tricks | tree walk | cheap (built-in) |
 | Store-friendly key | ✓ string prefix | needs tree | ✓ 64-bit, range-shards |
 | Simplicity | **simplest** | medium | most complex |
-| Used by | Redis GEO, Elastic | Maps, Uber (early) | Google Maps, Foursquare |
+| Used by | Redis GEO, Elasticsearch geohash grids | map tiling, in-memory spatial indexes | Google Maps, MongoDB `2dsphere` |
 
 **Pick:** geohash when you want the **simplest** thing on Redis/SQL and density is uniform;
 **quadtree** when density varies wildly and you control the index; **S2** at global scale
@@ -1197,8 +1229,10 @@ boundary `x=0`. Coffee shops are A=`(-0.41,0)`, B=`(0.01,0)`, C=`(1.80,0)`,
 D=`(2.19,0)`. A coarse cover includes all four.
 
 **Predict:** which shops belong to a 2 km query, in distance order?
+
 **Solve:** a k=2 search first discovers A and C. An unvisited cell has lower bound
 0.02 km. May it stop? What if the next unvisited lower bound later becomes 0.8 km?
+
 **Check:** the user changes the radius to 3 km. Can you keep the old nine-cell cover?
 
 <details>
@@ -1233,6 +1267,8 @@ D now qualifies. On Earth use the chosen spherical metric, not this local planar
 >
 > **Why it matters —** it's Case Study 7's moving-dots geo problem plus a real-time matcher whose
 > crux is durable assignment, not merely a short-lived lock.
+
+![Case-at-a-glance infographic for ride-hailing: 5 M drivers ÷ 4 s = 1,250,000 location writes/s (2,500,000 at rush peak) versus only ≈ 350 matches/s (1,400 peak); a huge, lossy location path Driver app ⇄ WebSocket gateway → Location ingest → RAM grid (LWW, TTL) and a small, strong match path Rider → Matching service (candidate hints from the grid; offer ⇄ accept with epoch 41 via the gateway) → Driver & trip authority (reserve d1 with expiry DB_now + 15 s; accept = one transaction writing ASSIGNED + MATCHED + outbox) → Outbox → Kafka; the trip state machine REQUESTED → MATCHED → ARRIVED → ON_TRIP → COMPLETED → PAID; surge = clamp(open_requests / max(1, avail_drivers), 1.0, 3.0); key decisions and failure modes.](diagrams/case36_info_ride_hailing_ai.png)
 
 Tap "request ride," and within seconds a nearby driver's phone buzzes with your trip. Under
 the hood: **millions of drivers stream their GPS location continuously**, and when a rider
@@ -1273,7 +1309,8 @@ then partition both by service region. Do not move the correctness invariant int
 - Drivers **publish location** every few seconds; riders **request a ride** at a pickup point.
 - **Match** a rider to a nearby available driver; the driver **accepts/declines**; on accept,
   the trip is **locked** to that pair.
-- Track the **trip** through its lifecycle (requested → matched → en route → ongoing → done).
+- Track the **trip** through its lifecycle (requested → matched → driver arrived → on trip →
+  completed; §8.8 draws the full state machine).
 - **Surge pricing** when demand outstrips supply in an area; **ETA** for pickup/arrival.
 
 **Out of scope** (say it): payments/wallet (idempotency, ledger — see Ch 37 *Payments*); the
@@ -1301,7 +1338,7 @@ cell, per city)? What's the dispatch SLA?*
    Peak (rush hour, 2×)        ≈ 2,500,000 writes / s
        → in-memory grid, last-write-wins; NO disk write per ping
    Ride requests / day         ~30,000,000
-   ── match QPS                3e7 / 86,400 ≈ 350 / s ; peak ≈ 1,500 / s
+   ── match QPS                3e7 / 86,400 ≈ 350 / s ; peak (~4×) ≈ 1,400 / s
    Live position record        ~40 B (driverId, lat, lng, ts, state)
    Live-position payload       5e6 × 40 B ≈ 200 MB (not provisioned RAM)
        → add grid indexes, object overhead, replicas, and connection state
@@ -1309,9 +1346,10 @@ cell, per city)? What's the dispatch SLA?*
 ```
 
 **What the numbers teach:** the asymmetry is everything. **Writes (location) are ~1M+/sec**
-but **disposable** → keep them in RAM with last-write-wins. **Matches are only ~hundreds/sec**
-but **must be perfectly consistent** (no double-dispatch). So we spend our consistency budget
-on the *small* match path and keep the *huge* location path cheap and eventually consistent.
+but **disposable** → keep them in RAM with last-write-wins. **Matches are only ~350/sec
+(~1,400 at peak)** but **must be perfectly consistent** (no double-dispatch). So we spend
+our consistency budget on the *small* match path and keep the *huge* location path cheap
+and eventually consistent.
 
 ## 8.3 Architecture
 
@@ -1339,12 +1377,14 @@ poll. Layer 3 is **RAM**; Layer 4 is **durable**.
   `driverId → {state, tripId, offerEpoch, expiresAt}` alongside the trip record.
   Redis availability is only a hint; an optional `SET NX` lease reduces contention, not
   the authority for acceptance or proof against unsafe cache failover.
-- **Trip store + surge + Kafka** — durable trip FSM, per-cell surge multiplier, and an event
+- **Trip store + surge + Kafka** — durable trip FSM (finite-state machine: a fixed set of
+  states plus the allowed transitions), per-cell surge multiplier, and an event
   bus that feeds ETA, analytics, payments, and notifications asynchronously.
 
 ## 8.4 Request Walkthrough
 
-Rider requests a ride; we match without double-dispatch:
+Rider requests a ride; we match without double-dispatch. An **epoch** is the driver's offer
+counter: each new offer increments it, so a reply carrying an older epoch is recognisably stale.
 ```
   1. Rider → POST /rides {pickup:(lat,lng), dest}
   2. Matching svc computes a full pickup-circle cover (Case 7 radius
@@ -1521,14 +1561,14 @@ not turn the cache lease into durable assignment; the authority must validate ac
 
 **The trip state machine — explicit, validated transitions (the durable side):**
 ```
-  REQUESTED ──match──▶ MATCHED ──driver arrives──▶ ARRIVED
-      │  (no drivers / cancel)        │ (rider cancels)
-      ▼                               ▼
-   NO_DRIVERS / CANCELLED         CANCELLED
-                                      ARRIVED ──start──▶ ON_TRIP
-                                                            │ drop-off
-                                                            ▼
-                                                        COMPLETED ─▶ PAID
+  REQUESTED ──match──▶ MATCHED ──driver arrives──▶ ARRIVED ──start──▶ ON_TRIP
+      │                   │                                              │
+      │ no drivers /      │ rider cancels                                │ drop-off
+      │ cancel            │                                              ▼
+      ▼                   ▼                                          COMPLETED ──▶ PAID
+  NO_DRIVERS /        CANCELLED
+  CANCELLED
+
    Rule: every transition is whitelisted; an event that doesn't match
    the current state is rejected (no "complete" before "on_trip").
 ```
@@ -1592,7 +1632,9 @@ The simplified SVG does not establish ownership merely by naming dispatch and Tr
 | 18 s | A's old handler resumes with epoch 41; its old timeout callback also runs. |
 
 **Predict:** what would unconditional "accept then persist" and `DEL` do at 18 s?
+
 **Solve:** apply `accept` and `releaseOffer` above to A's epoch 41. What changes?
+
 **Check:** the first offer was dispatched in 3 s; it times out after 15 s, then a second
 offer takes 2 s to dispatch and 4 s to accept. What is final-match latency?
 
@@ -1627,6 +1669,8 @@ Final match takes **3+15+2+4 = 24 s**. A 2–5 s first-offer SLO does not promis
 >
 > **Why it matters —** the whole design is the **fan-out** decision: push for normal authors, pull
 > for celebrities, hybrid in between — justified with follower-count arithmetic.
+
+![Case-at-a-glance infographic for a news feed: one post means 200 pushes for an average author but 100,000,000 for a celebrity; 100 M posts/day ≈ 1,160 writes/s vs 5 B reads/day ≈ 58,000 reads/s (≈ 50:1), a 6.4 TB feed cache (500 M × 800 × 16 B), pure push = 5e8 celebrity writes, pure pull = 1e12 queries/day; a write path Author → Post service (durable + outbox) → Kafka post.created → Fan-out workers → 'followers < 100k?' (yes: ZADD into the capped timeline cache; no: celeb recent cache), and a read path GET /feed → merge pushed ∪ celeb ∪ own posts → rank once → frozen snapshot → pages by (snapshotId, lastOrdinal); key decisions and failure modes.](diagrams/case36_info_news_feed_ai.png)
 
 Open Twitter/X or Facebook and you see a **timeline**: the recent posts of everyone you
 follow, blended and ranked, scrolling infinitely. Simple to describe, brutal at scale:
@@ -1719,8 +1763,8 @@ semantics below, not offsets into a changing sorted set.
 merges pushed + pulled at read time. The **Timeline cache** is a **Redis sorted set** per user.
 
 **Block-by-block:**
-- **Post service** — persists the post (source of truth); an outbox/CDC path publishes
-  `post.created` to **Kafka**. Return after durable commit; fan-out is asynchronous.
+- **Post service** — persists the post (source of truth); an outbox/CDC (change-data-capture)
+  path publishes `post.created` to **Kafka**. Return after durable commit; fan-out is asynchronous.
 - **Fan-out service / workers** — consume `post.created` and, **for normal authors**, push the
   `postId` into each follower's feed cache. **For celebrities, they skip the push** (that's the
   whole trick).
@@ -1765,6 +1809,7 @@ merges pushed + pulled at read time. The **Timeline cache** is a **Redis sorted 
   5. Freeze bounded ordered ids in a user-bound feed snapshot; hydrate bodies
   6. Return page + (snapshotId,lastOrdinal); NEXT page uses the same snapshot
 ```
+(Step 5's *hydrate* = fetch the post bodies for the chosen ids.)
 The asymmetry is the design: **normal authors pay at write time** (cheap — 200 pushes) so the
 **pushed portion is a bounded cache read**. **Celebrities avoid follower-wide writes** (no
 100 M-entry storm); their **handful** of posts are **pulled and merged** by each reader — cheap
@@ -1784,7 +1829,8 @@ because you only follow a few celebrities, not thousands.
 | Ranking features | `(user,post) → signals` | Feature store | Re-rank merged candidates |
 
 **Why a Redis sorted set for the feed?** `ZADD` inserts in O(log n) keyed by score (time or
-rank), `ZREVRANGE` returns the top-N in O(log n + N), and `ZREMRANGEBYRANK` trims the set to a
+rank), `ZRANGE feed:u 0 N-1 REV` (the older `ZREVRANGE`, deprecated since Redis 6.2) returns
+the top-N in O(log n + N), and `ZREMRANGEBYRANK` trims the set to a
 cap — exactly the "ordered, bounded, fast top-N" shape a timeline needs.
 
 ## 9.6 Scaling
@@ -1818,7 +1864,7 @@ cap — exactly the "ordered, bounded, fast top-N" shape a timeline needs.
                                    (cache is an optimization, not truth)
   Celebrity posts (hot key)     →  hybrid: never pushed; pulled + merged;
                                    celeb cache is heavily replicated
-  Tweet store node down         →  tunable quorum keeps reads/writes; ids
+  Post store node down          →  tunable quorum keeps reads/writes; ids
                                    in feed still resolve from replicas
   Read-your-own-writes miss     →  initial read/refresh includes own durable posts;
                                    existing snapshot keeps its fixed page order
@@ -1853,22 +1899,22 @@ The crux is choosing **push vs pull per author**, and proving it with numbers. L
 side by side:
 
 ```
-  ┌──────────────── PUSH (fan-out on WRITE) ─────────────────┐
+  ┌──────────────── PUSH (fan-out on WRITE) ──────────────────┐
   │ On post: copy postId into EVERY follower's feed cache.    │
-  │   writes = O(followers); read = bounded ordered page     │
+  │   writes = O(followers); read = bounded ordered page      │
   │   ✔ great when followers are few (the 99% of users)       │
   │   ✘ catastrophic for a celebrity: 1 post → 10^8 writes    │
   └───────────────────────────────────────────────────────────┘
-  ┌──────────────── PULL (fan-out on READ) ──────────────────┐
+  ┌──────────────── PULL (fan-out on READ) ───────────────────┐
   │ On read: query recent posts from EVERY followee, merge.   │
-  │   write cost = O(1)              read cost = O(followees)  │
+  │   write cost = O(1)            read cost = O(followees)   │
   │   ✔ great for celebrities (their post is written once)    │
   │   ✘ slow timelines for users who follow thousands         │
   └───────────────────────────────────────────────────────────┘
-  ┌──────────────── HYBRID (our workload choice) ───────────┐
+  ┌──────────────── HYBRID (our workload choice) ─────────────┐
   │ PUSH for normal authors (< threshold followers).          │
   │ SKIP push for celebrities; PULL their few posts on read.  │
-  │ Read = (your pushed feed)  ∪  (pull from the few celebs).│
+  │ Read = (your pushed feed)  ∪  (pull from the few celebs). │
   └───────────────────────────────────────────────────────────┘
 ```
 
@@ -1882,7 +1928,8 @@ side by side:
      A single celeb posting 5×/day adds 5 × 1e8 = 5e8 writes/day,
      concentrated as a BURST on 1e8 hot keys → unservable spike.
 
-  PURE PULL read amplification:
+  PURE PULL read amplification (avg followees = avg followers = F̄,
+  because every follow edge adds one of each):
      ≈ R × F̄ = 5e9 × 200 = 1e12 followee-queries/day → also unservable,
      and every timeline read pays it (reads are the 50:1 majority).
 
@@ -2006,7 +2053,9 @@ At 10:00:04 R freezes a chronological snapshot, page size 2. After page one,
 
 **Predict:** what are page one's ids? How does a time-only continuation lose a tied post
 if page size were 1?
+
 **Solve:** what does page two return using a live rank offset versus the frozen snapshot?
+
 **Check:** the celebrity cache disappears. Where do C's posts come from, and when should
 104 appear in this scrolling session?
 
@@ -2041,6 +2090,8 @@ display a "new posts" indication separately. Losing a derived cache must not los
 >
 > **Why it matters —** it takes two pipelines — parallel chunked transcoding into many renditions,
 > and ABR (manifest + segments) over a CDN — to serve one upload to billions of devices.
+
+![Case-at-a-glance infographic for video streaming: 500 h/min = 720,000 h/day uploaded, a ~5 Mbit/s 1080p source = 2.25 GB/hour so originals ≈ 1.6 PB/day, a 26.4 Mbit/s ladder = 5.28× source (2.08× for a 1080p source without 4K), ~10^10 view events/day ≈ 116k/s; an ingest row Upload (presigned URL) → Raw object store → Planner (common 0, 4, 8 s boundaries) → Encoder fleet (chunk × rendition jobs) → Packager (segments → playlists → master) and a delivery row Object store → CDN (edge / regional / origin) → Player (ABR loop) → View counter; an aligned-segments inset where the player steps from 480p to 1080p at the 8 s boundary; the six-row ABR ladder (240p 0.4 to 4K 16 Mb/s); key decisions and failure modes.](diagrams/case36_info_video_streaming_ai.png)
 
 A creator uploads one 4K video file; minutes later, **billions of viewers on every device and
 network speed** can play it with fewer stalls — your phone on 3G gets a lower-bitrate
@@ -2101,8 +2152,8 @@ before publish? Captions/multi-audio?*
 ```
    Upload rate              500 hours / minute = 30,000 video-hours/hr
    ── per day               720,000 video-hours uploaded / day
-   Raw bitrate (1080p)      ~5 Mbit/s → ~2.25 GB / hour
-   Raw ingest storage/day   720,000 h × 2.25 GB ≈ 1.6 PB/day (originals)
+   Source bitrate (1080p)   ~5 Mbit/s upload (already compressed) → ~2.25 GB / hour
+   Originals stored / day   720,000 h × 2.25 GB ≈ 1.6 PB/day
    Full six-rendition ladder (§10.8) = 26.4 Mbit/s total, NOT six equal files
      versus 5 Mbit/s source: renditions = 5.28×; including source = 6.28×
      hypothetical all-six output: ~8.55 PB/day + 1.62 PB/day originals
@@ -2264,10 +2315,10 @@ time spans across a worker fleet; arbitrary source keyframes alone do not align 
         each chunk encoded into EVERY rendition, in parallel:
                                        ▼    ▼    ▼        ▼
         ┌────────────────── Encoder fleet (hundreds) ───────────┐
-        │  (c1,240p)(c1,720p)(c2,240p)(c2,1080p)(c3,4K) ...      │
-        │  thousands of INDEPENDENT jobs → finish in minutes     │
+        │  (c1,240p)(c1,720p)(c2,240p)(c2,1080p)(c3,4K) ...     │
+        │  thousands of INDEPENDENT jobs → finish in minutes    │
         └───────────────────────────┬───────────────────────────┘
-                                     ▼
+                                    ▼
         ENCODERS: force closed GOPs at common 0,4,8... second boundaries.
         PACKAGER: validate alignment (last segment may be shorter);
         durable segments → rendition playlists → public master manifest.
@@ -2332,7 +2383,8 @@ decides what to fetch:
 **client**, so the server side is just **immutable, cacheable files** — perfect for a CDN. The
 manifest is tiny; segments are independently fetchable; switching renditions is just "ask the
 CDN for the next segment from a different folder." This is exactly how **HLS** (Apple) and
-**MPEG-DASH** work.
+**MPEG-DASH** work. The tree shows classic MPEG-TS `.ts` segments; most packagers today emit
+**CMAF** fragmented-MP4 (`.m4s`) segments, so one stored copy serves both HLS and DASH players.
 
 **The ABR rendition ladder** (what the encoder fleet produces):
 ```
@@ -2398,8 +2450,10 @@ whole downloaded segment is appended at completion.
 
 **Predict:** how many megabits/megabytes must download, how long does it take, and does
 playback stall?
+
 **Solve:** the next 4-second segment uses 0.8 Mbit/s at the same throughput. How much
 buffer does that download add net, if no stall occurs?
+
 **Check:** 1080p segments are still uploading but 360p is complete. May the public master
 list both? Can a monolithic MP4 be cached and resumed?
 
@@ -2435,6 +2489,8 @@ quality switching and independent media-unit delivery convenient.
 >
 > **Why it matters —** the design is chunking + content-hash dedupe + delta sync, with metadata
 > split from blocks — re-uploading whole files simply doesn't scale.
+
+![Case-at-a-glance infographic for file sync and storage (Drive / Dropbox): 500 M users × ~2,000 files = 10^12 files, ~1 MB average, ~4 MB chunks; a delta-sync bar where editing the middle turns [h0, h1, h2, h3] into [h0, h1, h2', h3]; a system of Client, Metadata service + DB, content-addressed Block store, Outbox → Kafka file.changed, Notification service and Phone; five steps (intent with base N and key u7, server says missing = {h2'}, upload only h2', commit → version N+1, other devices download only h2'); conflict copy for a stale base and a GC gate (refCount = 0 AND no live pins → mark DELETING); key decisions and failure modes.](diagrams/case36_info_file_sync_ai.png)
 
 You edit a document on your laptop; seconds later the change appears on your phone and your
 colleague's machine. That's **file sync**: keep a set of files **identical across many devices
@@ -2569,7 +2625,7 @@ chunk**, not the whole file — on **both** the upload and the download side. Ev
 |--------|--------------------|-------|-----|
 | File / version | `fileId, version → ordered [chunkHash], size, mtime` | Metadata DB (MySQL) | Transactional, versioned, point/range reads |
 | Chunk (block) | `(scope,chunkHash,generation) → bytes` | Object store (S3/GCS) | Immutable, scoped dedupe, verified integrity |
-| Block registry | `(scope,hash) → generation, state, refCount, uploadPins` | Metadata DB | Durability state and serialized commit-vs-GC decisions |
+| Block registry | `(scope,hash) → generation, state, refCount, uploadPins` | Metadata DB | Durability state and serialized commit-vs-garbage-collection (GC) decisions |
 | Upload intent | `intentId → file, base, hashes, scope, expiresAt` | Metadata DB | Pins blocks during upload; authorizes final commit |
 | Commit result | `(account,idempotencyKey) → requestDigest, result` | Metadata DB | Retry returns same version; altered payload with same key rejected |
 | Folder tree / ACL | `folderId → children, sharedWith` | Metadata DB | Listing, permissions |
@@ -2743,8 +2799,9 @@ For plain files, **conflict copies** (keep both, let the human merge) beat last-
   over WebSocket/long-poll to online devices; offline ones replay the **change journal** since
   their last cursor on reconnect.
 - *"Fixed vs content-defined chunking?"* — fixed is simpler and great for overwrites; CDC
-  (rolling-hash boundaries) survives insertions and keeps dedupe high — Dropbox-style systems use
-  variable chunking.
+  (rolling-hash boundaries) survives insertions and keeps dedupe high. Both are used in
+  practice: Dropbox's sync splits files into fixed 4 MB blocks, while LBFS-style systems
+  and backup tools such as restic and Borg use content-defined chunks.
 - *"How is this different from Google Docs?"* — Docs is **character-level real-time** co-editing
   (OT/CRDT, Ch 35). Drive/Dropbox sync **whole-file versions**; conflicts become copies, not
   merged keystrokes.
@@ -2788,7 +2845,9 @@ At 09:02 A commits with base=3 and key=u7; the response is lost. At 09:03 B comm
 different edit with base=3 and key=u8.
 
 **Predict:** may GC delete h2a at 09:01, and what must the registry check?
+
 **Solve:** what do A's retry and B's commit return? Which bytes remain protected?
+
 **Check:** another account knows the SHA-256 of h2a. Does that authorize reuse or download?
 
 <details>
@@ -2822,6 +2881,8 @@ gate existence checks, reuse and reads. Deterministic encryption does not remove
 >
 > **Why it matters —** the signal is in two choices: how you generate a short, unique, unguessable
 > id (with unpredictability only if required), and explicit HTTP cache policy.
+
+![Case-at-a-glance infographic for a URL shortener (warm-up): 100 M links/day ≈ 1,160 writes/s vs 10 B redirects/day ≈ 116,000 reads/s, 62^7 ≈ 3.52 trillion codes of which 5 years (182.5 B links) use ≈ 5.2%, ≈ 90 TB storage, and ≈ 1,420 expected colliding pairs for 100 M random codes; a create lane POST /shorten → Write service → alias or range ID allocator → base62 (≤ 7 chars) → KV put-if-absent, and a redirect lane GET /9xQ2bR → Redirect service → Redis cache (miss → KV) → 'now < expiresAt?' → 302 + Location + Cache-Control: no-store or 410, with async click events to Kafka; a 301 + max-age vs 302 + no-store comparison; key decisions and failure modes.](diagrams/case36_info_url_shortener_ai.png)
 
 Paste a long link, get back a short one like `tiny.cc/9xQ2bR`; click it and you're redirected
 to the original. This is the classic **warm-up** question — small enough to finish cleanly, yet
@@ -3066,8 +3127,10 @@ expires at 12:05 but remains in Redis until 12:10 because of an old cache policy
 
 **Predict:** does each writer seeing "alias absent" allow both inserts? What happens if
 both use an atomic put-if-absent instead?
+
 **Solve:** can all 64-bit IDs fit in seven base62 chars? Does 3.52 trillion slots imply
 100 million random creations are collision-free?
+
 **Check:** a user follows `abc1234` at 12:06. What response is correct on a cache hit,
 and does returning 302 alone prevent caching?
 
@@ -3132,7 +3195,8 @@ THE META-LESSON
   • Crux: the three indexes + the radius-search algorithm.
 
 8 · RIDE-HAILING (grid + atomic claim)
-  • Location writes ~1M/s → RAM grid, LWW; matches ~100s/s → strong.
+  • Location writes ~1M/s → RAM grid, LWW; matches ~350/s (1.4k peak)
+    → strong consistency.
   • No double-dispatch: current offer epoch + expiry + driver/trip
     transaction. Cache SET NX alone is not durable ownership.
   • Release only matching owner tokens; accepted trips do not TTL out.

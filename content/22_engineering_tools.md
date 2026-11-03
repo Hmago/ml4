@@ -6,7 +6,12 @@ The goal is not to make you an expert in all of them — nobody is. The goal is 
 
 ---
 
-## 33.1 The Big Picture — Why These Tools Exist
+## 22.1 The Big Picture — Why These Tools Exist
+
+![Map infographic of infra tools: four jobs in a restaurant-style pipeline INGEST (Kafka, Flink) → STORE (S3/HDFS, Postgres, Cassandra, Snowflake) → PROCESS (Spark/Flink, dbt/Hadoop, Airflow) → SERVE (Redis, Postgres, Cassandra, Elasticsearch); four priority tiers from Tier 1 must-know (Docker, Kubernetes, Kafka, Redis/Valkey, PostgreSQL, MongoDB, Cloud+S3, Spark) to Tier 4 legacy Hadoop; biggest 2025–2026 shifts (Hadoop out, lakehouse in; Kafka + Flink); and a pick-by-question table (e.g. make a slow read instant → SERVE → Redis / Valkey).](diagrams/sd22_info_four_jobs_tiers_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the restaurant analogy and the four jobs</summary>
 
 > **Simple Explanation:** Imagine a restaurant. Orders come in (ingestion), the kitchen stores ingredients (storage), cooks prepare meals (processing), and waiters serve customers fast (serving). When one cook can no longer keep up, you don't hire a *faster* cook — you reorganize the kitchen. Infrastructure tools are the reorganization patterns that let a system serve millions instead of dozens.
 
@@ -28,39 +33,51 @@ Almost every tool in this chapter exists to solve **one** of these four jobs:
 
 If you can place any new tool you meet into one of these four boxes, you already understand 80% of what it does. The rest is details.
 
+</details>
+
 ---
 
-## 33.2 The Priority Tiers (2025–2026)
+## 22.2 The Priority Tiers (2025–2026)
+
+<details>
+<summary><strong>Read as text</strong> — the four tiers and the biggest 2025–2026 shift</summary>
 
 Not every tool deserves equal attention. Here is the honest ranking based on current industry demand. Learn top-down.
 
 ```
  ┌─────────────────────────────────────────────────────────────────────┐
- │ TIER 1 — MUST-KNOW  (you will meet these everywhere)                 │
- │   Docker · Kubernetes · Kafka · Redis/Valkey · PostgreSQL ·          │
- │   MongoDB · Cloud+S3 · Spark                                         │
+ │ TIER 1 — MUST-KNOW  (you will meet these everywhere)                │
+ │   Docker · Kubernetes · Kafka · Redis/Valkey · PostgreSQL ·         │
+ │   MongoDB · Cloud+S3 · Spark                                        │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 2 — HIGH PRIORITY  (the modern data stack)                     │
- │   Snowflake/Databricks · dbt · Parquet · Iceberg/Delta · Flink ·     │
- │   Airflow · Terraform · Prometheus+Grafana · Ray                     │
+ │   Snowflake/Databricks · dbt · Parquet · Iceberg/Delta · Flink ·    │
+ │   Airflow · Terraform · Prometheus+Grafana · Ray                    │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 3 — SITUATIONAL  (know WHEN, not necessarily HOW)              │
- │   Cassandra/ScyllaDB · Elasticsearch/OpenSearch · gRPC/GraphQL ·     │
- │   Vector DBs (pgvector/Qdrant/Pinecone) · Distributed SQL            │
- │   (CockroachDB/Spanner/TiDB)                                         │
+ │   Cassandra/ScyllaDB · Elasticsearch/OpenSearch · gRPC/GraphQL ·    │
+ │   Vector DBs (pgvector/Qdrant/Pinecone) · Distributed SQL           │
+ │   (CockroachDB/Spanner/TiDB)                                        │
  ├─────────────────────────────────────────────────────────────────────┤
  │ TIER 4 — LEGACY  (learn only to maintain old systems)               │
- │   Hadoop (HDFS / MapReduce / Hive)                                   │
+ │   Hadoop (HDFS / MapReduce / Hive)                                  │
  └─────────────────────────────────────────────────────────────────────┘
 ```
 
 **The single biggest shift of 2025–2026:** Hadoop is out, the **lakehouse** is in. Cloud object storage (S3/GCS) plus open table formats (Iceberg/Delta) have replaced the old HDFS world. For streaming, **Kafka (transport) + Flink (processing)** is the modern pairing. AI features are now baked into every data platform. The AI era also added a new class of situational must-knows: **vector databases** for embedding search and **distributed SQL** for when you outgrow single-node Postgres.
 
+</details>
+
 ---
 
-## 33.3 TIER 1 — The Must-Know Tools
+## 22.3 TIER 1 — The Must-Know Tools
 
 ### Docker — Package Once, Run Anywhere
+
+![Docker infographic: the 'works on my machine' problem (arm64 image → exec format error on an amd64 server), the lunchbox analogy, and the pipeline Dockerfile → build → Image (read-only cached layers) → run → Containers on a shared host kernel; VM (full guest OS, GBs, minutes) vs container (app + libs, MBs, ms); layer-order fix COPY package*.json → RUN npm ci → COPY . .; multi-stage golang:1.27 builder → only /app → distroless ~20 MB with USER nonroot; a 6-row symptom → fix table; when to use / not use; trap: :latest tag and running as root.](diagrams/sd22_info_docker_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — images, layers, pro Dockerfiles and common issues</summary>
 
 > **Simple Explanation:** Docker is a **lunchbox** for your software. It seals your app together with everything it needs — the exact runtime, libraries, and config — into one portable **image** that runs identically on your laptop, a teammate's machine, CI, and production. It kills the oldest excuse in software: *"but it works on my machine."*
 
@@ -104,7 +121,7 @@ COPY . .            # source edits no longer bust the install layer above
 2. **Multi-stage builds** — compile in a fat "builder" stage, ship only the artifact in a tiny runtime image:
 
 ```dockerfile
-FROM golang:1.23 AS build
+FROM golang:1.27 AS build
 WORKDIR /src
 COPY . .
 RUN go build -o /app ./cmd/api
@@ -140,22 +157,31 @@ ENTRYPOINT ["/app"]
 - **Limitations:** Not a security boundary for untrusted multi-tenant code (use microVMs — Firecracker/gVisor); Linux containers need a Linux kernel (on macOS/Windows they run inside a lightweight VM); GPU/hardware passthrough needs extra runtime config (e.g., NVIDIA Container Toolkit).
 - **Unsupported / anti-patterns:** Many processes crammed into one container (use one-per-container + Compose/K8s); treating the container layer as durable storage; baking secrets into images; using `:latest` in production (non-reproducible deploys).
 
+</details>
+
 ---
 
 ### Kubernetes — Orchestrating Containers at Scale
+
+![Kubernetes infographic: the problem of placing and healing thousands of containers, the lunchroom-manager analogy, and a reconciliation loop (Desired: replicas = 3 vs Actual: 2 running, 1 crashed → start 1 new pod); traffic flows outside HTTP → Gateway API / Ingress → Service → pods on Nodes 1–3; object chips (Pod, Deployment, Service, Ingress → Gateway API, ConfigMap / Secret, Namespace) and scalers (HPA every 15 s, VPA, KEDA on Kafka lag, Cluster Autoscaler); three gotchas (CPU limit 200m = 20 ms per 100 ms → throttling, :latest → digest + PDB minAvailable: 2, Secret = base64); a 5-row symptom/cause/fix table (CrashLoopBackOff … OOMKilled exit 137) with limits ~5,000 nodes, 110 pods/node, 150,000 pods, etcd ~8 GB; trap: liveness probe that checks the DB.](diagrams/sd22_info_kubernetes_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — objects, self-healing, scaling and the 3 a.m. gotchas</summary>
 
 > **Simple Explanation:** If **Docker** (above) is a lunchbox that seals your app so it runs identically everywhere, **Kubernetes** is the lunchroom manager for thousands of lunchboxes: it decides which table (machine) each container sits at, replaces any that get dropped, and orders more tables when the room fills up.
 
 > **Official Definition:** *Kubernetes (K8s)* is a container orchestration system that automates deployment, scaling, healing, and networking of containers (typically Docker/OCI images) across a cluster of machines. You declare the *desired state*; a control loop continuously reconciles reality to match it.
 
+Note: Kubernetes runs the *images* Docker builds, but not the Docker Engine itself — since v1.24 (dockershim removed) each node runs containers through a CRI runtime such as **containerd** or **CRI-O**. Your Dockerfiles and images work unchanged.
+
 ```
    Docker / OCI images  ─▶  scheduled onto a Kubernetes cluster:
-   ┌────────────────────────────────────────────────────┐
+   ┌─────────────────────────────────────────────────────┐
    │  Node 1          Node 2          Node 3             │
    │  [pod][pod]      [pod][pod]      [pod]              │
    │     ▲ K8s restarts a crashed pod, adds pods under   │
    │     load, and load-balances traffic automatically.  │
-   └────────────────────────────────────────────────────┘
+   └─────────────────────────────────────────────────────┘
 ```
 
 - **Use it when:** You run more than one service, need zero-downtime deploys, autoscaling, or self-healing. This is the default for nearly all modern backends.
@@ -169,7 +195,7 @@ ENTRYPOINT ["/app"]
 | **Pod** | The smallest unit — one or more containers that live and die together. |
 | **Deployment** | "Keep N copies of this pod running, and roll out new versions safely." |
 | **Service** | A stable internal address + load balancer in front of pods (pods come and go; the Service stays). |
-| **Ingress** | The front door — routes outside HTTP traffic to the right Service. |
+| **Ingress** | The front door — routes outside HTTP traffic to the right Service. Successor for new clusters: **Gateway API** (ingress-nginx was retired in March 2026). |
 | **ConfigMap / Secret** | Configuration and passwords, injected into pods (kept out of the image). |
 | **Namespace** | A folder to isolate teams/environments inside one cluster. |
 
@@ -195,13 +221,13 @@ spec:
             limits:   { cpu: "1",    memory: "512Mi" }    # ceiling
 ```
 
-- **Scaling:** the **Horizontal Pod Autoscaler (HPA)** adds/removes pods based on CPU or custom metrics; the **Vertical Pod Autoscaler (VPA)** right-sizes CPU/memory requests; **KEDA** (Kubernetes Event-Driven Autoscaler) scales on external signals like Kafka lag or queue depth — useful for ML inference workloads; the **Cluster Autoscaler** adds/removes whole machines (nodes).
-- **Ecosystem to know:** **Helm** (package manager — install apps from reusable "charts"), **kubectl** (the CLI), and managed control planes (**EKS / GKE / AKS**) so you don't run the master yourself.
+- **Scaling:** the **Horizontal Pod Autoscaler (HPA)** adds/removes pods based on CPU or custom metrics; the **Vertical Pod Autoscaler (VPA)** right-sizes CPU/memory requests (since **in-place pod resize** went GA in v1.35, Dec 2025, a pod's CPU/memory can change without recreating it); **KEDA** (Kubernetes Event-Driven Autoscaler) scales on external signals like Kafka lag or queue depth — useful for ML inference workloads; the **Cluster Autoscaler** adds/removes whole machines (nodes).
+- **Ecosystem to know:** **Helm** (package manager — install apps from reusable "charts"), **kubectl** (the CLI), and managed control planes (**EKS / GKE / AKS**) so you don't run the control plane yourself.
 - **Container images:** K8s runs the Docker/OCI images covered in the **Docker** section above — keep them small (slim/distroless bases, multi-stage builds) so pods schedule and pull faster and present a smaller attack surface.
 
 **Advanced K8s patterns:**
 
-- **StatefulSets** are Deployments for stateful apps (databases, Kafka, Zookeeper). Each pod gets a stable hostname (`kafka-0`, `kafka-1`) and its own persistent volume that survives pod restarts — the ordering matters. Contrast with Deployments where pods are interchangeable.
+- **StatefulSets** are Deployments for stateful apps (databases, Kafka, etcd). Each pod gets a stable hostname (`kafka-0`, `kafka-1`), its own persistent volume that survives pod restarts, and ordered start-up/shutdown. Contrast with Deployments, where pods are interchangeable.
 - **Operators** encode complex operational knowledge into a custom controller. An "Operator" watches a custom resource (e.g., `kind: KafkaCluster`) and reconciles reality to it — provisioning storage, running rolling upgrades, managing secrets. Major data tools (Strimzi/Kafka, Postgres Operator, Spark Operator) all ship Operators.
 - **GitOps** (Flux, Argo CD) — rather than running `kubectl apply` from CI, a Git repo is the single source of truth for cluster state, and a controller inside the cluster continuously syncs the live state to match it. Drift is auto-corrected and every change is a git commit. Argo CD is the de facto standard.
 
@@ -232,9 +258,10 @@ The mistakes below pass code review and then page you at 3 a.m.
 
 **1. CPU *limits* cause throttling — even on an idle node.**
 ```yaml
-# ❌ ANTI-PATTERN: a tight CPU limit throttles the app via the Linux CFS quota.
-# The container is capped to 200ms of CPU per 100ms period, so p99 latency
-# spikes under bursty load while `kubectl top` shows low AVERAGE CPU. Baffling.
+# ❌ ANTI-PATTERN: a tight CPU limit throttles the app via the Linux CFS
+# (Completely Fair Scheduler) quota. 200m = 0.2 CPU = 20 ms of CPU per 100 ms
+# period; a burst that needs more is paused until the next period, so p99 latency
+# spikes while `kubectl top` shows low AVERAGE CPU. Baffling.
 resources:
   requests: { cpu: "200m", memory: "512Mi" }
   limits:   { cpu: "200m", memory: "512Mi" }
@@ -283,29 +310,36 @@ spec:
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Universal deploy target — works on every cloud and on-prem; strong self-healing and autoscaling primitives; rich ecosystem (Helm, Argo CD, KEDA, Operators); declarative model simplifies rollbacks and audits.
 - **Cons:** Steep operational curve (YAML sprawl, RBAC, networking, storage classes); significant initial complexity overhead for small teams; debugging failures requires expertise across multiple layers.
-- **Limitations:** etcd (the cluster state store) has a practical size cap (~8 GB) limiting cluster scale; tested ceiling is ~5,000 nodes and ~110 pods per node before control-plane strain; HPA latency means scaling reacts in seconds, not milliseconds.
+- **Limitations:** etcd (the cluster state store) has a practical size cap (~8 GB) limiting cluster scale; the documented tested limits are ~5,000 nodes, 110 pods per node and 150,000 pods per cluster; the HPA re-evaluates metrics every 15 s by default and new pods must still pull and start, so autoscaling reacts in tens of seconds to minutes, not milliseconds.
 - **Unsupported / anti-patterns:** Does not provide application-level business logic or stateful-data durability — that's your app's job; Docker containers share the host kernel (weaker isolation than a VM — not suitable where VM-level isolation is required); over-engineering for a single small service that Cloud Run or Fargate would serve adequately.
+
+</details>
 
 ---
 
 ### Kafka — The Central Nervous System
+
+![Kafka infographic: the coupling problem, the conveyor-belt analogy, and producers (web app, mobile, sensors) appending to topic 'orders' with Partitions 0–2 of [m0][m1]… and an offset marker, read independently by billing svc, analytics and fraud check; brokers with RF=3, acks=all, min.insync.replicas=2; rules '6 partitions → up to 6 consumers in one group' and 'ordering only within a partition'; ZooKeeper vs Kafka 4.0 (March 2025) KRaft controller nodes; delivery semantics (at-most-once, at-least-once, exactly-once ~3% throughput cost); three gotchas (auto-commit, slow poll loop, 10,000 partitions → size at ≈2–4× consumers); alternatives table (Redpanda, WarpStream ~0.5–1 s, Apache Pulsar, NATS JetStream); trap: a null key breaks per-order ordering.](diagrams/sd22_info_kafka_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — partitions, delivery semantics, KRaft, gotchas and alternatives</summary>
 
 > **Simple Explanation:** Kafka is a **conveyor belt** for events. Producers drop messages ("user clicked", "order placed") onto the belt; many independent consumers read from it at their own pace. Because the belt *keeps* the messages (a durable log), a consumer can crash, restart, and replay everything it missed. It decouples "who produces data" from "who uses data."
 
 > **Official Definition:** Apache Kafka is a distributed, partitioned, replicated **commit log** used as a publish/subscribe messaging system and event-streaming platform. It provides durable, ordered, high-throughput, and replayable event streams.
 
 ```
-   Producers                Kafka Topic ("orders")              Consumers
-   ┌────────┐   ┌──────────────────────────────────────┐   ┌──────────────┐
+   Producers                Kafka Topic ("orders")               Consumers
+   ┌─────────┐   ┌───────────────────────────────────────┐   ┌──────────────┐
    │ web app │─▶ │ Partition 0:  [m0][m1][m2][m3]...     │─▶ │ billing svc  │
    │ mobile  │─▶ │ Partition 1:  [m0][m1][m2]...         │─▶ │ analytics    │
    │ sensors │─▶ │ Partition 2:  [m0][m1]...             │─▶ │ fraud check  │
-   └────────┘   └──────────────────────────────────────┘   └──────────────┘
-                 messages are KEPT (replayable log)         each reads independently
+   └─────────┘   └───────────────────────────────────────┘   └──────────────┘
+                  messages are KEPT (replayable log)          each reads independently
 ```
 
 - **Use it when:** Decoupling services, building event-driven systems, streaming data pipelines, log aggregation, or you need high throughput (millions of events/sec) with replay.
-- **Avoid when:** You just need a simple task queue for a handful of background jobs — a lighter broker (RabbitMQ, AWS SQS, Redis Streams) is far less operational burden.
+- **Avoid when:** You just need a simple task queue for a handful of background jobs — a lighter broker (RabbitMQ, AWS SQS, Redis Streams) is far less operational burden. (Kafka 4.2, Feb 2026, made **share groups** — "Kafka Queues", KIP-932 — production-ready, so Kafka can now do queue-style consumption with per-message acks; that helps when you already run Kafka, but it is not a reason to adopt it for a small queue.)
 - **Senior gotcha:** Ordering is guaranteed **only within a partition**, not across the whole topic. Choosing the right partition key (e.g., `user_id`) is a critical design decision. Managed options (Confluent Cloud, AWS MSK, Redpanda) remove most of the operational pain.
 
 **Going deeper — the core concepts:**
@@ -317,20 +351,20 @@ spec:
 | **Offset** | The position of a message in a partition (0, 1, 2, …). Consumers track "where they've read up to." |
 | **Consumer group** | A set of consumers sharing the work; each partition is read by exactly one consumer in the group. |
 | **Broker** | A Kafka server. A cluster is many brokers. |
-| **Replication factor** | How many brokers hold a copy of each partition (e.g., RF=3 survives 2 broker failures). |
+| **Replication factor** | How many brokers hold a copy of each partition. RF=3 keeps the data through 2 broker failures; with `min.insync.replicas=2`, writes keep flowing through 1 failure. |
 
 **Why it's so fast:** Kafka writes events *sequentially* to disk (append-only log) and lets the OS page cache do the heavy lifting — sequential disk I/O is nearly as fast as memory. A single cluster routinely handles **millions of events/sec**.
 
 **Delivery semantics** (know these for interviews):
 - **At-most-once** — fast, may drop messages.
 - **At-least-once** — the common default; may *duplicate*, so consumers should be **idempotent**.
-- **Exactly-once (EOS)** — achieved by combining (1) an **idempotent producer** (each message has a sequence number; the broker deduplicates retries), (2) **transactions** (`beginTransaction` / `commitTransaction` spanning multiple partitions/topics), and (3) consumers reading only committed data (`isolation.level=read_committed`). Combined with `acks=all` (leader + all **ISR** replicas acknowledge before success) this gives end-to-end exactly-once. The cost is ~10–20% throughput reduction — use it for financial or billing pipelines, not high-volume telemetry.
+- **Exactly-once (EOS)** — achieved by combining (1) an **idempotent producer** (each message has a sequence number; the broker deduplicates retries), (2) **transactions** (`beginTransaction` / `commitTransaction` spanning multiple partitions/topics), and (3) consumers reading only committed data (`isolation.level=read_committed`). Combined with `acks=all` (the leader waits until every **in-sync replica** — ISR, explained just below — has the message) this gives exactly-once for **read-from-Kafka → process → write-to-Kafka** pipelines; side effects outside Kafka (a DB write, an email) still need idempotency. Since Kafka 3.0, producers default to `acks=all` and `enable.idempotence=true`. The throughput cost of transactions is modest — Confluent measured ~3% vs. an at-least-once `acks=all` producer (100 ms transactions, 1 KB messages); the bigger costs are extra latency and complexity — so reserve it for financial or billing pipelines, not high-volume telemetry.
 
 **ISR (In-Sync Replicas):** the subset of replicas fully caught up with the leader. A message is "committed" only once all ISR members have it. If a replica falls behind, it's dropped from the ISR. `acks=all` combined with `min.insync.replicas=2` is the standard durability configuration.
 
 **KRaft — ZooKeeper is gone (Kafka 4.0, March 2025):**
 
-Prior to Kafka 3.x, a separate Apache ZooKeeper ensemble managed cluster metadata (which broker leads which partition, controller election). **Kafka 4.0 completely removed ZooKeeper**. The replacement, **KRaft** (Kafka Raft), embeds metadata management directly into designated **controller nodes** using a Raft-based replicated log — the same append-only log mechanism Kafka already uses for data. Kafka 3.9 was the final bridge release supporting both modes.
+Until KRaft became production-ready (Kafka 3.3, 2022), every cluster needed a separate Apache ZooKeeper ensemble to hold cluster metadata (which broker leads which partition, controller election). **Kafka 4.0 completely removed ZooKeeper**. The replacement, **KRaft** (Kafka Raft), embeds metadata management directly into designated **controller nodes** using a Raft-based replicated log — the same append-only log mechanism Kafka already uses for data. Kafka 3.9 was the final bridge release supporting both modes (and the migration path from ZooKeeper).
 
 ```
    Old (pre-4.0):                     New (Kafka 4.0 KRaft):
@@ -341,9 +375,9 @@ Prior to Kafka 3.x, a separate Apache ZooKeeper ensemble managed cluster metadat
    (extra ops, latency, outages)      (simpler, faster metadata, fewer moving parts)
 ```
 
-Benefits: faster partition leader election (seconds → milliseconds), one fewer system to operate, and supports **millions** of partitions per cluster vs. hundreds of thousands before.
+Benefits: near-instant controller failover (standby controllers already hold the metadata log, instead of a new controller reloading everything from ZooKeeper), one fewer system to operate, and support for **millions** of partitions per cluster vs. hundreds of thousands before.
 
-**Tiered storage:** Kafka 3.6+ supports offloading older log segments to object storage (S3/GCS), decoupling retention from broker disk. Long retention (months) without huge brokers — important for event sourcing and audit logs.
+**Tiered storage:** offloads older log segments to object storage (S3/GCS), decoupling retention from broker disk — early access in Kafka 3.6, production-ready since 3.9 (not yet for compacted topics). Long retention (months) without huge brokers — important for event sourcing and audit logs.
 
 **Retention & compaction:** Kafka keeps messages for a configured time/size (e.g., 7 days), *independent of whether they were read* — that's what makes **replay** possible. **Log compaction** instead keeps only the latest value per key (great for "current state" topics).
 
@@ -360,7 +394,7 @@ Scaling rule of thumb: parallelism = number of partitions.
 | Symptom | Real cause | Fix |
 |---|---|---|
 | Consumer lag keeps growing | Consumers slower than producers, or too few partitions | Add partitions + consumers in the group; speed up / batch processing |
-| Endless rebalancing ("rebalance storm") | Processing exceeds `max.poll.interval.ms` → consumer is evicted | Process faster or off-thread; tune `max.poll.records` / interval |
+| Endless rebalancing ("rebalance storm") | Processing exceeds `max.poll.interval.ms` → consumer is evicted | Process faster or off-thread; tune `max.poll.records` / interval; move to the incremental KIP-848 protocol (`group.protocol=consumer`, GA in Kafka 4.0) |
 | Messages appear "out of order" | Ordering is guaranteed **per partition**, not per topic | Key related events so they land on the same partition |
 | One partition is hot / huge | Skewed partition key (e.g., one giant customer) | Pick a higher-cardinality key, or a custom partitioner |
 | Duplicate side effects downstream | At-least-once delivery re-delivers on retries | Make consumers **idempotent**; use EOS for financial paths |
@@ -401,7 +435,9 @@ consumer.commitSync();               // then commit (at-least-once)
 **3. Slow work in the poll loop triggers a rebalance storm.**
 ```java
 // ❌ If the time between poll() calls exceeds max.poll.interval.ms, the broker
-// assumes the consumer died and rebalances — which PAUSES the whole group.
+// assumes the consumer died and rebalances — with the classic protocol that
+// PAUSES the whole group (KIP-848's incremental protocol only moves the affected
+// partitions, but the slow consumer still loses its partitions).
 // A batch of 500 records making slow network calls is the usual cause.
 
 // ✅ Cap the batch so poll() is called often enough, or offload slow work:
@@ -419,12 +455,12 @@ props.put("max.poll.records", "100");   // smaller batches
    not to a number you think you'll "never outgrow".
 ```
 
-**5. Limitation — retention is a silent data-loss clock.** A consumer group offline longer than `retention.ms` (default 7 days) restarts at `auto.offset.reset`: `latest` silently skips the gap, `earliest` replays everything — both surprising in production. And Kafka is a log, not a database: don't use it for request/reply RPC or as a queryable source of truth.
+**5. Limitation — retention is a silent data-loss clock.** A consumer group offline longer than `retention.ms` (default 7 days) finds its next messages deleted — and its committed offsets also expire after `offsets.retention.minutes` (default 7 days) — so it restarts at `auto.offset.reset`: `latest` silently skips the gap, `earliest` replays everything still retained — both surprising in production. And Kafka is a log, not a database: don't use it for request/reply RPC or as a queryable source of truth.
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Extremely high throughput (millions of events/sec per cluster); durable, replayable log enables event sourcing and consumer decoupling; KRaft (Kafka 4.0) removes ZooKeeper complexity; tiered storage extends retention cheaply to object storage.
-- **Cons:** High operational weight (cluster sizing, partition tuning, consumer-group management); rebalances pause consumers and spike latency; exactly-once semantics carry ~10–20% throughput cost.
-- **Limitations:** Partition count can be increased but not easily decreased; ordering is guaranteed only within a partition, not across a topic; default max message size is ~1 MB (built for small, frequent messages, not payloads); no native per-message TTL — retention is per-topic; consumer rebalances pause processing for all consumers in a group.
+- **Cons:** High operational weight (cluster sizing, partition tuning, consumer-group management); classic-protocol rebalances pause consumers and spike latency (the KIP-848 protocol makes them incremental); exactly-once adds latency and complexity (throughput cost is modest, ~3% in Confluent's benchmark).
+- **Limitations:** Partition count can be increased but not easily decreased; ordering is guaranteed only within a partition, not across a topic; default max message size is ~1 MB (built for small, frequent messages, not payloads); no native per-message TTL — retention is per-topic; with the classic group protocol a rebalance pauses processing for all consumers in the group.
 - **Unsupported / anti-patterns:** Not a request/response RPC mechanism; not suited for large binary blobs or video payloads; no random-access query capability (it is a log, not a database); not a replacement for a lightweight task queue in low-throughput scenarios where SQS/RabbitMQ suffices.
 
 **Kafka alternatives — know when to reach for them:**
@@ -432,19 +468,26 @@ props.put("max.poll.records", "100");   // smaller batches
 | Alternative | What it is | Use it when |
 |---|---|---|
 | **Redpanda** | C++, Raft-native, no JVM, no ZooKeeper, Kafka-API compatible | Lower latency, simpler ops, same Kafka clients work |
-| **WarpStream** | S3-backed, zero local disk, Kafka-compatible (acquired by Confluent 2024) | Near-zero infra cost, tolerate higher latency (10s+) |
+| **WarpStream** | S3-backed, zero local disk, Kafka-compatible (acquired by Confluent 2024) | Near-zero infra cost; tolerate higher latency (default ~0.5–1 s end-to-end) |
 | **Apache Pulsar** | Segmented storage (BookKeeper), multi-tenant, geo-replication built-in | Multi-tenant SaaS, need fine-grained topic-level policies |
 | **NATS / NATS JetStream** | Lightweight, sub-millisecond, Go-native | IoT, edge, simple pub/sub without Kafka's operational weight |
 
 The interview answer: "Kafka is the right default for high-throughput event streaming. I'd consider Redpanda for operational simplicity with the same API, or WarpStream if we want near-zero disk cost at the cost of latency."
 
+</details>
+
 ---
 
 ### Redis / Valkey — The Speed Layer
 
+![Redis / Valkey infographic: the repeated-slow-read problem (app → database 10 ms), the whiteboard analogy and the 4-step cache-aside pattern with ttl=300; app → Redis 0.2 ms on a hit; six data structures with commands (String, Hash HSET user:42 name Ana age 30, List, Set, Sorted Set, Stream); cache-stampede demo with 50 requests and a 200 ms DB query (naive 50 DB queries vs single-flight lock SET lock:key NX EX 10 → 1 DB query; cached → 0) and TTL jitter expiries at 301, 307, 315, 317, 347 s; 2026 engine choice (Valkey, ElastiCache for Valkey 20% / ~33% cheaper, Memorystore, Redis 8 vector sets, Dragonfly); senior facts table (SCAN not KEYS *, eviction policies, AOF everysec ~1 s loss, 16384 hash slots + CROSSSLOT, Redlock caveats); trap: keys with no TTL.](diagrams/sd22_info_redis_valkey_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — data structures, cache-aside, stampedes and the Valkey fork</summary>
+
 > **Simple Explanation:** Redis is a **whiteboard next to your desk**. Instead of walking to the filing cabinet (the database) for every answer, you jot down frequently needed facts on the whiteboard for instant access. It lives in memory (RAM), so reads/writes take microseconds.
 
-> **Official Definition:** Redis is an in-memory data-structure store used as a cache, database, and message broker. It supports strings, hashes, lists, sets, sorted sets, streams, and more, with optional persistence to disk. **Valkey** is the Linux Foundation fork of Redis (BSD-licensed), now the default in AWS ElastiCache and Google Memorystore.
+> **Official Definition:** Redis is an in-memory data-structure store used as a cache, database, and message broker. It supports strings, hashes, lists, sets, sorted sets, streams, and more, with optional persistence to disk. **Valkey** is the Linux Foundation fork of Redis (BSD-licensed), now offered as a managed engine by AWS ElastiCache and Google Cloud Memorystore.
 
 ```
    Without cache:                With Redis cache:
@@ -485,23 +528,23 @@ read(key):
 - **Eviction policy:** when memory fills, Redis evicts per policy — `allkeys-lru` (drop least-recently-used) is common for a pure cache; `noeviction` errors on writes (safer for a datastore).
 - **Single-threaded core:** command execution is single-threaded, so one slow command (e.g., `KEYS *` on a huge keyspace) blocks everyone — use `SCAN` instead.
 - **Redis Cluster** shards the keyspace across nodes using **16384 hash slots** — each key maps to a slot (`CRC16(key) mod 16384`), and each node owns a slice of slots. A client must route to the right node (client-side or via `MOVED` redirects). Replicas provide HA per shard.
-- **Redlock** is the Redis algorithm for distributed locks across multiple independent Redis nodes. Despite widespread use, it has correctness caveats under network partitions and clock drift (see the Martin Kleppmann / Salvatore Sanfillippo debate). For critical correctness, a CP system (etcd, ZooKeeper) is safer.
+- **Redlock** is the Redis algorithm for distributed locks across multiple independent Redis nodes. Despite widespread use, it has correctness caveats under network partitions and clock drift (see the Martin Kleppmann / Salvatore Sanfilippo debate). For critical correctness, a CP system (etcd, ZooKeeper) is safer.
 
 **The Redis ecosystem in 2026:**
 
-In **March 2024**, Redis Ltd. changed the license from BSD to a dual SSPL/RSALv2 (not OSI-approved open source). The Linux Foundation responded by forking Redis 7.2 as **Valkey** (BSD license), backed by AWS, Google, Oracle, and Ericsson. Within months:
-- **AWS ElastiCache** and **Google Memorystore** defaulted to Valkey.
-- **Valkey 8.1** (2025) added I/O threading improvements, making it measurably faster than the Redis baseline on multi-core hardware.
-- **Redis 8 (2025)** reverted to **AGPL** (still not permissive, but more standard open-source), added **vector sets** (native ANN support), and continued active development.
-- **Dragonfly** is a multi-threaded, Redis/Memcached-compatible in-memory store that sidesteps the single-threaded bottleneck by using a shared-nothing architecture per CPU core — benchmarks show 25× higher throughput on large instances; mainly relevant at extreme scale.
+In **March 2024**, Redis Ltd. changed the license from BSD to a dual SSPL/RSALv2 (not OSI-approved open source). The Linux Foundation responded by forking Redis 7.2 as **Valkey** (BSD license), backed by AWS, Google, Oracle, and Ericsson. Since then:
+- **AWS ElastiCache** and **Google Cloud Memorystore** added Valkey as a managed engine; AWS prices it 20% below Redis OSS on nodes and ~33% below on serverless.
+- **Valkey 8.0** (Sept 2024) added multi-threaded I/O, making it measurably faster than the Redis 7.2 baseline on multi-core hardware; **Valkey 9.0** (Oct 2025) added atomic slot migration (safer resharding), per-field hash expiry, and numbered databases in cluster mode.
+- **Redis 8 (May 2025)** added **AGPLv3** as a third license option alongside RSALv2/SSPLv1 (OSI-approved open source again, though copyleft — not permissive like BSD), folded the former Redis Stack modules (JSON, search, time series) into the core, and added **vector sets** (native ANN support).
+- **Dragonfly** is a multi-threaded, Redis/Memcached-compatible in-memory store that sidesteps the single-threaded bottleneck by using a shared-nothing architecture per CPU core — its vendor benchmarks claim up to 25× higher throughput on large instances; mainly relevant at extreme scale.
 
 ```
    Decision tree (2026):
    Need Redis-compatible in-memory store?
      ├─ Self-hosted / cloud-neutral → Valkey (BSD, Linux Foundation)
-     ├─ AWS managed                → ElastiCache Valkey (default)
-     ├─ GCP managed                → Memorystore Valkey (default)
-     ├─ Need vector sets / full Redis features → Redis 8 (AGPL)
+     ├─ AWS managed                → ElastiCache for Valkey (cheapest engine)
+     ├─ GCP managed                → Memorystore for Valkey
+     ├─ Need vector sets / full Redis features → Redis 8 (AGPL option)
      └─ Extreme single-node throughput → Dragonfly
 ```
 
@@ -534,29 +577,9 @@ SCAN 0 MATCH user:* COUNT 100
 SSCAN huge_set 0 COUNT 100
 ```
 
-**2. Cache stampede (thundering herd) hammers the DB on expiry.**
-```python
-# ❌ ANTI-PATTERN: thousands of concurrent requests miss the SAME expired key and
-# all rebuild it against the database at the same instant.
-def get(key):
-    v = redis.get(key)
-    if v: return v
-    v = db.query(key)
-    redis.set(key, v, ex=300)        # everyone expires at T+300 → synchronized stampede
-    return v
+**2. Cache stampede (thundering herd) hammers the DB on expiry.** The program below runs both versions against in-memory stand-ins for Redis and the database (no servers needed): 50 requests hit one key at the same instant, and the database is slow (200 ms), so every request that misses piles in before the first rebuild finishes.
 
-# ✅ FIX: jittered TTL + a short single-flight lock so only one caller rebuilds.
-def get(key):
-    v = redis.get(key)
-    if v: return v
-    if redis.set(f"lock:{key}", "1", nx=True, ex=10):    # only one winner rebuilds
-        v = db.query(key)
-        redis.set(key, v, ex=300 + random.randint(0, 60))  # jitter de-syncs expiry
-        redis.delete(f"lock:{key}")
-        return v
-    time.sleep(0.05)                 # others back off and retry the cache
-    return get(key)
-```
+The naive version sends all 50 requests to the database; the single-flight version sends exactly 1 (the lock winner re-checks the cache after taking the lock, so a late caller cannot trigger a second rebuild), and the jitter spreads the five rebuilt keys' expiries across 300–360 s instead of all at 300 s.
 
 **3. Keys without a TTL are a slow memory leak; cross-slot ops break in Cluster.**
 ```
@@ -574,14 +597,129 @@ MGET {user}:1 {user}:2 {user}:3
 **4. Limitation — Redlock is not safe for correctness-critical locks.** Under GC pauses, clock drift, or partitions a lock can be held by two clients at once. For "must never double-execute" paths (payments), use a CP store (etcd/ZooKeeper) or a **fencing token** the resource validates. Remember Redis is a speed layer: with `appendfsync everysec` you can lose ~1s of writes on crash, so never make it the durable source of truth.
 
 **At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Sub-millisecond read/write latency; rich data structures (sorted sets, streams, pub/sub) cover many use-cases beyond plain caching; Valkey is BSD-licensed and now the cloud default; Dragonfly provides multi-threaded throughput for extreme scale.
+- **Pros:** Sub-millisecond read/write latency; rich data structures (sorted sets, streams, pub/sub) cover many use-cases beyond plain caching; Valkey is BSD-licensed and offered by the major managed services (and priced below Redis OSS on AWS); Dragonfly provides multi-threaded throughput for extreme scale.
 - **Cons:** All data must fit in RAM — cost scales with dataset size; AOF everysec durability can lose ~1 second of writes on crash; Redlock distributed locks have correctness caveats under network partitions and clock drift.
 - **Limitations:** Single-threaded command execution means one slow command (e.g., `KEYS *` on a large keyspace) blocks all other clients; Redis Cluster cannot execute multi-key operations across different hash slots unless keys share a hash tag; dataset size is bounded by available RAM on the cluster.
 - **Unsupported / anti-patterns:** Not a system of record for data that must survive memory loss; cannot serve relational joins or complex aggregations; not suitable for guaranteed-durable financial commits without careful AOF+fsync configuration; not a replacement for a database when data exceeds RAM budget.
 
+</details>
+
+**Python — cache stampede, naive vs single-flight (runnable):**
+
+```python
+import random
+import threading
+import time
+
+
+# ❌ ANTI-PATTERN: thousands of concurrent requests miss the SAME expired key and
+# all rebuild it against the database at the same instant.
+def get_naive(key):
+    v = redis.get(key)
+    if v is not None: return v
+    v = db.query(key)
+    redis.set(key, v, ex=300)        # everyone expires at T+300 → synchronized stampede
+    return v
+
+
+# ✅ FIX: jittered TTL + a short single-flight lock so only one caller rebuilds.
+def get(key):
+    v = redis.get(key)
+    if v is not None: return v
+    if redis.set(f"lock:{key}", "1", nx=True, ex=10):    # only one winner rebuilds
+        v = redis.get(key)           # re-check: a previous winner may have just finished
+        if v is None:
+            v = db.query(key)
+            redis.set(key, v, ex=300 + random.randint(0, 60))  # jitter de-syncs expiry
+        redis.delete(f"lock:{key}")
+        return v
+    time.sleep(0.05)                 # others back off and retry the cache
+    return get(key)
+
+
+# --- In-memory stand-ins so the demo runs without a Redis server or a database ---
+class FakeRedis:
+    """A dict of key -> (value, ttl). One mutex makes SET NX atomic, as in Redis."""
+    def __init__(self):
+        self.data, self.mu = {}, threading.Lock()
+
+    def get(self, key):
+        with self.mu:
+            item = self.data.get(key)
+            return item[0] if item else None
+
+    def set(self, key, value, ex=None, nx=False):
+        with self.mu:
+            if nx and key in self.data: return False
+            self.data[key] = (value, ex)
+            return True
+
+    def delete(self, key):
+        with self.mu:
+            self.data.pop(key, None)
+
+    def ttl(self, key):
+        return self.data[key][1]
+
+
+class FakeDB:
+    def __init__(self):
+        self.queries, self.mu = 0, threading.Lock()
+
+    def query(self, key):
+        with self.mu:
+            self.queries += 1
+        time.sleep(0.2)              # a slow query = the window in which the herd piles in
+        return f"row:{key}"
+
+
+def burst(fn, n, cached=False):
+    """Fire n concurrent requests for one key; an empty cache = the key just expired."""
+    global redis, db
+    redis, db = FakeRedis(), FakeDB()
+    if cached: redis.set("user:42", "row:user:42", ex=300)
+    start, results = threading.Barrier(n), []
+
+    def request():
+        start.wait()                 # release all n requests at the same instant
+        results.append(fn("user:42"))
+
+    threads = [threading.Thread(target=request) for _ in range(n)]
+    for t in threads: t.start()
+    for t in threads: t.join()
+    ok = all(r == "row:user:42" for r in results)
+    q = db.queries
+    return f"{q} DB {'query' if q == 1 else 'queries'}, all {n} callers got the row: {ok}"
+
+
+if __name__ == "__main__":
+    random.seed(42)
+    print("naive,         50 requests, key expired ->", burst(get_naive, 50))
+    print("single-flight, 50 requests, key expired ->", burst(get, 50))
+    print("single-flight, 50 requests, key cached  ->", burst(get, 50, cached=True))
+    redis, db = FakeRedis(), FakeDB()
+    keys = [f"user:{i}" for i in range(1, 6)]
+    for k in keys: get(k)            # rebuild 5 keys one after another
+    print("single-flight, rebuild 5 keys -> TTLs", [redis.ttl(k) for k in keys])
+```
+
+**Output:**
+
+```
+naive,         50 requests, key expired -> 50 DB queries, all 50 callers got the row: True
+single-flight, 50 requests, key expired -> 1 DB query, all 50 callers got the row: True
+single-flight, 50 requests, key cached  -> 0 DB queries, all 50 callers got the row: True
+single-flight, rebuild 5 keys -> TTLs [307, 301, 347, 317, 315]
+```
+
 ---
 
 ### PostgreSQL — The Default Database
+
+![Comparison infographic of PostgreSQL vs document stores: PostgreSQL as the do-everything filing cabinet (ACID, B-tree/GIN/GiST/HNSW indexes, MVCC + VACUUM) with a 6-rung scaling ladder from indexes + fix queries up to sharding with Citus / CockroachDB / Spanner; MongoDB / Cosmos DB as flexible folders with one order document { user, items[ ], status }, embed vs reference, the 16 MB document cap, w:1 vs w:majority, the Cosmos consistency slider Strong → Bounded Staleness → Session (default) → Consistent Prefix → Eventual and an RU/s gauge hitting 429; an at-a-glance table (model, scaling, consistency knob, best for) for PostgreSQL, MongoDB and Cosmos DB; a pick-by-need table; common mix-ups (N+1 = 101 round-trips → one JOIN, OFFSET 100000 → keyset, createdAt/country shard key → hashed userId, unbounded $push → bucket pattern); trap: schemaless still has a schema.](diagrams/sd22_info_postgres_vs_documents_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — indexes, MVCC, the scaling ladder and query gotchas</summary>
 
 > **Simple Explanation:** Postgres is the **reliable, do-everything filing cabinet**. It stores your data safely, never loses a committed write, enforces rules (this column must be a valid email), and answers complex questions with SQL. When in doubt about which database to start with, the answer is almost always "Postgres."
 
@@ -638,7 +776,7 @@ Queries with a `WHERE ts BETWEEN ...` filter will touch only matching partitions
 | Write throughput maxes a single primary | Vertical scaling topped out; shard or switch |
 | Multi-region active-active writes | Postgres replication is single-primary only |
 | Table rows > ~500M and partitioning gets unwieldy | Sharding wins |
-| SLA requires zero cross-region latency on writes | Spanner / CockroachDB / Aurora DSQL |
+| Must survive a whole-region outage with zero data loss and keep taking writes | Spanner / CockroachDB / Aurora DSQL |
 
 The rule of thumb: exhaust the Postgres scaling ladder before adding distributed SQL's operational and consistency complexity. Most applications never need it.
 
@@ -706,15 +844,20 @@ SELECT * FROM events WHERE id > $last_seen_id ORDER BY id LIMIT 20;
 - **Pros:** ACID compliance; enormously rich feature set (JSONB, pgvector, PostGIS, full-text search, logical replication); strong extension ecosystem; "just use Postgres" is a genuine architecture strategy for most applications.
 - **Cons:** Single-primary write ceiling (vertical scaling only, natively); connections are expensive — PgBouncer is practically mandatory at scale; MVCC bloat requires regular VACUUM to prevent table bloat and index degradation.
 - **Limitations:** No native horizontal write sharding — requires Citus or a migration to distributed SQL; multi-region active-active writes are not supported by the native replication model; large analytical full-table scans are significantly slower than columnar warehouses; each connection consumes ~5–10 MB of memory, limiting raw connection count.
-- **Unsupported / anti-patterns:** Petabyte-scale OLAP (use Snowflake/Databricks); multi-region active-active transactional writes (use Spanner/CockroachDB); workloads requiring horizontal write sharding without external tools.
+- **Unsupported / anti-patterns:** Petabyte-scale OLAP — online analytical processing, i.e. big scans and aggregations (use Snowflake/Databricks); multi-region active-active transactional writes (use Spanner/CockroachDB); workloads requiring horizontal write sharding without external tools.
+
+</details>
 
 ---
 
 ### MongoDB & Cosmos DB — Document & Multi-Model NoSQL
 
+<details>
+<summary><strong>Read as text</strong> — documents, shard keys, consistency levels and RU/s</summary>
+
 > **Simple Explanation:** If Postgres is a filing cabinet of rigid, identical forms (every row has the same columns), **MongoDB** is a box of **flexible folders** — each document can hold a different shape of data (nested objects, arrays, optional fields), stored as JSON. You keep an order *and everything about it* — line items, address, history — in **one document**, and read it back in a single call. **Cosmos DB** is Microsoft's fully-managed, globally-distributed cousin that speaks MongoDB's language (and several others) with a turnkey SLA.
 
-> **Official Definition:** MongoDB is an open-source, document-oriented NoSQL database that stores data as flexible BSON (binary JSON) documents grouped into collections, with secondary indexes, an aggregation pipeline, horizontal scaling via sharding, and replica-set high availability. Azure Cosmos DB is a fully-managed, globally-distributed, multi-model database exposing several wire-compatible APIs (NoSQL, MongoDB, Cassandra, Gremlin graph, Table) with turnkey multi-region replication and well-defined consistency levels.
+> **Official Definition:** MongoDB is a source-available (SSPL-licensed), document-oriented NoSQL database that stores data as flexible BSON (binary JSON) documents grouped into collections, with secondary indexes, an aggregation pipeline, horizontal scaling via sharding, and replica-set high availability. Azure Cosmos DB is a fully-managed, globally-distributed, multi-model database exposing several wire-compatible APIs (NoSQL, MongoDB, Cassandra, Gremlin graph, Table) with turnkey multi-region replication and well-defined consistency levels.
 
 | | **MongoDB** | **Azure Cosmos DB** |
 |---|---|---|
@@ -751,11 +894,13 @@ db.orders.insertOne({
   status: "paid", createdAt: new Date()
 });
 
-// Index the fields you filter/sort on, then aggregate
+// Index the fields you filter/sort on, then aggregate (spend = qty × price per item)
 db.orders.createIndex({ "user.id": 1, createdAt: -1 });
 db.orders.aggregate([
   { $match: { status: "paid" } },
-  { $group: { _id: "$user.id", spent: { $sum: { $sum: "$items.price" } } } },
+  { $unwind: "$items" },                                   // one row per line item
+  { $group: { _id: "$user.id",
+              spent: { $sum: { $multiply: ["$items.qty", "$items.price"] } } } },
   { $sort:  { spent: -1 } }
 ]);
 ```
@@ -816,9 +961,16 @@ db.orders.insertOne({ _id: "ord_1", user: { id: 42, name: "Ada" }, items: [/* ..
 - **Limitations:** MongoDB documents are capped at 16 MB; multi-document ACID transactions exist but add latency and don't scale like single-document writes; large `$lookup` joins degrade at scale; Cosmos throughput is bounded by provisioned RU/s and per-partition limits; strong global consistency trades away latency and RU budget.
 - **Unsupported / anti-patterns:** Highly relational workloads with many-to-many joins (use Postgres); large-scale ad-hoc analytical querying across entities (use a warehouse/lakehouse); low-cardinality or monotonically-increasing shard/partition keys; treating a document store as a drop-in for complex transactional relational integrity.
 
+</details>
+
 ---
 
 ### Cloud + Object Storage (S3 / GCS / Azure Blob) — The Foundation
+
+![Infographic on object storage (S3 / GCS / Blob): files stored as objects (data + metadata + key) in a flat namespace over HTTP with 11 nines (99.999999999%) durability and strong read-after-write consistency; a storage-class panel (Express One Zone single-digit ms, then the lifecycle Standard → Standard-IA after 30 days → Glacier after 90 → expire at day 365); the lakehouse stack S3 / GCS / ADLS + Iceberg / Delta + Spark / Snowflake / Flink replacing HDFS; a partitioned key s3://lake/events/dt=2026-06-21/region=eu/part-0001.parquet for pruning; presigned URL, multipart and least-privilege IAM mini-panels; and a symptom → cause → fix table (503 SlowDown, surprise bill, AccessDenied, scans everything, tiny files).](diagrams/sd22_info_object_storage_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — storage classes, key design, IAM and lifecycle rules</summary>
 
 > **Simple Explanation:** Object storage is an **infinite, cheap warehouse** where you throw files (images, logs, datasets, model checkpoints) and never worry about running out of space or losing them. Amazon **S3** is the archetype. It's the bedrock the entire modern data stack sits on.
 
@@ -826,21 +978,21 @@ db.orders.insertOne({ _id: "ord_1", user: { id: 42, name: "Ada" }, items: [/* ..
 
 ```
    The modern "lakehouse" foundation:
-   ┌─────────────────────────────────────────────┐
+   ┌──────────────────────────────────────────────┐
    │  S3 / GCS / ADLS  (cheap, infinite, durable) │  ← raw files (Parquet)
    │     +  Table format (Iceberg / Delta)        │  ← adds DB-like powers
    │     +  Engine (Spark / Snowflake / Flink)    │  ← reads & processes
-   └─────────────────────────────────────────────┘
+   └──────────────────────────────────────────────┘
    This stack REPLACED Hadoop's HDFS.
 ```
 
 - **Use it when:** Storing anything large or unstructured — datasets, backups, logs, ML artifacts, static assets — and as the storage layer for a data lake/lakehouse.
 - **Avoid when:** You need low-latency, transactional row-level access (use a database). Object storage is for *blobs and bulk*, not for serving individual records in 1 ms.
-- **Senior gotcha:** Cloud fluency (IAM permissions, regions, egress costs) is assumed in ~75% of senior roles. **Egress fees** (paying to move data *out*) are a notorious budget killer — design to minimize cross-region/cross-cloud transfer.
+- **Senior gotcha:** Cloud fluency (IAM permissions, regions, egress costs) is assumed in most senior roles. **Egress fees** (paying to move data *out*) are a notorious budget killer — design to minimize cross-region/cross-cloud transfer.
 
 **Going deeper — what separates a pro from a beginner here:**
 
-- **Storage classes = cost vs. access speed.** Hot data → S3 Standard; rarely accessed → Infrequent Access; archives → Glacier Instant/Flexible/Deep Archive (cheap to store, progressively slower/costlier to retrieve). **Lifecycle rules** auto-move old objects to cheaper tiers. **S3 Express One Zone** (2024) is a new high-performance class: single-AZ, ~10× lower latency and ~50% lower per-request cost than Standard — purpose-built for ML training data access, Spark shuffle, and analytics hot paths where you need speed but tolerate single-AZ durability.
+- **Storage classes = cost vs. access speed.** Hot data → S3 Standard; rarely accessed → Infrequent Access; archives → Glacier Instant/Flexible/Deep Archive (cheap to store, progressively slower/costlier to retrieve). **Lifecycle rules** auto-move old objects to cheaper tiers. **S3 Express One Zone** (launched late 2023) is a high-performance class: stored in a single **Availability Zone** (AZ — one data-center group within a region), consistent single-digit-millisecond access (up to ~10× faster than Standard), much cheaper requests after the April 2025 price cuts, but a higher per-GB storage price — purpose-built for ML training data access, Spark shuffle, and analytics hot paths where you need speed but tolerate single-AZ durability.
 - **File format matters enormously.** Store analytics data as **Parquet** (columnar, compressed), not CSV/JSON. A query reading 2 of 50 columns touches only those 2 columns on disk — often **10–100× less data scanned** = faster and cheaper.
 
 ```
@@ -852,14 +1004,14 @@ Parquet: columnar + compressed    →  read only needed columns + skip row-group
 - **Key/prefix design:** the object "path" is just a key. Partition data by useful prefixes so engines can **prune** what they read:
   `s3://bucket/events/dt=2026-06-03/region=eu/part-0001.parquet`
 - **Access patterns:** **presigned URLs** let a browser upload/download directly (no proxying through your server); **IAM roles/policies** grant least-privilege access. Never bake static keys into code.
-- **Multipart upload:** for objects > 100 MB, split the file into parts (minimum 5 MB each) uploaded in parallel, then assembled server-side with `CompleteMultipartUpload`. Mandatory for objects > 5 GB. Benefits: parallelism, retry individual parts on failure, and start uploading before the full file is known. Most SDKs do this automatically with a threshold you configure.
-- **Consistency:** modern S3 is **strongly read-after-write consistent** — after a successful write, the next read sees it (older "eventual consistency" caveats are gone).
+- **Multipart upload:** for objects > 100 MB, split the file into parts (minimum 5 MB each, up to 10,000 parts) uploaded in parallel, then assembled server-side with `CompleteMultipartUpload`. Mandatory for objects > 5 GB (the single-`PUT` limit); a single object can be up to 50 TB (raised from 5 TB in Dec 2025). Benefits: parallelism, retry individual parts on failure, and start uploading before the full file is known. Most SDKs do this automatically with a threshold you configure.
+- **Consistency:** modern S3 is **strongly read-after-write consistent** (since Dec 2020) — after a successful write, the next read *and* `LIST` see it (older "eventual consistency" caveats are gone).
 
 **Common issues developers hit:**
 
 | Symptom | Real cause | Fix |
 |---|---|---|
-| `503 SlowDown` under heavy load | Too many requests concentrated on one key prefix | Spread keys across prefixes — S3 scales throughput per prefix |
+| `503 SlowDown` under heavy load | Too many requests concentrated on one key prefix | Spread keys across prefixes — S3 scales per prefix (~3,500 writes + 5,500 reads per second each) |
 | Surprise huge bill | **Egress** + per-request cost on millions of small reads | Minimize cross-region transfer; batch into larger objects (Parquet) |
 | `AccessDenied` | IAM policy/role missing the exact action or resource ARN | Grant least-privilege `s3:GetObject`/`PutObject` on the right ARN |
 | Bucket accidentally public | Misconfigured bucket policy/ACL | Enable **Block Public Access**; audit policies |
@@ -917,13 +1069,20 @@ url = s3.generate_presigned_url(
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Virtually unlimited scale and eleven-nines durability; decoupled from compute (storage scales and bills independently); the universal foundation for lakehouses, ML artifact stores, and data archives; native integration with every major cloud service.
-- **Cons:** Tens-of-milliseconds baseline latency; LIST operations are slow and costly on large prefixes; per-request pricing makes high-frequency small reads expensive; egress fees for cross-region/cross-cloud transfers can dominate budgets.
-- **Limitations:** Objects are immutable — no in-place edits or appends; you must rewrite the entire object to change any byte; no cross-object transactions; LIST at massive scale (millions of objects per prefix) is slow and eventually consistent in some edge cases.
+- **Cons:** Tens-to-hundreds of milliseconds baseline latency (except Express One Zone); LIST operations are slow and costly on large prefixes; per-request pricing makes high-frequency small reads expensive; egress fees for cross-region/cross-cloud transfers can dominate budgets.
+- **Limitations:** Objects are immutable — no in-place edits (only S3 Express One Zone supports appends); you must rewrite the entire object to change any byte; no cross-object transactions; LIST at massive scale (millions of objects per prefix) is slow — it pages 1,000 keys per call.
 - **Unsupported / anti-patterns:** Low-latency single-record serving (use Redis or a database); row-level transactional updates (use a table format like Iceberg on top); POSIX file-locking semantics; small, frequent random writes (the per-request cost and latency make this antieconomical).
+
+</details>
 
 ---
 
 ### Apache Spark — The Heavy-Lifting Processor
+
+![Infographic on Apache Spark: one huge dataset (terabytes) split into four partitions, each processed by an executor in RAM and merged into one combined result, with a driver sending tasks and a lazy plan read → filter → groupBy → write = ACTION; an AQE panel (on by default since 3.2) contrasting fixed 200 shuffle partitions (10 TB → 200 tasks of ~50 GB → OOM; 10 MB → 200 tasks of ~50 KB → overhead) with runtime coalescing, broadcast-join switching and skew splitting; shuffle vs broadcast(small); a 'US 90%' skewed key salted into US·0 … US·15 (16 parallel tasks); and a symptom → cause → fix table.](diagrams/sd22_info_spark_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — lazy plans, shuffles, AQE and data skew</summary>
 
 > **Simple Explanation:** Spark is a **team of workers splitting a giant task**. To count words in a library too big for one person, you hand each worker a few shelves; they count in parallel, then combine totals. Spark splits huge datasets across many machines and processes them together — far faster than one machine, and it does most of the work in memory.
 
@@ -943,7 +1102,7 @@ url = s3.generate_presigned_url(
 - **Why it beat Hadoop:** Hadoop's MapReduce wrote intermediate results to disk after every step; Spark keeps them in memory, making it 10–100× faster for many jobs, with a far nicer API (DataFrames, SQL, **PySpark**).
 - **Use it when:** Transforming/aggregating large datasets (gigabytes to petabytes), big-data ETL, training on large data, or running heavy SQL analytics on a lake.
 - **Avoid when:** Your data fits comfortably on one machine — plain Python/pandas or DuckDB is simpler and often faster. Spark's overhead only pays off at scale.
-- **Senior gotcha:** Spark is **batch / micro-batch** first. For true event-by-event, sub-second streaming, reach for **Flink** (see Tier 2). Managed Spark = Databricks, AWS EMR, GCP Dataproc.
+- **Senior gotcha:** Spark is **batch / micro-batch** first. For true event-by-event, sub-second streaming with rich state, reach for **Flink** (see Tier 2) — Spark 4.1's new Real-Time Mode (Dec 2025) narrows the gap only for simple stateless pipelines. Managed Spark = Databricks, AWS EMR, GCP Dataproc.
 
 **Going deeper — the mental model that prevents slow jobs:**
 
@@ -966,29 +1125,31 @@ daily.write.parquet("s3://data/daily/")          # ACTION → now it all runs
 AQE (enabled by default since Spark 3.2) lets Spark **re-optimize the query plan at runtime** based on statistics it collects during execution — not just from estimates beforehand. Key capabilities:
 
 ```
-   Without AQE:  planner guesses 1M rows → allocates 200 partitions
-                 actual rows = 10B → massive skew, OOM
-   With AQE:     after the shuffle, Spark sees actual row counts and:
-                  • coalesces 200 post-shuffle partitions → fewer, larger tasks
-                  • switches a sort-merge join to a broadcast join if the
-                    right side turns out to be small
+   Without AQE:  every shuffle uses a fixed spark.sql.shuffle.partitions (200),
+                 and join strategies are chosen from (often stale) size estimates
+                   10 TB shuffled → 200 tasks of ~50 GB each → spill / OOM
+                   10 MB shuffled → 200 tiny ~50 KB tasks → pure scheduling overhead
+   With AQE:     after the shuffle, Spark sees the actual partition sizes and:
+                  • coalesces small post-shuffle partitions → fewer, larger tasks
+                  • switches a sort-merge join to a broadcast join if one
+                    side turns out to be small
                   • detects skewed partitions and splits them
 ```
 
-Three AQE features to know: **(1) dynamic coalescing** of post-shuffle partitions (kills the "too many tiny tasks" problem), **(2) skew join optimization** (automatically splits oversized partitions), **(3) dynamic join selection** (degrades/upgrades join strategy based on runtime size). Enable with `spark.sql.adaptive.enabled=true`.
+Three AQE features to know: **(1) dynamic coalescing** of post-shuffle partitions (kills the "too many tiny tasks" problem — set a high starting partition count and let AQE merge them down), **(2) skew join optimization** (automatically splits oversized partitions of a join), **(3) dynamic join selection** (switches to a broadcast join at runtime when one side turns out small). It is on by default since 3.2 (`spark.sql.adaptive.enabled=true`).
 
-**Structured Streaming** runs the same DataFrame/SQL API for streaming data. It processes Kafka/file streams as an **unbounded table** where new data is appended. The engine issues micro-batches (configurable trigger interval, down to 0 = continuous), maintaining checkpoints in S3/HDFS for exactly-once guarantees. Contrast with Flink: Structured Streaming is good for pipelines already on Spark (sub-second to a few seconds latency); use Flink when you need true event-time, per-event latency, or complex stateful logic.
+**Structured Streaming** runs the same DataFrame/SQL API for streaming data. It processes Kafka/file streams as an **unbounded table** where new data is appended. By default the engine runs micro-batches back-to-back (or on a trigger interval you set), maintaining checkpoints in S3/HDFS so that, with a replayable source and an idempotent or transactional sink, results are exactly-once. Typical latency is sub-second to a few seconds; Spark 4.1 (Dec 2025) added a **Real-Time Mode** that reaches millisecond-level latency, initially only for stateless, single-stage queries. Contrast with Flink: Structured Streaming is good for pipelines already on Spark; use Flink when you need true event-time, per-event latency, or complex stateful logic.
 
 **Common issues developers hit:**
 
 | Symptom | Real cause | Fix |
 |---|---|---|
-| One task OOMs while the rest finish | **Data skew** — one key holds most of the rows | Enable AQE skew-join; salt the key; broadcast the small side |
+| One task OOMs while the rest finish | **Data skew** — one key holds most of the rows | Enable AQE skew-join (joins); salt the key; broadcast the small side |
 | Driver runs out of memory | `collect()` pulled a huge result back to the driver | Write to storage instead; only `collect()` small results |
 | A stage is painfully slow | A massive **shuffle** from `groupBy` / `join` | Broadcast small tables; filter early; repartition sensibly |
 | "Too many tiny tasks" / slow writes | Thousands of small partitions or output files | Let AQE coalesce post-shuffle partitions; compact output |
 | `Spill to disk` warnings | Shuffle/aggregation exceeds executor memory | Add memory or partitions; reduce per-task data |
-| Small job slower than plain pandas | JVM + cluster overhead on small data | Use DuckDB/pandas under a few hundred GB |
+| Small job slower than plain pandas | JVM + cluster overhead on small data | Stay on one machine: pandas/Polars while data fits in RAM, DuckDB up to a few hundred GB |
 | Code "ran" but nothing happened | Transformations are lazy until an action | Trigger with an action (`write`/`count`) — this is by design |
 
 **Senior gotchas & anti-patterns — worked examples:**
@@ -1030,17 +1191,20 @@ big.join(broadcast(small_dim), "country_code")
 
 **4. Data skew makes one task run for hours while the cluster idles.**
 ```python
-# ❌ One key ("US") holds 90% of rows → a single straggler task bottlenecks the stage.
-big.groupBy("country").agg(...)
+# ❌ One key ("US") holds 90% of rows → in a join, every "US" row is shuffled to the
+# SAME task, so one straggler bottlenecks the stage. (A plain groupBy().sum()/count()
+# suffers less: Spark pre-aggregates on each partition before the shuffle.)
+big.join(other_big, "country")
 
-# ✅ Easiest: let AQE split the skewed partitions automatically.
+# ✅ Easiest: let AQE split the skewed join partitions automatically (on by default):
 #    spark.sql.adaptive.enabled=true ; spark.sql.adaptive.skewJoin.enabled=true
-# ✅ Manual salting when AQE isn't enough: spread the hot key across N buckets,
-#    aggregate per bucket, then combine the partials.
-from pyspark.sql.functions import floor, rand
-salted   = big.withColumn("salt", floor(rand() * 16))
-partials = salted.groupBy("country", "salt").agg(...)   # parallel across 16 buckets
-result   = partials.groupBy("country").agg(...)         # combine the 16 partials
+# ✅ Manual salting when AQE isn't enough: give each big-side row a random salt
+#    0..15, copy every other-side row 16× (one per salt), join on (country, salt).
+from pyspark.sql.functions import array, explode, floor, lit, rand
+N = 16
+left   = big.withColumn("salt", floor(rand() * N))             # hot key → 16 buckets
+right  = other_big.withColumn("salt", explode(array(*[lit(i) for i in range(N)])))
+result = left.join(right, ["country", "salt"]).drop("salt")   # 16 parallel tasks
 ```
 
 **5. Python UDFs defeat the optimizer; tiny output files cripple later reads.**
@@ -1061,16 +1225,28 @@ df.withColumn("c", (col("f") - 32) / 1.8)
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Handles petabyte-scale batch and micro-batch workloads on a single unified API (DataFrame/SQL/Streaming/MLlib); AQE auto-tunes query plans at runtime; runs on every major cloud (Databricks, EMR, Dataproc); 10–100× faster than Hadoop MapReduce.
 - **Cons:** JVM startup and shuffle overhead make small-data jobs slower than DuckDB or pandas; heavy memory tuning required (executor heap, off-heap, shuffle memory); data skew on a single partition can bottleneck the entire stage.
-- **Limitations:** Structured Streaming micro-batch latency floor is seconds — not true event-at-a-time; shuffle is the dominant bottleneck in joins/aggregations and cannot be fully eliminated; on-heap JVM GC pauses can affect latency-sensitive stages.
-- **Unsupported / anti-patterns:** Sub-second per-event streaming (use Flink); OLTP point-lookups or row-level updates; interactive single-row queries; any job where data fits comfortably on one machine (DuckDB or pandas will be simpler and often faster).
+- **Limitations:** Structured Streaming micro-batch latency is typically sub-second to seconds — the new Real-Time Mode (Spark 4.1) only covers simple stateless queries so far; shuffle is the dominant bottleneck in joins/aggregations and cannot be fully eliminated; on-heap JVM GC pauses can affect latency-sensitive stages.
+- **Unsupported / anti-patterns:** Sub-second per-event streaming with complex state (use Flink); OLTP (online transaction processing — many small single-row reads/writes) point-lookups or row-level updates; interactive single-row queries; any job where data fits comfortably on one machine (DuckDB or pandas will be simpler and often faster).
+
+</details>
 
 ---
 
-## 33.4 TIER 2 — The Modern Data Stack
+## 22.4 TIER 2 — The Modern Data Stack
+
+<details>
+<summary><strong>Read as text</strong> — from building blocks to a data platform</summary>
 
 TIER 1 gave you the building blocks; TIER 2 is how they assemble into an end-to-end **data platform**. Before meeting the tools one by one, it pays to see the whole assembly line — because almost every modern data system, from a three-person startup to Netflix or a bank, is the *same handful of stages* wired together. Learn the shape of the flow once, and every tool below snaps into a slot.
 
+</details>
+
 ### How Data Flows Through a Big Data System
+
+![Infographic of the modern data platform assembly line: SOURCES (apps, databases, APIs, logs, sensors) → 1 INGEST (Kafka, CDC, Fivetran / Airbyte) → 2 STORE (S3 / GCS / ADLS + Iceberg / Delta = LAKEHOUSE) → 3 PROCESS (Spark, dbt, Flink, Ray) → 4 SERVE (Snowflake / Databricks, Redis / Postgres), framed by ORCHESTRATE (Airflow / Dagster / Prefect) and OBSERVE + PROVISION (Prometheus, Grafana, OpenTelemetry, Terraform / OpenTofu); one order ord_1001 (total 39.97) entering Kafka topic orders and forking into a real-time lane (Flink fraud check → Redis live counters → live ops dashboard, seconds) and a nightly batch lane (S3 Parquet → Iceberg raw.orders → Airflow → dbt + Spark → Snowflake analytics.daily_revenue → BI dashboard); plus a batch-vs-streaming comparison table.](diagrams/sd22_info_data_flow_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the stages, batch vs streaming and one order end to end</summary>
 
 > **Simple Explanation:** Think of a bottling factory. Trucks drop raw ingredients at the loading dock (**ingest**), everything is kept in a giant warehouse (**store**), machines clean and mix it into product (**process / transform**), and finished bottles go to a storefront where customers grab them instantly (**serve**). A floor manager keeps the lines running in order (**orchestrate**), cameras watch for jams (**observe**), and the building itself was built from a blueprint (**provision**). A data platform is exactly this factory — for data instead of bottles.
 
@@ -1099,7 +1275,7 @@ Every tool in this tier owns one slot in that picture. Here is the map, stage by
 
 | Stage | Its one job | Popular tools (this tier + the TIER 1 foundation) |
 |---|---|---|
-| **1. Ingest** | Get data in reliably, in real time or in batches | **Kafka** (event backbone), CDC (Debezium), Fivetran / Airbyte (managed extract-load) |
+| **1. Ingest** | Get data in reliably, in real time or in batches | **Kafka** (event backbone), CDC — change data capture, streaming every row change out of a database (Debezium), Fivetran / Airbyte (managed extract-load) |
 | **2. Store** | Keep it durably and cheaply, with table semantics | **S3 / GCS / ADLS** (object storage) **+ Iceberg / Delta** (table format) = the **lakehouse** |
 | **3. Process / Transform** | Clean, join, aggregate, model, and train on it | **Spark** (batch), **dbt** (SQL transforms), **Flink** (streaming), **Ray** (ML) |
 | **4. Serve / Analyze** | Answer queries fast for BI, apps, and dashboards | **Snowflake / Databricks** (warehouse/lakehouse), **Redis / Postgres** (app serving) |
@@ -1144,7 +1320,7 @@ Many real systems run **both** (a "Lambda"-style architecture): a fast streaming
 
 Reading the diagram:
 
-- **Steps 1–2 (shared):** the tap emits an event, and **Kafka** carries it exactly once while two consumers read it independently — this decoupling is the whole reason to put a log in the middle.
+- **Steps 1–2 (shared):** the tap emits an event, and **Kafka** stores it once in its log while two consumers read it independently — this decoupling is the whole reason to put a log in the middle.
 - **Real-time lane (seconds):** **Flink** fraud-checks the card and counts sales-per-minute → **Redis** holds the live values → a **live ops dashboard** reacts within seconds.
 - **Batch lane (nightly):** the same raw event lands in **S3** as Parquet → registered in an **Iceberg** table `raw.orders` → **Airflow** triggers **dbt + Spark** to build `analytics.daily_revenue` in **Snowflake** → an analyst's **BI dashboard** shows revenue by day and region.
 - **Always-on:** **Prometheus + Grafana** watch the health of every box, on infrastructure that **Terraform** provisioned.
@@ -1153,9 +1329,16 @@ Notice how the *same* event feeds both an instant answer and the durable, exact 
 
 The rest of TIER 2 now walks these stages in order — starting with the **storage foundation** (the lakehouse), then the **engines** that process and serve it, then the cross-cutting layers that **orchestrate, provision, and observe** the whole thing.
 
+</details>
+
 ---
 
 ### Apache Parquet — The Columnar File Format
+
+![Infographic of the lakehouse stack as a 4-storey building: 1 Parquet files (column stripes with min/max, row groups ~128 MB, footer: schema + min/max), 2 Iceberg / Delta metadata (metadata file → snapshot → manifest list → manifests), 3 Snowflake / Databricks (storage and compute scale and bill separately), 4 dbt models linked by ref() arrows in a DAG; a row-vs-column inset (CSV reads every field vs Parquet reads only price + region; WHERE price > 100 skips row groups with max(price) ≤ 100; often 10–100× less I/O); snapshots v1 → v2 → v3 with time travel and copy-on-write vs merge-on-read; and a layer table (File / Table / Engine / Transform with what each gives and its trap).](diagrams/sd22_info_lakehouse_stack_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — columns, row groups and predicate pushdown</summary>
 
 > **Simple Explanation:** A CSV stores a table **row by row**, so reading just the `price` column still drags across every other field on every line. Parquet stores it **column by column** — a query that wants only `price` and `region` reads *just those two stripes* and skips the rest. Each column compresses tightly (same-type values), and per-chunk "min/max" stats let a reader skip whole blocks without opening them.
 
@@ -1184,9 +1367,14 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 
 **At a glance:** **Pros** — scans only the columns/row groups a query needs (often **10–100× less I/O** than CSV/JSON), excellent compression, open and read by every analytics engine, self-describing. **Cons / limits** — binary, immutable (updates rewrite files), full-row reads slower than a row store, and on its own no transactions or row-level update/delete (needs a table format). **Anti-patterns** — operational/transactional storage, sub-ms single-record serving, append-per-event sinks without compaction.
 
+</details>
+
 ---
 
 ### Apache Iceberg & Delta Lake — Open Table Formats
+
+<details>
+<summary><strong>Read as text</strong> — snapshots, atomic metadata, catalogs and updates</summary>
 
 > **Simple Explanation:** Raw files in S3 are like a pile of loose pages. A **table format** is the binder, index, and table-of-contents that turns that pile into a real, queryable table — with the ability to update rows, undo mistakes, and have many engines read it safely at once.
 
@@ -1194,18 +1382,19 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 
 - **Why they matter:** They give cheap object storage the powers of a database (transactions, updates, rollback) **without locking you into one vendor**. Iceberg is the fastest-rising and now supported by Snowflake, Databricks, AWS, GCP, and every major query engine.
 - **Time travel** lets you query "the table as it looked yesterday" — invaluable for debugging and reproducibility.
-- **The table-format war is over — Iceberg won** (circa 2025–2026). Its neutrality (no single vendor controls the spec), multi-engine support (Spark, Flink, Trino, DuckDB, Snowflake, BigQuery all read it natively), and REST catalog standardization beat out Delta Lake's historically Databricks-centric governance. Delta Lake still thrives within the Databricks ecosystem but is no longer the cross-vendor default.
+- **The table-format war is largely settled — Iceberg became the cross-vendor default** (circa 2025–2026). Its neutrality (no single vendor controls the spec), multi-engine support (Spark, Flink, Trino, DuckDB, Snowflake, BigQuery all read it natively), and REST catalog standardization beat out Delta Lake's historically Databricks-centric governance — Databricks itself bought Tabular (the company founded by Iceberg's creators) in 2024 and now supports Iceberg too. Delta Lake still thrives within the Databricks ecosystem but is no longer the cross-vendor default.
 - **Senior gotcha:** Choosing a table format is a long-term, hard-to-reverse decision. Default to Iceberg for new lakehouses unless the team is all-in on Databricks.
 
 **Going deeper — how a "table" lives on top of plain files:**
 
 ```
-   metadata (the magic)            data (plain files)
-   ┌────────────────────┐
-   │ snapshot (version) │──┐
-   ├────────────────────┤  │ points to ▶  manifest list ▶ manifests ▶
-   │ schema + partitions│  │                                  Parquet data files
-   └────────────────────┘  
+   METADATA (the magic)                              DATA (plain files)
+   ┌───────────────────────┐
+   │ table metadata file   │  schema · partition spec · list of snapshots
+   └───────────┬───────────┘
+               ▼  current snapshot (= one version of the table)
+        manifest list ──▶ manifests (file paths + min/max stats) ──▶ Parquet data files
+
    A query reads metadata first → knows EXACTLY which files to open (file skipping).
 ```
 
@@ -1214,8 +1403,8 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 - **Hidden partitioning (Iceberg's edge):** you partition by `day(timestamp)` once, and queries filtering on the timestamp get pruned automatically — no brittle `WHERE dt='...'` strings, and you can change the partition scheme without rewriting data.
 - **Schema evolution:** add/rename/drop columns safely by ID (old data still reads correctly).
 - **Copy-on-write vs. merge-on-read:** two strategies for handling row-level updates/deletes. **Copy-on-write (CoW)**: on each update, rewrite the entire data file — reads are fast (no merging needed), but writes amplify. **Merge-on-read (MoR)**: write a small delete/change file alongside the original; merge at read time — writes are fast and cheap, reads do more work. Iceberg supports both; choose CoW for read-heavy tables, MoR for frequent small updates (CDC/GDPR).
-- **Catalog options (how other engines find your tables):** REST catalog (Iceberg's standard wire protocol — engine-agnostic), **Apache Polaris** (a vendor-neutral REST catalog implementation that graduated CNCF incubation in 2026 — now the preferred open catalog), **AWS Glue** (AWS-native), **Nessie** (git-like branching for tables). The trend is REST catalog + Polaris as the default for multi-engine shops.
-- **DuckLake (2025):** from the DuckDB team — uses a standard SQL database (e.g., Postgres or DuckDB itself) as the Iceberg catalog rather than files in S3. Simplifies catalog management for smaller teams that already run Postgres.
+- **Catalog options (how other engines find your tables):** REST catalog (Iceberg's standard wire protocol — engine-agnostic), **Apache Polaris** (a vendor-neutral REST catalog implementation that became an Apache Software Foundation top-level project in Feb 2026 — now the preferred open catalog), **AWS Glue** (AWS-native), **Nessie** (git-like branching for tables). The trend is REST catalog + Polaris as the default for multi-engine shops.
+- **DuckLake (2025):** from the DuckDB team — a separate, simpler lakehouse table format (not Iceberg) that keeps all table metadata (snapshots, file lists, stats) in an ordinary SQL database (Postgres, MySQL, SQLite or DuckDB) instead of metadata files in S3; the data stays as Parquet. Attractive for smaller teams that already run Postgres, but its ecosystem is far younger than Iceberg's.
 - **The small-files problem & MERGE:** streaming writes create many tiny files that slow reads → run periodic **compaction**. Row-level `MERGE`/`UPDATE`/`DELETE` (for GDPR deletes, CDC upserts) is the big thing plain Parquet *can't* do but table formats can.
 
 **At a glance — strengths, tradeoffs, and hard limits**
@@ -1224,21 +1413,38 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 - **Limitations:** Not designed for transactional row-by-row OLTP serving — high concurrent-write conflicts degrade throughput; point-lookup latency (single-row reads) is far higher than a row-store database; compaction must be scheduled externally (no auto-compaction built into the spec).
 - **Unsupported / anti-patterns:** Replacing an OLTP database for transactional serving; sub-second single-record reads; high-frequency individual row updates at OLTP rates; use cases where a simple partitioned Parquet directory without metadata overhead suffices.
 
+</details>
+
 ---
 
 ### Snowflake & Databricks — Cloud Warehouses & Lakehouses
 
+<details>
+<summary><strong>Read as text</strong> — separate storage and compute, and the idle-credit trap</summary>
+
 **Rentable analytics super-computers** where storage and compute scale (and bill) **separately** — you load data, fire huge analytical/BI queries, and pay only for the compute you use. *Snowflake* leads for SQL/BI teams; *Databricks* (Spark + Delta Lake + MLflow) leads for data engineering and ML — pick one ecosystem and go deep. Use them for large-scale analytics and dashboards without running infrastructure; reach for Postgres/Redis instead for small data or low-latency OLTP serving. **Senior gotcha:** idle or oversized warehouses silently burn credits — cost control is the real skill.
+
+</details>
 
 ---
 
 ### dbt — Transforming Data with Just SQL
 
-**dbt brings software engineering to SQL.** You write `SELECT` models that reference each other with `ref()`; dbt works out the run order (a DAG), builds them **inside the warehouse**, and tests and documents every step — the **T** in **ELT**. It is the de facto transformation standard, always paired with a warehouse (Snowflake/BigQuery/Databricks). **Senior gotcha:** dbt only *transforms* data already loaded — it does not ingest it (that is Fivetran/Airbyte) and does not schedule itself at scale (that is Airflow/Dagster).
+<details>
+<summary><strong>Read as text</strong> — SQL models, ref() and the DAG</summary>
+
+**dbt brings software engineering to SQL.** You write `SELECT` models that reference each other with `ref()`; dbt works out the run order (a **DAG** — directed acyclic graph: a dependency graph with no loops), builds them **inside the warehouse**, and tests and documents every step — the **T** in **ELT** (Extract → Load raw data → Transform it inside the warehouse). It is the de facto transformation standard, always paired with a warehouse (Snowflake/BigQuery/Databricks). **Senior gotcha:** dbt only *transforms* data already loaded — it does not ingest it (that is Fivetran/Airbyte) and does not schedule itself at scale (that is Airflow/Dagster).
+
+</details>
 
 ---
 
 ### Apache Flink — True Real-Time Streaming
+
+![Infographic on Apache Flink: events arriving out of order on an arrival axis (10:01, 10:03, a late 10:02, 10:04, 10:06, 10:05) with a watermark line that closes the window; tumbling (every 1 min, no overlap), sliding (last 5 min, every 1 min) and session (bursts split by gaps) windows; Kafka (transport) → Flink operator keyBy(user) with state per key → action / alert; checkpoints to durable storage with restore + replay = exactly-once; the example 'count logins per user per 1-minute event-time window'; and a Spark Structured Streaming vs Flink comparison table (micro-batches vs event at a time, sub-second to seconds vs milliseconds).](diagrams/sd22_info_flink_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — windows, watermarks, state and checkpoints</summary>
 
 > **Simple Explanation:** If Spark is a team that processes data in **batches** (every few seconds/minutes), Flink processes **each event the instant it arrives**. For fraud detection or live dashboards where milliseconds matter, Flink reacts event-by-event and remembers context ("this card was used in 3 countries in 5 minutes").
 
@@ -1268,16 +1474,26 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 ```
 
 - **Easier entry point:** **Flink SQL** lets you express much of this in SQL instead of Java/Scala. Managed options: Confluent Flink, AWS Managed Service for Apache Flink, Ververica.
+- **2026 status:** **Flink 2.0** (March 2025, the first major release in nine years) added **disaggregated state** — state can live in object storage (the ForSt backend) instead of only on local disk, making rescaling and recovery of terabyte-scale state much faster — and removed old deprecated APIs (e.g., the DataSet batch API).
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** True event-at-a-time processing with event-time semantics and watermarks; exactly-once guarantees via checkpointing; rich stateful operations per key (windows, sessions, running aggregates); Kafka+Flink is the canonical modern streaming architecture.
 - **Cons:** Significant operational complexity — cluster management, state backend tuning (RocksDB), checkpoint configuration, and debugging are all harder than batch; steeper learning curve than Spark Structured Streaming.
-- **Limitations:** Large stateful computations require RocksDB tuning and local SSD — excessive state spills degrade performance; debugging distributed streaming failures is substantially harder than batch; managed options (Confluent Flink, AWS MSAF) reduce but don't eliminate ops burden.
+- **Limitations:** Large stateful computations need state-backend tuning (RocksDB on local SSD, or Flink 2.0's remote ForSt state) — badly sized state degrades performance; debugging distributed streaming failures is substantially harder than batch; managed options (Confluent Flink, AWS Managed Service for Apache Flink) reduce but don't eliminate ops burden.
 - **Unsupported / anti-patterns:** Batch jobs with no latency requirement — Spark or scheduled SQL is simpler and cheaper; use cases where Spark Structured Streaming's seconds-level latency is already sufficient; teams without streaming expertise should not pay Flink's operational cost without a confirmed sub-second requirement.
+
+</details>
 
 ---
 
 ### Ray — Distributed Python for ML
+
+![Infographic on Ray, distributed Python for ML: a laptop with '@ray.remote def train_fold(...)' sending ray.get([train_fold.remote(i, config) for i in range(8)]) to 8 parallel workers (fold 0 … fold 7) whose outputs merge into one list of 8 results; a layered stack of Ray Core (tasks + actors) with Train, Tune, Serve and Data on top, plus PyTorch Foundation (Oct 2025) and KubeRay on Kubernetes badges; and a library table (Train: PyTorch, XGBoost, Hugging Face; Tune: thousands of trials, Optuna / HyperOpt; Serve: request batching, LLM serving with vLLM; Data: reads Parquet, Arrow).](diagrams/sd22_info_ray_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — tasks, actors and the Ray AI libraries</summary>
+
+> **Simple Explanation:** Ray lets you take an ordinary Python function or class and say "run this on *some* machine in the cluster." Add one decorator, and the 8 model-training runs you would have run one after another on your laptop run side by side on 8 machines — with Ray handling where each runs and collecting the results for you.
 
 > **Official Definition:** Ray is an open-source distributed computing framework for Python that scales ML workloads — training, hyperparameter tuning, inference, and data processing — from a laptop to a multi-node cluster using a unified API.
 
@@ -1295,11 +1511,11 @@ The rest of TIER 2 now walks these stages in order — starting with the **stora
 - Scaling a Python ML pipeline beyond one machine without Spark's JVM overhead
 - Parallel hyperparameter search (Ray Tune runs thousands of trials across a cluster)
 - Model inference serving that needs auto-scaling and batching
-- LLM serving pipelines (vLLM, Anyscale, and many LLM inference stacks run on Ray Serve)
+- LLM serving pipelines (Ray Serve's LLM APIs wrap vLLM, and vLLM can use Ray to spread one model across several machines)
 
 **When not to use:** General-purpose big data ETL (Spark is more mature); simple batch jobs a single machine handles; non-Python stacks.
 
-**2026 status:** Ray is the default distributed compute layer for many modern LLM stacks. Anyscale (Ray's commercial backer) provides managed Ray clusters. Kubeflow and MLflow both integrate with Ray Train. It is increasingly used alongside Kubernetes (KubeRay operator deploys Ray clusters on K8s).
+**2026 status:** Ray is the distributed compute layer in many modern LLM stacks. In Oct 2025 it moved to the vendor-neutral **PyTorch Foundation** (Linux Foundation), next to PyTorch and vLLM; Anyscale (Ray's original developer) still sells managed Ray clusters. MLflow integrates with Ray Train/Tune for experiment tracking, and Ray is increasingly run on Kubernetes (the KubeRay operator deploys Ray clusters on K8s).
 
 ```python
 import ray
@@ -1314,30 +1530,42 @@ def train_fold(fold_id, config):
 results = ray.get([train_fold.remote(i, config) for i in range(8)])
 ```
 
-**Interview soundbite:** "For distributed Python ML — parallel training, hyperparameter search, or LLM inference — Ray is the standard choice. It's the distributed layer under most modern LLM serving stacks."
+**Interview soundbite:** "For distributed Python ML — parallel training, hyperparameter search, or LLM inference — Ray is the standard choice. It's the distributed layer under many modern LLM serving stacks."
 
 **At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Unified distributed Python API that scales seamlessly from a laptop to a multi-node cluster; Ray AI Libraries cover the full ML lifecycle (training, tuning, serving, data); Python-native without JVM overhead; the de facto distributed layer for LLM inference stacks (vLLM, Anyscale).
+- **Pros:** Unified distributed Python API that scales seamlessly from a laptop to a multi-node cluster; Ray AI Libraries cover the full ML lifecycle (training, tuning, serving, data); Python-native without JVM overhead; a widely used distributed layer for LLM inference (Ray Serve + vLLM).
 - **Cons:** Python-centric — non-Python workloads are not a first-class use case; cluster operations and debugging distributed Ray programs is complex; object-store memory pressure can cause difficult-to-diagnose failures.
 - **Limitations:** Primarily Python — not suited for JVM or Go-heavy compute workloads; Ray's distributed object store can exhaust memory under heavy in-flight data; cluster observability and debugging is substantially harder than single-machine debugging.
 - **Unsupported / anti-patterns:** General-purpose big data ETL where Spark's maturity and fault tolerance are preferred; simple batch jobs that a single machine handles fine (overkill adds latency and complexity); non-Python stacks; use cases where Kubernetes + simple multiprocessing is sufficient.
+
+</details>
 
 ---
 
 ### Airflow / Dagster / Prefect — Orchestration
 
+![Infographic of the ops layer in three panels: Orchestrate (Airflow / Dagster / Prefect running a five-task DAG with retry + backoff, backfill and alerts, every task idempotent), Provision (Terraform / OpenTofu: main.tf → terraform plan '+2 create ~1 change -0 destroy' → review like a PR → terraform apply, with remote state + lock on S3) and Observe (Prometheus pulling /metrics every 15–30 s → Grafana p95 latency dashboard and Alertmanager → Slack / PagerDuty, plus App → OTLP → OTel Collector → Prometheus / Tempo / Loki; RED for services, USE for resources), a layer/tool/core-loop/trap table, and the trap of console drift and alert fatigue.](diagrams/sd22_info_ops_layer_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — DAGs, retries and idempotent tasks</summary>
+
 **The conductor of the data orchestra.** An orchestrator schedules a pipeline's many steps, runs them in dependency order (a **DAG**), **retries** failures with backoff, and alerts you when something breaks — everything cron cannot do safely. Use it for multi-step, scheduled batch pipelines. *Airflow* has the largest ecosystem and job-market footprint; *Dagster* and *Prefect* are modern, more data-aware, and easier to test locally. **Golden rule:** make every task **idempotent** so retries and backfills are always safe.
+
+</details>
 
 ---
 
 ### Terraform — Infrastructure as Code
+
+<details>
+<summary><strong>Read as text</strong> — plan, apply, remote state and drift</summary>
 
 > **Simple Explanation:** Instead of clicking around a cloud console to create servers, databases, and networks (and forgetting what you did), you **write it down as code**. Terraform reads that code and builds the exact infrastructure — repeatably, reviewable in pull requests, and identical across dev/staging/prod.
 
 > **Official Definition:** Terraform is an open-source Infrastructure-as-Code (IaC) tool that provisions and manages cloud resources declaratively. You describe the desired end-state; Terraform computes and applies the changes to reach it.
 
 - **Use it when:** Managing any non-trivial cloud infrastructure. IaC is the standard for reproducible, auditable environments.
-- **Senior gotcha:** **State management** is the classic footgun — Terraform tracks reality in a "state file" that must be stored remotely and locked, or teammates will clobber each other's changes. (Note licensing: Terraform moved to BSL; **OpenTofu** is the open-source fork.)
+- **Senior gotcha:** **State management** is the classic footgun — Terraform tracks reality in a "state file" that must be stored remotely and locked, or teammates will clobber each other's changes. (Note licensing: Terraform moved to the source-available BSL in 2023 and HashiCorp is now part of IBM; **OpenTofu** is the open-source fork under the Linux Foundation.)
 
 **Going deeper — the workflow and building blocks:**
 
@@ -1361,18 +1589,23 @@ resource "aws_s3_bucket_versioning" "data" {
 }
 ```
 
-- **Remote state + locking:** store state in S3/GCS with a lock (DynamoDB/native locking) so two engineers can't apply simultaneously and corrupt it. **Never** edit infrastructure by hand after Terraform owns it (causes "drift").
+- **Remote state + locking:** store state in S3/GCS with a lock so two engineers can't apply simultaneously and corrupt it — on S3 use the native lock file (`use_lockfile = true`, GA in Terraform 1.11; the older DynamoDB lock table is deprecated). **Never** edit infrastructure by hand after Terraform owns it (causes "drift").
 - **Mental contrast:** declarative IaC (Terraform — *what*) vs. imperative config tools (Ansible — *how/steps*). For provisioning cloud resources, declarative wins.
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Declarative, version-controlled infrastructure that is reviewable, reproducible across environments, and self-documenting; provider ecosystem covers every major cloud and SaaS; `terraform plan` gives a safe diff before any change is applied.
 - **Cons:** State-file management is the classic operational footgun — corrupted or out-of-sync state causes dangerous plan/apply behavior; drift from manual console changes breaks the model; slow on very large state files (thousands of resources).
-- **Limitations:** The state file must be stored remotely with locking (S3 + DynamoDB or Terraform Cloud) — local-only state is unsafe for teams; Terraform does not manage data or application-layer config inside resources, only the resources themselves; BSL license (1.6+) prompted the OpenTofu fork for strict open-source environments.
+- **Limitations:** The state file must be stored remotely with locking (S3 with its native lock file, GCS, or HCP Terraform — formerly Terraform Cloud) — local-only state is unsafe for teams; Terraform does not manage data or application-layer config inside resources, only the resources themselves; BSL license (1.6+) prompted the OpenTofu fork for strict open-source environments.
 - **Unsupported / anti-patterns:** Imperative step-by-step server configuration within a host (use Ansible/Chef); managing data or records inside a database or S3 bucket (Terraform manages the resource, not its contents); rapid iterative changes to live production resources without careful plan review.
+
+</details>
 
 ---
 
 ### Prometheus + Grafana — Observability
+
+<details>
+<summary><strong>Read as text</strong> — pull scraping, PromQL, alerting and OpenTelemetry</summary>
 
 > **Simple Explanation:** **Prometheus** is the system that constantly takes your application's vital signs (requests/sec, error rate, latency, memory). **Grafana** is the screen of dashboards and alarms that displays those vitals and pages you at 3 a.m. when something is wrong. You cannot operate a serious system blind.
 
@@ -1384,7 +1617,7 @@ resource "aws_s3_bucket_versioning" "data" {
 
 **Going deeper — how it actually works:**
 
-- **Pull model:** Prometheus *scrapes* an HTTP `/metrics` endpoint on each service every few seconds. Apps expose metrics via client libraries; infrastructure exposes them via **exporters** (node_exporter for machines, etc.).
+- **Pull model:** Prometheus *scrapes* an HTTP `/metrics` endpoint on each service on a fixed interval (commonly 15–30 s; the built-in default is 1 min). Apps expose metrics via client libraries; infrastructure exposes them via **exporters** (node_exporter for machines, etc.).
 - **Four metric types:** **Counter** (only goes up — total requests), **Gauge** (up/down — memory in use), **Histogram** (bucketed distribution — request latencies), **Summary** (client-side quantiles).
 - **PromQL** is the query language. The key skill is computing rates and percentiles:
 
@@ -1401,7 +1634,7 @@ histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
 
 **OpenTelemetry (OTel) — graduated as CNCF standard (2026):**
 
-OpenTelemetry is now the **de facto vendor-neutral standard** for instrumenting applications to emit traces, metrics, and logs. It provides a unified SDK (all major languages), the **OTel Collector** (a sidecar/daemon that receives, processes, and exports telemetry to any backend — Prometheus, Jaeger, Datadog, Honeycomb, etc.), and a standardized wire format (OTLP). In 2026, OTel graduated from CNCF and is stable across all three signal types. The practical result: instrument once, send to any backend; switch backends without re-instrumenting.
+OpenTelemetry is now the **de facto vendor-neutral standard** for instrumenting applications to emit traces, metrics, and logs. It provides a unified SDK (all major languages), the **OTel Collector** (a sidecar/daemon that receives, processes, and exports telemetry to any backend — Prometheus, Jaeger, Datadog, Honeycomb, etc.), and a standardized wire format (OTLP). In May 2026 OTel became a **CNCF graduated** project (the foundation's top maturity level), with stable traces, metrics, and logs; Prometheus 3.0 (Nov 2024) can also ingest OTLP directly. The practical result: instrument once, send to any backend; switch backends without re-instrumenting.
 
 ```
    App  ──(OTLP)──▶  OTel Collector  ──▶  Prometheus (metrics)
@@ -1422,11 +1655,18 @@ OpenTelemetry is now the **de facto vendor-neutral standard** for instrumenting 
 - **Limitations:** Prometheus stores metrics only — no native log or trace storage; local TSDB default retention is 15 days and not designed for multi-year time ranges without external storage backends; cardinality explosions from high-cardinality labels can OOM the process.
 - **Unsupported / anti-patterns:** High-cardinality event-level or log storage (use Loki/Elasticsearch); long-term retention out of the box without Thanos or Mimir; structured log querying or distributed tracing (those require separate systems even in a full OTel stack).
 
+</details>
+
 ---
 
-## 33.5 TIER 3 — Situational Tools (Know *When*, Not Necessarily *How*)
+## 22.5 TIER 3 — Situational Tools (Know *When*, Not Necessarily *How*)
 
 ### Cassandra / ScyllaDB — Write-Heavy, Always-On
+
+![Comparison infographic of Cassandra / ScyllaDB versus Elasticsearch / OpenSearch: a leaderless ring of 6 nodes where any node takes writes, the LSM write path (write → commit log + memtable → flush → SSTable-1 → SSTable-2 → compaction → fewer SSTables), the read path with Bloom filters and a ONE / QUORUM / ALL consistency dial; versus a document 'Running wireless headphones' passing through an analyzer (lowercase, stop-words, stem running → run) into an inverted index (headphones → doc 3, doc 9), BM25-ranked results and shards with replicas; plus an 'If you need → use' table and common mix-ups (LSM vs B-tree, partition vs clustering key, fixed primary shard count).](diagrams/sd22_info_cassandra_elasticsearch_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — partition keys, tunable consistency and LSM-trees</summary>
 
 > **Simple Explanation:** Cassandra is built for systems that must **never go down** and absorb **massive write volume** — think IoT sensor data, message history, or activity feeds. It spreads data across many equal nodes with no single leader, so any node can take writes and the loss of a few doesn't bring the system down.
 
@@ -1469,12 +1709,17 @@ CREATE TABLE messages (
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Extremely high write throughput via LSM-tree storage; masterless peer-to-peer architecture means no single point of failure; tunable consistency per-query; multi-datacenter replication built-in; ScyllaDB C++ rewrite offers lower latency at high throughput vs. the JVM-based original.
 - **Cons:** Query-first data modeling is a hard paradigm shift — tables are designed around specific access patterns; operational burden is significant; eventual consistency by default requires careful application design.
-- **Limitations:** No joins or ad-hoc queries — data model must match access pattern exactly, and changing query patterns can require table rewrites; tombstones from deletes accumulate and degrade read/compaction performance; secondary indexes are weak and not recommended for high-cardinality filtering; aggregations are limited and slow.
+- **Limitations:** No joins or ad-hoc queries — data model must match access pattern exactly, and changing query patterns can require table rewrites; tombstones from deletes accumulate and degrade read/compaction performance; secondary indexes are weak and not recommended for high-cardinality filtering (Cassandra 5.0's Storage-Attached Indexes, 2024, help but don't make it a query engine); aggregations are limited and slow.
 - **Unsupported / anti-patterns:** Ad-hoc analytical queries or flexible reporting; relational joins across tables; small-scale applications where the operational overhead is unjustified; use cases where strong consistency on every read is required (Postgres or distributed SQL is better suited).
+
+</details>
 
 ---
 
 ### Elasticsearch / OpenSearch — Search & Log Analytics
+
+<details>
+<summary><strong>Read as text</strong> — the inverted index, analyzers, BM25 and shards</summary>
 
 > **Simple Explanation:** When you need a real **search box** ("find products matching 'wireless noise-cancel headphones'", ranked by relevance, with typo tolerance and filters), a normal database is painfully slow. Elasticsearch is purpose-built to index text and return ranked results in milliseconds. It's also the go-to for searching mountains of logs.
 
@@ -1489,7 +1734,7 @@ CREATE TABLE messages (
 - **The inverted index** is the core idea: instead of "doc → words," it stores "word → list of docs containing it." Searching "headphones" jumps straight to the list of matching documents — no scanning. (It's the same idea as the index at the back of a textbook.)
 - **Analyzers** decide how text becomes searchable tokens: lowercase, remove stop-words, **stemming** ("running" → "run"), and synonyms. Get the analyzer wrong and relevance suffers — this is most of the tuning work.
 - **Relevance ranking** uses **BM25** (a refined TF-IDF) so the most relevant docs sort to the top — not just "contains the word."
-- **Sharding & replicas:** an index is split into **shards** (for scale) each with **replicas** (for HA + read throughput). Choosing shard count up front matters; too many small shards hurt performance.
+- **Sharding & replicas:** an index is split into **shards** (for scale) each with **replicas** (for HA + read throughput). Choosing the primary shard count up front matters (changing it later means `_split`/`_shrink` or a reindex); too many small shards hurt performance.
 
 ```json
 // Query DSL: match the text, but only among in-stock products
@@ -1502,14 +1747,21 @@ CREATE TABLE messages (
 - **Aggregations** turn it into a fast analytics engine (facets, histograms over logs) — the "Kibana dashboard" experience in the ELK/Elastic stack.
 
 **At a glance — strengths, tradeoffs, and hard limits**
-- **Pros:** Best-in-class full-text search with BM25 relevance ranking, analyzers, and typo tolerance; fast aggregations over large document sets; near-real-time indexing; the "E" in the widely deployed ELK stack; OpenSearch is the BSD-licensed fork with active community.
-- **Cons:** Not a system of record — data can be lost (index corruption, accidental deletes) and re-indexing from a primary source is painful; JVM heap is hungry and must be sized carefully; shard count is fixed at index creation time (resharding requires a full reindex).
-- **Limitations:** Shard count cannot be changed after index creation — undersizing shards requires a costly reindex operation; near-real-time indexing has a default refresh interval (~1 second) so freshly indexed documents are not instantly visible; JVM GC pauses can cause query latency spikes under memory pressure.
+- **Pros:** Best-in-class full-text search with BM25 relevance ranking, analyzers, and typo tolerance; fast aggregations over large document sets; near-real-time indexing; the "E" in the widely deployed ELK stack; OpenSearch is the Apache-2.0-licensed fork (now run by the Linux Foundation's OpenSearch Software Foundation), and Elasticsearch itself added an AGPLv3 option in 2024.
+- **Cons:** Not a system of record — data can be lost (index corruption, accidental deletes) and re-indexing from a primary source is painful; JVM heap is hungry and must be sized carefully; the primary shard count is set at index creation — `_split` (to a multiple of the current count) or `_shrink` (to a factor of it) can change it on a read-only index; any other count needs a full reindex.
+- **Limitations:** Primary shard count is fixed per index — under-sizing means a split or a costly reindex later (many teams use time-based indices or rollover instead); near-real-time indexing has a default refresh interval (~1 second) so freshly indexed documents are not instantly visible; JVM GC pauses can cause query latency spikes under memory pressure.
 - **Unsupported / anti-patterns:** Primary transactional datastore — it is a search index, not a system of record; strong consistency guarantees; very frequent document updates (reindexing individual documents at high frequency is expensive); replacing a database for data you cannot afford to lose or rebuild.
+
+</details>
 
 ---
 
 ### gRPC & GraphQL — Beyond REST APIs
+
+![Comparison infographic of REST, gRPC and GraphQL: REST as the universal cacheable JSON default (weak spot over/under-fetching), gRPC with a .proto contract generating typed client and server over HTTP/2 and four call styles (unary, server-streaming, client-streaming, bidirectional; weak spot not browser-native), GraphQL with one endpoint and a query tree user(id: 42) → name, orders → total (weak spot HTTP caching); a worked N+1 example where naive resolvers make 101 round-trips for 100 orders and a DataLoader batches ids 1…100 into WHERE id IN (…) for 2 round-trips; an 'If you need → use' table and the trap of cargo-culting a new style.](diagrams/sd22_info_grpc_graphql_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — contracts, call styles and the N+1 trap</summary>
 
 > **Simple Explanation:** REST is the familiar way services talk over HTTP. **gRPC** is a faster, stricter dialect for **service-to-service** calls (compact binary, strongly typed, great for microservices). **GraphQL** lets a **client ask for exactly the fields it wants** in one request, instead of calling five REST endpoints and over-fetching.
 
@@ -1561,9 +1813,18 @@ query { user(id: 42) { name, orders { total } } }
 - **Limitations:** gRPC: not natively supported in browsers without grpc-web/proxy; no built-in HTTP caching layer (proxies can't cache binary frames); Protobuf schema evolution requires careful field numbering discipline. GraphQL: every field resolver can trigger database queries — without DataLoader batching, deep queries generate explosive backend load.
 - **Unsupported / anti-patterns:** gRPC for public browser-facing APIs where simplicity and broad tool compatibility matter (REST is better); GraphQL when straightforward cacheable REST endpoints already suffice and the flexibility overhead adds complexity without benefit; neither replaces a pub/sub or streaming system for event-driven architectures.
 
+</details>
+
 ---
 
 ### Vector Databases — AI Similarity Search
+
+![Comparison infographic of the two 'outgrew Postgres' moves: vector databases (embedding scatter with a query vector and its top-K nearest neighbours by cosine, text / image → embedding model → ANN index (HNSW, IVF) → top-K, hybrid search ANN + BM25 + filters → RRF merge → re-rank, exact search O(N×d), 1536-dim ~4× a 384-dim model; pgvector, Qdrant, Pinecone, Milvus, Weaviate, Chroma) versus distributed SQL (a single-primary write bottleneck vs nodes holding ranges that vote via Raft / Paxos, TrueTime ± uncertainty (1–7 ms) → commit wait → external consistency, ~1–5 ms per commit in-region; CockroachDB, YugabyteDB, TiDB, Spanner, Aurora DSQL), a 'Start with → Graduate to' table (pgvector → Qdrant / Milvus at ~10M vectors; Postgres + replicas + PgBouncer → CockroachDB / YugabyteDB / Spanner when one primary's writes max out) and the trap of adopting either too early.](diagrams/sd22_info_vector_distributed_sql_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — embeddings, ANN indexes and which store to pick</summary>
+
+> **Simple Explanation:** An embedding model turns a sentence or image into a list of numbers (a **vector**) so that things with similar *meaning* get nearby vectors. A vector database is a store that, given a new vector, quickly finds the stored ones closest to it — "find documents that *mean* the same thing," not just ones that share the same words.
 
 > **Official Definition:** A vector database stores high-dimensional embedding vectors and provides Approximate Nearest Neighbor (ANN) search — retrieving the K most semantically similar vectors to a query vector in milliseconds, even over billions of embeddings.
 
@@ -1575,12 +1836,12 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 
 | System | Best for | Notes |
 |---|---|---|
-| **pgvector** | Already running Postgres; < ~10M vectors | HNSW + IVF indexes, zero extra infra; ~70% of AI workloads start here |
+| **pgvector** | Already running Postgres; < ~10M vectors | HNSW + IVFFlat indexes, zero extra infra; where most teams start |
 | **Qdrant** | High-performance OSS, Rust, on-prem or cloud | Strong filtering + ANN; excellent for self-hosted production |
 | **Pinecone** | Serverless managed, team wants zero ops | Proprietary, expensive at scale, but easiest to start |
-| **Milvus** | Billion-scale, cloud-native | CNCF project, supports GPU-accelerated indexing |
+| **Milvus** | Billion-scale, cloud-native | LF AI & Data Foundation project, supports GPU-accelerated indexing |
 | **Weaviate** | Hybrid search (vector + BM25) + GraphQL | Multi-modal, schema-first |
-| **Chroma** | Local dev, prototyping | Not for production at scale |
+| **Chroma** | Local dev, prototyping | Simplest to embed in a Python app; less proven at large scale |
 
 **Decision heuristic:**
 
@@ -1592,7 +1853,7 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
    Billion+ vectors? → Milvus.
 ```
 
-**Hybrid search** (vector similarity + keyword/filter) is the production pattern: ANN retrieves candidates, a BM25 or filter re-ranks them. Most production RAG pipelines use pgvector or Qdrant for this.
+**Hybrid search** (vector similarity + keyword + filters) is the production pattern: run an ANN query and a BM25 keyword query side by side, apply metadata filters, merge the two ranked lists (e.g., Reciprocal Rank Fusion), and optionally re-rank the top results with a cross-encoder model. Most production RAG pipelines use pgvector or Qdrant for this.
 
 **Interview soundbite:** "For RAG or semantic search, I'd start with pgvector if we're already on Postgres — it handles most AI workloads without adding infrastructure. I'd graduate to Qdrant or Milvus once we hit scale limits."
 
@@ -1602,9 +1863,16 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 - **Limitations:** ANN search is approximate by definition — recall is < 100% and decreases as filtering constraints tighten; index build + memory consumption grows with dimensionality (e.g., 1536-dim OpenAI embeddings are ~4× more expensive than 384-dim models); pgvector's HNSW index is single-node bounded by Postgres memory.
 - **Unsupported / anti-patterns:** Exact relational or transactional queries — vector DBs are not a replacement for a general-purpose database; keyword/BM25 full-text search where semantic similarity is not needed (Elasticsearch is simpler and more accurate for pure keyword matching); storing structured relational data alongside vectors in a dedicated vector DB (use pgvector or a hybrid system instead).
 
+</details>
+
 ---
 
 ### Distributed SQL / NewSQL — Horizontally-Scalable Strong Consistency
+
+<details>
+<summary><strong>Read as text</strong> — ranges, consensus, TrueTime and when to adopt</summary>
+
+> **Simple Explanation:** Imagine Postgres, but instead of one machine taking every write, the tables are cut into many small ranges spread over many machines (even across continents), and each range keeps three or more copies that *vote* on every change. You still write normal SQL with transactions — the database hides the splitting and the voting from you.
 
 > **Official Definition:** Distributed SQL (NewSQL) databases provide the full ACID guarantees and SQL interface of a relational database while scaling writes horizontally across shards and regions, using consensus protocols (Raft/Paxos) and automatic sharding to eliminate the single-primary bottleneck.
 
@@ -1617,12 +1885,12 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 | System | Compatibility | Consensus | Multi-region | Notes |
 |---|---|---|---|---|
 | **CockroachDB** | PostgreSQL wire | Raft | Yes (geo-partitioning) | Serializable isolation, cloud and self-hosted |
-| **YugabyteDB** | PostgreSQL + MySQL | Raft | Yes | Fully open-source, strong Postgres compatibility |
+| **YugabyteDB** | PostgreSQL (YSQL) + Cassandra-style (YCQL) | Raft | Yes | Fully open-source, strong Postgres compatibility |
 | **TiDB** | MySQL wire | Raft (TiKV) | Yes | HTAP (OLTP + analytics in one), China-origin, widely deployed |
-| **Google Spanner** | SQL + JDBC | TrueTime (atomic clocks) | Native, all regions | External consistency; proprietary; the gold standard for global |
+| **Google Spanner** | GoogleSQL + PostgreSQL dialect | Paxos + TrueTime timestamps | Native, all regions | External consistency; proprietary; the gold standard for global |
 | **Amazon Aurora DSQL** | PostgreSQL wire | Custom | Active-active (multi-region) | Serverless, auto-scaling, no instance management |
 
-**Google Spanner's TrueTime** is the defining innovation: GPS clocks and atomic clocks in every Google datacenter give a bounded clock uncertainty (< 7 ms), enabling **external consistency** — commits are timestamped with real wall-clock time, so transactions across the globe are totally ordered without locks.
+**Google Spanner's TrueTime** is the defining innovation: GPS receivers and atomic clocks in every Google datacenter give each server the current time *plus a bounded uncertainty* (a few ms; the 2012 paper reported 1–7 ms). Each commit is stamped with a TrueTime timestamp, and Spanner then **waits out the uncertainty** ("commit wait") before reporting success — so if transaction A finishes before B starts anywhere on Earth, A's timestamp is smaller. That is **external consistency**. Read-write transactions still take locks; the payoff is that read-only transactions and snapshot reads at a timestamp need **no locks** at all.
 
 ```
    Single-primary Postgres:                Distributed SQL (CockroachDB/Spanner):
@@ -1638,12 +1906,19 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Full ACID + SQL with horizontal write scale and multi-region active-active — the capabilities Postgres cannot provide natively; automatic sharding eliminates manual partitioning; Spanner provides external consistency via TrueTime (atomic clocks); CockroachDB and YugabyteDB are Postgres-wire-compatible.
 - **Cons:** Consensus protocol adds ~1–5 ms latency per commit (cross-region commits pay full round-trip latency); higher operational cost and complexity than single-node Postgres; not 100% feature-compatible with vanilla Postgres/MySQL (subtle query behavior differences).
-- **Limitations:** Every commit requires consensus — cross-region transactions pay full network round-trip latency (tens to hundreds of ms); Raft-based systems have a commit latency floor determined by the slowest replica in quorum; feature compatibility gaps with vanilla Postgres mean some extensions and query patterns require testing.
+- **Limitations:** Every commit requires consensus — cross-region transactions pay full network round-trip latency (tens to hundreds of ms); in Raft/Paxos a commit waits for the nearest *majority* of replicas, so the round-trip to that majority sets the latency floor; feature compatibility gaps with vanilla Postgres mean some extensions and query patterns require testing.
 - **Unsupported / anti-patterns:** Premature adoption when a single Postgres primary with replicas and PgBouncer can still scale (adds unnecessary complexity and cost); ultra-low-latency single-node workloads where the consensus overhead is noticeable; workloads that do not require multi-region writes or horizontal write scale.
+
+</details>
 
 ---
 
-## 33.6 TIER 4 — Legacy: Hadoop
+## 22.6 TIER 4 — Legacy: Hadoop
+
+![Recap infographic from Hadoop to today: THEN (2010) data → HDFS (on-prem cluster) → MapReduce (disk at every step) versus NOW (2026) data → S3 + Iceberg/Delta → Spark / Flink / warehouse (Spark 10–100× faster); six Hadoop piece cards (HDFS 128 MB blocks replicated 3×, NameNode, MapReduce, YARN, Hive, HBase); an 11-step learning order from Docker + Kubernetes to Ray; a 'Pick by Question' table (PostgreSQL not Redis as source of truth, Redis / Valkey not a bigger DB box, Kafka, Spark, Flink, Elasticsearch / OpenSearch not LIKE '%...%'); a URL-shortener example (client → Redis serve → Postgres store, reads ~100:1, click events → Kafka → analytics) and five interview rules.](diagrams/sd22_info_hadoop_decision_map_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — HDFS, MapReduce and why it lost</summary>
 
 > **Simple Explanation:** Hadoop was the **original** big-data system (mid-2000s): store huge files across many cheap machines (**HDFS**) and process them with **MapReduce**. It was revolutionary — and it is now largely **retired** for new projects, replaced by Spark + cloud object storage + lakehouse formats.
 
@@ -1651,10 +1926,10 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 
 ```
    THEN (2010):  data ──▶ HDFS (on-prem cluster) ──▶ MapReduce (disk-heavy, slow)
-   NOW  (2025):  data ──▶ S3 (cloud) + Iceberg/Delta ──▶ Spark / Flink / warehouse
+   NOW  (2026):  data ──▶ S3 (cloud) + Iceberg/Delta ──▶ Spark / Flink / warehouse
 ```
 
-- **Why it declined:** MapReduce writes to disk at every step (slow); on-prem clusters are costly and inflexible vs. elastic cloud; Spark is 10–100× faster with a nicer API. Surveys show only ~17% still use HDFS vs ~48% on S3.
+- **Why it declined:** MapReduce writes to disk at every step (slow); on-prem clusters are costly and inflexible vs. elastic cloud; Spark is 10–100× faster with a nicer API. New data platforms are built on cloud object storage, not HDFS; HDFS survives mainly in existing on-prem clusters.
 - **Should you learn it?** Only enough to **maintain or migrate** legacy systems. Do **not** invest heavily for new skills — that time is far better spent on Spark, cloud storage, and lakehouse formats.
 - **Interview note:** If asked, say clearly: "Hadoop pioneered big data, but new systems use Spark on cloud object storage with open table formats." That signals you're current.
 
@@ -1673,13 +1948,18 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 
 **At a glance — strengths, tradeoffs, and hard limits**
 - **Pros:** Pioneered the commodity-cluster big-data model; HDFS replication provides fault tolerance across machines; MapReduce's simplicity made it easy to reason about; Hive brought SQL-like access to large datasets — all concepts that live on in modern tools.
-- **Cons:** MapReduce writes to disk at every stage (10–100× slower than Spark's in-memory processing); on-prem clusters tie storage to compute (inflexible vs. elastic cloud); NameNode is a historical SPOF; high operational burden; ~17% HDFS adoption vs ~48% S3 in 2025 surveys.
+- **Cons:** MapReduce writes to disk at every stage (10–100× slower than Spark's in-memory processing); on-prem clusters tie storage to compute (inflexible vs. elastic cloud); NameNode is a historical SPOF; high operational burden.
 - **Limitations:** Disk-heavy MapReduce I/O is a hard architectural ceiling on performance — no configuration changes fix it; NameNode stores all filesystem metadata in memory (single machine memory ceiling on namespace size); on-prem cluster provisioning cannot match cloud elasticity for burst workloads.
 - **Unsupported / anti-patterns:** Greenfield or new projects — use Spark + S3 + Iceberg instead; real-time or interactive workloads (MapReduce is batch-only, minimum latency is minutes); any scenario where the team does not already have legacy Hadoop infrastructure to maintain.
 
+</details>
+
 ---
 
-## 33.7 Decision Cheat-Sheet — "I need to ___, what do I reach for?"
+## 22.7 Decision Cheat-Sheet — "I need to ___, what do I reach for?"
+
+<details>
+<summary><strong>Read as text</strong> — the need → tool → not-this table</summary>
 
 | I need to... | Reach for | Not |
 |---|---|---|
@@ -1706,9 +1986,14 @@ This is the storage layer for **semantic search, RAG (Retrieval-Augmented Genera
 | AI similarity / semantic search | **pgvector** (start), then Qdrant/Milvus | Elasticsearch alone for vector search |
 | Distributed Python ML / LLM serving | **Ray** | rolling your own multiprocessing |
 
+</details>
+
 ---
 
-## 33.8 A Practical Learning Order
+## 22.8 A Practical Learning Order
+
+<details>
+<summary><strong>Read as text</strong> — the 11-step path and depth over breadth</summary>
 
 You do not learn these all at once. A sensible path for a senior engineer:
 
@@ -1733,14 +2018,19 @@ You do not learn these all at once. A sensible path for a senior engineer:
 
 **Depth over breadth:** It is far more valuable to deeply understand Postgres, Kafka, Redis, and Kubernetes than to name-drop twenty tools. Senior engineers are hired for **judgment** — knowing *which* tool fits *which* problem, and the tradeoffs — more than for memorizing configuration flags.
 
+</details>
+
 ---
 
-## 33.9 Interview Angle
+## 22.9 Interview Angle
+
+<details>
+<summary><strong>Read as text</strong> — the signals that read as senior, with a worked example</summary>
 
 When a system-design interviewer hears you casually and *correctly* place these tools, your seniority reads instantly. Strong signals:
 
 - **Justify, don't name-drop.** "I'd put Kafka here to decouple ingestion from processing and allow replay" beats "I'd use Kafka."
-- **Start simple.** Propose Postgres + a cache before reaching for Cassandra or a Spark cluster. Over-engineering is a red flag (see Ch 26).
+- **Start simple.** Propose Postgres + a cache before reaching for Cassandra or a Spark cluster. Over-engineering is a red flag (see the *Common Anti-Patterns* section of Ch 25).
 - **Know the tradeoffs.** Every choice costs something: Kafka adds operational weight; caching adds invalidation bugs; Kubernetes adds complexity; Cassandra trades consistency for availability.
 - **Be current.** Mention that the field moved from Hadoop/HDFS to **lakehouse** (S3 + Iceberg/Delta + Spark/Flink), and that Kafka + Flink is the modern streaming pair. This signals you track the industry, not a 2015 textbook.
 - **Place tools in the four-job frame out loud.** When you reach for a tool, say *which job* it does — "Kafka to **ingest** and buffer, S3 + Iceberg to **store**, Flink to **process**, Redis to **serve** hot reads." Narrating the ingest→store→process→serve pipeline shows you have a mental model, not a list of brand names.
@@ -1748,9 +2038,11 @@ When a system-design interviewer hears you casually and *correctly* place these 
 - **Anchor choices in numbers.** Tie the tool to a back-of-envelope estimate: "~50k writes/sec write-heavy and append-only → that's a Cassandra/LSM workload, not Postgres." Capacity math (QPS, payload size, storage growth) turns an opinion into a defensible decision.
 - **Worked example — "design a URL shortener."** A senior answer sounds like: "Reads dominate ~100:1, so I'd **serve** from Redis in front of the DB; **store** mappings in Postgres (or Cassandra if we expect billions of keys); generate ids with a counter or hash, not random retries; and **ingest** click events into Kafka so analytics never slows the redirect path." Notice every tool is justified by a job and a tradeoff — never name-dropped.
 
+</details>
+
 ---
 
-## 33.10 Summary
+## 22.10 Summary
 
 - Every tool maps to one of four jobs: **ingest, store, process, serve.** Place any new tool in that frame and it stops being scary.
 - **Tier 1 (learn first):** Docker, Kubernetes, Kafka, Redis/Valkey, PostgreSQL, **MongoDB**, Cloud+S3, Spark — you will meet these everywhere.
@@ -1758,12 +2050,12 @@ When a system-design interviewer hears you casually and *correctly* place these 
 - **Tier 3 (situational):** Cassandra/ScyllaDB, Elasticsearch, gRPC/GraphQL, **Vector DBs** (pgvector/Qdrant/Milvus), **Distributed SQL** (CockroachDB/Spanner/TiDB) — know *when*, learn *how* on demand.
 - **Tier 4 (legacy):** Hadoop — maintain/migrate only; don't invest for new skills.
 - **The 2025–2026 shifts:**
-  - Hadoop → lakehouse (S3 + Iceberg — Iceberg won the table-format war; Apache Polaris as the REST catalog standard).
-  - Kafka 4.0 removed ZooKeeper entirely (KRaft); Redpanda and WarpStream are credible alternatives.
-  - Redis forked to **Valkey** (BSD) after the 2024 license change; Valkey is now the cloud default.
-  - **OpenTelemetry graduated** as the vendor-neutral observability standard (traces + metrics + logs via OTel Collector).
+  - Hadoop → lakehouse (S3 + Iceberg — Iceberg became the cross-vendor table format; Apache Polaris as the open REST catalog).
+  - Kafka 4.0 removed ZooKeeper entirely (KRaft) and made the incremental KIP-848 rebalance protocol GA; Kafka 4.2 added production-ready queues (share groups); Redpanda and WarpStream are credible alternatives.
+  - Redis forked to **Valkey** (BSD) after the 2024 license change; Valkey is now offered (and priced lower) by the big managed services, and Redis 8 added an AGPL option.
+  - **OpenTelemetry graduated** in CNCF (May 2026) as the vendor-neutral observability standard (traces + metrics + logs via OTel Collector).
   - **Vector databases** became a standard component for any AI-powered feature (RAG, semantic search).
-  - **Ray** is the default distributed Python layer in modern LLM stacks.
+  - **Ray** is a standard distributed Python layer in modern LLM stacks (now under the PyTorch Foundation).
   - **Distributed SQL** (Spanner, CockroachDB, Aurora DSQL) matures as the upgrade path when Postgres writes saturate.
 - **Seniority = judgment.** The win is knowing which tool fits which problem and naming the tradeoffs — not memorizing all of them.
 
@@ -1812,7 +2104,7 @@ TIER 4 — LEGACY
   • Hadoop: maintain/migrate only; don't invest new.
 
 2025–2026 SHIFTS
-  • Hadoop → lakehouse (S3 + Iceberg won the format war).
+  • Hadoop → lakehouse (S3 + Iceberg, the default format).
   • Kafka 4.0 removed ZooKeeper (KRaft).
   • Redis → Valkey (BSD) after the license change.
   • OpenTelemetry graduated as the observability standard.
