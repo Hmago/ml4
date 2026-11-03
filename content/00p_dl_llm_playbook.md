@@ -4,12 +4,14 @@
 
 This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks), Ch 16 (Deep Learning Reference), Ch 17 (LLMs — how they work), **Ch 17b (LLMs — how you use them)**, **Ch 17c (LLM Systems — serving, scaling, evaluation)**, Ch 18 (AI Agents), **Ch 18b (Agents in Production)**, Ch 19 (Frameworks), Ch 20 (2026 Landscape). This is the index of decisions you make most often, in the order you make them.
 
+Need a study order instead? The learning tracks, the L1–L4 depth ladder and the 18-rung coding ladder are in the **Section map** at the top of [Ch 16](#content/16_deep_learning); **P13** below is the one-page checklist with links to every must-know topic. Model names, prices and benchmark tables date within months, so this playbook is a **November 2026** snapshot; the *shapes* (decoder-only, MoE, RAG, the serving levers) age much more slowly.
+
 ---
 
 ## Contents
 
 - [P1. The 90-Second Field Map](#p1-the-90-second-field-map)
-- [P2. Frontier Models Cheat Card (May 2026)](#p2-frontier-models-cheat-card-may-2026)
+- [P2. Frontier Models Cheat Card (November 2026)](#p2-frontier-models-cheat-card-november-2026)
 - [P3. "Which Model?" Decision Tree](#p3-which-model-decision-tree)
 - [P4. Training a Neural Network — Defaults & Recipes](#p4-training-a-neural-network--defaults--recipes)
 - [P5. Fine-Tuning Recipes](#p5-fine-tuning-recipes)
@@ -20,6 +22,7 @@ This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks
 - [P10. Diagnostics — When Things Break](#p10-diagnostics--when-things-break)
 - [P11. Numbers Worth Memorising](#p11-numbers-worth-memorising)
 - [P12. Interview Soundbites](#p12-interview-soundbites)
+- [P13. Must-Know Checklist and Code Ladder](#p13-must-know-checklist-and-code-ladder)
 
 ---
 
@@ -45,36 +48,48 @@ This is **not** a textbook chapter. The why-and-how is in Ch 14 (Neural Networks
 If you can sketch this on a whiteboard, you can answer 80% of "how does an LLM work end-to-end" interview questions.
 ![The 90-second training vs inference field map](diagrams/play00_fieldmap_ai.png)
 
+What the map compresses — say these out loud when you draw it:
+
+- **"Data" is a pipeline, not a box.** Crawl → extract text → language ID → quality filters → deduplicate → PII/safety → mix domains → decontaminate → order and anneal. Most of a model's quality comes from here, not from the architecture ([Ch 17 §3.1b](#content/17_llm)).
+- **Post-training has a second branch.** SFT, then preference tuning (DPO / RLHF / RLAIF) *or* reinforcement learning on answers a program can check (RLVR, optimised with GRPO) — that is how reasoning models are made. You pick by the feedback you have ([Ch 17 §3.5b–3.5c](#content/17_llm)).
+- **Inside "[LLM]" is one repeated block:** RMSNorm → attention (RoPE, grouped-query, FlashAttention) → RMSNorm → SwiGLU feed-forward, each with a residual. A mixture-of-experts model swaps the feed-forward for many experts plus a router ([Ch 17 §4.8](#content/17_llm)); pictures and audio enter as extra tokens ([Ch 17 §4.9](#content/17_llm)).
+
 ---
 
-## P2. Frontier Models Cheat Card (May 2026)
+## P2. Frontier Models Cheat Card (November 2026)
 
-Memorise the *shape*, not the digits — leaderboards drift monthly.
+Memorise the *shape*, not the names or digits — leaderboards and version numbers drift monthly. Facts below are from vendor model pages and cards as summarised in [Ch 17 §4](#content/17_llm); where a vendor page and this card disagree, trust the vendor page.
 
 ```
-   CLOSED-WEIGHT FRONTIER (within ~3 pts of each other)
-   ────────────────────────────────────────────────────
-   GPT-5.5            agents leader      Terminal-Bench 82.7%
-   Claude Opus 4.7    coding leader      SWE-bench 87.6%
-   Gemini 3.1 Pro     value + multimodal $2/$12 per M tokens, GPQA 94.3%
+   CLOSED-WEIGHT FRONTIER (three labs, same shape: a top tier, a workhorse, a cheap tier)
+   ──────────────────────────────────────────────────────────────────────────────────────
+   OpenAI      GPT-6 Astra (flagship) · GPT-6.1 Sol (near-Astra, much cheaper) ·
+               GPT-6 Luna (high-volume, low cost)         ~1M ctx, text+image in
+   Anthropic   Claude Fable 5.1 (top tier) · Opus 5.5 (long-running agentic coding) ·
+               Sonnet 5.5 (speed + intelligence) · Haiku 5.5 (fastest)   1M ctx, text+image in
+   Google      Gemini 4 Argon (sparse MoE, native multimodal: text, image, audio, video in,
+               up to 1M ctx) · Gemini 4 Carbon (staged rollout) · Gemini 3.x Flash tiers (cheap)
 
-   OPEN-WEIGHT (sparse-MoE era)
-   ─────────────────────────────
-   DeepSeek V4-Pro    1.6T / 49B active   raw benchmarks leader,  MIT
-   Llama 4 Scout      109B / 17B          10M context             Meta custom
-   Qwen 3.5           397B / 17B          GPQA 88.4%              Apache 2.0
-   Mistral Large 3    675B / 41B          tool-use                Apache 2.0
-   Gemma 4 31B        31B dense           80% LiveCodeBench       Apache 2.0
+   OPEN-WEIGHT (sparse-MoE era — total / active parameters)
+   ────────────────────────────────────────────────────────
+   DeepSeek V4-Pro    1.6T / 49B          1M ctx (compressed attention)   MIT
+   Muse Spark Open    816B / 42B          1M ctx, multimodal (Meta)       Muse licence, limited commercial
+   Qwen 3.5           397B / 17B          flagship; 3.6 followed          Apache 2.0 (check each card)
+   Mistral Large 3    675B / 41B          tool use + 2.5B vision encoder  Apache 2.0
+   Llama 4 Scout      109B / 17B          10M ctx *advertised*            Llama community licence
+   gpt-oss-120b       117B / 5.1B         fits one 80 GB GPU (4-bit)      Apache 2.0
+   Gemma 4            31B dense, 26B MoE  small multimodal, 128K–256K     Apache 2.0
 
    ON-DEVICE
    ─────────
    Gemini Nano        Pixel / Android
    Apple Foundation   iOS / macOS, ~3B
+   Gemma 4 E2B / E4B  phones and laptops, open weights
    Phi-4 Mini         Copilot+ PCs
    Llama 3.2 1B/3B    open-weight reference
 ```
 
-Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at 87.6%** — the agent category is what's still moving.
+**How to read it.** Each lab's launch table favours its own model and uses its own harness, so compare two scores only when they come from the *same* table. Context is ~1M tokens at the frontier; the 10M Scout figure is advertised, and *effective* length is shorter ([Ch 17 §2.7](#content/17_llm)). The open models are mostly large MoE: **memory follows the total parameters, compute follows the active ones** ([Ch 17 §4.8](#content/17_llm)). Most current API models take text and images in and return text; images and voice come from separate generators ([Ch 17 §4.9](#content/17_llm)).
 
 ---
 
@@ -83,33 +98,36 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 ```
    What's the task?
       │
-      ├── Real-time mobile autocomplete            → Gemini Nano / Apple Foundation
+      ├── Real-time mobile autocomplete            → Gemini Nano / Apple Foundation /
+      │                                              Gemma 4 E2B-E4B
       │
-      ├── High-QPS classification                  → Gemini 3 Flash / GPT-5 mini /
+      ├── High-QPS classification                  → Gemini 3.x Flash / GPT-6 Luna / Haiku 5.5 /
       │                                              open-weight Qwen 3.5 self-host
       │
-      ├── Complex code, multi-file refactor         → Claude Opus 4.7 + extended thinking
-      │                                              (or via Claude Code / Cursor)
+      ├── Complex code, multi-file refactor         → Claude Opus 5.5 (adaptive thinking) or
+      │                                              GPT-6.1 Sol (via Claude Code / Codex / Cursor)
       │
-      ├── Browser / desktop automation              → Claude Computer Use, OpenAI Operator
+      ├── Browser / desktop automation              → Claude computer use, OpenAI computer-use agent
       │
-      ├── PhD-level science reasoning               → Gemini 3.1 Pro or Opus 4.7 thinking
+      ├── PhD-level science reasoning               → top tier (Astra / Fable 5.1 / Gemini 4 Argon)
+      │                                              with the reasoning-effort dial turned up
       │
-      ├── Long document (>1M tokens)                → Llama 4 Scout (10M) / Gemini 3.1 Pro (2M)
+      ├── Long document (≥1M tokens)                → retrieve + chunk, or a ~1M-window model;
+      │                                              Scout's 10M is advertised — test effective length
       │
-      ├── Real-time voice                            → GPT-4o Realtime / Gemini Live /
+      ├── Real-time voice                            → OpenAI Realtime API / Gemini Live /
       │                                                ElevenLabs Conversational
       │
-      ├── Image gen (production)                     → Imagen 4 / DALL-E 3 / FLUX 1.1 Pro
+      ├── Image gen (production)                     → Imagen / GPT-Image / FLUX (check versions)
       │
-      ├── Video gen with audio                      → Veo 3.1
+      ├── Video gen with audio                      → Veo (Google)
       │
       ├── Bulk inference, cost dominates            → Self-host DeepSeek V4 / Qwen 3.5
       │
       └── Sensitive data / sovereign                 → On-device or self-host open-weight
 ```
 
-**Default for prototyping**: Gemini 3 Flash (cheap, fast, multimodal) or Claude Sonnet 4.6.
+**Default for prototyping**: a Flash / Sonnet / Luna-tier model (Gemini 3.x Flash, Claude Sonnet 5.5, GPT-6 Luna) — cheap, fast, good enough for almost everything. Reasoning depth is now a dial (`reasoning.effort` / `effort` / thinking levels): start low, raise it only on the hard cases.
 ![Which model? An eleven-branch decision tree](diagrams/play00_modeltree_ai.png)
 
 ---
@@ -120,18 +138,19 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 
 | Choice | Default | When to deviate |
 |---|---|---|
-| **Optimizer** | AdamW | SGD+momentum for ImageNet-style image models |
-| **Learning rate** | 3e-4 (Karpathy's constant) | Smaller (1e-5 to 5e-5) for fine-tuning |
-| **LR schedule** | Linear warmup (5–10% of steps) + cosine decay | Constant LR for short tuning runs |
-| **Batch size** | Largest that fits, then scale LR ∝ √batch | Tiny batches for limited memory |
-| **Precision** | BF16 mixed precision | FP32 if you see NaN; INT8/FP8 for inference only |
-| **Weight decay** | 0.1 (Transformers), 1e-4 (CNNs) | 0 if model is already underfitting |
-| **Gradient clipping** | 1.0 | Lower (0.5) if loss spikes |
-| **Dropout** | 0.0 (Transformers), 0.1–0.5 (older nets) | Modern Transformers prefer none |
-| **Init** | Xavier/Kaiming for dense; PyTorch defaults are usually fine | Custom for very deep nets |
-| **Activation** | GELU (Transformers), ReLU (everything else) | SwiGLU in modern LLMs |
-| **Normalisation** | LayerNorm (Transformers), BatchNorm (CNNs) | RMSNorm in Llama-family |
-| **Loss** | Cross-entropy | MSE for regression; focal loss for imbalanced |
+| **Optimizer** | AdamW | SGD+momentum (well tuned) for ImageNet-style CNNs; Muon / Adafactor / Lion are the 2024–26 alternatives |
+| **Learning rate** | 3e-4 (Karpathy's constant) for small models | Smaller as models grow (≈1.5e-4 at 70B, ≈8e-5 at 405B in Llama 3); 1e-5 to 5e-5 to fine-tune a Transformer |
+| **LR schedule** | Linear warmup + cosine decay to ~10% of peak ([Ch 16 §1.3](#content/16_deep_learning)) | Warmup 3–10% of steps for fine-tuning and small runs, but only ~0.1–2% for LLM pre-training; warmup–stable–decay for long runs |
+| **Batch size** | Largest that fits, then re-tune LR: SGD ∝ batch, Adam ∝ √batch (both only starting points) | Does not fit? Gradient accumulation: effective batch = micro-batch × steps × GPUs, divide each loss by k ([Ch 16 §1.9](#content/16_deep_learning)) |
+| **Precision** | BF16 mixed precision with FP32 master weights | FP16 needs loss scaling, BF16 does not; FP8 is used in some of the largest recent training runs; INT8/INT4 are mainly for inference |
+| **Weight decay** | 0.1 for LLM pre-training (0.01–0.1 with AdamW), 1e-4 for CNNs with SGD | Skip biases and norm gains; 0 if the model is underfitting |
+| **Gradient clipping** | Global norm 1.0 | Lower (0.5) if loss spikes |
+| **Dropout** | 0 for LLM pre-training; 0.1 for small Transformers and fine-tuning | 0.3–0.5 on large fully-connected layers in older nets |
+| **Init** | He / Kaiming (2/fan_in) for ReLU, Xavier (2/(fan_in+fan_out)) for tanh; Transformers: normal std 0.02, zero biases, residual out-projections scaled by 1/√(2L) ([Ch 16 §1.8](#content/16_deep_learning)) | PyTorch's `nn.Linear` default is neither — fine only because norm layers repair the scale; call `kaiming_normal_` for deep plain ReLU stacks |
+| **Activation** | ReLU (CNNs), GELU (BERT, GPT-2, ViT) | SwiGLU is the default in open LLMs (Llama, Qwen, DeepSeek), with hidden width ≈ 8d/3 to match a 4d FFN's parameters |
+| **Normalisation** | BatchNorm (CNNs), LayerNorm (classic Transformers) | RMSNorm, pre-norm, in most modern LLMs |
+| **Loss** | Cross-entropy (label smoothing 0.1 for classification) | MSE for regression; focal loss for heavy imbalance |
+| **Evaluate** | The final weights | EMA of the weights (decay 0.999–0.9999) for diffusion, GANs and many vision recipes; LLM pre-training usually skips it ([Ch 16 §1.9](#content/16_deep_learning)) |
 
 ### Diagnostic flow when training won't converge
 
@@ -158,6 +177,7 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
       ├── LR too high? Try 10× lower (most common)
       ├── Bug in label — predict the labels themselves; should overfit
       ├── Bug in dataloader — print one batch
+      ├── Init too small / too large in a deep net — print activation std per layer
       └── Architecture broken — overfit a single batch first
 
    Train loss spikes intermittently
@@ -165,14 +185,34 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
       ├── Lower learning rate
       ├── Tighten gradient clipping
       ├── Check for outlier batches (extreme labels)
-      └── BF16 instead of FP16
+      ├── BF16 instead of FP16
+      └── LLM-scale runs: AdamW β₂ = 0.95, QK-norm, rewind to an earlier
+          checkpoint and skip the batches around the spike (Ch 17 §3.6)
+
+   CUDA out of memory while training
+      │
+      ├── Count first: mixed-precision AdamW = 16 bytes/param (2+2+12),
+      │     so a 7B model needs 112 GB before activations
+      ├── States alone do not fit → shard (FSDP / ZeRO-3) or use LoRA
+      ├── Activations too big → smaller micro-batch + gradient accumulation
+      ├── Still too big → activation checkpointing (≈ +33% compute)
+      └── Attention scores huge at long sequences → FlashAttention
+
+   Accurate, but a tiny invisible change flips the answer
+      │
+      ├── Adversarial example (FGSM: x + ε·sign(∇ₓL)) — random noise will NOT reveal it
+      ├── Test with PGD, not just one FGSM step
+      └── Adversarial training (≈ K+1× cost, some clean accuracy lost);
+          randomized smoothing for a certified radius; beware gradient masking
 ```
+
+Where each lives: weight init and activations [Ch 16 §1.8](#content/16_deep_learning); accumulation, checkpointing, EMA and the 16-byte budget [Ch 16 §1.9](#content/16_deep_learning); adversarial examples [Ch 16 §2.7](#content/16_deep_learning); depthwise-separable convolutions for phones and cameras [Ch 16 §2.6](#content/16_deep_learning) (about 8–9× fewer multiply-adds for 3×3 filters, ~1 point of ImageNet accuracy in MobileNet v1).
 
 ### The "always do these first" sanity checks
 
 1. **Overfit a single batch.** If your model can't drive loss to ~0 on 4 examples, the model is broken. Don't tune hyperparameters yet.
 2. **Predict the labels.** Feed labels as features. Model should reach ~0 loss instantly. If not, there's a data bug.
-3. **Print one batch.** Look at shapes, dtype, value ranges. ~50% of "model is broken" issues are dataloader bugs.
+3. **Print one batch.** Look at shapes, dtype, value ranges. A large share of "model is broken" issues are dataloader bugs.
 4. **Run with 1 worker, no shuffling.** Reproducible failures debug faster.
 5. **Disable augmentation, regularisation, schedulers.** Get to a stupid model that learns. Add complexity back one at a time.
 
@@ -198,14 +238,14 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 
 | Hyperparameter | Default | Notes |
 |---|---|---|
-| Rank `r` | 16 | 8 is often enough; 64+ rarely helps |
+| Rank `r` | 16 | 8 is often enough; 64+ adds capacity (closer to full fine-tuning) with diminishing returns ([Ch 17b §9.4](#content/17b_llm_applications)) |
 | `lora_alpha` | 32 (= 2× r) | Most public recipes use this ratio |
 | `lora_dropout` | 0.05 | Only matters on very small datasets |
-| `target_modules` | `["q_proj", "v_proj"]` | Adding `k_proj`, `o_proj`, FFN layers helps quality at ~2× cost |
+| `target_modules` | `["q_proj", "v_proj"]` | Adding `k_proj`, `o_proj`, FFN layers (`gate_proj`, `up_proj`, `down_proj`) helps quality at ~2× cost |
 | Learning rate | 2e-4 | ~10× higher than full fine-tune |
 | Epochs | 1–3 | Diminishing returns past 3 |
-| Batch size | as large as fits | Use grad accumulation if OOM |
-| Quant for QLoRA | NF4 (4-bit) | ~75% memory cut |
+| Batch size | as large as fits | Use gradient accumulation if OOM ([Ch 16 §1.9](#content/16_deep_learning)) |
+| Quant for QLoRA | NF4 (4-bit) | Base weights ~75% smaller than 16-bit (70B: 140 → ~35 GB); the adapters stay in higher precision |
 
 ### SFT → DPO → RLHF — when each pays off
 ![SFT to DPO to RLHF, cost versus payoff ladder](diagrams/play00_sftdpo_ai.png)
@@ -213,10 +253,15 @@ Latest frontier note: **GPT-5.5 leads SWE-bench at 88.7%**, **Claude Opus 4.7 at
 | Stage | What it does | Cost | Pay off |
 |---|---|---|---|
 | **SFT** (Supervised) | Teach format, basic capability | Cheap | Always. Skip and you have no foundation. |
+| **Rejection sampling** | Sample N answers, keep the best, SFT on the winners | Cheap | Easy gain over plain SFT; stacks with DPO (Llama 3 did both). |
 | **DPO** | Align with preferences, no reward model | Medium | Often enough; what most teams ship. |
+| **KTO / SimPO / ORPO** | DPO cousins: thumbs-up/down labels only / no reference model / SFT and alignment in one stage | Low–Medium | When your feedback is unpaired, or you want fewer moving parts. |
 | **RLHF** (PPO + reward model) | Strongest alignment but complex | High | Worth it for top-of-leaderboard chasing. |
 | **RLAIF** | AI feedback replaces humans | Medium | Scales when human labels are scarce. |
 | **Constitutional AI** | Self-critique against principles | Low–Medium | Anthropic-style; less labelling. |
+| **RLVR + GRPO** | RL on answers a program can check (tests, exact match); GRPO uses the group's mean score as the baseline, so no critic | High | Maths, code and reasoning models (DeepSeek-R1 recipe). |
+
+Pick by **the feedback you actually have** ([Ch 17 §3.5c](#content/17_llm)): demonstrations → SFT; chosen/rejected pairs → DPO; thumbs up/down → KTO; an automatic checker → RLVR with GRPO; only a written rulebook → RLAIF. The follow-up interviewers ask is *reward hacking* — the model scores well without doing the thing (verbosity is the commonest hack); a KL penalty and a held-out gold metric are the defences. Both DPO and GRPO are runnable in Ch 17 ([§3.5](#content/17_llm), [§3.5b](#content/17_llm)).
 
 ### Hello world — LoRA SFT
 
@@ -245,15 +290,15 @@ SFTTrainer(
 
 | Lever | Typical impact | Where it lives |
 |---|---|---|
-| **Prompt caching** | 50–90% cost cut on shared prefixes | Provider feature; on by default for big system prompts |
-| **Model routing** | 30–80% cost cut | App layer — easy queries to Flash/4o-mini, hard ones to Pro/Opus |
+| **Prompt caching** | Up to ~90% cheaper on cached prefix tokens | Provider feature — automatic on some providers, opt-in on others; only an exact *prefix* hits, so put everything variable (timestamps, user IDs) last ([Ch 17c §2.4](#content/17c_llm_systems)) |
+| **Model routing** | 30–80% cost cut | App layer — easy queries to a Flash / Luna / Haiku-tier model, hard ones to Pro / Astra / Opus |
 | **Batching** | 50% via async batch APIs | OpenAI Batch / Anthropic Batch |
 | **Streaming** | Better TTFT, no cost change | Default for any user-facing chat |
-| **PagedAttention (vLLM)** | 5–10× throughput | Inference server |
-| **Speculative decoding** | 2–3× faster, no quality loss | Built into vLLM, SGLang |
-| **KV-cache reuse** | Multi-turn cost cut | vLLM, SGLang |
-| **Quantization** (INT8/INT4) | 2–8× memory | Use FP8/INT8 for serving; INT4 for edge |
-| **Smaller embedder** | 5–10× retrieval cost cut | Often within 1% quality |
+| **Continuous batching + PagedAttention (vLLM)** | Continuous batching is the biggest throughput win (10–20× over static batching on mixed-length traffic); paging lifts KV-cache use from ~20–40% to over 90% (vLLM paper: ~2–4× throughput over earlier servers) | Inference server ([Ch 17c §2.1–2.2](#content/17c_llm_systems)) |
+| **Speculative decoding** | ~2–3× faster per stream at low batch size; lossless — same output distribution | Built into vLLM, SGLang; skip it at high batch or high temperature ([Ch 17c §2.5](#content/17c_llm_systems)) |
+| **KV-cache reuse** | Multi-turn and agent-loop cost cut | vLLM prefix caching, SGLang RadixAttention |
+| **Quantization** | Weights 2× (INT8/FP8) to 4× (INT4) smaller than FP16 | Weight-only INT4/FP8 speeds up *decode*; W8A8/FP8 speeds up prefill too; FP8 KV cache cuts the long-context bill ([Ch 17c §3.1–3.2](#content/17c_llm_systems)) |
+| **Smaller embedder** | Several × cheaper retrieval | Usually a small quality loss — measure on your own eval |
 
 ### Inference server defaults
 
@@ -265,7 +310,7 @@ SFTTrainer(
    Edge / CPU / GGUF                        → llama.cpp
    Apple silicon                            → MLX
 
-   Avoid for new projects: TGI (maintenance mode in 2026).
+   Avoid for new projects: TGI (Hugging Face put it in maintenance mode in Dec 2025).
 ```
 
 ### Quick math: how big a GPU do I need?
@@ -277,7 +322,12 @@ SFTTrainer(
 | INT8 | 1 | 7 GB | 70 GB |
 | INT4 | 0.5 | 3.5 GB | 35 GB |
 
-Add ~20–40% on top for **KV cache** at production batch sizes. A single H100 (80 GB) serves a 70B model only at INT4. A B200 / B300 serves it at INT8.
+Those are **weights only**. The **KV cache** comes on top and grows with context × concurrent requests: `2 × layers × KV-heads × head-dim × bytes × tokens` — Llama-3-70B with grouped-query attention is about **320 KB per token**, so 10 GB at 32K and 40 GB at 128K *per request* ([Ch 17c §1.2](#content/17c_llm_systems), [Ch 17 §2.7](#content/17_llm)). In practice a single H100 (80 GB) serves a 70B model only at INT4 (FP8 weights alone are 70 GB, leaving ~10 GB for KV); a B200 / B300 holds it at INT8.
+
+Two multipliers people forget:
+
+- **Mixture-of-experts: memory follows *total* parameters, compute follows *active* ones.** DeepSeek-V3 (671B total, 37B active) costs the FLOPs of a 37B model but needs 671 GB of weights even at FP8 — an 8×H100 node (640 GB) cannot hold it, an 8×H200 node can ([Ch 17 §4.8](#content/17_llm)).
+- **Training is a different bill: ~16 bytes per parameter** for mixed-precision AdamW (2 weights + 2 gradients + 12 optimizer state) — a 7B model needs 112 GB before activations. FSDP / ZeRO-3 divides that by the number of GPUs; LoRA avoids it by freezing the base ([Ch 17 §3.6](#content/17_llm), [Ch 16 §1.9](#content/16_deep_learning)).
 
 ---
 
@@ -313,6 +363,8 @@ Add ~20–40% on top for **KV cache** at production batch sizes. A single H100 (
        LLM call ──► answer with citations
 ```
 
+**Knobs worth knowing:** chunk **~256–512 tokens** with **50–100 tokens of overlap** ([Ch 28](#content/28_semantic_search)); retrieve 20, keep 3 as the default. With a generous context window, widen it — retrieve 20–50 and let the window hold them rather than squeezing the evidence into three chunks ([Ch 17 §2.7](#content/17_llm)); Ch 28 retrieves 50–100 and keeps ~10. Long context replaces RAG only when the material fits in the window *and* the task needs all of it.
+
 ### Vector DB picker
 
 ```
@@ -332,22 +384,24 @@ Add ~20–40% on top for **KV cache** at production batch sizes. A single H100 (
 | Retrieves wrong docs | Query and corpus use different vocabulary | **HyDE** — generate hypothetical answer, embed *that* |
 | Misses exact-match (IDs, error codes) | Pure vector search | **Hybrid search** (vector + BM25) |
 | Top-5 by similarity ≠ top-5 by meaning | No reranker | Add **cross-encoder rerank** of top 20 → 3 |
-| Chunk meaningless on its own | Bad chunking | **Contextual chunks** — prepend doc summary |
-| Wrong answer despite right docs retrieved | Lost-in-the-middle | Put critical content at end; structured tags |
+| Chunk meaningless on its own | Bad chunking | **Contextual chunks** — prepend doc summary; ~256–512 tokens with overlap |
+| Wrong answer despite right docs retrieved | Lost-in-the-middle (accuracy is highest for evidence at the start or end of the prompt) | Put the key evidence and the question at the ends; fewer, better-ranked chunks; structured tags |
 | LLM hallucinates citations | No grounding instructions | "Quote the document; cite source. If unknown, say so." |
 | Slow at scale | Re-embedding on every query | Cache embeddings; serve via ANN index (HNSW) |
 
-### Embedder defaults (May 2026)
+### Embedder defaults (November 2026)
+
+Leaders rotate every few months — treat this as a starting shortlist and check the MTEB leaderboard *and* your own eval set.
 
 | Family | When |
 |---|---|
-| **OpenAI `text-embedding-3-large`** | Hosted, multilingual, strong default |
-| **Cohere `embed-v4`** | Best multilingual hosted |
-| **Voyage `voyage-3-large`** | Best on RAG benchmarks |
-| **BGE-M3** | Best open-weight, multilingual, hybrid (dense+sparse+ColBERT) |
-| **Nomic v2** | Best open-weight English, fast |
-| **Cohere Rerank v3.5** | Default reranker |
-| **BGE-Reranker v2** | Best open-weight reranker |
+| **OpenAI `text-embedding-3-large`** | Hosted, multilingual, strong default (last refreshed in early 2024, as of mid-2026) |
+| **Cohere `embed-v4`** | Hosted, multilingual |
+| **Voyage `voyage-4-large` / `voyage-3-large`** | Strong paid option, popular for RAG and code |
+| **Qwen3-Embedding (up to 8B)** | Apache 2.0, strong all-round open-weight model |
+| **BGE-M3** | Open-weight, multilingual, dense + sparse + ColBERT in one model |
+| **Cohere Rerank 4 (Pro / Fast; v3.5 still available)** | Managed reranker default |
+| **BGE-Reranker v2 / Qwen3-Reranker** | Open-weight rerankers you can self-host |
 
 ---
 
@@ -362,7 +416,8 @@ Add ~20–40% on top for **KV cache** at production batch sizes. A single H100 (
       │
       └── No → need loops, branches, durable state? → LangGraph
                 role-based pipeline?               → CrewAI
-                conversational debate (research)?  → AutoGen / AG2
+                conversational debate (research)?  → AG2, or Microsoft Agent Framework
+                                                     (AutoGen is in maintenance mode)
                 Google enterprise / Vertex?        → ADK + Agent Engine
                 type-safe / lots of validation?    → Pydantic AI
 ```
@@ -390,7 +445,7 @@ def get_weather(city: str) -> str:
 agent = create_agent(
     model=ChatOpenAI(model="gpt-4o"),
     tools=[get_weather],
-    prompt="You are a concise travel assistant.",
+    system_prompt="You are a concise travel assistant.",
 )
 print(agent.invoke({"messages": [("user", "Weather in Tokyo?")]})["messages"][-1].content)
 ```
@@ -457,7 +512,8 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
       │
       ├── No retrieval? Add RAG.
       ├── Retrieval works but answer ignores it?
-      │     → Move retrieved docs to end of prompt; add "cite source" instruction
+      │     → Put the key evidence and the question at the start or end of the prompt, not the
+      │       middle (lost-in-the-middle); add a "cite source" instruction
       │     → Use stricter system prompt: "If unsure, say 'I don't know.'"
       ├── Citing wrong docs?
       │     → Add reranker
@@ -466,7 +522,9 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
       │     → Check chunk size; chunk may lack context
       │     → Try contextual chunking (prepend doc summary)
       └── Still wrong on a hard task?
-            → Reasoning model with extended thinking
+            → Reasoning model with extended thinking — but still verify the answer
+              (run the tests, check the citation): the visible chain of thought is a
+              useful trace, not a guaranteed honest explanation (Ch 17 §15.1b)
 ```
 
 ### "My agent loops forever"
@@ -489,12 +547,14 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
       │
       ├── First-token latency high
       │     → Stream; turn on prompt caching; smaller model for simple queries
+      │     → Long prompts make prefill slow: shorten the prompt, cache the stable prefix
       ├── Total output latency high
-      │     → Speculative decoding (vLLM has it)
+      │     → Speculative decoding (vLLM has it; lossless, best at low batch size)
       │     → Smaller model
       │     → Reduce max_tokens; structured outputs cap waste
       ├── Tail latency (p99) bad
-      │     → Continuous batching; PagedAttention; bigger KV cache
+      │     → Continuous batching; PagedAttention; chunked prefill so long prompts
+      │       do not block everyone; bigger KV cache (FP8 KV, GQA/MLA model)
       └── Multi-step agent slow
             → Parallel tool calls
             → Cheaper model for retrieval / planning, expensive only for final
@@ -524,9 +584,9 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 ```
    RAG quality
       │
-      ├── First win: add a reranker. Almost always 5–15% gain.
+      ├── First win: add a reranker — typically the biggest single gain once the embedder is decent.
       ├── Second: hybrid search (vector + BM25).
-      ├── Third: better embedder (Voyage v3-large or BGE-M3).
+      ├── Third: better embedder (check MTEB and your own eval: Qwen3-Embedding, voyage-4, BGE-M3).
       ├── Fourth: smarter chunking (contextual chunks; semantic split).
       ├── Fifth: query rewriting (LLM splits multi-part questions).
       └── If still bad: maybe it's not retrieval — eval the LLM with the *correct* docs.
@@ -539,40 +599,45 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 
 | Quantity | Value | Why it matters |
 |---|---|---|
-| Tokens per English word | ~1.3 | Estimate token count from word count |
-| Chars per token (English) | ~4 | Estimate from char count |
+| Tokens per English word | ~1.3 (≈ 4 characters or 0.75 words per token) | Estimate tokens from word or character count; code, numbers and other languages cost more, and vendors' tokenizers differ ([Ch 17 §2.2](#content/17_llm)) |
 | BF16 bytes per parameter | 2 | Memory math |
 | INT4 bytes per parameter | 0.5 | On-device math |
+| Training memory, mixed-precision AdamW | 16 bytes / param (2 + 2 + 12) | 7B → 112 GB, 70B → 1.12 TB before activations ([Ch 17 §3.6](#content/17_llm)) |
+| Training compute | ≈ 6 · N · D FLOPs | 405B params × 15T tokens ≈ 3.8 × 10²⁵ ([Ch 17 §3.1](#content/17_llm)) |
+| Chinchilla ratio | ≈ 20 tokens per parameter | Labs over-train small models: Llama 3 8B saw ≈ 1,900 ([Ch 17 §3.7](#content/17_llm)) |
+| Activation checkpointing | ≈ +33% compute (30–40% measured) | Buys most of the activation memory back ([Ch 16 §1.9](#content/16_deep_learning)) |
+| KV cache, Llama-3-70B (GQA, FP16) | ~320 KB per token → 40 GB at 128K, per request | Often the binding serving constraint |
+| MoE active share | DeepSeek-V3: 37B of 671B (5.5%) | Memory follows total, compute follows active |
+| Image token cost | ⌈H/p⌉ · ⌈W/p⌉ — 336 × 336 at p = 14 → 576 tokens | Why video is compressed hard ([Ch 17 §4.9](#content/17_llm)) |
 | H100 HBM | 80 GB | Standard production GPU memory |
-| B200 HBM | 192 GB | Next-gen NVIDIA, 2024–2026 |
-| TPU v7 Ironwood HBM | 192 GB | Google flagship; 4,614 FP8 TFLOPS |
-| Ironwood pod | 9,216 chips → 42.5 exaFLOPS | Google's 2026 compute story |
-| Default learning rate | 3e-4 | "Karpathy's constant" |
+| B200 HBM | ~180–192 GB (B300: 288 GB) | Blackwell, 2025 |
+| TPU v7 Ironwood HBM | 192 GiB; 4,614 FP8 TFLOPS per chip | Google flagship |
+| Ironwood pod | 9,216 chips → ~42.5 exaFLOPS (FP8) | Google's 2026 compute story |
+| Default learning rate | 3e-4 for small models, falling with size (≈ 8e-5 at 405B) | "Karpathy's constant" |
 | Fine-tune LR | 1e-5 to 5e-5 | 10× lower than from-scratch |
 | LoRA LR | 2e-4 | 10× higher than full FT |
 | LoRA rank `r` | 16 | Sane default |
-| Token price drop 2022 → 2026 | ~1000× | Architecture decisions follow this |
-| GPT-4 quality cost (2026) | $0.06 / M tokens | Down from $20 in 2022 |
-| Frontier SWE-bench (May 2026) | ~88% | GPT-5.5 leads |
+| Token price drop 2022 → 2026 | ~150–1000× for equal quality | Architecture decisions follow this ([Ch 20 §20.8](#content/20_2026_landscape)) |
+| GPT-4-quality cost | ~$0.06 / M tokens (July 2026 estimate) | Down from ~$20 in late 2022 |
+| SWE-bench Verified | Top scores in the high 80s % (2026) | Treat as saturated and contaminated — OpenAI stopped reporting it in Feb 2026 and recommends SWE-bench Pro |
 | Reasoning thinking budget | 1K–100K tokens | Controlled per-call |
-| Default chunk size for RAG | 100–500 tokens | Balance precision vs context |
-| Top-k for retrieval | 20 → rerank to 3 | Standard pipeline |
-| Prompt cache discount | ~90% | Biggest single cost lever |
-| EU AI Act enforcement | Aug 2, 2026 | Penalties + GPAI live |
-| Llama 4 Scout context | 10M tokens | Industry-largest |
-| Gemini 3.1 Pro context | 2M tokens | Hosted long-context default |
+| Default chunk size for RAG | ~256–512 tokens, 50–100 overlap | Balance precision vs context |
+| Top-k for retrieval | 20 → rerank to 3 (50–100 → 10 in Ch 28) | Standard pipeline; widen with a big window |
+| Prompt cache discount | up to ~90% | Biggest single cost lever |
+| EU AI Act | General application 2 Aug 2026; the AI Office's enforcement powers over general-purpose AI start then. High-risk rules were delayed to 2 Dec 2027 and 2 Aug 2028 (Digital Omnibus, May 2026) | Check the current text before quoting dates |
+| Frontier context window | ~1M tokens (GPT-6, Claude, Gemini 4 Argon) | Llama 4 Scout advertises 10M; effective length is shorter |
 
 ---
 
 ## P12. Interview Soundbites
 
-One- or two-sentence answers to the questions you'll actually be asked. Memorise the *shape*; rephrase to fit the conversation.
+Short answers to the questions you'll actually be asked — two to four sentences each. Memorise the *shape*; rephrase to fit the conversation.
 
 **"Walk me through training an LLM."**
-Tokenise data with BPE → pretrain on next-token prediction across web-scale corpus on TPU/GPU clusters with mixed-precision and FSDP/DeepSpeed → SFT on instruction-tuned data → align with DPO or RLHF → deploy on vLLM with KV-cache reuse and quantization for serving.
+Curate the data (crawl → filter → deduplicate → mix → decontaminate) → tokenise with BPE → pretrain on next-token prediction on TPU/GPU clusters with BF16 mixed precision and FSDP/ZeRO sharding (compute ≈ 6·N·D) → SFT on instruction data → align with DPO or RLHF, and RLVR/GRPO for reasoning → deploy on vLLM with KV-cache reuse and quantization.
 
 **"Why are reasoning models a big deal?"**
-They scale a separate axis — *test-time compute*. Doubling thinking budget often beats doubling parameters on math, code, and planning. Pay only on hard problems; skip them for trivial tasks.
+They scale a separate axis — *test-time compute*. On hard math, code and planning, extra thinking tokens can beat a much bigger model (the gains flatten and the bill grows). They are trained with RL on answers a program can check (RLVR/GRPO). Pay only on hard problems; skip them for trivial tasks — and remember the visible reasoning is a useful trace, not a guaranteed honest explanation.
 
 **"How would you fix a hallucinating LLM?"**
 RAG with hybrid search and a reranker; structured output with a strict JSON schema; "cite source or say 'I don't know'" instructions; reasoning model on hard cases; eval with Ragas faithfulness on every release.
@@ -590,28 +655,97 @@ Query rewriting → hybrid search (dense + BM25) → cross-encoder rerank (top 2
 Default: prompt + RAG. Fine-tune only when you need a specific style/format prompts can't capture, when you must run on-device, or when token cost on the hot path dominates.
 
 **"Why is TGI no longer the default in 2026?"**
-HuggingFace put it in maintenance mode. vLLM is the production default — PagedAttention, ~5–10× throughput, OpenAI-compatible API, broad hardware support. Stripe cut inference cost 73% migrating to vLLM.
+Hugging Face put it in maintenance mode in December 2025 and points users to vLLM or SGLang. vLLM is the production default — continuous batching, PagedAttention, an OpenAI-compatible API, broad hardware support. Stripe reportedly cut inference cost 73% moving from Hugging Face Transformers to vLLM (a secondary report, not from TGI).
 
 **"How does PagedAttention work in 30 seconds?"**
-KV cache is partitioned into fixed-size blocks like OS virtual-memory pages. Requests share blocks, no fragmentation. Net: 2–10× more concurrent users on the same GPU.
+The KV cache is split into fixed-size blocks, like OS virtual-memory pages, with a per-request block table. Memory is allocated on demand and prefixes can be shared copy-on-write. KV-cache utilisation rises from roughly 20–40% to over 90%, so you fit bigger batches — the vLLM paper reports ~2–4× throughput over earlier servers.
 
-**"Why did SWE-bench jump from 13% to 88% in 18 months?"**
-Four compounding factors: better base models, test-time compute, better scaffolds (file IO, test runners, diff review), and RL on agentic traces. The scaffold gap explains why Augment at 72% (Opus 4.6) beat Cursor at 65.7% (Sonnet 4.6).
+**"Why did SWE-bench Verified go from ~13% to the high 80s — and why did OpenAI stop reporting it?"**
+Four compounding factors: better base models, test-time compute, better scaffolds (file IO, test runners, diff review), and RL on agentic traces. But in February 2026 OpenAI found flawed tests and training-data contamination, stopped reporting it and recommends SWE-bench Pro, where the same models score far lower (Opus 4.7 was reported at about 64% on Pro against 87.6% on Verified). Scaffold matters as much as the model — Ch 20 cites Augment at 72% with Opus 4.6 against Cursor at 65.7% with Sonnet 4.6, though those differ in model *and* harness.
 
 **"When does long context replace RAG?"**
-Single big document analysis (one contract, one paper, one repo). For knowledge-base Q&A across thousands of changing docs, retrieval still wins — lost-in-the-middle is real.
+When the material fits in the window and the task needs *all* of it — one contract, one paper, one repo slice. For Q&A across thousands of changing, access-controlled docs, retrieval still wins on cost, freshness and citations. Advertised is not effective: accuracy is U-shaped (best at the start and end), needle-in-a-haystack is a smoke test, and RULER-style multi-hop tests show models degrading well before their limit. In practice they combine — retrieve 20–50 chunks and let a big window hold them.
 
 **"What's context engineering?"**
-Designing the entire context window — system prompt, retrieved docs, tool outputs, history, memory, layout — not just the user-facing prompt. The wording of the prompt is one slice; the rest determines 80% of an AI app's quality.
+Designing the entire context window — system prompt, retrieved docs, tool outputs, history, memory, layout — not just the user-facing prompt. The wording of the prompt is one slice; the rest decides most of an AI app's quality.
 
 **"What's your default model for a new prototype?"**
-Gemini 3 Flash or Claude Sonnet 4.6 — cheap, fast, multimodal, good enough for almost everything. Move to Pro / Opus only when measurably needed; move to open-weight when cost or sovereignty pressure shows up.
+A Flash / Sonnet / Luna-tier model — Gemini 3.x Flash, Claude Sonnet 5.5 or GPT-6 Luna — cheap, fast, multimodal, good enough for almost everything. Move to the top tier only when measurably needed; move to open-weight when cost or sovereignty pressure shows up.
 
 **"How would you decide on-device vs cloud?"**
 On-device when privacy, latency, billions-of-queries scale, or offline matters. Cloud when you need top-end reasoning, multimodal beyond text+image, real-time external data, or you can't ship a model with the OS.
 
 **"What would you cite as quality benchmarks in 2026?"**
-SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (computer use), GPQA Diamond (graduate science), ARC-AGI-2, FrontierMath. **Not** MMLU or HumanEval — saturated.
+SWE-bench Pro (the contamination-resistant successor to Verified — which OpenAI no longer reports), Terminal-Bench (CLI agents; the newest vendor tables use 4.0), OSWorld (computer use), GPQA Diamond (graduate science — now near 90%+ at the top, so close to saturated), ARC-AGI-2, FrontierMath, Humanity's Last Exam. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from.
+
+**"What does FlashAttention change?"**
+Not the maths — it is *exact* attention. It streams K and V through the GPU's fast on-chip memory in tiles with an online softmax, so the n × n score matrix is never written to slow HBM: memory falls from O(n²) to O(n) and it runs faster (the paper measured ~3× faster GPT-2 training at 1K tokens) because attention is memory-bound. FLOPs stay O(n²) ([Ch 17 §2.4](#content/17_llm)).
+
+**"What makes long context hard?"**
+Four things: attention compute grows as n², the KV cache grows with n (≈ 320 KB per token for a 70B GQA model, so 40 GB at 128K), the model may never have trained at that length (RoPE scaling plus staged long-context training), and lost-in-the-middle. Attention sinks — keep the first ~4 tokens plus a rolling window — give a stable stream with a fixed cache, but not a longer memory ([Ch 17 §2.7](#content/17_llm)).
+
+**"Explain mixture of experts — and what goes wrong when you train one."**
+Replace each feed-forward block with N experts and a router that sends every token to its top-k, blending their outputs by softmax gates. It stores a lot (total parameters) but computes a little (active ones — DeepSeek-V3 uses 37B of 671B). Left alone the router collapses onto a few experts, so you add an auxiliary load-balancing loss (or DeepSeek's aux-loss-free bias) and cap each expert with a capacity factor, dropping overflow tokens. It saves compute, not memory, and pays off at large serving batches ([Ch 17 §4.8](#content/17_llm)).
+
+**"How does an LLM 'see' an image?"**
+Cut the image into patches and embed them as tokens. Either a pretrained vision encoder plus a small projector feeds them into the LLM's embedding space (bolt-on), or one Transformer is trained on interleaved text, image and audio from the start (native / early fusion). The cost is token count: a 336 × 336 image with 14-pixel patches is 576 tokens, and video is frames × tokens per frame ([Ch 17 §4.9](#content/17_llm)).
+
+**"Is in-context learning real learning? Are emergent abilities real?"**
+ICL changes behaviour with frozen weights — partly pattern-copying (induction heads), partly recognising which task this is, and in bigger models partly learning a new mapping; it is sensitive to example order and format. "Emergence" is partly a measurement artefact: if per-token accuracy p improves smoothly, an exact-match score p^k looks like a sudden jump, and a smooth metric shows steady progress ([Ch 17 §3.9](#content/17_llm)).
+
+**"Can you trust a reasoning model's chain of thought?"**
+As a monitoring signal, yes; as an explanation, no. In Anthropic's hint experiments Claude 3.7 Sonnet and DeepSeek-R1 admitted a hint they had demonstrably used only about 25% and 39% of the time, and training against "bad thoughts" taught models to hide their intent. Verify answers independently ([Ch 17 §15.1b](#content/17_llm)).
+
+**"What goes into a pretraining dataset?"**
+Crawl → extract text → language ID → heuristic then model-based quality filters → near-duplicate removal (MinHash + LSH) → PII and safety filtering → domain mixing → synthetic data → decontamination against benchmarks → ordering and a final high-quality "annealing" phase. Data quality moves the result more than architecture tweaks ([Ch 17 §3.1b](#content/17_llm)).
+
+**"My 7B model does not fit on one GPU for training — what do you do?"**
+Count first: mixed-precision AdamW is 16 bytes per parameter, so 112 GB. Shard the states with FSDP / ZeRO-3 or freeze the base with LoRA; shrink activations with a smaller micro-batch plus gradient accumulation (effective batch = micro-batch × steps × GPUs, each loss ÷ k) and activation checkpointing (about +33% compute). Evaluate an EMA of the weights if you train a diffusion model or GAN ([Ch 16 §1.9](#content/16_deep_learning), [Ch 17 §3.6](#content/17_llm)).
+
+**"How do you initialise a deep network — and which activation do modern LLMs use?"**
+Keep the signal's variance constant through depth: He init (2/fan_in) for ReLU, Xavier for tanh. Transformers use std 0.02, zero biases and scale each residual branch's output projection by 1/√(2L), so the residual stream does not grow with depth. Modern LLMs use gated SwiGLU with the hidden width cut to 8d/3, so the parameter count matches a plain FFN ([Ch 16 §1.8](#content/16_deep_learning)).
+
+**"Why are MobileNets cheap?"**
+A depthwise-separable convolution splits one convolution into a per-channel spatial filter and a 1×1 channel mixer. Cost falls to 1/C_out + 1/K² of the original — about 8–9× fewer multiply-adds for 3×3 filters, for roughly one point of ImageNet accuracy in MobileNet v1 ([Ch 16 §2.6](#content/16_deep_learning)).
+
+**"How would you make an image model robust to adversarial examples?"**
+Tiny, aligned nudges (FGSM: x + ε·sign(∇ₓL)) add up like n while random noise adds up like √n, so passing a random-noise test proves nothing. Adversarial training — PGD attacks inside the training loop, about K+1× the cost and some clean accuracy lost — is the reliable defence; randomized smoothing gives a certified radius; beware gradient masking ([Ch 16 §2.7](#content/16_deep_learning)).
+
+---
+
+## P13. Must-Know Checklist and Code Ladder
+
+The last-week page. Tracks, the L1–L4 depth ladder and the full 18-rung coding ladder live in the **Section map** at the top of [Ch 16](#content/16_deep_learning); this is the short version. The rule that saves the most time: **L2 on every ★★★ topic, L3 only on the ladder below, L1 on everything else** — the "Depth" column is the tag on each topic's heading in the chapter.
+
+### Must-know topics — where each one lives
+
+| Topic | Depth | Read | Runnable code |
+|---|---|---|---|
+| Weight init and activations (He / Xavier, std 0.02, SwiGLU) | L2 | [Ch 16 §1.8](#content/16_deep_learning) | 20-layer signal experiment; SwiGLU parameter count |
+| Gradient accumulation, checkpointing, EMA; the 16-byte budget | L2 | [Ch 16 §1.9](#content/16_deep_learning) | Accumulation = big batch; memory table; EMA |
+| Depthwise-separable convs, MobileNet | L2 | [Ch 16 §2.6](#content/16_deep_learning) | Conv vs separable cost |
+| Adversarial examples (FGSM, PGD, adversarial training) | L1 | [Ch 16 §2.7](#content/16_deep_learning) | FGSM on a linear model |
+| FlashAttention (tiles + online softmax) | L2 | [Ch 17 §2.4](#content/17_llm), [Ch 29 §24.5](#content/29_gpus_tpus_infrastructure) | Online softmax in NumPy |
+| Long context, attention sinks, needle-in-a-haystack vs RULER | L2 | [Ch 17 §2.7](#content/17_llm) | KV-cache calculator; sinks |
+| The pretraining data pipeline (filter, dedupe, mix, decontaminate) | L2 | [Ch 17 §3.1b](#content/17_llm) | MinHash / LSH; decontamination |
+| In-context learning vs emergent abilities | L2 | [Ch 17 §3.9](#content/17_llm) | Few-shot prompt builder; p^k emergence |
+| Multimodal LLMs (patches → tokens, bolt-on vs native) | L2 | [Ch 17 §4.9](#content/17_llm), [Ch 16 §2.4](#content/16_deep_learning), [Ch 16 §4.3](#content/16_deep_learning) | Image → tokens and token cost |
+| MoE routing, load balancing, capacity factor | L2 (layer: L3) | [Ch 17 §4.8](#content/17_llm), [Ch 16 §6.1](#content/16_deep_learning) | A MoE layer in NumPy |
+| Reasoning-trace faithfulness | L2 | [Ch 17 §15.1b](#content/17_llm) | — |
+| Alignment family and reward hacking | L2 | [Ch 17 §3.5c](#content/17_llm) | Reward-hacking sweep |
+
+### The coding ladder — in the order to practise it
+
+These are the problems candidates report implementing from scratch in 20–40 minutes; work top-down, because each rung reuses the one above.
+
+| Rungs | Implement | Where |
+|---|---|---|
+| 1–5 · warm-ups | BPE · sinusoidal positions · RoPE · RMSNorm · stable softmax | [Ch 17 §2.2](#content/17_llm), [Ch 16 §3.4](#content/16_deep_learning), [Ch 16 §1.5](#content/16_deep_learning), [Ch 17 §1.4](#content/17_llm) |
+| 6–10 · the realistic bar | Scaled dot-product attention · multi-head · grouped-query · KV cache · sampling (temperature, top-k, top-p) | [Ch 17 §2.4](#content/17_llm), [Ch 17c §1.2](#content/17c_llm_systems), [Ch 17 §2.6](#content/17_llm) |
+| 11–13 | Sliding-window attention · LoRA layer · KL divergence | [Ch 17 §2.4](#content/17_llm), [Ch 17b §9.4](#content/17b_llm_applications), [Ch 17 §1.4](#content/17_llm) |
+| 14–18 · research and infra roles | DPO loss · MoE layer · speculative decoding · continuous batching · GRPO | [Ch 17 §3.5](#content/17_llm), [Ch 17 §4.8](#content/17_llm), [Ch 17c §2.5](#content/17c_llm_systems), [Ch 17c §2.1](#content/17c_llm_systems), [Ch 17 §3.5b](#content/17_llm) |
+
+**Only a weekend?** Rungs 6, 7, 9 and 10 — attention, multi-head, KV cache, sampling — cover most reported LLM coding rounds. Say tensor shapes out loud as you go; shape errors are the commonest way to lose a correct answer.
 
 ---
 
@@ -622,45 +756,53 @@ SWE-bench Verified (real bug fixes), Terminal-Bench 2.0 (CLI agents), OSWorld (c
 ║  DEEP LEARNING & LLMs PLAYBOOK — FIELD GUIDE                       ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  PIPELINE                                                          ║
-║    • Data → tokenise (BPE) → pretrain (next-token) →               ║
-║      post-train (SFT → DPO/RLHF/RLAIF) → serve                     ║
+║    • Data (crawl→filter→dedupe→mix) → tokenise (BPE) →             ║
+║      pretrain (next-token) → post-train (SFT → DPO/RLHF/RLAIF;     ║
+║      RLVR + GRPO for reasoning) → serve                            ║
 ║    • Sketch the train/inference map; it answers 80%                ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  MODEL CHOICE                                                      ║
-║    • Default prototype: Gemini 3 Flash / Sonnet 4.6                ║
-║    • Escalate to Pro/Opus only when measurably needed              ║
+║    • Default prototype: a Flash / Sonnet / Luna-tier model         ║
+║    • Escalate to the top tier only when measurably needed          ║
 ║    • Reasoning models trade test-time compute for IQ;              ║
 ║      pay only on hard math/code/planning                           ║
+║    • MoE: memory = total params, compute = active params           ║
 ║    • On-device: privacy, latency, scale, offline                   ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  TRAINING DEFAULTS                                                 ║
-║    • LR 3e-4 base; fine-tune 1e-5–5e-5; LoRA 2e-4, r=16            ║
-║    • AdamW + warmup + cosine; BF16 mixed precision                 ║
+║    • LR 3e-4 (falls with model size); fine-tune 1e-5–5e-5;         ║
+║      LoRA 2e-4, r=16                                               ║
+║    • AdamW + warmup + cosine; BF16 mixed precision; clip 1.0       ║
+║    • Init: He/Xavier; Transformers std 0.02, residual ×1/√(2L)     ║
+║    • Won't fit? 16 B/param: accumulate, checkpoint, shard/LoRA     ║
 ║    • Won't converge? lower LR, check data/labels first             ║
 ║    • Fine-tune last: prompt + RAG beats it by default              ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  SERVING (COST/LATENCY)                                            ║
-║    • vLLM is the 2026 default (PagedAttention, KV reuse)           ║
+║    • vLLM is the 2026 default (continuous batching, paged KV)      ║
 ║    • Cut cost in order: prompt cache (~90% off) → model            ║
 ║      routing → batch API (50%) → small embedder → quantize         ║
+║    • KV cache ≈ 320 KB/token (70B GQA) — often the limit           ║
 ║    • BF16 = 2 bytes/param; INT4 = 0.5 — size your GPU              ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  RAG                                                               ║
+║  RAG & LONG CONTEXT                                                ║
 ║    • Rewrite → hybrid (dense+BM25) → rerank 20→3 → cite            ║
-║    • Chunk 100–500 tokens; eval faithfulness (Ragas)               ║
-║    • Long context replaces RAG only for single big docs            ║
+║    • Chunk ~256–512 tokens; eval faithfulness (Ragas)              ║
+║    • Long context replaces RAG only when it all fits and all       ║
+║      of it is needed; advertised window ≠ effective window         ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  AGENTS & DIAGNOSTICS                                              ║
 ║    • Build agents only for multi-step, tool-using tasks            ║
 ║    • Loops forever → step cap, better stop criteria                ║
 ║    • Hallucinates → RAG + JSON schema + 'cite or IDK'              ║
+║    • Visible reasoning is a trace, not proof — verify answers      ║
 ║    • Fine-tune worse → forgetting/overfit: mix data, lower LR      ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  BENCH IN 2026: SWE-bench Verified, Terminal-Bench,                ║
-║  OSWorld, GPQA, ARC-AGI-2 — NOT MMLU/HumanEval                     ║
+║  BENCH IN 2026: SWE-bench Pro (Verified is contaminated),          ║
+║  Terminal-Bench, OSWorld, GPQA, ARC-AGI-2 — NOT MMLU/HumanEval     ║
 ╚════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-**See also:** [Ch 14 Neural Networks](#content/14_neural_networks) · [Ch 16 Deep Learning Reference](#content/16_deep_learning) · [Ch 17 LLMs](#content/17_llm) · [Ch 18 AI Agents](#content/18_ai_agents) · [Ch 19 AI Frameworks](#content/19_ai_frameworks) · [Ch 20 The 2026 AI Landscape](#content/20_2026_landscape) · [Ch 00 Cheat Sheet](#content/00_quick_reference_cheat_sheet)
+**See also:** [Ch 14 Neural Networks](#content/14_neural_networks) · [Ch 16 Deep Learning Reference](#content/16_deep_learning) · [Ch 17 LLMs](#content/17_llm) · [Ch 17b LLM Applications](#content/17b_llm_applications) · [Ch 17c LLM Systems](#content/17c_llm_systems) · [Ch 18 AI Agents](#content/18_ai_agents) · [Ch 19 AI Frameworks](#content/19_ai_frameworks) · [Ch 20 The 2026 AI Landscape](#content/20_2026_landscape) · [Ch 00 Cheat Sheet](#content/00_quick_reference_cheat_sheet)

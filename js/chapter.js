@@ -2248,6 +2248,15 @@ plt.show = _capture_show
 `;
     }
 
+    // Every run prints like a fresh program: an earlier block's np.set_printoptions must not change this block's output
+    pyodide.runPython(`
+try:
+    import numpy as _np
+    _np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan', precision=8, suppress=False, threshold=1000, formatter=None, sign='-', floatmode='maxprec')
+except Exception:
+    pass
+`);
+
     // Run the code
     pyodide.runPython(matplotlibSetup + code);
 
