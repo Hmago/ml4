@@ -1061,7 +1061,7 @@ Reading the output: the 2×2 matrix starts with one direction 33× stronger than
 }
 ```
 
-**The basics are in Ch 14.** Step decay, cosine annealing, warmup and ReduceLROnPlateau are explained with a chart in [Ch 14 §14.13](#content/14_neural_networks). This section adds the two things Ch 14 leaves out: *why* warmup matters for Adam, and the schedule most large runs moved to.
+**The basics are in Ch 14.** Step decay, cosine annealing, warmup and ReduceLROnPlateau are explained with a chart in [Ch 14 §14.13](#content/14_neural_networks). This section adds the two things Ch 14 only mentions in passing: *why* warmup matters for Adam, and the schedule most large runs moved to.
 
 **Why warmup — the real reason.** On step 1 Adam moves *every* weight by about the full learning rate, whatever the gradient size is (in §1.2 the first step is $m/\sqrt{v} = \pm1$), and its squared-gradient average $\hat v$ is still built from only a handful of samples. A freshly initialised Transformer is also at its most fragile: gradients can be large and noisy, and their directions poorly informed. One full-size step at that moment can throw the weights somewhere the loss never recovers from (a loss spike, or NaN). Warmup ramps the learning rate from ~0 up to its peak over the first 1–5% of steps while those statistics settle. Small models often don't need it; Transformers and large batches almost always do. (This is the standard explanation; exactly *why* warmup helps is still partly empirical.)
 

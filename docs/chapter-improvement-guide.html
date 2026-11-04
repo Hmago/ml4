@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Improve ML Study Notes chapters with AI — step-by-step</title>
+<style>
+  :root { --blue:#1e3a8a; --ink:#1f2328; --muted:#57606a; --line:#d0d7de; --bg:#f6f8fa; --ok:#1a7f37; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.55 "Segoe UI", system-ui, sans-serif; color:var(--ink); background:#fff; }
+  header { background:var(--blue); color:#fff; padding:28px 20px; }
+  header h1 { margin:0 0 6px; font-size:26px; }
+  header p { margin:0; opacity:.9; }
+  main { max-width:900px; margin:0 auto; padding:10px 20px 60px; }
+  h2 { margin:34px 0 10px; font-size:20px; display:flex; gap:10px; align-items:center; }
+  .num { background:var(--blue); color:#fff; border-radius:50%; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex:none; }
+  .note { background:#fff8c5; border:1px solid #eac54f; border-radius:8px; padding:10px 14px; margin:12px 0; }
+  .tip  { background:#ddf4ff; border:1px solid #54aeff; border-radius:8px; padding:10px 14px; margin:12px 0; }
+  .box { position:relative; background:var(--bg); border:1px solid var(--line); border-radius:8px; margin:10px 0; }
+  .box pre { margin:0; padding:14px 16px; padding-right:110px; overflow:auto; font:14px/1.5 Consolas, "Cascadia Mono", monospace; white-space:pre-wrap; }
+  .copy { position:absolute; top:8px; right:8px; border:1px solid var(--line); background:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:13px; }
+  .copy.done { color:var(--ok); border-color:var(--ok); }
+  kbd { background:var(--bg); border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 6px; font:13px Consolas, monospace; }
+  ul { padding-left:22px; } li { margin:4px 0; }
+  select { font-size:16px; padding:8px; border-radius:6px; border:1px solid var(--line); max-width:100%; }
+  button.action { font-size:14px; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .muted { color:var(--muted); font-size:14px; }
+  #prompt { max-height:420px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Improve a chapter of ML Study Notes with AI</h1>
+  <p>Follow the steps in order. Steps 1–2 are once per computer. Steps 3–8 are once per chapter.</p>
+</header>
+<main>
+
+<div class="note"><b>Harshit, do this once before sharing:</b> push all your latest work to GitHub, and add your colleague as a collaborator at <i>github.com/Hmago/ml4 → Settings → Collaborators</i>.</div>
+
+<h2><span class="num">1</span> Install the tools (once)</h2>
+<p>Open <b>PowerShell</b>: press <kbd>Start</kbd>, type <i>PowerShell</i>, press <kbd>Enter</kbd>. Paste this and press <kbd>Enter</kbd>. Accept any prompts.</p>
+<div class="box"><button class="copy">Copy</button><pre>winget install --id Git.Git -e
+winget install --id OpenJS.NodeJS.LTS -e
+winget install --id Python.Python.3.12 -e
+winget install --id EclipseAdoptium.Temurin.21.JDK -e</pre></div>
+<p><b>Close PowerShell and open it again</b>, then run this (put in your own name and email):</p>
+<div class="box"><button class="copy">Copy</button><pre>py -m pip install numpy
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"</pre></div>
+<p>Install <b>Agency</b>: open <a href="https://aka.ms/agency" target="_blank">aka.ms/agency</a> and run the Windows install command shown on that page. Then close and reopen PowerShell.</p>
+
+<h2><span class="num">2</span> Download the project (once)</h2>
+<div class="box"><button class="copy">Copy</button><pre>cd $HOME
+git clone https://github.com/Hmago/ml4.git</pre></div>
+<p class="muted">If a browser window asks you to sign in to GitHub, sign in.</p>
+
+<h2><span class="num">3</span> Open Agency</h2>
+<div class="box"><button class="copy">Copy</button><pre>cd $HOME\ml4
+git pull
+agency copilot</pre></div>
+<ul>
+  <li>First time only: sign in with GitHub when asked.</li>
+  <li>If it asks <i>"Do you trust the files in this folder?"</i>, choose <b>Yes</b>.</li>
+</ul>
+
+<h2><span class="num">4</span> Select the model</h2>
+<p>Type <kbd>/model</kbd>, press <kbd>Enter</kbd>, choose <b>Claude Opus 5.5</b> with the arrow keys, then press <kbd>Enter</kbd>.</p>
+<p class="muted">This is the model used for the finished chapters. <b>Claude Sonnet 5.5</b> uses fewer credits, and the images may need more fixing.</p>
+
+<h2><span class="num">5</span> Allow all permissions</h2>
+<p>Type <kbd>/allow-all</kbd>, press <kbd>Enter</kbd>, and confirm with <b>Yes</b>. Without this, the AI stops to ask before every file it edits and every command it runs.</p>
+
+<h2><span class="num">6</span> Pick a chapter and paste the prompt</h2>
+<p>1) Choose the chapter. They are listed in the recommended order.</p>
+<p>
+  <select id="chapter"></select>
+  <button class="action" id="markDone">Mark as done ✓</button>
+</p>
+<p>2) Click <b>Copy prompt</b>, paste it into Agency (right-click or <kbd>Ctrl</kbd>+<kbd>V</kbd>), and press <kbd>Enter</kbd>.</p>
+<div class="box"><button class="copy" data-target="prompt">Copy prompt</button><pre id="prompt"></pre></div>
+<div class="tip">
+  <b>While it works</b>, which takes about 1–3 hours per chapter:
+  <ul>
+    <li>Leave the window open. If it asks a question, answer in plain words.</li>
+    <li>If it stops early or says "rate-limited", wait 10 minutes, then type <kbd>continue</kbd>.</li>
+    <li>If an image has a wrong word or number, type for example: <i>"regenerate the image for Batch Norm, the table shows 0.3 instead of 0.5"</i>.</li>
+  </ul>
+</div>
+
+<h2><span class="num">7</span> Check the result</h2>
+<p>When it finishes, it gives you a link such as <i>http://localhost:8000/#content/…</i>. Open it in your browser and scroll through the chapter. If you don't get a link, type <kbd>start the web app and give me the link to this chapter</kbd>.</p>
+
+<h2><span class="num">8</span> Save and publish</h2>
+<p>When you are happy with the chapter, type:</p>
+<div class="box"><button class="copy">Copy</button><pre>Commit only this chapter's changes and new images with a short message, then pull and push to main. If the pull conflicts in js/data/search_index.js, js/state.js or sw.js, don't merge them by hand: keep the incoming version, re-run the generators, bump the cache number again, then commit and push.</pre></div>
+<p class="muted">The website updates by itself a few minutes after the push.</p>
+<p>Then click <b>Mark as done ✓</b> above. For the <b>next chapter</b>, type <kbd>/clear</kbd> and repeat steps 6–8. If you closed the window, start again from step 3.</p>
+
+<h2>Already finished, don't redo</h2>
+<p class="muted">14 Neural Networks, 16 Deep Learning, 17 LLMs, 21–26 System Design, 26s, 35–37 Design Cases, 31–31d DSA.</p>
+<p class="muted">Not in the list on purpose: <i>README.md</i> (the Learning Roadmap page, which is just a table of contents) and <i>27_practical_ml.ipynb</i> (a notebook).</p>
+
+</main>
+
+<script type="text/plain" id="tpl">You are improving ONE chapter of the "ML Study Notes" learning app in this repository (the current folder). The reader is preparing for Google AI Engineer interviews and found earlier chapters hard to understand. Make this chapter correct, simple and visual, to the same standard as the finished chapters 14, 16, 17, 21–26 and 31.
+
+CHAPTER: content/{{FILE}}  ({{TITLE}})
+IMAGE PREFIX: {{PREFIX}}
+LAYOUT: {{LAYOUT}}
+KNOWN ISSUES: {{NOTES}}
+
+GROUND RULES
+- Run `git pull` first. Read .github/copilot-instructions.md and follow it.
+- Edit only this chapter, new images in diagrams/, and the generated files in step 6. Never edit .ipynb files. Do NOT commit or push until I ask.
+- Check today's date. Anything about "current" models, tools, hardware, prices or benchmarks must be right as of today. Verify it with web search, hedge what you cannot verify, and never invent facts or numbers.
+- Chapters 16 and 17 were verified in November 2026. Keep this chapter consistent with them, for example the model lineup in Ch 17 §4. If you find a conflict, tell me.
+- Keep the chapter's voice: a plain "Simple Explanation" first, then the formal definition. Keep ASCII diagrams, tables and Mermaid. Never link external images.
+- Keep additions concise. Fixing and clarifying matter more than adding length.
+- Keep headings stable, because other chapters link to them. Change one only if it is wrong, and tell me.
+- The app uses marked with breaks:false, so consecutive lines merge into one paragraph. Put Input/Output inside code fences, and leave a blank line between consecutive bold-label lines.
+
+STEP 1 — Setup (skip any part that already exists)
+Create the folder %USERPROFILE%\ml4-tools and run `npm i pyodide@0.25.1 marked@12.0.1 sharp` in it. Make sure numpy works in Python.
+
+STEP 2 — Review and fix (the most important step)
+Read the whole chapter in ~250-line chunks.
+- Fix WRONG content: facts, numbers, formulas, complexity, code bugs, outdated claims, contradictions, and broken § or chapter links. Recompute every worked example with Python.
+- Fix UNCLEAR content:
+  - terms or symbols used before they are defined
+  - missing steps
+  - examples that switch data halfway through
+  - misaligned ASCII art
+  - run-on Markdown
+- For each major topic with a core formula, add one line:
+  > **Maths in one line:** `formula` — what it means in plain words.
+- Add any missing interview-essential points briefly, with a small numeric example. Link to other chapters instead of duplicating them.
+- Existing diagram images count as content. If one shows outdated or wrong facts, remove its image line, make a corrected infographic for that topic in step 4, and tell me which one you replaced.
+
+STEP 3 — Code
+Convert only real worked examples (algorithms, problems, demos of an idea) into COMPLETE runnable programs. After each one, add a blank line, then `**Output:**`, then a plain fence holding its EXACT output. Leave short syntax or API reminders and one-liners as they are; a snippet that already runs can simply get its Output block.
+- Python:
+  - Use only libraries the app can run in the browser (Pyodide 0.25.1): numpy, pandas, scikit-learn, scipy, matplotlib, xgboost, lightgbm, statsmodels, networkx and sympy.
+  - All blocks on a page share one interpreter, so each block must be self-contained.
+  - Seeded, under 5 seconds, with 3–4 test inputs (the chapter's own example first, then edge cases) and a self-check (assert).
+  - Print numbers formatted, never raw numpy scalars. For a plot, the Output block holds only the printed text.
+  - The Output block is what Pyodide 0.25.1 prints. Run it with Node from ml4-tools and loadPackage the libraries the block imports. Also run it with local Python as a sanity check; if library versions make the outputs differ, Pyodide wins.
+- Java:
+  - One file, with the class containing main first. Keep the chapter's method unchanged.
+  - 3–4 tests, the chapter's example first. Run it with `java File.java`.
+- Leave these as they are, with no Output block: framework code (PyTorch, TensorFlow, JAX, LangChain, FastAPI, SDKs, cloud APIs), config, SQL, shell, pseudo-code, and deliberately wrong examples.
+
+STEP 4 — Infographics (one per major topic)
+- Plan first. Normally make one topic per "##" section. Merge tiny sibling sections, split a huge one, and skip the table of contents, takeaways and review questions. For each topic, list the heading, the key facts with the chapter's own numbers, and the main diagram.
+- Style: open and view diagrams/dl16_info_backprop_ai.png and diagrams/llm17_info_self_attention_qkv_ai.png. Pass BOTH as input_images on EVERY image call.
+- Layout, from top to bottom:
+  1. A dark-blue title banner, with the key word in yellow, plus a subtitle and a tag.
+  2. Three cards: "The Problem" (light red), "The Idea" (4 numbered steps) and "Real-World Analogy".
+  3. A cream "Maths in One Line" card, or "Key Numbers" if there is no formula.
+  4. A wide "How It Works" diagram with the chapter's exact labels and numbers.
+  5. A bottom-left table of 5 rows or fewer, and a bottom-right card with "When to Use" (✓) and "Watch Out" (✗).
+  6. A red "Trap:" strip and a dark-blue footer one-liner.
+- In the image prompt write: "Use ONLY this text; spell every word, number and symbol exactly." Less text renders more accurately.
+- Generate ONE image at a time. Parallel calls hit the rate limit. If you are rate-limited, wait 10 minutes and continue.
+- VIEW every image. Check every number, label, formula, arrow direction and spelling against the chapter. Regenerate up to 2 times on any error.
+- Save each image as diagrams/{{PREFIX}}_info_<slug>_ai.png. Compress it with sharp: .png({palette:true,quality:90,compressionLevel:9,effort:10}), which gives about 0.5 MB.
+
+STEP 5 — Place the images
+- Save a copy of the chapter first, so you can compare afterwards.
+- Add the line ![descriptive alt text, no square brackets](diagrams/…png) with a blank line before and after. Put it directly under the topic's heading, or after the heading's one-line tagline if it has one.
+- LAYOUT collapse:
+  - Wrap each covered section's explanation like this:
+    <details>
+    <summary><strong>Read as text</strong> — short phrase</summary>
+
+    …explanation…
+
+    </details>
+  - Headings stay OUTSIDE the wrapper.
+  - Keep these VISIBLE and in their original order: runnable code with its Output block, and existing diagram images.
+  - Prose that comes after a code block goes in a second wrapper after it, titled "Read as text — continued".
+  - Never nest <details>. Leave existing <details> blocks untouched. If a section is mostly existing <details> blocks (practice answers, Q&A), add only the image there.
+- LAYOUT inline: image lines only, with no wrapping.
+- While placing, NEVER delete, rewrite or reorder text. Only add image lines and <details>, <summary> and </details> lines. The one exception is a stale image you replaced in step 2.
+- Finished examples to copy:
+  - content/16_deep_learning.md, "## 1.1 Backpropagation"
+  - content/31_dsa_foundations.md, "### Pattern 3: Prefix Sum"
+
+STEP 6 — Finish and verify
+- Run `node tools/update-reading-times.js` and `node tools/build-search-index.js`.
+- In sw.js, increase the CACHE_NAME number by one, for example v332 → v333.
+- Run `node tools/check-sw-precache.js --check`. Never hand-edit js/data/search_index.js or the reading-times block.
+- If the chapter's reading time changed a lot, update its hours in README.md's table of contents.
+- Verify, using marked 12.0.1 from ml4-tools:
+  - Compared with your copy, only image, <details>, <summary> and </details> lines were added.
+  - Every image file exists and renders exactly once.
+  - Every <details> is closed.
+  - Every Output block matches its code.
+  - Headings are unchanged, apart from the fixes you report.
+- Start the web app with `python -m http.server 8000` in the repo, in the background. Then give me this link: http://localhost:8000/#{{HASH}}
+
+FINAL REPLY (short, plain English)
+Cover:
+- the top 5 things that were wrong and how you fixed them
+- sections you added
+- programs you completed
+- how many images you made, and any with small glitches left
+- anything you could not verify</script>
+
+<script>
+const chapters = [
+  ["17b_llm_applications.md", "LLMs — How You Use Them", "llm17b", "collapse", "Model names and prices are dated July 2026 (around lines 1312–1360 and 1569–1574); update them to match Ch 17 §4. The chunk-size advice of 200–1000 tokens (around line 1263) conflicts with Ch 28's 256–512; make them agree."],
+  ["17c_llm_systems.md", "LLM Systems — Serving & Scale", "llm17c", "collapse", "The model and benchmark references are dated July 2026 (\"LMSYS\", SWE-bench Verified listed as the coding benchmark, around lines 900–945). Update them to match Ch 17 §4 and the playbook (00p)."],
+  ["18_ai_agents.md", "AI Agents & Tool Use", "ag18", "collapse", ""],
+  ["18b_agents_in_production.md", "Agents in Production", "ag18b", "collapse", ""],
+  ["19_ai_frameworks.md", "AI Frameworks & Engineering", "fw19", "collapse", "Model IDs and benchmark rows are dated July 2026 (around line 110 and lines 756–759). An agent example uses `prompt=`, but the current API is `system_prompt=` (around line 140). Check every library API against today's official docs."],
+  ["20_2026_landscape.md", "The 2026 AI Landscape", "land20", "collapse", "The whole chapter is written \"as of July 2026\": the intro, the lineup, the leaderboards, the decision tree and the Q&A (around lines 712–746). Update it to today; Ch 17 §4 has the November 2026 lineup. SWE-bench Verified is shown as a live benchmark (around lines 200–216, 635, 734), but OpenAI stopped reporting it in February 2026. EU AI Act dates may be outdated (around lines 537 and 725). OSWorld scores disagree (lines 298/637 vs 713). The existing images land20_frontiermap_ai.png, land20_swebench_ai.png and land20_decisiontree_ai.png show July 2026 data; replace them."],
+  ["06_math_fundamentals.md", "Math for ML & AI", "math06", "collapse", ""],
+  ["07_introduction.md", "Introduction to ML", "intro07", "collapse", ""],
+  ["08_core_concepts.md", "Core Concepts & Terminology", "core08", "collapse", ""],
+  ["09_data_preprocessing.md", "Data Preprocessing", "prep09", "collapse", ""],
+  ["10_supervised_learning.md", "Supervised Learning", "sup10", "collapse", ""],
+  ["11_unsupervised_learning.md", "Unsupervised Learning", "unsup11", "collapse", ""],
+  ["12_key_algorithms.md", "Key Algorithms Deep Dive", "algo12", "collapse", ""],
+  ["13_model_evaluation.md", "Model Evaluation & Tuning", "eval13", "collapse", ""],
+  ["15_reinforcement_learning.md", "Reinforcement Learning", "rl15", "collapse", ""],
+  ["27_practical_ml.md", "Practical ML: Zero to Production", "pml27", "collapse", "The notebook 27_practical_ml.ipynb is a separate chapter. Leave it unchanged."],
+  ["28_semantic_search.md", "Building Semantic Search", "sem28", "collapse", ""],
+  ["29_gpus_tpus_infrastructure.md", "GPUs, TPUs & AI Infrastructure", "gpu29", "collapse", "Hardware specs change fast. Verify every GPU and TPU number against vendor pages."],
+  ["30_google_ml_ecosystem.md", "Google ML Ecosystem", "gml30", "collapse", "Verify current Google product names (Vertex AI, Gemini, TPU generations) against official pages."],
+  ["40_python_ml_ai.md", "Python for ML & AI", "py40", "collapse", ""],
+  ["32_interview_questions.md", "ML Interview Questions", "iq32", "inline", ""],
+  ["33_llm_interview_questions.md", "LLM Interview Questions — Pt 1", "iq33", "inline", ""],
+  ["33b_llm_interview_questions_part2.md", "LLM Interview Questions — Pt 2", "iq33b", "inline", ""],
+  ["34_google_top10_ml_interview.md", "Google's Top 10 ML Topics — Pt 1", "top34", "collapse", ""],
+  ["34b_google_top10_ml_interview_part2.md", "Google's Top 10 ML Topics — Pt 2", "top34b", "collapse", ""],
+  ["15s_ml_curriculum_recap.md", "ML Curriculum — Quick Revision", "rec15s", "inline", "Three existing images are wrong: nn_init_ai.png (labels 1/n as Xavier), nn_vanishing_ai.png (labels don't match the drawing) and nn_regularization_ai.png (claims batch norm trades training accuracy). Replace each with the matching corrected nn14_info_*_ai.png from Ch 14."],
+  ["20s_deep_learning_llms_recap.md", "Deep Learning & LLMs — Quick Revision", "rec20s", "inline", "Its facts were already checked against Ch 16/17 in November 2026. Focus on the images, and fix only clear errors."],
+  ["00p_dl_llm_playbook.md", "DL & LLMs — Playbook", "play00p", "inline", "Its facts were already checked against Ch 16/17 in November 2026. Focus on the images, and fix only clear errors."],
+  ["38_java_refresher.md", "Java Refresher — Core & DSA Toolkit", "java38", "collapse", "There are about 60 small Java snippets. Make complete programs only for the worked examples."],
+  ["38b_java_modern.md", "Modern Java", "java38b", "collapse", ""],
+  ["39_python_refresher.md", "Python Refresher — Core & FastAPI", "py39", "collapse", "There are about 40 small Python snippets. Make complete programs only for the worked examples."],
+  ["01_google_ai_engineer_strategy.md", "Google AI Engineer Strategy", "strat01", "inline", ""],
+  ["02_behavioral_interview.md", "Behavioral Interview (Google)", "beh02", "collapse", ""],
+  ["03_staying_relevant_ai_era.md", "Staying Relevant in AI Era", "era03", "collapse", ""],
+  ["04_aptitude_mental_math.md", "Aptitude & Mental Math", "apt04", "inline", "There are about 200 practice-answer <details> blocks. Keep them exactly as they are."],
+  ["05_brain_training.md", "Brain Training & Memory", "brain05", "collapse", ""],
+  ["05b_brain_upgrade_30_days.md", "Sharper, Younger Brain (Program)", "brain05b", "inline", ""],
+  ["00_quick_reference_cheat_sheet.md", "Cheat Sheet — All Topics", "cheat00", "inline", ""],
+];
+const layoutText = {
+  collapse: "collapse (image + collapsed \"Read as text\"; code with output and existing diagrams stay visible)",
+  inline: "inline (this is a revision / Q&A / guide page: image lines only, no collapsing)",
+};
+const KEY = "ml4-guide-done";
+const done = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+const sel = document.getElementById("chapter");
+const tpl = document.getElementById("tpl").textContent;
+
+function fill() {
+  sel.innerHTML = "";
+  chapters.forEach(([file, title], i) => {
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = (done.has(file) ? "✓ " : "") + file.replace(".md", "") + " — " + title;
+    sel.appendChild(o);
+  });
+}
+function render() {
+  const [file, title, prefix, layout, notes] = chapters[sel.value];
+  document.getElementById("prompt").textContent = tpl
+    .replaceAll("{{FILE}}", file).replaceAll("{{TITLE}}", title)
+    .replaceAll("{{PREFIX}}", prefix).replaceAll("{{LAYOUT}}", layoutText[layout])
+    .replaceAll("{{NOTES}}", notes || "none recorded. Find them in step 2.")
+    .replaceAll("{{HASH}}", "content/" + file.replace(".md", ""));
+  document.getElementById("markDone").textContent = done.has(file) ? "Mark as not done" : "Mark as done ✓";
+}
+fill();
+const firstOpen = chapters.findIndex(([f]) => !done.has(f));
+sel.value = firstOpen < 0 ? 0 : firstOpen;
+render();
+sel.addEventListener("change", render);
+document.getElementById("markDone").addEventListener("click", () => {
+  const i = sel.value, file = chapters[i][0];
+  done.has(file) ? done.delete(file) : done.add(file);
+  localStorage.setItem(KEY, JSON.stringify([...done]));
+  fill(); sel.value = i; render();
+});
+document.querySelectorAll(".copy").forEach(btn => btn.addEventListener("click", async () => {
+  const pre = btn.dataset.target ? document.getElementById(btn.dataset.target) : btn.parentElement.querySelector("pre");
+  try { await navigator.clipboard.writeText(pre.textContent); }
+  catch { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); s.removeAllRanges(); }
+  const t = btn.textContent; btn.textContent = "Copied ✓"; btn.classList.add("done");
+  setTimeout(() => { btn.textContent = t; btn.classList.remove("done"); }, 1500);
+}));
+</script>
+</body>
+</html>
