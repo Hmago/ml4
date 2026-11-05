@@ -1,6 +1,6 @@
 # ML Curriculum — Quick Revision
 
-> Condensed revision for **Chapters 07–15**. Skim this before an interview instead of re-reading 113,000 words of source chapters. Formulas, decision rules, comparison tables and must-know facts are preserved; worked examples, proofs and coding walkthroughs stay in the originals.
+> Condensed revision for **Chapters 07–15**. Skim this before an interview instead of re-reading nine source chapters (about 190,000 words, code included). Formulas, decision rules, comparison tables and must-know facts are preserved; worked examples, proofs and coding walkthroughs stay in the originals.
 
 **How to use it:** **Part 1** is the decision layer — pick an algorithm, pick a metric, avoid a trap. **Part 2** is the chapter-by-chapter refresher. If you only have 20 minutes, read Part 1 and the one-page recap at the end.
 
@@ -17,6 +17,8 @@
 ---
 
 # Part 1 — Decision Guides
+
+![Decision-guides map: nine cards for picking a model by data (no labels: K-Means or DBSCAN for groups, PCA/UMAP with t-SNE for pictures only, Isolation Forest or LOF for outliers; labels: CNN or ViT, Transformer, linear baseline then gradient boosting for tabular, simple models under 1k rows) plus metric and split rules, a Pick by Question table (RL, Precision F0.5, Recall F2, GroupKFold, random search often beats grid), three traps, and the 99.9% accuracy at 0.1% fraud warning](diagrams/rec15s_info_decision_guides_map_ai.png)
 
 ## Master algorithm selection
 
@@ -46,12 +48,12 @@ graph TD
     E2 -->|Yes| E3[CatBoost]
     E2 -->|No| E4[XGBoost / LightGBM]
     E -->|Fast baseline| E5[Logistic Regression]
-    E -->|Under 1k rows| E6[SVM or KNN]
+    E -->|Under 1k rows| E6[Regularized linear, Naive Bayes,<br/>KNN or Random Forest]
 
     D -->|Reward, not labels| F[Reinforcement Learning<br/>see Ch 15]
 ```
 
-> **The honest default for tabular data:** a linear baseline first, then gradient boosting. Deep learning wins on images, text and audio — not on spreadsheets.
+> **The honest default for tabular data:** a linear baseline first, then gradient boosting. Deep learning wins on images, text and audio; on spreadsheets boosted trees are still the default, though tabular foundation models such as TabPFN now match or beat them on small tables ([Ch 10 §10.12](#content/10_supervised_learning)).
 
 ## Supervised algorithms compared
 
@@ -75,7 +77,7 @@ graph TD
 |---|---|---|---|---|---|---|---|---|---|
 | **K-Means** | Clustering | Round, equal-size, equal-density blobs | Fast default; millions of points | Elongated, unequal or non-convex clusters | Yes | No — forces every point in | Spherical | Excellent | Customer segmentation |
 | **K-Medoids (PAM)** | Clustering | As K-Means, but centre is a real point | Non-Euclidean metric; outliers you can't drop | Past ~10k points | Yes | Robust | Spherical, any metric | Poor | Clustering by edit distance |
-| **Hierarchical (Ward)** | Clustering | Data is genuinely nested | You want a dendrogram and don't know K | No real hierarchy; past ~10k points | No — cut the tree | No | Depends on linkage | Poor — $O(n^3)$ | Taxonomy building |
+| **Hierarchical (Ward)** | Clustering | Data is genuinely nested | You want a dendrogram and don't know K | No real hierarchy; past ~10k points | No — cut the tree | No | Depends on linkage | Poor — $O(n^2)$ distance matrix | Taxonomy building |
 | **DBSCAN** | Clustering | Dense regions split by sparse ones | Odd shapes + real outliers to flag | Clusters have very different densities | No | **Yes** — labels noise | Arbitrary | Good | Geospatial hotspots |
 | **HDBSCAN** | Clustering | Dense regions, density may vary | Same as DBSCAN but density varies | Uniformly dense data, no real gaps | No | **Yes** | Arbitrary, multi-density | Good | Anomaly-rich sensor data |
 | **Spectral** | Clustering | Clusters connected in a similarity graph | Non-convex but connected (interlocking moons) | Badly built graph; large $n$ | Yes | No | Manifold / graph-connected | Poor | Image segmentation |
@@ -113,8 +115,8 @@ graph TD
 | **GroupKFold** | Repeated entities (patients, users) | Stops the same entity spanning splits |
 | **TimeSeriesSplit** | Time-ordered data | Train always precedes test; never shuffle |
 | **LOOCV** | Under ~100 samples | N× cost, high variance |
-| Grid search | Small grids (≤ ~30 combos) | Exhaustive, predictable |
-| **Random search** | Larger spaces | Usually beats grid at equal budget — only 1–2 params matter, and random varies them all |
+| Grid search | 1–2 knobs, few values each | Exhaustive, but $v^k$ fits explode with $k$ knobs |
+| **Random search** | Larger spaces | Often beats grid at equal budget — only a few knobs usually matter (Bergstra & Bengio, 2012), and random tries a new value of each on every trial |
 | **Bayesian (Optuna)** | Expensive training runs | Learns where to look; fewest trials |
 
 ## The 12 traps
@@ -164,7 +166,7 @@ graph TD
 
 > 💡 **In a sentence —** ML inverts traditional programming: instead of writing rules, you supply labelled examples and let an algorithm discover the mapping.
 
-![Machine learning versus traditional programming, and the four types of ML](diagrams/rev_mlmap_ai.png)
+![Infographic: what machine learning is. Traditional programming takes rules plus input to give output, machine learning takes input plus output to discover the rules; a spam-filter example where a learned rule scores 88.8% on new emails against 67.2% for a guessed rule](diagrams/intro07_info_what_is_ml_ai.png)
 
 ### The inversion
 
@@ -200,9 +202,9 @@ Self-supervision is the trick behind LLMs: hide a word, predict it, repeat acros
 4. **Feature engineering** — scale, encode, create, decompose
 5. **Split & train** — train/val/test; fit; tune
 6. **Evaluate** — held-out metrics
-7. **Deploy & monitor** — serve, log, watch for drift
+7. **Deploy & monitor** — serve, log, watch for drift — and loop back to step 1 when the world changes
 
-> **The 80% rule:** roughly 80% of real project time goes to steps 2–4, and only 10–20% to modelling. Data quality beats model choice almost every time.
+> **Where the time goes:** data work (steps 2–4) takes the biggest share of a project. The famous "80%" comes from a small 2016 CrowdFlower survey; larger Anaconda surveys put loading and cleaning at 38–45% of working time, so say "roughly 40–80%, depending on what is counted" ([Ch 07](#content/07_introduction)). Data quality beats model choice almost every time.
 
 ---
 
@@ -211,8 +213,8 @@ Self-supervision is the trick behind LLMs: hide a word, predict it, repeat acros
 > - ML = Input + Output → Rules (the inversion)
 > - AI ⊃ ML ⊃ Deep Learning ⊃ Generative AI
 > - Four types: supervised, unsupervised, self-supervised, reinforcement
-> - 80% of the work is data preparation
-> - On tabular data, gradient boosting still beats deep learning
+> - Data work is the biggest share of a project (surveys: roughly 40–80% of the time)
+> - On tabular data, gradient boosting is still the standard first choice
 
 ---
 
@@ -230,7 +232,7 @@ Self-supervision is the trick behind LLMs: hide a word, predict it, repeat acros
 | **Validation** | Tune hyperparameters, select model | 10–20% |
 | **Test** | Final unbiased estimate — read once | 10–20% |
 
-Small data (<10k) → 70/15/15 · medium (100k) → 80/10/10 · large (>1M) → 98/1/1, since 1% of a million is still 10,000 test rows.
+Small data (<10k rows) → 70/15/15, or cross-validation · 10k–1M → 80/10/10 · >1M → 98/1/1, since 1% of a million is still 10,000 test rows. Rows, not percentages, set a test score's precision: accuracy $p$ on $n$ rows has standard error $\sqrt{p(1-p)/n}$, so 90% on 100 rows is ±3 points, on 1,000 rows ±0.95 ([Ch 08 §8.3](#content/08_core_concepts)).
 
 **Epoch** = one full pass over the data. **Batch** = the rows behind one weight update. **Iteration** = one forward + backward pass. Iterations per epoch = ⌈dataset ÷ batch⌉.
 
@@ -251,7 +253,7 @@ FOR each mini-batch:
 | **MAE** | Regression | $\frac{1}{n}\sum \lvert \hat{y}-y \rvert$ | Robust to outliers |
 | **MSE** | Regression | $\frac{1}{n}\sum(\hat{y}-y)^2$ | Punishes large errors hard |
 | **RMSE** | Reporting | $\sqrt{\text{MSE}}$ | Same units as the target |
-| **Huber** | Regression | MSE inside $\delta$, MAE outside | Both worlds |
+| **Huber** | Regression | Quadratic inside $\pm\delta$, linear outside | MSE's smoothness, MAE's robustness |
 | **Binary cross-entropy** | Binary | $-[y\log\hat{y}+(1-y)\log(1-\hat{y})]$ | Pair with sigmoid |
 | **Categorical cross-entropy** | Multi-class | $-\sum_i y_i\log\hat{y}_i$ | Pair with softmax |
 | **KL divergence** | Matching distributions | $\sum P\log(P/Q)$ | VAEs, distillation, RLHF |
@@ -279,7 +281,7 @@ More data reduces **variance**; it does not reduce **bias** — for that you nee
 
 **What each optimizer actually does** — all three solve the same problem, "which way do I step, and how far?", with increasing cleverness:
 
-- **SGD** — step straight down the gradient of the current mini-batch, same step size for every weight. Because each batch is a noisy sample of the data, the path zig-zags. Simple, memory-free, and still the best final accuracy on vision benchmarks — if you are willing to tune it.
+- **SGD** — step straight down the gradient of the current mini-batch, same step size for every weight. Because each batch is a noisy sample of the data, the path zig-zags. Simple and memory-free, and on vision models well-tuned SGD + momentum often generalizes as well as Adam or slightly better.
 - **SGD + momentum** — remember the direction you have been travelling and keep some of it, like a ball rolling downhill. Zig-zags across a narrow valley cancel out while the consistent downhill direction accumulates, so it moves faster and gets shaken around less by noise.
 - **Adam** — give **every single weight its own learning rate**, automatically. Weights whose gradients have been large get smaller steps; weights that rarely move get larger ones. That is why Adam works out of the box on almost anything and why it is the default first choice.
 
@@ -295,7 +297,7 @@ $$W_{\text{new}} = W_{\text{old}} - \alpha \cdot \frac{\partial L}{\partial W}$$
 
 **SGD + momentum:** $v \leftarrow \beta v + g$, $w \leftarrow w - \alpha v$ ($\beta\approx0.9$) — carries through narrow valleys.
 
-Here $g$ is the current gradient, $v$ is the running **velocity** (the accumulated direction of travel), and $\beta$ is how much of it survives each step. At $\beta=0.9$ a step is roughly the average of the last ten gradients, so one odd batch can no longer knock you off course.
+Here $g$ is the current gradient, $v$ is the running **velocity** (the accumulated direction of travel), and $\beta$ is how much of it survives each step. A decay of $\beta$ remembers roughly the last $1/(1-\beta)$ gradients — about ten at $\beta=0.9$ — so one odd batch can no longer knock you off course. (This is PyTorch's form; [Ch 16 §1.2](#content/16_deep_learning) writes the averaged form $v \leftarrow \beta v + (1-\beta)g$ — same idea, a 10× smaller velocity at $\beta=0.9$, so a 10× larger matching learning rate.)
 
 **Adam:** tracks first and second moments of the gradient, bias-corrects both, and gives every parameter its own step size:
 
@@ -307,7 +309,7 @@ Reading it in words: $m_t$ is the **average gradient** (the direction — moment
 
 Defaults $\alpha=0.001$, $\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-8}$. **AdamW** decouples weight decay — the default for Transformers.
 
-> **Rule of thumb:** start with Adam at `lr=0.001`. Switch to SGD + momentum when chasing the last 1% on vision benchmarks. Tune the learning rate on a **log** scale.
+> **Rule of thumb:** start with Adam at `lr=0.001`. Try well-tuned SGD + momentum when chasing the last few points on vision models. Tune the learning rate on a **log** scale.
 
 ### Learning-rate schedules
 
@@ -317,7 +319,7 @@ A **schedule** changes $\alpha$ *during* training instead of holding it fixed. T
 |---|---|---|
 | **Step decay** | Multiply by 0.1 at fixed epochs (e.g. 30, 60, 90) | Classic CNN training; easy to reason about |
 | **Cosine annealing** | Glide smoothly from the starting value down to ~0 along a cosine curve | The modern default; no cliff edges to tune |
-| **Warmup → decay** | Ramp **up** from ~0 over the first few hundred steps, then decay | **Transformers.** Early gradients are large and the Adam moment estimates are still garbage, so full-size first steps can wreck the weights |
+| **Warmup → decay** | Ramp **up** from ~0 over the first 1–5% of steps, then decay (cosine, or warmup–stable–decay for LLMs) | **Transformers** and large batches. Early gradients are large and noisy and Adam's statistics come from a handful of samples, so a full-size first step can wreck the weights ([Ch 16 §1.3](#content/16_deep_learning)) |
 | **OneCycleLR** | One big rise then a long fall, with momentum moving opposite | Fast training on a fixed budget ("super-convergence") |
 | **ReduceLROnPlateau** | Cut $\alpha$ only when validation loss stops improving | You don't know the right schedule; let the metric decide |
 
@@ -325,7 +327,7 @@ A **schedule** changes $\alpha$ *during* training instead of holding it fixed. T
 
 ### Initialization
 
-![Why weight initialization scale matters: He vs Xavier](diagrams/nn_init_ai.png)
+![Infographic: weight initialization, Xavier and He. A neuron sums n_in terms so Var(z) is about n_in times Var(w) times Var(x); LeCun keeps Var(w) = 1/n_in, He doubles it to 2/n_in because ReLU zeroes half, Xavier uses 2/(n_in + n_out); measured over 10 ReLU layers only He keeps the signal steady](diagrams/nn14_info_weight_init_ai.png)
 
 **Why this matters at all.** You have to seed the weights with *something* before training starts, and the choice is not cosmetic:
 
@@ -377,9 +379,11 @@ WRONG:  scaler.fit(all_data)    → test statistics leak into training
 RIGHT:  scaler.fit(X_train)     → transform train and test separately
 ```
 
-Fitting on everything is **silent** leakage: your test metrics look great and production disagrees. The same applies to imputers, encoders and feature statistics.
+Fitting on everything is **silent** leakage: your test metrics look great and production disagrees. The same applies to imputers, encoders and feature statistics. Wrap them all with the model in one scikit-learn `Pipeline`, so cross-validation refits every step on each training fold ([Ch 09 — A Leakage-Safe Pipeline](#content/09_data_preprocessing)).
 
 ### Missing values
+
+![Data preprocessing map: nine cards for missing values (MCAR drop or mean, MAR model-based imputer, MNAR was_missing flag), outliers (IQR fence Q1 - 1.5 IQR to Q3 + 1.5 IQR, Z-score above 3 fooled by skew, keep fraud or remove age 200 or cap or log1p), encoding, scaling and feature engineering, plus a Pick by Question table (median for skew, target-encode 10,000 zip codes into 1 column, scale for KNN/SVM/K-Means/NN, none for trees, Filter/RFE/Lasso) and the fit-on-train-only Pipeline rule](diagrams/rec15s_info_preprocessing_map_ai.png)
 
 The three-letter codes describe **why** a value is missing — and that reason decides what you are allowed to do about it. Guess wrong and your imputation quietly biases the model.
 
@@ -434,7 +438,7 @@ So $Z = 2$ means "two standard deviations above average". The threshold of **3**
 | **Label** | Ordinal only | Invents an order for nominal data |
 | **One-hot** | Nominal, < ~20 categories | Explodes on high cardinality |
 | **Ordinal** | Ordered, order specified by you | Must get the order right |
-| **Target** | High cardinality (city, zip, user) | Leakage — fit on the training fold only |
+| **Target** | High cardinality (city, zip, user) | Leakage — a row can see its own label; fit on the training fold, with smoothing and out-of-fold (cross-fitted) means |
 | **Frequency** | High cardinality, fast | Ignores the target relationship |
 | **Hashing** | Very high cardinality, online | Collisions |
 | **Embeddings** | Neural networks | Needs enough data per category |
@@ -512,7 +516,7 @@ The boundary at $z=0$ is always a **straight hyperplane** — it cannot model XO
 
 Lazy — no training, stores everything. Predict by majority vote (or average) of the K nearest points. Distances: Euclidean (default), Manhattan (high-dim sparse), cosine (text).
 
-K=1 gives a jagged overfit boundary; K=N always predicts the majority. Rule of thumb $K=\sqrt{n}$, odd for binary. **Must scale features.** Cost $O(nd)$ per query — impractical past ~100k rows.
+K=1 gives a jagged overfit boundary; K=N always predicts the majority. Start at K=5 (scikit-learn's default), treat $K=\sqrt{n}$ as an upper-end rule of thumb, pick the final K by cross-validation, and keep it odd for binary. **Must scale features.** Cost $O(nd)$ per query — every prediction scans the training set, so it slows as $n$ grows.
 
 ### Decision trees
 
@@ -561,13 +565,15 @@ Read it as: the probability of class $y$ **given** the observed features is prop
 
 Averaging only helps if the trees differ — that is why Random Forest samples a random **feature** subset at each split. OOB score uses the ~37% of rows left out of each bootstrap as free validation.
 
-Gradient boosting fits each new tree to the negative gradient of the loss (the pseudo-residuals), then adds it scaled by the learning rate $\eta$.
+Gradient boosting fits each new tree to the negative gradient of the loss (the pseudo-residuals), then adds it scaled by the learning rate $\eta$. **Stacking** trains a meta-learner on the base models' **out-of-fold** predictions — never in-sample ones, or it learns to trust overfit models ([Ch 10 §10.8](#content/10_supervised_learning)).
 
 | Library | Growth | Advantage |
 |---|---|---|
-| **XGBoost** | Level-wise | Regularized, GPU, battle-tested |
-| **LightGBM** | Leaf-wise | 10–30× faster on large data |
+| **XGBoost** | Level-wise by default | Regularized, GPU, battle-tested |
+| **LightGBM** | Leaf-wise | Histogram binning — fast on large data (>100K rows) |
 | **CatBoost** | Symmetric | Native categoricals, fast inference |
+
+**Which features matter?** Tree impurity importance (MDI) is biased toward high-cardinality and ID-like features; prefer permutation importance or SHAP ([Ch 10 §10.10](#content/10_supervised_learning)).
 
 ### Class imbalance — the 99% trap
 
@@ -576,10 +582,10 @@ At 0.1% fraud, always predicting "legitimate" scores 99.9% accuracy and catches 
 | Fix | How | Best for |
 |---|---|---|
 | **Adjust threshold** | Move the decision boundary | Any probabilistic model |
-| **Class weights** | Scale minority loss by $N_\text{neg}/N_\text{pos}$ | `class_weight='balanced'` |
-| **SMOTE** | Synthesize minority points between neighbours | Small minority class |
+| **Class weights** | `class_weight='balanced'` gives class $c$ weight $n_\text{samples}/(n_\text{classes}\cdot n_c)$; boosting's `scale_pos_weight` ≈ $N_\text{neg}/N_\text{pos}$ | Most models — but it inflates probabilities, so recalibrate |
+| **SMOTE** | Synthesize minority points between neighbours, inside training folds only | Last resort — it distorts probabilities too, and a 2022 simulation study found no ROC-AUC gain |
 | **Undersample** | Drop majority rows | Very large majority |
-| **Balanced ensembles** | BalancedRandomForest, EasyEnsemble | Robust default |
+| **Balanced ensembles** | BalancedRandomForest, EasyEnsemble | Resampling built into the ensemble |
 
 ---
 
@@ -589,7 +595,7 @@ At 0.1% fraud, always predicting "legitimate" scores 99.9% accuracy and catches 
 > - Logistic regression draws a straight boundary — always
 > - KNN and SVM need scaled features; trees do not
 > - Gini ≈ entropy in practice; Gini is cheaper
-> - Imbalance: never trust accuracy — use AUC-PR, class weights, or SMOTE
+> - Imbalance: never trust accuracy — use AUC-PR, a tuned threshold or class weights; SMOTE last
 > - Stratified K-Fold for every classification problem
 
 ---
@@ -606,13 +612,13 @@ As dimensions grow, volume grows exponentially and points become equidistant —
 
 $$\lim_{d \to \infty} \frac{\text{dist}_{\max} - \text{dist}_{\min}}{\text{dist}_{\min}} \to 0$$
 
-KNN degrades, K-Means clusters turn arbitrary, density estimates break. Rough rule: you need 5–10× more data per added dimension. Remedy with PCA/UMAP, feature selection, or regularization.
+KNN degrades, K-Means clusters turn arbitrary, density estimates break. What drives the curse is the data's **intrinsic** dimension — how many independent directions it really varies in — not the column count, which is why distances still work on images and embeddings; there is no reliable "N× more data per dimension" rule ([Ch 11 §11.2](#content/11_unsupervised_learning)). Remedy with PCA/UMAP, feature selection, or regularization.
 
 ### Clustering
 
 ![Clustering algorithms compared: which shapes each one can find](diagrams/rev_clustering_ai.png)
 
-**K-Means** minimizes within-cluster sum of squares $J = \sum_k \sum_{x_i \in C_k} \lVert x_i - \mu_k \rVert^2$ by alternating "assign to nearest centroid" and "recompute centroids". In that formula $C_k$ is cluster $k$, $\mu_k$ is its centroid (the mean of its members), and $J$ — called the **inertia** — is the total squared distance from every point to its own centroid, so smaller is tighter. **K-Means++** seeds centroids far apart (each new seed is picked with probability $\propto D(x)^2$, where $D(x)$ is the distance from $x$ to the nearest seed already chosen) and is the sklearn default. Cost $O(nKId)$ for $n$ points, $K$ clusters, $I$ iterations and $d$ dimensions — very fast. Restart it several times and keep the lowest inertia, since it lands in local optima.
+**K-Means** minimizes within-cluster sum of squares $J = \sum_k \sum_{x_i \in C_k} \lVert x_i - \mu_k \rVert^2$ by alternating "assign to nearest centroid" and "recompute centroids". In that formula $C_k$ is cluster $k$, $\mu_k$ is its centroid (the mean of its members), and $J$ — called the **inertia** — is the total squared distance from every point to its own centroid, so smaller is tighter. **K-Means++** seeds centroids far apart (each new seed is picked with probability $\propto D(x)^2$, where $D(x)$ is the distance from $x$ to the nearest seed already chosen) and is the sklearn default. Cost $O(nKId)$ for $n$ points, $K$ clusters, $I$ iterations and $d$ dimensions — very fast. Restart it several times and keep the lowest inertia, since it lands in local optima — and note scikit-learn ≥ 1.4's `n_init='auto'` runs k-means++ only **once**, so pass `n_init=10` for restarts.
 
 **Hierarchical** builds a dendrogram you can cut at any height, so K is chosen after the fact. Linkage decides the character:
 
@@ -623,13 +629,13 @@ KNN degrades, K-Means clusters turn arbitrary, density estimates break. Rough ru
 | Average | Mean of all pairs | A compromise |
 | **Ward's** | Increase in within-cluster variance | Best general default |
 
-Cost $O(n^3)$ time and $O(n^2)$ memory — impractical past ~10k rows.
+Cost: naive $O(n^3)$ time; SciPy's algorithms for the common linkages run in $O(n^2)$ time, but every version needs the $O(n^2)$ pairwise distances — about 400 MB at 10k points, so it is impractical much past that.
 
-**DBSCAN** takes $\varepsilon$ (radius) and `minPts`. A **core point** has ≥ minPts neighbours within $\varepsilon$; a **border point** is within $\varepsilon$ of a core; everything else is **noise**. Clusters are connected core regions — so it finds K itself, handles arbitrary shapes, and flags outliers. Its weakness is varying density, which **HDBSCAN** fixes by extracting stable clusters from a hierarchy.
+**DBSCAN** takes $\varepsilon$ (radius) and `minPts`. A **core point** has ≥ minPts points within $\varepsilon$, **itself included** (scikit-learn's `min_samples` convention — say which you use); a **border point** is within $\varepsilon$ of a core; everything else is **noise**. Clusters are connected core regions — so it finds K itself, handles arbitrary shapes, and flags outliers. Its weakness is varying density, which **HDBSCAN** fixes by extracting stable clusters from a hierarchy.
 
 **Spectral** builds a similarity graph, takes the bottom K eigenvectors of the Laplacian $L = D - W$ — where $W$ holds the pairwise similarities and $D$ is the diagonal matrix of row sums (each node's total connection strength) — and runs K-Means in that embedding, which untangles interlocking rings K-Means cannot touch. $O(n^3)$ naive.
 
-**GMM** models each cluster as a Gaussian with its own mean, covariance and weight, fitted by **EM**, giving every point a **soft** membership probability. K-Means is just GMM with spherical covariance and hard assignment. Choose K with BIC or AIC.
+**GMM** models each cluster as a Gaussian with its own mean, covariance and weight, fitted by **EM**, giving every point a **soft** membership probability. K-Means is the limit of a GMM whose components all have **equal weights** and the **same** covariance $\sigma^2 I$, as $\sigma^2 \to 0$: responsibilities snap to 0 or 1, and EM becomes "assign to the nearest mean, then average". Choose K with BIC or AIC.
 
 ### Evaluating clusters
 
@@ -637,7 +643,7 @@ $$s(i) = \frac{b(i)-a(i)}{\max(a(i),b(i))} \in [-1, 1]$$
 
 where $a$ = mean distance within the cluster (cohesion) and $b$ = mean distance to the nearest other cluster (separation). Average $s > 0.70$ is strong, $> 0.50$ reasonable, $< 0.25$ means there probably aren't real clusters.
 
-Pair it with the **Elbow method** (inertia vs K, look for the bend) and **Davies-Bouldin** (lower is better). Use at least two — each can be fooled alone.
+Pair it with the **Elbow method** (inertia vs K, look for the bend) and **Davies-Bouldin** (lower is better). Use at least two — each can be fooled alone. If ground-truth labels exist, score with **ARI** or **NMI**, never accuracy — cluster IDs are arbitrary ([Ch 11 §11.9](#content/11_unsupervised_learning)).
 
 ### Dimensionality reduction
 
@@ -655,9 +661,9 @@ Pair it with the **Elbow method** (inertia vs K, look for the bend) and **Davies
 
 $$\text{Lift}(A \Rightarrow B) = \frac{\text{Confidence}(A \Rightarrow B)}{\text{Support}(B)}$$
 
-Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by level; **FP-Growth** compresses into a tree and runs 10–100× faster.
+Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by level, rescanning the data once per itemset length; **FP-Growth** compresses the transactions into a prefix tree — two scans, no candidate generation — and its authors reported it about an order of magnitude faster.
 
-**Self-supervised learning** manufactures labels from the data's own structure — BERT masks 15% of tokens and predicts them, GPT predicts the next token, SimCLR forces two augmented views of an image to agree. Pre-train on billions of tokens, fine-tune on a thousand labels, and beat fully supervised training on a million.
+**Self-supervised learning** manufactures labels from the data's own structure — BERT masks 15% of tokens and predicts them, GPT predicts the next token, SimCLR forces two augmented views of an image to agree. Pre-train on unlabelled data, then fine-tune on a few labels: ULMFiT (2018) matched, with only 100 labelled examples, a model trained from scratch on up to 100× more.
 
 ---
 
@@ -675,13 +681,15 @@ Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by le
 
 > 💡 **In a sentence —** The mathematics, assumptions and hyperparameters inside each major algorithm — enough to tune and debug rather than guess.
 
+![Key algorithms map: nine cards - linear regression normal equation w* = (X^T X)^-1 X^T y costing O(n x p^2 + p^3), L1 diamond exact zeros vs L2 circle, logistic sigmoid slope at most 0.25 and convex log-loss, Random Forest variance rho x sigma^2 + (1 - rho) x sigma^2 / n, sklearn alpha = lambda vs C = 1/lambda, Naive Bayes log-probabilities, and the boosting family (XGBoost Newton steps, level-wise, hist default since 2.0; LightGBM up to 255 bins, leaf-wise, num_leaves; CatBoost ordered target statistics, symmetric trees) plus a Pick by Question table](diagrams/rec15s_info_key_algorithms_map_ai.png)
+
 ### Linear regression — two routes
 
 **Normal equation** (closed form, exact): $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$. Read it as: $X$ is the feature matrix ($n$ rows × $p$ columns), $\mathbf{y}$ is the column of true targets, $X^\top$ is $X$ **transposed** (flipped so rows become columns), $(\cdot)^{-1}$ is the matrix inverse, and $\mathbf{w}^*$ is the single best set of weights — solved in one shot, no iteration. Needs $X^\top X$ invertible (fails on collinear features) and costs $O(np^2 + p^3)$ — impractical past a few thousand features.
 
 **Gradient descent** (iterative): works at any scale, supports regularization naturally, allows online learning.
 
-**Five assumptions**, each of which breaks the coefficients when violated: linearity · independent observations · homoscedasticity (constant error variance) · normally distributed errors (needed for p-values) · no multicollinearity.
+**Five assumptions:** linearity · independent errors · homoscedasticity (constant error variance) · normally distributed errors · no multicollinearity. For **prediction** only linearity really matters — break it and predictions are biased. The middle three protect **inference** (standard errors, p-values), and multicollinearity makes the weights unstable and unreadable while predictions stay fine — fix it with Ridge ([Ch 12 §12.2](#content/12_key_algorithms)).
 
 ### Regularization geometry
 
@@ -695,13 +703,13 @@ Lift > 1 means A and B co-occur more than chance. **Apriori** prunes level by le
 
 The constraint region is a **diamond** for L1 and a **circle** for L2. The diamond's corners sit on the axes, so the solution lands on one and a weight becomes exactly zero. A circle has no corners, so nothing ever does.
 
-$\lambda = 0$ is plain OLS; $\lambda \to \infty$ shrinks everything to zero and predicts the mean. Find it by cross-validation. In sklearn, `C = 1/\lambda` — **small C means more regularization.**
+$\lambda = 0$ is plain OLS; $\lambda \to \infty$ shrinks everything to zero and predicts the mean. Find it by cross-validation. In sklearn, Ridge and Lasso take `alpha` $=\lambda$, but LogisticRegression and SVMs take $C = 1/\lambda$ — **small C means more regularization.**
 
 ### Logistic regression mechanics
 
 $$\sigma(z) = \frac{1}{1+e^{-z}}, \qquad \sigma'(z) = \sigma(z)(1-\sigma(z)) \le 0.25$$
 
-Binary cross-entropy is **convex** in the weights here, so gradient descent reaches the global optimum — unlike a neural network. That 0.25 ceiling on the derivative is exactly why sigmoid causes vanishing gradients when stacked deep.
+Binary cross-entropy is **convex** in the weights here, so there is one basin and gradient descent finds the global optimum — unlike a neural network. On perfectly separable data the unregularized weights run off to infinity; scikit-learn's default `C=1.0` is a real penalty, not "off", and keeps them finite. That 0.25 ceiling on the derivative is exactly why sigmoid causes vanishing gradients when stacked deep.
 
 ### Trees and forests
 
@@ -711,16 +719,15 @@ Why averaging works — for $n$ trees with pairwise correlation $\rho$:
 
 $$\text{Ensemble Variance} = \rho\sigma^2 + \frac{1-\rho}{n}\sigma^2 \xrightarrow[n\to\infty]{} \rho\sigma^2$$
 
-where $\sigma^2$ is a single tree's variance and $\rho$ is how correlated any two trees are. Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Tune `n_estimators` 200–500, `max_features` √p (classification) or p/3 (regression), `max_depth` 3–15, `min_samples_leaf` 1–20.
+where $\sigma^2$ is a single tree's variance and $\rho$ is how correlated any two trees are. Identical trees ($\rho=1$) gain nothing; decorrelating them is the whole game, which is what random feature subsets buy. Typical tuning: `n_estimators` 100–500 (default 100), `max_depth` `None` or 10–30, `min_samples_leaf` 1–5, `max_features` `'sqrt'` for classification — regression defaults to 1.0 (all features), so try 0.33 to decorrelate.
 
 ### The boosting family
-![The boosting family: XGBoost, LightGBM and CatBoost](diagrams/rev_boostingfamily_ai.png)
 
-**XGBoost** adds second-order Taylor expansion (Newton, not just gradient), explicit L1+L2 on tree structure, column subsampling, a weighted quantile sketch for split finding, and GPU support.
+**XGBoost** takes second-order (Newton) steps — gradient **and** curvature — with built-in L1/L2 penalties on leaf weights, level-wise growth by default, column subsampling, histogram split search (`tree_method="hist"`, the default since 2.0) and GPU support.
 
-**LightGBM** grows **leaf-wise** (always split the leaf with the biggest loss reduction) rather than level-wise — deeper, more focused trees and 10–30× the speed past ~100k rows.
+**LightGBM** bins each feature into ≤ 255 histogram buckets and grows **leaf-wise** (always split the leaf with the biggest loss reduction) rather than level-wise — deeper, more focused trees and fast, memory-light training on large data (>100K rows); control overfitting with `num_leaves`.
 
-**CatBoost** uses ordered boosting so categorical target statistics can't leak, and symmetric trees that make inference $O(\text{depth})$.
+**CatBoost** uses ordered target statistics (a category is encoded from **earlier** rows' labels only) and ordered boosting so nothing leaks, plus symmetric (oblivious) trees — one shared question per level — that make inference very fast.
 
 ### Naive Bayes variants
 
@@ -731,13 +738,15 @@ where $\sigma^2$ is a single tree's variance and $\rho$ is how correlated any tw
 | **Bernoulli** | Present / absent | Text with binary features |
 | **Complement** | Modified complement classes | Imbalanced text |
 
+Multiplying hundreds of small probabilities underflows to 0, so implementations **add log-probabilities** instead — same winner ([Ch 12 §12.9](#content/12_key_algorithms)).
+
 ---
 
 > ✅ **Must-remember**
 >
 > - Normal equation $(X^\top X)^{-1}X^\top y$ — exact but $O(p^3)$
 > - L1 diamond has corners → exact zeros; L2 circle has none
-> - sklearn's `C` = 1/λ, so small C = **more** regularization
+> - sklearn's `C` (logistic regression, SVM) = 1/λ, so small C = **more** regularization
 > - Sigmoid derivative caps at 0.25 → vanishing gradients when deep
 > - Random Forest works by **decorrelating** trees, not just averaging
 > - XGBoost/LightGBM/CatBoost are the tabular starting point
@@ -760,7 +769,7 @@ $$\text{Specificity} = \frac{TN}{TN+FP}, \qquad F_\beta = (1+\beta^2)\frac{PR}{\
 
 The four counts: **TP** = predicted positive and it was (true positive), **FP** = predicted positive and it wasn't, **TN** = predicted negative and it was, **FN** = predicted negative but it was actually positive. $P$ and $R$ are shorthand for precision and recall. In $F_\beta$, $\beta$ is how many times more you care about recall than precision.
 
-**FP (Type I)** is a false alarm — costly in spam filtering. **FN (Type II)** is a miss — costly in cancer screening. Which one hurts more is a domain decision, and it picks your metric: $F_2$ weights recall double, $F_{0.5}$ weights precision double.
+**FP (Type I)** is a false alarm — costly in spam filtering. **FN (Type II)** is a miss — costly in cancer screening. Which one hurts more is a domain decision, and it picks your metric: $F_2$ weights recall double, $F_{0.5}$ weights precision double. F1 ignores TN entirely; when you want one number that uses **all four** cells and stays honest under imbalance, use **MCC** — from −1 (every prediction flipped) through 0 (random) to +1 ([Ch 13 §13.3](#content/13_model_evaluation)).
 
 ### ROC vs precision-recall
 
@@ -768,16 +777,19 @@ The four counts: **TP** = predicted positive and it was (true positive), **FP** 
 
 **ROC-AUC** plots recall against false-positive rate across every threshold. Its intuition: pick a random positive and a random negative — AUC is the probability the model scores the positive higher.
 
-| AUC | Reading |
+| AUC (a rough guide — the bar varies by domain) | Reading |
 |---|---|
 | 1.0 | Perfect |
-| 0.9–0.99 | Excellent |
+| 0.9–1.0 | Excellent |
 | 0.8–0.9 | Good |
 | 0.7–0.8 | Fair |
+| 0.5–0.7 | Poor |
 | 0.5 | Random |
 | < 0.5 | Worse than random — flip the predictions |
 
 **The catch:** with 1% positives, a flood of false positives barely moves the false-positive rate, so ROC still looks great while precision collapses. Use **AUC-PR** for rare positives — its baseline is the prevalence (0.01), not 0.5.
+
+AUC measures **ranking**, not whether the probabilities are honest. **Calibration** asks: of all cases scored 0.7, are about 70% positive? Check it with a reliability diagram, ECE or the Brier score; naive Bayes and deep nets tend to be over-confident, SVMs and random forests under-confident ([Ch 13 §13.12](#content/13_model_evaluation)).
 
 ### Regression metrics
 
@@ -801,7 +813,9 @@ $R^2 = 0$ means the model equals always predicting the mean; **$R^2 < 0$ means w
 
 ### Tuning
 
-Grid search is exhaustive and fine for small grids. **Random search usually wins at equal budget** because only 1–2 hyperparameters typically matter, and random varies all of them every trial instead of wasting runs on fixed values. **Bayesian optimization** (Optuna) builds a surrogate model to decide where to look next — best when each training run is expensive.
+Grid search is exhaustive and fine for 1–2 knobs with few values. **Random search often wins at equal budget** because only a few hyperparameters typically matter (Bergstra & Bengio, 2012), and random tries a new value of each one on every trial instead of wasting runs on fixed values. **Bayesian optimization** (Optuna) builds a surrogate model to decide where to look next — best when each training run is expensive.
+
+If one CV loop both picks the hyperparameters and reports the score, the score is optimistic; **nested CV** tunes in an inner loop and estimates in an outer one ([Ch 13 §13.7](#content/13_model_evaluation)). And a 1-point gap between two models on the same test rows may be noise — compare them **pairwise** with McNemar's test or a paired bootstrap ([Ch 13 §13.10](#content/13_model_evaluation)).
 
 ---
 
@@ -811,8 +825,8 @@ Grid search is exhaustive and fine for small grids. **Random search usually wins
 > - ROC-AUC for balanced, **AUC-PR for rare positives**
 > - R² < 0 means worse than predicting the mean
 > - Stratified K-Fold for classification; TimeSeriesSplit for time
-> - Random search beats grid search at equal compute
-> - The test set is read **once**
+> - Random search usually beats grid search at equal compute
+> - The test set is read **once**; AUC ranks, calibration checks the probabilities
 
 ---
 
@@ -827,6 +841,8 @@ Grid search is exhaustive and fine for small grids. **Random search usually wins
 ![Anatomy of an artificial neuron: inputs, weights, sum, bias, and activation](diagrams/nn_neuron_ai.png)
 
 $$z = \sum_i w_i x_i + b, \qquad \hat{y} = f(z)$$
+
+A dense layer therefore holds $n_\text{in} \times n_\text{out} + n_\text{out}$ parameters — one weight per input–output pair plus one bias per output; forgetting the biases is the classic slip. A 784 → 128 → 10 network has $100{,}480 + 1{,}290 = 101{,}770$ ([Ch 14 §14.2](#content/14_neural_networks)).
 
 Without an activation, stacked layers collapse: $W_2(W_1x + b_1) + b_2$ is just one affine map, so a 100-layer network still draws a straight boundary. The **Universal Approximation Theorem** says one hidden layer with enough width can approximate any continuous function on a bounded domain — a statement about what a network *can represent*, not a promise that training will find it.
 
@@ -843,7 +859,7 @@ XOR proves it. No straight line separates it, but two ReLU features — $h_1 = \
 | **Sigmoid** | $1/(1+e^{-z})$ | $(0,1)$ | Binary output; LSTM gates |
 | **Tanh** | $(e^z-e^{-z})/(e^z+e^{-z})$ | $(-1,1)$ | RNN hidden state; zero-centred |
 | **Softmax** | $e^{z_i}/\sum_j e^{z_j}$ | Sums to 1 | Multi-class output |
-| **GELU** | $z\cdot\Phi(z)$ | Smooth gate | Transformer feed-forward blocks |
+| **GELU** | $z\cdot\Phi(z)$ | Smooth gate | BERT, GPT-2/3, ViT feed-forward blocks; most modern LLMs use a gated variant (SwiGLU / GeGLU) |
 
 Sigmoid's derivative $s(1-s)$ **peaks at 0.25** — it can never pass back more than a quarter of the gradient it receives.
 
@@ -859,7 +875,7 @@ Feed **raw logits** to fused losses (`BCEWithLogitsLoss`, `CrossEntropyLoss`) �
 
 ### When training breaks
 
-![Vanishing vs exploding gradients through a deep network](diagrams/nn_vanishing_ai.png)
+![Infographic: vanishing and exploding gradients. Backprop multiplies one factor per layer, so ten sigmoid slopes give 0.25 to the 10th, about 1e-6, while a factor of 1.5 over 20 layers is about 3,300 times; over 10 layers sigmoid with Xavier leaves 2.9e-7 at layer 1, ReLU with He keeps 1.58, and weights 1.5 times too large give 91; fixes are ReLU-family activations, LSTM or GRU gates, residual connections, gradient clipping and proper initialization](diagrams/nn14_info_vanishing_exploding_ai.png)
 
 The gradient is a **product** of per-layer factors, so it decays or explodes exponentially: ten sigmoids contribute at most $0.25^{10}\approx10^{-6}$, while a factor of 1.5 across 20 layers is $\approx3{,}300\times$.
 
@@ -873,9 +889,9 @@ The gradient is a **product** of per-layer factors, so it decays or explodes exp
 
 ### Regularizing a network
 
-![Dropout, batch normalization and weight decay compared](diagrams/nn_regularization_ai.png)
+![Infographic: dropout and batch norm, train versus eval. Dropout with p = 0.5 zeroes random units and divides survivors by 0.5 in training and is off at eval; batch norm normalizes with this batch's mean and variance in training and running statistics at eval; batch norm is mainly a training stabilizer, not a regularizer, and model.eval() does not stop gradient tracking](diagrams/nn14_info_dropout_batchnorm_ai.png)
 
-**Dropout** zeroes units while training and divides survivors by $(1-p)$; it is **off** at inference with no rescaling. **BatchNorm** uses the current batch's statistics while training but **running** statistics at evaluation — so `model.eval()` matters (and it does *not* disable autograd; `no_grad()` is separate). Transformers use **LayerNorm** (normalize across each token's features) and modern LLMs often **RMSNorm** (rescale by root-mean-square, no mean subtraction). **Weight decay** multiplies each weight by $(1-2\alpha\lambda)$ each step; AdamW decouples it, and an L2 term inside Adam is **not** equivalent.
+**Dropout** zeroes units while training and divides survivors by $(1-p)$; it is **off** at inference with no rescaling. **BatchNorm** uses the current batch's statistics while training but **running** statistics at evaluation — so `model.eval()` matters (and it does *not* disable autograd; `no_grad()` is separate). Transformers use **LayerNorm** (normalize across each token's features) and modern LLMs often **RMSNorm** (rescale by root-mean-square, no mean subtraction). **Weight decay:** an L2 penalty $\lambda\lVert w\rVert^2$ under plain SGD multiplies each weight by $(1-2\alpha\lambda)$ per step, while **AdamW** decouples the decay and multiplies by $(1-\alpha\lambda)$; an L2 term inside Adam is **not** equivalent, because Adam's adaptive scaling acts on it too.
 
 ### Architectures
 
@@ -914,7 +930,7 @@ Divide attention scores by $\sqrt{d_k}$ or softmax saturates. Causal masking hap
 
 > 💡 **In a sentence —** An agent learns by doing — it acts, receives reward, and adjusts to maximize cumulative future reward, with no labelled dataset anywhere.
 
-![The reinforcement learning loop, and the main families of algorithm](diagrams/rev_rl_ai.png)
+![Reinforcement learning map: nine cards - agent loop (state, action, reward, next state), MDP (S, A, P, R, gamma) with the Markov property, discount gamma = 0.9 looking about 10 steps ahead (0.9^10 about 0.35), Bellman Q*(s,a) = R + gamma x max Q*(s',a'), TD error, epsilon-greedy decaying 1.0 to 0.01 plus UCB and Thompson sampling, Q-learning off-policy vs SARSA on-policy, DQN with 4 frames, replay and target network, actor-critic advantage - plus a Pick by Question table (policy gradient, PPO clip 0.8 to 1.2, SFT to reward model to PPO + KL, DPO, GRPO) and the trap that PPO clipping is a brake, not a hard guarantee](diagrams/rec15s_info_rl_map_ai.png)
 
 ### The framework
 
@@ -928,7 +944,7 @@ Divide attention scores by $\sqrt{d_k}$ or softmax saturates. Causal masking hap
 
 An **MDP** is the tuple $(S, A, P, R, \gamma)$ — states, actions, transition probabilities, rewards, discount. The **Markov property** says the future depends only on the current state, which is what makes RL tractable; when it doesn't hold, engineer the state to carry history (DQN stacks four frames).
 
-**Return** $G_t = \sum_k \gamma^k r_{t+k+1}$. The discount $\gamma$ sets the horizon: 0 is myopic, 0.9 counts a reward ten steps out at ~0.35×, 0.99 is far-sighted.
+**Return** $G_t = \sum_k \gamma^k r_{t+k+1}$. The discount $\gamma$ sets the horizon — it looks roughly $1/(1-\gamma)$ steps ahead: 0 is myopic, 0.9 looks about 10 steps ahead (a reward 10 steps after the first counts $0.9^{10}\approx0.35$ of its value), 0.99 about 100.
 
 ### Value functions and Bellman
 
@@ -944,8 +960,9 @@ $\mathbb{E}_\pi[\cdot]$ means "the average over everything that could happen if 
 
 | Strategy | Mechanism |
 |---|---|
-| **ε-greedy** | Random action with probability ε; decay 1.0 → 0.05 |
+| **ε-greedy** | Random action with probability ε; decay it, e.g. 1.0 → 0.01 |
 | **UCB** | $\arg\max_a [Q(a) + c\sqrt{\ln t / N(a)}]$ — bonus shrinks as an action is tried |
+| **Thompson sampling** | Pick each action with the probability that it is the best |
 | **Boltzmann** | Sample $\propto e^{Q(a)/\tau}$; $\tau \to 0$ greedy, $\tau \to \infty$ uniform |
 
 ### The algorithm families
@@ -954,15 +971,15 @@ $\mathbb{E}_\pi[\cdot]$ means "the average over everything that could happen if 
 
 $$Q(s,a) \leftarrow Q(s,a) + \alpha\underbrace{\left[r + \gamma\max_{a'}Q(s',a') - Q(s,a)\right]}_{\text{TD error, i.e. surprise}}$$
 
-Positive TD error means it went better than expected. Off-policy means it learns the optimal $Q$ while behaving ε-greedily.
+Positive TD error means it went better than expected. Off-policy means it learns the optimal $Q$ while behaving ε-greedily. Its on-policy twin **SARSA** uses the next action actually taken, $r + \gamma Q(s',a')$, so it scores the policy it follows, exploration included — more cautious when exploring mistakes are costly ([Ch 15 §15.5](#content/15_reinforcement_learning)).
 
-**DQN** replaces the impossible Q-table (Atari has ~$10^{56}$ states) with a CNN, and adds the two tricks that make it stable: **experience replay** (sample random past transitions to break temporal correlation) and a **target network** (a frozen copy for TD targets, so you aren't chasing a moving target).
+**DQN** replaces the Q-table — hopeless when the state is raw screen pixels — with a CNN that reads the last four frames, and adds the two tricks that make it stable: **experience replay** (sample random past transitions to break temporal correlation) and a **target network** (a frozen copy for TD targets, so you aren't chasing a moving target).
 
 **Policy gradients** optimize $\pi_\theta$ directly: $\nabla_\theta J = \mathbb{E}[\nabla_\theta \log\pi_\theta(a_t \mid s_t)\, G_t]$ — raising the log-probability of actions that led to high returns. This handles **continuous** action spaces where argmax over Q is impossible. REINFORCE does it per episode, with high variance.
 
 **Actor-critic** pairs an actor (the policy) with a critic (a value estimate), and uses the **advantage** $A(s_t,a_t) = r_t + \gamma V(s_{t+1}) - V(s_t)$ instead of the raw return — cutting variance by asking "was this action better than expected *here*" rather than "was this a good episode".
 
-**PPO** clips the policy ratio so a single update can never be destructive. It is the workhorse of modern RL and the backbone of **RLHF**: supervised fine-tune → train a reward model → PPO with a KL penalty that stops the policy drifting into reward hacking.
+**PPO** clips the probability ratio $\rho = \pi_\text{new}(a \mid s)/\pi_\text{old}(a \mid s)$ to $[1-\epsilon, 1+\epsilon]$ (usually $\epsilon = 0.2$, a clip range unrelated to ε-greedy's ε): once an action's probability has moved past the clip range in the helpful direction, the objective stops rewarding further pushes. That discourages overly large updates, but it is **not a hard guarantee** that the policy cannot change too much. The classic **RLHF** recipe is supervised fine-tune → train a reward model → PPO with a KL penalty that stops the policy drifting into reward hacking. Alternatives: **DPO** trains directly on chosen/rejected answer pairs with no separate reward model or RL loop, and **GRPO** (DeepSeek) is PPO without the critic, scoring each sampled answer against its own group ([Ch 15 §15.7](#content/15_reinforcement_learning)).
 
 ---
 
@@ -970,10 +987,10 @@ Positive TD error means it went better than expected. Off-policy means it learns
 >
 > - MDP = $(S, A, P, R, \gamma)$; the future depends only on the current state
 > - $Q^*(s,a) = R + \gamma\,\mathbb{E}[\max_{a'}Q^*(s',a')]$
-> - TD error = $r + \gamma\max Q(s',a') - Q(s,a)$; off-policy, model-free
+> - TD error = $r + \gamma\max Q(s',a') - Q(s,a)$; Q-learning is off-policy, SARSA on-policy
 > - DQN = experience replay + target network
-> - Policy gradients handle continuous actions; PPO clips the update
-> - RLHF = SFT → reward model → PPO + KL penalty
+> - Policy gradients handle continuous actions; PPO clips the update — a brake, not a guarantee
+> - Classic RLHF = SFT → reward model → PPO + KL penalty; DPO skips the reward model
 
 ---
 
@@ -981,15 +998,15 @@ Positive TD error means it went better than expected. Off-policy means it learns
 
 | Chapter | The single thing to remember |
 |---|---|
-| **07 — Intro** | ML = Input + Output → Rules. AI ⊃ ML ⊃ DL ⊃ GenAI. 80% of the work is data prep. Gradient boosting still beats deep learning on tabular data. |
+| **07 — Intro** | ML = Input + Output → Rules. AI ⊃ ML ⊃ DL ⊃ GenAI. Data work is the biggest share of a project (roughly 40–80%). Gradient boosting is still the first choice on tabular data. |
 | **08 — Core Concepts** | Total Error = **Bias² + Variance + Noise**. Loop: forward → loss → backward → $w \leftarrow w - \alpha\,\partial L/\partial w$. Adam lr=0.001 default. L1 → zeros, L2 → shrinks. |
 | **09 — Preprocessing** | **Fit on train only.** IQR fence $Q1-1.5\,IQR$ to $Q3+1.5\,IQR$. One-hot nominal, target-encode high cardinality. Scaling before splitting is silent leakage. |
-| **10 — Supervised** | Bagging cuts **variance**, boosting cuts **bias**. Logistic regression = straight boundary + calibrated probabilities. Stratified K-Fold always. $K=\sqrt{n}$ for KNN. |
+| **10 — Supervised** | Bagging cuts **variance**, boosting cuts **bias**. Logistic regression = straight boundary + calibrated probabilities. Stratified K-Fold always. KNN: start at K=5, tune K by CV. |
 | **11 — Unsupervised** | K-Means: you pick K, round clusters only. DBSCAN: finds K, any shape, flags noise. Silhouette > 0.5 is reasonable. PCA linear; t-SNE picture-only; UMAP both. |
-| **12 — Key Algorithms** | $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$, exact but $O(p^3)$. L1's diamond corners give exact zeros. Boosting fits residuals. LightGBM leaf-wise = 10–30× faster. |
+| **12 — Key Algorithms** | $\mathbf{w}^* = (X^\top X)^{-1}X^\top\mathbf{y}$, exact but $O(p^3)$. L1's diamond corners give exact zeros. Boosting fits residuals. LightGBM: histogram bins + leaf-wise growth = fast on big data. |
 | **13 — Evaluation** | Precision = TP/(TP+FP); Recall = TP/(TP+FN). **AUC-PR when positives are rare.** R² < 0 = worse than the mean. Never tune on test. TimeSeriesSplit for time. |
 | **14 — Neural Networks** | No activation ⇒ one linear layer. Sigmoid+BCE and softmax+CE both give $\partial L/\partial z = \hat{y}-y$. He init = $2/n_\text{in}$. CNN locality · RNN memory · Transformer attention. |
-| **15 — Reinforcement** | $Q^*(s,a) = R + \gamma\max_{a'}Q^*(s',a')$. DQN = replay + target network. **PPO** clips the policy ratio. RLHF = SFT → RM → PPO + KL penalty. |
+| **15 — Reinforcement** | $Q^*(s,a) = R + \gamma\max_{a'}Q^*(s',a')$. DQN = replay + target network. **PPO** clips the policy ratio (a brake, not a guarantee). Classic RLHF = SFT → RM → PPO + KL penalty; DPO skips the RM. |
 
 ---
 

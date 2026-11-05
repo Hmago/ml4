@@ -51,16 +51,16 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 07 | Introduction to Machine Learning | ★ | [07_introduction.md](content/07_introduction.md) | ~1.5 hrs | Beginner |
-| 08 | Core Concepts & Terminology | ★★★ | [08_core_concepts.md](content/08_core_concepts.md) | ~6.5 hrs | Beginner |
-| 09 | Data Preprocessing | ★★ | [09_data_preprocessing.md](content/09_data_preprocessing.md) | ~1 hr | Beginner-Intermediate |
-| 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~5.5 hrs | Intermediate |
-| 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~5.75 hrs | Intermediate |
-| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~3.5 hrs | Intermediate |
-| 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~3.5 hrs | Intermediate |
+| 07 | Introduction to Machine Learning | ★ | [07_introduction.md](content/07_introduction.md) | ~3 hrs (~1.25 hrs fast path) | Beginner |
+| 08 | Core Concepts & Terminology | ★★★ | [08_core_concepts.md](content/08_core_concepts.md) | ~10.75 hrs (~3.75 hrs fast path) | Beginner |
+| 09 | Data Preprocessing | ★★ | [09_data_preprocessing.md](content/09_data_preprocessing.md) | ~2.75 hrs (~1.25 hrs fast path) | Beginner-Intermediate |
+| 10 | Supervised Learning | ★★★ | [10_supervised_learning.md](content/10_supervised_learning.md) | ~9.5 hrs (~3 hrs fast path) | Intermediate |
+| 11 | Unsupervised Learning | ★★ | [11_unsupervised_learning.md](content/11_unsupervised_learning.md) | ~10.25 hrs (~3.25 hrs fast path) | Intermediate |
+| 12 | Key ML Algorithms Deep Dive | ★★★ | [12_key_algorithms.md](content/12_key_algorithms.md) | ~6.5 hrs (~2 hrs fast path) | Intermediate |
+| 13 | Model Evaluation & Tuning | ★★★ | [13_model_evaluation.md](content/13_model_evaluation.md) | ~6.5 hrs (~2 hrs fast path) | Intermediate |
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~11 hrs (~4.5 hrs fast path) | Intermediate-Advanced |
-| 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~1 hr | Intermediate |
-| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.25 hrs | All Levels |
+| 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~2.25 hrs (~0.75 hrs fast path) | Intermediate |
+| ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.75 hrs | All Levels |
 | | **Core ML Total** | | | **~37.25 hrs** | |
 
 ### Deep Learning & LLMs

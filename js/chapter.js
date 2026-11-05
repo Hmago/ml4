@@ -2170,12 +2170,29 @@ async function runPythonCode(code, outputEl) {
       'wandb': 'Weights & Biases',
       'ragas': 'Ragas',
       'deepeval': 'DeepEval',
+      // Agent protocols, gateways, retrieval stores and other server-side SDKs
+      'mcp': 'MCP SDK',
+      'a2a': 'A2A SDK',
+      'litellm': 'LiteLLM',
+      'smolagents': 'smolagents',
+      'sentence_transformers': 'sentence-transformers',
+      'faiss': 'FAISS',
+      'chromadb': 'Chroma',
+      'qdrant_client': 'Qdrant client',
+      'sglang': 'SGLang',
+      'llama_cpp': 'llama.cpp',
+      'langsmith': 'LangSmith',
+      'langfuse': 'Langfuse',
+      'guardrails': 'Guardrails AI',
+      'nemoguardrails': 'NeMo Guardrails',
       'requests': null,  // works in pyodide via micropip but blocked by CORS — skip silently
     };
     const blockedHits = [];
     for (const mod of importedModules) {
       if (browserIncompatible.hasOwnProperty(mod) && browserIncompatible[mod]) {
         blockedHits.push(browserIncompatible[mod]);
+      } else if (/^langchain_/.test(mod)) {
+        blockedHits.push('LangChain');
       }
     }
     if (blockedHits.length > 0) {

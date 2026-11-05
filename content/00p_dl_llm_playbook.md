@@ -618,7 +618,7 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 | LoRA LR | 2e-4 | 10× higher than full FT |
 | LoRA rank `r` | 16 | Sane default |
 | Token price drop 2022 → 2026 | ~150–1000× for equal quality | Architecture decisions follow this ([Ch 20 §20.8](#content/20_2026_landscape)) |
-| GPT-4-quality cost | ~$0.06 / M tokens (July 2026 estimate) | Down from ~$20 in late 2022 |
+| GPT-4-quality cost | ~$0.06 / M tokens (July 2026 estimate) | Down from ~20 dollars in late 2022 |
 | SWE-bench Verified | Top scores in the high 80s % (2026) | Treat as saturated and contaminated — OpenAI stopped reporting it in Feb 2026 and recommends SWE-bench Pro |
 | Reasoning thinking budget | 1K–100K tokens | Controlled per-call |
 | Default chunk size for RAG | ~256–512 tokens, 50–100 overlap | Balance precision vs context |

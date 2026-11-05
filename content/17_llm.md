@@ -4983,7 +4983,7 @@ Published numbers beat guesses. **GPU-hours** = number of GPUs × hours each one
 | Llama 3 8B (Meta, 2024) | 8B | 15T+ | H100 80 GB | 1.3M GPU-hours |
 | Llama 3 70B (Meta, 2024) | 70B | 15T+ | H100 80 GB | 6.4M GPU-hours |
 | Llama 3.1 405B (Meta, 2024) | 405B | 15.6T | up to 16,000 H100 | one 54-day stretch of pre-training logged 466 job interruptions |
-| DeepSeek-V3 (2024) | 671B total, 37B active (MoE) | 14.8T | 2,048 H800 | 2.788M GPU-hours — about $5.6M at an assumed $2 per GPU-hour, final run only (no research or ablation runs) |
+| DeepSeek-V3 (2024) | 671B total, 37B active (MoE) | 14.8T | 2,048 H800 | 2.788M GPU-hours — about $5.6M at an assumed 2 dollars per GPU-hour, final run only (no research or ablation runs) |
 
 Divide GPU-hours by the number of GPUs to get wall-clock time: DeepSeek-V3's 2.788M ÷ 2,048 ≈ 1,361 hours ≈ 57 days for everything (pre-training, context extension, post-training).
 
