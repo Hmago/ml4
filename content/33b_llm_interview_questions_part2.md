@@ -204,7 +204,8 @@ and seat a new group." The kitchen (GPU) is always busy.
   GPU is ALWAYS fully utilized. No idle slots.
   New requests start as soon as any slot opens up.
 
-  Result: 10-20× higher throughput than static batching!
+  Result: ~8× the throughput of static batching (Anyscale), up to 23× with vLLM;
+  Orca reported 36.9× over FasterTransformer.
 ```
 
 **Official Definition:**
@@ -218,7 +219,7 @@ and seat a new group." The kitchen (GPU) is always busy.
 - Static batching: all requests start and end together → GPU idle time from length variation
 - Continuous batching: requests enter and exit independently → near 100% GPU utilization
 - vLLM introduced **PagedAttention** alongside continuous batching — manages KV cache memory like virtual memory pages
-- This is what makes LLM serving at scale practical — 10-20× throughput improvement
+- This is what makes LLM serving at scale practical — Orca reported 36.9× over FasterTransformer; Anyscale measured ~8× over static batching alone, up to 23× with vLLM
 - Key serving frameworks (2025): vLLM (PagedAttention), TGI (Hugging Face), TensorRT-LLM (NVIDIA), SGLang (UC Berkeley / LMSYS — best for structured generation), Ollama (local/edge deployment)
 
 ---
@@ -283,7 +284,7 @@ make LLMs faster:
   KV cache               Don't recompute past tokens ~n× faster
   Flash Attention        Faster attention math       2-4× faster
   Speculative decoding   Draft+verify trick          2-3× faster
-  Continuous batching    No idle GPU time            10-20× throughput
+  Continuous batching    No idle GPU time            ~8-23× throughput
   Smaller model          Use 7B instead of 70B       ~10× faster
   Streaming              Show tokens as generated    Perceived 10×
 
@@ -538,7 +539,7 @@ tests — like giving a student a standardized exam covering many subjects.
 - No single metric captures everything — use a combination
 - Perplexity: good for comparing language models, but low perplexity ≠ useful model
 - MMLU/MMLU-Pro: broad knowledge tests — MMLU is saturated (top models >90%), MMLU-Pro is the harder replacement
-- **SWE-bench Verified** (2025-26): the key benchmark for coding agents — measures ability to solve real GitHub issues. Frontier models went from ~13% (2023) to 70-88% by 2026
+- **SWE-bench Verified**: was the key benchmark for coding agents — measures ability to solve real GitHub issues. Frontier models went from ~13% (2023) to 70-88% by early 2026, when OpenAI retired it (flawed tests, contamination). SWE-bench Pro — OpenAI found ~30% of tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report it, so treat scores as rough
 - **ARC-AGI-2**: measures novel reasoning/fluid intelligence — remains hard (frontier scores far below the saturated ARC-AGI-1); **GPQA-Diamond** and **LiveCodeBench** are the other go-to 2026 differentiators
 - LMArena (formerly Chatbot Arena / LMSYS): crowd-sourced preferences, ELO rating — closest to real-world quality. Increasingly trusted over static benchmarks
 - Always evaluate on YOUR specific use case — benchmark scores don't guarantee performance on your data
@@ -1349,7 +1350,7 @@ someone who gives you directions vs. someone who drives you there.
 
 **Interview Answer:**
 - Agent = LLM + tools + a loop (ReAct pattern: Thought → Action → Observation → repeat)
-- Key frameworks: LangChain/LangGraph, LlamaIndex, CrewAI (multi-agent), AutoGen (Microsoft), Agno
+- Key frameworks: LangChain/LangGraph, LlamaIndex, CrewAI (multi-agent), Microsoft Agent Framework (1.0, Apr 2026; successor to the now-archived AutoGen), Agno
 - **Computer Use** (Anthropic, Oct 2024): models that interact with GUIs via screenshots + mouse/keyboard — general-purpose automation
 - **SWE-bench**: the key benchmark for coding agents — solving real GitHub issues end-to-end
 - Challenges: error propagation (mistakes compound), safety (agents with real-world access), cost (many LLM calls per task), reliability (agents can get stuck in loops)
@@ -1826,7 +1827,7 @@ Think of it like a teacher who has read the textbook once and memorized their ke
   IMPACT:
   ┌─────────────────┬──────────────────────────────────────────┐
   │ Latency (TTFT)  │ 80–90% reduction for long cached prefix  │
-  │ Cost            │ 60–90% reduction for cached tokens       │
+  │ Cost            │ 90–97.5% off the input price of hits     │
   │ Throughput      │ Higher: less compute per request         │
   └─────────────────┴──────────────────────────────────────────┘
 ```

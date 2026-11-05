@@ -162,6 +162,8 @@ dropping rare phrases. The long tail may matter greatly to a particular user.
 
 ## 5.3 Architecture
 
+![Whiteboard HLD of search autocomplete, online and offline lanes. Online: the Browser (60 ms debounce, cancels old requests) sends GET /ac?q=ne to the Edge / CDN hot-prefix cache; on a miss the Suggest Service normalizes, routes by prefix, checks a Redis hot top-K cache, walks n to e in RAM trie shards (32 shards x 3, top-K per node) and returns the top-K list. Offline: search query logs flow through Kafka, an Aggregator (time decay, drop spam and PII, keep top-N), Bigtable popularity, a snapshot builder and an object store; replicas load shadow, validate and flip a pointer. Sticky: 5 B searches/day x 6, 350,000/s average, 1,000,000/s peak, p99 under 50 ms, trie 144 GB.](diagrams/case36_hld_autocomplete_ai.png)
+
 **Image correction:**
 
 ![Search Autocomplete / Typeahead — high-level architecture (HLD)](diagrams/autocomplete_ai.png)
@@ -556,6 +558,8 @@ cheap** in an object store. The real engineering is **scheduling and politeness*
 throughput.
 
 ## 6.3 Architecture
+
+![Web crawler HLD whiteboard. Seed URLs enter the URL Frontier queue (priority front queues, per-host FIFO back queues, host heap by nextAllowed). It leases a URL and token to the Fetchers, which check DNS and robots in Redis, send a conditional GET to web servers, receive 200 or 304, and report a token-checked completion. Pages go to an object store of raw gzip HTML, read by the Indexer and the Parser, which feeds content dedupe (sim-hash), the Bigtable link graph and URL dedupe (Bloom plus URL record), returning new URLs only. Due recrawls from Bigtable crawl metadata skip the seen-set. Sticky: 30 B pages monthly, 11,600 pages/s average, 35,000/s and 18 Gbps peak, Bloom 36 GB at 1 percent.](diagrams/case36_hld_web_crawler_ai.png)
 
 **Image correction:**
 
@@ -964,6 +968,8 @@ older one), and only checkpoint occasionally. That split
 
 ## 7.3 Architecture
 
+![Whiteboard HLD of proximity search in two lanes. Static places: the App sends GET /nearby with r=2km to the Search Service, which covers the circle with cell ids, reads candidates from the Geo-index (Redis GEO or PostGIS; geohash, quadtree or S2), fetches metadata from Postgres places, filters by haversine distance, sorts and returns the top N with distances. Moving users: phones send GPS pings every 10 s to Location ingest, which keeps only the latest, overwrites the RAM grid of live locations (LWW plus TTL), updates a Redis user-to-cell map and checkpoints asynchronously. Sticky: 200 M places about 200 GB, 1 B queries/day, 11,600/s average and 35k peak, p99 under 100 to 200 ms, 5,000,000 moving writes/s.](diagrams/case36_hld_proximity_ai.png)
+
 **Image correction:**
 
 ![Proximity / Nearby (Maps / Yelp) — high-level architecture (HLD)](diagrams/proximity_ai.png)
@@ -1352,6 +1358,8 @@ our consistency budget on the *small* match path and keep the *huge* location pa
 and eventually consistent.
 
 ## 8.3 Architecture
+
+![Ride-hailing HLD whiteboard. The Rider app sends POST /rides to the Matching service, which reads nearby driver hints from the RAM grid, reserves driver d1 for 15 s in the Driver plus trip authority, exchanges offer and accept with epoch 41 through the WebSocket gateway, commits accept as one transaction and returns matched. Drivers send GPS every 4 s through the gateway to Location ingest, which overwrites the RAM grid (LWW plus TTL) feeding Redis surge per cell. The authority writes an outbox row; the outbox relay publishes trip.matched to Kafka for ETA, payments, notify. Sticky: 5 M drivers every 4 s, 1,250,000 location writes/s, 2,500,000/s peak, 350 matches/s and 1,400 peak, first offer in 2 to 5 s.](diagrams/case36_hld_ride_hailing_ai.png)
 
 **Image correction:**
 
@@ -1750,6 +1758,8 @@ How far back does the timeline go (retention)?*
 it is a workload-driven choice, not a claim that pure push or pull never works.
 
 ## 9.3 Architecture
+
+![Whiteboard HLD of a hybrid news feed. Author posts to the Post Service, which commits to the Post Store (Cassandra) and replies after commit. An outbox relay publishes Kafka post.created to Fan-out Workers, which check the Social Graph: under 100k followers they ZADD into the Timeline Cache (Redis ZSET, cap 800 per user); celebrities skip the push and land in the Celeb Recent Cache. Reader calls GET /feed; the Feed Service merges pushed ids, celebrity pulls and own posts, the Ranking Service ranks once into a Feed Snapshot, and a page returns with snapshotId and lastOrdinal. Sticky note: 500M DAU, 1,160 posts/s, 58,000 reads/s, 6.4 TB feed cache, p95 under 200 ms.](diagrams/case36_hld_news_feed_ai.png)
 
 **Image correction:**
 
@@ -2175,6 +2185,8 @@ aggregation; HyperLogLog instead estimates **unique viewers**, a different metri
 
 ## 10.3 Architecture
 
+![Whiteboard HLD of video streaming in two lanes. Upload lane: the Creator calls POST /videos on the Upload Service, gets a presigned URL and PUTs the original straight into the Raw Object Store; status lives in the Metadata DB. An uploaded event starts the Planner (common 0, 4, 8 s boundaries), which queues chunk by rendition jobs for the parallel Encoder Fleet; the Packager validates and writes segments, playlists, then master to the Origin Object Store and marks READY. Playback lane: the Player's ABR loop fetches the manifest and segments from the CDN, filled from origin on a miss; view events flow through a log to a sharded View Counter. Sticky note: 500 h uploaded per minute, 1.6 PB originals per day, 26.4 Mb/s ladder, 116k views/s, start under 2 s.](diagrams/case36_hld_video_streaming_ai.png)
+
 **Image correction:**
 
 ![Video Streaming (YouTube / Netflix) — high-level architecture (HLD)](diagrams/video_streaming_ai.png)
@@ -2570,6 +2582,8 @@ turn "20 saves of a big file" into a few 4 MB chunk transfers.
 
 ## 11.3 Architecture
 
+![Whiteboard HLD of file sync in two lanes. Metadata path: the Laptop chunks and hashes the file, sends an intent with base N and key u7 to the Metadata Service, gets back missing equals h2-prime, later commits with key u7 and receives version N+1; the Metadata Service checks the base, pins blocks and writes the MySQL Metadata DB of versions, block registry and journal. Block path: the Laptop PUTs only h2-prime to the Block Service, which verifies hash and length, stores it in the immutable Block Store (S3 or GCS) and calls back AVAILABLE. An outbox feeds Kafka file.changed to the Notification Service and Search and Thumbnails; the Phone gets a pull and downloads only h2-prime. A GC Worker deletes only when refCount is 0 and no live pins. Sticky note: 500M users by 2,000 files, 1 trillion files, 4 MB chunks.](diagrams/case36_hld_file_sync_ai.png)
+
 **Image correction:**
 
 ![File Sync & Storage (Drive / Dropbox) — high-level architecture (HLD)](diagrams/file_sync_ai.png)
@@ -2944,6 +2958,8 @@ pairs before retries. Encode unique allocated integers to avoid generated-code c
 or use random candidates plus an atomic uniqueness check. Reads still dominate.
 
 ## 12.3 Architecture
+
+![Whiteboard HLD of a URL shortener. Create row: the Creator calls POST /shorten on the Write Service, which takes an alias or the next id from the ID Range Allocator (disjoint ranges), encodes it as base62 in at most 7 characters, writes put-if-absent into the KV Store (Cassandra or DynamoDB) holding code to longURL and expiresAt, and returns tiny.cc/9xQ2bR. Redirect row: the Browser calls GET /9xQ2bR on the Redirect Service, which reads Redis on a hit or the KV Store on a miss and fills the cache, checks expiresAt (expired gives 410), answers 302 with Location and no-store, and the Browser follows Location to the long URL site. Click events go async through Kafka to an Analytics Warehouse. Sticky note: 1,160 creates/s, 116k redirects/s, 3.5 trillion codes, 90 TB, redirect under 50 ms.](diagrams/case36_hld_url_shortener_ai.png)
 
 **Image correction:**
 

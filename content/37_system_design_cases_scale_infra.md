@@ -196,6 +196,8 @@ whole minute. Persist the refill timestamp even after a denial.
 
 ## 13.3 Architecture
 
+![Whiteboard HLD of the distributed rate limiter. Clients send GET /v1/search to the API Gateway fleet (auth to KEY, limiter middleware, policy cache), which runs EVAL token_bucket.lua on the Redis Cluster of token buckets, sharded by KEY over 16,384 slots, where Redis TIME, refill and spend are one atomic step. Allowed calls go to backend services; denied ones get 429 plus Retry-After. Async: Redis replicates to a replica, allow and deny events go through Kafka to OLAP audit metrics, and the policy store invalidates gateway caches via pub/sub. Sticky note: 1,000,000 checks/s peak, 10M keys x 100 B about 1 GB, 10 to 20 Redis shards, under 1 ms p99 added, 0.3 ms same-AZ hop.](diagrams/case37_hld_rate_limiter_ai.png)
+
 The limiter lives **inside the API gateway**, as middleware that runs *before*
 any request is routed to a backend. State lives in a sharded Redis cluster.
 
@@ -565,6 +567,8 @@ Decode with `id >> 22 = 1000`, `(id >> 12) & 1023 = 7`,
 [Contents](#chapter37-toc) · [Previous: limiter](#cs13) · [Next: Top-K](#cs15)
 
 ## 14.3 Architecture
+
+![Whiteboard HLD of Snowflake unique IDs. In an app pod, app code calls nextId() on the embedded generator library, which checks the lease, the clock against last_ts and the sequence, returns a 64-bit ID, which the app inserts into sharded DBs. In the background the generator renews its lease with the ZooKeeper or etcd coordinator, which returns worker_id and a timestamp grant; a restart after grant 1100 starts at 1101. Pattern B routes polyglot clients through a load balancer to an ID service. The bit bar shows sign 0, 41-bit timestamp, 10-bit machine, 12-bit sequence. Sticky note: 2^41 ms about 69.7 years, 1024 workers x 4096 IDs/ms, 4.096M IDs/s per worker, fleet about 4.2B IDs/s.](diagrams/case37_hld_unique_ids_ai.png)
 
 Two deployment shapes. **Embedded** (a library inside each service) is the
 default — it has **no network hop**. A standalone **ID service** is used when
@@ -986,6 +990,8 @@ collisions in this tiny illustration:
 
 ## 15.2 Architecture
 
+![Whiteboard HLD of a top-K trending pipeline. Event sources send events into Kafka partitioned by key. Kafka fans out to three stream workers, each with a Count-Min Sketch and a top-C candidate heap. Workers emit top-C candidates with their window to a merge step that combines only the same window and writes an approximate global top-K to Redis. Dashboards call GET /trending on the /trending API, which reads Redis and returns top-K plus freshness. A Spark batch job computes exact counts from Kafka and reconciles drift into Redis. Sticky note: 1M events/s is 3.6B/hour, about 10^9 keys/day, exact map about 16 GB, CMS 4 x 2^20 x 8 B = 32 MiB, over-count about 9,332/hour.](diagrams/case37_hld_top_k_ai.png)
+
 **Image correction:** unique heap keys, approximate candidates, explicit window semantics
 
 ![Top-K / Trending / Heavy Hitters — high-level architecture (HLD)](diagrams/topk_ai.png)
@@ -1201,6 +1207,8 @@ the API boundary and clamp `r-2` to zero (a negative Redis index means "from end
 
 ## 16.2 Architecture
 
+![Whiteboard HLD of a leaderboard. Players POST a score to the Score API, which validates, dedupes by season, match and player, commits score, version and outbox in one commit to Cassandra, and replies accepted v9. Replayable score events flow to a Projector that applies an update only if newer, writing ZADD plus version into a Redis sorted set. Players read top, rank and around-me through the Leaderboard API using ZREVRANGE and ZREVRANK in O(log N). If Redis is lost it is rebuilt from Cassandra. Sticky note: 50M players x 10/day, 500M writes/day about 6k/s, peak about 20k/s, 100k+ reads/s, 1.6 GB payload, plan 6 to 10 GB.](diagrams/case37_hld_leaderboard_ai.png)
+
 **Image correction:** replace bare dual-write and unbounded tie encoding
 
 ![Leaderboard / Ranking — high-level architecture (HLD)](diagrams/leaderboard_ai.png)
@@ -1404,6 +1412,8 @@ choice, with measured lag rather than a claim of linearizable caching.
 
 ## 17.2 Architecture
 
+![Whiteboard HLD of a cache-aside distributed cache on a consistent-hash ring. App servers with the cache client and near cache send GET k to the cache cluster of nodes A to D with LRU, about 100 vnodes per node, and get a hit in 0.3 ms or a miss. On a miss they read the authoritative database in 10 ms, then SET k, v, TTL. The cluster replicates asynchronously, and a membership and failover manager publishes ring ownership and promotes replicas. Notes show the g7 to g8 generation fence and stampede handling. Sticky note: 1M reads/s at over 90% hits, DB sees about 100k/s, 4 nodes for RAM, 8 nodes for ops, 10 ms DB versus 0.3 ms cache.](diagrams/case37_hld_dist_cache_ai.png)
+
 **Image correction:** generic ring is not Redis Cluster; four 200k-op nodes are 800k ops/s
 
 ![Distributed Cache (Redis / Memcached) — high-level architecture (HLD)](diagrams/dist_cache_ai.png)
@@ -1589,6 +1599,8 @@ zero rows**; it no longer owns the current attempt.
 [Contents](#chapter37-toc) · [Previous: cache](#cs17) · [Next: payments](#cs19)
 
 ## 18.2 Architecture
+
+![Whiteboard HLD of a job scheduler. Producers submit a job with run_at or cron to the Submit API, which durably writes it to the Postgres job store and returns a job_id. A leader-elected scheduler, using etcd or ZooKeeper and a ZSET due index, promotes due jobs to READY. Workers lease an attempt for 30 s with SKIP LOCKED, run it, call an email or webhook provider that dedupes by job ID, and ACK with token n to mark it DONE; after N attempts a job goes to the DLQ. A sweeper returns expired leases to READY. Sticky note: 100M jobs/day, 1,200/s, peak 5,000/s, 1,000 slots, 72 machines, 100 GB/day. Red note: a stale ACK affects 0 rows.](diagrams/case37_hld_job_scheduler_ai.png)
 
 **Image correction:** ACK needs the current attempt; timer entries consume memory
 
@@ -1852,6 +1864,8 @@ the locked balance, T31 would incorrectly read 5,000.
 [Contents](#chapter37-toc) · [Previous: scheduler](#cs18) · [Next: inventory](#cs20)
 
 ## 19.3 Architecture
+
+![Whiteboard HLD of a payments wallet. The client sends POST /topup with an Idempotency-Key to the Payment API, which records T1 as PENDING under a unique key in the Ledger SQL store. The saga orchestrator runs a fraud risk check, then charges the external processor, Stripe or Adyen, through an idempotent gateway adapter with key T1. The wallet ledger service posts entries, balances and outbox in one ACID transaction where entries sum to zero, and the client gets a receipt. An outbox relay feeds Kafka for notifications and a reconciliation job that also reads the processor settlement report. Sticky note: peak 10,000 txn/s, 20,000 entries/s, 172.8M txns/day, 69 GB/day, years of retention. Red note: timeout means UNKNOWN, re-query, never re-charge.](diagrams/case37_hld_payments_ai.png)
 
 **Image correction:** dashed HTTP arrows are not async events; balance and PENDING rules follow Mermaid/text
 
@@ -2202,6 +2216,8 @@ the other unit: available=0. Within this simplified no-restock/no-return sale,
 
 ## 20.2 Architecture
 
+![Whiteboard HLD of flash sale inventory that never oversells. One million buyers join a virtual waiting room, which admits a steady rate to the Inventory API, idempotent by order_id, with an optional Redis admission gate. The API reserves and decrements stock only if available covers the quantity, in one transaction on the authoritative Inventory SQL store of stock, reservations and outbox, and returns the hold or sold out. It calls Payment from Case 19, receives a payment callback, and confirms by CAS from ACTIVE to CONFIRMED. An expiry worker moves ACTIVE to EXPIRED and restores stock. An outbox relay feeds Kafka order events to fulfillment and reconciliation. Sticky note: 1M buyers, 100 units, one hot SKU, 5-minute hold.](diagrams/case37_hld_flash_sale_ai.png)
+
 **Image correction:** TTL is not release; Redis recovery must precede a no-oversell claim
 
 ![E-commerce Inventory / Flash Sale — high-level architecture (HLD)](diagrams/inventory_ai.png)
@@ -2431,6 +2447,8 @@ The two successful sets are not subsets of the same three-node universe.
 
 ## 21.2 Architecture
 
+![Whiteboard HLD of a Dynamo-style key-value store. The client sends PUT or GET for cart:alice to any node acting as coordinator; there is no leader. The coordinator hashes the key on a ring with virtual nodes to get a preference list of 3 nodes, sends to home replicas A, B and C, waits for W = 2 acks on PUT or R = 2 replies on GET, and returns the value with its version context. It read-repairs stale Node C. Under sloppy quorum, stand-in Node D takes a hinted handoff and replays it later. Gossip and Merkle-tree anti-entropy run in the background. Sticky note: 1M ops/s, 30 TB stored, about 30 to 40 nodes, single-digit ms.](diagrams/case37_hld_kv_store_ai.png)
+
 **Image correction:** W+R>N is fixed-set overlap, not an unconditional latest-write guarantee
 
 ![Distributed Key-Value Store (Dynamo-style) — high-level architecture (HLD)](diagrams/kv_store_ai.png)
@@ -2618,6 +2636,8 @@ via unauthenticated preview or HEAD requests.
 [Contents](#chapter37-toc) · [Previous: KV store](#cs21) · [Next: e-commerce](#cs23)
 
 ## 22.2 Architecture
+
+![Whiteboard HLD of Pastebin: metadata in DB, blob in S3. Write lane: Writer posts a paste to the Write API, which generates a base62 or counter key, puts blob p7/v1 into the private S3/GCS object store, writes key, expiry, view_once and consumed metadata to the Metadata DB with a hot-metadata cache, and returns a short link. Read lane: Reader sends GET p7 with identity to the Read API, which checks ACL and server-time expiry, CASes consumed from false to true, fetches the blob with service access and streams it no-store. A CDN serves public pastes only. TTL sweep and orphan cleanup delete blobs. Sticky note: 10M pastes/day, 120 writes/s, 1,200 reads/s, 100 GB/day.](diagrams/case37_hld_pastebin_ai.png)
 
 **Image correction:** authorize private serving and enforce view-once before fetching the blob
 
@@ -2830,6 +2850,8 @@ not a newly calculated amount or new charge.
 [Contents](#chapter37-toc) · [Previous: Pastebin](#cs22) · [Next: LLM serving](#f1)
 
 ## 23.3 Architecture
+
+![Whiteboard HLD of the e-commerce platform: AP browse, CP checkout, split by a dashed line. Clients reach an API Gateway / BFF that fans out to Search (CS5) on Elasticsearch, a cache-first Catalog service on MongoDB, precomputed Serviceability / TAT and best-effort Recs (F3). Supplier ingest writes MongoDB docs and Kafka item events indexed into Elasticsearch. POST /checkout goes to Cart + Order service with MySQL hot orders, which reserves R901 in Inventory (CS20) and charges P901 via the Payment saga (CS19) and gateway; confirmed orders flow to Fulfillment and Notifications. Orders archive to Cassandra by copy, verify, delete. Sticky note: 12k views/s, 120k/s peak, 120 orders/s, 1 TB catalog. Red note: timeout is PAYMENT_UNKNOWN.](diagrams/case37_hld_ecommerce_ai.png)
 
 **Image correction:** UNKNOWN payment is not failure; terminal does not mean immutable forever
 
@@ -3190,6 +3212,8 @@ cannot fit; do not advertise unlimited context then discover OOM mid-batch.
 
 ### F1.2 Architecture
 
+![Whiteboard HLD of LLM inference serving: batch continuously, reuse KV, stream. Clients POST /chat to an API Gateway, a safety prompt screen and a tenant-scoped prompt/response cache. On a miss the model router picks a small or large model and admits the request to the GPU fleet if its KV budget fits. A continuous-batching scheduler runs prefill, which fills the paged KV cache in GPU HBM, and decode, one token per step; EOS, cancel or deadline frees KV. Tokens and cache hits pass an output gate before the SSE stream. A model registry loads weights; an autoscaler scales on queue depth and tok/s. Sticky note: 60k tok/s, 43 GPUs, 60-150 GPUs, TTFT 500 ms, 512 MiB KV at 4k.](diagrams/case37_hld_llm_serving_ai.png)
+
 **Image correction:** dense decode is O(context), cache isolation and output gate are required
 
 ![LLM Inference Serving — high-level architecture (HLD)](diagrams/llm_serving_ai.png)
@@ -3394,6 +3418,8 @@ Measure the actual joint tail and reduce rerank depth if it violates the budget.
 
 ### F2.2 Architecture
 
+![Whiteboard HLD of RAG and semantic search: only current, authorized chunks answer. A dashed line separates two lanes. The offline indexing lane chunks docs and ACL changes with overlap, embeds them into the Vector DB with ANN index and metadata, and publishes v9 into a Manifest of current versions, ACLs and tombstones. The online query lane sends query and identity to a hybrid lexical plus ANN retriever, passes about 100 candidates to a live gate that checks ACL, version and deletion against the Manifest and fails closed, reranks with a cross-encoder, and sends the top 5 in 1,500 tokens to the LLM (F1), which answers with citations or abstains. Sticky note: 100M chunks, 307.2 GB vectors, 800 ms budget.](diagrams/case37_hld_rag_ai.png)
+
 **Image correction:** enforce current permissions, document versions and deletion before context
 
 ![RAG / Semantic Search — high-level architecture (HLD)](diagrams/rag_ai.png)
@@ -3594,6 +3620,8 @@ fetch exceeds 35 ms, use a tested lightweight ranker/trending fallback.
 [Contents](#chapter37-toc) · [Previous: RAG](#f2) · [Next: pattern library](#part-g)
 
 ### F3.2 Architecture
+
+![Whiteboard HLD of the recommendation feed: cheap recall, precise ranking. A GET feed request passes a gateway to candidate generation, which recalls 700 two-tower ANN, 300 follows and 200 trending items; filter and prune unions them to 1,000, keeps 600 eligible and prunes to 500; a heavy ranker scores 500 in 60 ms with features fetched from the online and offline feature store in 35 ms; re-rank and policy apply diversity, dedupe and business rules and return the top 20. A funnel reads 100M items to 1,000, 600, 500, 20. Logs feed a point-in-time join, Spark training and the model store, which deploys to the ranker. Sticky note: 1B requests/day, 12k/s avg, 40k/s peak, 6M scorings/s, under 200 ms.](diagrams/case37_hld_recsys_ai.png)
 
 **Image correction:** feature freshness and point-in-time joins require more than one shared definition
 

@@ -277,7 +277,10 @@ function formatCaseStudyContent(root) {
     const image = p.querySelector('img');
     if (image && p.children.length === 1) {
       p.classList.add('case-figure');
-      p.dataset.figure = image.getAttribute('src').endsWith('_ai.png') ? 'architecture' : 'whiteboard';
+      const src = image.getAttribute('src');
+      p.dataset.figure = src.includes('_hld_') ? 'hld'
+        : src.includes('_info_') ? 'infographic'
+        : src.endsWith('_ai.png') ? 'architecture' : 'whiteboard';
     }
     const text = p.textContent.trim();
     if (text.startsWith('Prerequisites:')) p.classList.add('case-prerequisites');

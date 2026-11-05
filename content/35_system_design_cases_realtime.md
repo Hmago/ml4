@@ -320,6 +320,8 @@ image is not evidence for a guarantee such as "exactly once" or "no double assig
 
 ![Infographic of the 4-layer reference skeleton and the 45-minute interview: a client arrow into four colour-coded bands (Layer 1 Edge: GeoDNS · CDN · API Gateway · L7 LB; Layer 2 Services: stateless + Realtime Gateway; Layer 3 Data: SQL · Wide-column · Redis · Object store; Layer 4 Async: outbox/CDC → bus → consumers + DLQ) with a 'response after required commit' arrow; an 8-segment 45-minute clock (0–5 clarify … 41–45 trade-offs); a Junior/Senior/Staff rubric for requirements, estimation, failure and trade-offs; do/don't lists and the trap that writing the database and Kafka separately is not atomic.](diagrams/case35_info_reference_arch_interview_ai.png)
 
+![Whiteboard HLD of the 4-layer reference architecture: edge, services, data, async. The Client resolves the nearest region via GeoDNS, loads assets from the CDN, and sends an HTTPS request to the API Gateway, which passes admitted traffic to the L7 LB. The LB feeds stateless services and the long-lived WebSocket Realtime Gateway. Services commit state plus outbox in one SQL commit and use Wide-column, Redis and an Object store; the response returns after the commit. Outbox or CDC feeds a Kafka message bus; consumer groups fan out, index and transcode with retry and dedupe, failing to a DLQ. Sticky note: day about 100k s, peak 2 to 3 times average, 99.9% about 8.8 h/yr down, US to EU 150 ms.](diagrams/case35_hld_reference_arch_ai.png)
+
 These four responsibilities are a **checklist, not a mandatory deployment topology**.
 A small service can implement them in one process plus a database. Split components only
 when isolation, scale, ownership, or deployment needs justify the additional failure modes.
@@ -557,6 +559,8 @@ status lookups are reliable. The 27 TB estimate excludes replicas, indexes, and 
 for retries/status changes; with three replicas its base payload alone is 81 TB.
 
 ## 1.3 Architecture
+
+![Notification System whiteboard HLD: producer services call POST /v1/notify with an idempotency key; the Notification API (auth, validate) writes request + outbox in one transaction to the Requests DB and returns 202 Accepted; an outbox relay publishes to Kafka requested; the Notification Processor (prefs + quiet hours, template, per-user rate limit) uses PostgreSQL prefs, Redis cache + token bucket and S3 templates, then fans out to push.q, email.q, sms.q and in-app.q, each with a worker (retry + DLQ) calling FCM/APNs, SES, Twilio or writing the Cassandra feed; provider receipts and webhooks go to a status consumer and a 90-day-TTL delivery log; status ACCEPTED → SENT → DELIVERED → OPENED, timeout → UNKNOWN → reconcile; sticky note: 100M users × 10/day, about 11,600/s average, 35,000/s peak, SMS 1,750/s, log 300 GB/day.](diagrams/case35_hld_notification_ai.png)
 
 The PNG shows the overall components; the editable mechanism is in **Deep Dive**.
 Only the request/outbox commit is on the acceptance path; provider work is asynchronous.
@@ -994,6 +998,8 @@ delivery fan-out beyond the simplified 1:1 estimate. Account separately for repl
 history projections, indexes, backups, and the chosen retention period.
 
 ## 2.3 Architecture
+
+![Whiteboard HLD of chat: commit in order, then route. Phone A sends SEND with a clientMsgId to Gateway-A, which routes by convId to the fenced Conversation Owner; it dedupes, assigns a seqId, appends and commits to a replicated log, then returns ACK sent. Asynchronously the log is materialized into Cassandra history; the owner looks up B in the Redis connection registry (Crux A), publishes to pub/sub gw:Gateway-B, and Gateway-B writes the frame to Phone B. If B is offline, a Durable KV inbox and Push (Case 1) wake the phone; SYNC from seq 40 replays 41 to head. Crux B: PENDING, SENT, DELIVERED, READ. Sticky note: 20B messages/day, 200k/s average, 600k/s peak, about 200 gateways, p95 under 500 ms.](diagrams/case35_hld_chat_ai.png)
 
 **Transport first — why WebSocket?** Chat needs the *server* to push to the client at any
 moment. Your options:
@@ -1480,6 +1486,8 @@ from the actual layout/layer mix and separately benchmark CPU, packets/s, encryp
 
 ## 3.3 Architecture
 
+![Whiteboard HLD of video conferencing with separate signaling and media planes. Signaling: Client A creates a meeting via the Meeting Service (PostgreSQL), sends join to the Signaling Service, which records the member and SFU in a Redis room registry, and relays the SDP offer and answer. Media: Client A uploads 720p, 360p and 180p simulcast over UDP to the SFU, or via a STUN/TURN TCP/TLS relay when UDP is blocked; the SFU forwards without decoding, 720p to a fiber laptop and 180p to a 3G phone, and loss feedback lowers the layer. A Recording Service writes MP4 to S3 for CDN playback. Sticky note: mesh 10.5 Mbps up at N=8, about 30.6 Tbps egress, under 200 ms.](diagrams/case35_hld_video_conf_ai.png)
+
 Separate **signaling responsibilities** from **media forwarding** so each has appropriate
 scaling and failure isolation. They may share physical infrastructure in a small deployment;
 they should not be forced through the same application request-processing path.
@@ -1892,6 +1900,8 @@ authority, so a doc's own edit rate is the bottleneck. 20 ops/s is trivial; the 
 design question is the rare doc with thousands of concurrent editors.
 
 ## 4.3 Architecture
+
+![Whiteboard HLD of a collaborative editor: transform, commit, then broadcast. Editor A sends OP baseRev 7 to the Collab Gateway, which routes by docId to the Doc Session Server, the fenced per-document owner, which authorizes, dedupes the opId and runs the OT transform, with Redis cursors and Spanner ACL and headRev. It commits rev 8 to the fenced Kafka op log, then sends ACK rev 8 to Editor A and APPLY rev 8 to Editor B. Async workers compact snapshots into the Doc store, index and notify (Case 1); recovery reloads snapshot plus log tail. Example: ins(2,Y) becomes ins(3,Y), giving XabYc at rev 9. Sticky note: 10M ops/s, 20 ops/s per doc, 5 TB snapshots, under 100 to 200 ms.](diagrams/case35_hld_collab_editor_ai.png)
 
 For the **central OT architecture chosen here**, each document has a single fenced authority
 that serializes operations, transforms them, and durably commits revision/identity before

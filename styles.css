@@ -903,6 +903,8 @@ body.sidebar-collapsed .content.case-study-view {
 }
 .content.case-study-view .case-figure[data-figure="architecture"]::after { content: "Architecture overview · original PNG"; }
 .content.case-study-view .case-figure[data-figure="whiteboard"]::after { content: "Whiteboard rehearsal · practice sketch"; }
+.content.case-study-view .case-figure[data-figure="hld"]::after { content: "Whiteboard HLD · the version to draw in the interview"; }
+.content.case-study-view .case-figure[data-figure="infographic"]::after { content: "Infographic · the case on one page"; }
 .content.case-study-view .case-mechanism-label {
   margin-top: 24px;
   margin-bottom: 10px;

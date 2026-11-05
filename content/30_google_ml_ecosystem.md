@@ -294,8 +294,10 @@ A TPU pod is a cluster of TPU chips connected via high-speed custom interconnect
 | TPU v2 | 512 | ~11.5 | 16 GB (HBM) | 2017 |
 | TPU v3 | 1,024 | ~100+ | 32 GB (HBM2) | 2018 |
 | TPU v4 | 4,096 | ~1,100+ | 32 GB (HBM2e) | 2022 |
-| TPU v5e | 256 | ~100 | 16 GB (HBM) | 2023 |
-| TPU v5p | 8,960 | ~4,600+ | 95 GB (HBM) | 2023 |
+| TPU v5e | 256 | ~50 | 16 GB (HBM) | 2023 |
+| TPU v5p | 8,960 | ~4,100 | 95 GB (HBM) | 2023 |
+| TPU v6e (Trillium) | 256 | ~235 | 32 GB (HBM) | 2024 |
+| TPU7x (v7 Ironwood) | 9,216 | ~21,300 | 192 GiB (HBM) | 2025 |
 
 ---
 
@@ -810,6 +812,8 @@ tflite_model = converter.convert()
 
 ---
 
+> **Name change (22 April 2026).** Google relaunched Vertex AI as **Gemini Enterprise Agent Platform**, "the evolution of Vertex AI". The services in this section — Pipelines, Feature Store, Endpoints, Model Registry, Model Monitoring — now ship inside it, and docs and APIs still show the Vertex AI names in places. This section keeps the older name, which most existing code and many interviewers still use; the platform's agent tools (ADK, Agent Runtime, Agent Studio) are in [Ch 19 §19.12](#content/19_ai_frameworks).
+
 ## 4.1 The Simple Explanation
 
 ### The Restaurant Kitchen Analogy
@@ -822,7 +826,7 @@ Building ML models is like cooking a meal. But in a big company, you're not just
 4. **Quality checks** to make sure the food tastes right (Model Monitoring)
 5. **A menu board** tracking all your dishes (Model Registry)
 
-**Vertex AI** is Google Cloud's complete restaurant management system for ML. It handles everything from organizing your data to serving predictions to millions of users.
+**Vertex AI** (now part of **Gemini Enterprise Agent Platform**) is Google Cloud's complete restaurant management system for ML. It handles everything from organizing your data to serving predictions to millions of users.
 
 ```
   ┌──────────────────────────────────────────────────────────┐
@@ -1524,7 +1528,7 @@ Scaling laws discovered the same pattern for AI: as you make models bigger, trai
   │    ✗ Small experiments (just use a GPU)                  │
   │    ✗ Need on-premise hardware (TPUs are cloud-only)      │
   │                                                          │
-  │  Access: Google Cloud → Vertex AI → TPU VMs              │
+  │  Access: Google Cloud → Cloud TPU (TPU VMs or GKE)       │
   │          or Google Colab (free TPU v2, limited)           │
   └──────────────────────────────────────────────────────────┘
 ```
@@ -1652,7 +1656,7 @@ Scaling laws discovered the same pattern for AI: as you make models bigger, trai
 ║  • SavedModel packages graph+weights; TFLite for mobile/edge        ║
 ║  • TF = production/deploy, JAX = research/scale, PyTorch = flex     ║
 ╠══════════════════════════════════════════════════════════════════════╣
-║  Vertex AI (managed ML platform)                                    ║
+║  Vertex AI → Gemini Enterprise Agent Platform (renamed Apr 2026)    ║
 ║  • Pipelines orchestrate reproducible train→deploy workflows        ║
 ║  • Feature Store: consistent features for train + serving           ║
 ║  • Endpoints serve models w/ autoscaling; Registry versions them    ║

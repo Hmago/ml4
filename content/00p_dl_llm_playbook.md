@@ -75,7 +75,7 @@ Memorise the *shape*, not the names or digits — leaderboards and version numbe
    DeepSeek V4-Pro    1.6T / 49B          1M ctx (compressed attention)   MIT
    Muse Spark Open    816B / 42B          1M ctx, multimodal (Meta)       Muse licence, limited commercial
    Qwen 3.5           397B / 17B          flagship; 3.6 followed          Apache 2.0 (check each card)
-   Mistral Large 3    675B / 41B          tool use + 2.5B vision encoder  Apache 2.0
+   Mistral Large 4    1.05T / 52B         1M ctx + 1.6B vision encoder    Mistral open-weight (modified MIT)
    Llama 4 Scout      109B / 17B          10M ctx *advertised*            Llama community licence
    gpt-oss-120b       117B / 5.1B         fits one 80 GB GPU (4-bit)      Apache 2.0
    Gemma 4            31B dense, 26B MoE  small multimodal, 128K–256K     Apache 2.0
@@ -290,11 +290,11 @@ SFTTrainer(
 
 | Lever | Typical impact | Where it lives |
 |---|---|---|
-| **Prompt caching** | Up to ~90% cheaper on cached prefix tokens | Provider feature — automatic on some providers, opt-in on others; only an exact *prefix* hits, so put everything variable (timestamps, user IDs) last ([Ch 17c §2.4](#content/17c_llm_systems)) |
+| **Prompt caching** | About 90–97.5% cheaper on cached prefix tokens (cache hits billed at 0.025×–0.1× the input price, depending on model) | Provider feature — automatic on some providers, opt-in on others; only an exact *prefix* hits, so put everything variable (timestamps, user IDs) last ([Ch 17c §2.4](#content/17c_llm_systems)) |
 | **Model routing** | 30–80% cost cut | App layer — easy queries to a Flash / Luna / Haiku-tier model, hard ones to Pro / Astra / Opus |
 | **Batching** | 50% via async batch APIs | OpenAI Batch / Anthropic Batch |
 | **Streaming** | Better TTFT, no cost change | Default for any user-facing chat |
-| **Continuous batching + PagedAttention (vLLM)** | Continuous batching is the biggest throughput win (10–20× over static batching on mixed-length traffic); paging lifts KV-cache use from ~20–40% to over 90% (vLLM paper: ~2–4× throughput over earlier servers) | Inference server ([Ch 17c §2.1–2.2](#content/17c_llm_systems)) |
+| **Continuous batching + PagedAttention (vLLM)** | Continuous batching is the biggest throughput win (Orca: 36.9× over FasterTransformer; Anyscale: ~8× over static batching alone, up to 23× with vLLM); paging lifts KV-cache use from ~20–40% to over 90% (vLLM paper: ~2–4× throughput over earlier servers) | Inference server ([Ch 17c §2.1–2.2](#content/17c_llm_systems)) |
 | **Speculative decoding** | ~2–3× faster per stream at low batch size; lossless — same output distribution | Built into vLLM, SGLang; skip it at high batch or high temperature ([Ch 17c §2.5](#content/17c_llm_systems)) |
 | **KV-cache reuse** | Multi-turn and agent-loop cost cut | vLLM prefix caching, SGLang RadixAttention |
 | **Quantization** | Weights 2× (INT8/FP8) to 4× (INT4) smaller than FP16 | Weight-only INT4/FP8 speeds up *decode*; W8A8/FP8 speeds up prefill too; FP8 KV cache cuts the long-context bill ([Ch 17c §3.1–3.2](#content/17c_llm_systems)) |
@@ -322,7 +322,7 @@ SFTTrainer(
 | INT8 | 1 | 7 GB | 70 GB |
 | INT4 | 0.5 | 3.5 GB | 35 GB |
 
-Those are **weights only**. The **KV cache** comes on top and grows with context × concurrent requests: `2 × layers × KV-heads × head-dim × bytes × tokens` — Llama-3-70B with grouped-query attention is about **320 KB per token**, so 10 GB at 32K and 40 GB at 128K *per request* ([Ch 17c §1.2](#content/17c_llm_systems), [Ch 17 §2.7](#content/17_llm)). In practice a single H100 (80 GB) serves a 70B model only at INT4 (FP8 weights alone are 70 GB, leaving ~10 GB for KV); a B200 / B300 holds it at INT8.
+Those are **weights only**. The **KV cache** comes on top and grows with context × concurrent requests: `2 × layers × KV-heads × head-dim × bytes × tokens` — Llama-3-70B with grouped-query attention is about **320 KiB per token**, so 10 GiB at 32K and 40 GiB (≈ 43 GB) at 128K *per request* ([Ch 17c §1.2](#content/17c_llm_systems), [Ch 17 §2.7](#content/17_llm)). In practice a single H100 (80 GB) serves a 70B model only at INT4 (FP8 weights alone are 70 GB, leaving ~10 GB for KV); a B200 / B300 holds it at INT8.
 
 Two multipliers people forget:
 
@@ -417,8 +417,8 @@ Leaders rotate every few months — treat this as a starting shortlist and check
       └── No → need loops, branches, durable state? → LangGraph
                 role-based pipeline?               → CrewAI
                 conversational debate (research)?  → AG2, or Microsoft Agent Framework
-                                                     (AutoGen is in maintenance mode)
-                Google enterprise / Vertex?        → ADK + Agent Engine
+                                                     (AutoGen is archived; this is its successor)
+                Google Cloud / Agent Platform?     → ADK + Agent Runtime
                 type-safe / lots of validation?    → Pydantic AI
 ```
 
@@ -475,7 +475,7 @@ print(agent.invoke({"messages": [("user", "Weather in Tokyo?")]})["messages"][-1
       │
       ├── Multi-agent role pipeline               → CrewAI
       │
-      ├── On Google Cloud                         → ADK + Vertex Agent Engine
+      ├── On Google Cloud                         → ADK + Agent Runtime (Gemini Enterprise Agent Platform)
       │
       ├── Fine-tune / LoRA                        → HuggingFace TRL + PEFT
       │
@@ -606,7 +606,7 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 | Training compute | ≈ 6 · N · D FLOPs | 405B params × 15T tokens ≈ 3.8 × 10²⁵ ([Ch 17 §3.1](#content/17_llm)) |
 | Chinchilla ratio | ≈ 20 tokens per parameter | Labs over-train small models: Llama 3 8B saw ≈ 1,900 ([Ch 17 §3.7](#content/17_llm)) |
 | Activation checkpointing | ≈ +33% compute (30–40% measured) | Buys most of the activation memory back ([Ch 16 §1.9](#content/16_deep_learning)) |
-| KV cache, Llama-3-70B (GQA, FP16) | ~320 KB per token → 40 GB at 128K, per request | Often the binding serving constraint |
+| KV cache, Llama-3-70B (GQA, FP16) | ~320 KiB per token → 40 GiB (≈ 43 GB) at 128K, per request | Often the binding serving constraint |
 | MoE active share | DeepSeek-V3: 37B of 671B (5.5%) | Memory follows total, compute follows active |
 | Image token cost | ⌈H/p⌉ · ⌈W/p⌉ — 336 × 336 at p = 14 → 576 tokens | Why video is compressed hard ([Ch 17 §4.9](#content/17_llm)) |
 | H100 HBM | 80 GB | Standard production GPU memory |
@@ -617,13 +617,13 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 | Fine-tune LR | 1e-5 to 5e-5 | 10× lower than from-scratch |
 | LoRA LR | 2e-4 | 10× higher than full FT |
 | LoRA rank `r` | 16 | Sane default |
-| Token price drop 2022 → 2026 | ~150–1000× for equal quality | Architecture decisions follow this ([Ch 20 §20.8](#content/20_2026_landscape)) |
-| GPT-4-quality cost | ~$0.06 / M tokens (July 2026 estimate) | Down from ~20 dollars in late 2022 |
-| SWE-bench Verified | Top scores in the high 80s % (2026) | Treat as saturated and contaminated — OpenAI stopped reporting it in Feb 2026 and recommends SWE-bench Pro |
+| Price of a fixed capability | ~13× cheaper per year for the same benchmark score (Epoch AI, Sep 2026: ~47% per quarter) | Architecture decisions follow this ([Ch 20 §20.8](#content/20_2026_landscape)) |
+| GPT-3-level quality cost | 60 → 0.06 USD per 1M tokens, Nov 2021 → Nov 2024 (a16z "LLMflation": ~1,000× in 3 years) | The *best* model's price stays roughly flat |
+| SWE-bench Verified | Top scores reached the high 80s % before it was retired | Retired by OpenAI in Feb 2026 (flawed tests, contamination). SWE-bench Pro — OpenAI found ~30% of tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report it, so treat scores as rough |
 | Reasoning thinking budget | 1K–100K tokens | Controlled per-call |
 | Default chunk size for RAG | ~256–512 tokens, 50–100 overlap | Balance precision vs context |
 | Top-k for retrieval | 20 → rerank to 3 (50–100 → 10 in Ch 28) | Standard pipeline; widen with a big window |
-| Prompt cache discount | up to ~90% | Biggest single cost lever |
+| Prompt cache discount | about 90–97.5% off the input price (hits billed at 0.025×–0.1× input, depending on model) | Biggest single cost lever |
 | EU AI Act | General application 2 Aug 2026; the AI Office's enforcement powers over general-purpose AI start then. High-risk rules were delayed to 2 Dec 2027 and 2 Aug 2028 (Digital Omnibus, May 2026) | Check the current text before quoting dates |
 | Frontier context window | ~1M tokens (GPT-6, Claude, Gemini 4 Argon) | Llama 4 Scout advertises 10M; effective length is shorter |
 
@@ -643,7 +643,7 @@ They scale a separate axis — *test-time compute*. On hard math, code and plann
 RAG with hybrid search and a reranker; structured output with a strict JSON schema; "cite source or say 'I don't know'" instructions; reasoning model on hard cases; eval with Ragas faithfulness on every release.
 
 **"How do you reduce LLM cost?"**
-In order: prompt caching (90% off on shared prefixes), model routing (cheap model for easy queries), batch APIs (50% off), smaller embedder, quantization for self-hosted.
+In order: prompt caching (about 90–97.5% off the input price of shared prefixes), model routing (cheap model for easy queries), batch APIs (50% off), smaller embedder, quantization for self-hosted.
 
 **"Why is my fine-tune worse than the base model?"**
 Likely catastrophic forgetting or overfitting to format. Mix general data into the tune set, lower LR, fewer epochs, and run held-out evals — don't trust train loss.
@@ -661,7 +661,7 @@ Hugging Face put it in maintenance mode in December 2025 and points users to vLL
 The KV cache is split into fixed-size blocks, like OS virtual-memory pages, with a per-request block table. Memory is allocated on demand and prefixes can be shared copy-on-write. KV-cache utilisation rises from roughly 20–40% to over 90%, so you fit bigger batches — the vLLM paper reports ~2–4× throughput over earlier servers.
 
 **"Why did SWE-bench Verified go from ~13% to the high 80s — and why did OpenAI stop reporting it?"**
-Four compounding factors: better base models, test-time compute, better scaffolds (file IO, test runners, diff review), and RL on agentic traces. But in February 2026 OpenAI found flawed tests and training-data contamination, stopped reporting it and recommends SWE-bench Pro, where the same models score far lower (Opus 4.7 was reported at about 64% on Pro against 87.6% on Verified). Scaffold matters as much as the model — Ch 20 cites Augment at 72% with Opus 4.6 against Cursor at 65.7% with Sonnet 4.6, though those differ in model *and* harness.
+Four compounding factors: better base models, test-time compute, better scaffolds (file IO, test runners, diff review), and RL on agentic traces. But in February 2026 OpenAI found flawed tests and training-data contamination and retired it. It pointed to SWE-bench Pro, where the same models score far lower (Opus 4.7 was reported at about 64% on Pro against 87.6% on Verified) — then on 8 Jul 2026 found ~30% of Pro's tasks broken and retracted that recommendation; some labs still report Pro, so treat its scores as rough. Scaffold matters as much as the model — the same model can score very differently under two harnesses.
 
 **"When does long context replace RAG?"**
 When the material fits in the window and the task needs *all* of it — one contract, one paper, one repo slice. For Q&A across thousands of changing, access-controlled docs, retrieval still wins on cost, freshness and citations. Advertised is not effective: accuracy is U-shaped (best at the start and end), needle-in-a-haystack is a smoke test, and RULER-style multi-hop tests show models degrading well before their limit. In practice they combine — retrieve 20–50 chunks and let a big window hold them.
@@ -676,13 +676,13 @@ A Flash / Sonnet / Luna-tier model — Gemini 3.x Flash, Claude Sonnet 5.5 or GP
 On-device when privacy, latency, billions-of-queries scale, or offline matters. Cloud when you need top-end reasoning, multimodal beyond text+image, real-time external data, or you can't ship a model with the OS.
 
 **"What would you cite as quality benchmarks in 2026?"**
-SWE-bench Pro (the contamination-resistant successor to Verified — which OpenAI no longer reports), Terminal-Bench (CLI agents; the newest vendor tables use 4.0), OSWorld (computer use), GPQA Diamond (graduate science — now near 90%+ at the top, so close to saturated), ARC-AGI-2, FrontierMath, Humanity's Last Exam. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from.
+Terminal-Bench (CLI agents; the newest vendor tables use 4.0), OSWorld (computer use), GPQA Diamond (graduate science — now near 90%+ at the top, so close to saturated), ARC-AGI-2, FrontierMath, Humanity's Last Exam — and SWE-bench Pro only with a caveat: OpenAI retired SWE-bench Verified in Feb 2026 (flawed tests, contamination), then found ~30% of Pro's tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report Pro, so treat its scores as rough. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from.
 
 **"What does FlashAttention change?"**
 Not the maths — it is *exact* attention. It streams K and V through the GPU's fast on-chip memory in tiles with an online softmax, so the n × n score matrix is never written to slow HBM: memory falls from O(n²) to O(n) and it runs faster (the paper measured ~3× faster GPT-2 training at 1K tokens) because attention is memory-bound. FLOPs stay O(n²) ([Ch 17 §2.4](#content/17_llm)).
 
 **"What makes long context hard?"**
-Four things: attention compute grows as n², the KV cache grows with n (≈ 320 KB per token for a 70B GQA model, so 40 GB at 128K), the model may never have trained at that length (RoPE scaling plus staged long-context training), and lost-in-the-middle. Attention sinks — keep the first ~4 tokens plus a rolling window — give a stable stream with a fixed cache, but not a longer memory ([Ch 17 §2.7](#content/17_llm)).
+Four things: attention compute grows as n², the KV cache grows with n (≈ 320 KiB per token for a 70B GQA model, so 40 GiB ≈ 43 GB at 128K), the model may never have trained at that length (RoPE scaling plus staged long-context training), and lost-in-the-middle. Attention sinks — keep the first ~4 tokens plus a rolling window — give a stable stream with a fixed cache, but not a longer memory ([Ch 17 §2.7](#content/17_llm)).
 
 **"Explain mixture of experts — and what goes wrong when you train one."**
 Replace each feed-forward block with N experts and a router that sends every token to its top-k, blending their outputs by softmax gates. It stores a lot (total parameters) but computes a little (active ones — DeepSeek-V3 uses 37B of 671B). Left alone the router collapses onto a few experts, so you add an auxiliary load-balancing loss (or DeepSeek's aux-loss-free bias) and cap each expert with a capacity factor, dropping overflow tokens. It saves compute, not memory, and pays off at large serving batches ([Ch 17 §4.8](#content/17_llm)).
@@ -780,9 +780,9 @@ These are the problems candidates report implementing from scratch in 20–40 mi
 ╠════════════════════════════════════════════════════════════════════╣
 ║  SERVING (COST/LATENCY)                                            ║
 ║    • vLLM is the 2026 default (continuous batching, paged KV)      ║
-║    • Cut cost in order: prompt cache (~90% off) → model            ║
+║    • Cut cost in order: prompt cache (90–97.5% off input) → model  ║
 ║      routing → batch API (50%) → small embedder → quantize         ║
-║    • KV cache ≈ 320 KB/token (70B GQA) — often the limit           ║
+║    • KV cache ≈ 320 KiB/token (70B GQA) — often the limit          ║
 ║    • BF16 = 2 bytes/param; INT4 = 0.5 — size your GPU              ║
 ╠════════════════════════════════════════════════════════════════════╣
 ║  RAG & LONG CONTEXT                                                ║
@@ -798,8 +798,9 @@ These are the problems candidates report implementing from scratch in 20–40 mi
 ║    • Visible reasoning is a trace, not proof — verify answers      ║
 ║    • Fine-tune worse → forgetting/overfit: mix data, lower LR      ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  BENCH IN 2026: SWE-bench Pro (Verified is contaminated),          ║
-║  Terminal-Bench, OSWorld, GPQA, ARC-AGI-2 — NOT MMLU/HumanEval     ║
+║  BENCH IN 2026: Terminal-Bench, OSWorld, GPQA, ARC-AGI-2 —         ║
+║  NOT MMLU/HumanEval. SWE-bench Verified retired (Feb 2026);        ║
+║  Pro ~30% broken (OpenAI, Jul 2026) — treat its scores as rough    ║
 ╚════════════════════════════════════════════════════════════════════╝
 ```
 

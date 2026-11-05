@@ -69,13 +69,13 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 |----|-------|:------:|------|------|------------|
 | 16 | Deep Learning — Complete Reference | ★★★ | [16_deep_learning.md](content/16_deep_learning.md) | ~28.5 hrs (~11.5 hrs fast path) | Advanced |
 | 17 | LLMs — How They Work (Transformer, training, families) | ★★★ | [17_llm.md](content/17_llm.md) | ~26 hrs (~12 hrs fast path) | Intermediate-Advanced |
-| 17b | LLMs — How You Use Them (prompting, RAG, tools, safety) | ★★★ | [17b_llm_applications.md](content/17b_llm_applications.md) | ~2.75 hrs | Intermediate |
-| 17c | LLM Systems — Serving, Scaling & Measuring | ★★★ | [17c_llm_systems.md](content/17c_llm_systems.md) | ~3.25 hrs | Advanced |
-| 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~2.25 hrs | Intermediate-Advanced |
-| 18b | Agents in Production (failures, evals, sandboxing) | ★★★ | [18b_agents_in_production.md](content/18b_agents_in_production.md) | ~2.25 hrs | Advanced |
-| 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~2.75 hrs | Intermediate-Advanced |
-| 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~2 hrs | Intermediate |
-| ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~3.5 hrs | All Levels |
+| 17b | LLMs — How You Use Them (prompting, RAG, tools, safety) | ★★★ | [17b_llm_applications.md](content/17b_llm_applications.md) | ~7.5 hrs (~3 hrs fast path) | Intermediate |
+| 17c | LLM Systems — Serving, Scaling & Measuring | ★★★ | [17c_llm_systems.md](content/17c_llm_systems.md) | ~7.75 hrs (~3.5 hrs fast path) | Advanced |
+| 18 | AI Agents & Tool Use (ReAct, MCP, A2A) | ★★★ | [18_ai_agents.md](content/18_ai_agents.md) | ~6.75 hrs (~2.5 hrs fast path) | Intermediate-Advanced |
+| 18b | Agents in Production (failures, evals, sandboxing) | ★★★ | [18b_agents_in_production.md](content/18b_agents_in_production.md) | ~4.25 hrs (~1.75 hrs fast path) | Advanced |
+| 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~6.5 hrs (~3 hrs fast path) | Intermediate-Advanced |
+| 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~4.75 hrs (~2.5 hrs fast path) | Intermediate |
+| ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~7.75 hrs | All Levels |
 | | **Deep Learning & LLMs Total** | | | **~33 hrs** | |
 
 ### System Design

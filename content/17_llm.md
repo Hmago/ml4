@@ -2991,7 +2991,7 @@ Instead of picking a fixed number of tokens (Top-K), include the smallest set of
   it considers fewer options. When uncertain, it considers more.
 ```
 
-**Temperature + Top-P together:** Temperature reshapes the distribution FIRST (sharper or flatter), then Top-P selects from it. Most APIs use both together (common defaults: temperature=0.7, top_p=0.9). The usual order inside libraries is temperature → top-k → top-p. The prompt-by-prompt guide to temperature is in [Ch 17b §8.1](#content/17b_llm_applications).
+**Temperature + Top-P together:** Temperature reshapes the distribution FIRST (sharper or flatter), then Top-P selects from it. In API calls, change one or the other, not both — OpenAI's API reference recommends exactly that, and both default to 1; current frontier reasoning models ignore or reject them altogether. The usual order inside libraries is temperature → top-k → top-p. The prompt-by-prompt guide to temperature is in [Ch 17b §8.1](#content/17b_llm_applications).
 
 </details>
 
@@ -3246,7 +3246,7 @@ length    KV memory   score-matrix entries per head per layer
 <details>
 <summary><strong>Read as text</strong> — reading the calculator and the whiteboard slip-ups</summary>
 
-**Reading the output.** The 70B rows reproduce the hand calculation: 320 KiB per token, so 2.5 GiB at 8K and 40 GiB at 128K. If the same model used plain multi-head attention (64 KV heads instead of 8) it would need 2.5 MiB per token — 20 GiB at 8K — which is the 8× saving that grouped-query attention buys (see [Ch 17 §2.4](#content/17_llm) and [Ch 17c §1.2](#content/17c_llm_systems)). An FP8 cache halves the numbers again, yet 1M tokens still need more memory (160 GiB) than the FP16 weights (130 GiB). In the last table 128K is 16× longer than 8K, so the cache is 16× larger, but the attention score matrix is 16² = **256×** larger. (Sizes here are GiB = 2³⁰ bytes; [Ch 17c](#content/17c_llm_systems) calls the same 40 GiB "40 GB", which is about 43 decimal GB.)
+**Reading the output.** The 70B rows reproduce the hand calculation: 320 KiB per token, so 2.5 GiB at 8K and 40 GiB at 128K. If the same model used plain multi-head attention (64 KV heads instead of 8) it would need 2.5 MiB per token — 20 GiB at 8K — which is the 8× saving that grouped-query attention buys (see [Ch 17 §2.4](#content/17_llm) and [Ch 17c §1.2](#content/17c_llm_systems)). An FP8 cache halves the numbers again, yet 1M tokens still need more memory (160 GiB) than the FP16 weights (130 GiB). In the last table 128K is 16× longer than 8K, so the cache is 16× larger, but the attention score matrix is 16² = **256×** larger. (Sizes here are GiB = 2³⁰ bytes, the same unit [Ch 17c](#content/17c_llm_systems) uses; 40 GiB is about 43 decimal GB.)
 
 > **Interview note.** Be ready to recompute this on a whiteboard: 2 × layers × KV heads × head dim × bytes × tokens. The classic slips are using the number of *query* heads (64) instead of *KV* heads (8) — an 8× error — forgetting the 2 for K *and* V, and multiplying by tokens but not by the number of concurrent requests.
 
@@ -3392,7 +3392,7 @@ That makes it a **smoke test, not proof**. The needle is a single literal fact t
 <details>
 <summary><strong>Read as text</strong> — the interview answer and the trap</summary>
 
-> **Say this in an interview:** "A long window costs three things: attention compute that grows with n², a KV cache that grows with n — about 320 KB per token for a 70B grouped-query model, so roughly 40 GB at 128K — and long-sequence training the model may never have had. Labs stretch it with RoPE scaling plus staged long-context training, local-plus-global attention, KV-cache compression and ring attention across GPUs; retrieval is the cheaper route when only a few passages matter. And advertised is not effective: needle-in-a-haystack is nearly solved, but multi-needle, multi-hop and aggregation tests like RULER still show models degrading well before their limit."
+> **Say this in an interview:** "A long window costs three things: attention compute that grows with n², a KV cache that grows with n — about 320 KiB per token for a 70B grouped-query model, so roughly 40 GiB (≈ 43 GB) at 128K — and long-sequence training the model may never have had. Labs stretch it with RoPE scaling plus staged long-context training, local-plus-global attention, KV-cache compression and ring attention across GPUs; retrieval is the cheaper route when only a few passages matter. And advertised is not effective: needle-in-a-haystack is nearly solved, but multi-needle, multi-hop and aggregation tests like RULER still show models degrading well before their limit."
 >
 > **The trap:** *"The model scores 100% on needle-in-a-haystack at 1M tokens — can it use 1M tokens?"* — No. That test checks retrieval of one literal fact. It says nothing about reasoning across the whole context, and accuracy usually degrades long before the advertised limit.
 
@@ -6135,10 +6135,10 @@ Google's multimodal model designed from the ground up to handle text, images, au
 | **Gemma** (Google) | Gemma 4, Apr 2026; Gemma 4 12B, Jun 2026 | E2B, E4B, 12B, 26B MoE (about 4B active), 31B dense | Apache 2.0 (Gemma 3 and earlier used Google's own terms) | Small multimodal models for phones and laptops; 128K–256K context; the 12B takes images and audio with no separate encoder |
 | **Llama / Muse** (Meta) | Llama 4 (Apr 2025); Muse Spark Open (Oct 2026) | 109B / 17B, 400B / 17B; 816B / 42B | Llama 4 Community Licence; Muse Model License | See §4.3 |
 | **Qwen** (Alibaba) | Qwen3 (Apr 2025), Qwen3.5 (Feb 2026), Qwen3.6 (Apr 2026) | 397B / 17B flagship; 122B / 10B; 35B / 3B; 27B dense; down to 0.8B | Apache 2.0 (check each card) | The widest size range; natively multimodal; hybrid Gated DeltaNet + attention layers; 200+ languages |
-| **DeepSeek** | V3 (Dec 2024), R1 (Jan 2025), V3.2 (2025), V4 (Apr 2026) | V3 and R1: 671B / 37B; V4-Pro: 1.6T / 49B; V4-Flash: 284B / 13B | MIT (V4) | MoE with latent attention (MLA); R1 showed RL-trained reasoning in the open; V4 reaches a 1M-token context with compressed attention |
-| **Kimi** (Moonshot AI) | K2 (Jul 2025), K2.5 (early 2026) | 1T / 32B (384 experts, 8 chosen + 1 shared) | Modified MIT | Trained with the Muon optimizer; agent-focused; K2.5 added native vision (400M-param MoonViT encoder) |
-| **GLM** (Z.ai / Zhipu) | GLM-5 (Feb 2026), later 5.x updates | 744B / 40B | MIT | Long-horizon coding and agents; 200K-token context in GLM-5 |
-| **Mistral** | Mixtral 8x7B / 8x22B (2023–24); Mistral Large 3 (Dec 2025); Small 4 (Mar 2026) | Large 3: 675B / 41B (granular MoE + a 2.5B vision encoder) | Apache 2.0 | Europe's leading lab; Small 4 merges chat, reasoning (Magistral), vision (Pixtral) and agentic coding (Devstral) in one model with a reasoning-effort switch |
+| **DeepSeek** | V3 (Dec 2024), R1 (Jan 2025), V3.2 (2025), V4 (Apr 2026), V4.1 Flash (Sep 2026) | V3 and R1: 671B / 37B; V4-Pro: 1.6T / 49B; V4-Flash: 284B / 13B; V4.1 Flash: 552B, 8B active in prefill and 16B in decode | MIT (V4, V4.1) | MoE with latent attention (MLA); R1 showed RL-trained reasoning in the open; V4 reaches a 1M-token context with compressed attention |
+| **Kimi** (Moonshot AI) | K2 (Jul 2025), K2.5 (early 2026), K3 (Jul 2026), K3.1 Pro (Oct 2026) | K2 / K2.5: 1T / 32B (384 experts, 8 chosen + 1 shared); K3 / K3.1 Pro: 2.8T / 104B (16 of 896 experts), 1M context | Modified MIT (K2, K2.5); custom Kimi K3 licence (K3, K3.1 Pro) | Trained with the Muon optimizer; agent-focused; K2.5 added native vision (400M-param MoonViT encoder); K3 is among the largest open releases so far |
+| **GLM** (Z.ai / Zhipu) | GLM-5 (Feb 2026), GLM-5.3 (Aug 2026) | 744B / 40B (GLM-5.3 is a post-trained update of GLM-5) | MIT (GLM-5); GLM-5.3 has its own licence — check the card | Long-horizon coding and agents; 200K-token context in GLM-5 |
+| **Mistral** | Mixtral 8x7B / 8x22B (2023–24); Mistral Large 3 (Dec 2025); Small 4 (Mar 2026); Mistral Large 4 (Oct 2026) | Large 4: 1.05T / 52B (granular MoE + a 1.6B vision encoder), 1M context; Large 3: 675B / 41B | Apache 2.0 up to Large 3 and Small 4; Large 4 uses the Mistral Ecosystem Open Weight License (modified MIT; model-as-a-service providers need a commercial licence) | Europe's leading lab; Small 4 merges chat, reasoning (Magistral), vision (Pixtral) and agentic coding (Devstral) in one model with a reasoning-effort switch |
 | **Others** | Phi-4 (Microsoft, 14B, MIT); Command R+ and Command A (Cohere); OLMo (Ai2) | various | various | Phi: small models built on carefully curated data; Cohere: RAG and tool use (weights are non-commercial, check the licence); OLMo: weights *and* data *and* code |
 
 **Reading the table:** since 2025 the open frontier has been mostly large MoE models whose *active* parameters are a few percent of the total (§4.8), and much of it comes from Chinese labs (DeepSeek, Qwen, Kimi, GLM) alongside US and European releases (gpt-oss, Llama / Muse, Gemma, Mistral). "Open weights" almost never include the training data.
@@ -6890,8 +6890,8 @@ So long-context research has two jobs. **Shrink the cache** — GQA and MLA (§2
 **Evaluation — benchmarks have a shelf life.**
 
 - **Saturation.** MMLU, HumanEval and GSM8K no longer separate frontier models. Olympiad maths went silver → gold-level → perfect scores in two years.
-- **Contamination.** In February 2026 OpenAI stopped reporting SWE-bench Verified, citing flawed tests and training-data leakage, and recommended SWE-bench Pro.
-- **Scaffolding.** On ARC-AGI-3, GPT-6 Astra scored 62.7% with ARC Prize's standard harness and 99.9% with the provider's own adapter harness (ARC Prize, Sept 2026) — the same model, a 37-point swing from the wrapper alone.
+- **Contamination.** In February 2026 OpenAI retired SWE-bench Verified, citing flawed tests and training-data leakage. It recommended SWE-bench Pro instead, but on 8 Jul 2026 found ~30% of Pro's tasks broken and retracted that recommendation; some labs still report Pro, so treat its scores as rough.
+- **Scaffolding.** On ARC-AGI-3, GPT-6 Astra's best score was 62.7% with ARC Prize's standard harness (max effort) and 99.9% with the provider's own adapter harness (ARC Prize, Sept 2026). At the same "high" effort the two harnesses gave 54.8% and 99.9% — a 45-point swing from the wrapper alone.
 - **What to do:** hold-out sets nobody has published, fresh ("live") benchmarks, expert-graded tasks, and always report model + harness + date.
 
 ---
@@ -6911,7 +6911,7 @@ Every limitation below has a concrete failure you can describe in an interview.
 | **Long-horizon agent reliability** | 95% per step over 20 steps gives 0.95²⁰ ≈ 36% end to end. METR's May 2026 report (data from Feb–Mar 2026): the best public models finish ≈12-hour tasks half the time (wide error bars) but ≈1.5-hour tasks only 80% of the time | Errors compound; the model often cannot tell it has made one; context fills up | Short sub-tasks, tests as checkpoints, human-in-the-loop ([Ch 18b](#content/18b_agents_in_production)) |
 | **Reasoning faithfulness** | A hint flips the answer, yet the CoT admits it only ≈25% (Claude 3.7 Sonnet) or ≈39% (R1) of the time (§15.1b) | The CoT is trained to reach correct answers, not to be an honest report | Monitor but never rely on it; verify outputs independently |
 | **Sample efficiency** | Llama 3 trained on ≈15T tokens; a child hears roughly 10⁷–10⁸ words by age 5 — about 10⁵× less (rough estimate) | Gradient descent needs many examples; no built-in world priors | Better data curation, synthetic data, RL environments, in-context learning |
-| **Evaluation** | SWE-bench Verified retired for leakage; ARC-AGI-3: 62.7% vs 99.9% depending on the harness (§15.2) | Benchmarks live on the internet that models train on; scores depend on scaffolding and sampling | Private held-out sets, live benchmarks, task-specific evals |
+| **Evaluation** | SWE-bench Verified retired for leakage; ARC-AGI-3: 54.8% vs 99.9% at the same effort, depending on the harness (§15.2) | Benchmarks live on the internet that models train on; scores depend on scaffolding and sampling | Private held-out sets, live benchmarks, task-specific evals |
 
 > **Why long tasks fail:** if each step succeeds with probability *p*, an *n*-step task succeeds with probability *pⁿ*. 0.95²⁰ = 0.36 and 0.99¹⁰⁰ = 0.37 — even a 99%-reliable step gives only about a one-in-three chance of finishing 100 steps.
 
@@ -7457,10 +7457,11 @@ Understanding the key papers helps you understand WHY things are the way they ar
        │ Gemini 3 (Nov), Claude Opus 4.5 (Nov) — the 2025 frontier
        │
   2026 │ Gemini 3.1 Pro (Feb)
-       │ OpenAI stops reporting SWE-bench Verified (Feb) — contaminated; recommends SWE-bench Pro
+       │ OpenAI retires SWE-bench Verified (Feb) — flawed tests, contamination
        │ GPT-5.5 (Apr 23); DeepSeek V4 (Apr 24) — open MIT-licensed MoE,
        │    Pro: 1.6T total / 49B active, 1M-token context
        │ Gemini 3.5 Flash (May 19); Claude Opus 4.8 (May 28)
+       │ OpenAI finds ~30% of SWE-bench Pro tasks broken (Jul 8) — retracts its recommendation
        │ IMO (Jul) — AI systems score a perfect 42 / 42 under official grading
        │ Claude Opus 5 (Jul 24)
        │ GPT-6 Astra (early Sep) → GPT-6 Sol / Luna (Sep 22) → GPT-6.1 Sol (Sep 29)

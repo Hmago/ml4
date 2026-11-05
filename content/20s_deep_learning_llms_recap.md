@@ -14,11 +14,13 @@
 - [Ch 20 — The 2026 AI Landscape](#ch-20--the-2026-ai-landscape)
 - [One-page cheat recap](#one-page-cheat-recap)
 
-> **The section is now nine chapters.** Ch 17 and Ch 18 were each split so no chapter is a nine-hour read. Full map, the three learning tracks and the L1–L4 depth ladder → [Ch 16](#content/16_deep_learning).
+> **The section is now eight chapters, plus the Playbook.** Ch 17 and Ch 18 were each split so no chapter is a nine-hour read. Full map, the three learning tracks and the L1–L4 depth ladder → [Ch 16](#content/16_deep_learning).
 
 ---
 
 ## Ch 16 — Deep Learning: Complete Reference
+
+![Deep Learning on One Page map: training-recipe chips (AdamW with beta2 0.95 for LLMs, weight decay 0.1 not on biases or norms, warmup 0.1-2% of steps then cosine to 10% or WSD, clip gradient norm at 1.0, BF16 plus FP32 master = 16 bytes per parameter, pre-norm RMSNorm, init std 0.02 and He for ReLU); a 4-step fix order when a 7B model runs out of memory (112 GB before activations): shard states with ZeRO-3 or FSDP, FlashAttention, activation checkpointing at +33% compute, smaller micro-batch plus accumulation; an architecture chooser grid for images, edge, detection, segmentation, text understanding, text generation, streams, graphs, tabular and image or video generation; a pick-by-question table; a 3-step debug list (initial loss ln K = 2.3 for 10 classes, overfit one batch, model.eval before testing); trap: a 7B model cannot train on one 80 GB GPU.](diagrams/rec20s_info_ch16_dl_map_ai.png)
 
 > 💡 **In a sentence —** Deep learning is a toolbox of neural-network architectures and training recipes — backprop + gradient descent + normalization — that share a common structure but differ by what data they process and what structure they exploit.
 
@@ -236,6 +238,8 @@ $W^O$ mixes information from all heads. Typical: 12 heads (BERT-base), 96 heads 
 
 #### BERT vs GPT
 
+![Same attention, different mask: three columns for encoder-only (full 4x4 mask grid), decoder-only (lower-triangle causal grid) and encoder-decoder (encoder to decoder via cross-attention) with the formula softmax(QK^T/sqrt(d) + M)V, a pick-by-need table, why decoder-only won, and common mix-ups](diagrams/llm17_info_encoder_decoder_compare_ai.png)
+
 | | BERT | GPT |
 |--|------|-----|
 | Architecture | Encoder-only | Decoder-only |
@@ -245,7 +249,6 @@ $W^O$ mixes information from all heads. Typical: 12 heads (BERT-base), 96 heads 
 | Examples | BERT-base (110M), RoBERTa, DeBERTa | GPT-3/4, LLaMA, Claude, Mistral |
 
 BERT-base: 12 layers, 12 heads, 768 hidden dim, 110M params. BERT-large: 24 layers, 16 heads, 1024 hidden dim, 340M params. **T5 (encoder-decoder)**: span-corruption pre-training, text-to-text — translation, summarisation; Whisper uses the same shape for speech. Almost every large LLM is decoder-only (simple to scale, prompt-everything, cacheable K/V); encoders still power embeddings, reranking and classification (ModernBERT, 2024: RoPE + GeGLU + local/global attention, 8K context).
-![BERT vs GPT: encoder-only vs decoder-only architectures](diagrams/dlrev_bertgpt_ai.png)
 
 The full Transformer block: Input → Self-Attention → Add&Norm → FFN → Add&Norm → Output (the 2026 version: pre-norm RMSNorm, RoPE, GQA/MLA, SwiGLU FFN — [Ch 17 §2.4](#content/17_llm)). FFN holds ~2/3 of a layer's parameters ($8d^2$ vs attention's $4d^2$) and much of the factual knowledge. Attention handles token relationships. Parameter rule of thumb: ≈ $12\,L\,d^2$.
 
@@ -351,6 +354,8 @@ Learn embeddings without labels, then reuse them for search, zero-shot classific
 
 ## Ch 17 / 17b — Large Language Models
 
+![How an LLM Works, by the Numbers: inference path Text, Tokenise (BPE, 1 token about 4 characters or 0.75 words), Embed, N x block (RMSNorm, GQA attention + RoPE, RMSNorm, SwiGLU FFN holding about 2/3 of the parameters), softmax over the vocabulary, decode (greedy, top-k, top-p), with attention = softmax(QK^T / sqrt(d_k)) V; a 4-step training staircase pre-train on about 15T tokens, SFT on reply tokens (LIMA 1,000 examples), RLHF or DPO on preference pairs, RLVR / GRPO with a checker reward (R1-Zero AIME 15.6% to about 71%); eight number cards C = 6ND, 20 tokens per parameter, about 1,900 tokens per parameter for Llama 3 8B, 16 bytes per parameter (7B = 112 GB), KV cache 320 KiB per token (40 GiB at 128K), MoE 671B total / 37B active, vocabularies 30K-260K, about 1M-token windows (advertised is not effective); a pick-by-question table; trap: emergence is partly a metric artefact, exact match on k tokens = p^k.](diagrams/rec20s_info_ch17_llm_numbers_map_ai.png)
+
 > **Chapter 17 is now three chapters.** [Ch 17](#content/17_llm) = how an LLM works inside (tokenizer → Transformer → training → families). [Ch 17b](#content/17b_llm_applications) = how you build with one (prompting, hallucinations, RAG, tools, fine-tuning, cost, safety). [Ch 17c](#content/17c_llm_systems) = how you run one at scale — recapped in its own section below.
 
 > 💡 **In a sentence —** An LLM is a massive decoder-only Transformer that learns to predict the next token from a trillion-token corpus; reasoning, code and translation capabilities arise from that single objective (how *sudden* they appear is partly a measurement artefact — see In-Context Learning & Emergent Abilities below).
@@ -443,25 +448,28 @@ Attention is **memory-bound**: the textbook version writes the $n\times n$ score
 
 ### Decoding Strategies
 
+![Output knobs infographic: the temperature softmax p_i = exp(z_i / T) / sum exp(z_j / T); bar charts for 'The capital of France is ___' over Paris, Lyon, Nice, Rome, Berlin at T = 0.5 (Paris 0.769), T = 1 (0.50) and T = 2 (0.340), with top-p 0.9 keeping 3, 4 and 5 tokens; a 1,000-token cap split into 900 thinking and 100 answer tokens; a who-supports-what grid as of Nov 2026 for OpenAI GPT-6, Claude 5.5, Gemini 4 and open-weight models (temperature, effort dial, stop sequences, penalties); frequency and presence penalty arithmetic for 'cat' (2.0 to 0.5 and 1.5); trap: temperature 0 does not guarantee identical output.](diagrams/llm17b_info_output_knobs_ai.png)
+
 **Greedy**: always pick $\arg\max$. Deterministic, can loop ("the the the…").
 
 **Beam search (width B)**: keep top-B sequences; better for translation/summarisation but bland for open-ended chat; width 1 *is* greedy; rank finished hypotheses by length-normalised score, not raw score.
 
 **Top-K sampling**: sample from top-K tokens only; renormalise. K=50 is a common library default.
 
-**Top-P (nucleus) sampling**: include the smallest set of tokens whose cumulative probability ≥ P (typically 0.9) — *including* the token that crosses P. Adapts to model confidence — narrow when confident, wide when uncertain. **Min-p**: keep tokens with $p_i \ge p_\text{base}\cdot p_\text{top}$ (0.01–0.2) — the cut-off scales with confidence and holds up better at high temperature.
+**Top-P (nucleus) sampling**: include the smallest set of tokens whose cumulative probability ≥ P (e.g. 0.9; API default 1) — *including* the token that crosses P. Adapts to model confidence — narrow when confident, wide when uncertain. **Min-p**: keep tokens with $p_i \ge p_\text{base}\cdot p_\text{top}$ (0.01–0.2) — the cut-off scales with confidence and holds up better at high temperature.
 
 **Temperature** rescales logits before softmax: $p_i \propto e^{z_i/T}$; it never changes the ranking, so greedy/beam are unaffected. Order in libraries: penalties → temperature → top-k → top-p → softmax → draw. The code interviewers ask for ([Ch 17 §2.6](#content/17_llm), rung 10): work on *logits* and mask dropped ones with $-\infty$, **not 0** (a logit of 0 still gets probability).
 
 | Temperature | Effect |
 |-------------|--------|
-| 0 | Special case = greedy (dividing by 0 is undefined) |
-| 0.7 | Natural, varied — good default |
-| 1.0 | Sample directly from distribution |
+| 0 | Special case = greedy (dividing by 0 is undefined); repeatable, not more *true*, and hosted APIs still don't promise identical output |
+| 0.7 | Natural, varied — conversation, writing |
+| 1.0 | The model's own distribution (OpenAI's default) |
 | 2.0 | Wild, often incoherent |
 
-Temperature=0 for code/factual Q&A. Temperature=0.7–1.0 for creative tasks. Repetition / presence / frequency penalties push down already-seen tokens but also hurt code identifiers and JSON keys — use lightly.
-![Decoding strategies: greedy, beam, top-K, top-P, temperature](diagrams/dlrev_decoding_ai.png)
+**In practice** ([Ch 17b §8](#content/17b_llm_applications)): low temperature for extraction, classification and code, 0.7–1.0 for creative work, and tune temperature **or** top-p, not both. **Current frontier reasoning models drop these knobs** (Nov 2026): GPT-6 accepts them only at reasoning effort `none`, the Claude 5.5 family removed them, Gemini 4 and 3.6+ ignore them — you steer with the effort setting, the output cap and a schema instead. Temperature and top-p still control the open-weight models you serve yourself.
+
+Repetition / presence / frequency penalties push down already-seen tokens but also hurt code identifiers and JSON keys — use lightly (OpenAI's range is −2 to 2, in Chat Completions only; Anthropic has neither).
 
 **Autoregressive loop**: one token per forward pass; the KV cache stores past keys/values so each step computes only the *new* token's K,V and attends over the cache instead of re-processing the whole prefix (it trades memory for time — the cache grows linearly with context).
 
@@ -469,7 +477,7 @@ Temperature=0 for code/factual Q&A. Temperature=0.7–1.0 for creative tasks. Re
 
 ### LLM Training Pipeline (★★★)
 
-**Stage 1 — Pre-training**: next-token prediction on trillions of tokens (Llama 3 ≈ 15T — 15.6T for the 405B; Qwen3 ≈ 36T; GPT-3 only 300B). Compute $C \approx 6ND$ (GPT-3 ≈ 3,640 petaflop/s-days; Llama 3 405B ≈ 3.8·10²⁵ FLOPs; use *active* params for MoE). "GPT-3 cost $4.6M" is a 2020 Lambda Labs estimate of renting V100s at the cheapest cloud price, not OpenAI's bill.
+**Stage 1 — Pre-training**: next-token prediction on trillions of tokens (Llama 3 ≈ 15T — 15.6T for the 405B; Qwen3 ≈ 36T; GPT-3 only 300B). Compute $C \approx 6ND$ (GPT-3 ≈ 3,640 petaflop/s-days; Llama 3 405B ≈ 3.8·10²⁵ FLOPs; use *active* params for MoE). "GPT-3 cost 4.6M USD" is a 2020 Lambda Labs estimate of renting V100s at the cheapest cloud price, not OpenAI's bill.
 
 **Data composition and mixing** ([Ch 17 §3.1](#content/17_llm)). Mix shares are *sampling weights*, not corpus sizes: GPT-3 sampled 60% filtered Common Crawl / 22% WebText2 / 8% Books1 / 8% Books2 / 3% Wikipedia — so Wikipedia was seen 3.4× but raw web only 0.44×. Newer labs disclose only coarse splits (**Llama 3 ≈ 50% general knowledge, 25% maths & reasoning, 17% code, 8% multilingual**). Code in the mix also helps non-code reasoning; quality > quantity past a certain scale.
 
@@ -507,28 +515,31 @@ on (prompt, chosen, rejected) pairs — no reward model, no RL loop; used by Lla
 
 ### Fine-Tuning & Alignment — LoRA, RLHF, DPO (★★★)
 
-**LoRA (★★★)**: Freeze $W_0$; learn low-rank update $\Delta W = BA$ where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times d}$, $r \ll d$; $B$ starts at 0 so fine-tuning begins exactly at the pretrained model. For $d=4096$, $r=8$: 65K trainable params vs 16.7M — 256× fewer. At inference, merge: $W_\text{eff} = W_0 + BA$. Zero extra latency. Applied to q/v projections at minimum, often every linear layer. QLoRA loads base model in 4-bit + trains LoRA adapters: fine-tune a 7B model on a single 24GB GPU.
+**LoRA (★★★, [Ch 17b §9.4](#content/17b_llm_applications))**: Freeze $W_0$ ($d\times k$); learn $h = W_0x + \frac{\alpha}{r}BAx$ with $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$, $r \ll \min(d,k)$ — $r(d+k)$ trainable numbers instead of $dk$. $B$ starts at 0, so training begins exactly at the pretrained model. One 4096×4096 matrix at $r=16$: 131,072 vs 16.8M = **0.78%**; Llama-2-7B with LoRA on q_proj + v_proj in all 32 layers: 8.4M trainable ≈ **0.12%**, a ~17 MB adapter. Merge after training ($W' = W_0 + \frac{\alpha}{r}BA$) → **no extra inference latency**; keep adapters unmerged to hot-swap many on one base.
+
+**QLoRA** = frozen 4-bit **NF4** base + double quantization + paged optimizers, adapters in 16-bit: a 7B base is ≈ 3.7 GB (one 16–24 GB GPU); the paper fine-tuned **65B on one 48 GB GPU** (> 780 GB in 16-bit). A 4-bit 70B (≈ 37 GB) does **not** fit a 24 GB card. Hosted fine-tuning is shrinking — OpenAI closed self-serve fine-tuning to new organisations on 7 May 2026 — so most teams tune open weights with TRL + PEFT.
 
 **RLHF (★★★)**:
 1. SFT: fine-tune on high-quality (prompt, response) demonstrations (InstructGPT: ~13K).
-![RLHF pipeline: SFT, reward model, PPO+KL, and DPO](diagrams/dlrev_rlhf_ai.png)
 2. Reward Model: train on human rankings; objective: push $s_\text{win} - s_\text{lose}$ apart via $L = -\log\sigma(s_\text{win}-s_\text{lose})$.
-3. PPO + KL constraint: $R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$. KL term prevents reward hacking while keeping the model grounded.
+3. PPO + KL constraint: $R_\text{total} = R_\text{RM} - \beta D_{KL}(\pi \| \pi_\text{SFT})$. KL term keeps the policy near the SFT model, which limits reward hacking (it does not rule it out — watch for proxy reward rising while KL balloons).
+
+![RLHF pipeline: SFT, reward model, PPO+KL, and DPO](diagrams/dlrev_rlhf_ai.png)
 
 **DPO (★★★)**: Skips the reward model. Directly fine-tunes LLM on (prompt, chosen, rejected) triples with a single loss that increases P(chosen) and decreases P(rejected), with implicit KL regularisation. Simpler, more stable, comparable quality. Used by LLaMA 3, Zephyr.
 
 #### Fine-Tuning Methods Compared
 
-| Method | Trainable Params | VRAM (7B) | Use case |
+| Method | Trainable params | Memory for 7B (weights + optimizer state, before activations) | Use case |
 |--------|-----------------|-----------|---------|
-| Full fine-tuning | 100% | ≥112 GB (16 B/param) + activations | When you have multi-GPU and large high-quality dataset |
-| LoRA (r=16) | ~0.1–0.5% | 16–24 GB | **Standard choice for most tasks** |
-| QLoRA (4-bit + LoRA) | ~0.1–0.5% | **8–12 GB** | Single consumer GPU (RTX 4090) |
-| Prompt tuning | <0.01% | Base model VRAM | Very quick adapt, lower quality |
-| Prefix tuning | ~0.1% | Base model VRAM | Between prompt and LoRA |
-| Adapter layers | ~1% | Close to LoRA | Legacy; LoRA preferred |
+| Full fine-tuning | 100% | **112 GB** (16 B/param) | Highest ceiling; multi-GPU, large high-quality dataset; most forgetting |
+| LoRA (r=16, q+v) | ≈ 0.12% | ≈ 14 GB | **The default** — close to full FT on a narrow task, forgets less |
+| QLoRA (4-bit NF4 + LoRA) | ≈ 0.12% | **≈ 3.7 GB** → one 16–24 GB GPU | When GPU memory is the limit |
+| DoRA | ≈ LoRA | ≈ LoRA | Drop-in LoRA variant (magnitude + direction), reported to beat LoRA at the same rank |
+| Prefix / prompt tuning | Very few | ≈ base model | Learned soft-prompt vectors; usually weaker than LoRA on hard tasks |
+| Adapters (2019) / IA3 | Small / fewest | ≈ base model | Adapters add a little inference latency; IA3 only rescales keys, values and FFN activations |
 
-**LoRA hyperparams that matter**: rank $r$ (try 8, 16, 32 — higher rank = more expressiveness but more params), alpha $\alpha$ (scale = $\alpha/r$, usually set $\alpha = 2r$), target modules (q_proj, v_proj at minimum; add k_proj, o_proj, gate_proj, up_proj, down_proj for more capacity). Too low a rank underfits domain-specific tasks; too high approaches full fine-tuning cost.
+**LoRA hyperparams that matter**: rank $r$ (4–8 often enough for style or format; **16 a common default**; 64+ more capacity with diminishing returns), alpha $\alpha$ (scale $=\alpha/r$ keeps the update size stable when you change $r$; common recipes set $\alpha = 2r$), target modules (q_proj, v_proj at minimum; QLoRA put adapters on every linear layer). Trade-off measured by "LoRA Learns Less and Forgets Less" (2024): LoRA trails full fine-tuning on code and maths but keeps more of the base model's other skills.
 
 #### Will It Fit? Training Memory & ZeRO/FSDP ([Ch 17 §3.6](#content/17_llm))
 
@@ -537,6 +548,8 @@ Mixed-precision AdamW = **16 bytes/param** (2 BF16 weights + 2 grads + 12 for th
 ---
 
 ### Scaling Laws (★★★)
+
+![Infographic: scaling laws. Training compute C = 6 x N x D; Chinchilla uses about 20 tokens per parameter. Left chart: predicted loss falls with model size (0.1B 3.49, 1B 2.58, 7B 2.18, 65B 1.94, 1T 1.80) toward the floor E = 1.69. Right chart: tokens per parameter for Gopher 1.1, GPT-3 1.7, Chinchilla 20, LLaMA-13B 77, Llama 3 8B about 1,900. Budget table for 1e21, 1e23 and 1e25 FLOPs.](diagrams/llm17_info_scaling_laws_ai.png)
 
 **Kaplan et al. (2020)**: loss scales as a power law in parameters $N$, data $D$, and compute $C$ (exponents ≈ 0.076, 0.095, 0.050 → ≈ 5% lower loss per doubling of $N$):
 $$\mathcal{L} \propto N^{-\alpha}, \quad \mathcal{L} \propto D^{-\beta}, \quad \mathcal{L} \propto C^{-\gamma}$$
@@ -547,7 +560,6 @@ This justified the push to ever-larger models (Kaplan: spend most extra compute 
 > **Training tokens ≈ 20 × parameters**  (with $C \approx 6ND$: $N_\text{opt} = \sqrt{C/120}$)
 
 Chinchilla (70B, 1.4T tokens) beat GPT-3 (175B, 300B) and Gopher (280B, 300B) at similar compute; LLaMA-13B (**1.0T** tokens, 77 tokens/param) beat GPT-3 on most benchmarks. Data quality and quantity matter as much as scale. **Over-training:** a model is trained once and served billions of times, so labs train smaller models far past 20 tokens/param — Llama 3 8B saw ≈ 15T tokens ≈ 1,900 tokens/param (~94× Chinchilla); inference compute passes training compute after serving ≈ $3D$ tokens. The fitted constants are illustrations (fit on 70M–16B models, hard to replicate), not a planning tool. Other axes: data-constrained scaling (repeat ≲ 4 epochs) and **test-time compute** (reasoning budget) as a third scaling axis.
-![Scaling laws: Kaplan power laws and the Chinchilla rule](diagrams/dlrev_chinchilla_ai.png)
 
 #### In-Context Learning & Emergent Abilities ([Ch 17 §3.9](#content/17_llm))
 
@@ -611,18 +623,24 @@ Reasoning models (RLVR/GRPO + an adjustable thinking budget) print a chain of th
 
 ### Prompt Engineering
 
+![Building with an LLM: Climb the Ladder. A four-rung ladder from the bottom: prompt (role, context, 2-5 examples, input, output format), add RAG for knowledge (chunk 256-512 tokens, retrieve about 20, rerank, keep 3-5), add tools for actions (your code runs each call, result returned by call id), fine-tune for volume or consistency (LoRA: frozen W0 + B x A, B starts at 0). A table of temperature and top-p support as of Nov 2026: GPT-6 only at effort none, Claude 5.5 removed, Gemini 4 ignored, open weights yes. Eight rules of thumb: reasoning models (goal and criteria, raise effort), output cap includes reasoning tokens, JSON Schema guarantees shape not truth, grading rewards guessing, temperature 0 is repeatable not true, prompt injection OWASP LLM01 least privilege first, same embedding model for queries and documents, LoRA trains r(d+k) not dk (0.78% at r = 16). A pick-by-question table ending with QLoRA 65B on one 48 GB GPU; cost card: output about 5x input, about 5.40 vs 540 USD a month by tier, RAG about 240x cheaper per question than a 667K-token prompt; trap: a system prompt is guidance, not a security boundary.](diagrams/rec20s_info_ch17b_building_map_ai.png)
+
+A strong prompt has five parts — role and instructions, context, examples, the input, and the output format ([Ch 17b §5](#content/17b_llm_applications)).
+
 | Technique | When to use |
 |-----------|------------|
-| Zero-shot | Strong models on common tasks |
-| Few-shot (3–5 examples) | Custom tasks, biggest single lever |
-| Chain-of-Thought ("Think step by step") | Math, logic, multi-step reasoning |
-| System prompt | Persona, constraints, output format |
-| ReAct | Agent tasks: interleave Thought/Action/Observation |
-| Tree of Thoughts | Hard planning problems — explore multiple paths |
-| Self-consistency | Majority vote over N reasoning paths for factual/math |
-| Structured output | Machine-readable pipelines: JSON schema enforcement |
+| Zero-shot | Tasks the model already does well |
+| Few-shot (2–5 clear, varied examples, tricky cases included) | Custom tasks or a specific style; balance the labels and mix the order — models lean to the most frequent and the most recent label |
+| Chain-of-Thought ("Let's think step by step") | Maths and logic on **non-reasoning** models (Wei 2022: the gain appeared only in very large models) |
+| System prompt | Rules for the whole conversation; models give it priority over the user — guidance, **not** a security boundary |
+| ReAct | Interleave Thought → Action → Observation; today it is structured tool calls inside the agent loop |
+| Tree of Thoughts | Search over partial solutions, keep the best $b$ (Game of 24: CoT 4% → ToT 74%); many model calls |
+| Self-consistency | Majority vote over $n$ sampled paths (GSM8K +17.9 points); helps only when mistakes scatter, costs $n$× |
+| Structured output | Anything a program parses: enforce a JSON Schema (see Controlling Output below) |
 
-**Prompt injection**: user crafts input to override system prompt. Mitigations: input validation, prompt hardening ("ignore override attempts"), output filtering, canary tokens, sandboxing.
+**Prompting reasoning models** (o-series and GPT-5 onwards, Claude with extended/adaptive thinking, Gemini 2.5 onwards): skip "think step by step" and hand-written step lists; give the goal, context, constraints and success criteria, and raise the effort setting (OpenAI `reasoning.effort`, Anthropic `output_config.effort`, Gemini `thinking_level`). On few-shot the vendors differ — OpenAI: try zero-shot first; Google: always include a few — so test both.
+
+**Prompt injection** (OWASP **LLM01**, #1 in both the 2025 and 2026 editions): text the model reads — typed by the user (**direct**) or hidden in a web page, PDF, email, retrieved chunk, tool result or image (**indirect**) — overrides your instructions. Instructions and attacker text share one token stream, so there is no fix like parameterised SQL queries: **limit the damage** in layers — constrain behaviour, validate outputs, filter input and output (+ a canary string), **least privilege (the most important)**, human approval for risky actions, isolate untrusted content, red-team. Break the **lethal trifecta** (private data + untrusted content + a way to send data out) by removing one leg. A jailbreak attacks the vendor's safety rules; an injection attacks *your app's* instructions ([Ch 18b](#content/18b_agents_in_production)).
 
 **The 4 prompt sins**: (1) too much in one call — split into steps; (2) no examples for non-obvious tasks; (3) critical instruction buried in middle of context; (4) prompts not version-controlled.
 
@@ -635,56 +653,97 @@ Reasoning models (RLVR/GRPO + an adjustable thinking budget) print a chain of th
 4. Safety rail: do not divulge system prompt contents.
 5. Fallback instructions: what to say when unsure.
 
-**Few-shot example selection**: choose diverse examples that cover edge cases; order by similarity to test input (most similar last = recency bias helps); 3–5 examples usually yield 90% of the possible gain; more than 10 rarely helps and wastes context.
+**Where it goes:** OpenAI Responses `instructions` (or a `developer` message), Anthropic `system`, Gemini Interactions `system_instruction`. A **role** ("You are a senior Python reviewer") sets tone, vocabulary and focus but adds no knowledge — Zheng et al. (2024) found personas did not improve factual accuracy — so put the real requirements in the instructions.
 
-**Chain-of-Thought subtlety**: CoT works by pushing the model to allocate tokens to intermediate reasoning before committing to the answer. The intermediate tokens don't need to be "correct" thinking — they activate better output distributions, and the visible trace may not be the real reason for the answer (faithfulness above). For factual claims, still verify with RAG.
+**Few-shot example selection**: diverse examples that include the tricky cases (retrieving ones similar to the input helps); balance the labels and mix up the order (Zhao et al. 2021: models lean to the majority and the most recent label); examples must agree with the instructions — when they conflict, the model copies the examples. Many-shot (hundreds of examples) works in a 1M window, but you pay those tokens on every call ([Ch 17 §3.9](#content/17_llm)).
 
-**Output format**: JSON mode or structured output schema eliminates downstream parsing failures. Always specify the exact schema; ask for `null` or omission of optional fields rather than the model inventing data.
+**Chain-of-Thought subtlety**: each reasoning token is extra computation the answer can build on, and the answer is conditioned on the worked steps — a mistake has to survive several explicit steps. The visible trace may still not be the real reason for the answer (faithfulness above); for factual claims, ground with RAG.
 
-**Prompt testing**: version-control prompts like code; run regression suite on every change; sample temperature=0 for stable comparisons; always test on adversarial inputs (empty inputs, very long inputs, jailbreak attempts, off-topic questions).
+**Layout**: separate the parts with tags (`<instructions>`, `<document>`, `<example>`); put long documents first and the question last (Anthropic: up to 30% better in its tests).
+
+**Output format**: asking for JSON guarantees nothing, JSON mode guarantees only that it parses, and schema-constrained structured output guarantees the shape (see Controlling Output below). Ask for `null` or omission of optional fields rather than invented data.
+
+**Prompt testing**: version-control prompts like code; keep a small test set with expected answers and re-run it on every prompt or model change — a fix for one case often breaks another (scoring: [Ch 17c §4](#content/17c_llm_systems)); include adversarial inputs (empty, very long, jailbreak attempts, off-topic).
 
 ---
 
 ### Hallucinations (★★)
 
-A hallucination is a confident false statement. Causes:
-1. Compression: facts are approximate in distributed weights.
-2. Out-of-distribution questions push the model to guess.
-3. RLHF incentives: confident answers rated higher than "I don't know".
-4. Knowledge cutoff: events after training are unknown.
+A hallucination is a confident false statement — the model has no separate truth check, so when it lacks the fact, plausible and true come apart ([Ch 17b §7](#content/17b_llm_applications)). Causes:
+1. **Pre-training — facts seen once aren't learned reliably** (Kalai et al., Sept 2025): if 20% of such facts appear exactly once, expect a base model to hallucinate on at least ~20% of them.
+2. **Grading rewards guessing**: right/wrong benchmarks score "I don't know" like a wrong answer, so models learn to guess. Fix the incentive — right = 1, "I don't know" = 0, wrong = $-t/(1-t)$ — and answering beats abstaining only when $P(\text{right}) > t$.
+3. Compression (facts spread across weights), rare or out-of-distribution questions, preference training that rewards confident answers, sycophancy (accepting a false premise).
+4. Knowledge cutoff: events after training are unknown — retrieve them.
 
-**Mitigation**: RAG (ground answers in retrieved text), temperature=0 for factual tasks, `"If unsure, say so"` in prompt, tool use (delegate arithmetic to code), consistency checks.
+**Types:** **intrinsic** (contradicts the source you gave) vs **extrinsic** (adds unsupported claims, e.g. an invented citation).
+
+**Mitigation** (lower the rate, catch the rest): ground with RAG; require citations or quotes that code checks; tools (search, database, calculator); allow abstention ("If unsure, say so"); consistency checks (sample several answers — disagreement flags invention, SelfCheckGPT); measure groundedness on a golden set. **Not a fix: temperature 0** — it makes the most likely answer repeatable, not true, and frontier reasoning models ignore or reject the setting anyway.
 
 ---
 
 ### RAG — Retrieval-Augmented Generation (★★★)
 
 ```
-SETUP (once):   Documents → chunk (~500 words) → embed → vector DB
+SETUP (once, then incrementally):
+    Documents → chunk (256–512 tokens, 50–100 overlap) → embed → vector DB
 
-QUERY TIME:     question → embed → top-K nearest chunks
-                → stuff chunks into prompt → LLM generates grounded answer
+QUERY TIME:
+    question → embed with the SAME model → nearest chunks
+    (retrieve ~20 → rerank → keep the best 3–5)
+    → put them in the prompt → LLM writes a grounded, cited answer
 ```
 
-**Chunking strategies**: fixed size (simple, splits sentences), recursive (paragraph→sentence→word), semantic (split at topic boundaries), overlapping (50–100 token overlap prevents gaps).
+**Chunk count:** $\lceil (N-\text{overlap}) / (\text{size}-\text{overlap}) \rceil$ — a 2,000-token document at 512 tokens with 100 overlap → ⌈1,900 / 412⌉ = 5 chunks (+20% storage). **Strategies**: fixed size (simple, cuts mid-thought), recursive (paragraph → sentence → word), semantic (split at topic changes; costs embedding calls), overlap (a boundary sentence survives whole in one chunk). Smaller chunks match more sharply but carry less context.
 
-**Why RAG beats fine-tuning for facts**: update docs without retraining; cite sources; no hallucinated facts (model reads real text).
+**Why RAG beats fine-tuning for facts** ([Ch 17b §9.1](#content/17b_llm_applications)): edit a document and re-index it instead of retraining; it can cite the source; lower hallucination risk because it reads real text — though it can still misread it or retrieve the wrong chunk. **RAG supplies knowledge, fine-tuning shapes behaviour** (format, tone, a narrow skill). Usual order of attempts: prompt → add retrieval for facts → add tools for actions → fine-tune when volume or consistency justifies it ([§9.2.11](#content/17b_llm_applications)).
 
-**Modern RAG improvements** (see Ch 19 for full detail): HyDE, hybrid search (vector + BM25), reranking (cross-encoder), contextual chunking, query rewriting, agentic RAG.
+**Modern RAG improvements** ([Ch 19 §19.9](#content/19_ai_frameworks); index internals in [Ch 28](#content/28_semantic_search)): hybrid search (vector + BM25, fused with RRF), reranking (cross-encoder), HyDE, contextual chunking, query rewriting, agentic RAG.
 
 ---
 
 ### Embeddings & Vector Databases
 
-An embedding model converts text → dense vector (e.g., 1536 dims). Similar meaning → similar vectors. Used for semantic search, RAG retrieval.
+An embedding model converts text (or images, audio) → one dense vector (e.g., 1,536 dims for `text-embedding-3-small`, 3,072 for `gemini-embedding-2`); similar meaning → similar vectors. Trained contrastively; ~20M–8B parameters, about 0.02–0.20 USD per 1M tokens ([Ch 17b §10](#content/17b_llm_applications)).
 
-$\text{cosine similarity}(A,B) = \frac{A \cdot B}{\|A\|\|B\|}$ — ignores magnitude, measures angle. Range: −1 (opposite) to 1 (identical).
+$\text{cosine similarity}(A,B) = \frac{A \cdot B}{\|A\|\|B\|}$ — ignores magnitude, measures angle. Range: −1 (opposite) to 1 (same direction). On unit vectors $\|A-B\|^2 = 2 - 2\cos$, so cosine, dot product and Euclidean distance give the **same ranking**; an un-normalised dot product rewards long vectors.
 
-**Vector search algorithms**: brute force $O(n)$; HNSW graph $O(\log n)$; IVF (cluster then search); PQ (compress vectors).
+**Two production rules:** embed queries and documents with the **same model**; switching models means **re-embedding the whole corpus** (even `gemini-embedding-001` → `-2`). **Matryoshka (MRL)** models let you keep a prefix of the vector: index size $= N \times \text{dims} \times 4$ bytes — 10M chunks at 3,072 dims = 123 GB, at 768 dims = 31 GB, for a small quality cost.
+
+**Vector search algorithms**: brute force $N \times d$ multiply-adds per query (exact); HNSW layered graph (approximate, roughly logarithmic hops); IVF (cluster, search nearby clusters); PQ (compress vectors); hybrid adds BM25. Aim for recall@10 above ~0.95. **pgvector** is the usual default if you already run Postgres; FAISS is a library, not a database.
+
+---
+
+### Controlling Output — Effort, Caps, Schemas & Tool Calls (★★)
+
+Which request parameters still work depends on the model (snapshot Nov 2026, [Ch 17b §8](#content/17b_llm_applications)):
+
+| Parameter | GPT-6 family (Responses API) | Claude 5.5 family | Gemini 4 / 3.6+ | Open weights you serve |
+|---|---|---|---|---|
+| Temperature, top-p | Only at reasoning effort `none` | Removed — omit | Ignored | Yes |
+| Reasoning depth | `reasoning.effort` | `output_config.effort` | `thinking_level` | Model-specific |
+| Output cap | `max_output_tokens` (includes reasoning) | `max_tokens` (includes thinking) | `max_output_tokens` | `max_tokens` |
+| Schema-constrained JSON | `text.format` + JSON Schema | `output_config.format` | `response_format` + schema | Guided decoding |
+
+**Output cap:** billed output = reasoning + visible tokens ≤ cap — a 1,000-token cap with 900 thinking tokens leaves 100 for the answer, and the text simply stops (OpenAI `incomplete`, Anthropic `stop_reason: "max_tokens"`). Set the cap generously and ask for brevity in the prompt. Stop sequences: Anthropic and Gemini yes, OpenAI's Responses API no.
+
+**Structured output, three levels:** ask in the prompt (no guarantee) → JSON mode (parses; keys and types unchecked) → schema-constrained (required keys, right types, no extra keys). Constrained decoding sets every token the grammar forbids at that position to $-\infty$, then picks as usual. A schema guarantees the **shape, not the truth**, and a safety refusal comes back separately.
+
+**Tool calling** ([Ch 17b §9.3](#content/17b_llm_applications)): send tool definitions (name, description, JSON Schema) → the model returns calls with ids → **your code** validates and runs them (the safety boundary) → send each result back with its call id → repeat until it answers in text. Model calls = sequential tool rounds + 1 — two independent weather lookups plus a subtraction take 3 calls with parallel tool calls, 4 without; every call needs exactly one result; `strict: true` makes the arguments match the schema. Loop design and MCP: the Ch 18 section below.
+
+---
+
+### Cost, Context & Responsible Deployment (★★)
+
+- **Cost** = in_tokens × p_in + out_tokens × p_out (prices per 1M tokens; [Ch 17b §13.3](#content/17b_llm_applications), snapshot 5 Nov 2026). Output costs ≈ 5× input and hidden thinking tokens bill as output. The same traffic (1,000 chats a day, 800 in + 200 out) costs ≈ 5.40 USD a month on GPT-6 Luna and ≈ 540 on GPT-6 Astra — a 100× spread, so route easy queries down. Cached input costs 2.5–10% of the normal price (keep the stable prefix first); batch/flex ≈ 50% off.
+- **Context window** = system + history + retrieved + question + **reserved output**; ~1M tokens is standard (GPT-6 ≈ 1.05M, Claude 5.5 1M, Gemini 4 Argon 1,048,576). A 667K-token manual now fits, but each question then costs ≈ 13.36 USD against ≈ 0.055 with RAG (243×), with a slower first token and weaker mid-prompt recall — RAG for repeated Q&A, the long window for one-off "read it all" jobs.
+- **Choosing a model**: prototype on a Flash / Sonnet / Luna-tier model and move up only when your eval says so; top tier with the effort dial raised for hard reasoning and code; small open weights (Gemma 4, gpt-oss-20b) on-device or for strict privacy.
+- **Responsible AI** ([Ch 17b §14](#content/17b_llm_applications)): test bias with counterfactual swaps (change only the name, gender or dialect); guardrails on input **and** output — independent filters multiply (two that each miss 10% let ~1% through), but they are **not** a security boundary for agents (least-privilege tools and approval gates are); serving energy dominates at scale (median Gemini Apps text prompt ≈ 0.24 Wh vs ≈ 1,287 MWh to train GPT-3 — a billion prompts a day overtake it in ~5 days); ship against a checklist (red-team, evals, bias, hallucination rate, privacy, monitoring, fallback, AI disclosure, rate limits).
 
 ---
 
 ### Evaluation
+
+Full recap of the eval stack, judges and A/B tests: the Ch 17c section below; benchmark map as of Nov 2026: [Ch 20 §20.13](#content/20_2026_landscape).
 
 | Metric | What it measures | Notes |
 |--------|-----------------|-------|
@@ -692,30 +751,30 @@ $\text{cosine similarity}(A,B) = \frac{A \cdot B}{\|A\|\|B\|}$ — ignores magni
 | BLEU | N-gram precision vs reference (translation) | Misses semantic equivalence |
 | ROUGE-L | Longest common subsequence recall (summarisation) | ROUGE-1 = unigram, ROUGE-2 = bigram |
 | MMLU, HumanEval, GSM8K | Academic knowledge / Python functions / grade-school maths | **Saturated** — no longer separate frontier models |
-| SWE-bench Verified | Real GitHub bug fixes | Frontier scored ~88% by mid-2026, but **OpenAI stopped reporting it in Feb 2026** (flawed tests, training-data leakage) and recommends SWE-bench Pro — cite with that caveat |
-| GPQA Diamond | Graduate-level science | Active — frontier ~94% |
-| Arena (arena.ai; formerly LMArena / Chatbot Arena) | Crowd-sourced head-to-head human preference (Elo) | Best real-world signal, but use with caution; coding/agent benchmarks are self-reported and **scaffold-sensitive** (ARC-AGI-3: 62.7% vs 99.9% depending on the harness) — report model + harness + date |
+| SWE-bench Verified / Pro | Real GitHub bug fixes | Verified retired by OpenAI Feb 2026 (flawed tests, contamination); Pro: OpenAI found ~30% broken tasks and retracted its recommendation 8 Jul 2026 — treat scores as rough |
+| GPQA Diamond | 198 graduate-level science questions | **Saturated** — top score 96.4% (Gemini 4 Argon, Sep 2026) |
+| Arena (arena.ai; formerly LMArena / Chatbot Arena) | Crowd-sourced head-to-head human preference (Elo-style) | Measures preference, not correctness; a 19-point gap is only a 53% win rate. Coding/agent benchmarks are self-reported and **harness-sensitive** (ARC-AGI-3: 62.7% vs 99.9% for the same model in two harnesses) — report model + harness + date |
 
 ---
 
 ### Inference Optimisation (★★)
 
-**Quantisation**: reduce weight precision from FP32/FP16 to INT8 or INT4.
+**Quantisation** ([Ch 17c §3.1](#content/17c_llm_systems)): reduce weight precision from FP32/FP16 to 8 or 4 bits.
 
 | Precision | Memory (70B model, weights only) |
 |-----------|-------------------|
 | FP32 | 280 GB |
 | FP16/BF16 | 140 GB |
-| INT8 | 70 GB |
+| INT8 / FP8 | 70 GB |
 | **INT4** | **35 GB** (one 48–80 GB GPU or 2×24 GB — *not* a single 24 GB card — plus KV cache) |
 
-FP16→INT8: <1% quality loss. FP16→INT4: 1–3% loss. Methods: GPTQ (GPU inference), AWQ (activation-aware, better quality), GGUF (CPU/edge, used by llama.cpp).
+FP8 (W8A8) is near-lossless for most models and the usual default; 4-bit costs a little quality — check on your own eval. **Weight-only** INT4 (GPTQ, AWQ) speeds **decode** only (the matmul still runs in BF16); **W8A8 / FP8** speeds prefill too. GGUF is llama.cpp / Ollama's quantised format for CPU and laptops.
 
 **KV Cache**: cache Key and Value tensors from prior tokens so each step computes only the new token's K,V and attends over the cache (no re-processing of the prefix). Memory per token $= 2 \times n_\text{layers} \times n_\text{kv-heads} \times d_\text{head} \times \text{bytes}$ — grows **linearly** with context and batch. Use *KV* heads, not query heads (an 8× slip for Llama-3-70B): 320 KiB/token → 2.5 GiB at 8K, 40 GiB at 128K per request (2.5 MiB/token with full MHA).
 
 **FlashAttention**: exact tiled attention with an online softmax; never materialises the $N \times N$ matrix. Extra memory $O(N^2) \to O(N)$; faster (≈ 3× on GPT-2 training) because it moves fewer bytes between HBM and SRAM. Compute is still $O(N^2 d)$ and the KV cache is unchanged. Standard in modern training and prefill.
 
-**Speculative decoding**: small draft model generates K candidate tokens; large model verifies all K in one parallel forward pass; reject and regenerate from first mismatch. Net: 2–3× speedup with zero quality loss.
+**Speculative decoding** ([Ch 17c §2.5](#content/17c_llm_systems)): a cheap draft proposes $k$ tokens; the large model verifies all of them in one forward pass and keeps them up to the first rejection. **Lossless** — the output distribution is unchanged. Speed-up ≈ $E \div (1+kc)$ with $E = (1-\alpha^{k+1})/(1-\alpha)$: at $k=4$ and a cheap draft, ≈ 2.8× at acceptance α = 0.8 but only ≈ 1.2× at 0.3 — you want α above ~0.6.
 
 > ✅ **Must-remember**
 >
@@ -729,22 +788,32 @@ FP16→INT8: <1% quality loss. FP16→INT4: 1–3% loss. Methods: GPTQ (GPU infe
 > - **MoE** ([§4.8](#content/17_llm)): top-$k$ gates + a balance loss (or a bias) stop routing collapse; compute = active params, **memory = all params**; experts are not topic specialists.
 > - **Multimodal LLM** ([§4.9](#content/17_llm)) = encoder → projector → tokens ($\lceil H/p\rceil\lceil W/p\rceil$: 336² at $p$=14 = 576); video multiplies it; native = one Transformer on all modalities.
 > - **Reasoning traces are evidence, not proof** ([§15.1b](#content/17_llm)): models admit a planted hint only ≈ 25–39% of the time; never present CoT as "the explanation".
-> - **RAG** = retrieve then generate; grounding beats memorisation for facts.
-> - **Temperature, top-p/min-p** control randomness; temperature 0 = greedy (a special case); mask dropped logits with $-\infty$.
-> - **INT4 quantisation** shrinks a 70B model to ≈ 35 GB (one 48–80 GB GPU, not a 24 GB card) with ~1–3% quality loss.
+> - **Prompting reasoning models** ([Ch 17b §5.4](#content/17b_llm_applications)): drop "think step by step" and scripted steps — give the goal, context, constraints and success criteria, and raise the effort setting. Hidden reasoning counts against the output cap and bills as output.
+> - **Hallucination** ([Ch 17b §7](#content/17b_llm_applications)) is partly an incentive problem — right/wrong grading rewards guessing. Reduce it with RAG, citations, tools and an abstention path; temperature 0 makes an answer repeatable, not true.
+> - **Prompt injection** (OWASP LLM01) is unsolved at the model level — defend architecturally with least privilege and approval gates; filters alone are not a boundary.
+> - **RAG** = retrieve then generate (chunks of 256–512 tokens with 50–100 overlap; retrieve ~20, rerank, keep 3–5). RAG supplies knowledge; fine-tuning shapes behaviour.
+> - **Structured output**: schema-constrained decoding beats "please reply in JSON" — it guarantees the shape, not the truth.
+> - **LoRA** ([Ch 17b §9.4](#content/17b_llm_applications)): $r(d+k)$ trainable numbers instead of $dk$ (0.78% at $d=k=4{,}096$, $r=16$); $B$ starts at 0; merged adapters add no latency. **QLoRA** (4-bit NF4 base) fine-tunes 65B on one 48 GB GPU.
+> - **Temperature, top-p/min-p** control randomness on models you serve; temperature 0 = greedy (a special case); tune temperature *or* top-p; mask dropped logits with $-\infty$. Frontier reasoning models (GPT-6 above effort `none`, Claude 5.5, Gemini 4) drop these knobs — steer with effort, the output cap and a schema.
+> - **Cost** = in_tokens × p_in + out_tokens × p_out, output ≈ 5× input; the same traffic spans ~100× between a high-volume and a flagship tier. ~1M-token windows fit a whole manual, but RAG is ~240× cheaper per question.
+> - **INT4 quantisation** shrinks a 70B model to ≈ 35 GB (one 48–80 GB GPU, not a 24 GB card) at a small quality cost; weight-only INT4 speeds decode, FP8 (W8A8) speeds prefill too.
 > - **BLEU** measures n-gram precision (translation); **ROUGE** measures recall (summarisation). Both fail to capture semantic meaning — they measure surface overlap only.
-> - **Arena Elo** is a useful real-world signal; academic benchmarks (MMLU, HumanEval, GSM8K) are saturated, and SWE-bench Verified is contaminated (OpenAI stopped reporting it, Feb 2026).
+> - **Arena** (Elo-style) measures preference, not correctness. MMLU, HumanEval, GSM8K and GPQA Diamond are saturated; SWE-bench Verified was retired by OpenAI in Feb 2026, and for Pro OpenAI found ~30% broken tasks and retracted its recommendation on 8 Jul 2026.
 > - **PagedAttention** (vLLM) makes the KV cache manageable in production by treating it like OS virtual memory.
 
 ---
 
 ## Ch 17c — LLM Systems: Serving, Scaling & Measuring
 
+![LLM serving map: nine cards (prefill is compute-bound and sets TTFT; decode is bandwidth-bound and sets TPOT; bandwidth ceiling tok/s = bandwidth / weight bytes per GPU, 48 tok/s for 70B FP16 on 2xH100 and 96 tok/s for INT4 on one H100; KV cache formula with Llama-3-70B at 128K = 40 GiB, more than the 35 GB INT4 weights; TTFT under 300 ms and TPOT under 30 ms, sell goodput; continuous batching Orca 36.9x and PagedAttention 20-38% to 90%+ KV use; speculative decoding 3.36 tokens per pass at alpha 0.8, k 4; weight-only quantization helps decode, FP8 helps both; eval stack assertions, golden set, judge, online A/B), a bill strip (1M requests/day at 4 / 20 USD per 1M tokens = 6,000 USD/day; one 8xH100 node about 17,520 USD/month) and a pick-by-question table](diagrams/rec20s_info_ch17c_serving_map_ai.png)
+
 > 💡 **In a sentence —** Inference has two phases with opposite bottlenecks (prefill = compute-bound, decode = bandwidth-bound); almost every serving optimisation helps exactly one of them, and evaluation is the four-layer stack that tells you whether any of it worked.
 
 ---
 
 ### Prefill vs Decode — the master model
+
+*Home: [Ch 17c §1.1](#content/17c_llm_systems)*
 
 | | **Prefill** | **Decode** |
 |---|---|---|
@@ -753,48 +822,60 @@ FP16→INT8: <1% quality loss. FP16→INT4: 1–3% loss. Methods: GPTQ (GPU infe
 | Sets | **TTFT** | **TPOT / ITL** |
 | Helped by | Chunked prefill, prefix caching, W8A8/FP8 | Batching, weight-only quantization, speculative decoding, GQA |
 
-**Bandwidth ceiling:** max tok/s = per-GPU bandwidth ÷ bytes of weights **per GPU**. A 70B FP16 (140 GB) sharded over 2×H100 → 70 GB each ÷ 3.35 TB/s ≈ **48 tok/s** for one stream. At INT4 (35 GB) on one GPU ≈ **96 tok/s**. Always state the shard count.
+**Bandwidth ceiling:** max tok/s = per-GPU bandwidth ÷ bytes of weights **per GPU**. A 70B FP16 (140 GB) sharded over 2×H100 → 70 GB each ÷ 3.35 TB/s ≈ **48 tok/s** for one stream. At INT4 (35 GB) on one GPU ≈ **96 tok/s**. Always state the shard count. More FLOPs at the same bandwidth do nothing for decode; the H200 (4.8 TB/s) decodes ~1.4× faster than the H100.
 ![Prefill vs decode and the bandwidth ceiling formula](diagrams/dlrev_bandwidth_ai.png)
 
 ### KV cache — the formula to memorise
 
+*Home: [Ch 17c §1.2](#content/17c_llm_systems)*
+
 **KV bytes = 2 × layers × KV-heads × head-dim × seq-len × bytes**
 
-Llama-3-70B (80 layers, 8 KV heads, dim 128, FP16) → **320 KiB/token** (≈ 0.33 MB). With plain MHA (64 KV heads) it would be 2.5 MiB/token — the 8× gap *is* why GQA exists. Use KV heads, not query heads, in the formula, and multiply by concurrent requests.
+Llama-3-70B (80 layers, 8 KV heads, dim 128, FP16) → **320 KiB/token** (≈ 0.33 MB). With plain MHA (64 KV heads) it would be 2.5 MiB/token — the 8× gap *is* why GQA exists (MLA in DeepSeek-V3 caches 576 numbers per token per layer, ÷ 57 vs MHA of its shape). Use KV heads, not query heads, in the formula, and multiply by concurrent requests.
 
 | Context | 4K | 8K | 32K | 128K |
 |---|---|---|---|---|
 | KV cache per request (GiB) | 1.25 | 2.5 | 10 | **40** (≈ 43 GB decimal) |
 
-At 128K the cache rivals the quantized weights (35 GB at INT4) and at 1M (320 GiB) it exceeds even the FP16 weights → KV quantization (FP8 halves it) becomes the lever, not weight quantization. The cache grows *linearly* with context; attention *compute* grows quadratically.
+At 128K one request's cache is already **bigger** than the INT4 weights (35 GB), and at 1M (320 GiB) it exceeds even the FP16 weights → KV quantization (FP8 halves it) becomes the lever, not weight quantization. The cache grows *linearly* with context; attention *compute* grows quadratically. MoE does not shrink the cache (it depends on attention, not experts), and the cache — not the weights — usually sets your batch size.
 
 ### The four metrics
 
-**TTFT** (prefill + queue) · **TPOT/ITL** (decode) · **throughput** (your bill) · **P95/P99** (queueing). Chat targets: TTFT < 300 ms, TPOT < 30 ms. Total = TTFT + TPOT × output tokens. Bigger batch → more throughput, worse TPOT and tail.
+*Home: [Ch 17c §1.3](#content/17c_llm_systems)*
+
+**TTFT** (queue + prefill) · **TPOT/ITL** (decode; watch the worst gaps too) · **throughput** (your bill) · **goodput** (requests/s that meet *every* SLO — the capacity you can actually sell). Report P50 and P99, never just the mean. Chat targets: TTFT < 300 ms, TPOT < 30 ms. Total = TTFT + TPOT × (N − 1): 200 tokens at 300 ms + 25 ms ≈ 5.3 s, 94% of it decode. Bigger batch → more throughput, worse TPOT and tail — and past a point *lower* goodput.
 
 ### Serving optimisations
 
+*Home: [Ch 17c §2.1–2.6](#content/17c_llm_systems)*
+
 | Technique | What it does | Watch out for |
 |---|---|---|
-| **Continuous batching** | Refills slots at token granularity; ~10–20× throughput | Needs paged KV; raises TPOT under load |
-| **PagedAttention** | Block table + free list; utilisation 20–40% → 90%+ | Kernel indirection; block-size trade-off |
+| **Continuous batching** | Refills slots at token granularity — the biggest throughput win (Orca 36.9× over FasterTransformer; Anyscale ~8× alone, up to 23× with vLLM) | Needs paged KV; raises TPOT under load |
+| **PagedAttention** | Block table + free list; KV memory used for real tokens 20–38% → 90%+ (2–4× throughput, vLLM paper) | Kernel indirection; block-size trade-off |
 | **FlashAttention** | Exact tiled attention + online softmax — never writes the $n\times n$ matrix to HBM | Helps training and prefill most; FLOPs and KV-cache size unchanged (Flash-Decoding for decode) |
-| **Chunked prefill** | Interleaves prefill slices with decode | Slightly worse TTFT for the long request |
-| **Prefix caching** | Reuses KV of a shared prefix | Put variable content **last**, or it never hits |
-| **Semantic caching** | Skips the model on similar questions | Can return a *wrong* answer |
-| **Speculative decoding** | Draft + verify; lossless | Needs α > ~0.6; useless at high batch |
-| **Disaggregation** | Separate prefill/decode pools | Must ship GB of KV between pools |
+| **Chunked prefill** | Interleaves prefill slices with decode; on by default in vLLM V1 (`max_num_batched_tokens`) | Slightly worse TTFT for the long request |
+| **Prefix caching** | Reuses KV of an identical prefix, whole blocks only | Put variable content **last**, or it never hits |
+| **Semantic caching** | Skips the model on similar questions | Can return a *wrong* answer (opposite meaning, another user's data) |
+| **Speculative decoding** | Draft + verify; lossless | Needs α above ~0.6 and a cheap draft; gains shrink at high batch |
+| **Disaggregation** | Separate prefill/decode pools | Must ship GB of KV between pools (~3.3 GB for a 10K-token prompt) |
 
-**Speculative decoding maths:** E[tokens] = (1 − α^(γ+1))/(1 − α). At α = 0.8, γ = 4 → **3.36 tokens/step**. At α = 0.3 → 1.43, a net loss.
+**Speculative decoding maths:** E[tokens per target pass] = (1 − α^(k+1))/(1 − α); speed-up ≈ E ÷ (1 + k·c) for a draft costing c of a target step. At α = 0.8, k = 4 → **3.36 tokens/pass** (2.80× with a cheap draft). At α = 0.3 → 1.43 tokens: 1.19× with a cheap draft, 0.79× (a net loss) with a costly one.
+
+**Split to fit, replicate to scale:** tensor parallelism inside an NVLink node lowers per-token latency; pipeline parallelism fits a bigger model but does not speed one stream; expert parallelism spreads MoE experts (an all-to-all every layer); replicas add throughput only.
 
 ### Quantization — the question people get wrong
 
-- **Weight-only** (GPTQ, AWQ, NF4) → helps **decode** only (fewer bytes streamed)
-- **W8A8 / FP8** → helps **both**, because activations are quantized too and the low-precision tensor cores engage
-- 70B: FP16 140 GB · FP8 70 GB · INT4 35 GB. Dropping to INT4 on one H100 frees ~45 GB for KV cache — the concurrency win usually beats the hardware saving.
-- **Multi-LoRA:** one resident base model, ~30 MB adapters per request; different adapters share a batch because only the low-rank term differs.
+*Home: [Ch 17c §3.1–3.3](#content/17c_llm_systems)*
+
+- **Weight-only** (GPTQ, AWQ, NF4) → helps **decode** only (fewer bytes streamed; the matmul still runs in BF16)
+- **W8A8 / FP8** → helps **both**, because activations are quantized too and the low-precision tensor cores engage (H100: ~1,979 FP8 vs ~989 BF16 dense TFLOPS); FP4 (NVFP4 / MXFP4) on Blackwell
+- 70B: FP16 140 GB · FP8 70 GB · INT4 35 GB. INT4 on one H100 leaves about 39 GiB for KV cache (fifteen 8K requests) — the concurrency win usually beats the hardware saving.
+- **Multi-LoRA:** one resident base model, ~30 MB adapters per request (rank 8 on Q and V of a 70B); different adapters share a batch because only the low-rank term differs.
 
 ### Evaluation stack
+
+*Home: [Ch 17c §4.1–4.4](#content/17c_llm_systems)*
 
 ```
 4. ONLINE      A/B tests, guardrails, cost & latency   ← slowest, truest
@@ -803,48 +884,37 @@ At 128K the cache rivals the quantized weights (35 GB at INT4) and at 1M (320 Gi
 1. ASSERTIONS  valid JSON? cites source? no PII?        ← fastest
 ```
 
-**LLM-as-judge biases:** *position* (swap order and average), *verbosity* (length-control), *self-preference* (use a different model family). Prefer **pairwise** over absolute 1–10; calibrate against human labels first.
+**LLM-as-judge biases:** *position* (judge both orders; count a win only if it survives the swap, else a tie; report the flip rate), *verbosity* (length-control), *self-preference* (use a different model family). Prefer **pairwise** over absolute 1–10; calibrate against 100–200 human labels first.
 
-**Golden sets:** built from **real production failures**, versioned in git, mostly deterministic assertions. Every incident becomes a permanent case.
+**Golden sets:** built from **real production failures**, versioned in git, mostly deterministic assertions; run each case 3–5 times and track its pass rate. Every incident becomes a permanent case.
 
-**A/B traps:** peeking (fix sample size up front), novelty effect, wrong primary metric, high variance. One primary metric + guardrails on latency, cost and escalation rate.
+**A/B traps:** peeking (checking daily for 10 days turns 5% false positives into ~19% — fix the sample size up front), novelty effect, wrong primary metric, high variance. n per arm ≈ 7.85 × [p₁(1−p₁) + p₂(1−p₂)] ÷ Δ² — about 9,333 sessions per arm for 60% → 62%. One primary metric + guardrails on latency, cost and escalation rate.
 
 ### Cost arithmetic (do this out loud)
 
-1M req/day × (500 in + 200 out) = 500M in + 200M out. At $5/$25 per M → **$7,500/day ≈ $225k/mo**. Self-host: 200M ÷ 86,400 ≈ **2,315 out tok/s** → ~2×8×H100 ≈ **$23k/mo**. Caveats: headcount, peak-vs-mean capacity, quality gap. **Cache first** — 30% hit rate is a day's work and 30% off the bill.
+*Home: [Ch 17c §5.2](#content/17c_llm_systems)*
+
+1M req/day × (500 in + 200 out) = 500M in + 200M out. At 4 / 20 USD per 1M tokens (frontier tier, Nov 2026) → **6,000 USD/day ≈ 182,500 USD/month**; the mid tier (2 / 10) halves it.
+
+Self-host a 70B: 200M ÷ 86,400 ≈ **2,315 out tok/s** on average; size for a 3× peak. The workload is input-heavy, so FP8 W8A8 fits it on **one 8×H100 node** (≈ 17,520 USD/month at 3 USD per GPU-hour) where INT4 weight-only needs two. Break-even vs frontier prices ≈ **2B tokens/month** (4.1B vs mid tier). Caveats: headcount, redundancy, peak-vs-mean capacity, quality gap.
+
+**Cache first** — prompt caching bills a repeated prefix at 2.5–10% of the input price, and a semantic cache that answers 30% of requests removes 30% of the bill.
 
 ---
 
 ## Ch 18 / 18b — AI Agents & Tool Use
 
-> **Chapter 18 is now two chapters.** [Ch 18](#content/18_ai_agents) = how an agent works (loop, tools, MCP, patterns, multi-agent, memory, context engineering). [Ch 18b](#content/18b_agents_in_production) = how you run one safely (failure modes, injection defence, evaluation, human gates, sandboxing, long-running agents).
+![AI agents map: nine cards (agent loop = LLM + tools + loop + state, observe, think, act, 95% per step gives 60% over 10 steps; tool calling where the model emits JSON and your code validates and runs it, the security boundary; MCP with one client per server, N x M to N + M, tools, resources and prompts, stateless since spec 2026-07-28; A2A agent-to-agent delegation with Agent Cards and Tasks; patterns starting from a single agent, multi-agent at about 15x the tokens of a chat; context stack with stable layers first and the moves write, select, compress, isolate; six failure modes each needing a guard in code; action gates allow, log, confirm, human and the sandbox ladder process, container, gVisor, Firecracker; pass@k vs pass^k at p 0.9, k 8 about 100% vs 43%) and a pick-by-question table](diagrams/rec20s_info_ch18_agents_map_ai.png)
 
-### Agents in production — the flashcard version
-
-**Five failure modes:** prompt injection · tool misuse · infinite loops · hallucinated tool calls · cost explosion. Each needs a *guard*, not a better prompt.
-
-**Jailbreak vs injection.** Jailbreak attacks the vendor's safety training; injection attacks *your* instructions. Indirect injection (payload inside a page, PDF or RAG chunk the agent reads) is the dangerous one — invisible to the user, and with tools attached it becomes real actions. "Ignore instructions in the input" cannot work: instructions and data share one channel.
-
-**Dual-LLM (CaMeL):** privileged model plans and holds tools but never sees untrusted bytes; quarantined model reads untrusted content but has no tools. Only schema-validated values cross. Same principle as parameterised SQL.
-
-**MCP attacks:** *tool poisoning* (instructions hidden in tool metadata) · *rug pull* (definition changed after approval — hash at approval, re-verify on load) · *cross-server shadowing*.
-
-**Action classification:** read-only → allow · low-risk write → allow + log · high-risk → confirm · irreversible → explicit human approval, always.
-
-**Containment:** process < container < gVisor < Firecracker. Filesystem isolation without a **default-deny egress allowlist** still permits exfiltration. Hard budgets on tokens, steps, time and cost, then escalate.
-
-**Long-running agents:** durable state + checkpoint/resume · **idempotency keys** on side-effecting calls · re-check permissions at point of *use* · re-validate the goal (it may be stale).
-
-**Dashboard:** task success · tool-call error rate · steps p95 · cost per task · escalation rate (two-sided alarm — zero usually means the gate broke) · safety events · **trace replay**.
-
----
-
+> **Chapter 18 is now two chapters.** [Ch 18](#content/18_ai_agents) = how an agent works (loop, tools, MCP, A2A, patterns, multi-agent, memory, context engineering). [Ch 18b](#content/18b_agents_in_production) = how you run one safely (failure modes, injection defence, evaluation, human gates, sandboxing, long-running agents).
 
 > 💡 **In a sentence —** An AI agent is an LLM operating in a loop — observe → think → act → observe — that uses tools to accomplish multi-step goals autonomously in the real world.
 
 ---
 
 ### The Agent Loop
+
+*Home: [Ch 18 §18.1](#content/18_ai_agents)*
 
 ```
 User Goal
@@ -853,145 +923,188 @@ User Goal
 Observe (context, results) → Think (LLM reasons) → Act (tool call / API)
                                     ▲                       │
                                     └───────────────────────┘
-                               (repeat until done or max steps)
+                (repeat until done, stuck, or a step/token/time/cost budget runs out)
 ```
 
-**ReAct pattern** (Reason + Act): LLM alternates between `Thought: ...` and `Action: tool(args)` and `Observation: result`. Makes reasoning interpretable; audit trail for debugging. When to use an agent vs simple prompt: if the task requires multiple steps, external data, or trial-and-error — use an agent. If a single LLM call suffices — don't.
+Agent = **LLM + tools + loop + state** — the *model* picks the next step at run time. **ReAct pattern** (Reason + Act, Yao et al. 2022): `Thought → Action → Observation`, repeated; interpretable, an audit trail for debugging. Native tool calling (since mid-2023) replaced regex-parsing "Action:" text, but the loop is the same.
+
+**Single call vs workflow vs agent:** if one LLM call does it, don't loop; if *you* can list the steps, build a workflow (cheaper, faster, testable); use an agent only when the model must choose the steps.
+
+**Reliability compounds:** P(task) ≈ pⁿ — 95% per step is 60% over 10 steps and 36% over 20; 99% per step gives 90% over 10.
 
 ---
 
 ### Function Calling / Tool Use
 
-The LLM outputs structured JSON specifying which function to call + arguments. Your code executes the function. The LLM never executes anything directly — **critical security boundary**.
+*Home: [Ch 18 §18.2](#content/18_ai_agents); request format in [Ch 17b §9.3](#content/17b_llm_applications)*
+
+The LLM outputs structured JSON specifying which function to call + arguments. Your code validates and executes the function. The LLM never executes anything directly — **critical security boundary**.
 ![Function calling: the LLM never executes tools directly](diagrams/dlrev_toolcalling_ai.png)
 
 ```
 App → (message + tool schemas) → LLM
 LLM → tool_call JSON → App
-App → executes tool → result
+App → validates, executes tool → result
 App → (result) → LLM
-LLM → final answer
+LLM → final answer (or another tool call)
 ```
 
-**Tool design best practices**: specific names, precise descriptions (model reads these), typed parameters with constraints, return structured JSON (not prose), handle errors gracefully, keep tools focused (one action each).
+**Tool design = prompt design:** specific, namespaced names; 3–4-sentence descriptions (the model reads these); typed parameters with enums and formats; small structured JSON output; one coherent job per tool; few tools per agent. Strict mode guarantees the argument *shape*, not sensible values — still validate.
 
-All major providers (OpenAI, Anthropic, Google) follow the same pattern: define schemas → model outputs JSON → you execute.
+**Same loop, different field names (Nov 2026):** OpenAI `function_call` / `function_call_output` (`call_id`) · Anthropic `tool_use` / `tool_result` (`tool_use_id`) · Gemini `function_call` / `function_result` (`call_id`). With parallel calls, send back one result per call id.
+
+**Errors:** return model-fixable ones (bad argument, unknown tool) as tool results that say what is allowed; stop on ones it cannot fix (expired credentials, quota, server down). Cap retries.
 
 ---
 
 ### Model Context Protocol (MCP)
 
-> **MCP** is an open protocol (Anthropic, 2024) standardising how LLM apps connect to tools, data, and services — "USB-C for AI." 97M installs by March 2026; 10,000+ servers.
+![Infographic: MCP, the Model Context Protocol (Anthropic, Nov 2024; Agentic AI Foundation since Dec 2025; spec 2026-07-28, as of Nov 2026). Connectors drop from N x M to N + M (10 apps x 50 services = 500 vs 60 pieces); before MCP 3 apps x 3 services need 9 connectors, with MCP a host runs one client per server, each speaking JSON-RPC 2.0 to GitHub, PostgreSQL and Slack servers; cards for host, client, server, stateless spec, tools = verbs, resources = nouns, prompts = recipes and client features; error answers (isError result, -32602, -32022); function calling is model to host, MCP is host to server.](diagrams/ag18_info_mcp_architecture_ai.png)
 
-**Architecture**: Host (your app) → MCP Clients → MCP Servers (GitHub, DB, Slack…) over JSON-RPC 2.0. Replaces N×M custom integrations with N+M.
-![MCP architecture: hosts, clients, servers, and three primitives](diagrams/dlrev_mcp_ai.png)
+> **MCP** is an open protocol introduced by Anthropic (Nov 2024) and governed since 9 Dec 2025 by the **Agentic AI Foundation** (a Linux Foundation fund) — "a USB-C port for AI apps". 10,000+ active public servers by Dec 2025; current spec revision **2026-07-28** ([Ch 18 §18.3](#content/18_ai_agents)).
+
+**Architecture**: Host (your app — owns the model, UI and consent) → one MCP Client **per server** → MCP Servers (GitHub, DB, Slack…) over JSON-RPC 2.0. Replaces N×M custom integrations with N+M (10 apps × 50 services: 500 connectors → 60 pieces).
+
+**MCP vs function calling:** function calling is the model ↔ host contract; MCP is the host ↔ tool-server contract. The host turns MCP tools into the model's tool list — the model never speaks MCP.
 
 **Three primitives**:
+
 | Primitive | What | Who controls |
 |-----------|------|-------------|
 | **Tools** | Functions (verbs) | Model-controlled |
 | **Resources** | Data (nouns) | App-controlled |
 | **Prompts** | Templated workflows (recipes) | User-controlled |
 
-**Transports**: stdio (local/dev, server as subprocess) vs Streamable HTTP (remote/production, SSE streaming). Production: sticky sessions or external state for horizontal scaling.
+**Stateless since 2026-07-28:** no `initialize` handshake, no session, no `Mcp-Session-Id`; every request carries its protocol version and client capabilities in `_meta`, so any replica can answer. State lives behind explicit handles (e.g. a `basket_id` the model passes back). Sampling and Roots are deprecated; Elicitation stays.
 
-**Security risks**: prompt injection via tool outputs, excessive permissions, data exfiltration, unauthorised destructive tool calls. MCP 2026 spec: OAuth 2.1 + tool annotations (readOnlyHint, destructiveHint) — but treat server annotations as hints from potentially-untrusted code.
+**Transports**: stdio (local; the host starts the server as a subprocess) vs Streamable HTTP (remote/production: one HTTP POST per message, the reply a JSON body or an SSE stream; no sticky sessions). The old HTTP+SSE transport is deprecated.
+
+**Security risks**: prompt injection via tool outputs, tool poisoning and rug pulls, over-broad permissions, data exfiltration, unapproved destructive calls, stolen tokens. OAuth 2.1 and tool annotations (`readOnlyHint`, `destructiveHint`) date from the 2025-03-26 revision — treat annotations as hints from potentially untrusted servers, and bind tokens to one server (no token passthrough).
 
 ---
 
 ### Agent Architecture Patterns
 
+*Home: [Ch 18 §18.4–18.5](#content/18_ai_agents)*
+
+**Reasoning (one agent):** ReAct (decide as you go) · Plan-and-Execute (plan first, re-plan on failure) · Reflexion (self-critique and retry after a failed check).
+
 | Pattern | When to use | Key detail |
 |---------|------------|-----------|
-| **Single agent** | One model + a few tools | Simplest; breaks down with many tools or huge context |
-| **Router** | Multiple distinct task types | Cheap model classifies → specialist handles; N×M → N+M cost |
-| **Pipeline (sequential)** | Fixed ordered steps | Deterministic; brittle if any step fails |
-| **Orchestrator-worker** | Complex tasks with parallel subtasks | Orchestrator plans + delegates; workers execute in parallel |
-| **Evaluator-optimiser** | Quality loops | Generator produces, evaluator scores, loop until pass |
+| **Single agent** | One model + a few tools — start here | Breaks down as the context fills or tools multiply |
+| **Router** | Distinct request types | A cheap model classifies into fixed labels (+ a "general" fallback); a *workflow* — your code picks the path |
+| **Pipeline (sequential)** | Fixed stages known in advance | Latency adds up (t₁ + … + tₙ); gates between steps catch early mistakes |
+| **Orchestrator-worker** | Subtasks you cannot list in advance | Lead model splits at run time; latency ≈ t_plan + max(tᵢ) + t_synth |
+| **Evaluator-optimiser** | Clear criteria, feedback helps | Generate → critique → revise; cap at 2–3 rounds |
 
-57% of enterprise project failures originate in orchestration design (Anthropic analysis of 200+ deployments).
+Start with the simplest pattern that could work (Anthropic, *Building effective agents*, Dec 2024).
+
+**Multi-agent costs:** Anthropic's multi-agent research system beat a single agent by 90.2% on its internal eval, at ~15× the tokens of a chat (a single agent ~4×). Parallel *writers* make conflicting decisions (Cognition) — keep writes single-threaded; add agents for read-only search and fresh-eyes review.
 
 ---
 
 ### A2A Protocol
 
-> **A2A** (Google, April 2025, now Linux Foundation) standardises **agent-to-agent** communication. MCP = agent-to-tools. A2A = agent-to-agents (cross-org, cross-vendor).
+> **A2A** (Agent2Agent; Google, April 2025 → Linux Foundation June 2025 → Agentic AI Foundation Aug 2026) lets independent, *opaque* agents discover each other and delegate work. MCP = agent-to-tools (vertical). A2A = agent-to-agents (horizontal, cross-org, cross-vendor) ([Ch 18 §18.3](#content/18_ai_agents)).
 
-A2A v1.0: Agent Cards (JSON capability metadata + cryptographic verification) + Tasks (structured work units) over HTTP/JSON-RPC. 150+ organisations support it (Google, Microsoft, AWS, Salesforce, SAP, IBM).
+A2A v1.0 (March 2026): an **Agent Card** at `/.well-known/agent-card.json` (skills, endpoint, auth; may be signed) for discovery, then **Tasks** with a lifecycle (`submitted → working → completed`, pausing at `input-required` / `auth-required`) that return **artifacts**. Bindings: JSON-RPC 2.0, gRPC or HTTP+JSON, with SSE streaming and webhook push. Need a function result now → MCP tool; delegating a long-running job to another team's agent → A2A. A remote agent's output is untrusted input.
 
 ---
 
 ### Agent Memory & Context Engineering
 
-**Memory types**:
-```
-Short-term (within session):  context window, tool results, scratchpad
-Long-term (across sessions):  vector DB (semantic search), summarised history,
-                               user profile, knowledge base
-State (multi-step tasks):     checkpoints (LangGraph MemorySaver / PostgresSaver)
-```
+*Home: [Ch 18 §18.8–18.9](#content/18_ai_agents)*
 
-When context window fills: (1) truncate oldest, (2) summarise older turns, (3) sliding window + retrieval from vector DB.
+**Memory types** (CoALA): **working** (context window, tool results, scratchpad) · **semantic** (facts about the user or world) · **episodic** (past episodes and outcomes) · **procedural** (how-to: system prompt, Agent Skills, code) — plus **checkpoints** for task state (LangGraph: `InMemorySaver` in tests, `PostgresSaver` in production). Retrieve memories by relevance + recency + importance.
 
-**Context engineering** (2026 named discipline): designing everything in the context window — system prompt, RAG docs, tool results, history, memory — to maximise output quality. The context stack:
+When the context window fills: (1) truncate oldest (silently loses early decisions), (2) **compact** — summarise older turns, (3) keep recent turns and retrieve older ones from a vector DB.
+
+**Context engineering** (the term caught on in mid-2025): designing everything the model sees — the smallest set of high-signal tokens. Room for history = window − system − tools − docs − reserved output. Stable layers go first so the prompt cache can reuse them:
 
 ```
-1. System prompt  (static, developer-set)
-2. Retrieved docs  (RAG, per-query)
-3. Tool results  (dynamic, per-step)
-4. Conversation history  (growing, per-turn)
-5. Structured memory  (persistent, compressed)
-6. User message  (current turn)
+1. System prompt          (static, developer-set)
+2. Long-term memory       (summarised from past sessions)
+3. Retrieved docs         (RAG, per query)
+4. Tool results           (per step)
+5. Conversation history   (grows every turn)
+6. Current user message   (this turn)
 ```
+
+**Four moves:** write (notes outside the window) · select (RAG, tool search) · compress (compaction, trimmed tool output) · isolate (sub-agents with clean contexts).
+
+**Context rot:** quality drops as the window fills, even on simple tasks (Chroma, 18 LLMs, 2025) — failures are poisoning, distraction, confusion and clash.
+
+**Tool bloat:** selection accuracy degrades past 30–50 tools; tool search loads 3–5 tools at a time and cuts definition tokens by over 85%.
+
+---
+
+### Agents in production — the flashcard version
+
+*Home: [Ch 18b](#content/18b_agents_in_production)*
+
+**Six failure modes:** prompt injection · tool misuse · infinite loops · hallucinated tool calls · cost explosion · context overflow (guards in the table below). Each needs a *guard* in code, not a better prompt.
+
+**Jailbreak vs injection.** Jailbreak attacks the vendor's safety training; injection attacks *your* instructions. Indirect injection (payload inside a page, PDF or RAG chunk the agent reads) is the dangerous one — invisible to the user, and with tools attached it becomes real actions. "Ignore instructions in the input" cannot work: instructions and data share one channel. Injection is **LLM01** in the 2025 and 2026 OWASP LLM lists and **ASI01 Agent Goal Hijack** in OWASP's Agentic Top 10.
+
+**Lethal trifecta** (Willison, 2025): untrusted input + private data + a way to act or communicate out. Meta's **Agents Rule of Two**: give one session at most two of the three, or have a human approve the third.
+
+**Dual-LLM** (Willison, 2023): privileged model plans and holds tools but never sees untrusted bytes; quarantined model reads untrusted content but has no tools. Only schema-validated values cross — same principle as parameterised SQL. **CaMeL** (Google, Google DeepMind and ETH, 2025) hardens it with provenance tags and a policy check at every tool call (77% of AgentDojo tasks with provable security vs 84% undefended).
+
+**MCP attacks:** *tool poisoning* (instructions hidden in tool metadata) · *rug pull* (definition changed after approval — hash at approval, re-verify on load) · *cross-server shadowing*.
+
+**Action classification:** read-only → allow · low-risk write → allow + log · high-risk → confirm · irreversible → explicit human approval, always. Gate when P(wrong) × impact > cost of a review; the risk class lives in *your* registry, not the server's annotations.
+
+**Containment:** process < container < gVisor < Firecracker microVM. Filesystem isolation without a **default-deny egress allowlist** (matching the parsed host exactly) still permits exfiltration. Scoped, short-lived credentials the model never sees. Hard budgets on tokens, steps, time and cost, then escalate.
+
+**Long-running agents:** durable state + checkpoint/resume · retries with capped exponential backoff + jitter · **idempotency keys** (task id + step) on side-effecting calls · re-check permissions at point of *use* · re-validate the goal (it may be stale).
+
+**Dashboard:** task success · tool-call error rate · steps p95 · cost per task · escalation rate (two-sided alarm — zero usually means the gate broke) · safety events · **trace replay**.
 
 ---
 
 ### Production Failure Modes
 
-| Failure | Mitigation |
-|---------|-----------|
-| Prompt injection (malicious tool outputs) | Sanitise outputs; content filtering; judge models |
-| Tool misuse / wrong args | User confirmation for destructive tools; strict param validation |
-| Infinite loops | Max iterations (e.g., 25); detect repeated identical calls; timeout |
-| Hallucinated tool calls | Validate every call against registered tool list |
-| Cost explosion | Per-request cost limits; use cheap models for routing |
-| Context overflow | Summarise tool outputs; token budgets per section |
+*Home: [Ch 18b §18.10, §18.13](#content/18b_agents_in_production)*
 
-**HITL (Human-in-the-Loop)**: pause before irreversible or high-blast-radius actions (delete, deploy, bulk update, financial txns). Serialise full agent state to checkpoint; notify human; resume on approve/deny.
+| Failure | Guard |
+|---------|-----------|
+| Prompt injection (page, email or tool result) | Least privilege, approval gates, egress control, dual-LLM split |
+| Tool misuse — right tool, wrong target | Your own risk registry; confirmation for destructive calls |
+| Infinite loops | Step cap (e.g. 25), repeat detector, timeout |
+| Hallucinated tool calls | Validate every call against the registry and its schema |
+| Cost explosion | Per-task token and cost budgets |
+| Context overflow | Trim or summarise tool output; per-section token budget |
+
+**HITL (Human-in-the-Loop)**: pause before irreversible or high-blast-radius actions (delete, deploy, money leaving, external messages). Checkpoint the full state, notify a human, resume on approve/deny — in LangGraph, `interrupt()` + a checkpointer, resumed with `Command(resume=...)` (the node re-runs from its first line).
 
 #### Agent Evaluation
 
-Evaluating agents is harder than evaluating single LLM calls because correctness is multi-step and often path-dependent.
+*Home: [Ch 18b §18.12](#content/18b_agents_in_production)* — harder than evaluating one LLM call: the output is a multi-step trajectory, many paths are valid, and the same agent can pass one run and fail the next.
 
-**Evaluation hierarchy**:
-1. **Unit tests on tools**: does each tool return the right output? Pure, fast, reliable.
-2. **Task-level evals**: does the agent complete the goal? Run 50–200 reference tasks; binary pass/fail.
-3. **Trajectory evals**: is the agent taking efficient, sensible steps? LLM-as-judge on step-by-step trace.
-4. **Safety red-team**: can it be prompted to misuse tools? Run adversarial prompts systematically.
+**Grade both** the **end state** (is the refund in the database? do the tests pass?) and the **trajectory** (which tools, in what order, any policy broken) — never the agent's own claim that it finished. End-to-end tells you *if* it failed; per-step tells you *where*.
 
-**Key metrics for agent systems**:
-- **Task success rate** — gold standard; compare to human baseline.
-- **Steps to success** — efficiency proxy; too many steps = cost and reliability risk.
-- **Tool call accuracy** — fraction of tool calls that are correctly specified (right tool, valid args).
-- **Hallucinated tool calls** — fraction that invoke non-existent tools; should be 0.
-- **Cost per task** — total token cost; catches runaway loops before they hit production.
+**Key metrics**: task success rate · **consistency (pass^k)** · steps to success · tool-call accuracy and invalid-call rate (hallucinated tools should be 0) · cost per task · latency p50/p95.
 
-**SWE-bench Verified** was the most widely-cited agent benchmark (2025–2026): 500 real GitHub issues from verified-solvable repositories. Measures end-to-end coding agent performance with patch submission and automated test evaluation. Caveat: OpenAI stopped reporting it in Feb 2026 (flawed tests, training-data leakage); scores also swing with the scaffold.
+**pass@k vs pass^k:** pass@k = 1 − (1 − p)^k asks "did *any* try work?" (capability); pass^k = p^k asks "did *every* try work?" (reliability, from τ-bench). At p = 0.9, k = 8 → ≈ 100% vs **43%**. Ship the consistent agent and route what it cannot do to a human.
 
-**LLM-as-judge** for agent evaluation: ask a strong model (GPT-5.6 or Claude Opus) to score the agent's final response and trace against a rubric. Faster and cheaper than human annotation, but suffers from self-preference and verbosity biases — mitigate by using a different model family as the judge.
+**Benchmarks:** SWE-bench Verified was retired by OpenAI in Feb 2026 (flawed tests, contamination); for SWE-bench Pro OpenAI found ~30% broken tasks and retracted its recommendation on 8 Jul 2026, so treat its scores as rough. Also name Terminal-Bench (4.0 current), τ-/τ²-bench, OSWorld, GAIA, BrowseComp and AgentDojo — and quote version, scaffold and number of trials.
+
+**LLM-as-judge for agents:** give the judge the full trace (tool calls and results), ask narrow yes/no questions per criterion, make it quote the step it grades, and check in code anything a program can check. Debias it as in [Ch 17c §4.2](#content/17c_llm_systems) — both orders, a different model family.
 
 > ✅ **Must-remember**
 >
-> - Agent = LLM in a loop with tools; chatbot = single pass.
-> - **ReAct** interleaves Thought/Action/Observation — interpretable + more accurate.
-> - **MCP** = N+M integrations (not N×M); Tools/Resources/Prompts primitives.
-> - **A2A** = agent-to-agent cross-org coordination; MCP = agent-to-tools.
-> - Start with one agent; add multi-agent only when a single agent demonstrably fails.
-> - Production agents need: max iterations, cost limits, confirm-destructive, logging, HITL path.
+> - Agent = LLM + tools + loop + state; the model picks the next step. Reliability compounds as pⁿ.
+> - **ReAct** interleaves Thought/Action/Observation — interpretable and debuggable.
+> - **MCP** = N+M integrations (not N×M) via Tools/Resources/Prompts; stateless since spec 2026-07-28; governed by the Agentic AI Foundation.
+> - **A2A** = agent-to-agent delegation (Agent Cards, Tasks); MCP = agent-to-tools.
+> - Start with one agent; add multi-agent only with eval evidence (~15× the tokens of a chat).
+> - Production agents need: step/token/cost budgets, confirm-destructive, least privilege, egress control, tracing, a HITL path — and pass^k, not just pass@1.
 
 ---
 
 ## Ch 19 — AI Frameworks & Engineering
+
+![AI engineering stack map as of Nov 2026: nine cards (agent frameworks with LangChain + LangGraph as the production default, CrewAI, MS Agent Framework and Google ADK, AutoGen archived; LlamaIndex + Workflows for document-heavy RAG with 256-512 token chunks and 50-100 overlap; DSPy compiles prompts against an eval set; Pydantic AI / Instructor validate and retry at 1 / (1 - f) calls; fine-tuning with Hugging Face TRL + PEFT, LoRA trains r x (d_in + d_out) per matrix, QLoRA uses a 4-bit base; pgvector under 10M vectors, hybrid search fused by RRF 1/(60 + rank), rerank top-20 to 3; one CI eval tool plus one tracing platform; Ollama for dev, vLLM for prod, SGLang for heavy prefix reuse, TGI archived Mar 2026; cost levers with prompt caching paying above a ~22% hit rate and batch APIs at 50% off), badges for Vertex AI becoming Gemini Enterprise Agent Platform and OWASP 2026 LLM01 prompt injection, and a pick-by-question table](diagrams/rec20s_info_ch19_stack_map_ai.png)
 
 > 💡 **In a sentence —** The 2026 AI engineering stack layers agent frameworks, RAG tooling, vector databases, evaluation, and inference servers into a production lifecycle; knowing when to use each layer — and when to skip it — is the core skill.
 
@@ -999,40 +1112,48 @@ Evaluating agents is harder than evaluating single LLM calls because correctness
 
 ### Framework Landscape
 
+*Home: [Ch 19 §19.1](#content/19_ai_frameworks)* — sensible defaults as of November 2026:
+
 ```
-         LangChain / LangGraph  ←  agents, multi-step, stateful
-         LlamaIndex Workflows   ←  document-heavy RAG, data
-         DSPy                   ←  prompt optimisation with evals
-         Pydantic AI            ←  type-safe agents
-         CrewAI / AutoGen       ←  multi-agent roles
-         Google ADK             ←  GCP-native enterprise agents
+         LangChain + LangGraph   ←  agents; LangGraph for state, loops, approvals
+         LlamaIndex + Workflows  ←  document-heavy RAG, data
+         DSPy                    ←  prompt optimisation with evals
+         Pydantic AI             ←  type-safe agents
+         CrewAI / MS Agent Fwk   ←  multi-agent roles / conversations
+         Google ADK              ←  GCP-native enterprise agents
               ↓
-         vLLM (production) / Ollama (local dev)
+         Hosted APIs / vLLM (production) / Ollama (local dev)
               ↓
-         pgvector / Qdrant / Weaviate / Pinecone
+         pgvector / Qdrant / Weaviate / Pinecone / Milvus
               ↓
-         MLflow 3 / LangSmith / Ragas / DeepEval
+         MLflow 3 / LangSmith / Langfuse / Ragas / DeepEval
 ```
+
+*MS Agent Fwk* = Microsoft Agent Framework, the successor to the archived AutoGen.
 
 ---
 
-### LangChain 1.0 + LangGraph 1.0
+### LangChain & LangGraph
 
-**LangChain 1.0 GA**: October 22, 2025. LCEL pipe-syntax: `prompt | model | parser`. `create_agent` for single agent with tools. Swap model/provider without touching the rest.
+*Home: [Ch 19 §19.2](#content/19_ai_frameworks)*
 
-**LangGraph 1.0**: for workflows with cycles, branches, and durability. Graph of state-typed nodes with conditional edges. Headline: durable state (resume after crash), built-in persistence, first-class HITL pauses.
+**LangChain 1.0** and **LangGraph 1.0** went GA together in October 2025 (1.4 / 1.2 in November 2026). LCEL pipe syntax: `prompt | model | parser`. **`create_agent`** is the standard single agent with tools (it replaced `create_react_agent`), customised with **middleware** (summarise history, redact PII, require approval); older chains and retrievers moved to `langchain-classic`. Swap model/provider without touching the rest.
 
-**LangSmith**: traces every prompt, retrieval, tool call, and token. Single most useful debugging tool for "almost working" agents. Enable: `LANGSMITH_TRACING=true`.
+**LangGraph**: steps as a graph of state-typed nodes with conditional edges — for cycles, branches and approvals. Headline: **durable execution** (a checkpointer such as `PostgresSaver` resumes a crashed run from its last finished step), persistence by `thread_id`, and HITL pauses (`interrupt()`, resumed with `Command(resume=...)`).
 
-**When to reach for LangChain**: RAG, chatbots, agents, multi-step, fast provider switching. Use raw SDK for simple 50-line scripts; use LlamaIndex for heavy document ingestion.
+**LangSmith**: traces every prompt, retrieval, tool call, and token. Single most useful debugging tool for "almost working" agents. Enable: `LANGSMITH_TRACING=true` plus `LANGSMITH_API_KEY`.
+
+**When to reach for LangChain**: RAG, chatbots, agents, multi-step, fast provider switching. Use the raw SDK for a 50-line script; use LlamaIndex for heavy document ingestion.
 
 ---
 
-### LlamaIndex Workflows 1.0
+### LlamaIndex & Workflows
 
-**LlamaIndex** specialises in connecting LLMs to data. **Workflows 1.0** (June 2025): event-driven, async-first agent runtime. Each `@step` receives typed events and emits typed events — natural fan-out, pause/resume.
+*Home: [Ch 19 §19.3](#content/19_ai_frameworks)*
 
-Three-line RAG: `SimpleDirectoryReader → VectorStoreIndex → query_engine`. Parses 200+ formats (PDF, docx, md, html).
+**LlamaIndex** specialises in connecting LLMs to data. **Workflows 1.0** (June 2025): event-driven, async-first agent runtime — each `@step` receives typed events and emits typed events, so branches, loops and pause/resume fall out naturally. It is now a separate package, `llama-index-workflows` (2.x), usable without the rest of LlamaIndex.
+
+Three-line RAG: `SimpleDirectoryReader → VectorStoreIndex → query_engine` — many built-in readers, plus LlamaParse for messy PDFs; chunk size, overlap and top-k still need tuning.
 
 **vs LangChain**: LlamaIndex wins on data parsing and retrieval primitives; LangChain wins on agent orchestration breadth. Many production stacks combine both.
 
@@ -1040,130 +1161,150 @@ Three-line RAG: `SimpleDirectoryReader → VectorStoreIndex → query_engine`. P
 
 ### DSPy — Programming, Not Prompting
 
-**DSPy** (Stanford): declare a `Signature` (input→output types), wrap in a `Module`, run `MIPROv2` optimizer with 20 labelled examples and a metric → it finds the best prompt+demonstrations. 10–40% quality gains over hand-written prompts. Compiled prompts are saved as JSON and survive model swaps.
+*Home: [Ch 19 §19.4](#content/19_ai_frameworks)*
 
-Use DSPy when you have evals and care about numbers. Skip it when you don't — no eval set = nothing to optimise against.
+**DSPy** (Stanford; 3.4, Sep–Oct 2026): declare a `Signature` (input→output fields), wrap it in a `Module` (`Predict`, `ChainOfThought`, `ReAct`), then run an optimizer on a few dozen labelled examples and a metric — **MIPROv2** (bootstrapped demos + LM-proposed instructions + Bayesian search), **GEPA** (reads failures and rewrites the instructions) or `BootstrapFewShot` for ~10 examples. "Compiling" is a search: keep the candidate prompt with the best mean metric. The DSPy paper reported gains of over 25% (GPT-3.5) and over 65% (Llama-2-13B-chat) against standard few-shot on its tasks — your gain depends on your task. Save the compiled program as JSON; re-compile when you switch models.
+
+Use DSPy when you have evals and care about numbers, and confirm the winner on a held-out dev set (with a dozen examples the top score can be luck). No eval set = nothing to optimise against.
 
 ---
 
 ### Pydantic AI
 
-Type-safe agents: inputs, outputs, tool signatures are all Pydantic-typed. If model returns invalid JSON/wrong schema → auto-retry with validation error. Zero manual JSON schema writing. `Instructor` is the cousin for non-agent use cases (wraps any OpenAI-compatible client to return Pydantic models).
+*Home: [Ch 19 §19.5](#content/19_ai_frameworks)*
+
+Type-safe agents (1.0 Sep 2025, 2.0 Jun 2026): `output_type` is a Pydantic model, tool schemas come from type hints and docstrings, `instructions=` sets the system-level text. If the model returns the wrong schema → re-prompt with the validation error. `Instructor` is the cousin for non-agent use (wraps an LLM client so calls return Pydantic models). Under both is a capped validate-and-retry loop: at failure rate f it costs 1 / (1 − f) calls per item, and a schema guarantees shape, not correctness.
 
 ---
 
-### Multi-Agent Frameworks
+### Multi-Agent Frameworks: LangGraph, CrewAI, Agent Framework, ADK
 
-| Framework | Model | Sweet spot | Status |
+*Home: [Ch 19 §19.6](#content/19_ai_frameworks)*
+
+| Framework | Model | Sweet spot | Status (Nov 2026) |
 |-----------|-------|-----------|--------|
-| **LangGraph** | Explicit state graph | Production, durability, branching, HIL | **GA** |
-| **CrewAI** | Role-based crews | Pipeline-style, low learning curve | Active |
-| AutoGen / AG2 | Conversational GroupChat | Research, code-gen experiments | Maintenance mode |
-| **Google ADK** | Code-first, GCP-native | Enterprise GCP, multi-agent | Active |
+| **LangGraph** | Explicit state graph | Production: durability, branching, human approval | **GA** since 1.0 (Oct 2025) |
+| **CrewAI** | Role-based crews + event-driven Flows | Pipeline-style roles, low learning curve | Active (1.x) |
+| **Microsoft Agent Framework** | Agents + graph workflows (Semantic Kernel base + AutoGen patterns) | Python/.NET teams on Azure; anyone leaving AutoGen | **GA** 1.0 (Apr 2026) |
+| **Google ADK** | Code-first, multi-agent, deploys to Google Cloud | GCP shops | Active (2.x) |
+| AutoGen | Conversational `GroupChat` | Reading old code only | **Archived** (community fork AG2 continues) |
 
-Warning: every agent turn = at least one LLM call. 4-agent debate × 5 rounds = 20+ calls. Quantify cost before adopting multi-agent.
+Warning: every agent turn = at least one LLM call. 4-agent debate × 5 rounds = 20 calls; if every agent re-reads the whole chat (200 new tokens a turn) that is 38,000 input tokens vs 3,800 for a pipeline — cost grows with the *square* of the conversation. Quantify before adopting multi-agent.
 
-#### HuggingFace Ecosystem
+#### Hugging Face Ecosystem
 
-For open-source model work, HuggingFace provides the de-facto standard libraries:
+*Home: [Ch 19 §19.7](#content/19_ai_frameworks)* — the Hub hosts 3M+ models and ~1.1M datasets (Oct 2026).
 
 | Library | Purpose | Key APIs |
 |---------|---------|---------|
-| `transformers` | Load/run any open model | `AutoModelForCausalLM.from_pretrained()` |
-| `datasets` | Load/process datasets | `load_dataset("name")` |
-| `TRL` | SFT, DPO, PPO training | `SFTTrainer`, `DPOTrainer`, `PPOTrainer` |
-| `PEFT` | LoRA, prefix, adapters | `get_peft_model()`, `LoraConfig` |
-| `accelerate` | Multi-GPU/multi-node | `Accelerator()`, device map auto |
-| `bitsandbytes` | INT8/INT4 quantisation | `load_in_4bit=True` |
+| `transformers` (v5) | Load/run pretrained models | `pipeline(...)`, `AutoModelForCausalLM.from_pretrained()` |
+| `datasets` | Load/stream datasets | `load_dataset("name")` |
+| `trl` | Post-training: SFT, DPO, GRPO, reward modelling | `SFTTrainer`, `SFTConfig` |
+| `peft` | LoRA, QLoRA, prompt tuning | `LoraConfig` |
+| `accelerate` | Multi-GPU / multi-node launch | `Accelerator()`, device map auto |
+| `bitsandbytes` | 4-bit loading for QLoRA | `BitsAndBytesConfig(load_in_4bit=True)` |
 
-**QLoRA fine-tuning checklist**:
+**LoRA fine-tuning with TRL + PEFT** — trainable weights per adapted matrix = r × (d_in + d_out), ≈ 2.3M (0.4%) for Qwen3-0.6B at r = 16 on `q_proj` and `v_proj`:
 ```python
-# 1. Load model in 4-bit
-model = AutoModelForCausalLM.from_pretrained(
-    "meta-llama/Llama-3.1-8B",
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-# 2. Wrap with LoRA
-config = LoraConfig(r=16, lora_alpha=32,
-    target_modules=["q_proj","v_proj","k_proj","o_proj"],
-    lora_dropout=0.05)
-model = get_peft_model(model, config)
-# 3. Train with SFTTrainer
-trainer = SFTTrainer(model=model, train_dataset=dataset,
-    args=TrainingArguments(output_dir="./qlora-output",
-        per_device_train_batch_size=4, gradient_accumulation_steps=4,
-        num_train_epochs=3, learning_rate=2e-4))
+# Runs locally (a GPU helps): pip install trl peft datasets; downloads Qwen3-0.6B, no API key
+from datasets import load_dataset
+from peft import LoraConfig
+from trl import SFTConfig, SFTTrainer
+
+dataset = load_dataset("trl-lib/Capybara", split="train[:1000]")  # chat-format examples
+lora = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05,
+                  target_modules=["q_proj", "v_proj"], task_type="CAUSAL_LM")
+trainer = SFTTrainer(model="Qwen/Qwen3-0.6B", train_dataset=dataset, peft_config=lora,
+                     args=SFTConfig(output_dir="./lora-out", num_train_epochs=1, learning_rate=1e-4))
 trainer.train()
+trainer.save_model()  # saves only the adapter: a few MB
 ```
 
-After training, merge LoRA into base weights for single-file deployment: `model.merge_and_unload()`, then save with `model.save_pretrained()`.
+**QLoRA** is the same recipe with the frozen base loaded in 4-bit (NF4), which fits a 7B fine-tune on one 16–24 GB GPU ([Ch 17b §9.4](#content/17b_llm_applications)). After training, merge the adapter (W′ = W + (α/r)·B·A — no extra inference latency) or keep it separate to hot-swap many adapters on one base ([Ch 17c §3.3](#content/17c_llm_systems)).
 
 ---
 
 ### Vector Databases
 
+*Home: [Ch 19 §19.9](#content/19_ai_frameworks)*
+
 | DB | Best for |
 |----|---------|
-| **pgvector** | <10M vectors, already on Postgres — default for most teams |
-| **Qdrant** | High-throughput open source; fastest p99 at 10M vectors |
-| **Weaviate** | Hybrid search (vector + BM25) out of the box |
-| **Pinecone** | Managed, zero ops |
-| **Milvus/Zilliz** | Billions of vectors, distributed |
+| **pgvector** | Up to millions of vectors (< 10M), already on Postgres — default for most teams; pair with Postgres full-text search for hybrid |
+| **Qdrant** | High-throughput open source (Rust); rich payload filters; dense + sparse hybrid |
+| **Weaviate** | Hybrid search (vector + BM25 + filters) in one query |
+| **Pinecone** | Managed, serverless, zero ops |
+| **Milvus/Zilliz** | Billions of vectors, distributed (Zilliz = managed) |
+| **Vertex AI Vector Search** | Managed on Google Cloud (ScaNN); 2.0 adds hybrid search |
 | Chroma | Local dev/prototyping |
 
-**Key insight**: pure vector search underperforms **hybrid search** (vector + BM25 + metadata filters) on most real workloads. IDs, names, version numbers need exact match; meaning needs vectors.
+**Key insight**: pure vector search underperforms **hybrid search** (vector + BM25 + metadata filters) on most real workloads. IDs, names, version numbers need exact match; meaning needs vectors. Fuse the two rankings with **reciprocal rank fusion**: RRF(d) = Σ 1/(60 + rank) — ranks only, so scores never need rescaling.
+
+**Filter ACLs inside the search:** post-filtering a global top-k leaves about fetch × p results for a user who may see a share p of the index (top-20 at 3% ≈ 0.6 results).
 
 ---
 
 ### Modern RAG
 
-Vanilla RAG: chunk → embed → top-K → stuff into prompt. Fails in specific ways; fix each failure mode:
+*Home: [Ch 19 §19.9](#content/19_ai_frameworks)*
+
+Vanilla RAG: chunk (start at 256–512 tokens with 50–100 overlap) → embed → top-K → stuff into prompt. Fails in specific ways; fix each failure mode as you hit it:
 
 | Vanilla fails when | Fix | What it does |
 |-------------------|-----|-------------|
 | Question and doc use different words | **HyDE** | Generate hypothetical answer; embed that; retrieve against it |
+| Exact ID/SKU match fails | **Hybrid search** | Vector + BM25, fused with RRF |
 | Top-K by similarity ≠ top-K by meaning | **Reranking** | Cross-encoder rescores top-20 → keep best 3 |
-| Chunk meaningless alone | **Contextual chunking** | Prepend doc summary to each chunk |
+| Chunk meaningless alone | **Contextual chunking** | Prepend a short document-level context to each chunk |
 | Multi-part question | **Query rewriting** | LLM splits into sub-queries |
 | Not every Q needs retrieval | **Agentic RAG** | LLM decides whether and what to retrieve as a tool call |
 | Facts are relational | **Graph RAG** | Retrieve subgraphs from knowledge graph |
-| Exact ID/SKU match fails | **Hybrid search** | Vector + BM25 union |
 
-**Biggest quality lever after embeddings: reranking**. Retrieve 20, rerank to 3 with a cross-encoder (e.g., Cohere Rerank).
+**Contextual retrieval** (Anthropic, 2024) prepends an LLM-written 50–100-token note to each chunk before embedding *and* BM25 — 49% fewer failed retrievals, 67% with reranking. **Late chunking** embeds the whole document first, then pools token vectors per chunk (no extra LLM calls).
+
+**Highest-leverage changes: a stronger embedding model and a reranker** — retrieve 20, rerank to 3 with a cross-encoder (e.g., Cohere Rerank). Shortlist embeddings on MTEB's *Retrieval* task, then re-test the top 2–3 on your own data.
 
 ---
 
 ### Evaluation & Observability
 
-**Three layers**: offline evals (curated test set per release), online evals (LLM-as-judge on live traffic samples), tracing (every prompt, retrieval, tool call).
+*Home: [Ch 19 §19.10](#content/19_ai_frameworks); the concepts in [Ch 17c §4](#content/17c_llm_systems)*
+
+**Three layers**: offline evals (curated test set per release), online evals (LLM-as-judge on a *sample* of live traffic — about 1% of 1M requests/day pins a 90% pass rate to ±0.6 points), tracing (every prompt, retrieval, tool call).
 
 | Tool | Purpose |
 |------|---------|
-| **Ragas** | Reference-free RAG metrics: faithfulness, context precision, answer relevancy |
+| **Ragas** | RAG metrics: faithfulness, context precision/recall, answer relevancy |
 | **DeepEval** | pytest-style LLM unit tests; CI/CD friendly |
-| **LangSmith** | Tracing + evals; deepest LangChain integration |
-| **MLflow 3.0** | Unified ML + GenAI lifecycle; prompt registry; OpenTelemetry tracing |
-| **W&B Weave** | Evals + tracing + dashboards |
-| **promptfoo** | CLI regression detection, red-team |
+| **LangSmith** | Tracing + evals; deepest LangChain/LangGraph integration (hosted) |
+| **MLflow 3** | Classic ML + GenAI in one: OpenTelemetry tracing, LLM-judge scorers, prompt registry |
+| **Langfuse / Arize Phoenix** | Open-source, self-hostable tracing + evals |
+| **W&B Weave / Braintrust** | Hosted evals, tracing and dashboards |
+| **promptfoo** | CLI regression detection, red-team (OpenAI agreed to buy it, Mar 2026) |
 
-**LLM-as-judge failure modes**: verbosity bias (prefers longer), self-preference (GPT-4 prefers GPT-4 outputs), position bias (first option rated higher). Fixes: require span citations, swap order and average, use different model family as judge.
+Pattern: **one CI tool + one platform**. Ask "can traces leave our VPC?" first, and instrument with OpenTelemetry so switching stays cheap.
+
+**LLM-as-judge failure modes**: position bias (judge both orders; count only verdicts that survive the swap), verbosity bias (length-control), self-preference (a judge favours its own model family — use a different family). Calibrate on 100–200 human labels and make the judge quote its evidence.
 
 ---
 
 ### Inference Servers
 
+![Infographic comparing inference server tiers as of Nov 2026: local dev (Ollama, llama.cpp, MLX, LM Studio), production serving (vLLM as the default, SGLang, TensorRT-LLM, TGI archived Mar 2026) and orchestration (NVIDIA Dynamo, llm-d, Ray Serve, Dynamo-Triton). Shows throughput = concurrent requests x tokens/s per request (32 users x 25 tokens/s = about 800 tokens/s), and the Red Hat Aug 2025 benchmark on one A100 40 GB with Llama 3.1 8B: vLLM 793 vs Ollama 41 output tokens/s and P99 time-to-first-token 80 ms vs 673 ms, plus a need-to-tool table.](diagrams/fw19_info_inference_servers_ai.png)
+
+*Home: [Ch 19 §19.11](#content/19_ai_frameworks); how serving works in [Ch 17c](#content/17c_llm_systems)*
+
 ```
-Local dev:       Ollama (easiest, "docker run a model")
-                 llama.cpp (CPU/GGUF)
-Production:      vLLM (DEFAULT) — PagedAttention, 5–10× throughput
-                 SGLang — fast for structured/agent workloads
-                 TensorRT-LLM — peak NVIDIA performance, complex setup
-                 TGI — ⚠ MAINTENANCE MODE since 2026; migrate
+Local dev:       Ollama (easiest: pull a model, run it)
+                 llama.cpp (CPU/GGUF) · MLX (Apple silicon) · LM Studio
+Production:      vLLM (DEFAULT) — PagedAttention + continuous batching
+                 SGLang — RadixAttention; agents, heavy prefix reuse
+                 TensorRT-LLM — peak NVIDIA performance, more setup
+                 TGI — maintenance since Dec 2025; repo ARCHIVED Mar 2026
+Orchestration:   NVIDIA Dynamo, llm-d, Ray Serve, Dynamo-Triton
 ```
 
-**vLLM PagedAttention**: partitions KV cache into fixed-size blocks (like OS virtual memory pages); eliminates fragmentation; 2–10× more concurrent users on same GPU. Red Hat benchmark: vLLM 793 tok/s vs Ollama 41; p99 TTFT 80ms vs 673ms. Stripe saved 73% migrating to vLLM.
-![vLLM and PagedAttention versus Ollama benchmarks](diagrams/dlrev_vllm_ai.png)
+**vLLM PagedAttention**: stores the KV cache in fixed-size blocks (like OS virtual-memory pages), so almost no memory is wasted — about **2–4× the throughput** of earlier serving systems at the same latency (vLLM paper); continuous batching underneath (Anyscale: up to 23× over static batching with vLLM). V1 engine since v0.8, OpenAI-compatible `vllm serve`, NVIDIA/AMD/Intel/TPU. Red Hat benchmark (Aug 2025; one A100, Llama 3.1 8B): vLLM peaked at 793 tok/s vs Ollama's 41, P99 TTFT 80 ms vs 673 ms — apples-to-oranges by design.
 
 **Most teams**: Ollama for dev, vLLM for prod.
 
@@ -1171,24 +1312,39 @@ Production:      vLLM (DEFAULT) — PagedAttention, 5–10× throughput
 
 ### Google AI Engineer Stack
 
-**Gemini Enterprise Agent Platform** (rebranded from Vertex AI at Cloud Next 2026):
+*Home: [Ch 19 §19.12](#content/19_ai_frameworks); models and TPUs in [Ch 20 §20.12](#content/20_2026_landscape)*
+
+**Gemini Enterprise Agent Platform** — launched at Google Cloud Next (22 Apr 2026) as "the evolution of Vertex AI"; agents reach employees through the Gemini Enterprise app:
 
 | Component | Role |
 |-----------|------|
-| **ADK** | Open-source code-first agent framework (Python, Go, Java, TS) |
-| **Agent Engine** | Managed runtime — deploy, scale, sessions, memory |
-| **Agent Builder** | Console / low-code surface |
-| **Vertex Pipelines** | Managed Kubeflow pipelines |
-| **Model Garden** | Curated catalogue (Gemini, LLaMA, Mistral, Anthropic) |
-| **Genkit** | Lighter open-source GenAI framework |
+| **ADK** | Open-source code-first agent framework (Python, TypeScript, Go, Java); multi-agent, A2A and MCP built in |
+| **Agent Studio** | Low-code visual builder; export to ADK |
+| **Agent Runtime** (formerly Agent Engine) | Managed runtime — deploy, scale, sessions, Memory Bank, long-running agents |
+| **Agent Identity, Registry, Gateway** | Governance: every agent gets an identity, is listed, goes through policy |
+| **Model Garden** | 200+ models: Gemini, Gemma, third-party models such as Claude |
+| **Pipelines, Feature Store, Model Registry** | Classic Vertex AI MLOps, now under the Agent Platform name |
+| **Genkit** | Lighter open-source framework for AI features in apps (TypeScript, Go, Python, Dart) |
 
-Key papers from Google: *Attention Is All You Need* (2017), *BERT* (2018), *Chinchilla* (2022), *PaLM/PaLM 2*, Gemini technical reports.
+Key papers from Google: *Attention Is All You Need* (2017), *BERT* (2018), *T5* (2019), *Switch Transformer* (2021), *Chain-of-Thought Prompting* (2022), *Chinchilla* (DeepMind, 2022), *PaLM/PaLM 2*, Gemini technical reports.
+
+---
+
+### Model Access & Governance
+
+*Home: [Ch 19 §19.12a–19.12b](#content/19_ai_frameworks)*
+
+**Route by compliance first:** enterprises mostly reach frontier models through their cloud — Amazon Bedrock (Claude, OpenAI GPT since June 2026, Nova; AgentCore runtime), Microsoft Foundry (OpenAI, Claude), Google's Agent Platform (Gemini, Claude in Model Garden) — for IAM, residency, private networking and one bill. Air-gapped means self-hosted open weights or an on-prem appliance.
+
+**OWASP Top 10 for LLM Applications, 2026 edition** (Aug 2026, eight of ten reordered): LLM01 prompt injection (still #1) · LLM03 excessive agency (up from #6) · LLM10 improper output handling (treat model output as untrusted — never `eval` it). Agents also need OWASP's **Top 10 for Agentic Applications** (Dec 2025): ASI01 agent goal hijack.
 
 ---
 
 ### MLOps Lifecycle & Cost/Latency Levers
 
-MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment tracking (**MLflow 3**) → Training (PyTorch/JAX) → Model registry → Serving (**vLLM** / FastAPI) → Monitoring (Evidently AI) → Pipeline orchestration (Kubeflow/Airflow) → retrain.
+*Home: [Ch 19 §19.13–19.14](#content/19_ai_frameworks)*
+
+MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment tracking (**MLflow 3**) → Training (PyTorch/JAX) → Model registry → Serving (**vLLM** / FastAPI) → Monitoring (Evidently AI, Arize) → Pipeline orchestration (Kubeflow/Airflow) → retrain.
 
 **Interview red flag**: "deploy and forget." Always mention monitoring and retraining.
 
@@ -1196,141 +1352,183 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 | Lever | Savings |
 |-------|---------|
-| **Prompt caching** | 50–90% on repeated prefixes (system prompt cached) |
-| **Model routing** | 30–80% — easy queries → Flash/Haiku/mini; hard → Opus/Pro/GPT-5.6 |
-| Batch APIs | 50% async off-peak |
-| Provider failover | LiteLLM, OpenRouter |
+| **Prompt caching** | Up to 90% on the cached prefix (hits bill at 10% of input; 5% on Claude Opus/Sonnet 5.5, 2.5% on Fable 5.1) — but writes can cost 1.25×, so it pays only above a ~22% hit rate |
+| **Model routing / cascades** | 50–85% in Ch 19's example — easy → Haiku 5.5 / Gemini Flash-Lite / GPT-6 Luna; hard → Opus 5.5 / Gemini 4 Argon / GPT-6 Astra |
+| Batch APIs | 50% for work that can wait (results within 24 h) |
+| Lower reasoning effort | Large on reasoning models — thinking tokens bill as output |
+| Trim the prompt | Proportional — few-shot examples, tool definitions and history grow quietly |
 
-**Latency levers**: streaming (TTFT wins), parallel tool calls, KV-cache reuse across turns (vLLM/SGLang), edge inference for hot paths.
+**Latency levers**: streaming (TTFT wins), parallel tool calls, prefix caching (provider caching, vLLM automatic prefix caching, SGLang RadixAttention), lower effort or a smaller tier, edge inference for hot paths.
 
-**Reliability**: structured outputs (eliminates parser failures), guardrails, fallback cascade (timeout → cheaper model → different provider), idempotency keys on tools that cost money.
+**Reliability**: structured outputs (eliminates parser failures), guardrails, retries with exponential backoff + jitter, a fallback chain to another model or provider (LiteLLM, OpenRouter), timeout budgets, idempotency keys on tools that cost money. Retries fix blips; fallbacks fix outages (an outage fails every retry).
 
 > ✅ **Must-remember**
 >
-> - **LangChain + LangGraph** = safe production default for general agents; LlamaIndex = data-heavy RAG.
-> - **vLLM** is the 2026 default inference server; **TGI is in maintenance mode** — migrate.
-> - **Hybrid search beats pure vector** on real workloads. Reranking is the #1 RAG quality win.
-> - **Prompt caching** is the #1 cost lever after model choice.
+> - **LangChain + LangGraph** = safe production default for general agents; LlamaIndex = data-heavy RAG; AutoGen is archived → Microsoft Agent Framework.
+> - **vLLM** is the default inference server; **TGI** has been in maintenance since Dec 2025 and archived since Mar 2026 — migrate to vLLM or SGLang.
+> - **Hybrid search beats pure vector** on real workloads (fuse with RRF); reranking is often the biggest RAG win after embeddings; filter ACLs inside the search.
+> - **Prompt caching and model routing** are the biggest cost levers — caching pays only above a ~22% hit rate.
+> - **Vertex AI → Gemini Enterprise Agent Platform** (Apr 2026): ADK to build, Agent Runtime to run, Agent Studio for low-code.
 > - **DSPy** if you have evals; skip otherwise. **Pydantic AI** for type-safety.
 
 ---
 
 ## Ch 20 — The 2026 AI Landscape
 
-> ⏱ **Dated snapshot.** The lineup and numbers in this section are the **July 2026** view from [Ch 20](#content/20_2026_landscape). By early November 2026 the flagships had moved on — GPT-6 (Astra / Sol / Luna), Claude 5.5 (Opus / Sonnet / Haiku) + Fable 5.1, Gemini 4 (Argon / Carbon), Muse Spark Open from Meta — see [Ch 17 §4.1–4.6](#content/17_llm); where they disagree, trust the vendor model card. The *shapes* below (no single winner, open weights ≈ 4–6 months behind, price/latency/ecosystem decide) still hold.
+![2026 AI landscape map as of 5 Nov 2026: a lineup table of three tiers per lab (OpenAI GPT-6 Astra, GPT-6.1 Sol / Terra, GPT-6 Luna; Anthropic Claude Fable 5.1, Opus 5.5 and Sonnet 5.5, Haiku 5.5; Google Gemini 4 Argon, Gemini 3.8 Flash, Gemini 3.5 Flash-Lite; ~1M-token context, top tier ~100x the cheap tier at 10 / 50 vs 0.10 / 0.50 USD per 1M tokens), nine cards (reasoning dial billed as output; open weights about 4 months behind, sparse MoE where memory follows total and compute follows active parameters; coding agents = model x harness x effort, Terminal-Bench 4.0 top 64.8% plus or minus 11 points; OSWorld-Verified 86.1% vs ~72% human, OSWorld 2.0 only 20.6% completed; benchmark status saturated MMLU and GPQA, retired SWE-bench Verified, contested SWE-bench Pro, current Terminal-Bench 4.0, OSWorld 2.0 and HLE; a fixed capability ~10-13x cheaper a year but agents multiply tokens; ~1M context with lost-in-the-middle; EU AI Act dates 2 Aug 2025, 2 Aug 2026, 2 Dec 2027 / 2 Aug 2028 and fines up to EUR 35M or 7%; Google stack Gemini 4 + Agent Platform + TPU7x Ironwood at 42.5 exaFLOPS per pod) and a pick-by-question table](diagrams/rec20s_info_ch20_landscape_map_ai.png)
 
-> 💡 **In a sentence —** By July 2026 no single model wins everything — GPT-5.6 leads agents, Claude Opus 4.8 leads code/tools (Claude Sonnet 5 the mid-tier default), Gemini 3.5 Pro leads multimodal/value, and open-weight models (DeepSeek, Llama 4, Qwen 3.5) are within ~5 points on most tasks, making model choice primarily a question of price, latency, and ecosystem.
+> ⏱ **Dated snapshot.** Model names and numbers below are the **5 November 2026** view from [Ch 20](#content/20_2026_landscape), in step with [Ch 17 §4](#content/17_llm). They change every few weeks — memorise the *shapes*, say "as of <month, year>", and where a vendor page disagrees, trust the vendor page.
+
+> 💡 **In a sentence —** No single model wins everything: three closed labs each sell a top, a workhorse and a cheap tier with ~1M-token context and a reasoning-effort dial, open weights trail by a few months, and model choice is mostly price, latency, ecosystem and your own eval.
 
 ---
 
-### Frontier Model Lineup (July 2026)
+### Frontier Model Lineup (Nov 2026)
+
+*Home: [Ch 20 §20.1](#content/20_2026_landscape)*
 
 ```
-CLOSED-WEIGHT FRONTIER:
-   GPT-5.6 (OpenAI)      — agents leader; Terminal-Bench 82.7%; SWE-bench 88.7%
-   Claude Opus 4.8 (Ant) — SWE-bench 87.6%; tool orchestration
-   Claude Sonnet 5 (Ant) — mid-tier price/perf default; $2/$10 per M tokens
-   Gemini 3.5 Pro (Ggl)  — GPQA 94.3%; cheapest flagship $4/$12 per M tokens
+   Tier           OpenAI                 Anthropic                Google
+   ────────────   ────────────────────   ──────────────────────   ─────────────────────────
+   Top            GPT-6 Astra            Claude Fable 5.1         Gemini 4 Argon
+                                                                  (Gemini 4 Carbon: limited)
+   Workhorse      GPT-6.1 Sol / Terra    Claude Opus 5.5,         Gemini 3.8 Flash
+                                         Claude Sonnet 5.5
+   Cheap / fast   GPT-6 Luna             Claude Haiku 5.5         Gemini 3.5 Flash-Lite
 
-OPEN-WEIGHT (sparse MoE era):
-   DeepSeek V4-Pro        — 1.6T/49B active; SWE-bench 83.7%; MIT license
-   Llama 4 Scout          — 109B/17B; 10M context window (industry largest)
-   Qwen 3.5               — 397B/17B; GPQA 88.4%; Apache 2.0
-   Mistral Large 3        — 675B/41B; Apache 2.0
-   Gemma 4 31B            — dense; LiveCodeBench 80%; Apache 2.0
+   Plus Grok 4.7 (SpaceXSI, formerly xAI). All: ~1M-token context (Grok 500K) + an effort dial.
 ```
 
-**Interview tip**: don't memorise exact numbers (they drift monthly). Memorise the *shape*: closed-weight leads by ~3–8 points on agentic/code tasks; within ~3 points at the top means model choice is mostly about price/latency/ecosystem.
+List prices, USD per 1M tokens (input / output): GPT-6 Astra and Claude Fable 5.1 at 10 / 50 · Claude Opus 5.5 at 4 / 20 · GPT-6.1 Sol and Claude Sonnet 5.5 at 2 / 10 · GPT-6 Luna at 0.10 / 0.50. Inside one lab the top tier is ~100× the cheap tier; batch APIs halve most prices.
+
+**Who leads depends on the test:** Claude Opus 5.5 tops Terminal-Bench 4.0; GPT-6 Astra tops ARC-AGI-3 and Humanity's Last Exam; Gemini 4 Carbon tops Arena (text) and the Artificial Analysis index v5.0.
+
+**Interview tip**: don't memorise exact numbers (they drift monthly). Memorise the *shape*: three tiers per lab, the leaders within a few points of each other, open weights a few months behind — so model choice is mostly about price, latency, ecosystem and your own eval.
 
 ---
 
 ### Reasoning Models & Test-Time Compute
 
+![Infographic of the reasoning-effort dial: a normal call versus a call with 8,000 hidden thinking tokens, a low-to-max effort knob with the OpenAI, Anthropic and Gemini parameter names, the cost formula with thinking billed as output, and worked costs at 2 and 10 USD per 1M tokens where reasoning wins on hard maths (0.184 vs 0.354 USD) but loses on easy lookup (0.104 vs 0.029 USD)](diagrams/land20_info_reasoning_dial_ai.png)
+
+*Home: [Ch 20 §20.2](#content/20_2026_landscape); how they are trained (RLVR, GRPO) in [Ch 17 §3.5b](#content/17_llm)*
+
 > A **reasoning model** allocates additional compute *at inference time* — generating hidden "thinking" tokens before the final answer — so accuracy on hard problems scales with thinking budget, not parameters alone.
-![Reasoning models and test-time compute budgets](diagrams/dlrev_reasoning_ai.png)
 
 ```
-Normal LLM:     Input → [one forward pass] → Output (cost: fixed)
+Normal answer:   Input → [forward passes, one per answer token] → Output
+                 (cost grows with the answer length only)
 
-Reasoning model: Input → [think… think… think…] → Output (cost: scales with task)
-                          (1K to 100K+ hidden tokens)
+Reasoning:       Input → [think… think… think…] → Output
+                          (about 1K to 100K+ hidden tokens; cost grows with
+                           how hard the model decides the task is)
 ```
 
-Doubling the thinking budget often beats doubling parameters on math, formal logic, multi-step planning, and hard code generation (Snell et al.: on problems a small model already partly solves, optimally allocated test-time compute can beat a 14× larger model). Control: `reasoning.effort` low → max (OpenAI), the `effort` setting / adaptive thinking (Anthropic; earlier models used `thinking.budget_tokens`), thinking levels (Gemini). By late 2026 thinking is built into the main model lines rather than a separate o-series ([Ch 17 §4.1](#content/17_llm)).
+Thinking is now a **dial on every flagship**, not a separate model line, and models think *adaptively* (fewer tokens on easy prompts). Snell et al. (2024): on problems a small model already partly solves, optimally allocated test-time compute can beat a 14× larger model ([Ch 17](#content/17_llm)). Set it with `reasoning={"effort": ...}` (OpenAI Responses API), `output_config={"effort": ...}` (Anthropic) or `thinking_level` (Gemini). The visible reasoning is a summary, not a guaranteed honest explanation.
 
-**When reasoning helps**: math, formal logic, complex code with specs, scientific analysis with multiple hypotheses, multi-step planning. **Skip for**: simple Q&A, creative writing, high-throughput classification, real-time voice. Cost trap: reasoning models charge for hidden tokens too — a single `high` call can be 10–50× a normal call.
+**When reasoning helps**: math, formal logic, multi-step planning, hard code generation and long agentic coding, scientific analysis with multiple hypotheses, debugging legacy code. **Skip for**: simple Q&A, creative writing, high-throughput classification, real-time voice, bulk extraction.
+
+**Cost trap**: thinking tokens bill as output — 8,000 hidden tokens before a 300-token answer is ~21× a normal call on a mid-tier model (10–50× is typical). It pays only where a wrong answer is expensive.
 
 ---
 
 ### Open-Weight Race
 
-All flagship open models in 2026 are **sparse MoE** — large total parameter count, small active slice per token. Why it matters:
+*Home: [Ch 20 §20.3](#content/20_2026_landscape)*
 
-1. **Cost & sovereignty**: self-host on H100s/TPUs; data never leaves your VPC.
-2. **License war**: Apache 2.0 (Qwen 3.5, Mistral, Gemma 4). Llama keeps MAU clause (no commercial use above 700M monthly active users). DeepSeek went MIT.
-3. **Quality**: DeepSeek V4 at 83.7% SWE-bench is within 5 points of GPT-5.6 — close enough that self-hosted open-weight + good infra often beats premium API on cost.
+Almost every open flagship is a **sparse MoE**: memory follows **total** parameters, compute follows **active** ones (~2 FLOPs per active parameter per token).
 
-**When to pick open-weight**: privacy-critical (health, finance, defence), bulk inference (token cost dominates), long-context RAG (Llama 4 Scout 10M), research reproducibility. **When to pick closed**: top-end agent reliability, latest reasoning frontier, computer-use, zero ops.
+| Model (Nov 2026) | Total / active | Licence |
+|---|---|---|
+| Kimi K3 / K3.1 Pro (Moonshot) | 2.8T / 104B | Custom Kimi licence |
+| DeepSeek V4-Pro · V4.1 Flash | 1.6T / 49B · 552B (8B active in prefill, 16B in decode) | MIT |
+| Mistral Large 4 | 1.05T / 52B | Modified MIT (model-as-a-service needs a licence) |
+| Muse Spark Open (Meta) | 816B / 42B | Muse Model License |
+| Qwen 3.5 (Alibaba) | 397B / 17B | Apache 2.0 |
+| gpt-oss-120b (OpenAI) | 117B / 5.1B | Apache 2.0 |
+| Gemma 4 (Google) | Up to 31B dense / 26B MoE | Apache 2.0 |
+
+The shape: the best open models trail the best closed ones by **about 4 months** (Epoch AI, May 2026), and most come from Chinese labs. Qwen 3.5 needs 13× the memory of Gemma 4 31B yet ~0.55× its compute per token. "Open weights" ≠ open source — training data is almost never released, so check the licence.
+
+**When to pick open-weight**: privacy-critical or sovereign workloads (health, finance, defence), bulk inference where token cost dominates, deep fine-tuning or distillation, research reproducibility.
+
+**When to pick closed**: top-end agent reliability, the newest reasoning frontier, polished computer use, zero ops.
 
 ---
 
 ### Coding Agents & SWE-bench
 
-SWE-bench Verified scores late-2023 → July 2026: ~13% → **88.7%** (but note OpenAI stopped reporting Verified in Feb 2026 — flawed tests and training-data leakage — and recommends SWE-bench Pro, so treat the top scores as inflated; [Ch 17 §15.2](#content/17_llm)). Four compounding factors: (1) stronger base models, (2) test-time compute / reasoning, (3) better scaffolds (file IO, test runners, diff review, persistent state), (4) RL on agentic traces.
+![Infographic of coding agents in 2026: agent score as a function of model, harness, effort and task set; a timeline from Devin at about 14 percent (Mar 2024) through SWE-bench Verified (Aug 2024), its retirement (Feb 2026) and SWE-bench Pro's retracted recommendation (Jul 2026); the Terminal-Bench 4.0 leaderboard of 28 Oct 2026 (Claude Opus 5.5 with Claude Code 64.8 percent); and the ARC-AGI-3 harness effect, 54.8 vs 99.9 percent for the same model](diagrams/land20_info_coding_agents_ai.png)
 
-Scaffold gap: Augment Code at 72% with Opus 4.6 vs Cursor at 65.7% with Sonnet 4.6 — same model family, better harness wins.
-![SWE-bench Verified progress and the scaffold gap](diagrams/dlrev_swebench_ai.png)
+*Home: [Ch 20 §20.4](#content/20_2026_landscape)*
 
-**Dev-tool landscape**: Claude Code (terminal agent, multi-file refactors), Cursor (IDE, tight feedback loops), Windsurf (IDE, multi-file Cascade), GitHub Copilot (enterprise), Devin (async cloud agent), Codex CLI (OpenAI-native terminal).
+**Agent score = f(model, harness, effort, task set)** — a score without its harness and date is not a fact.
 
-Trend: coding split into **interactive copilots** (tight feedback) and **autonomous agents** (delegated tasks). Both keep human in the review loop.
+| When | What happened |
+|---|---|
+| Mar 2024 | Devin solved ~14% of (a sample of) the original SWE-bench |
+| Aug 2024 | SWE-bench Verified (500 human-checked tasks); best ~33% at launch |
+| Feb 2026 | **Verified retired by OpenAI** — ≥ 59% of the audited hard tasks had flawed tests, and frontier models reproduced gold patches (contamination); it pointed labs to SWE-bench Pro |
+| Jul 2026 | **Pro:** OpenAI found ~30% broken tasks and retracted its recommendation (8 Jul 2026) |
+| Nov 2026 | Vendors report Terminal-Bench 4.0 (66 tasks): Claude Opus 5.5 + Claude Code 64.8%; the top five sit inside one ±11-point error bar |
+
+**Why scores rose**: (1) stronger base models, (2) test-time reasoning, (3) better harnesses (file tools, test runners, diff review, memory), (4) RL on agentic traces.
+
+**Why to be careful**: contamination and broken tests, plus harness effects — on ARC-AGI-3 GPT-6 Astra reached 99.9% with a harness that keeps its reasoning state between steps, far above its score at the same effort in the standard harness.
+
+**Dev-tool landscape**: Claude Code (terminal agent + apps), Codex (OpenAI: CLI, IDE, cloud), Cursor (AI-native IDE), GitHub Copilot (IDE + a cloud agent that opens PRs), Google's Antigravity / Gemini CLI / Jules, Devin and Windsurf (Cognition), Kiro (AWS).
+
+Trend: coding split into **interactive copilots** (tight feedback) and **delegated agents** (hand over a ticket, review the PR). Both keep a human in the review loop.
 
 ---
 
 ### Multimodal Generation
 
-**Image** (2026 production rule): hosted APIs for quality (DALL-E 3/GPT-Image-1, Imagen 4, Midjourney v7), FLUX/Stable Diffusion for self-host and LoRA customisation.
+*Home: [Ch 20 §20.5](#content/20_2026_landscape)*
 
-**Video** (the 2026 explosion):
+Generation products are **young and short-lived** — build behind your own interface, with stored prompts and an eval set to re-qualify a replacement:
 
-| Model | Headline |
-|-------|---------|
-| Sora 2 (OpenAI) | 60-second physics-realistic clips |
-| **Veo 3.1 (Google)** | 1-minute + **synchronised audio** (dialogue + SFX) — first model to do so |
-| Runway Gen-4 | Editor-friendly, camera/character control |
+- **Image**: hosted APIs for quality — gpt-image-2 (OpenAI, Apr 2026), Google's Nano Banana models; FLUX.2 / Stable Diffusion for self-host and LoRA customisation.
+- **Video**: clips of seconds, not minutes — Gemini Omni Flash (3–10 s, up to 4K), Veo 3.1 (native audio; GA on Agent Platform, its Gemini API preview shut 22 Oct 2026). **Sora was discontinued** (app Apr 2026, API Sep 2026).
+- **Voice**: one end-to-end speech-to-speech model answers in a few hundred ms (GPT-4o averaged ~320 ms in 2024) vs 2.8–5.4 s for the old STT → LLM → TTS chain — OpenAI Realtime API / GPT-Live-1, Gemini 3.8 Live, ElevenLabs.
 
-Veo 3.1's native audio is the biggest leap — bypasses post-production sound.
-
-**Voice (2026)**: end-to-end speech-to-speech models (~300ms latency), natural interruptions. GPT-5.6 Realtime API, Gemini Live (real-time + screen-share), ElevenLabs Conversational. Vs 2024's 3-step pipeline (STT → LLM → TTS): 2026 is one model.
+Don't confuse generation (Veo *makes* clips) with understanding (Gemini 4 Argon *reads* video).
 
 ---
 
 ### Computer-Use Agents
 
+*Home: [Ch 20 §20.6](#content/20_2026_landscape); how the loop works in [Ch 18 §18.6](#content/18_ai_agents)*
+
 > An AI that drives a real computer — screenshot → reasons → mouse/keyboard actions.
 
-Claude Computer Use: 14% → **44% on OSWorld** in 18 months. OpenAI Operator (cloud browser), Project Mariner (Google Chrome), Codex Desktop (Mac).
+**Which OSWorld?** OSWorld (2024; 369 tasks, humans ~72%, best model ~12% at launch) · OSWorld-Verified: best reported 86.1%, above the human baseline, mostly self-reported → near saturated · OSWorld 2.0 (Jun 2026; 108 long workflows, ~318 tool calls each): the best agent completed **20.6%** (54.8% partial score). Vendors often quote partial scores — not comparable with completion rates.
 
-**When to use**: legacy software with no API, one-off cross-app automation, QA testing of flaky internal tools. **When NOT**: high-QPS production (each step = screenshot + LLM call, ~1–3s per step), latency-sensitive UX, anything with a public API (use the API), high blast-radius mistakes.
+**Products (Nov 2026):** API tools (Anthropic, OpenAI, Gemini computer use) in your own sandboxed VM; ChatGPT agent and Gemini Agent (which absorbed Project Mariner, shut 4 May 2026) in the vendor's cloud; Claude for Chrome and Chrome's auto-browse in your own browser — the highest prompt-injection risk.
+
+**When to use**: legacy software with no API, one-off cross-app automation, QA of flaky internal tools, back-office data entry. **When NOT**: high-QPS production, latency-sensitive UX (seconds per click), anything with a public API (use the API), high blast-radius mistakes. Errors compound (99% per step → ~74% over 30 steps), and a 30-step task costs tens of cents and a minute or two.
 
 ---
 
 ### On-Device AI & Quantisation
 
-By 2026 every major OS ships on-device models: Gemini Nano (Pixel/Android), Apple Intelligence (iOS/macOS), Phi-4 Mini (Copilot+ PCs), Llama 3.2 1B/3B.
+*Home: [Ch 20 §20.7](#content/20_2026_landscape)*
+
+Ships on devices (Nov 2026): **Gemini Nano** via Android AICore (Nano 4 in preview), **Apple Foundation Models 3** (AFM 3 Core ≈ 3B; larger requests go to Private Cloud Compute), **Phi Silica** on Copilot+ PCs, and open Gemma 4 E2B/E4B, small Qwen 3.5 sizes, Llama 3.2 1B/3B.
 
 **Quantisation enables this**:
 
 ```
-FP32: 28 GB (7B model)  →  INT4: 3.5 GB  ← fits on a phone
+7B model:  FP32 28 GB  →  FP16 14 GB  →  INT8 7 GB  →  INT4 3.5 GB  ← fits on a phone
 ```
 
-GPTQ, AWQ, GGUF (CPU/edge via llama.cpp), MLC, Apple MLX. INT4 loses ~1–3% on benchmarks.
+GPTQ, AWQ, GGUF (CPU/edge via llama.cpp), Apple MLX, LiteRT-LM (Android). Well-calibrated 4-bit usually costs a small benchmark drop, but it varies by model and task — long reasoning and maths suffer first, so measure on your own eval.
 
-**On-device vs cloud**:
+**The 2026 pattern is a cascade**: a small local model (1–8B, often fine-tuned) handles the common case and escalates the hard tail to a frontier model in the cloud.
+
 | On-device | Cloud |
 |-----------|-------|
-| Privacy-critical (health, finance) | Largest frontier models |
+| Privacy-critical (health, finance, personal context) | Largest frontier models |
 | Latency-critical (autocomplete, real-time UX) | Multi-step reasoning beyond on-device |
 | Billions of queries (zero marginal cost) | Live external data |
 | Offline availability | Computer use, video gen |
@@ -1339,156 +1537,160 @@ GPTQ, AWQ, GGUF (CPU/edge via llama.cpp), MLC, Apple MLX. INT4 loses ~1–3% on 
 
 ### Cost Trajectory & Long-Context Era
 
-Token prices fell ~150–1000× between 2022 and 2026 for equivalent quality. Architectures formerly uneconomic (30-LLM-call agent loops, multi-agent debates, hybrid RAG + reranking) are now routine.
+*Home: [Ch 20 §20.8–20.9](#content/20_2026_landscape)*
 
-**Context window growth**: 2K (GPT-3) → 8K/32K (GPT-4) → 200K (Claude 2.1/3) → 1M, later 2M (Gemini 1.5) → **10M advertised (Llama 4 Scout, 2025)**; by late 2026 the GPT-6, Claude 5.5 and Gemini 4 lineups list ~1M tokens ([Ch 17 §2.7](#content/17_llm)).
+**A fixed capability gets ~10–13× cheaper per year**: a16z "LLMflation" measured ~1,000× in 3 years for GPT-3-level quality; Epoch AI (Sep 2026) ~47% per quarter ≈ 13× per year. But top-tier list prices stay high (10 / 50 USD per 1M tokens) and tokens per task keep growing — a chat feature turned into a 30-call agent costs ~165× more. Architectures formerly uneconomic (30-call agent loops, hybrid RAG + reranking, multi-agent review) are now routine.
 
-**Lost-in-the-middle** still exists — attention degrades on tokens buried in the centre of long contexts, and advertised length ≠ effective length (RULER). A 2026 best practice: retrieve top-50 with hybrid search + reranking, dump into 1M context, let the model reason over retrieved subset.
+**Context window growth**: 4K (ChatGPT, 2022) → 8K/32K (GPT-4, 2023) → 100K–200K (Claude 2/2.1, 2023) → 1M (Gemini 1.5 Pro, 2024; 2M later that year) → **10M advertised (Llama 4 Scout, 2025)** → ~1M standard on frontier APIs in 2026 ([Ch 17 §2.7](#content/17_llm)).
 
-**Context engineering (7 techniques, in order of impact)**:
-
-| Technique | Impact | How |
-|-----------|--------|-----|
-| RAG | Very high | Retrieves relevant docs on each turn |
-| Tool use | High | Delegates computation, real-time data |
-| Conversation summarisation | Medium-high | Compress old turns to fit history |
-| Memory systems | Medium | Persistent notes across sessions |
-| Context caching | Cost: 50–90% | Cache system prompt + common prefix at API level |
-| Structured layout (XML/JSON tags) | Medium | `<instructions>` tags improve model parsing |
-| Attention anchoring | Medium | Repeat critical instructions just before generation |
+**Lost-in-the-middle** still exists — accuracy dips for material buried mid-prompt, and advertised length ≠ effective length (RULER). Best practice: **use both** — retrieve 20–50 chunks with hybrid search + a reranker and let a large window hold them. Prompt caching makes cached reads ~90–97.5% cheaper. Context engineering itself is in [Ch 18 §18.9](#content/18_ai_agents) (recap above).
 
 ---
 
 ### Model Selection Decision Tree
 
+*Home: [Ch 20 §20.14–20.15](#content/20_2026_landscape)* — names are a Nov 2026 snapshot; remember the branches.
+
 ```
 Start: What is the task?
 
-  1. Simple Q&A / text gen / translation?
-     → Use cheapest model that meets quality bar (Flash, Haiku, mini)
-     → If quality insufficient, step up one tier
-
-  2. Hard math / complex code / multi-step logic?
-     → Use reasoning model (GPT-5.6, Claude Opus 4.8 extended thinking, Gemini 3.5 Thinking)
-     → Watch cost: 10-50× premium; only if quality improvement justifies
-
-  3. Multimodal input (images, documents)?
-     → Gemini 3.5 Pro or GPT-5.6 / Claude Opus 4.8
-
-  4. High-volume / privacy-critical / bulk offline?
-     → Open-weight: DeepSeek V4, LLaMA 4 Scout, Qwen 3.5
-     → Self-host vLLM on H100s for bulk inference
-
-  5. Structured tabular data / CTR / fraud?
-     → XGBoost first; LLM only if text context is the main signal
-
-  6. Real-time voice?
-     → GPT-5.6 Realtime / Gemini Live (end-to-end, not STT+LLM+TTS)
-
-  7. Coding agent / autonomous dev work?
-     → Claude Code (terminal), Cursor (IDE), GitHub Copilot (enterprise)
-
-  8. Multi-step enterprise agent on GCP?
-     → Google ADK + Agent Engine + Vertex AI
+  Real-time mobile autocomplete     → On-device: Gemini Nano / Apple Foundation Models / Gemma 4 E2B-E4B
+  High-QPS classification           → Cheap tier (Flash-Lite / GPT-6 Luna / Haiku 5.5) or self-hosted open weights
+  Complex code, multi-file changes  → Claude Opus 5.5 or GPT-6.1 Sol inside a harness (Claude Code / Codex / Cursor)
+  PhD-level science reasoning       → Top tier (GPT-6 Astra / Fable 5.1 / Gemini 4 Argon), effort dial up
+  Long documents (≥ 1M tokens)      → Retrieve + chunk, or a ~1M-window model (Scout's 10M is advertised — test it)
+  Browser / desktop automation      → Computer-use tool in a sandboxed VM — but call a real API if one exists
+  Real-time voice                   → OpenAI Realtime API / Gemini 3.8 Live / ElevenLabs
+  Image generation                  → gpt-image-2 / Nano Banana / FLUX.2 (self-host)
+  Video with audio                  → Veo 3.1 or Gemini Omni Flash, behind your own interface
+  Privacy / sovereignty / bulk      → Self-host DeepSeek V4.1 Flash / Qwen 3.5 / gpt-oss on vLLM
+  Tabular data / CTR / fraud        → Classical ML first (XGBoost); an LLM only if text is the main signal
 ```
 
-**Classical ML still wins on**:
-- Tabular data / fraud / CTR → XGBoost
-- Time-series forecasting → Prophet, DeepAR  
-- Search ranking → LambdaMART
-- Recommendation → matrix factorisation, two-tower
-- Small-data classification → logistic regression + feature engineering
+**Default for prototyping**: a Flash / Sonnet / Luna-tier model with the effort dial low; raise it only where your eval shows the task is hard.
 
-The "use LLMs for everything" trap is the most common junior mistake in 2026 system design interviews.
+**Classical ML still wins on**:
+- CTR prediction at web scale, tabular fraud → gradient-boosted trees (XGBoost / LightGBM) + feature engineering
+- Recommender candidate generation → two-tower retrieval + ANN
+- Time-series forecasting → Prophet, classical statsmodels, lightweight transformers
+- Search ranking → LambdaMART + neural rerankers, not LLMs
+
+The "use LLMs for everything" trap is the most common junior mistake in system design interviews: start with the simplest classical approach and add an LLM only where it earns its latency and cost.
 
 ---
 
 ### Safety, Bias & Alignment
 
-**Sources of model bias**: biased training data (over-represented demographics get better quality outputs), RLHF feedback from non-representative raters, instruction-following overfit to superficial preference signals.
+*Home: [Ch 20 §20.11](#content/20_2026_landscape); bias in [Ch 17b §14.1](#content/17b_llm_applications), guardrails in [Ch 17b §14.4](#content/17b_llm_applications)*
 
-**Alignment tax** (real but shrinking): earlier aligned models (ChatGPT 3.5 era) were noticeably less capable than base models; modern alignment techniques (Constitutional AI, RLHF with diverse raters, DPO) add <5% quality hit while dramatically improving safety.
+**Alignment techniques**: RLHF (human rankings → reward model → PPO) · Constitutional AI (self-critique against written principles) · DPO (optimise directly on chosen/rejected pairs) · RLAIF (AI feedback at scale) · RLVR / GRPO (a program checks the answer — how reasoning models are trained) · red-teaming before every major release.
 
 **Guardrails architecture**:
 ```
 User input
     ↓
-Input guardrail (content classifier — block prohibited topics, PII)
+Input guardrail (PII, toxicity, prompt-injection / jailbreak detection, topic blocklist)
     ↓
 LLM generation
     ↓
-Output guardrail (factuality checker, toxicity filter, PII redaction)
+Output guardrail (hallucination check against sources, PII leakage, toxicity, format)
     ↓
 User
 ```
 
-Key tool categories: NeMo Guardrails (NVIDIA), Llama Guard (Meta, open), Constitutional classifiers (Anthropic). For RAG specifically: hallucination detector on final answer.
+Key tools: Guardrails AI, NeMo Guardrails (NVIDIA), Llama Guard 4 and Prompt Guard 2 (Meta, open), ShieldGemma (Google), managed moderation (OpenAI, Model Armor, Bedrock Guardrails, Azure AI Content Safety). Filters are **not** a security boundary against prompt injection — least privilege and approval gates are ([Ch 18b](#content/18b_agents_in_production)).
 
-**Copyright & data concerns**: LLMs trained on copyrighted text; fair use doctrine unclear globally. EU AI Act requires training-data transparency for GPAI models with >10^25 FLOPs training compute. US: currently no training-data disclosure requirement (2026).
+**Bias, copyright and environmental cost** are real review items — test bias with counterfactual swaps.
 
 ---
 
 ### EU AI Act & Regulation
 
-| Date | What changes |
+*Home: [Ch 20 §20.11](#content/20_2026_landscape)* — dates as amended by the **AI Omnibus** (in force 27 Jul 2026):
+
+| Date | What applies |
 |------|-------------|
-| Feb 2, 2025 | Prohibited-AI bans live (social scoring, real-time biometric surveillance) |
-| Aug 2, 2025 | General-purpose AI (GPAI) provider obligations apply |
-| **Aug 2, 2026** | **Full enforcement + GPAI penalties live** |
-| Aug 2, 2027 | High-risk regulated-product rules |
+| Feb 2, 2025 | **Banned practices** — social scoring, untargeted face scraping, emotion recognition at work or school, most real-time remote biometric ID by police |
+| Aug 2, 2025 | **GPAI providers**: technical documentation, public summary of training content, copyright policy; systemic-risk models (presumed above 10²⁵ training FLOPs) also need evaluations, incident reporting, cybersecurity |
+| **Aug 2, 2026** | **General application**: transparency duties (say it's an AI, label deepfakes); the Commission can fine GPAI providers |
+| Dec 2, 2026 | Marking AI-generated content for systems already on the market (postponed by the Omnibus) |
+| Aug 2, 2027 | GPAI models placed on the market before 2 Aug 2025 must comply |
+| **Dec 2, 2027** | **High-risk systems in Annex III** (hiring, credit scoring, education, law enforcement) — delayed |
+| **Aug 2, 2028** | **High-risk AI in regulated products** (Annex I: machinery, toys, medical devices) — delayed |
 
-Penalties: up to €35M or 7% global revenue. Headline obligations for foundation-model providers: training-data summaries, copyright respect, transparency docs, systemic-risk evaluations for largest models.
+Penalties: up to €35M or 7% of worldwide turnover (whichever is higher) for banned practices; GPAI breaches up to €15M or 3%.
 
-**Google's 7 AI Principles (2018, still cited)**: socially beneficial, avoid bias, safety, accountable, privacy by design, scientific excellence, aligned uses.
+**Elsewhere (Nov 2026)**: no general US federal AI statute (executive action: the AI Action Plan and EO 14365); California's SB 53 frontier-transparency law since 1 Jan 2026; the UK AI Security Institute tests frontier models before release; China requires CAC filing and AI-content labels (since 1 Sep 2025).
+
+**Google's AI Principles**: the 2018 seven-point list (socially beneficial, avoid unfair bias, safety, accountable, privacy by design, scientific excellence, aligned uses) is historical; the **Feb 2025 revision** removed the explicit weapons and surveillance pledges and pursues AI where likely benefits substantially exceed foreseeable risks — cite that as current.
 
 ---
 
 ### Google's 2026 AI Stack
 
+*Home: [Ch 20 §20.12](#content/20_2026_landscape)* — Google owns all three layers: models, platform, chips.
+
 | Tier | Model | Use case |
 |------|-------|---------|
-| Gemini 3.5 Pro | Flagship | Complex reasoning, multimodal, SWE-bench 80.6%, GPQA 94.3% |
-| Gemini 3.5 Flash | High-throughput | Production workhorse |
-| Gemini 3 Nano | On-device | Pixel, Android, ChromeOS |
-| Gemini Live | Real-time | Bidirectional audio + video |
-| Imagen 4 / Veo 3.1 | Generation | Image/video in Vertex |
+| Top | Gemini 4 Argon — sparse MoE; text, image, audio, video in; up to 1M tokens | Hardest reasoning, coding, agents |
+| Top, limited | Gemini 4 Carbon | Strongest; staged rollout to vetted cyber defenders |
+| Workhorse | Gemini 3.8 Flash | High-throughput production default |
+| Cheapest | Gemini 3.5 Flash-Lite | Bulk classification and extraction |
+| On-device | Gemini Nano (Nano 4 in preview) | Android, through AICore |
+| Real-time | Gemini 3.8 Live | Low-latency voice and video agents |
+| Generation | Gemini Omni Flash and Veo 3.1 (video), Nano Banana (images), Lyria (music) | Media generation |
+| Open weights | Gemma 4 | Self-hosting, on-device, fine-tuning |
 
-**TPU v7 "Ironwood"** (GA early 2026): 4,614 FP8 TFLOPS per chip; 192 GB HBM (6× Trillium); pod scale 9,216 chips → 42.5 exaFLOPS; TPU 8t (training) and 8i (serving) were announced in April 2026 ([Ch 16 §7.4](#content/16_deep_learning)). Anthropic announced (Oct 2025) access to up to one million TPUs and well over a gigawatt of capacity coming online in 2026.
+Platform: **Gemini Enterprise Agent Platform** (ADK, Agent Studio, Agent Runtime + Memory Bank — see the Ch 19 recap above).
+
+**TPU7x "Ironwood"** (GA): 4,614 FP8 TFLOPS per chip (~10× v5p); 192 GiB HBM (6× Trillium) at 7.38 TB/s; pods of 9,216 chips → 42.5 exaFLOPS FP8. TPU 8t (training) and 8i (serving) were announced in April 2026 ([Ch 16 §7.4](#content/16_deep_learning)). Anthropic announced (Oct 2025) access to up to one million TPUs and well over a gigawatt of capacity coming online in 2026.
 
 ---
 
 ### 2026 Benchmark Landscape
 
+*Home: [Ch 20 §20.13](#content/20_2026_landscape)* — saturated, contaminated or broken; status as of Nov 2026:
+
 | Benchmark | Status |
 |-----------|--------|
-| MMLU, HumanEval, GSM8K | **Saturated** (≥90% frontier) — citing them is a yellow flag |
-| **SWE-bench Verified** | Frontier ~88% — but OpenAI stopped reporting it (Feb 2026, leakage / flawed tests) and recommends SWE-bench Pro |
-| **Terminal-Bench 2.0** | Active — GPT-5.6 82.7% |
-| **OSWorld** | Active — Claude Opus 4.8 ~44% |
-| **GPQA Diamond** | Active — frontier ~94% |
-| **ARC-AGI-2** | Active — frontier well below humans |
-| **FrontierMath** | Active — frontier ~30% |
+| MMLU, HumanEval, GSM8K | **Saturated** (above 90% for years) — citing them is a yellow flag |
+| GPQA Diamond | **Saturated** — 96.4% (Gemini 4 Argon) |
+| FrontierMath T1–3 · ARC-AGI-2 | Nearly saturated — 93.7% · 95.0% (GPT-6 Astra) |
+| **SWE-bench Verified** | **Retired** by OpenAI (Feb 2026): flawed tests, contamination |
+| **SWE-bench Pro** | **Contested** — OpenAI found ~30% broken tasks and retracted its recommendation (8 Jul 2026); treat scores as rough |
+| OSWorld-Verified | Nearly saturated — 86.1%, above the ~72% human baseline (mostly self-reported) |
+| **Terminal-Bench 4.0** | Current — 64.8% Claude Opus 5.5 + Claude Code (66 tasks: ±11 points) |
+| **OSWorld 2.0** | Current — best agent completed 20.6% of long workflows |
+| **Humanity's Last Exam** | Current — 54.8% GPT-6 Astra on the Scale AI / CAIS leaderboard |
+| **ARC-AGI-3** | Current — the score depends on the harness |
+| **Arena (text)** | Current — measures preference, not correctness; Gemini 4 Carbon 1528 |
+
+**How to read any score**: which version and split · which harness and effort · who ran it · how many tasks (95% interval ≈ ±1.96·√(p(1−p)/n)) · is it still clean · when.
 
 ---
 
 ### Common Interview Pitfalls
 
-1. Citing MMLU/HumanEval as quality signals in 2026 — they're saturated.
-2. Defaulting to reasoning models for everything — use them only for hard decomposable tasks.
+*Home: [Ch 20 §20.16](#content/20_2026_landscape)*
+
+1. Defaulting to high reasoning effort for everything — 10–50× the cost on simple tasks, with no quality gain.
+2. Citing saturated or retired benchmarks (MMLU, HumanEval, GPQA Diamond, SWE-bench Verified) — cite a current one with version, harness, source and date.
 3. Memorising exact leaderboard numbers (they drift monthly) — memorise the shape instead.
 4. Treating long context as a substitute for retrieval — lost-in-the-middle is real.
-5. Ignoring EU AI Act dates — Aug 2, 2026 enforcement is non-negotiable for EU deployment.
+5. Quoting the old EU AI Act dates — "high-risk from August 2026" is now wrong (Dec 2027 / Aug 2028).
 6. Computer-use for high-QPS production — slow and fragile; APIs always win where they exist.
-7. Jumping straight to "use a Transformer" for tabular data — XGBoost at 1/100 the cost.
-8. Ignoring open-weight for scale — DeepSeek/Llama/Qwen are within 5 points of frontier APIs.
+7. Skipping classical ML — boosted trees on tabular data at a tiny fraction of the cost.
+8. Ignoring open weights at scale — DeepSeek, Qwen, gpt-oss or Mistral are only months behind.
+9. Confusing video generation (Veo, Gemini Omni Flash) with video understanding (Gemini 4 Argon).
+10. Building on one product with no fallback — Sora, Project Mariner and Veo's Gemini API preview were all shut down.
 
 > ✅ **Must-remember**
 >
-> - No single model wins everything — pick by task (GPT-5.6 for agents, Claude for code, Gemini for multimodal/value).
-> - **Test-time compute** (reasoning budget) > parameter scaling for hard decomposable tasks.
-> - **SWE-bench** went 13% → 88% in 18 months: better models + reasoning + better scaffolds + RL on traces (Verified is now contaminated — quote it with a date and the scaffold).
-> - **EU AI Act enforcement: Aug 2, 2026** — €35M or 7% global revenue.
-> - **Veo 3.1** (synchronised audio), **Llama 4 Scout** (10M context), **TPU v7 Ironwood** (42.5 exaFLOPS pod).
+> - No single model wins everything — three tiers per lab, ~1M context, an effort dial everywhere; pick by task fit, price and your own eval.
+> - **Test-time compute** is a dial: thinking tokens bill as output, so turn it up only where a wrong answer is expensive.
+> - **Coding agents = model × harness × effort.** SWE-bench Verified was retired (Feb 2026) and SWE-bench Pro is contested — quote any score with version, harness and date.
+> - **EU AI Act**: GPAI duties since 2 Aug 2025, general application 2 Aug 2026, high-risk moved to 2 Dec 2027 / 2 Aug 2028; fines up to €35M or 7% of turnover.
+> - **Google's stack**: Gemini 4 + Gemini Enterprise Agent Platform + TPU7x Ironwood (42.5 exaFLOPS pod).
 
 ---
 
@@ -1498,9 +1700,11 @@ Penalties: up to €35M or 7% global revenue. Headline obligations for foundatio
 |---------|-----------------------------------|
 | **Ch 16 — Deep Learning** | $\text{Attention}(Q,K,V) = \text{softmax}(QK^T/\sqrt{d_k})V$; **AdamW** = correct optimizer for Transformers (uncorrected early Adam steps are too large); **ResNet skip** solved deep training; init keeps variance constant (He $2/\text{fan}_{in}$, Xavier $2/(\text{fan}_{in}+\text{fan}_{out})$); **RMSNorm + RoPE + SwiGLU** in modern LLMs; mixed-precision AdamW = 16 B/param, accumulation / checkpointing (+33% compute) / EMA; depthwise-separable conv ≈ $1/C_\text{out}+1/K^2$; FGSM = $x+\varepsilon\,\text{sign}(\nabla_xL)$; **flow matching** (SD3, FLUX) = straighter paths; **MoE**: compute ≈ active params, memory = all params. |
 | **Ch 17 — LLMs** | **Chinchilla rule**: training tokens ≈ 20× params (but served-a-lot models over-train); **KV cache** grows *linearly* with context, **FlashAttention** is exact with $O(N)$ extra memory and unchanged FLOPs; data pipeline = filter → MinHash dedup → decontaminate → mix → anneal; DPO replaces 3-stage RLHF with one direct preference loss, GRPO/RLVR power reasoning models; ICL changes behaviour not weights, "emergence" is partly the $p^k$ metric; CoT is evidence, not proof (hint admitted ≈ 25–39%); INT4 shrinks 70B to ≈ 35 GB (one 48–80 GB GPU, not 24 GB) with ~1–3% quality loss. |
-| **Ch 18 — AI Agents** | An agent = LLM in an observe→think→act loop with tools. **MCP** = N+M (not N×M) integrations via Tools/Resources/Prompts primitives. **A2A** = agent-to-agent cross-org. Critical security rule: the LLM never executes tools directly — your code does. |
-| **Ch 19 — Frameworks** | **vLLM** (PagedAttention, 2–10× throughput) is the 2026 default inference server; **TGI is in maintenance mode**. Hybrid search beats pure vector; reranking is the #1 RAG quality lever; prompt caching is the #1 cost lever. LangGraph for production agents; LlamaIndex for data-heavy RAG. |
-| **Ch 20 — 2026 Landscape** | No single model wins everything; within ~3 points at the top → model choice is price/latency/ecosystem. **Test-time compute** (reasoning budget) > parameter scaling for hard tasks. **EU AI Act full enforcement: Aug 2, 2026**. **SWE-bench** 13% → 88% in 18 months = better models + reasoning + scaffolds + RL (Verified is now contaminated — quote it with a date). |
+| **Ch 17b — Using LLMs** | System prompts are guidance, **not a security boundary**; reasoning models need no "think step by step" — give goal, context and success criteria, then raise the effort setting. Prompt for behaviour you can describe, **RAG** for knowledge that changes, **fine-tune** for behaviour you can only demonstrate. LoRA trains r·(d + k) numbers per matrix (0.78% at d = k = 4,096, r = 16) and merges back with no extra latency; QLoRA = 4-bit NF4 base. Chunk 256–512 tokens with 50–100 overlap; structured output beats "please reply in JSON". |
+| **Ch 17c — LLM Systems** | **Prefill** is compute-bound (sets TTFT), **decode** is bandwidth-bound (sets TPOT): one stream ≈ per-GPU bandwidth ÷ weight bytes per GPU (70B FP16 on 2×H100 ≈ 48 tok/s). KV bytes = 2 × layers × KV-heads × head-dim × tokens × bytes (320 KiB/token → 40 GiB at 128K for Llama-3-70B). Continuous batching + PagedAttention are the big throughput wins; weight-only quantization helps decode, FP8 helps both; speculative decoding is lossless (α = 0.8, k = 4 → 3.36 tokens per pass). Sell **goodput**, not throughput; judge both orders; self-hosting beats frontier API prices only above ~2B tokens/month. |
+| **Ch 18 / 18b — AI Agents** | An agent = LLM + tools + loop + state; reliability compounds (0.95¹⁰ ≈ 60%). **MCP** = N+M (not N×M) integrations via Tools/Resources/Prompts, stateless since spec 2026-07-28. **A2A** = agent-to-agent delegation. Critical security rule: the LLM never executes tools directly — your code does. In production, injection is contained, not filtered (least privilege, approval gates, egress allowlist), and you report **pass^k** (0.9⁸ ≈ 43%), not just pass@1. |
+| **Ch 19 — Frameworks** | **vLLM** (PagedAttention + continuous batching; ~2–4× throughput in the vLLM paper) is the default inference server; **TGI** is archived (Mar 2026). Hybrid search (fused with RRF) beats pure vector; reranking is often the #1 RAG quality lever; prompt caching and routing are the top cost levers (caching pays above a ~22% hit rate). LangGraph for production agents; LlamaIndex for data-heavy RAG; AutoGen → Microsoft Agent Framework; Vertex AI → Gemini Enterprise Agent Platform. |
+| **Ch 20 — 2026 Landscape** | No single model wins everything: three tiers per lab, ~1M context, open weights ~4 months behind → model choice is price/latency/ecosystem and your own eval. **Test-time compute** is a dial billed as output tokens — turn it up for hard tasks only. **EU AI Act**: GPAI duties since 2 Aug 2025, general application 2 Aug 2026, high-risk moved to Dec 2027 / Aug 2028. **SWE-bench Verified** retired (Feb 2026), **Pro** contested (Jul 2026) — quote any score with version, harness and date. |
 
 ---
 

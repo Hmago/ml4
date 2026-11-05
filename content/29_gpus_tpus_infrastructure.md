@@ -12,7 +12,7 @@ Training a neural network boils down to three operations repeated billions of ti
 
 NVIDIA dominates AI hardware. Here is the current lineup that matters:
 
-| GPU | Year | VRAM | Memory BW | FP16 TFLOPS | Tensor TFLOPS (FP16) | TDP | Price (Cloud $/hr) |
+| GPU | Year | VRAM | Memory BW | FP16 Tensor TFLOPS (dense) | FP16 Tensor TFLOPS (with 2:4 sparsity) | TDP | Price (Cloud $/hr) |
 |-----|------|------|-----------|-------------|----------------------|-----|---------------------|
 | A100 (80GB) | 2020 | 80 GB HBM2e | 2.0 TB/s | 312 | 624 | 300W | ~$2-3 |
 | H100 (SXM) | 2022 | 80 GB HBM3 | 3.35 TB/s | 989 | 1,979 | 700W | ~$3-4 |
@@ -32,15 +32,15 @@ The H200 has the same compute as the H100 but nearly double the memory capacity 
     "labels": ["V100 (2017)", "A100 (2020)", "H100 (2022)", "H200 (2024)", "B200 (2025)"],
     "datasets": [
       {
-        "label": "Tensor Core TFLOPS (FP16)",
-        "data": [125, 624, 1979, 1979, 4500],
+        "label": "Dense FP16 Tensor Core TFLOPS",
+        "data": [125, 312, 989, 989, 2250],
         "backgroundColor": ["#66bb6a", "#42a5f5", "#ab47bc", "#ef5350", "#ffa726"]
       }
     ]
   },
   "options": {
     "plugins": { "title": { "display": true, "text": "GPU Tensor Core Performance by Generation" } },
-    "scales": { "y": { "title": { "display": true, "text": "TFLOPS (FP16)" } } }
+    "scales": { "y": { "title": { "display": true, "text": "TFLOPS (FP16, dense)" } } }
   }
 }
 ```
@@ -715,7 +715,7 @@ def compute_mfu(tokens_per_second: float,
     tokens_per_second: measured training throughput
     num_params:        total model parameters (e.g., 7e9)
     hardware_peak_flops: peak FLOPs/s for the hardware
-                         (e.g., H100 BF16 Tensor = 989e12 TFLOPS → 989e12)
+                         (e.g., H100 SXM dense BF16 Tensor = 989 TFLOPS (989e12 FLOP/s))
     Returns MFU as a fraction (0.0 – 1.0).
     """
     achieved_flops = tokens_per_second * 6 * num_params
@@ -726,7 +726,7 @@ def compute_mfu(tokens_per_second: float,
 mfu = compute_mfu(
     tokens_per_second=3_500,
     num_params=7e9,
-    hardware_peak_flops=989e12   # H100 SXM BF16 Tensor Core TFLOPS
+    hardware_peak_flops=989e12   # H100 SXM dense BF16 Tensor Core peak, in FLOP/s
 )
 print(f"MFU = {mfu:.1%}")   # → ~14.9%  — reasonably good for a single GPU
 ```

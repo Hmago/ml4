@@ -88,8 +88,8 @@ A text embedding model takes a string and outputs a fixed-length vector. Under t
 
 | Model | Provider | Dimensions | Max Tokens | Notes |
 |---|---|---|---|---|
-| `text-embedding-3-large` | OpenAI | 3072 | 8191 | Best OpenAI model; supports dimension reduction via API parameter |
-| `text-embedding-3-small` | OpenAI | 1536 | 8191 | Cheaper, slightly lower quality |
+| `text-embedding-3-large` | OpenAI | 3072 | 8192 | Best OpenAI model; supports dimension reduction via API parameter |
+| `text-embedding-3-small` | OpenAI | 1536 | 8192 | Cheaper, slightly lower quality |
 | `text-embedding-004` | Google | 768 | 2048 | Gemini embedding; good for Google Cloud pipelines |
 | `all-MiniLM-L6-v2` | Sentence-Transformers | 384 | 256 | Fast, small, runs on CPU — great for prototyping |
 | `bge-large-en-v1.5` | BAAI | 1024 | 512 | Open-source, strong MTEB scores |
@@ -498,8 +498,8 @@ Brute-force comparison against millions of vectors is O(n) per query and too slo
 | **Weaviate** | Open-source | HNSW | Built-in + hybrid | Production, self-hosted or cloud, multimodal |
 | **Qdrant** | Open-source | HNSW | Built-in (rich) | Production, self-hosted, best filtering |
 | **Milvus** | Open-source | IVF, HNSW, DiskANN | Built-in | Large scale (billions of vectors), distributed |
-| **Vertex AI Vector Search** | Managed (Google) | ScaNN | Built-in | Google Cloud native, integrates with Vertex AI |
-| **pgvector** | PostgreSQL extension | IVF, HNSW | SQL WHERE | Already using Postgres, <1M vectors |
+| **Vector Search** (Gemini Enterprise Agent Platform, formerly Vertex AI) | Managed (Google) | ScaNN | Built-in | Google Cloud native, integrates with Gemini Enterprise Agent Platform |
+| **pgvector** | PostgreSQL extension | IVF, HNSW | SQL WHERE | Already using Postgres, up to ~10M vectors (rule of thumb) |
 
 ### ANN algorithms explained
 
@@ -533,7 +533,7 @@ Search: Start at Layer 2, jump to nearest node,
 | **Index build time** | Time to index all vectors | Hours for millions |
 | **Memory per vector** | RAM needed per stored vector | 4-8 bytes/dimension (float32) |
 
-**Quick decision guide:** Prototyping: ChromaDB. Managed production: Pinecone or Vertex AI Vector Search. Self-hosted production: Qdrant or Weaviate. Billions of vectors: Milvus. Already using Postgres: pgvector. Research: FAISS.
+**Quick decision guide:** Prototyping: ChromaDB. Managed production: Pinecone or Google's Vector Search (Gemini Enterprise Agent Platform). Self-hosted production: Qdrant or Weaviate. Billions of vectors: Milvus. Already using Postgres: pgvector. Research: FAISS.
 
 ---
 
@@ -765,7 +765,7 @@ results = search_and_rerank("What is the company's strategy for reducing churn?"
 
 | Service | Model | Notes |
 |---|---|---|
-| **Cohere Rerank** | `rerank-v3.5` | API-based, multilingual, very strong quality |
+| **Cohere Rerank** | `rerank-v5.0-fast` | API-based, multilingual, very strong quality |
 | **Jina Reranker** | `jina-reranker-v2` | Open-source and API, fast |
 | **Voyage Reranker** | `rerank-2` | Strong on code and technical docs |
 | **Google Vertex AI** | Ranking API | Integrated with Vertex AI Search |
@@ -1019,14 +1019,14 @@ results = collection.query(
   Pinecone Serverless              ~$35/month
   Weaviate Cloud                   ~$25/month (starter)
   Qdrant Cloud                     ~$30/month
-  Vertex AI Vector Search          ~$100/month (enterprise SLA)
+  Vector Search (Agent Platform)   ~$100/month (enterprise SLA)
   pgvector (existing Postgres)     $0 additional (but slower ANN)
 
   TOTAL FOR 1M DOCS (embedding once + hosting monthly):
   ──────────────────────────────────────────────────────────────
   Budget option:  Gemini embed ($6) + ChromaDB (free)   = ~$6 one-time
   Production:     OpenAI large ($65) + Pinecone ($35/mo) = $65 + $35/mo
-  Enterprise:     Self-hosted + Vertex AI ($200/mo GPU + $100/mo) = ~$300/mo
+  Enterprise:     Self-hosted + Vector Search ($200/mo GPU + $100/mo) = ~$300/mo
 ```
 
 > **Rule of thumb:** Embedding is a one-time cost (re-embed only when changing models). Vector DB hosting is the ongoing cost. For most startups, the total is under $100/month for millions of documents.
@@ -1207,7 +1207,7 @@ Minimal changes: Audio → text via speech-to-text (Whisper, Google Speech-to-Te
 
 **Weaviate**: Open-source with cloud option. Built-in hybrid search (vector + BM25), multi-tenancy. Choose when you want infra control and hybrid search out of the box.
 
-For Google Cloud, Vertex AI Vector Search (ScaNN-based) integrates tightly with Vertex AI and Gemini.
+For Google Cloud, Vector Search (ScaNN-based; part of Gemini Enterprise Agent Platform, formerly Vertex AI) integrates tightly with Gemini.
 </details>
 
 ---
@@ -1255,7 +1255,7 @@ Semantic search converts both the query and document into dense vectors using an
 <details>
 <summary>Answer</summary>
 
-`text-embedding-3-large` has higher quality (better MTEB benchmark scores), captures more nuance in the 3072-dimensional space, and handles longer inputs (8191 tokens). But it requires an API call (cost, latency, dependency on OpenAI), and the larger vectors use 8x more memory in the vector DB. `all-MiniLM-L6-v2` runs locally on CPU, is free, and is very fast — but lower quality and limited to 256 tokens input. Use MiniLM for prototyping and OpenAI/Gemini for production.
+`text-embedding-3-large` has higher quality (better MTEB benchmark scores), captures more nuance in the 3072-dimensional space, and handles longer inputs (8192 tokens). But it requires an API call (cost, latency, dependency on OpenAI), and the larger vectors use 8x more memory in the vector DB. `all-MiniLM-L6-v2` runs locally on CPU, is free, and is very fast — but lower quality and limited to 256 tokens input. Use MiniLM for prototyping and OpenAI/Gemini for production.
 </details>
 
 **3.** Your chunks are 2000 tokens each and search quality is poor. What is likely wrong and how do you fix it?
