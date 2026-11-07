@@ -955,7 +955,7 @@ Many "the model is dumb at X" behaviours are really "the model never sees X". Me
 |---|---|---|---|
 | **Leading spaces** | `hello`, ` hello` and `Hello` are three different tokens with three different ids | The space is part of the token | Do not end a prompt with a stray space (`"The answer is "`) — the model rarely saw a lone trailing space before a word |
 | **Numbers** | GPT-2 cuts `12345678` into `123`, `45`, `678`; cl100k and o200k cut it left to right into 3-digit groups: `123`, `456`, `78`. Llama 1/2 and Gemma use one token per digit | Merges learned from frequency, not place value; groups are cut from the *left* | Arithmetic on long numbers is unreliable — use a calculator or code tool, or ask for digit-by-digit work |
-| **Counting letters** ("how many r's in *strawberry*?") | The model sees `st` + `raw` + `berry` — three opaque ids, not ten letters | It must have *memorised* how each token is spelled | Ask it to spell the word out first (each letter then becomes its own token), or use a code tool |
+| **Counting letters** ("how many r's in *strawberry*?") | The model sees a few opaque ids, not ten letters — e.g. `st` + `raw` + `berry` with GPT-4o's o200k tokenizer (GPT-4's cl100k gives `str` + `aw` + `berry`) | It must have *memorised* how each token is spelled | Ask it to spell the word out first (each letter then becomes its own token), or use a code tool |
 | **Multilingual cost** | Same meaning, many more tokens (table below) | The vocabulary was learned mostly from English-heavy data | Prefer newer tokenizers; budget context and cost by tokens, not words |
 | **Glitch tokens** | `" SolidGoldMagikarp"` is a single token in GPT-2's vocabulary (id 43453) | Tokens that exist in the vocabulary but were almost never seen in training have under-trained embeddings and can trigger bizarre output (2023 reports on GPT-3) | Newer vocabularies split it into ordinary pieces; filter or re-initialise such tokens |
 | **Whitespace and code** | Indentation and repeated spaces can cost many tokens | Older tokenizers had no multi-space tokens | Modern tokenizers merge runs of spaces: 5 spaces = 5 tokens in GPT-2, 1 in cl100k and o200k |
@@ -6171,7 +6171,7 @@ The Transformer paper introduced an encoder-decoder architecture, but modern LLM
 
 **Simple explanation:** think of three workers handling a page of text. The **encoder** is a *reader*: it may look anywhere on the page and ends up understanding every word. The **decoder** is a *writer*: it writes one word at a time and may only look at what it has already written. The **encoder-decoder** is a *translator*: it first reads the whole source page, then writes the output while glancing back at its notes.
 
-> **Maths in one line:** `softmax(QKᵀ/√d + M)·V` — the same attention in all three families; only the mask `M` differs: 0 where a token may look, −∞ where it may not, so a blocked token gets weight exactly 0.
+> **Maths in one line:** `softmax(QKᵀ/√d_k + M)·V` — the same attention in all three families; only the mask `M` differs: 0 where a token may look, −∞ where it may not, so a blocked token gets weight exactly 0.
 
 ```
   ENCODER (full mask)         DECODER (causal mask)

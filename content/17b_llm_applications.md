@@ -517,7 +517,7 @@ shared mistake       0.40   0.41   0.33   0.26
 <details>
 <summary><strong>Read as text</strong> — direct vs indirect injection, why it is unsolved, the layered defences and the lethal trifecta</summary>
 
-**Prompt injection** is when text the model reads changes what it does in ways you did not intend. It is number one on the OWASP Top 10 for LLM Applications (LLM01, 2025 edition). The text can come straight from the user (**direct** injection) or hide in content the model processes — a web page, PDF, email, retrieved chunk, tool result or image (**indirect** injection). OWASP notes it does not even have to be visible to a person, only readable by the model.
+**Prompt injection** is when text the model reads changes what it does in ways you did not intend. It is number one on the OWASP Top 10 for LLM Applications (LLM01 in both the 2025 and 2026 editions). The text can come straight from the user (**direct** injection) or hide in content the model processes — a web page, PDF, email, retrieved chunk, tool result or image (**indirect** injection). OWASP notes it does not even have to be visible to a person, only readable by the model.
 
 ```
   System prompt: "You are a helpful customer service bot for BankCo.
@@ -1745,7 +1745,8 @@ def qlora(n, adapters, double_quant=True):
     bits = 4 + (0.127 if double_quant else 0.5)   # NF4 weights + per-block scale constants
     return (n * bits / 8 + adapters * 16) / GB
 
-# adapters: LoRA r=16 on q_proj + v_proj, counted as above (7B: 32 layers of 4096; 65B/70B: 80 layers of 8192)
+# adapters: LoRA r=16 on q_proj + v_proj, counted as above (7B: 32 layers of 4096; 65B: 80 layers of 8192).
+# 70B reuses the 65B count; its GQA v_proj is only 8192 -> 1024, so the exact figure is 32.8M (0.2 GB less below)
 models = [("7B", 7e9, 8.4e6), ("65B", 65e9, 42e6), ("70B", 70e9, 42e6)]
 print(f"{'model':<5} {'full FT':>9} {'LoRA':>8} {'QLoRA':>7}   (GB)")
 for name, n, adapters in models:
@@ -2283,7 +2284,7 @@ LLMs charge per token, with **separate input and output prices** — output cost
 
 | Lever | Typical effect (Nov 2026) |
 |---|---|
-| Prompt caching | Cached input costs 2.5–10% of the normal input price (90–97.5% off), depending on vendor and model; writing to the cache can cost a little more than normal input (1.25× on OpenAI and Anthropic). Keep the stable prefix first ([Ch 17c §2.4](#content/17c_llm_systems)) |
+| Prompt caching | Cached input costs 2.5–10% of the normal input price (90–97.5% off), depending on vendor and model; writing to the cache can cost a little more than normal input (1.25× for OpenAI GPT-5.6 and later and for Anthropic's 5-minute cache). Keep the stable prefix first ([Ch 17c §2.4](#content/17c_llm_systems)) |
 | Batch / flex processing | About 50% off for jobs that can wait (OpenAI, Anthropic, Google) |
 | Model routing | Send easy requests to a high-volume tier, hard ones to the flagship |
 
@@ -2626,7 +2627,7 @@ Filters are not a security boundary against prompt injection: for agents that ca
 |-----------|-----------|-------------|
 | Guardrails AI | Open source (Apache 2.0) | Validators that check and fix inputs and outputs (format, PII, toxicity) |
 | NeMo Guardrails | NVIDIA, open source | Programmable rails for dialogue, topics and tool calls, written in Colang |
-| Llama Guard 4 | Meta, open weights (12B, Apr 2025) | Classifies prompts and responses, text and images, against 14 MLCommons hazard categories |
+| Llama Guard 4 | Meta, open weights (12B, Apr 2025) | Classifies prompts and responses, text and images, against 14 hazard categories (the 13 MLCommons categories plus code-interpreter abuse) |
 | Llama Prompt Guard 2 | Meta, open weights (86M and 22M) | Small classifiers for prompt-injection and jailbreak attempts |
 | ShieldGemma / ShieldGemma 2 | Google, open weights | Text safety classifiers (2B–27B); ShieldGemma 2 (4B) checks images |
 | gpt-oss-safeguard | OpenAI, open weights (20B and 120B) | Reasons over a safety policy that *you* write, at inference time |

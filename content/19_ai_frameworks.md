@@ -1970,7 +1970,7 @@ As of November 2026:
 
 | Lever | Typical savings | How |
 |---|---|---|
-| **Prompt caching** | Up to 90% on the cached prefix — more on some models | Put the stable part first (system prompt, tools, documents). Cache hits bill at 10% of the input price on OpenAI and most Claude models (5% on Claude Opus and Sonnet 5.5, 2.5% on Fable 5.1), but writes can cost 1.25× ([Ch 17c §2.4](#content/17c_llm_systems)) |
+| **Prompt caching** | Up to 90% on the cached prefix — more on some models | Put the stable part first (system prompt, tools, documents). Cache hits bill at 10% of the input price on most OpenAI and Claude models (5% on GPT-6.1 Sol and Terra and on Claude Opus and Sonnet 5.5, 2.5% on Fable 5.1), but writes can cost 1.25× ([Ch 17c §2.4](#content/17c_llm_systems)) |
 | **Model routing / cascades** | 50–85% in the example below; depends on how much traffic the cheap model can keep | Easy → Haiku 5.5 / Gemini Flash-Lite / GPT-6 Luna; hard → Opus 5.5 / Gemini 4 Argon / GPT-6 Astra |
 | **Batch APIs** | 50% | Anthropic, OpenAI and Gemini batch endpoints, for work that can wait (results within 24 h) |
 | **Lower reasoning effort** | Large on reasoning models | Thinking tokens bill as output tokens; set the effort dial low for easy calls |

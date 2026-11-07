@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~208 hours of content · 415+ DSA problems │
+  │  50 chapters · ~359 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -61,7 +61,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 14 | Neural Networks | ★★★ | [14_neural_networks.md](content/14_neural_networks.md) | ~11 hrs (~4.5 hrs fast path) | Intermediate-Advanced |
 | 15 | Reinforcement Learning | ★ | [15_reinforcement_learning.md](content/15_reinforcement_learning.md) | ~2.25 hrs (~0.75 hrs fast path) | Intermediate |
 | ↻ | **ML Curriculum — Quick Revision** (recap of Ch 07–15; no read status / quiz) | ★★ | [15s_ml_curriculum_recap.md](content/15s_ml_curriculum_recap.md) | ~3.75 hrs | All Levels |
-| | **Core ML Total** | | | **~37.25 hrs** | |
+| | **Core ML Total** | | | **~66.25 hrs** | |
 
 ### Deep Learning & LLMs
 
@@ -76,7 +76,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 19 | AI Frameworks & Engineering (LangChain, vLLM, ADK) | ★★★ | [19_ai_frameworks.md](content/19_ai_frameworks.md) | ~6.5 hrs (~3 hrs fast path) | Intermediate-Advanced |
 | 20 | The 2026 AI Landscape (frontier models, regulation) | ★★ | [20_2026_landscape.md](content/20_2026_landscape.md) | ~4.75 hrs (~2.5 hrs fast path) | Intermediate |
 | ↻ | **Deep Learning & LLMs — Quick Revision** (recap of Ch 16–20; no read status / quiz) | ★★ | [20s_deep_learning_llms_recap.md](content/20s_deep_learning_llms_recap.md) | ~7.75 hrs | All Levels |
-| | **Deep Learning & LLMs Total** | | | **~33 hrs** | |
+| | **Deep Learning & LLMs Total** | | | **~99.75 hrs** | |
 
 ### System Design
 
@@ -89,7 +89,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | 25 | System Design — Part 3: Operations & Case Studies (reliability, security, observability, deployment, multi-region, FinOps, Instagram) | ★★★ | [25_system_design_operations_case_studies.md](content/25_system_design_operations_case_studies.md) | ~3 hrs | Intermediate-Advanced |
 | 26 | ML System Design (Google) — capstone | ★★★ | [26_ml_system_design.md](content/26_ml_system_design.md) | ~1.5 hrs | Intermediate-Advanced |
 | ↻ | **System Design — Quick Revision** (recap of Ch 21–26; no read status / quiz) | ★★ | [26s_system_design_recap.md](content/26s_system_design_recap.md) | ~3.25 hrs | All Levels |
-| | **System Design Total** | | | **~26 hrs** | |
+| | **System Design Total** | | | **~25.75 hrs** | |
 
 ### System Design — Case Studies (Design X)
 
@@ -132,40 +132,40 @@ assumptions, not official company interview frequencies or measured production a
 | 40 | Python for ML & AI — Libraries, Models & Azure LLMs | ★★★ | [40_python_ml_ai.md](content/40_python_ml_ai.md) | ~1.75 hrs | Beginner-Intermediate |
 | 27 | Practical ML — From Zero to Production | ★★ | [27_practical_ml.md](content/27_practical_ml.md) | ~4 hrs | Beginner-Advanced |
 | 28 | Building Semantic Search (Text, Images, Metadata) | ★★ | [28_semantic_search.md](content/28_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
-| 29 | GPUs, TPUs & AI Infrastructure | ★★ | [29_gpus_tpus_infrastructure.md](content/29_gpus_tpus_infrastructure.md) | ~3.25 hrs | Intermediate-Advanced |
-| 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~2.75 hrs | Intermediate |
-| | **Practical & Infra Total** | | | **~14 hrs** | |
+| 29 | GPUs, TPUs & AI Infrastructure | ★★ | [29_gpus_tpus_infrastructure.md](content/29_gpus_tpus_infrastructure.md) | ~8 hrs (~2.25 hrs fast path) | Intermediate-Advanced |
+| 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~7.5 hrs (~2.75 hrs fast path) | Intermediate |
+| | **Practical & Infra Total** | | | **~23.5 hrs** | |
 
 ### Languages & Coding
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~5.75 hrs | Beginner-Intermediate |
-| 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~5 hrs | Intermediate |
-| 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~2.75 hrs | Beginner-Intermediate |
+| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~9.25 hrs (~2.75 hrs fast path) | Beginner-Intermediate |
+| 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~8.25 hrs (~2.25 hrs fast path) | Intermediate |
+| 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~6 hrs (~1.75 hrs fast path) | Beginner-Intermediate |
 | 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~7.25 hrs | Intermediate |
 | 31b | DSA: Graphs (Java) | ★★★ | [31b_dsa_graphs.md](content/31b_dsa_graphs.md) | ~2.5 hrs | Intermediate |
 | 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~6.5 hrs | Intermediate-Advanced |
 | 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~4.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Languages & Coding Total** | | | **~34.5 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~44.5 hrs + practice** | |
 
 ### Interview Preparation
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~4 hrs | Intermediate-Advanced |
-| 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~4 hrs | Intermediate-Advanced |
-| 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~4.25 hrs | Intermediate-Advanced |
+| 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~16.25 hrs | Intermediate-Advanced |
+| 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~12 hrs | Intermediate-Advanced |
+| 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~13.25 hrs | Intermediate-Advanced |
 | 34 | Google's Top 10 ML Interview Topics — Part 1 (Topics 1–10: Classic ML Core) | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~4.75 hrs | Intermediate-Advanced |
 | 34b | Google's Top 10 ML Interview Topics — Part 2 (Topics 11–14: LLM Architecture, Training, Serving, Eval) | ★★★ | [34b_google_top10_ml_interview_part2.md](content/34b_google_top10_ml_interview_part2.md) | ~3.75 hrs | Intermediate-Advanced |
-| | **Interview Prep Total** | | | **~20.75 hrs** | |
+| | **Interview Prep Total** | | | **~50 hrs** | |
 
 ### Grand Total
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~208 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~359 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

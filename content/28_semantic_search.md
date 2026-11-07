@@ -90,14 +90,14 @@ A text embedding model takes a string and outputs a fixed-length vector. Under t
 |---|---|---|---|---|
 | `text-embedding-3-large` | OpenAI | 3072 | 8192 | Best OpenAI model; supports dimension reduction via API parameter |
 | `text-embedding-3-small` | OpenAI | 1536 | 8192 | Cheaper, slightly lower quality |
-| `text-embedding-004` | Google | 768 | 2048 | Gemini embedding; good for Google Cloud pipelines |
+| `gemini-embedding-2` | Google | 3072 (768 / 1536 recommended) | 8192 | Current Gemini embedding model (as of Nov 2026); `text-embedding-004` was shut down on the Gemini API in Jan 2026 |
 | `all-MiniLM-L6-v2` | Sentence-Transformers | 384 | 256 | Fast, small, runs on CPU — great for prototyping |
 | `bge-large-en-v1.5` | BAAI | 1024 | 512 | Open-source, strong MTEB scores |
 | `e5-large-v2` | Microsoft | 1024 | 512 | Prefix-based: "query: ..." / "passage: ..." |
 | `jina-embeddings-v3` | Jina AI | 1024 | 8192 | Long-context, multilingual, open-source |
 | `voyage-3` | Voyage AI | 1024 | 32000 | Excellent for code and long documents |
 
-**Which to pick?** Production API: `text-embedding-3-large` or `text-embedding-004`. Self-hosted: `bge-large-en-v1.5` or `e5-large-v2`. Prototyping: `all-MiniLM-L6-v2`.
+**Which to pick?** Production API: `text-embedding-3-large` or `gemini-embedding-2`. Self-hosted: `bge-large-en-v1.5` or `e5-large-v2`. Prototyping: `all-MiniLM-L6-v2`. For the full Nov 2026 list see [Ch 17b §10.2](#content/17b_llm_applications).
 
 ### Similarity metrics
 
@@ -771,11 +771,15 @@ results = search_and_rerank("What is the company's strategy for reducing churn?"
 | **Google Vertex AI** | Ranking API | Integrated with Vertex AI Search |
 
 ```python
-# Cohere Rerank API example
+# Runs locally: pip install cohere; needs CO_API_KEY (Cohere Rerank API example)
 import cohere
-co = cohere.Client("YOUR_API_KEY")
-response = co.rerank(model="rerank-english-v3.0", query=query, documents=docs, top_n=5)
+
+co = cohere.ClientV2()                      # reads CO_API_KEY from the environment
+query = "How do I reset my password?"
+docs = ["Reset it under Settings > Security.", "Our office opens at 9 am.", "Passwords expire every 90 days."]
+response = co.rerank(model="rerank-v5.0-fast", query=query, documents=docs, top_n=2)
 reranked = [(r.index, r.relevance_score) for r in response.results]
+print(reranked)
 ```
 
 ### Reciprocal Rank Fusion (RRF)
@@ -807,8 +811,8 @@ Where $k$ is typically 60. Documents ranked highly by multiple rankers get the h
         "borderWidth": 1
       },
       {
-        "label": "RRF Fused Score",
-        "data": [0.78, 0.93, 0.82, 0.65, 0.70],
+        "label": "RRF Fused Score (k = 60, rescaled 0–1)",
+        "data": [0.75, 1.0, 0.49, 0.25, 0.0],
         "backgroundColor": "rgba(34, 197, 94, 0.6)",
         "borderColor": "rgba(34, 197, 94, 1)",
         "borderWidth": 1
@@ -824,7 +828,7 @@ Where $k$ is typically 60. Documents ranked highly by multiple rankers get the h
 }
 ```
 
-Doc B ranks #2 in dense but #1 in BM25 — RRF correctly promotes it to the top. Doc D is strong in dense only — RRF pushes it down.
+Doc B ranks #3 in dense but #1 in BM25 — RRF (k = 60) promotes it to the top (0.0323 vs Doc A's 0.0320). Doc D is #2 in dense but last in BM25 — RRF pushes it down to #4. RRF uses only the ranks, never the raw scores, so the raw RRF values sit close together (0.0313–0.0323); the green bars rescale them to 0–1 so the order is visible.
 
 ---
 
@@ -1005,12 +1009,12 @@ results = collection.query(
 ### Cost Estimation — What Does This Actually Cost?
 
 ```
-  EMBEDDING COSTS (per 1 million documents, ~500 tokens each):
+  EMBEDDING COSTS (per 1 million documents, ~500 tokens each = 500M tokens; list prices as of Nov 2026):
   ──────────────────────────────────────────────────────────────
-  OpenAI text-embedding-3-small    ~$10       (cheapest quality option)
-  OpenAI text-embedding-3-large    ~$65       (best OpenAI quality)
-  Gemini text-embedding-004        ~$6        (Google, very competitive)
-  Cohere embed-v3                  ~$5        (good multilingual)
+  OpenAI text-embedding-3-small    ~$10       (0.02 USD per 1M tokens)
+  OpenAI text-embedding-3-large    ~$65       (0.13 USD per 1M tokens)
+  Google gemini-embedding-2        ~$100      (0.20 USD per 1M; Batch API half)
+  Cohere Embed 5 Pro / Fast        ~$60 / $40 (0.12 / 0.08 USD per 1M)
   Self-hosted (sentence-transformers on GPU)   ~$0 marginal, $200/mo GPU
 
   VECTOR DB HOSTING (per 1 million 768-dim vectors):

@@ -7370,7 +7370,7 @@ The two are close relatives — flow matching with a Gaussian path contains diff
 
 A hospital doesn't send every patient to every doctor. A cardiologist handles heart problems; a neurologist handles brain problems. You only see the relevant specialist.
 
-MoE applies this to neural networks: instead of using ALL parameters for every input, route each token to the 2 most relevant "expert" sub-networks.
+MoE applies this to neural networks: instead of using ALL parameters for every input, route each token to a few "expert" sub-networks — 2 of 8 in Mixtral, 8 of 256 (plus one always-on shared expert) in DeepSeek-V3.
 
 One honest caveat: the experts do **not** become tidy topic specialists ("the Python expert", "the French expert"). The Mixtral authors looked for that and found routing follows *syntax and position* far more than subject matter. Think "many parallel workers that each got good at some token patterns", not "one department per subject".
 

@@ -494,7 +494,7 @@ graph LR
 **Two design rules to remember:**
 
 1. **One client per server.** Servers are isolated from each other — the Slack server never sees GitHub data unless the host passes it along. The host is the only place where results from different servers meet, which also makes it the security checkpoint.
-2. **Stateless since 2026-07-28.** There is no `initialize` handshake and no session. Every request carries its protocol version and client capabilities in a `_meta` field, so any server replica behind a load balancer can answer it. A server that needs state across calls (a shopping basket, an open browser) returns an explicit handle such as `basket_id`, which the model passes back on later calls.
+2. **Stateless since 2026-07-28.** There is no `initialize` handshake and no session. Every request carries its protocol version and client capabilities in a `_meta` field, so any server replica behind a load balancer can answer it; a client that wants the server's capabilities up front makes one `server/discover` call. A server that needs state across calls (a shopping basket, an open browser) returns an explicit handle such as `basket_id`, which the model passes back on later calls.
 
 **MCP vs function calling — the question everyone gets.** They are two different interfaces, and they stack:
 

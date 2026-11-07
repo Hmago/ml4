@@ -400,7 +400,7 @@ Leaders rotate every few months — treat this as a starting shortlist and check
 | **Voyage `voyage-4-large` / `voyage-3-large`** | Strong paid option, popular for RAG and code |
 | **Qwen3-Embedding (up to 8B)** | Apache 2.0, strong all-round open-weight model |
 | **BGE-M3** | Open-weight, multilingual, dense + sparse + ColBERT in one model |
-| **Cohere Rerank 4 (Pro / Fast; v3.5 still available)** | Managed reranker default |
+| **Cohere Rerank 5.0 (`rerank-v5.0-pro` / `-fast`)** | Managed reranker default |
 | **BGE-Reranker v2 / Qwen3-Reranker** | Open-weight rerankers you can self-host |
 
 ---
@@ -522,7 +522,7 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
       │     → Check chunk size; chunk may lack context
       │     → Try contextual chunking (prepend doc summary)
       └── Still wrong on a hard task?
-            → Reasoning model with extended thinking — but still verify the answer
+            → Reasoning model at a higher effort setting — but still verify the answer
               (run the tests, check the citation): the visible chain of thought is a
               useful trace, not a guaranteed honest explanation (Ch 17 §15.1b)
 ```
@@ -624,7 +624,7 @@ Most teams converge on **one CI tool + one platform.** Pair Ragas/DeepEval (CI) 
 | Default chunk size for RAG | ~256–512 tokens, 50–100 overlap | Balance precision vs context |
 | Top-k for retrieval | 20 → rerank to 3 (50–100 → 10 in Ch 28) | Standard pipeline; widen with a big window |
 | Prompt cache discount | about 90–97.5% off the input price (hits billed at 0.025×–0.1× input, depending on model) | Biggest single cost lever |
-| EU AI Act | General application 2 Aug 2026; the AI Office's enforcement powers over general-purpose AI start then. High-risk rules were delayed to 2 Dec 2027 and 2 Aug 2028 (Digital Omnibus, May 2026) | Check the current text before quoting dates |
+| EU AI Act | General application 2 Aug 2026; the AI Office's enforcement powers over general-purpose AI start then. High-risk rules were delayed to 2 Dec 2027 and 2 Aug 2028 (Digital Omnibus, Regulation (EU) 2026/1744, in force 27 Jul 2026) | Check the current text before quoting dates |
 | Frontier context window | ~1M tokens (GPT-6, Claude, Gemini 4 Argon) | Llama 4 Scout advertises 10M; effective length is shorter |
 
 ---
@@ -676,7 +676,7 @@ A Flash / Sonnet / Luna-tier model — Gemini 3.x Flash, Claude Sonnet 5.5 or GP
 On-device when privacy, latency, billions-of-queries scale, or offline matters. Cloud when you need top-end reasoning, multimodal beyond text+image, real-time external data, or you can't ship a model with the OS.
 
 **"What would you cite as quality benchmarks in 2026?"**
-Terminal-Bench (CLI agents; the newest vendor tables use 4.0), OSWorld (computer use), GPQA Diamond (graduate science — now near 90%+ at the top, so close to saturated), ARC-AGI-2, FrontierMath, Humanity's Last Exam — and SWE-bench Pro only with a caveat: OpenAI retired SWE-bench Verified in Feb 2026 (flawed tests, contamination), then found ~30% of Pro's tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report Pro, so treat its scores as rough. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from.
+Terminal-Bench 4.0 (CLI agents), OSWorld 2.0 (long computer-use workflows), Humanity's Last Exam, ARC-AGI-3 and FrontierMath — saturated or nearly saturated ones (GPQA Diamond at 96.4%, ARC-AGI-2 at 95%) only as history — and SWE-bench Pro only with a caveat: OpenAI retired SWE-bench Verified in Feb 2026 (flawed tests, contamination), then found ~30% of Pro's tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report Pro, so treat its scores as rough. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from ([Ch 20 §20.13](#content/20_2026_landscape)).
 
 **"What does FlashAttention change?"**
 Not the maths — it is *exact* attention. It streams K and V through the GPU's fast on-chip memory in tiles with an online softmax, so the n × n score matrix is never written to slow HBM: memory falls from O(n²) to O(n) and it runs faster (the paper measured ~3× faster GPT-2 training at 1K tokens) because attention is memory-bound. FLOPs stay O(n²) ([Ch 17 §2.4](#content/17_llm)).
@@ -798,8 +798,8 @@ These are the problems candidates report implementing from scratch in 20–40 mi
 ║    • Visible reasoning is a trace, not proof — verify answers      ║
 ║    • Fine-tune worse → forgetting/overfit: mix data, lower LR      ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  BENCH IN 2026: Terminal-Bench, OSWorld, GPQA, ARC-AGI-2 —         ║
-║  NOT MMLU/HumanEval. SWE-bench Verified retired (Feb 2026);        ║
+║  BENCH IN 2026: Terminal-Bench 4.0, OSWorld 2.0, HLE, ARC-AGI-3 —  ║
+║  NOT MMLU/HumanEval/GPQA. SWE-bench Verified retired (Feb 2026);   ║
 ║  Pro ~30% broken (OpenAI, Jul 2026) — treat its scores as rough    ║
 ╚════════════════════════════════════════════════════════════════════╝
 ```

@@ -710,7 +710,7 @@ WITH chunked prefill (chunk = 512 tokens)
 | Match on | Exact token-prefix match | Embedding similarity above a threshold |
 | Saves | Prefill compute (lower TTFT, lower cost) | The entire call (near-zero latency) |
 | Risk | Essentially none — the output is unchanged | **Serving a wrong answer** to a subtly different question |
-| Where | Built into vLLM and SGLang; provider APIs sell it as "prompt caching", billing cached input tokens at a large discount (often 50–90 % off) | Application layer (e.g. a Redis + embeddings layer) |
+| Where | Built into vLLM and SGLang; provider APIs sell it as "prompt caching", billing cached input tokens at a large discount (90–97.5 % off as of Nov 2026) | Application layer (e.g. a Redis + embeddings layer) |
 
 **How the engines find a match.** vLLM's *automatic prefix caching* — on by default in its V1 engine — hashes each full 16-token block together with everything before it, so a block is reused only when the whole prefix up to that block is identical; a partial last block is always recomputed. SGLang's *RadixAttention* (Zheng et al., NeurIPS 2024) keeps cached prefixes in a radix tree and evicts the least recently used branches. Same idea, different bookkeeping — both are exact.
 
@@ -1534,7 +1534,7 @@ $\text{Perplexity} = e^{\text{average negative natural-log probability of each t
   Bad model:  P("mat") = 0.001 → for this token, perplexity 1/0.001 = 1,000
 
   Published zero-shot results (same GPT-2 tokenizer, same test set):
-  Penn Treebank:  GPT-2 1.5B ≈ 35.8    GPT-3 175B ≈ 20.5   (lower is better)
+  Penn Treebank (per word):  GPT-2 1.5B ≈ 35.8    GPT-3 175B ≈ 20.5   (lower is better)
 ```
 
 **Three limitations to name:**
@@ -1789,11 +1789,11 @@ Before trusting human labels, measure how often two raters agree (Cohen's κ cor
 
 | Frontier benchmark | What it tests | Status as of November 2026 |
 |---|---|---|
-| **Terminal-Bench** | Agent work in a real terminal: inspect files, run commands, recover from errors | Version 2.0 is the widely reported table; 4.0 is the newest release, and scores are not comparable across versions |
+| **Terminal-Bench** | Agent work in a real terminal: inspect files, run commands, recover from errors | Version 4.0 is the current table (top about 65 %, Oct 2026); 2.x is saturated (about 90 %). Scores are not comparable across versions |
 | **OSWorld (-Verified)** | Operating a real desktop through screenshots — computer use ([Ch 18 §18.6](#content/18_ai_agents)) | Active |
 | **GPQA Diamond** | 198 graduate-level, "Google-proof" science questions | Saturated — top score about 96 % (Epoch AI, Sep 2026) |
 | **AIME / FrontierMath** | Competition- to research-level maths (reasoning models) | AIME is close to saturated; FrontierMath is still hard |
-| **ARC-AGI-2 / ARC-AGI-3** | Abstract reasoning from a few examples; ARC-AGI-3 (March 2026) is interactive games with no instructions | Far from solved: at ARC-AGI-3's launch humans scored 100 % and the best AI 0.51 % |
+| **ARC-AGI-2 / ARC-AGI-3** | Abstract reasoning from a few examples; ARC-AGI-3 (March 2026) is interactive games with no instructions | ARC-AGI-2 is nearly saturated (95.0 %, Sep 2026). ARC-AGI-3 is current: at launch humans scored 100 % and the best AI 0.51 %; by Sep 2026 the best reached 62.7 % on the Standard harness ([Ch 20 §20.13](#content/20_2026_landscape)) |
 | **Humanity's Last Exam** | 2,500 expert-written questions across many fields | Active |
 | **LiveCodeBench** | Competitive-programming problems published after a model's training cutoff | Contamination-resistant by design |
 | **MMLU-Pro** | Harder, 10-option version of MMLU | Itself approaching saturation |

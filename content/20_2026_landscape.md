@@ -989,7 +989,7 @@ Source: the AI Act (Regulation (EU) 2024/1689) as amended by the AI Omnibus, whi
 | 2 Dec 2027 | **High-risk systems in Annex III** (hiring, credit scoring, education, law enforcement…) — delayed by the Omnibus |
 | 2 Aug 2028 | **High-risk AI inside regulated products** (Annex I: machinery, toys, lifts, medical devices…) — delayed by the Omnibus |
 
-The Omnibus also added a ban on AI systems that generate non-consensual intimate images or child sexual abuse material, extended some small-company relief to small mid-caps, and gave the EU AI Office more oversight of systems built on general-purpose models. If you build foundation models, deploy them in the EU, or sell to EU customers, these dates apply to you — check the current text before quoting them.
+The Omnibus (Regulation (EU) 2026/1744, in force 27 Jul 2026) also added two bans — AI systems that generate non-consensual intimate images or child sexual abuse material — which apply from 2 Dec 2026, extended some small-company relief to small mid-caps, and gave the EU AI Office more oversight of systems built on general-purpose models. If you build foundation models, deploy them in the EU, or sell to EU customers, these dates apply to you — check the current text before quoting them.
 
 </details>
 
@@ -1001,7 +1001,7 @@ The Omnibus also added a ban on AI systems that generate non-consensual intimate
 | Where | Status, Nov 2026 |
 |---|---|
 | **US — federal** | No general federal AI statute. Policy runs through executive action: the July 2025 AI Action Plan and Executive Order 14365 (Dec 2025), which seeks a national framework that pre-empts state AI laws — as of late October 2026 it had not displaced any state law |
-| **US — states** | California's SB 53 (Transparency in Frontier AI Act) has applied since 1 Jan 2026: large frontier developers publish a safety framework and transparency reports, report critical safety incidents, and protect whistle-blowers |
+| **US — states** | California's SB 53 (Transparency in Frontier AI Act) has applied since 1 Jan 2026: large frontier developers publish a safety framework and transparency reports, report critical safety incidents, and protect whistle-blowers. Colorado repealed its AI Act before it took effect (14 May 2026) and replaced it with a narrower automated-decision transparency law (SB 26-189) due on 1 Jan 2027 |
 | **UK** | The AI Security Institute (renamed from AI Safety Institute in Feb 2025) runs pre-deployment tests of frontier models with the labs' cooperation |
 | **China** | Generative AI services must file with the Cyberspace Administration of China (CAC); labels on AI-generated content have been required since 1 Sep 2025 |
 | **Industry** | Frontier Model Forum — founded in 2023 by Anthropic, Google, Microsoft and OpenAI (Amazon and Meta joined in 2024) — shares safety practices; most labs also publish their own frontier-safety frameworks |
