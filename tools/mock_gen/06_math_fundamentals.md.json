@@ -1,248 +1,248 @@
 [
   {
-    "q": "A feature vector is $[3,-4,12]$. Which pair correctly gives its $L_1$ norm and max norm?",
+    "q": "A feature vector is [3, -4, 12]. Which pair correctly gives its L1 norm and its max norm?",
     "options": [
-      "$19$ and $12$",
-      "$13$ and $12$",
-      "$19$ and $4$",
-      "$13$ and $4$"
+      "19 and 12",
+      "13 and 12",
+      "19 and 4",
+      "13 and 4"
     ],
     "answer": 0,
-    "explanation": "The $L_1$ norm adds absolute values: $3+4+12=19$. The max norm takes the largest absolute component, so it is $12$."
+    "explanation": "L1 adds the absolute values: 3 + 4 + 12 = 19. The max norm is the largest absolute entry, 12. (13 is the L2 norm, √(9 + 16 + 144) = √169.) For every vector, max norm ≤ L2 ≤ L1."
   },
   {
-    "q": "For $a=[2,-1,0]$ and $b=[4,3,5]$, what is $a \\cdot b$, and what does its sign suggest?",
+    "q": "For a = [2, -1, 0] and b = [4, 3, 5], what is a · b, and what does its sign tell you?",
     "options": [
-      "$11$; mostly aligned",
-      "$5$; weakly aligned",
-      "$-5$; mostly opposite",
-      "$8$; unrelated"
+      "11; the vectors point almost exactly the same way",
+      "5; they point roughly the same way (angle under 90°)",
+      "-5; they point roughly opposite ways",
+      "8; the vectors are exactly perpendicular"
     ],
     "answer": 1,
-    "explanation": "The dot product is $2\\cdot4+(-1)\\cdot3+0\\cdot5=5$. A positive value suggests some alignment, though not necessarily high cosine similarity."
+    "explanation": "a · b = 2·4 + (-1)·3 + 0·5 = 5. Because a · b = ‖a‖ ‖b‖ cos θ, a positive value means the angle is under 90°. Here cos θ = 5 / (√5 · √50) ≈ 0.32, so they are only weakly aligned; a dot product of 0 would mean perpendicular."
   },
   {
-    "q": "If $A$ has shape $(4\\times 3)$ and $B$ has shape $(3\\times 2)$, which statement is correct for $AB$?",
+    "q": "A has shape (4 × 3) and B has shape (3 × 2). Which statement about the product AB is correct?",
     "options": [
-      "It is invalid because the outer dimensions do not match.",
-      "It has shape $(3\\times 3)$ because the inner dimensions match.",
-      "It has shape $(2\\times 4)$ after transposing the product.",
-      "It is valid and has shape $(4\\times 2)$."
+      "It is invalid because the outer sizes 4 and 2 differ",
+      "It is valid and has shape (3 × 3)",
+      "It is valid only after transposing B first",
+      "It is valid and has shape (4 × 2)"
     ],
     "answer": 3,
-    "explanation": "Matrix multiplication requires the columns of $A$ to equal the rows of $B$, here $3=3$. The output takes the outer dimensions, $(4\\times2)$."
+    "explanation": "The inner sizes must match (A's 3 columns, B's 3 rows) and the result takes the outer sizes, (4 × 2). Each of the 8 cells is a 3-term dot product, so the cost is about 2·4·3·2 = 48 FLOPs. B·A would be a different (3 × 3) matrix."
   },
   {
-    "q": "For $A=\\begin{pmatrix}2&5\\\\1&3\\end{pmatrix}$, what does the determinant say about invertibility?",
+    "q": "A 2 × 2 matrix has rows [2, 5] and [1, 3]. What does its determinant say about invertibility?",
     "options": [
-      "$\\det(A)=1$, so $A$ is invertible.",
-      "$\\det(A)=0$, so $A$ is singular.",
-      "$\\det(A)=11$, so $A$ is singular.",
-      "$\\det(A)=-1$, so $A$ is not invertible."
+      "det = 1, so the matrix is invertible",
+      "det = 0, so the matrix is singular",
+      "det = 11, so the matrix is singular",
+      "det = -1, so the matrix has no inverse"
     ],
     "answer": 0,
-    "explanation": "For a $2\\times2$ matrix, $\\det(A)=ad-bc=(2)(3)-(5)(1)=1$. A nonzero determinant means the matrix is invertible."
+    "explanation": "For a 2 × 2 matrix det = ad − bc = 2·3 − 5·1 = 1. Any non-zero determinant means the matrix does not squish space flat, so an inverse exists; |det| = 1 means areas keep their size. A determinant of 0 (rows that are multiples of each other) would mean singular."
   },
   {
-    "q": "A matrix sends some nonzero direction to the zero vector. In the chapter's language, what happened?",
+    "q": "A linear layer Y = X·Wᵀ + b (the PyTorch nn.Linear layout) takes a batch X of shape (64, 512) and has W of shape (256, 512). The layer above hands back G = ∂L/∂Y. What are the shapes of ∂L/∂W and ∂L/∂b?",
     "options": [
-      "The transpose turned rows into columns without changing rank.",
-      "The identity matrix was applied before the transformation.",
-      "The matrix has a negative determinant and reverses orientation.",
-      "The matrix squished information flat, so it is singular."
+      "(64, 512) from G·W, and (64,) from summing G over the features",
+      "(512, 256) from Xᵀ·G, and (256,) taken from the first row of G",
+      "(64, 256), the same as G, and (256,) averaged over the features",
+      "(256, 512) from Gᵀ·X, and (256,) from summing G over the batch rows"
     ],
     "answer": 3,
-    "explanation": "A singular matrix loses information by collapsing at least one direction, which prevents an inverse from recovering the original vector. The chapter describes this as squishing things flat."
+    "explanation": "Every gradient has the shape of the thing it belongs to. ∂L/∂W = Gᵀ·X: (256, 64) @ (64, 512) = (256, 512), and the matrix multiply adds up the 64 examples for free. b was added to every row, so its gradient sums G over the rows: (256,). G·W = (64, 512) is ∂L/∂X, the error signal passed to the layer below. Taking only row 0 of G for the bias is a silent bug, because (256,) still matches (256,)."
   },
   {
-    "q": "For $A\\vec v=\\lambda\\vec v$, which interpretation is most precise?",
+    "q": "For A·v = λ·v, which interpretation is most precise?",
     "options": [
-      "$\\vec v$ keeps its direction while $A$ scales it by $\\lambda$.",
-      "$A$ rotates every vector by exactly $\\lambda$ radians.",
-      "$\\lambda$ must be zero whenever $A$ is invertible.",
-      "$\\vec v$ is any vector whose length equals $\\lambda$."
+      "A rotates every vector through an angle of exactly λ radians",
+      "λ must equal zero whenever the matrix A is invertible",
+      "v is any vector at all whose length happens to equal λ",
+      "v keeps its direction; A only stretches it by the factor λ"
     ],
-    "answer": 0,
-    "explanation": "An eigenvector is a special vector whose direction is unchanged by the matrix transformation; only its scale changes by the eigenvalue. Most vectors are not eigenvectors."
+    "answer": 3,
+    "explanation": "An eigenvector is a direction the matrix only stretches (or flips, if λ is negative), and λ is the stretch factor. For A = [[2, 1], [1, 2]], v = [1, 1] gives A·v = [3, 3] = 3·v, while [1, 0] is turned into [2, 1], so it is not an eigenvector. An invertible matrix has no zero eigenvalue."
   },
   {
-    "q": "PCA finds covariance eigenvalues $9, 3, 0.5$. Approximately what fraction of variance is explained by the top two principal components?",
+    "q": "PCA finds covariance eigenvalues 9, 3 and 0.5. About what fraction of the variance do the top two principal components explain?",
     "options": [
-      "$72\\%$",
-      "$80\\%$",
-      "$96\\%$",
-      "$99\\%$"
+      "72%",
+      "80%",
+      "96%",
+      "99%"
     ],
     "answer": 2,
-    "explanation": "The top two explain $(9+3)/(9+3+0.5)=12/12.5=0.96$. PCA keeps directions with large eigenvalues because they carry most variance."
+    "explanation": "Each eigenvalue is the variance along its component, so the share is (9 + 3) / (9 + 3 + 0.5) = 12 / 12.5 = 96%. PC1 alone explains 9 / 12.5 = 72%. Standardise features first when units differ, or the feature with the biggest numbers dominates PC1."
   },
   {
-    "q": "In $A=U\\Sigma V^\\top$, which piece stores the stretch amounts sorted from largest to smallest?",
+    "q": "In the SVD A = U Σ Vᵀ, which piece holds the stretch amounts (singular values), sorted from largest to smallest?",
     "options": [
-      "$U$",
-      "$V^\\top$",
-      "$A^{-1}$",
-      "$\\Sigma$"
+      "U",
+      "Vᵀ",
+      "A⁻¹",
+      "Σ"
     ],
     "answer": 3,
-    "explanation": "In SVD, $U$ and $V^\\top$ are rotation-like factors, while $\\Sigma$ is the diagonal matrix of singular values. The chapter calls these the stretch amounts."
+    "explanation": "U and V are orthogonal (rotations, possibly with a mirror flip) and Σ is the diagonal matrix of singular values. Keeping only the top k gives the best possible rank-k copy of A (Eckart–Young), with an error made of exactly the singular values dropped."
   },
   {
-    "q": "In scaled dot-product attention, why divide $QK^\\top$ by $\\sqrt{d_k}$?",
+    "q": "In scaled dot-product attention, why are the scores Q·Kᵀ divided by √d_k before the softmax?",
     "options": [
-      "To keep score variance near $1$ and avoid peaky softmax gradients.",
-      "To make $Q$, $K$, and $V$ have identical learned weights.",
-      "To reduce the score matrix from $(n\\times n)$ to $(n\\times d_k)$.",
-      "To replace the softmax with a cheaper linear normalization."
+      "To keep the score variance near 1 so the softmax stays soft",
+      "To make Q, K and V share identical learned projection weights",
+      "To shrink the score matrix from (n × n) down to (n × d_k)",
+      "To replace the softmax with a cheaper linear normalisation"
     ],
     "answer": 0,
-    "explanation": "Raw dot products sum about $d_k$ unit-variance terms, so their variance grows with $d_k$. Scaling by $\\sqrt{d_k}$ prevents softmax saturation and vanishing gradients."
+    "explanation": "With unit-variance entries, q · k sums d_k products and has variance d_k, a spread of about ±8 at d_k = 64. Softmax of numbers that far apart is nearly one-hot, and its gradients are near zero. Dividing by √d_k brings the variance back to 1; it acts like a fixed temperature."
   },
   {
-    "q": "A decoder-only transformer uses causal masking. What is set to $-\\infty$ before softmax?",
+    "q": "A decoder-only transformer uses causal masking. Which entries of the n × n score matrix are set to −∞, and when?",
     "options": [
-      "The diagonal entries for the current token itself",
-      "The lower triangle containing earlier positions",
-      "The upper triangle containing future positions",
-      "The value vectors for padded vocabulary items"
+      "The diagonal (each token itself), after the softmax",
+      "The lower triangle (earlier tokens), before the softmax",
+      "The upper triangle (later tokens), before the softmax",
+      "The upper triangle (later tokens), after the softmax"
     ],
     "answer": 2,
-    "explanation": "Causal attention masks future positions by setting the upper triangle of the score matrix to $-\\infty$. After softmax, those future positions receive zero probability."
+    "explanation": "Each position may attend only to itself and earlier positions, so the upper triangle (future tokens) is set to −∞ before the softmax, which then gives those positions weight exactly 0. Masking after the softmax would leave rows that no longer add up to 1."
   },
   {
-    "q": "With $d_{model}=768$ and $h=12$ heads, what is $d_k$ per head in the chapter's equal-split setup?",
+    "q": "With d_model = 768 split equally across h = 12 heads, what is d_k per head, and how many weights do the query, key, value and output projections hold together (no biases)?",
     "options": [
-      "$32$",
-      "$64$",
-      "$96$",
-      "$128$"
+      "64 per head, and 4 × 768² ≈ 2.36 million in total",
+      "64 per head, and 12 × 4 × 768² ≈ 28.3 million",
+      "768 per head, and 4 × 768² ≈ 2.36 million in total",
+      "32 per head, and 4 × 64² ≈ 16 thousand in total"
+    ],
+    "answer": 0,
+    "explanation": "d_k = d_model / h = 768 / 12 = 64. The four projections are each 768 × 768 in total, so 4 × 768² = 2,359,296 weights — the same for any number of heads, because the heads only split those matrices into slices."
+  },
+  {
+    "q": "At the flat point (0, 0) of f(x, y) = x² + 3xy + 2y², the Hessian is [[2, 3], [3, 4]], with eigenvalues of about 6.16 and −0.16. What kind of point is it?",
+    "options": [
+      "A minimum, because both diagonal entries are positive",
+      "A maximum, because the determinant is negative",
+      "A saddle, because the eigenvalues have mixed signs",
+      "Undecidable without computing the third derivatives"
+    ],
+    "answer": 2,
+    "explanation": "At a flat point, all-positive eigenvalues mean a bowl (minimum), all-negative a hilltop (maximum), mixed signs a saddle. The 2 × 2 shortcut agrees: det = 2·4 − 3·3 = −1 < 0. Stepping to (1, 0) goes uphill (f = 1) but stepping to (1, −0.72) goes downhill (f = −0.1232). Positive diagonal entries alone do not make a minimum."
+  },
+  {
+    "q": "For f(x, y) = x² + 3xy + y², what is ∂f/∂y at the point (x = 2, y = 1)?",
+    "options": [
+      "5",
+      "7",
+      "10",
+      "8"
+    ],
+    "answer": 3,
+    "explanation": "Freeze x and differentiate in y: ∂f/∂y = 3x + 2y, which is 6 + 2 = 8 at (2, 1). (7 is ∂f/∂x = 2x + 3y at the same point.)"
+  },
+  {
+    "q": "For the chain a = 2x − 1, b = a³, L = 5b, what is dL/dx at x = 2?",
+    "options": [
+      "30",
+      "45",
+      "270",
+      "135"
+    ],
+    "answer": 2,
+    "explanation": "At x = 2, a = 3. Multiply the local slopes: dL/db = 5, db/da = 3a² = 27, da/dx = 2, so dL/dx = 5 · 27 · 2 = 270. Backpropagation is exactly this multiplication, done from the loss backwards."
+  },
+  {
+    "q": "You gradient-check f(x) = x³ at x = 2 (true slope 12) with a nudge h = 0.1: the one-sided difference gives 12.61 and the central difference 12.01. If you shrink h to 0.01, what happens to the two errors?",
+    "options": [
+      "Both errors shrink about 10×",
+      "One-sided shrinks about 10×, central about 100×",
+      "One-sided shrinks about 100×, central about 10×",
+      "Both stay the same; only rounding noise changes"
     ],
     "answer": 1,
-    "explanation": "The worked attention example uses $d_k=d_v=d_{model}/h$. Here $768/12=64$ per head."
+    "explanation": "The one-sided error shrinks like h (0.61 → 0.06), while the central difference (f(x + h) − f(x − h)) / 2h shrinks like h² (0.01 → 0.0001). That is why gradient checks use the central version, with h around 1e-5 to 1e-6 in float64 — a far smaller h lets rounding noise take over."
   },
   {
-    "q": "What is the derivative of $f(x)=4x^3-2x+9$?",
+    "q": "For f(x, y) = x² + y², start at (5, −1) with learning rate 0.1. Where does one gradient-descent step land?",
     "options": [
-      "$12x^2-2$",
-      "$4x^2-2x$",
-      "$12x^3-2$",
-      "$x^4-x^2+9x$"
-    ],
-    "answer": 0,
-    "explanation": "Apply the power and sum rules: $(4x^3)'=12x^2$, $(-2x)'=-2$, and the constant derivative is $0$."
-  },
-  {
-    "q": "For $f(x,y)=x^2+3xy+y^2$, what is $\\partial f/\\partial y$ at $(x=2,y=1)$?",
-    "options": [
-      "$5$",
-      "$7$",
-      "$10$",
-      "$8$"
-    ],
-    "answer": 3,
-    "explanation": "Holding $x$ fixed, $\\partial f/\\partial y=3x+2y$. At $(2,1)$ this is $6+2=8$."
-  },
-  {
-    "q": "For the chain $a=2x-1$, $b=a^3$, and $L=5b$, what is $dL/dx$ at $x=2$?",
-    "options": [
-      "$30$",
-      "$45$",
-      "$270$",
-      "$135$"
+      "(6.0, −1.2)",
+      "(4.5, −0.9)",
+      "(4.0, −0.8)",
+      "(5.0, −1.0)"
     ],
     "answer": 2,
-    "explanation": "At $x=2$, $a=3$. Chain rule gives $dL/dx=(dL/db)(db/da)(da/dx)=5\\cdot(3a^2)\\cdot2=5\\cdot27\\cdot2=270$."
+    "explanation": "∇f = [2x, 2y] = [10, −2]. Step against it: (5, −1) − 0.1 · [10, −2] = (4, −0.8). On this bowl every step multiplies each coordinate by 1 − 2·0.1 = 0.8. (6.0, −1.2) is where a step uphill, along +∇f, would land."
   },
   {
-    "q": "The chapter says the gradient points uphill. Which update follows gradient descent for minimizing $f$?",
+    "q": "A function maps 3 inputs to 2 outputs. What is the shape of its Jacobian, and what does entry (i, j) mean?",
     "options": [
-      "$\\theta_{new}=\\theta_{old}+\\text{lr}\\cdot\\nabla f$",
-      "$\\theta_{new}=\\theta_{old}/(\\text{lr}\\cdot\\nabla f)$",
-      "$\\theta_{new}=\\nabla f-\\theta_{old}$",
-      "$\\theta_{new}=\\theta_{old}-\\text{lr}\\cdot\\nabla f$"
-    ],
-    "answer": 3,
-    "explanation": "To reduce the function, gradient descent moves opposite the gradient. Adding the gradient would move uphill."
-  },
-  {
-    "q": "For $f(x,y)=x^2+y^2$, start at $(5,-1)$ with learning rate $0.1$. What is the next point?",
-    "options": [
-      "$(6.0,-1.2)$",
-      "$(4.5,-0.9)$",
-      "$(4.0,-0.8)$",
-      "$(5.0,-1.0)$"
+      "3 × 2; the curvature between inputs i and j",
+      "2 × 2; the determinant of the output transformation",
+      "2 × 3; how output i changes when input j is nudged",
+      "3 × 3; the probability of output class j for input i"
     ],
     "answer": 2,
-    "explanation": "$\\nabla f=[2x,2y]=[10,-2]$. The update is $(5,-1)-0.1[10,-2]=(4,-0.8)$."
+    "explanation": "The Jacobian has one row per output and one column per input, so 2 × 3, with entry (i, j) = ∂F_i/∂x_j. Backprop never builds it in full; it computes a vector–Jacobian product vᵀJ (reverse mode), which is cheap when there is one output, the loss."
   },
   {
-    "q": "In a Jacobian for two outputs and three inputs, what does each entry represent?",
+    "q": "Why don't deep-learning frameworks build and invert the full Hessian of a large network?",
     "options": [
-      "A second derivative measuring curvature of one input pair",
-      "The determinant of a square transformation matrix",
-      "A probability assigned to one categorical class",
-      "How one output changes when one input is nudged"
+      "It only exists for categorical variables, not continuous weights",
+      "It always points uphill, so it can never help an optimizer descend",
+      "It is identical to the gradient in any network that uses ReLU",
+      "Its n² entries (10¹² for a million weights) are far too many to store"
     ],
     "answer": 3,
-    "explanation": "The Jacobian is a table of first derivatives for multi-input, multi-output functions. Each cell is a partial derivative of one output with respect to one input."
+    "explanation": "A million weights give a 10¹²-entry Hessian (about 4 TB in FP32), and inverting it costs about n³ operations. Practical methods use Hessian–vector products, which never build H, or cheap approximations (Sophia's diagonal estimate, Shampoo/SOAP's per-matrix preconditioners). Adam's per-weight scale is not the Hessian."
   },
   {
-    "q": "Why is the full Hessian often avoided for large neural networks?",
+    "q": "In the chapter's tiny network (h = 1.1, a = ReLU(h), o = w2·a + b2), why does dL/dh equal dL/da?",
     "options": [
-      "It contains $n^2$ second-derivative entries and can be too large to store.",
-      "It only works for categorical variables and not continuous weights.",
-      "It always points uphill, so it cannot help optimization.",
-      "It is identical to the gradient for ReLU networks."
-    ],
-    "answer": 0,
-    "explanation": "The Hessian captures curvature using second derivatives, but for millions of parameters it would require trillions of entries. Optimizers like Adam use cheaper approximations to useful curvature-like behavior."
-  },
-  {
-    "q": "In the chapter's backprop example, why is $dL/dh=dL/da$ when $h>0$?",
-    "options": [
-      "The loss derivative is always exactly $1$ for squared error.",
-      "The ReLU derivative is $1$ on its positive side.",
-      "The output weight $w_2$ becomes zero during backprop.",
-      "The bias derivative cancels the activation derivative."
+      "The squared-error loss always has a derivative of exactly 1",
+      "The ReLU's slope is 1 on its positive side, and h > 0",
+      "The output weight w2 becomes zero during the backward pass",
+      "The bias gradient cancels out the activation's derivative"
     ],
     "answer": 1,
-    "explanation": "For $a=\\operatorname{ReLU}(h)$, the local derivative is $1$ when $h>0$. Thus the upstream derivative passes through unchanged at that point."
+    "explanation": "dL/dh = dL/da · ReLU′(h), and ReLU′(h) = 1 when h > 0, so the upstream gradient (0.678 here) passes through unchanged. With x = −2, h = −0.9 < 0, the slope is 0, and w1 and b1 get no gradient for that input."
   },
   {
-    "q": "A classifier with true accuracy $0.9$ is evaluated on $20$ independent examples. Which distribution models the count of correct predictions?",
+    "q": "A classifier's true accuracy is 90%. On a 1,000-image test it scores 91.2%. Treating each image as an independent right/wrong trial, is this evidence that it beats 90%?",
     "options": [
-      "Gaussian with $\\mu=0$ and $\\sigma=1$",
-      "Poisson with $\\lambda=0.9$",
-      "Categorical over all vocabulary tokens",
-      "Binomial with $n=20$ and $p=0.9$"
+      "Yes: 912 is 12 above the expected 900, which is beyond normal luck",
+      "Yes: on 1,000 images any gain over one point is significant",
+      "No: with an SD of about 9.5, 912 or more happens 11% of the time",
+      "No: accuracy counts follow a Poisson law, so tests are meaningless"
     ],
-    "answer": 3,
-    "explanation": "Counting successes over repeated Bernoulli trials is binomial. Here each test example is right or wrong with success probability $0.9$."
+    "answer": 2,
+    "explanation": "The number correct is Binomial(n = 1,000, p = 0.9): mean 900, SD √(1000 · 0.9 · 0.1) ≈ 9.5. A score of 912 is only 1.26 SD above the mean, and P(912 or more) ≈ 11%, so a truly 90% model scores this high fairly often by luck alone."
   },
   {
-    "q": "Using $\\binom{4}{2}p^2(1-p)^2$, what is $P(2$ heads in $4$ fair coin flips$)$?",
+    "q": "Using C(4, 2) · p² · (1 − p)², what is the probability of exactly 2 heads in 4 fair coin flips?",
     "options": [
-      "$0.375$",
-      "$0.250$",
-      "$0.500$",
-      "$0.125$"
+      "0.375",
+      "0.250",
+      "0.500",
+      "0.125"
     ],
     "answer": 0,
-    "explanation": "$\\binom42=6$ and each exact sequence has probability $(0.5)^4=1/16$. Therefore $6/16=0.375$."
+    "explanation": "C(4, 2) = 6 orderings, each with probability 0.5⁴ = 1/16, so 6/16 = 0.375. The binomial mean is np = 2 heads and the variance np(1 − p) = 1."
   },
   {
-    "q": "For a Gaussian height model with $\\mu=170$ and $\\sigma=8$, about 95% of values fall in which range?",
+    "q": "Heights are roughly Gaussian with mean 170 cm and standard deviation 8 cm. About 95% of people fall in which range?",
     "options": [
-      "$162$ to $178$",
-      "$154$ to $186$",
-      "$146$ to $194$",
-      "$170$ to $186$"
+      "162 to 178 cm",
+      "154 to 186 cm",
+      "146 to 194 cm",
+      "170 to 186 cm"
     ],
     "answer": 1,
-    "explanation": "The 68-95-99.7 rule says about 95% lies within $\\mu\\pm2\\sigma$. Here that is $170\\pm16$, or $154$ to $186$."
+    "explanation": "The 68-95-99.7 rule puts about 95% within μ ± 2σ = 170 ± 16, so 154 to 186 cm (exactly 95% lies within ±1.96σ). 162 to 178 cm is ±1σ (68%) and 146 to 194 cm is ±3σ (99.7%)."
   },
   {
-    "q": "An LLM outputs probabilities across roughly 50,000 next-word choices. Which distribution type from the chapter describes that output?",
+    "q": "An LLM outputs one probability for every token in its vocabulary (50,257 tokens for GPT-2, 128,256 for Llama 3). Which distribution is that?",
     "options": [
       "Bernoulli",
       "Poisson",
@@ -250,413 +250,413 @@
       "Categorical"
     ],
     "answer": 3,
-    "explanation": "A categorical distribution assigns probabilities across multiple possible choices that sum to one. LLM softmax outputs are categorical distributions over vocabulary tokens."
+    "explanation": "A categorical distribution gives probabilities to K options that add up to 1, which is exactly what softmax produces. Bernoulli is one yes/no trial, Poisson counts events in a time window, and a Gaussian is a continuous bell curve."
   },
   {
-    "q": "A game pays `$0` with probability $0.7$ and `$10` with probability $0.3$. What is $E[X]$?",
+    "q": "A game pays 0 USD with probability 0.7 and 10 USD with probability 0.3. What is the expected payout per play?",
     "options": [
-      "$3$",
-      "$7$",
-      "$10$",
-      "$0.21$"
+      "3 USD",
+      "7 USD",
+      "10 USD",
+      "0.21 USD"
     ],
     "answer": 0,
-    "explanation": "Expected value multiplies outcomes by probabilities and adds them: $0\\cdot0.7+10\\cdot0.3=3$. It is a long-run average, not necessarily an outcome."
+    "explanation": "E[X] = Σ x · P(x) = 0 · 0.7 + 10 · 0.3 = 3 USD. It is the long-run average per play, not a payout you can actually receive on any single play."
   },
   {
-    "q": "Values $2,4,6,8$ are equally likely. What is their population variance using the chapter's formula?",
+    "q": "Values 2, 4, 6 and 8 are equally likely. What is their variance, dividing by n as the population formula does?",
     "options": [
-      "$2$",
-      "$4$",
-      "$5$",
-      "$20$"
+      "2",
+      "4",
+      "5",
+      "20"
     ],
     "answer": 2,
-    "explanation": "The mean is $5$. Squared deviations are $9,1,1,9$, whose average is $20/4=5$."
+    "explanation": "The mean is 5; the squared deviations are 9, 1, 1 and 9, whose average is 20 / 4 = 5. Dividing by n − 1 instead (the sample estimate, the default of pandas and np.cov) gives 6.67, so pass ddof explicitly."
   },
   {
-    "q": "If covariance is $12$, $\\sigma_X=3$, and $\\sigma_Y=4$, what is Pearson correlation $r$?",
+    "q": "Two features have covariance 12 and standard deviations 3 and 4. What is Pearson's correlation r?",
     "options": [
-      "$0.25$",
-      "$1.0$",
-      "$7.0$",
-      "$12.0$"
+      "0.25",
+      "1.0",
+      "7.0",
+      "12.0"
     ],
     "answer": 1,
-    "explanation": "Pearson correlation is $r=\\operatorname{Cov}(X,Y)/(\\sigma_X\\sigma_Y)$. Here $12/(3\\cdot4)=1$, a perfect positive correlation."
+    "explanation": "r = Cov(X, Y) / (σX · σY) = 12 / (3 · 4) = 1: a perfect positive straight-line relationship, as for a feature duplicated in different units. Covariance changes with the units; r does not."
   },
   {
-    "q": "Why does the chapter warn that correlation does not imply causation?",
+    "q": "Ice-cream sales and drowning deaths are strongly correlated. What is the best explanation?",
     "options": [
-      "Correlation only applies to categorical labels, not numeric features.",
-      "Two variables can share a hidden driver, like summer increasing both ice cream sales and drowning.",
-      "A positive correlation means one feature must be a duplicate of the other.",
-      "Correlation is always zero after features are standardized."
+      "Eating ice cream directly raises the risk of drowning",
+      "A confounder, hot weather, drives both of them up",
+      "Correlation only works for categorical labels, so it is invalid here",
+      "A positive correlation means one series duplicates the other"
     ],
     "answer": 1,
-    "explanation": "Correlation measures association, not a causal mechanism. The chapter's example is ice cream sales and drowning both rising because of summer."
+    "explanation": "Correlation measures association, not cause: both rise in hot weather, a confounder. Remember too that r only measures straight-line links — y = x² on x = −2 … 2 has r = 0 despite y being fully determined by x."
   },
   {
-    "q": "A disease has prior $P(D)=0.02$, sensitivity $P(+|D)=0.9$, and false-positive rate $P(+|\\neg D)=0.1$. What is $P(+)$?",
+    "q": "Asha labels 60% of your images with a 2% error rate; Ravi labels 40% with a 5% error rate. What fraction of all labels is wrong, and what share of the wrong labels are Ravi's?",
     "options": [
-      "$0.018$",
-      "$0.098$",
-      "$0.116$",
-      "$0.900$"
+      "3.5% wrong; Ravi's share is 40%",
+      "3.2% wrong; Ravi's share is 62.5%",
+      "7.0% wrong; Ravi's share is 71.4%",
+      "3.2% wrong; Ravi's share is 40%"
     ],
-    "answer": 2,
-    "explanation": "Total evidence is $P(+|D)P(D)+P(+|\\neg D)P(\\neg D)=0.9\\cdot0.02+0.1\\cdot0.98=0.116$. This denominator includes true and false positives."
+    "answer": 1,
+    "explanation": "Law of total probability: 0.6 · 0.02 + 0.4 · 0.05 = 0.012 + 0.020 = 0.032. Ravi's share of the errors is 0.020 / 0.032 = 62.5% — Bayes' theorem, with the total probability as its denominator. He did 40% of the labelling but 62.5% of the mistakes."
   },
   {
-    "q": "Using the same disease setup with $P(+)=0.116$, what is $P(D|+)$?",
+    "q": "A disease has 2% prevalence; the test has 90% sensitivity and a 10% false-positive rate. A patient tests positive. What is P(disease | positive)?",
     "options": [
-      "About $15.5\\%$",
-      "About $20.0\\%$",
-      "About $77.6\\%$",
-      "About $90.0\\%$"
+      "About 15.5%",
+      "About 20.0%",
+      "About 77.6%",
+      "About 90.0%"
     ],
     "answer": 0,
-    "explanation": "Bayes gives $P(D|+)=(0.9\\cdot0.02)/0.116=0.018/0.116\\approx0.155$. The posterior is far below sensitivity because the disease is rare."
+    "explanation": "P(positive) = 0.9 · 0.02 + 0.1 · 0.98 = 0.018 + 0.098 = 0.116 (law of total probability). Bayes: 0.018 / 0.116 ≈ 15.5%. False positives from the 98% healthy majority outnumber true positives more than 5 to 1; answering 90% (the sensitivity) is the base-rate fallacy."
   },
   {
-    "q": "In Bayes' theorem, what is the chapter's name for $P(B|A)$?",
+    "q": "The true distribution has two peaks, but your model can only form one bump. Minimising which KL direction makes the model spread over both peaks?",
     "options": [
-      "Prior",
-      "Evidence",
-      "Posterior",
-      "Likelihood"
+      "Reverse KL, D_KL(Q‖P), because it punishes Q > 0 where P ≈ 0",
+      "Forward KL, D_KL(P‖Q), because it punishes Q ≈ 0 where P > 0",
+      "Either one, because KL divergence is symmetric in P and Q",
+      "Neither; only a symmetric distance can cover several peaks"
+    ],
+    "answer": 1,
+    "explanation": "Forward KL (truth first) explodes wherever the model gives near-zero probability to something real, so it is mode-covering — what cross-entropy / MLE training minimises. Reverse KL is mode-seeking. For P = [0.45, 0.05, 0.05, 0.45], forward KL is 0.368 for an even spread vs 0.703 for a one-peak model; reverse KL flips the verdict (0.511 vs 0.431)."
+  },
+  {
+    "q": "You draw two cards from a 52-card deck without replacement, and the first is an ace. What is the probability the second is also an ace, and are the two draws independent?",
+    "options": [
+      "4/52 ≈ 7.7%; yes, each draw is independent",
+      "1/221 ≈ 0.45%; no, both cards must be aces",
+      "3/51 ≈ 5.9%; no, the first draw changed the deck",
+      "3/52 ≈ 5.8%; yes, one ace is simply gone"
+    ],
+    "answer": 2,
+    "explanation": "Given the first ace, the world shrinks to 51 cards with 3 aces: P(B | A) = 3/51 ≈ 5.9%, lower than 4/52 ≈ 7.7%, so the draws are dependent. 1/221 = 4/52 × 3/51 is P(both aces), from the always-true multiplication rule P(A) · P(B | A)."
+  },
+  {
+    "q": "The spread of an average of N independent draws is σ/√N. If σ = 12 and N = 36, what is it, and how much data would halve it?",
+    "options": [
+      "2; four times the data (N = 144) halves it",
+      "0.33; twice the data (N = 72) halves it",
+      "6; twice the data (N = 72) halves it",
+      "2; twice the data (N = 72) halves it"
+    ],
+    "answer": 0,
+    "explanation": "SE = 12 / √36 = 12 / 6 = 2. Because of the square root, halving it takes 4× the data: 12 / √144 = 1. That is why eval error bars and mini-batch noise shrink only slowly as N grows."
+  },
+  {
+    "q": "Why does the chapter connect mini-batch gradient descent to the Central Limit Theorem?",
+    "options": [
+      "A mini-batch gradient is an average, so its noise shrinks like 1/√B",
+      "Each per-example gradient must itself be exactly Gaussian",
+      "The weights become normally distributed after every update",
+      "A large enough batch makes the loss surface convex"
+    ],
+    "answer": 0,
+    "explanation": "The mini-batch gradient averages B per-example gradients, so it points the right way on average and its noise falls like 1/√B: 64× the batch gives 1/8 of the noise. The per-example gradients themselves need not be Gaussian."
+  },
+  {
+    "q": "A coin lands heads 8 times in 10 flips. Which p does maximum likelihood estimation choose?",
+    "options": [
+      "0.2",
+      "0.5",
+      "0.8",
+      "1.0"
+    ],
+    "answer": 2,
+    "explanation": "Setting the derivative of 8 log p + 2 log(1 − p) to zero gives 8/p = 2/(1 − p), so p̂ = 8/10 = 0.8, the observed fraction. Adding a Beta(2, 2) prior (MAP) would pull it towards 0.5: (8 + 1)/(10 + 2) = 0.75."
+  },
+  {
+    "q": "LLM pre-training maximises Σ log P(next token | previous tokens, θ). Minimising which quantity is equivalent?",
+    "options": [
+      "Σ P(next token | previous tokens, θ), without the log",
+      "Σ log θ, summed over every parameter of the model",
+      "‖θ‖₂, the L2 norm of all the model's weights",
+      "Σ −log P(next token | previous tokens, θ)"
     ],
     "answer": 3,
-    "explanation": "$P(B|A)$ is the likelihood: how likely the evidence is if the hypothesis is true. The posterior is $P(A|B)$."
+    "explanation": "Maximising the log-likelihood is the same as minimising its negative, and −log P(correct token) is the cross-entropy loss. So training an LLM with cross-entropy is maximum likelihood estimation."
   },
   {
-    "q": "Which ML example in the chapter maps prior, evidence, and posterior most directly to class frequency, input features, and predicted class probabilities?",
+    "q": "A model comparison reports p = 0.03. What does that p-value mean?",
     "options": [
-      "Principal component analysis",
-      "Naive Bayes classifier",
-      "Gradient clipping",
-      "Layer normalization"
-    ],
-    "answer": 1,
-    "explanation": "The chapter's Bayes table lists Naive Bayes with prior as class frequency, evidence as features of the new input, and posterior as predicted class probabilities."
-  },
-  {
-    "q": "The CLT says the spread of an average scales as $\\sigma/\\sqrt{N}$. If $\\sigma=12$ and $N=36$, what is the spread?",
-    "options": [
-      "$2$",
-      "$0.33$",
-      "$6$",
-      "$72$"
+      "Data this extreme would occur 3% of the time if the null were true",
+      "There is a 3% chance that the null hypothesis is actually true",
+      "The measured improvement is worth 3% in practical business terms",
+      "Only 3% of the test examples were predicted correctly by the model"
     ],
     "answer": 0,
-    "explanation": "The standard error is $12/\\sqrt{36}=12/6=2$. More samples make the average tighter."
+    "explanation": "A p-value is P(data at least this extreme | H0), computed assuming the null is true. It is not P(H0 | data) — that needs a prior and Bayes' theorem — and it says nothing about how large or important the effect is."
   },
   {
-    "q": "Why does mini-batch gradient descent connect to the Central Limit Theorem in the chapter?",
+    "q": "Model A gets 920/1000 correct and model B 935/1000, on separate random samples. A two-proportion z-test gives z = 1.29 and p = 0.196, with α = 0.05. What is the right conclusion?",
     "options": [
-      "A mini-batch average gradient can approximate the true gradient.",
-      "Each individual gradient must follow a Gaussian distribution exactly.",
-      "The model weights become normally distributed after every update.",
-      "The loss surface becomes convex when batch size is large."
-    ],
-    "answer": 0,
-    "explanation": "The chapter lists mini-batch gradients as a CLT use: averaging gradients over a batch gives an estimate of the true gradient. The original per-example gradient distribution need not be Gaussian."
-  },
-  {
-    "q": "MLE for a coin that produced $8$ heads in $10$ flips would choose which $p$?",
-    "options": [
-      "$0.2$",
-      "$0.5$",
-      "$0.8$",
-      "$1.0$"
+      "Model B is proven to be the better model",
+      "The 1.5-point gain is statistically significant",
+      "Not enough evidence: the gain could be noise",
+      "The null hypothesis has a 19.6% chance of being true"
     ],
     "answer": 2,
-    "explanation": "MLE picks the parameter that makes observed data most likely. For Bernoulli trials, the MLE is the observed success fraction, $8/10=0.8$."
+    "explanation": "0.196 > 0.05, so the gap is not significant: its 95% interval, −0.8 to +3.8 points, includes 0. That means 'not proven', not 'no effect' — about 4,700 examples per model would give 80% power, and the same gap on 10,000 each gives p ≈ 0.00004."
   },
   {
-    "q": "The chapter says LLM pre-training with next-word probabilities is equivalent to minimizing what expression?",
+    "q": "In the decomposition expected test error = Bias² + Variance + σ², which term can no model remove?",
     "options": [
-      "$\\sum_i P(x_i)$",
-      "$\\sum_i \\log \\theta_i$",
-      "$\\sum_i \\|w_i\\|_2$",
-      "$\\sum_i -\\log P(\\text{next word}|\\text{previous words},\\theta)$"
-    ],
-    "answer": 3,
-    "explanation": "Maximizing log likelihood is equivalent to minimizing negative log likelihood. The chapter identifies this $-\\log P$ objective with cross-entropy loss."
-  },
-  {
-    "q": "In hypothesis testing, what does a p-value mean according to the chapter?",
-    "options": [
-      "How likely the evidence is if the null hypothesis were true",
-      "The probability that the null hypothesis is true",
-      "The size of the practical business impact",
-      "The fraction of test examples predicted correctly"
-    ],
-    "answer": 0,
-    "explanation": "A p-value is the probability of seeing evidence this extreme under the null. The chapter explicitly warns it is not the probability that the null is true."
-  },
-  {
-    "q": "A model comparison gives $p=0.197$ with threshold $\\alpha=0.05$. What conclusion matches the chapter's example?",
-    "options": [
-      "The smaller model is proven better.",
-      "The improvement is statistically significant.",
-      "There is not enough evidence; the gain could be noise.",
-      "The null hypothesis has probability $19.7\\%$."
-    ],
-    "answer": 2,
-    "explanation": "Because $0.197>0.05$, the result is not statistically significant. This does not prove no effect; it means there is insufficient evidence."
-  },
-  {
-    "q": "Using $E[(y-\\hat f(x))^2]=\\text{Bias}^2+\\text{Var}+\\sigma^2$, which term cannot be eliminated by a better model?",
-    "options": [
-      "Bias squared",
+      "Bias²",
       "Variance",
       "Model capacity",
-      "Irreducible noise $\\sigma^2$"
+      "The label noise σ²"
     ],
     "answer": 3,
-    "explanation": "$\\sigma^2$ is noise in the data-generating process and sets a performance ceiling. Bias and variance can be traded off by model choice and regularization."
+    "explanation": "σ² is randomness in the labels themselves, so it sets the performance floor. Bias and variance are traded off through model size and regularisation. (In the chapter's SGD run the loss never drops below about 0.25 = 0.5², the label-noise variance.)"
   },
   {
-    "q": "Which behavior best signals high variance in the bias-variance trade-off table?",
+    "q": "Which pattern best signals high variance (overfitting)?",
     "options": [
       "High training error and high test error",
       "Low training error but high test error",
-      "Identical train and test error near zero",
-      "High irreducible label noise only"
+      "Equal training and test error near zero",
+      "High label noise and nothing else"
     ],
     "answer": 1,
-    "explanation": "High variance means the model memorizes training noise, so training error can be low while test error remains high. High bias instead underfits both train and test."
+    "explanation": "A high-variance model memorises the noise in its training set, so training error is low while test error stays high. High bias (underfitting) shows high error on both."
   },
   {
-    "q": "Which change generally reduces bias but may raise variance, as described in the chapter?",
+    "q": "You estimate a true value f = 1 from the mean of 5 labels with noise variance σ² = 1. Why can the shrunk estimate 0.833 × mean have lower test error than the unbiased mean?",
     "options": [
-      "Using fewer parameters and stronger regularization",
-      "Increasing model capacity with more parameters or depth",
-      "Adding more dropout to every layer",
-      "Averaging many independent model predictions"
-    ],
-    "answer": 1,
-    "explanation": "More capacity lets the model capture richer patterns, reducing bias. It can also become more sensitive to training noise, increasing variance."
-  },
-  {
-    "q": "A learning rate of $10$ in the chapter's table is most associated with what failure mode?",
-    "options": [
-      "Underflow in the softmax exponentials",
-      "Convergence that is correct but slow",
-      "Immediate sparsity from L1 regularization",
-      "Overshooting, bouncing, or divergence"
+      "Shrinking removes the label noise σ² from the test error",
+      "Unbiased estimators always have the highest possible variance",
+      "Shrinking lowers bias, and lower bias always means lower error",
+      "It adds bias² of 0.028 but cuts variance from 0.200 to 0.139"
     ],
     "answer": 3,
-    "explanation": "The learning-rate table marks very large learning rates as overshooting the valley and possibly diverging. Too-small rates converge slowly."
+    "explanation": "Bias² = (1 − 0.833)² = 0.028 and variance = 0.833² × 1/5 = 0.139, so the total is 0.028 + 0.139 + 1 = 1.167, versus 0 + 0.200 + 1 = 1.200 for the plain mean. A little bias buys a bigger variance cut — the case for regularisation in one line. The noise term σ² never moves."
   },
   {
-    "q": "If momentum uses $v_t=0.9v_{t-1}+\\nabla L$ with $v_{t-1}=2$ and current gradient $3$, what is $v_t$?",
+    "q": "Gradient descent on L(θ) = θ², starting at θ = 10, uses learning rate 1.1. What happens?",
     "options": [
-      "$4.8$",
-      "$2.7$",
-      "$3.0$",
-      "$5.0$"
-    ],
-    "answer": 0,
-    "explanation": "$v_t=0.9\\cdot2+3=1.8+3=4.8$. Momentum remembers much of the previous direction while adding the current gradient."
-  },
-  {
-    "q": "In Adam, what do $m_t$ and $v_t$ track?",
-    "options": [
-      "The model mean and validation loss",
-      "First moment and second moment of gradients",
-      "BatchNorm mean and variance at inference",
-      "L1 and L2 penalties on parameters"
-    ],
-    "answer": 1,
-    "explanation": "Adam maintains a running mean gradient $m_t$ and running squared-gradient estimate $v_t$. These support momentum and adaptive per-parameter scaling."
-  },
-  {
-    "q": "Why does Adam use bias correction terms like $1-\\beta^t$?",
-    "options": [
-      "To turn categorical outputs into probabilities",
-      "To force every parameter to have identical learning rate",
-      "To undo initialization-to-zero bias in early moment estimates",
-      "To remove the need for $\\epsilon$ in the denominator"
-    ],
-    "answer": 2,
-    "explanation": "The moment estimates start at zero, so early estimates are biased too small. Dividing by $1-\\beta^t$ corrects this startup bias."
-  },
-  {
-    "q": "What makes AdamW different from vanilla Adam with L2 regularization?",
-    "options": [
-      "AdamW removes the first-moment estimate entirely.",
-      "AdamW normalizes across the mini-batch before each update.",
-      "AdamW uses only SGD steps after warmup finishes.",
-      "AdamW applies weight decay directly to parameters outside the adaptive gradient path."
+      "It lands exactly on the minimum after one step",
+      "It bounces between +10 and −10 forever",
+      "It converges slowly because the step is too small",
+      "Each step multiplies θ by −1.2, so it diverges"
     ],
     "answer": 3,
-    "explanation": "AdamW decouples weight decay from Adam's adaptive denominator by shrinking parameters directly. This gives consistent proportional decay independent of gradient history."
+    "explanation": "The slope is 2θ, so each step multiplies θ by 1 − 2·lr. lr = 1.1 gives −1.2: θ flips sign and grows, reaching about 383 after 20 steps. lr = 0.5 lands exactly (factor 0) and lr = 1.0 bounces forever (factor −1); in general a bowl of curvature h needs lr < 2/h."
   },
   {
-    "q": "For $w=[0.2,-0.4]$, $\\lambda=0.5$, and original loss $1.0$, what is the L1-regularized loss?",
+    "q": "Momentum updates v(t) = 0.9 · v(t−1) + 0.1 · g(t). If v(t−1) = 2 and the current gradient g(t) = 3, what is v(t)?",
     "options": [
-      "$1.30$",
-      "$1.10$",
-      "$1.20$",
-      "$1.60$"
+      "2.1",
+      "4.8",
+      "2.9",
+      "2.7"
     ],
     "answer": 0,
-    "explanation": "The L1 penalty is $0.5(|0.2|+|{-0.4}|)=0.5\\cdot0.6=0.3$. Total loss is $1.0+0.3=1.3$."
+    "explanation": "v = 0.9 · 2 + 0.1 · 3 = 1.8 + 0.3 = 2.1: 90% of the old direction plus 10% of the new gradient. 4.8 comes from PyTorch's form without the 0.1 (v = 0.9v + g), whose velocity is 10× larger and so pairs with a 10× smaller learning rate."
   },
   {
-    "q": "For the same $w=[0.2,-0.4]$, $\\lambda=0.5$, and original loss $1.0$, what is the L2-regularized loss?",
+    "q": "Per weight, what do Adam's two running averages m and v track?",
     "options": [
-      "$1.60$",
-      "$1.30$",
-      "$1.10$",
-      "$1.20$"
-    ],
-    "answer": 2,
-    "explanation": "The L2 penalty is $0.5(0.2^2+(-0.4)^2)=0.5(0.04+0.16)=0.1$. Total loss is $1.1$."
-  },
-  {
-    "q": "Which geometric explanation does the chapter give for L1 producing exact zeros?",
-    "options": [
-      "L1 has a circular constraint with no corners.",
-      "L1 uses Gaussian priors centered away from zero.",
-      "L1's diamond constraint has corners on the axes.",
-      "L1's gradient becomes smaller as weights approach zero."
-    ],
-    "answer": 2,
-    "explanation": "The L1 constraint is diamond-shaped with corners on coordinate axes, where some weights are zero. L2 is smooth like a circle and rarely lands exactly on an axis."
-  },
-  {
-    "q": "BatchNorm and LayerNorm differ mainly in which axis supplies the normalization statistics. Which pairing is correct?",
-    "options": [
-      "BatchNorm: features per sample; LayerNorm: batch per feature",
-      "BatchNorm: batch per feature; LayerNorm: features per sample",
-      "BatchNorm: time steps only; LayerNorm: labels only",
-      "BatchNorm: weights; LayerNorm: gradients"
+      "The weight's mean value and its validation loss",
+      "The mean gradient and the mean squared gradient",
+      "BatchNorm's mean and variance used at inference",
+      "The weight's L1 and L2 penalty terms"
     ],
     "answer": 1,
-    "explanation": "BatchNorm normalizes each feature across the mini-batch, while LayerNorm normalizes each sample across its own feature dimension. This is why LayerNorm works well for transformers."
+    "explanation": "m is the running mean of the gradient (the direction, like momentum) and v the running mean of the squared gradient — an uncentred second moment, so √v is the typical size of the gradient, not its spread. The step lr · m̂ / (√v̂ + ε) moves each weight by about lr, whatever its gradient's scale."
   },
   {
-    "q": "Why can LayerNorm behave the same during training and inference?",
+    "q": "Adam (β1 = 0.9, β2 = 0.999) starts m and v at zero. Without bias correction, how would its very first update compare with the corrected one?",
     "options": [
-      "It uses running averages accumulated from previous batches.",
-      "It depends on the labels rather than activations.",
-      "It computes statistics within each sample, independent of other batch items.",
-      "It removes learnable scale and shift parameters."
-    ],
-    "answer": 2,
-    "explanation": "LayerNorm's mean and variance are computed over the features of a single sample or token. It does not depend on who else is in the mini-batch, unlike BatchNorm."
-  },
-  {
-    "q": "RMSNorm differs from LayerNorm in the chapter because it does what?",
-    "options": [
-      "Drops mean subtraction and normalizes only by root-mean-square",
-      "Normalizes each feature across the mini-batch",
-      "Requires running averages at inference",
-      "Adds dropout before every normalization step"
-    ],
-    "answer": 0,
-    "explanation": "RMSNorm skips the mean-centering step and divides by the root mean square. The chapter notes this reduces compute and is used by models like LLaMA, Gemini, and Mistral."
-  },
-  {
-    "q": "If a language model's entropy is $3$ bits, what is its perplexity using the chapter's formula?",
-    "options": [
-      "$3$",
-      "$6$",
-      "$9$",
-      "$8$"
+      "About 10× too small, since m is only 10% of the first gradient",
+      "Exactly the same, because the two zero starts cancel out",
+      "About 1,000× too small, since v is only 0.1% of the first g²",
+      "About 3× too large: v is 1,000× too small, under a square root"
     ],
     "answer": 3,
-    "explanation": "The chapter states perplexity is $2^{\\text{entropy}}$. Therefore $2^3=8$, meaning roughly eight choices on average."
+    "explanation": "At t = 1, m = 0.1g is 10× too small but v = 0.001g² is 1,000× too small, and v sits under a square root: 0.1 / √0.001 ≈ 3.16× too large. Dividing by 1 − β^t fixes it, so the corrected first step is exactly lr (g = 0.2 gives a step of 0.001). For a steady gradient the uncorrected overshoot peaks near 6.6× around step 12."
   },
   {
-    "q": "For one-hot true label class $2$, what is cross-entropy if the model gives the correct class probability $0.25$?",
+    "q": "What makes AdamW different from Adam with an L2 penalty added to the loss?",
     "options": [
-      "$-\\log(0.75)$",
-      "$\\log(4)$",
-      "$0.25\\log(0.25)$",
-      "$1-0.25$"
+      "AdamW removes the first-moment estimate entirely",
+      "AdamW normalises each mini-batch before every update",
+      "AdamW switches to plain SGD steps after warmup ends",
+      "AdamW shrinks the weights directly, outside the adaptive step"
     ],
-    "answer": 1,
-    "explanation": "For a one-hot label, cross-entropy is $-\\log(Q_{correct})=-\\log(0.25)=\\log(4)$. It only checks the probability assigned to the correct class."
+    "answer": 3,
+    "explanation": "With L2 in the loss, the decay term passes through Adam's denominator, so weights with a large gradient history are barely decayed. AdamW subtracts lr · λ · θ separately — the same proportional shrink for every weight. With lr = 0.001 and λ = 0.1 each weight shrinks 0.01% per step, to about 0.819 of its size after 2,000 steps if nothing pushes back."
   },
   {
-    "q": "Which relationship between cross-entropy, entropy, and KL divergence is given in the chapter?",
+    "q": "Weights w = [0.2, −0.4], λ = 0.5 and a data loss of 1.0. What is the total loss with an L1 penalty λ · Σ|wᵢ|?",
     "options": [
-      "$\\text{Entropy}=\\text{Cross-Entropy}+\\text{KL}$",
-      "$\\text{KL}=\\text{Entropy}+\\text{Cross-Entropy}$",
-      "$\\text{Cross-Entropy}=\\text{Entropy}+\\text{KL}$",
-      "$\\text{Cross-Entropy}=\\text{KL}-\\text{Entropy}$"
+      "1.30",
+      "1.10",
+      "1.20",
+      "1.60"
+    ],
+    "answer": 0,
+    "explanation": "L1 penalty = 0.5 × (0.2 + 0.4) = 0.3, so the total is 1.3. With an L2 penalty λ · Σwᵢ² it would be 0.5 × (0.04 + 0.16) = 0.1, total 1.1 — squaring makes small weights cost far less under L2."
+  },
+  {
+    "q": "With standardised, uncorrelated features and λ = 0.1, the unregularised weights are [0.6, 0.05, −0.3]. What do L1 (λ · Σ|w|) and L2 (λ · Σw²) return?",
+    "options": [
+      "L1: [0.5, 0.042, −0.25]; L2: [0.5, 0, −0.2]",
+      "L1: [0.6, 0, −0.3]; L2: [0.5, 0.042, −0.25]",
+      "L1: [0.5, 0.04, −0.2]; L2: [0.5, 0, −0.25]",
+      "L1: [0.5, 0, −0.2]; L2: [0.5, 0.042, −0.25]"
+    ],
+    "answer": 3,
+    "explanation": "L1 soft-thresholds: subtract λ from each size and stop at 0, so 0.05 (≤ λ) becomes exactly 0 — automatic feature selection. L2 divides every weight by 1 + 2λ = 1.2: everything shrinks and nothing reaches 0."
+  },
+  {
+    "q": "Which geometric picture explains why L1 gives exact zeros and L2 does not?",
+    "options": [
+      "L1's constraint region is a circle with no corners",
+      "L1 uses a Gaussian prior centred away from zero",
+      "L1's diamond has corners sitting on the axes",
+      "L1's pull fades away as weights approach zero"
     ],
     "answer": 2,
-    "explanation": "The chapter states cross-entropy equals true entropy plus KL divergence. Since true entropy is fixed, minimizing cross-entropy also minimizes KL."
+    "explanation": "Growing loss contours usually touch the L1 diamond first at a corner, and the corners lie on the axes, where one weight is exactly 0. L2's circle has no corners, so weights shrink but stay non-zero. A pull that fades near zero (2λw) is L2's; L1 pulls with a constant ±λ. L1 matches a Laplace prior, L2 a Gaussian."
   },
   {
-    "q": "Why does RLHF or DPO use a KL penalty according to the chapter?",
+    "q": "BatchNorm and LayerNorm differ in which numbers supply the mean and variance. Which pairing is correct?",
     "options": [
-      "To make attention masks bidirectional during fine-tuning",
-      "To keep the fine-tuned model close to its original behavior",
+      "BatchNorm: one sample's features; LayerNorm: one feature across the batch",
+      "BatchNorm: one feature across the batch; LayerNorm: one sample's features",
+      "BatchNorm: the time steps only; LayerNorm: the labels only",
+      "BatchNorm: the weights; LayerNorm: the gradients"
+    ],
+    "answer": 1,
+    "explanation": "BatchNorm normalises each feature down the batch column; LayerNorm normalises each sample (token) across its own features. So LayerNorm does not depend on batch-mates and suits variable-length sequences in Transformers."
+  },
+  {
+    "q": "Why does LayerNorm behave identically during training and inference, unlike BatchNorm?",
+    "options": [
+      "It uses running averages accumulated from earlier batches",
+      "It depends on the labels rather than on the activations",
+      "Its statistics come from each sample's own features",
+      "It has no learnable scale or shift parameters at all"
+    ],
+    "answer": 2,
+    "explanation": "LayerNorm's mean and variance come from one sample's features, so nothing depends on who else is in the batch. BatchNorm uses batch statistics in training and running averages at inference, and its batch mean wobbles at small batch sizes (about ±71% of σ at B = 2)."
+  },
+  {
+    "q": "How does RMSNorm differ from LayerNorm?",
+    "options": [
+      "It skips the mean subtraction and divides by the root-mean-square",
+      "It normalises each feature across the mini-batch, not each token",
+      "It needs running averages of the statistics at inference time",
+      "It applies dropout to the input before every normalisation step"
+    ],
+    "answer": 0,
+    "explanation": "RMSNorm computes y = g · x / RMS(x): no centring and no β, so d learned gains instead of 2d. [3.0, 1.5, 2.0] has RMS 2.25 and becomes [1.33, 0.67, 0.89], whose mean is 0.96, not 0. It ignores a rescaling of the input but not a shift, and it is used by Llama, Gemma, Mistral, Qwen and DeepSeek."
+  },
+  {
+    "q": "A language model's average cross-entropy on a test set is 3 bits per token. What is its perplexity?",
+    "options": [
+      "3",
+      "6",
+      "9",
+      "8"
+    ],
+    "answer": 3,
+    "explanation": "Perplexity = 2^(cross-entropy in bits) = e^(cross-entropy in nats), so 2³ = 8: the model is as unsure as if it were picking uniformly among 8 tokens. Compare perplexities only on the same text with the same tokenizer."
+  },
+  {
+    "q": "The true class is class 2 (a one-hot label) and the model gives it probability 0.25. What is the cross-entropy loss?",
+    "options": [
+      "−log(0.75)",
+      "log(4)",
+      "0.25 · log(0.25)",
+      "1 − 0.25"
+    ],
+    "answer": 1,
+    "explanation": "With a one-hot label every other term drops out, leaving −log Q(correct) = −log 0.25 = log 4 ≈ 1.386 nats. Confident mistakes cost the most: probability 0.01 on the right answer costs 4.6 nats."
+  },
+  {
+    "q": "Which relationship links cross-entropy H(P, Q), entropy H(P) and KL divergence?",
+    "options": [
+      "H(P) = H(P, Q) + KL(P‖Q)",
+      "KL(P‖Q) = H(P) + H(P, Q)",
+      "H(P, Q) = H(P) + KL(P‖Q)",
+      "H(P, Q) = KL(P‖Q) − H(P)"
+    ],
+    "answer": 2,
+    "explanation": "Cross-entropy = entropy + KL. The truth's entropy is fixed, so minimising cross-entropy minimises KL. In the chapter's example both models share H(P) = 1.033 nats, and only the KL part (0.006 vs 1.062) separates the good model from the bad one."
+  },
+  {
+    "q": "Why do RLHF (PPO) and DPO include a KL term to a frozen reference model?",
+    "options": [
+      "To make the attention masks bidirectional during fine-tuning",
+      "To keep the tuned model from drifting far from its original behaviour",
       "To replace cross-entropy with ordinary least squares",
       "To compute the determinant of the covariance matrix"
     ],
     "answer": 1,
-    "explanation": "KL divergence measures how far the new distribution has drifted from the reference model. The penalty acts like a leash so helpfulness tuning does not erase prior capabilities."
+    "explanation": "KL measures how far the tuned model has drifted from the reference. PPO adds β · KL(tuned ‖ reference) as a penalty, and DPO builds the same leash into its loss through log-ratios. It keeps helpfulness tuning from erasing what the model already knew."
   },
   {
-    "q": "Which floating-point issue is illustrated by $e^{1000}=\\infty$?",
+    "q": "In float64, computing e^1000 returns infinity. Which floating-point problem is this?",
     "options": [
       "Cancellation",
       "Underflow",
       "Overflow",
-      "Quantization-aware training"
+      "Absorption"
     ],
     "answer": 2,
-    "explanation": "Overflow occurs when a number is too large to represent, producing infinity. Underflow is the opposite problem for tiny values such as $e^{-1000}$."
+    "explanation": "Overflow: the true value is too big to represent (float64 tops out near e^709.8). Underflow is the opposite (e^−1000 becomes 0); absorption is a small number vanishing when added to a big one; cancellation is precision lost when subtracting nearly equal numbers."
   },
   {
-    "q": "The log-sum-exp trick makes softmax stable by doing which operation first?",
+    "q": "The log-sum-exp trick makes softmax numerically stable by doing what first?",
     "options": [
       "Dividing every logit by the vocabulary size",
-      "Subtracting the maximum logit from every logit",
-      "Squaring all logits before exponentiation",
-      "Clipping all probabilities after softmax"
+      "Subtracting the largest logit from every logit",
+      "Squaring the logits before exponentiating them",
+      "Clipping the probabilities after the softmax"
     ],
     "answer": 1,
-    "explanation": "Subtracting the maximum preserves softmax probabilities but turns huge exponentials into safe smaller ones. The chapter's example changes $[1000,1001,1002]$ to $[-2,-1,0]$."
+    "explanation": "e^(x − m) = e^x · e^(−m), and the e^(−m) cancels between top and bottom, so the result is unchanged. softmax([1000, 1001, 1002]) becomes softmax([−2, −1, 0]) = [0.090, 0.245, 0.665]: every exponent is ≤ 0, so nothing overflows, and the largest term is e⁰ = 1, so the sum cannot underflow."
   },
   {
-    "q": "What is $\\operatorname{softmax}([1000,1001,1002])$ after subtracting the max, as shown in the chapter?",
+    "q": "Logits [2, 1, 0] give the top token 0.665 at temperature T = 1. What happens at T = 0.5 and at T = 2?",
     "options": [
-      "$[0.665,0.245,0.090]$",
-      "$[0.333,0.333,0.333]$",
-      "$[0.090,0.245,0.665]$",
-      "$[0,0,1]$"
+      "T = 0.5: top token 0.867, sharper; T = 2: 0.506, flatter",
+      "T = 0.5: top token 0.506, flatter; T = 2: 0.867, sharper",
+      "Both stay at 0.665; temperature only reorders the tokens",
+      "T = 0.5 makes the last token most likely; T = 2 the first"
     ],
-    "answer": 2,
-    "explanation": "Subtracting $1002$ gives $[-2,-1,0]$, whose softmax the chapter lists as approximately $[0.090,0.245,0.665]$. The largest original logit still gets the largest probability."
+    "answer": 0,
+    "explanation": "Softmax(z / T) multiplies every gap between scores by 1/T. T = 0.5 sharpens to [0.867, 0.117, 0.016] (entropy 0.636 bits); T = 2 flattens to [0.506, 0.307, 0.186] (1.472 bits). The ranking never changes, so greedy decoding picks the same token at any T > 0."
   },
   {
-    "q": "In mixed precision training, why keep master weights in FP32?",
+    "q": "A weight of 1.0 receives an update of 0.0001. In BF16 the gap between 1 and the next representable number is about 0.0078. What happens, and how does mixed precision handle it?",
     "options": [
-      "Because FP32 is always faster than FP16 on modern GPUs",
-      "Because FP16 cannot represent any negative gradients",
-      "Because softmax requires integer-valued logits",
-      "Because updates need a precise copy while forward/backward can use faster low precision"
+      "The update is rounded away; keep FP32 master weights for updates",
+      "The update is stored exactly, since BF16 matches FP32's precision",
+      "The weight overflows to infinity, so switch the run to FP16",
+      "The update is doubled, so apply loss scaling to shrink it back"
     ],
-    "answer": 3,
-    "explanation": "The chapter describes using FP16/BF16 for speed while maintaining FP32 master weights for accurate updates. This combines low-precision throughput with high-precision stability."
+    "answer": 0,
+    "explanation": "0.0001 is far below half the gap after 1, so 1 + 0.0001 rounds back to 1 (absorption) — in FP16 too, whose gap is 0.000977. Mixed precision runs the matrix maths in BF16 or FP16 but applies every update to an FP32 master copy (gap 1.2e-7), where it survives."
   },
   {
-    "q": "Which format does the chapter associate with about three decimal digits and a bigger range, commonly used for LLM training?",
+    "q": "Which 16-bit format keeps FP32's 8 exponent bits — and so FP32's range — at the cost of coarser rounding, and is the training default on TPUs and A100-or-newer GPUs?",
     "options": [
-      "FP32",
+      "FP16",
       "BF16",
-      "FP8",
-      "INT4"
+      "FP8 E4M3",
+      "FP4 E2M1"
     ],
     "answer": 1,
-    "explanation": "The floating-point table lists BF16 as about three digits with a bigger range and notes it is used for LLM training. FP16 is also about three digits but has less range."
+    "explanation": "BF16 (1 sign, 8 exponent, 7 mantissa bits) matches FP32's range, so it almost never overflows and needs no loss scaling, but it keeps only 2–3 decimal digits. FP16 (5 exponent, 10 mantissa bits) is more precise but overflows above 65,504 and flushes tiny gradients to zero."
   }
 ]

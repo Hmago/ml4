@@ -454,10 +454,10 @@ Read it like an engineer: the top five are within about 7 points, three of them 
 |---|---|---|
 | **Claude Code** (Anthropic) | Terminal agent, plus desktop and web apps | Long multi-file changes, agentic loops |
 | **Codex** (OpenAI) | CLI, IDE extension, cloud tasks, desktop app | GPT-6-native workflows |
-| **Cursor** (Anysphere) | AI-native IDE (a VS Code fork) | Inline edits, codebase-aware chat, agent mode across vendors' models |
+| **Cursor** (SpaceX; Anysphere until Aug 2026) | AI-native IDE (a VS Code fork) | Inline edits, codebase-aware chat, agent mode across vendors' models |
 | **GitHub Copilot** | IDE extension + a cloud coding agent that opens pull requests | Broad enterprise rollout, several vendors' models |
-| **Antigravity · Gemini CLI · Jules** (Google) | Agent-first IDE · terminal agent · async cloud agent | Gemini-native workflows |
-| **Devin · Windsurf** (Cognition) | Async cloud agent · IDE (Windsurf joined Cognition in 2025) | Delegated tickets |
+| **Antigravity 2.0 · Antigravity CLI** (Google) | Agent-first IDE and agent manager · terminal agent (replaced Gemini CLI for individual accounts in Jun 2026; the Jules cloud agent closes on 31 Dec 2026) | Gemini-native workflows |
+| **Devin · Devin Desktop** (Cognition) | Async cloud agent · IDE (formerly Windsurf, renamed Jun 2026) | Delegated tickets |
 | **Kiro** (AWS) · **Grok Build** (SpaceXSI) | Spec-driven IDE · terminal agent | AWS-centred and Grok-native work |
 
 The trend: coding split into **interactive copilots** (tight feedback loops in the editor) and **delegated agents** (hand over a ticket, review the pull request). Both keep a human in the review loop — the moment trust breaks, productivity collapses ([Ch 18b §18.13](#content/18b_agents_in_production)).

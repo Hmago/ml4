@@ -1476,7 +1476,7 @@ The shape: the best open models trail the best closed ones by **about 4 months**
 
 **Why to be careful**: contamination and broken tests, plus harness effects — on ARC-AGI-3 GPT-6 Astra reached 99.9% with a harness that keeps its reasoning state between steps, far above its score at the same effort in the standard harness.
 
-**Dev-tool landscape**: Claude Code (terminal agent + apps), Codex (OpenAI: CLI, IDE, cloud), Cursor (AI-native IDE), GitHub Copilot (IDE + a cloud agent that opens PRs), Google's Antigravity / Gemini CLI / Jules, Devin and Windsurf (Cognition), Kiro (AWS).
+**Dev-tool landscape**: Claude Code (terminal agent + apps), Codex (OpenAI: CLI, IDE, cloud), Cursor (AI-native IDE; part of SpaceX since Aug 2026), GitHub Copilot (IDE + a cloud agent that opens PRs), Google's Antigravity 2.0 / Antigravity CLI (Gemini CLI's successor for individuals), Devin and Devin Desktop (Cognition; formerly Windsurf), Kiro (AWS).
 
 Trend: coding split into **interactive copilots** (tight feedback) and **delegated agents** (hand over a ticket, review the PR). Both keep a human in the review loop.
 

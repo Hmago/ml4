@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~359 hours of content · 415+ DSA problems │
+  │  50 chapters · ~386 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -30,22 +30,22 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 01 | Google AI Engineer — Strategy Guide | ★★★ | [01_google_ai_engineer_strategy.md](content/01_google_ai_engineer_strategy.md) | ~2.25 hrs | All Levels |
-| 02 | Behavioral Interview (Googleyness & Leadership) | ★★★ | [02_behavioral_interview.md](content/02_behavioral_interview.md) | ~2.5 hrs | All Levels |
-| 03 | Staying Relevant in the AI Era | ★ | [03_staying_relevant_ai_era.md](content/03_staying_relevant_ai_era.md) | ~1.5 hrs | All Levels |
+| 02 | Behavioral Interview (Googleyness & Leadership) | ★★★ | [02_behavioral_interview.md](content/02_behavioral_interview.md) | ~7.75 hrs (~4 hrs fast path) | All Levels |
+| 03 | Staying Relevant in the AI Era | ★ | [03_staying_relevant_ai_era.md](content/03_staying_relevant_ai_era.md) | ~6.25 hrs (~3 hrs fast path) | All Levels |
 
 ### Aptitude & Brain Training
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 04 | Aptitude & Mental Math for Engineers | ★ | [04_aptitude_mental_math.md](content/04_aptitude_mental_math.md) | ~6 hrs | All Levels |
-| 05 | Brain Training — Memory, Focus & IQ | | [05_brain_training.md](content/05_brain_training.md) | ~2.5 hrs | All Levels |
-| 05B | Build a Sharper, Younger Brain (Complete Program) | | [05b_brain_upgrade_30_days.md](content/05b_brain_upgrade_30_days.md) | ~1.75 hrs | All Levels |
+| 05 | Brain Training — Memory, Focus & Effective Learning | | [05_brain_training.md](content/05_brain_training.md) | ~6.75 hrs (~3.5 hrs fast path) | All Levels |
+| 05B | Build a Sharper, Younger Brain (Complete Program) | | [05b_brain_upgrade_30_days.md](content/05b_brain_upgrade_30_days.md) | ~3.5 hrs | All Levels |
 
 ### Math Foundations
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 06 | Math Fundamentals for ML & AI | ★★ | [06_math_fundamentals.md](content/06_math_fundamentals.md) | ~5.25 hrs | Beginner |
+| 06 | Math Fundamentals for ML & AI | ★★ | [06_math_fundamentals.md](content/06_math_fundamentals.md) | ~16.5 hrs (~6.75 hrs fast path) | Beginner |
 
 ### Core ML Curriculum
 
@@ -165,7 +165,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~359 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~386 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

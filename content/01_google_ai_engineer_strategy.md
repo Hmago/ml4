@@ -105,7 +105,7 @@ flowchart LR
 
 Non-technical. Your background, interest in Google, current projects. In 2026, recruiters specifically check for **ML production experience**, not just algorithm knowledge.
 
-Have a tight 2-minute pitch ready: who you are, what ML systems you have built, why Google.
+Have a tight 30–60 second pitch ready: who you are, what ML systems you have built, why Google.
 
 ### Technical Phone Screen (45-60 min)
 
@@ -129,7 +129,7 @@ After the loop, interviewers submit detailed scorecards. A committee of senior e
 
 ### Team Matching
 
-Once the committee approves, you enter team matching. You will have 1-3 calls with potential teams (DeepMind, Search, Ads, etc.). This is mutual — you are also interviewing them.
+Team matching usually follows committee approval, though in 2026 candidates report it can also run before or alongside the committee ([Ch 2 §1.3](#content/02_behavioral_interview)). You will have 1-3 calls with potential teams (DeepMind, Search, Ads, etc.). This is mutual — you are also interviewing them.
 
 ### Timeline
 
@@ -540,7 +540,7 @@ This round is not optional filler. Google's hiring committee weighs "Googleyness
 
 ### The STAR Method
 
-Every behavioral answer must follow STAR format. Interviewers are trained to listen for these four components.
+Tell every story-based behavioral answer in STAR order. It gives the interviewer the context, your role, your actions and the result they need to write down and score (Chapter 2, Part 5).
 
 ```
   ┌──────────────────────────────────────────────────────────────┐
@@ -554,10 +554,10 @@ Every behavioral answer must follow STAR format. Interviewers are trained to lis
   │ 2-3 sen- │ role.    │ not "we." This is    │ what you        │
   │ tences.  │          │ the LONGEST part.    │ learned.        │
   ├──────────┼──────────┼──────────────────────┼─────────────────┤
-  │ ~30 sec  │ ~15 sec  │ ~90 sec              │ ~30 sec         │
+  │ ~15 sec  │ ~10 sec  │ ~70 sec (~60%)       │ ~25 sec         │
   └──────────┴──────────┴──────────────────────┴─────────────────┘
 
-  Total: 2-3 minutes. Most candidates spend too long on S and T,
+  Total: about 2 minutes; stop by 3. Most candidates spend too long on S and T,
   then rush A and R. The ACTION is what Google evaluates.
 ```
 
@@ -954,7 +954,7 @@ Key point: RSUs dominate compensation at L5+. A strong RSU negotiation matters f
 ║  ML DEPTH & BEHAVIORAL                                             ║
 ║  • Depth tests reasoning, not recall — "here's how I'd reason".  ║
 ║  • Behavioral = Googleyness + Leadership; prepare 8 STAR stories.║
-║  • STAR: ~50% on Action; every result needs numbers.            ║
+║  • STAR: ~60% on Action; every result needs numbers.            ║
 ║                                                                    ║
 ║  OFFER & COMMON MISTAKES                                           ║
 ║  • RSUs dominate comp at L5+; negotiate equity, get competing    ║

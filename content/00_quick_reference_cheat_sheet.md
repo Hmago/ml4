@@ -888,36 +888,35 @@ gamma = discount factor (0-1)
 
 ## 17 — Behavioral Interview
 
-### STAR Method (Aim for 2.5 minutes per answer)
+### STAR Method (Aim for about 2 minutes per answer; stop by 3)
 
 ```
-S (Situation)  20% (~30s)   Context. When, where, what was happening.
-T (Task)       10% (~15s)   YOUR specific responsibility.
-A (Action)     50% (~90s)   What YOU did. Decisions, alternatives, tradeoffs. [THE MEAT]
-R (Result)     20% (~30s)   Outcome with NUMBERS. Lessons learned.
+S (Situation)  ~10% (~15s)  Context. When, where, what was happening.
+T (Task)       ~10% (~10s)  YOUR specific responsibility.
+A (Action)     ~60% (~70s)  What YOU did. Decisions, alternatives, tradeoffs. [THE MEAT]
+R (Result)     ~20% (~25s)  Outcome with NUMBERS. Lessons learned.
 ```
 
-### Google's 4 Evaluation Dimensions
+### Google's 4 Hiring Attributes
 
-| Dimension | What They Evaluate | Weight |
-|-----------|--------------------|--------|
-| General Cognitive Ability | Problem-solving, learning, structured thinking | ~25% |
-| Leadership | Ownership, influence without authority, growing others | ~25% |
-| Role-Related Knowledge | Technical depth, domain expertise | ~25% |
-| Googleyness | Collaboration, humility, user focus, ambiguity tolerance | ~25% |
+| Attribute | What They Evaluate | Mainly scored in |
+|-----------|--------------------|------------------|
+| General Cognitive Ability | Problem-solving, learning, structured thinking | Coding, ML depth, system design |
+| Leadership | Ownership, influence without authority, growing others | Googleyness & Leadership round |
+| Role-Related Knowledge | Technical depth, domain expertise | Coding, ML depth, system design |
+| Googleyness | Collaboration, humility, user focus, ambiguity tolerance | Googleyness & Leadership round |
 
-**Need 3.5+ average to pass. Behavioral is ~50% of your total evaluation!**
+**No public pass mark and no published weighting: the hiring committee weighs the written evidence from every round (Chapter 2, §1.2).**
 
-### 7 Traits of Googleyness
+### 6 Googleyness Signals
 
 ```
-1. Intellectual Humility   -> "I was wrong, here's what I learned"
-2. Comfort with Ambiguity  -> "Requirements unclear, so I ran experiments"
-3. Bias to Action          -> "Prototyped over the weekend, it worked"
-4. Collaboration           -> "Paired with them, they ended up owning it"
-5. User Focus              -> "User testing showed X, so we prioritized that"
-6. Ethical Awareness        -> "Found bias in model, added fairness metrics"
-7. Growth Mindset          -> "Got feedback to improve X, here's how I did"
+1. Thrives in ambiguity        -> "Requirements unclear, so I ran experiments"
+2. Values feedback             -> "I was wrong; here's what I changed"
+3. Challenges the status quo   -> "Prototyped a fix in two days; the team adopted it"
+4. Puts the user first         -> "User testing showed X, so we prioritized that"
+5. Does the right thing        -> "Found bias in the model, added fairness metrics"
+6. Cares about the team        -> "Paired with them; they ended up owning it"
 ```
 
 ### 8 Stories You Need (Story Bank)
@@ -933,7 +932,7 @@ R (Result)     20% (~30s)   Outcome with NUMBERS. Lessons learned.
 8. Improved a process/system       -> Challenging status quo, impact
 ```
 
-### Red Flags (Instant Rejection)
+### Red Flags (What Sinks an Answer)
 
 - Blaming others, no ownership: "It wasn't my fault"
 - No specifics: vague stories without numbers

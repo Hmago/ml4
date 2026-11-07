@@ -1,112 +1,112 @@
 [
   {
-    "q": "A learner asks which single change has the strongest, most direct evidence for a sharper, slower-aging brain. Which pillar does the chapter rank first?",
+    "q": "A learner asks which habit the chapter ranks first among its seven pillars for a sharper, slower-aging brain. Which is it?",
     "options": [
-      "Taking a daily multivitamin and fish-oil capsule",
+      "Taking a daily multivitamin and a fish-oil capsule",
       "Regular aerobic exercise, like a brisk daily walk",
       "Playing timed brain-training puzzle apps each day",
-      "Pulling occasional all-nighters to study longer"
+      "Pulling occasional all-nighters to study for longer"
     ],
     "answer": 1,
-    "explanation": "Aerobic exercise has the strongest evidence: a one-year trial grew the hippocampus about 2% and improved memory (Erickson et al., 2011), and it raises BDNF. The chapter's one-thing advice is a brisk 30-minute walk most days."
+    "explanation": "Move is pillar 1, tagged strong evidence with the highest payoff: an umbrella review of 2,724 RCTs found general cognition +0.42 (Singh et al., 2025), and exercise raises BDNF. Erickson et al. (2011) grew the front of the hippocampus about 2% in a year, though pooled trials suggest exercise mainly prevents shrinkage (Firth et al., 2018). If you do one thing: a brisk 30-minute walk most days."
   },
   {
-    "q": "Mechanistically, why is aerobic exercise so good for the brain?",
+    "q": "The 2024 Lancet Commission says about 45 percent of dementia cases are potentially preventable or delayable. How should a reader interpret that figure?",
     "options": [
-      "It raises BDNF, growing new neurons in the hippocampus",
-      "It permanently clears all cortisol from the body forever",
-      "It converts brain neurons into faster-firing muscle cells",
-      "It benefits only the developing brains of young children"
+      "A population estimate across 14 modifiable risk factors, led by hearing loss and LDL",
+      "A personal guarantee that following all seven pillars cuts your own risk by that much",
+      "The share of cases caused by vitamin deficiencies that supplements can fully reverse",
+      "The result of a 20-year randomized trial of brain-training apps in older adults"
     ],
     "answer": 0,
-    "explanation": "Exercise increases BDNF, nicknamed 'Miracle-Gro for the brain', which supports growth and maintenance of neurons and their connections (Cotman & Berchtold, 2002) — a key reason movement improves memory."
+    "explanation": "Livingston et al. (2024) attribute about 45% of dementia worldwide to 14 modifiable factors; it is a population estimate of what might be prevented or delayed if every factor were removed, not a personal guarantee. Hearing loss and high LDL cholesterol lead at 7% each, and LDL and untreated vision loss were new in 2024. Fixing a real risk factor such as blood pressure, hearing or smoking is a bigger lever than any pill."
   },
   {
-    "q": "Which eating pattern does the chapter recommend for a 'younger' brain?",
+    "q": "Observational studies linked the MIND diet to a brain about 7.5 years 'younger'. What did the 3-year randomized trial (Barnes et al., NEJM 2023) find?",
     "options": [
-      "A high-sugar diet, to keep quick brain fuel on hand",
-      "Mostly fried and packaged food, chosen for convenience",
-      "The MIND diet: greens, berries, fish, nuts, olive oil",
-      "Energy drinks paired with skipped meals through the day"
+      "It confirmed the 7.5-year gain, so the diet now counts as a proven brain treatment",
+      "It found harm to memory, so the chapter now advises cutting out fish and nuts",
+      "No significant difference vs a control diet; eat this way for heart health",
+      "It helped only the people who also took fish-oil capsules every single day"
     ],
     "answer": 2,
-    "explanation": "The MIND diet tracked with much slower decline — about 7.5 years younger at high adherence (Morris et al., 2015). Leafy greens and berries stand out (Morris 2018; Devore 2012), while ultra-processed food tracks with faster decline (Gomes Goncalves 2023)."
+    "explanation": "Morris et al. (2015) was observational. In the NEJM trial, 604 adults aged 65+ on the MIND diet did no better in cognition or brain MRI than a control diet with the same mild calorie cut (difference 0.035 units, P = 0.23); both groups improved. The chapter rates 'brain foods' as mixed evidence but heart and blood-vessel health as strong, since high blood pressure, diabetes, obesity and high LDL are Lancet risk factors."
   },
   {
-    "q": "The chapter links '3 p.m. brain fog' partly to blood sugar. What fix does it give?",
+    "q": "A 55-year-old vegan who takes metformin wants a 'memory supplement'. Which step matches Pillar 7's guidance?",
     "options": [
-      "Eat extra candy so your blood sugar can never dip at all",
-      "Drink much less water so the brain can concentrate more",
-      "Cut every last carbohydrate out of your daily diet permanently",
-      "Favour whole foods with fibre and protein for steady fuel"
+      "Start ginkgo biloba, since it is the best-proven memory supplement after 50",
+      "Take extra vitamin B12 anyway, since it sharpens memory even without a deficiency",
+      "Buy a nootropic stack, since 'natural' brain products have no drug interactions",
+      "Ask a doctor for a B12 test: age over 50, a vegan diet and metformin are all flags"
     ],
     "answer": 3,
-    "explanation": "Refined carbs spike blood sugar then crash it, causing fog; whole foods release fuel slowly for steady focus. Mild dehydration also causes fog (Ganio et al., 2011), so keep water within reach."
+    "explanation": "Tier 1 is about fixing a real gap. Being over 50, vegan, or on metformin or acid reducers are each reasons to ask for a B12 test (NIH ODS); deficiency causes fatigue, confusion and poor memory, but B12 did not improve cognition in people who were not deficient (16 trials; Markun et al., 2021). Talk to a doctor or pharmacist before starting any supplement. Ginkgo failed in the GEM trial (Tier 4), and 'natural' does not mean interaction-free."
   },
   {
-    "q": "Beyond filing away memories, what makes losing sleep especially costly for the brain?",
+    "q": "What does Pillar 3 say about sleep 'power-washing' waste such as amyloid-beta out of the brain?",
     "options": [
-      "Sleep power-washes waste like amyloid-beta from the brain",
-      "Sleep permanently erases all of the previous day's skills",
-      "Sleep prevents neurons from ever firing signals again",
-      "Sleep rests the muscles but does nothing for the brain"
+      "Clear in mice and hinted at in small human studies, but still debated",
+      "Proven in large human trials to be sleep's main job, well ahead of memory",
+      "Disproved, so sleep matters for physical rest but not for the brain",
+      "It happens only during short daytime naps of under twenty minutes"
     ],
     "answer": 0,
-    "explanation": "During sleep the glymphatic system clears metabolic waste, including the amyloid-beta protein tied to Alzheimer's, far faster than while awake (Xie et al., 2013, Science). Sleep both consolidates memory and cleans the brain."
+    "explanation": "Xie et al. (2013) found sleep widened the space between brain cells by about 60% and sped amyloid-beta clearance in mice; in humans, one night of total sleep loss raised hippocampal amyloid-beta (Shokri-Kojori et al., 2018, 20 people). But a 2024 mouse study found less clearance during sleep (Miao et al.), so the chapter says 'probably'. The firm benefit is memory consolidation."
   },
   {
-    "q": "Which sleep habit does the chapter call the strongest anchor for your body clock?",
+    "q": "Which sleep habit does the chapter treat as the anchor for your body clock?",
     "options": [
-      "Varying your schedule based on how tired you happen to feel",
+      "Varying your schedule based on how tired you happen to feel each day",
       "Sleeping in very late on weekends to fully catch up on rest",
-      "A fixed daily wake time, paired with morning daylight",
+      "A fixed daily wake time, paired with bright morning daylight",
       "A strong alcoholic nightcap to fall asleep more quickly"
     ],
     "answer": 2,
-    "explanation": "A consistent wake time (even on weekends) plus morning light anchors the circadian clock more than bedtime does. Alcohol may speed sleep onset but suppresses REM and worsens overall sleep quality."
+    "explanation": "The protocol says a fixed wake time, 7 days a week, anchors your body clock, and bright morning daylight sets it strongly; a regular schedule even predicted mortality better than sleep length did (Windred et al., 2024). Rule of thumb: 7+ hours, the same wake time every day, and the last coffee about 9 hours before bed. Alcohol helps you fall asleep but fragments the second half of the night and suppresses REM."
   },
   {
-    "q": "A learner wants to begin their upgrade with supplements. What is the chapter's guidance?",
+    "q": "A learner wants to begin their brain upgrade with supplements. What is the chapter's guidance?",
     "options": [
-      "Buy the most expensive nootropic stack and take it first thing",
-      "Fix diet, sleep and exercise first; only a few pills help",
-      "Rely on ginkgo biloba, which reliably prevents dementia",
-      "Assume any 'natural' pill is safe with no interactions"
+      "Buy the most expensive nootropic stack and take it first thing every morning",
+      "Lifestyle first; fix only a real gap, after asking a doctor or pharmacist",
+      "Start with ginkgo biloba, since a large trial showed that it prevents dementia",
+      "Choose 'natural' pills, since natural products are safe and have no interactions"
     ],
     "answer": 1,
-    "explanation": "Supplements are the last, smallest pillar: food first, and test before you guess. A large trial found ginkgo did NOT prevent dementia (DeKosky 2008); creatine and correcting real deficiencies (D, B12) have better evidence. Check with a clinician."
+    "explanation": "Pillar 7 is deliberately the last and smallest: food, sleep and exercise first, don't guess, and talk to a doctor or pharmacist before starting any supplement, especially if pregnant, breastfeeding, on medication or managing a health condition. 'Natural' does not mean safe, so check the interactions table first. The GEM trial (3,069 adults aged 75+, median 6.1 years) found ginkgo did not lower dementia (DeKosky et al., 2008), placing it in Tier 4."
   },
   {
     "q": "Why does the chapter include managing chronic stress as a form of brain protection?",
     "options": [
       "Stress has no measurable effect on the human brain at all",
-      "Cortisol is needed for memory, so more stress is always good",
+      "Cortisol is needed for memory, so more stress is always better",
       "Only a physical head injury can ever affect the hippocampus",
-      "Chronic cortisol can shrink the hippocampus over time"
+      "Chronic stress hormones wear on the memory and focus centres"
     ],
     "answer": 3,
-    "explanation": "Prolonged stress and high cortisol can atrophy the hippocampus and impair the prefrontal cortex (Lupien et al., 2009) — the very regions you are trying to sharpen. Mindfulness and slow breathing help (Mrazek 2013; Balban 2023)."
+    "explanation": "Long-term exposure to glucocorticoids such as cortisol affects the hippocampus (memory) and prefrontal cortex (focus and self-control) (Lupien, McEwen et al., 2009); short bursts are fine. Calming helps modestly: group mindfulness courses cut distress by SMD -0.32 (Galante et al., 2023) and breathwork cut stress by g = -0.35 (Fincham et al., 2023). If stress becomes weeks of anxiety or low mood, see a professional."
   },
   {
-    "q": "To build 'cognitive reserve' and stay sharp with age, which activity does the chapter favour?",
+    "q": "To build 'cognitive reserve' and stay sharp with age, which activity has the best trial evidence in the chapter?",
     "options": [
       "Repeating easy tasks that you have already fully mastered",
-      "Learning a hard new skill, plus social ties and purpose",
+      "Learning a hard new skill, alongside social ties and purpose",
       "Isolating yourself from other people to avoid distraction",
       "Passive television and scrolling for several hours a day"
     ],
     "answer": 1,
-    "explanation": "Rich intellectual, social and physical engagement builds reserve (Stern, 2012). Learning demanding new skills improved memory in older adults (Park et al., 2014), and a sense of purpose predicts slower decline (Boyle et al., 2010)."
+    "explanation": "Rich intellectual, social and physical engagement builds cognitive reserve (Stern, 2012). The best trial evidence is for demanding new skills: older adults learning digital photography or quilting (about 16.5 hours a week for 3 months) improved episodic memory while a social-only group did not (Park et al., 2014). Purpose and social ties are linked to lower risk (Boyle et al., 2010; Holt-Lunstad et al., 2010), but those links are observational; social isolation is one of the 14 Lancet risk factors."
   },
   {
     "q": "Which statement matches the chapter's honest expectation-setting about results?",
     "options": [
       "A validated IQ can reliably be raised 15 points in two weeks",
-      "Brain-training games broadly raise general intelligence too",
-      "No quick IQ jump, but a tuned brain that ages more slowly",
+      "Brain-training games broadly raise general intelligence as well",
+      "No quick IQ jump, but a tuned brain and lower risk of decline",
       "Every benefit is instant and permanent after one session"
     ],
     "answer": 2,
-    "explanation": "Fluid IQ is largely stable and brain games don't transfer to general intelligence (Owen 2010; Melby-Lervag & Hulme 2013). The real, compounding payoff is a fully-tuned brain, faster learning of specific skills, and years-slower aging (the Erickson trial ran a full year)."
+    "explanation": "Adult IQ relative to your age group is very stable, schooling is the best-proven lever (about 1-5 points per extra year), and brain games don't transfer to general intelligence (Owen et al., 2010; Simons et al., 2016). What you can do: run your brain at its true ceiling, sharpen the skills you practise and lower your risk of decline. Effects are real but small: US POINTER's structured program added only 0.029 SD a year over a self-guided one (Baker et al., 2025)."
   }
 ]
