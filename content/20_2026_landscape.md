@@ -55,7 +55,7 @@ By the end of this chapter you'll be able to:
 
 > **Frontier model**: a generally-capable foundation model at or near the state of the art on the standard benchmarks (reasoning, coding, maths, multimodal). Built by a small set of labs with the compute and talent to push the curve.
 
-![Infographic of the Nov 2026 frontier lineup: a 3 x 3 grid of OpenAI, Anthropic and Google models by tier with USD per 1M token prices (GPT-6 Astra 10 in, 50 out; GPT-6 Luna 0.10 in, 0.50 out, a 100x gap), the cost-per-call formula, who leads which benchmark, and when to use each tier](diagrams/land20_info_frontier_lineup_ai.png)
+![Infographic of the Nov 2026 frontier lineup: a 3 x 3 grid of OpenAI, Anthropic and Google models by tier with USD per 1M token prices (GPT-6 Astra 10 in, 50 out; Claude Fable 5.2, Anthropic's top tier since 9 Nov 2026, 8 in, 40 out; GPT-6 Luna 0.10 in, 0.50 out, a 100x gap from Astra), the cost-per-call formula, who leads which benchmark (Terminal-Bench 4.1: Claude Opus 5.5; ARC-AGI-3: GPT-6 Astra; Arena and the AA Index: Gemini 4 Carbon), and when to use each tier](diagrams/land20_info_frontier_lineup_ai.png)
 
 <details>
 <summary><strong>Read as text</strong> — three trims per lab, the cost formula and the lineup at a glance</summary>
@@ -113,7 +113,7 @@ Notes on the snapshot: OpenAI's standard rates apply to prompts under 272K token
 
 | Pattern | Evidence, Nov 2026 |
 |---|---|
-| **No single winner** — each lab leads somewhere | Terminal-Bench 4.0: Claude Opus 5.5 first; ARC-AGI-3: GPT-6 Astra first; Arena text and the Artificial Analysis index v5.0: Gemini 4 Carbon first (§20.13) |
+| **No single winner** — each lab leads somewhere | Terminal-Bench 4.1: Claude Opus 5.5 first; ARC-AGI-3: GPT-6 Astra first; Arena text and the Artificial Analysis index v5.0: Gemini 4 Carbon first (§20.13) |
 | **Price spread is inside each lab** | OpenAI's top tier is 100× its cheap tier on input; the three labs' workhorses are within about 5× of each other |
 | **Context has converged** | ~1M tokens on almost every frontier API model (Grok 4.7: 500K) — [§20.9](#content/20_2026_landscape) |
 | **Reasoning is a dial, not a product** | Every model above takes a reasoning-effort setting (§20.2) |
@@ -418,7 +418,7 @@ When to pick **closed-weight**: top-end agent reliability, the newest reasoning 
 | Aug 2024 | **SWE-bench Verified**: 500 human-checked tasks; the best system scored about 33% at launch |
 | Feb 2026 | OpenAI **stopped reporting Verified**: at least 59% of the hard tasks it audited had flawed tests, and every frontier model it tried could reproduce some gold patches from memory (contamination). State of the art had crept only from 74.9% to 80.9% in six months. It recommended **SWE-bench Pro** |
 | Jul 2026 | OpenAI audited SWE-bench Pro's 731 public tasks (frontier scores had jumped from 23.3% to 80.3% in eight months), estimated **~30% of tasks are broken**, and **retracted** its recommendation |
-| Nov 2026 | Vendors report **Terminal-Bench 4.0** plus newer coding suites (DeepSWE, FrontierCode, SWE-Marathon). Treat each as one noisy signal (§20.13) |
+| Nov 2026 | Vendors report **Terminal-Bench 4.0** plus newer coding suites (DeepSWE, FrontierCode, SWE-Marathon); on 9 Nov tbench.ai moved to **4.1** — the same tasks with hardened verifiers. Treat each as one noisy signal (§20.13) |
 
 </details>
 
@@ -442,6 +442,8 @@ Terminal-Bench gives an agent hard, real command-line tasks (66 tasks in 4.0, 5 
 ```
 
 Read it like an engineer: the top five are within about 7 points, three of them are statistically tied, the best open-weight entry is about 23 points behind, and a model run in a generic harness (Gemini 3.8 Flash in mini-SWE-agent) is not comparable with one run in its own vendor's agent. (Claude Fable 5.2, released 9 Nov 2026, postdates this snapshot — the Fable row is 5.1.)
+
+**Update, 11 Nov 2026 — Terminal-Bench 4.1 is now current.** tbench.ai now headlines **4.1** (released 9 Nov 2026): the same tasks as 4.0, with verifiers hardened against reward hacking and false negatives. The team re-graded the saved 4.0 runs — about 1% of trials changed score, and all 35 entries stayed inside their 4.0 95% intervals — so the picture above barely changes. Claude Opus 5.5 + Claude Code leads 4.1 at 65.8% ([announcement](https://www.tbench.ai/news/terminal-bench-4-1), [leaderboard](https://www.tbench.ai/)).
 
 </details>
 
@@ -1103,7 +1105,7 @@ Source: Google Cloud's TPU7x documentation (Nov 2026). Ironwood has about 10× t
 
 ## 20.13 Benchmarks 2026 — What Saturated, What's New
 
-![Infographic of AI benchmarks as of Nov 2026: a map of saturated (MMLU, HumanEval, GSM8K, GPQA Diamond 96.4 percent), nearly saturated, retired or contested (SWE-bench Verified, SWE-bench Pro) and current benchmarks (Terminal-Bench 4.0, OSWorld 2.0, HLE, ARC-AGI-3, Arena, AA Index); the 95 percent interval formula with overlapping Terminal-Bench 4.0 error bars (64.8 plus or minus 11.5 vs 58.2 plus or minus 11.9, a tie); the SWE-bench Verified honest ceiling of 83.6 percent; and five questions to ask of any score](diagrams/land20_info_benchmarks_ai.png)
+![Infographic of AI benchmarks as of Nov 2026: a map of saturated (MMLU, HumanEval, GSM8K, GPQA Diamond 96.4 percent), nearly saturated (FrontierMath Tiers 1-3 at 95.1 percent, Claude Fable 5.2, Epoch AI, 9 Nov 2026), retired or contested (SWE-bench Verified, SWE-bench Pro) and current benchmarks (Terminal-Bench 4.1 at 65.8 percent, OSWorld 2.0, HLE, ARC-AGI-3, Arena text at 1526 for Gemini 4 Carbon on 9 Nov 2026, AA Index); the 95 percent interval formula with overlapping Terminal-Bench 4.0 error bars from the 28 Oct 2026 snapshot (64.8 plus or minus 11.5 vs 58.2 plus or minus 11.9, a tie); the SWE-bench Verified honest ceiling of 83.6 percent; and five questions to ask of any score](diagrams/land20_info_benchmarks_ai.png)
 
 <details>
 <summary><strong>Read as text</strong> — exams that saturate, leak or break, and the error-bar formula</summary>
@@ -1122,11 +1124,11 @@ Source: Google Cloud's TPU7x documentation (Nov 2026). Ironwood has about 10× t
 | **GPQA Diamond** | 198 PhD-level science questions (experts score about 65%) | **Saturated** | 96.4% Gemini 4 Argon (Epoch AI hub, Sep 2026) |
 | **FrontierMath, Tiers 1–3** | Unpublished research-level maths | Nearly saturated | 95.1% Claude Fable 5.2 (Epoch AI hub, 9 Nov 2026); GPT-6 Astra and GPT-6.1 Sol 93.7%. The harder Tier 4 (about 40 problems) is topped out too: 100% for Fable 5.2 and GPT-6.1 Sol |
 | **ARC-AGI-2** | Abstract visual puzzles | Nearly saturated | 95.0% GPT-6 Astra at max effort (ARC Prize, Sep 2026) |
-| **Terminal-Bench 2.x** | Command-line agent tasks | Saturated — vendors moved to 3.0 and 4.0 | about 90% on 2.1 in 2026 model cards |
+| **Terminal-Bench 2.x** | Command-line agent tasks | Saturated — vendors moved to 3.0 and 4.x | about 90% on 2.1 in 2026 model cards |
 | **SWE-bench Verified** | 500 real GitHub fixes | **Retired** — flawed tests and contamination (OpenAI, Feb 2026) | High 80s, no longer meaningful |
 | **SWE-bench Pro** | Harder GitHub tasks (731 public) | **Contested** — ~30% of tasks broken; OpenAI retracted its recommendation (Jul 2026) | about 80% |
 | **OSWorld-Verified** | 369 desktop tasks | Nearly saturated — above the ~72% human baseline; mostly self-reported | 86.1% (Qwen3.8 Max) |
-| **Terminal-Bench 4.0** | 66 hard CLI tasks, model + harness | **Current** | 64.8% Claude Opus 5.5 + Claude Code (tbench.ai, 28 Oct 2026) |
+| **Terminal-Bench 4.1** | 66 hard CLI tasks, model + harness (4.0's tasks with hardened verifiers, 9 Nov 2026) | **Current** — replaced 4.0; the regraded 4.0 entries all stayed inside their 95% intervals | 65.8% Claude Opus 5.5 + Claude Code ([tbench.ai](https://www.tbench.ai/), 11 Nov 2026); 64.8% on 4.0 (tbench.ai, 28 Oct 2026) |
 | **OSWorld 2.0** | 108 long-horizon desktop workflows | **Current** | 20.6% completed, Claude Opus 4.8 (paper); vendors quote partial scores (§20.6) |
 | **Humanity's Last Exam** | About 2,500 expert questions, 100+ subjects | **Current** | 54.8% GPT-6 Astra (Scale AI / CAIS leaderboard, Sep 2026); higher self-reported runs use tools |
 | **ARC-AGI-3** | Interactive game worlds the agent must explore | **Current** — score depends on the harness | GPT-6 Astra best: 62.7% Standard harness (max effort), 99.9% Provider Adapter harness (high effort); at high effort Standard gives 54.8% (ARC Prize, Sep 2026) |
@@ -1282,7 +1284,7 @@ Model names below are a November 2026 snapshot; the branches are what you should
 ## 20.17 Interview Questions
 
 **Q1. Walk me through the frontier model lineup as of November 2026.**
-Three closed labs, each with three tiers: OpenAI's GPT-6 Astra, GPT-6.1 Sol / Terra and GPT-6 Luna; Anthropic's Claude Fable 5.2 (9 Nov 2026; 8 / 40 USD per 1M tokens), Opus 5.5 (its recommended default), Sonnet 5.5 and Haiku 5.5; Google's Gemini 4 Argon (with Gemini 4 Carbon for vetted defenders), Gemini 3.8 Flash and Flash-Lite — plus SpaceXSI's Grok 4.7. Nearly all have ~1M-token context and a reasoning-effort dial. The leader depends on the test: Claude Opus 5.5 tops Terminal-Bench 4.0, GPT-6 Astra tops Humanity's Last Exam and ARC-AGI-3, Gemini 4 Carbon tops Arena and the Artificial Analysis index. Open weights (Kimi K3, DeepSeek V4.x, Mistral Large 4, Qwen 3.5) trail by a few months. So model choice is mostly price, latency, ecosystem and your own eval.
+Three closed labs, each with three tiers: OpenAI's GPT-6 Astra, GPT-6.1 Sol / Terra and GPT-6 Luna; Anthropic's Claude Fable 5.2 (9 Nov 2026; 8 / 40 USD per 1M tokens), Opus 5.5 (its recommended default), Sonnet 5.5 and Haiku 5.5; Google's Gemini 4 Argon (with Gemini 4 Carbon for vetted defenders), Gemini 3.8 Flash and Flash-Lite — plus SpaceXSI's Grok 4.7. Nearly all have ~1M-token context and a reasoning-effort dial. The leader depends on the test: Claude Opus 5.5 tops Terminal-Bench 4.1, GPT-6 Astra tops Humanity's Last Exam and ARC-AGI-3, Gemini 4 Carbon tops Arena and the Artificial Analysis index. Open weights (Kimi K3, DeepSeek V4.x, Mistral Large 4, Qwen 3.5) trail by a few months. So model choice is mostly price, latency, ecosystem and your own eval.
 
 **Q2. When does test-time compute scaling beat parameter scaling?**
 On hard, checkable, multi-step work — maths, code, planning — spending more inference tokens on thinking can beat a much bigger model, with diminishing returns as the budget grows. Every 2026 flagship exposes this as an effort dial, and thinking tokens are billed as output. Keep it low for simple Q&A, creative writing, real-time voice and high-throughput classification, where the extra cost and latency don't buy quality.
@@ -1303,7 +1305,7 @@ Obligations for general-purpose AI providers have applied since 2 Aug 2025: tech
 Pick closed-weight (GPT-6.x, Claude 5.5 / Fable 5.2, Gemini 4) when you want zero ops, the newest reasoning frontier, polished computer use or quick model swaps. Pick open-weight (DeepSeek V4.x, Qwen 3.5, Kimi K3, Mistral Large 4, gpt-oss, Gemma 4) for privacy and sovereignty, very high volume where token cost dominates, deep fine-tuning or distillation, or reproducible research — and check the licence first. Many stacks blend: open weights for routine traffic, a closed API for the hard tail.
 
 **Q8. What's wrong with citing MMLU or HumanEval in 2026?**
-They are saturated — frontier models have scored 90%+ for years, so they no longer separate models; GPQA Diamond (~96%) and SWE-bench Verified (retired for contamination) have joined them. Cite a current benchmark with its version, harness, source and date — Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, or the Arena and Artificial Analysis indexes — and then say what your own task-specific eval would measure.
+They are saturated — frontier models have scored 90%+ for years, so they no longer separate models; GPQA Diamond (~96%) and SWE-bench Verified (retired for contamination) have joined them. Cite a current benchmark with its version, harness, source and date — Terminal-Bench 4.1, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, or the Arena and Artificial Analysis indexes — and then say what your own task-specific eval would measure.
 
 **Q9. The price of a fixed level of capability falls roughly 10–13× a year. What does that change architecturally?**
 Patterns that were uneconomic become routine: agent loops with dozens of LLM calls per task, hybrid retrieval with a cross-encoder reranker, multi-agent review, reasoning with thousands of thinking tokens. Design for tomorrow's prices — more calls per task, more context per call, more compute at inference — but route easy traffic to cheap tiers, because the *best* model's price has not fallen the same way and agents multiply token use (a chat feature turned into a 30-call agent can cost over 100× more).

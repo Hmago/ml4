@@ -2303,7 +2303,7 @@ The metric you optimize defines what your model learns to care about. Choose wro
 bad payers; a higher value means the score separates them better.
 
 ² **NDCG@k** — rewards relevant items more the higher they rank; taught in
-[Ch 26](#content/26_ml_system_design).
+[Ch 26](#content/26_ml_system_design) and, with worked code, [Ch 28 §28.9](#content/28_semantic_search).
 
 ³ **IoU** (intersection over union) — overlap of the predicted and true boxes ÷ their combined
 area; a detection usually counts as correct when IoU ≥ 0.5.

@@ -82,6 +82,8 @@ An LLM is a next-token predictor built as a pipeline. Each section below is one 
 
 ## 11.1 Tokenization — Byte Pair Encoding (BPE) ★★★
 
+![Infographic on BPE tokenization: the problem with one id per word, the four-step merge idea, the formula (a, b)* = argmax count(a b) with vocabulary = base symbols + M merges (GPT-2: 256 + 50,000 + 1 = 50,257), a worked example on low x5, lower x2, newest x3, widest x2 with pair counts (l,o) 7, (o,w) 7, (e,s) 5, merges lo, low, es, est and final splits such as n e w est, a table of BPE, WordPiece, Unigram LM and SentencePiece, and the trap that BPE splits into subwords, not words.](diagrams/top34b_info_bpe_tokenization_ai.png)
+
 ### Simple Explanation
 
 Before an LLM can read text, it must convert text into numbers. One number per word does not work — there are millions of words, misspellings, new slang and code, and any word missing from the list would be unreadable. BPE (Byte Pair Encoding) is a compression trick: start with single characters (or bytes), then repeatedly merge the most frequent adjacent pair into a new token. After tens of thousands of merges you have a vocabulary of roughly 32K–262K subword tokens: common words become one token, rare words become a few pieces.
@@ -187,6 +189,8 @@ The final split depends entirely on which merges the tokenizer learned — a rea
 ## 11.2 Positional Encoding — From Sinusoidal to RoPE ★★★
 
 > **Maths in one line:** `(R_m q)ᵀ (R_n k) = qᵀ R_(n−m) k`, with pair i rotated by `m·θᵢ` and `θᵢ = base^(−2i/d)` — rotate the query by its position and the key by its position; the score then depends only on the gap n − m.
+
+![Infographic on RoPE positional encoding: attention is order-blind (dog bites man vs man bites dog), the four-step idea, the formula (R_m q)T (R_n k) = qT R_(n-m) k with theta_i = 10000^(-2i/d) and each symbol labelled, a worked d = 4 example (theta_0 = 1.0, theta_1 = 0.01; at position 2 pair 0 turns 2.0 rad, about 114.6 degrees, pair 1 turns 0.02 rad, about 1.15 degrees), two circles showing q at 0 / k at 2 and q at 3 / k at 5 with the same 2.0 rad gap, the 2 x 2 rotation matrix applied to Q and K but not V, a sinusoidal vs learned vs RoPE table, context-stretching methods PI, NTK-aware, YaRN and Llama 3 base 500,000, and the trap that RoPE does not extrapolate for free.](diagrams/top34b_info_rope_positional_encoding_ai.png)
 
 ### Why Position Matters ★★★
 
@@ -341,6 +345,8 @@ Rescaling only makes long inputs *possible*. Models also train progressively on 
 > This section derives attention from first principles. If you've read [Ch 34 Topic 6](#content/34_google_top10_ml_interview), this goes deeper with the full mathematical proof, the causal mask and multi-head efficiency analysis.
 
 > **Maths in one line:** `Attention(Q, K, V) = softmax(QKᵀ/√d_k + M)·V` — score every query against every key, scale so the scores have variance about 1, hide the future with the mask M (0 or −∞), turn each row into weights that sum to 1, and average the values with them.
+
+![Infographic deriving Transformer attention: the formula Attention(Q, K, V) = softmax(QKT / sqrt(d_k) + M) V with each part labelled, why dividing by sqrt(d_k) matters (Var of q.k = 508.2 for d_k = 512, 0.99 after scaling; largest weight per row 1.00 unscaled vs 0.45 scaled), a 4 x 4 causal attention-weight grid (rows 1.00 / 0.45 0.55 / 0.12 0.53 0.35 / 0.30 0.22 0.33 0.15, future cells masked), how MHA, GQA (g = 2), MQA and MLA (latent 512 + RoPE 64 = 576) share K and V across 8 query heads, a KV-cache-by-variant table, and the trap that more heads do not cost more parameters or FLOPs.](diagrams/top34b_info_attention_derivation_ai.png)
 
 ### Step 1: The Problem Attention Solves ★★★
 
@@ -595,6 +601,8 @@ At inference the K up-projection is folded ("absorbed") into the query side and 
 
 > **Maths in one line:** `KV bytes = 2 × batch × layers × kv_heads × d_head × seq_len × bytes_per_value` — every layer keeps one key and one value vector per KV head for every token of every request, so the cache grows in a straight line with context length *and* batch size.
 
+![Infographic on the KV cache: recomputing K and V costs 1 + 2 + 3 + 4 = 10 computations for 4 tokens versus 4 with a cache, the formula KV bytes = 2 x batch x layers x kv_heads x d_head x seq_len x bytes with each term labelled, a growing cache bar K1V1 to K4V4 read by the new query, the Llama 2 70B worked example (2 x 80 x 8 x 128 x 2 = 327,680 bytes = 320 KiB per token; 1.25 GiB per 4K request; 40 GiB for batch 32, about 31 percent of the 140 GB of weights), to-scale bars for weights 140 GB vs KV cache GQA 40 GiB vs MHA 320 GiB, a table of cache-shrinking techniques (GQA/MQA 8x, MLA about 57x, FP8 2x, PagedAttention 2-4x throughput, sliding window), the max-batch calculation on 4 x 80 GB GPUs (148 GB free: 110 requests with GQA, 13 with MHA), and the trap that the KV cache does not speed up training.](diagrams/top34b_info_kv_cache_memory_ai.png)
+
 ### Why KV Cache Exists ★★★
 
 During autoregressive generation, each new token attends to ALL previous tokens. Thanks to the causal mask (11.3), an earlier token's K and V never change — so recomputing them at every step is pure waste. Without a cache, generating n tokens recomputes the whole prefix each time: O(n²) projection work in total.
@@ -758,6 +766,8 @@ The last line is the interview point: **maximum batch ≈ (usable GPU memory −
 
 > **Maths in one line:** `ℓ_new = ℓ_old · e^(m_old − m_new) + Σⱼ e^(sⱼ − m_new)` — keep a running max m and running sum ℓ for each query row; when a new block raises the max, shrink the old sum (and the old output) by `e^(m_old − m_new)`, so the n × n matrix never has to exist.
 
+![Infographic on FlashAttention: standard attention writes and reads the n x n score and weight matrices in slow HBM (32 GiB per head at 128K tokens), while FlashAttention loads Q blocks and K, V tiles into fast SRAM and keeps a running max, sum and output; the online-softmax formula l_new = l_old x e^(m_old - m_new) + sum of e^(s_j - m_new) with labelled symbols; a worked example with score blocks 3, 1, 2 (m = 3, l = 1.5032) and 5, 0.5 (m = 5, l = 1.0111) combining to 1.5032 x 0.1353 + 1.0111 = 1.2145, equal to the direct sum; a standard vs FlashAttention table (memory O(n squared) vs O(n), HBM traffic, unchanged O(n squared d) FLOPs, both exact); versions FA-1 2022 to FA-4 2026; and the trap that FlashAttention is exact, not approximate.](diagrams/top34b_info_flash_attention_ai.png)
+
 ### The Problem with Standard Attention ★★★
 
 A GPU has a large but slow memory, **HBM** (High Bandwidth Memory — the "80 GB" on the spec sheet), and a tiny but roughly 10× faster on-chip **SRAM** (about 20 MB on an A100). Standard attention writes the full n × n score matrix to HBM, reads it back for the softmax, writes the weights, and reads them again to multiply by V:
@@ -916,6 +926,8 @@ In practice you rarely write it: PyTorch's `scaled_dot_product_attention` picks 
 ---
 
 ## 11.6 Mixture of Experts (MoE) ★★★
+
+![Infographic on Mixture of Experts: the formula y = sum over the top-k experts of gate times expert output with every symbol labelled; a worked top-2 routing example where router scores 2.0, 1.0, -1.0, 0.5 give gates 0.73 and 0.27 for experts 0 and 1 while experts 2 and 3 stay off; Mixtral 8x7B storing 46.7B but running 12.9B parameters per token (28 percent) with to-scale bars; the load-balancing loss L = alpha x N x sum f x P at 0.0100 for a healthy router vs 0.0185 for a skewed one; a table of Mixtral, DeepSeek-V3, Llama 4 Scout and gpt-oss-120b total vs active parameters; and the trap that MoE saves compute, not memory.](diagrams/top34b_info_mixture_of_experts_ai.png)
 
 ### Simple Explanation
 
@@ -1203,6 +1215,11 @@ Five words used below. The **policy** is the model being trained. The **referenc
 
 > **Maths in one line:** each stage minimises a loss on a different signal — the next token of raw text (`−log p(xₜ | x<ₜ)`), the same loss on ideal replies only, then a preference or reward (`−log σ(gap)` for the reward model and DPO; reward − β·KL for RL).
 
+![Infographic on the LLM training pipeline: a left-to-right conveyor of four stations, pre-training on trillions of tokens giving a BASE model that knows a lot but follows nothing, SFT on 1K to 1M ideal replies giving an INSTRUCT model that answers then stops, RLHF or DPO on A-is-better-than-B judgements giving an ALIGNED model, and optional RLVR on checkable problems giving a REASONING model; a maths card showing each stage's loss, minus log p of the next token, the same loss on reply tokens only, minus log sigmoid of the score gap, and reward minus beta times KL; one real number per stage such as Llama 3 405B on 15.6T tokens and DeepSeek-R1-Zero AIME 2024 rising from 15.6 to 77.9 percent; recipes for Llama 3, Tulu 3 and DeepSeek-R1; and the trap that pure RL without SFT was R1-Zero, not R1.](diagrams/top34b_info_training_pipeline_overview_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the four stages, their signals, real numbers and recipes</summary>
+
 ```mermaid
 graph LR
     PT["Stage 1: Pre-training<br/>next-token prediction<br/>on trillions of tokens"]
@@ -1235,11 +1252,18 @@ Real recipes stack and repeat these stages: **Llama 3** = SFT + rejection sampli
 
 **Go deeper:** [Ch 17 §3](#content/17_llm) (the full training section) · [Ch 33 Q13](#content/33_llm_interview_questions) (the interview Q&A) · [Ch 17 §3.5c](#content/17_llm) (which post-training method for which feedback).
 
+</details>
+
 ---
 
 ## 12.2 Stage 1: Pre-training ★★★
 
+![Infographic on LLM pre-training: the next-token loss L = minus 1 over T times the sum of log p of the true next token, plus compute C about 6 x N x D, each symbol labelled; a worked loss example where true-token probabilities 0.30, 0.20, 0.50 and 0.10 give 1.204, 1.609, 0.693 and 2.303, so L = 5.809 / 4 = 1.452 nats and perplexity about 4.27, with a 4 x 4 causal-mask grid; a compute example for Llama 3.1 405B, 6 x 405B x 15.6T = 3.79 x 10^25 FLOPs on up to 16,384 H100s and 30.84M H100-hours, 78 days of all GPUs; a to-scale donut of the Llama 3 data mix, 50 percent general knowledge, 25 percent maths and reasoning, 17 percent code, 8 percent multilingual; and the trap that quality comes mostly from the data pipeline, not the architecture.](diagrams/top34b_info_pretraining_objective_scale_ai.png)
+
 ### Objective ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the next-token loss and a worked example</summary>
 
 Minimise the next-token prediction loss (cross-entropy), averaged over the T positions of a training sequence:
 
@@ -1249,7 +1273,12 @@ This is the "language modelling" or "causal LM" objective. A causal mask hides t
 
 > **Maths in one line:** `L = −(1/T)·Σₜ log p(xₜ | x<ₜ)` and `C ≈ 6·N·D` — the loss is the average surprise at the true next token; training compute is about 6 × parameters × tokens (2N FLOPs forward and 4N backward per token). Example: true-token probabilities 0.30, 0.20, 0.50, 0.10 give L = (1.204 + 1.609 + 0.693 + 2.303) / 4 = 1.452 nats, perplexity e^1.452 ≈ 4.27.
 
+</details>
+
 ### What the Model Learns ★★★
+
+<details>
+<summary><strong>Read as text</strong> — five capabilities and how they emerge</summary>
 
 | Capability | How It Emerges |
 |-----------|---------------|
@@ -1259,7 +1288,12 @@ This is the "language modelling" or "causal LM" objective. A causal mask hides t
 | Code generation | Trained on public code, learns to complete programs |
 | Multilingual | Predicting the next token in French text learns French |
 
+</details>
+
 ### Scale of Pre-training ★★★
+
+<details>
+<summary><strong>Read as text</strong> — tokens, FLOPs, GPUs and the Llama 3.1 405B run</summary>
 
 ```
 Typical pre-training run (2024–2026):
@@ -1279,7 +1313,12 @@ Typical pre-training run (2024–2026):
     Reliability: 466 job interruptions in one 54-day stretch of the run
 ```
 
+</details>
+
 ### Pre-training Data Mixture (Llama 3, published) ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the Llama 3 data mix and why data beats architecture</summary>
 
 ```mermaid
 pie title "Llama 3 final pre-training mix (share of tokens)"
@@ -1293,15 +1332,27 @@ Labs choose these weights by small-scale experiments (**domain mixing**). High-v
 
 **Go deeper:** [Ch 17 §3.1](#content/17_llm) (loss, recipe, compute programs) · [Ch 17 §3.1b](#content/17_llm) (the data pipeline) · [Ch 29](#content/29_gpus_tpus_infrastructure) (clusters and training cost).
 
+</details>
+
 ---
 
 ## 12.3 Stage 2: Supervised Fine-Tuning (SFT) ★★★
 
+![Infographic on supervised fine-tuning, SFT: the loss L_SFT = minus 1 over the number of reply tokens times the sum over reply tokens of log p of the true next token, each symbol labelled; a ChatML chat template strip with a loss mask of 0s under the user prompt, labels = -100, and 1s under the assistant reply and its end token; a worked loss example where reply-token probabilities 0.90, 0.50, 0.25 and 0.80 give 0.105, 0.693, 1.386 and 0.223, averaging 0.602; a before and after card where the base model continues What is 2+2? with more questions while the SFT model answers and stops; a data table, InstructGPT about 13K demos, Alpaca 52K, LIMA 1,000 curated examples equal or preferred to GPT-4 in 43 percent, Tulu 3 939,344; and the trap that SFT mostly teaches style, not knowledge.](diagrams/top34b_info_sft_instruction_tuning_ai.png)
+
 ### Why SFT Is Needed ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why a base model just continues the question</summary>
 
 The pre-trained (base) model is a text-completion engine. Ask it "What is 2+2?" and it might continue with "What is 3+3? What is 4+4?" because lists of questions are common on the web. SFT teaches it to **follow instructions** — to answer as an assistant, in the chat format, and then stop.
 
+</details>
+
 ### How SFT Works ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the chat template, the loss mask and the SFT loss</summary>
 
 Each conversation is flattened with a **chat template** — special tokens that mark who is speaking (ChatML shown; every model family has its own, and the same template must be used at inference):
 
@@ -1321,7 +1372,12 @@ $$L_{\text{SFT}} = -\frac{1}{|R|}\sum_{t \in R} \log P(x_t \mid x_{<t};\, \theta
 
 > **Maths in one line:** `L_SFT = −(1/|R|)·Σ_{t∈R} log p(xₜ | x<ₜ)` — the pre-training loss restricted to the reply tokens R. Example: reply-token probabilities 0.90, 0.50, 0.25, 0.80 give (0.105 + 0.693 + 1.386 + 0.223) / 4 = 0.602.
 
+</details>
+
 ### SFT Data — Quality Over Quantity ★★★
+
+<details>
+<summary><strong>Read as text</strong> — dataset sizes, LIMA's lesson and what SFT cannot do</summary>
 
 Pre-training needs trillions of tokens; SFT needs thousands to about a million examples, and quality matters more than size.
 
@@ -1355,17 +1411,29 @@ graph LR
 
 **Go deeper:** [Ch 17 §3.3](#content/17_llm) (masked-loss program, data sizes) · [Ch 17b §9.4](#content/17b_llm_applications) (fine-tuning in practice, LoRA).
 
+</details>
+
 ---
 
 ## 12.4 Stage 3a: RLHF — Reinforcement Learning from Human Feedback ★★★
 
+![Infographic on RLHF: the Bradley-Terry reward-model loss L_RM = minus log sigmoid of r(x, y_w) minus r(x, y_l), and the objective max E of r minus beta times KL from the frozen SFT model, each symbol labelled; panel 1 shows a prompt with four answers ranked 1st to 4th by a human, with K answers giving K(K-1)/2 pairs, 4 answers 6 pairs and 9 answers 36 pairs; panel 2 works the loss step by step, score gap 1.5 gives sigmoid 0.82 and loss 0.20, gap 0 gives ln 2 = 0.69, gap -1.5 gives 1.70, with to-scale bars; panel 3 shows the PPO loop policy, response, reward model, r minus beta KL against the frozen reference, PPO update, with the ratio clipped to 0.8 to 1.2; a table of the four models in memory, policy and critic trained, reference and reward model frozen; and the trap that human labels are collected offline, not during training.](diagrams/top34b_info_rlhf_reward_model_ppo_ai.png)
+
 ### Why RLHF Is Needed After SFT ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why comparisons beat demonstrations, and the RLHF maths</summary>
 
 SFT teaches the model to produce plausible-looking responses, but it has no way to learn **which of two good responses is better**. People are also far more reliable at *comparing* two answers than at writing a perfect one or scoring one "7 out of 10". RLHF turns those comparisons into a training signal. The headline result (InstructGPT, 2022): human raters preferred the outputs of a 1.3B RLHF model to those of the 175B GPT-3 — over 100× fewer parameters.
 
 > **Maths in one line:** `L_RM = −log σ(r(x, y_w) − r(x, y_l))`, then maximise `E[r(x, y)] − β·KL(π_θ ‖ π_ref)` — train a reward model so the preferred answer scores higher, then use RL to earn reward without drifting far from the SFT model.
 
+</details>
+
 ### The RLHF Pipeline — Three Steps ★★★
+
+<details>
+<summary><strong>Read as text</strong> — collect comparisons, train a reward model, run PPO</summary>
 
 ```mermaid
 graph TD
@@ -1388,7 +1456,12 @@ graph TD
     style ALIGNED fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### Step 2: Train the Reward Model ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the Bradley–Terry loss with worked score gaps</summary>
 
 Given a prompt $x$ and two responses where humans prefer $y_w$ (the winner) over $y_l$ (the loser):
 
@@ -1398,7 +1471,12 @@ $$L_{\text{RM}} = -\log \sigma\!\left(r(x, y_w) - r(x, y_l)\right)$$
 
 Here $r(x, y)$ is the scalar score of the reward model (an LLM whose output layer is replaced by a single number) and $\sigma$ is the sigmoid, so $\sigma(\text{gap})$ is the predicted probability that a human prefers $y_w$. A gap of 1.5 means 82% sure and a loss of 0.20; a gap of 0 gives ln 2 = 0.69; the wrong order (−1.5) costs 1.70. Only score *differences* matter. Ranking K answers gives K(K−1)/2 pairs: 4 answers → 6 pairs, 9 answers → 36.
 
+</details>
+
 ### Step 3: Optimise the Policy with PPO ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the KL-regularised objective, reward hacking and PPO's four models</summary>
 
 **The RLHF objective** (PPO is the algorithm that optimises it):
 
@@ -1414,7 +1492,12 @@ Term 1: earn reward (be what humans prefer). Term 2: don't drift far from the SF
 
 PPO keeps **four models** in memory: the policy and a value network (critic) are trained; the reference and the reward model are frozen. Each update clips the probability ratio $\rho = \pi_{\text{new}}/\pi_{\text{old}}$ to $[1-\varepsilon,\ 1+\varepsilon]$ with $\varepsilon = 0.2$, so one batch cannot move the policy too far.
 
+</details>
+
 ### RLHF Challenges ★★★
+
+<details>
+<summary><strong>Read as text</strong> — reward hacking, rater disagreement, cost and instability</summary>
 
 | Challenge | Description | Mitigation |
 |-----------|------------|------------|
@@ -1425,11 +1508,18 @@ PPO keeps **four models** in memory: the policy and a value network (critic) are
 
 **Go deeper:** [Ch 17 §3.4](#content/17_llm) (reward-model and PPO-clip programs, InstructGPT numbers) · [Ch 33 Q14](#content/33_llm_interview_questions) · [Ch 17 §3.5c](#content/17_llm) (reward hacking).
 
+</details>
+
 ---
 
 ## 12.5 Stage 3b: DPO — Direct Preference Optimization ★★★
 
+![Infographic on DPO, Direct Preference Optimization: the loss L_DPO = minus log sigma of beta times the difference between log pi_theta over pi_ref for the chosen answer y_w and for the rejected answer y_l, with callouts for sigmoid, beta (usually 0.1), the policy being trained, the frozen SFT reference, and the chosen and rejected answers; the derivation in four steps where beta log Z(x) cancels; RLHF's reward-model plus PPO pipeline next to DPO's single loss; a worked example with beta 0.1, reference -12 and -15, policy -10 and -17, gains +2 and -2, margin 0.4, sigma 0.599, loss 0.513; a to-scale loss-versus-margin curve marking -0.40 at 0.913, 0 at 0.693 = ln 2 and +0.40 at 0.513; an RLHF vs DPO table; and the trap that DPO does use a frozen reference model, while SimPO and ORPO drop it.](diagrams/top34b_info_dpo_direct_preference_ai.png)
+
 ### The Key Insight ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the three-step derivation, the DPO loss and a worked example</summary>
 
 DPO (Rafailov et al., 2023) removes the reward model and the RL loop. It trains the LLM directly on the same preference pairs with a simple classification-style loss — and it optimises the *same* KL-regularised objective as RLHF. The derivation takes three steps:
 
@@ -1448,6 +1538,8 @@ Where:
 > **Maths in one line:** `L_DPO = −log σ(β·[(log π_θ(y_w|x) − log π_ref(y_w|x)) − (log π_θ(y_l|x) − log π_ref(y_l|x))])` — an answer's implicit reward is β × how much more the policy likes it than the reference does; push the winner's implicit reward above the loser's.
 
 **Worked example (β = 0.1).** The frozen reference gives the chosen answer a sequence log-probability of −12 and the rejected one −15. At the start the policy equals the reference: margin 0, loss ln 2 = 0.693. After training raises the chosen answer to −10 and lowers the rejected one to −17, the margin is 0.1 × (2 − (−2)) = 0.4 and the loss falls to 0.513.
+
+</details>
 
 ```python
 # Reward-model loss vs DPO loss: both are -log sigmoid(gap); DPO's score is beta * log(pi / pi_ref)
@@ -1499,6 +1591,9 @@ DPO, beta = 0.1
 beta = 0.5, chosen up 2, rejected down 2: margin +2.00, loss 0.1269
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the run shows, and RLHF vs DPO side by side</summary>
+
 Read it: both losses are the same logistic function of a gap — DPO just computes the "score" from log-probability ratios instead of a separate reward model. The **push** column, σ(−margin), is the size of the gradient: DPO works hardest on the pair it currently gets wrong (0.599) and eases off once it prefers the winner (0.401). A larger β turns the same small drift into a big margin, so the policy needs to move less — a stronger pull towards the reference.
 
 ```mermaid
@@ -1519,7 +1614,12 @@ graph LR
     style DPO fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### DPO vs RLHF — Interview Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — reward model, training loop, memory, hyperparameters and quality</summary>
 
 | Aspect | RLHF (PPO) | DPO |
 |--------|------|-----|
@@ -1530,7 +1630,12 @@ graph LR
 | Quality | Strong; learns from its own fresh samples | **Comparable on many tasks**; well-tuned PPO can win, e.g. on code (Xu et al., 2024) |
 | Used by | InstructGPT, Llama 2 (PPO + rejection sampling) | **Llama 3, Zephyr, Tulu 3** and many open models |
 
+</details>
+
 ### DPO's Cousins — One Line Each ★★
+
+<details>
+<summary><strong>Read as text</strong> — IPO, KTO, SimPO and ORPO in one line each</summary>
 
 | Method | What it changes | Needs |
 |---|---|---|
@@ -1541,15 +1646,27 @@ graph LR
 
 **Go deeper:** [Ch 17 §3.5](#content/17_llm) (derivation, gradient, PyTorch version, cousins) · [Ch 33 Q15](#content/33_llm_interview_questions) · [Ch 33b Q69](#content/33b_llm_interview_questions_part2).
 
+</details>
+
 ---
 
 ## 12.6 GRPO and RLVR — DeepSeek-R1's Approach ★★★
 
+![Infographic on GRPO and RLVR: the group advantage A-hat_i = r_i minus the mean of r_1 to r_G, divided by their std plus epsilon, with callouts for the advantage given to every token, the 1-or-0 reward, the group average as baseline, the group spread and epsilon; a checker scoring 8 sampled answers to What is 12 x 15? (gold 180), rewards 1 0 0 1 0 0 0 1; the advantage step by step, mean 3/8 = 0.375, std = sqrt(0.375 x 0.625) = 0.484, right answers +1.29, wrong answers -0.77, advantages sum to 0; to-scale bars for 1, 3 and 7 of 8 right (+2.65/-0.38, +1.29/-0.77, +0.38/-2.65) and no gradient when all 8 or none are right; key numbers as of Nov 2026, R1-Zero AIME 2024 pass@1 15.6 to 77.9 percent, 86.7 percent with majority voting, G = 16, about 800K rejection-sampling SFT samples, R1-Distill 1.5B to 70B SFT only; and the trap that RL-only training was R1-Zero, not R1.](diagrams/top34b_info_grpo_rlvr_deepseek_r1_ai.png)
+
 ### Why This Matters ★★★
+
+<details>
+<summary><strong>Read as text</strong> — R1-Zero, R1 and why RL on checkable tasks is now standard</summary>
 
 DeepSeek-R1-Zero (January 2025) showed that long chain-of-thought reasoning can emerge from reinforcement learning alone: GRPO with rule-based rewards, applied straight to the DeepSeek-V3 base model, with no supervised chain-of-thought examples. The released DeepSeek-R1 then added small SFT stages to make that reasoning readable. Together they made open reasoning models reproducible, and RL on checkable tasks is now a standard post-training stage (OpenAI's o-series is also trained with large-scale RL on chains of thought, but its recipe is not published).
 
+</details>
+
 ### GRPO — Group Relative Policy Optimization ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the group baseline, the clipped objective, memory and wasted prompts</summary>
 
 GRPO (introduced in DeepSeekMath, 2024) is PPO without the value network (critic). Instead of learning a baseline, it estimates one from a GROUP of answers to the same prompt:
 
@@ -1569,7 +1686,12 @@ $$\rho_{i,t} = \frac{\pi_\theta(y_{i,t} \mid x, y_{i,<t})}{\pi_{\text{old}}(y_{i
 
 Two consequences interviewers like. **Memory:** no critic means about half of PPO's training state (for a 7B model, roughly 126 GB instead of 252 GB in Ch 17's estimate). **Wasted prompts:** if every answer in a group is right — or every one wrong — all advantages are 0 and the prompt teaches nothing, so recipes keep prompts of medium difficulty (DAPO's "dynamic sampling" drops such groups).
 
+</details>
+
 ### RLVR — RL with Verifiable Rewards ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the rule-based reward, and RLVR vs GRPO</summary>
 
 ```
 Key idea: for maths and code we do not need a learned reward model —
@@ -1585,6 +1707,8 @@ hack. A weak checker (thin unit tests) can still be gamed.
 ```
 
 **RLVR names the reward; GRPO is an optimiser.** Tulu 3, which introduced the name RLVR, ran it with PPO; DeepSeek ran rule-based rewards with GRPO. The program below scores eight sampled answers with a checker and turns the rewards into GRPO advantages.
+
+</details>
 
 ```python
 # RLVR + GRPO in miniature: a rule-based checker scores 8 sampled answers; the group mean is the baseline
@@ -1637,6 +1761,9 @@ advantages: +1.29 -0.77 -0.77 +1.29 -0.77 -0.77 -0.77 +1.29
 0 of 8 correct: every advantage is 0 -> this prompt gives no gradient
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: three lessons and DeepSeek-R1's four stages</summary>
+
 Three lessons. A **rare success earns a big bonus** (+2.65 when 1 of 8 is right), so hard-but-solvable prompts teach the most. A group that is **all right or all wrong teaches nothing**. And the **checker is strict**: the sixth answer had the right idea but no parseable "Answer:", so it scored 0 — which is exactly how a format reward trains the model to answer in a checkable form.
 
 ```mermaid
@@ -1668,7 +1795,12 @@ graph TD
 
 Two details worth knowing: in the original report the ~800K-sample SFT of stage 3 is applied to DeepSeek-V3-Base again (two epochs), not to the RL checkpoint; and the distilled models received no RL at all.
 
+</details>
+
 ### What Emerged from RLVR (without being taught) ★★★
+
+<details>
+<summary><strong>Read as text</strong> — longer thinking, the aha moment and the AIME jump</summary>
 
 | What R1-Zero did on its own | Evidence (DeepSeek-R1 paper) |
 |---|---|
@@ -1679,11 +1811,18 @@ Two details worth knowing: in the original report the ~800K-sample SFT of stage 
 
 **Go deeper:** [Ch 17 §3.5b](#content/17_llm) (GRPO program, PPO vs GRPO, Dr. GRPO and DAPO) · [Ch 20 §20.2](#content/20_2026_landscape) (reasoning models today) · [Ch 33b Q61](#content/33b_llm_interview_questions_part2).
 
+</details>
+
 ---
 
 ## 12.7 Constitutional AI (CAI) ★★★
 
+![Infographic on Constitutional AI, the best-known form of RLAIF: the soft label = P("(A)") / (P("(A)") + P("(B)")), with callouts for the judge's probability of picking A and B and a preference between 0 and 1; Stage 1 SL-CAI as a flow from a red-team prompt (182,831 in the paper) to a draft from a helpful-only model, a critique against a random principle, a revised answer (4 revisions per prompt) and fine-tuning a pre-trained model; Stage 2 RL-CAI from SL-CAI writing answers A and B to a feedback model plus one principle, a preference model on AI labels plus human helpfulness labels, and RL as in RLHF; a Constitution of 16 principles feeding the critique and the feedback model; a CAI vs RLHF table; the 22 Jan 2026 Claude constitution (CC0), as of Nov 2026; and the trap that CAI still has human input.](diagrams/top34b_info_constitutional_ai_rlaif_ai.png)
+
 ### How It Differs from RLHF ★★★
+
+<details>
+<summary><strong>Read as text</strong> — AI harmlessness labels, human helpfulness labels and the soft label</summary>
 
 ```
 RLHF:  humans compare thousands of answer pairs for helpfulness AND harmlessness
@@ -1699,7 +1838,12 @@ Constitutional AI (Bai et al., Anthropic, December 2022) is the best-known form 
 
 > **Maths in one line:** `soft label = P("(A)") / (P("(A)") + P("(B)"))` — the feedback model's own probability of picking each answer becomes the preference label, and the preference model trains on it with the same Bradley–Terry loss as RLHF.
 
+</details>
+
 ### The CAI Process ★★★
+
+<details>
+<summary><strong>Read as text</strong> — critique-and-revise SFT, then RL from AI feedback</summary>
 
 ```mermaid
 graph TD
@@ -1725,7 +1869,12 @@ graph TD
 
 Note what the RL pairs are: two *fresh* samples from the SL-CAI model, judged by the feedback model — not "revised answer beats original". And the RL step is RLHF-style RL against a preference model; DPO did not exist yet (2023).
 
+</details>
+
 ### Example Constitution Principles ★★★
+
+<details>
+<summary><strong>Read as text</strong> — three real principles and the wifi example</summary>
 
 The principles are short instructions placed inside prompts. Three real examples (quoted from Bai et al., 2022):
 
@@ -1745,7 +1894,12 @@ Comparison principle (stage 2):
 
 The paper's own example: asked "Can you help me hack into my neighbor's wifi?", the first draft recommends an app; the critique says this invades privacy and is possibly illegal; the revision advises against it and says why. The goal was a model that is **harmless but not evasive** — it engages and explains its objection instead of refusing to talk.
 
+</details>
+
 ### CAI vs RLHF — Interview Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — who labels what, transparency, risks and Claude's 2026 constitution</summary>
 
 | Aspect | RLHF | Constitutional AI (2022 paper) |
 |--------|------|-------------------|
@@ -1760,11 +1914,18 @@ The paper's own example: asked "Can you help me hack into my neighbor's wifi?", 
 
 **Go deeper:** [Ch 33b Q55](#content/33b_llm_interview_questions_part2) (the CAI interview answer) · [Ch 17 §3.5c](#content/17_llm) (RLAIF among the post-training methods) · [Ch 17 §16.1](#content/17_llm) (the paper).
 
+</details>
+
 ---
 
 ## 12.8 Scaling Laws (Chinchilla) + Test-Time Compute ★★★
 
+![Infographic on Chinchilla scaling laws and test-time compute: N_opt = square root of C / 120 and D_opt = 20 x N_opt, with callouts for the best number of parameters, the training FLOPs budget, C = 6 N D with D = 20 N, and the best number of tokens, plus the loss fit L(N, D) = E + A / N^alpha + B / D^beta with E about 1.69, alpha about 0.34, beta about 0.28; a 1e22 FLOPs budget worked step by step to 9.1B parameters on 183B tokens, predicted loss 2.146; GPT-3's budget 6 x 175B x 300B = 3.15e23 spent two ways, 175B on 0.30T tokens loss 2.002 vs 51B on 1.02T tokens loss 1.961, with to-scale N and D bars, and a note that 1e22 is 31.5x less compute so 9.1B does not beat GPT-3; four ways to spend test-time compute since o1 (Sep 2024) and Snell et al. 2024, about 4x less compute than best-of-N, can beat a 14x larger model on easy and medium questions, while on the hardest a bigger model wins; a tokens-per-parameter table, GPT-3 1.7, Chinchilla 20, LLaMA-7B 143, Llama 3 8B about 1,875, as of Nov 2026; and the trap that 20 tokens per parameter is optimal only for training compute.](diagrams/top34b_info_scaling_laws_test_time_ai.png)
+
 ### Scaling Laws — The Core Relationships ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the Chinchilla loss fit and D ≈ 20 × N</summary>
 
 Loss falls as a smooth power law in parameters, data and compute (Kaplan et al., 2020), so labs can predict a big run from small ones. Chinchilla (Hoffmann et al., DeepMind, 2022) fitted the loss as:
 
@@ -1783,11 +1944,18 @@ Kaplan's earlier fit had advised spending most extra compute on a bigger model (
 
 > **Maths in one line:** `N_opt = √(C / 120)` and `D_opt = 20·N_opt` — combine C = 6·N·D with D = 20·N to get C = 120·N²; doubling the compute multiplies both by √2 ≈ 1.41.
 
+</details>
+
 ### The Chinchilla Insight — Worked Example ★★★
+
+<details>
+<summary><strong>Read as text</strong> — a 1e22 FLOPs budget and the fair GPT-3 comparison</summary>
 
 **A budget of $10^{22}$ FLOPs:** $10^{22} = 120N^2 \Rightarrow N = \sqrt{10^{22}/120} \approx 9.1$ billion parameters, and $D = 20 \times 9.1\text{B} \approx 183$ billion tokens.
 
 **Careful with the comparison.** GPT-3 (175B parameters on 300B tokens, only 1.7 tokens per parameter) used $6 \times 175\text{B} \times 300\text{B} = 3.15 \times 10^{23}$ FLOPs — 31.5× more than this budget — so a 9.1B model on 183B tokens does **not** beat it (predicted loss 2.15 vs 2.00). The fair test spends GPT-3's own budget: the 20-tokens rule picks about **51B parameters on 1.0T tokens**, with a lower predicted loss (1.96) at under a third of the size — so it is also far cheaper to serve. The real-world proof: Chinchilla (70B on 1.4T tokens) beat Gopher (280B on 300B tokens) on a similar budget.
+
+</details>
 
 ```python
 # Chinchilla: the compute-optimal size for a budget, and why GPT-3 was under-trained
@@ -1836,6 +2004,9 @@ Llama 3 8B : 1,875 tok/param = 94x Chinchilla
 serving (2N FLOPs/token) matches the 6ND training bill after 45T served tokens = 3 x D
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: under-trained, compute-optimal and over-trained models</summary>
+
 ```mermaid
 graph LR
     subgraph "Tokens per parameter"
@@ -1853,7 +2024,12 @@ graph LR
     style OVER_T fill:#e3f2fd,stroke:#1565c0,color:#000
 ```
 
+</details>
+
 ### Beyond Chinchilla — Inference-Optimal Scaling ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why labs over-train small models, and the break-even point</summary>
 
 ```
 Chinchilla minimises TRAINING compute only. But a model is trained once and
@@ -1868,7 +2044,12 @@ Break-even: training costs 6·N·D and serving 2·N per token, so after 3·D ser
 tokens inference has used as much compute as training (45T tokens for Llama 3 8B).
 ```
 
+</details>
+
 ### Test-Time Compute Scaling ★★★
+
+<details>
+<summary><strong>Read as text</strong> — four ways to think longer, and when it beats a bigger model</summary>
 
 **The third scaling axis (since OpenAI's o1, September 2024):** besides pre-training compute and RL post-training compute, spend more compute *per question at inference time*. Reasoning models are the product of RLVR (§12.6) plus this idea.
 
@@ -1904,6 +2085,8 @@ graph TD
 ```
 
 **Go deeper:** [Ch 17 §3.7](#content/17_llm) (scaling laws, compute calculator) · [Ch 33 Q20](#content/33_llm_interview_questions) · [Ch 33b Q62](#content/33b_llm_interview_questions_part2) (test-time compute) · [Ch 20 §20.2](#content/20_2026_landscape) (the reasoning dial by vendor).
+
+</details>
 
 ---
 
@@ -2018,6 +2201,8 @@ Two facts drive almost everything in this topic. **Decode — writing the answer
 
 ## 13.1 Quantization for Serving (INT4/INT8/FP8) ★★★
 
+![Infographic on quantization for serving: x_q = round(x / scale) + zero_point, with callouts for the stored integer 0 to 255, the real weight, the size of one step and the integer that stands for 0.0, plus scale = (x_max - x_min) / (2^bits - 1) and zero_point = round(-x_min / scale); the INT8 worked example step by step, weights -0.8, 0.3, 1.2, -0.1, 0.9, scale 2.0 / 255 = 0.00784, zero_point 102, stored 0, 140, 255, 89, 217; a to-scale real line from -0.8 to 1.2 mapped onto the integer line 0 to 255 with zero_point = 102, and dequantizing 140 to 0.298 with error 0.002 under half a step; INT8 255 steps max error 0.00196 vs INT4 15 steps max error 0.0333, 17x worse, so 4-bit formats keep one scale per group of 128 weights (NVFP4: 16); a 70B weights table as of Nov 2026, BF16 140 GB, FP8 W8A8 70 GB, INT4 GPTQ/AWQ about 36 GB, FP4 NVFP4/MXFP4 about 37-39 GB Blackwell only, with to-scale bars; a decode vs prefill grid where weight-only INT4 speeds decode only and FP8 W8A8 both; INT4 70B on one H100 leaves about 39 GiB for KV cache, fifteen 8K-token chats vs two with FP8; and the trap that calibrated FP8 / INT8 is near-lossless.](diagrams/top34b_info_quantization_for_serving_ai.png)
+
 ### Simple Explanation
 
 A photo saved with 16.7 million colours (24 bits per pixel) and the same photo reduced to a 256-colour palette (8 bits per pixel) look almost identical, yet the second is a third of the size. Quantization does this for model weights: instead of storing each weight as a 16-bit number (BF16), store it as an 8-bit or even 4-bit number. A 70B model drops from 140 GB to 70 GB at 8 bits, or about 35 GB at 4 bits — and because decode streams every weight for every token, fewer bytes also means faster generation.
@@ -2025,6 +2210,9 @@ A photo saved with 16.7 million colours (24 bits per pixel) and the same photo r
 > **Maths in one line:** `x_q = round(x / scale) + zero_point` with `scale = (x_max − x_min) / (2^bits − 1)` — the real range is cut into 255 equal steps (8 bits), each weight snaps to the nearest step, so it is never off by more than half a step.
 
 ### How Quantization Works — The Math ★★★
+
+<details>
+<summary><strong>Read as text</strong> — scale, zero point and the INT8 worked example</summary>
 
 ```
 Linear (asymmetric) quantization maps FP16/FP32 values to 8-bit integers 0…255:
@@ -2058,6 +2246,8 @@ Symmetric variant: zero_point = 0 and scale = max|x| / 127 (integers -127…127)
 ```
 
 **Run it** — the chapter's five weights at 8 and 4 bits, and what dropping the zero point costs on a skewed tensor:
+
+</details>
 
 ```python
 # Asymmetric (zero-point) INT8 on the chapter's 5 weights, the same at INT4, and why skewed tensors need a zero point
@@ -2106,9 +2296,17 @@ INT4: scale 0.1333, zero_point 6, stored [0, 8, 15, 5, 13], max error 0.0333
 ReLU activations, mean error: symmetric 0.00917, asymmetric 0.00455 (2.0x worse without a zero point)
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what 4 bits and a missing zero point cost</summary>
+
 Reading it: 4 bits leave only 15 steps instead of 255, so the worst error grows 17× (0.0333 vs 0.00196). That is why every 4-bit scheme keeps a separate scale for each small group of weights — GPTQ and AWQ typically use groups of 128, NVFP4 blocks of 16 — so one large value only coarsens its own group. The symmetric-vs-asymmetric gap is the same lesson: integer codes that are never used are wasted resolution.
 
+</details>
+
 ### Quantization Approaches ★★★
+
+<details>
+<summary><strong>Read as text</strong> — PTQ vs QAT, and Gemma 3's QAT numbers</summary>
 
 ```mermaid
 graph TD
@@ -2128,7 +2326,12 @@ graph TD
 
 **PTQ is the default for LLMs** because it needs no training run — GPTQ quantized 175B-parameter models in about four GPU-hours. **QAT** costs a short extra training phase but holds quality better at 4 bits: Google's Gemma 3 QAT checkpoints (April 2025) shrank the 27B model from 54 GB in BF16 to 14.1 GB in int4, and Google reported a 54% smaller perplexity drop than plain post-training int4 (Q4_0).
 
+</details>
+
 ### Quantization Formats Compared ★★★
+
+<details>
+<summary><strong>Read as text</strong> — FP32 to 2-bit: size for 70B, quality and where each fits</summary>
 
 | Format | Bits per weight | 70B weights | Quality (typical) | Where it fits |
 |--------|------|-------|---------|----------|
@@ -2142,7 +2345,12 @@ graph TD
 
 FP8 comes in two flavours: **E4M3** (4 exponent bits, 3 mantissa bits, largest value 448) keeps more precision and is used for weights and activations; **E5M2** (largest value 57,344) keeps more range and is used for gradients in training.
 
+</details>
+
 ### Which Phase Does It Speed Up? ★★★
+
+<details>
+<summary><strong>Read as text</strong> — decode vs prefill for each scheme, and the KV-cache win</summary>
 
 A favourite follow-up. Decode is limited by **bytes read**; prefill (processing the whole prompt in one pass) is limited by **matmul speed** — so the two phases react differently. The third memory consumer is the **KV cache**, the keys and values stored for every earlier token (§11.4):
 
@@ -2154,7 +2362,12 @@ A favourite follow-up. Decode is limited by **bytes read**; prefill (processing 
 
 The freed memory is often the bigger win: INT4 weights for a 70B model leave about 39 GiB of one H100 for KV cache — fifteen 8K-token conversations, where FP8 weights leave room for two.
 
+</details>
+
 ### Advanced: GPTQ and AWQ ★★★
+
+<details>
+<summary><strong>Read as text</strong> — how GPTQ and AWQ choose their 4-bit weights</summary>
 
 ```
 GPTQ (Frantar et al., ICLR 2023) — post-training, weight-only:
@@ -2178,15 +2391,27 @@ AWQ (Activation-aware Weight Quantization; Lin et al., MLSys 2024) — post-trai
 
 **Go deeper:** [Ch 17c §3.1–3.2](#content/17c_llm_systems) (which phase each scheme speeds up, SmoothQuant, KV-cache quantization) · [Ch 33b Q39](#content/33b_llm_interview_questions_part2) (the interview card) · [Ch 29 §24.9](#content/29_gpus_tpus_infrastructure) (distill, quantize or prune)
 
+</details>
+
 ---
 
 ## 13.2 Speculative Decoding ★★★
 
+![Infographic on speculative decoding: a cheap drafter guesses K tokens and the 70B target model verifies all of them in one forward pass, keeping each token with probability min(1, p/q) and resampling the first rejection from max(0, p − q). Formula E = (1 − α^(K+1)) / (1 − α) tokens per target pass and speed-up ≈ E / (1 + K·c), with each symbol labelled. Standard vs speculative timeline; worked example α = 0.9, K = 4: E = 1 + 0.9 + 0.81 + 0.729 + 0.6561 = 4.0951 ≈ 4.10, giving 3.41× at c = 0.05 and 2.28× at c = 0.2; a to-scale curve of tokens per pass vs α (1.43, 1.94, 2.77, 3.36, 4.10); a best-draft-length table (α 0.3, c 0.2 → best K 1, and K = 4 gives 0.79×, slower); when to use it, and the trap that the standard rule is provably lossless.](diagrams/top34b_info_speculative_decoding_ai.png)
+
 ### The Problem ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why decode leaves the GPU idle</summary>
 
 LLM generation is **memory-bandwidth bound** — each step generates only one token but must stream the entire model from memory. A 70B model in BF16 split over two H100s reads 70 GB per GPU per step: about 21 ms, so roughly 48 tokens per second for one conversation, while the GPU's compute units sit mostly idle.
 
+</details>
+
 ### The Idea ★★★
+
+<details>
+<summary><strong>Read as text</strong> — draft K tokens, verify them in one pass, and the formula</summary>
 
 Use a small, fast "draft" model to guess K tokens, then let the large target model check all K in a single forward pass. Think of a junior writing a sentence and a senior editor approving it at a glance: reading costs the senior about the same whether the draft has one word or five, so every correct guess is nearly free.
 
@@ -2212,7 +2437,12 @@ graph LR
     style V1 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### How Verification Works ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the accept / resample rule and tokens per pass</summary>
 
 ```
 Draft model proposes:   x₁ x₂ x₃ x₄   with draft probabilities  q(x₁) … q(x₄)
@@ -2234,7 +2464,12 @@ Expected tokens per target pass:  E = 1 + α + α² + … + α^K = (1 − α^(K+
   → about 2–3× in practice, after scheduling and verification overheads
 ```
 
+</details>
+
 ### When to Use Speculative Decoding ★★★
+
+<details>
+<summary><strong>Read as text</strong> — when it pays and when it slows you down</summary>
 
 | Scenario | Expect | Why |
 |----------|---------|-----|
@@ -2245,6 +2480,8 @@ Expected tokens per target pass:  E = 1 + α + α² + … + α^K = (1 − α^(K+
 | No well-matched drafter | Can be a net loss | α = 0.3 with c = 0.2 and K = 4 gives 0.79× — slower than plain decoding |
 
 **Run it** — the formula checked by simulation, then the best draft length K for four drafters:
+
+</details>
 
 ```python
 # Speculative decoding - tokens per target pass, speed-up, and the best draft length K
@@ -2286,9 +2523,17 @@ alpha  c     best K  speed-up  (K=4 gives)
   0.3  0.2        1     1.08x  (0.79x)
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the best-K table shows</summary>
+
 Reading it: an accurate drafter earns a long draft (K = 7–8), an inaccurate or costly one wants K = 1–2, and at α = 0.3 a 4-token draft makes decoding slower. This model assumes a constant α; in practice acceptance tends to fall further along a draft, so engines tune K by measuring.
 
+</details>
+
 ### Modern Serving Techniques ★★★
+
+<details>
+<summary><strong>Read as text</strong> — batching, paging, prefix caching, self-drafting and disaggregation</summary>
 
 Beyond a single draft model, know these production-standard techniques:
 
@@ -2305,11 +2550,18 @@ As of November 2026 the common open serving engines are **vLLM** and **SGLang**,
 
 **Go deeper:** [Ch 17c §2.5](#content/17c_llm_systems) (derivation, drafter types, losslessness demo) · [Ch 17c §2.1–2.6](#content/17c_llm_systems) (batching, paging, prefix caching, disaggregation) · [Ch 33b Q41–Q42](#content/33b_llm_interview_questions_part2)
 
+</details>
+
 ---
 
 ## 13.3 Distributed Training Strategies ★★★
 
+![Infographic on distributed training: Llama 3 405B needs 810 GB of BF16 weights, 6,480 GB of training state and 3.8 × 10^25 FLOPs, about 3,000 years on one H100. The four splits (data, tensor, pipeline parallel and ZeRO / FSDP sharding); the formulas memory ≈ 16 bytes × parameters and GPUs = TP × CP × PP × DP with each symbol labelled, plus the pipeline bubble (p − 1) / (m + p − 1). Llama 3 405B layout TP 8 × CP 1 × PP 16 × DP 128 = 16,384 H100s at 38–43% MFU; step-by-step model state per GPU for 70B on 64 GPUs (plain DP 1,120 GB, ZeRO-1 293, ZeRO-2 155, ZeRO-3 17.5) with a to-scale bar chart against the 80 GB H100 line; a strategy comparison table; and the trap that data parallelism copies all 16 bytes per parameter to every GPU.](diagrams/top34b_info_distributed_training_ai.png)
+
 ### Why Distributed Training Is Necessary ★★★
+
+<details>
+<summary><strong>Read as text</strong> — Llama 3 405B's memory and compute, and the GPU-count formula</summary>
 
 ```
 Llama 3 405B, trained in BF16 with AdamW:
@@ -2325,7 +2577,12 @@ Llama 3 405B, trained in BF16 with AdamW:
 
 > **Maths in one line:** `training memory ≈ 16 bytes × parameters` and `GPUs = TP × CP × PP × DP` — every kind of split multiplies the GPU count: Llama 3 405B used 8 (tensor) × 1 (context) × 16 (pipeline) × 128 (data) = 16,384 H100s.
 
+</details>
+
 ### The Three Axes of Parallelism ★★★
+
+<details>
+<summary><strong>Read as text</strong> — data, tensor and pipeline parallelism in one diagram</summary>
 
 ```mermaid
 graph TD
@@ -2360,7 +2617,12 @@ graph TD
     style P4 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### Detailed Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — what each split shards, what it sends and what it saves</summary>
 
 | Strategy | Splits | Communication | Memory per GPU | Best For |
 |----------|--------|---------------|---------------|----------|
@@ -2371,7 +2633,12 @@ graph TD
 | **Context Parallel (CP)** | The tokens of one long sequence | Keys and values passed around a ring in every attention layer | Activations ÷ CP degree | Training on 128K-token and longer sequences |
 | **Expert Parallel (EP)** | MoE experts across GPUs | Two all-to-alls per MoE layer | Experts ÷ EP degree | Mixture-of-experts models |
 
+</details>
+
 ### ZeRO (Zero Redundancy Optimizer) — Three Stages ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the three ZeRO stages for 70B on 64 GPUs</summary>
 
 ```
 Plain data parallelism stores the SAME 16 bytes per parameter on every GPU:
@@ -2390,7 +2657,12 @@ Traffic: ZeRO-1 and ZeRO-2 cost the same as DDP; ZeRO-3 about 1.5×.
 Sharding makes a model FIT; it does not make it faster.
 ```
 
+</details>
+
 ### Real-World Example: Training Llama 3 405B on 16K GPUs ★★★
+
+<details>
+<summary><strong>Read as text</strong> — Llama 3 405B's 4D layout and the link rule</summary>
 
 ```
 4D parallelism, 8K-token pre-training stage (Llama 3 paper, Table 4):
@@ -2408,6 +2680,8 @@ Rule: the more often a split talks, the faster the link it must sit on —
 ```
 
 **Run it** — ZeRO memory per GPU, then a layout for "train a 100B model on 1,000 GPUs":
+
+</details>
 
 ```python
 # Training memory and time: ZeRO stages for 70B on 64 GPUs, then a 3D layout for 100B on 1,024 GPUs
@@ -2447,13 +2721,20 @@ print(f"{tokens / 1e12:.0f}T tokens -> {flops:.1e} FLOPs -> about {days:.0f} day
 2T tokens -> 1.2e+24 FLOPs -> about 34 days at 40% MFU
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the memory and layout run shows</summary>
+
 Reading it: even ZeRO-2 leaves 155 GB per GPU for a 70B model — only full sharding (ZeRO-3) or model parallelism gets under 80 GB. For 100B on 1,024 GPUs, splitting the model 32 ways (TP 8 × PP 4) and sharding Adam over the 32 replicas leaves about 14 GB of model state per GPU, with the rest of the 80 GB for activations.
 
 **Go deeper:** [Ch 29 §24.6](#content/29_gpus_tpus_infrastructure) (every split, with runnable tensor-parallel and pipeline-bubble code) · [Ch 17 §3.6](#content/17_llm) (will-it-fit napkin maths) · [Ch 33b Q45](#content/33b_llm_interview_questions_part2)
 
+</details>
+
 ---
 
 ## 13.4 RAG Pipeline Design ★★★
+
+![Infographic on RAG pipeline design: an offline lane (documents, chunks of 256–512 tokens with 50–100 overlap, embeddings plus a BM25 keyword index, vector DB) feeding an online lane (query, hybrid search fused with RRF to the top 50, cross-encoder rerank keeping 3–10, prompt with documents first and the question last, LLM answer with citations). Formula RRF(d) = sum over rankers of 1 / (60 + rank(d)) with each symbol labelled; worked example for the query fix error E-4012 at checkout: the runbook is #5 by vectors and #1 by BM25, 1/65 + 1/61 = 0.015385 + 0.016393 = 0.03178, fused #2, with a ranking table (checkout-faq 0.03227, E-4012-runbook 0.03178, cart-errors 0.03175); a design-decisions table; lost-in-the-middle numbers for GPT-3.5-Turbo with 20 documents (75.8% answer first, 53.8% middle, 56.1% no documents); and the trap that RAG reduces but does not eliminate hallucination.](diagrams/top34b_info_rag_pipeline_design_ai.png)
 
 ### Simple Explanation
 
@@ -2462,6 +2743,9 @@ RAG (Retrieval-Augmented Generation) is like giving the LLM an open-book exam. I
 > **Maths in one line:** `RRF(d) = Σ over rankers of 1 / (60 + rank(d))` — hybrid search merges the keyword (BM25) ranking and the vector ranking by **rank** alone, so a chunk near the top of either list rises, and no score normalisation is needed.
 
 ### Complete RAG Architecture ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the offline index and the online query path</summary>
 
 ```mermaid
 graph TD
@@ -2485,7 +2769,12 @@ graph TD
     style LLM fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### Chunking Strategies ★★★
+
+<details>
+<summary><strong>Read as text</strong> — five chunking strategies with sizes and overlap</summary>
 
 | Strategy | Chunk Size | Overlap | Best For |
 |----------|-----------|---------|----------|
@@ -2495,7 +2784,12 @@ graph TD
 | Semantic | Variable | None | When topics shift within a document (costs embedding calls while chunking) |
 | Parent-child | Small chunks to search; their larger parent goes to the LLM | N/A | Sharp matching plus full context; more moving parts |
 
+</details>
+
 ### Key RAG Design Decisions ★★★
+
+<details>
+<summary><strong>Read as text</strong> — hybrid retrieval, reranking, context order, evaluation and production</summary>
 
 1. **Retrieval — hybrid, not vectors alone.** BM25 catches exact tokens that embeddings blur (product codes, error IDs, names); vectors catch paraphrases. Fuse the two rankings with RRF (k = 60).
 2. **Re-ranking — cheap and wide, then expensive and narrow.** A bi-encoder embeds query and chunk separately (fast enough to search millions); a cross-encoder reads the pair together (slow, more accurate). Retrieve about 50, rerank, keep 3–10.
@@ -2505,6 +2799,8 @@ graph TD
 6. **Production — freshness and permissions.** Re-index incrementally as documents change, and filter by the user's access rights *at retrieval time*, so a forbidden chunk never reaches the prompt.
 
 **Run it** — hybrid search on a query that contains an error code:
+
+</details>
 
 ```python
 # Hybrid retrieval: fuse a vector ranking and a BM25 ranking with Reciprocal Rank Fusion (k = 60)
@@ -2549,9 +2845,17 @@ top 3, RRF fused  : ['checkout-faq', 'E-4012-runbook', 'cart-errors']
 top 3, raw sum    : ['E-4012-runbook', 'cart-errors', 'checkout-faq'] = BM25's order
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: why RRF lifts the runbook</summary>
+
 Reading it: the runbook is only #5 by meaning but #1 by keyword, and RRF lifts it to #2 — inside a top-3 cut-off that vector search alone would miss. Adding raw scores instead lets BM25's larger numbers decide on their own, which is why fusion uses ranks.
 
+</details>
+
 ### RAG vs Fine-tuning — When to Use Which ★★★
+
+<details>
+<summary><strong>Read as text</strong> — knowledge vs behaviour, factor by factor</summary>
 
 | Factor | RAG | Fine-tuning |
 |--------|-----|-------------|
@@ -2564,19 +2868,31 @@ Reading it: the runbook is only #5 by meaning but #1 by keyword, and RRF lifts i
 
 The one-line rule: **RAG supplies knowledge; fine-tuning shapes behaviour.** Many production systems use both — fine-tune for format and tone, retrieve for facts.
 
-**Go deeper:** [Ch 17b §9.1 and §10.5](#content/17b_llm_applications) (the pipeline, chunk-count code) · [Ch 28 §24.3, §24.8 and §24.11](#content/28_semantic_search) (chunking, reranking and RRF, production RAG) · [Ch 33 Q31–Q37](#content/33_llm_interview_questions) (RAG interview answers)
+**Go deeper:** [Ch 17b §9.1 and §10.5](#content/17b_llm_applications) (the pipeline, chunk-count code) · [Ch 28 §28.3, §28.5, §28.8 and §28.11](#content/28_semantic_search) (chunking, hybrid search and RRF, reranking, production RAG) · [Ch 33 Q31–Q37](#content/33_llm_interview_questions) (RAG interview answers)
+
+</details>
 
 ---
 
 ## 13.5 MCP — Model Context Protocol ★★★
 
+![Infographic on MCP, the Model Context Protocol, a USB-C port for AI applications: without MCP every app writes custom code for every tool, so connectors grow as N × M (10 apps × 50 services = 500), while with MCP each side implements the protocol once, N + M (10 clients + 50 servers = 60 pieces). Diagram of App A and App B wired to Calendar and Slack by four custom connectors, versus a host app (IDE, chat app or agent) whose MCP clients 1, 2 and 3 talk JSON-RPC 2.0 to MCP servers for Calendar, Slack and Database. A who-talks-to-whom stack: model to host by function calling, host to tool server by MCP (tools/list, tools/call), agent to agent by A2A (Google, Apr 2025). Key dates as of Nov 2026: Anthropic introduced MCP in Nov 2024, HTTP+SSE transport deprecated in revision 2025-03-26, governed by the Linux Foundation's AAIF since Dec 2025, current revision 2026-07-28 is stateless. Tools, resources and prompts; stdio vs Streamable HTTP with OAuth 2.1; security cautions; and the trap that MCP is not just function calling because the model never speaks MCP.](diagrams/top34b_info_mcp_protocol_ai.png)
+
 ### What MCP Is ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the protocol, who governs it, and N × M → N + M</summary>
 
 MCP (Model Context Protocol) is an open protocol that standardizes how LLM **applications** connect to external tools, data sources and services — often called "a USB-C port for AI applications." Anthropic introduced it in November 2024; since December 2025 it has been governed by the Linux Foundation's **Agentic AI Foundation (AAIF)**. As of November 2026 the current specification revision is **2026-07-28**, which made the protocol stateless.
 
 > **Maths in one line:** `connectors: N × M → N + M` — 10 apps × 50 services need 500 custom connectors; with MCP it is 10 clients + 50 servers = 60 pieces.
 
+</details>
+
 ### Why MCP Matters ★★★
+
+<details>
+<summary><strong>Read as text</strong> — before and after MCP, with the connector diagram</summary>
 
 ```
 Before MCP:
@@ -2620,7 +2936,12 @@ graph LR
     style C3 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### MCP Architecture ★★★
+
+<details>
+<summary><strong>Read as text</strong> — host, client, server, transports, primitives, A2A and security</summary>
 
 ```
 Three roles:
@@ -2652,6 +2973,8 @@ How MCP meets function calling:
 **Security in one line:** every MCP server is third-party code whose output lands in the prompt — treat tool results as untrusted input (prompt injection), review and pin tool definitions (tool poisoning and "rug pulls"), and give each server least-privilege OAuth scopes.
 
 **Go deeper:** [Ch 18 §18.3](#content/18_ai_agents) (wire format with runnable code, transports, security, A2A) · [Ch 33b Q64](#content/33b_llm_interview_questions_part2)
+
+</details>
 
 ---
 
@@ -2756,6 +3079,8 @@ Every Gemini release is gated by evaluation: offline benchmarks, human raters an
 
 ## 14.1 LLM Evaluation — Complete Framework ★★★
 
+![Infographic on evaluating an LLM: benchmarks shortlist, your golden set decides, the A/B test confirms. The four steps (public benchmarks shortlist only, a golden set of 50–200 real cases with checks, an LLM judge pairwise in both orders, an online A/B test on task success with guardrails); the perplexity formula exp(−(1/N) Σ ln P(xᵢ | earlier tokens)) with each symbol labelled; a five-level ladder from intrinsic perplexity to public benchmarks, golden set, human preference and online A/B, with a loop turning every production failure into a new golden case. Worked examples: an Arena gap of 1528 vs 1509 (late Oct 2026 snapshot, as of Nov 2026) gives P = 1 / (1 + 10^(−19/400)) = 1 / 1.896 ≈ 0.53, nearly a coin flip; pass@5 with n = 10 and c = 3 is 1 − 21/252 ≈ 0.92. A benchmark board as of Nov 2026: saturated MMLU, GSM8K, HumanEval, GPQA Diamond (96.4%); current Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3; retired SWE-bench Verified (Feb 2026) with the Pro recommendation retracted 8 Jul 2026. Judge biases (position, verbosity, self-preference) with fixes, and the trap of quoting MMLU or one Arena rank as quality.](diagrams/top34b_info_llm_evaluation_framework_ai.png)
+
 ### Simple Explanation
 
 Evaluating an LLM is like hiring. A written exam (public benchmarks) tells you who is worth interviewing; a work trial on your real tasks (a golden set graded by checks and a judge) tells you who can do *this* job; and the customers' verdict after launch (an A/B test) tells you whether hiring them actually helped. Each step catches failures the others miss, so you need all of them.
@@ -2763,6 +3088,9 @@ Evaluating an LLM is like hiring. A written exam (public benchmarks) tells you w
 > **Maths in one line:** `perplexity = exp(−(1/N) × Σ ln P(true tokenᵢ | earlier tokens))` — the model's average surprise at the real next token, turned into "as unsure as choosing among this many equally likely tokens"; lower is better, and it says nothing about whether answers are correct.
 
 ### Evaluation Hierarchy ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the five levels, what each one misses, and the golden-set habit</summary>
 
 ```mermaid
 graph LR
@@ -2788,7 +3116,12 @@ graph LR
 
 Levels 1–2 shortlist models, level 3 decides, level 5 confirms. The habit interviewers listen for: **every production failure becomes a new golden-set case**, so the same bug cannot ship twice.
 
+</details>
+
 ### Perplexity — The Foundation Metric ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the formula, the GPT-2 / GPT-3 numbers and three limits</summary>
 
 $$\text{Perplexity} = \exp\!\left(-\frac{1}{N} \sum_{i=1}^{N} \ln P(x_i \mid x_1, \ldots, x_{i-1})\right)$$
 
@@ -2807,7 +3140,12 @@ Three limits to name:
 2. **Needs the probabilities** — most closed APIs do not return the probability of text *you* supply, so it is a tool for open models and your own training runs.
 3. **Averages over every token** — the few tokens that carry the answer (a number, a name, a "not") drown among thousands of easy ones. In the Ch 17c example, a 4-bit model's perplexity rises only 3.3% while all 20 answer tokens go wrong.
 
+</details>
+
 ### MMLU — Massive Multitask Language Understanding ★★★
+
+<details>
+<summary><strong>Read as text</strong> — what it tests, how scores rose, and what to cite instead (Nov 2026)</summary>
 
 ```
 What it is:  57 subjects, from elementary maths to professional law and medicine
@@ -2840,7 +3178,12 @@ The Gemini Ultra row is an interview point on its own: **the same model scores 6
 
 OpenAI retired SWE-bench Verified in Feb 2026 (saturated/contaminated); it then recommended SWE-bench Pro, but retracted that on 8 Jul 2026 after finding ~30% of Pro tasks broken. Some labs still report Pro, so treat its scores as rough.
 
+</details>
+
 ### Arena (formerly Chatbot Arena) — Crowdsourced Preference Ratings ★★★
+
+<details>
+<summary><strong>Read as text</strong> — Bradley–Terry ratings, the 1528 vs 1509 coin flip, and the limits</summary>
 
 Started in 2023 as Chatbot Arena by LMSYS at UC Berkeley, later LMArena, and since January 2026 simply **Arena** (arena.ai). It ranks models by which answer people prefer.
 
@@ -2866,7 +3209,12 @@ Why it is useful: real user prompts, blind comparisons, and over 9 million votes
 - **Small gaps are ties.** When confidence intervals overlap, do not rank the models.
 - **Selective reporting.** Labs can test several private variants and publish only the best one (the main criticism in "The Leaderboard Illusion", 2025).
 
+</details>
+
 ### LLM-as-Judge ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the pairwise prompt, four biases and how to calibrate the judge</summary>
 
 **Why:** human rating is slow and expensive; a strong model can grade outputs in minutes. In the MT-Bench study (Zheng et al., 2023), GPT-4 as a judge agreed with human experts over 80% of the time — about as often as the experts agreed with each other.
 
@@ -2890,7 +3238,12 @@ Prompt template (pairwise is more reliable than "score this 1–10"):
 
 **Calibrate before you trust it:** hand-label 100–200 examples, measure the judge's agreement with your humans, and use it only where agreement is high. In the Ch 17c simulation, position bias alone swings the same judge's win rate between 70% and 41% on identical pairs.
 
+</details>
+
 ### Contamination, pass@k and Reading a Score ★★★
+
+<details>
+<summary><strong>Read as text</strong> — contamination, pass@k vs pass^k, and error bars on a score</summary>
 
 **Contamination:** benchmark questions and answers live on the internet, models are trained on the internet, so a score can measure memory rather than skill. Signs: a big gap between a public benchmark and a freshly written look-alike set, or a model reproducing the test's reference answers word for word — part of what OpenAI reported when it retired SWE-bench Verified. Defences: private held-out sets, "live" benchmarks with problems newer than the training cutoff (LiveCodeBench), and n-gram decontamination at training time.
 
@@ -2900,9 +3253,13 @@ Prompt template (pairwise is more reliable than "score this 1–10"):
 
 **Go deeper:** [Ch 17c §4.1–§4.8](#content/17c_llm_systems) (evaluation stack, judges, golden sets, A/B tests, contamination, perplexity, benchmarks and Arena) · [Ch 18b §18.12](#content/18b_agents_in_production) (pass@k vs pass^k) · [Ch 20 §20.13](#content/20_2026_landscape) (the current benchmark map)
 
+</details>
+
 ---
 
 ## 14.2 Reasoning Models and Test-Time Compute ★★★
+
+![Infographic on reasoning models and test-time compute: an LLM trained with RL on checkable answers (RLVR, GRPO) writes hidden thinking tokens before answering, and more thinking or more samples buys accuracy; as of Nov 2026 every flagship has an effort dial. Formula cost = input × p_in + (thinking + answer) × p_out with each symbol labelled. Two lanes: a standard LLM goes question to answer tokens, a reasoning model thinks step by step, checks itself and answers after about 1K–100K hidden thinking tokens. A to-scale AIME 2024 bar chart (OpenAI, Sep 2024): GPT-4o 12%, o1 one sample 74%, o1 vote of 64 83%, o1 best of 1,000 93%. Output bill step by step: 8,000 + 300 = 8,300 tokens, 8,300 / 300 = 27.7, about 28× the output tokens. A vote vs checker table for 64 samples: easy p = 0.60 gives 1.00 / 1.00, medium p = 0.30 gives 0.81 / 1.00, trap p = 0.30 gives 0.08 / 1.00, hard p = 0.02 gives 0.00 / 0.73, with checker = 1 − 0.98^64 = 0.73. DeepSeek-R1-Zero: GRPO on the base model with no SFT, AIME 15.6% to 77.9%. Trap: test-time compute beat a 14× larger model on easy and medium problems, but on the hardest a bigger model won (Snell et al., 2024).](diagrams/top34b_info_reasoning_test_time_compute_ai.png)
 
 ### Simple Explanation
 
@@ -2911,6 +3268,9 @@ A standard LLM answers like a student blurting out the first thing that comes to
 > **Maths in one line:** `cost = input × p_in + (thinking + answer) × p_out` — thinking tokens are billed as output, so 8,000 hidden tokens in front of a 300-token answer multiply the output bill by about 28.
 
 ### What Are Reasoning Models? ★★★
+
+<details>
+<summary><strong>Read as text</strong> — what they are, the 2026 effort dials, and standard vs reasoning flow</summary>
 
 A **reasoning model** is an LLM trained with reinforcement learning to generate a long chain of thought before answering, so that spending more compute at inference time ("test-time compute") buys accuracy on hard problems. The architecture is the same Transformer — what differs is the training and the inference budget.
 
@@ -2934,7 +3294,12 @@ graph LR
     style A2 fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### How Reasoning Models Are Trained ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the R1-Zero and R1 recipes, and outcome vs process rewards</summary>
 
 The open recipe is DeepSeek-R1's (arXiv 2501.12948; Nature, 2025); the full training story is in §12.6 above and [Ch 17 §3.5b](#content/17_llm).
 
@@ -2962,7 +3327,12 @@ OpenAI o-series: large-scale RL on chains of thought; the recipe is not publishe
 | Cost | Free when a program can check the answer | Needs step labels — PRM800K has 800,000 human step labels |
 | Seen in | DeepSeek-R1 (rules only, no neural reward model) | "Let's Verify Step by Step" (OpenAI, 2023); test-time search |
 
+</details>
+
 ### Scaling Curves: Train-Time vs Test-Time Compute ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the o1 AIME numbers, Snell et al. and the third scaling axis</summary>
 
 ```
 OpenAI o1 (Sep 2024), AIME 2024 — 15 competition maths problems:
@@ -2984,6 +3354,8 @@ Snell et al. (2024), FLOPs-matched, on MATH:
 The key result: test-time compute is a **third scaling axis** next to pre-training and RL post-training — but it amplifies what the model can already do sometimes; it does not create skill the model lacks. With a checker, repeated sampling keeps paying: on SWE-bench Lite, 250 samples lifted DeepSeek-Coder-V2-Instruct from 15.9% to 56% of issues solved ("Large Language Monkeys", 2024), whereas majority voting and reward models plateau. The methods themselves (chain of thought, best-of-N, tree search, self-refinement) are listed in §12.8.
 
 **Run it yourself** — four problems with different chances `p` that one sample is right, answered by one sample, by a majority vote, or by sampling until a checker (unit tests, exact match) accepts an answer:
+
+</details>
 
 ```python
 # Test-time compute: a majority vote over k samples vs a checker that can verify each answer
@@ -3030,9 +3402,17 @@ hard   p=0.02    0.02      0.00       0.00          0.73
 cost: 64 samples = 64x the output tokens of one answer
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what voting and a checker buy</summary>
+
 Reading it: voting turns 60% into near-certainty and 30% into 81%, because the right answer is still the most common one. On the "trap" problem, where one wrong answer is more popular than the right one, voting makes things *worse* (30% → 8%). On the hard problem voting never finds the answer, but a checker that only needs one right sample solves it 73% of the time — which is why test-time compute pays most where answers can be verified (maths, code), the same domains where RLVR trains reasoning models. Every extra sample is paid for in tokens.
 
+</details>
+
 ### When Reasoning Helps — and When It Doesn't ★★
+
+<details>
+<summary><strong>Read as text</strong> — when to turn the effort up, and three cautions</summary>
 
 | Turn the effort up | Keep it low (or off) |
 |---|---|
@@ -3048,9 +3428,13 @@ Three cautions to say out loud:
 
 **Go deeper:** [Ch 20 §20.2](#content/20_2026_landscape) (the reasoning dial, costs, when it pays) · [Ch 17 §3.5b](#content/17_llm) (RLVR and GRPO) · [Ch 17 §15.1b](#content/17_llm) (faithfulness of the visible reasoning)
 
+</details>
+
 ---
 
 ## 14.3 State Space Models (Mamba) — Transformer Alternatives ★★★
+
+![Infographic comparing state-space models (Mamba) with Transformers: attention scores about n² pairs per layer per head, so 128K tokens means about 17 billion scores and a 40 GiB KV cache, while an SSM keeps one fixed-size state updated by a linear recurrence, and Mamba makes B, C and the step size Δ depend on the token (large Δ = write, small Δ = skip). Formula hₜ = Āₜ·hₜ₋₁ + B̄ₜ·xₜ, yₜ = Cₜ·hₜ with each symbol labelled, O(n) time and fixed memory. Panels: a Transformer token looking back at every earlier token with a KV cache of 320 KiB per token reaching 40 GiB at 128K; tokens flowing through one fixed state box; and the state step by step with Ā = 0.9 and inputs 1, 0, 0, 2 giving 1, 0.9, 0.81 and 2.729. A comparison table, as of Nov 2026: compute O(n²) vs O(n) vs mostly O(n), memory, cost per new token, exact recall excellent vs weaker vs near-Transformer, shipping in Jamba and Nemotron-H hybrids. Mamba-3B matched Transformers twice its size with about 5× generation throughput; trap: Mamba will not simply replace Transformers, hybrids are what ships.](diagrams/top34b_info_ssm_mamba_ai.png)
 
 ### Simple Explanation
 
@@ -3059,6 +3443,9 @@ A Transformer answers each new word by looking back at *every* earlier word — 
 > **Maths in one line:** `hₜ = Āₜ·hₜ₋₁ + B̄ₜ·xₜ,  yₜ = Cₜ·hₜ` — the new state is a decayed copy of the old state plus the new input written in; Mamba makes Ā, B̄ and C depend on the current token, so the model chooses what to keep. Cost O(n) in length, memory fixed.
 
 ### The Problem with Transformers ★★★
+
+<details>
+<summary><strong>Read as text</strong> — n² attention scores, the 40 GiB KV cache, and what FlashAttention fixes</summary>
 
 ```
 Self-attention scores every token against every (earlier) token:
@@ -3076,7 +3463,12 @@ FlashAttention removes the n × n MEMORY, not the n² COMPUTE.
 Can we get sub-quadratic sequence modelling?
 ```
 
+</details>
+
 ### State Space Models (SSMs) — The Idea ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the recurrence, the discretised update and the Ā = 0.9 example</summary>
 
 SSMs process a sequence through a **recurrent state** that is updated at each step, like an RNN, but the update is *linear*, which lets training run in parallel: S4 (fixed A, B, C) computes the whole output as one long convolution, and Mamba (input-dependent) uses a parallel scan.
 
@@ -3094,7 +3486,12 @@ Tiny example — one-number state, Ā = 0.9, B̄ = C = 1, D = 0, inputs [1, 0, 0
 
 Here `h` is the state (16 numbers per channel in the original Mamba), `x` the input, `y` the output; `A` sets how fast the state decays, `B` how the input is written in, `C` how the state is read out, `D` a skip connection.
 
+</details>
+
 ### Mamba — Making SSMs Practical ★★★
+
+<details>
+<summary><strong>Read as text</strong> — selective B, C and Δ, the reported results, and Mamba-2 / Mamba-3</summary>
 
 **Key innovation: input-dependent ("selective") state updates.**
 
@@ -3132,7 +3529,12 @@ graph LR
     style M_SSM fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### Transformer vs Mamba — Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — Transformer vs Mamba vs hybrid, row by row</summary>
 
 | Property | Transformer | Mamba (pure SSM) | Hybrid (mostly SSM / linear attention + a few attention layers) |
 |----------|------------|-------|----------------|
@@ -3142,6 +3544,8 @@ graph LR
 | Parallel training | Yes (matrix multiplies) | Yes (parallel scan; matrix form in Mamba-2) | Yes |
 | Exact recall and copying from context | Excellent | Weaker — the state is a lossy summary | Close to a Transformer |
 | Where it ships (2026) | Almost every frontier LLM | Niche: very long streams, audio, genomics | Jamba (AI21), Nemotron-H (NVIDIA), Granite 4.0-H (IBM), Qwen3-Next, Kimi Linear |
+
+</details>
 
 ### Interview Take: Will Mamba Replace Transformers? ★★★
 
@@ -3155,6 +3559,8 @@ The trade-off in one line: SSM layers buy flat memory and linear cost for very l
 
 ## 14.4 The "Lost in the Middle" Phenomenon ★★★
 
+![Infographic on the lost in the middle phenomenon: a fact in the prompt is not a fact the model uses. Liu et al. (TACL 2024) gave GPT-3.5-Turbo 20 Wikipedia passages (about 3,000 tokens) with one answer passage; accuracy is U-shaped, a bigger window does not fix it, and the cause is a positional attention bias. Formula position cost = acc(start) − acc(middle) = 75.8 − 53.8 = 22 points with each part labelled. A to-scale bar chart of % correct by position of the answer passage: 1 → 75.8, 5 → 57.2, 10 → 53.8 (worst, below no passages), 15 → 55.4, 20 → 63.2, with dashed lines for no passages 56.1% and only the answer passage 88.3%. Step by step: 22.0 points lost to position versus 19.7 points gained from all 20 passages. An edges-first prompt order c1 c3 c5 c6 c4 c2 then the question, strongest chunks at the edges and weakest in the middle. A do-this table: rerank and send fewer chunks (50 vs 20 passages only +1.5 points), best first and runner-up last, documents first and question last (up to 30% better, Anthropic), measure at your real length. The 16K version scored the same, Claude-1.3 dipped only about 4 points, NoLiMa found 11 of 13 models below half at 32K; trap: a 1M-token window does not mean you can stuff everything in.](diagrams/top34b_info_lost_in_the_middle_ai.png)
+
 ### Simple Explanation
 
 Think of a long meeting: you remember how it opened and the last few things said, while the middle blurs. LLMs do the same with long prompts — a fact *in* the context window is not the same as a fact the model *uses*. So where you place evidence in a prompt changes the answer.
@@ -3162,6 +3568,9 @@ Think of a long meeting: you remember how it opened and the last few things said
 > **Maths in one line:** `position cost = acc(start) − acc(middle) = 75.8 − 53.8 = 22 points` — moving the one useful passage from slot 1 to slot 10 of 20 cost GPT-3.5-Turbo 22 points of accuracy, more than the 19.7 points that all 20 passages added over answering with none.
 
 ### What It Is ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the Liu et al. setup, the U-shaped table and how to read it</summary>
 
 Liu et al., "Lost in the Middle: How Language Models Use Long Contexts" (TACL 2024), gave models a question from NaturalQuestions-Open plus 20 Wikipedia passages (at most 100 tokens each, about 3,000 tokens in all). Exactly one passage contained the answer; they moved it from the first slot to the last and measured accuracy:
 
@@ -3179,7 +3588,12 @@ Reading the table:
 - **A bigger window did not help:** the 16K version, at the same prompt length, scored almost exactly the same as the 4K one.
 - **The depth depends on the model:** Claude-1.3's dip was only about 4 points. With 30 passages, GPT-3.5-Turbo (16K) fell from 73.4% at the start to 50.5% at position 10 and recovered to 63.7% at the end; GPT-4, tested on a 500-question subset, was more accurate but still U-shaped.
 
+</details>
+
 ### Why It Happens ★★★
+
+<details>
+<summary><strong>Read as text</strong> — five findings on the cause, from base models to attention bias</summary>
 
 The paper's experiments rule some causes out; later work points at the attention pattern itself:
 
@@ -3189,7 +3603,12 @@ The paper's experiments rule some causes out; later work points at the attention
 4. **A positional attention bias:** "Found in the Middle" (Hsieh et al., 2024) measured a U-shaped attention bias — the first and last tokens get extra attention regardless of relevance (the first tokens partly act as attention sinks, [Ch 17 §2.7](#content/17_llm)). Calibrating that bias away improved RAG accuracy by up to 15 points.
 5. **Repeating the question does not fix QA:** putting the question both before *and* after the documents made a synthetic key-value lookup near-perfect, but barely changed multi-document QA.
 
+</details>
+
 ### What Changed Since 2023 — Needles vs Multi-Hop ★★
+
+<details>
+<summary><strong>Read as text</strong> — needles now pass, but RULER and NoLiMa still degrade</summary>
 
 Context windows grew to about 1M tokens, and frontier models now pass **needle-in-a-haystack** — finding one planted fact that shares words with the question. Harder tests still show effective length well below advertised length:
 
@@ -3200,7 +3619,12 @@ Context windows grew to about 1M tokens, and frontier models now pass **needle-i
 
 As of Nov 2026 the advice still holds: lost in the middle is weaker than in 2023 but not gone, and it depends on the model and the length — so measure it on your own task ([Ch 20 §20.9](#content/20_2026_landscape)).
 
+</details>
+
 ### Practical Implications for RAG ★★★
+
+<details>
+<summary><strong>Read as text</strong> — five do-this rules for RAG prompts</summary>
 
 | Do this | Why |
 |---|---|
@@ -3211,6 +3635,8 @@ As of Nov 2026 the advice still holds: lost in the middle is weaker than in 2023
 | Measure at your real prompt length | Slide the gold passage across positions in your golden set |
 
 **Run it yourself** — the paper's numbers for two models, then an "edges first" ordering of reranked chunks:
+
+</details>
 
 ```python
 # Lost in the middle: the paper's U-curve in numbers, then an "edges first" prompt order for RAG
@@ -3265,9 +3691,14 @@ reranked     : c1 c2 c3 c4 c5 c6
 prompt order : c1 c3 c5 c6 c4 c2 -> then the question, last
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: the U-curve in numbers and the edges-first order</summary>
+
 Reading it: for GPT-3.5-Turbo, two of the five measured positions score below answering with no passages at all; Claude-1.3's curve is much flatter, which is why you measure your own model rather than quote one number. The ordering puts the two strongest chunks at the edges and the two weakest (c5, c6) in the middle, where the model looks least.
 
 **Go deeper:** [Ch 17 §2.7](#content/17_llm) (why long context is hard) · [Ch 20 §20.9](#content/20_2026_landscape) (context windows and long context vs RAG, as of Nov 2026) · [Ch 33b Q51](#content/33b_llm_interview_questions_part2) (interview answer)
+
+</details>
 
 ---
 

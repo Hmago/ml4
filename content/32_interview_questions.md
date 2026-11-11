@@ -2956,7 +2956,7 @@ At scale it works like a hiring funnel: a cheap screen cuts hundreds of millions
 
 **Trap:** Jumping straight to "train a deep model on clicks" — state the label, the funnel and the metrics first, and split the data by time: a random split leaks the future into training.
 
-**Go deeper:** [Ch 26 — Two-Tower](#content/26_ml_system_design) · [Ch 26 — The Funnel That Powers Google](#content/26_ml_system_design) · [Ch 26 — Three Hard Realities](#content/26_ml_system_design) · [Ch 28 §24.9](#content/28_semantic_search) · Q38, Q41 and Q49 in this chapter
+**Go deeper:** [Ch 26 — Two-Tower](#content/26_ml_system_design) · [Ch 26 — The Funnel That Powers Google](#content/26_ml_system_design) · [Ch 26 — Three Hard Realities](#content/26_ml_system_design) · [Ch 28 §28.9](#content/28_semantic_search) · Q38, Q41 and Q49 in this chapter
 
 ---
 
@@ -3541,7 +3541,7 @@ however large the catalog.
 
 **Trap:** "Amazon recommends what customers similar to you bought" — that is user-based filtering; Amazon's engine relates *items*. And ranking by raw co-purchase counts recommends best-sellers to everyone — compare with what chance predicts.
 
-**Go deeper:** Q34 (recommender design) and Q38 (YouTube's two-stage funnel) in this chapter · [Ch 26 — Two-Tower and the Funnel](#content/26_ml_system_design) · [Ch 11 §11.16](#content/11_unsupervised_learning) (lift and the best-seller trap) · [Ch 28 §24.9](#content/28_semantic_search) (ranking metrics)
+**Go deeper:** Q34 (recommender design) and Q38 (YouTube's two-stage funnel) in this chapter · [Ch 26 — Two-Tower and the Funnel](#content/26_ml_system_design) · [Ch 11 §11.16](#content/11_unsupervised_learning) (lift and the best-seller trap) · [Ch 28 §28.9](#content/28_semantic_search) (ranking metrics)
 
 ---
 
@@ -3803,7 +3803,7 @@ true +4.
 
 # PART 8 — OpenAI-Specific Questions
 
-> **Currency note (Nov 2026):** OpenAI's flagship models are reasoning models. Since o1 (2024) they are trained with reinforcement learning to "think" in hidden tokens before answering, and since GPT-5 (Aug 2025) the thinking is built into the main line as a reasoning-effort setting; the lineup as of Nov 2026 is GPT-6 Astra, GPT-6.1 Sol and Terra, and GPT-6 Luna ([Ch 20 §20.1](#content/20_2026_landscape)). When a question touches chain-of-thought or benchmarks, answer with the effort dial and current evals — Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, Arena — not saturated MMLU or GSM8K. The answers below are the short, OpenAI-flavoured versions; the full ones live in Ch 33 and 33b.
+> **Currency note (Nov 2026):** OpenAI's flagship models are reasoning models. Since o1 (2024) they are trained with reinforcement learning to "think" in hidden tokens before answering, and since GPT-5 (Aug 2025) the thinking is built into the main line as a reasoning-effort setting; the lineup as of Nov 2026 is GPT-6 Astra, GPT-6.1 Sol and Terra, and GPT-6 Luna ([Ch 20 §20.1](#content/20_2026_landscape)). When a question touches chain-of-thought or benchmarks, answer with the effort dial and current evals — Terminal-Bench 4.1, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, Arena — not saturated MMLU or GSM8K. The answers below are the short, OpenAI-flavoured versions; the full ones live in Ch 33 and 33b.
 
 ---
 
@@ -3946,7 +3946,7 @@ Today labs also over-train smaller models for cheap serving, and scale test-time
 ### Q46 (O). How would you evaluate a language model?
 *[O] | ★★★*
 
-![Interview card for Q46, evaluating a language model: a six-layer evaluation ladder from perplexity, public benchmarks (shortlist only) and a 50 to 200 case golden set up to an LLM judge, red-teaming and an online A/B test; the error-bar formula margin = 1.96 x sqrt(p(1-p)/n) showing 90% on 200 cases is plus or minus 4.2 points; saturated (MMLU, GSM8K, HumanEval) versus current benchmarks as of Nov 2026; a key-numbers table for MMLU, HumanEval, Arena and GDPval; follow-ups and the leaderboard trap.](diagrams/iq32_info_q46_evaluating_llms_ai.png)
+![Interview card for Q46, evaluating a language model: a six-layer evaluation ladder from perplexity, public benchmarks (shortlist only) and a 50 to 200 case golden set up to an LLM judge, red-teaming and an online A/B test; the error-bar formula margin = 1.96 x sqrt(p(1-p)/n) showing 90% on 200 cases is plus or minus 4.2 points; saturated (MMLU, GSM8K, HumanEval) versus current benchmarks as of Nov 2026 (Terminal-Bench 4.1, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3); a key-numbers table for MMLU, HumanEval, Arena and GDPval; follow-ups and the leaderboard trap.](diagrams/iq32_info_q46_evaluating_llms_ai.png)
 
 **Simple Answer:**
 
@@ -3991,7 +3991,7 @@ OpenAI retired its own SWE-bench Verified in Feb 2026.
 
 | Then (saturated: top models 90%+) | Now (as of Nov 2026) |
 |---|---|
-| MMLU (57 subjects, ~14K test questions), GSM8K, HumanEval (164 Python problems), HellaSwag | Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, Arena |
+| MMLU (57 subjects, ~14K test questions), GSM8K, HumanEval (164 Python problems), HellaSwag | Terminal-Bench 4.1, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, Arena |
 
 - **Benchmarks break:** OpenAI retired SWE-bench Verified in Feb 2026 (saturated/contaminated); it then recommended SWE-bench Pro, but retracted that on 8 Jul 2026 after finding ~30% of Pro tasks broken.
 - **OpenAI's own evals measure real work and honesty:** GDPval (Sep 2025) has experts in 44 occupations grade outputs head-to-head; SimpleQA scores right, wrong and "I don't know" separately.
@@ -4284,7 +4284,7 @@ Reading it: sliding the only relevant page from rank 1 to rank 10 costs 0.009 of
 
 **Trap:** "ROC-AUC is 0.99, so the ranking is great" — AUC weighs a swap at rank 900 the same as one at rank 1, so it barely sees the top of the list (the only relevant page at rank 10 of 1,000 still scores AUC 0.991, NDCG@10 just 0.289); report a top-weighted metric at the k users actually see.
 
-**Go deeper:** [Ch 28 §24.9](#content/28_semantic_search) (formulas, code, building an evaluation set) · [Ch 13 §13.10](#content/13_model_evaluation) (which metric for which problem) · [Ch 26 — Metrics](#content/26_ml_system_design) (offline vs online) · [Q36 in Ch 33](#content/33_llm_interview_questions) (recall@k and MRR for RAG, with a program) · Q13 (ROC-AUC) and Q38 (YouTube) in this chapter
+**Go deeper:** [Ch 28 §28.9](#content/28_semantic_search) (formulas, code, building an evaluation set) · [Ch 13 §13.10](#content/13_model_evaluation) (which metric for which problem) · [Ch 26 — Metrics](#content/26_ml_system_design) (offline vs online) · [Q36 in Ch 33](#content/33_llm_interview_questions) (recall@k and MRR for RAG, with a program) · Q13 (ROC-AUC) and Q38 (YouTube) in this chapter
 
 ---
 

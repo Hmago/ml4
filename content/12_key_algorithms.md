@@ -1717,7 +1717,7 @@ for eta in (0.1, 0.03):
     model = lgb.LGBMClassifier(n_estimators=5000, learning_rate=eta, num_leaves=31,
                                subsample=0.8, subsample_freq=1,  # subsample does nothing unless subsample_freq > 0
                                colsample_bytree=0.8, random_state=0, verbose=-1)
-    model.fit(X_train, y_train, eval_set=[(X_val, y_val)],
+    model.fit(X_train, y_train, eval_X=X_val, eval_y=y_val,   # LightGBM < 4.7: eval_set=[(X_val, y_val)]
               callbacks=[lgb.early_stopping(50, verbose=False)])
     ran = len(model.evals_result_["valid_0"]["binary_logloss"])
     test_ll = log_loss(y_test, model.predict_proba(X_test))  # uses best_iteration_ automatically

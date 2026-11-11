@@ -3498,7 +3498,7 @@ lgb_model = lgb.LGBMClassifier(
 )
 lgb_model.fit(
     X_train, y_train,
-    eval_set=[(X_val, y_val)],
+    eval_X=X_val, eval_y=y_val,   # LightGBM < 4.7: eval_set=[(X_val, y_val)]
     callbacks=[lgb.early_stopping(50), lgb.log_evaluation(100)]
 )
 ```

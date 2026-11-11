@@ -1769,7 +1769,7 @@ Before trusting human labels, measure how often two raters agree (Cohen's κ cor
 
 ## 4.8 Benchmarks & Arena (formerly Chatbot Arena) `L1`
 
-![Infographic on benchmarks and Arena, as of Nov 2026. Saturated benchmarks: MMLU, HellaSwag, GSM8K, HumanEval. Frontier benchmarks: Terminal-Bench, OSWorld-Verified, GPQA Diamond, AIME and FrontierMath, ARC-AGI-3 (humans 100%, best AI 0.51% at launch), Humanity's Last Exam, LiveCodeBench, with a warning card that SWE-bench Verified was retired in Feb 2026 and the SWE-bench Pro recommendation retracted on 8 Jul 2026. Arena podium from the 27 Oct 2026 table: Gemini 4 Carbon 1528, Gemini 4 Argon 1520, Claude Opus 5.5 1509; P(A beats B) = 1 / (1 + 10^((R_B - R_A) / 400)), so a 19-point gap is a 53% win rate.](diagrams/llm17c_info_benchmarks_and_arena_ai.png)
+![Infographic on benchmarks and Arena, as of Nov 2026. Saturated benchmarks: MMLU, HellaSwag, GSM8K, HumanEval. Frontier benchmarks: Terminal-Bench, OSWorld-Verified, GPQA Diamond, AIME and FrontierMath, ARC-AGI-3 (humans 100%, best AI 0.51% at launch), Humanity's Last Exam, LiveCodeBench, with a warning card that SWE-bench Verified was retired in Feb 2026 and the SWE-bench Pro recommendation retracted on 8 Jul 2026. Arena podium from the 9 Nov 2026 table: Gemini 4 Carbon 1526, Gemini 4 Argon 1522, Muse Wonder 1511, a statistical tie at the top (Claude Opus 5.5 is fourth at 1506); P(A beats B) = 1 / (1 + 10^((R_B - R_A) / 400)), so the 20-point gap between 1526 and 1506 is a 53% win rate.](diagrams/llm17c_info_benchmarks_and_arena_ai.png)
 
 | Benchmark | What It Tests | Format |
 |-----------|--------------|--------|
@@ -1789,7 +1789,7 @@ Before trusting human labels, measure how often two raters agree (Cohen's κ cor
 
 | Frontier benchmark | What it tests | Status as of November 2026 |
 |---|---|---|
-| **Terminal-Bench** | Agent work in a real terminal: inspect files, run commands, recover from errors | Version 4.0 is the current table (top about 65 %, Oct 2026); 2.x is saturated (about 90 %). Scores are not comparable across versions |
+| **Terminal-Bench** | Agent work in a real terminal: inspect files, run commands, recover from errors | Version 4.1 is the current table (since 9 Nov 2026: 4.0's tasks re-graded with hardened verifiers, every entry within its 4.0 95 % interval); top 65.8 %, Claude Opus 5.5 + Claude Code ([tbench.ai](https://www.tbench.ai/news/terminal-bench-4-1), 11 Nov 2026); 2.x is saturated (about 90 %). Scores are not comparable across major versions |
 | **OSWorld (-Verified)** | Operating a real desktop through screenshots — computer use ([Ch 18 §18.6](#content/18_ai_agents)) | Active |
 | **GPQA Diamond** | 198 graduate-level, "Google-proof" science questions | Saturated — top score about 96 % (Epoch AI, Sep 2026) |
 | **AIME / FrontierMath** | Competition- to research-level maths (reasoning models) | AIME is close to saturated; FrontierMath Tiers 1–3 are nearly saturated too (95.1 %, Claude Fable 5.2, Epoch AI, 9 Nov 2026) and the harder Tier 4 is topped out (100 %, Fable 5.2 and GPT-6.1 Sol) |

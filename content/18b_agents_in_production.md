@@ -577,7 +577,7 @@ The metrics above tell you whether an agent is *good*. These tell you whether it
 
 ### Benchmark-Style Harnesses
 
-![Infographic of agent benchmarks as harnesses, as of Nov 2026: a four-step harness loop (reset environment, agent runs task with tool calls recorded, grader checks end state and trajectory, aggregate success, pass^k, steps, cost, latency); columns for Terminal-Bench 4.0, tau2-bench (Sierra), OSWorld (369 tasks, humans about 72%) and GAIA (466 questions, humans about 92%) / BrowseComp (1,266 facts); warning badges that SWE-bench Verified was retired by OpenAI in Feb 2026 and that OpenAI retracted its SWE-bench Pro recommendation on 8 Jul 2026 after finding about 30% of tasks broken; a pick-by-agent table ending with AgentDojo for injection resistance.](diagrams/ag18b_info_benchmarks_harness_ai.png)
+![Infographic of agent benchmarks as harnesses, as of Nov 2026: a four-step harness loop (reset environment, agent runs task with tool calls recorded, grader checks end state and trajectory, aggregate success, pass^k, steps, cost, latency); columns for Terminal-Bench 4.1, tau2-bench (Sierra), OSWorld (369 tasks, humans about 72%) and GAIA (466 questions, humans about 92%) / BrowseComp (1,266 facts); warning badges that SWE-bench Verified was retired by OpenAI in Feb 2026 and that OpenAI retracted its SWE-bench Pro recommendation on 8 Jul 2026 after finding about 30% of tasks broken; a pick-by-agent table (Terminal-Bench 4.1 for a coding or shell agent) ending with AgentDojo for injection resistance.](diagrams/ag18b_info_benchmarks_harness_ai.png)
 
 <details>
 <summary><strong>Read as text</strong> — the benchmarks as of November 2026 and the harness loop</summary>
@@ -588,7 +588,7 @@ A benchmark harness provides a fixed set of tasks with automated graders, so res
 |---|---|---|---|
 | **SWE-bench Verified** | Fix real GitHub issues in Python repos (500 human-checked tasks) | The repo's tests pass after the patch | Retired by OpenAI in Feb 2026 (flawed tests, contamination) |
 | **SWE-bench Pro** (Scale AI) | Longer, multi-file fixes across 41 repos (1,865 tasks) | Tests pass | OpenAI found ~30% of tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report it, so treat scores as rough |
-| **Terminal-Bench** | Real work in a Linux terminal — build, configure, debug | A test script checks the end state | Version 4.0 is current; scores across versions are not comparable |
+| **Terminal-Bench** | Real work in a Linux terminal — build, configure, debug | A test script checks the end state | Version 4.1 is current (since 9 Nov 2026: 4.0's tasks with hardened verifiers); scores across major versions are not comparable |
 | **τ-bench / τ²-bench** (Sierra) | Customer-service chats (retail, airline; τ² adds telecom) with a simulated user and a written policy | Final database state matches the goal | Introduced pass^k; in τ² the simulated user also acts on the system |
 | **OSWorld** | Operate a real desktop OS and its apps (369 tasks) | A checker script per task inspects the end state | Computer use; humans solved about 72% |
 | **GAIA** | Multi-step assistant questions that need browsing and tools (466) | Exact match on a short answer | Humans scored about 92% |

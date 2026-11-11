@@ -86,6 +86,11 @@ The tradeoff: making the model more flexible usually lowers bias but raises vari
 
 > **Maths in one line:** $E[(y-\hat f(x))^2] = (E[\hat f(x)] - f(x))^2 + \text{Var}[\hat f(x)] + \sigma^2$ — retrain the model on many training sets and score each on the same new point $x$: the average squared error is **bias²** (how far the *average* model is from the truth) **+ variance** (how much the models disagree) **+ noise** (randomness in the label that no model can remove).
 
+![Infographic on the bias-variance decomposition: expected test error = bias² + variance + noise σ², with each term of the formula labelled; the measured sums for polynomials fitted to 20 noisy sine points with noise 0.09 (degree 1: 0.193 + 0.007 + 0.09 = 0.290, degree 3: 0.005 + 0.014 + 0.09 = 0.109 best, degree 15: 0.000 + 0.071 + 0.09 = 0.161); a to-scale chart of bias², variance and test error against polynomial degree above the noise floor; a double-descent curve peaking at the interpolation threshold; and a simple / right-sized / over-flexible model spectrum.](diagrams/top34_info_bias_variance_decomposition_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the set-up and the formal decomposition</summary>
+
 Set-up: the true relationship is $y = f(x) + \varepsilon$, where the noise $\varepsilon$ has mean $0$ and variance $\sigma^2$ (it need not be Gaussian) and is independent of the training data. $\hat{f}(x)$ is the prediction of a model trained on a random training set $D$. The expectation $E[\cdot]$ averages over **training sets** (which change $\hat f$) and over the **noise in the new label**; the point $x$ is held fixed.
 
 $$\text{Expected Prediction Error} = \underbrace{\text{Bias}^2(\hat{f}(x))}_{\substack{\text{Systematic error from} \\ \text{wrong assumptions}}} + \underbrace{\text{Variance}(\hat{f}(x))}_{\substack{\text{Sensitivity to} \\ \text{training data}}} + \underbrace{\sigma^2}_{\substack{\text{Noise we} \\ \text{can never remove}}}$$
@@ -94,7 +99,12 @@ $$\text{Expected Prediction Error} = \underbrace{\text{Bias}^2(\hat{f}(x))}_{\su
 
 $$E\!\left[(y - \hat{f}(x))^2\right] = \underbrace{\left[E[\hat{f}(x)] - f(x)\right]^2}_{\text{Bias}^2} + \underbrace{E\!\left[(\hat{f}(x) - E[\hat{f}(x)])^2\right]}_{\text{Variance}} + \underbrace{\sigma^2}_{\text{Noise}}$$
 
+</details>
+
 ### Step-by-Step Derivation ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the seven-step derivation and the fine print</summary>
 
 **Step 1:** Start with the expected squared error
 
@@ -131,9 +141,14 @@ $$E\!\left[(y - \hat{f}(x))^2\right] = \text{Bias}^2 + \text{Variance} + \sigma^
 
 **Go deeper:** [Ch 8 §8.14](#content/08_core_concepts) — the same decomposition measured by simulation.
 
+</details>
+
 ---
 
 ## Visual — The Tradeoff Curve ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the simple-to-over-flexible model spectrum</summary>
 
 ```mermaid
 graph LR
@@ -147,7 +162,12 @@ graph LR
     style C fill:#ccccff,stroke:#0000cc,color:#000
 ```
 
+</details>
+
 ### The Tradeoff in Real Numbers
+
+<details>
+<summary><strong>Read as text</strong> — bias², variance and test MSE by polynomial degree</summary>
 
 Fit polynomials of growing degree to 20 noisy points from a sine curve (noise variance $\sigma^2 = 0.09$), refit each one on 500 fresh training sets, and measure every term ([Ch 8 §8.14](#content/08_core_concepts) has the program):
 
@@ -160,15 +180,27 @@ Fit polynomials of growing degree to 20 noisy points from a sine curve (noise va
 
 Read it left to right: bias² collapses once the model can bend like a sine wave, variance grows tenfold (0.007 → 0.071), and the total is a **U** with its bottom at degree 3 — sitting on a noise floor of 0.09 that no model can go below.
 
+</details>
+
 ### Beyond the U-Curve — Double Descent ★★
+
+<details>
+<summary><strong>Read as text</strong> — the interpolation threshold and implicit regularization</summary>
 
 The U describes the classical regime. Very over-parameterized models can show **double descent**: test error peaks near the **interpolation threshold** — the size at which the model can first fit the training set exactly (for simple models, roughly when the number of parameters reaches the number of training examples) — and then **falls again** as the model keeps growing (Belkin et al., 2019; Nakkiran et al., 2019, "Deep Double Descent"). The leading explanation is **implicit regularization**: among the many weight settings that fit the training data perfectly, gradient descent tends to find smooth, small-norm ones, so variance drops again. The decomposition still holds; what breaks is the rule "more parameters ⇒ more variance".
 
 **Go deeper:** [Ch 8 §8.14](#content/08_core_concepts) — measured table, U-curve chart and the double-descent chart.
 
+</details>
+
 ---
 
 ## How to Diagnose: Learning Curves ★★★
+
+![Infographic on diagnosing bias versus variance: avoidable bias = training error − target error and variance = validation error − training error, a decision flow (training error far above target → high bias; validation much worse than training → high variance; otherwise good fit), the Gmail spam example against a 95% target (logistic regression 72%/70% high bias, deep net 99.5%/78% high variance, tuned random forest 93%/91% good fit) as worked steps and a to-scale bar chart, a target-2% table (15/16 high bias, 3/14 high variance, 15/30 both, 3/4 good fit), and the fixes for high bias and high variance.](diagrams/top34_info_diagnose_and_fix_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — learning curves and the train / validation / target table</summary>
 
 A **learning curve** plots training and validation error — against training **epochs**, or against **training-set size**. Read it against a **target error**: the best error you could hope for (human-level performance, or the best known system). The distance from training error to the target is the **bias** you could still remove; the gap between training and validation error is **variance**.
 
@@ -204,9 +236,14 @@ These are rules of thumb: on a noisy task a gap of several points can be healthy
 
 **Go deeper:** [Ch 13 §13.9](#content/13_model_evaluation) — learning curves against training-set size, with code; [Ch 8 §8.13](#content/08_core_concepts) — learning curves against epochs.
 
+</details>
+
 ---
 
 ## How to Fix ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the fix flowchart — bias first, then variance</summary>
 
 ```mermaid
 graph TD
@@ -240,9 +277,14 @@ Check bias first: until training error is close to the target, a validation gap 
 
 **Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) — regularization; [Ch 12 §12.5](#content/12_key_algorithms) and [§12.6](#content/12_key_algorithms) — bagging (random forest) and boosting.
 
+</details>
+
 ---
 
 ## Worked Example ★★★
+
+<details>
+<summary><strong>Read as text</strong> — three Gmail spam models against a 95% target</summary>
 
 Scenario: a spam classifier for Gmail. Assume the best achievable accuracy (careful human raters agreeing) is about **95%**, so that is the target. (A real spam system would track precision and recall — Topic 7 — accuracy just keeps the arithmetic simple.)
 
@@ -251,6 +293,8 @@ Scenario: a spam classifier for Gmail. Assume the best achievable accuracy (care
 | 1. Logistic regression on a few hand-made features | 72% | 70% | 23 points | 2 points | **High bias** → richer features (word n-grams, sender reputation), a more flexible model (gradient-boosted trees, a neural net) |
 | 2. Large deep network, no regularization | 99.5% | 78% | none (it memorised the training set) | 21.5 points | **High variance** → more data, dropout or L2, early stopping, a smaller network |
 | 3. Random forest with tuned hyperparameters | 93% | 91% | 2 points | 2 points | **Good fit** ✓ → ship it; further gains come from new features or data |
+
+</details>
 
 ---
 
@@ -336,7 +380,12 @@ Imagine you're blindfolded on a hilly landscape and you want to find the lowest 
 
 > **Maths in one line:** $\theta \leftarrow \theta - \alpha\,\nabla J(\theta)$ — move every weight a small step against its slope; steeper slope, bigger step. On a bowl-shaped (quadratic) loss this only converges if $\alpha < 2/\lambda_{\max}$, where $\lambda_{\max}$ is the steepest curvature — in the worked example below, $\alpha < 0.18$.
 
+![Infographic on gradient descent and its three variants: the update θ ← θ − α∇J(θ) with each symbol labelled and the mini-batch form, the four-step loop (initialize, forward pass, gradient, update), one update by hand on the points (1,2), (2,4), (3,5) with α = 0.1 (J = 15.0, gradients −16.67 and −7.33, w = 1.667, b = 0.733, J falls to 0.234), three paths on a contour plot (batch GD 1 update per epoch, SGD 1,000, mini-batch 16), and a table for N = 1,000 examples comparing batch GD, mini-batch B = 64 and SGD.](diagrams/top34_info_gradient_descent_variants_ai.png)
+
 ### Core Update Rule ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the update rule and its symbols</summary>
 
 $$\theta_{\text{new}} = \theta_{\text{old}} - \alpha \cdot \nabla J(\theta)$$
 
@@ -346,7 +395,12 @@ Where:
 - $\nabla J(\theta)$ = gradient of the loss with respect to the parameters — the vector of partial derivatives $\partial J/\partial\theta_j$, pointing uphill
 - $J(\theta)$ = loss function (how wrong the model is)
 
+</details>
+
 ### Step-by-Step Process ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the five-step training loop</summary>
 
 ```mermaid
 graph TD
@@ -367,9 +421,14 @@ graph TD
 
 **Go deeper:** [Ch 8 §8.9](#content/08_core_concepts) — gradient descent with a learning-rate demo; [Ch 6 §4.1](#content/06_math_fundamentals) — the maths.
 
+</details>
+
 ---
 
 ## Three Variants of Gradient Descent ★★★
+
+<details>
+<summary><strong>Read as text</strong> — batch, stochastic and mini-batch side by side</summary>
 
 ```mermaid
 graph TD
@@ -393,7 +452,12 @@ graph TD
     style MBGD fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### Mathematical Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the three update formulas and the N = 1,000 table</summary>
 
 $$\begin{aligned}
 \textbf{Batch GD:} \quad & \theta \leftarrow \theta - \alpha \cdot \frac{1}{N} \sum_{i=1}^{N} \nabla L_i(\theta) && \leftarrow \text{all } N \text{ examples} \\[6pt]
@@ -411,13 +475,20 @@ The "SGD" optimizer in PyTorch or Keras is really **mini-batch** SGD — you cho
 
 **Go deeper:** [Ch 8 §8.11](#content/08_core_concepts) — the three variants raced on the same data.
 
+</details>
+
 ---
 
 ## Advanced Optimizers ★★★
 
 > **Maths in one line:** $\theta \leftarrow \theta - \alpha\,\hat m_t / (\sqrt{\hat v_t} + \varepsilon)$ (Adam) — step along a smoothed gradient $\hat m$ (momentum) divided by the weight's typical gradient size $\sqrt{\hat v}$ (adaptive step), so every weight moves by roughly $\alpha$ per step whatever the scale of its gradient.
 
+![Infographic on momentum, RMSProp, Adam and AdamW: the AdamW update θ ← θ − α(m̂ₜ/(√v̂ₜ + ε) + λθ) with each symbol labelled plus Adam's moment and bias-correction formulas, a family tree from plain SGD through momentum, RMSProp and bias correction to Adam and AdamW (the Transformer and LLM default), bias correction worked at t = 1 (uncorrected step 0.1/√0.001 = 3.16 times too large), a bar chart of the weight after 2,000 steps (Adam + L2 0.023 / 0.830 / 1.012 vs AdamW 0.830 for quiet, medium and loud gradients), and Adam defaults versus the Llama 2 AdamW recipe.](diagrams/top34_info_adam_and_adamw_ai.png)
+
 ### Momentum — "Ball rolling downhill with inertia" ★★★
+
+<details>
+<summary><strong>Read as text</strong> — velocity, the 10× speed-up and damped zigzags</summary>
 
 $$\begin{aligned}
 v_t &= \beta \cdot v_{t-1} + \nabla J(\theta) && \leftarrow \text{accumulate velocity } (\beta \approx 0.9) \\
@@ -430,7 +501,12 @@ Key insight: Momentum helps in two ways:
 
 (This is PyTorch's form. Some texts write $v_t = \beta v_{t-1} + (1-\beta)\nabla J$ — the same idea with a 10× smaller velocity, so its learning rate is 10× larger.)
 
+</details>
+
 ### RMSProp — "Adaptive learning rate per parameter" ★★★
+
+<details>
+<summary><strong>Read as text</strong> — per-weight step sizes, and Adagrad</summary>
 
 $$\begin{aligned}
 s_t &= \beta \cdot s_{t-1} + (1-\beta) \cdot (\nabla J(\theta))^2 && \leftarrow \text{running average of squared gradients} \\
@@ -439,7 +515,12 @@ s_t &= \beta \cdot s_{t-1} + (1-\beta) \cdot (\nabla J(\theta))^2 && \leftarrow 
 
 Key insight: each weight's step is divided by the size of its own recent gradients, so weights with large gradients get smaller steps and weights with small gradients get larger ones. (Adagrad does the same with a running *sum*, which only grows — so its learning rate decays towards zero.)
 
+</details>
+
 ### Adam — "Momentum + RMSProp + Bias Correction" ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the update equations, the defaults and the family diagram</summary>
 
 $$\begin{aligned}
 m_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot \nabla J(\theta) && \leftarrow \text{1st moment (mean of gradients)} \\
@@ -467,7 +548,12 @@ graph TD
     style ADAMW fill:#c8e6c9,stroke:#1b5e20,color:#000
 ```
 
+</details>
+
 ### AdamW — Adam with Decoupled Weight Decay ★★★
+
+<details>
+<summary><strong>Read as text</strong> — decoupled weight decay, the Llama 2 recipe, Lion and Muon</summary>
 
 **The problem.** Classic "L2 regularization" adds $\lambda\theta$ to the gradient. Under plain SGD that is exactly weight decay. Under Adam the sum is divided by $\sqrt{\hat v}$, so a weight with large gradients is barely decayed and a weight with tiny gradients is decayed hard — the regularization strength ends up depending on gradient history.
 
@@ -483,9 +569,14 @@ With $\alpha = 10^{-3}$ and $\lambda = 0.1$ every weight shrinks by $\alpha\lamb
 
 **Go deeper:** [Ch 8 §8.10](#content/08_core_concepts) — SGD vs momentum vs Adam on a thin valley; [Ch 16 §1.2](#content/16_deep_learning) — Adam by hand, AdamW vs L2, Muon.
 
+</details>
+
 ---
 
 ## Why Bias Correction Matters in Adam ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the t = 1 arithmetic and why the uncorrected step is too large</summary>
 
 Problem: $m_0 = 0$ and $v_0 = 0$, so the early running averages are pulled towards zero.
 
@@ -499,9 +590,16 @@ Correction: $\hat{m}_1 = m_1 / (1 - 0.9^1) = g_1$ and $\hat{v}_1 = v_1 / (1 - 0.
 
 **Go deeper:** [Ch 16 §1.2](#content/16_deep_learning) — the worked Adam step and a program that measures the oversized steps.
 
+</details>
+
 ---
 
 ## Learning Rate — The Most Important Hyperparameter ★★★
+
+![Infographic on the learning rate: the cosine schedule αₜ = α_min + ½(α_max − α_min)(1 + cos(πt/T)) with each symbol labelled and worked halfway (peak 1e-3, floor 1e-4 gives 5.5e-4), a chart of warmup + cosine versus warmup–stable–decay, the stability ceiling on the 3-point regression (curvatures 0.240 and 11.09, α < 2/11.09 = 0.18) with loss curves for α = 0.1 and 0.17 converging and 0.19 exploding, a schedule table (constant, warmup + cosine, WSD) and the α = 0.1 run J = 15.0 → 0.234 → 0.058 → 0.0556.](diagrams/top34_info_learning_rate_and_schedules_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — too small, just right, too large — and how to pick it</summary>
 
 ```mermaid
 graph LR
@@ -517,7 +615,12 @@ graph LR
 
 **How to pick it:** run short trials on a log scale (1e-4, 3e-4, 1e-3, 3e-3…) and keep the largest value that trains smoothly, or run an LR range test (raise the rate every step and pick a value below where the loss starts to blow up). Typical starting points: Adam at 1e-3 for small networks; 2e-5 to 5e-5 for fine-tuning BERT-style models; for LLM pre-training the peak shrinks as models grow (Llama 2 7B: 3e-4; Llama 3 405B: 8e-5).
 
+</details>
+
 ### Learning Rate Schedules ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the cosine formula, six schedules, warmup and decay</summary>
 
 > **Maths in one line:** $\alpha_t = \alpha_{\min} + \tfrac12(\alpha_{\max} - \alpha_{\min})\bigl(1 + \cos(\pi t / T)\bigr)$ — after warmup, slide from the peak to the floor along half a cosine over $T$ steps; halfway ($t = T/2$) it sits exactly between them, e.g. $5.5\times10^{-4}$ for a peak of $10^{-3}$ and a floor of $10^{-4}$.
 
@@ -544,9 +647,14 @@ graph TD
 
 **Go deeper:** [Ch 16 §1.3](#content/16_deep_learning) — warmup + cosine vs WSD with numbers; [Ch 14 §14.13](#content/14_neural_networks) — schedules in practice.
 
+</details>
+
 ---
 
 ## Worked Example — Linear Regression with Gradient Descent ★★★
+
+<details>
+<summary><strong>Read as text</strong> — two iterations by hand, the end point and the ceiling</summary>
 
 Given: 3 data points $\to (1, 2),\ (2, 4),\ (3, 5)$
 
@@ -585,6 +693,8 @@ The first step overshot the slope ($w = 1.667$ is above the best value 1.5), so 
 **Where it ends:** the least-squares line $w = 1.5$, $b = 0.667$, with $J = 0.0556$ (the three points are not on one line, so the loss cannot reach 0). The loss gets there in about 3 steps, but the weights take about 70 steps to settle within 0.001: the loss surface is a long, thin valley whose two curvatures differ 46×, and along the flat direction each step closes only 2.4% of the remaining gap. That is exactly the problem momentum and Adam were invented for.
 
 **The ceiling:** gradient descent on this loss is stable only for $\alpha < 2/\lambda_{\max} = 2/11.09 = 0.18$. At $\alpha = 0.17$ it converges; at $\alpha = 0.19$ the loss explodes.
+
+</details>
 
 ```python
 # Gradient descent on the chapter's 3 points: the iterations above, where it ends, and the learning-rate ceiling
@@ -642,11 +752,21 @@ alpha = 0.17: J after 100 steps = 0.0556
 alpha = 0.19: J after 100 steps = 1.14e+10
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: where to go deeper</summary>
+
 **Go deeper:** [Ch 8 §8.9](#content/08_core_concepts) — learning rates that crawl, converge and diverge on a one-weight loss.
+
+</details>
 
 ---
 
 ## Local Minima vs Saddle Points ★★★
+
+![Infographic on saddle points and choosing an optimizer: the chance that a zero-gradient point is a minimum is about 2 to the minus n, worked as 1/2, 1/4 and 1/1,024 (about 1 in 1,000) for n = 10; a 3-D saddle surface where the ball crawls on the plateau then rolls off downhill; mini-panels for local minimum, plateau and global minimum; a table of SGD + momentum, Adam, AdamW (default), LAMB / LARS and Adagrad with best-for and avoid-when; trap: you need a good minimum that generalizes, not the global one.](diagrams/top34_info_saddles_and_optimizer_choice_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — minima, saddles, plateaus and the 2⁻ⁿ argument</summary>
 
 ```mermaid
 graph TD
@@ -667,9 +787,14 @@ graph TD
 
 **Go deeper:** [Ch 6 §4.6](#content/06_math_fundamentals) — convexity, the swap argument and a saddle-point program.
 
+</details>
+
 ---
 
 ## When to Use Which Optimizer ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the optimizer chooser table</summary>
 
 | Optimizer | Best For | Avoid When |
 |-----------|----------|-----------|
@@ -681,6 +806,8 @@ graph TD
 | Muon / Lion (newer) | Muon: 2-D hidden weight matrices in some frontier LLM runs; Lion: one state per weight instead of two | You can't afford to re-tune — learning rate and weight decay differ from AdamW's |
 
 **Go deeper:** [Ch 16 §1.2](#content/16_deep_learning) — optimizer cheat sheet, optimizer-state memory and "Beyond AdamW".
+
+</details>
 
 ---
 
@@ -763,7 +890,12 @@ In ML, regularization **penalizes model complexity** so the model focuses on tru
 
 > **Maths in one line:** `J(w) = Loss(data, w) + λ · penalty(w)`, with penalty `Σ|wᵢ|` (L1) or `Σwᵢ²` (L2) — λ sets how much training fit you trade for smaller weights. For standardized, uncorrelated features L1 *subtracts* a fixed amount from every |w| and stops at 0; L2 *divides* every w by the same factor.
 
+![Infographic on L1 vs L2 regularization: J(w) = Loss(data, w) + lambda times penalty(w) with each symbol labelled; the L1 pull is a constant lambda times sign(w), the L2 pull 2 lambda w fades; a loss ellipse touches the L1 diamond at its corner on the w2 axis (w1 = 0 exactly) but the L2 circle at an ordinary point; penalty alone from 0.100, L1 reaches 0 in 10 steps while L2 is still 0.012 after 20; Ch 8's six weights 2.10, 0.30, -4.20, 0.050, 1.80, -0.010 become 1.70, 0, -3.80, 0, 1.40, 0 under L1 (3 exact zeros) and 1.68, 0.24, -3.36, 0.040, 1.44, -0.008 under L2 (no zeros); trap: L2 never removes features.](diagrams/top34_info_l1_vs_l2_sparsity_ai.png)
+
 ### The Modified Loss Function ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the penalized loss and three practical rules</summary>
 
 $$\begin{aligned}
 \textbf{Without regularization:} \quad & J(\theta) = \text{Loss}(\text{data}, \theta) \\[8pt]
@@ -780,7 +912,12 @@ Three practical rules:
 
 (Bayesian view, a common follow-up: L2 is a Gaussian prior on the weights, L1 a Laplace prior — the penalty is the negative log-prior of a MAP estimate.)
 
+</details>
+
 ### Why L1 Produces Sparsity — The Geometric Intuition ★★★
+
+<details>
+<summary><strong>Read as text</strong> — diamond vs circle, and why corners give exact zeros</summary>
 
 Candidates commonly report this as the follow-up to "L1 vs L2". Here's why:
 
@@ -800,7 +937,12 @@ graph TD
 
 (The constraint form "‖w‖ ≤ t" and the penalty form "loss + λ·penalty" are the same problem: every λ corresponds to some budget t.)
 
+</details>
+
 ### Mathematical Explanation of Sparsity ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the two gradient updates and soft-thresholding</summary>
 
 **The gradient update with L1** (α = learning rate, as in Topic 2):
 
@@ -815,6 +957,8 @@ $$w = w - \alpha \cdot \left(\frac{\partial \text{Loss}}{\partial w} + 2\lambda 
 The push is **proportional to $w$**: as $w$ gets small, the push gets small. On the penalty alone each step multiplies $w$ by $(1 - 2\alpha\lambda)$ — geometric decay that never reaches zero; with data, the weight settles at a smaller, non-zero value.
 
 **The detail most answers miss:** plain (sub)gradient steps with an L1 term overshoot zero, flip sign and **jitter around it** — they almost never land exactly on 0. Lasso solvers use **soft-thresholding** (the "proximal" step): shrink $|w|$ by $\alpha\lambda$ and clip at zero, $w \leftarrow \text{sign}(w)\cdot\max(|w| - \alpha\lambda,\ 0)$. That is what produces exact zeros. The program uses Ch 8's six weights:
+
+</details>
 
 ```python
 # L1 vs L2 in motion: soft-thresholding lands on exact zeros, plain subgradient steps only jitter near zero
@@ -861,6 +1005,9 @@ L2             1.680   0.240  -3.360   0.040   1.440  -0.008   exact zeros: 0
 penalty only, 20 steps from 0.100: L1 -> 0.000, L2 -> 0.012
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the run shows, the L1 vs L2 table and AdamW</summary>
+
 Both L1 runs agree on the big weights (2.10 → 1.70: subtract 0.4), but only soft-thresholding gives the three exact zeros — the subgradient version leaves 0.011–0.015 of jitter. L2 divides everything by 1.25 and zeroes nothing. The last line is the whole story in one number: a constant pull reaches zero in 10 steps; a proportional pull is still at 0.012 after 20.
 
 | | L1 (Lasso) | L2 (Ridge / weight decay) |
@@ -875,13 +1022,20 @@ Both L1 runs agree on the big weights (2.10 → 1.70: subtract 0.4), but only so
 
 **Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) · [Ch 6 §4.5](#content/06_math_fundamentals) · [Ch 10 §10.9](#content/10_supervised_learning) · [Ch 32 Q4](#content/32_interview_questions)
 
+</details>
+
 ---
 
 ## Dropout — Regularization for Neural Networks ★★★
 
 > **Maths in one line:** `ã = a · m / (1 − p)`, where the mask m = 0 with probability p and 1 otherwise — each activation is dropped with probability p and the survivors are scaled up by 1/(1 − p), so the expected value E[ã] = a and inference uses the full network unchanged.
 
+![Infographic on dropout: a-tilde = a times m / (1 - p) with each symbol labelled, E of a-tilde = a and Var = a squared times p / (1 - p); a 3-input, 5-hidden network in training with hidden units 2 and 4 dropped and the kept units scaled by 2, beside the same network at inference with all units on; worked steps at p = 0.5: outputs 3, 4, 7, 2, 5 with mask 1, 0, 1, 0, 1 give 3, 0, 7, 0, 5, times 2 gives 6, 0, 14, 0, 10, and neuron 1 averages (6 + 0) / 2 = 3; three views (ensemble of 2^N masks, 64 for N = 6; no co-adaptation; noise injection); typical p about 0.1 in Transformers, 0.3-0.5 on dense layers, none in PaLM pre-training; trap: forgetting model.eval().](diagrams/top34_info_dropout_ai.png)
+
 ### How It Works ★★★
+
+<details>
+<summary><strong>Read as text</strong> — kept and dropped neurons in one training step</summary>
 
 ```mermaid
 graph TD
@@ -905,7 +1059,12 @@ graph TD
     style O fill:#e3f2fd,stroke:#1565c0,color:#000
 ```
 
+</details>
+
 ### Step-by-Step Mechanism ★★★
+
+<details>
+<summary><strong>Read as text</strong> — training vs inference, a worked mask, typical rates and the naming trap</summary>
 
 ```
 During TRAINING (a fresh random mask for every mini-batch):
@@ -929,7 +1088,12 @@ Example with p = 0.5 (this step, neurons 2 and 4 happen to be dropped):
 
 **Naming trap:** PyTorch's `nn.Dropout(p)` and Keras's `Dropout(rate)` give the probability of **dropping** a unit, but the original paper (Srivastava et al., *JMLR* 2014) used p for the probability of **keeping** it (p = 0.5 for hidden units, 0.8 for inputs). Say which convention you mean.
 
+</details>
+
 ### Why Dropout Works — Three Perspectives ★★★
+
+<details>
+<summary><strong>Read as text</strong> — ensemble, no co-adaptation and noise injection</summary>
 
 | Perspective | The idea | What it buys |
 |---|---|---|
@@ -939,13 +1103,20 @@ Example with p = 0.5 (this step, neurons 2 and 4 happen to be dropped):
 
 **Go deeper:** [Ch 6 §4.5](#content/06_math_fundamentals) (the expectation and variance, simulated) · [Ch 14 §14.7](#content/14_neural_networks) · [Ch 32 Q28](#content/32_interview_questions)
 
+</details>
+
 ---
 
 ## Batch Normalization ★★★
 
 > **Maths in one line:** `x̂ = (x − μ_B) / √(σ²_B + ε),  y = γ·x̂ + β` — standardize each feature with the current mini-batch's mean and variance, then let the learned scale γ and shift β choose the final range.
 
+![Infographic comparing BatchNorm, LayerNorm and RMSNorm: x-hat = (x - batch mean) / sqrt(batch variance + epsilon), y = gamma times x-hat + beta, with each symbol labelled; a 4 x 3 batch grid drawn three times, BatchNorm averaging one feature column (2, 4, 6, 8 gives mean 5, variance 5, sigma 2.24, x-hat -1.34, -0.45, 0.45, 1.34), LayerNorm one token row (3.0, 1.5, 2.0 gives mean 2.17, sigma 0.62, x-hat 1.34, -1.07, -0.27) and RMSNorm the same row with no mean (RMS 2.25 gives 1.33, 0.67, 0.89); a table of statistics, train vs inference, batch size 1 and typical models; notes on running averages with m = 0.1 in PyTorch, the plus or minus 71% wobble at batch size 2, and Santurkar 2018; trap: forgetting model.eval().](diagrams/top34_info_batchnorm_vs_layernorm_ai.png)
+
 ### The Problem It Solves ★★★
+
+<details>
+<summary><strong>Read as text</strong> — internal covariate shift and the modern caveat</summary>
 
 ```
 During training, each layer receives inputs from the previous layer.
@@ -959,7 +1130,12 @@ larger learning rate, care less about initialization, and train faster.
 
 > **Modern caveat:** The original "Internal Covariate Shift" explanation is now contested. Santurkar et al. (NeurIPS 2018) showed BatchNorm's main benefit is **smoothing the loss landscape** (making gradients more predictable), not reducing ICS — the two are only weakly correlated. Cite the loss-landscape view in interviews.
 
+</details>
+
 ### Step-by-Step Computation ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the four steps, a worked batch of four and the flow</summary>
 
 For a mini-batch $B = \{x_1, x_2, \ldots, x_m\}$:
 
@@ -1006,7 +1182,12 @@ graph LR
     style E fill:#d4edda,stroke:#155724,color:#000
 ```
 
+</details>
+
 ### BatchNorm During Inference ★★★
+
+<details>
+<summary><strong>Read as text</strong> — running averages, momentum conventions and small batches</summary>
 
 Problem: At inference, we may have a single sample — no "batch" to compute $\mu, \sigma^2$.
 
@@ -1024,7 +1205,12 @@ At inference: use $\mu_{\text{running}}$ and $\sigma^2_{\text{running}}$ instead
 
 At inference BatchNorm is a fixed per-channel scale and shift, so it can be folded into the preceding convolution and costs nothing.
 
+</details>
+
 ### LayerNorm & RMSNorm — Why Transformers Don't Use BatchNorm ★★★
+
+<details>
+<summary><strong>Read as text</strong> — BatchNorm vs LayerNorm vs RMSNorm, with numbers</summary>
 
 All three normalizers apply the same two lines; they differ only in **which numbers** the statistics are taken over.
 
@@ -1055,11 +1241,18 @@ RMSNorm (Zhang & Sennrich, 2019) drops the mean subtraction and β: one reductio
 
 **Go deeper:** [Ch 16 §1.5](#content/16_deep_learning) · [Ch 6 §4.7](#content/06_math_fundamentals) · [Ch 32 Q27](#content/32_interview_questions)
 
+</details>
+
 ---
 
 ## Early Stopping ★★★
 
 > **Maths in one line:** `λ ≈ 1 / (2·α·τ)` — for a quadratic loss, τ gradient steps at learning rate α (starting near zero) act roughly like an L2 penalty λΣw² of this strength: more steps = weaker regularization (Goodfellow et al., *Deep Learning*, §7.8).
+
+![Infographic on early stopping, label smoothing and augmentation: lambda is about 1 / (2 alpha tau), so more steps mean weaker L2-like regularization, and y_smooth = (1 - epsilon) times the one-hot target + epsilon / K; a loss-vs-epoch chart with training loss falling and validation loss U-shaped, marked STOP + restore best with a patience bracket; label smoothing with epsilon 0.1 and K = 5 turns 0, 0, 1, 0, 0 into 0.02, 0.02, 0.92, 0.02, 0.02, best logit gap ln(0.92 / 0.02) = 3.83; MixUp at lambda 0.7 gives cat 0.7 / dog 0.3 and CutMix 112x112 on 224x224 gives 25%, cat 0.75 / dog 0.25; a table of which regularizer to use for linear models, trees and neural nets, and the default order; trap: never use label-changing transforms such as rotating a 6 into a 9.](diagrams/top34_info_early_stopping_and_data_regularizers_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the stopping rule, step by step</summary>
 
 ```mermaid
 graph TD
@@ -1076,7 +1269,12 @@ graph TD
     style C fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
+</details>
+
 ### Why It's Regularization ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why fewer steps act like L2, and two traps</summary>
 
 ```
 Early stopping limits training time → limits how many gradient steps
@@ -1095,9 +1293,14 @@ The number of training steps is an implicit regularization parameter.
 
 **Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) (early stopping in practice) · [Ch 12 §12.6](#content/12_key_algorithms) (the mechanics for boosted trees) · [Ch 14 §14.13](#content/14_neural_networks)
 
+</details>
+
 ---
 
 ## Label Smoothing & Data Augmentation ★★
+
+<details>
+<summary><strong>Read as text</strong> — label smoothing, augmentation and the training-only rule</summary>
 
 Two regularizers that change the **data** instead of the weights: label smoothing softens the targets, augmentation multiplies the inputs.
 
@@ -1119,9 +1322,14 @@ Augment the **training** set only. The one test-time exception, test-time augmen
 
 **Go deeper:** [Ch 16 §1.4](#content/16_deep_learning) (label smoothing) · [Ch 16 §2.5](#content/16_deep_learning) (MixUp, CutMix, RandAugment) · [Ch 14 §14.13](#content/14_neural_networks) (basic augmentation)
 
+</details>
+
 ---
 
 ## All Regularization Techniques — Decision Guide ★★★
+
+<details>
+<summary><strong>Read as text</strong> — which regularizer for which model, and a default order</summary>
 
 ```mermaid
 graph TD
@@ -1154,6 +1362,8 @@ graph TD
 **A default order** when a model overfits: (1) more data or augmentation — it fixes the cause; (2) early stopping — nearly free; (3) L2 / weight decay; (4) dropout; (5) L1 only when you want sparsity; (6) a simpler model.
 
 **Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) ("Which One Should You Reach For?") · [Ch 16 §1.2](#content/16_deep_learning) (AdamW)
+
+</details>
 
 ---
 
@@ -1236,7 +1446,12 @@ A **Random Forest** is like asking 100 different people to play 20 Questions, ea
 
 > **Maths in one line:** `gain = I(parent) − Σⱼ (nⱼ / N) · I(childⱼ)`, with impurity `I` = Gini `1 − Σpᵢ²` or entropy `−Σpᵢ log₂ pᵢ` — at each node the tree tries every feature and threshold and keeps the split whose children are purest once each child is weighted by its share of the rows.
 
+![Infographic: how a decision tree picks a split. Formula gain = I(parent) − Σⱼ (nⱼ/N) · I(childⱼ), with Gini = 1 − Σpᵢ² and entropy = −Σpᵢ log₂ pᵢ, each symbol labelled. Worked example on 100 emails with 60 spam: parent Gini 0.48 and entropy 0.971 bits; the split 'contains FREE' gives children 48/2 and 12/38 with entropy 0.242 and 0.795, so information gain = 0.971 − 0.519 = 0.452 bits. A tree drawing adds a 'known sender?' split (2/28 and 10/10). A table compares splits A, B and C by information, Gini and error gain (0.4523, 0.2592, 0.2600 / 0.0013, 0.0008, 0 / 0.1140, 0.0612, 0), showing that misclassification error scores the useful split C as zero.](diagrams/top34_info_tree_splitting_criteria_ai.png)
+
 ### How a Tree Decides Where to Split ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the spam tree and the greedy search</summary>
 
 ```mermaid
 graph TD
@@ -1255,7 +1470,12 @@ graph TD
 
 The search is **greedy**: the best question *now*, with no look-ahead, because finding the truly optimal tree is NP-complete. For a numeric feature the candidate thresholds are the midpoints between its sorted distinct values.
 
+</details>
+
 ### Gini Impurity ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the Gini formula, worked on 60 spam / 40 not</summary>
 
 $$\text{Gini}(\text{node}) = 1 - \sum p_i^2$$
 
@@ -1271,7 +1491,12 @@ Perfectly mixed: $\text{Gini} = 1 - (0.5^2 + 0.5^2) = 0.5$ — worst!
 
 Range: 0 (pure) to 0.5 for two classes; with K classes the maximum is 1 − 1/K. Read it as "the chance that two randomly drawn examples from the node have different classes".
 
+</details>
+
 ### Entropy & Information Gain ★★★
+
+<details>
+<summary><strong>Read as text</strong> — entropy and information gain, worked on 60 spam / 40 not</summary>
 
 $$\text{Entropy}(\text{node}) = -\sum p_i \cdot \log_2(p_i)$$
 
@@ -1285,7 +1510,12 @@ $$\text{Information Gain} = H(\text{parent}) - \sum \frac{n_j}{N} \times H(\text
 
 The tree picks the split with HIGHEST information gain (= biggest reduction in entropy/uncertainty).
 
+</details>
+
 ### Worked Example — Choosing the Best Split ★★★
+
+<details>
+<summary><strong>Read as text</strong> — splits A and B by hand, and Gini vs entropy</summary>
 
 Dataset: 100 emails (60 spam, 40 not-spam). Two candidate features to split on:
 
@@ -1312,6 +1542,8 @@ $$\text{IG}(B) = 0.971 - \left(\tfrac{40}{100} \times 0.954 + \tfrac{60}{100} \t
 **WINNER:** Split A (Contains "FREE") with $\text{IG} = 0.452 \gg 0.001$. Split B barely changes the class mix (62.5% and 58.3% spam vs 60% in the parent).
 
 **Gini or entropy?** They rank splits almost identically — Gini gain here is 0.259 for A and 0.001 for B. Gini is scikit-learn's default because it skips the logarithm. What you should **not** split on is plain misclassification error — the program shows why:
+
+</details>
 
 ```python
 # Choosing a split: entropy and Gini agree on the chapter's spam example; misclassification error can't see a good split
@@ -1359,9 +1591,17 @@ B: length > 100       0.0013    0.0008     0.0000
 C: one rare word      0.1140    0.0612     0.0000
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: why error gain cannot see split C</summary>
+
 Split C isolates 20 emails that are 95% spam, yet its error gain is **zero**: both children still predict "spam", so the count of mistakes (40) doesn't move. Gini and entropy are strictly concave, so any split that changes the class mix scores above zero — the tree can make progress one useful split at a time. That is why trees split on Gini or entropy and only *report* accuracy.
 
+</details>
+
 ### Regression Trees, Overfitting & Cost ★★
+
+<details>
+<summary><strong>Read as text</strong> — regression trees, overfitting controls and cost</summary>
 
 - **Regression trees** use the same loop with variance (squared error) as the impurity, and a leaf predicts the mean of its rows — so a tree can never predict outside the range of targets it was trained on.
 - **A tree grown until every leaf is pure memorizes the training set** (low bias, high variance). Control it with `max_depth`, `min_samples_leaf`, or cost-complexity pruning (`ccp_alpha` in scikit-learn).
@@ -1369,11 +1609,18 @@ Split C isolates 20 emails that are 95% spam, yet its error gain is **zero**: bo
 
 **Go deeper:** [Ch 12 §12.4](#content/12_key_algorithms) · [Ch 10 §10.7](#content/10_supervised_learning) (Gini vs entropy side by side)
 
+</details>
+
 ---
 
 ## Random Forest ★★★
 
 > **Maths in one line:** `Var(average of K trees) = ρσ² + (1 − ρ)σ²/K` — with K trees of variance σ² and pairwise correlation ρ, adding trees shrinks only the second term; only making the trees disagree (smaller ρ) lowers the floor ρσ².
+
+![Infographic: Random Forest. Each tree trains on a bootstrap sample of N rows (about 63.2% unique) and tries a random √M features per split; the trees vote or average. Formula Var(average of K trees) = ρσ² + (1 − ρ)σ²/K with ρ, σ² and K labelled and ρσ² marked as the floor. Worked numbers with σ² = 1 and K = 100: ρ = 0.9 gives 0.901, ρ = 0.3 gives 0.307, ρ = 0 gives 0.010, plotted as variance against 1, 10 and 100 trees flattening at the dashed floors. A feature-importance table contrasts MDI (a random ID scored 0.439), permutation importance (the same ID only +0.018) and SHAP (not causal); out-of-bag notes: each row is unseen by about 36.8% of trees, OOB accuracy 0.722 vs 5-fold CV 0.726.](diagrams/top34_info_random_forest_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — bootstrap samples, random features and the vote</summary>
 
 ```mermaid
 graph TD
@@ -1401,7 +1648,12 @@ graph TD
 
 (√M is scikit-learn's default for classification; its regression default uses all M features, and Breiman's classic M/3 is worth trying to decorrelate regression trees.)
 
+</details>
+
 ### Why Random Forest Works — Two Levels of Randomness ★★★
+
+<details>
+<summary><strong>Read as text</strong> — two levels of randomness and the variance formula</summary>
 
 ```mermaid
 graph TD
@@ -1426,6 +1678,8 @@ graph TD
 ```
 
 Why bother with the second level? If one feature dominates, every bootstrapped tree splits on it first and the trees stay alike (high ρ). Hiding it from some splits forces genuinely different trees. The simulation checks the formula and the 63.2%:
+
+</details>
 
 ```python
 # Why random forests decorrelate trees: Var(average of K trees) = rho*sigma^2 + (1 - rho)*sigma^2/K
@@ -1470,9 +1724,17 @@ print(f"bootstrap of N = {N}: unique rows {np.mean(unique):.3f}, theory 1 - (1 -
 bootstrap of N = 100: unique rows 0.635, theory 1 - (1 - 1/N)^N = 0.634
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the simulation shows</summary>
+
 With ρ = 0.9, a hundred trees still keep 90% of one tree's variance (0.901); cut the correlation to 0.3 and the same hundred trees reach 0.307. More trees can never beat the ρσ² floor — decorrelation is the lever.
 
+</details>
+
 ### Out-of-Bag (OOB) Error ★★★
+
+<details>
+<summary><strong>Read as text</strong> — out-of-bag error as free validation</summary>
 
 ```
 Each bootstrap sample leaves out about 36.8% of the rows ((1 − 1/N)^N → e⁻¹),
@@ -1488,7 +1750,12 @@ set — but still keep an untouched test set for the number you report.
 
 Boosting has no equivalent: its trees are built in sequence on the errors of all previous trees, so no row is left untouched — boosted models need an explicit validation set for early stopping.
 
+</details>
+
 ### Feature Importance — Which Number to Trust ★★★
+
+<details>
+<summary><strong>Read as text</strong> — MDI vs permutation vs SHAP, and what to say</summary>
 
 | Method | How it works | Pitfall |
 |---|---|---|
@@ -1500,11 +1767,18 @@ Boosting has no equivalent: its trees are built in sequence on the errors of all
 
 **Go deeper:** [Ch 12 §12.5](#content/12_key_algorithms) · [Ch 10 §10.8](#content/10_supervised_learning) · [Ch 10 §10.10](#content/10_supervised_learning) (MDI vs permutation vs SHAP) · [Ch 32 Q7](#content/32_interview_questions)
 
+</details>
+
 ---
 
 ## Gradient Boosting — Step by Step ★★★
 
 > **Maths in one line:** `F_m(x) = F_{m−1}(x) + η · h_m(x)`, with each small tree h_m fit to the pseudo-residuals `rᵢ = −∂L/∂F(xᵢ)` (just y − F for squared error) — every round takes an η-sized step downhill on the loss, one tree at a time.
+
+![Infographic: gradient boosting to XGBoost. Formula Fₘ(x) = Fₘ₋₁(x) + η · hₘ(x) with η = 0.1 and each small tree fit to the residuals y − F, plus the XGBoost leaf weight w* = −G / (H + λ) with G, H and λ labelled. Worked example on three houses (targets 300, 500, 200): F₀ = 333.3, residuals −33.3, +166.7, −133.3, the stump 'size < 2,000?' gives leaves −83.3 and +166.7, so F₁ = 325, 350, 325 and SSE falls 46,666.7 → 38,750.0 → 32,337.5 after round 2. The XGBoost leaf {A, C} with G = +166.7, H = 2 shrinks from −83.3 to −55.6 at λ = 1 and the one-row leaf {B} halves from +166.7 to +83.3. A mini diagram contrasts bagging (deep parallel trees, averaged, cuts variance) with boosting (shallow trees, depth 3–8, in sequence, summed, cuts bias).](diagrams/top34_info_gradient_boosting_and_xgboost_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the boosting loop and why it is called "gradient"</summary>
 
 ```mermaid
 graph TD
@@ -1538,7 +1812,12 @@ graph TD
 
 Why "gradient"? For squared error $L = \tfrac12 (y - F)^2$ the negative gradient is exactly the residual $y - F$. For other losses the same loop fits the tree to $-\partial L / \partial F$ instead — for log-loss that is $y - p$ — which is why one algorithm handles regression, classification and ranking. ($F_0$ is the best constant: the mean for squared error, the log-odds of the base rate for log-loss.)
 
+</details>
+
 ### Worked Numerical Example ★★★
+
+<details>
+<summary><strong>Read as text</strong> — three rounds by hand on three houses</summary>
 
 ```
 Data: predict house price (in thousands)
@@ -1568,6 +1847,8 @@ STEP 2: h₂ on the new residuals: same split, leaves −75.0 / +150.0
 ```
 
 The program reproduces the three rounds, then previews the XGBoost leaf formula from the next sections on round 1's stump:
+
+</details>
 
 ```python
 # Gradient boosting by hand on the chapter's three houses (stumps, eta = 0.1), then XGBoost's leaf weight -G/(H + lambda)
@@ -1623,11 +1904,19 @@ lambda = 1: leaf {A,C}  G = +166.7, H = 2  ->  w* = -55.6
 lambda = 1: leaf {B}  G = -166.7, H = 1  ->  w* = +83.3
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: where to go deeper</summary>
+
 **Go deeper:** [Ch 12 §12.6](#content/12_key_algorithms) (three rounds on Maple Street, early stopping, the learning-rate trade-off) · [Ch 32 Q8](#content/32_interview_questions)
+
+</details>
 
 ---
 
 ## Bagging vs Boosting — Comprehensive Comparison ★★★
+
+<details>
+<summary><strong>Read as text</strong> — average vs sum, aspect by aspect</summary>
 
 > **Maths in one line:** bagging `f̂ = (1/K) Σₖ fₖ` (an **average** of independent models: cuts variance, down to the ρσ² floor) vs boosting `F_M = F₀ + η Σₘ hₘ` (a **sum** of dependent corrections: each term cuts the bias that is left).
 
@@ -1645,9 +1934,14 @@ Bagging needs **low-bias** learners (averaging cannot remove bias — an average
 
 **Go deeper:** [Ch 10 §10.8](#content/10_supervised_learning) · [Ch 32 Q6](#content/32_interview_questions)
 
+</details>
+
 ---
 
 ## What Makes XGBoost Special ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the leaf-weight formula and what XGBoost adds, with defaults</summary>
 
 > **Maths in one line:** `w* = −G / (H + λ)` and `Gain = ½ [G_L²/(H_L+λ) + G_R²/(H_R+λ) − (G_L+G_R)²/(H_L+H_R+λ)] − γ` — G and H are the sums of the loss's first and second derivatives over a leaf's rows; λ shrinks leaf values toward zero and γ is the price of one more leaf.
 
@@ -1660,7 +1954,12 @@ Bagging needs **low-bias** learners (averaging cannot remove bias — an average
 | **System design** | Cache-aware column blocks, out-of-core training, multithreaded split search, GPU (`device="cuda"`) | CPU |
 | **Shrinkage + column subsampling** | Borrowed from Friedman's GBM and from random forests | eta 0.3, max_depth 6, colsample 1 |
 
+</details>
+
 ### XGBoost Objective Function ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the regularized objective, with the chapter's numbers</summary>
 
 $$\text{Obj} = \underbrace{\sum L(y_i, \hat{y}_i)}_{\text{Training loss}} + \underbrace{\sum \Omega(f_k)}_{\text{Regularization on trees}}$$
 
@@ -1675,7 +1974,12 @@ This is why XGBoost is called "regularized boosting." Friedman's original gradie
 
 **With the chapter's numbers.** For squared loss, $g_i = F - y_i$ and $h_i = 1$, so a leaf's weight is $-G/(H + \lambda)$ = (sum of residuals) / (rows + λ). In round 1 above, leaf {A, C} has G = +166.7 and H = 2: at λ = 0 its weight is −83.3, the plain mean residual; at XGBoost's default λ = 1 it shrinks to −55.6. The one-row leaf {B} is halved, +166.7 → +83.3 — **λ shrinks leaves with few rows the most**, which is exactly where overfitting lives.
 
+</details>
+
 ### XGBoost vs LightGBM vs CatBoost ★★
+
+<details>
+<summary><strong>Read as text</strong> — three libraries, their tricks and the leaf-wise trap</summary>
 
 All three run the same boosting loop; they differ in how they grow trees and handle categories.
 
@@ -1688,6 +1992,8 @@ All three run the same boosting loop; they differ in how they grow trees and han
 **Trap:** leaf-wise growth keeps splitting the single highest-loss leaf, so LightGBM overfits small data more readily — control it with `num_leaves` (keep it below 2^max_depth), not just `max_depth`. With equal tuning the three usually land close together; features and validation design matter more. As of Nov 2026, boosted trees remain the default for tabular data, though on small tables (roughly ≤ 10K rows) a tabular foundation model such as TabPFN is worth a quick try ([Ch 12 §12.10](#content/12_key_algorithms)).
 
 **Go deeper:** [Ch 12 §12.6](#content/12_key_algorithms) (XGBoost vs LightGBM vs CatBoost, tuning order) · [Ch 32 Q8](#content/32_interview_questions)
+
+</details>
 
 ---
 
@@ -1781,7 +2087,12 @@ The words used in the rest of this topic:
 
 > **Maths in one line:** `a⁽ˡ⁾ = f(W⁽ˡ⁾ a⁽ˡ⁻¹⁾ + b⁽ˡ⁾)` — every layer does the same three things: multiply the previous layer's outputs by a weight matrix, add a bias, apply a non-linear activation f. The last layer's output is the prediction ŷ.
 
+![Infographic: the forward pass. Formula a⁽ˡ⁾ = f(W⁽ˡ⁾ a⁽ˡ⁻¹⁾ + b⁽ˡ⁾) with the activation, weight matrix, previous outputs and bias labelled, plus σ(z) = 1 / (1 + e⁻ᶻ). A 2-2-1 network with inputs x₁ = 1 and x₂ = 2, all six weights (0.5, 0.3, 0.2, 0.7 into the hidden layer; 0.4, 0.6 into the output) and biases 0.1, 0.2 and 0.1: hidden h₁ = σ(1.2) = 0.769, h₂ = σ(1.8) = 0.858, output ŷ = σ(0.922) = 0.716, loss −log(0.7155) = 0.335 for y = 1. A matrix panel shows W with rows (0.5, 0.3) and (0.2, 0.7), b = (0.1, 0.2) and z = Wx + b = (1.2, 1.8), and a five-step table repeats the calculation; the trap notes that without activations W₂(W₁x) = (W₂W₁)x collapses to one linear layer.](diagrams/top34_info_forward_pass_ai.png)
+
 ### Architecture of a Neural Network ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the 2-2-1 network, its 9 numbers and the matrix form</summary>
 
 The smallest network that shows every idea: 2 inputs, one hidden layer of 2 sigmoid neurons, 1 sigmoid output — a "2-2-1" network with 2×2 + 2 + 2 + 1 = **9 learnable numbers**. The labels are the numbers used in the worked example below.
 
@@ -1813,7 +2124,12 @@ graph LR
 
 In matrix form the hidden layer is $\vec{z} = W\vec{x} + \vec{b}$: row $i$ of $W$ holds the weights *into* hidden neuron $i$, so $w_{12}$ is the weight from $x_2$ to $h_1$.
 
+</details>
+
 ### Forward Pass — Step by Step ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the five steps with numbers, from z = Wx + b to the loss 0.335</summary>
 
 Given: Input $\vec{x} = [1, 2]$, Weights (hidden): $W = \begin{pmatrix} 0.5 & 0.3 \\ 0.2 & 0.7 \end{pmatrix}$, $\vec{b} = [0.1, 0.2]$, Weights (output): $\vec{v} = [0.4, 0.6]$, $c = 0.1$, Activation: $\sigma(z) = 1/(1+e^{-z})$
 
@@ -1841,13 +2157,20 @@ The network says "72% yes" for a true "yes": the loss is small but not zero, so 
 
 **Go deeper:** [Ch 14 §14.2](#content/14_neural_networks) · [Ch 14 §14.4](#content/14_neural_networks) · [Ch 06 §2.6](#content/06_math_fundamentals)
 
+</details>
+
 ---
 
 ## Deep Dive — Backpropagation ★★★
 
 > **Maths in one line:** `δ_l = (W_{l+1}ᵀ δ_{l+1}) ⊙ f′(z_l)` and `∂L/∂W_l = δ_l · a_{l−1}ᵀ` — a layer's error signal δ (the gradient of the loss with respect to that layer's pre-activation z) is the next layer's signal sent back through its weights, times this layer's activation slope; a weight's gradient is its neuron's δ times the input that weight multiplied.
 
+![Infographic: backpropagation. Formula δₗ = (Wₗ₊₁ᵀ δₗ₊₁) ⊙ f′(zₗ) and ∂L/∂Wₗ = δₗ · aₗ₋₁ᵀ with every symbol labelled, plus the one-neuron chain rule ∂L/∂w = ∂L/∂z₂ × ∂z₂/∂z₁ × ∂z₁/∂w. Worked example for one sigmoid neuron with squared error: forward x = 2, w = 0.5, z₁ = 1.0, z₂ = σ(1) = 0.731, L = (1 − 0.731)² = 0.072; backward ∂L/∂z₂ = −0.538, times σ′(1) = 0.197 gives −0.106, times x = 2 gives ∂L/∂w = −0.212; update with α = 0.1 gives w = 0.5212. A table compares ∂L/∂w for squared error and cross-entropy: −0.2115 vs −0.5379 at z₁ = 1 and −0.0264 vs −1.9866 at z₁ = −5, about 75 times larger with cross-entropy because ∂L/∂z = ŷ − y.](diagrams/top34_info_backpropagation_ai.png)
+
 ### The Chain Rule — Core Idea ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the chain rule, Jacobians and summing over paths</summary>
 
 ```mermaid
 graph LR
@@ -1874,7 +2197,12 @@ $$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \hat{
 
 Two details interviewers check. With many neurons per layer each factor is a matrix of partial derivatives (a **Jacobian**), and the product is a chain of matrix products. And where one value feeds several later nodes, its gradient is the **sum** of the gradients along every path.
 
+</details>
+
 ### Backpropagation — Worked Example ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the backward pass by hand, the update, and why cross-entropy</summary>
 
 ```mermaid
 graph LR
@@ -1923,6 +2251,8 @@ $$w_{\text{new}} = w - \alpha \times \frac{\partial L}{\partial w} = 0.5 - 0.1 \
 The weight increased! This makes sense because the prediction (0.731) was less than the target (1.0), so the weight should increase to make the output larger.
 
 **Why classifiers use cross-entropy, not squared error, after a sigmoid.** This example uses squared error to keep the algebra short. With binary cross-entropy the sigmoid's slope cancels out of step 2, leaving $\partial L/\partial z_1 = z_2 - y = -0.269$ — no $\times 0.197$ — so $\partial L/\partial w = -0.538$, 2.5× larger. The gap matters most when the neuron is confidently wrong: at $z_1 = -5$ squared error's gradient is about 75× smaller than cross-entropy's, because $\sigma'(-5) = 0.0066$ nearly erases it.
+
+</details>
 
 ```python
 # One sigmoid neuron: the chapter's squared-error backprop, a gradient check, then why cross-entropy learns faster
@@ -1978,6 +2308,9 @@ z1 = -5.0   cross-entropy       0.0067  -1.9866
 
 ### Backprop on the Forward-Pass Network — All Nine Gradients ★★★
 
+<details>
+<summary><strong>Read as text</strong> — the four backprop lines and all nine gradients</summary>
+
 Now the 2-2-1 network from the forward pass ($\hat{y} = 0.7155$, $y = 1$, cross-entropy loss 0.335). Four lines give all 9 gradients, working from the output back to the input ($\odot$ = multiply element by element):
 
 | Step | Formula | Numbers |
@@ -1988,6 +2321,8 @@ Now the 2-2-1 network from the forward pass ($\hat{y} = 0.7155$, $y = 1$, cross-
 | 4. Hidden weights | $\partial L/\partial W = \vec{\delta}_h\,\vec{x}^{\top}$ and $\partial L/\partial \vec{b} = \vec{\delta}_h$ | rows $[-0.0202, -0.0405]$ and $[-0.0208, -0.0416]$ |
 
 Every gradient is negative, so one gradient-descent step raises all 9 numbers and pushes $\hat{y}$ towards 1. Notice the hidden layer's gradients are about 7.5× smaller than the output layer's: on the way back each sigmoid multiplied the signal by $h(1-h) \le 0.25$. That is the vanishing-gradient problem in miniature (next section). The program below confirms every number with a **gradient check** — nudge each weight by $\pm\varepsilon$ and compare $\frac{L(w+\varepsilon) - L(w-\varepsilon)}{2\varepsilon}$ with backprop's answer.
+
+</details>
 
 ```python
 # Backprop on the chapter's 2-2-1 network: all nine gradients, a numerical check, one update
@@ -2047,7 +2382,12 @@ loss 0.3348 -> 0.3159 after one step
 output layer gets 7.5x bigger gradients than the hidden layer
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: where to go deeper</summary>
+
 **Go deeper:** [Ch 14 §14.5](#content/14_neural_networks) · [Ch 16 §1.1](#content/16_deep_learning) · [Ch 06 §2.3](#content/06_math_fundamentals) · [Ch 32 Q23](#content/32_interview_questions)
+
+</details>
 
 ---
 
@@ -2055,7 +2395,12 @@ output layer gets 7.5x bigger gradients than the hidden layer
 
 > **Maths in one line:** `∂L/∂w₁ ∝ Π_l f′(z⁽ˡ⁾) · W⁽ˡ⁾ ≈ (factor per layer)^depth` — backprop multiplies one factor per layer (activation slope × weights): factors below 1 shrink the gradient exponentially (0.25¹⁰ ≈ 10⁻⁶), factors above 1 blow it up (1.5¹⁰ ≈ 58).
 
+![Infographic: vanishing and exploding gradients. Formula ∂L/∂w₁ ∝ Πₗ f′(z⁽ˡ⁾) · W⁽ˡ⁾ ≈ (factor per layer)^depth with each symbol labelled. Three worked panels: 10 sigmoid layers keep at most 0.25¹⁰ = 0.00000095 (about 10⁻⁶) of the gradient, drawn as a fading arrow; a factor of 1.5 grows it to 1.5¹⁰ = 57.7, drawn as a swelling arrow; a residual block y = x + F(x) has ∂y/∂x = 1 + F′(x), so with slope 0.01 fifty plain layers pass back 0.01⁵⁰ = 10⁻¹⁰⁰ while fifty residual blocks pass back 1.01⁵⁰ ≈ 1.64. A table of the real 50-layer, width-64 run: sigmoid Xavier plain 3.9 × 10⁻³² and ReLU std 0.01 9.3 × 10⁻⁶³ vanish, ReLU He 2.19 and sigmoid with residual skips 1.09 stay healthy, ReLU 1.5 × He 1.4 × 10⁹ explodes. Fix list: ReLU, residuals and LSTM gates for vanishing; He 2/n_in, Xavier 2/(n_in + n_out) and normalization for both; clipping g ← c · g / ‖g‖ with c = 1.0 for exploding only.](diagrams/top34_info_vanishing_exploding_gradients_ai.png)
+
 ### The Problem ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why gradients vanish or explode, who suffers, how to diagnose</summary>
 
 ```mermaid
 graph TD
@@ -2081,7 +2426,12 @@ graph TD
 
 The 0.25¹⁰ is an upper bound on the **activation** factors only — the weights can shrink the gradient further or offset the shrinking (a weight of 4 cancels a slope of 0.25). Who suffers most: very deep plain networks, and RNNs, where the same weight matrix multiplies the gradient at every time step (a factor of 0.9 leaves 0.9¹⁰⁰ ≈ 0.00003 after 100 steps). To diagnose it, log the gradient norm of every layer: vanishing shows early layers' norms orders of magnitude below the last layers' while the loss plateaus; exploding shows norm spikes, then a NaN loss.
 
+</details>
+
 ### Solutions ★★★
+
+<details>
+<summary><strong>Read as text</strong> — which fix targets vanishing, exploding or both</summary>
 
 Every fix keeps the per-layer factor close to 1. Know which problem each one targets:
 
@@ -2105,7 +2455,12 @@ graph LR
     style CLIP fill:#d4edda,stroke:#155724,color:#000
 ```
 
+</details>
+
 ### Initialization and Residual Connections — The Two Fixes Interviewers Probe ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the symmetry problem, Xavier vs He, and the +1 residual path</summary>
 
 **Initialization.** The weights must be *random*: if every hidden neuron starts with the same weights, they all compute the same output and receive the same gradient, so they stay identical forever (the **symmetry** problem). Zero *biases* are fine. The weights' *scale* is chosen so each layer passes on a signal of the same size. A neuron sums $n_{\text{in}}$ inputs (its fan-in), and variances of independent terms add, so $\operatorname{Var}(z) \approx n_{\text{in}} \operatorname{Var}(w) \operatorname{Var}(x)$; setting $n_{\text{in}} \operatorname{Var}(w) = 1$ keeps the size steady.
 
@@ -2117,6 +2472,8 @@ graph LR
 **Residual connections.** A residual block outputs its input plus a learned correction, $y = x + F(x)$, so $\partial y/\partial x = 1 + F'(x)$. The **+1** is a path on which the gradient is never shrunk. With numbers: if every layer's local slope were 0.01, 50 plain layers would pass back $0.01^{50} = 10^{-100}$ of the gradient, while 50 residual blocks pass back about $1.01^{50} \approx 1.64$. ResNet (He et al., 2015) used this to train a 152-layer network. Every Transformer block wraps both attention and the feed-forward layer in a residual connection; most modern LLMs use the **pre-norm** form $x + F(\text{Norm}(x))$.
 
 The program measures both fixes on a real 50-layer network (width 64; the residual version adds a skip around every layer) and then clips an exploded gradient:
+
+</details>
 
 ```python
 # 50 layers deep: which fixes keep the gradient alive? Plain vs residual, four inits, then clipping
@@ -2176,15 +2533,25 @@ sigmoid, Xavier, residual   average |gradient| at layer 1 = 1.09e+00
 clip: norm 2.44e+11 -> 1.00, direction kept (cosine 1.000)
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the 50-layer run shows</summary>
+
 Fifty plain sigmoid layers leave about $4 \times 10^{-32}$ of the gradient, and a too-small initialization (std 0.01) kills even ReLU. He initialization keeps it near 1; weights just 1.5× too large explode it by $1.5^{50} \approx 6.4 \times 10^{8}$ (2.19 → 1.40 × 10⁹). The *same* 50 sigmoid layers with skip connections keep it at 1.09 — the identity path carries it. Clipping cuts the exploded gradient to length 1 without changing its direction; it cannot rescue a vanished one.
 
 **Go deeper:** [Ch 14 §14.6](#content/14_neural_networks) · [Ch 14 §14.8](#content/14_neural_networks) · [Ch 16 §1.6](#content/16_deep_learning) · [Ch 16 §1.8](#content/16_deep_learning) · [Ch 32 Q24](#content/32_interview_questions)
+
+</details>
 
 ---
 
 ## Activation Functions — Deep Comparison ★★★
 
 > **Maths in one line:** `gradient sent back = gradient arriving × f′(z)` — the activation's slope is a per-layer multiplier on the learning signal: sigmoid at most 0.25, tanh at most 1, ReLU exactly 1 (active) or 0 (inactive).
+
+![Infographic comparing five activation functions, each with an exactly plotted curve: sigmoid 1/(1 + e⁻ˣ), range (0, 1), max slope 0.25; tanh, range (−1, 1), max slope 1; ReLU max(0, x), range 0 to ∞, slope 1 or 0; Leaky ReLU max(0.01x, x), range (−∞, ∞), slope 1 or 0.01; GELU x · Φ(x), range from about −0.17 to ∞ with its lowest point −0.17 at x ≈ −0.75. Formula: gradient sent back = gradient arriving × f′(z), with σ′(z) = σ(z)(1 − σ(z)). Worked steps: σ′(0) = 0.5 × (1 − 0.5) = 0.25 and σ′(5) = 0.99331 × 0.00669 = 0.0066, drawn as a bell curve; tanh′(2) = 1 − 0.964² = 0.071; ten sigmoid layers pass back at most 0.25¹⁰ ≈ 0.000001 while ten active ReLUs pass back 1¹⁰ = 1. A table shows where each goes: ReLU in MLP and CNN hidden layers, GELU or SwiGLU and GeGLU in Transformers, sigmoid per output for binary or multi-label, softmax for multi-class, none for regression.](diagrams/top34_info_activation_functions_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the five activations compared and where each goes</summary>
 
 ```mermaid
 graph TD
@@ -2227,7 +2594,12 @@ graph TD
 
 A gated unit multiplies two projections of the input, one passed through an activation: $\text{SwiGLU}(x) = \text{SiLU}(xW_1) \odot (xW_2)$, with $\text{SiLU}(z) = z \cdot \sigma(z)$. See [Ch 16 §1.8](#content/16_deep_learning).
 
+</details>
+
 ### Why ReLU Dominates ★★★
+
+<details>
+<summary><strong>Read as text</strong> — sigmoid vs ReLU slopes, and why a non-linearity at all</summary>
 
 **Sigmoid gradient:** $\sigma'(z) = \sigma(z)(1-\sigma(z))$
 
@@ -2248,6 +2620,8 @@ ReLU removes the activation's shrinking, not the weights': a poorly scaled initi
 **Why a non-linearity at all?** Without one, two layers collapse into one: $W_2(W_1 x) = (W_2 W_1) x$, a single matrix. A 100-layer network with no activations can only draw the same straight-line boundaries as a 1-layer one.
 
 **Go deeper:** [Ch 14 §14.3](#content/14_neural_networks) · [Ch 16 §1.8](#content/16_deep_learning)
+
+</details>
 
 ---
 
@@ -2338,7 +2712,12 @@ Before Transformers, sequence models called **RNNs** (recurrent neural networks)
 
 > **Maths in one line:** `Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k) · V` — every token scores every token, turns its scores into weights that sum to 1, and takes the weighted average of their value vectors.
 
+![Infographic: self-attention step by step. Formula Attention(Q, K, V) = softmax(Q·Kᵀ / √d_k) · V with Q, Kᵀ, √d_k and V labelled. Worked example for the tokens I, love and ML with d_k = 2: the score grid Q·Kᵀ (rows 1 0 1, 1 1 0, 2 1 1) is divided by √2 = 1.414, softmaxed row by row into a weight heat-map (0.401 0.198 0.401, 0.401 0.401 0.198, 0.503 0.248 0.248) and multiplied by V, giving outputs I = 3.000, 4.000; love = 2.593, 3.593; ML = 2.490, 3.490. Row ML is worked out line by line (exp values 4.113, 2.028, 2.028, sum 8.169). A causal-mask grid shows −∞ above the diagonal becoming weight 0, so love becomes 2.000, 3.000 and ML is unchanged. A table explains the √d_k scaling: for d_k = 4, 64 and 512 the spread of q·k is 2.00, 7.96 and 22.71 and the winning weight is 0.52, 0.88 and 0.96 raw but 0.34, 0.36 and 0.37 after scaling; the softmax slope w(1 − w) is 0.001 raw vs 0.249 scaled.](diagrams/top34_info_self_attention_step_by_step_ai.png)
+
 ### The Three Vectors: Query, Key, Value ★★★
+
+<details>
+<summary><strong>Read as text</strong> — Q, K and V from one embedding, and the library analogy</summary>
 
 Each token's embedding x (a row of d_model numbers) is multiplied by three **learned** matrices W_Q, W_K, W_V — the same matrices for every token — giving its query, key and value vectors (d_k numbers each in one head).
 
@@ -2366,7 +2745,12 @@ graph TD
 
 Unlike a real library, attention never returns just one book: it returns a **blend of all the values**, weighted by how well each key matches the query.
 
+</details>
+
 ### The Attention Formula ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the formula in four steps, plus the causal mask</summary>
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q \cdot K^T}{\sqrt{d_k}}\right) \cdot V$$
 
@@ -2378,7 +2762,12 @@ Step by step:
 
 In a **decoder**, one extra step comes before the softmax: the **causal mask** sets the score of every future position to −∞, so its weight becomes exactly 0.
 
+</details>
+
 ### Worked Example — Step by Step with Numbers ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the 3-token example by hand, with and without the mask</summary>
 
 ```
 Input: 3 tokens ["I", "love", "ML"]. Assume their embeddings have already been
@@ -2479,6 +2868,8 @@ toward "I" (weight 0.503), capturing the relationship between them.
 
 The program below reproduces every number above, with and without the causal mask.
 
+</details>
+
 ```python
 # Scaled dot-product attention on the chapter's 3-token example, then the same with a causal mask
 import numpy as np
@@ -2529,7 +2920,12 @@ causal mask (decoder):
 
 ### Why Scale by √d_k? ★★★
 
+<details>
+<summary><strong>Read as text</strong> — why dot products spread by √d_k and saturate softmax</summary>
+
 A dot product q · k of two $d_k$-long vectors with independent, unit-variance entries is a sum of $d_k$ terms, so its variance is $d_k$ and its spread (standard deviation) is $\sqrt{d_k}$ — **8 when $d_k = 64$**. Scores that far apart make softmax nearly one-hot, and its gradient for the winner, w(1 − w), nearly zero. Dividing by $\sqrt{d_k}$ brings the spread back to about 1 whatever the head size. The program measures both effects.
+
+</details>
 
 ```python
 # Why divide by sqrt(d_k): raw dot products spread out as d_k grows, and softmax saturates
@@ -2570,9 +2966,14 @@ assert slopes[0] < 0.002 and slopes[1] > 0.2           # about 250x more gradien
 divided by 8: weights [0.475, 0.175, 0.175, 0.175], slope w(1-w) = 0.249
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the run shows and where to go deeper</summary>
+
 Without scaling, the winning key's weight climbs from 0.52 to 0.96 as $d_k$ grows; with scaling it stays near 0.35 for every head size.
 
 **Go deeper:** [Ch 16 §3.3](#content/16_deep_learning) (self-attention from scratch, the causal mask, self- vs cross-attention) · [Ch 34b §11.3](#content/34b_google_top10_ml_interview_part2) (the full derivation and the variance proof).
+
+</details>
 
 ---
 
@@ -2580,7 +2981,12 @@ Without scaling, the winning key's weight climbs from 0.52 to 0.96 as $d_k$ grow
 
 > **Maths in one line:** `MultiHead(X) = Concat(head₁, …, head_h) · W_O`, with `headᵢ = Attention(X·W_Qⁱ, X·W_Kⁱ, X·W_Vⁱ)` — run h small attentions side by side, each on a d_model/h-wide slice, glue their outputs together, then mix them with W_O.
 
+![Infographic: multi-head attention, GQA and MQA. Formula MultiHead(X) = Concat(head₁, …, head_h) · W_O with headᵢ = Attention(X·W_Qⁱ, X·W_Kⁱ, X·W_Vⁱ), each part labelled. Panel 1 splits a 512-wide embedding into 8 slices of 64, one per head, concatenated back to 512 and mixed by W_O (512×512): parameters 4 × 512² = 1,048,576 per layer for h = 1 or h = 8, and score FLOPs h × n² × d_k = n² × 512. Panel 2 computes the KV cache per token for a 70B-sized model (80 layers, head size 128, FP16) as 2 × layers × K/V heads × head size × bytes: MHA 2.5 MiB, GQA 320 KiB, MQA 40 KiB, so GQA is 8× smaller. Wiring diagrams show one K/V head per query (MHA), K/V heads shared by groups of 4 (GQA) and one K/V head for all (MQA). A table, as of Nov 2026: MHA 64 K/V heads, 10 GiB at 4K tokens (GPT-2/3, Llama 2 7B/13B); GQA 8, 1.25 GiB (Llama 3, Mistral 7B, Gemma 2/3); MQA 1, 160 MiB (PaLM, Falcon-7B); MLA in DeepSeek-V2/V3 caches 576 numbers per token per layer.](diagrams/top34_info_multi_head_gqa_ai.png)
+
 ### Why Multiple Heads? ★★★
+
+<details>
+<summary><strong>Read as text</strong> — one blend vs several, and why head roles are learned</summary>
 
 ```mermaid
 graph TD
@@ -2609,7 +3015,12 @@ graph TD
 
 Head roles are **learned, not assigned**. Probing studies do find some readable heads (previous-token, coreference), but many heads can be pruned after training with little loss — so do not over-claim that each head has one neat job.
 
+</details>
+
 ### Mathematical Formulation ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the dimensions, parameters and FLOPs of 8 heads</summary>
 
 ```
 MultiHead(Q, K, V) = Concat(head₁, head₂, ..., headₕ) · W_O
@@ -2631,7 +3042,12 @@ What grows: h score matrices (n × n each) instead of one — more softmax
             work and more memory if they are stored (FlashAttention avoids that).
 ```
 
+</details>
+
 ### MQA and GQA — Sharing Keys and Values ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the KV cache for MHA, GQA, MQA and MLA</summary>
 
 During generation every past token's K and V vectors are kept in the **KV cache** (see the follow-up questions below), and that cache — not the weights — is often what fills GPU memory. Sharing K and V across query heads shrinks it. **MHA** (multi-head attention) gives every query head its own K and V; **MQA** (multi-query) shares one K/V head across all query heads; **GQA** (grouped-query) shares each K/V head within a group. For a Llama-2/3-70B-sized model (80 layers, 64 query heads, head size 128, FP16):
 
@@ -2645,13 +3061,20 @@ GQA keeps quality close to MHA at 8× less cache here, which is why most open LL
 
 **Go deeper:** [Ch 34b §11.3](#content/34b_google_top10_ml_interview_part2) (why multi-head costs the same, GQA/MQA) · [Ch 17 §2.4](#content/17_llm) (runnable GQA, MLA, sliding window) · [Ch 17c §1.2](#content/17c_llm_systems) (the KV cache with real numbers).
 
+</details>
+
 ---
 
 ## Positional Encoding ★★★
 
 > **Maths in one line:** `PE(pos, 2i) = sin(pos / 10000^(2i/d_model))`, `PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))` — each pair of dimensions is a clock hand turning at its own speed; together the hands give every position a unique stamp.
 
+![Infographic on positional encoding from sinusoidal to RoPE: attention is order-blind, so in Dog bites man and Man bites dog each word gets the same output; the sinusoidal formula PE(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE(pos, 2i+1) = cos(...) with every symbol labelled; a worked d_model = 4 table (pos 0 = 0.00, 1.00, 0.00, 1.00; pos 1 = 0.84, 0.54, 0.01, 1.00; pos 2 = 0.91, -0.42, 0.02, 1.00); two clock hands turning at 1 rad and 0.01 rad per position; RoPE rotating q by m times theta and k by n times theta so (R_m q)·(R_n k) = q·R_(n-m) k depends only on n - m; and a table of sinusoidal, learned, RoPE and ALiBi with the models that use them.](diagrams/top34_info_positional_encoding_rope_ai.png)
+
 ### Why It's Needed ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why attention is order-blind without positions</summary>
 
 ```mermaid
 graph TD
@@ -2671,7 +3094,12 @@ graph TD
 
 Strictly, this holds for unmasked attention; a causal mask leaks some order information (see NoPE in [Ch 16 §3.4](#content/16_deep_learning)), but nearly all production LLMs still use explicit positions.
 
+</details>
+
 ### Sinusoidal Positional Encoding (Original Transformer) ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the sin/cos formula, why it works and the d_model = 4 table</summary>
 
 ```
 PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))
@@ -2698,6 +3126,8 @@ Example (d_model=4):
 ```
 
 The program shows the problem (without positions, "dog" gets the same output in both sentences), rebuilds the table above, and checks property 2.
+
+</details>
 
 ```python
 # Attention without positions is order-blind; sinusoidal PE fixes it, and a shift by k is one fixed linear map
@@ -2754,6 +3184,9 @@ PE(pos + 2) = R @ PE(pos) for positions 0-7 with ONE fixed 2x2 rotation R
 
 ### RoPE and Other Modern Choices ★★★
 
+<details>
+<summary><strong>Read as text</strong> — sinusoidal, learned, RoPE and ALiBi compared</summary>
+
 | Method | How position enters | Absolute or relative? | Used by |
 |---|---|---|---|
 | Sinusoidal (2017) | add a fixed sin/cos vector to the input | absolute | original Transformer |
@@ -2765,11 +3198,18 @@ RoPE's key property is `(R_m q)·(R_n k) = q·R_(n−m) k`: rotating both vector
 
 **Go deeper:** [Ch 34b §11.2](#content/34b_google_top10_ml_interview_part2) (RoPE derivation and worked example) · [Ch 16 §3.4](#content/16_deep_learning) (runnable RoPE, ALiBi, NoPE and context stretching).
 
+</details>
+
 ---
 
 ## Full Transformer Architecture ★★★
 
 > **Maths in one line:** each sub-layer is wrapped as `x ← LayerNorm(x + Sublayer(x))` in the 2017 model (post-norm); modern LLMs use `x ← x + Sublayer(RMSNorm(x))` (pre-norm) — the residual "+ x" lets gradients flow straight through deep stacks.
+
+![Infographic: the Transformer from the 2017 blueprint to today's LLM. The 2017 model has 6 encoder and 6 decoder layers, d_model = 512 and 8 heads. Formulas contrast post-norm x ← LayerNorm(x + Sublayer(x)) with today's pre-norm x ← x + Sublayer(RMSNorm(x)), labelling the sublayer, the residual shortcut and where the norm sits. A two-tower diagram shows the encoder (embedding + positions, self-attention, Add & Norm, FFN 512 → 2,048 → 512, Add & Norm) feeding K, V into the decoder's cross-attention, then FFN and Linear + Softmax. Three mask grids show full encoder self-attention, the lower-triangle causal decoder mask (future = −∞) and decoder-rows × encoder-columns cross-attention. A 2017 → today table lists decoder only, pre-norm RMSNorm, SwiGLU with 3 matrices, RoPE on Q and K, and GQA + FlashAttention (e.g. Llama 3); family picks: encoder-only BERT, RoBERTa, ModernBERT (loss on 15% masked tokens), decoder-only GPT, Gemini, Llama, Gemma (100% of tokens), encoder-decoder T5, BART, Whisper.](diagrams/top34_info_transformer_architecture_variants_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the 2017 encoder–decoder, layer by layer</summary>
 
 The original model was built for translation: an encoder of 6 identical layers and a decoder of 6 layers, with d_model = 512, 8 heads and a feed-forward inner size of 2,048.
 
@@ -2802,7 +3242,12 @@ graph TD
     style LINEAR fill:#d4edda,stroke:#155724,color:#000
 ```
 
+</details>
+
 ### Three Types of Attention in a Transformer ★★★
+
+<details>
+<summary><strong>Read as text</strong> — encoder self, masked decoder self and cross-attention</summary>
 
 ```mermaid
 graph TD
@@ -2823,9 +3268,16 @@ graph TD
     style CA fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
+</details>
+
 ### What Changed Since 2017 — the Modern LLM Block ★★★
 
+<details>
+<summary><strong>Read as text</strong> — the classic opener question</summary>
+
 "How does a modern LLM differ from the 2017 Transformer?" is a common opener. The attention idea is unchanged; the parts around it changed:
+
+</details>
 
 | Part | 2017 Transformer | Modern decoder-only LLM (e.g. Llama 3) | Why |
 |---|---|---|---|
@@ -2835,13 +3287,23 @@ graph TD
 | Position | sinusoidal, added to the input | RoPE on Q and K | relative positions; can be stretched |
 | Attention | MHA | GQA (or MLA), run with FlashAttention kernels | smaller KV cache; less memory traffic |
 
+<details>
+<summary><strong>Read as text</strong> — continued: where to go deeper</summary>
+
 **Go deeper:** [Ch 17 §2.4](#content/17_llm) ("What else changed since 2017" and the full block) · [Ch 16 §3.3](#content/16_deep_learning) (where attention sits in a block, pre-LN vs post-LN).
+
+</details>
 
 ---
 
 ## Encoder-Only vs Decoder-Only vs Encoder-Decoder ★★★
 
+<details>
+<summary><strong>Read as text</strong> — the key number: 15% vs 100% of tokens</summary>
+
 > **Key number:** BERT's masked-language-model loss uses only the 15% of tokens it masks, while a decoder gets a next-token loss at 100% of positions — one reason next-token prediction scales so well.
+
+</details>
 
 | | Encoder-only | Decoder-only | Encoder-decoder |
 |---|---|---|---|
@@ -2850,15 +3312,25 @@ graph TD
 | Best for | classification, NER, embeddings, rerankers — NOT generation | generation, chat, code, reasoning — today's LLMs | input → output tasks: translation, summarisation, speech-to-text |
 | Examples | BERT, RoBERTa, ModernBERT (2024) | GPT, Gemini, Llama, Gemma | original Transformer, T5, BART, Whisper |
 
+<details>
+<summary><strong>Read as text</strong> — continued: why decoder-only won, and where to go deeper</summary>
+
 Why decoder-only won for LLMs: one simple objective works on any text, any task can be phrased as "continue this text", and causal attention lets past tokens' keys and values be cached, so generation is cheap. Encoders remain the efficient choice for classification, embeddings and reranking.
 
 **Go deeper:** [Ch 16 §3.5](#content/16_deep_learning) (BERT, GPT and T5 in numbers, with masking code).
+
+</details>
 
 ---
 
 ## Computational Complexity ★★★
 
 > **Maths in one line:** `attention FLOPs ≈ 4 · n² · d per layer` (Q·Kᵀ and weights·V, 2·n²·d each) and `n²` scores per head — doubling the context quadruples the attention work.
+
+![Infographic: the O(n²) cost of attention and how to beat it. Formula attention FLOPs ≈ 4 · n² · d per layer, with 4 labelled as Q·Kᵀ and weights·V at 2·n²·d each, n as sequence length and d as model width. A to-scale drawing shows that a 2n × 2n score grid holds 4 n × n grids, so doubling the context quadruples the work. Score memory in FP16 step by step: n = 1,000 gives 1,000,000 scores × 2 bytes = 2 MB (fine); n = 100K gives 10,000,000,000 scores × 2 bytes = 20 GB per head per layer (cannot be stored). Storing the n × n matrix is solved exactly by FlashAttention; n² compute and the growing KV cache need a new pattern, layer type or more devices. A table compares FlashAttention (memory O(n), compute still O(n²), exact), Ring Attention (exact), sliding window (Mistral 7B v0.1, W = 4,096, O(n · W)), sparse patterns (O(n) to O(n√n)) and linear attention or SSMs (O(n), weaker at exact recall); GQA, MQA and MLA cut bytes per token, not the n².](diagrams/top34_info_attention_complexity_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the n² cost, the two separate problems and the fixes</summary>
 
 ```
 Self-attention per layer: time O(n² · d), score memory O(n²) per head
@@ -2883,6 +3355,8 @@ There are two separate problems: (1) **storing** the n × n matrix — solved ex
 GQA, MQA and MLA (above) attack a different cost: the **bytes per token** in the KV cache, not the n².
 
 **Go deeper:** [Ch 34b §11.5](#content/34b_google_top10_ml_interview_part2) (FlashAttention and the online softmax) · [Ch 17 §2.7](#content/17_llm) (long context) · [Ch 16 §6.2](#content/16_deep_learning) (SSMs and hybrids).
+
+</details>
 
 ---
 
@@ -2994,6 +3468,11 @@ An **A/B test** applies the same care to product changes: show the current versi
 
 ## Deep Dive — Confusion Matrix ★★★
 
+![Infographic: from the confusion matrix to precision, recall and F1. Formulas precision = TP / (TP + FP), recall = TP / (TP + FN) and F1 = 2PR / (P + R) = 2TP / (2TP + FP + FN), with TP labelled hits, FP false alarms, FN misses and F1 as a harmonic mean. Spam-filter example on 10,000 pages with 100 spam: TP 80, FN 20, FP 50, TN 9,850, giving accuracy 99.3%, precision 80 / 130 = 61.5%, recall 80 / 100 = 80% and F1 = 160 / 230 = 0.696. A to-scale bar chart shows the accuracy trap: flag nothing still scores 99.0% accuracy with 0% recall. A table maps the costlier mistake to the metric: false alarm → precision (spam filter), miss → recall (cancer screening, fraud), both → F1 (named-entity recognition), no threshold yet → ROC-AUC / PR-AUC; F0.5 = 0.645 and F2 = 0.755.](diagrams/top34_info_classification_metrics_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the four boxes, the formulas and the question each metric answers</summary>
+
 Every prediction lands in one of four boxes. Name each box by **what the model said** (Positive / Negative) and **whether it was right** (True / False):
 
 | | Predicted + (flagged) | Predicted − (not flagged) |
@@ -3013,9 +3492,14 @@ Every prediction lands in one of four boxes. Name each box by **what the model s
 
 **Go deeper:** [Ch 13 §13.2–13.3](#content/13_model_evaluation) (confusion matrix, F-beta, macro vs micro averaging, MCC).
 
+</details>
+
 ---
 
 ## When to Prioritize Which Metric ★★★
+
+<details>
+<summary><strong>Read as text</strong> — which mistake costs more, metric floors and F-beta</summary>
 
 ```mermaid
 graph TD
@@ -3032,7 +3516,12 @@ graph TD
 
 In practice you rarely maximize one metric alone. You **set a floor on one and maximize the other** — "recall ≥ 95% for cancer screening, then the best precision" — by moving the decision threshold: a higher threshold flags fewer items, so precision usually rises and recall falls. When one error matters more but both count, use **F-beta**: `Fβ = (1+β²)·P·R / (β²·P + R)`, where β = 2 weights recall more and β = 0.5 weights precision more.
 
+</details>
+
 ### Worked Example ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the spam filter worked by hand</summary>
 
 ```
 Google Search Spam Detection:
@@ -3060,6 +3549,8 @@ What to optimize?
 ```
 
 **Run it** — the same confusion matrix, the "flag nothing" baseline, and the two F-beta scores:
+
+</details>
 
 ```python
 # Spam filter: every metric from one confusion matrix, then the "flag nothing" baseline and F-beta
@@ -3097,19 +3588,34 @@ flag nothing      99.0%       0.0%      0%  0.000      100.00%
 F0.5 (precision counts more) = 0.645   F2 (recall counts more) = 0.755
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: the accuracy trap, and F0.5 vs F2</summary>
+
 The second row is the accuracy trap in one line: 99.0% accuracy with 0% recall. Because a blocked legitimate page hurts more here, F0.5 (0.645) is the score that matches the business; F2 (0.755) would suit a task where misses cost more.
 
 **Go deeper:** [Ch 13 §13.3](#content/13_model_evaluation) (F-beta and the precision-recall trade-off).
+
+</details>
 
 ---
 
 ## AUC-ROC Curve ★★★
 
+![Infographic: ROC-AUC vs PR-AUC, and calibration. Formulas AUC = P(score of a random positive > score of a random negative), AP = Σₙ (Rₙ − Rₙ₋₁) · Pₙ and Brier = mean((p − y)²), with each part labelled. A to-scale ROC plot for 1,000 emails with 100 spam passes through (FPR, TPR) = (0.006, 0.30), (0.033, 0.60), (0.111, 0.80) and (0.222, 0.90), shaded AUC ≈ 0.90 above the random diagonal (AUC 0.5). With 10× more legitimate mail, FPR at threshold 0.5 stays 0.111 but precision collapses from 0.444 to 0.074 and the PR baseline falls from 0.100 to 0.011. A reliability diagram shows a flatter, over-confident curve (says 0.97, really 0.83) against the perfectly calibrated diagonal, and the Brier score for predictions 0.9, 0.8, 0.3 on outcomes 1, 0, 0 is (0.01 + 0.64 + 0.09) / 3 ≈ 0.247. A table says what to report: ROC-AUC for balanced ranking, PR-AUC (average precision) for rare positives, precision@k for a fixed review budget, Brier or ECE when probabilities are used as numbers; Platt, isotonic or temperature scaling fix calibration.](diagrams/top34_info_roc_pr_calibration_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — scores, thresholds and what AUC measures</summary>
+
 Most classifiers output a **score**, and you choose the threshold that turns it into yes/no. The **ROC curve** (Receiver Operating Characteristic) plots the true positive rate (recall) against the **false positive rate** — FPR = FP / (FP + TN) = 1 − specificity — at every threshold. **AUC** is the area under that curve.
 
 > **Maths in one line:** `AUC = P(score of a random positive > score of a random negative)` (ties count ½) — 1.0 is a perfect ranking, 0.5 a coin flip, and no threshold is needed.
 
+</details>
+
 ### What It Is ★★★
+
+<details>
+<summary><strong>Read as text</strong> — perfect, good, random and worse-than-random curves</summary>
 
 ```mermaid
 graph TD
@@ -3129,7 +3635,12 @@ graph TD
     style BAD fill:#f8d7da,stroke:#721c24,color:#000
 ```
 
+</details>
+
 ### How to Build the ROC Curve ★★★
+
+<details>
+<summary><strong>Read as text</strong> — sweeping the threshold on 1,000 emails</summary>
 
 ```
 ROC Curve:
@@ -3157,7 +3668,12 @@ A second model scores 1,000 emails (100 spam, 900 legitimate):
   (an estimate — the full sweep over every score gives the exact value)
 ```
 
+</details>
+
 ### AUC-ROC Intuition ★★★
+
+<details>
+<summary><strong>Read as text</strong> — AUC as a pairwise chance, and what it does not tell you</summary>
 
 ```
 AUC = Probability that a randomly chosen positive sample gets a
@@ -3177,15 +3693,22 @@ Credit scoring often reports the same quantity as **Gini = 2·AUC − 1** (not t
 
 **Go deeper:** [Ch 13 §13.4](#content/13_model_evaluation) (an ROC built by hand, and AUC by pair counting = 0.8125).
 
+</details>
+
 ---
 
 ## Precision-Recall Curve (Better for Imbalanced Data) ★★★
+
+<details>
+<summary><strong>Read as text</strong> — why ROC flatters rare positives, and average precision</summary>
 
 When positives are rare, ROC flatters the model. FPR = FP / (FP + TN) divides by the **huge negative class**, so thousands of false alarms barely move it. Precision = TP / (TP + FP) divides by the **alarms you actually raised**, so the same false alarms dominate it. The **PR curve** plots precision (y) against recall (x) at every threshold and ignores the true negatives altogether.
 
 > **Maths in one line:** `AP = Σₙ (Rₙ − Rₙ₋₁) · Pₙ` — average precision, the step-wise area under the PR curve; a random model scores the positive rate, not 0.5.
 
 **Run it** — the four thresholds above as ROC and PR points, then the same model facing 10× more legitimate mail:
+
+</details>
 
 ```python
 # ROC vs PR on the 1,000-email model: four thresholds, a trapezoid AUC, then 10x more legit mail
@@ -3226,6 +3749,9 @@ ROC-AUC from these 4 points (trapezoid) = 0.90
 PR-AUC baseline (= spam rate): 0.100 -> 0.011
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: 10× more legit mail and what to report</summary>
+
 Ten times more legitimate mail leaves every FPR — and so the whole ROC curve and its AUC — unchanged, yet precision at threshold 0.5 falls from 0.444 to 0.074: about 13 of every 14 alerts are now false. The PR-AUC baseline falls with the spam rate, from 0.10 to 0.011, so always compare a PR-AUC with the positive rate, never with 0.5.
 
 | Situation | Report |
@@ -3239,9 +3765,14 @@ Compute PR-AUC as **average precision** (scikit-learn `average_precision_score`)
 
 **Go deeper:** [Ch 13 §13.5](#content/13_model_evaluation) (why ROC flatters an imbalanced model; average precision 0.493 vs trapezoid 0.638).
 
+</details>
+
 ---
 
 ## Calibration — Can You Trust the Probabilities? ★★
+
+<details>
+<summary><strong>Read as text</strong> — reliability diagram, Brier score and the fixes</summary>
 
 A model is **calibrated** if, of all the cases it scores 0.7, about 70% really are positive. Ranking and calibration are different properties: a model can rank perfectly (high AUC) and still say "0.97" when the truth is 0.83. Calibration matters whenever a probability is used **as a number** — an ad's expected value = predicted click probability × bid, a lending risk cut-off, a confidence shown to users.
 
@@ -3258,15 +3789,27 @@ Platt and temperature scaling are strictly increasing maps, so they leave the ra
 
 **Go deeper:** [Ch 13 §13.12](#content/13_model_evaluation) (reliability diagram, ECE, Platt vs isotonic in code).
 
+</details>
+
 ---
 
 ## A/B Testing — Google's Decision Framework ★★★
+
+![Infographic: A/B testing design, sample size and pitfalls. Formula n per group ≈ 2σ²(z₁₋α/₂ + z₁₋β)² / δ² with σ² as the variance p(1 − p), 1.96 for α = 0.05, 0.84 for 80% power and δ the smallest effect worth detecting; ≈ 16σ²/δ², so halving δ needs 4× the users. Users are split 50/50 by hash(user_id) into control (old model) and treatment (new model). Worked sample size for CTR 10% → 11%: σ² = 0.10 × 0.90 = 0.09, δ = 0.01, (1.96 + 0.84)² ≈ 7.84, n ≈ 2 × 0.09 × 7.84 / 0.01² ≈ 14,100 users per group. Result 10.0% vs 11.0% gives z ≈ 2.74, p ≈ 0.006 and a 95% CI of +0.3 to +1.7 points, drawn to scale on a number line that excludes 0, so ship if guardrails hold. A pitfalls table: peeking with 10 daily looks gives 19% false positives instead of 5%; 20 metrics give a 64% chance of a false win (Bonferroni α/20 = 0.0025); a 50.6% / 49.4% split of 10M users gives χ² = 1,440 > 3.84; novelty and network effects need 2+ weeks and cluster randomization. CUPED cut variance about 50% at Bing.](diagrams/top34_info_ab_testing_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — randomization, causality and the sample-size formula</summary>
 
 An **A/B test** (online controlled experiment) randomly assigns users to **control** (A, the current system) or **treatment** (B, the change) during the same period and compares metrics chosen in advance. Randomization makes the difference causal; a hypothesis test and a confidence interval separate it from noise.
 
 > **Maths in one line:** `n per group ≈ 2σ²(z₁₋α/₂ + z₁₋β)² / δ²`, with σ² = p(1 − p) for a rate and δ the smallest effect worth detecting — at α = 0.05 and 80% power, (1.96 + 0.84)² ≈ 7.84, so n ≈ 16σ²/δ²: halving δ needs 4× the users.
 
+</details>
+
 ### How to Design an A/B Test ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the seven steps and the CTR 10% → 11% example</summary>
 
 ```mermaid
 graph TD
@@ -3302,6 +3845,8 @@ Worked example — will a new ranking model lift CTR from 10% to 11%?
 ```
 
 **Run it** — the sample size, the test on the result, and three traps measured:
+
+</details>
 
 ```python
 # A/B test for CTR 10% -> 11%: sample size, z-test + 95% CI, then three traps in numbers
@@ -3353,9 +3898,17 @@ false positives: look once 4.9%, peek daily 19.4%
 SRM chi-square = 1,440  (above 3.84 means the split is broken)
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the peeking simulation shows</summary>
+
 The peeking line simulates 20,000 tests in which the change does nothing: each day adds an independent batch of evidence, and the z-score after k days is the running sum divided by √k. Looking once gives the promised ~5% false positives; stopping at the first daily p < 0.05 gives about 19%.
 
+</details>
+
 ### Common A/B Testing Pitfalls ★★★
+
+<details>
+<summary><strong>Read as text</strong> — six pitfalls, their fixes and CUPED</summary>
 
 | Pitfall | What goes wrong | Fix |
 |---|---|---|
@@ -3369,6 +3922,8 @@ The peeking line simulates 20,000 tests in which the change does nothing: each d
 **Need more power without more users? Use CUPED** (Controlled-experiment Using Pre-Experiment Data): replace each user's metric Y with `Y − θ(X − mean of X)`, where X is the same metric for that user before the test and θ = cov(X, Y) / var(X). Variance shrinks by the factor (1 − ρ²), ρ being the correlation of X and Y; at Bing it cut variance by about 50% — like doubling the traffic (Deng et al., WSDM 2013).
 
 **Go deeper:** [Ch 32 Q17](#content/32_interview_questions) (A/B design interview card) · [Ch 26 — A/B Testing](#content/26_ml_system_design) (SRM, interleaving, long-term holdouts) · [Ch 17c §4.4](#content/17c_llm_systems) (A/B-testing an LLM feature) · [Ch 6 §3.7](#content/06_math_fundamentals) (hypothesis tests).
+
+</details>
 
 ---
 
@@ -3448,6 +4003,11 @@ Imagine you have a spreadsheet with 10,000 columns describing each customer. Mos
 
 ## The Curse of Dimensionality ★★★
 
+![Infographic: dimensionality reduction, from the curse of dimensionality to PCA and t-SNE or UMAP. Formula C v = λ v and explained ratio λᵢ / Σⱼ λⱼ, with each symbol labelled. Bars drawn to scale show a ball inside a cube holding 78.5% of a square, 52.4% of a 3-D cube and 0.25% of a 10-D cube; in 1,000-D the farthest point is only 11% farther than the nearest. PCA by hand on the points (2,4), (4,6), (6,8), (8,10), (10,12): mean (6, 8), covariance matrix with 10 in every cell, eigenvalues 20 and 0, PC1 = (0.707, 0.707) explains 100%, scores −5.66, −2.83, 0, 2.83, 5.66, plotted as five dots on the PC1 line. A table picks the tool: PCA keeps global variance and has transform, for compressing features; t-SNE keeps local neighbours only and must be re-run, for 2-D pictures only; UMAP keeps neighbours plus some global layout and has transform. Trap: gaps and cluster sizes in t-SNE or UMAP plots mean nothing, and t-SNE output must never feed a model.](diagrams/top34_info_dimensionality_reduction_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — sparse data, vanishing distances and four problems</summary>
+
 The **curse of dimensionality** is the set of problems that appear when data has many features: the volume of the space grows exponentially with each new dimension, so a fixed dataset becomes sparse and distances stop telling points apart.
 
 > **Maths in one line:** `(D_max − D_min) / D_min → 0 as d → ∞` — for random, independent features the farthest point is barely farther away than the nearest (Beyer et al., 1999). In Ch 11's simulation of 1,000 random points, the farthest is ~136× the nearest in 2-D but only 11% farther in 1,000-D.
@@ -3470,7 +4030,12 @@ graph TD
     style D4 fill:#fff3cd,stroke:#856404,color:#000
 ```
 
+</details>
+
 ### The Volume of a Hypersphere ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the ball in the cube, and intrinsic dimension</summary>
 
 ```
 Fit a ball of radius 0.5 inside the unit cube (it touches every face).
@@ -3491,15 +4056,25 @@ Why it is not hopeless: real data usually has a low **intrinsic dimension** — 
 
 **Go deeper:** [Ch 11 §11.2](#content/11_unsupervised_learning) (distance-concentration simulation and remedies).
 
+</details>
+
 ---
 
 ## PCA — Step by Step ★★★
+
+<details>
+<summary><strong>Read as text</strong> — rotating onto the axes of most variance</summary>
 
 **PCA (Principal Component Analysis)** rotates the data onto new perpendicular axes — the **principal components** — ordered by how much variance each one captures, then keeps the first k.
 
 > **Maths in one line:** `C = XcᵀXc / (n − 1)`, `C v = λ v`, explained-variance ratio `λᵢ / Σⱼ λⱼ` — the components are the eigenvectors of the covariance matrix, and each eigenvalue λ is the variance of the data along its component.
 
+</details>
+
 ### Algorithm ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the five steps, and the SVD shortcut</summary>
 
 ```mermaid
 graph TD
@@ -3517,7 +4092,12 @@ graph TD
 
 Libraries reach the same answer through the **SVD** of the centred data (no covariance matrix needed): the right singular vectors are the components and λᵢ = σᵢ² / (n − 1).
 
+</details>
+
 ### Worked Example — PCA on 2D Data ★★★
+
+<details>
+<summary><strong>Read as text</strong> — five points reduced to one component by hand</summary>
 
 Data points: $(2,4),\ (4,6),\ (6,8),\ (8,10),\ (10,12)$
 
@@ -3544,6 +4124,8 @@ Variance explained by PC1: $20/(20+0) = 100\%$! (Data is perfectly correlated �
 Check: the variance of these scores is $(32 + 8 + 0 + 8 + 32)/4 = 20 = \lambda_1$ — an eigenvalue **is** the variance along its component. We reduced 2D → 1D while capturing ALL the variance.
 
 **Run it** — the chapter's points, then noisy points that are not on a line, then choosing k for 95% on 100 columns built from 5 hidden factors:
+
+</details>
 
 ```python
 # PCA by hand: the chapter's points lie on a line (100% in PC1); real data never does
@@ -3593,9 +4175,17 @@ noisy points: eigenvalues = [4.75, 0.25], PC1 explains 95%, rebuild error = 1.00
 component 6 adds only 0.04% - the rest is noise
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: the noisy points and the elbow at five factors</summary>
+
 The noisy points keep 95% in one component, and what is thrown away is exactly $(n-1)\lambda_2 = 4 \times 0.25 = 1$. On the 100-column data the cumulative curve jumps to 98.3% at the fifth component and then goes flat — the elbow sits at the true number of hidden factors.
 
+</details>
+
 ### Choosing k — The Explained Variance Ratio ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the 95% rule, the scree elbow and validation</summary>
 
 $$\text{Explained variance ratio for component } i = \frac{\lambda_i}{\sum \lambda_j}$$
 
@@ -3613,7 +4203,12 @@ Cumulative explained variance for an illustrative 1,000-feature dataset:
 
 Rules for choosing $k$: keep enough components for **90–95%** cumulative variance (scikit-learn: `PCA(n_components=0.95)`); look for the **elbow** in the scree plot; or, when PCA feeds a model, treat $k$ as a hyperparameter and pick it by validation score. When features are highly correlated this often shrinks thousands of features to tens or hundreds of components.
 
+</details>
+
 ### Limitations of PCA ★★★
+
+<details>
+<summary><strong>Read as text</strong> — linear, label-blind, scale-sensitive — and the fixes</summary>
 
 | Limitation | What to do |
 |---|---|
@@ -3625,13 +4220,20 @@ Rules for choosing $k$: keep enough components for **90–95%** cumulative varia
 
 **Go deeper:** [Ch 11 §11.11](#content/11_unsupervised_learning) (PCA by hand three ways, scree plot, scaling trap) · [Ch 6 §1.6](#content/06_math_fundamentals) (eigenvectors and SVD behind PCA).
 
+</details>
+
 ---
 
 ## PCA vs t-SNE vs UMAP ★★★
 
+<details>
+<summary><strong>Read as text</strong> — what t-SNE and UMAP optimize</summary>
+
 **t-SNE** (t-distributed Stochastic Neighbor Embedding) and **UMAP** (Uniform Manifold Approximation and Projection) are non-linear methods that draw a 2-D or 3-D map in which points that were neighbours in the original space stay neighbours.
 
 > **Maths in one line:** t-SNE minimizes `KL(P‖Q) = Σ pᵢⱼ log(pᵢⱼ / qᵢⱼ)` between neighbour probabilities in high-D (P) and in 2-D (Q) — tearing real neighbours apart is expensive, while placing distant points at any distance is almost free, so **neighbourhoods survive and gaps do not**. UMAP optimizes a similar cross-entropy on a k-nearest-neighbour graph.
+
+</details>
 
 | Aspect | PCA | t-SNE | UMAP |
 |--------|-----|-------|------|
@@ -3644,6 +4246,9 @@ Rules for choosing $k$: keep enough components for **90–95%** cumulative varia
 | Key knobs | k | perplexity (typically 5–50; default 30) | n_neighbors (15), min_dist (0.1) |
 | Use for | Feature reduction, denoising, compression | 2-D/3-D pictures only | Pictures, and features with care |
 
+<details>
+<summary><strong>Read as text</strong> — continued: four caveats interviewers probe</summary>
+
 **Caveats interviewers probe:**
 
 1. **Gaps and cluster sizes mean nothing** in t-SNE or UMAP plots — only who sits next to whom.
@@ -3652,6 +4257,8 @@ Rules for choosing $k$: keep enough components for **90–95%** cumulative varia
 4. **Run PCA first:** reduce to ~50 dimensions, then run t-SNE or UMAP — faster and less noisy (scikit-learn's documentation recommends this).
 
 **Go deeper:** [Ch 11 §11.12–11.13](#content/11_unsupervised_learning) (a t-SNE demo where gaps of 10 and 90 come out equal; UMAP `transform` on new points).
+
+</details>
 
 ---
 
@@ -3735,6 +4342,11 @@ Preprocessing is a chef's prep work before cooking:
 
 ## Handling Missing Data ★★★
 
+![Infographic: missing data and class imbalance. Formulas var(mean-filled) = (1 − q) · var(observed) and the balanced class weight w_c = n / (K · n_c), with each symbol labelled. Panel 1: why is it missing, MCAR (pure chance, dropping rows OK), MAR (depends on seen columns, use KNN or iterative imputation), MNAR (depends on the value, flag and investigate); the MAR demo with q = 36.2% missing shows income std 15.1 true, 11.7 after mean-filling and 14.8 after KNN, drawn to scale, with (1 − 0.362) × var(observed) = 136.3 and √136.3 = 11.7, and RMSE on the gaps 17.1 for mean vs 5.6 for KNN. Panel 2: the imbalance ladder for 9,900 legit and 100 fraud rows: measure PR-AUC and recall, threshold t* = C_FP / (C_FP + C_FN) = 1 / (1 + 9) = 0.1, class weights fraud 10,000 / (2 × 100) = 50 and legit ≈ 0.505, SMOTE on training folds only: 2,3 + 0.6 × (4,5 − 2,3) = 3.2, 4.2, drawn 60% along the segment; then recalibrate. Table: always legit recall 0.00, PR-AUC 0.01; threshold 0.5 recall 0.28, precision 0.74; threshold 0.1 recall 0.61, precision 0.29; balanced weights recall 0.98, precision 0.08; PR-AUC stays 0.45. Trap: imputing or running SMOTE before the split leaks the test set.](diagrams/top34_info_missing_data_and_imbalance_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — MCAR, MAR, MNAR and the imputation menu</summary>
+
 *Why* a value is missing decides what you can safely do. **MCAR** (Missing Completely At Random) = pure chance; **MAR** (Missing At Random) = the gaps depend on other columns you *can* see; **MNAR** (Missing Not At Random) = the gaps depend on the missing value itself.
 
 > **Maths in one line:** `var(mean-filled column) = (1 − q) · var(observed values)` — filling a share q of a column with its mean adds no spread, so the variance shrinks by (1 − q) and the column's correlations with everything else weaken.
@@ -3769,6 +4381,8 @@ graph TD
 No imputation fully fixes MNAR — add the flag and find out *why* values are missing. The 5% and 30% cut-offs are rules of thumb, not laws.
 
 **Try it — mean vs KNN imputation when the data is MAR.** Income rises with age, and older people skip the income question more often:
+
+</details>
 
 ```python
 # Mean vs KNN imputation when data is MAR (older people skip the income question more often)
@@ -3818,9 +4432,17 @@ KNN             5.6   14.8               0.96
 variance check: (1 - q) x var(observed) = 136.3, var(mean-filled) = 136.3
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what mean vs KNN filling did to the numbers</summary>
+
 **What to notice:** older (richer) people are missing more often, so the observed mean (62.0) is biased low against the true 65.8 — and mean-filling copies that bias into every gap. Mean-filling also shrinks the spread (true std 15.1, mean-filled 11.7 — the last line confirms the variance is exactly (1 − q) × the observed variance) and weakens the age–income correlation (0.94 → 0.72). KNN finds people of the same age, so its error on the gaps (5.6) is close to the noise level of 5 (its correlation, 0.96, is slightly above the true 0.94 because filled-in values carry no noise).
 
+</details>
+
 ### The Correct Order of Operations ★★★
+
+<details>
+<summary><strong>Read as text</strong> — fit on train, transform both, forward-fill time series</summary>
 
 ```
 CRITICAL: Fit imputers ONLY on training data, then transform both
@@ -3847,9 +4469,14 @@ Time series:
 
 **Go deeper:** [Ch 09 Step 1 — Missing Values](#content/09_data_preprocessing) · [Ch 08 §8.4](#content/08_core_concepts)
 
+</details>
+
 ---
 
 ## Handling Imbalanced Datasets ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the cheapest-first ladder, in numbers</summary>
 
 **Class imbalance** = one class is rare — say 100 frauds among 10,000 transactions. A model that always answers "legit" scores 99% accuracy and catches no fraud. Work through the fixes **cheapest first**.
 
@@ -3883,7 +4510,12 @@ graph TD
 
 Thresholds and weights move the **operating point**; the ranking quality (PR-AUC 0.45) does not change. Pick the point from the business cost of a miss vs a false alarm.
 
+</details>
+
 ### SMOTE — How It Works ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the interpolation recipe, a worked point and the caveats</summary>
 
 ```
 SMOTE (Synthetic Minority Over-sampling Technique, Chawla et al. 2002):
@@ -3908,9 +4540,16 @@ Example:
 
 **Go deeper:** [Ch 10 §10.11](#content/10_supervised_learning) · [Ch 13 §13.5](#content/13_model_evaluation)
 
+</details>
+
 ---
 
 ## Data Leakage — The Silent Killer ★★★
+
+![Infographic: data leakage, the silent killer. Rule: use feature x only if t_known(x) ≤ t_predict, with each symbol labelled. Panel 1 shows a time split: TRAIN Jan–Mar, a gap equal to the label delay (label = buys within 7 days, so a 7-day gap), VALIDATE Apr; on a day ruler with t = the day being predicted, the window mean(sales over t−7 … t−1) is safe, while t−7 … t includes day t and the centred t−3 … t+3 peeks 3 days ahead. Panel 2, too good to be true: the takes_insulin column, prescribed after diagnosis, gave 97.4% test accuracy but 67.6% in production, against 67.4% for always answering no, drawn to scale. Table of four sources and fixes: target leakage (takes_insulin, drop it after a feature audit), preprocessing (scaler fit on all rows, split first and use a Pipeline), temporal (random split or back-fill, split by time and .shift(1).rolling(7)), group (one patient's two X-rays, keep each entity in one split). Remember: gap = label delay (chargebacks 30–90 days), forward-fill only, check leakage first when validation AUC is 0.99. Trap: a Pipeline fixes only preprocessing leakage.](diagrams/top34_info_data_leakage_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the four sources of leakage and the insulin example</summary>
 
 **Data leakage** = training on information that will not exist at the moment of prediction. Almost every other bug makes your score go *down*; leakage makes it go *up*, so nobody investigates. In Ch 08's diabetes demo a `takes_insulin` column (prescribed *after* diagnosis) gave 97.4% test accuracy — and 67.6% in production, no better than always answering "no" (67.4%).
 
@@ -3939,7 +4578,12 @@ graph TD
     style L4 fill:#fff3cd,stroke:#856404,color:#000
 ```
 
+</details>
+
 ### Leakage in Time Series ★★★
+
+<details>
+<summary><strong>Read as text</strong> — the time split, safe windows and five temporal leaks</summary>
 
 Time-ordered data (sales, clicks, transactions) leaks in quieter ways than a random split. The fix is always the same question: *at the moment of this prediction, did this value already exist?*
 
@@ -3962,7 +4606,12 @@ feature for day t:   mean(sales[t−7 … t−1])   ✓ only the past
 | Mean / target encodings over all time | City's average sale price computed over the whole year | Expanding mean of **past** rows only |
 | Labels that arrive late | Fraud chargebacks land 30–90 days later | Leave a gap = label delay; build features "as of" prediction time (point-in-time joins) |
 
+</details>
+
 ### How to Prevent Data Leakage ★★★
+
+<details>
+<summary><strong>Read as text</strong> — split first, pipelines, feature audits and too-good scores</summary>
 
 ```mermaid
 graph TD
@@ -3980,9 +4629,16 @@ A `Pipeline` stops **preprocessing** leakage only. Target, temporal and group le
 
 **Go deeper:** [Ch 08 §8.4](#content/08_core_concepts) · [Ch 13 §13.7](#content/13_model_evaluation) · [Ch 09 — A Leakage-Safe Pipeline](#content/09_data_preprocessing)
 
+</details>
+
 ---
 
 ## Feature Encoding ★★★
+
+![Infographic: feature engineering, encode, select, scale. Formula for smoothed target encoding enc(c) = (n_c · ȳ_c + m · ȳ) / (n_c + m), with each symbol labelled: rows in category c, the category's mean label, smoothing strength and the global mean label. Worked example: a one-row city with label 1, ȳ = 0.625 and m = 2 gives (1 × 1 + 2 × 0.625) / (1 + 2) = 2.25 / 3 = 0.750. Bar chart of the leak on coin-flip labels with 500 IDs: in-sample AUC 0.778, smoothed 0.771, out-of-fold 0.502 and test 0.506 against a dashed 0.5 no-signal line. Scaling z = (x − μ_train) / σ_train: KNN 72.2% raw vs 96.3% scaled, a tree 94.4% both ways, drawn to scale. Table to pick the encoder: one-hot for few categories (K columns), ordinal for truly ordered values, target for many values such as city or ID (smooth and out-of-fold), hashing for huge or streaming vocabularies (B buckets, collisions), embedding for deep learning and IDs with about K^0.25 dimensions (81 → 3). Remember: select inside CV (noise scored 91% vs an honest 47%), correlation 0.062 misses an x² link that mutual information 0.940 finds, RobustScaler (x − median) / IQR for outliers. Trap: in-sample target encoding scored coin-flip labels at AUC 0.78.](diagrams/top34_info_encoding_selection_scaling_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the five encoders and when to use each</summary>
 
 Models need numbers, so categories ("red", "Paris", user 48213) must be encoded. The right encoder depends on **cardinality** — how many distinct values the column has — and on the model.
 
@@ -4011,9 +4667,16 @@ graph TD
 
 The embedding-size starting point is a rule of thumb from Google's TensorFlow team (dimensions ≈ fourth root of the number of categories: 81 categories → 3 dimensions); tune it like any other hyperparameter.
 
+</details>
+
 ### Target Encoding Without the Leak ★★★
 
+<details>
+<summary><strong>Read as text</strong> — why in-sample encoding copies the label</summary>
+
 Encoding a row with a mean that **includes its own label** hands the model a copy of the answer — badly so for rare categories, where the "mean" is mostly that one label. The test below uses a 500-value ID column and **coin-flip labels**, so the honest answer is "no signal" (AUC 0.5):
+
+</details>
 
 ```python
 # Target-encoding leak: on coin-flip labels, in-sample encoding looks predictive; out-of-fold does not
@@ -4068,13 +4731,21 @@ out-of-fold, 5 folds (m=10)         0.502
 test rows (train-fitted, m=10)      0.506   <- the truth: no signal
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: what the coin-flip test shows</summary>
+
 **What to notice:** in-sample encoding "predicts" pure noise at AUC 0.778, and smoothing alone barely helps (0.771). Out-of-fold encoding — each row encoded only from the *other* folds — gives the honest 0.502, matching the test rows. scikit-learn's `TargetEncoder` (version 1.3+) does this cross-fitting inside `fit_transform`; for time series, use an expanding mean of past rows only. CatBoost's "ordered target statistics" are the same idea built into the model.
 
 **Go deeper:** [Ch 09 Step 3 — Encoding Categorical Features](#content/09_data_preprocessing)
 
+</details>
+
 ---
 
 ## Feature Selection Methods ★★★
+
+<details>
+<summary><strong>Read as text</strong> — filter, wrapper, embedded and after-training methods</summary>
 
 Fewer, better features train faster, overfit less and are easier to explain. Selection that looks at the labels must run **inside** cross-validation: in Ch 08, choosing the 20 "best" of 5,000 pure-noise features on all rows gave 91% cross-validated accuracy on coin-flip labels; re-selecting inside each fold gave the honest 47%.
 
@@ -4115,9 +4786,14 @@ graph TD
 
 **Go deeper:** [Ch 09 Step 5 — Feature Selection](#content/09_data_preprocessing) · [Ch 10 §10.10](#content/10_supervised_learning)
 
+</details>
+
 ---
 
 ## Feature Scaling ★★★
+
+<details>
+<summary><strong>Read as text</strong> — standard, min-max and robust scaling, and who needs it</summary>
 
 Distance- and gradient-based models compare raw magnitudes, so a feature measured in thousands drowns out one measured in units. In Ch 09's wine example, KNN went from 72.2% accuracy on raw features to 96.3% after scaling, while a decision tree scored 94.4% either way.
 
@@ -4152,6 +4828,8 @@ Always: fit the scaler on TRAIN only (inside the Pipeline).
 ```
 
 **Go deeper:** [Ch 09 Step 4 — Feature Scaling](#content/09_data_preprocessing) · [Ch 08 §8.9](#content/08_core_concepts)
+
+</details>
 
 ---
 
@@ -4243,6 +4921,11 @@ Building an ML system is like running a restaurant:
 
 ## End-to-End ML System Architecture ★★★
 
+![Infographic: building the ML system. Formula score(user, item) = u · v, with u the 128-dim user-tower embedding, · the dot product and v the precomputed item embedding, so finding the best items becomes a nearest-neighbor ANN search. Panel 1 shows the five layers stacked: Data (ingest and validate), Features (the Feature Store), Training (train, evaluate, register), Serving (online, batch, edge) and Monitoring (drift, latency, alerts); the Feature Store feeds both Training and Serving, and a red retrain arrow loops from Monitoring back to Training. Panel 2 is the StreamFlix funnel: 800M videos, retrieval with two-tower plus ANN in about 10 ms to about 1,000, ranking with a multi-task DCN in about 20 ms to about 100, re-ranking for diversity, freshness and safety in about 10 ms to about 25 shown, all inside a page of about 300 ms. Panel 3 works the numbers: 800,000,000 × 128 = 102,400,000,000, about 1.0 × 10^11 multiply-adds per request; calls per day = QPS × 86,400, so 10,000 QPS is 864 million a day. Table LLM or classic model: tabular high-QPS work uses gradient-boosted trees, few labels on text or images use an LLM, answering from documents uses LLM plus RAG, LLM quality at classic cost means distilling a small model, text-heavy ranking uses LLM embeddings as features. Remember: point-in-time join, a 770M T5 student beat few-shot 540B PaLM on one benchmark, Agent Platform Feature Store, formerly Vertex AI, as of Nov 2026. Trap: separate feature code for training and serving causes silent skew.](diagrams/top34_info_ml_system_build_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the five layers from data to monitoring</summary>
+
 Five layers, each feeding the next — and monitoring closes the loop back to training. The model is the small part: most of the work is data, features, serving and monitoring.
 
 ```mermaid
@@ -4284,9 +4967,14 @@ graph TD
 
 **Go deeper:** [Ch 26 — ML System Design](#content/26_ml_system_design) · [Ch 27 §18.1](#content/27_practical_ml)
 
+</details>
+
 ---
 
 ## Feature Store — Why It Matters ★★★
+
+<details>
+<summary><strong>Read as text</strong> — training-serving skew and point-in-time joins</summary>
 
 **Training-serving skew** = a feature is computed one way for training (say, a Python batch job) and another way at serving time (say, C++ per request), so the live model sees different inputs from the ones it learned on — and degrades silently. Ch 26 calls it the #1 cause of "great offline, terrible live". A **feature store** keeps one definition of each feature and serves it to both paths.
 
@@ -4315,9 +5003,14 @@ On Google Cloud (as of Nov 2026) this is the **Agent Platform Feature Store** (f
 
 **Go deeper:** [Ch 26 Part 2 — Feed the Machine](#content/26_ml_system_design)
 
+</details>
+
 ---
 
 ## The Recommendation Funnel — Retrieval → Ranking → Re-ranking ★★★
+
+<details>
+<summary><strong>Read as text</strong> — retrieval, ranking and re-ranking with the StreamFlix numbers</summary>
 
 You cannot score 800 million videos per request inside a ~300 ms page budget. So recommenders — and search and ads — **cascade**: a cheap model narrows the field, a heavier model ranks the short list, and business rules polish the final page. The numbers below are Ch 26's StreamFlix example.
 
@@ -4346,9 +5039,14 @@ flowchart LR
 
 **Go deeper:** [Ch 26 Part 3 — Build the Brain](#content/26_ml_system_design) · [Ch 28 — Semantic Search](#content/28_semantic_search)
 
+</details>
+
 ---
 
 ## LLM or Classic Model? ★★★
+
+<details>
+<summary><strong>Read as text</strong> — which model fits which situation, and the cost trap</summary>
 
 Now that LLMs are cheap to call, "why not just use an LLM?" is a natural follow-up. **Default answer:** start with the cheapest model that meets the quality bar, and add an LLM only where language understanding or generation is the core of the task — or where you lack labels.
 
@@ -4366,9 +5064,16 @@ Now that LLMs are cheap to call, "why not just use an LLM?" is a natural follow-
 
 **Go deeper:** [Ch 20 §20.14–§20.15](#content/20_2026_landscape) · [Ch 17c §3.4](#content/17c_llm_systems) · [Ch 26 Part 8](#content/26_ml_system_design)
 
+</details>
+
 ---
 
 ## Online vs Batch Inference ★★★
+
+![Infographic: serve it fast, keep it healthy. Formula PSI = Σᵢ (aᵢ − eᵢ) · ln(aᵢ / eᵢ), with each symbol labelled: add over the 10 bins, live share in bin i, training share in bin i, natural log; under 0.1 stable, 0.1 to 0.25 watch, over 0.25 act. Panel 1 draws the 300 ms page budget to scale: feature lookup 10, retrieval 20, ranking 40 and re-rank 10, so 10 + 20 + 40 + 10 = 80 ms of models and about 220 ms for network and rendering; a cascade averages 1 + 0.1 × 50 = 6 ms, not 50 ms. Panel 2: one request fans out to 10 shards, each slow 1% of the time, so 1 − 0.99^10 = 1 − 0.904, about 9.6% of requests are slow. Panel 3 is a PSI gauge for session length in minutes, drawn to scale from 0 to 0.5 with stable, watch and act zones and markers at 0.001 for the same users, 0.178 for sessions up 30% and 0.425 for sessions up 50%, plus an off-scale 8.283 skew bug where serving sends seconds. Table of inference modes: online takes tens to a few hundred ms (search ranking, home feed), batch takes hours (nightly churn scores), streaming takes seconds (fraud velocity features); most real systems are a hybrid. Remember: 90% cache hits mean 10× less backend load, DistilBERT is 40% smaller and 60% faster and keeps 97% of GLUE, INT8 weights are 4× smaller than FP32. Trap: deploy and done.](diagrams/top34_info_serve_and_monitor_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — online, batch and streaming, and the 300 ms budget</summary>
 
 **Online** inference computes a prediction per request; **batch** precomputes predictions on a schedule; **streaming** keeps features or scores fresh within seconds. Most real systems are a **hybrid**: precompute what is stable (item embeddings, user profiles) in batch, and combine it with live session context per request.
 
@@ -4395,9 +5100,14 @@ graph TD
 
 **Go deeper:** [Ch 26 Part 5 — Ship It](#content/26_ml_system_design) · [Ch 27 §18.2](#content/27_practical_ml)
 
+</details>
+
 ---
 
 ## Model Serving at Scale ★★★
+
+<details>
+<summary><strong>Read as text</strong> — caching, distillation, quantization, cascades and tail latency</summary>
 
 Serving means meeting a latency budget at high QPS for an acceptable cost. The levers: scale out, cache, shrink the model, batch requests, and cascade cheap → expensive models.
 
@@ -4437,9 +5147,14 @@ graph TD
 
 **Go deeper:** [Ch 26 Part 5 — Ship It](#content/26_ml_system_design) · [Ch 17c §3.4](#content/17c_llm_systems)
 
+</details>
+
 ---
 
 ## Model Monitoring — What Can Go Wrong ★★★
+
+<details>
+<summary><strong>Read as text</strong> — data, concept and prediction drift, skew and feedback loops</summary>
 
 Models decay after launch because the world changes. **Data drift** = the inputs change (P(x) shifts); **concept drift** = the right answer for the same inputs changes (P(y | x) shifts); **prediction drift** = the model's outputs change (P(ŷ) shifts).
 
@@ -4466,9 +5181,16 @@ graph TD
     style FP fill:#fff3cd,stroke:#856404,color:#000
 ```
 
+</details>
+
 ### Measuring Drift — PSI in Numbers ★★
 
+<details>
+<summary><strong>Read as text</strong> — how PSI bins and compares traffic</summary>
+
 Training data is split into 10 equal bins (deciles); live traffic is binned the same way and compared. Four scenarios for a "session length in minutes" feature:
+
+</details>
 
 ```python
 # PSI (Population Stability Index): stable traffic vs real drift vs a training-serving skew bug
@@ -4513,9 +5235,17 @@ new app: sessions +50%          0.425  ACT
 skew: serving sends SECONDS     8.283  ACT
 ```
 
+<details>
+<summary><strong>Read as text</strong> — continued: reading the four PSI scores</summary>
+
 **What to notice:** same-population traffic scores 0.001. A real behavior change of +30% lands in "watch" and +50% in "act". A training-serving skew bug — serving sends seconds while training used minutes — scores 8.3: skew usually looks like an enormous, overnight "drift", which is how you catch it. For a roughly bell-shaped feature, a shift of δ standard deviations gives PSI ≈ δ² (the +30% case is a 0.44σ shift of log-length: 0.44² ≈ 0.19, measured 0.178).
 
+</details>
+
 ### Monitoring Dashboard — What to Track ★★★
+
+<details>
+<summary><strong>Read as text</strong> — real-time and daily metrics, retraining triggers and the rollout</summary>
 
 ```
 REAL-TIME METRICS (alert within minutes):
@@ -4548,6 +5278,8 @@ EVERY RETRAINED MODEL SHIPS THROUGH:
 ```
 
 **Go deeper:** [Ch 27 §18.7–§18.9](#content/27_practical_ml) · [Ch 26 Part 6 — Keep It Alive](#content/26_ml_system_design)
+
+</details>
 
 ---
 

@@ -676,7 +676,7 @@ A Flash / Sonnet / Luna-tier model — Gemini 3.x Flash, Claude Sonnet 5.5 or GP
 On-device when privacy, latency, billions-of-queries scale, or offline matters. Cloud when you need top-end reasoning, multimodal beyond text+image, real-time external data, or you can't ship a model with the OS.
 
 **"What would you cite as quality benchmarks in 2026?"**
-Terminal-Bench 4.0 (CLI agents), OSWorld 2.0 (long computer-use workflows), Humanity's Last Exam and ARC-AGI-3 — saturated or nearly saturated ones (GPQA Diamond at 96.4%, ARC-AGI-2 at 95%, FrontierMath Tiers 1–3 at 95.1% for Claude Fable 5.2 on Epoch AI's hub, 9 Nov 2026, with Tier 4 topped out at 100%) only as history — and SWE-bench Pro only with a caveat: OpenAI retired SWE-bench Verified in Feb 2026 (flawed tests, contamination), then found ~30% of Pro's tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report Pro, so treat its scores as rough. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from ([Ch 20 §20.13](#content/20_2026_landscape)).
+Terminal-Bench 4.1 (CLI agents; since 9 Nov 2026 it re-grades 4.0's tasks with hardened verifiers), OSWorld 2.0 (long computer-use workflows), Humanity's Last Exam and ARC-AGI-3 — saturated or nearly saturated ones (GPQA Diamond at 96.4%, ARC-AGI-2 at 95%, FrontierMath Tiers 1–3 at 95.1% for Claude Fable 5.2 on Epoch AI's hub, 9 Nov 2026, with Tier 4 topped out at 100%) only as history — and SWE-bench Pro only with a caveat: OpenAI retired SWE-bench Verified in Feb 2026 (flawed tests, contamination), then found ~30% of Pro's tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report Pro, so treat its scores as rough. **Not** MMLU or HumanEval — saturated. Always say which harness and which table a score came from ([Ch 20 §20.13](#content/20_2026_landscape)).
 
 **"What does FlashAttention change?"**
 Not the maths — it is *exact* attention. It streams K and V through the GPU's fast on-chip memory in tiles with an online softmax, so the n × n score matrix is never written to slow HBM: memory falls from O(n²) to O(n) and it runs faster (the paper measured ~3× faster GPT-2 training at 1K tokens) because attention is memory-bound. FLOPs stay O(n²) ([Ch 17 §2.4](#content/17_llm)).
@@ -798,7 +798,7 @@ These are the problems candidates report implementing from scratch in 20–40 mi
 ║    • Visible reasoning is a trace, not proof — verify answers      ║
 ║    • Fine-tune worse → forgetting/overfit: mix data, lower LR      ║
 ╠════════════════════════════════════════════════════════════════════╣
-║  BENCH IN 2026: Terminal-Bench 4.0, OSWorld 2.0, HLE, ARC-AGI-3 —  ║
+║  BENCH IN 2026: Terminal-Bench 4.1, OSWorld 2.0, HLE, ARC-AGI-3 —  ║
 ║  NOT MMLU/HumanEval/GPQA. SWE-bench Verified retired (Feb 2026);   ║
 ║  Pro ~30% broken (OpenAI, Jul 2026) — treat its scores as rough    ║
 ╚════════════════════════════════════════════════════════════════════╝

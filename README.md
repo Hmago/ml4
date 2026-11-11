@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~386 hours of content · 415+ DSA problems │
+  │  50 chapters · ~409 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -130,11 +130,11 @@ assumptions, not official company interview frequencies or measured production a
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
 | 40 | Python for ML & AI — Libraries, Models & Azure LLMs | ★★★ | [40_python_ml_ai.md](content/40_python_ml_ai.md) | ~1.75 hrs | Beginner-Intermediate |
-| 27 | Practical ML — From Zero to Production | ★★ | [27_practical_ml.md](content/27_practical_ml.md) | ~4 hrs | Beginner-Advanced |
-| 28 | Building Semantic Search (Text, Images, Metadata) | ★★ | [28_semantic_search.md](content/28_semantic_search.md) | ~2.25 hrs | Intermediate-Advanced |
+| 27 | Practical ML — From Zero to Production | ★★ | [27_practical_ml.md](content/27_practical_ml.md) | ~7.25 hrs (~4.75 hrs fast path) | Beginner-Advanced |
+| 28 | Building Semantic Search (Text, Images, Metadata) | ★★ | [28_semantic_search.md](content/28_semantic_search.md) | ~4.25 hrs (~1.75 hrs fast path) | Intermediate-Advanced |
 | 29 | GPUs, TPUs & AI Infrastructure | ★★ | [29_gpus_tpus_infrastructure.md](content/29_gpus_tpus_infrastructure.md) | ~8 hrs (~2.25 hrs fast path) | Intermediate-Advanced |
 | 30 | Google ML Ecosystem (TPUs, JAX, Vertex AI, key papers) | ★★ | [30_google_ml_ecosystem.md](content/30_google_ml_ecosystem.md) | ~7.5 hrs (~2.75 hrs fast path) | Intermediate |
-| | **Practical & Infra Total** | | | **~23.5 hrs** | |
+| | **Practical & Infra Total** | | | **~28.75 hrs** | |
 
 ### Languages & Coding
 
@@ -157,15 +157,15 @@ assumptions, not official company interview frequencies or measured production a
 | 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~16.25 hrs | Intermediate-Advanced |
 | 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~12 hrs | Intermediate-Advanced |
 | 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~13.25 hrs | Intermediate-Advanced |
-| 34 | Google's Top 10 ML Interview Topics — Part 1 (Topics 1–10: Classic ML Core) | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~4.75 hrs | Intermediate-Advanced |
-| 34b | Google's Top 10 ML Interview Topics — Part 2 (Topics 11–14: LLM Architecture, Training, Serving, Eval) | ★★★ | [34b_google_top10_ml_interview_part2.md](content/34b_google_top10_ml_interview_part2.md) | ~3.75 hrs | Intermediate-Advanced |
-| | **Interview Prep Total** | | | **~50 hrs** | |
+| 34 | Google's Top 10 ML Interview Topics — Part 1 (Topics 1–10: Classic ML Core) | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~14.5 hrs (~8 hrs fast path) | Intermediate-Advanced |
+| 34b | Google's Top 10 ML Interview Topics — Part 2 (Topics 11–14: LLM Architecture, Training, Serving, Eval) | ★★★ | [34b_google_top10_ml_interview_part2.md](content/34b_google_top10_ml_interview_part2.md) | ~11.5 hrs (~7.75 hrs fast path) | Intermediate-Advanced |
+| | **Interview Prep Total** | | | **~67.5 hrs** | |
 
 ### Grand Total
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~386 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~409 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

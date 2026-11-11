@@ -354,7 +354,7 @@ Learn embeddings without labels, then reuse them for search, zero-shot classific
 
 ## Ch 17 / 17b — Large Language Models
 
-![How an LLM Works, by the Numbers: inference path Text, Tokenise (BPE, 1 token about 4 characters or 0.75 words), Embed, N x block (RMSNorm, GQA attention + RoPE, RMSNorm, SwiGLU FFN holding about 2/3 of the parameters), softmax over the vocabulary, decode (greedy, top-k, top-p), with attention = softmax(QK^T / sqrt(d_k)) V; a 4-step training staircase pre-train on about 15T tokens, SFT on reply tokens (LIMA 1,000 examples), RLHF or DPO on preference pairs, RLVR / GRPO with a checker reward (R1-Zero AIME 15.6% to about 71%); eight number cards C = 6ND, 20 tokens per parameter, about 1,900 tokens per parameter for Llama 3 8B, 16 bytes per parameter (7B = 112 GB), KV cache 320 KiB per token (40 GiB at 128K), MoE 671B total / 37B active, vocabularies 30K-260K, about 1M-token windows (advertised is not effective); a pick-by-question table; trap: emergence is partly a metric artefact, exact match on k tokens = p^k.](diagrams/rec20s_info_ch17_llm_numbers_map_ai.png)
+![How an LLM Works, by the Numbers: inference path Text, Tokenise (BPE, 1 token about 4 characters or 0.75 words), Embed, N x block (RMSNorm, GQA attention + RoPE, RMSNorm, SwiGLU FFN holding about 2/3 of the parameters), softmax over the vocabulary, decode (greedy, top-k, top-p), with attention = softmax(QK^T / sqrt(d_k)) V; a 4-step training staircase pre-train on about 15T tokens, SFT on reply tokens (LIMA 1,000 examples), RLHF or DPO on preference pairs, RLVR / GRPO with a checker reward (R1-Zero AIME 2024 15.6% to 77.9% in the revised paper); eight number cards C = 6ND, 20 tokens per parameter, about 1,900 tokens per parameter for Llama 3 8B, 16 bytes per parameter (7B = 112 GB), KV cache 320 KiB per token (40 GiB at 128K), MoE 671B total / 37B active, vocabularies 30K-260K, about 1M-token windows (advertised is not effective); a pick-by-question table; trap: emergence is partly a metric artefact, exact match on k tokens = p^k.](diagrams/rec20s_info_ch17_llm_numbers_map_ai.png)
 
 > **Chapter 17 is now three chapters.** [Ch 17](#content/17_llm) = how an LLM works inside (tokenizer → Transformer → training → families). [Ch 17b](#content/17b_llm_applications) = how you build with one (prompting, hallucinations, RAG, tools, fine-tuning, cost, safety). [Ch 17c](#content/17c_llm_systems) = how you run one at scale — recapped in its own section below.
 
@@ -1087,7 +1087,7 @@ When the context window fills: (1) truncate oldest (silently loses early decisio
 
 **pass@k vs pass^k:** pass@k = 1 − (1 − p)^k asks "did *any* try work?" (capability); pass^k = p^k asks "did *every* try work?" (reliability, from τ-bench). At p = 0.9, k = 8 → ≈ 100% vs **43%**. Ship the consistent agent and route what it cannot do to a human.
 
-**Benchmarks:** SWE-bench Verified was retired by OpenAI in Feb 2026 (flawed tests, contamination); for SWE-bench Pro OpenAI found ~30% broken tasks and retracted its recommendation on 8 Jul 2026, so treat its scores as rough. Also name Terminal-Bench (4.0 current), τ-/τ²-bench, OSWorld, GAIA, BrowseComp and AgentDojo — and quote version, scaffold and number of trials.
+**Benchmarks:** SWE-bench Verified was retired by OpenAI in Feb 2026 (flawed tests, contamination); for SWE-bench Pro OpenAI found ~30% broken tasks and retracted its recommendation on 8 Jul 2026, so treat its scores as rough. Also name Terminal-Bench (4.1 current since 9 Nov 2026), τ-/τ²-bench, OSWorld, GAIA, BrowseComp and AgentDojo — and quote version, scaffold and number of trials.
 
 **LLM-as-judge for agents:** give the judge the full trace (tool calls and results), ask narrow yes/no questions per criterion, make it quote the step it grades, and check in code anything a program can check. Debias it as in [Ch 17c §4.2](#content/17c_llm_systems) — both orders, a different model family.
 
@@ -1375,7 +1375,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 ## Ch 20 — The 2026 AI Landscape
 
-![2026 AI landscape map as of 5 Nov 2026: a lineup table of three tiers per lab (OpenAI GPT-6 Astra, GPT-6.1 Sol / Terra, GPT-6 Luna; Anthropic Claude Fable 5.1, Opus 5.5 and Sonnet 5.5, Haiku 5.5; Google Gemini 4 Argon, Gemini 3.8 Flash, Gemini 3.5 Flash-Lite; ~1M-token context, top tier ~100x the cheap tier at 10 / 50 vs 0.10 / 0.50 USD per 1M tokens), nine cards (reasoning dial billed as output; open weights about 4 months behind, sparse MoE where memory follows total and compute follows active parameters; coding agents = model x harness x effort, Terminal-Bench 4.0 top 64.8% plus or minus 11 points; OSWorld-Verified 86.1% vs ~72% human, OSWorld 2.0 only 20.6% completed; benchmark status saturated MMLU and GPQA, retired SWE-bench Verified, contested SWE-bench Pro, current Terminal-Bench 4.0, OSWorld 2.0 and HLE; a fixed capability ~10-13x cheaper a year but agents multiply tokens; ~1M context with lost-in-the-middle; EU AI Act dates 2 Aug 2025, 2 Aug 2026, 2 Dec 2027 / 2 Aug 2028 and fines up to EUR 35M or 7%; Google stack Gemini 4 + Agent Platform + TPU7x Ironwood at 42.5 exaFLOPS per pod) and a pick-by-question table](diagrams/rec20s_info_ch20_landscape_map_ai.png)
+![2026 AI landscape map as of 5 Nov 2026: a lineup table, updated 11 Nov 2026, of three tiers per lab (OpenAI GPT-6 Astra, GPT-6.1 Sol / Terra, GPT-6 Luna; Anthropic Claude Fable 5.2, Opus 5.5 and Sonnet 5.5, Haiku 5.5; Google Gemini 4 Argon, Gemini 3.8 Flash, Gemini 3.5 Flash-Lite; ~1M-token context, top tier ~100x the cheap tier at 10 / 50 vs 0.10 / 0.50 USD per 1M tokens, with Claude Fable 5.2 at 8 / 40), nine cards (reasoning dial billed as output; open weights about 4 months behind, sparse MoE where memory follows total and compute follows active parameters; coding agents = model x harness x effort, Terminal-Bench 4.1 top 65.8% plus or minus 11 points; OSWorld-Verified 86.1% vs ~72% human, OSWorld 2.0 only 20.6% completed; benchmark status saturated MMLU and GPQA, retired SWE-bench Verified, contested SWE-bench Pro, current Terminal-Bench 4.1, OSWorld 2.0 and HLE; a fixed capability ~10-13x cheaper a year but agents multiply tokens; ~1M context with lost-in-the-middle; EU AI Act dates 2 Aug 2025, 2 Aug 2026, 2 Dec 2027 / 2 Aug 2028 and fines up to EUR 35M or 7%; Google stack Gemini 4 + Agent Platform + TPU7x Ironwood at 42.5 exaFLOPS per pod) and a pick-by-question table](diagrams/rec20s_info_ch20_landscape_map_ai.png)
 
 > ⏱ **Dated snapshot.** Model names and numbers below are the **5 November 2026** view from [Ch 20](#content/20_2026_landscape) (Anthropic's top tier, Arena and FrontierMath updated 11 Nov), in step with [Ch 17 §4](#content/17_llm). They change every few weeks — memorise the *shapes*, say "as of <month, year>", and where a vendor page disagrees, trust the vendor page.
 
@@ -1401,7 +1401,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 List prices, USD per 1M tokens (input / output): GPT-6 Astra at 10 / 50 · Claude Fable 5.2 at 8 / 40 (from 9 Nov 2026; Fable 5.1 was 10 / 50) · Claude Opus 5.5 at 4 / 20 · GPT-6.1 Sol and Claude Sonnet 5.5 at 2 / 10 · GPT-6 Luna at 0.10 / 0.50. Inside one lab the top tier is ~100× the cheap tier; batch APIs halve most prices.
 
-**Who leads depends on the test:** Claude Opus 5.5 tops Terminal-Bench 4.0; GPT-6 Astra tops ARC-AGI-3 and Humanity's Last Exam; Gemini 4 Carbon tops Arena (text) and the Artificial Analysis index v5.0.
+**Who leads depends on the test:** Claude Opus 5.5 tops Terminal-Bench 4.1; GPT-6 Astra tops ARC-AGI-3 and Humanity's Last Exam; Gemini 4 Carbon tops Arena (text) and the Artificial Analysis index v5.0.
 
 **Interview tip**: don't memorise exact numbers (they drift monthly). Memorise the *shape*: three tiers per lab, the leaders within a few points of each other, open weights a few months behind — so model choice is mostly about price, latency, ecosystem and your own eval.
 
@@ -1470,7 +1470,7 @@ The shape: the best open models trail the best closed ones by **about 4 months**
 | Aug 2024 | SWE-bench Verified (500 human-checked tasks); best ~33% at launch |
 | Feb 2026 | **Verified retired by OpenAI** — ≥ 59% of the audited hard tasks had flawed tests, and frontier models reproduced gold patches (contamination); it pointed labs to SWE-bench Pro |
 | Jul 2026 | **Pro:** OpenAI found ~30% broken tasks and retracted its recommendation (8 Jul 2026) |
-| Nov 2026 | Vendors report Terminal-Bench 4.0 (66 tasks): Claude Opus 5.5 + Claude Code 64.8%; the top five sit inside one ±11-point error bar |
+| Nov 2026 | Vendors report Terminal-Bench 4.0 (66 tasks): Claude Opus 5.5 + Claude Code 64.8% (28 Oct); the top five sit inside one ±11-point error bar. On 9 Nov tbench.ai moved to 4.1 (same tasks, hardened verifiers), where Opus 5.5 still leads at 65.8% |
 
 **Why scores rose**: (1) stronger base models, (2) test-time reasoning, (3) better harnesses (file tools, test runners, diff review, memory), (4) RL on agentic traces.
 
@@ -1659,7 +1659,7 @@ Platform: **Gemini Enterprise Agent Platform** (ADK, Agent Studio, Agent Runtime
 | **SWE-bench Verified** | **Retired** by OpenAI (Feb 2026): flawed tests, contamination |
 | **SWE-bench Pro** | **Contested** — OpenAI found ~30% broken tasks and retracted its recommendation (8 Jul 2026); treat scores as rough |
 | OSWorld-Verified | Nearly saturated — 86.1%, above the ~72% human baseline (mostly self-reported) |
-| **Terminal-Bench 4.0** | Current — 64.8% Claude Opus 5.5 + Claude Code (66 tasks: ±11 points) |
+| **Terminal-Bench 4.1** | Current since 9 Nov 2026 (4.0's 66 tasks, hardened verifiers) — 65.8% Claude Opus 5.5 + Claude Code (±11 points; 64.8% on 4.0, 28 Oct) |
 | **OSWorld 2.0** | Current — best agent completed 20.6% of long workflows |
 | **Humanity's Last Exam** | Current — 54.8% GPT-6 Astra on the Scale AI / CAIS leaderboard |
 | **ARC-AGI-3** | Current — the score depends on the harness |

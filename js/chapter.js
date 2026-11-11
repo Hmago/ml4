@@ -2188,6 +2188,18 @@ async function runPythonCode(code, outputEl) {
       'langfuse': 'Langfuse',
       'guardrails': 'Guardrails AI',
       'nemoguardrails': 'NeMo Guardrails',
+      // Gradient-boosting libraries, tuning, MLOps and data/document loaders without Pyodide builds
+      'xgboost': 'XGBoost',
+      'lightgbm': 'LightGBM',
+      'catboost': 'CatBoost',
+      'optuna': 'Optuna',
+      'imblearn': 'imbalanced-learn',  // current releases need scikit-learn >= 1.4.2; the sandbox has 1.3
+      'prometheus_client': 'prometheus_client',
+      'evidently': 'Evidently',
+      'kagglehub': 'kagglehub',
+      'ucimlrepo': 'ucimlrepo',
+      'pypdf': 'pypdf',
+      'docx': 'python-docx',
       'requests': null,  // works in pyodide via micropip but blocked by CORS — skip silently
     };
     const blockedHits = [];
@@ -2218,7 +2230,6 @@ async function runPythonCode(code, outputEl) {
       'seaborn': 'seaborn',
       'matplotlib': 'matplotlib',
       'joblib': 'joblib',
-      'imblearn': 'imbalanced-learn',
       'statsmodels': 'statsmodels',
       'networkx': 'networkx',
       'sympy': 'sympy',

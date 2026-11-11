@@ -892,7 +892,7 @@ Three habits in one small loop. The template's hash (`3d962e20`) is logged, so a
 
 ## 19.9 Vector Databases & Modern RAG
 
-![Infographic on vector databases and hybrid search as of Nov 2026: six options (pgvector, Qdrant, Weaviate, Pinecone, Milvus and Zilliz, Vertex AI Vector Search) with one line each; formula RRF(d) = sum over rankers of 1/(k + rank), k = 60; worked example for the query refund for SKU-4417: keyword top-3 d4, d1, d0 and vector top-3 d0, d4, d2 fuse to d4 0.0325, d0 0.0323, d1 0.0318; a pick-by-size table (under 10M on Postgres pgvector, 10M to 1B self-hosted Qdrant, Weaviate or Milvus, over 1B Milvus, Vespa or Zilliz); trap: vector-only search misses exact IDs.](diagrams/fw19_info_vector_db_hybrid_search_ai.png)
+![Infographic on vector databases and hybrid search as of Nov 2026: six options (pgvector, Qdrant, Weaviate, Pinecone, Milvus and Zilliz, Google's Vector Search on Gemini Enterprise Agent Platform, formerly Vertex AI Vector Search, whose 2.0 adds hybrid) with one line each; formula RRF(d) = sum over rankers of 1/(k + rank), k = 60; worked example for the query refund for SKU-4417: keyword top-3 d4, d1, d0 and vector top-3 d0, d4, d2 fuse to d4 0.0325, d0 0.0323, d1 0.0318; a pick-by-size table (under 10M on Postgres pgvector, otherwise Pinecone; 10M to 1B self-hosted Qdrant, Weaviate or Milvus, managed Pinecone or Google's Vector Search; over 1B Milvus or Vespa, managed Zilliz or Google's Vector Search); trap: vector-only search misses exact IDs.](diagrams/fw19_info_vector_db_hybrid_search_ai.png)
 
 <details>
 <summary><strong>Read as text</strong> — a search index for meaning, and where the basics live</summary>
@@ -1416,7 +1416,7 @@ Status as of November 2026. Always quote the harness and the date with a score; 
 |---|---|---|
 | **SWE-bench Verified** | Real GitHub bug fixes in Python repos | **Retired** by OpenAI in Feb 2026 (flawed tests, contamination) |
 | **SWE-bench Pro** | A harder set of real repository tasks | OpenAI found ~30% of tasks broken and retracted its recommendation on 8 Jul 2026; some labs still report it, so treat scores as rough |
-| **Terminal-Bench 4.0** | Command-line tasks in a sandboxed terminal | Active; a new version or harness changes the score, so 3.0 and 4.0 results don't compare |
+| **Terminal-Bench 4.1** | Command-line tasks in a sandboxed terminal | Active; 4.1 (9 Nov 2026) keeps 4.0's tasks but hardens the verifiers, and a new major version or harness changes the score, so 3.0 and 4.x results don't compare |
 | **OSWorld-Verified** | Full desktop computer use, checked by scripts | The best self-reported scores now pass the ~72% human baseline; compare only runs with the same harness and step budget |
 | **τ-bench / τ²-bench** | Multi-turn tool use with a simulated customer (retail, airline; τ² adds telecom) | Active; report pass^k (all k tries succeed), not just pass@1 |
 | **GAIA** | General-assistant questions that need browsing and tools | Near saturated — official top entries are around 90%, close to the 92% human baseline |

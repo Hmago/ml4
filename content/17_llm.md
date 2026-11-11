@@ -6057,7 +6057,7 @@ Meta released the LLaMA model weights publicly, enabling researchers and develop
 
 ## 4.4 Claude (Anthropic)
 
-![Frontier landscape as of late 2026: Claude tier ladder Haiku 5.5, Sonnet 5.5, Opus 5.5, Fable 5.1; Gemini timeline from 1.0 Dec 2023 to 4 Argon Oct 2026; eight open-weight models coloured by licence (Apache 2.0, MIT, modified or custom); a pick-a-model rule and how to stay current](diagrams/llm17_info_claude_gemini_open_landscape_ai.png)
+![Frontier landscape as of late 2026: Claude tier ladder Haiku 5.5, Sonnet 5.5, Opus 5.5, Fable 5.2 (the top tier since 9 Nov 2026); Gemini timeline from 1.0 Dec 2023 to 4 Argon Oct 2026; eight open-weight models coloured by licence (Apache 2.0, MIT, modified or custom); a pick-a-model rule and how to stay current](diagrams/llm17_info_claude_gemini_open_landscape_ai.png)
 
 <details>
 <summary><strong>Read as text</strong> — the Claude version table, the naming note and what makes Claude different</summary>

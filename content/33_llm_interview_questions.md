@@ -2709,7 +2709,7 @@ offline, then per question retrieve ~20 candidates with hybrid search, rerank to
 **Trap:** "RAG eliminates hallucinations" — it only reduces them: the model can still ignore or misread the retrieved
 text, and when retrieval misses it may answer confidently anyway, so measure faithfulness and let it say "I don't know".
 
-**Go deeper:** [Ch 17b §9.1](#content/17b_llm_applications) · [Ch 17b §10.5](#content/17b_llm_applications) · [Ch 28 §24.11](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks)
+**Go deeper:** [Ch 17b §9.1](#content/17b_llm_applications) · [Ch 17b §10.5](#content/17b_llm_applications) · [Ch 28 §28.11](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks)
 
 ---
 
@@ -2796,7 +2796,7 @@ model-specific, so changing the model means re-embedding everything.
 or embedding queries with a different model than the documents: each model has its own space, so the similarities are
 meaningless. Store the raw text and the model version, and re-embed the whole corpus when you switch.
 
-**Go deeper:** [Ch 17b §10.1–10.2](#content/17b_llm_applications) · [Ch 17 §2.3](#content/17_llm) · [Ch 28 §24.2](#content/28_semantic_search) · [Ch 16 §4.1](#content/16_deep_learning)
+**Go deeper:** [Ch 17b §10.1–10.2](#content/17b_llm_applications) · [Ch 17 §2.3](#content/17_llm) · [Ch 28 §28.2](#content/28_semantic_search) · [Ch 16 §4.1](#content/16_deep_learning)
 
 ---
 
@@ -2933,7 +2933,7 @@ nprobe 50: recall@10 = 1.00, vectors scanned = 100.0%
 **Trap:** "A vector database returns *the* nearest neighbours" — by default it returns *approximate* ones and silently
 misses some of the true top-k, so measure recall@k against brute force instead of assuming it.
 
-**Go deeper:** [Ch 17b §10.4](#content/17b_llm_applications) · [Ch 28 §24.6](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks)
+**Go deeper:** [Ch 17b §10.4](#content/17b_llm_applications) · [Ch 28 §28.6](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks)
 
 ---
 
@@ -3076,7 +3076,7 @@ size 28, overlap 0: 2 chunks, 53 words stored for 53 (+0%), fact intact: False
 averages many topics and matches nothing well, every hit burns prompt tokens, and many embedders silently cut off text
 past their max input.
 
-**Go deeper:** [Ch 28 §24.3](#content/28_semantic_search) · [Ch 17b §10.5](#content/17b_llm_applications) · [Ch 19 §19.9](#content/19_ai_frameworks)
+**Go deeper:** [Ch 28 §28.3](#content/28_semantic_search) · [Ch 17b §10.5](#content/17b_llm_applications) · [Ch 19 §19.9](#content/19_ai_frameworks)
 
 ---
 
@@ -3146,7 +3146,7 @@ contextual hybrid retrieval cut top-20 retrieval failures from 2.9% to 1.9% (5.7
 
 **Trap:** "Add a reranker and retrieval misses go away." It only reorders the N candidates it is given: it can raise recall at the final K, but never above stage 1's recall@N — so measure recall@N first.
 
-**Go deeper:** [Ch 28 §24.8](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks) · [Ch 17b §10.3](#content/17b_llm_applications)
+**Go deeper:** [Ch 28 §28.8](#content/28_semantic_search) · [Ch 19 §19.9](#content/19_ai_frameworks) · [Ch 17b §10.3](#content/17b_llm_applications)
 
 ---
 
@@ -3274,7 +3274,7 @@ Reading it: MRR = (1 + 1/2 + 1/5) ÷ 3 = 0.567. The reranker lifts MRR to 0.833 
 
 **Trap:** "Just score the final answers." An end-to-end score says something broke, not where — score retrieval and generation separately so you know whether to fix the index or the prompt.
 
-**Go deeper:** [Ch 28 §24.9](#content/28_semantic_search) · [Ch 17c §4.1–4.3](#content/17c_llm_systems) · [Ch 19 §19.10](#content/19_ai_frameworks)
+**Go deeper:** [Ch 28 §28.9](#content/28_semantic_search) · [Ch 17c §4.1–4.3](#content/17c_llm_systems) · [Ch 19 §19.10](#content/19_ai_frameworks)
 
 ---
 
@@ -3466,7 +3466,7 @@ Doc B is three times longer, so the raw dot product (3 × 0.5 = 1.5) ranks it ab
 
 **Trap:** "Opposites get a low or negative cosine." Real embeddings put antonyms close (happy vs sad 0.37, well above happy vs table 0.13) because they share contexts; −1 means opposite *direction*, not opposite meaning.
 
-**Go deeper:** [Ch 17b §10.3](#content/17b_llm_applications) · [Ch 17b §10.1](#content/17b_llm_applications) · [Ch 28 §24.2](#content/28_semantic_search)
+**Go deeper:** [Ch 17b §10.3](#content/17b_llm_applications) · [Ch 17b §10.1](#content/17b_llm_applications) · [Ch 28 §28.2](#content/28_semantic_search)
 
 ---
 

@@ -1859,7 +1859,7 @@ Vendors count image tokens differently, so check the usage numbers each response
 
 [Ch 17 §2.3](#content/17_llm) showed that embeddings turn tokens into vectors. But embeddings go far beyond individual tokens — you can embed entire sentences, paragraphs, documents, images, and even audio into vectors.
 
-**The core idea:** Convert any piece of content into a fixed-size list of numbers where **similar content = similar numbers**. An embedding model is trained for exactly this, with *contrastive learning*: pairs that mean the same thing are pulled together and unrelated pairs pushed apart ([Ch 28 §24.2](#content/28_semantic_search)).
+**The core idea:** Convert any piece of content into a fixed-size list of numbers where **similar content = similar numbers**. An embedding model is trained for exactly this, with *contrastive learning*: pairs that mean the same thing are pulled together and unrelated pairs pushed apart ([Ch 28 §28.2](#content/28_semantic_search)).
 
 ```
   "How do I reset my password?"     → [0.23, -0.45, 0.82, ...]
@@ -2039,7 +2039,7 @@ A vector database stores millions to billions of embeddings and finds the most s
   → Semantic search! Finds related content even with different words.
 ```
 
-> **Maths in one line:** brute force = `N × d` multiply-adds per query — 10M vectors × 768 dims ≈ 7.7 billion per query, which is why indexes trade a little recall for speed (recall@10 above ~0.95 is a common target, [Ch 28 §24.6](#content/28_semantic_search)).
+> **Maths in one line:** brute force = `N × d` multiply-adds per query — 10M vectors × 768 dims ≈ 7.7 billion per query, which is why indexes trade a little recall for speed (recall@10 above ~0.95 is a common target, [Ch 28 §28.6](#content/28_semantic_search)).
 
 **Popular vector databases** (which one to pick, and why: [Ch 19 §19.9](#content/19_ai_frameworks)):
 
@@ -2130,15 +2130,15 @@ Production systems add hybrid search, a reranker (retrieve ~20, keep the best 3�
   − More complex
 
   SEMANTIC: Use embeddings to detect topic changes, split at topic boundaries
-  + Best quality chunks
-  − Most expensive (needs embedding calls while chunking)
+  + Follows topic shifts
+  − Slow (needs embedding calls while chunking); measured gains are often small
 
   OVERLAP: Each chunk repeats the last ~50-100 tokens of the previous one
   + A sentence on a boundary survives whole in at least one chunk
   − More chunks to store and search
 
   Typical chunk size: 256-512 tokens with 50-100 tokens of overlap
-  (the same default as Ch 28 §24.3)
+  (the same default as Ch 28 §28.3)
 ```
 
 > **Maths in one line:** `chunks = ⌈(N − overlap) / (size − overlap)⌉` — a 2,000-token document at 512 tokens with 100 overlap gives ⌈1,900 / 412⌉ = 5 chunks and stores 2,400 tokens (+20%).

@@ -1,662 +1,662 @@
 [
   {
-    "q": "In the double descent phenomenon, what happens to test error as model complexity increases beyond the interpolation threshold?",
+    "q": "A team keeps enlarging a network past the point where it can fit the training set exactly. Under double descent, what happens to test error beyond that interpolation threshold?",
     "options": [
-      "Test error rises and stays elevated because the model memorized all training noise, blocking any generalization beyond that point",
-      "Test error plateaus permanently at the threshold as the model reaches its maximum representational capacity",
-      "Test error decreases again because overparameterized models find simpler interpolating solutions via implicit SGD regularization",
-      "Test error stays constant because overparameterized models are immune to standard overfitting mechanisms"
+      "It rises and stays high, because a model that fits every training label has memorised all of the noise for good",
+      "It flattens at the threshold value, because the model has reached its maximum useful capacity",
+      "It can fall again, because gradient descent tends to pick smooth, small-norm fits among the many perfect ones",
+      "It drops straight to the noise floor, because over-parameterised models are unable to overfit at all"
     ],
     "answer": 2,
-    "explanation": "Beyond the interpolation threshold, SGD implicit regularization finds simple interpolating functions, causing test error to fall again. This contradicts the classical U-curve but is reproducible across architectures from kernel methods to deep networks."
+    "explanation": "Test error peaks near the interpolation threshold — the size at which the model can first fit the training set exactly (for simple models, roughly parameters ≈ training examples) — and then falls again as the model grows (Belkin et al., 2019; Nakkiran et al., 2019). The leading explanation is implicit regularization: among the many perfect fits, gradient descent finds smooth, small-norm ones, so variance drops again. The decomposition bias² + variance + noise still holds; only the rule 'more parameters ⇒ more variance' breaks."
   },
   {
-    "q": "Bagging (Random Forest) and Boosting (XGBoost) both combine trees. Which correctly describes what each primarily reduces?",
+    "q": "Bagging (random forest) and boosting (XGBoost) both combine trees. Which statement correctly describes what each mainly reduces?",
     "options": [
-      "Bagging reduces variance by averaging many high-variance trees trained in parallel; Boosting reduces bias by fitting shallow trees sequentially to correct residuals",
-      "Bagging reduces bias by iteratively combining weak learners; Boosting reduces variance by averaging strong trees trained on independent bootstrap samples",
-      "Both reduce variance via aggregation; the only structural distinction is whether trees are trained in parallel versus sequential stages",
-      "Bagging eliminates outlier sensitivity via robust averaging; Boosting reduces feature correlation through aggressive subsampling"
+      "Bagging averages deep, high-variance trees built in parallel to cut variance; boosting adds shallow trees in sequence, each fitting the remaining errors, to cut bias",
+      "Bagging adds weak learners one at a time to cut bias; boosting averages strong trees trained on independent bootstrap samples to cut variance",
+      "Both mainly cut variance by aggregation; the only real difference is whether the trees are trained in parallel or one after another",
+      "Bagging mainly removes outlier sensitivity through robust averaging; boosting mainly removes feature correlation through heavy subsampling"
     ],
     "answer": 0,
-    "explanation": "Bagging trains deep trees (low bias, high variance) in parallel and averages them, reducing variance. Boosting trains shallow trees (high bias, low variance) sequentially correcting residuals, reducing bias. Mixing these up is the most common ensemble exam error."
+    "explanation": "Averaging cancels variance but not bias, so a random forest averages deep, low-bias trees. Boosting removes bias step by step, so each step is a weak, shallow tree (depth 3–8; XGBoost's default is 6) fitted to the errors left so far; shrinkage and subsampling also curb its variance. That is why random forests use deep trees and boosting uses shallow ones."
   },
   {
-    "q": "A model achieves 72% training accuracy and 70% test accuracy. If you collect 5x more training data without changing the model, the most likely result is:",
+    "q": "A spam classifier scores 72% training accuracy and 70% validation accuracy, while careful human raters reach about 95%. If you collect 5× more training data and change nothing else, what is the most likely outcome?",
     "options": [
-      "Test accuracy improves substantially as the richer dataset reveals patterns hidden in the small original sample",
-      "Neither metric improves much because the tiny gap with low accuracy signals high bias, which more data does not cure",
-      "The train-test gap widens as more data causes the model to memorize finer-grained training patterns",
-      "Both metrics approach 100% as the larger sample fully resolves ambiguity in the decision boundary"
+      "Validation accuracy climbs sharply, because the bigger sample reveals patterns hidden in the small one",
+      "Little changes: the 23-point gap to the target is bias, and more data mainly reduces variance",
+      "The train–validation gap widens, because more data lets the model memorise finer training detail",
+      "Both numbers approach the 95% target, because more data removes bias and variance equally"
     ],
     "answer": 1,
-    "explanation": "A small train-test gap with low absolute accuracy signals HIGH BIAS, not high variance. More data reduces variance. Curing high bias requires a more complex model or better features, not more samples."
+    "explanation": "Avoidable bias = target − training = 95 − 72 = 23 points; variance = training − validation = 2 points. That is high bias — the chapter's logistic regression on a few hand-made features. More data shrinks variance, not bias: a model that cannot represent the pattern keeps the same bias however much data it sees. Fix bias first with richer features (word n-grams, sender reputation) or a more flexible model such as gradient-boosted trees."
   },
   {
-    "q": "Adam initializes $m_0=0$, $v_0=0$ and applies $\\hat{m}_t=m_t/(1-\\beta_1^t)$. What specific problem does this bias correction address?",
+    "q": "Adam starts with m₀ = 0 and v₀ = 0 (β₁ = 0.9, β₂ = 0.999). What would the very first update look like WITHOUT bias correction?",
     "options": [
-      "It caps gradient magnitudes that spike early in training, preventing parameter explosion during the unstable initial phase when loss surfaces are steepest and most sensitive",
-      "It normalizes moment estimates uniformly across all layers so every parameter in the network converges at an approximately equal and consistent rate throughout the training run",
-      "It lowers the effective learning rate during the warm-up epochs to prevent gradient instability arising from poor random weight initialization at the very start of training",
-      "At $t=1$ with $\\beta_1=0.9$: $m_1=0.1g_1$ severely underestimates $g_1$; dividing by 0.1 restores the true gradient before correction vanishes near $t=100$"
+      "About 10× too small, because m₁ = 0.1·g₁ understates the gradient and nothing compensates for it",
+      "Exactly the learning rate α, because the zero starts in m and v cancel each other out",
+      "Zero, because both moment estimates are still sitting at their initial value on step one",
+      "About 3.16× too large, because v₁ = 0.001·g₁² is understated far more than m₁ = 0.1·g₁"
     ],
     "answer": 3,
-    "explanation": "Zero initialization biases early estimates toward zero. At $t=1$, $m_1=(1-0.9)g_1=0.1g_1$. Dividing by $(1-0.9^1)=0.1$ restores $g_1$. By $t=100$, the denominator $\\approx 1$ and the correction disappears naturally."
+    "explanation": "Uncorrected, the step is α·m₁/√v₁ = α·0.1·g₁/√(0.001·g₁²) ≈ 3.16·α in the gradient's direction — too LARGE, because v is understated 1,000× and sits under a square root, while m is understated only 10×. Dividing by (1 − 0.9ᵗ) and (1 − 0.999ᵗ) makes the first step exactly ±α. The v correction fades slowly — its factor is still 10.5 at t = 100 and 1.58 at t = 1,000 — so bias correction matters for the first few thousand steps."
   },
   {
-    "q": "SGD with momentum often achieves better test accuracy than Adam on large image benchmarks despite slower convergence. The primary explanation is:",
+    "q": "On ResNet-style image classifiers, well-tuned SGD with momentum often matched or beat Adam's test accuracy. Which explanation matches the current view?",
     "options": [
-      "SGD unscaled updates produce larger gradient norms that help escape suboptimal local minima more reliably than adaptive steps",
-      "Adam bias correction introduces an implicit weight decay effect that specifically degrades vision model feature diversity",
-      "SGD gradient noise biases convergence toward flatter minima that generalize better; Adam precise steps converge into sharper, narrower minima",
-      "SGD maintains more stable batch-norm statistics across layers, yielding more reliable gradient estimates in the final epochs"
+      "SGD's unscaled updates are larger, so they jump out of the poor local minima that Adam's smaller, adaptive steps cannot leave",
+      "Adam's bias correction acts as hidden weight decay that specifically harms the features vision models learn",
+      "SGD noise may favour flatter minima, though flatness is debated; with decoupled weight decay (AdamW) the gap largely closed",
+      "SGD keeps BatchNorm running statistics steadier, so its final-epoch gradients are measurably more reliable"
     ],
     "answer": 2,
-    "explanation": "Flat minima generalize better because small weight perturbations produce small loss changes. Adam finds solutions more precisely but they can be sharper. For Transformers and NLP, Adam dominates; the tradeoff is architecture-dependent."
+    "explanation": "Wilson et al. (2017) found well-tuned SGD + momentum often matched or beat Adam on image classifiers. A popular explanation is that SGD noise favours flatter minima (Keskar et al., 2017), but flatness alone is debated — sharpness can change under a reparametrization that leaves the function unchanged (Dinh et al., 2017). With decoupled weight decay the gap largely closed: Transformers, LLMs and ConvNeXt train with AdamW, while SGD + momentum remains common for ResNet-style CNNs."
   },
   {
-    "q": "When gradient norm $\\|g\\|$ exceeds threshold $\\tau$, what is the correct formula for the clipped gradient?",
+    "q": "A gradient g = (3, 4) arrives and you clip by global norm with threshold c = 1. What does the clipped gradient become, and why this rule?",
     "options": [
-      "$g_{\\text{clip}}=\\tau \\cdot g/\\|g\\|$, rescaling to preserve direction while bounding magnitude exactly to $\\tau$",
-      "$g_{\\text{clip}}=g/\\tau$, proportionally reducing the gradient to keep the effective step within a safe range",
-      "$g_{\\text{clip}}=0$, skipping the update entirely to avoid parameter instability during high-gradient batches",
-      "$g_{\\text{clip}}=g\\cdot\\tau/\\|g\\|^2$, applying a quadratic penalty that penalizes larger gradients more aggressively"
+      "(0.6, 0.8): it is rescaled to length c, so its direction is kept and only the step size is capped",
+      "(1, 1): each component is capped at c separately, which keeps every coordinate in a safe range",
+      "(0, 0): an update whose norm exceeds c is skipped entirely, which protects the weights from a spike",
+      "(0.12, 0.16): it is divided by its squared norm, which penalises large gradients more strongly"
     ],
     "answer": 0,
-    "explanation": "Clipping rescales: $g \\leftarrow \\tau \\times g/\\|g\\|$. Direction is preserved; magnitude is capped at $\\tau$, preventing exploding gradients in RNNs and Transformers. Zeroing the gradient entirely would lose all directional information."
+    "explanation": "If ‖g‖ > c, g ← c·g/‖g‖. Here ‖g‖ = 5, so g becomes (0.6, 0.8): the same direction at length 1. Capping each component separately (1, 1) changes the direction. Clipping guards against exploding gradients in RNNs and Transformers — GPT-3 and Llama 2 clip at 1.0 — but it cannot rescue a gradient that has vanished."
   },
   {
-    "q": "The linear scaling rule for mini-batch training states that when you double the batch size you should:",
+    "q": "You double the batch size of a training run. Which learning-rate adjustment is the recommended starting point?",
     "options": [
-      "Halve the learning rate to maintain the same gradient noise-to-signal ratio as the smaller-batch baseline configuration",
-      "Double the learning rate so that the per-sample update magnitude remains approximately constant across batch sizes",
-      "Increase training epochs proportionally to preserve the total number of gradient update steps during the run",
-      "Reduce the momentum coefficient $\\beta$ proportionally to prevent velocity accumulation from overshooting the optimum"
+      "Halve it, because each update in a bigger batch already sums twice as much gradient signal",
+      "Raise it: about 2× for SGD (linear rule) or about 1.4× for Adam (square-root rule), then sweep",
+      "Leave it as it is and double the epochs, so that the run still takes the same total number of update steps",
+      "Leave it as it is and lower the momentum β instead, so the larger velocity does not overshoot"
     ],
     "answer": 1,
-    "explanation": "A larger batch has lower-variance gradient estimates. Doubling the learning rate matches the per-sample update scale of the smaller batch. Linear warmup is recommended for very large batches to avoid instability in early steps."
+    "explanation": "Larger batches give less noisy gradients (noise falls as 1/√B) but fewer updates per epoch, so each step can be bigger. Goyal et al. (2017) used the linear rule for SGD — ResNet-50 went from 0.1 at batch 256 to 3.2 at 8,192, with warmup; for Adam the square-root rule (about ×1.4) is common. Past a 'critical batch size' the returns diminish, so confirm with a short sweep."
   },
   {
-    "q": "In deep network loss landscapes, which type of critical point (near-zero gradient) is by far the most commonly encountered?",
+    "q": "Training a large network stalls on a long plateau. Which kind of zero-gradient point is the usual culprit in high dimensions, and why?",
     "options": [
-      "Local minima significantly worse than the global minimum, frequently trapping training in persistent sub-optimal regions",
-      "Global minima with very small basins of attraction, requiring precise initialization to avoid overshooting during descent",
-      "Flat plateau regions with uniformly near-zero Hessian eigenvalues that produce indefinitely slow convergence without momentum",
-      "Saddle points with mixed curvature — having ALL $d$ dimensions curve upward simultaneously is exponentially unlikely"
+      "A bad local minimum far worse than the global one, which traps gradient descent for the rest of training",
+      "The global minimum itself, whose basin is so narrow that most initializations overshoot it",
+      "A region where every curvature is exactly zero, which only second-order optimizers can cross",
+      "A saddle point: a minimum needs every direction to curve upward, about 2⁻ⁿ odds if each were a coin flip"
     ],
     "answer": 3,
-    "explanation": "For a zero-gradient point to be a local minimum, ALL d dimensions must curve upward. With millions of parameters this probability is exponentially small. SGD noise and momentum help escape the abundant saddle points efficiently."
+    "explanation": "At a zero-gradient point a minimum needs all n directions to curve upward — about 1 in 1,000 for n = 10 if each were a coin flip, and networks have millions of weights. Dauphin et al. (2014) found that critical points with high training error were saddles. Gradient descent rarely converges to a saddle (Lee et al., 2016) but can crawl near one — the plateau — and momentum and SGD noise help it across. The local minima SGD does find tend to have similar loss, so the goal is a good minimum, not the global one."
   },
   {
-    "q": "In momentum SGD $v_t=\\beta v_{t-1}+\\nabla J$, what is the standard default for $\\beta$ and its effective memory window?",
+    "q": "In PyTorch-style momentum, v ← β·v + ∇J and θ ← θ − α·v, with the usual β = 0.9. What happens when the gradient stays constant for many steps?",
     "options": [
-      "0.999, matching the second-moment decay used in Adam to maintain consistent hyperparameter symmetry across optimizer components",
-      "0.1, keeping the historical gradient contribution minimal relative to the current step for rapid local adaptation",
-      "0.9, giving an effective memory window of $1/(1-0.9)=10$ steps via exponential decay of prior gradient contributions",
-      "0.5, providing equal weighting between current and historical velocity components for conservative stable convergence"
+      "The velocity decays toward zero, so the step shrinks to almost nothing on a long and consistent slope",
+      "The step stays exactly α·∇J, because momentum only changes the direction of each update",
+      "The step grows toward α·∇J/(1 − β), 10× larger — β = 0.9 acts like remembering about 10 gradients",
+      "The step grows without limit, so momentum always needs gradient clipping to stay stable"
     ],
     "answer": 2,
-    "explanation": "With $\\beta=0.9$, effective window $= 1/(1-0.9)=10$ steps. This dampens oscillations in inconsistent directions while accelerating along consistent ones. It is the standard for both SGD momentum and Adam $\\beta_1$."
+    "explanation": "With a steady gradient g the velocity converges to g/(1 − β), so the step becomes α·g/(1 − 0.9) = 10·α·g — acceleration along consistent directions — while directions whose gradient keeps flipping sign cancel out (damped zigzags). Some texts write v ← β·v + (1 − β)·∇J: the same idea with a 10× smaller velocity, so its learning rate is 10× larger."
   },
   {
-    "q": "L2 regularization shrinks weights proportionally; L1 applies a constant subgradient push. The key consequence for sparsity is:",
+    "q": "Why does an L1 penalty produce exact zeros while L2 does not, and what does a Lasso solver do to actually land on zero?",
     "options": [
-      "L1 can drive weights to exactly zero because the constant $\\lambda\\cdot\\text{sign}(w)$ push never weakens as $w\\to 0$, while L2 force diminishes and asymptotically approaches but never reaches zero",
-      "L2 drives more weights to exactly zero because proportional shrinkage is strongest when weights are already near the origin, delivering a net push that exceeds any constant-magnitude regularization force",
-      "L1 produces smoother predictions by spreading the penalty evenly across all parameters regardless of their magnitude, maintaining a consistent regularization strength that avoids abrupt weight collapses",
-      "L2 performs more aggressive feature selection because the squared penalty amplifies the cost differential between important and redundant features, naturally eliminating the smaller weight values first"
+      "L1's pull is a constant λ·sign(w) that never fades while L2's pull 2λw shrinks with w; solvers soft-threshold to clip at 0",
+      "L2's pull is strongest near zero, so it zeroes more weights; L1 needs an extra clipping step to keep weights alive",
+      "L1 spreads its penalty evenly over all weights to smooth predictions; the exact zeros come from early stopping",
+      "L2 squares each weight, which removes the small ones first; L1 only removes features once the learning rate decays"
     ],
     "answer": 0,
-    "explanation": "L2 update: $w\\leftarrow w(1-2\\alpha\\lambda)$ shrinks exponentially but never reaches zero. L1: $w\\leftarrow w-\\alpha\\lambda\\cdot\\text{sign}(w)$ applies a constant push. A tiny positive weight still gets pushed by $\\alpha\\lambda$, crossing zero — hence L1 produces exact sparsity."
+    "explanation": "L1 subtracts a fixed amount per step however small w gets; L2 multiplies w by (1 − 2αλ) — geometric decay that never reaches zero. On the penalty alone from 0.100, L1 hits 0 in 10 steps while L2 is still 0.012 after 20. Plain subgradient steps overshoot and jitter near zero (0.011–0.015 left in the chapter's run), so Lasso solvers use soft-thresholding, w ← sign(w)·max(|w| − αλ, 0), which gave exactly 3 zeros on Ch 8's six weights."
   },
   {
-    "q": "During inference, Batch Normalization cannot use live batch statistics from a single sample. What does it use instead?",
+    "q": "At inference a BatchNorm layer may see a single example. What does PyTorch use instead of batch statistics, and how are they updated during training?",
     "options": [
-      "Statistics from the last training batch, saved in the model checkpoint and reused verbatim at inference time",
-      "Running exponential moving averages of mean and variance accumulated across all training batches, paired with learned $\\gamma$ and $\\beta$",
-      "Statistics from the full validation set, computed post-training to give an unbiased population-level calibration",
-      "No normalization at inference — $\\gamma$ is reset to 1 and $\\beta$ to 0, making the layer a transparent identity function"
+      "The mean and variance of the very last training batch, saved in the checkpoint and reused unchanged",
+      "Running averages updated as running = (1 − m)·running + m·batch, where m = 0.1 weights the new batch",
+      "Statistics recomputed over the full validation set after training, for an unbiased population estimate",
+      "No statistics at all: γ is reset to 1 and β to 0, so the layer becomes an identity function"
     ],
     "answer": 1,
-    "explanation": "During training, BatchNorm tracks $\\mu_{\\text{run}}$ and $\\sigma_{\\text{run}}$ via EMA (default momentum 0.9 in PyTorch). At inference, these running statistics replace batch statistics, enabling single-sample inference with stable consistent normalization."
+    "explanation": "PyTorch's default momentum m = 0.1 is the weight on the NEW batch (it also stores the unbiased variance); Keras defines momentum the other way round — its default 0.99 is the weight on the OLD value. Call model.eval() at test time, or outputs depend on batch-mates. Small batches hurt: the batch mean wobbles by about σ/√B (±71% of σ at B = 2), so below roughly 16–32 per device use GroupNorm or LayerNorm. At inference BatchNorm is a fixed per-channel scale and shift that can be folded into the preceding convolution."
   },
   {
-    "q": "In inverted dropout, surviving activations are scaled by $1/(1-p)$ during training. The purpose of this scaling factor is:",
+    "q": "With inverted dropout at rate p, surviving activations are multiplied by 1/(1 − p) during training. What is this scaling for?",
     "options": [
-      "To compensate for increased gradient variance from randomly zeroing units within each forward pass of a mini-batch",
-      "To prevent surviving neurons from becoming overconfident by normalizing their relative contribution within the hidden layer",
-      "To preserve training-inference consistency with standard L2 weight decay applied to the remaining active connections",
-      "To maintain the expected activation magnitude at each layer so inference uses all neurons without any additional rescaling step"
+      "To offset the extra gradient variance that zeroing units adds to each mini-batch update",
+      "To stop the surviving neurons from becoming over-confident relative to their temporarily dropped neighbours",
+      "To keep dropout consistent with the L2 weight decay applied to the remaining connections",
+      "To keep each activation's expected value unchanged, so inference uses every unit with no rescaling"
     ],
     "answer": 3,
-    "explanation": "With dropout rate $p=0.5$, half the neurons are zeroed on average, halving the expected output sum. Scaling survivors by $1/(1-p)=2$ restores the expected magnitude. At inference all neurons are active and no scaling is applied — the network output matches training scale exactly."
+    "explanation": "With p = 0.5, outputs [3, 4, 7, 2, 5] masked to [3, 0, 7, 0, 5] are scaled ×2 to [6, 0, 14, 0, 10]; over many steps neuron 1 averages (6 + 0)/2 = 3, its inference value. At inference every unit is on (model.eval()) and nothing is rescaled. Naming trap: PyTorch's nn.Dropout(p) gives the drop probability, but the original paper (Srivastava et al., 2014) used p for the keep probability."
   },
   {
-    "q": "Bishop (1995) proved that early stopping with gradient descent on a quadratic loss is equivalent to which regularizer?",
+    "q": "How does early stopping relate to L2 regularization?",
     "options": [
-      "Dropout regularization — training duration controls the effective ensemble size of sub-networks implicitly trained, with longer training equivalent to averaging more randomized architectures",
-      "Max-norm regularization — training stops when the largest weight vector in the network exceeds the maximum Euclidean norm constraint, bounding all weight magnitudes simultaneously",
-      "L2 (Ridge) regularization — fewer steps keep weights near initialization, equivalent to larger $\\lambda$; more steps approach the unregularized solution",
-      "L1 (Lasso) regularization — the training step count directly controls how many weights are eventually driven to exactly zero, providing explicit sparsity-inducing behavior over time"
+      "It is exactly dropout: training time controls how many thinned sub-networks get averaged",
+      "It is exactly a max-norm constraint: training halts as soon as any single weight vector grows past a set length",
+      "For a quadratic loss with small steps it is approximately L2: fewer steps ≈ larger λ, roughly λ ≈ 1/(2ατ)",
+      "It is exactly L1: the number of training steps sets how many weights end at exactly zero"
     ],
     "answer": 2,
-    "explanation": "For gradient descent on quadratic loss, the trajectory from initialization equals the L2-regularized solution path: fewer steps = stronger shrinkage toward initialization. Early stopping is L2 regularization because it limits how far weights travel from their near-zero initial values."
+    "explanation": "Bishop (1995) and Goodfellow et al. (§7.8) show that τ gradient steps at learning rate α from near zero act roughly like an L2 penalty of strength λ ≈ 1/(2ατ) — more steps, weaker regularization. It is only approximate (quadratic loss, small steps), and it only works if you restore the best checkpoint (Keras needs restore_best_weights=True). The validation score you stopped on is now optimistic, so report a separate test set."
   },
   {
-    "q": "In Random Forest, each tree trains on a bootstrap sample. For $n$ samples, approximately what fraction is never included in any given tree?",
+    "q": "Each random-forest tree trains on a bootstrap sample of N rows. About what share of rows does a given tree never see, and what is that good for?",
     "options": [
-      "About 36.8%, since each sample is excluded with probability $(1-1/n)^n \\to e^{-1} \\approx 0.368$ for large $n$, enabling free out-of-bag validation",
-      "About 50%, because bootstrap sampling draws exactly half of the $n$ samples with replacement by design for computational efficiency",
-      "About 20%, aligning with the standard 80/20 train-validation split convention used across most model evaluation practices",
-      "About 10%, leaving a minimal held-out set to maximize usable training data per individual tree in the ensemble"
+      "About 36.8%, since (1 − 1/N)ᴺ → e⁻¹; their out-of-bag error can replace a validation set for tuning, but not the test set",
+      "About 50%, because a bootstrap deliberately draws half the rows; their error is the final test score you report",
+      "About 20%, matching the usual 80/20 split; their error replaces both the validation set and the test set",
+      "About 10%, to maximise each tree's training data; those few left-out rows are simply discarded"
     ],
     "answer": 0,
-    "explanation": "The probability a specific sample is never chosen in $n$ draws with replacement is $(1-1/n)^n \\to e^{-1}\\approx 0.368$. This ~36.8% OOB fraction provides free validation that approximates cross-validation accuracy without any separate split."
+    "explanation": "A row is missed by one bootstrap with probability (1 − 1/N)ᴺ → e⁻¹ ≈ 0.368, so each tree sees about 63.2% unique rows. Predicting each row only with the trees that never saw it gives the OOB error — close to cross-validation from one fit (Ch 12: OOB accuracy 0.722 vs 5-fold CV 0.726). Use it for tuning, but keep an untouched test set for the number you report. Boosting has no OOB equivalent, so it needs an explicit validation set for early stopping."
   },
   {
-    "q": "In XGBoost regularization $\\Omega(f) = \\gamma T + \\frac{1}{2}\\lambda\\sum_j w_j^2$, the hyperparameter $\\gamma$ specifically penalizes:",
+    "q": "In XGBoost's regularized objective Ω(f) = γT + ½λΣwⱼ², what does γ control?",
     "options": [
-      "The sum of squared leaf weights $\\sum_j w_j^2$, distributing prediction load evenly across all leaves to limit individual leaf dominance",
-      "The total number of leaves $T$, requiring each additional split to reduce the training objective by at least $\\gamma$ to be accepted",
-      "The maximum tree depth, controlling how many nested conditional branches any individual tree in the ensemble can learn",
-      "The maximum absolute leaf weight via an $L_\\infty$ constraint that bounds the maximum prediction scale per tree"
+      "The size of the leaf weights, pulling every leaf score toward zero so that no single leaf dominates",
+      "The price of one more leaf: a split is kept only if its gain exceeds γ",
+      "The maximum depth of each tree, capping how many nested questions any tree may ask",
+      "The largest absolute leaf weight, enforced as a hard L∞ bound on every tree in the ensemble"
     ],
     "answer": 1,
-    "explanation": "$\\gamma$ penalizes leaf count $T$ directly. A split is accepted only if it reduces the objective by more than $\\gamma$, imposing a minimum gain threshold. $\\lambda$ separately applies L2 on leaf scores. This explicit structural penalty distinguishes XGBoost from vanilla gradient boosting."
+    "explanation": "T is the number of leaves, so γ is a complexity cost per leaf — a split whose gain is below γ is pruned (default γ = 0). λ (default 1) is the L2 penalty that shrinks leaf weights, and alpha adds an optional L1 term. Friedman's original gradient boosting has no Ω term; it controls complexity only through depth, shrinkage and subsampling. Split search today uses histogram binning (tree_method='hist', the default since XGBoost 2.0)."
   },
   {
-    "q": "Gradient Boosting uses shallow trees as base learners. The primary statistical rationale is:",
+    "q": "Each tree in a forest has prediction variance σ² = 1 and the trees are correlated with ρ = 0.9. What does growing from 100 to 1,000 trees do, and what would help more?",
     "options": [
-      "Shallow trees are memory-efficient, allowing Boosting to scale to datasets too large for deep-tree bagging while still fitting in the available RAM on commodity hardware",
-      "Shallow trees reduce feature interactions, making the final ensemble more interpretable and suitable for auditing in compliance-regulated industries with explainability requirements",
-      "Shallow trees train faster, so more boosting rounds can be completed within the same wall-clock time budget, improving coverage of the feature space at each iteration",
-      "Shallow trees have high bias and low variance — Boosting corrects the high bias sequentially while low variance prevents cascading noise across hundreds of iterations"
+      "Variance falls tenfold, from about 0.9 to 0.09, so adding more trees is the main lever to pull here",
+      "Variance rises slightly, because more correlated trees amplify the error they share",
+      "Variance drops to about zero, since averaging enough trees cancels any kind of error",
+      "Almost nothing — the ρσ² = 0.9 floor remains; decorrelating the trees (smaller ρ) helps far more"
     ],
     "answer": 3,
-    "explanation": "Boosting sequentially reduces bias. Base learners need high bias (correctable via residuals) and low variance (stable). Deep trees have low bias but high variance — chaining them amplifies noise rather than reducing systematic error."
+    "explanation": "Var(average of K trees) = ρσ² + (1 − ρ)σ²/K. With ρ = 0.9, 100 trees give 0.901 and 1,000 give 0.9001: only the second term shrinks. Cutting ρ to 0.3 brings 100 trees to 0.307. That is why random forests add a second layer of randomness — a random feature subset at every split (√M for classification) — so one dominant feature cannot make every tree alike."
   },
   {
-    "q": "In gradient boosting for regression under squared loss, the initialization $F_0(x)$ before any trees are added is standardly set to:",
+    "q": "In round 1 of the chapter's three-house boosting example (squared loss, so g = F − y and h = 1 per row), leaf {A, C} has G = +166.7 and H = 2. What leaf weight does XGBoost's Newton step give with λ = 1?",
     "options": [
-      "Zero, giving a neutral baseline so first-tree residuals equal the raw target values without any constant offset",
-      "The median of the targets, giving a robust initialization when outliers are present in the training distribution",
-      "The mean of all targets $\\bar{y}$, which minimizes $\\sum(y_i-c)^2$ over all constant predictions $c$",
-      "A linear regression fit on features, providing a stronger initialization than any constant prediction value"
+      "−83.3, the plain mean residual, because λ only matters once the tree is pruned",
+      "+83.3, because the leaf weight always takes the sign of the summed gradient G",
+      "−55.6, from −G/(H + λ) = −166.7/3, shrunk toward zero from the λ = 0 value of −83.3",
+      "−166.7, because the Newton step uses the whole gradient sum G without ever dividing by H"
     ],
     "answer": 2,
-    "explanation": "Under squared loss, $\\arg\\min_c \\sum(y_i-c)^2=\\bar{y}$. Starting at the mean ensures first-step residuals have zero mean and maximum spread. This is the default in both scikit-learn and XGBoost gradient boosting."
+    "explanation": "XGBoost uses second-order (Newton) leaf weights w* = −G/(H + λ), where G and H sum the loss's first and second derivatives over the leaf's rows. At λ = 0 the weight is −166.7/2 = −83.3, the mean residual; at the default λ = 1 it is −166.7/3 = −55.6. The one-row leaf {B} is halved, +166.7 → +83.3: λ shrinks leaves with few rows the most, which is exactly where overfitting lives. (Round 0 starts from F₀ = mean = 333.3, the best constant under squared loss.)"
   },
   {
-    "q": "The sigmoid function $\\sigma(z)$ has derivative $\\sigma(z)(1-\\sigma(z))$. At which $z$ does this expression reach its maximum value?",
+    "q": "In the chapter's 50-layer test, plain sigmoid layers pass back about 4 × 10⁻³² of the gradient, but the same layers with skip connections pass back about 1.09. Why?",
     "options": [
-      "$z=0$, where $\\sigma(0)=0.5$ yields the peak derivative value of $0.25$",
-      "$z=\\pm 1$, where the sigmoid transitions most sharply between flat saturation and nearly linear regions",
-      "$z=\\pm 5$, at the onset of the saturation regime where gradients become negligibly small",
-      "No finite maximum exists; the derivative grows unboundedly when many sigmoid layers are composed in a deep network"
+      "A residual block y = x + F(x) has ∂y/∂x = 1 + F′(x), so the identity path carries the gradient unshrunk",
+      "Skip connections switch the sigmoids to ReLUs internally, so every active slope becomes exactly 1",
+      "Skip connections halve the effective depth, so the per-layer shrinkage is applied only 25 times",
+      "Skip connections clip the gradient at every layer, which stops it from vanishing or exploding"
     ],
     "answer": 0,
-    "explanation": "$\\sigma(0)(1-\\sigma(0))=0.5\\times 0.5=0.25$, the global maximum. At $z=5$: $\\approx 0.0067$. Stacking 10 sigmoid layers: $0.25^{10}\\approx 10^{-6}$, explaining the vanishing gradient problem that motivated ReLU adoption."
+    "explanation": "The +1 is a path on which the gradient is never shrunk. With a local slope of 0.01 per layer, 50 plain layers pass back 0.01⁵⁰ = 10⁻¹⁰⁰, while 50 residual blocks pass back about 1.01⁵⁰ ≈ 1.64. A sigmoid's slope is at most σ′(0) = 0.25, so 10 plain sigmoid layers keep at most 0.25¹⁰ ≈ 10⁻⁶ from the activations alone. ResNet trained 152 layers this way, and every Transformer block wraps attention and the FFN in residuals (modern LLMs: pre-norm x + F(Norm(x)))."
   },
   {
-    "q": "Which weight initialization scheme is specifically designed for ReLU-activated layers, and what key property does it preserve?",
+    "q": "Which weight initialization is designed for ReLU layers, and what does it compensate for?",
     "options": [
-      "Xavier: $\\text{Var}(w)=2/(n_{in}+n_{out})$, balancing forward and backward signal variance for symmetric activations such as tanh or sigmoid",
-      "He (Kaiming): $\\text{Var}(w)=2/n_{in}$, compensating for ReLU zeroing roughly half of all activations, which halves expected layer output variance",
-      "LeCun: $\\text{Var}(w)=1/n_{in}$, designed for self-normalizing networks where SELU activations maintain near-unit variance by construction",
-      "Orthogonal initialization with unit-norm rows, exactly preserving gradient norms through linear transformations in the initial forward pass"
+      "Xavier: Var(w) = 2/(n_in + n_out), which averages fan-in and fan-out for tanh or sigmoid layers",
+      "He (Kaiming): Var(w) = 2/n_in, doubled because ReLU zeroes about half of its inputs",
+      "LeCun: Var(w) = 1/n_in, the scheme built around self-normalizing SELU activations",
+      "Orthogonal rows of unit norm, which keep gradient norms fixed only through purely linear layers"
     ],
     "answer": 1,
-    "explanation": "ReLU zeros ~50% of neurons, halving expected output variance per layer. He initialization sets $\\text{Var}(w)=2/n_{in}$ to restore unit variance per layer. Xavier was designed for tanh/sigmoid and leads to vanishing activations when paired with ReLU in deep networks."
+    "explanation": "A neuron sums n_in inputs, so Var(z) ≈ n_in·Var(w)·Var(x); ReLU zeroes about half, so He doubles the variance to 2/n_in to keep the signal size steady (std 0.088 for a 256 → 256 layer, vs Xavier's 0.0625). In the chapter's 50-layer run, ReLU with He init kept the gradient near 2.19, std 0.01 killed it (9.3 × 10⁻⁶³) and 1.5 × He exploded it (1.4 × 10⁹). Weights must also be random, not equal, to break symmetry; zero biases are fine."
   },
   {
-    "q": "GELU activation $f(x)=x\\cdot\\Phi(x)$ is preferred over ReLU in Transformer models. The primary reason is:",
+    "q": "Which statement about activation functions in Transformers matches current practice?",
     "options": [
-      "GELU gradient equals exactly 1 for all positive inputs, providing complete vanishing-gradient protection regardless of network depth",
-      "GELU is piecewise linear with no transcendental function evaluation, offering significant throughput advantages on specialized ML hardware",
-      "GELU never produces exactly zero activations, completely eliminating the dead neuron problem that affects hard-threshold activations",
-      "GELU smoothly gates values near zero using a differentiable probabilistic threshold, providing stochastic regularization and a smoother optimization landscape"
+      "Most modern LLMs use plain ReLU in the feed-forward block, because it is the cheapest to compute",
+      "GELU's slope is exactly 1 for every positive input, which is why it fixed vanishing gradients in BERT",
+      "Transformer hidden layers use sigmoid, because its outputs can be read directly as probabilities",
+      "GELU = x·Φ(x), a smooth ReLU, was used in BERT, GPT-2/3 and ViT; Llama-style LLMs use gated SwiGLU"
     ],
     "answer": 3,
-    "explanation": "GELU multiplies input by the probability it exceeds a Gaussian sample — a soft, probabilistic gate resembling stochastic dropout. This yields smoother gradient flow near zero than ReLU hard cutoff, benefiting deep Transformers like GPT-2, BERT, and LLaMA."
+    "explanation": "GELU multiplies x by the standard normal CDF Φ(x): it is smooth, its lowest value is about −0.17 at x ≈ −0.75, and its slope is rarely exactly 0, so units do not die. Most modern LLMs use a gated unit instead — SwiGLU(x) = SiLU(xW₁) ⊙ (xW₂) in Llama, Qwen and DeepSeek, GeGLU in Gemma — with three FFN matrices instead of two. Sigmoid belongs at binary or multi-label outputs and in LSTM gates, not in hidden layers."
   },
   {
-    "q": "The dead ReLU problem — a neuron permanently outputting zero — occurs specifically when:",
+    "q": "A ReLU unit outputs zero for every training example and never recovers. What causes this, and what is a typical trigger?",
     "options": [
-      "The pre-activation $z=w^Tx+b<0$ for every training sample in every batch, making the gradient zero always and blocking any weight update",
-      "The learning rate is too small, so updates are insufficient to push the pre-activation above zero within the available training budget",
-      "The batch size is too large, eliminating the stochastic noise that would otherwise reactivate neurons stuck below zero",
-      "The bias is initialized too large and positive, causing early saturation that prevents gradient signal from reaching the neuron"
+      "Its pre-activation w·x + b is negative for every input, so its gradient is always 0 — often after too high a learning rate",
+      "The learning rate is too small, so the updates never push the pre-activation above zero within the training budget",
+      "The batch size is too large, which removes the gradient noise that would otherwise push the unit back above zero",
+      "The bias started large and positive, which saturates the unit so that no gradient can reach its incoming weights"
     ],
     "answer": 0,
-    "explanation": "If $z<0$ for all training samples, ReLU outputs 0 everywhere and its gradient is 0: $\\partial L/\\partial w=0$, so weights never update. Large negative learning-rate steps can kill neurons by driving biases very negative. Leaky ReLU fixes this with a small slope $\\alpha$ for $x<0$."
+    "explanation": "When z < 0 for every input, ReLU outputs 0 and passes back 0, so the unit's weights never update. A learning rate that is too high is a common cause (one big step drives the bias very negative). Fixes: a lower learning rate, He initialization, Leaky ReLU or GELU (non-zero slope below 0), or normalization before the activation. ReLU removes only the activation's shrinking — a std-0.01 init still vanishes even with ReLU."
   },
   {
-    "q": "In Transformer self-attention, why is scaling by $\\sqrt{d_k}$ necessary before applying softmax?",
+    "q": "Why does scaled dot-product attention divide the scores Q·Kᵀ by √d_k before the softmax?",
     "options": [
-      "Softmax already normalizes its inputs to a valid probability distribution regardless of magnitude, so no additional scaling is needed to ensure attention weights sum to exactly 1 over the sequence",
-      "Without scaling, dot product variance grows linearly with $d_k$, pushing softmax into near-one-hot regions with vanishing gradients; dividing by $\\sqrt{d_k}$ restores unit variance",
-      "Scaling by sqrt(d_k) makes attention scores invariant to sequence length n, preventing longer sequences from receiving disproportionately larger scores that would bias attention toward earlier positions",
-      "The value dimension d_v is often chosen differently from d_k, and the scale factor bridges this dimensional mismatch between the dot-product score space and the downstream value projection space"
+      "Softmax already normalizes each row to sum to 1, so the division only makes the numbers easier to read",
+      "A q·k dot product of unit-variance entries has variance d_k; unscaled, softmax saturates and its gradients vanish",
+      "It makes the attention scores independent of the sequence length n, so long inputs cannot swamp the early positions",
+      "It reconciles a key size d_k that differs from the value size d_v before the weights are multiplied by V"
     ],
     "answer": 1,
-    "explanation": "If $q,k\\sim\\mathcal{N}(0,1)$ elementwise, $\\text{Var}[q^Tk]=d_k$. Large variance saturates softmax into near-one-hot outputs, collapsing gradients. Dividing by $\\sqrt{d_k}$ normalizes variance to 1. This scaling was proven critical in the original Attention Is All You Need paper."
+    "explanation": "q·k sums d_k products, so its spread is √d_k — 8 at d_k = 64. Scores that far apart make softmax nearly one-hot, and the winner's gradient w(1 − w) nearly zero: 0.001 raw vs 0.249 after dividing by 8 in the chapter's program. Without scaling the top weight climbs from 0.52 (d_k = 4) to 0.96 (d_k = 512); with scaling it stays near 0.35. Dividing by d_k instead of √d_k would over-shrink the scores."
   },
   {
-    "q": "The Transformer decoder applies a causal mask, setting future attention scores to $-\\infty$ before softmax. The specific reason is:",
+    "q": "Why does a Transformer decoder set future attention scores to −∞ before the softmax during training?",
     "options": [
-      "Future token embeddings have not yet been computed during autoregressive inference, so their key and query projections would be undefined; the model cannot attend to positions that do not yet exist",
-      "Future tokens would receive equal attention weights without masking, wasting model capacity on uninformative positions and producing a uniform attention distribution over the entire context window",
-      "At training time teacher forcing feeds the full target in parallel; without the mask each position could attend to future tokens, invalidating autoregressive inference consistency",
-      "Future positions in sinusoidal positional encoding carry negative cosine components that, without masking, distort the softmax normalization and destabilize attention score distributions in the decoder"
+      "The future tokens' keys and queries have not been computed yet, so their scores would be undefined",
+      "Unmasked future tokens would all get equal weights, wasting capacity on a uniform distribution",
+      "The whole target sequence is fed in parallel; without the mask each position could copy the token it must predict",
+      "Sinusoidal encodings of later positions carry negative cosines that would distort the softmax sums"
     ],
     "answer": 2,
-    "explanation": "Teacher forcing provides the entire target sequence simultaneously for training efficiency. Without masking, position 5 could attend to position 6, learning a cheating shortcut. Setting future scores to $-\\infty$ makes softmax assign probability 0, matching autoregressive inference exactly."
+    "explanation": "Training feeds the whole sequence at once, so all n next-token predictions come out of one forward pass. The mask puts −∞ above the diagonal before the softmax, so those weights become exactly 0 and each row still sums to 1 — zeroing weights after the softmax would break that. Each position then predicts from earlier tokens only, matching generation; and because a token's keys and values never change, they can be cached (the KV cache)."
   },
   {
-    "q": "In the Transformer decoder cross-attention layer, how are Query (Q), Key (K), and Value (V) matrices assigned?",
+    "q": "In the cross-attention layer of a Transformer decoder, where do the Query (Q), Key (K) and Value (V) come from?",
     "options": [
-      "Q from the encoder output; K and V from the decoder masked self-attention output to blend encoder and decoder representations",
-      "Q, K, and V all derived from the encoder output, letting the decoder directly copy and select encoder representations",
-      "Q and K from the encoder for efficient key-query alignment; V from the decoder to mix encoder context with decoder features",
-      "Q from the decoder masked self-attention output; K and V both from the encoder output"
+      "Q from the encoder output; K and V from the decoder's masked self-attention output",
+      "Q, K and V all come from the encoder output, so the decoder copies encoder representations",
+      "Q and K from the encoder for alignment; V from the decoder to mix in decoder features",
+      "Q from the decoder's masked self-attention output; K and V both from the encoder output"
     ],
     "answer": 3,
-    "explanation": "Cross-attention: the decoder forms queries (Q from decoder) to search the encoder (K from encoder) and retrieve its content (V from encoder). This reads the source sequence: each decoder token asks what encoder information it needs, finds matching encoder keys, and retrieves encoder values."
+    "explanation": "Each decoder token forms a query that searches the encoder's keys and retrieves the encoder's values — this is how an encoder–decoder model (the 2017 translator, T5, BART, Whisper) reads the source sequence. Decoder-only LLMs such as GPT, Gemini and Llama have no cross-attention, only masked self-attention."
   },
   {
-    "q": "The original sinusoidal positional encoding satisfies: $PE(pos+k)$ is a linear transformation of $PE(pos)$ for any fixed offset $k$. Why does this matter?",
+    "q": "The original sinusoidal encoding has the property that PE(pos + k) is one fixed linear map (a rotation) of PE(pos), the same for every pos. Why does that matter?",
     "options": [
-      "It enables the model to learn relative position differences — attention between positions $m$ and $n$ can depend only on offset $(n-m)$, since encoding differences encode relative distance",
-      "It ensures positional encoding magnitudes never exceed token embedding magnitudes at any layer, so the position signal cannot overwhelm learned semantic representations during training",
-      "It enables generalization beyond the training context length, because sinusoidal functions are defined for all integer positions and thus extend to sequences of arbitrary length",
-      "It guarantees orthogonality between encodings at different positions, ensuring the model cannot confuse nearby tokens with similar position representations during attention computation"
+      "A model can learn to attend by relative offset, because shifting by k is the same transformation at any position",
+      "It guarantees that position vectors never outweigh token embeddings, so position cannot drown out meaning",
+      "It lets models read sequences far longer than in training, which is why sinusoidal encoding extrapolates well",
+      "It makes the encodings at different positions exactly orthogonal, so nearby tokens can never be confused"
     ],
     "answer": 0,
-    "explanation": "Since $PE(pos+k)=f(PE(pos))$ for linear $f$, a learned linear layer can extract relative relationships like token $j$ is 3 steps after token $i$. Attention benefits from relative rather than absolute positions. This motivated choosing sinusoidal over learned absolute positional embeddings."
+    "explanation": "Each pair of dimensions is a clock hand turning at its own speed, so a shift by k is one fixed rotation — useful for attending by relative position. Extrapolation was the paper's hope, but in practice sinusoidal encoding extrapolates poorly (Press et al., 2022), and learned position embeddings gave nearly identical results in the original paper. Values are bounded in [−1, 1] but not orthogonal. Modern LLMs use RoPE, which rotates q and k so the score itself depends only on the distance."
   },
   {
-    "q": "For a fraud detection problem where 0.1% of transactions are fraud, AUC-PR is preferred over AUC-ROC. The primary reason is:",
+    "q": "A fraud model has ROC-AUC 0.97, yet investigators say most of its alerts are false. With 0.1% fraud, why is PR-AUC the better number to report?",
     "options": [
-      "AUC-ROC FPR divides FP by $(FP+TN)$; with 999K negatives even 10K false positives give FPR $\\approx 1\\%$, making the ROC curve deceptively optimistic on highly imbalanced data",
-      "AUC-PR is computationally simpler because it requires only a single evaluation at a fixed recall threshold rather than sweeping the full range, making it faster to compute at production scale",
-      "AUC-PR is bounded above by the class prior, providing a directly comparable random-classifier baseline analogous to AUC-ROC 0.5, so both metrics share the same intuitive interpretation framework",
-      "AUC-PR evaluates at a fixed recall of 0.5, matching typical fraud investigation capacity, while AUC-ROC averages all thresholds equally and is therefore harder to tune for operational constraints"
+      "FPR divides false alarms by the huge legitimate class, so thousands of them barely move ROC; precision divides by the alerts raised",
+      "PR-AUC is cheaper to compute, because it evaluates one fixed recall level instead of sweeping every threshold",
+      "PR-AUC has a random baseline of 0.5 like ROC-AUC, so the two numbers are read on exactly the same scale",
+      "ROC-AUC ignores the true positives entirely, while PR-AUC weighs all four confusion-matrix cells equally"
     ],
     "answer": 0,
-    "explanation": "With 999K negatives, even 10K false positives yield FPR=1% — the ROC curve looks great while the model floods investigators with false alarms. AUC-PR focuses on TP, FP, FN, ignoring the enormous TN pool that inflates ROC performance on imbalanced datasets."
+    "explanation": "In the chapter's run, 10× more legitimate mail left the FPR at threshold 0.5 unchanged (0.111) — so the ROC curve and its AUC did not move — while precision fell from 0.444 to 0.074. The PR curve ignores true negatives. A random model's PR-AUC equals the positive rate (0.011 when 1.1% are positive), not 0.5. Report PR-AUC as average precision, plus precision@k for the number of alerts the team can review."
   },
   {
-    "q": "In the A/B test sample size formula $n=(Z_{\\alpha/2}+Z_\\beta)^2\\cdot 2\\sigma^2/\\delta^2$, the parameter $\\delta$ represents:",
+    "q": "Detecting a CTR lift from 10% to 11% (α = 0.05, 80% power) needs about 14,100 users per group. Roughly how many would you need to detect a lift of only 0.5 points?",
     "options": [
-      "The variance $\\sigma^2$ of the metric, measuring how noisy individual user observations are across experimental conditions",
-      "The significance level $\\alpha$, controlling the false positive rate for mistakenly rejecting the null hypothesis",
-      "The minimum detectable effect — the smallest true difference between treatment and control that the test must reliably detect",
-      "The statistical power $1-\\beta$, specifying the probability of detecting a true effect when one actually exists"
+      "About 7,000 per group, because a smaller effect needs proportionally fewer users to detect",
+      "About 28,000 per group, because the sample size grows in proportion to 1/δ",
+      "About 56,000 per group, because n ≈ 16σ²/δ², so halving δ needs about 4× the users",
+      "About 14,100 per group, because the sample size depends only on α and the power"
     ],
     "answer": 2,
-    "explanation": "$\\delta$ is the minimum detectable effect (MDE) — the smallest business-meaningful change worth reliably detecting. Since $n\\propto 1/\\delta^2$, detecting tiny effects requires enormous sample sizes. At Google scale, detecting a 0.1% CTR improvement can require weeks of traffic."
+    "explanation": "n per group ≈ 2σ²(z₁₋α/₂ + z₁₋β)²/δ², with σ² = p(1 − p) = 0.09 and (1.96 + 0.84)² ≈ 7.84, so 2 × 0.09 × 7.84/0.01² ≈ 14,100. δ is the minimum detectable effect — the smallest lift worth detecting — and n ∝ 1/δ², so halving it quadruples n (σ² stays about 0.09). Fix n in advance and run in whole weeks; +1 point on 10% is a 10% relative lift, so say which one you mean."
   },
   {
-    "q": "An A/B test monitors 20 metrics simultaneously at overall $\\alpha=0.05$. Bonferroni correction adjusts the per-test threshold to approximately:",
+    "q": "An A/B test reads 20 metrics, each at α = 0.05. If the change does nothing, what is the chance of at least one false 'win', and what is the Bonferroni per-metric threshold?",
     "options": [
-      "$\\alpha=0.10$, doubling the threshold to account for increased measurement variance from running multiple simultaneous comparisons",
-      "$\\alpha=0.005$, applying a square-root correction that balances false positives and false negatives across the metric portfolio",
-      "$\\alpha=0.025$, halving significance to control the pairwise family-wise comparison error rate across metric pairs",
-      "$\\alpha=0.0025$, dividing by the number of tests to keep the family-wise error rate at exactly 0.05"
+      "About 5%, and α = 0.10, because more metrics add measurement noise that must be allowed for",
+      "About 20%, and α = 0.005, using a square-root correction across the whole metric set",
+      "About 50%, and α = 0.025, halving α to control the errors between pairs of metrics",
+      "About 64%, and α = 0.05/20 = 0.0025, which keeps the family-wise error rate at 5%"
     ],
     "answer": 3,
-    "explanation": "Without correction, 20 tests at $\\alpha=0.05$ give ~64% chance of at least one false positive. Bonferroni: $\\alpha_{adj}=0.05/20=0.0025$, controlling FWER. Benjamini-Hochberg is less conservative when controlling the false discovery rate (FDR) instead of FWER."
+    "explanation": "1 − 0.95²⁰ ≈ 64%. Pre-register one primary metric; for the rest use Bonferroni (α/m = 0.0025) or false-discovery-rate control (Benjamini–Hochberg), which is less conservative. Related traps from the chapter: peeking daily with 10 looks gives about 19% false positives instead of 5%, and a sample-ratio mismatch (50.6% / 49.4% of 10M users, χ² = 1,440) invalidates the result."
   },
   {
-    "q": "A classifier produces AUC-ROC = 0.5. This is equivalent to:",
+    "q": "A model has ROC-AUC 0.92, but among cases it scores 0.97 only 83% are positive, and its scores feed an expected-value calculation (probability × bid). What should you do?",
     "options": [
-      "A random classifier with no discriminative ability — the probability it ranks a random positive above a random negative is exactly 50%",
-      "A perfectly calibrated classifier whose predicted probabilities are unbiased estimates of the true event probability",
-      "A majority-class classifier achieving accuracy equal to the prevalence of the dominant class in the dataset",
-      "A classifier at optimal precision-recall tradeoff where both precision and recall equal 0.5 for the positive class"
+      "Nothing: a ROC-AUC above 0.9 already shows the predicted probabilities are trustworthy",
+      "Calibrate on held-out data (Platt, isotonic or temperature scaling); the ranking and its AUC can stay the same",
+      "Retrain with balanced class weights, which pulls the over-confident probabilities back down toward the true rates",
+      "Lower the decision threshold to 0.83, which turns the raw scores into calibrated probabilities"
+    ],
+    "answer": 1,
+    "explanation": "AUC measures ranking only; calibration means P(y = 1 | predicted p) = p. Check it with a reliability diagram and the Brier score (predictions 0.9, 0.8, 0.3 on outcomes 1, 0, 0 → ≈ 0.247). Platt and temperature scaling are strictly increasing maps, so they leave the ranking and ROC-AUC unchanged; isotonic regression can create ties. Class weights and resampling make things worse here — they inflate predicted probabilities."
+  },
+  {
+    "q": "You need to explore a 5-million-point embedding set in 2-D and later place tomorrow's new points on the same map. Why might UMAP fit better than scikit-learn's t-SNE?",
+    "options": [
+      "UMAP is deterministic, so every run gives the identical map whatever the random seed",
+      "UMAP scales to millions of points and has a transform for new points; scikit-learn's t-SNE has neither",
+      "UMAP preserves the true distances between clusters, so its gaps can be read as real separations",
+      "UMAP is linear like PCA, so its two output axes are mixtures of the original features that you can interpret"
+    ],
+    "answer": 1,
+    "explanation": "UMAP runs at about O(n^1.14) on an approximate k-NN graph, scales to millions and places new points with transform. scikit-learn's t-SNE (O(n log n) with Barnes-Hut) slows beyond tens of thousands of points and must be re-run for new data. Both are non-linear and seed-dependent, and gaps mean little in either. UMAP's reputed global-structure edge is mostly its initialization: t-SNE with a PCA start closes most of the gap (Kobak & Linderman, 2021)."
+  },
+  {
+    "q": "After PCA you have eigenvalues λ₁ ≥ λ₂ ≥ … ≥ λ_d of the covariance matrix. What fraction of the variance does component i explain?",
+    "options": [
+      "λᵢ²/Σⱼλⱼ², squared to match variance being a second-order quantity",
+      "λᵢ/Σⱼλⱼ, because each eigenvalue is the variance of the data along its component",
+      "λᵢ − λᵢ₊₁, the variance gained over the next-best component",
+      "√λᵢ/Σⱼ√λⱼ, normalized by standard deviations so that components measured in different units compare"
+    ],
+    "answer": 1,
+    "explanation": "An eigenvalue is the variance along its eigenvector: in the chapter's example the PC1 scores −5.66, −2.83, 0, 2.83, 5.66 have variance 20 = λ₁, and with λ₂ = 0 PC1 explains 20/(20 + 0) = 100%. Keep enough components for 90–95% cumulative variance (PCA(n_components=0.95)), look for the scree elbow, or tune k by validation score when PCA feeds a model. Standardize first, and fit PCA on the training split only."
+  },
+  {
+    "q": "In a t-SNE plot, clusters A and B sit far apart and cluster B looks twice as large as cluster C. What can you safely conclude?",
+    "options": [
+      "A and B are far apart in the original space, because t-SNE keeps large distances intact",
+      "B holds about twice as many points as C, because t-SNE preserves the area of each cluster",
+      "B is twice as spread out as C in the original space, because t-SNE preserves variances",
+      "Little beyond who neighbours whom: t-SNE keeps local neighbourhoods, not gaps or sizes"
+    ],
+    "answer": 3,
+    "explanation": "t-SNE minimizes KL(P‖Q): tearing real neighbours apart is expensive, but placing distant points at any distance is almost free, so neighbourhoods survive and gaps do not (in Ch 11, clusters 10 and 90 apart came out about equally far apart). Try several perplexity values (default 30) and seeds before trusting a cluster, run PCA to about 50 dimensions first, and never feed t-SNE output to a classifier — there is no transform for new points."
+  },
+  {
+    "q": "Why do distance-based methods such as k-NN weaken when there are many independent, noise-like features?",
+    "options": [
+      "Features with larger units dominate the distance, and that bias grows with every dimension added",
+      "High-dimensional vectors no longer fit in memory, so k-d tree indexes fail before any distance is computed at all",
+      "Distances concentrate: (D_max − D_min)/D_min → 0, so the nearest and farthest points are almost equally far",
+      "The covariance matrix always becomes singular, so no meaningful distance can be defined at all"
+    ],
+    "answer": 2,
+    "explanation": "For random, independent features the farthest point is barely farther than the nearest (Beyer et al., 1999): in Ch 11's simulation it is about 136× the nearest in 2-D but only 11% farther in 1,000-D. Likewise a ball inside a cube holds 78.5% of a square but 0.25% of a 10-D cube. Real data usually has a low intrinsic dimension and suffers less — which is why reducing dimensions first (PCA) helps."
+  },
+  {
+    "q": "SMOTE makes a synthetic point from minority sample x = [2, 3] and minority neighbour x_nn = [4, 5] with λ = 0.6. What is the new point, and where may SMOTE be applied?",
+    "options": [
+      "[3.2, 4.2], from x + λ(x_nn − x); only inside the training folds, never before the split",
+      "[3.0, 4.0], the midpoint; it may be applied to the whole dataset before splitting",
+      "[5.2, 6.8], from x_nn + λ·x; it must also be run on the test set to keep ratios equal",
+      "[1.2, 1.8], from λ·x; it replaces the original minority rows in both train and test"
     ],
     "answer": 0,
-    "explanation": "AUC-ROC equals the probability that a random positive gets a higher score than a random negative. AUC=0.5 means this equals chance — the ROC curve lies on the diagonal. AUC below 0.5 means inverting all predictions would outperform the original model."
+    "explanation": "x_new = x + λ(x_nn − x) = [2, 3] + 0.6 × [2, 2] = [3.2, 4.2] — a random point on the segment to one of the k = 5 nearest minority neighbours. Resample only the training part of each fold (imbalanced-learn's Pipeline) and keep the test set at the real class ratio; SMOTE before the split puts near-copies of test rows into training. Like class weights, it distorts predicted probabilities, so recalibrate afterwards."
   },
   {
-    "q": "Compared to t-SNE, UMAP has one primary advantage for exploratory data analysis. That advantage is:",
+    "q": "You target-encode a 500-value ID column with each category's mean label computed on all training rows, each row included. The labels are coin flips, yet training AUC is 0.78. What happened?",
     "options": [
-      "UMAP produces more visually separated clusters because its stronger inter-cluster repulsion in the fuzzy simplicial set formulation creates sharper inter-group boundaries than the t-SNE heavy-tailed kernel",
-      "UMAP better preserves global structure — relative inter-cluster distances reflect true high-dimensional separation — while t-SNE distorts global layout to optimize local neighborhoods",
-      "UMAP is fully deterministic and always produces the same embedding for a given dataset regardless of random seed, unlike t-SNE whose stochastic optimization produces different layouts on each run",
-      "UMAP handles 100x larger datasets than t-SNE because the approximate nearest-neighbor graph construction scales sublinearly and requires only logarithmic memory during the embedding optimization phase"
+      "The IDs really do carry signal; the model found a genuine pattern that the test set will confirm",
+      "Each row's encoding contains its own label; out-of-fold encoding gives the honest AUC of about 0.50",
+      "The encoding imposed an order on the IDs; switching to one-hot encoding will remove the effect",
+      "The encoding was not smoothed; adding smoothing with m = 10 on its own will bring the AUC back to about 0.50"
     ],
     "answer": 1,
-    "explanation": "t-SNE optimizes primarily for local neighborhood preservation, placing clusters at arbitrary global positions. UMAP, grounded in manifold theory, preserves global structure. Both are stochastic; UMAP is faster ($O(n^{1.14})$ vs $O(n^2)$) and generally preferred for large-scale exploration."
+    "explanation": "With about 4 rows per ID, a category's 'mean' is mostly that row's own label, so the feature copies the answer. In the chapter's run, in-sample encoding scored 0.778, smoothing alone barely helped (0.771), and out-of-fold encoding — each row encoded only from the other folds — gave 0.502, matching the test rows (0.506). scikit-learn's TargetEncoder (1.3+) cross-fits automatically; CatBoost's ordered target statistics are the same idea."
   },
   {
-    "q": "After computing eigenvalues $\\lambda_1\\geq\\lambda_2\\geq\\ldots\\geq\\lambda_d$ in PCA, the fraction of variance explained by component $i$ is:",
+    "q": "High earners deliberately skip a survey's income question. What kind of missingness is this, and what is the main defence?",
     "options": [
-      "$\\lambda_i^2/\\sum_j\\lambda_j^2$, computed in squared units to maintain consistency with variance as a second-order statistical quantity",
-      "$\\lambda_i/\\sum_j\\lambda_j$, because each eigenvalue equals the projected variance along its corresponding eigenvector direction",
-      "$\\lambda_i-\\lambda_{i+1}$, the marginal variance reduction from adding component $i$ relative to the next-best alternative",
-      "$\\sqrt{\\lambda_i}/\\sum_j\\sqrt{\\lambda_j}$, normalizing by standard deviations to make components comparable across measurement scales"
-    ],
-    "answer": 1,
-    "explanation": "Each eigenvalue $\\lambda_i$ equals the variance of data projected onto the $i$-th eigenvector. Total variance $=\\sum_j\\lambda_j$, so the explained fraction is $\\lambda_i/\\sum_j\\lambda_j$. Select the smallest $k$ with cumulative ratio $\\geq 95\\%$ (or your target threshold)."
-  },
-  {
-    "q": "t-SNE has $O(n^2)$ time complexity per iteration. The core reason this makes it impractical beyond ~100K samples is:",
-    "options": [
-      "It requires one neural encoder forward pass per pair of points to compute high-dimensional affinity scores for all $n(n-1)$ combinations",
-      "It draws $O(n^2)$ random sample pairs during initialization to set starting coordinates for the low-dimensional embedding",
-      "Both the $n\\times n$ pairwise affinity matrices and all gradient update computations scale quadratically — memory and runtime exceed practical limits without approximation",
-      "It must sort all $n^2$ pairwise distances at every iteration to determine which pairs fall in the local neighborhood"
+      "MCAR: the gaps are pure chance, so dropping the incomplete rows gives unbiased results",
+      "MAR: the gaps depend on other observed columns, so KNN imputation from those columns fixes it fully",
+      "Not missing data at all: a skipped income answer is best encoded as an income of zero",
+      "MNAR: missingness depends on the missing value itself; add an is_missing flag and find out why"
     ],
     "answer": 3,
-    "explanation": "t-SNE computes $P_{ij}$ and $Q_{ij}$ for all $n(n-1)$ pairs — both storing and differentiating $n\\times n$ matrices are $O(n^2)$. Barnes-Hut approximation reduces this to $O(n\\log n)$ using a quad-tree, making t-SNE feasible for up to ~100K points."
+    "explanation": "MCAR = pure chance; MAR = depends on columns you can see (older people skip more often); MNAR = depends on the value itself (high earners skip because income is high). No imputation fully fixes MNAR — add the flag so the model can learn that missingness is informative, and investigate the cause. Under MAR, mean-filling is biased and shrinks the column (std 15.1 → 11.7 in the chapter's demo), while KNN imputation does much better."
   },
   {
-    "q": "The curse of dimensionality makes distance-based methods like k-NN unreliable in high-dimensional spaces. The fundamental mathematical reason is:",
+    "q": "You predict a store's sales for day t with a 7-day rolling-average feature, and the label is known immediately. Which feature definition and validation split are leak-free?",
     "options": [
-      "Euclidean distance becomes biased toward features with larger numerical scales, requiring normalization that is harder to validate in high-dimensional regimes",
-      "High-dimensional feature vectors cannot be stored efficiently in RAM, so index structures like k-d trees fail before any distance computation",
-      "All pairwise distances converge to nearly the same value — the ratio $(d_{max}-d_{min})/d_{max}\\to 0$ as dimensions grow — making nearest-neighbor distinctions meaningless",
-      "The covariance matrix becomes singular in high dimensions, preventing computation of meaningful Mahalanobis distances between correlated feature groups"
+      "mean(sales[t−7 … t]) with a random 80/20 split, so both sets see every season",
+      "mean(sales[t−3 … t+3]), a centred window, validated with a time-based split",
+      "mean(sales[t−7 … t−1]) — shift by one before rolling — with a split by time",
+      "mean(sales[t−7 … t]) with back-filled gaps, validated by shuffled K-fold"
     ],
     "answer": 2,
-    "explanation": "In high dimensions all pairwise distances converge — the ratio (d_max-d_min)/d_max approaches 0 as dimensionality grows. Selecting k nearest neighbors becomes meaningless when all distances are nearly equal. PCA, embeddings, or other dimensionality reduction are required before applying distance-based methods."
+    "explanation": "Every feature must already exist at the moment you predict: t_known(x) ≤ t_predict. A window that includes day t contains the target; a centred window peeks 3 days ahead; back-fill copies future values into the past; random or shuffled splits train on Friday to predict Wednesday. Use .shift(1).rolling(7), split by time (TimeSeriesSplit), forward-fill only, and leave a gap equal to the label delay when labels arrive late (fraud chargebacks: 30–90 days)."
   },
   {
-    "q": "SMOTE creates synthetic minority samples by interpolation. Given minority sample $x$ and nearest neighbor $x_{nn}$, the synthetic point is:",
+    "q": "When designing Gmail's spam filter, which offline evaluation target best matches the product's costs?",
     "options": [
-      "$x+\\lambda(x_{nn}-x)$ where $\\lambda\\sim U[0,1]$ — placing the new point uniformly anywhere on the line segment between the two minority examples",
-      "The exact midpoint $(x+x_{nn})/2$, ensuring each synthetic sample is equidistant from both reference points in feature space",
-      "$x_{nn}+\\varepsilon$ where $\\varepsilon$ is Gaussian noise drawn from the empirical variance of the full minority class distribution",
-      "The softmax-weighted combination of $x$ and $x_{nn}$ using learned class probability scores as interpolation coefficients"
+      "Recall at a fixed, very low false-positive rate, plus PR-AUC — a real email lost in spam is the costly error",
+      "Overall accuracy, because spam is common enough in email that accuracy cannot be misleading here",
+      "Maximum recall at any false-positive rate, because letting one spam email through is the worst error",
+      "ROC-AUC alone, because it is threshold-free and so needs no business costs to interpret it"
     ],
     "answer": 0,
-    "explanation": "$x_{new}=x+\\lambda(x_{nn}-x)$ with $\\lambda\\sim U[0,1]$ places the new sample at a uniformly random point on the segment between two existing minority examples. The midpoint ($\\lambda=0.5$) is a special case; randomizing $\\lambda$ diversifies samples along the minority class manifold."
+    "explanation": "A legitimate email sent to spam is the expensive mistake, so you fix a very low false-positive rate and maximize the spam caught under that constraint, reporting PR-AUC as well. Online, an A/B test tracks the false-positive rate through users' 'Not spam' clicks. Google reports that its RETVec text vectorizer raised Gmail's spam detection rate by 38% and cut false positives by 19.4% (Nov 2023)."
   },
   {
-    "q": "Target encoding replaces a categorical value with the per-category mean target. Why does applying this before the train/test split cause data leakage?",
+    "q": "What does a feature store with point-in-time joins give an ML system?",
     "options": [
-      "The encoding introduces an implicit ordinal ordering among categories that does not exist in the original categorical feature representation",
-      "Category means computed over the full dataset include test-set labels — the model indirectly sees test targets encoded within training feature values",
-      "High-cardinality categories with few samples receive noisy target means, creating a specific form of overfitting in the encoded space",
-      "Target encoding makes the model dependent on the absolute target scale, which differs between training and production distributions"
+      "Versioned model checkpoints, so a bad deployment can be rolled back and traffic split between versions",
+      "One feature definition for training (offline) and serving (online), with training rows seeing only values known at event time",
+      "A cache of raw inputs next to the model server, which removes database round-trips from online inference",
+      "Cached feature statistics that speed up Bayesian hyperparameter search across concurrent experiments"
     ],
     "answer": 1,
-    "explanation": "Category means computed over the full dataset embed test-set label information into training features. Correct practice: compute means only within training folds using cross-validation or apply additive smoothing. This is why sklearn Pipelines with proper cross-validation are essential for target encoding."
+    "explanation": "Training-serving skew — a feature computed one way in a batch job and another way per request — is the #1 cause of 'great offline, terrible live'. A feature store keeps one definition, with an offline store (BigQuery, S3) for training and an online store (Redis, Bigtable) for serving; a point-in-time join gives each training example the latest value with timestamp ≤ its event time. On Google Cloud this is the Agent Platform Feature Store in Gemini Enterprise Agent Platform (formerly Vertex AI), as of Nov 2026; Feast is the common open-source choice. Still monitor: stale or missing values cause skew too."
   },
   {
-    "q": "High-income survey respondents specifically avoid answering an income question. This type of missing data is:",
+    "q": "PSI against training data scores 0.18 for session length after an app redesign, and jumps to 8.3 for a duration feature the morning after a serving release. How should you read these?",
     "options": [
-      "MCAR (Missing Completely At Random) — the missingness is independent of both observed covariates and the unobserved income values",
-      "MAR (Missing At Random) — the missingness depends on other observable features like job category or age in the dataset",
-      "MAR (Missing At Random) — income correlates with observables such that missingness can be fully modeled from available predictors",
-      "MNAR (Missing Not At Random) — the probability of missingness depends on the unobserved value itself because high incomes are the reason for avoidance"
+      "Both are stable, because PSI only signals real trouble once it passes 10",
+      "Each calls for immediate retraining, since any PSI over 0.1 means real drift",
+      "The 0.18 needs a rollback, while the 8.3 is seasonal drift that will settle",
+      "0.18 is in the watch band (0.1–0.25); 8.3 overnight points to a skew bug, such as a units change"
     ],
     "answer": 3,
-    "explanation": "MNAR occurs when missingness depends on the unobserved value. High earners skip BECAUSE the income is high — the mechanism is informative. Standard imputation cannot correct MNAR without additional assumptions or selection models. Adding an is_missing indicator feature is a common practical mitigation."
+    "explanation": "PSI = Σ (aᵢ − eᵢ)·ln(aᵢ/eᵢ) over 10 training-decile bins; rules of thumb: under 0.1 stable, 0.1–0.25 watch, over 0.25 act. In the chapter's run, sessions +30% scored 0.178 and +50% scored 0.425, while serving seconds instead of minutes scored 8.283 — skew looks like an enormous overnight 'drift'. Retrain on sustained drift (e.g. PSI > 0.25 for days, not a one-day blip) or a metric drop, and ship each new model via offline eval → shadow → canary → ramp with auto-rollback."
   },
   {
-    "q": "Which of the following algorithms does NOT require feature scaling as a preprocessing step?",
+    "q": "How does Byte Pair Encoding (BPE) build its vocabulary?",
     "options": [
-      "k-Nearest Neighbors — Euclidean distance is directly affected by scale, so unscaled features with large magnitudes dominate the computation",
-      "Support Vector Machines with RBF kernel — kernel distances depend on feature magnitudes and scale differences dominate the decision boundary",
-      "Gradient Boosted Trees (XGBoost, LightGBM) — split decisions compare values to thresholds and are invariant to monotonic feature transformations",
-      "Neural networks trained with gradient descent — convergence speed and stability depend on the conditioning of the input feature matrix"
+      "It splits words at morphological boundaries taken from language-specific dictionaries of prefixes and suffixes",
+      "It scores every possible segmentation by likelihood and keeps the best one using dynamic programming",
+      "It starts from characters or bytes and repeatedly merges the most frequent adjacent pair until the target size",
+      "It cuts text into fixed 4-character windows and gives each distinct window its own integer ID"
     ],
     "answer": 2,
-    "explanation": "Decision trees split on thresholds: feature > value? — identical whether measured in meters or kilometers. SVMs, k-NN, linear models, and neural networks are all scale-sensitive. StandardScaler, MinMaxScaler, or RobustScaler is recommended before those methods."
+    "explanation": "BPE counts adjacent symbol pairs, merges the most frequent into a new token, records the merge and repeats; new text is encoded by replaying the merges in order. Byte-level BPE (GPT-2 onward, Llama 3) starts from the 256 byte values, so no string is out-of-vocabulary. WordPiece (BERT) merges by a likelihood score count(ab)/(count(a)·count(b)); Unigram LM (T5) starts large and prunes. Vocabularies run from 32,000 (Llama 2) to about 262K (Gemma 3)."
   },
   {
-    "q": "Training-serving skew, one of the most common ML production failures, is best described as:",
+    "q": "How does RoPE (Rotary Position Embedding), used in Llama, Gemma, Qwen and Mistral, encode position?",
     "options": [
-      "Feature values computed at inference time differ from those used during training due to different code paths, data sources, or preprocessing logic for the same nominal feature name",
-      "The model degrades gradually as user behavior shifts over months, requiring periodic scheduled retraining to maintain accuracy — this is concept drift rather than the feature-value mismatch of training-serving skew",
-      "Serving infrastructure introduces latency that alters batch statistics seen by normalization layers, causing BatchNorm running means at inference to diverge from those accumulated during training time",
-      "The model performs well offline but poorly online because the holdout evaluation distribution systematically differs from live production traffic in ways not visible during standard development cycles"
+      "It rotates each pair of q and k numbers by position × θᵢ, so the score q·k depends only on the offset n − m",
+      "It adds a position-dependent bias inside every feed-forward block, separating position from attention",
+      "It looks up a learned vector for each position and adds it to the input embedding, as BERT and GPT-2 do",
+      "It masks value vectors outside a fixed radius, so each token only attends within a sliding window"
     ],
     "answer": 0,
-    "explanation": "Training-serving skew: average_spend_30d is computed differently in batch pipelines vs online feature logic — same feature name, different values. The model behaves unexpectedly in production. A feature store with a single consistent definition for both training retrieval and serving lookup prevents this."
+    "explanation": "(R_m q)·(R_n k) = q·R_(n−m) k: rotating both vectors by their own positions leaves a score that depends only on the distance; it is applied to Q and K (not V) in every layer, with no added parameters. RoPE does not extrapolate for free — a model trained on 8K tokens has never seen the angles for position 30,000 — so long-context models rescale it (Position Interpolation, NTK-aware scaling, YaRN; Llama 3 uses base 500,000)."
   },
   {
-    "q": "A feature store in an ML system serves which primary dual purpose?",
+    "q": "MQA and GQA both shrink the KV cache. What is the structural difference between them?",
     "options": [
-      "Storing trained model weight checkpoints with versioning metadata to support rollback of production deployments and controlled A/B traffic splitting between model versions",
-      "Providing consistent feature values for offline training (historical batch retrieval) and online serving (real-time lookup), preventing training-serving skew",
-      "Caching raw input data near the model server to eliminate database roundtrip latency during online serving, reducing p99 inference latency below the acceptable user-facing threshold",
-      "Automating hyperparameter search by caching precomputed feature statistics needed for Bayesian optimization across all concurrent training experiments in the MLOps pipeline"
-    ],
-    "answer": 1,
-    "explanation": "The feature store maintains an offline store (batch historical features for training) and an online store (low-latency real-time lookup for serving). Identical feature definitions in both prevent training-serving skew. Feast, Tecton, and Vertex AI Feature Store all implement this dual-store pattern."
-  },
-  {
-    "q": "In a production ML system for a rapidly evolving domain like spam detection, which retraining trigger is the most reliable signal?",
-    "options": [
-      "A fixed weekly retraining schedule ensuring the model always incorporates at least the most recent week of training data",
-      "Arrival of each validated data batch ensuring training always reflects the very latest available labeled examples immediately",
-      "A significant rise in observed model loss on new incoming data indicating input distribution shift before production impact",
-      "A degradation in the monitored business metric below a predefined threshold, directly confirming real production harm requiring action"
-    ],
-    "answer": 3,
-    "explanation": "Scheduled retraining may waste compute when no drift occurs or be too slow when drift is rapid. Input distribution drift is an early signal but does not confirm model degradation. Business metric drops directly confirm performance harm. A layered approach uses drift detection for early alerts and metric drops for mandatory triggers."
-  },
-  {
-    "q": "Byte Pair Encoding (BPE) tokenization builds its vocabulary by:",
-    "options": [
-      "Splitting words using morphological boundaries from language-specific dictionaries for prefixes, roots, and suffixes",
-      "Computing log-likelihood of all possible subword segmentations and selecting the highest-likelihood segmentation via dynamic programming",
-      "Starting with a character-level vocabulary and iteratively merging the most frequent adjacent symbol pair until the target vocabulary size is reached",
-      "Grouping characters into fixed-length 4-character windows and assigning each unique window a distinct integer token ID"
+      "GQA keeps more value heads than key heads; MQA keeps an equal number of each, both set to one",
+      "GQA groups query heads by layer depth; MQA groups them by the patterns each head has learned",
+      "MQA shares one K/V head across all h query heads; GQA shares g K/V heads, each serving h/g query heads",
+      "GQA applies rotary embeddings only to the keys to save memory; MQA applies them to both keys and queries"
     ],
     "answer": 2,
-    "explanation": "BPE: (1) start with characters, (2) count all adjacent pairs, (3) merge the most frequent pair into a new token, (4) repeat. This creates subword units: unhappiness → [un, happi, ness]. No OOV words exist because single bytes are always a fallback. WordPiece uses likelihood rather than frequency — the key algorithmic difference."
+    "explanation": "MHA has h K/V heads, GQA g (1 < g < h), MQA one. For a Llama-2/3-70B-sized model (80 layers, 64 query heads, head size 128, FP16) the cache is 2.5 MiB per token with MHA, 320 KiB with GQA-8 and 40 KiB with MQA — 10 GiB vs 1.25 GiB at 4K tokens for MHA vs GQA. GQA keeps quality near MHA (Llama 2 70B, Llama 3, Mistral 7B, Gemma 2/3); MQA (PaLM, Falcon-7B) saves the most but can lose a little quality. MLA (DeepSeek-V2/V3) caches a 576-number latent instead."
   },
   {
-    "q": "RoPE (Rotary Position Embedding), used in LLaMA and Mistral, encodes position by:",
+    "q": "A common misconception is that FlashAttention approximates attention. Which description is correct?",
     "options": [
-      "Rotating query and key vectors by angles proportional to their positions so that $q_m^Tk_n$ depends only on relative offset $(n-m)$, not absolute positions",
-      "Adding position-dependent biases to FFN layers at every Transformer block, decoupling positional information from the attention mechanism",
-      "Using a learned position embedding lookup table jointly updated with model weights, adding zero inference-time overhead versus sinusoidal encoding",
-      "Applying position-dependent masking to value vectors, limiting each token effective attention to a fixed sliding context radius"
+      "It replaces softmax with a kernel feature map, trading a little accuracy for linear memory and compute",
+      "It attends only to a local window plus a few global tokens, which makes attention linear in length",
+      "It stores attention weights in INT8 and rebuilds FP16 values in the backward pass, halving memory",
+      "It is exact: it works in SRAM tiles with an online softmax and never writes the n × n matrix to HBM"
+    ],
+    "answer": 3,
+    "explanation": "FlashAttention loads Q, K and V tiles into fast on-chip SRAM, keeps a running max and sum (online softmax) and writes each output row once, so the n × n score matrix — 20 GB per head per layer at n = 100K in FP16 — is never stored. The result is the same up to floating-point rounding; memory drops to O(n), compute stays O(n²), and it runs faster because attention is limited by memory traffic. Linear attention, sliding windows and sparse patterns are the approximate alternatives."
+  },
+  {
+    "q": "Mixtral 8x7B routes each token to the top 2 of 8 expert FFNs. Which statement about its cost is correct?",
+    "options": [
+      "It stores 56B parameters and runs 14B per token, since all eight 7B experts are full copies",
+      "It stores 46.7B parameters but runs about 12.9B per token: MoE saves compute, not memory",
+      "It stores and runs only 12.9B per token, because idle experts are loaded from disk on demand",
+      "It runs all 46.7B per token, because top-2 routing evaluates every expert before choosing two"
+    ],
+    "answer": 1,
+    "explanation": "Only the feed-forward blocks are copied into experts; attention and embeddings are shared, so '8x7B' stores 46.7B and runs 12.9B (28%) per token — yet every expert must stay in memory. Left alone, routing collapses onto a few experts, so Switch Transformer added a load-balancing loss (at its minimum, α, under uniform routing); DeepSeek-V3 uses bias-based balancing and picks 8 of 256 experts plus a shared one. Switch Transformer itself routes each token to just one expert."
+  },
+  {
+    "q": "Which statement about the KV cache in autoregressive generation is correct?",
+    "options": [
+      "It stores past tokens' K and V, cutting K/V work from O(n²) to O(n) per generation; each step still attends to all n cached keys",
+      "It makes every new token cost O(1), because attention then only needs to read the newest key and value pair",
+      "It speeds up training as well, because activations are cached between epochs instead of being recomputed",
+      "It stores the n × n attention weights, so the softmax never has to be recomputed for earlier tokens"
     ],
     "answer": 0,
-    "explanation": "RoPE rotates Q and K at position $m$ by angle $m\\cdot\\theta_i$. The resulting dot product $q_m^Tk_n=q^TR(n-m)k$ depends only on the relative offset. Attention needs relative context, not absolute indices. RoPE adds zero parameters and improves length extrapolation beyond training context."
+    "explanation": "Thanks to the causal mask a token's K and V never change, so recomputing them every step (1 + 2 + … + n = O(n²)) is waste; with the cache each step computes K and V for the new token only. The query is still compared with all t cached keys, so attention over n steps stays O(n²), and decoding is memory-bandwidth-bound. The price is memory: 2 × layers × KV heads × head size × bytes — 320 KiB per token for Llama-2/3-70B in FP16. It does not speed up training."
   },
   {
-    "q": "Grouped Query Attention (GQA) and Multi-Query Attention (MQA) both reduce KV cache size. Their structural difference is:",
+    "q": "Why do Transformer and LLM recipes use AdamW instead of Adam with an L2 penalty added to the loss?",
     "options": [
-      "GQA uses more value heads than key heads for asymmetric attention coverage; MQA equalizes key and value counts to a single shared head",
-      "GQA groups query heads by Transformer layer depth; MQA groups them by their learned semantic specialization across attention patterns",
-      "MQA uses exactly one shared KV head for all $h$ query heads; GQA uses $g$ KV heads shared by groups of $h/g$ query heads where $1<g<h$",
-      "GQA applies rotary embeddings only to key vectors to save memory; MQA applies them uniformly to both key and query vectors"
-    ],
-    "answer": 2,
-    "explanation": "Standard MHA: $h$ Q, $h$ K, $h$ V heads. MQA (extreme): one shared KV head for all $h$ query heads. GQA (intermediate): $g$ KV heads, each shared by $h/g$ query heads. LLaMA 2 and Gemini use GQA with $g=8$, achieving near-MHA quality with $8\\times$ KV cache reduction."
-  },
-  {
-    "q": "A common misconception about Flash Attention is that it approximates attention to save memory. The correct characterization is:",
-    "options": [
-      "Flash Attention replaces softmax with a linear approximation via kernel feature maps, trading a small accuracy loss for O(n) memory, enabling much longer context than standard dense attention",
-      "Flash Attention uses block-sparse attention patterns, attending only to local windows plus a small set of global summary tokens, reducing full-context attention to linear time complexity",
-      "Flash Attention quantizes intermediate attention weights to INT8 in the forward pass and reconstructs FP16 gradients in the backward pass, halving activation memory at the cost of quantization error",
-      "Flash Attention is mathematically exact — it uses an online softmax algorithm with tiled SRAM computation, producing bit-identical results while avoiding materializing the full $n\\times n$ matrix in HBM"
+      "AdamW drops bias correction, which removes the oversized first steps that Adam + L2 suffers from",
+      "AdamW keeps one optimizer number per weight instead of two, halving the memory of Adam + L2",
+      "AdamW applies the L2 term before the gradient is computed, so the loss surface itself becomes smoother to descend",
+      "Adam divides the L2 gradient by √v̂, so weights with large gradients barely decay; AdamW decays weights directly"
     ],
     "answer": 3,
-    "explanation": "Flash Attention tiles Q, K, V into SRAM-sized blocks and uses online softmax with running statistics, accumulating outputs without ever storing the full $n\\times n$ matrix in slow HBM. The computation is bit-identical to standard attention. 2-4x speedup comes from reduced memory I/O, not approximation."
+    "explanation": "Adding λθ to the gradient is exact weight decay only under plain SGD. Under Adam the sum is divided by √v̂, so the decay depends on gradient history: in Ch 16's 2,000-step simulation Adam + L2 left weights at 0.023, 0.830 or 1.012 for quiet, medium or loud gradients, while AdamW left all three at 0.830. AdamW (Loshchilov & Hutter, 2019) updates θ ← θ − α(m̂/(√v̂ + ε) + λθ). Llama 2's recipe: β₂ = 0.95, weight decay 0.1, clipping at 1.0, 2,000 warmup steps, cosine decay to 10% of peak. AdamW still keeps two numbers per weight; Lion keeps one."
   },
   {
-    "q": "In a Mixture of Experts (MoE) Transformer with $N=8$ experts, why is top-$K=2$ typically preferred over $K=1$?",
+    "q": "What is the pre-training objective of decoder-only LLMs such as GPT, Gemini and Llama?",
     "options": [
-      "K=2 is required for differentiability of the gating function — single-expert hard selection is non-differentiable, so two active experts enable continuous gradient flow through the router",
-      "K=2 assigns one expert to the self-attention sub-layer and one to the feed-forward sub-layer, specializing experts across the two main computational stages in each Transformer block",
-      "$K=2$ provides better gradient coverage per expert — each expert sees more training examples per step, reducing the training instability observed with $K=1$ in the Switch Transformer",
-      "K=2 achieves exact load balance so each of eight experts processes exactly 25% of all tokens, eliminating the auxiliary load balancing loss that becomes necessary with asymmetric routing"
+      "Masked-token cross-entropy: hide 15% of tokens and predict them from context on both sides, as BERT does",
+      "A contrastive loss that pulls in-context example pairs together and pushes random negatives apart",
+      "Mean squared error between the model's hidden states and the embeddings of a frozen teacher encoder",
+      "Next-token cross-entropy, L = −(1/T)·Σₜ log p(xₜ | x<ₜ), predicting each token from its left context"
+    ],
+    "answer": 3,
+    "explanation": "A causal mask hides the future, so one T-token sequence gives T training examples in a single forward pass, and no labels are needed. BERT's masked-LM loss uses only the 15% of tokens it masks, while a decoder gets a next-token loss at 100% of positions — one reason next-token prediction scales so well. Example: true-token probabilities 0.30, 0.20, 0.50, 0.10 give L = 1.452 nats, perplexity ≈ 4.27."
+  },
+  {
+    "q": "In supervised fine-tuning (SFT) on chat data, which tokens does the training loss cover?",
+    "options": [
+      "Every token of the conversation — system prompt, user turns and assistant replies — weighted equally",
+      "Only the first token of each assistant reply, so that the model learns how good answers begin",
+      "Only the assistant's reply tokens, including the end-of-turn token; the prompt is read but masked out",
+      "A random half of the assistant tokens in each batch, like masked language modelling without replacement"
     ],
     "answer": 2,
-    "explanation": "Switch Transformer (K=1) demonstrated training instability and poor expert utilization. K=2 ensures more gradient signal per expert per training step, stabilizing convergence. Mixtral 8x7B (N=8, K=2) achieves LLaMA 2 70B quality while activating only 12.9B of 46.7B total parameters per token."
+    "explanation": "L_SFT = −(1/|R|)·Σ log p(xₜ | x<ₜ) over the reply tokens R; prompt labels are set to −100 in PyTorch / Hugging Face. Scoring the end-of-turn token teaches the model to stop. SFT needs thousands to about a million examples: InstructGPT used about 13K human demonstrations, and LIMA's 1,000 curated examples showed SFT mostly teaches style — knowledge comes from pre-training. SFT cannot learn that answer A beats answer B, which is why preference tuning follows."
   },
   {
-    "q": "Without a KV cache, generating $n$ tokens autoregressively requires total computation proportional to:",
+    "q": "Direct Preference Optimization (DPO) reaches the same goal as RLHF while removing a component. Which one?",
     "options": [
-      "$O(n^2)$ total — step $t$ recomputes keys and values for all $t$ prior tokens, summing $1+2+\\cdots+n=O(n^2)$; KV caching reduces this to $O(n)$ by storing computed representations",
-      "O(n) total because each step requires one forward pass, and modern implementations cache all intermediate states so earlier tokens are never reprocessed during autoregressive generation",
-      "O(n log n) total because attention uses a hierarchical sliding window attending to a logarithmic prior context at each step, which is sufficient for capturing long-range dependencies in text",
-      "O(n^3) total because each step attends to all prior tokens with a quadratic matrix multiply, and this quadratic cost is paid independently for each of the n generation steps in sequence"
+      "The separately trained reward model and the RL loop: it trains on preference pairs, using β·log(π_θ/π_ref) as an implicit reward",
+      "The frozen reference model π_ref: it optimizes the preference labels directly, with no reference anywhere in its loss",
+      "Human preference data: it generates its own preference labels through self-critique, just as Constitutional AI does",
+      "The KL constraint: it maximizes raw preference probabilities with no pull at all back toward the SFT model"
     ],
     "answer": 0,
-    "explanation": "Without caching: step 1 computes K/V for 1 token, step 2 recomputes 2, ..., step $n$ recomputes all $n$. Total: $O(n^2)$. With KV cache: each step only adds the new token K/V: $O(n)$ total. At context 4K tokens, the cache reduces recomputation by approximately 2000-fold."
+    "explanation": "The RLHF objective has a closed-form best policy, so the reward can be written β·log(π*/π_ref) + β·log Z(x); in the Bradley–Terry loss β·log Z(x) cancels, giving L_DPO = −log σ(β·[(log π_θ(y_w) − log π_ref(y_w)) − (log π_θ(y_l) − log π_ref(y_l))]). The frozen reference IS still used (SimPO and ORPO drop it). Worked example, β = 0.1: a margin of 0.4 lowers the loss from ln 2 = 0.693 to 0.513."
   },
   {
-    "q": "Both BPE and WordPiece start with characters and iteratively merge. What is the key algorithmic difference in which pair each selects to merge?",
+    "q": "GRPO removes PPO's value network (critic). How does it get a baseline for the advantage?",
     "options": [
-      "BPE uses byte-level inputs; WordPiece uses character-level inputs, making BPE inherently more language-agnostic across scripts",
-      "BPE selects the pair with the highest raw co-occurrence frequency; WordPiece selects the pair whose merge maximally increases the training corpus log-likelihood",
-      "WordPiece starts with a full vocabulary and prunes low-utility tokens; BPE starts with characters and grows the vocabulary by adding new merged tokens",
-      "WordPiece tokenizes right-to-left to match BERT bidirectional pretraining; BPE tokenizes strictly left-to-right for GPT causal language modeling"
+      "It uses the running mean reward over all previous training steps as one global baseline",
+      "It samples G answers per prompt and scores each against its own group: Aᵢ = (rᵢ − mean)/std",
+      "It uses the frozen SFT model's log-probabilities as a stand-in for the learned value of each state",
+      "It trains a small discriminator that predicts whether a response is above or below average"
     ],
     "answer": 1,
-    "explanation": "BPE merge criterion: highest raw frequency count of the pair in training data. WordPiece criterion: merge that most increases $\\log P(\\text{corpus})$ — the statistically most informative pair. In practice results are similar; WordPiece avoids merges that are frequent but not linguistically informative for the language model."
+    "explanation": "Every token of answer i gets Âᵢ = (rᵢ − mean(r₁…r_G))/(std + ε); R1-Zero used G = 16. With 3 of 8 answers correct, mean 0.375 and std 0.484 give +1.29 to each correct answer and −0.77 to each wrong one. No critic roughly halves PPO's training state. A group that is all right or all wrong has zero advantages and teaches nothing, so recipes keep prompts of medium difficulty."
   },
   {
-    "q": "The pretraining objective of decoder-only LLMs (GPT family, LLaMA) is to minimize:",
+    "q": "What did the Chinchilla scaling study (Hoffmann et al., 2022) conclude about spending a fixed training-compute budget?",
     "options": [
-      "Masked language modeling cross-entropy: randomly masking 15% of tokens and predicting them using bidirectional context, as in BERT encoder-only models",
-      "Contrastive loss between in-context example pairs and random negatives, building strong semantic similarity for downstream retrieval tasks",
-      "Mean squared error between the model hidden states and fixed semantic embeddings from a separately pretrained frozen teacher encoder",
-      "Causal language modeling cross-entropy $L=-\\sum_t\\log P(x_t|x_1,\\ldots,x_{t-1};\\theta)$, predicting each token given only its left context"
+      "Model size should grow with the cube root of compute, favouring very big models on small, curated datasets",
+      "Every model should train on a fixed 300B tokens, the amount that proved enough at every size studied",
+      "Parameters matter more than data at scale, so extra compute should mostly buy a bigger model",
+      "Parameters and tokens should grow together, about 20 tokens per parameter — a 70B model on ~1.4T tokens"
     ],
     "answer": 3,
-    "explanation": "Decoder-only LLMs use autoregressive next-token prediction. Causal masking enforces left-context-only conditioning. This objective is distinct from BERT masked LM. At scale, world knowledge, in-context learning, and reasoning emerge as natural byproducts of this simple objective applied across trillion-token corpora."
+    "explanation": "With C ≈ 6·N·D and D ≈ 20·N, N_opt = √(C/120): a 10²² FLOPs budget gives about 9.1B parameters on 183B tokens. Kaplan's earlier fit (N ∝ C^0.73) favoured size, which is why GPT-3 had 175B parameters on only 300B tokens. Chinchilla (70B, 1.4T tokens) beat Gopher (280B, 300B tokens) on a similar budget. The 20× rule is optimal for training compute only; models that will serve heavily are over-trained (Llama 3 8B: about 1,875 tokens per parameter)."
   },
   {
-    "q": "In Supervised Fine-Tuning (SFT) of a language model on instruction-following data, the training loss is computed over:",
+    "q": "Why do Transformers use LayerNorm or RMSNorm rather than BatchNorm?",
     "options": [
-      "Every token in the full conversation including system prompts, user messages, and assistant responses with equal weight throughout",
-      "Only the first token of each assistant response, training the model to generate high-probability response openings in context",
-      "Only the assistant response tokens — system prompts and user messages provide input context but are masked out of the loss calculation",
-      "A randomly sampled 50% of all assistant tokens per batch, analogous to masked language modeling but without token replacement"
-    ],
-    "answer": 2,
-    "explanation": "$L_{SFT}=-\\sum_{t\\in\\text{asst\\_tokens}}\\log P(x_t|\\text{context})$. User and system tokens are context inputs but are excluded from the gradient. This focuses training on high-quality assistant responses, not on learning to generate user-style text. InstructGPT used ~13K expert demonstrations with this formulation."
-  },
-  {
-    "q": "Direct Preference Optimization (DPO) achieves the same alignment goal as RLHF but eliminates a critical component. What does DPO eliminate?",
-    "options": [
-      "The separately trained reward model — DPO optimizes the LLM directly from preference pairs using the policy log-ratio as an implicit reward",
-      "The frozen reference policy $\\pi_{ref}$ — DPO optimizes directly from preference labels with no reference model in its objective",
-      "Human preference data — DPO generates its own preference labels through AI self-critique, similar to Constitutional AI RLAIF",
-      "The KL divergence constraint — DPO allows unconstrained policy optimization by directly maximizing raw preference probabilities"
+      "They normalize each token over its own features, so training and inference match at any batch size, padding or one-token generation",
+      "BatchNorm cannot be folded into a neighbouring matrix multiply, which makes it too slow inside attention layers",
+      "LayerNorm and RMSNorm regularize more strongly, because their per-token statistics inject extra noise",
+      "BatchNorm has no learned scale and shift, so the network can never undo the normalization when it hurts"
     ],
     "answer": 0,
-    "explanation": "RLHF requires a trained reward model plus PPO. DPO reparameterizes: the optimal RLHF policy satisfies $r(x,y)=\\beta\\log(\\pi_\\theta/\\pi_{ref})+\\text{const}$. Substituting into Bradley-Terry gives a supervised-like loss with no reward model needed. The frozen reference model $\\pi_{ref}$ IS still used in the DPO loss."
+    "explanation": "BatchNorm averages one feature across the batch, which mixes positions and padding, fluctuates strongly in NLP (Shen et al., PowerNorm, 2020) and needs running averages that differ from training. LayerNorm normalizes each token (x = [3.0, 1.5, 2.0] → [1.34, −1.07, −0.27]); RMSNorm skips the mean and β (RMS 2.25 → [1.33, 0.67, 0.89]) — one reduction instead of two — and sits before each block (pre-norm) in Llama, Gemma, Mistral, Qwen and DeepSeek. With no batch noise, they are not regularizers."
   },
   {
-    "q": "GRPO (Group Relative Policy Optimization) eliminates the value network required by PPO. How does it estimate the baseline advantage?",
+    "q": "A fraud model is trained on 9,900 legitimate and 100 fraud rows. In what order should you work through the imbalance fixes?",
     "options": [
-      "GRPO uses the cumulative mean reward from all previous training steps as a global running baseline throughout the training process",
-      "For each prompt it samples $G$ responses, computes their rewards, and uses the group mean and standard deviation to normalize each advantage",
-      "GRPO uses the SFT reference model log-probabilities as a quality proxy for the baseline to avoid additional inference-time forward passes",
-      "GRPO uses a separately trained discriminator network that scores whether a given response quality is above or below average"
-    ],
-    "answer": 1,
-    "explanation": "PPO advantage $=r(y)-V(x)$ requires a learned value network. GRPO: sample $G$ completions per prompt, compute rewards $\\{r_i\\}$, then $\\hat{A}_i=(r_i-\\text{mean})/\\text{std}$. Group statistics serve as a Monte Carlo baseline — no critic needed, reducing memory and compute while maintaining variance reduction."
-  },
-  {
-    "q": "The Chinchilla scaling law (Hoffmann et al., 2022) revised the field consensus on how to allocate a fixed compute budget. Its key finding was:",
-    "options": [
-      "Model size should scale as the cube root of the compute budget, strongly favoring larger models trained on relatively small but high-quality curated datasets for optimal efficiency",
-      "Training tokens should be fixed at 300 billion regardless of model size, as Chinchilla showed this amount proved consistently sufficient across all model sizes and architectures studied",
-      "Model quality improves faster by increasing parameters than by increasing training data — parameter count is the primary bottleneck at scale and data becomes the secondary constraint",
-      "Both model size and training tokens should scale proportionally with compute; the optimal ratio is roughly 20 tokens per parameter — a 70B model should train on ~1.4T tokens"
-    ],
-    "answer": 3,
-    "explanation": "Pre-Chinchilla, the field over-parameterized: Gopher was 280B trained on 300B tokens. Chinchilla showed ~20 tokens per parameter is optimal. A 70B model at 1.4T tokens outperforms a 280B model at the same compute. LLaMA deliberately overtrains smaller models to optimize inference efficiency."
-  },
-  {
-    "q": "The reward model in RLHF is trained on preference pairs $(x, y_w, y_l)$ where $y_w$ is preferred. The Bradley-Terry training loss is:",
-    "options": [
-      "$\\|r(x,y_w)-1\\|^2+\\|r(x,y_l)-0\\|^2$, regressing preferred reward to 1 and rejected reward to 0 via squared error targets",
-      "KL divergence between reward distributions over preferred and rejected responses to maximally separate their score distributions",
-      "$-\\log\\sigma(r(x,y_w)-r(x,y_l))$, pushing preferred response reward above rejected via a sigmoid pairwise comparison loss",
-      "$-\\log P_\\theta(y_w\\succ y_l|x)$ modeled as a Dirichlet distribution over all possible pairwise preference orderings"
+      "SMOTE on the full dataset first, then class weights, then choose the threshold on the test set",
+      "Undersample the majority class to 50/50, then judge the model by accuracy on a balanced test set",
+      "Honest metrics (PR-AUC, recall), then the threshold, then class weights, then resample training folds only, then recalibrate",
+      "Class weights first, then resampling, keeping the default 0.5 threshold so the probabilities stay calibrated"
     ],
     "answer": 2,
-    "explanation": "Bradley-Terry: $P(y_w\\succ y_l)=\\sigma(r(y_w)-r(y_l))$. Maximizing log-likelihood gives $-\\log\\sigma(r(y_w)-r(y_l))$. The loss pushes $r(y_w)>r(y_l)$ with a large margin. Absolute reward values have no fixed scale — only pairwise differences matter for the ranking objective."
+    "explanation": "Cheapest first. Moving the threshold is free: t* = C_FP/(C_FP + C_FN) = 0.1 when a miss costs 9× a false alarm, and in the chapter it lifted recall from 0.28 to 0.61. Balanced weights w_c = n/(K·n_c) give fraud 50 and legit ≈ 0.505. Thresholds and weights only move the operating point — PR-AUC stayed 0.45. Resample (SMOTE, undersampling) last and only inside training folds; weights and resampling inflate predicted probabilities, so recalibrate."
   },
   {
-    "q": "Constitutional AI (CAI) from Anthropic reduces the human labeling burden in alignment. What is the core mechanism?",
+    "q": "Your tree ensemble ranks user_id as its most important feature by the default impurity (MDI) importance. What should you check next, and with what?",
     "options": [
-      "CAI uses GPT-4 as an off-the-shelf reward model to auto-label preference pairs using existing rubrics, bypassing the need to write custom human-authored safety guidelines for each deployment context",
-      "The AI critiques and revises its own outputs using human-authored principles, then generates synthetic preference pairs via AI self-evaluation (RLAIF), replacing most human pairwise labeling",
-      "CAI eliminates the alignment training phase entirely, relying solely on high-quality supervised demonstrations curated by domain experts to instill safe behaviors without any reinforcement learning",
-      "CAI trains a compact proxy reward model on publicly available preference datasets to approximate custom human feedback at reduced cost without requiring any proprietary data collection effort"
+      "Nothing: impurity importance is measured on held-out data, so a high-cardinality ID column cannot fool it",
+      "Permutation importance on held-out data — model-agnostic: shuffle one column and measure the score drop",
+      "L1 regularization as an embedded filter, since impurity and permutation importance always agree",
+      "SHAP values read as causal effects, which prove whether user_id truly drives the outcome"
     ],
     "answer": 1,
-    "explanation": "CAI: (1) Generate response, (2) AI critiques using written principles, (3) AI revises — use as SFT data. (4) AI generates preference pairs judged by another AI instance (RLAIF). Humans write principles but do not label individual pairs, scaling alignment feedback while maintaining oversight via the principle specification."
+    "explanation": "MDI sums impurity drops on training data and is biased toward high-cardinality and continuous features: in Ch 12 a random ID scored MDI 0.439 but permutation importance only +0.018. Permutation importance is model-agnostic and computed after training on held-out data; its pitfall is that correlated features share credit. SHAP explains individual predictions but is not causal. Then drop the ID — it also invites leakage."
   },
   {
-    "q": "Well-calibrated INT8 post-training quantization typically introduces how much benchmark degradation compared to FP16?",
+    "q": "Speculative decoding lets a fast draft model propose K tokens that the target model verifies in one forward pass. With the standard accept/resample rule, what is guaranteed about output quality?",
     "options": [
-      "10-20% relative degradation, making INT8 models noticeably worse and suitable only for non-quality-critical inference workloads",
-      "Less than 1% degradation on most benchmarks — well-calibrated INT8 is effectively lossless for practical production deployment",
-      "3-8% relative degradation, approximately matching the quality gap between two consecutive model generation releases",
-      "No measurable degradation at all, because modern GPUs natively execute INT8 at the same mathematical precision as FP16 operations"
-    ],
-    "answer": 1,
-    "explanation": "With 256 quantization levels and per-channel scale/zero-point calibration, INT8 loses less than 1% on perplexity and accuracy benchmarks. INT4 (GPTQ, AWQ) loses 1-3%. A 70B FP16 model at 140GB becomes INT8 at 70GB with minimal quality impact for production deployment."
-  },
-  {
-    "q": "Speculative decoding uses a fast draft model to propose $K$ tokens verified in one target-model forward pass. What is the output quality guarantee?",
-    "options": [
-      "Output degrades proportionally to the draft model rejection rate — a poor-quality draft significantly degrades final output quality for the target model",
-      "Speculative decoding is slightly lossy — the target model occasionally accepts suboptimal draft tokens to sustain throughput at the cost of minor quality degradation",
-      "Output quality slightly improves because rejected draft tokens are replaced by sampling from a corrected distribution, producing higher-quality outputs than pure target decoding",
-      "Speculative decoding is provably lossless — the rejection sampling scheme guarantees identical output distribution to what the target model alone would produce"
+      "Quality drops in proportion to how often drafts are rejected, so a weak draft model hurts the answers",
+      "It is slightly lossy: the target accepts some near-miss tokens to keep throughput high",
+      "Quality improves, because rejected tokens are resampled from a corrected, sharper distribution",
+      "It is provably lossless: the output follows the target model's distribution exactly"
     ],
     "answer": 3,
-    "explanation": "For draft token $t_i$ with probability $p_i$: accept if $\\min(1, q_i/p_i)$ where $q_i$ is the target probability; otherwise resample from $\\max(0, q_i-p_i)$ normalized. This rejection sampler provably matches the target distribution exactly. Speedup comes entirely from batching $K$ verifications in one forward pass."
+    "explanation": "Each draft token xᵢ is kept with probability min(1, p(xᵢ)/q(xᵢ)), with p the target's and q the draft's probability; the first rejection is resampled from max(0, p − q) renormalized, and if all K survive the target adds a bonus token. Expected tokens per target pass: (1 − α^(K+1))/(1 − α) — 4.10 at α = 0.9, K = 4 — about 2–3× faster in practice. Gains vanish when acceptance collapses, e.g. for creative high-temperature text."
   },
   {
-    "q": "ZeRO Stage 3 in DeepSpeed achieves maximum memory savings in data-parallel training by sharding:",
+    "q": "A video app must pick about 25 items from 800M videos for each user within a ~300 ms page budget. Which design fits?",
     "options": [
-      "Only optimizer states across GPUs — momentum and variance tensors account for the largest per-parameter memory overhead in mixed-precision training",
-      "Only model parameters at inference time while keeping full gradient and optimizer state copies on each GPU during training",
-      "Model parameters, gradients, AND optimizer states — each of $N$ GPUs stores $1/N$ of every component, enabling up to $16\\times$ memory reduction",
-      "Model parameters by contiguous layer groups, assigning each GPU permanent full ownership of specific transformer layers throughout the run"
+      "Score all 800M videos with the heavy ranking model on every request, using bigger accelerators",
+      "Precompute one global top-25 list each night and serve the same list to every user next day",
+      "Two-tower retrieval with ANN search (800M → ~1,000), a heavier multi-task ranker (→ ~100), then re-ranking",
+      "One LLM prompt per request that lists the whole 800M-video catalogue and asks the model to choose 25 of them"
     ],
     "answer": 2,
-    "explanation": "ZeRO Stage 1: shard optimizer states (~4x). Stage 2: + shard gradients (~8x). Stage 3: + shard parameters (~16x in FP32 mixed precision). Stage 3 requires AllGather to reconstruct parameters before each forward/backward pass, adding communication overhead but enabling trillion-parameter training on GPU clusters."
+    "explanation": "Scoring 800M × 128-dim embeddings exactly costs ≈ 1.0 × 10¹¹ multiply-adds per request. In a two-tower model the item vectors are precomputed and score = u·v, so retrieval is a nearest-neighbour search (~10 ms). The ranker (Wide & Deep, DCN-v2; heads such as P(click) and expected watch time) adds rich user × item crosses on ~1,000 candidates (~20 ms); re-ranking handles diversity, freshness and safety (~10 ms). Stable parts are precomputed, but each request is scored live."
   },
   {
-    "q": "In a production RAG system, why is hybrid search (dense vector + BM25) generally superior to dense-only retrieval?",
+    "q": "Why does production RAG usually combine BM25 keyword search with dense vector retrieval?",
     "options": [
-      "Dense embeddings handle semantic similarity but fail on exact matches for rare terms like error codes and product IDs; BM25 term-frequency matching handles exact queries precisely — hybrid covers the full query spectrum",
-      "Hybrid search always outperforms single-signal retrieval because averaging two independent ranking signals is statistically more robust regardless of query type, domain, or term rarity distribution",
-      "BM25 inverted index queries faster than vector databases, so hybrid reduces average retrieval latency while dense embeddings handle semantically ambiguous long-tail queries more precisely and reliably",
-      "Hybrid provides a temporal safety fallback for knowledge postdating the embedding model training cutoff, ensuring recently indexed documents remain discoverable before the next scheduled model update"
+      "Vectors catch paraphrases but blur exact tokens such as error codes and product IDs; BM25 matches them — fuse with RRF",
+      "Averaging any two ranking signals always beats one, whatever the query type, the domain or the term rarity",
+      "BM25 is much faster than vector search, so the hybrid mainly cuts latency rather than improving recall",
+      "BM25 can index documents newer than the embedding model's training cutoff, which vectors cannot find"
     ],
     "answer": 0,
-    "explanation": "Dense embeddings capture semantic similarity but may miss exact matches for identifiers like ERR_4012 or SKU-99X. BM25 handles term frequency precisely. Production RAG combines both with Reciprocal Rank Fusion (RRF). Weaviate, Qdrant, and Vespa all support hybrid search natively."
+    "explanation": "BM25 catches exact tokens that embeddings blur (an error code like E-4012, product codes, names); vectors catch paraphrases. Fuse the two rankings with Reciprocal Rank Fusion (k = 60) — ranks, not raw scores, so BM25's bigger numbers cannot decide alone. Then retrieve about 50, rerank with a cross-encoder, keep 3–10, and filter by the user's permissions at retrieval time."
   },
   {
-    "q": "In the lost-in-the-middle study (Liu et al., 2023), when the key fact is placed at the middle of a long context, models achieve approximately what recall rate?",
+    "q": "In Liu et al.'s 'Lost in the Middle' study (20 passages, one containing the answer), how did GPT-3.5-Turbo's accuracy depend on where the answer passage sat?",
     "options": [
-      "75-80% recall — only slightly lower than beginning and end placements, suggesting a minor effect easily compensated in practice",
-      "About 40-50% recall — roughly half the performance achieved when the fact appears at beginning (~85%) or end (~80%) positions",
-      "60-65% recall — a moderate reduction that adding extra retrieved documents in the context can usually compensate for",
-      "10-15% recall — near-random performance indicating that models essentially ignore content in middle context positions"
+      "Almost flat — about 75% wherever the passage was, so its position barely matters",
+      "U-shaped: 75.8% first, 53.8% at position 10 (below its 56.1% with no passages), 63.2% last",
+      "Steadily rising toward the end, because the most recent tokens always dominate attention",
+      "Near zero in the middle, because models ignore every passage except the first and last two"
     ],
     "answer": 1,
-    "explanation": "Liu et al. found ~45% middle recall vs ~85% at beginning and ~80% at end — roughly a 2x performance gap. This affects all tested models including GPT-4 and Claude. Practical RAG implication: place the most relevant retrieved documents first and last, not in the middle of the assembled context window."
+    "explanation": "Best at the start (primacy), second-best at the end (recency), worst in the middle — where the passages actually hurt compared with answering closed-book. The 16K-context version scored almost the same, so a bigger window did not help; Claude-1.3's dip was only about 4 points. For RAG: rerank and send fewer chunks, put the best chunk first and the runner-up last, and put the question after the documents. The effect is weaker today but not gone — measure it on your own task."
   },
   {
-    "q": "A common misconception is that reasoning models like o1 and DeepSeek-R1 are just standard LLMs with chain-of-thought prompting. The actual distinction is:",
+    "q": "How do reasoning models such as DeepSeek-R1 differ from a standard LLM prompted to 'think step by step'?",
     "options": [
-      "Reasoning models use much larger context windows than standard LLMs, allowing many more intermediate computation steps to be stored and referenced before producing the final answer token",
-      "Reasoning models are fine-tuned on expert-annotated chain-of-thought solution traces; standard LLMs are tuned only on direct final answers without any intermediate reasoning annotations",
-      "Reasoning models perform Monte Carlo Tree Search at inference time, branching on uncertainty to explore multiple reasoning paths in parallel before committing to the highest-scoring one",
-      "Reasoning models are trained via RL with verifiable rewards — emergent behaviors like self-correction and backtracking arise from RL optimization, not from prompt-level instructions"
+      "They use far larger context windows, so more intermediate steps can be stored before the answer",
+      "They are fine-tuned only on expert-written chain-of-thought traces, with no reinforcement learning stage at all",
+      "They run Monte Carlo tree search at inference, branching on uncertainty before they commit",
+      "They are trained with RL on checkable rewards, so long reasoning and self-checking emerge from training"
     ],
     "answer": 3,
-    "explanation": "CoT prompting is a prompt-level technique applied to any model at inference time. Reasoning models are TRAINED via RL: DeepSeek-R1 showed that self-correction and reconsideration behaviors emerged from GRPO with verifiable math/code rewards without any supervised CoT demonstrations — a fundamental capability difference."
+    "explanation": "Chain-of-thought prompting is an inference-time trick for any model. DeepSeek-R1-Zero applied GRPO with rule-based rewards (a correct final answer, reasoning inside think tags) straight to the base model with no SFT; longer thinking and 'Wait…' self-checks emerged, and AIME 2024 pass@1 rose from 15.6% to 77.9%. The released R1 added cold-start SFT, more RL and about 800K rejection-sampled SFT examples for readability. OpenAI's o-series also uses large-scale RL, but its recipe is unpublished."
   }
 ]

@@ -4,22 +4,25 @@
 > Practice without theory is dangerous."
 
 **What this document covers:**
-A complete hands-on guide to building ML models. Starting from installing Python, all the way through training, evaluating, and deploying models. Every section includes real code you can copy-paste and run. Organized from beginner to advanced.
+A hands-on guide to building ML models — from installing Python to training, evaluating, deploying and monitoring them — organized from beginner to advanced.
+
+> ▶ Blocks that use NumPy, pandas, scikit-learn or matplotlib run in your browser (older sandbox versions; each **Output:** is exactly what they print). Blocks starting `# Runs locally:` need your own machine.
 
 ---
 
 ## What You'll Learn
 
 After working through this guide, you will be able to:
-- Set up a complete ML development environment from scratch
-- Load datasets from multiple sources (sklearn, Kaggle, CSV, APIs)
+- Set up a clean ML environment (uv or venv + pip)
+- Load datasets from scikit-learn, files, Kaggle, Hugging Face and more
 - Explore and visualize data to understand its structure
 - Preprocess data (handle missing values, encode, scale)
 - Train and evaluate 10+ ML algorithms with real code
-- Tune hyperparameters using Grid Search and Random Search
+- Tune hyperparameters (grid search, random search, Optuna)
 - Build end-to-end ML pipelines
 - Debug common ML problems (overfitting, data leakage, class imbalance)
-- Train basic neural networks with PyTorch/TensorFlow
+- Train basic neural networks with PyTorch and Keras 3
+- Save, serve and monitor models in production
 
 ---
 
@@ -32,13 +35,13 @@ After working through this guide, you will be able to:
 | 3 | Exploratory Data Analysis (EDA) | Beginner |
 | 4 | Data Preprocessing (Complete Guide) | Beginner-Intermediate |
 | 5 | Your First ML Model (Step by Step) | Beginner |
-| 6 | Supervised Learning Algorithms (7 algorithms + comparison) | Intermediate |
+| 6 | Supervised Learning Algorithms (8 algorithms + comparison) | Intermediate |
 | 7 | Unsupervised Learning (K-Means, PCA, DBSCAN, Silhouette) | Intermediate |
 | 8 | Model Evaluation (Metrics, CV, Learning Curves, Imbalance) | Intermediate |
-| 9 | Hyperparameter Tuning (Grid + Random Search) | Intermediate |
+| 9 | Hyperparameter Tuning (Grid, Random Search, Optuna) | Intermediate |
 | 10 | Feature Engineering (with runnable examples) | Intermediate-Advanced |
 | 11 | ML Pipelines (Production-Ready Code) | Intermediate-Advanced |
-| 12 | Neural Networks (PyTorch + Keras) | Advanced |
+| 12 | Neural Networks (PyTorch + Keras 3) | Advanced |
 | 13 | End-to-End Projects (Classification + Regression) | All Levels |
 | 14 | Common Errors & Debugging Guide | All Levels |
 | 15 | Algorithm Selection Cheat Sheet | Reference |
@@ -54,117 +57,137 @@ After working through this guide, you will be able to:
 
 ## 1.1 What You Need
 
-```
-  THE ML TECH STACK:
-  ┌────────────────────────────────────────────────────────────┐
-  │                                                            │
-  │  LANGUAGE:    Python (the standard for ML)                 │
-  │                                                            │
-  │  CORE LIBRARIES:                                           │
-  │  ┌──────────────┬─────────────────────────────────────┐    │
-  │  │ NumPy        │ Fast math on arrays/matrices         │    │
-  │  │ Pandas       │ Data loading, cleaning, manipulation │    │
-  │  │ Matplotlib   │ Basic plotting and charts            │    │
-  │  │ Seaborn      │ Beautiful statistical visualizations │    │
-  │  │ Scikit-learn │ THE ML library (models, metrics,     │    │
-  │  │              │  preprocessing, everything)          │    │
-  │  └──────────────┴─────────────────────────────────────┘    │
-  │                                                            │
-  │  ADVANCED (install later when needed):                     │
-  │  ┌──────────────┬─────────────────────────────────────┐    │
-  │  │ XGBoost      │ Gradient boosting (Kaggle winner)    │    │
-  │  │ LightGBM     │ Fast gradient boosting (large data)  │    │
-  │  │ PyTorch      │ Deep learning framework (research)   │    │
-  │  │ TensorFlow   │ Deep learning framework (production) │    │
-  │  │ Jupyter      │ Interactive notebooks                │    │
-  │  └──────────────┴─────────────────────────────────────┘    │
-  │                                                            │
-  └────────────────────────────────────────────────────────────┘
-```
+![Cheat card for setting up a clean ML environment: the rule of one isolated environment per project with Python 3.13 as the safe pick as of Nov 2026 because TensorFlow 2.21 wheels stop at 3.13; a stack of the five libraries to install now (NumPy, pandas, matplotlib, scikit-learn, JupyterLab) plus boosting libraries for Part 6 and PyTorch and Keras 3 for Part 12; four routes: uv (recommended: uv init, uv add, uv run), venv plus pip, conda via Miniforge, and Google Colab; a GPU check with nvidia-smi and torch.cuda.is_available() returning True; and the trap that ModuleNotFoundError after installing means pip used another Python.](diagrams/pml27_info_environment_setup_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the five libraries to install now, the ones that come later, and TensorFlow's status</summary>
+
+Five libraries cover almost all classic ML; add the rest when a later Part needs them.
+
+| Library | Job | Install |
+|---|---|---|
+| **NumPy** | maths on arrays | now |
+| **pandas** | tables: load, clean, group, join | now |
+| **matplotlib** | plots | now |
+| **scikit-learn** | classic models, preprocessing, metrics | now |
+| **JupyterLab** | notebooks | now |
+| **XGBoost / LightGBM / CatBoost** | gradient boosting for tables | Part 6 |
+| **PyTorch**, **Keras 3** | neural networks | Part 12 |
+
+As of Nov 2026 TensorFlow is in maintenance mode; Google recommends Keras 3, JAX or PyTorch for new work.
+
+**Go deeper:** [Ch 40 §40.1](#content/40_python_ml_ai) (the library map) · [Ch 30 §3.4](#content/30_google_ml_ecosystem) (TensorFlow vs JAX vs PyTorch)
+
+</details>
 
 ---
 
 ## 1.2 Installation — Step by Step
 
-### Option A: Using pip (simplest)
+<details>
+<summary><strong>Read as text</strong> — one environment per project, and why Python 3.13 is the safe pick</summary>
 
-```python
-# Step 1: Install Python 3.9+ from python.org
-# During installation, CHECK "Add Python to PATH"
+Use **one isolated environment per project**, and the newest Python all your libraries support. As of Nov 2026 that is **3.13**: Python 3.15 is out, but TensorFlow 2.21 ships wheels only up to 3.13 (CatBoost: 3.14).
 
-# Step 2: Open terminal/command prompt and verify
-python --version     # should show Python 3.9+
-pip --version        # should show pip 21+
+</details>
 
-# Step 3: Install core libraries
-pip install numpy pandas matplotlib seaborn scikit-learn jupyter
+### Option A: uv (recommended — fast, and it installs Python for you)
 
-# Step 4: Install advanced libraries (optional, do when needed)
-pip install xgboost lightgbm
-pip install torch torchvision       # PyTorch
-pip install tensorflow              # TensorFlow
+<details>
+<summary><strong>Read as text</strong> — the uv commands: init, add, run</summary>
 
-# Step 5: Launch Jupyter Notebook
-jupyter notebook
-# This opens a browser window where you can write and run code
+```bash
+# Install uv once — Windows: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+#                   macOS/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+uv init ml-project --python 3.13              # fetches Python 3.13 if missing
+cd ml-project
+uv add numpy pandas matplotlib scikit-learn   # pins versions in pyproject.toml + uv.lock
+uv run python train.py                        # runs in the project's .venv
+uv run --with jupyter jupyter lab
 ```
 
-### Option B: Using Anaconda (recommended for beginners)
+</details>
 
-```python
-# Step 1: Download Anaconda from anaconda.com
-# It comes with Python + most ML libraries pre-installed
+### Option B: venv + pip (built into Python)
 
-# Step 2: Open Anaconda Prompt and create an environment
-conda create -n ml_env python=3.11
-conda activate ml_env
+<details>
+<summary><strong>Read as text</strong> — the venv + pip commands and requirements.txt</summary>
 
-# Step 3: Install libraries
-conda install numpy pandas matplotlib seaborn scikit-learn jupyter
-conda install -c conda-forge xgboost lightgbm
-
-# Step 4: Launch Jupyter
-jupyter notebook
+```bash
+python -m venv .venv                          # with Python 3.13 from python.org
+.venv\Scripts\activate                        # macOS/Linux: source .venv/bin/activate
+python -m pip install numpy pandas matplotlib scikit-learn jupyterlab
+python -m pip freeze > requirements.txt       # commit this file, never .venv
+jupyter lab
 ```
 
-### Option C: Google Colab (zero install — runs in browser)
+</details>
 
+### Option C: conda (optional — for non-Python binaries)
+
+<details>
+<summary><strong>Read as text</strong> — Miniforge commands and the Anaconda licence note</summary>
+
+```bash
+# Miniforge = conda with the free conda-forge channel
+conda create -n ml -c conda-forge python=3.13 numpy pandas matplotlib scikit-learn jupyterlab
+conda activate ml
 ```
-  Go to: https://colab.research.google.com
-  
-  - FREE (with GPU!)
-  - All libraries pre-installed
-  - Works from any browser
-  - Saves to Google Drive
-  - Perfect for learning and prototyping
-  
-  Most libraries are already available. If you need one:
-  !pip install xgboost
+
+Anaconda's own `defaults` channel is paid for companies with more than 200 employees (as of Nov 2026).
+
+</details>
+
+### Option D: Google Colab (zero install)
+
+<details>
+<summary><strong>Read as text</strong> — what Colab gives you and its 12-hour limit</summary>
+
+[Colab](https://colab.research.google.com): a free hosted notebook, libraries preinstalled, GPUs/TPUs when available. Sessions last at most 12 hours and idle machines are wiped — save to Google Drive.
+
+</details>
+
+### Later: boosting, deep learning, GPU check
+
+<details>
+<summary><strong>Read as text</strong> — installing boosting and PyTorch, and the one-line GPU check</summary>
+
+```bash
+uv add xgboost lightgbm catboost      # Part 6
+uv add torch                          # Part 12; NVIDIA GPU build: use the command from pytorch.org/get-started
+nvidia-smi                                                   # does the driver see an NVIDIA GPU?
+python -c "import torch; print(torch.cuda.is_available())"   # True = PyTorch can use it
 ```
+
+On Apple Silicon check `torch.backends.mps.is_available()`. TensorFlow's GPU support on native Windows ended with 2.10 — use WSL2.
+
+</details>
 
 ### Verify Everything Works
 
 ```python
-# Run this in a Jupyter cell or Python script to verify:
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+# Smoke test: the core libraries import and a bundled dataset loads (versions vary, so no fixed output)
+import matplotlib
+import numpy
+import pandas
+import sklearn
 from sklearn.datasets import load_iris
 
-print(f"NumPy:        {np.__version__}")
-print(f"Pandas:       {pd.__version__}")
-print(f"Scikit-learn: loaded successfully")
-print(f"Matplotlib:   loaded successfully")
-print(f"Seaborn:      loaded successfully")
-
-# Quick test: load a dataset and plot it
-iris = load_iris()
-df = pd.DataFrame(iris.data, columns=iris.feature_names)
-df['species'] = iris.target
-print(f"\nIris dataset loaded: {df.shape[0]} rows, {df.shape[1]} columns")
-print("Setup complete!")
+for lib in (numpy, pandas, sklearn, matplotlib):
+    print(f"{lib.__name__:<11} {lib.__version__}")
+X, y = load_iris(return_X_y=True)
+assert X.shape == (150, 4)
+print("Setup OK")
 ```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the ModuleNotFoundError trap</summary>
+
+**Trap:** a `ModuleNotFoundError` right after installing means pip used another Python — activate the env, or use `python -m pip` / `uv run`.
+
+**Go deeper:** [Ch 40 §40.1](#content/40_python_ml_ai) (reproducible environments) · [Ch 39 §39.1](#content/39_python_refresher) (Python versions)
+
+</details>
 
 ---
 
@@ -174,30 +197,26 @@ print("Setup complete!")
 
 ## 2.1 Where to Get Datasets
 
-```
-  ┌───────────────────────────────────────────────────────────────────┐
-  │  SOURCE               │ WHAT / WHEN TO USE                        │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ sklearn.datasets      │ Built-in toy datasets. Perfect for        │
-  │                       │ learning. No download needed.             │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ Kaggle                │ Thousands of real-world datasets.         │
-  │ kaggle.com/datasets   │ Competitions with prizes. Best for        │
-  │                       │ portfolio projects.                       │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ UCI ML Repository     │ Classic academic datasets. Iris, Wine,    │
-  │                       │ Adult Income. Good for textbook examples. │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ Hugging Face          │ NLP datasets, pre-trained models.         │
-  │ huggingface.co        │ Best for text/language tasks.             │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ Google Dataset Search │ Search across millions of datasets.       │
-  │                       │ Great for finding niche data.             │
-  ├───────────────────────┼───────────────────────────────────────────┤
-  │ Your own CSV/Excel    │ Real company data. Most common in         │
-  │                       │ actual work.                              │
-  └───────────────────────┴───────────────────────────────────────────┘
-```
+![Cheat card on where datasets come from and how to load them: a source map of six loaders with what they need, where only scikit-learn load_* datasets work offline and fetch_*, OpenML, Kaggle (kagglehub plus a token), Hugging Face Hub (load_dataset) and UCI (fetch_ucirepo) need the internet; the bundled dataset sizes (iris 150 x 4, wine 178 x 13, breast_cancer 569 x 30, digits 1797 x 64, diabetes 442 x 10); a read_csv before and after example where dtype keeps the zip code 02134 and na_values turns the question mark into nan; the Kaggle token steps; and the traps that NA counts as missing by default and load_boston was removed in scikit-learn 1.2.](diagrams/pml27_info_loading_datasets_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — nine data sources, their loaders, and which ones work offline</summary>
+
+| Source | Load it with | Note |
+|---|---|---|
+| scikit-learn `load_*` | `load_iris(as_frame=True)` | bundled, works offline |
+| scikit-learn `fetch_*` | `fetch_california_housing()` | downloaded once, then cached |
+| OpenML | `fetch_openml("titanic", version=1)` | curated tables with fixed IDs |
+| Kaggle | `kagglehub.dataset_download("owner/name")` | real-world data, competitions |
+| Hugging Face Hub | `load_dataset("stanfordnlp/imdb")` | text, image and audio |
+| UCI ML Repository | `fetch_ucirepo(id=2)` | classic academic tables |
+| seaborn | `sns.load_dataset("titanic")` | small demo tables |
+| Google Dataset Search | datasetsearch.research.google.com | finds data anywhere |
+| Your own files | `pd.read_csv(...)`, `pd.read_parquet(...)` | most real work |
+
+Only bundled `load_*` data works in the ▶ Run sandbox (no network).
+
+</details>
 
 ---
 
@@ -206,492 +225,637 @@ print("Setup complete!")
 ### Method 1: Scikit-learn Built-in Datasets (easiest)
 
 ```python
-from sklearn.datasets import (
-    load_iris,           # Classification: 3 flower species (150 rows)
-    load_wine,           # Classification: 3 wine types (178 rows)
-    load_breast_cancer,  # Classification: malignant vs benign (569 rows)
-    load_digits,         # Classification: handwritten digits 0-9 (1797 rows)
-    load_diabetes,       # Regression: disease progression (442 rows)
-    load_boston,          # Regression: house prices (506 rows) [deprecated]
-    fetch_california_housing,  # Regression: house prices (20640 rows)
-    make_classification, # Generate synthetic classification data
-    make_regression,     # Generate synthetic regression data
-)
+# Bundled datasets ship inside scikit-learn: no download, and they load in this app too
+import pandas as pd                      # as_frame=True returns pandas objects
+from sklearn.datasets import (load_breast_cancer, load_diabetes, load_digits,
+                              load_iris, load_wine, make_classification)
 
-# --- LOAD A CLASSIFICATION DATASET ---
-iris = load_iris()
+for loader in [load_iris, load_wine, load_breast_cancer, load_digits, load_diabetes]:
+    X, y = loader(return_X_y=True)
+    print(f"{loader.__name__:<19} {X.shape[0]:>5} rows x {X.shape[1]:>2} features")
 
-# Convert to Pandas DataFrame (much easier to work with)
-import pandas as pd
-df = pd.DataFrame(iris.data, columns=iris.feature_names)
-df['target'] = iris.target
-df['species'] = df['target'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
+df = load_iris(as_frame=True).frame      # features + target in one DataFrame
+print("iris frame:", df.shape, "| rows per class:", df["target"].value_counts().sort_index().tolist())
 
-print(df.head())
-#    sepal length (cm)  sepal width (cm)  ...  target    species
-# 0                5.1               3.5  ...       0     setosa
-# 1                4.9               3.0  ...       0     setosa
-
-# --- LOAD A REGRESSION DATASET ---
-housing = fetch_california_housing()
-df_housing = pd.DataFrame(housing.data, columns=housing.feature_names)
-df_housing['price'] = housing.target
-print(df_housing.head())
-
-# --- GENERATE SYNTHETIC DATA (great for experiments) ---
-from sklearn.datasets import make_classification
-X, y = make_classification(
-    n_samples=1000,    # number of rows
-    n_features=20,     # number of features
-    n_informative=10,  # features that actually matter
-    n_classes=2,       # binary classification
-    random_state=42    # reproducibility
-)
-print(f"Synthetic data: {X.shape[0]} samples, {X.shape[1]} features")
+X, y = make_classification(n_samples=1000, n_features=20, n_informative=10,
+                           weights=[0.9, 0.1], random_state=42)
+print(f"make_classification: {X.shape[0]} rows, {y.mean():.1%} positives")
+assert df.shape == (150, 5)
 ```
 
-### Method 2: Load from CSV / Excel File
+**Output:**
+
+```
+load_iris             150 rows x  4 features
+load_wine             178 rows x 13 features
+load_breast_cancer    569 rows x 30 features
+load_digits          1797 rows x 64 features
+load_diabetes         442 rows x 10 features
+iris frame: (150, 5) | rows per class: [50, 50, 50]
+make_classification: 1000 rows, 10.3% positives
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: regression vs classification sets, and the load_boston trap</summary>
+
+`load_diabetes` is regression. `weights=[0.9, 0.1]` gives ~10% positives (10.3%: `flip_y` relabels 1% at random).
+
+> ⚠️ **`load_boston` is gone** — removed in scikit-learn 1.2 over an ethically problematic feature. Use `fetch_california_housing` or `load_diabetes`.
+
+</details>
+
+### Method 2: Load from CSV / Excel / Parquet
 
 ```python
+# read_csv knobs on a tiny in-memory CSV (the same call works on a file path or a URL)
+import io
 import pandas as pd
 
-# --- FROM CSV ---
-df = pd.read_csv("data/my_dataset.csv")
-# Common parameters:
-df = pd.read_csv(
-    "data/my_dataset.csv",
-    sep=",",                # delimiter (use "\t" for TSV)
-    header=0,               # row number for column names (None if no header)
-    na_values=["?", "N/A"], # treat these as missing values
-    dtype={"zip": str},     # force column types
-    nrows=10000,            # only read first N rows (for large files)
-)
-
-# --- FROM EXCEL ---
-df = pd.read_excel("data/my_dataset.xlsx", sheet_name="Sheet1")
-
-# --- FROM URL (any CSV on the internet) ---
-url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/titanic.csv"
-df = pd.read_csv(url)
-print(df.head())
-print(f"Shape: {df.shape}")
+raw = "id;zip;signup;age;plan\n1;02134;2026-01-05;34;pro\n2;94105;2026-02-11;?;free\n3;00501;2026-03-20;29;NA\n"
+naive = pd.read_csv(io.StringIO(raw), sep=";")
+df = pd.read_csv(io.StringIO(raw), sep=";", na_values=["?"], dtype={"zip": str}, parse_dates=["signup"])
+print("zip    :", naive["zip"].tolist(), "->", df["zip"].tolist())
+print("age    :", naive["age"].tolist(), "->", df["age"].tolist())
+print("missing:", df.isna().sum().to_dict())
+print("month  :", df["signup"].dt.month.tolist())
+assert df["zip"].tolist()[0] == "02134"
 ```
 
-### Method 3: Download from Kaggle
+**Output:**
+
+```
+zip    : [2134, 94105, 501] -> ['02134', '94105', '00501']
+age    : ['34', '?', '29'] -> [34.0, nan, 29.0]
+missing: {'id': 0, 'zip': 0, 'signup': 0, 'age': 1, 'plan': 1}
+month  : [1, 2, 3]
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the four read_csv knobs, and Excel / Parquet</summary>
+
+| Knob | Why |
+|---|---|
+| `dtype={"zip": str}` | keeps leading zeros |
+| `na_values=["?"]` | extra missing markers (one `?` made `age` text) |
+| `keep_default_na=False` | keeps a real "NA" (missing by default — see `plan`) |
+| `parse_dates=["signup"]` | real dates, so `.dt.month` works |
+
+Excel: `pd.read_excel` (needs `openpyxl`). Parquet, the usual big-data format: `pd.read_parquet` (needs `pyarrow`).
+
+</details>
+
+### Method 3: Download from Kaggle, OpenML, Hugging Face and UCI
+
+<details>
+<summary><strong>Read as text</strong> — download code for OpenML, Kaggle, Hugging Face and UCI, and the Kaggle token</summary>
 
 ```python
-# Step 1: Install the Kaggle API
-# pip install kaggle
-
-# Step 2: Get your API key:
-# Go to kaggle.com -> Your Profile -> Account -> Create New Token
-# This downloads kaggle.json. Place it in:
-#   Windows: C:\Users\<username>\.kaggle\kaggle.json
-#   Mac/Linux: ~/.kaggle/kaggle.json
-
-# Step 3: Download a dataset via command line
-# kaggle datasets download -d <dataset-path>
-
-# Example: Download the Titanic dataset
-# kaggle competitions download -c titanic
-
-# Step 4: In Python, unzip and load
-import zipfile
+# Runs locally (internet + a Kaggle token): pip install kagglehub datasets ucimlrepo scikit-learn pandas
 import pandas as pd
+import kagglehub
+from datasets import load_dataset
+from sklearn.datasets import fetch_openml
+from ucimlrepo import fetch_ucirepo
 
-with zipfile.ZipFile("titanic.zip", "r") as z:
-    z.extractall("titanic_data/")
+titanic = fetch_openml("titanic", version=1, as_frame=True).frame     # OpenML id 40945: 1,309 rows, cached
 
-df = pd.read_csv("titanic_data/train.csv")
-print(df.head())
+# Kaggle (for a competition, accept its rules on kaggle.com first)
+fraud = pd.read_csv(kagglehub.dataset_download("mlg-ulb/creditcardfraud") + "/creditcard.csv")   # 284,807 rows
+train = pd.read_csv(kagglehub.competition_download("titanic", path="train.csv"))                 # 891 rows
 
-# --- OR USE KAGGLE API DIRECTLY IN PYTHON ---
-# In Google Colab, you can upload kaggle.json and run:
-# !kaggle competitions download -c titanic
+imdb = load_dataset("stanfordnlp/imdb", split="train").to_pandas()   # Hugging Face: 25,000 reviews
+
+adult = fetch_ucirepo(id=2)                                          # UCI Adult income: 48,842 rows
+X, y = adult.data.features, adult.data.targets
 ```
 
-### Method 4: Seaborn Built-in Datasets
+**Kaggle token:** kaggle.com → Settings → API → *Generate New Token*; save it as `~/.kaggle/access_token` or in `KAGGLE_API_TOKEN` (old `kaggle.json` keys still work). Never commit it.
 
-```python
-import seaborn as sns
-
-# List all available datasets
-print(sns.get_dataset_names())
-# ['anagrams', 'anscombe', 'attention', 'brain_networks', 'car_crashes',
-#  'diamonds', 'dots', 'exercise', 'flights', 'fmri', 'geyser', 'glue',
-#  'healthexp', 'iris', 'mpg', 'penguins', 'planets', 'seaice',
-#  'taxis', 'tips', 'titanic', ...]
-
-# Load one
-tips = sns.load_dataset("tips")
-titanic = sns.load_dataset("titanic")
-diamonds = sns.load_dataset("diamonds")
-penguins = sns.load_dataset("penguins")
-
-print(tips.head())
-```
+</details>
 
 ### Recommended Starter Datasets (by difficulty)
 
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  BEGINNER:                                                       │
-  │  Iris (classification, 150 rows, 4 features) — your first model │
-  │  Tips (regression, 244 rows) — predict tip amount               │
-  │  Penguins (classification, 344 rows) — cleaner version of Iris  │
-  │                                                                  │
-  │  INTERMEDIATE:                                                    │
-  │  Titanic (classification, 891 rows) — survival prediction        │
-  │  California Housing (regression, 20K rows) — house prices       │
-  │  Diamonds (regression, 54K rows) — predict diamond price        │
-  │                                                                  │
-  │  ADVANCED:                                                        │
-  │  Adult Income (classification, 48K rows) — income > 50K?        │
-  │  MNIST (classification, 70K images) — handwritten digit images  │
-  │  Credit Card Fraud (classification, 284K rows, imbalanced!)     │
-  └─────────────────────────────────────────────────────────────────┘
-```
+<details>
+<summary><strong>Read as text</strong> — eight starter datasets from beginner to advanced</summary>
+
+| Level | Dataset (task) | Size | Where |
+|---|---|---|---|
+| Beginner | Iris (3 classes) | 150 rows | `load_iris` |
+| Beginner | Penguins (3 classes) | 344 rows, 11 with gaps | seaborn |
+| Beginner | Tips (regression) | 244 rows | seaborn |
+| Intermediate | Titanic (survival) | 891 rows (1,309 on OpenML) | Kaggle, seaborn |
+| Intermediate | California Housing (regression) | 20,640 rows | `fetch_california_housing` |
+| Advanced | Adult Income (income > 50K?) | 48,842 rows | UCI, OpenML |
+| Advanced | MNIST (digit images) | 70,000 | `fetch_openml("mnist_784")` |
+| Advanced | Credit Card Fraud (imbalanced) | 284,807 rows, 0.17% fraud | Kaggle |
+
+**Go deeper:** [Ch 40 §40.3](#content/40_python_ml_ai) (pandas)
+
+</details>
 
 ---
 
 # PART 3: EXPLORATORY DATA ANALYSIS (EDA)
 
+> **Exploratory data analysis (EDA)**: counting, summarizing and plotting data to learn its structure and problems *before* modelling (John Tukey, 1977).
+
 ---
 
 ## 3.1 The First 10 Commands You Should Always Run
 
+![Cheat card for the EDA first look: ten numbered questions with their pandas commands, from df.shape for how big to df.corr(numeric_only=True) for which numbers move together; a worked Titanic table comparing 12 real rows with all 891 rows (age missing 25% vs 19.9%, deck missing 75% vs 77.2% so drop deck, duplicate rows 1 vs 107, survived 58.3% vs 38.4%, women and men survival 1.00 and 0.00 vs 74.2% and 18.9%); and three traps: look-alike duplicates may be real passengers, pandas 3 stores text as str so select it with exclude number, and seaborn's alive column leaks the target.](diagrams/pml27_info_eda_first_look_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the ten questions and the command that answers each</summary>
+
+| Question | Command |
+|---|---|
+| How big? | `df.shape` |
+| What does a row look like? | `df.head()` |
+| Types, non-null counts? | `df.info()` (text is `str` in pandas 3, `object` in pandas 2) |
+| Ranges and odd values? | `df.describe()` |
+| Where are the holes? | `df.isna().sum()` |
+| Duplicate rows? | `df.duplicated().sum()` |
+| Is the target balanced? | `df["target"].value_counts(normalize=True)` |
+| Text columns? | `df.select_dtypes(exclude="number")` |
+| Does a category move the target? | `df.groupby(col)["target"].mean()` |
+| Which numbers move together? | `df.corr(numeric_only=True)` (§3.2) |
+
+</details>
+
 ```python
+# EDA first look: 12 real Titanic rows (seaborn's copy: rows 0-9, 32 and 47)
+import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Load your data
-df = sns.load_dataset("titanic")
+nan = np.nan
+df = pd.DataFrame({
+    "survived": [0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+    "sex":  list("MFFFMMMMFFFF"),                     # M = male, F = female
+    "age":  [22, 38, 26, 35, 35, nan, 54, 2, 27, 14, nan, nan],
+    "deck": [nan, "C", nan, "C", nan, nan, "E", nan, nan, nan, nan, nan],
+})
 
-# ─── STEP 1: Basic shape and structure ───
-print(df.shape)           # (891, 15) — 891 rows, 15 columns
-print(df.head())          # First 5 rows
-print(df.dtypes)          # Data types of each column
-print(df.info())          # Non-null counts + types (spot missing values!)
-print(df.describe())      # Statistics for numeric columns (mean, std, min, max)
-
-# ─── STEP 2: Check for missing values ───
-print(df.isnull().sum())  # Count of missing values per column
-print(df.isnull().sum() / len(df) * 100)  # Percentage missing
-
-# ─── STEP 3: Check for duplicates ───
-print(f"Duplicates: {df.duplicated().sum()}")
-
-# ─── STEP 4: Check target variable distribution ───
-print(df['survived'].value_counts())           # Counts
-print(df['survived'].value_counts(normalize=True))  # Percentages
-
-# ─── STEP 5: Check unique values in categorical columns ───
-for col in df.select_dtypes(include='object').columns:
-    print(f"{col}: {df[col].nunique()} unique values")
-    print(df[col].value_counts().head())
-    print()
+print(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
+print("Text columns:", df.select_dtypes(exclude="number").columns.tolist())   # pandas 2 and 3
+missing = df.isna().sum()
+for col, n in missing[missing > 0].items():
+    print(f"Missing {col}: {n} of {len(df)} ({n / len(df):.0%})")
+print("Duplicate rows:", df.duplicated().sum())
+print(f"Target: {df['survived'].mean():.1%} survived")
+by_sex = df.groupby("sex")["survived"].mean()
+print("Survival by sex:", ", ".join(f"{k} {v:.2f}" for k, v in by_sex.items()))
+print("deck values:", ", ".join(sorted(df["deck"].dropna().unique())))
+assert df.duplicated().sum() == 1
 ```
+
+**Output:**
+
+```
+Shape: 12 rows x 4 columns
+Text columns: ['sex', 'deck']
+Missing age: 3 of 12 (25%)
+Missing deck: 9 of 12 (75%)
+Duplicate rows: 1
+Target: 58.3% survived
+Survival by sex: F 1.00, M 0.00
+deck values: C, E
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the full 891 rows, and three traps (look-alike duplicates, leakage, pandas 3 text)</summary>
+
+All 891 rows, less extreme: `age` 19.9% missing, `deck` 77.2% (drop it), 38.4% survived — women 74.2%, men 18.9%.
+
+| Trap | Titanic example | Do |
+|---|---|---|
+| A duplicate may be real | 107 duplicates in the full data: different passengers who look alike without names (rows 32, 47) | drop only true repeats (same ID) |
+| A column leaks the target | `alive` ("yes"/"no") is `survived` in words | drop anything unknown at prediction time |
+| pandas 3 text dtype | text columns are `str`, not `object` | select with `exclude="number"` (`include="object"` is deprecated for them) |
+
+**Go deeper:** [Ch 9 Step 1](#content/09_data_preprocessing) (missing values) · [Ch 8 §8.4](#content/08_core_concepts) (leakage)
+
+</details>
 
 ---
 
 ## 3.2 Visualization — See Your Data
 
-### Distribution of Numeric Features
+![Maths-style infographic on four EDA plots for the breast cancer data (569 rows, target 1 = benign): the Pearson correlation formula r = cov(x, y) / (sigma x times sigma y) with labelled parts and the 1.5 IQR outlier rule; a box-plot fence worked step by step (Q1 420.3, Q3 782.7, IQR 362.4, upper fence 1326.3, 25 outliers above 1326); a right-skewed histogram of mean area with median 551 left of mean 655 (skew 1.65, try np.log1p); to-scale bars of correlation with the target (worst concave points -0.79, mean radius -0.73, mean area -0.71, mean texture -0.42) and r(mean radius, mean area) = 0.99; a how-to-read table; and the parabola y = x squared where r = 0 although y depends fully on x.](diagrams/pml27_info_eda_visualization_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the four plots, Pearson r and the 1.5·IQR outlier rule</summary>
+
+Summary numbers hide shape. Four plots answer most questions: **histogram** (shape), **box plot** (outliers), **correlation heatmap** (what moves together), **scatter coloured by class** (what separates the classes).
+
+> **Maths in one line:** `r = cov(x, y) / (σx · σy)` — Pearson correlation runs from −1 to +1 and sees only *straight-line* links; a box plot draws as dots every point below `Q1 − 1.5·IQR` or above `Q3 + 1.5·IQR` (IQR = Q3 − Q1).
+
+</details>
 
 ```python
-# Histogram for every numeric column
-df.hist(figsize=(12, 8), bins=30)
-plt.tight_layout()
-plt.show()
+# EDA on the bundled breast-cancer data: the numbers, then the four plots
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.datasets import load_breast_cancer
 
-# Distribution of one column with KDE
-sns.histplot(df['age'], kde=True, bins=30)
-plt.title("Age Distribution")
-plt.show()
+df = load_breast_cancer(as_frame=True).frame        # 569 rows; target 0 = malignant, 1 = benign
+cols = ["mean radius", "mean texture", "mean area", "worst concave points", "target"]
+corr = df[cols].corr()
+print("r with target:", ", ".join(f"{c} {v:+.2f}" for c, v in corr["target"].drop("target").items()))
+print(f"r(mean radius, mean area) = {corr.loc['mean radius', 'mean area']:.2f}  <- near-duplicates")
 
-# Box plots to spot outliers
-sns.boxplot(data=df[['age', 'fare']])
-plt.title("Box Plot — Age and Fare")
-plt.show()
+area = df["mean area"]
+q1, q3 = area.quantile([0.25, 0.75])
+iqr = q3 - q1
+outliers = ((area < q1 - 1.5 * iqr) | (area > q3 + 1.5 * iqr)).sum()
+print(f"mean area: Q1 {q1:.0f}, Q3 {q3:.0f}, IQR {iqr:.0f} -> {outliers} outliers above {q3 + 1.5 * iqr:.0f}")
+print(f"mean area: mean {area.mean():.0f} > median {area.median():.0f} (skew {area.skew():.2f})")
+assert outliers == 25
+
+fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+ax[0, 0].hist(area, bins=30)
+ax[0, 0].set_title("Histogram: mean area")
+ax[0, 1].boxplot([area[df["target"] == 0], area[df["target"] == 1]])
+ax[0, 1].set_title("Box plot: mean area (left malignant, right benign)")
+im = ax[1, 0].imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
+ax[1, 0].set_xticks(range(len(cols)))
+ax[1, 0].set_xticklabels(cols, rotation=90)
+fig.colorbar(im, ax=ax[1, 0])
+ax[1, 1].scatter(df["mean radius"], df["worst concave points"], c=df["target"], cmap="coolwarm", s=8)
+ax[1, 1].set_title("Scatter: radius vs concave points, by class")
+fig.tight_layout()
 ```
 
-### Relationship Between Features
+**Output:**
 
-```python
-# Correlation matrix heatmap (numeric columns only)
-plt.figure(figsize=(10, 8))
-numeric_df = df.select_dtypes(include='number')
-sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', center=0, fmt='.2f')
-plt.title("Correlation Matrix")
-plt.show()
-
-# Scatter plot: two features colored by target
-sns.scatterplot(data=df, x='age', y='fare', hue='survived', alpha=0.6)
-plt.title("Age vs Fare by Survival")
-plt.show()
-
-# Pair plot (all combinations — powerful but slow for many features)
-sns.pairplot(df[['age', 'fare', 'pclass', 'survived']], hue='survived')
-plt.show()
+```
+r with target: mean radius -0.73, mean texture -0.42, mean area -0.71, worst concave points -0.79
+r(mean radius, mean area) = 0.99  <- near-duplicates
+mean area: Q1 420, Q3 783, IQR 362 -> 25 outliers above 1326
+mean area: mean 655 > median 551 (skew 1.65)
 ```
 
-### Categorical Features vs Target
+<details>
+<summary><strong>Read as text</strong> — continued: why every r is negative here</summary>
 
-```python
-# Bar plot: survival rate by class
-sns.barplot(data=df, x='pclass', y='survived')
-plt.title("Survival Rate by Passenger Class")
-plt.ylabel("Survival Rate")
-plt.show()
+Every r is negative because 1 means *benign*: big, irregular cells point to malignant. (Jupyter and this app draw the figure; a plain script needs `plt.show()`.)
 
-# Count plot: how many in each category
-sns.countplot(data=df, x='pclass', hue='survived')
-plt.title("Survival Counts by Class")
-plt.show()
-
-# Cross-tabulation
-print(pd.crosstab(df['pclass'], df['survived'], margins=True))
-```
+</details>
 
 ### How to READ Your Visualizations
 
-```
-  WHAT TO LOOK FOR IN EACH PLOT:
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ HISTOGRAM          │ Is it bell-shaped (normal)? Skewed right  │
-  │                    │ (long tail to the right)? Bimodal (two    │
-  │                    │ peaks = possibly two populations)?        │
-  │                    │ Skewed? -> consider log transform.        │
-  ├────────────────────┼────────────────────────────────────────────┤
-  │ BOX PLOT           │ Dots outside the whiskers = outliers.     │
-  │                    │ Many outliers? -> investigate. Typos?     │
-  │                    │ Real extreme values? -> cap or remove.    │
-  ├────────────────────┼────────────────────────────────────────────┤
-  │ CORRELATION HEATMAP│ Values near +1 or -1 = strong correlation.│
-  │                    │ Two features at 0.95? -> drop one (they   │
-  │                    │ carry the same info = multicollinearity). │
-  │                    │ Feature correlated with target? -> good   │
-  │                    │ predictor!                                │
-  ├────────────────────┼────────────────────────────────────────────┤
-  │ SCATTER PLOT       │ Clear clusters by color (hue) = that      │
-  │                    │ feature helps separate classes.           │
-  │                    │ Random cloud = feature may not be useful. │
-  ├────────────────────┼────────────────────────────────────────────┤
-  │ BAR PLOT (target)  │ Tall bar for one category = that category │
-  │                    │ has a strong effect on the target.        │
-  │                    │ All bars similar height = feature has     │
-  │                    │ little predictive power.                  │
-  └────────────────────┴────────────────────────────────────────────┘
-```
+<details>
+<summary><strong>Read as text</strong> — what to look for in each plot, and the low-r trap</summary>
 
-### EDA Checklist
+| Plot | Look for | Then |
+|---|---|---|
+| Histogram | a long tail, two peaks | long right tail (mean 655 > median 551) → try `np.log1p` for linear models; two peaks → two populations? |
+| Box plot | dots beyond the whiskers | typo → fix; real extreme → keep or cap |
+| Heatmap | r near ±1 | two features at 0.99 → keep one for linear models; strong r with the target → useful |
+| Scatter by class | separate colour clouds | those features separate the classes |
+| Bar: target rate per category | uneven bars | the category matters |
 
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │  BEFORE building any model, answer these questions:           │
-  │                                                               │
-  │  [ ] How many rows and columns?                               │
-  │  [ ] What are the data types? (numeric, categorical, text)    │
-  │  [ ] Any missing values? How much? Which columns?             │
-  │  [ ] Any duplicate rows?                                      │
-  │  [ ] Is the target variable balanced or imbalanced?           │
-  │  [ ] What do the distributions look like? Any outliers?       │
-  │  [ ] Which features are correlated with the target?           │
-  │  [ ] Which features are correlated with each other?           │
-  │  [ ] Any obvious data quality issues? (wrong types, errors)   │
-  └──────────────────────────────────────────────────────────────┘
-```
+**Trap — low r does not mean useless.** For x = −2, −1, 0, 1, 2 and y = x², y depends completely on x, yet r = 0. Look at a scatter before dropping a feature; trees use curved signal.
+
+**Go deeper:** [Ch 6 §3.3](#content/06_math_fundamentals) (correlation) · [Ch 9 Step 2](#content/09_data_preprocessing) (outliers) · [Ch 40 §40.4](#content/40_python_ml_ai) (matplotlib)
+
+</details>
 
 ### Try It Yourself -- EDA Challenge
 
 ```
-  Load the "penguins" dataset and answer these questions:
-  
+  Load load_wine(as_frame=True).frame and answer:
+
   1. How many rows and columns? Any missing values?
-  2. What species are in the dataset? Is it balanced?
-  3. Which numeric feature is most correlated with body_mass_g?
-  4. Create a scatter plot of flipper_length vs body_mass, colored by species.
-     Can you visually separate the species?
-  5. Are there any outliers in bill_depth_mm?
+  2. Wines per class (target 0, 1, 2)? Balanced?
+  3. Which feature is most correlated with alcohol?
+  4. Scatter flavanoids vs proline, coloured by class. Do the classes separate?
+  5. How many magnesium values are outliers by the 1.5 x IQR rule?
 ```
 
 ```python
 # Starter code:
-import seaborn as sns
-penguins = sns.load_dataset("penguins")
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.datasets import load_wine
+
+df = load_wine(as_frame=True).frame
 # YOUR CODE HERE — answer the 5 questions above
 ```
+
+<details>
+<summary><strong>Answers</strong></summary>
+
+1. 178 rows × 14 columns (13 features + `target`), no missing values.
+2. 59 / 71 / 48 — mildly imbalanced: split with `stratify=y`.
+3. `proline` (r = +0.64).
+4. Mostly: class 0 has high proline (mean 1116), class 2 low flavanoids (0.78), class 1 neither (520, 2.08).
+5. 4 (above the 135.5 fence).
+
+</details>
 
 ---
 
 # PART 4: DATA PREPROCESSING (COMPLETE GUIDE)
 
+Models need clean numbers. The rule for every step: **split first, then learn fill values, categories and scales from the training rows only.** Theory: [Ch 09](#content/09_data_preprocessing).
+
 ---
 
 ## 4.1 Handle Missing Values
 
+![Cheat card for handling missing values: bars measuring gaps in a 10-passenger table (age 3 missing 30%, embarked 1 missing 10%, deck 7 missing 70% so drop deck); a rule-of-thumb strategy by share missing (under 5% drop rows or fill, 5 to 30% median or mode plus a was-missing flag, over 30% consider dropping the column or a model that accepts NaN); a split-first diagram where the first 8 rows train and the last 2 test, train ages 2, 22, 26, 35, 38, 54 give median (26 + 35) / 2 = 30.5 while the all-rows median 27.0 would leak; test rows become 27.0 with flag 0 and 30.5 with flag 1; key APIs df.isna().sum() and SimpleImputer with add_indicator; and the pandas 3 trap that inplace fillna on a column changes nothing.](diagrams/pml27_info_missing_values_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what to count and when to fill</summary>
+
+**What & when:** count the gaps per column, pick a strategy by how much is missing, and learn fill values *after* the split.
+
+</details>
+
 ```python
+# Missing values: measure them, then fill with numbers learned from TRAIN only
+import io
 import pandas as pd
-import numpy as np
 from sklearn.impute import SimpleImputer
 
-df = sns.load_dataset("titanic")
+csv = """age,fare,sex,embarked,deck,survived
+22,7.25,male,S,,0
+38,71.28,female,C,C,1
+26,7.92,female,S,,1
+35,53.10,female,S,C,1
+,8.46,male,Q,,0
+54,51.86,male,S,E,0
+2,21.08,male,S,,0
+,7.23,female,,,1
+27,11.13,female,S,,1
+,30.07,female,C,,1"""
+df = pd.read_csv(io.StringIO(csv))
+for col, n in df.isna().sum().items():
+    if n:
+        print(f"{col:<9}{n} missing ({n / len(df):.0%})")
 
-# ─── SEE WHAT'S MISSING ───
-print(df.isnull().sum())
-# age         177  (19.9%)
-# deck        688  (77.2%)   <-- too much! consider dropping
-# embark_town   2  (0.2%)
-
-# ─── STRATEGY 1: Drop rows (when very few are missing) ───
-df_clean = df.dropna(subset=['embark_town'])  # only 2 rows lost
-
-# ─── STRATEGY 2: Drop column (when > 50% missing) ───
-df_clean = df.drop(columns=['deck'])  # 77% missing, not useful
-
-# ─── STRATEGY 3: Fill with median (numeric, has outliers) ───
-df['age'] = df['age'].fillna(df['age'].median())
-
-# ─── STRATEGY 4: Fill with mode (categorical) ───
-df['embark_town'] = df['embark_town'].fillna(df['embark_town'].mode()[0])
-
-# ─── STRATEGY 5: Using sklearn SimpleImputer (recommended for pipelines) ───
-imputer_num = SimpleImputer(strategy='median')   # for numeric
-imputer_cat = SimpleImputer(strategy='most_frequent')  # for categorical
-
-# ─── STRATEGY 6: Create a "was_missing" indicator column ───
-df['age_missing'] = df['age'].isnull().astype(int)
-df['age'] = df['age'].fillna(df['age'].median())
-# Now the model knows WHICH rows had missing age
+train, test = df.iloc[:8], df.iloc[8:]            # split FIRST
+imp = SimpleImputer(strategy="median", add_indicator=True).fit(train[["age"]])
+print(f"train median age {imp.statistics_[0]:.1f} (all 10 rows: {df['age'].median():.1f} - a leak)")
+for age, flag in imp.transform(test[["age"]]):
+    print(f"test row -> age {age:.1f}, was_missing {flag:.0f}")
+assert imp.statistics_[0] == 30.5
 ```
+
+**Output:**
+
+```
+age      3 missing (30%)
+embarked 1 missing (10%)
+deck     7 missing (70%)
+train median age 30.5 (all 10 rows: 27.0 - a leak)
+test row -> age 27.0, was_missing 0
+test row -> age 30.5, was_missing 1
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: where the 30.5 comes from</summary>
+
+Train ages 2, 22, 26, 35, 38, 54 → median (26 + 35) / 2 = 30.5. The test passenger with no age gets 30.5 plus flag 1, so "age unknown" stays usable as a signal.
+
+</details>
 
 ### When to Use Which Strategy
 
-```
-  ┌─────────────────────────────────────────────────────────────┐
-  │  % Missing  │  Strategy                                      │
-  ├─────────────┼───────────────────────────────────────────────┤
-  │  < 5%       │  Drop rows OR fill with median/mode           │
-  │  5% - 30%   │  Fill with median/mode + add "was_missing" col│
-  │  30% - 50%  │  Use a model to predict missing values (KNN)  │
-  │  > 50%      │  Drop the column (unless domain-important)    │
-  └─────────────┴───────────────────────────────────────────────┘
-```
+<details>
+<summary><strong>Read as text</strong> — the strategy table and the pandas 3 trap</summary>
+
+| Missing (rule of thumb) | Strategy |
+|---|---|
+| under 5% | drop those rows (only if the gaps are random), or fill |
+| 5–30% (age) | median (numbers) or mode (categories) + a was-missing flag (`add_indicator=True`) |
+| over 30% (deck) | consider dropping the column; if it matters, `KNNImputer` / `IterativeImputer`, or a model that accepts NaN (HistGradientBoosting, XGBoost, LightGBM) |
+
+**Trap:** fill values computed on all rows leak the test set (27.0 instead of 30.5). In pandas 3 (Copy-on-Write), `df["age"].fillna(x, inplace=True)` only warns and changes nothing — write `df = df.fillna({"age": x})`.
+
+**Go deeper:** [Ch 09 Step 1 — Missing Values](#content/09_data_preprocessing).
+
+</details>
 
 ---
 
 ## 4.2 Encode Categorical Variables
 
+![Infographic: encoding categories by column type. One-hot turns port S, C into port_C and port_S columns, with an unseen port Q becoming all zeros; ordinal encoding uses your order low 0, medium 1, high 2 instead of the alphabetical default; smoothed target encoding with m = 2 and global mean 0.50 pulls port C from 1.00 to 0.75 and port S from 0.25 to 0.33. Includes the formula enc(c) = (n_c times mean_c + m times global mean) / (n_c + m), a pick-by-column table and the LabelEncoder trap.](diagrams/pml27_info_categorical_encoding_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what encoding does and the target-encoding formula</summary>
+
+**What & when:** turn text categories into numbers; pick the encoder by the kind of column.
+
+> **Maths in one line:** target encoding `enc(c) = (n_c · ȳ_c + m · ȳ) / (n_c + m)` — a category's mean label, pulled toward the global mean ȳ when it has few rows n_c (m = smoothing).
+
+</details>
+
 ```python
+# Encoding: one-hot (no order), ordinal (your order), smoothed target mean (many values)
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
-df = sns.load_dataset("titanic")
+train = pd.DataFrame({"port": ["S", "C", "S", "S", "C", "S"],
+                      "fare": ["low", "high", "low", "medium", "high", "low"],
+                      "survived": [0, 1, 1, 0, 1, 0]})
+test = pd.DataFrame({"port": ["C", "Q"], "fare": ["medium", "high"]})   # port Q never seen
 
-# ─── METHOD 1: Label Encoding (ordinal categories) ───
-# Use when categories have a natural ORDER
-# Example: "low" < "medium" < "high"
-le = LabelEncoder()
-df['sex_encoded'] = le.fit_transform(df['sex'])
-# female -> 0, male -> 1
+ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False).fit(train[["port"]])
+print("one-hot", [str(c) for c in ohe.get_feature_names_out()], "-> C, Q:",
+      ohe.transform(test[["port"]]).astype(int).tolist())
+oe = OrdinalEncoder(categories=[["low", "medium", "high"]]).fit(train[["fare"]])
+print("ordinal medium, high ->", oe.transform(test[["fare"]]).ravel().tolist())
+print("default order:", [str(c) for c in OrdinalEncoder().fit(train[["fare"]]).categories_[0]])
 
-# ─── METHOD 2: One-Hot Encoding (nominal categories) ───
-# Use when categories have NO natural order
-# Example: "red", "blue", "green" — no ordering
-df_encoded = pd.get_dummies(df, columns=['embark_town'], drop_first=True)
-# Creates: embark_town_Queenstown, embark_town_Southampton
-# drop_first=True avoids the "dummy variable trap" (multicollinearity)
-
-# ─── METHOD 3: Ordinal Encoding (custom order) ───
-# Use when you want to specify the exact order
-oe = OrdinalEncoder(categories=[['Third', 'Second', 'First']])
-df['class_encoded'] = oe.fit_transform(df[['class']])
-# Third -> 0, Second -> 1, First -> 2
-
-# ─── METHOD 4: Target Encoding (high cardinality) ───
-# Replace each category with the mean of the target for that category
-# Great when a column has 100+ categories (one-hot would explode)
-target_means = df.groupby('embark_town')['survived'].mean()
-df['embark_target_encoded'] = df['embark_town'].map(target_means)
-# Cherbourg -> 0.55, Queenstown -> 0.39, Southampton -> 0.34
+m, g = 2, train["survived"].mean()                  # smoothing strength, global mean
+s = train.groupby("port")["survived"].agg(["mean", "count"])
+enc = (s["count"] * s["mean"] + m * g) / (s["count"] + m)
+for port in enc.index:
+    print(f"target-encode {port}: raw {s.loc[port, 'mean']:.2f} (n={s.loc[port, 'count']}) -> {enc[port]:.2f}")
+assert round(enc["C"], 2) == 0.75
 ```
+
+**Output:**
+
+```
+one-hot ['port_C', 'port_S'] -> C, Q: [[1, 0], [0, 0]]
+ordinal medium, high -> [1.0, 2.0]
+default order: ['high', 'low', 'medium']
+target-encode C: raw 1.00 (n=2) -> 0.75
+target-encode S: raw 0.25 (n=4) -> 0.33
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: why port C shrinks to 0.75</summary>
+
+Port C (2 rows, both survived) is shrunk from 1.00 to (2 · 1.0 + 2 · 0.5) / 4 = 0.75 — two rows are not trusted blindly. The unseen port Q becomes all zeros.
+
+</details>
 
 ### When to Use Which Encoding
 
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │  Encoding          │  When to Use                             │
-  ├────────────────────┼──────────────────────────────────────────┤
-  │  One-Hot           │  Nominal (no order), < 10 categories     │
-  │  Label / Ordinal   │  Ordinal (has order), tree-based models  │
-  │  Target Encoding   │  High cardinality (100+ categories)      │
-  │  Binary Encoding   │  Medium cardinality (10-100 categories)  │
-  └────────────────────┴──────────────────────────────────────────┘
+<details>
+<summary><strong>Read as text</strong> — the encoder chooser and four traps</summary>
 
-  WARNING: Tree models (Random Forest, XGBoost) can handle
-  Label Encoding even for nominal features. Linear models CANNOT
-  — they'll think category 3 > category 1, which is wrong.
-  Use One-Hot for linear models, logistic regression, SVM.
-```
+| Column | Encoder |
+|---|---|
+| no order, few values (port) | `OneHotEncoder(handle_unknown="ignore")` — needed by linear models, SVM, KNN, nets |
+| real order (low < medium < high) | `OrdinalEncoder(categories=[[...]])` — give the order yourself |
+| hundreds of values (city, ID) | `TargetEncoder` (scikit-learn ≥ 1.3; smooths and cross-fits) |
+| any, with boosted trees | native pandas `category` support: HistGradientBoosting, LightGBM, XGBoost (default since 3.3), CatBoost (`cat_features=`) |
+
+**Trap:** `LabelEncoder` is for the target y — on features it sorts alphabetically (high 0, low 1, medium 2), a false order. `pd.get_dummies` forgets the training categories, so test columns can differ. Target means computed on all rows leak the label. `drop="first"` matters only for unregularised linear regression.
+
+**Go deeper:** [Ch 09 Step 3 — Encoding](#content/09_data_preprocessing).
+
+</details>
 
 ---
 
 ## 4.3 Feature Scaling
 
+![Infographic: scale on train, apply everywhere. StandardScaler formula z = (x minus train mean) / train std with MinMax and Robust variants; worked example with train ages 20, 30, 40, 50, 60 (mean 40, std 14.14) giving test age 44 = 0.28 and age 90 = 3.54, MinMax 0.6 and 1.75, Robust 0.2 and 2.5, and a leak warning that fitting on train plus test moves the mean from 40.0 to 47.7. A ColumnTransformer flow imputes and scales age and fare, imputes and one-hot encodes sex and embarked, makes 8 features and feeds LogisticRegression; a missing test age becomes median 30.5 then 0.05. Table of which models need scaling, with wine KNN 72.2% raw vs 96.3% scaled.](diagrams/pml27_info_scaling_pipeline_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what scaling does and the three formulas</summary>
+
+**What & when:** bring numeric features to comparable ranges for models that use distances or gradients. Fit on train; transform train *and* test.
+
+> **Maths in one line:** `z = (x − μ_train) / σ_train` (StandardScaler, the default) · `(x − min) / (max − min)` (MinMax, bounded inputs) · `(x − median) / IQR` (Robust, outliers).
+
+</details>
+
 ```python
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import train_test_split
+# Scaling: learn the numbers on TRAIN, reuse them on TEST
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 
-# ─── STEP 1: ALWAYS split BEFORE scaling (prevent data leakage!) ───
-X = df[['age', 'fare', 'pclass']].dropna()
-y = df.loc[X.index, 'survived']
+train = np.array([[20.0], [30.0], [40.0], [50.0], [60.0]])   # ages
+test = np.array([[44.0], [90.0]])                              # 90 is outside the train range
+for scaler in [StandardScaler(), MinMaxScaler(), RobustScaler()]:
+    scaler.fit(train)                                          # fit on train only
+    print(f"{type(scaler).__name__:<15} test {scaler.transform(test).ravel().round(2).tolist()}")
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-# ─── METHOD 1: StandardScaler (Z-score: mean=0, std=1) ───
-# Best for: linear models, SVM, neural networks
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)   # fit on TRAIN only!
-X_test_scaled = scaler.transform(X_test)          # transform test with TRAIN stats
-
-# ─── METHOD 2: MinMaxScaler (scale to 0-1) ───
-# Best for: neural networks, KNN, algorithms sensitive to magnitude
-scaler = MinMaxScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+mu = StandardScaler().fit(train).mean_[0]
+leaky = StandardScaler().fit(np.vstack([train, test])).mean_[0]   # WRONG: test rows shape the mean
+print(f"mean from train {mu:.1f} vs from train + test {leaky:.1f}")
+assert mu == 40.0
 ```
+
+**Output:**
+
+```
+StandardScaler  test [0.28, 3.54]
+MinMaxScaler    test [0.6, 1.75]
+RobustScaler    test [0.2, 2.5]
+mean from train 40.0 vs from train + test 47.7
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading the numbers and the fit-on-train rule</summary>
+
+Age 44 → (44 − 40) / 14.14 = 0.28. Test values may leave the training range (90 → 1.75 under MinMax) — that is correct.
 
 ```
   ╔══════════════════════════════════════════════════════════════╗
-  ║  CRITICAL RULE: FIT ON TRAIN, TRANSFORM BOTH                ║
+  ║  CRITICAL RULE: FIT ON TRAIN, TRANSFORM BOTH                 ║
   ║                                                              ║
-  ║  WRONG: scaler.fit_transform(ALL_DATA)    <- DATA LEAKAGE!  ║
-  ║  RIGHT: scaler.fit(X_train)               <- learn from     ║
+  ║  WRONG: scaler.fit_transform(ALL_DATA)    <- DATA LEAKAGE!   ║
+  ║  RIGHT: scaler.fit(X_train)               <- learn from      ║
   ║         scaler.transform(X_train)            train only      ║
   ║         scaler.transform(X_test)          <- apply same      ║
   ║                                              stats to test   ║
   ╚══════════════════════════════════════════════════════════════╝
 ```
 
+</details>
+
 ### Which Algorithms Need Scaling?
 
+<details>
+<summary><strong>Read as text</strong> — which models need scaling, and the trap</summary>
+
+**Need it:** linear/logistic regression, Ridge, Lasso, SVM, KNN, K-Means, PCA, neural nets — anything using distances, penalties or gradient descent. **Don't:** trees, random forests, gradient boosting, Naive Bayes — trees split on thresholds, so units don't matter. On the wine data the same KNN scores 72.2% raw vs 96.3% scaled; a tree scores 94.4% either way.
+
+**Trap:** scaling before the split or before cross-validation — keep the scaler inside a `Pipeline` (§4.4).
+
+**Go deeper:** [Ch 09 Step 4 — Feature Scaling](#content/09_data_preprocessing) (with the wine experiment).
+
+</details>
+
+---
+
+## 4.4 Put It Together — One Leakage-Safe Preprocessor
+
+<details>
+<summary><strong>Read as text</strong> — why one ColumnTransformer inside a Pipeline</summary>
+
+**What & when:** real tables mix numbers and text. A `ColumnTransformer` gives each column group its own steps; inside a `Pipeline` with the model, one `fit` learns everything from the training rows, and `cross_val_score` refits it in every fold.
+
+</details>
+
+```python
+# One leakage-safe preprocessor: impute + scale numbers, impute + one-hot categories
+import io
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+csv = """age,fare,sex,embarked,deck,survived
+22,7.25,male,S,,0
+38,71.28,female,C,C,1
+26,7.92,female,S,,1
+35,53.10,female,S,C,1
+,8.46,male,Q,,0
+54,51.86,male,S,E,0
+2,21.08,male,S,,0
+,7.23,female,,,1
+27,11.13,female,S,,1
+,30.07,female,C,,1"""
+df = pd.read_csv(io.StringIO(csv))
+X, y = df[["age", "fare", "sex", "embarked"]], df["survived"]   # deck (70% missing) left out
+X_train, X_test, y_train = X.iloc[:8], X.iloc[8:], y.iloc[:8]
+
+pre = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median", add_indicator=True),
+                          StandardScaler()), ["age", "fare"]),
+    ("cat", make_pipeline(SimpleImputer(strategy="most_frequent"),
+                          OneHotEncoder(handle_unknown="ignore", sparse_output=False)), ["sex", "embarked"]),
+])
+model = make_pipeline(pre, LogisticRegression()).fit(X_train, y_train)   # learns from train only
+
+print("features:", [str(c) for c in pre.get_feature_names_out()])
+for row in pre.transform(X_test).round(2).tolist():
+    print("test row:", row)
+print("P(survived):", model.predict_proba(X_test)[:, 1].round(2).tolist())
+assert pre.transform(X_test).shape == (2, 8)
 ```
-  ┌──────────────────────────────────────────────────────────────┐
-  │  NEEDS SCALING:              │  DOESN'T NEED SCALING:        │
-  ├──────────────────────────────┼───────────────────────────────┤
-  │  Linear Regression           │  Decision Tree                │
-  │  Logistic Regression         │  Random Forest                │
-  │  SVM                         │  XGBoost / LightGBM           │
-  │  KNN                         │  Naive Bayes                  │
-  │  K-Means                     │  CatBoost                     │
-  │  PCA                         │                               │
-  │  Neural Networks             │  (Tree models split on values │
-  │  Gradient Descent-based      │   so scale doesn't matter)    │
-  └──────────────────────────────┴───────────────────────────────┘
+
+**Output:**
+
 ```
+features: ['num__age', 'num__fare', 'num__missingindicator_age', 'cat__sex_female', 'cat__sex_male', 'cat__embarked_C', 'cat__embarked_Q', 'cat__embarked_S']
+test row: [-0.2, -0.71, -0.58, 1.0, 0.0, 0.0, 0.0, 1.0]
+test row: [0.05, 0.06, 1.73, 1.0, 0.0, 1.0, 0.0, 0.0]
+P(survived): [0.69, 0.79]
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: 4 columns become 8 features, and the trap</summary>
+
+4 input columns → 8 features. The missing test age → train median 30.5 → standardised 0.05 (the 0/1 flag is standardised too, harmlessly).
+
+**Trap:** `fit_transform` on the full table before splitting, or `pd.get_dummies` outside the pipeline. Part 11 grows this into a full pipeline with cross-validation and saving.
+
+**Go deeper:** [Ch 09 — A Leakage-Safe Pipeline](#content/09_data_preprocessing).
+
+</details>
 
 ---
 
@@ -701,84 +865,83 @@ X_test_scaled = scaler.transform(X_test)
 
 ## 5.1 Complete Beginner Walkthrough — Iris Classification
 
+![Infographic: your first model, Iris in seven steps. Load 150 flowers with 4 features and 3 species, explore 50 per species, split 120 / 30 with stratify, scale fitted on train only, train KNN with K = 5, predict 30 test flowers, evaluate 93.3% (28 of 30). Shows precision = TP / (TP + FP) and recall = TP / (TP + FN), the 3 by 3 confusion matrix 10 0 0, 0 10 0, 0 2 8 with the 2 virginica called versicolor circled, versicolor precision 10 / 12 = 0.83, virginica recall 8 / 10 = 0.80, and a classification report table.](diagrams/pml27_info_first_model_iris_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the task and the seven steps</summary>
+
+**What:** predict a flower's species (setosa, versicolor or virginica) from 4 measurements in cm with K-nearest neighbours (KNN). Every supervised project follows these steps.
+
+</details>
+
 ```python
-# ══════════════════════════════════════════════════════════════════
-#  YOUR FIRST ML MODEL: Predicting Iris Flower Species
-#  Dataset: 150 flowers, 4 measurements, 3 species
-# ══════════════════════════════════════════════════════════════════
-
-# ─── STEP 1: Import libraries ───
+# Your first model: KNN on Iris - load, explore, split, scale, train, predict, evaluate
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
 
-# ─── STEP 2: Load and explore the data ───
+# Steps 1-2: load and explore - 150 flowers, 4 measurements in cm, 3 species
 iris = load_iris()
-df = pd.DataFrame(iris.data, columns=iris.feature_names)
-df['species'] = iris.target_names[iris.target]
+X, y = iris.data, iris.target
+print(f"X shape {X.shape}; species {iris.target_names.tolist()}")
+print(f"flowers per species: {np.bincount(y).tolist()}")
+print(f"first flower: {X[0].tolist()} -> {iris.target_names[y[0]]}")
 
-print("Shape:", df.shape)
-print("\nFirst 5 rows:")
-print(df.head())
-print("\nClass distribution:")
-print(df['species'].value_counts())
-# setosa        50
-# versicolor    50
-# virginica     50  (perfectly balanced!)
-
-# ─── STEP 3: Prepare features (X) and target (y) ───
-X = df[iris.feature_names]    # 4 feature columns
-y = iris.target               # 0, 1, or 2
-
-# ─── STEP 4: Split into training and test sets ───
+# Step 3: split 80/20; stratify keeps 10 of each species in the test set
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
-    test_size=0.2,      # 80% train, 20% test
-    random_state=42,     # for reproducibility
-    stratify=y           # keep class balance in both splits
-)
-print(f"\nTrain: {X_train.shape[0]} samples")
-print(f"Test:  {X_test.shape[0]} samples")
+    X, y, test_size=0.2, random_state=42, stratify=y)
+print(f"train {len(X_train)} rows, test {len(X_test)} rows")
 
-# ─── STEP 5: Scale features ───
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+# Step 4: scale - learn mean and std on TRAIN only, apply to both
+scaler = StandardScaler().fit(X_train)
+X_train_s, X_test_s = scaler.transform(X_train), scaler.transform(X_test)
 
-# ─── STEP 6: Train the model ───
-model = KNeighborsClassifier(n_neighbors=5)
-model.fit(X_train_scaled, y_train)  # THIS IS WHERE LEARNING HAPPENS
-print("\nModel trained!")
+# Step 5: train - KNN simply stores the 120 scaled training flowers
+model = KNeighborsClassifier(n_neighbors=5).fit(X_train_s, y_train)
 
-# ─── STEP 7: Make predictions ───
-y_pred = model.predict(X_test_scaled)
-
-# ─── STEP 8: Evaluate ───
-accuracy = accuracy_score(y_test, y_pred)
-print(f"\nAccuracy: {accuracy:.2%}")  # should be ~96-100%
-
-print("\nClassification Report:")
+# Steps 6-7: predict the 30 unseen flowers and evaluate
+y_pred = model.predict(X_test_s)
+acc = accuracy_score(y_test, y_pred)
+print(f"\ntest accuracy {acc:.1%} ({(y_pred == y_test).sum()} of {len(y_test)} correct)\n")
 print(classification_report(y_test, y_pred, target_names=iris.target_names))
-
-print("\nConfusion Matrix:")
+print("confusion matrix (rows = true, columns = predicted):")
 print(confusion_matrix(y_test, y_pred))
-
-# ─── STEP 9: Visualize the confusion matrix ───
-cm = confusion_matrix(y_test, y_pred)
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-            xticklabels=iris.target_names,
-            yticklabels=iris.target_names)
-plt.xlabel('Predicted')
-plt.ylabel('Actual')
-plt.title('Confusion Matrix')
-plt.show()
+assert acc > 0.9
 ```
+
+**Output:**
+
+```
+X shape (150, 4); species ['setosa', 'versicolor', 'virginica']
+flowers per species: [50, 50, 50]
+first flower: [5.1, 3.5, 1.4, 0.2] -> setosa
+train 120 rows, test 30 rows
+
+test accuracy 93.3% (28 of 30 correct)
+
+              precision    recall  f1-score   support
+
+      setosa       1.00      1.00      1.00        10
+  versicolor       0.83      1.00      0.91        10
+   virginica       1.00      0.80      0.89        10
+
+    accuracy                           0.93        30
+   macro avg       0.94      0.93      0.93        30
+weighted avg       0.94      0.93      0.93        30
+
+confusion matrix (rows = true, columns = predicted):
+[[10  0  0]
+ [ 0 10  0]
+ [ 0  2  8]]
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading the report and the step-by-step recap</summary>
+
+Setosa is perfect; both errors are virginica called versicolor (their petals overlap), so virginica recall = 8 / 10 = 0.80 and versicolor precision = 10 / 12 = 0.83. One test flower = 3.3 points, so a single split is noisy. To plot it: `ConfusionMatrixDisplay.from_predictions(y_test, y_pred)` then `plt.show()`.
 
 ```
   WHAT JUST HAPPENED — STEP BY STEP:
@@ -787,13 +950,17 @@ plt.show()
   Load Data → Explore → Split → Scale → Train → Predict → Evaluate
        │          │        │       │       │        │          │
        ▼          ▼        ▼       ▼       ▼        ▼          ▼
-  150 flowers  Check     80/20  Normalize  KNN    Model    Accuracy
-  4 features   for       split  features  learns  guesses   = 97%
-  3 species    issues                     pattern species
+  150 flowers  50 per   120/30  fit on   KNN     30 test   Accuracy
+  4 features   species  split   train    stores  flowers   = 93.3%
+  3 species    balanced         only     rows    guessed   (28/30)
 
   This workflow is THE SAME for every ML project.
   Only the model and preprocessing change.
 ```
+
+**Go deeper:** [Ch 40 §40.5](#content/40_python_ml_ai) · [Ch 13 §13.2](#content/13_model_evaluation).
+
+</details>
 
 ### Try It Yourself -- First Model Challenge
 
@@ -802,11 +969,12 @@ plt.show()
 
   1. Load: from sklearn.datasets import load_breast_cancer
   2. Convert to DataFrame, explore with .shape, .describe(), .value_counts()
-  3. Split 80/20 with stratify
-  4. Scale features
+  3. Split 80/20 with stratify=y and random_state=42
+  4. Scale features (fit on train only, or use make_pipeline)
   5. Train a KNeighborsClassifier
   6. Print accuracy and classification report
-  7. BONUS: Try K=1, 3, 5, 7, 9 — which K gives the best accuracy?
+  7. BONUS: Try K=1, 3, 5, 7, 9 with cross_val_score on the TRAIN set,
+     then check only the winner on the test set.
 ```
 
 ```python
@@ -820,626 +988,835 @@ data = load_breast_cancer()
 
 # PART 6: SUPERVISED LEARNING ALGORITHMS
 
-For each algorithm: what it is, when to use it, advantages/disadvantages,
-and complete runnable code.
-
-### Setup Code (run this FIRST before any algorithm below)
-
-```python
-# ═══ RUN THIS CELL FIRST — sets up data for all algorithm examples ═══
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report
-
-# Load Iris dataset
-iris = load_iris()
-X = pd.DataFrame(iris.data, columns=iris.feature_names)
-y = iris.target
-
-# Split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-# Scaled versions (for algorithms that need scaling)
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-print(f"Ready! Train: {X_train.shape}, Test: {X_test.shape}")
-```
+Each algorithm: what & when, the maths, the knobs, one runnable example, the trap. Every example is self-contained: Iris, the same stratified 80/20 split (`random_state=42`; 120 train / 30 test flowers), and the scaler inside a `Pipeline` where needed. One test flower = 3.3 points, so pick models by cross-validation (§6.9). Selection guide: [Ch 10 §10.12](#content/10_supervised_learning).
 
 ---
 
 ## 6.1 Logistic Regression
 
-```
-  WHAT: Predicts probability of belonging to a class (0 or 1).
-        Despite the name, it's for CLASSIFICATION, not regression.
-  
-  WHEN TO USE:
-  - Binary classification (spam/not spam, yes/no)
-  - You need interpretable results (which features matter?)
-  - Baseline model (always try this first!)
-  - Linear decision boundary is sufficient
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Fast to train and predict        - Only linear boundaries
-  + Highly interpretable             - Needs feature scaling
-  + Outputs probabilities            - Struggles with complex patterns
-  + Works well with high-dim text    - Assumes feature independence
-  + Good baseline for any project
-```
+![Infographic comparing four classifiers from simple to strong. Logistic regression p = 1 / (1 + e^-z), Iris test 93.3%, largest weights petal width +2.49 for virginica and petal length -1.80 for setosa. Decision tree with Gini G = 1 - sum of p_k squared, root 40 / 40 / 40 gives 0.667, no depth cap train 100% test 93.3% vs max_depth=3 train 98.3% test 96.7%, first rule petal length at most 2.45 means setosa. Random forest variance formula, 200 trees out-of-bag 95.0%, test 90.0%, petal width impurity 0.41 vs permutation 0.09. Gradient boosting F_m = F_(m-1) + eta times h_m, breast cancer 569 tumours, early stop at 63 of 500 trees, test 94.7%. Pick-by-need table and the early-stopping-on-test trap.](diagrams/pml27_info_linear_tree_boosting_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what & when, the sigmoid and the knobs</summary>
+
+**What & when:** a linear model that outputs class probabilities — the first baseline for any classifier, and the pick when you must explain predictions. Needs scaling.
+
+> **Maths in one line:** `p = 1 / (1 + e^(−z))`, `z = w₀ + w₁x₁ + … + w_p·x_p` — the weighted sum is the log-odds; the sigmoid squashes it into 0–1 (softmax for 3+ classes).
+
+| Knob | Effect | Start with |
+|---|---|---|
+| `C` | inverse regularisation — smaller = simpler | 1.0, then a log grid |
+| `l1_ratio` | 0 = L2, 1 = L1 (with `solver="saga"`); replaces `penalty` (deprecated in scikit-learn 1.8) | 0 (default) |
+| `class_weight` | `"balanced"` upweights a rare class | `None` |
+
+</details>
 
 ```python
+# Logistic regression on Iris: accuracy, probabilities, the strongest weight per class
+from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-# Train
-model = LogisticRegression(max_iter=1000, random_state=42)
-model.fit(X_train_scaled, y_train)
-
-# Predict
-y_pred = model.predict(X_test_scaled)
-y_prob = model.predict_proba(X_test_scaled)  # probabilities
-
-# Evaluate
-print(f"Accuracy: {accuracy_score(y_test, y_pred):.2%}")
-print(classification_report(y_test, y_pred))
-
-# See which features matter most
-for name, coef in zip(iris.feature_names, model.coef_[0]):
-    print(f"  {name}: {coef:.3f}")
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)
+print(f"test accuracy {model.score(X_test, y_test):.1%}")
+print("P(each species), test flower 0:", model.predict_proba(X_test[:1])[0].round(3).tolist())
+for species, w in zip(iris.target_names, model[-1].coef_):
+    top = abs(w).argmax()
+    print(f"  {species:<10} largest weight: {iris.feature_names[top]} ({w[top]:+.2f})")
 ```
+
+**Output:**
+
+```
+test accuracy 93.3%
+P(each species), test flower 0: [0.979, 0.021, 0.0]
+  setosa     largest weight: petal length (cm) (-1.80)
+  versicolor largest weight: petal width (cm) (-0.81)
+  virginica  largest weight: petal width (cm) (+2.49)
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading the weights, and the trap</summary>
+
+On scaled inputs a weight is the log-odds change per standard deviation: longer petals push *away* from setosa (−1.80).
+
+**Trap:** comparing weights of unscaled or correlated features (petal length and width share credit unpredictably). A ConvergenceWarning means: raise `max_iter`.
+
+**Go deeper:** [Ch 12 §12.3](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.2 Decision Tree
 
-```
-  WHAT: Learns a series of if/else rules to classify or predict.
-        Like a flowchart — follow the path to the answer.
-  
-  WHEN TO USE:
-  - You need full interpretability (show the tree to stakeholders)
-  - Mixed feature types (numeric + categorical)
-  - Non-linear relationships
-  - As building block for ensembles (Random Forest, XGBoost)
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Easy to understand and visualize + Prone to overfitting (deep trees)
-  + No scaling needed                - Unstable (small data change =
-  + Handles non-linear patterns        completely different tree)
-  + Fast training                    - Usually lower accuracy than
-  + Works with mixed types             ensemble methods
-```
+<details>
+<summary><strong>Read as text</strong> — what & when, Gini and the knobs</summary>
+
+**What & when:** if/else questions learned from the data — use it to *show* the rules; it is the building block of forests and boosting. No scaling; accepts NaN (scikit-learn ≥ 1.3).
+
+> **Maths in one line:** Gini `G = 1 − Σ pₖ²`; each split maximises `G(parent) − Σₖ (nₖ / n) · G(childₖ)`. The Iris root (40 / 40 / 40) has G = 1 − 3 · (1/3)² = 0.667.
+
+| Knob | Effect | Start with |
+|---|---|---|
+| `max_depth` | caps the questions on any path | 3–10 |
+| `min_samples_leaf` | minimum rows per leaf | 5–20 |
+| `ccp_alpha` | prunes weak branches after growing | tune with CV |
+
+</details>
 
 ```python
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+# Decision tree: unlimited depth vs max_depth=3, and the learned rules as text
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, export_text
 
-# Train
-model = DecisionTreeClassifier(
-    max_depth=3,           # limit depth to prevent overfitting
-    min_samples_split=10,  # need at least 10 samples to split
-    random_state=42
-)
-model.fit(X_train, y_train)  # no scaling needed for trees!
-
-# Predict & evaluate
-y_pred = model.predict(X_test)
-print(f"Accuracy: {accuracy_score(y_test, y_pred):.2%}")
-
-# Visualize the tree!
-plt.figure(figsize=(15, 8))
-plot_tree(model, feature_names=iris.feature_names,
-          class_names=iris.target_names, filled=True, rounded=True)
-plt.title("Decision Tree for Iris Classification")
-plt.show()
-
-# Feature importance
-for name, imp in sorted(zip(iris.feature_names, model.feature_importances_),
-                         key=lambda x: x[1], reverse=True):
-    print(f"  {name}: {imp:.3f}")
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+for depth in [None, 3]:
+    tree = DecisionTreeClassifier(max_depth=depth, random_state=42).fit(X_train, y_train)
+    print(f"max_depth={str(depth):<4} leaves {tree.get_n_leaves():>2}  "
+          f"train {tree.score(X_train, y_train):.1%}  test {tree.score(X_test, y_test):.1%}")
+names = [n.replace(" (cm)", "") for n in iris.feature_names]
+print(export_text(tree, feature_names=names, class_names=iris.target_names.tolist()))
 ```
+
+**Output:**
+
+```
+max_depth=None leaves  8  train 100.0%  test 93.3%
+max_depth=3    leaves  5  train 98.3%  test 96.7%
+|--- petal length <= 2.45
+|   |--- class: setosa
+|--- petal length >  2.45
+|   |--- petal width <= 1.65
+|   |   |--- petal length <= 4.95
+|   |   |   |--- class: versicolor
+|   |   |--- petal length >  4.95
+|   |   |   |--- class: virginica
+|   |--- petal width >  1.65
+|   |   |--- petal length <= 4.85
+|   |   |   |--- class: virginica
+|   |   |--- petal length >  4.85
+|   |   |   |--- class: virginica
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: why depth 3 wins, and the trap</summary>
+
+Unlimited depth memorises the training set (100%) but tests worse than depth 3. The last split sends both sides to virginica — purer leaves, same answer. `plot_tree(tree, filled=True)` draws it.
+
+**Trap:** deep trees overfit and are unstable (a small data change → a different tree). Cap the depth or leaf size, and judge on validation data.
+
+**Go deeper:** [Ch 12 §12.4](#content/12_key_algorithms) · [Ch 10 §10.7](#content/10_supervised_learning).
+
+</details>
 
 ---
 
 ## 6.3 Random Forest
 
-```
-  WHAT: Trains many decision trees on random subsets of data,
-        then lets them vote. Wisdom of the crowd beats any individual.
-  
-  WHEN TO USE:
-  - Almost ANY classification or regression problem
-  - When you want good accuracy without much tuning
-  - When you need feature importance
-  - First "serious" model to try after baseline
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + High accuracy out of the box     - Slower than single tree
-  + Resistant to overfitting         - Less interpretable (100 trees)
-  + No scaling needed                - Large memory for many trees
-  + Handles missing values (some     - Can be slow on very large data
-    implementations)
-  + Built-in feature importance
-```
+<details>
+<summary><strong>Read as text</strong> — what & when, the variance formula and the knobs</summary>
+
+**What & when:** many trees vote, each trained on a bootstrap sample of the rows with a random subset of features per split — the low-effort default for tabular data. No scaling; accepts NaN (scikit-learn ≥ 1.4).
+
+> **Maths in one line:** `Var(average of B trees) = ρσ² + (1 − ρ)σ²/B` — more trees shrink the second term; random feature subsets lower the tree correlation ρ in the first.
+
+| Knob | Effect | Start with |
+|---|---|---|
+| `n_estimators` | more trees: never worse, only slower | 200–500 |
+| `max_features` | features tried per split (fewer = more diverse trees) | `"sqrt"` (default) |
+| `oob_score=True` | free validation score from the rows each tree never saw | on |
+
+</details>
 
 ```python
+# Random forest: 200 voting trees, the free out-of-bag score, two kinds of importance
+from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
 
-# Train
-model = RandomForestClassifier(
-    n_estimators=100,      # 100 trees
-    max_depth=5,           # limit each tree's depth
-    min_samples_leaf=5,    # each leaf needs at least 5 samples
-    random_state=42,
-    n_jobs=-1              # use all CPU cores (parallel!)
-)
-model.fit(X_train, y_train)
-
-# Predict & evaluate
-y_pred = model.predict(X_test)
-print(f"Accuracy: {accuracy_score(y_test, y_pred):.2%}")
-
-# Feature importance (very useful!)
-importance = pd.Series(model.feature_importances_, index=iris.feature_names)
-importance.sort_values(ascending=True).plot.barh()
-plt.title("Feature Importance (Random Forest)")
-plt.xlabel("Importance")
-plt.show()
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+rf = RandomForestClassifier(n_estimators=200, oob_score=True, random_state=42, n_jobs=-1)
+rf.fit(X_train, y_train)
+print(f"out-of-bag accuracy {rf.oob_score_:.1%} | test accuracy {rf.score(X_test, y_test):.1%}")
+perm = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
+for name, imp, p in sorted(zip(iris.feature_names, rf.feature_importances_, perm.importances_mean),
+                           key=lambda r: -r[1]):
+    print(f"  {name:<18} impurity {imp:.2f}   permutation {p:.2f}")
 ```
+
+**Output:**
+
+```
+out-of-bag accuracy 95.0% | test accuracy 90.0%
+  petal length (cm)  impurity 0.45   permutation 0.36
+  petal width (cm)   impurity 0.41   permutation 0.09
+  sepal length (cm)  impurity 0.12   permutation -0.05
+  sepal width (cm)   impurity 0.02   permutation -0.04
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: out-of-bag vs test, and the importance trap</summary>
+
+The out-of-bag score comes free, without the test set. The test score (27 of 30) is two flowers below the depth-3 tree — noise on 30 rows. Shuffling petal width barely hurts: the correlated petal length carries the same signal.
+
+**Trap:** impurity-based `feature_importances_` favour many-valued features (IDs) and split credit among correlated ones — report `permutation_importance` on held-out data.
+
+**Go deeper:** [Ch 12 §12.5](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.4 XGBoost / LightGBM (Gradient Boosting)
 
-```
-  WHAT: Builds trees sequentially — each tree fixes the errors
-        of the previous ones. The go-to algorithm for structured data.
-  
-  WHEN TO USE:
-  - Tabular/structured data (spreadsheets, databases)
-  - Kaggle competitions (wins most tabular challenges)
-  - When you need the best accuracy possible
-  - Medium to large datasets
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Best accuracy on tabular data    - More hyperparameters to tune
-  + Handles missing values natively  - Can overfit if not tuned
-  + Built-in regularization          - Slower training than RF
-  + Supports GPU acceleration        - Less interpretable
-```
+<details>
+<summary><strong>Read as text</strong> — what & when, the update rule, the knobs and the libraries</summary>
+
+**What & when:** trees built in sequence, each fitting what the previous ones still get wrong — usually the most accurate choice for tabular data. No scaling; NaN handled natively.
+
+> **Maths in one line:** `F_m(x) = F_{m−1}(x) + η · h_m(x)` — each small tree h_m fits the current errors (the loss's negative gradient); the model steps only η toward it.
+
+| Knob | Effect | Start with |
+|---|---|---|
+| learning rate η | smaller = better generalisation, more trees | 0.05–0.1 |
+| number of trees | let early stopping on a **validation** set choose | 1,000, stop after 50 bad rounds |
+| tree size | `max_depth` (XGBoost, CatBoost) or `num_leaves` / `max_leaf_nodes` (LightGBM, scikit-learn) | depth 4–6 / 15–63 leaves |
+
+| Library (as of Nov 2026) | Pick it for |
+|---|---|
+| scikit-learn 1.9 `HistGradientBoosting*` | no extra install; NaN + categoricals; runs in this app |
+| XGBoost 3.4 | GPU via `device="cuda"`; pandas categoricals on by default since 3.3 |
+| LightGBM 4.7 | the fastest on large data (leaf-wise trees) |
+| CatBoost 1.2 | many text categories, little tuning (`cat_features=`) |
+
+</details>
 
 ```python
-# pip install xgboost lightgbm
+# Gradient boosting in scikit-learn: HistGradientBoosting with early stopping
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.model_selection import train_test_split
 
-# ─── XGBOOST ───
+X, y = load_breast_cancer(return_X_y=True)          # 569 tumours, 30 features, 2 classes
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+gb = HistGradientBoostingClassifier(learning_rate=0.1, max_iter=500, max_leaf_nodes=15,
+                                    early_stopping=True, validation_fraction=0.15,
+                                    n_iter_no_change=20, random_state=42).fit(X_train, y_train)
+print(f"trees built: {gb.n_iter_} of 500 (early stopping on a 15% validation split)")
+print(f"test accuracy {gb.score(X_test, y_test):.1%}")
+```
+
+**Output:**
+
+```
+trees built: 63 of 500 (early stopping on a 15% validation split)
+test accuracy 94.7%
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: XGBoost, LightGBM and CatBoost code, and the trap</summary>
+
+scikit-learn ≥ 1.9 bins features slightly differently, so it stops at 56 trees (same 94.7%). The three big libraries, with their current APIs:
+
+```python
+# Runs locally: pip install xgboost lightgbm catboost   (XGBoost 3.4, LightGBM 4.7, CatBoost 1.2 - Nov 2026)
+from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier, early_stopping
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
-model = XGBClassifier(
-    n_estimators=100,
-    max_depth=4,
-    learning_rate=0.1,     # smaller = more careful learning
-    subsample=0.8,         # use 80% of data per tree
-    colsample_bytree=0.8,  # use 80% of features per tree
-    random_state=42,
-    eval_metric='mlogloss'
-)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-print(f"XGBoost Accuracy: {accuracy_score(y_test, y_pred):.2%}")
+X, y = load_breast_cancer(return_X_y=True)
+X_rest, X_test, y_rest, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_tr, X_val, y_tr, y_val = train_test_split(X_rest, y_rest, test_size=0.2, random_state=42, stratify=y_rest)
 
-# ─── LIGHTGBM (faster for large data) ───
-from lightgbm import LGBMClassifier
+xgb = XGBClassifier(n_estimators=1000, learning_rate=0.05, max_depth=4, subsample=0.8,
+                    colsample_bytree=0.8, early_stopping_rounds=50, random_state=42)  # device="cuda" for GPU
+xgb.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
+lgbm = LGBMClassifier(n_estimators=1000, learning_rate=0.05, num_leaves=15, random_state=42, verbose=-1)
+lgbm.fit(X_tr, y_tr, eval_X=X_val, eval_y=y_val,           # LightGBM < 4.7: eval_set=[(X_val, y_val)]
+         callbacks=[early_stopping(50, verbose=False)])
+cat = CatBoostClassifier(iterations=1000, learning_rate=0.05, depth=6, early_stopping_rounds=50,
+                         random_seed=42, verbose=0)          # cat_features=[...] for text columns
+cat.fit(X_tr, y_tr, eval_set=(X_val, y_val))
 
-model = LGBMClassifier(
-    n_estimators=100,
-    max_depth=4,
-    learning_rate=0.1,
-    num_leaves=31,         # LightGBM's main param instead of max_depth
-    random_state=42,
-    verbose=-1
-)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-print(f"LightGBM Accuracy: {accuracy_score(y_test, y_pred):.2%}")
+for name, m in [("XGBoost", xgb), ("LightGBM", lgbm), ("CatBoost", cat)]:
+    print(f"{name:<9} test accuracy {m.score(X_test, y_test):.1%}")
 ```
+
+**Trap:** early stopping on the *test* set makes the test score dishonest. Hold out a separate validation split (as above); touch the test set once.
+
+**Go deeper:** [Ch 12 §12.6](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.5 Support Vector Machine (SVM)
 
-```
-  WHAT: Finds the best boundary (hyperplane) that separates classes
-        with the widest margin. Can handle non-linear boundaries
-        using the "kernel trick."
-  
-  WHEN TO USE:
-  - Small to medium datasets (slow on large data)
-  - High-dimensional data (text classification)
-  - When you need a strong non-linear classifier (RBF kernel)
-  - Binary classification especially
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Strong on high-dim data          - Slow on large datasets O(n^2)
-  + Effective with clear margins     - Needs feature scaling
-  + Kernel trick for non-linear      - Memory intensive
-  + Robust to overfitting (in        - Hard to interpret
-    high dimensions)                 - Sensitive to hyperparams (C, gamma)
-```
+![Infographic: SVM, KNN, Naive Bayes, linear regression and a fair bake-off. SVM on Iris: C=0.01 gives 120 support vectors and test 86.7%, C=1 47 and 96.7%, C=100 25 and 96.7%. KNN chosen by 5-fold CV: K=1 94.2%, K=5 96.7% best, K=25 90.0%. Naive Bayes: GaussianNB 96.7% on Iris; spam filter gives free cash P(spam) 0.87 and notes for the meeting 0.15. Linear regression on 442 diabetes patients: R squared 0.453, MAE 42.8; Lasso alpha=5 keeps 5 of 10 features, R squared 0.465. A to-scale bar chart of the wine bake-off with 5-fold CV: SVM 98.6%, logistic regression 97.9%, random forest 97.9%, Naive Bayes 97.2%, HistGradientBoosting 95.8%, KNN 95.1%, decision tree 90.2%, and KNN without scaling 70.5% in red.](diagrams/pml27_info_svm_knn_nb_bakeoff_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what & when, the margin formula and the knobs</summary>
+
+**What & when:** the widest-margin boundary between classes; the kernel trick lets it curve. Strong on small-to-medium data with many features. Needs scaling; training grows roughly O(n²)–O(n³), so it is impractical beyond about 50K rows.
+
+> **Maths in one line:** `min ½‖w‖² + C · Σᵢ max(0, 1 − yᵢ(w·xᵢ + b))` — keep the margin (width 2/‖w‖) wide, paying a hinge penalty for each point inside it or on the wrong side; C sets the price.
+
+| Knob | Effect | Start with |
+|---|---|---|
+| `kernel` | `"rbf"` (curved), `"linear"`, `"poly"` | `"rbf"` (default) |
+| `C` | small = wide, soft margin; big = fit every point | 1, then a log grid |
+| `gamma` | RBF reach — big = wiggly boundary | `"scale"` (default) |
+
+</details>
 
 ```python
+# SVM with an RBF kernel: C trades a wide margin against fitting every point
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-# Train (always scale for SVM!)
-model = SVC(
-    kernel='rbf',       # 'linear', 'rbf', 'poly'
-    C=1.0,              # regularization (higher = less regularization)
-    gamma='scale',      # kernel coefficient
-    probability=True,   # enable predict_proba (slower)
-    random_state=42
-)
-model.fit(X_train_scaled, y_train)
-
-y_pred = model.predict(X_test_scaled)
-print(f"SVM Accuracy: {accuracy_score(y_test, y_pred):.2%}")
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+for C in [0.01, 1, 100]:
+    svm = make_pipeline(StandardScaler(), SVC(kernel="rbf", C=C)).fit(X_train, y_train)
+    print(f"C={C:<5} support vectors {svm[-1].n_support_.sum():>3}  "
+          f"train {svm.score(X_train, y_train):.1%}  test {svm.score(X_test, y_test):.1%}")
 ```
+
+**Output:**
+
+```
+C=0.01  support vectors 120  train 90.0%  test 86.7%
+C=1     support vectors  47  train 97.5%  test 96.7%
+C=100   support vectors  25  train 99.2%  test 96.7%
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: underfitting at C = 0.01, and the trap</summary>
+
+At C = 0.01 violations are so cheap that all 120 training flowers become support vectors — underfitting.
+
+**Trap:** `SVC(probability=True)` is deprecated in scikit-learn 1.9 (removal planned for 1.11); for probabilities use `CalibratedClassifierCV(SVC(), ensemble=False)`. For big data use `LinearSVC` or `SGDClassifier`.
+
+**Go deeper:** [Ch 12 §12.7](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.6 K-Nearest Neighbors (KNN)
 
-```
-  WHAT: Classifies a new point by majority vote of its K closest neighbors.
-        No training phase — stores all data and computes at prediction time.
-  
-  WHEN TO USE:
-  - Small datasets
-  - When you need a simple, non-parametric baseline
-  - Recommendation systems (similar items/users)
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Very simple to understand        - Slow at prediction (scans all data)
-  + No training phase                - Needs feature scaling
-  + Works for any decision boundary  - Sensitive to irrelevant features
-  + Easy to update (just add data)   - Curse of dimensionality
-```
+<details>
+<summary><strong>Read as text</strong> — what & when, the vote and the knobs</summary>
+
+**What & when:** a new point takes the majority vote of its K nearest training rows — a baseline for small, low-dimensional data, and the idea behind similarity search. Needs scaling; predictions get slow on big data.
+
+> **Maths in one line:** `ŷ(q) = majority class of the K training points nearest to q`, with `d(q, x) = √Σⱼ (qⱼ − xⱼ)²` — measure, keep the K closest, vote.
+
+| Knob | Effect | Start with |
+|---|---|---|
+| `n_neighbors` (K) | small = jumpy boundary; large = smooth | pick by CV (odd K avoids ties with 2 classes) |
+| `weights` | `"distance"` lets closer neighbours count more | `"uniform"` |
+
+</details>
 
 ```python
+# KNN: choose K by 5-fold cross-validation on the TRAIN set, then test once
+from sklearn.datasets import load_iris
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-# Train (always scale for KNN!)
-model = KNeighborsClassifier(n_neighbors=5, metric='minkowski')
-model.fit(X_train_scaled, y_train)
-
-y_pred = model.predict(X_test_scaled)
-print(f"KNN Accuracy: {accuracy_score(y_test, y_pred):.2%}")
-
-# Find the best K
-from sklearn.model_selection import cross_val_score
-k_range = range(1, 31)
-k_scores = [cross_val_score(KNeighborsClassifier(n_neighbors=k),
-            X_train_scaled, y_train, cv=5, scoring='accuracy').mean()
-            for k in k_range]
-
-plt.plot(k_range, k_scores)
-plt.xlabel('K')
-plt.ylabel('Cross-Validated Accuracy')
-plt.title('KNN: Finding the Best K')
-plt.show()
-best_k = k_range[np.argmax(k_scores)]
-print(f"Best K: {best_k}")
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+scores = {}
+for k in [1, 3, 5, 7, 9, 15, 25]:
+    knn = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=k))
+    scores[k] = cross_val_score(knn, X_train, y_train, cv=5).mean()
+    print(f"K={k:<3} CV accuracy {scores[k]:.1%}")
+best_k = max(scores, key=scores.get)
+final = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=best_k))
+print(f"best K = {best_k} -> test accuracy {final.fit(X_train, y_train).score(X_test, y_test):.1%}")
 ```
+
+**Output:**
+
+```
+K=1   CV accuracy 94.2%
+K=3   CV accuracy 95.8%
+K=5   CV accuracy 96.7%
+K=7   CV accuracy 95.8%
+K=9   CV accuracy 95.8%
+K=15  CV accuracy 95.8%
+K=25  CV accuracy 90.0%
+best K = 5 -> test accuracy 93.3%
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: choosing K, and the trap</summary>
+
+K = 1 follows noise; K = 25 smooths too much.
+
+**Trap:** picking K by test accuracy makes the reported score optimistic — choose by CV on the training rows, then test once. In high dimensions all points look about equally far apart, and KNN weakens.
+
+**Go deeper:** [Ch 12 §12.8](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.7 Naive Bayes
 
-```
-  WHAT: Applies Bayes' theorem with the "naive" assumption that
-        features are independent. Surprisingly effective!
-  
-  WHEN TO USE:
-  - Text classification (spam, sentiment) — the classic use case
-  - Very fast training needed (large datasets, real-time)
-  - Small training set (low variance)
-  - Multi-class classification
-  
-  ADVANTAGES:                        DISADVANTAGES:
-  + Extremely fast                   - Assumes feature independence
-  + Works well with small data       - Can't learn feature interactions
-  + Great for text / NLP             - Probability estimates unreliable
-  + Handles many features            - Poor on complex relationships
-```
+<details>
+<summary><strong>Read as text</strong> — what & when, Bayes' rule and the variants</summary>
+
+**What & when:** Bayes' rule plus the "naive" assumption that features are independent given the class. One-pass training, fine with tiny data, the classic for text (spam, sentiment); it cannot learn feature interactions.
+
+> **Maths in one line:** `ĉ = argmax_c P(c) · Πⱼ P(xⱼ | c)` — prior × the probability of every clue under that class (in practice, add logs).
+
+| Variant | Features | Knob |
+|---|---|---|
+| `GaussianNB` | continuous measurements | `var_smoothing` |
+| `MultinomialNB` / `ComplementNB` | word counts or TF-IDF (Complement: imbalanced text) | `alpha` (Laplace smoothing, 1.0) |
+| `BernoulliNB` | present / absent (0/1) features | `alpha` |
+
+</details>
 
 ```python
+# Naive Bayes: GaussianNB for measurements, MultinomialNB for word counts
+from sklearn.datasets import load_iris
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB, MultinomialNB
 
-# GaussianNB for continuous features
-model = GaussianNB()
-model.fit(X_train_scaled, y_train)
-y_pred = model.predict(X_test_scaled)
-print(f"Naive Bayes Accuracy: {accuracy_score(y_test, y_pred):.2%}")
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(
+    iris.data, iris.target, test_size=0.2, random_state=42, stratify=iris.target)
+print(f"GaussianNB on Iris: test accuracy {GaussianNB().fit(X_train, y_train).score(X_test, y_test):.1%}")
 
-# MultinomialNB is for text (with word counts / TF-IDF)
-# from sklearn.feature_extraction.text import TfidfVectorizer
-# vectorizer = TfidfVectorizer()
-# X_text = vectorizer.fit_transform(text_data)
-# model = MultinomialNB()
-# model.fit(X_text, y_labels)
+texts = ["win cash now", "cheap pills win", "free cash offer",
+         "meeting at noon", "lunch at noon tomorrow", "project meeting notes"]
+labels = [1, 1, 1, 0, 0, 0]                        # 1 = spam
+vec = CountVectorizer().fit(texts)
+nb = MultinomialNB(alpha=1.0).fit(vec.transform(texts), labels)
+for msg in ["free cash", "notes for the meeting"]:
+    print(f"  '{msg}' -> P(spam) = {nb.predict_proba(vec.transform([msg]))[0, 1]:.2f}")
 ```
+
+**Output:**
+
+```
+GaussianNB on Iris: test accuracy 96.7%
+  'free cash' -> P(spam) = 0.87
+  'notes for the meeting' -> P(spam) = 0.15
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: why "free cash" looks like spam, and the trap</summary>
+
+"free" and "cash" appear only in spam; unseen words ("for", "the") are ignored.
+
+**Trap:** Naive Bayes probabilities are over-confident — calibrate (`CalibratedClassifierCV`) if you need real ones. `MultinomialNB` needs non-negative inputs (counts, TF-IDF), never standardised features.
+
+**Go deeper:** [Ch 12 §12.9](#content/12_key_algorithms).
+
+</details>
 
 ---
 
 ## 6.8 Linear Regression (for Regression Problems)
 
+<details>
+<summary><strong>Read as text</strong> — what & when and the Ridge / Lasso penalties</summary>
+
+**What & when:** a number as a weighted sum of features — the baseline for every regression. Ridge and Lasso add a weight penalty, so they need scaling and a tuned `alpha` (`RidgeCV`, `LassoCV`).
+
+> **Maths in one line:** minimise `Σ(yᵢ − ŷᵢ)²`, plus `α·Σwⱼ²` (Ridge: shrinks every weight) or `α·Σ|wⱼ|` (Lasso: pushes weak weights to exactly 0, selecting features).
+
+</details>
+
 ```python
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.datasets import fetch_california_housing
+# Linear, Ridge and Lasso regression on the bundled diabetes data (442 patients, 10 features)
+import numpy as np
+from sklearn.datasets import load_diabetes
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-# Load regression dataset
-housing = fetch_california_housing()
-X = pd.DataFrame(housing.data, columns=housing.feature_names)
-y = housing.target
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# ─── Plain Linear Regression ───
-model = LinearRegression()
-model.fit(X_train_scaled, y_train)
-y_pred = model.predict(X_test_scaled)
-
-print(f"MAE:  {mean_absolute_error(y_test, y_pred):.4f}")
-print(f"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.4f}")
-print(f"R2:   {r2_score(y_test, y_pred):.4f}")
-
-# ─── Ridge Regression (L2 regularization) ───
-model = Ridge(alpha=1.0)
-model.fit(X_train_scaled, y_train)
-
-# ─── Lasso Regression (L1 regularization — feature selection) ───
-model = Lasso(alpha=0.01)
-model.fit(X_train_scaled, y_train)
-
-# Show which features Lasso kept (non-zero weights)
-for name, coef in zip(housing.feature_names, model.coef_):
-    status = "KEPT" if abs(coef) > 0.001 else "DROPPED"
-    print(f"  {name}: {coef:.4f} ({status})")
+data = load_diabetes()
+X_train, X_test, y_train, y_test = train_test_split(
+    data.data, data.target, test_size=0.2, random_state=42)
+for name, reg in [("Linear", LinearRegression()), ("Ridge a=1", Ridge(alpha=1.0)),
+                  ("Lasso a=5", Lasso(alpha=5.0))]:
+    model = make_pipeline(StandardScaler(), reg).fit(X_train, y_train)
+    pred = model.predict(X_test)
+    rmse = np.sqrt(mean_squared_error(y_test, pred))   # = root_mean_squared_error (sklearn >= 1.4)
+    print(f"{name:<10} MAE {mean_absolute_error(y_test, pred):5.1f}  RMSE {rmse:5.1f}  "
+          f"R2 {r2_score(y_test, pred):.3f}")
+kept = [f for f, w in zip(data.feature_names, model[-1].coef_) if w != 0]
+print(f"Lasso kept {len(kept)} of 10 features: {kept}")
 ```
+
+**Output:**
+
+```
+Linear     MAE  42.8  RMSE  53.9  R2 0.453
+Ridge a=1  MAE  42.8  RMSE  53.8  R2 0.454
+Lasso a=5  MAE  43.5  RMSE  53.3  R2 0.465
+Lasso kept 5 of 10 features: ['sex', 'bmi', 'bp', 's3', 's5']
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading MAE, RMSE and R², and the trap</summary>
+
+Target: disease progression one year later. MAE 42.8 = the average miss; RMSE weights big misses more; R² 0.453 = 45% of the variation explained. Lasso dropped half the features and still scored slightly better.
+
+**Trap:** `mean_squared_error(..., squared=False)` was removed in scikit-learn 1.6 — use `root_mean_squared_error` (≥ 1.4) or `np.sqrt` as above, which works on every version.
+
+**Go deeper:** [Ch 12 §12.2](#content/12_key_algorithms) · [Ch 13 §13.6](#content/13_model_evaluation).
+
+</details>
 
 ---
 
 ## 6.9 Algorithm Comparison Template
 
+<details>
+<summary><strong>Read as text</strong> — the fair-comparison recipe</summary>
+
+**What & when:** the honest way to choose: same folds for every model, preprocessing inside each pipeline, test set untouched until there is a winner. Typical order: baseline (logistic regression) → forest or boosting → tune the top one or two (Part 9).
+
+</details>
+
 ```python
-# Compare multiple models on the same dataset in one run
+# Compare 7 classifiers fairly: same stratified folds, scaling inside each pipeline
+from sklearn.datasets import load_wine
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
+X, y = load_wine(return_X_y=True)                      # 178 wines, 13 features, 3 cultivars
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)   # the test set waits for the winner
 models = {
-    "Logistic Regression": LogisticRegression(max_iter=1000),
-    "Decision Tree":       DecisionTreeClassifier(max_depth=5),
-    "Random Forest":       RandomForestClassifier(n_estimators=100, n_jobs=-1),
-    "Gradient Boosting":   GradientBoostingClassifier(n_estimators=100),
-    "SVM (RBF)":           SVC(kernel='rbf'),
-    "KNN (K=5)":           KNeighborsClassifier(n_neighbors=5),
+    "Logistic Regression": make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)),
+    "Decision Tree":       DecisionTreeClassifier(max_depth=5, random_state=42),
+    "Random Forest":       RandomForestClassifier(n_estimators=100, random_state=42),
+    "HistGradientBoosting": HistGradientBoostingClassifier(random_state=42),
+    "SVM (RBF)":           make_pipeline(StandardScaler(), SVC()),
+    "KNN (K=5)":           make_pipeline(StandardScaler(), KNeighborsClassifier()),
     "Naive Bayes":         GaussianNB(),
+    "KNN, NO scaling":     KNeighborsClassifier(),            # contrast row
 }
-
-print(f"{'Model':<25} {'CV Accuracy':>12} {'Std':>8}")
-print("-" * 48)
-
-results = {}
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+print(f"{'Model':<22}{'CV mean':>9}{'std':>7}")
 for name, model in models.items():
-    scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='accuracy')
-    results[name] = scores.mean()
-    print(f"{name:<25} {scores.mean():>11.2%} {scores.std():>7.2%}")
-
-# Visualize
-pd.Series(results).sort_values().plot.barh(figsize=(10, 5))
-plt.xlabel("Cross-Validated Accuracy")
-plt.title("Model Comparison")
-plt.show()
+    s = cross_val_score(model, X_train, y_train, cv=cv, scoring="accuracy")
+    print(f"{name:<22}{s.mean():>9.1%}{s.std():>7.1%}")
 ```
+
+**Output:**
+
+```
+Model                   CV mean    std
+Logistic Regression       97.9%   2.8%
+Decision Tree             90.2%   5.9%
+Random Forest             97.9%   2.8%
+HistGradientBoosting      95.8%   3.4%
+SVM (RBF)                 98.6%   1.7%
+KNN (K=5)                 95.1%   3.5%
+Naive Bayes               97.2%   2.6%
+KNN, NO scaling           70.5%   3.9%
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading the table, and the trap</summary>
+
+With a 2–3 point spread (std) across folds, the leaders are statistically tied — prefer the simplest or fastest. The last row is §4.3 again: without scaling, KNN drops from 95.1% to 70.5%.
+
+**Trap:** scaling `X_train` once *before* `cross_val_score` leaks each validation fold into the scaler — keep it inside the pipeline. On imbalanced data, score with F1 or PR-AUC, not accuracy (Part 8).
+
+**Go deeper:** [Ch 12 §12.10](#content/12_key_algorithms) · [Ch 13 §13.7](#content/13_model_evaluation).
+
+</details>
 
 ---
 
 # PART 7: UNSUPERVISED LEARNING ALGORITHMS
 
+![Infographic comparing four unsupervised tools after scaling with StandardScaler: a K-Means elbow chart on scaled iris (inertia 600.0, 222.4, 139.8, 114.1, 90.9, 81.5, elbow at K = 2 to 3), PCA variance bars (0.73, 0.229, 0.037, 0.005; 2 PCs keep 95.8 percent; unscaled PC1 92.5 percent), DBSCAN eps 0.2 finding both moons (ARI 1.00) versus a straight K-Means cut (ARI 0.25), and a silhouette table where K = 2 scores best (0.582) but K = 3 matches the species (ARI 0.620).](diagrams/pml27_info_unsupervised_toolkit_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — no labels, so scale the features first</summary>
+
+No labels: the algorithm finds groups (clustering) or fewer axes (PCA) itself. All four methods use distances — **scale the features first**.
+
+</details>
+
 ---
 
 ## 7.1 K-Means Clustering
 
+<details>
+<summary><strong>Read as text</strong> — what K-Means does and the inertia formula</summary>
+
+**What & when:** assign each point to its nearest centroid (cluster centre), move each centroid to its points' mean, repeat. Fast segmentation of round blobs when you can guess K. Pass `n_init=10` (the default `'auto'` = one k-means++ start since scikit-learn 1.4) and `random_state`.
+
+> **Maths in one line:** `inertia = Σᵢ ‖xᵢ − μ(cluster of i)‖²` — the total squared distance from each point to its centroid; K-Means minimises it, and it keeps falling as K grows — so look for the bend, not the minimum.
+
+</details>
+
 ```python
-from sklearn.cluster import KMeans
+# K-Means on scaled iris: inertia for K = 1..6 — look for the elbow
+import warnings
+from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+warnings.filterwarnings("ignore", message="libc not found")   # harmless notice in the browser build
 
-# Scale features first (K-Means uses distance!)
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# ─── Find optimal K using Elbow Method ───
+X = StandardScaler().fit_transform(load_iris().data)   # distances need comparable units
 inertias = []
-K_range = range(1, 11)
-for k in K_range:
-    km = KMeans(n_clusters=k, random_state=42, n_init=10)
-    km.fit(X_scaled)
-    inertias.append(km.inertia_)
-
-plt.plot(K_range, inertias, 'bo-')
-plt.xlabel('Number of Clusters (K)')
-plt.ylabel('Inertia')
-plt.title('Elbow Method — Choose K at the "bend"')
-plt.show()
-
-# ─── Train with chosen K ───
-kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-clusters = kmeans.fit_predict(X_scaled)
-
-# ─── Visualize (using first 2 features) ───
-plt.scatter(X_scaled[:, 0], X_scaled[:, 1], c=clusters, cmap='viridis', alpha=0.6)
-plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1],
-            marker='X', s=200, c='red', label='Centroids')
-plt.title('K-Means Clustering')
-plt.legend()
-plt.show()
+for k in range(1, 7):
+    inertias.append(KMeans(n_clusters=k, n_init=10, random_state=42).fit(X).inertia_)
+    change = f"   ({inertias[-1] / inertias[-2] - 1:+.0%})" if k > 1 else ""
+    print(f"K={k}: inertia = {inertias[-1]:5.1f}{change}")
+assert round(inertias[0]) == 150 * 4      # K=1: 150 rows x 4 features of variance 1
 ```
+
+**Output:**
+
+```
+K=1: inertia = 600.0
+K=2: inertia = 222.4   (-63%)
+K=3: inertia = 139.8   (-37%)
+K=4: inertia = 114.1   (-18%)
+K=5: inertia =  90.9   (-20%)
+K=6: inertia =  81.5   (-10%)
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: reading the elbow and the pitfall</summary>
+
+Big drops at K = 2 and 3, then 20% or less: the elbow is K = 2–3 — blurry, as real elbows are, so confirm with the silhouette (§7.4).
+
+**Pitfall:** K-Means *always* returns K round groups — even in pure noise or on crescents (§7.3).
+
+**Go deeper:** [Ch 11 §11.4](#content/11_unsupervised_learning)
+
+</details>
 
 ---
 
 ## 7.2 PCA (Dimensionality Reduction)
 
+<details>
+<summary><strong>Read as text</strong> — what PCA keeps and the variance-ratio formula</summary>
+
+**What & when:** PCA rotates the data onto new axes (principal components, PCs) ordered by the variance they capture, and keeps the first few — to plot in 2-D, compress correlated features or speed up a model. `n_components` takes a count (`2`) or a fraction (`0.95`).
+
+> **Maths in one line:** `explained variance ratio of PC k = λₖ / (λ₁ + … + λ_d)` — λ are the covariance matrix's eigenvalues, so each ratio is that PC's share of the total spread.
+
+</details>
+
 ```python
+# PCA on iris: variance kept per component, scaled vs unscaled
+import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
-# Reduce from 4 dimensions to 2 for visualization
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X_scaled)
+X_raw = load_iris().data
+X = StandardScaler().fit_transform(X_raw)
 
-print(f"Explained variance: {pca.explained_variance_ratio_}")
-print(f"Total explained: {sum(pca.explained_variance_ratio_):.2%}")
+ratios = PCA().fit(X).explained_variance_ratio_
+print("Variance ratio per PC:", [round(float(r), 3) for r in ratios])
+print("Cumulative:           ", [round(float(c), 3) for c in np.cumsum(ratios)])
 
-# Visualize
-plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap='viridis', alpha=0.7)
-plt.xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)')
-plt.ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)')
-plt.title('PCA — Iris Dataset in 2D')
-plt.colorbar(label='Species')
-plt.show()
+pca = PCA(n_components=0.95)            # keep just enough PCs for 95% of the variance
+X_small = pca.fit_transform(X)
+print(f"PCs kept for 95%: {pca.n_components_}  ->  shape {X.shape} -> {X_small.shape}")
 
-# ─── How many components to keep? ───
-pca_full = PCA()
-pca_full.fit(X_scaled)
-cumulative = np.cumsum(pca_full.explained_variance_ratio_)
-plt.plot(range(1, len(cumulative)+1), cumulative, 'bo-')
-plt.axhline(y=0.95, color='r', linestyle='--', label='95% threshold')
-plt.xlabel('Number of Components')
-plt.ylabel('Cumulative Explained Variance')
-plt.title('How Many Components to Keep?')
-plt.legend()
-plt.show()
-# Keep enough components to explain 95% of variance
+raw = PCA().fit(X_raw).explained_variance_ratio_
+print(f"Unscaled PC1 alone: {raw[0]:.1%}  (petal length's large spread dominates)")
+assert abs(ratios.sum() - 1) < 1e-9
 ```
+
+**Output:**
+
+```
+Variance ratio per PC: [0.73, 0.229, 0.037, 0.005]
+Cumulative:            [0.73, 0.958, 0.995, 1.0]
+PCs kept for 95%: 2  ->  shape (150, 4) -> (150, 2)
+Unscaled PC1 alone: 92.5%  (petal length's large spread dominates)
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: two PCs keep 95.8% and the unscaled trap</summary>
+
+Two PCs keep 95.8%, so a 2-D plot of iris loses little. Unscaled, PC1's 92.5% just reflects petal length's wide spread in cm — units, not structure.
+
+**Pitfall:** fit PCA on training data only (in a Pipeline after the scaler); it is linear — for curved structure use t-SNE or UMAP.
+
+**Go deeper:** [Ch 11 §11.11](#content/11_unsupervised_learning)
+
+</details>
 
 ---
 
 ## 7.3 DBSCAN (Density-Based Clustering)
 
-```
-  WHAT: Finds clusters based on density — groups of points packed together.
-        Automatically determines the number of clusters.
-        Marks isolated points as NOISE (outliers).
-  
-  WHEN TO USE:
-  - You don't know how many clusters exist
-  - Clusters have irregular/non-spherical shapes
-  - You need outlier detection
-  
-  K-MEANS: assumes round clusters, must specify K
-  DBSCAN:  finds any shape, K is automatic, handles noise
-```
+<details>
+<summary><strong>Read as text</strong> — DBSCAN vs K-Means and the core-point rule</summary>
+
+**What & when:** DBSCAN grows clusters out of dense regions and labels isolated points as noise (`-1`). Use it when you don't know K, clusters have odd shapes, or you want outliers flagged.
+
+> **Maths in one line:** `p is a core point ⇔ |{q : dist(p, q) ≤ eps}| ≥ min_samples` (p counts itself) — a cluster is core points chained within eps plus the border points they reach; the rest is noise.
+
+| | K-Means | DBSCAN |
+|---|---|---|
+| Number of clusters | you choose K | found from the data |
+| Cluster shape | round blobs | any shape |
+| Outliers | forced into a cluster | labelled noise (`-1`) |
+| Key knobs | `n_clusters` | `eps` (radius), `min_samples` (default 5) |
+
+</details>
 
 ```python
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
+# DBSCAN vs K-Means on two crescents, and what eps does
+import warnings
 from sklearn.datasets import make_moons
+from sklearn.cluster import DBSCAN, KMeans
+from sklearn.metrics import adjusted_rand_score
+warnings.filterwarnings("ignore", message="libc not found")   # harmless notice in the browser build
 
-# Generate crescent-shaped data (K-Means would fail on this!)
-X_moons, y_moons = make_moons(n_samples=300, noise=0.1, random_state=42)
+X, y_true = make_moons(n_samples=300, noise=0.1, random_state=42)
 
-# DBSCAN
-db = DBSCAN(eps=0.2, min_samples=5)
-clusters = db.fit_predict(X_moons)
+def summary(labels):
+    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)   # -1 = noise
+    ari = adjusted_rand_score(y_true, labels)
+    return f"{n_clusters:2d} clusters, {int((labels == -1).sum()):3d} noise, ARI = {ari:.2f}"
 
-# Visualize
-plt.figure(figsize=(12, 4))
-
-plt.subplot(1, 2, 1)
-plt.scatter(X_moons[:, 0], X_moons[:, 1], c=clusters, cmap='viridis', alpha=0.7)
-plt.title(f'DBSCAN: {len(set(clusters)) - (1 if -1 in clusters else 0)} clusters found')
-# Note: -1 = noise points
-
-plt.subplot(1, 2, 2)
-from sklearn.cluster import KMeans
-km_clusters = KMeans(n_clusters=2, random_state=42, n_init=10).fit_predict(X_moons)
-plt.scatter(X_moons[:, 0], X_moons[:, 1], c=km_clusters, cmap='viridis', alpha=0.7)
-plt.title('K-Means (fails on crescents!)')
-
-plt.tight_layout()
-plt.show()
+for eps in (0.05, 0.2, 0.5):
+    print(f"DBSCAN eps={eps:<4}:", summary(DBSCAN(eps=eps, min_samples=5).fit_predict(X)))
+km_labels = KMeans(n_clusters=2, n_init=10, random_state=42).fit_predict(X)
+print("K-Means K=2     :", summary(km_labels))
+assert adjusted_rand_score(y_true, km_labels) < 0.5    # a straight cut can't follow crescents
 ```
+
+**Output:**
+
+```
+DBSCAN eps=0.05:  1 clusters, 294 noise, ARI = 0.00
+DBSCAN eps=0.2 :  2 clusters,   0 noise, ARI = 1.00
+DBSCAN eps=0.5 :  1 clusters,   0 noise, ARI = 0.00
+K-Means K=2     :  2 clusters,   0 noise, ARI = 0.25
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: what eps does and the pitfall</summary>
+
+ARI (adjusted Rand index): 1 = same grouping as the true labels, about 0 = random. eps = 0.2 finds both crescents; too small makes almost everything noise, too large merges everything; K-Means cuts straight across.
+
+**Pitfall:** one `eps` cannot fit clusters of different density (and it depends on scale) — try `sklearn.cluster.HDBSCAN` (scikit-learn ≥ 1.3), which needs no eps.
+
+**Go deeper:** [Ch 11 §11.6](#content/11_unsupervised_learning)
+
+</details>
 
 ---
 
 ## 7.4 Evaluating Clusters — Silhouette Score
 
+<details>
+<summary><strong>Read as text</strong> — the silhouette formula</summary>
+
+**What & when:** with no labels there is no accuracy; the silhouette scores how much closer each point is to its own cluster than to the next. Use it with the elbow to pick K.
+
+> **Maths in one line:** `s(i) = (b − a) / max(a, b)` — a = mean distance to the point's own cluster, b = to the nearest other cluster; averaged over all points it runs from −1 (wrong clusters) to +1 (tight, well separated).
+
+</details>
+
 ```python
-from sklearn.metrics import silhouette_score
-
-# Try different K values and measure quality
+# Choosing K on scaled iris: silhouette (no labels) vs ARI against the real species
+import warnings
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, adjusted_rand_score
+warnings.filterwarnings("ignore", message="libc not found")   # harmless notice in the browser build
 
-sil_scores = []
-K_range = range(2, 11)
-for k in K_range:
-    km = KMeans(n_clusters=k, random_state=42, n_init=10)
-    labels = km.fit_predict(X_scaled)
-    score = silhouette_score(X_scaled, labels)
-    sil_scores.append(score)
-    print(f"K={k}: Silhouette = {score:.3f}")
+iris = load_iris()
+X = StandardScaler().fit_transform(iris.data)
+sil = {}
+for k in range(2, 7):
+    labels = KMeans(n_clusters=k, n_init=10, random_state=42).fit_predict(X)
+    sil[k] = silhouette_score(X, labels)
+    ari = adjusted_rand_score(iris.target, labels)
+    print(f"K={k}: silhouette = {sil[k]:.3f}   ARI vs species = {ari:.3f}")
 
-plt.plot(K_range, sil_scores, 'bo-')
-plt.xlabel('Number of Clusters (K)')
-plt.ylabel('Silhouette Score')
-plt.title('Silhouette Score — Higher is Better (max = 1.0)')
-plt.show()
-
-# Best K = the one with highest silhouette score
-best_k = list(K_range)[np.argmax(sil_scores)]
-print(f"Best K by Silhouette Score: {best_k}")
+best_k = max(sil, key=sil.get)
+print("Best K by silhouette:", best_k)
+assert best_k == 2      # geometry sees 2 groups, although iris has 3 species
 ```
 
-```
-  INTERPRETING SILHOUETTE SCORE:
-  ┌────────────────────────────────────────────────────────────┐
-  │ Score > 0.7   │ Strong cluster structure                   │
-  │ Score > 0.5   │ Reasonable structure                       │
-  │ Score > 0.25  │ Weak — clusters may be overlapping         │
-  │ Score < 0.25  │ No meaningful structure found               │
-  └───────────────┴────────────────────────────────────────────┘
+**Output:**
 
-  USE BOTH the Elbow Method (inertia) AND Silhouette Score
-  together for the most reliable choice of K.
 ```
+K=2: silhouette = 0.582   ARI vs species = 0.568
+K=3: silhouette = 0.460   ARI vs species = 0.620
+K=4: silhouette = 0.387   ARI vs species = 0.473
+K=5: silhouette = 0.346   ARI vs species = 0.435
+K=6: silhouette = 0.317   ARI vs species = 0.450
+Best K by silhouette: 2
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: silhouette vs species and the rule of thumb</summary>
+
+The silhouette picks K = 2, yet iris has 3 species and the ARI peaks at K = 3: versicolor and virginica overlap. Metrics suggest K; the problem decides. Rule of thumb (Kaufman & Rousseeuw): above 0.70 strong, above 0.50 reasonable, above 0.25 weak, below that no structure.
+
+**Pitfall:** O(n²) pairwise distances — pass `sample_size=10_000` on big data; it also favours round blobs.
+
+**Go deeper:** [Ch 11 §11.9](#content/11_unsupervised_learning)
+
+</details>
 
 ### Try It Yourself -- Clustering Challenge
 
 ```
-  Load the wine dataset and cluster the wines:
-  
-  1. from sklearn.datasets import load_wine
-  2. Scale the features
-  3. Use the Elbow Method to find the best K
-  4. Use Silhouette Score to confirm your choice
-  5. Train K-Means with your chosen K
-  6. Compare your clusters to the real wine labels (wine.target)
-     Hint: use sklearn.metrics.adjusted_rand_score
+  Cluster the wine dataset (178 wines, 13 features, 3 cultivars):
+  1. Load it (sklearn.datasets.load_wine) and scale the features
+  2. Find the elbow (inertia, K = 1..8) and confirm with the silhouette
+  3. Train K-Means with your K and compare with wine.target
+     using sklearn.metrics.adjusted_rand_score
 ```
 
 ---
@@ -1450,239 +1827,274 @@ print(f"Best K by Silhouette Score: {best_k}")
 
 ## 8.1 Classification Metrics
 
+![Infographic on classification metrics for breast cancer with malignant as the positive class: a confusion matrix of 143 test rows (TP 49, FN 4, FP 1, TN 89), step-by-step precision 49/50 = 0.980, recall 49/53 = 0.925 and F1 98/103 = 0.951, ROC-AUC 0.996 against a random 0.5 and PR-AUC 0.994 against a random 0.37 = 53/143, and a table choosing precision, recall, PR-AUC, ROC-AUC or RMSE / MAE / R2 by the cost of each mistake.](diagrams/pml27_info_classification_metrics_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the four outcomes and precision, recall, F1</summary>
+
+**What & when:** count a classifier's four outcomes — true/false positives and negatives (TP, FP, FN, TN) — and pick the summary that matches the cost of each mistake.
+
+> **Maths in one line:** `precision = TP / (TP + FP)`, `recall = TP / (TP + FN)`, `F1 = 2·P·R / (P + R)` — how many alarms were real, how many real cases were caught, and their harmonic mean.
+
+</details>
+
 ```python
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    classification_report, confusion_matrix, roc_auc_score, roc_curve
-)
+# Classification metrics on breast cancer, positive class = malignant
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, average_precision_score
 
-# After making predictions...
-y_pred = model.predict(X_test_scaled)
-y_prob = model.predict_proba(X_test_scaled)[:, 1]  # probability of positive class
+X, y = load_breast_cancer(return_X_y=True)
+y = 1 - y            # sklearn codes malignant as 0; make 1 = the class we must catch
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, stratify=y, random_state=42)
 
-# ─── All metrics at once ───
-print(classification_report(y_test, y_pred))
-#               precision    recall  f1-score   support
-# 
-#            0       0.95      0.97      0.96        65
-#            1       0.93      0.89      0.91        35
-# 
-#     accuracy                           0.94       100
-#    macro avg       0.94      0.93      0.93       100
-# weighted avg       0.94      0.94      0.94       100
+model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)).fit(X_train, y_train)
+y_pred = model.predict(X_test)                # labels at threshold 0.5
+y_prob = model.predict_proba(X_test)[:, 1]    # P(malignant), needed for the AUCs
 
-# ─── ROC Curve and AUC (binary classification only) ───
-fpr, tpr, thresholds = roc_curve(y_test, y_prob)
-auc = roc_auc_score(y_test, y_prob)
-
-plt.plot(fpr, tpr, label=f'AUC = {auc:.3f}')
-plt.plot([0, 1], [0, 1], 'k--', label='Random (AUC = 0.5)')
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('ROC Curve')
-plt.legend()
-plt.show()
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+precision, recall = tp / (tp + fp), tp / (tp + fn)
+f1 = 2 * precision * recall / (precision + recall)
+print(f"TP={tp} FP={fp} FN={fn} TN={tn}")
+print(f"precision = {tp}/{tp + fp} = {precision:.3f}   recall = {tp}/{tp + fn} = {recall:.3f}   F1 = {f1:.3f}")
+print(f"ROC-AUC = {roc_auc_score(y_test, y_prob):.3f}   PR-AUC = {average_precision_score(y_test, y_prob):.3f}")
+assert abs(f1 - f1_score(y_test, y_pred)) < 1e-12     # by-hand formula = sklearn
 ```
+
+**Output:**
+
+```
+TP=49 FP=1 FN=4 TN=89
+precision = 49/50 = 0.980   recall = 49/53 = 0.925   F1 = 0.951
+ROC-AUC = 0.996   PR-AUC = 0.994
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: ROC-AUC vs PR-AUC</summary>
+
+`classification_report(y_test, y_pred)` prints these for every class; `RocCurveDisplay.from_predictions(y_test, y_prob)` draws the curve. **ROC-AUC** = the chance a random positive scores above a random negative (0.5 = coin flip). **PR-AUC** (average precision) has the positive rate as its random baseline (53/143 = 0.37), so it stays honest when positives are rare.
+
+</details>
 
 ### Which Metric to Use
 
-```
-  ┌────────────────────────────────────────────────────────────────┐
-  │  SITUATION                       │ USE THIS METRIC              │
-  ├──────────────────────────────────┼──────────────────────────────┤
-  │  Balanced classes, general use   │ Accuracy or F1               │
-  │  Imbalanced classes              │ F1, Precision, Recall, AUC   │
-  │  False positives are costly      │ Precision                    │
-  │    (spam filter, fraud alert)    │                              │
-  │  False negatives are costly      │ Recall                       │
-  │    (cancer detection, security)  │                              │
-  │  Need to compare models overall  │ AUC-ROC                      │
-  │  Regression: general use         │ RMSE                         │
-  │  Regression: outlier-robust      │ MAE                          │
-  │  Regression: proportion explained│ R-squared                    │
-  └──────────────────────────────────┴──────────────────────────────┘
-```
+| Situation | Use this metric |
+|---|---|
+| Balanced classes, general use | Accuracy or F1 |
+| Imbalanced classes | PR-AUC, recall at a fixed precision, F1 — never accuracy alone |
+| False positives costly (spam filter hiding real mail) | Precision |
+| False negatives costly (cancer screening, fraud, security) | Recall |
+| Compare models across all thresholds | ROC-AUC (PR-AUC if positives are rare) |
+| Probabilities must be trustworthy | Log loss or Brier score + a calibration check |
+| Regression: general / robust to outliers / variance explained | RMSE / MAE / R² |
+
+**Pitfall:** metrics treat label 1 as positive — in `load_breast_cancer` 1 is *benign*, hence the flip.
+
+**Go deeper:** [Ch 13 §13.3–13.5](#content/13_model_evaluation); calibration in §13.12.
 
 ---
 
 ## 8.2 Cross-Validation (Don't Trust a Single Split)
 
+![Infographic on 5-fold stratified cross-validation of a StandardScaler plus LogisticRegression pipeline on breast cancer: a 5 by 5 grid where the TEST fold moves diagonally, fold accuracies 0.974, 0.947, 0.965, 0.991 and 0.991 averaged step by step to 0.974 plus or minus 0.017, a table of recall, F1, ROC-AUC and average precision with their fold spreads, and the three splitters StratifiedKFold, GroupKFold and TimeSeriesSplit.](diagrams/pml27_info_cross_validation_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — why K folds and the mean ± std score</summary>
+
+**What & when:** one split is one roll of the dice. K-fold cross-validation (CV) trains K times, each time testing on a different fold, so every row is tested once — for comparing and tuning models. Splitters: `StratifiedKFold` (classification), `GroupKFold` (a user's rows stay together), `TimeSeriesSplit` (train on the past, test on the future).
+
+> **Maths in one line:** `CV score = (s₁ + … + s_K) / K`, reported as mean ± std over the folds — the std shows how much the score moves with the split.
+
+</details>
+
 ```python
-from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
+# 5-fold stratified CV of a leakage-safe pipeline: mean ± std, several metrics at once
+from sklearn.datasets import load_breast_cancer
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_val_score, cross_validate
 
-model = RandomForestClassifier(n_estimators=100, random_state=42)
+X, y = load_breast_cancer(return_X_y=True)
+y = 1 - y                                    # 1 = malignant
+model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))  # scaler re-fit inside each fold
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-# ─── Basic 5-fold cross-validation ───
-scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='accuracy')
-print(f"CV Scores:  {scores}")
-print(f"Mean:       {scores.mean():.2%}")
-print(f"Std:        {scores.std():.2%}")
-print(f"95% CI:     {scores.mean():.2%} +/- {scores.std() * 2:.2%}")
+scores = cross_val_score(model, X, y, cv=cv, scoring="accuracy")
+print("Fold accuracies:", [round(float(s), 3) for s in scores])
+print(f"Accuracy = {scores.mean():.3f} ± {scores.std():.3f}  (mean ± std over 5 folds)")
 
-# ─── Stratified K-Fold (preserves class balance in each fold) ───
-skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-scores = cross_val_score(model, X_train_scaled, y_train, cv=skf, scoring='f1_macro')
-print(f"Stratified CV F1: {scores.mean():.2%} +/- {scores.std():.2%}")
+metrics = ["recall", "f1", "roc_auc", "average_precision"]
+res = cross_validate(model, X, y, cv=cv, scoring=metrics)
+for m in metrics:
+    print(f"{m:>17} = {res['test_' + m].mean():.3f} ± {res['test_' + m].std():.3f}")
+assert len(scores) == cv.get_n_splits()
 ```
 
-```
-  WHY CROSS-VALIDATION MATTERS:
-  ──────────────────────────────────────────────────────────────
-  Single train/test split:   accuracy = 94%  (lucky? unlucky?)
-  5-fold cross-validation:   94% +/- 2%     (reliable estimate!)
+**Output:**
 
-  ALWAYS report CV scores, not single-split scores.
-  If CV std is high (> 5%), your model is unstable — investigate.
 ```
+Fold accuracies: [0.974, 0.947, 0.965, 0.991, 0.991]
+Accuracy = 0.974 ± 0.017  (mean ± std over 5 folds)
+           recall = 0.944 ± 0.052
+               f1 = 0.963 ± 0.024
+          roc_auc = 0.995 ± 0.005
+average_precision = 0.994 ± 0.006
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the fold spread and the leakage pitfall</summary>
+
+Folds span 0.947–0.991 — one split could have shown either. The ± is the **spread between folds**, not a 95% confidence interval (folds share training rows).
+
+**Pitfall:** anything fitted on all rows before CV (scaler, feature selection, oversampling) leaks the validation folds — keep every step inside the Pipeline.
+
+**Go deeper:** [Ch 13 §13.7](#content/13_model_evaluation)
+
+</details>
 
 ---
 
 ## 8.3 Learning Curves — Diagnose Overfitting vs Underfitting
 
-```
-  Learning curves show train and validation scores as training
-  data INCREASES. They're the best way to diagnose your model.
-```
+![Infographic on learning curves for the digits dataset with 5-fold CV at 143, 574 and 1437 training rows: a depth-2 tree underfits (training 0.40, 0.32, 0.32; validation 0.28, 0.32, 0.32), an unlimited tree overfits (training 1.00; validation 0.56, 0.75, 0.86, gap 0.44 to 0.14 and still rising) and an SVC fits well (validation 0.82, 0.96, 0.99, gap 0.01), with the formula gap = training score minus validation score and a table of fixes.](diagrams/pml27_info_learning_curves_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — training vs validation as data grows, and the gap</summary>
+
+**What & when:** training and validation scores as the training set **grows** — shows whether more data, a bigger model or more regularisation will help.
+
+> **Maths in one line:** `gap = training score − validation score` — a big gap means high variance (overfitting); both scores low with a small gap means high bias (underfitting).
+
+</details>
 
 ```python
-from sklearn.model_selection import learning_curve
-
-def plot_learning_curve(model, X, y, title="Learning Curve"):
-    train_sizes, train_scores, val_scores = learning_curve(
-        model, X, y,
-        train_sizes=np.linspace(0.1, 1.0, 10),
-        cv=5, scoring='accuracy', n_jobs=-1
-    )
-
-    train_mean = train_scores.mean(axis=1)
-    train_std = train_scores.std(axis=1)
-    val_mean = val_scores.mean(axis=1)
-    val_std = val_scores.std(axis=1)
-
-    plt.figure(figsize=(8, 5))
-    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1)
-    plt.fill_between(train_sizes, val_mean - val_std, val_mean + val_std, alpha=0.1)
-    plt.plot(train_sizes, train_mean, 'o-', label='Training Score')
-    plt.plot(train_sizes, val_mean, 'o-', label='Validation Score')
-    plt.xlabel('Training Set Size')
-    plt.ylabel('Accuracy')
-    plt.title(title)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.show()
-
-# Compare a simple vs complex model
+# Learning curves on digits, in numbers: underfit vs overfit vs good fit
+from sklearn.datasets import load_digits
+from sklearn.model_selection import learning_curve, StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
 
-plot_learning_curve(
-    DecisionTreeClassifier(max_depth=2),
-    X_train_scaled, y_train,
-    "Underfitting (max_depth=2)"
-)
-
-plot_learning_curve(
-    DecisionTreeClassifier(max_depth=None),
-    X_train_scaled, y_train,
-    "Overfitting (no depth limit)"
-)
-
-plot_learning_curve(
-    RandomForestClassifier(n_estimators=50, max_depth=5, random_state=42),
-    X_train_scaled, y_train,
-    "Good Fit (Random Forest)"
-)
+X, y = load_digits(return_X_y=True)          # 1,797 8x8 images of digits, 10 classes
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+models = {"Tree max_depth=2  (underfit)": DecisionTreeClassifier(max_depth=2, random_state=42),
+          "Tree no depth limit (overfit)": DecisionTreeClassifier(random_state=42),
+          "SVC rbf kernel     (good fit)": SVC()}
+for name, model in models.items():
+    sizes, train_sc, val_sc = learning_curve(model, X, y, cv=cv, train_sizes=[0.1, 0.4, 1.0])
+    print(name)
+    for n, tr, va in zip(sizes, train_sc.mean(axis=1), val_sc.mean(axis=1)):
+        print(f"   n={n:4d}  train={tr:.2f}  val={va:.2f}  gap={tr - va:.2f}")
+assert val_sc.mean(axis=1)[-1] > 0.95       # the SVC generalises
 ```
 
+**Output:**
+
 ```
-  HOW TO READ LEARNING CURVES:
-  ┌────────────────────────────────────────────────────────────────┐
-  │                                                                │
-  │  OVERFITTING:            UNDERFITTING:        GOOD FIT:        │
-  │                                                                │
-  │  Train ──────── high     Train ──────── low   Train ─── high   │
-  │                          Val   ──────── low   Val   ─── high   │
-  │  Val   ──────── low                           (close together) │
-  │  (big gap)               (both low)                            │
-  │                                                                │
-  │  FIX: more data,         FIX: more complex    You're done!     │
-  │  regularize, simpler     model, more features Just optimize    │
-  │  model, dropout          less regularization  hyperparams.     │
-  │                                                                │
-  │  If train AND val both increase with more data -> get more data│
-  │  If val plateaus even with more data -> need a better model    │
-  └────────────────────────────────────────────────────────────────┘
+Tree max_depth=2  (underfit)
+   n= 143  train=0.40  val=0.28  gap=0.12
+   n= 574  train=0.32  val=0.32  gap=0.00
+   n=1437  train=0.32  val=0.32  gap=0.00
+Tree no depth limit (overfit)
+   n= 143  train=1.00  val=0.56  gap=0.44
+   n= 574  train=1.00  val=0.75  gap=0.25
+   n=1437  train=1.00  val=0.86  gap=0.14
+SVC rbf kernel     (good fit)
+   n= 143  train=0.99  val=0.82  gap=0.17
+   n= 574  train=1.00  val=0.96  gap=0.04
+   n=1437  train=1.00  val=0.99  gap=0.01
 ```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the three patterns and their fixes</summary>
+
+| Pattern | Training | Validation | Fix |
+|---|---|---|---|
+| Underfitting | low (0.32) | low, small gap (0.32) | bigger model, more features, less regularisation |
+| Overfitting | high (1.00) | much lower (0.86) | more data, regularise (`max_depth`, dropout), simpler model |
+| Good fit | high (1.00) | high and close (0.99) | done — tune hyperparameters |
+
+Validation still rising at full size (0.56 → 0.75 → 0.86) → more data helps; flat (0.32) → change the model. Plot it with `LearningCurveDisplay.from_estimator(model, X, y)` (scikit-learn ≥ 1.2).
+
+**Go deeper:** [Ch 13 §13.9](#content/13_model_evaluation)
+
+</details>
 
 ---
 
 ## 8.4 Handling Class Imbalance
 
-```
-  PROBLEM: Dataset has 95% class A, 5% class B.
-  A model that ALWAYS predicts class A gets 95% accuracy!
-  But it catches ZERO of the important class B cases.
+![Infographic on class imbalance with 54 positives in 1000 test rows: always predicting negative is 94.6 percent accurate with recall 0, the balanced class weight n_samples / (n_classes x n_c) gives a positive 10 and a negative about 0.53, a real precision-recall curve marks thresholds 0.5, 0.3 and 0.1 and class_weight balanced (precision 0.972, 0.909, 0.518, 0.378; recall 0.648, 0.741, 0.796, 0.833) with PR-AUC 0.815 vs 0.816, and a cheapest-first order: metric, threshold, class weights, then SMOTE inside training folds.](diagrams/pml27_info_class_imbalance_ai.png)
 
-  This is extremely common in:
-  - Fraud detection (0.1% fraud)
-  - Medical diagnosis (rare diseases)
-  - Spam detection (mostly ham)
-  - Anomaly detection (mostly normal)
-```
+<details>
+<summary><strong>Read as text</strong> — why accuracy lies and the balanced-weight formula</summary>
+
+**What & when:** when one class is rare — fraud, rare diseases, defects — "always predict the common class" looks accurate and catches nothing.
+
+> **Maths in one line:** `class_weight='balanced'` gives class c the weight `n_samples / (n_classes × n_c)` — with 5% positives each positive counts 10 and each negative ≈ 0.53, so both classes carry equal total weight.
+
+</details>
 
 ```python
-# ─── METHOD 1: class_weight='balanced' (simplest, try this first) ───
-from sklearn.ensemble import RandomForestClassifier
+# 5% positives: accuracy lies; class weights or a lower threshold buy recall
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, average_precision_score
 
-model = RandomForestClassifier(
-    n_estimators=100,
-    class_weight='balanced',  # automatically up-weights minority class
-    random_state=42
-)
-model.fit(X_train, y_train)
+X, y = make_classification(n_samples=4000, n_features=10, weights=[0.95], class_sep=0.8, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, stratify=y, random_state=42)
+print(f"Test set: {y_test.sum()} positives of {len(y_test)} ({y_test.mean():.1%})")
 
-# ─── METHOD 2: SMOTE — Generate synthetic minority samples ───
-# pip install imbalanced-learn
-from imblearn.over_sampling import SMOTE
+def show(name, pred, score=None):
+    ap = "" if score is None else f"  PR-AUC={average_precision_score(y_test, score):.3f}"
+    print(f"{name:<24} acc={accuracy_score(y_test, pred):.3f}  prec={precision_score(y_test, pred, zero_division=0):.3f}"
+          f"  recall={recall_score(y_test, pred):.3f}{ap}")
 
-smote = SMOTE(random_state=42)
-X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
-print(f"Before SMOTE: {pd.Series(y_train).value_counts().to_dict()}")
-print(f"After SMOTE:  {pd.Series(y_train_resampled).value_counts().to_dict()}")
-# SMOTE creates synthetic examples of the minority class
-# so both classes have equal representation
-
-model.fit(X_train_resampled, y_train_resampled)
-
-# ─── METHOD 3: Adjust decision threshold ───
-y_prob = model.predict_proba(X_test)[:, 1]
-# Default threshold = 0.5
-# Lower threshold to catch more positives (higher recall, lower precision)
-threshold = 0.3
-y_pred_adjusted = (y_prob >= threshold).astype(int)
+dummy = DummyClassifier().fit(X_train, y_train).predict(X_test)      # always the majority class
+show("always 'negative'", dummy)
+plain = LogisticRegression(max_iter=1000).fit(X_train, y_train)
+p = plain.predict_proba(X_test)[:, 1]
+show("plain, threshold 0.5", plain.predict(X_test), p)
+weighted = LogisticRegression(max_iter=1000, class_weight="balanced").fit(X_train, y_train)
+show("class_weight='balanced'", weighted.predict(X_test), weighted.predict_proba(X_test)[:, 1])
+for t in (0.3, 0.1):                  # real work: choose t on validation data, never on test
+    show(f"plain, threshold {t}", (p >= t).astype(int), p)
+assert recall_score(y_test, dummy) == 0 and accuracy_score(y_test, dummy) > 0.94
 ```
 
-```
-  WHICH METHOD TO USE:
-  ┌────────────────────────────────────────────────────────────────┐
-  │  Method             │ When to Use                               │
-  ├─────────────────────┼───────────────────────────────────────────┤
-  │  class_weight=      │ ALWAYS try this first. Zero extra code.  │
-  │  'balanced'         │ Works with most sklearn classifiers.     │
-  ├─────────────────────┼───────────────────────────────────────────┤
-  │  SMOTE              │ When you need more training data for the │
-  │                     │ minority class. Use ONLY on training set! │
-  ├─────────────────────┼───────────────────────────────────────────┤
-  │  Threshold tuning   │ When you want to trade precision for     │
-  │                     │ recall (or vice versa) after training.   │
-  ├─────────────────────┼───────────────────────────────────────────┤
-  │  Undersample        │ When you have tons of majority class data│
-  │  majority class     │ and can afford to throw some away.       │
-  └─────────────────────┴───────────────────────────────────────────┘
+**Output:**
 
-  CRITICAL: NEVER apply SMOTE to the test set! Only to training data.
-  Test set must reflect real-world class distribution.
 ```
+Test set: 54 positives of 1000 (5.4%)
+always 'negative'        acc=0.946  prec=0.000  recall=0.000
+plain, threshold 0.5     acc=0.980  prec=0.972  recall=0.648  PR-AUC=0.815
+class_weight='balanced'  acc=0.917  prec=0.378  recall=0.833  PR-AUC=0.816
+plain, threshold 0.3     acc=0.982  prec=0.909  recall=0.741  PR-AUC=0.815
+plain, threshold 0.1     acc=0.949  prec=0.518  recall=0.796  PR-AUC=0.815
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: weights vs thresholds, the methods and the test-set rule</summary>
+
+"Always negative" is 94.6% accurate with zero recall. Class weights lift recall 0.648 → 0.833 (precision 0.378); a 0.1 threshold gets 0.796 with no retraining. PR-AUC barely moves — both slide along the same trade-off; neither ranks better.
+
+| Method | When to use |
+|---|---|
+| Threshold tuning | First — it is free. Choose it on validation data; `TunedThresholdClassifierCV` (scikit-learn ≥ 1.5) does it with CV |
+| `class_weight='balanced'` | One argument (`scale_pos_weight` in XGBoost / LightGBM) |
+| SMOTE / oversampling | Weak models; inside CV via `imblearn.pipeline.make_pipeline(SMOTE(), model)`. With a strong model + tuned threshold it rarely helps (Elor & Averbuch-Elor, 2022) |
+| Undersampling | Huge majority class — faster, but discards data |
+
+**CRITICAL:** never resample the test set — it must keep the real class ratio. Weights and resampling also distort probabilities; recalibrate if you need them.
+
+**Go deeper:** [Ch 10 §10.11](#content/10_supervised_learning)
+
+</details>
 
 ---
 
@@ -1692,75 +2104,70 @@ y_pred_adjusted = (y_prob >= threshold).astype(int)
 
 ## 9.1 Grid Search vs Random Search
 
+![Grid vs random search cheat card: fits = values per knob multiplied x folds (4 x 4 x 5 = 80 fits; 3 x 4 x 3 x 3 = 108 settings x 5 = 540 fits); on wine data with StandardScaler + SVC a 4 x 4 grid finds C=1, gamma=0.01 (CV 0.993, test 1.000) while 16 random log-scale samples find C=45.7, gamma=0.0985 (CV 0.986, test 0.972); key APIs GridSearchCV, RandomizedSearchCV, loguniform, svc__C; trap: best_score_ is optimistic, use nested CV](diagrams/pml27_info_hyperparameter_search_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what tuning is, the cost formula and the search options</summary>
+
+**What & when:** hyperparameters are knobs you set *before* training (`C`, `max_depth`, learning rate). Tuning keeps the setting with the best **cross-validated** score; the test set waits until the end.
+
+> **Maths in one line:** `fits = (values per knob, multiplied) × folds` — the 4 × 4 grid below with 5 folds is 80 fits; a 3 × 4 × 3 × 3 random-forest grid is 108 × 5 = 540. Random search costs `n_iter × folds` however many knobs you add.
+
+| Argument | Meaning | Typical |
+|---|---|---|
+| `param_grid` / `param_distributions` | Values to try / distributions to sample | `{"svc__C": [0.1, 1, 10]}` |
+| `n_iter` | Random search: settings sampled | 20–100 |
+| `cv`, `scoring` | Folds (stratified for classifiers), metric | 5, `"average_precision"` if imbalanced |
+
+</details>
+
 ```python
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from sklearn.ensemble import RandomForestClassifier
+# Grid vs random search over a leakage-safe Pipeline (scaler + SVM), 16 settings x 5 folds each
+from scipy.stats import loguniform
+from sklearn.datasets import load_wine
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
-# ─── GRID SEARCH: Try EVERY combination (exhaustive) ───
-param_grid = {
-    'n_estimators': [50, 100, 200],
-    'max_depth': [3, 5, 10, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 5],
-}
-# Total combinations: 3 x 4 x 3 x 3 = 108
+X, y = load_wine(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42)
+pipe = Pipeline([("scale", StandardScaler()), ("svc", SVC())])   # scaler refit in every fold
 
-grid_search = GridSearchCV(
-    RandomForestClassifier(random_state=42),
-    param_grid,
-    cv=5,                  # 5-fold cross-validation
-    scoring='accuracy',
-    n_jobs=-1,             # use all cores
-    verbose=1
-)
-grid_search.fit(X_train, y_train)
+param_grid = {"svc__C": [0.1, 1, 10, 100],            # step__param names a Pipeline knob
+              "svc__gamma": [0.001, 0.01, 0.1, 1]}    # 4 x 4 = 16 settings
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring="accuracy").fit(X_train, y_train)
 
-print(f"Best params: {grid_search.best_params_}")
-print(f"Best CV accuracy: {grid_search.best_score_:.2%}")
+param_dist = {"svc__C": loguniform(1e-2, 1e3),        # log scale: 0.01-0.1 as likely as 100-1000
+              "svc__gamma": loguniform(1e-4, 1e1)}
+rand = RandomizedSearchCV(pipe, param_dist, n_iter=16, cv=5, scoring="accuracy",
+                          random_state=42).fit(X_train, y_train)
 
-# Use the best model
-best_model = grid_search.best_estimator_
-y_pred = best_model.predict(X_test)
-
-# ─── RANDOM SEARCH: Sample random combinations (faster) ───
-from scipy.stats import randint, uniform
-
-param_distributions = {
-    'n_estimators': randint(50, 300),
-    'max_depth': randint(3, 20),
-    'min_samples_split': randint(2, 20),
-    'min_samples_leaf': randint(1, 10),
-}
-
-random_search = RandomizedSearchCV(
-    RandomForestClassifier(random_state=42),
-    param_distributions,
-    n_iter=50,             # try 50 random combinations
-    cv=5,
-    scoring='accuracy',
-    n_jobs=-1,
-    random_state=42
-)
-random_search.fit(X_train, y_train)
-print(f"Best params: {random_search.best_params_}")
-print(f"Best CV accuracy: {random_search.best_score_:.2%}")
+for name, s in (("grid  ", grid), ("random", rand)):
+    p = s.best_params_
+    print(f"{name}: {len(s.cv_results_['params'])} settings x 5 folds | best C={p['svc__C']:.3g}, "
+          f"gamma={p['svc__gamma']:.3g} | CV {s.best_score_:.3f} | test {s.score(X_test, y_test):.3f}")
+assert len(grid.cv_results_["params"]) == 16 and grid.best_score_ > 0.95
 ```
 
+**Output:**
+
 ```
-  GRID SEARCH vs RANDOM SEARCH:
-  ┌──────────────────────┬──────────────────────────────────────┐
-  │ Grid Search          │ Random Search                         │
-  ├──────────────────────┼──────────────────────────────────────┤
-  │ Tries ALL combos     │ Tries N random combos                 │
-  │ Guaranteed to find   │ Might miss the best, but usually     │
-  │ best in the grid     │ finds near-optimal much faster        │
-  │ Slow: 3^4=81 combos  │ Fast: 50 random combos               │
-  │ Use for: few params  │ Use for: many params, large ranges    │
-  └──────────────────────┴──────────────────────────────────────┘
-  
-  RULE OF THUMB: Start with Random Search (n_iter=50-100).
-  Then narrow the range and do Grid Search in the promising zone.
+grid  : 16 settings x 5 folds | best C=1, gamma=0.01 | CV 0.993 | test 1.000
+random: 16 settings x 5 folds | best C=45.7, gamma=0.0985 | CV 0.986 | test 0.972
 ```
+
+<details>
+<summary><strong>Read as text</strong> — continued: which search wins, the optimism trap and Optuna</summary>
+
+With two knobs that both matter, the grid wins; random search pays off when many knobs exist and few matter. One test mistake in 36 rows costs 2.8 points, so choose by CV and report the test score once.
+
+**Pitfall:** `best_score_` is the best of many noisy scores, so it is optimistic; nested CV gives an unbiased estimate. Never tune on the test set.
+
+**Smarter search:** Optuna (5.0, September 2026) picks each trial from earlier results: `optuna.create_study(direction="maximize").optimize(objective, n_trials=100)`, where `objective(trial)` returns a CV score. **Go deeper:** [Ch 13 §13.8](#content/13_model_evaluation) — why random beats grid, Bayesian search, successive halving.
+
+</details>
 
 ---
 
@@ -1770,94 +2177,141 @@ print(f"Best CV accuracy: {random_search.best_score_:.2%}")
 
 ## 10.1 Practical Feature Engineering Techniques
 
-All examples below use real datasets you can run immediately.
+![Feature engineering infographic: log1p(fare) = ln(1 + fare) squeezes the long tail (512 to 6.24, 7.25 to 2.11, fare skew 4.79 to 0.39 on all 891 Titanic rows); one passenger worked through 5 recipes (family 3 + 1 + 1 = 5, fare per person 21.075 / 5 = 4.21, age 2 child, ln(1 + 21.075) = 3.09, fare minus class-3 mean +10.43); months on a sin/cos circle so Dec (-0.50, +0.87) sits next to Jan (0.00, +1.00); breast-cancer selection: SelectKBest top 5 of 30, VarianceThreshold(0.01) 30 to 14 drops 2 of the top 5 (variance 0.0045); trap: fit learned statistics on training rows only](diagrams/pml27_info_feature_engineering_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what to engineer and the log-transform maths</summary>
+
+**What & when:** turn raw columns into signals a model can use — ratios, bins, logs, flags, group statistics, date parts. Linear models and small datasets gain most.
+
+> **Maths in one line:** `log1p(fare) = ln(1 + fare)` — squeezes the long tail (512 → 6.24, 7.25 → 2.11); on all 891 Titanic rows fare skew drops from 4.79 to 0.39.
+
+</details>
 
 ```python
-import pandas as pd
+# Six feature recipes on the first 10 Titanic passengers (real rows from the 891-row dataset)
 import numpy as np
-import seaborn as sns
-
-# Using the Titanic dataset for feature engineering examples
-df = sns.load_dataset("titanic")
-
-# ─── 1. CREATE INTERACTION FEATURES ───
-# Combine existing features into new meaningful ones
-df['family_size'] = df['sibsp'] + df['parch'] + 1
-df['is_alone'] = (df['family_size'] == 1).astype(int)
-df['fare_per_person'] = df['fare'] / df['family_size']
-
-# ─── 2. BINNING / DISCRETIZATION ───
-# Turn continuous variables into categories
-df['age'] = df['age'].fillna(df['age'].median())
-df['age_group'] = pd.cut(df['age'],
-    bins=[0, 12, 18, 35, 50, 100],
-    labels=['child', 'teen', 'young_adult', 'middle_aged', 'senior'])
-
-df['fare_bin'] = pd.qcut(df['fare'], q=4, labels=['low', 'medium', 'high', 'premium'])
-
-# ─── 3. LOG TRANSFORM (for skewed distributions) ───
-# Fare is right-skewed (many cheap tickets, few expensive ones)
-df['log_fare'] = np.log1p(df['fare'])  # log(1+x) handles zeros safely
-print(f"Fare skewness: {df['fare'].skew():.2f} -> Log fare: {df['log_fare'].skew():.2f}")
-
-# ─── 4. POLYNOMIAL FEATURES ───
+import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
-X_sample = df[['age', 'fare']].dropna().values
-poly = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
-X_poly = poly.fit_transform(X_sample)
-print(f"Original: {X_sample.shape[1]} features -> Polynomial: {X_poly.shape[1]} features")
-# Creates: age, fare, age^2, fare^2, age*fare
 
-# ─── 5. BOOLEAN / INDICATOR FEATURES ───
-df['is_child'] = (df['age'] < 12).astype(int)
-df['has_cabin'] = df['deck'].notna().astype(int)
-df['is_female'] = (df['sex'] == 'female').astype(int)
-df['is_first_class'] = (df['pclass'] == 1).astype(int)
+df = pd.DataFrame({
+    "pclass": [3, 1, 3, 1, 3, 3, 1, 3, 3, 2],
+    "age":    [22, 38, 26, 35, 35, np.nan, 54, 2, 27, 14],
+    "sibsp":  [1, 1, 0, 1, 0, 0, 0, 3, 0, 1],
+    "parch":  [0, 0, 0, 0, 0, 0, 0, 1, 2, 0],
+    "fare":   [7.25, 71.2833, 7.925, 53.1, 8.05, 8.4583, 51.8625, 21.075, 11.1333, 30.0708],
+    "deck":   [None, "C", None, "C", None, None, "E", None, None, None],
+})
+# 1. Interactions / ratios
+df["family_size"] = df["sibsp"] + df["parch"] + 1
+df["is_alone"] = (df["family_size"] == 1).astype(int)
+df["fare_per_person"] = df["fare"] / df["family_size"]
+# 2. Binning: pd.cut intervals are right-closed, so age 12 is a child and 18 a teen
+age = df["age"].fillna(df["age"].median())          # real project: median of TRAIN rows only
+df["age_group"] = pd.cut(age, bins=[0, 12, 18, 35, 50, 100],
+                         labels=["child", "teen", "young_adult", "middle_aged", "senior"])
+# 3. Log transform for a right-skewed column
+df["log_fare"] = np.log1p(df["fare"])
+# 4. Flags (indicator features)
+df["has_cabin"] = df["deck"].notna().astype(int)
+# 5. Group aggregate: fare compared with the passenger's class average
+df["fare_vs_class"] = df["fare"] - df.groupby("pclass")["fare"].transform("mean")
 
-# ─── 6. AGGREGATION FEATURES ───
-# "How does this passenger compare to their group?"
-df['avg_fare_by_class'] = df.groupby('pclass')['fare'].transform('mean')
-df['fare_vs_class_avg'] = df['fare'] - df['avg_fare_by_class']
-# Positive = paid more than class average, Negative = paid less
+print(f"fare skew {df['fare'].skew():.2f} -> log_fare skew {df['log_fare'].skew():.2f}")
+for i in (0, 1, 7):
+    r = df.loc[i]
+    print(f"row {i}: family {r['family_size']}, alone {r['is_alone']}, fare/person "
+          f"{r['fare_per_person']:.2f}, {r['age_group']}, log_fare {r['log_fare']:.2f}, "
+          f"cabin {r['has_cabin']}, vs class {r['fare_vs_class']:+.2f}")
+
+# 6. Polynomial features: every square and pairwise product
+poly = PolynomialFeatures(degree=2, include_bias=False).fit(df[["age", "fare"]].dropna())
+print("poly:", list(poly.get_feature_names_out(["age", "fare"])))
+assert df["family_size"].tolist() == [2, 2, 1, 2, 1, 1, 1, 5, 3, 2]
 ```
+
+**Output:**
+
+```
+fare skew 0.93 -> log_fare skew 0.38
+row 0: family 2, alone 0, fare/person 3.62, young_adult, log_fare 2.11, cabin 0, vs class -3.40
+row 1: family 2, alone 0, fare/person 35.64, middle_aged, log_fare 4.28, cabin 1, vs class +12.53
+row 7: family 5, alone 0, fare/person 4.21, child, log_fare 3.09, cabin 0, vs class +10.43
+poly: ['age', 'fare', 'age^2', 'age fare', 'fare^2']
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: learned statistics must come from training rows</summary>
+
+**Pitfalls:** medians, group means and target encodings (Part 4.2) are *learned* — compute them on training rows only, inside a Pipeline (Part 11), or the test set leaks in. Degree-2 polynomials explode: 30 columns → 495.
+
+</details>
 
 ### Datetime Feature Engineering (common pattern)
 
 ```python
-# When you have date/time columns, extract useful parts
-# Example with a sample date column:
-dates = pd.to_datetime(['2024-01-15', '2024-06-22', '2024-12-25', '2024-07-04'])
-date_df = pd.DataFrame({'date': dates})
+# Date parts + a cyclical month (sin, cos), so December sits next to January
+import numpy as np
+import pandas as pd
 
-date_df['year'] = date_df['date'].dt.year
-date_df['month'] = date_df['date'].dt.month
-date_df['day_of_week'] = date_df['date'].dt.dayofweek  # 0=Monday
-date_df['is_weekend'] = date_df['day_of_week'].isin([5, 6]).astype(int)
-date_df['quarter'] = date_df['date'].dt.quarter
-date_df['day_of_year'] = date_df['date'].dt.dayofyear
-print(date_df)
+d = pd.DataFrame({"date": pd.to_datetime(["2024-01-15", "2024-06-22", "2024-07-04", "2024-12-25"])})
+d["day_of_week"] = d["date"].dt.day_of_week               # Monday = 0 ... Sunday = 6
+d["is_weekend"] = (d["day_of_week"] >= 5).astype(int)
+angle = 2 * np.pi * (d["date"].dt.month - 1) / 12          # January -> angle 0
+d["month_sin"], d["month_cos"] = np.sin(angle), np.cos(angle)
+for r in d.itertuples():
+    print(f"{r.date:%Y-%m-%d %a}: day_of_week {r.day_of_week}, weekend {r.is_weekend}, "
+          f"month (sin, cos) = ({r.month_sin:+.2f}, {r.month_cos:+.2f})")
+assert d["is_weekend"].tolist() == [0, 1, 0, 0]
 ```
+
+**Output:**
+
+```
+2024-01-15 Mon: day_of_week 0, weekend 0, month (sin, cos) = (+0.00, +1.00)
+2024-06-22 Sat: day_of_week 5, weekend 1, month (sin, cos) = (+0.50, -0.87)
+2024-07-04 Thu: day_of_week 3, weekend 0, month (sin, cos) = (+0.00, -1.00)
+2024-12-25 Wed: day_of_week 2, weekend 0, month (sin, cos) = (-0.50, +0.87)
+```
+
+December (−0.50, +0.87) now sits next to January (0.00, +1.00), 11 apart as raw numbers. Keep both columns: January and July share sine 0.00. Write `.dt.day_of_week` — pandas 3.1 deprecates `.dt.dayofweek`.
 
 ### Feature Selection -- Remove Useless Features
 
 ```python
-from sklearn.feature_selection import SelectKBest, f_classif
+# Feature selection on the breast-cancer data: F-test top 5 vs a variance cut-off (fit on TRAIN only)
+from sklearn.datasets import load_breast_cancer
+from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_classif
+from sklearn.model_selection import train_test_split
 
-# Select top K features by statistical test
-selector = SelectKBest(score_func=f_classif, k=5)
-X_selected = selector.fit_transform(X_train, y_train)
+data = load_breast_cancer(as_frame=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    data.data, data.target, test_size=0.2, stratify=data.target, random_state=42)
 
-# See which features were selected
-selected_mask = selector.get_support()
-selected_features = X_train.columns[selected_mask].tolist()
-print(f"Selected features: {selected_features}")
+kbest = SelectKBest(score_func=f_classif, k=5).fit(X_train, y_train)
+top5 = list(X_train.columns[kbest.get_support()])
+print("SelectKBest(k=5):", top5)
 
-# Alternatively: remove low-variance features
-from sklearn.feature_selection import VarianceThreshold
-selector = VarianceThreshold(threshold=0.01)  # remove near-constant features
-X_filtered = selector.fit_transform(X_train)
-print(f"Before: {X_train.shape[1]} features -> After: {X_filtered.shape[1]} features")
+vt = VarianceThreshold(threshold=0.01).fit(X_train)       # looks at X only, never at y
+dropped = list(X_train.columns[~vt.get_support()])
+print(f"VarianceThreshold(0.01): {X_train.shape[1]} -> {X_train.shape[1] - len(dropped)} features")
+print("  dropped top-5 features:", [f for f in top5 if f in dropped])
+print(f"  e.g. variance of 'worst concave points' = {X_train['worst concave points'].var():.4f}")
+assert X_train.shape[1] == 30 and "worst concave points" in top5
 ```
+
+**Output:**
+
+```
+SelectKBest(k=5): ['mean perimeter', 'mean concave points', 'worst radius', 'worst perimeter', 'worst concave points']
+VarianceThreshold(0.01): 30 -> 14 features
+  dropped top-5 features: ['mean concave points', 'worst concave points']
+  e.g. variance of 'worst concave points' = 0.0045
+```
+
+**Pitfall:** variance depends on units — concave-points values lie between 0 and 0.3, so a strong predictor looks "near-constant". Use `VarianceThreshold()` (threshold 0) only for truly constant columns, and fit any selector inside the Pipeline.
+
+**Go deeper:** [Ch 09 — Step 5: Feature Engineering](#content/09_data_preprocessing) (cyclical features, mutual information, wrapper and embedded selection).
 
 ---
 
@@ -1867,75 +2321,106 @@ print(f"Before: {X_train.shape[1]} features -> After: {X_filtered.shape[1]} feat
 
 ## 11.1 Why Pipelines Matter
 
+![Pipeline plus ColumnTransformer cheat card: full_pipeline sends age and fare through SimpleImputer (median) and StandardScaler, and sex, embarked, pclass through SimpleImputer (most_frequent) and OneHotEncoder (ignore unknown), into a RandomForest with 100 trees and depth 5; 5-fold CV refits every step, giving CV 0.779 +/- 0.026 and test 0.792 on 600 simulated passengers with 20% ages missing; the saved model_pipeline.joblib predicts female, class 1, port C at 0.87 and male, class 3, unseen port Z at 0.11 without crashing](diagrams/pml27_info_sklearn_pipeline_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the recipe-card idea, with vs without a Pipeline, and the hidden CV leak</summary>
+
+**Simple Explanation:** a Pipeline is a recipe card — all preprocessing steps plus the model in ONE object. `fit` learns every step's numbers from training rows only; `predict` replays them on new rows.
+
 ```
-  WITHOUT PIPELINE:                   WITH PIPELINE:
-  ──────────────────                  ─────────────────
-  scaler.fit(X_train)                pipe.fit(X_train, y_train)
-  X_train = scaler.transform(X_train) y_pred = pipe.predict(X_test)
-  imputer.fit(X_train)
-  X_train = imputer.transform(X_train) # ONE object. No data leakage.
-  model.fit(X_train, y_train)          # Easy to save, deploy, reproduce.
-  X_test = scaler.transform(X_test)
-  X_test = imputer.transform(X_test)
-  y_pred = model.predict(X_test)
-  # Error-prone, data leakage risk!
+  WITHOUT PIPELINE                        WITH PIPELINE
+  ────────────────                        ─────────────
+  imputer.fit(X_train)                    pipe.fit(X_train, y_train)
+  X_tr = imputer.transform(X_train)       y_pred = pipe.predict(X_test)
+  scaler.fit(X_tr)
+  X_tr = scaler.transform(X_tr)           ONE object:
+  model.fit(X_tr, y_train)                - CV refits every step per fold
+  X_te = imputer.transform(X_test)        - identical steps when serving
+  X_te = scaler.transform(X_te)           - one file to save and deploy
+  y_pred = model.predict(X_te)
+  8 lines to keep in sync
 ```
+
+The hidden leak: fit the scaler on all training rows, *then* run `cross_val_score`, and every validation fold has shaped the preprocessing. Give CV the Pipeline instead.
+
+</details>
 
 ## 11.2 Building a Complete Pipeline
 
+<details>
+<summary><strong>Read as text</strong> — the three building blocks and their key options</summary>
+
+| Piece | Job | Key option |
+|---|---|---|
+| `SimpleImputer` | Fill gaps with a training statistic | `strategy="median"` / `"most_frequent"` |
+| `OneHotEncoder` | One 0/1 column per category | `handle_unknown="ignore"`: unseen → all zeros |
+| `ColumnTransformer` | Send each column group to its own steps | `remainder="drop"` (default) |
+
+</details>
+
 ```python
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score
-
-# ─── DEFINE COLUMN TYPES ───
-numeric_features = ['age', 'fare', 'sibsp', 'parch']
-categorical_features = ['sex', 'embarked', 'pclass']
-
-# ─── BUILD PREPROCESSING PIPELINES ───
-numeric_pipeline = Pipeline([
-    ('imputer', SimpleImputer(strategy='median')),
-    ('scaler', StandardScaler()),
-])
-
-categorical_pipeline = Pipeline([
-    ('imputer', SimpleImputer(strategy='most_frequent')),
-    ('encoder', OneHotEncoder(handle_unknown='ignore')),
-])
-
-# ─── COMBINE INTO COLUMN TRANSFORMER ───
-preprocessor = ColumnTransformer([
-    ('numeric', numeric_pipeline, numeric_features),
-    ('categorical', categorical_pipeline, categorical_features),
-])
-
-# ─── BUILD FULL PIPELINE (preprocessing + model) ───
-full_pipeline = Pipeline([
-    ('preprocessor', preprocessor),
-    ('classifier', RandomForestClassifier(n_estimators=100, random_state=42)),
-])
-
-# ─── USE IT (one line!) ───
-full_pipeline.fit(X_train, y_train)
-y_pred = full_pipeline.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Pipeline Accuracy: {accuracy:.2%}")
-
-# ─── CROSS-VALIDATE THE ENTIRE PIPELINE ───
-scores = cross_val_score(full_pipeline, X_train, y_train, cv=5, scoring='accuracy')
-print(f"CV Accuracy: {scores.mean():.2%} (+/- {scores.std():.2%})")
-
-# ─── SAVE THE PIPELINE (for deployment) ───
+# End-to-end Pipeline on Titanic-like data: impute + scale + one-hot + model, CV, save, load
 import joblib
-joblib.dump(full_pipeline, 'model_pipeline.pkl')
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# ─── LOAD AND USE LATER ───
-loaded_pipeline = joblib.load('model_pipeline.pkl')
-predictions = loaded_pipeline.predict(new_data)
+rng = np.random.default_rng(42)                      # 600 simulated passengers
+n = 600
+pclass = rng.choice([1, 2, 3], n, p=[0.25, 0.2, 0.55])
+sex = rng.choice(["female", "male"], n, p=[0.35, 0.65])
+age = rng.normal(30, 14, n).clip(1, 80).round()
+logit = 3.5 * (sex == "female") - 1.5 * (pclass - 2) - 0.05 * (age - 30) - 1.2
+y = (rng.random(n) < 1 / (1 + np.exp(-logit))).astype(int)
+X = pd.DataFrame({"age": age, "fare": (rng.lognormal(2.5, 0.6, n) * (4 - pclass)).round(2), "sex": sex,
+                  "embarked": rng.choice(["S", "C", "Q"], n, p=[0.72, 0.19, 0.09]), "pclass": pclass})
+X.loc[rng.random(n) < 0.2, "age"] = np.nan           # 20% missing ages, like the real data
+X.loc[[3, 7], "embarked"] = np.nan
+
+numeric_pipeline = Pipeline([("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())])
+categorical_pipeline = Pipeline([("imputer", SimpleImputer(strategy="most_frequent")),
+                                 ("encoder", OneHotEncoder(handle_unknown="ignore"))])
+preprocessor = ColumnTransformer([("numeric", numeric_pipeline, ["age", "fare"]),
+                                  ("categorical", categorical_pipeline, ["sex", "embarked", "pclass"])])
+full_pipeline = Pipeline([("preprocessor", preprocessor),
+                          ("classifier", RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42))])
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+scores = cross_val_score(full_pipeline, X_train, y_train, cv=5)    # refits EVERY step inside each fold
+full_pipeline.fit(X_train, y_train)
+print(f"CV accuracy {scores.mean():.3f} +/- {scores.std():.3f} | test {full_pipeline.score(X_test, y_test):.3f}")
+
+joblib.dump(full_pipeline, "model_pipeline.joblib")   # ONE file: preprocessing + model
+loaded = joblib.load("model_pipeline.joblib")         # only load files YOU created (Part 16)
+new_data = pd.DataFrame({"age": [np.nan, 40], "fare": [80.0, 7.9], "sex": ["female", "male"],
+                         "embarked": ["C", "Z"], "pclass": [1, 3]})     # "Z" never seen in training
+for row, p in zip(new_data.itertuples(), loaded.predict_proba(new_data)[:, 1]):
+    print(f"  {row.sex}, class {row.pclass}, embarked {row.embarked}: P(survive) = {p:.2f}")
+assert (loaded.predict(X_test) == full_pipeline.predict(X_test)).all()
 ```
+
+**Output:**
+
+```
+CV accuracy 0.779 +/- 0.026 | test 0.792
+  female, class 1, embarked C: P(survive) = 0.87
+  male, class 3, embarked Z: P(survive) = 0.11
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: why nothing crashed and the save-the-whole-pipeline trap</summary>
+
+The missing age became the training median and the unseen port "Z" became all zeros — no crash.
+
+**Pitfall:** save the WHOLE pipeline, not just the model; re-coding preprocessing for serving causes training-serving skew ([Ch 26 — The Pantry and the #1 Silent Killer](#content/26_ml_system_design)). **Go deeper:** [Ch 09 — A Leakage-Safe Pipeline](#content/09_data_preprocessing).
+
+</details>
 
 ---
 
@@ -1945,168 +2430,112 @@ predictions = loaded_pipeline.predict(new_data)
 
 ## 12.1 Your First Neural Network with PyTorch
 
+![First neural network comparison: one iris network 4 to 16 to 8 to 3 with parameters = inputs x outputs + outputs per dense layer (4 x 16 + 16 = 80, 16 x 8 + 8 = 136, 8 x 3 + 3 = 27, total 243); PyTorch loop of forward + loss, zero_grad, backward, step for 100 epochs with CrossEntropyLoss on raw logits and Adam lr 0.01; Keras 3 compile, fit, evaluate with EarlyStopping patience 10 where val_loss turns up while loss keeps falling; compare table of style, best use and deploy targets (as of Nov 2026: PyTorch 2.15, Keras 3.15, TorchServe archived Aug 2025)](diagrams/pml27_info_first_neural_network_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — when to use a network, the parameter count, the PyTorch training loop and common bugs</summary>
+
+**What & when:** neural networks shine on images, text, audio and huge datasets; on small tables, tree ensembles usually match them with less effort ([Ch 14 §14.14](#content/14_neural_networks)).
+
+> **Maths in one line:** `parameters per dense layer = inputs × outputs + outputs` — 4→16→8→3 gives 80 + 136 + 27 = **243**.
+
 ```python
+# Runs locally: pip install torch scikit-learn   (PyTorch 2.15, October 2026)
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-# ─── PREPARE DATA ───
-iris = load_iris()
-X, y = iris.data, iris.target
-
+torch.manual_seed(42)
+X, y = load_iris(return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler().fit(X_train)                       # fit on train only
+X_train_t = torch.tensor(scaler.transform(X_train), dtype=torch.float32)
+X_test_t = torch.tensor(scaler.transform(X_test), dtype=torch.float32)
+y_train_t = torch.tensor(y_train, dtype=torch.long)          # class ids must be int64
+y_test_t = torch.tensor(y_test, dtype=torch.long)
 
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+model = nn.Sequential(nn.Linear(4, 16), nn.ReLU(),           # 4 inputs -> 16 hidden
+                      nn.Linear(16, 8), nn.ReLU(),           # 16 -> 8 hidden
+                      nn.Linear(8, 3))                       # 3 raw class scores (logits)
+criterion = nn.CrossEntropyLoss()                            # applies softmax itself
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-# Convert to PyTorch tensors
-X_train_t = torch.FloatTensor(X_train)
-y_train_t = torch.LongTensor(y_train)
-X_test_t = torch.FloatTensor(X_test)
-y_test_t = torch.LongTensor(y_test)
+model.train()
+for epoch in range(1, 101):                                  # full batch: all 120 rows each step
+    loss = criterion(model(X_train_t), y_train_t)            # forward pass + loss
+    optimizer.zero_grad()                                    # clear old gradients
+    loss.backward()                                          # backpropagation
+    optimizer.step()                                         # update the weights
+    if epoch % 20 == 0:
+        print(f"epoch {epoch:3d}  loss {loss.item():.4f}")
 
-# ─── DEFINE THE MODEL ───
-class IrisNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.layer1 = nn.Linear(4, 16)    # 4 inputs -> 16 hidden neurons
-        self.relu1 = nn.ReLU()
-        self.layer2 = nn.Linear(16, 8)    # 16 -> 8 hidden neurons
-        self.relu2 = nn.ReLU()
-        self.output = nn.Linear(8, 3)     # 8 -> 3 classes
-
-    def forward(self, x):
-        x = self.relu1(self.layer1(x))
-        x = self.relu2(self.layer2(x))
-        x = self.output(x)
-        return x
-
-model = IrisNet()
-
-# ─── DEFINE LOSS AND OPTIMIZER ───
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-# ─── TRAINING LOOP ───
-epochs = 100
-for epoch in range(epochs):
-    # Forward pass
-    outputs = model(X_train_t)
-    loss = criterion(outputs, y_train_t)
-
-    # Backward pass
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    if (epoch + 1) % 20 == 0:
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}")
-
-# ─── EVALUATE ───
 model.eval()
 with torch.no_grad():
-    outputs = model(X_test_t)
-    _, predicted = torch.max(outputs, 1)
-    accuracy = (predicted == y_test_t).sum().item() / len(y_test_t)
-    print(f"\nTest Accuracy: {accuracy:.2%}")
+    accuracy = (model(X_test_t).argmax(dim=1) == y_test_t).float().mean().item()
+print(f"test accuracy {accuracy:.2%} | parameters {sum(p.numel() for p in model.parameters())}")
 ```
+
+**Common bugs:** softmax before `CrossEntropyLoss` (it wants raw logits); no `optimizer.zero_grad()` (gradients pile up); labels not int64; skipping `model.eval()` + `torch.no_grad()` at test time. On real data, feed mini-batches of 32–256 rows with a `DataLoader`. No framework? scikit-learn's `MLPClassifier(hidden_layer_sizes=(16, 8))` trains the same network.
+
+**Go deeper:** [Ch 14 §14.7a](#content/14_neural_networks) (a first network, step by step) · [Ch 16 §1.1–1.2](#content/16_deep_learning) (backprop, optimizers).
+
+</details>
 
 ---
 
-## 12.2 Your First Neural Network with Keras/TensorFlow (simpler)
+## 12.2 Your First Neural Network with Keras 3 (simpler)
+
+<details>
+<summary><strong>Read as text</strong> — the Keras 3 version, early stopping and Keras vs PyTorch</summary>
+
+Keras 3 runs one codebase on a PyTorch, JAX or TensorFlow backend (TensorFlow 2.21 is maintenance-focused). Declare layers, `compile`, `fit` — no hand-written loop.
 
 ```python
-# pip install tensorflow
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+# Runs locally: pip install keras torch scikit-learn   (Keras 3.15; "jax" or "tensorflow" also work as backend)
+import os
+os.environ["KERAS_BACKEND"] = "torch"                # set BEFORE importing keras
+import keras
+from keras import layers
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-# ─── PREPARE DATA ───
-iris = load_iris()
-X_train, X_test, y_train, y_test = train_test_split(
-    iris.data, iris.target, test_size=0.2, random_state=42
-)
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+keras.utils.set_random_seed(42)
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler().fit(X_train)
+X_train, X_test = scaler.transform(X_train), scaler.transform(X_test)
 
-# ─── DEFINE MODEL (Sequential API — easiest) ───
 model = keras.Sequential([
-    layers.Dense(16, activation='relu', input_shape=(4,)),  # 4 inputs -> 16 hidden
-    layers.Dense(8, activation='relu'),                      # 16 -> 8 hidden
-    layers.Dense(3, activation='softmax'),                   # 8 -> 3 classes
+    keras.Input(shape=(4,)),                         # Keras 3: declare the input (not input_shape=)
+    layers.Dense(16, activation="relu"),
+    layers.Dense(8, activation="relu"),
+    layers.Dense(3, activation="softmax"),
 ])
-
-# ─── COMPILE ───
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',  # for integer labels (0,1,2)
-    metrics=['accuracy']
-)
-
-model.summary()  # print architecture
-
-# ─── TRAIN ───
-history = model.fit(
-    X_train, y_train,
-    epochs=50,
-    batch_size=16,
-    validation_split=0.2,  # use 20% of training data for validation
-    verbose=1
-)
-
-# ─── EVALUATE ───
-test_loss, test_acc = model.evaluate(X_test, y_test)
-print(f"\nTest Accuracy: {test_acc:.2%}")
-
-# ─── PLOT TRAINING HISTORY ───
-import matplotlib.pyplot as plt
-
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
-plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='Val Loss')
-plt.title('Loss Over Epochs')
-plt.xlabel('Epoch')
-plt.legend()
-
-plt.subplot(1, 2, 2)
-plt.plot(history.history['accuracy'], label='Train Acc')
-plt.plot(history.history['val_accuracy'], label='Val Acc')
-plt.title('Accuracy Over Epochs')
-plt.xlabel('Epoch')
-plt.legend()
-
-plt.tight_layout()
-plt.show()
-
-# If val_loss starts going UP while train_loss goes down = OVERFITTING
-# Solution: add Dropout layers or early stopping
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.01),
+              loss="sparse_categorical_crossentropy",   # integer labels 0, 1, 2
+              metrics=["accuracy"])
+model.summary()                                      # Total params: 243
+early_stop = keras.callbacks.EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+history = model.fit(X_train, y_train, epochs=100, batch_size=16, validation_split=0.2,
+                    callbacks=[early_stop], verbose=0)
+test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
+print(f"trained {len(history.history['loss'])} epochs | test accuracy {test_acc:.2%}")
 ```
 
-```
-  PYTORCH vs KERAS — WHEN TO USE WHICH:
-  ┌──────────────────────┬──────────────────────────────────────┐
-  │ Keras (TensorFlow)   │ PyTorch                               │
-  ├──────────────────────┼──────────────────────────────────────┤
-  │ Simpler, less code   │ More flexible, more control           │
-  │ Better for beginners │ Better for research & custom models   │
-  │ Strong deployment    │ Dominant in academia & research papers │
-  │ (TF Serving, TFLite) │ Growing in production (TorchServe)    │
-  │ Higher-level API     │ Lower-level, explicit training loop   │
-  │ Faster prototyping   │ Easier debugging (Python-native)      │
-  └──────────────────────┴──────────────────────────────────────┘
-  
-  START with Keras for learning. Move to PyTorch when you need
-  custom training loops, research architectures, or more control.
-```
+Plot `history.history["loss"]` against `["val_loss"]` (Part 8.3): validation loss rising while training loss falls = overfitting, which `EarlyStopping` catches.
+
+| | Keras 3 | PyTorch |
+|---|---|---|
+| Style | `compile` → `fit` → `evaluate` | You write the training loop |
+| Best for | Quick prototypes, standard models | Most papers and jobs; custom models; Hugging Face |
+| Deploy | `model.export()`: SavedModel, ONNX, LiteRT (on-device) | `torch.export`, ONNX, ExecuTorch (on-device); LLMs on vLLM / SGLang |
+
+**Which first?** PyTorch for interviews and most jobs; Keras 3 for a quick baseline. (TorchServe, still named in older guides, was archived in August 2025.) **Go deeper:** [Ch 16 §7.4](#content/16_deep_learning) · [Ch 19](#content/19_ai_frameworks).
+
+</details>
 
 ---
 
@@ -2114,180 +2543,187 @@ plt.show()
 
 ---
 
+## 13.1 End-to-End Classification — Titanic Survival
+
+![End-to-end Titanic classification in 7 steps: load 891 rows with 174 ages missing, add family_size and is_alone, split first 712 train and 179 test, pipeline with impute + scale and impute + one-hot, compare 3 models with 5-fold CV (Logistic Regression 0.757, Gradient Boosting 0.749, Random Forest 0.736), test once (0.754 vs baseline 1 - 67/179 = 0.626), explain with permutation importance (sex 0.182, is_alone 0.023, pclass 0.016); on the real Titanic gradient boosting wins with CV 0.817 and test 0.782](diagrams/pml27_info_titanic_end_to_end_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the task, the baseline maths and the stand-in data</summary>
+
+**What & when:** predict yes/no from a table mixing numbers, text categories and missing values — §11.2's pipeline, end to end. Kaggle's Titanic (891 passengers, 38% survived) is the classic first project.
+
+> **Maths in one line:** `baseline accuracy = share of the biggest class` — here 1 − 67/179 = 0.626 on the test set ("everyone died"); a model is useful only above it.
+
+▶ Run cannot download files, so step 1 builds a stand-in with Titanic's columns and patterns. Locally, use `sns.load_dataset("titanic")` — nothing else changes.
+
+</details>
+
 ```python
-# ══════════════════════════════════════════════════════════════
-#  COMPLETE PROJECT: Predict Titanic Survival
-#  This is the code you'd submit to Kaggle
-# ══════════════════════════════════════════════════════════════
-
-import pandas as pd
+# 13.1 End-to-end classification: split first -> Pipeline -> compare with CV -> test ONCE -> explain
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import accuracy_score, classification_report
-import warnings
-warnings.filterwarnings('ignore')
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# ═══ 1. LOAD DATA ═══
-df = sns.load_dataset("titanic")
-print(f"Shape: {df.shape}")
-print(f"\nMissing values:\n{df.isnull().sum()}")
+# 1. LOAD - a stand-in with Titanic's columns and patterns. Real data: sns.load_dataset("titanic")
+rng = np.random.default_rng(42)
+n = 891
+df = pd.DataFrame({
+    "pclass": rng.choice([1, 2, 3], n, p=[0.24, 0.21, 0.55]),
+    "sex": rng.choice(["male", "female"], n, p=[0.65, 0.35]),
+    "age": rng.normal(30, 14, n).clip(1, 75).round(),
+    "sibsp": rng.choice([0, 1, 2, 3, 4], n, p=[0.68, 0.23, 0.04, 0.02, 0.03]),
+    "parch": rng.choice([0, 1, 2, 3, 5], n, p=[0.76, 0.13, 0.09, 0.01, 0.01]),
+    "embarked": rng.choice(["S", "C", "Q"], n, p=[0.72, 0.19, 0.09]),
+})
+df["fare"] = (rng.lognormal(2.1, 0.5, n) * df["pclass"].map({1: 7.0, 2: 1.8, 3: 1.0})).round(2)
+female, child = df["sex"].eq("female"), df["age"] < 13
+p = np.select([female & (df["pclass"] < 3), female, child, df["pclass"] == 1],
+              [0.95, 0.50, 0.50, 0.37], default=0.14)        # women and children first
+p = np.where(df["sibsp"] + df["parch"] >= 4, p * 0.3, p)      # big families rarely made it
+df["survived"] = (rng.random(n) < p).astype(int)
+df.loc[rng.random(n) < 0.2, "age"] = np.nan                   # ~20% of ages unknown
+df.loc[rng.choice(n, 2, replace=False), "embarked"] = np.nan
+print(f"{n} passengers, {df['survived'].mean():.1%} survived, {df['age'].isna().sum()} ages missing")
 
-# ═══ 2. FEATURE ENGINEERING ═══
-# Extract title from name
-df['title'] = df['who']  # 'man', 'woman', 'child'
+# 2. FEATURES - row-by-row formulas use no other rows, so they are safe before the split
+df["family_size"] = df["sibsp"] + df["parch"] + 1
+df["is_alone"] = (df["family_size"] == 1).astype(int)
+num, cat = ["age", "fare", "family_size", "is_alone", "pclass"], ["sex", "embarked"]
 
-# Family size
-df['family_size'] = df['sibsp'] + df['parch'] + 1
-df['is_alone'] = (df['family_size'] == 1).astype(int)
-
-# Age groups
-df['age'] = df['age'].fillna(df['age'].median())
-df['age_group'] = pd.cut(df['age'], bins=[0, 12, 18, 35, 50, 100],
-                          labels=['child', 'teen', 'young', 'middle', 'senior'])
-
-# Fare per person
-df['fare'] = df['fare'].fillna(df['fare'].median())
-df['fare_per_person'] = df['fare'] / df['family_size']
-
-# ═══ 3. SELECT AND ENCODE FEATURES ═══
-features = ['pclass', 'sex', 'age', 'sibsp', 'parch', 'fare',
-            'family_size', 'is_alone', 'fare_per_person']
-
-df_model = df[features + ['survived']].copy()
-
-# Encode sex
-df_model['sex'] = LabelEncoder().fit_transform(df_model['sex'])
-
-# Handle remaining missing
-df_model = df_model.dropna()
-
-X = df_model.drop('survived', axis=1)
-y = df_model['survived']
-
-# ═══ 4. SPLIT ═══
+# 3. SPLIT FIRST - the test set stays locked until step 6
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+    df[num + cat], df["survived"], test_size=0.2, random_state=42, stratify=df["survived"])
 
-# ═══ 5. TRAIN MULTIPLE MODELS ═══
-models = {
-    'Random Forest': RandomForestClassifier(n_estimators=200, max_depth=6, random_state=42),
-    'Gradient Boosting': GradientBoostingClassifier(n_estimators=150, max_depth=4, random_state=42),
-}
+# 4. PREPROCESS INSIDE THE PIPELINE - medians and categories come from training folds only
+ohe = OneHotEncoder(drop="first", handle_unknown="ignore", sparse_output=False)  # k categories -> k-1 columns
+prep = ColumnTransformer([
+    ("num", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
+    ("cat", make_pipeline(SimpleImputer(strategy="most_frequent"), ohe), cat)])
+models = {"Logistic Regression": LogisticRegression(max_iter=1000),
+          "Random Forest": RandomForestClassifier(n_estimators=50, max_depth=6, random_state=42),
+          "Gradient Boosting": GradientBoostingClassifier(n_estimators=50, max_depth=2, random_state=42)}
 
+# 5. COMPARE WITH 5-FOLD STRATIFIED CV (training rows only)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_acc = {}
 for name, model in models.items():
-    scores = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy')
-    print(f"{name}: CV={scores.mean():.2%} (+/- {scores.std():.2%})")
+    s = cross_val_score(make_pipeline(prep, model), X_train, y_train, cv=cv)
+    cv_acc[name] = s.mean()
+    print(f"{name:<20} CV accuracy {s.mean():.3f} +/- {s.std():.3f}")
 
-# ═══ 6. TRAIN BEST MODEL AND EVALUATE ON TEST SET ═══
-best_model = GradientBoostingClassifier(n_estimators=150, max_depth=4, random_state=42)
-best_model.fit(X_train, y_train)
-y_pred = best_model.predict(X_test)
+# 6. REFIT THE WINNER ON ALL TRAINING ROWS, TEST ONCE
+best = max(cv_acc, key=cv_acc.get)
+pipe = make_pipeline(prep, models[best]).fit(X_train, y_train)
+acc, baseline = pipe.score(X_test, y_test), 1 - y_test.mean()     # baseline = always "died"
+print(f"{best}: test accuracy {acc:.3f} vs baseline {baseline:.3f}")
+assert acc > baseline
 
-print(f"\nTest Accuracy: {accuracy_score(y_test, y_pred):.2%}")
-print(classification_report(y_test, y_pred))
-
-# ═══ 7. FEATURE IMPORTANCE ═══
-importance = pd.Series(best_model.feature_importances_, index=X.columns)
-importance.sort_values(ascending=True).plot.barh(figsize=(8, 5))
-plt.title('Feature Importance — What Predicts Survival?')
-plt.xlabel('Importance')
-plt.tight_layout()
-plt.show()
+# 7. EXPLAIN - shuffle one column at a time; the accuracy drop is its importance
+imp = permutation_importance(pipe, X_test, y_test, n_repeats=5, random_state=42)
+for col, drop in sorted(zip(num + cat, imp.importances_mean), key=lambda t: -t[1])[:3]:
+    print(f"  {col:<12} accuracy drop {drop:.3f}")
 ```
+
+**Output:**
+
+```
+891 passengers, 37.5% survived, 174 ages missing
+Logistic Regression  CV accuracy 0.757 +/- 0.031
+Random Forest        CV accuracy 0.736 +/- 0.025
+Gradient Boosting    CV accuracy 0.749 +/- 0.041
+Logistic Regression: test accuracy 0.754 vs baseline 0.626
+  sex          accuracy drop 0.182
+  is_alone     accuracy drop 0.023
+  pclass       accuracy drop 0.016
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: how to read the scores, the leakage trap and further reading</summary>
+
+**How to read it:** with a few strong, mostly additive signals, logistic regression wins and holds up on the test set; shuffling `sex` costs 18 points. On the real data the same code (scikit-learn 1.9.1) picks gradient boosting (CV 0.817, test 0.782).
+
+**Pitfall:** filling `age` with the whole table's median before splitting leaks test rows; in the pipeline the median comes from training folds only. `LabelEncoder` is for targets, not features; `OneHotEncoder(sparse=...)` was removed in scikit-learn 1.4 — use `sparse_output`.
+
+**Go deeper:** [Ch 09 — A Leakage-Safe Pipeline](#content/09_data_preprocessing) · [Ch 13 §13.7 Cross-Validation](#content/13_model_evaluation)
+
+</details>
 
 ---
 
-## 13.2 End-to-End Regression -- California House Prices
+## 13.2 End-to-End Regression — Diabetes Progression
+
+![End-to-end regression infographic on the diabetes table (442 patients, 10 measurements, target 25 to 346, split 353 train / 89 test): formulas MAE = mean|y - y-hat|, RMSE = sqrt(mean((y - y-hat)^2)), R^2 = 1 - sum(y - y-hat)^2 / sum(y - y-bar)^2; the mean baseline predicts y-bar so R^2 = 1 - 1 = 0 (CV -0.027); 5-fold CV R^2 bars to scale: Linear Regression 0.480 wins over Random Forest 0.430 and Gradient Boosting 0.423; tested once: MAE 42.8, RMSE 53.9, R^2 0.453; with 20,640 California districts boosting wins 0.835 vs linear 0.576; trap: scaling before cross_val_score leaks across folds](diagrams/pml27_info_regression_end_to_end_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the task and the MAE, RMSE and R² formulas</summary>
+
+**What & when:** predict a number. scikit-learn's bundled diabetes table (442 patients, 10 pre-scaled measurements) asks how far the disease progresses in a year (target 25 to 346).
+
+> **Maths in one line:** `MAE = mean|y − ŷ|`, `RMSE = √mean((y − ŷ)²)`, `R² = 1 − Σ(y − ŷ)² / Σ(y − ȳ)²` — MAE is the typical miss, RMSE punishes big misses (so RMSE ≥ MAE), R² = 0 means "no better than the mean".
+
+</details>
 
 ```python
-# ══════════════════════════════════════════════════════════════
-#  COMPLETE REGRESSION PROJECT: Predict California House Prices
-# ══════════════════════════════════════════════════════════════
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.datasets import fetch_california_housing
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+# 13.2 End-to-end regression: baseline + 3 models compared with CV, winner tested ONCE
+from sklearn.datasets import load_diabetes
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import KFold, cross_validate, train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-# ═══ 1. LOAD DATA ═══
-housing = fetch_california_housing()
-df = pd.DataFrame(housing.data, columns=housing.feature_names)
-df['Price'] = housing.target
-print(f"Shape: {df.shape}")
-print(df.describe())
-
-# ═══ 2. EDA ═══
-# Check target distribution
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
-df['Price'].hist(bins=50)
-plt.title('House Price Distribution')
-plt.subplot(1, 2, 2)
-sns.heatmap(df.corr()[['Price']].sort_values(by='Price', ascending=False),
-            annot=True, cmap='coolwarm')
-plt.title('Correlation with Price')
-plt.tight_layout()
-plt.show()
-
-# ═══ 3. PREPARE ═══
-X = df.drop('Price', axis=1)
-y = df['Price']
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# ═══ 4. TRAIN & COMPARE MODELS ═══
+X, y = load_diabetes(return_X_y=True)                  # 442 patients x 10 features; y = progression
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 models = {
-    'Linear Regression': LinearRegression(),
-    'Ridge (L2)':        Ridge(alpha=1.0),
-    'Random Forest':     RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42),
-    'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, max_depth=5, random_state=42),
+    "Baseline (mean)": DummyRegressor(),
+    "Linear Regression": make_pipeline(StandardScaler(), LinearRegression()),
+    "Random Forest": RandomForestRegressor(n_estimators=100, min_samples_leaf=5, random_state=42),
+    "Gradient Boosting": GradientBoostingRegressor(n_estimators=200, max_depth=2, learning_rate=0.05,
+                                                   random_state=42),
 }
-
-print(f"{'Model':<25} {'CV MAE':>10} {'CV R2':>10}")
-print("-" * 48)
+cv = KFold(n_splits=5, shuffle=True, random_state=42)
+cv_r2 = {}
 for name, model in models.items():
-    mae_scores = -cross_val_score(model, X_train_scaled, y_train, cv=5,
-                                   scoring='neg_mean_absolute_error')
-    r2_scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='r2')
-    print(f"{name:<25} {mae_scores.mean():>9.4f} {r2_scores.mean():>9.4f}")
+    s = cross_validate(model, X_train, y_train, cv=cv, scoring=("neg_mean_absolute_error", "r2"))
+    cv_r2[name] = s["test_r2"].mean()
+    print(f"{name:<18} CV MAE {-s['test_neg_mean_absolute_error'].mean():5.1f} | CV R2 {cv_r2[name]:6.3f}")
 
-# ═══ 5. FINAL EVALUATION ═══
-best_model = GradientBoostingRegressor(n_estimators=200, max_depth=5, random_state=42)
-best_model.fit(X_train_scaled, y_train)
-y_pred = best_model.predict(X_test_scaled)
-
-print(f"\nFinal Test Results:")
-print(f"  MAE:  ${mean_absolute_error(y_test, y_pred)*100000:.0f}")
-print(f"  RMSE: ${np.sqrt(mean_squared_error(y_test, y_pred))*100000:.0f}")
-print(f"  R2:   {r2_score(y_test, y_pred):.4f}")
-
-# ═══ 6. ACTUAL VS PREDICTED PLOT ═══
-plt.figure(figsize=(8, 6))
-plt.scatter(y_test, y_pred, alpha=0.3, s=10)
-plt.plot([0, 5], [0, 5], 'r--', label='Perfect Prediction')
-plt.xlabel('Actual Price (x$100K)')
-plt.ylabel('Predicted Price (x$100K)')
-plt.title('Actual vs Predicted House Prices')
-plt.legend()
-plt.show()
+best = max(cv_r2, key=cv_r2.get)
+y_pred = models[best].fit(X_train, y_train).predict(X_test)
+mae, rmse = mean_absolute_error(y_test, y_pred), mean_squared_error(y_test, y_pred) ** 0.5
+print(f"{best} on test: MAE {mae:.1f} | RMSE {rmse:.1f} | R2 {r2_score(y_test, y_pred):.3f}")
+assert rmse >= mae                                     # big misses weigh more in RMSE
 ```
+
+**Output:**
+
+```
+Baseline (mean)    CV MAE  66.9 | CV R2 -0.027
+Linear Regression  CV MAE  45.0 | CV R2  0.480
+Random Forest      CV MAE  47.6 | CV R2  0.430
+Gradient Boosting  CV MAE  47.6 | CV R2  0.423
+Linear Regression on test: MAE 42.8 | RMSE 53.9 | R2 0.453
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: why linear wins here, when boosting wins, and the RMSE version trap</summary>
+
+**How to read it:** the mean-only baseline scores R² ≈ 0, as the formula says. With 353 training rows, linear regression beats the forest and boosting. On the 20,640 districts of `fetch_california_housing()` (a download — run it locally) the order flips: linear R² 0.576 vs `HistGradientBoostingRegressor` 0.835. Boosting needs rows.
+
+**Pitfall:** keep the scaler inside the pipeline so CV refits it per fold. `mean_squared_error(...) ** 0.5` works in every version; `root_mean_squared_error` needs scikit-learn ≥ 1.4, and `squared=False` was removed in 1.6.
+
+**Go deeper:** [Ch 13 §13.6 Regression Metrics](#content/13_model_evaluation)
+
+</details>
 
 ---
 
@@ -2295,122 +2731,104 @@ plt.show()
 
 ---
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ERROR / PROBLEM           │ CAUSE                │ FIX                  │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Train acc: 99%             │ Overfitting          │ More data, regularize│
-│ Test acc: 60%              │                      │ simpler model, dropout│
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Train acc: 55%             │ Underfitting          │ More features, more  │
-│ Test acc: 53%              │                      │ complex model, less  │
-│                            │                      │ regularization       │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Model takes forever        │ Too much data or     │ Subsample data, use  │
-│ to train                   │ complex model        │ LightGBM, reduce     │
-│                            │                      │ features, use GPU    │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ "Could not convert         │ Categorical data     │ Encode strings to    │
-│  string to float"          │ not encoded          │ numbers first        │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Very high accuracy on      │ Data leakage!        │ Check: is a feature  │
-│ test set (suspicious)      │                      │ derived from target? │
-│                            │                      │ Did you scale before │
-│                            │                      │ splitting?           │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Model always predicts      │ Class imbalance      │ Use class_weight=    │
-│ the majority class         │                      │ 'balanced', SMOTE,   │
-│                            │                      │ or threshold tuning  │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ NaN in predictions         │ NaN in input data    │ Check for missing    │
-│                            │                      │ values, impute first │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Feature importance shows   │ Correlated features  │ Remove highly        │
-│ unexpected results         │ or high cardinality  │ correlated features, │
-│                            │                      │ use permutation imp. │
-├────────────────────────────┼──────────────────────┼──────────────────────┤
-│ Validation score varies    │ Small dataset or     │ Use K-fold CV (5-10) │
-│ wildly between runs        │ unstable split       │ instead of single    │
-│                            │                      │ train/test split     │
-└────────────────────────────┴──────────────────────┴──────────────────────┘
-```
+Error texts are the libraries' own (scikit-learn 1.9, pandas 3.1).
+
+| Symptom or error | Likely cause | Fix |
+|---|---|---|
+| Train 0.99, test 0.60 | Overfitting | Simpler model, more regularisation or data; early stopping or dropout for nets |
+| Train 0.55, test 0.53 | Underfitting | Better features, a more flexible model, less regularisation |
+| Test score suspiciously high | Leakage: a feature recorded after the outcome, or preprocessing fitted before the split | Score each feature alone (AUC ≥ 0.95 is suspect); split first, fit everything in a `Pipeline` |
+| High accuracy, no positive ever caught | Class imbalance + the 0.5 threshold | `class_weight="balanced"`, tune the threshold, report PR-AUC and recall (§8.4) |
+| `could not convert string to float: 'male'` | Text categories reached the model | `OneHotEncoder` in a `ColumnTransformer` |
+| `Input X contains NaN.` | Missing values reached a model that can't take them | `SimpleImputer`, or `HistGradientBoosting*` (trees and forests accept NaN from scikit-learn 1.4) |
+| `ConvergenceWarning: lbfgs failed to converge` | Unscaled features or too few iterations | `StandardScaler`, then raise `max_iter` |
+| `The feature names should match those that were passed during fit.` | Columns renamed, reordered or missing at predict time | Save and reuse the whole pipeline (Part 16) |
+| `Found unknown categories ['Q'] in column 0 during transform` | A category never seen in training | `OneHotEncoder(handle_unknown="ignore")` |
+| `df[col][row] = x` changes nothing (pandas 3 warns `ChainedAssignmentError`) | Copy-on-Write: chained assignment never writes to `df` | `df.loc[row, col] = x` |
+| Scores swing between runs | Small data, one lucky split | Stratified 5–10-fold CV; report mean ± std |
+| Feature importance looks wrong | Impurity importance favours many-valued and correlated features | Permutation importance on held-out data (§13.1) |
+| Training takes forever | Big data or a slow model | Subsample while iterating, `HistGradientBoosting*` or LightGBM, `n_jobs=-1` |
+
+**Go deeper:** [Ch 08 — Debugging Flow](#content/08_core_concepts) · [Ch 13 §13.11 Common Evaluation Mistakes](#content/13_model_evaluation)
 
 ---
-
 # PART 15: WHAT TO USE WHEN — ALGORITHM CHEAT SHEET
 
 ---
 
 ```
-  ┌───────────────────────────────────────────────────────────────────────┐
-  │  ALGORITHM SELECTION FLOWCHART                                        │
-  │                                                                       │
-  │  What's your task?                                                    │
-  │       │                                                               │
-  │       ├── CLASSIFICATION (predict a category)                         │
-  │       │    │                                                          │
-  │       │    ├── Need a baseline?                                       │
-  │       │    │   → Logistic Regression                                  │
-  │       │    │                                                          │
-  │       │    ├── Tabular data, want best accuracy?                      │
-  │       │    │   → XGBoost or LightGBM                                  │
-  │       │    │                                                          │
-  │       │    ├── Need interpretability?                                  │
-  │       │    │   → Decision Tree or Logistic Regression                 │
-  │       │    │                                                          │
-  │       │    ├── Text data?                                             │
-  │       │    │   → Naive Bayes (simple) or Transformer (advanced)       │
-  │       │    │                                                          │
-  │       │    ├── Image data?                                            │
-  │       │    │   → CNN (Convolutional Neural Network)                   │
-  │       │    │                                                          │
-  │       │    └── Small dataset, no tuning time?                         │
-  │       │        → Random Forest                                        │
-  │       │                                                               │
-  │       ├── REGRESSION (predict a number)                               │
-  │       │    │                                                          │
-  │       │    ├── Need a baseline?                                       │
-  │       │    │   → Linear Regression                                    │
-  │       │    │                                                          │
-  │       │    ├── Tabular data, want best accuracy?                      │
-  │       │    │   → XGBoost or LightGBM                                  │
-  │       │    │                                                          │
-  │       │    ├── Suspect only some features matter?                     │
-  │       │    │   → Lasso (L1) or Elastic Net                            │
-  │       │    │                                                          │
-  │       │    └── Non-linear relationship?                               │
-  │       │        → Random Forest or Neural Network                      │
-  │       │                                                               │
-  │       └── CLUSTERING (find groups, no labels)                         │
-  │            │                                                          │
-  │            ├── Know number of groups?                                  │
-  │            │   → K-Means                                              │
-  │            │                                                          │
-  │            ├── Don't know number of groups?                            │
-  │            │   → DBSCAN or Hierarchical Clustering                    │
-  │            │                                                          │
-  │            └── Need soft (probabilistic) assignments?                  │
-  │                → Gaussian Mixture Model (GMM)                         │
-  │                                                                       │
-  └───────────────────────────────────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                                                                         │
+  │  ALGORITHM SELECTION FLOWCHART                                          │
+  │                                                                         │
+  │  What's your task?                                                      │
+  │       │                                                                 │
+  │       ├── CLASSIFICATION (predict a category)                           │
+  │       │    │                                                            │
+  │       │    ├── Need a baseline?                                         │
+  │       │    │   → Logistic Regression                                    │
+  │       │    │                                                            │
+  │       │    ├── Tabular data, want best accuracy?                        │
+  │       │    │   → Gradient boosting: XGBoost, LightGBM or CatBoost       │
+  │       │    │                                                            │
+  │       │    ├── Need interpretability?                                   │
+  │       │    │   → Logistic Regression or a shallow Decision Tree         │
+  │       │    │                                                            │
+  │       │    ├── Text data?                                               │
+  │       │    │   → Baseline: TF-IDF + Logistic Regression / Naive Bayes   │
+  │       │    │   → Best: fine-tuned transformer, or embeddings + LR       │
+  │       │    │                                                            │
+  │       │    ├── Image data?                                              │
+  │       │    │   → Fine-tune a pretrained CNN or ViT (transfer learning)  │
+  │       │    │                                                            │
+  │       │    └── Small dataset, no tuning time?                           │
+  │       │        → Random Forest                                          │
+  │       │                                                                 │
+  │       ├── REGRESSION (predict a number)                                 │
+  │       │    │                                                            │
+  │       │    ├── Need a baseline?                                         │
+  │       │    │   → Linear Regression (Ridge if features correlate)        │
+  │       │    │                                                            │
+  │       │    ├── Tabular data, want best accuracy?                        │
+  │       │    │   → XGBoost or LightGBM                                    │
+  │       │    │                                                            │
+  │       │    ├── Suspect only some features matter?                       │
+  │       │    │   → Lasso (L1) or Elastic Net                              │
+  │       │    │                                                            │
+  │       │    └── Non-linear relationship?                                 │
+  │       │        → Gradient boosting or Random Forest                     │
+  │       │                                                                 │
+  │       ├── CLUSTERING (find groups, no labels)                           │
+  │       │    │                                                            │
+  │       │    ├── Know the number of groups?                               │
+  │       │    │   → K-Means                                                │
+  │       │    │                                                            │
+  │       │    ├── Unknown number, odd shapes or noise points?              │
+  │       │    │   → DBSCAN / HDBSCAN or Hierarchical Clustering            │
+  │       │    │                                                            │
+  │       │    └── Need soft (probabilistic) assignments?                   │
+  │       │        → Gaussian Mixture Model (GMM)                           │
+  │       │                                                                 │
+  │       └── ANOMALY DETECTION (rare oddities, few or no labels)           │
+  │            → Isolation Forest (or Local Outlier Factor)                 │
+  │                                                                         │
+  └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Quick Reference Table
 
-```
-  ┌────────────────────┬──────────┬───────────┬───────────┬──────────────┐
-  │ Algorithm          │ Speed    │ Accuracy  │ Interp.   │ Scaling?     │
-  ├────────────────────┼──────────┼───────────┼───────────┼──────────────┤
-  │ Linear/Logistic Reg│ Fast     │ Low-Med   │ High      │ YES          │
-  │ Decision Tree      │ Fast     │ Medium    │ Very High │ No           │
-  │ Random Forest      │ Medium   │ High      │ Medium    │ No           │
-  │ XGBoost/LightGBM   │ Med-Fast │ Very High │ Low       │ No           │
-  │ SVM                │ Slow     │ High      │ Low       │ YES          │
-  │ KNN                │ Pred:Slow│ Medium    │ Medium    │ YES          │
-  │ Naive Bayes        │ Very Fast│ Low-Med   │ Medium    │ Depends      │
-  │ Neural Network     │ Slow     │ Very High │ Very Low  │ YES          │
-  └────────────────────┴──────────┴───────────┴───────────┴──────────────┘
-```
+| Algorithm | Speed | Accuracy (tables) | Interpretability | Scaling? |
+|---|---|---|---|---|
+| Linear / Logistic Regression | Fast | Low–Medium | High | Yes if regularised |
+| Decision Tree | Fast | Low | Very high | No |
+| Random Forest | Medium | Medium | Low | No |
+| XGBoost / LightGBM / CatBoost | Medium | High | Low | No |
+| SVM (RBF) | Slow beyond ~50K rows | Medium | Low | Yes |
+| KNN | Slow to predict | Medium | Medium | Yes |
+| Naive Bayes | Very fast | Low | Medium | No |
+| Neural network | Slow | Medium (best on images/text) | Very low | Yes |
+
+**Go deeper:** [Ch 12 §12.10 The Bake-Off](#content/12_key_algorithms)
 
 ---
 
@@ -2426,21 +2844,19 @@ plt.show()
 <details>
 <summary>Answers</summary>
 
-1. Load CSV (pd.read_csv) -> EDA (shape, dtypes, missing values, distributions) -> Preprocess (impute missing, encode categoricals, scale numerics) -> Split (train_test_split with stratify) -> Train baseline (LogisticRegression) -> Evaluate (accuracy, F1, confusion matrix) -> Try better models (RandomForest, XGBoost) -> Tune hyperparameters (RandomizedSearchCV) -> Final evaluation on test set.
+1. Load (`pd.read_csv`) → EDA (shape, dtypes, missing values, target balance) → **split first** (`stratify=y`) → `Pipeline`: `ColumnTransformer` (impute + scale numbers, impute + one-hot categories) + model, fitted on training rows only → baseline, then compare models with stratified 5-fold CV (F1 or PR-AUC if imbalanced) → tune (`RandomizedSearchCV`) → evaluate ONCE on the test set → save the pipeline (§13.1).
 
-2. Overfitting. Try: (a) Reduce max_depth / increase min_samples_leaf, (b) Use fewer features (feature selection), (c) Get more training data, (d) Add regularization, (e) Use cross-validation to tune hyperparameters instead of fitting to one split.
+2. Overfitting. Try: (a) lower `max_depth` / raise `min_samples_leaf`, (b) fewer or better features, (c) more data, (d) tune with cross-validation instead of one split.
 
-3. StandardScaler (mean=0, std=1): when data has outliers or is approximately normal. MinMaxScaler (0-1): when you need bounded values, for neural networks, KNN. Don't need scaling: Decision Trees, Random Forest, XGBoost, LightGBM, Naive Bayes (tree-based models split on thresholds, not distances).
+3. StandardScaler (mean 0, std 1): the default for linear models, SVM, KNN, PCA and neural nets. MinMaxScaler (0–1): when you need a bounded range (e.g. pixels) and there are no big outliers. Heavy outliers: RobustScaler. No scaling needed: decision trees, Random Forest, XGBoost, LightGBM, Naive Bayes (trees split one feature at a time on thresholds).
 
-4. 500 cities = 500 new columns. This massively increases dimensionality, slows training, and can cause overfitting (sparse features). Alternatives: Target Encoding (replace city with mean target value), Frequency Encoding (replace with count), Hashing (hash into fixed bins), or Embeddings (neural network).
+4. 500 sparse columns: slow, and rare cities have too few rows to learn from (overfitting). Alternatives: target encoding computed out-of-fold (`TargetEncoder`, scikit-learn ≥ 1.3; in-sample means leak the label), frequency encoding, hashing, grouping rare cities into "Other", native categorical support (LightGBM, CatBoost), or embeddings (neural nets).
 
-5. See the "Algorithm Comparison Template" code in Part 6.9 — it does exactly this with cross_val_score and a bar chart.
+5. See the "Algorithm Comparison Template" in §6.9 — `cross_val_score` in a loop plus a bar chart.
 
-6. Speed-ups: (a) Use LightGBM instead of RandomForest (much faster), (b) PCA to reduce from 200 features to ~50, (c) Feature selection (remove low-variance or uncorrelated features), (d) Subsample data for initial experiments, (e) Use n_jobs=-1 for parallel processing, (f) Use a smaller model first to find which features matter, then train the big model on only those.
+6. (a) `HistGradientBoosting*` or LightGBM instead of Random Forest (histogram binning is much faster), (b) `n_jobs=-1`, (c) subsample while experimenting, (d) drop useless features or PCA 200 → ~50 for linear/KNN/SVM models, (e) avoid kernel SVM and KNN at this size.
 
 </details>
-
----
 
 ---
 
@@ -2448,145 +2864,108 @@ plt.show()
 
 ---
 
+## 16.1 Save the Whole Pipeline (joblib)
+
+![Save-the-whole-pipeline cheat card: iris_pipeline.joblib holds StandardScaler and LogisticRegression in one file, with iris_pipeline.json storing the scikit-learn version and feature names; joblib.load (trusted files only) turns raw input 5.1, 3.5, 1.4, 0.2 cm into setosa (p = 0.985) with the same predictions on all 150 rows; a pickle jar whose __reduce__ calls print shows that loading = running code; exact output lines; key APIs joblib.dump, joblib.load, InconsistentVersionWarning; trap: saving only the model means the scaler gets forgotten](diagrams/pml27_info_save_whole_pipeline_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what to save and why it must be the whole pipeline</summary>
+
+**What & when:** save the trained model so a server or batch job can predict without retraining — the **whole pipeline** in one file, so nobody forgets the scaler.
+
+</details>
+
 ```python
+# 16.1 Save the WHOLE pipeline, reload it, prove nothing changed - and see why pickles are risky
+import json
+import pickle
 import joblib
+import sklearn
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
-# ─── METHOD 1: joblib (recommended for sklearn) ───
-# Save
-joblib.dump(model, 'my_model.pkl')
-joblib.dump(scaler, 'my_scaler.pkl')
+iris = load_iris()
+pipe = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)).fit(iris.data, iris.target)
+joblib.dump(pipe, "iris_pipeline.joblib")                     # scaler + model in ONE file
+with open("iris_pipeline.json", "w") as f:                    # what you need to rebuild it later
+    json.dump({"sklearn": sklearn.__version__, "features": iris.feature_names}, f)
 
-# Load
-loaded_model = joblib.load('my_model.pkl')
-loaded_scaler = joblib.load('my_scaler.pkl')
+loaded = joblib.load("iris_pipeline.joblib")                  # only ever load files YOU made
+proba = loaded.predict_proba([[5.1, 3.5, 1.4, 0.2]])[0]       # raw cm values, no manual scaling
+print(f"Prediction: {iris.target_names[proba.argmax()]} (p = {proba.max():.3f})")
+assert (loaded.predict(iris.data) == pipe.predict(iris.data)).all()
+print("Same predictions on all 150 rows after reload")
 
-# Use
-new_data_scaled = loaded_scaler.transform(new_data)
-predictions = loaded_model.predict(new_data_scaled)
-
-# ─── METHOD 2: Save entire pipeline (best practice) ───
-# If you built a Pipeline (Part 11), save the whole thing:
-joblib.dump(full_pipeline, 'production_pipeline.pkl')
-# One file contains preprocessing + model. No mismatch possible.
-
-# ─── METHOD 3: PyTorch models ───
-# Save
-import torch
-torch.save(model.state_dict(), 'model_weights.pth')
-
-# Load
-model = IrisNet()  # must define same architecture first!
-model.load_state_dict(torch.load('model_weights.pth'))
-model.eval()
-
-# ─── METHOD 4: Keras/TensorFlow models ───
-# Save
-model.save('my_keras_model.keras')
-
-# Load
-loaded_model = keras.models.load_model('my_keras_model.keras')
+class Payload:                                                # unpickling may CALL any function
+    def __reduce__(self):
+        return (print, ("!! this ran just because a pickle was loaded",))
+pickle.loads(pickle.dumps(Payload()))                         # joblib.load has the same power
 ```
+
+**Output:**
+
+```
+Prediction: setosa (p = 0.985)
+Same predictions on all 150 rows after reload
+!! this ran just because a pickle was loaded
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the two pitfalls — untrusted pickles and version mismatches</summary>
+
+**Pitfalls:**
+
+1. **Never load a pickle or joblib file you did not create** — loading can run any code (the last line proves it with a harmless `print`).
+2. **Same versions on both sides.** Loading under another scikit-learn version is unsupported (you get `InconsistentVersionWarning`). Pin versions, keep the metadata file, retrain when you upgrade.
+
+</details>
+
+## 16.2 Formats and Safety — skops, ONNX, safetensors
+
+![Model file format comparison: a decision flow asks who could have touched the file (only me, then what loads it: Python with the same versions gives joblib / pickle, no Python gives ONNX with onnxruntime; someone else gives skops with trusted types only) plus a neural-net weights branch to safetensors, PyTorch state_dict and Keras .keras; a 7-row table shows only joblib / pickle runs code on load, while skops, ONNX, safetensors, PyTorch .pt (weights_only=True since 2.6), Keras .keras (safe_mode=True) and XGBoost JSON do not; trap: weights_only=False or safe_mode=False brings the pickle risk back](diagrams/pml27_info_model_formats_safety_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the format table: what each is for, how to save and load, and whether loading runs code</summary>
+
+| Format | Use it for | Save → load | Runs code on load? |
+|---|---|---|---|
+| joblib / pickle | scikit-learn objects you made | `joblib.dump(pipe, "m.joblib")` → `joblib.load(...)` | **Yes** — same versions needed |
+| skops | scikit-learn files from others | `sio.dump(pipe, "m.skops")` → `sio.load("m.skops", trusted=[...])` (review `sio.get_untrusted_types` first) | No — unknown types refused |
+| ONNX | Serving without Python, any language | `to_onnx(pipe, X[:1].astype(np.float32))` → `onnxruntime.InferenceSession` | No (still sandbox it) |
+| safetensors | Neural-net weights (PyTorch, Hugging Face) | `save_file(model.state_dict(), "m.safetensors")` → `model.load_state_dict(load_file(...))` | No — tensors only |
+| PyTorch `.pt` | Weights only; rebuild the class first | `torch.save(model.state_dict(), "m.pt")` → `model.load_state_dict(torch.load("m.pt"))` | No: `weights_only=True` by default since PyTorch 2.6 |
+| Keras `.keras` | Whole Keras 3 models; `model.export("m_export")` writes a SavedModel for serving (ONNX, LiteRT also) | `model.save("m.keras")` → `keras.saving.load_model("m.keras")` | No: `safe_mode=True` by default |
+| XGBoost native | Boosted trees, long-term storage | `model.save_model("m.json")` → `load_model(...)` | No — loads in later versions too |
+
+§18.3 serves the saved pipeline behind an API.
+
+</details>
 
 ---
 
 # PART 17: PROGRESSIVE PRACTICE CHALLENGES
 
-Build these projects in order. Each one teaches new skills.
+Build these in order. "Download" datasets need internet (run them locally); the rest ship with scikit-learn.
 
----
+| # | Challenge | Dataset | Skills | Target |
+|---|---|---|---|---|
+| **Beginner** | | | | |
+| 1 | Iris species | `load_iris()` | Split, scale, KNN, evaluate | Accuracy > 95% |
+| 2 | Penguin species | `sns.load_dataset("penguins")` (download) | Missing values, encode `sex`, compare models | Accuracy > 95% |
+| 3 | Restaurant tips (regression) | `sns.load_dataset("tips")` (download) | First regression, MAE / RMSE | R² > 0.4 |
+| **Intermediate** | | | | |
+| 4 | Titanic survival | `sns.load_dataset("titanic")` (download) | Feature engineering, Pipeline, compare 5+ models, tune | Accuracy > 80% |
+| 5 | California house prices | `fetch_california_housing()` (download) | Regression, learning curves, Ridge vs Lasso vs boosting | R² > 0.8 |
+| 6 | Wine cultivar (3 grape varieties) | `load_wine()` | Multi-class, PCA plot, CV, confusion matrix | Accuracy > 95% |
+| **Advanced** | | | | |
+| 7 | Credit-card fraud | Kaggle "Credit Card Fraud Detection" (download) | 0.17% fraud: `class_weight`, threshold tuning, PR-AUC (accuracy is useless) | F1 > 0.75 on fraud |
+| 8 | Handwritten digits | `load_digits()` or MNIST (download) | Pixels as features, a neural net or CNN, confusion matrix | Accuracy > 97% |
+| 9 | Customer segments | Kaggle "Mall Customer Segmentation Data" (download) | K-Means, DBSCAN, silhouette, naming segments | Silhouette > 0.5 |
+| 10 | Full pipeline + deployment | Any of the above | `ColumnTransformer` pipeline, `RandomizedSearchCV`, save and reload, predict from one raw row | Same predictions after reload |
 
-```
-  ┌────────────────────────────────────────────────────────────────────┐
-  │  LEVEL 1: BEGINNER (just follow the steps)                         │
-  ├────────────────────────────────────────────────────────────────────┤
-  │                                                                    │
-  │  Challenge 1: Iris Classification                                  │
-  │  Dataset: sklearn load_iris()                                      │
-  │  Task: Classify 3 flower species                                   │
-  │  Skills: Load data, split, scale, train KNN, evaluate              │
-  │  Target: > 95% accuracy                                           │
-  │                                                                    │
-  │  Challenge 2: Penguin Species                                      │
-  │  Dataset: sns.load_dataset("penguins")                             │
-  │  Task: Classify penguin species from measurements                  │
-  │  Skills: Handle missing values, encode sex column, compare models  │
-  │  Target: > 95% accuracy                                           │
-  │                                                                    │
-  │  Challenge 3: Tips Regression                                      │
-  │  Dataset: sns.load_dataset("tips")                                 │
-  │  Task: Predict tip amount from bill, party size, time, etc.        │
-  │  Skills: First regression model, MAE/RMSE evaluation               │
-  │  Target: R2 > 0.4                                                 │
-  │                                                                    │
-  ├────────────────────────────────────────────────────────────────────┤
-  │  LEVEL 2: INTERMEDIATE (think about decisions)                     │
-  ├────────────────────────────────────────────────────────────────────┤
-  │                                                                    │
-  │  Challenge 4: Titanic Survival                                     │
-  │  Dataset: sns.load_dataset("titanic")                              │
-  │  Task: Predict who survives                                        │
-  │  Skills: Feature engineering (family_size, is_alone), handle       │
-  │  missing values, compare 5+ algorithms, tune hyperparameters       │
-  │  Target: > 80% accuracy                                           │
-  │                                                                    │
-  │  Challenge 5: California House Prices                               │
-  │  Dataset: sklearn fetch_california_housing()                       │
-  │  Task: Predict median house value                                  │
-  │  Skills: Regression, feature importance, learning curves,          │
-  │  Ridge/Lasso comparison, pipeline                                  │
-  │  Target: R2 > 0.8                                                 │
-  │                                                                    │
-  │  Challenge 6: Wine Quality                                         │
-  │  Dataset: sklearn load_wine()                                      │
-  │  Task: Classify wine type from chemical properties                 │
-  │  Skills: Multi-class, PCA for visualization, model comparison,    │
-  │  cross-validation, confusion matrix analysis                       │
-  │  Target: > 95% accuracy with the right algorithm                  │
-  │                                                                    │
-  ├────────────────────────────────────────────────────────────────────┤
-  │  LEVEL 3: ADVANCED (real-world complexity)                         │
-  ├────────────────────────────────────────────────────────────────────┤
-  │                                                                    │
-  │  Challenge 7: Credit Card Fraud Detection                          │
-  │  Dataset: Kaggle "Credit Card Fraud Detection"                     │
-  │  Task: Detect fraudulent transactions                              │
-  │  Skills: Extreme class imbalance (0.17% fraud!), SMOTE,           │
-  │  class_weight, precision-recall tradeoff, AUC-ROC, threshold      │
-  │  tuning. Accuracy is USELESS here — use F1 and recall.            │
-  │  Target: F1 > 0.75 on fraud class                                 │
-  │                                                                    │
-  │  Challenge 8: MNIST Digit Recognition                              │
-  │  Dataset: sklearn load_digits() or Keras MNIST                    │
-  │  Task: Classify handwritten digits (0-9) from images              │
-  │  Skills: Image data, neural networks, CNN if using full MNIST,    │
-  │  confusion matrix to see which digits get confused                │
-  │  Target: > 97% accuracy                                           │
-  │                                                                    │
-  │  Challenge 9: Customer Segmentation (Unsupervised)                 │
-  │  Dataset: Kaggle "Mall Customer Segmentation Data"                │
-  │  Task: Find natural customer groups for marketing                 │
-  │  Skills: K-Means, DBSCAN, Silhouette Score, PCA visualization,   │
-  │  interpreting clusters for business meaning                       │
-  │  Target: Silhouette > 0.5, 3-5 meaningful segments               │
-  │                                                                    │
-  │  Challenge 10: Full Pipeline + Deployment                          │
-  │  Dataset: Any of the above                                         │
-  │  Task: Build a complete sklearn Pipeline with ColumnTransformer,  │
-  │  tune with RandomizedSearchCV, save with joblib, load and         │
-  │  predict on new data. Write a function that takes raw input       │
-  │  and returns a prediction.                                        │
-  │  Skills: Everything combined. Production-ready code.              │
-  │                                                                    │
-  └────────────────────────────────────────────────────────────────────┘
-
-  HOW TO USE THESE CHALLENGES:
-  ──────────────────────────────────────────────────────
-  1. Try each challenge WITHOUT looking at solutions first
-  2. Get stuck? Re-read the relevant Part of this guide
-  3. Compare your approach to the end-to-end projects (Part 13)
-  4. After completing a challenge, ask: "What would I do differently?"
-  5. Keep a notebook of patterns: "When I see X, I do Y"
-```
+**How to use them:** try each without looking at solutions; when stuck, re-read the relevant Part; afterwards note the pattern ("When I see X, I do Y").
 
 ---
 
@@ -2594,7 +2973,7 @@ Build these projects in order. Each one teaches new skills.
 
 ---
 
-MLOps is the discipline of moving trained models into reliable, monitored production systems. A notebook prototype that achieves 92% accuracy is worthless if nobody can call it, it returns garbage after a data shift, or it silently degrades over six months. This section covers the full deployment loop: serving, registries, CI/CD, experiment tracking, drift detection, and safe rollout.
+**MLOps** (machine-learning operations) is the discipline of moving trained models into reliable, monitored production systems. A 92%-accurate notebook is worthless if nobody can call it or it silently degrades. As Google's "Hidden Technical Debt in Machine Learning Systems" (NIPS 2015) shows, the model code is a small box among much bigger ones — data, validation, serving, monitoring.
 
 > **Google Cloud naming:** Google's managed ML platform is **Gemini Enterprise Agent Platform** ("Agent Platform" for short), called **Vertex AI** until April 2026. The services were renamed, but the `google-cloud-aiplatform` SDK and its code did not change ([Ch 30 §4](#content/30_google_ml_ecosystem)).
 
@@ -2602,634 +2981,588 @@ MLOps is the discipline of moving trained models into reliable, monitored produc
 
 ## 18.1 The Production ML Loop
 
+![Production ML loop map: six steps clockwise, 1 DATA (pipeline, feature store), 2 TRAIN + TRACK (params, metrics, data + code version), 3 REGISTER (version + alias champion), 4 SERVE (online API or batch job), 5 MONITOR (latency, errors, drift PSI, live metrics), 6 RETRAIN (drift, metric drop or schedule) back to DATA, with CI/CD gates tests, eval vs champion, shadow, canary; serving modes Online (ms to a few hundred ms, FastAPI, BentoML, Agent Platform Online Inference), Batch (minutes to hours, Spark, BigQuery ML, Agent Platform Batch Inference), Streaming (seconds, Pub/Sub or Kafka + Beam on Dataflow); pick-by-question table; trap: training-serving skew, ship one Pipeline or use a feature store](diagrams/pml27_info_production_loop_serving_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the six-step loop, where the CI/CD gates sit and further reading</summary>
+
+A production model is not a file but a loop that repeats for as long as the model lives: CI/CD gates every hand-off, and monitoring triggers retraining.
+
 ```
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │                   PRODUCTION ML DEPLOYMENT LOOP                      │
-  │                                                                      │
-  │  Data         Experiment     Model         Serving      Monitoring   │
-  │  Pipeline     Tracking       Registry      Layer        & Alerting   │
-  │     │              │             │             │              │      │
-  │  raw data    log runs &    version &       REST API /    drift +     │
-  │  feature     metrics to    tag models      batch job     perf        │
-  │  store       MLflow/W&B    (stage: dev     FastAPI /     metrics     │
-  │                            / staging /     Agent Platform            │
-  │                            production)                               │
-  │     │              │             │             │              │      │
-  │     └──────────────┴─────────────┴──────┬──────┘              │      │
-  │                                         │                     │      │
-  │                      CI/CD Pipeline     │    retraining       │      │
-  │                      (test + validate   │◄────trigger ────────┘      │
-  │                       + deploy)         │                            │
-  └─────────────────────────────────────────┴────────────────────────────┘
+  1 DATA ───────► 2 TRAIN + TRACK ───► 3 REGISTER ───────► 4 SERVE
+  pipeline,       params, metrics,     version + alias     online API
+  feature store   data + code version  ("champion")        or batch job
+       ▲                                                        │
+       │          CI/CD gates every hand-off: tests,            ▼
+       │          eval vs champion, shadow → canary        5 MONITOR
+       │                                                   latency, errors,
+       └──────── 6 RETRAIN ◄─── drift, metric drop ─────── drift (PSI),
+                                or schedule                live metrics
 ```
+
+**Go deeper:** [Ch 26 — ML System Design](#content/26_ml_system_design) (the interview view) · [Ch 30 §4](#content/30_google_ml_ecosystem) (on Google Cloud).
+
+</details>
 
 ---
 
 ## 18.2 Model Serving — Online vs Batch
 
-**Online (real-time) serving** answers one request at a time with a latency SLO (e.g., < 100 ms). Use it when the downstream consumer is a user or live system.
+<details>
+<summary><strong>Read as text</strong> — online, batch and streaming in one line</summary>
 
-**Batch serving** scores large datasets offline on a schedule. Use it when you can tolerate hours of latency and want to amortize infrastructure cost.
+**Online serving** answers each request within a latency budget; **batch serving** scores a whole table on a schedule and stores the results; **streaming** sits in between. Most real systems are a hybrid: precompute what is stable, compute the rest per request.
 
-```
-  ONLINE SERVING                       BATCH SERVING
-  ─────────────────────────────        ────────────────────────────────
-  Request → API endpoint → model       Trigger (cron / event)
-             ↓                         → load data from storage
-          Response in milliseconds     → run model on entire dataset
-                                       → write predictions back to storage
+</details>
 
-  Use when:                            Use when:
-  - user-facing (search rank,          - nightly churn scores
-    fraud check, recommendation)       - weekly risk scoring
-  - SLA on latency                     - pre-computing embeddings
-  - single or small batch of rows      - large-scale re-scoring
+| Mode | Latency | Use when | Examples (open source · Google Cloud) |
+|---|---|---|---|
+| **Online** | ms to a few hundred ms | someone is waiting: search ranking, fraud check | FastAPI, BentoML, Ray Serve, KServe · Agent Platform Online Inference |
+| **Batch** | minutes to hours | scores can be precomputed: nightly churn scores | Spark or pandas job, BigQuery ML · Agent Platform Batch Inference |
+| **Streaming** | seconds | features follow live events: "5 card uses in 10 minutes" | Pub/Sub or Kafka + Beam (Dataflow) or Flink |
 
-  Examples:                            Examples:
-  - FastAPI / Flask endpoint           - Spark / pandas batch job
-  - Agent Platform Online Inference    - Agent Platform Batch Inference
-  - TorchServe / BentoML               - Dataflow / BigQuery ML
-```
+<details>
+<summary><strong>Read as text</strong> — continued: the training-serving skew trap and further reading</summary>
+
+**Pitfall — training-serving skew:** serving computes a feature differently from training (other code, units, freshness), so a great offline model is poor live. Ship preprocessing + model as one Pipeline (Parts 11, 16) or use a feature store.
+
+**Go deeper:** [Ch 26 Part 5 — Ship It](#content/26_ml_system_design) (latency budget, caching).
+
+</details>
 
 ---
 
 ## 18.3 FastAPI Serving Endpoint
 
-A minimal but production-viable endpoint. Input validation with Pydantic prevents malformed data from ever reaching the model.
+![FastAPI serving cheat card: rule validate the input, load the model once, log every prediction, expose /health; request flow client JSON POST /predict, Pydantic gate (HTTP 422 for pclass 5, port Z or an extra key), the Titanic Pipeline model_pipeline.joblib loaded once at startup that imputes missing age or embarked, p1 >= THRESHOLD tuned in Part 8, response with prediction, probability and model_version v1.2.3, logged for drift monitoring; /health for load balancers and Kubernetes probes, /docs for interactive docs; key pieces ConfigDict(extra=forbid, allow_inf_nan=False), Field(ge=1, le=3), .model_dump(), fastapi run serve.py --port 8080; trap: keep a plain def, not async def, for the CPU-bound model call](diagrams/pml27_info_fastapi_endpoint_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the endpoint code, the 422 check and the async and Pydantic traps</summary>
+
+A minimal production-shaped endpoint for the Titanic Pipeline saved in §11.2 (`model_pipeline.joblib`: impute + scale + one-hot + model in one file): validate the input, load the model once, log every prediction, expose a health check.
 
 ```python
+# Runs locally: pip install "fastapi[standard]" scikit-learn pandas joblib   (FastAPI 0.16x, Pydantic v2)
 # serve.py
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, validator
+import logging
+from typing import Literal
+
 import joblib
 import numpy as np
-import logging
+import pandas as pd
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 
-app = FastAPI(title="ML Model API", version="1.0")
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("serve")
+app = FastAPI(title="Titanic survival API", version="1.0")
 
-# Load artifact once at startup — never inside a request handler
-pipeline = joblib.load("production_pipeline.pkl")
+# Load once at startup, never per request. joblib/pickle can run code: load only files you made (Part 16).
+pipeline = joblib.load("model_pipeline.joblib")
 MODEL_VERSION = "v1.2.3"
+THRESHOLD = 0.5                   # use the threshold you tuned in Part 8, not a default
 
-# ── Input schema with validation ──────────────────────────────────────
 class PredictRequest(BaseModel):
-    age: float = Field(..., ge=0, le=120, description="Passenger age in years")
-    fare: float = Field(..., ge=0, description="Ticket fare (non-negative)")
-    pclass: int = Field(..., ge=1, le=3, description="Passenger class 1/2/3")
-    sex: str = Field(..., pattern="^(male|female)$")
-
-    @validator("fare")
-    def fare_not_nan(cls, v):
-        if np.isnan(v):
-            raise ValueError("fare must not be NaN")
-        return v
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)   # reject unknown keys, NaN, inf
+    age: float | None = Field(default=None, ge=0, le=120)    # missing -> the pipeline's median imputer
+    fare: float = Field(ge=0)
+    sex: Literal["male", "female"]
+    embarked: Literal["S", "C", "Q"] | None = None           # missing -> the most frequent port
+    pclass: int = Field(ge=1, le=3)
 
 class PredictResponse(BaseModel):
     prediction: int
-    probability: float
+    probability: float            # P(survived = 1)
     model_version: str
 
-# ── Health check (required by load balancers) ─────────────────────────
-@app.get("/health")
+@app.get("/health")               # load balancers and Kubernetes probes call this
 def health():
     return {"status": "ok", "model_version": MODEL_VERSION}
 
-# ── Prediction endpoint ───────────────────────────────────────────────
 @app.post("/predict", response_model=PredictResponse)
-def predict(req: PredictRequest):
-    import pandas as pd
+def predict(req: PredictRequest):  # plain def: FastAPI runs it in a thread pool
     try:
-        row = pd.DataFrame([req.dict()])
-        pred = int(pipeline.predict(row)[0])
-        prob = float(pipeline.predict_proba(row)[0][pred])
-        logger.info("prediction", extra={"pred": pred, "prob": prob,
-                                          "input": req.dict()})
-        return PredictResponse(prediction=pred, probability=prob,
-                                model_version=MODEL_VERSION)
-    except Exception as e:
-        logger.error("prediction_error", exc_info=True)
+        data = {k: (np.nan if v is None else v) for k, v in req.model_dump().items()}   # None -> NaN
+        p1 = float(pipeline.predict_proba(pd.DataFrame([data]))[0, 1])
+    except Exception:
+        logger.exception("prediction_error")
         raise HTTPException(status_code=500, detail="Prediction failed")
+    logger.info("prediction", extra={"input": req.model_dump(), "p1": p1, "version": MODEL_VERSION})
+    return PredictResponse(prediction=int(p1 >= THRESHOLD), probability=round(p1, 4),
+                           model_version=MODEL_VERSION)
 
-# Run: uvicorn serve:app --host 0.0.0.0 --port 8080
+# Run: fastapi run serve.py --port 8080    (or: uvicorn serve:app --host 0.0.0.0 --port 8080)
 ```
 
-Key practices above:
-- Schema validation with Pydantic rejects bad input before it reaches the model.
-- Model loaded once at startup; per-request I/O is negligible.
-- Structured logging enables downstream drift monitoring.
-- `/health` endpoint required by Kubernetes liveness probes and load balancers.
+A request with `"pclass": 5` or `"embarked": "Z"` gets HTTP 422 before your code runs; leaving out `age` or `embarked` is fine — the Pipeline imputes them. Interactive docs appear at `/docs`. The logged inputs feed drift monitoring (§18.8).
+
+**Pitfalls:** a CPU-bound model call inside `async def` blocks every other request — keep a plain `def`, which FastAPI runs in a thread pool. And FastAPI 0.128+ requires Pydantic v2: `.model_dump()` and `@field_validator`, not `.dict()` and `@validator`.
+
+**Go deeper:** [Ch 25 §16.10](#content/25_system_design_operations_case_studies) (Kubernetes probes) · Part 16 (safer formats than pickle).
+
+</details>
 
 ---
 
 ## 18.4 Experiment Tracking
 
-Experiment tracking records every training run: hyperparameters, metrics, data versions, and artifacts. Without it you cannot reproduce results or explain which model you deployed.
+![Track, register, gate cheat card: log every run (git commit, data version, n_estimators 200 and max_depth 6 for run rf-depth6, environment, f1 and accuracy, model file); the CancerClassifier registry keeps immutable versions v1, v2 champion (serving) and v3 challenger (canary), where promote = move champion to v3 and roll back = move it back to v2; four CI/CD gates (code tests, data validation, train + evaluate beating the floor and the champion, deploy via shadow, canary and ramp) each with its fail action; key calls mlflow.log_params, mlflow.sklearn.log_model with name=model, mlflow.sklearn.autolog, set_registered_model_alias, models:/CancerClassifier@champion; trap: CI that tests only code can still ship a worse model](diagrams/pml27_info_track_register_gate_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — what to log for every run</summary>
+
+Experiment tracking records every run so you can reproduce it. Log **code version** (git commit), **data version**, **parameters**, **environment**, **metrics** and the **model file**.
+
+</details>
 
 ### MLflow (open source, self-hosted)
 
-```python
-import mlflow
-import mlflow.sklearn
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import f1_score
+<details>
+<summary><strong>Read as text</strong> — the MLflow 3 run and the autolog shortcut</summary>
 
-mlflow.set_experiment("titanic-survival")
+```python
+# Runs locally: pip install mlflow scikit-learn   (MLflow 3.x)
+import mlflow
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
+
+mlflow.set_tracking_uri("sqlite:///mlflow.db")   # a database store; the registry (§18.5) needs one
+mlflow.set_experiment("cancer-classifier")
+
+X, y = load_breast_cancer(return_X_y=True, as_frame=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
 with mlflow.start_run(run_name="rf-depth6"):
-    # Log hyperparameters
     params = {"n_estimators": 200, "max_depth": 6, "random_state": 42}
     mlflow.log_params(params)
-
-    model = RandomForestClassifier(**params)
-    model.fit(X_train, y_train)
+    model = RandomForestClassifier(**params).fit(X_train, y_train)
     y_pred = model.predict(X_test)
-
-    # Log metrics
     f1 = f1_score(y_test, y_pred)
-    mlflow.log_metrics({"f1": f1, "accuracy": (y_pred == y_test).mean()})
-
-    # Log model artifact + sklearn signature
-    signature = mlflow.models.infer_signature(X_train, model.predict(X_train))
-    mlflow.sklearn.log_model(model, "model", signature=signature,
-                              registered_model_name="TitanicSurvivor")
-    print(f"Run logged. F1={f1:.4f}")
+    mlflow.log_metrics({"f1": f1, "accuracy": accuracy_score(y_test, y_pred)})
+    mlflow.sklearn.log_model(model, name="model",            # MLflow 3: name= replaces artifact_path=
+                             input_example=X_train.head(3),  # the signature is inferred from it
+                             registered_model_name="CancerClassifier")
+    print(f"Run logged. F1 = {f1:.4f}")
+# Compare runs in the browser: mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-### Weights & Biases (hosted, strong visualization)
+Shortcut: `mlflow.sklearn.autolog()` before `fit` logs parameters, training metrics and the model automatically.
 
-```python
-import wandb
+</details>
 
-wandb.init(project="titanic-survival", config={"n_estimators": 200, "max_depth": 6})
-config = wandb.config
+### Same Calls in W&B and Agent Platform Experiments
 
-model = RandomForestClassifier(n_estimators=config.n_estimators,
-                                max_depth=config.max_depth)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-wandb.log({"f1": f1_score(y_test, y_pred),
-            "accuracy": (y_pred == y_test).mean()})
-wandb.finish()
-```
+<details>
+<summary><strong>Read as text</strong> — the same calls in W&amp;B and Agent Platform, and the test-set trap</summary>
 
-### Vertex AI Experiments (GCP-native)
+| Tracker | Start a run | Log parameters and metrics |
+|---|---|---|
+| **Weights & Biases** (hosted) | `with wandb.init(project="cancer-classifier", config=params) as run:` | parameters go in `config`; `run.log({"f1": f1})` |
+| **Agent Platform Experiments** (formerly Vertex AI Experiments) | `aiplatform.init(project="my-gcp-project", location="us-central1", experiment="cancer-classifier")`, then `with aiplatform.start_run("rf-depth6"):` | `aiplatform.log_params(params)`, `aiplatform.log_metrics({"f1": f1})` |
 
-Now called **Experiments on Gemini Enterprise Agent Platform**; the SDK calls are unchanged.
+**Pitfall:** picking the best of 100 runs by *test* F1 turns the test set into a tuning set. Choose by validation or CV score; use the test set once.
 
-```python
-from google.cloud import aiplatform
-
-aiplatform.init(project="my-gcp-project", location="us-central1",
-                experiment="titanic-survival")
-
-with aiplatform.start_run("rf-depth6"):
-    aiplatform.log_params({"n_estimators": 200, "max_depth": 6})
-    aiplatform.log_metrics({"f1": 0.83, "accuracy": 0.81})
-```
+</details>
 
 ---
 
 ## 18.5 Model Registry & Versioning
 
-A model registry is the system of record for trained models. It stores artifacts, links them to the experiment run that produced them, and tracks lifecycle stage (staging → production → archived).
+<details>
+<summary><strong>Read as text</strong> — versions, aliases, promote and roll back</summary>
 
-```
-  MODEL LIFECYCLE IN A REGISTRY:
-  ┌──────────────────────────────────────────────────────────┐
-  │  Training run  →  Registered  →  Staging  →  Production  │
-  │  (experiment       (artifact      (human       (serving   │
-  │   tracked)          stored,        review,      traffic)  │
-  │                     tagged)        tests)                  │
-  │                                       ↓                    │
-  │                                   Archived                 │
-  │                             (superseded but kept           │
-  │                              for rollback)                 │
-  └──────────────────────────────────────────────────────────┘
-```
+A **model registry** records every model version, the run that produced it, and which version is live. Versions are immutable; you promote and roll back by moving an **alias** (`champion`, `challenger`). MLflow deprecated its Staging / Production stages in 2.9 in favour of aliases; Google's Model Registry uses aliases too.
+
+Example: v2 is `champion` (serving), v3 is `challenger` (in canary). Promote = move `champion` to v3; roll back = move it back to v2. Serving loads `models:/CancerClassifier@champion`, never a hard-coded version.
 
 ```python
-# Promote a model from Staging to Production in MLflow
+# Runs locally: pip install mlflow scikit-learn   (uses the registry filled by the §18.4 run)
 import mlflow
-from mlflow.tracking import MlflowClient
+from mlflow import MlflowClient
 
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 client = MlflowClient()
-model_name = "TitanicSurvivor"
+name = "CancerClassifier"
 
-# List all versions in Staging
-for mv in client.search_model_versions(f"name='{model_name}'"):
-    if mv.current_stage == "Staging":
-        print(f"Version {mv.version}: {mv.run_id}")
+for mv in client.search_model_versions(f"name='{name}'"):
+    print(f"version {mv.version}  run {mv.run_id}  aliases {mv.aliases}")
 
-# Promote version 3 to Production, archive the old one
-client.transition_model_version_stage(
-    name=model_name, version=3, stage="Production",
-    archive_existing_versions=True
-)
-
-# Load the current production model
-model_uri = f"models:/{model_name}/Production"
-prod_model = mlflow.sklearn.load_model(model_uri)
+client.set_registered_model_alias(name, "champion", "1")      # promote (or roll back) = move the alias
+champion = client.get_model_version_by_alias(name, "champion")
+model = mlflow.sklearn.load_model(f"models:/{name}@champion")
+print(f"serving version {champion.version}")
 ```
+
+**Pitfall:** `model_final_v2_REALLY_final.pkl` copied to a server cannot say which data or code made it. Deploy from the registry, by alias.
+
+**Go deeper:** [Ch 30 §4.3](#content/30_google_ml_ecosystem) (Concept 4: Model Registry on Google Cloud).
+
+</details>
 
 ---
 
 ## 18.6 CI/CD for ML
 
-A CI/CD pipeline for ML runs automated tests on every commit that touches model code or training data. It gates deployments behind validation checks, preventing regressions from reaching production silently.
+<details>
+<summary><strong>Read as text</strong> — the four gates, a GitHub Actions workflow and the champion check</summary>
 
-```
-  ML CI/CD PIPELINE (GitHub Actions / Agent Platform Pipelines / Kubeflow):
+ML CI/CD must test **code, data and model**, and Google's MLOps guide adds **CT (continuous training)**: a deployed pipeline that retrains and validates automatically. Every stage is a gate.
 
-  Code push / PR
-       │
-       ▼
-  ┌──────────────┐    fail → block merge
-  │  Unit tests  │─────────────────────────────────────┐
-  │  (transform  │                                     │
-  │   functions, │                                     │
-  │   schema)    │                                     │
-  └──────┬───────┘                                     │
-         │ pass                                        │
-         ▼                                             │
-  ┌──────────────────┐    fail → block merge           │
-  │  Train on        │─────────────────────────────────┤
-  │  reference data  │                                 │
-  │  + eval metrics  │                                 │
-  │  vs threshold    │                                 │
-  └──────┬───────────┘                                 │
-         │ pass                                        │
-         ▼                                             │
-  ┌──────────────────┐    fail → alert                 │
-  │  Bias / fairness │─────────────────────────────────┤
-  │  checks          │                                 │
-  └──────┬───────────┘                                 │
-         │ pass                                        │
-         ▼                                             │
-  ┌──────────────────┐                                 │
-  │  Deploy to       │                                 │
-  │  Staging →       │                                 │
-  │  shadow / canary │                                 │
-  │  → Production    │                                 │
-  └──────────────────┘◄────────────────────────────────┘
-```
+| Stage | What runs | If it fails |
+|---|---|---|
+| 1. Code tests | unit tests on feature transforms; input-schema checks | block the merge |
+| 2. Data validation | schema, missing values, ranges, drift (§18.8) | stop the pipeline, alert |
+| 3. Train + evaluate | metric must beat a floor **and** the champion, overall and per segment | do not register |
+| 4. Deploy | `challenger` → shadow → canary → ramp (§18.10) | automatic rollback |
 
-A minimal GitHub Actions workflow for testing + training:
+A minimal GitHub Actions workflow for stages 1–3:
 
 ```yaml
 # .github/workflows/ml_ci.yml
 name: ML CI
-
 on: [push, pull_request]
 
 jobs:
   test-and-train:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run unit tests
-        run: pytest tests/ -v
-
-      - name: Train and validate model
-        run: python train.py --validate-thresholds
-        # train.py exits non-zero if F1 drops below threshold
-
-      - name: Upload model artifact
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"   # a version every library you pin supports
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit and data tests
+        run: pytest tests/ -q
+      - name: Train and validate
+        run: python train.py --validate-thresholds   # exits non-zero if F1 < floor or < champion
+      - name: Register as challenger (main branch only)
         if: github.ref == 'refs/heads/main'
-        run: python register_model.py --stage staging
+        run: python register_model.py --alias challenger
 ```
+
+**Pitfall:** a pipeline can pass every unit test and still ship a worse model — stage 3 must compare against the champion on the same evaluation data.
+
+**Go deeper:** [Ch 30 §4.3](#content/30_google_ml_ecosystem) (Concept 1: Pipelines on Google Cloud).
+
+</details>
 
 ---
 
 ## 18.7 Monitoring — Operational Metrics
 
-Operational monitoring tracks that the serving infrastructure is functioning. These metrics should alert before users are affected.
+![Monitoring infographic: four golden signals with example alerts (p99 latency above 200 ms for 5 min, traffic below 50% of normal, 5xx errors above 1%, CPU above 90%); PSI = sum over bins of (a_i - e_i) x ln(a_i / e_i) with below 0.1 stable, 0.1-0.25 watch, above 0.25 significant shift, and KS D = the biggest gap between the cumulative curves; worked example on age (training N(35, 10), live N(52, 15)): top bin (0.636 - 0.100) x ln(6.36) = 0.536 x 1.850 = 0.992, other 9 bins add 0.668, PSI 1.660 = drift, with a to-scale bar chart of training versus live bin shares; results table age 1.660 / 0.545 drift, fare 0.005 / 0.017 / p 0.775 stable, age +0.5 yr with n = 200k 0.003 / 0.021 / p < 0.001 stable; four kinds of drift table; trap: judge drift by size, not p-value](diagrams/pml27_info_monitoring_drift_ai.png)
 
-| Metric | What it measures | Alert threshold |
-|--------|-----------------|-----------------|
-| Request latency (P95, P99) | End-to-end response time | > SLA (e.g., 200 ms) |
-| Error rate | HTTP 4xx / 5xx per minute | > 1% |
-| Prediction throughput | Requests per second | < baseline × 0.5 (drop-off) |
-| Model load time | Seconds to warm up | > 30 s |
-| GPU/CPU utilization | Compute saturation | > 90% sustained |
-| Memory utilization | OOM risk | > 85% |
+<details>
+<summary><strong>Read as text</strong> — the four golden signals, Prometheus metrics and the label trap</summary>
+
+Operational monitoring answers "is the service up and fast?" Start from Google SRE's **four golden signals** and alert on what users feel, before they notice.
+
+| Signal | Metric | Example alert (tune to your SLO) |
+|--------|--------|-----------------|
+| Latency | p95 / p99 response time | p99 above the SLO (e.g. 200 ms) for 5 min |
+| Traffic | requests per second | below 50% of normal |
+| Errors | share of HTTP 5xx | above 1% |
+| Saturation | CPU, GPU, memory, queue length | CPU above 90%, memory above 85% |
 
 ```python
-# Minimal Prometheus-style metrics with the prometheus_client library
-from prometheus_client import Counter, Histogram, start_http_server
+# Runs locally: pip install "fastapi[standard]" prometheus-client
 import time
 
-REQUEST_COUNT = Counter("model_requests_total", "Total prediction requests",
-                         ["status"])
-REQUEST_LATENCY = Histogram("model_request_latency_seconds",
-                             "Prediction latency",
-                             buckets=[.01, .05, .1, .25, .5, 1.0])
+from fastapi import FastAPI
+from prometheus_client import Counter, Histogram, make_asgi_app
+
+app = FastAPI()
+app.mount("/metrics", make_asgi_app())    # Prometheus scrapes this URL
+
+REQUESTS = Counter("model_requests_total", "Prediction requests", ["status"])
+LATENCY = Histogram("model_request_latency_seconds", "Prediction latency",
+                    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0])
 
 @app.post("/predict")
-def predict(req: PredictRequest):
-    start = time.time()
-    try:
-        result = _run_model(req)
-        REQUEST_COUNT.labels(status="success").inc()
-        return result
-    except Exception as e:
-        REQUEST_COUNT.labels(status="error").inc()
-        raise
-    finally:
-        REQUEST_LATENCY.observe(time.time() - start)
+def predict(x: float):
+    with LATENCY.time():                   # records the duration even if the model raises
+        try:
+            time.sleep(0.02)               # stand-in for pipeline.predict_proba(...)
+            score = 0.5
+        except Exception:
+            REQUESTS.labels(status="error").inc()
+            raise
+    REQUESTS.labels(status="success").inc()
+    return {"score": score}
+
+# p99 latency in PromQL: histogram_quantile(0.99, rate(model_request_latency_seconds_bucket[5m]))
 ```
+
+**Pitfall:** never use `user_id` or a raw input as a metric label — each distinct value is a new time series. Per-request detail belongs in logs.
+
+**Go deeper:** [Ch 25 §15.12](#content/25_system_design_operations_case_studies) (the four golden signals).
+
+</details>
 
 ---
 
 ## 18.8 Data Drift & Concept Drift Detection
 
-Operational metrics tell you the infrastructure is up. Drift detection tells you whether the **model is still making good predictions** on real traffic.
+<details>
+<summary><strong>Read as text</strong> — the four kinds of drift</summary>
 
-### Definitions
+Operational metrics say the service is up; drift detection says whether the **model is still right**.
 
-> **Data drift (covariate shift):** the distribution of input features P(X) changes after deployment. The model itself is unchanged, but it is now being asked to predict on inputs it was not trained for.
+| What changes | Formally | Example | Detect with |
+|---|---|---|---|
+| Data drift (covariate shift) | inputs P(X) | age ~ N(35, 10) in training, N(52, 15) live | PSI or KS test per feature |
+| Concept drift | the rule P(Y ∣ X) | after an economic shock, high earners churn *less* | metrics on fresh (delayed) labels |
+| Prediction drift | outputs P(ŷ) | "will churn" jumps from 10% to 40% overnight | the score distribution |
+| Training-serving skew | serving ≠ training features | serving sends fare in cents | logged serving features vs training |
 
-> **Concept drift:** the relationship between inputs and the target P(Y|X) changes. Even if the inputs look the same, the correct answer has shifted — e.g., customer behavior patterns after an economic shock.
-
-```
-  DATA DRIFT:                         CONCEPT DRIFT:
-  Training: age ~ N(35, 10)           Training: high income → churns more
-  Production: age ~ N(52, 15)         Production: high income → churns less
-       ↑ user demographics shifted         ↑ behavior pattern changed
-  Model still valid but operating     Model predictions are now wrong
-  in a range it barely saw            even for normal inputs
-```
+</details>
 
 ### Detecting Data Drift — PSI and KS Test
 
-**Population Stability Index (PSI)** quantifies the shift in a feature's distribution between training (reference) and current serving data. Originally from credit risk modeling.
+<details>
+<summary><strong>Read as text</strong> — the binning idea and the PSI and KS formulas</summary>
 
-```
-  PSI = Σ (Actual% − Expected%) × ln(Actual% / Expected%)
-          over N buckets
+**Simple explanation:** cut one feature's training values into 10 equal-count bins and drop live values into the same bins. About 10% per bin means nothing moved; 40% in the top bin means drift. The **Population Stability Index (PSI)** turns that into one number; the **Kolmogorov–Smirnov (KS) test** compares the cumulative distributions.
 
-  Rule of thumb:
-  ┌─────────────┬──────────────────────────────────────────┐
-  │ PSI < 0.10  │ No significant change — monitor normally │
-  │ 0.10–0.20   │ Moderate shift — investigate             │
-  │ PSI > 0.20  │ Major shift — retrain or flag for review │
-  └─────────────┴──────────────────────────────────────────┘
-```
+> **Maths in one line:** `PSI = Σᵢ (aᵢ − eᵢ) · ln(aᵢ / eᵢ)`, with eᵢ the training share and aᵢ the live share in bin i — below 0.1 stable, 0.1–0.25 watch, above 0.25 a significant shift (some teams alert at 0.2). KS: `D = maxₓ |F_train(x) − F_live(x)|`, the biggest gap between the two cumulative curves.
+
+</details>
 
 ```python
+# Drift check: PSI and the KS test per feature, training data (reference) vs last week's traffic
 import numpy as np
-import pandas as pd
-
-def compute_psi(reference: np.ndarray, current: np.ndarray,
-                n_bins: int = 10) -> float:
-    """
-    Compute Population Stability Index between reference and current
-    distributions. Higher PSI = more drift.
-    """
-    # Build bins from reference distribution
-    breakpoints = np.nanpercentile(reference,
-                                    np.linspace(0, 100, n_bins + 1))
-    breakpoints = np.unique(breakpoints)  # deduplicate edge cases
-
-    ref_counts, _ = np.histogram(reference, bins=breakpoints)
-    cur_counts, _ = np.histogram(current,   bins=breakpoints)
-
-    # Convert to proportions, clamp zeros to avoid log(0)
-    ref_pct = np.clip(ref_counts / len(reference), 1e-6, None)
-    cur_pct = np.clip(cur_counts / len(current),   1e-6, None)
-
-    psi = np.sum((cur_pct - ref_pct) * np.log(cur_pct / ref_pct))
-    return float(psi)
-
-
-# Example: check drift in "age" feature over 7-day windows
-train_ages   = X_train["age"].values          # reference (training data)
-recent_ages  = recent_traffic["age"].values   # production traffic, last 7 days
-
-psi_age = compute_psi(train_ages, recent_ages)
-print(f"Age PSI = {psi_age:.4f}")
-if psi_age > 0.20:
-    print("ALERT: major distribution shift in 'age' — consider retraining")
-```
-
-**Kolmogorov-Smirnov (KS) Test** is a statistical test for whether two samples come from the same distribution. It returns a p-value: low p-value means the distributions are significantly different.
-
-```python
 from scipy.stats import ks_2samp
 
-stat, p_value = ks_2samp(train_ages, recent_ages)
-print(f"KS statistic = {stat:.4f}, p-value = {p_value:.4f}")
-if p_value < 0.05:
-    print("ALERT: distributions are significantly different (p < 0.05)")
+def compute_psi(reference, current, n_bins=10, eps=1e-4):
+    """PSI over the reference's quantile bins. Higher = more drift."""
+    edges = np.unique(np.quantile(reference, np.linspace(0, 1, n_bins + 1)))
+    edges[0], edges[-1] = -np.inf, np.inf     # open-ended: keep live values outside the training range
+    ref = np.histogram(reference, edges)[0] / len(reference)
+    cur = np.histogram(current, edges)[0] / len(current)
+    ref, cur = np.clip(ref, eps, None), np.clip(cur, eps, None)   # empty bin -> avoid log(0)
+    return float(np.sum((cur - ref) * np.log(cur / ref)))
+
+rng = np.random.default_rng(42)
+checks = {   # feature: (training sample, live sample)
+    "age":  (rng.normal(35, 10, 5_000), rng.normal(52, 15, 2_000)),        # users got older
+    "fare": (rng.lognormal(3, 0.8, 5_000), rng.lognormal(3, 0.8, 2_000)),  # same distribution
+    "age, +0.5 yr, n=200k": (rng.normal(35, 10, 200_000), rng.normal(35.5, 10, 200_000)),
+}
+print(f"{'feature':<22}{'PSI':>7}{'KS D':>7}{'KS p':>9}  verdict")
+psi = {}
+for name, (train, live) in checks.items():
+    psi[name] = compute_psi(train, live)
+    d, p = ks_2samp(train, live)
+    verdict = "stable" if psi[name] < 0.1 else ("watch" if psi[name] < 0.25 else "DRIFT")
+    p_txt = f"{p:.3f}" if p >= 0.001 else "<0.001"
+    print(f"{name:<22}{psi[name]:>7.3f}{d:>7.3f}{p_txt:>9}  {verdict}")
+
+train_age, live_age = checks["age"]
+outside = np.mean(live_age > train_age.max())
+print(f"live ages above the oldest training age: {outside:.1%}")
+assert psi["age"] > 0.25 and psi["fare"] < 0.1
 ```
+
+**Output:**
+
+```
+feature                   PSI   KS D     KS p  verdict
+age                     1.660  0.545   <0.001  DRIFT
+fare                    0.005  0.017    0.775  stable
+age, +0.5 yr, n=200k    0.003  0.021   <0.001  stable
+live ages above the oldest training age: 13.5%
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: what the numbers show — judge size, not p-value, and keep bins open</summary>
+
+**What to notice:**
+
+1. **age** drifted (PSI 1.66); **fare** did not (PSI 0.005).
+2. **The big-sample trap:** with 200,000 rows a harmless half-year shift gives KS p < 0.001 while PSI is 0.003. At production volumes almost everything is "significant" — judge the *size* (PSI or D), not the p-value.
+3. **Open-ended bins:** 13.5% of live ages exceed the oldest training age. Bins that stop at the training min and max make `np.histogram` silently drop exactly those values. For a categorical feature, use each category as a bin.
+
+</details>
 
 ### Feature and Label Monitoring
 
-```python
-import pandas as pd
+<details>
+<summary><strong>Read as text</strong> — what to check, how often, and the delayed-label trap</summary>
 
-def monitor_features(reference_df: pd.DataFrame,
-                     production_df: pd.DataFrame,
-                     threshold_psi: float = 0.20) -> pd.DataFrame:
-    """Compute PSI for every numeric feature and flag drifters."""
-    results = []
-    for col in reference_df.select_dtypes(include="number").columns:
-        psi = compute_psi(reference_df[col].dropna().values,
-                          production_df[col].dropna().values)
-        results.append({"feature": col, "psi": psi,
-                         "drifted": psi > threshold_psi})
-    return pd.DataFrame(results).sort_values("psi", ascending=False)
+| Check | How often | Needs labels? | Catches |
+|---|---|---|---|
+| PSI per input feature vs training | daily | no | data drift, pipeline and unit bugs |
+| Prediction distribution (mean score, positive rate) | hourly to daily | no | prediction drift, broken upstream features |
+| KS statistic D on key features | weekly | no | shape changes coarse PSI bins hide |
+| F1 / AUC / calibration on delayed labels | when labels arrive | yes | concept drift — the only direct check of "still right" |
 
-drift_report = monitor_features(X_train, recent_traffic)
-print(drift_report)
-#    feature    psi   drifted
-#    age        0.23  True      ← needs attention
-#    fare       0.08  False
-#    pclass     0.03  False
+**Pitfall:** a churn label may settle 30+ days after the prediction, so accuracy alone warns you a month late — label-free checks are the early warning.
 
-# Label / prediction monitoring (detect concept drift indirectly)
-# If ground-truth labels are available with a delay:
-from sklearn.metrics import f1_score
+**Go deeper:** [Ch 26 — Drift: The World Moves On](#content/26_ml_system_design) · [Ch 34 Topic 10](#content/34_google_top10_ml_interview) (PSI in numbers) · [Ch 30 §4.3](#content/30_google_ml_ecosystem) (Concept 5: Google's Model Monitoring).
 
-daily_f1 = f1_score(ground_truth_labels, production_predictions)
-print(f"Rolling F1 (last 24h) = {daily_f1:.4f}")
-if daily_f1 < 0.75:
-    print("ALERT: model performance degraded below threshold")
-```
-
-```
-  DRIFT MONITORING STRATEGY:
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  Daily:     PSI on all input features against training baseline   │
-  │  Daily:     prediction distribution shift (expected vs actual %)  │
-  │  Weekly:    KS test on key features                               │
-  │  When       compute F1/AUC against delayed labels if available    │
-  │  labels     (labels often arrive hours/days after prediction)     │
-  │  arrive:                                                          │
-  └──────────────────────────────────────────────────────────────────┘
-```
+</details>
 
 ---
 
 ## 18.9 Retraining Triggers
 
-Retraining is not always better. Triggering it too often wastes compute; triggering it too rarely lets the model drift silently. Use a combination of signals:
+![Retrain and roll out safely infographic: A/B sample size n = 2 x (1.96 + 0.84)^2 x p(1 - p) / delta^2, about 16 x p(1 - p) / delta^2, worked for a click rate moving from 10% to 11%: 15.68 x 0.09 / 0.0001 = about 14,100 users per group, and halving delta needs 4x the users; a rollout ladder from offline eval to shadow (users see v1), canary 1-5%, 20%, 50%, 100% with a guardrail breach rolling back; sticky hash routing bucket = sha256(salt:user_id) mod 100, v2 if bucket < pct, shown as a 10 x 10 grid of buckets with 5 for v2 at 5% and 15 added at 20%, giving 497, 1,938 and 4,874 of 10,000 users at 5%, 20% and 50% and 0 users moved back; retraining triggers table (data drift PSI above 0.25, performance drop below the floor, daily to monthly schedule, known events); trap: Python's built-in hash() is randomised per process](diagrams/pml27_info_retrain_rollout_ai.png)
 
-```
-  RETRAINING DECISION TREE:
-  ┌───────────────────────────────────────────────────────────────┐
-  │                                                               │
-  │  Is PSI > 0.20 for any critical feature?                     │
-  │  YES → investigate. If data quality OK → schedule retrain.   │
-  │  NO  → continue monitoring.                                  │
-  │                                                               │
-  │  Is rolling F1/AUC below threshold (requires label delay)?   │
-  │  YES → immediate retrain pipeline.                           │
-  │                                                               │
-  │  Is scheduled retrain window reached (e.g., weekly/monthly)? │
-  │  YES → retrain on freshest N days of data + validate.        │
-  │                                                               │
-  │  Is there a known business event (product launch, pandemic)?  │
-  │  YES → manual trigger for emergency retrain.                 │
-  │                                                               │
-  └───────────────────────────────────────────────────────────────┘
+<details>
+<summary><strong>Read as text</strong> — the four triggers and the broken-feature trap</summary>
 
-  After retraining: VALIDATE before replacing production model.
-  Compare new model vs current on a held-out recent slice.
-  If new model is worse → do not promote.
-```
+Retrain too often and you waste compute; too rarely and the model decays. Combine a schedule with event triggers.
+
+| Trigger | Signal | Action |
+|---|---|---|
+| Data drift | PSI above 0.25 on a key feature for days | check data quality first; if real, retrain |
+| Performance drop | delayed-label F1 / AUC below the floor | retrain now, or roll back |
+| Schedule | daily (fast rankers) to monthly (stable domains) | retrain on the freshest window |
+| Known event | launch, policy change, pandemic | manual retrain |
+
+The retrained model must beat the champion on a recent held-out slice, then ship through §18.10.
+
+**Pitfall:** if drift comes from a broken upstream feature (all zeros, wrong units), retraining teaches the model the bug. Find the cause first.
+
+**Go deeper:** [Ch 26 — Retraining & Safe Deployment](#content/26_ml_system_design).
+
+</details>
 
 ---
 
 ## 18.10 Safe Rollout — Shadow, Canary, A/B
 
-Never flip 100% of traffic to a new model instantly. Use progressive delivery patterns to catch regressions early.
+<details>
+<summary><strong>Read as text</strong> — shadow, canary and A/B, and the sample-size formula</summary>
+
+Never flip 100% of traffic at once. Walk the model up a ladder — offline evaluation → shadow → canary → ramp, usually as an A/B test — with automatic rollback if a guardrail breaks.
 
 ```
-  SHADOW DEPLOYMENT
-  ─────────────────────────────────────────────────────────────────
-  Production   ─── 100% traffic → Model v1 → response to user
-  traffic ─┤
-  (mirrored)   ─── 100% traffic → Model v2 → /dev/null (no response)
+  SHADOW — v2 sees real traffic; users only ever see v1
+    request ──► v1 ──► response to the user
+       └─copy─► v2 ──► logged only: compare its scores and latency with v1
 
-  Purpose: compare v2 predictions and latency to v1 without any
-           user impact. Best for high-risk changes.
-  ─────────────────────────────────────────────────────────────────
+  CANARY — a few real users get v2
+    1–5% of users ──► v2    watch p99 latency, errors, guardrails;
+    the rest      ──► v1    ramp 5% → 20% → 50% → 100%; breach → roll back
 
-  CANARY DEPLOYMENT
-  ─────────────────────────────────────────────────────────────────
-  Production   ─── 95% traffic → Model v1
-  traffic ─┤
-             ─── 5% traffic  → Model v2  (real users, small %)
-
-  Gradually increase v2 %: 5% → 20% → 50% → 100%
-  Monitor P95 latency and error rate at each step.
-  Roll back if metrics degrade.
-  ─────────────────────────────────────────────────────────────────
-
-  A/B TESTING
-  ─────────────────────────────────────────────────────────────────
-  Assign users deterministically (e.g., hash of user_id):
-  Group A (50%) → Model v1
-  Group B (50%) → Model v2
-
-  Measure business metric (CTR, revenue, churn) after N days.
-  Statistical significance test before declaring a winner.
-  A/B is about measuring business impact; canary is about
-  catching infrastructure/quality regressions.
-  ─────────────────────────────────────────────────────────────────
+  A/B TEST — measure business impact
+    hash(user_id) ──► group A (v1) or group B (v2); run to the planned size
 ```
+
+A canary catches breakage but is too small to measure business impact — that is the A/B test's job.
+
+> **Maths in one line:** users per A/B group `n ≈ 2 · (1.96 + 0.84)² · p(1 − p) / δ² ≈ 16 · p(1 − p) / δ²` (5% significance, 80% power) — to detect a click rate moving from 10% to 11% (δ = 0.01) you need 15.68 × 0.09 / 0.0001 ≈ 14,100 users per group; halving δ needs 4× the users.
+
+Route users by **hashing** their id: the same user always gets the same model, with nothing to store.
+
+</details>
 
 ```python
-# Simple canary routing in FastAPI
+# Canary routing: hash each user id into 100 buckets -> sticky, the right share, nothing to store
 import hashlib
 
-def route_to_model(user_id: str, canary_pct: float = 0.05) -> str:
-    """Return 'v2' for canary_pct fraction of users, else 'v1'."""
-    # Deterministic: same user always gets same model
-    h = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
-    return "v2" if (h % 100) < (canary_pct * 100) else "v1"
+def bucket(user_id: str, salt: str = "churn-v2-rollout") -> int:
+    """Stable bucket 0-99. A new salt per experiment re-shuffles users independently."""
+    digest = hashlib.sha256(f"{salt}:{user_id}".encode()).hexdigest()
+    return int(digest, 16) % 100
 
-@app.post("/predict")
-def predict(req: PredictRequest, user_id: str = "anonymous"):
-    model_version = route_to_model(user_id, canary_pct=0.05)
-    model = model_v2 if model_version == "v2" else model_v1
-    pred = model.predict(req.to_frame())[0]
-    # Log which model version served this prediction for analysis
-    logger.info("served", extra={"model_version": model_version,
-                                  "prediction": int(pred)})
-    return {"prediction": int(pred), "model_version": model_version}
+def route_to_model(user_id: str, canary_pct: int = 5) -> str:
+    return "v2" if bucket(user_id) < canary_pct else "v1"
+
+users = [f"user_{i}" for i in range(10_000)]
+for pct in (5, 20, 50):
+    on_v2 = sum(route_to_model(u, pct) == "v2" for u in users)
+    print(f"canary_pct = {pct:>2}%  ->  {on_v2:>5,} of 10,000 users on v2 ({on_v2 / len(users):.1%})")
+
+# Sticky: the same user always gets the same model (no flip-flopping between requests)
+assert all(route_to_model(u) == route_to_model(u) for u in users)
+# Ramping 5% -> 20% only ADDS users: nobody who saw v2 is moved back to v1
+moved_back = sum(route_to_model(u, 5) == "v2" and route_to_model(u, 20) == "v1" for u in users)
+print(f"users moved back to v1 when ramping 5% -> 20%: {moved_back}")
+assert moved_back == 0
 ```
+
+**Output:**
+
+```
+canary_pct =  5%  ->    497 of 10,000 users on v2 (5.0%)
+canary_pct = 20%  ->  1,938 of 10,000 users on v2 (19.4%)
+canary_pct = 50%  ->  4,874 of 10,000 users on v2 (48.7%)
+users moved back to v1 when ramping 5% -> 20%: 0
+```
+
+<details>
+<summary><strong>Read as text</strong> — continued: the built-in hash() trap and further reading</summary>
+
+**Pitfall:** never bucket with Python's built-in `hash()` — it is randomised per process for strings, so a user lands in different groups on different servers.
+
+**Go deeper:** [Ch 26 — A/B Testing](#content/26_ml_system_design) · [Ch 34 Topic 7](#content/34_google_top10_ml_interview) (A/B design, worked).
+
+</details>
 
 ---
 
 ## 18.11 MLOps Maturity Levels
 
-```
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  LEVEL 0 — Manual                                                │
-  │  Notebook → manual export → ad-hoc deployment → no monitoring   │
-  │  Suitable for: one-off analyses, no real users                   │
-  │                                                                  │
-  │  LEVEL 1 — Automated Training                                    │
-  │  Experiment tracking + model registry + scheduled retraining     │
-  │  + basic operational monitoring                                  │
-  │  Suitable for: internal tools, low-risk models                   │
-  │                                                                  │
-  │  LEVEL 2 — Automated Pipeline                                    │
-  │  + CI/CD for model code + drift detection + canary deployments   │
-  │  + label monitoring + auto-retrain triggers                      │
-  │  Suitable for: customer-facing models, regulated industries      │
-  │                                                                  │
-  │  Most teams should target Level 1–2. Level 0 is a liability.     │
-  └──────────────────────────────────────────────────────────────────┘
-```
+![MLOps maturity levels and tool map: three rising steps, Level 0 manual process (nothing automated, you deploy a trained model), Level 1 ML pipeline automation (continuous training, you deploy the training pipeline) and Level 2 CI/CD pipeline automation (you deploy the pipeline via CI/CD), with the big jump at level 0 to 1; a tool table as of Nov 2026 with open-source and managed options for experiment tracking, model registry, online and batch serving, orchestration, drift detection and feature store, for example MLflow, FastAPI, Airflow, Evidently and Feast versus Agent Platform services; which level fits which team; mix-ups: level 1 is continuous training, Agent Platform was Vertex AI until April 2026, TorchServe archived in August 2025](diagrams/pml27_info_mlops_maturity_tools_ai.png)
+
+<details>
+<summary><strong>Read as text</strong> — the three maturity levels and the big jump</summary>
+
+Google's MLOps guide (Cloud Architecture Center) grades teams by **what is automated**:
+
+| Level | What is automated | What you deploy | Fits |
+|---|---|---|---|
+| **0 — Manual process** | nothing: notebooks hand a model file to engineers | a trained model | a few rarely changed models |
+| **1 — ML pipeline automation** | **continuous training**: a triggered pipeline retrains and validates data and model | the training pipeline | data that keeps changing |
+| **2 — CI/CD pipeline automation** | level 1 + CI/CD that tests and deploys the pipeline code itself | the pipeline, via CI/CD | many models, frequent changes |
+
+The big jump is to level 1: you stop shipping a model and start shipping the pipeline that makes models.
+
+</details>
 
 ### Tool Reference
 
-| Category | Open Source | Managed (Cloud) |
+<details>
+<summary><strong>Read as text</strong> — open-source and Google Cloud tools for each job</summary>
+
+As of November 2026:
+
+| Category | Open source | Managed (cloud) |
 |----------|-------------|-----------------|
-| Experiment tracking | MLflow, DVC | Agent Platform Experiments (formerly Vertex AI), W&B, Comet |
-| Model registry | MLflow Model Registry | Agent Platform Model Registry, SageMaker Registry |
-| Serving (online) | FastAPI, BentoML, TorchServe | Agent Platform Online Inference, SageMaker Endpoint |
-| Serving (batch) | Spark, pandas job | Agent Platform Batch Inference, SageMaker Batch |
-| Orchestration | Apache Airflow, Kubeflow Pipelines | Agent Platform Pipelines, SageMaker Pipelines |
-| Drift detection | Evidently AI, Alibi Detect, whylogs | Amazon SageMaker Model Monitor |
-| Feature store | Feast | Agent Platform Feature Store, Tecton |
+| Experiment tracking | MLflow, DVC | Agent Platform Experiments, W&B, Comet |
+| Model registry | MLflow Model Registry | Agent Platform Model Registry |
+| Serving (online) | FastAPI, BentoML, Ray Serve, KServe, NVIDIA Dynamo-Triton (formerly Triton Inference Server); LLMs: vLLM ([Ch 19 §19.11](#content/19_ai_frameworks)) | Agent Platform Online Inference (Endpoints) |
+| Serving (batch) | Spark, a scheduled pandas job | Agent Platform Batch Inference |
+| Orchestration | Apache Airflow, Kubeflow Pipelines | Agent Platform Pipelines |
+| Drift detection | Evidently, whylogs; Alibi Detect (source-available) | Agent Platform Model Monitoring |
+| Feature store | Feast | Agent Platform Feature Store |
+
+AWS offers the same set under **Amazon SageMaker AI**. TorchServe was archived in August 2025 — do not start new projects on it.
+
+**Go deeper:** [Ch 30 §4.4](#content/30_google_ml_ecosystem) (the whole loop on Google Cloud).
+
+</details>
 
 ---
 
 ## Key Takeaways
 
-```
-╔══════════════════════════════════════════════════════════════════════╗
-║  PRACTICAL ML CHEAT SHEET                                            ║
-║  ────────────────────────────────────────────────────────────────   ║
-║                                                                      ║
-║  WORKFLOW: Load -> EDA -> Preprocess -> Split -> Train -> Evaluate   ║
-║  BASELINE: Always start with Logistic Regression / Linear Regression ║
-║  SCALING: Fit on train, transform both. Tree models don't need it.  ║
-║  ENCODING: One-Hot for nominal (<10 cats), Target for high-card     ║
-║  LEAKAGE: Split BEFORE any preprocessing!                           ║
-║  TUNING: RandomizedSearchCV first, then GridSearchCV to refine      ║
-║  PIPELINE: Use sklearn Pipeline for clean, reproducible code        ║
-║  TABULAR: XGBoost/LightGBM almost always wins                      ║
-║  IMAGES: CNN (Convolutional Neural Network)                         ║
-║  TEXT: Naive Bayes (simple) or Transformers (state-of-art)          ║
-║  EVALUATE: Use F1/AUC for imbalanced data, not just accuracy       ║
-║  OVERFIT: More data, regularize, simpler model, cross-validate     ║
-║                                                                      ║
-║  THE #1 RULE: Your model is only as good as your data.              ║
-║  Spend 80% of your time on data quality and feature engineering.    ║
-╚══════════════════════════════════════════════════════════════════════╝
-```
+1. **Setup:** one isolated environment per project (uv, or venv + a pinned `requirements.txt`); as of Nov 2026 Python 3.13 is the safe pick — TensorFlow 2.21 ships wheels only up to 3.13.
+2. **Data and EDA:** only bundled `load_*` datasets work offline (`fetch_*`, Kaggle, Hugging Face and OpenML download); set `dtype` and `na_values` in `read_csv`; drop target-leaking columns such as Titanic's `alive`.
+3. **Workflow:** load → explore → split → preprocess → train → evaluate → tune → ship → monitor — and print a dummy baseline first (Titanic "everyone died" = 0.626).
+4. **No leakage:** split first, then put imputing, scaling and encoding in a `ColumnTransformer` inside a `Pipeline` — CV refits it in every fold, and unseen categories become all zeros instead of crashing.
+5. **Preprocessing choices:** scale for KNN, SVM, linear models and neural nets, not trees; one-hot for few categories, target encoding (inside CV) for many; `OrdinalEncoder` with an explicit order for ordered features — `LabelEncoder` is for y only.
+6. **Unsupervised:** scale before K-Means, PCA and DBSCAN; pick K with the elbow plus the silhouette, but let the problem decide (on iris the silhouette prefers K = 2; there are 3 species).
+7. **Model family:** tabular → gradient-boosted trees (XGBoost, LightGBM, CatBoost), though with few rows (353) a linear model can win; images and text → fine-tune a pretrained model after a classical baseline.
+8. **Evaluate for the decision:** report CV as mean ± std; imbalanced classes → PR-AUC and a threshold tuned on validation data before trying resampling; regression → MAE (typical miss), RMSE (punishes big misses), R² = 0 means "no better than the mean".
+9. **Tune honestly:** `best_score_` is optimistic (the maximum of noisy scores) — report the test set once or use nested CV; fight overfitting with more data, regularization, a simpler model or early stopping.
+10. **Ship one versioned artifact:** preprocessing + model in one file with its library versions; joblib for your own files, skops / ONNX / safetensors for shared ones — never unpickle a file you did not create.
+11. **Serve and monitor:** Pydantic v2 rejects bad input (HTTP 422); log every prediction with its model version; watch the service (latency, traffic, errors, saturation) and the model (PSI above 0.25 = significant shift; at scale judge drift by size, not p-value).
+12. **Ship gradually:** shadow → 1–5% canary → ramp or A/B test, with automatic rollback; bucket users by a stable hash of their id.
 
 ---
 

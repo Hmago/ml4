@@ -1303,7 +1303,7 @@ A benchmark is like a driving test in an empty car park: a fair first filter, bu
   MMLU (2020)            57 subjects, multiple choice  saturated: top models 90%+
   GPQA Diamond (2023)    198 PhD-level science Qs      saturated: 96.4% vs ~65% experts
   SWE-bench Verified     500 real GitHub fixes         retired by OpenAI, Feb 2026
-  Terminal-Bench 4.0     66 hard command-line tasks    current: top 64.8% ± 11.5
+  Terminal-Bench 4.1     66 hard command-line tasks    current: top 65.8% ± 11.4
   Humanity's Last Exam   ~2,500 expert questions       current
 
   WHAT ONE SCORE CANNOT SHOW
@@ -1331,7 +1331,7 @@ A benchmark is like a driving test in an empty car park: a fair first filter, bu
 
 - **Narrow format:** most items are short, single-turn and auto-graded (multiple choice, exact match, unit tests), and mostly in English — they miss long-form quality, multi-turn help, calibration, safety, cost and latency.
 - **Arena measures preference, not correctness:** votes reward length and formatting, so Arena (formerly Chatbot Arena / LMArena) also publishes a style-controlled ranking; a 19-point gap is only a 53% win rate ([Ch 17c §4.8](#content/17c_llm_systems)).
-- **What labs quote now (Nov 2026):** Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3 and Arena ([Ch 20 §20.13](#content/20_2026_landscape)). OpenAI retired SWE-bench Verified in Feb 2026 (saturated/contaminated); it then recommended SWE-bench Pro, but retracted that on 8 Jul 2026 after finding ~30% of Pro tasks broken.
+- **What labs quote now (Nov 2026):** Terminal-Bench 4.1 (since 9 Nov 2026), OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3 and Arena ([Ch 20 §20.13](#content/20_2026_landscape)). OpenAI retired SWE-bench Verified in Feb 2026 (saturated/contaminated); it then recommended SWE-bench Pro, but retracted that on 8 Jul 2026 after finding ~30% of Pro tasks broken.
 - **For a product decision:** a versioned golden set of 50–200 real cases, an LLM judge calibrated on human labels, then an online A/B test ([Ch 17c §4.1–4.4](#content/17c_llm_systems)).
 
 **Likely follow-ups:**
@@ -2088,7 +2088,7 @@ cascade, escalate 10%:  28.5 ms on average vs 92.4 ms for big-only
 ### Q61. What are reasoning models and how do they work?
 *[ARCH] | ★★★*
 
-![Interview card Q61 Reasoning Models: RL on checkable answers teaches long hidden thinking, the model thinks, checks and backtracks before answering, and an effort dial is raised for hard work; scratch-paper student analogy; o1 scored 74% vs GPT-4o's 12% on AIME 2024; formula cost = input x p_in + (thinking + answer) x p_out, so 8,000 thinking tokens before a 300-token answer is about 28x the output bill; pipeline from base model through RL on checkable tasks (RLVR + GRPO, reward 1 if right) to a reasoning model with an effort dial, a token bar of input, hidden thinking and answer, and the strawberry example where a normal call says 2 and a reasoning call counts 3; key numbers DeepSeek-R1-Zero 15.6% to 71.0%, 1K to 100K+ thinking tokens, high-effort calls 10-50x a quick one; follow-ups and the bigger-model trap.](diagrams/iq33b_info_q61_reasoning_models_ai.png)
+![Interview card Q61 Reasoning Models: RL on checkable answers teaches long hidden thinking, the model thinks, checks and backtracks before answering, and an effort dial is raised for hard work; scratch-paper student analogy; o1 scored 74% vs GPT-4o's 12% on AIME 2024; formula cost = input x p_in + (thinking + answer) x p_out, so 8,000 thinking tokens before a 300-token answer is about 28x the output bill; pipeline from base model through RL on checkable tasks (RLVR + GRPO, reward 1 if right) to a reasoning model with an effort dial, a token bar of input, hidden thinking and answer, and the strawberry example where a normal call says 2 and a reasoning call counts 3; key numbers DeepSeek-R1-Zero AIME 2024 15.6% to 77.9% (revised paper), 1K to 100K+ thinking tokens, high-effort calls 10-50x a quick one; follow-ups and the bigger-model trap.](diagrams/iq33b_info_q61_reasoning_models_ai.png)
 
 **Simple Answer:**
 A normal LLM answers in one go — like a student who writes down the first thing that

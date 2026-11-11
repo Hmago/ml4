@@ -939,7 +939,7 @@ Price: 100               →    LogPrice: 4.6  ← ln(100); handles skewed data
                                PriceBin: "low"/"medium"/"high"
 ```
 
-DayOfWeek here counts Monday = 1 (the ISO convention); pandas' `.dt.dayofweek` counts Monday = 0.
+DayOfWeek here counts Monday = 1 (the ISO convention); pandas' `.dt.day_of_week` counts Monday = 0.
 
 </details>
 
