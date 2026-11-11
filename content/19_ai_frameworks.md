@@ -90,10 +90,10 @@ By the end of this chapter you'll be able to:
   │  VECTOR DB  │   │  EXPERIMENT │   │     EVAL    │   │  TRACING /  │   │    MLOPS    │
   │             │   │   TRACKING  │   │             │   │OBSERVABILITY│   │             │
   │   pgvector  │   │             │   │    Ragas    │   │             │   │   MLflow 3  │
-  │   Pinecone  │   │   MLflow 3  │   │   DeepEval  │   │  LangSmith  │   │  Vertex AI  │
-  │    Qdrant   │   │     W&B     │   │  promptfoo  │   │   Langfuse  │   │   Kubeflow  │
-  │   Weaviate  │   │             │   │             │   │   Phoenix   │   │   Airflow   │
-  │    Milvus   │   │             │   │             │   │             │   │             │
+  │   Pinecone  │   │   MLflow 3  │   │   DeepEval  │   │  LangSmith  │   │    Agent    │
+  │    Qdrant   │   │     W&B     │   │  promptfoo  │   │   Langfuse  │   │   Platform  │
+  │   Weaviate  │   │             │   │             │   │   Phoenix   │   │   Kubeflow  │
+  │    Milvus   │   │             │   │             │   │             │   │   Airflow   │
   └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
@@ -913,7 +913,7 @@ Three habits in one small loop. The template's hash (`3d962e20`) is logged, so a
 | **Weaviate** | Hybrid search out of the box | Vector + BM25 + filters in one query |
 | **Pinecone** | Managed service, zero ops | Serverless; usage-based pricing |
 | **Milvus / Zilliz** | Billions of vectors | Distributed; many index types, including disk-based DiskANN; Zilliz is the managed version |
-| **Vector Search** (Gemini Enterprise Agent Platform; formerly Vertex AI Vector Search) | Managed, on Google Cloud | Built on Google's ScaNN; version 2.0 adds built-in full-text and hybrid search |
+| **Vector Search** (Gemini Enterprise Agent Platform; formerly Vertex AI Vector Search) | Managed, on Google Cloud | Built on Google's ScaNN; version 2.0 (renamed Agent Retrieval) adds built-in full-text and hybrid search |
 | **Chroma** | Local dev, prototyping | In-process; great for notebooks |
 | **Vespa** | Search + ranking + ML in one | Spun out of Yahoo; complex but powerful |
 
@@ -938,7 +938,7 @@ Three habits in one small loop. The template's hash (`3d962e20`) is logged, so a
         │           │              │            │              │            │
         ▼           ▼              ▼            ▼              ▼            ▼
     pgvector    Pinecone       Qdrant /    Pinecone /      Milvus /     Zilliz /
-               (Chroma to     Weaviate /    Vertex AI        Vespa      Vertex AI
+               (Chroma to     Weaviate /    Google's         Vespa      Google's
                prototype)       Milvus    Vector Search               Vector Search
 ```
 
@@ -1970,7 +1970,7 @@ As of November 2026:
 
 | Lever | Typical savings | How |
 |---|---|---|
-| **Prompt caching** | Up to 90% on the cached prefix — more on some models | Put the stable part first (system prompt, tools, documents). Cache hits bill at 10% of the input price on most OpenAI and Claude models (5% on GPT-6.1 Sol and Terra and on Claude Opus and Sonnet 5.5, 2.5% on Fable 5.1), but writes can cost 1.25× ([Ch 17c §2.4](#content/17c_llm_systems)) |
+| **Prompt caching** | Up to 90% on the cached prefix — more on some models | Put the stable part first (system prompt, tools, documents). Cache hits bill at 10% of the input price on most OpenAI and Claude models (5% on GPT-6.1 Sol and Terra and on Claude Opus and Sonnet 5.5, 2.5% on Fable 5.2), but writes can cost 1.25× ([Ch 17c §2.4](#content/17c_llm_systems)) |
 | **Model routing / cascades** | 50–85% in the example below; depends on how much traffic the cheap model can keep | Easy → Haiku 5.5 / Gemini Flash-Lite / GPT-6 Luna; hard → Opus 5.5 / Gemini 4 Argon / GPT-6 Astra |
 | **Batch APIs** | 50% | Anthropic, OpenAI and Gemini batch endpoints, for work that can wait (results within 24 h) |
 | **Lower reasoning effort** | Large on reasoning models | Thinking tokens bill as output tokens; set the effort dial low for easy calls |
@@ -2283,7 +2283,7 @@ Three axes: scale, ops, hybrid-search needs. <10M vectors and already on Postgre
 The provider keeps the processed prefix of your prompt (system prompt, tool definitions, long documents) and bills later hits at a fraction of the input price — 10% on OpenAI and most Claude models, as little as 2.5% on some. For a chatbot that resends a 2,000-token system prompt on every turn it is often the biggest single cost lever. The catch: writes can cost 1.25×, so with a 10% read price it only pays above a ~22% hit rate. Anthropic, OpenAI and Gemini all support it.
 
 **Q9. Walk me through deploying a fine-tuned LLM at Google.**
-Fine-tune with HuggingFace TRL + PEFT (LoRA/QLoRA) → log experiments to MLflow / W&B → register in the Agent Platform Model Registry (formerly Vertex AI Model Registry) → deploy to a Vertex AI Inference endpoint, or serve it with vLLM on GKE → monitor input drift, quality and cost → retrain on a schedule or a trigger. (Agent Runtime hosts *agents*, not raw model weights.)
+Fine-tune with HuggingFace TRL + PEFT (LoRA/QLoRA) → log experiments to MLflow / W&B → register in the Agent Platform Model Registry (formerly Vertex AI Model Registry) → deploy to an Agent Platform Inference endpoint, or serve it with vLLM on GKE → monitor input drift, quality and cost → retrain on a schedule or a trigger. (Agent Runtime hosts *agents*, not raw model weights.)
 
 **Q10. What's the role of structured outputs in production?**
 LLM responses constrained to a JSON Schema at decode time. Eliminates parser failures, JSON fence noise, and the "sometimes the model decides to add a preamble" class of bugs. OpenAI Structured Outputs, Anthropic structured outputs (`output_config.format`, plus `strict` tool inputs), Gemini JSON-schema responses, and Pydantic AI / Instructor as cross-provider wrappers — details in [Ch 17b §8.6](#content/17b_llm_applications).

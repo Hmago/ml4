@@ -29,8 +29,8 @@ Most external hires land at L4 or L5. L3 is typical for new grads. L6+ external 
   │ Google DeepMind     │ Frontier models (Gemini). Research-heavy.   │
   │                     │ Often requires publications.                │
   ├─────────────────────┼─────────────────────────────────────────────┤
-  │ Cloud AI / Vertex   │ Production ML platform, model serving,     │
-  │                     │ AutoML, Gemini API. More SWE-focused.      │
+  │ Cloud AI / Agent    │ Production ML platform, model serving,     │
+  │ Platform (ex-Vertex)│ AutoML, Gemini API. More SWE-focused.      │
   ├─────────────────────┼─────────────────────────────────────────────┤
   │ Search              │ Ranking, retrieval, Knowledge Graph.        │
   │                     │ 8.5B+ queries/day. Real-time serving.      │
@@ -840,8 +840,8 @@ Key point: RSUs dominate compensation at L5+. A strong RSU negotiation matters f
   │    │ no communication.            │ assumptions and tradeoffs aloud. │
   ├────┼──────────────────────────────┼──────────────────────────────────┤
   │ 10 │ Know nothing about Google    │ At minimum: what TPU v5 offers,  │
-  │    │ tech (TPU, JAX, Vertex).     │ how JAX differs from PyTorch,    │
-  │    │                              │ what Vertex AI does.             │
+  │    │ tech (TPU, JAX, Agent        │ how JAX differs from PyTorch,    │
+  │    │ Platform, ex-Vertex AI).     │ what Agent Platform does.        │
   ├────┼──────────────────────────────┼──────────────────────────────────┤
   │ 11 │ Treat ML depth as trivia.    │ It tests reasoning, not recall.  │
   │    │ Guess confidently when       │ "I'm not sure, but I'd reason   │
@@ -915,7 +915,7 @@ Key point: RSUs dominate compensation at L5+. A strong RSU negotiation matters f
 
 - **Google AI Blog** (ai.googleblog.com) — What Google is actively working on
 - **Google DeepMind Blog** (deepmind.google/blog) — Research updates
-- **Google Cloud Vertex AI docs** — Production ML platform
+- **Gemini Enterprise Agent Platform docs** (formerly Vertex AI) — Google Cloud's production ML platform
 - **Google Research Publications** (research.google/pubs) — All published papers
 - **Careers at Google DeepMind** (deepmind.google/careers) — Role descriptions reveal what they value
 

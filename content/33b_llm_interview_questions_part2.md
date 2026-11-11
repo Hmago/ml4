@@ -590,7 +590,7 @@ It is like moving a piano that is too heavy for one person. Several people can e
 
 **Likely follow-ups:**
 
-- *Why keep tensor parallelism inside a node?* — It communicates twice per layer on every token: NVLink gives ~900 GB/s per H100, InfiniBand between nodes ~50 GB/s — an ~18× gap.
+- *Why keep tensor parallelism inside a node?* — It communicates twice per layer on every token: NVLink gives ~450 GB/s each way per H100 (900 GB/s total), InfiniBand NDR between nodes ~50 GB/s each way — about a 9× gap.
 - *How do you shrink the pipeline bubble?* — Feed many micro-batches: idle share ≈ (p − 1) / (m + p − 1), so 4 stages waste 27% with 8 micro-batches and 9% with 32.
 - *How would you serve DeepSeek-V3?* — Its 671 GB of FP8 weights overflow 8 × H100 (640 GB) but fit one 8 × H200 node (1,128 GB) with TP or EP; DeepSeek itself runs wide expert parallelism (EP32 prefill, EP144 decode).
 
@@ -2138,7 +2138,7 @@ multi-step work and keep it low for lookups and chat.
 
 | | What happens | Numbers to quote |
 |---|---|---|
-| **Training** | RLVR: sample a group of answers per problem, reward 1 if a checker accepts; GRPO scores each answer against its group's mean, so no critic network | DeepSeek-R1-Zero, RL only: AIME 2024 pass@1 15.6% → 71.0% |
+| **Training** | RLVR: sample a group of answers per problem, reward 1 if a checker accepts; GRPO scores each answer against its group's mean, so no critic network | DeepSeek-R1-Zero, RL only: AIME 2024 pass@1 15.6% → 77.9% (revised paper; v1 said 71.0%) |
 | **Inference** | The model writes thinking tokens, then the answer; an effort setting steers how much it thinks | About 1K to 100K+ thinking tokens per call |
 | **What you see** | Closed APIs: a summary of the reasoning at most; open-weight models such as DeepSeek-R1 print raw text inside `<think>` tags | OpenAI, Anthropic and Google never return the raw chain |
 | **Cost and latency** | Thinking is billed as output and adds seconds to minutes | A high-effort call often costs 10–50× a quick one |
@@ -2219,7 +2219,7 @@ small model already partly solves.
 - **Why "paradigm shift":** quality is no longer fixed when training ends — o1's accuracy rose smoothly with both RL training compute and thinking time, and cost moved from one-off to per query.
 - **The verifier is the bottleneck:** with unit tests, 250 samples lifted SWE-bench Lite from 15.9% to 56%; without a checker, voting and reward models plateau after a few hundred samples (Brown et al., 2024).
 - **Difficulty picks the method:** easier questions gain most from sequential revision, harder ones from parallel sampling or PRM search; the hardest gain little — a better base model wins (Snell et al.).
-- **Training makes long thinking useful:** DeepSeek-R1-Zero learned it from RL alone (AIME 2024: 15.6% → 71.0%); R1 itself started with cold-start SFT ([Ch 17 §3.5b](#content/17_llm)).
+- **Training makes long thinking useful:** DeepSeek-R1-Zero learned it from RL alone (AIME 2024: 15.6% → 77.9% in the revised paper); R1 itself started with cold-start SFT ([Ch 17 §3.5b](#content/17_llm)).
 - **Pricing:** thinking tokens are billed at the output-token rate, so the effort setting is a cost knob too ([Q61](#content/33b_llm_interview_questions_part2)).
 
 **Worked example:** with a checker (unit tests), the same sample budget solves more when it goes where one more try helps most — the idea behind Snell et al.'s "compute-optimal" scaling.
@@ -3001,7 +3001,7 @@ Think of a teacher who has already annotated the textbook: for each new question
 | Vendor (as of Nov 2026) | How it is turned on | Minimum prefix | Lifetime | Read · write (× input price) |
 |---|---|---|---|---|
 | OpenAI (GPT-5.6 and later) | Automatic; optional explicit breakpoints (`prompt_cache_breakpoint`) | 1,024 tokens | 30 min by default, 12 h option | 0.1× (0.05× on GPT-6.1 Sol and Terra) · 1.25×, 2.5× for 12 h |
-| Anthropic (Claude) | Opt in with `cache_control`: once at the top level (automatic) or on up to 4 blocks | 512 tokens on the newest Claude models (up to 4,096 on older ones) | 5 min, refreshed by each hit; 1 h option | 0.1× (0.05× Opus and Sonnet 5.5, 0.025× Fable 5.1) · 1.25×, 2× for 1 h |
+| Anthropic (Claude) | Opt in with `cache_control`: once at the top level (automatic) or on up to 4 blocks | 512 tokens on the newest Claude models (up to 4,096 on older ones) | 5 min, refreshed by each hit; 1 h option | 0.1× (0.05× Opus and Sonnet 5.5, 0.025× Fable 5.1 and 5.2) · 1.25×, 2× for 1 h |
 | Google (Gemini) | Implicit caching is automatic; explicit `caches.create` only on supported Gemini 3 and 2.5 models, not Gemini 4 Argon | 4,096 tokens on Gemini 3 and 4 | Implicit: managed by Google; explicit: a TTL you set, plus an hourly storage fee | 0.1× (Gemini 3.8 Flash), 0.05× (Gemini 4 Argon) · no write premium |
 
 **Worked example:** a 10-turn chat re-sends its whole history every turn; a warm cache turns most of it into cheap reads, but a cache that expires between turns makes every turn pay the 1.25× write price.

@@ -1453,7 +1453,7 @@ Cross features win: "this user's click-rate *on cooking videos*" predicts far be
 **Training-serving skew = #1 silent killer:**
 > Training computes a feature in Python/batch; serving computes it in C++/real-time — differently. Model silently falls apart live.
 
-**Fix — Feature Store** (e.g., Vertex AI Feature Store): one shared definition, served both batch (for training) and online (for inference) with point-in-time correctness. Training and serving read the same feature code, so the "two implementations" skew disappears.
+**Fix — Feature Store** (e.g., Feature Store on Gemini Enterprise Agent Platform, formerly Vertex AI): one shared definition, served both batch (for training) and online (for inference) with point-in-time correctness. Training and serving read the same feature code, so the "two implementations" skew disappears.
 
 ```
   Slow-cooked features (overnight): 30-day watch rate, user embeddings
@@ -1577,7 +1577,7 @@ Result: a 10B-param teacher's quality can ship as a 50M-param student running in
   → Challenger loses → investigate why offline metric gain didn't transfer
 ```
 
-**Model registry (Vertex AI, MLflow, SageMaker):** every trained model is versioned with its training data fingerprint, hyperparameters, evaluation metrics, and lineage (which dataset → which model). Enables:
+**Model registry (Agent Platform, MLflow, SageMaker):** every trained model is versioned with its training data fingerprint, hyperparameters, evaluation metrics, and lineage (which dataset → which model). Enables:
 - Reproducible model serving (know exactly what trained that model)
 - Rollback to previous champion in minutes
 - Audit trail for regulated industries

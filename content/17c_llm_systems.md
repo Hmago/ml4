@@ -956,7 +956,7 @@ As of November 2026, vLLM's documentation lists EAGLE, MTP, separate draft model
 
 | Link between the pools | Bandwidth | Time to move 3.3 GB | Verdict |
 |---|---|---|---|
-| NVLink (same node, H100) | 900 GB/s | ≈ 4 ms | Free |
+| NVLink (same node, H100) | 450 GB/s each way (900 GB/s total) | ≈ 7 ms | Free |
 | InfiniBand NDR, 400 Gb/s | 50 GB/s | ≈ 66 ms | Fine — and it can be streamed layer by layer while prefill runs |
 | 100 Gb/s Ethernet | 12.5 GB/s | ≈ 0.26 s | Marginal |
 | 10 Gb/s Ethernet | 1.25 GB/s | ≈ 2.6 s | Ruinous — longer than the prefill itself |
@@ -1792,7 +1792,7 @@ Before trusting human labels, measure how often two raters agree (Cohen's κ cor
 | **Terminal-Bench** | Agent work in a real terminal: inspect files, run commands, recover from errors | Version 4.0 is the current table (top about 65 %, Oct 2026); 2.x is saturated (about 90 %). Scores are not comparable across versions |
 | **OSWorld (-Verified)** | Operating a real desktop through screenshots — computer use ([Ch 18 §18.6](#content/18_ai_agents)) | Active |
 | **GPQA Diamond** | 198 graduate-level, "Google-proof" science questions | Saturated — top score about 96 % (Epoch AI, Sep 2026) |
-| **AIME / FrontierMath** | Competition- to research-level maths (reasoning models) | AIME is close to saturated; FrontierMath is still hard |
+| **AIME / FrontierMath** | Competition- to research-level maths (reasoning models) | AIME is close to saturated; FrontierMath Tiers 1–3 are nearly saturated too (95.1 %, Claude Fable 5.2, Epoch AI, 9 Nov 2026) and the harder Tier 4 is topped out (100 %, Fable 5.2 and GPT-6.1 Sol) |
 | **ARC-AGI-2 / ARC-AGI-3** | Abstract reasoning from a few examples; ARC-AGI-3 (March 2026) is interactive games with no instructions | ARC-AGI-2 is nearly saturated (95.0 %, Sep 2026). ARC-AGI-3 is current: at launch humans scored 100 % and the best AI 0.51 %; by Sep 2026 the best reached 62.7 % on the Standard harness ([Ch 20 §20.13](#content/20_2026_landscape)) |
 | **Humanity's Last Exam** | 2,500 expert-written questions across many fields | Active |
 | **LiveCodeBench** | Competitive-programming problems published after a model's training cutoff | Contamination-resistant by design |
@@ -1840,15 +1840,16 @@ Academic benchmarks don't always reflect real-world usefulness. **Arena** — st
   4. A Bradley–Terry model fits all the votes at once and reports
      each model's score on the Elo scale, with a confidence interval
 
-  Snapshot — text leaderboard as of early November 2026
-  (table last updated 27 October 2026; it changes monthly):
-  1. Gemini 4 Carbon    1528 ± 9
-  2. Gemini 4 Argon     1520 ± 6
-  3. Claude Opus 5.5    1509 ± 7
-  1528 vs 1509: P = 1 / (1 + 10^(-19/400)) ≈ 0.53 — nearly a coin flip
+  Snapshot — text leaderboard, arena.ai default view (style control on),
+  9 November 2026 (it changes often):
+  1. Gemini 4 Carbon    1526 ± 10
+  2. Gemini 4 Argon     1522 ± 5
+  3. Muse Wonder (Meta) 1511 ± 6
+  4. Claude Opus 5.5    1506 ± 6
+  1526 vs 1506: P = 1 / (1 + 10^(-20/400)) ≈ 0.53 — nearly a coin flip
 ```
 
-**Why this matters:** a model can top Arena yet trail on agentic coding benchmarks such as Terminal-Bench, or the reverse — real-world preference ≠ benchmark scores. Two cautions: votes reward style (length, headings, bullet points), which is why Arena also publishes a style-controlled ranking; and labs can test several private variants before a launch and publish only the best one (the main criticism in "The Leaderboard Illusion", 2025). Treat models whose confidence intervals overlap as tied, and check arena.ai for today's table.
+**Why this matters:** a model can top Arena yet trail on agentic coding benchmarks such as Terminal-Bench, or the reverse — real-world preference ≠ benchmark scores. Two cautions: votes reward style (length, headings, bullet points), which is why Arena's default ranking now controls for style (the raw-vote ranking is still published); and labs can test several private variants before a launch and publish only the best one (the main criticism in "The Leaderboard Illusion", 2025). Treat models whose confidence intervals overlap as tied, and check arena.ai for today's table.
 
 </details>
 

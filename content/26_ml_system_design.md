@@ -222,7 +222,7 @@ You hit a subtle bug: a feature looks great in training but tanks live. Welcome 
 
 🧠 **Training-serving skew** = practicing with one recipe and cooking from another. Training computes a feature one way (Python, batch); serving computes it slightly differently (C++, real-time) — and the model quietly falls apart. It's the **#1 cause of "great offline, terrible live."**
 
-🧠 **The fix — a feature store** = a **shared kitchen pantry**. Every model grabs identical, pre-prepped ingredients from one jar, and training and serving pull from the *same jar*. (Google's is Vertex AI Feature Store: one definition, served both batch for training and online for inference, with **point-in-time correctness** — each training row sees feature values exactly as they were at that moment, never values computed later.)
+🧠 **The fix — a feature store** = a **shared kitchen pantry**. Every model grabs identical, pre-prepped ingredients from one jar, and training and serving pull from the *same jar*. (Google's is the Feature Store on Gemini Enterprise Agent Platform, formerly Vertex AI Feature Store: one definition, served both batch for training and online for inference, with **point-in-time correctness** — each training row sees feature values exactly as they were at that moment, never values computed later.)
 
 > 🎤 **Soundbite:** "I'd compute features through one shared definition — a feature store — so training and serving use the same code and can't silently drift apart. I'd still monitor feature distributions, because stale or missing values can cause skew anyway. Most 'mysterious' production regressions are just skew."
 
@@ -404,7 +404,7 @@ These are **p99 budgets** (the time 99% of requests must beat), so they are loos
 |---|---|---|
 | **HNSW** (graph algorithm) | Hop greedily through a layered "small-world" graph of near neighbors | Very high recall; memory-hungry (graph + full vectors in RAM) |
 | **FAISS** (Meta's library) | **IVF**: cluster the vectors, search only the nearest clusters · **PQ**: compress each vector into a short code | Flexible, GPU support, great at billion scale; compression costs some recall |
-| **ScaNN** (Google's library) | Anisotropic quantization tuned for maximum inner product search (MIPS) | Keeps errors smallest where they would change the top scores; top-tier speed/recall; powers Vertex AI Vector Search |
+| **ScaNN** (Google's library) | Anisotropic quantization tuned for maximum inner product search (MIPS) | Keeps errors smallest where they would change the top scores; top-tier speed/recall; powers Google's Vector Search (Agent Platform) |
 
 StreamFlix uses **ScaNN** to search 800M video embeddings in under 5ms.
 
@@ -596,7 +596,7 @@ Interviewers push on trade-offs — that's the substance of seniority. Never pre
 7. **Latency is a budget,** and the tails (p99) are what users feel.
 8. **Shipping is the starting line** — drift, retraining, and safe rollout keep it alive.
 9. **Responsible AI is architecture,** not an afterthought.
-10. **Be concrete:** name real systems (ScaNN, TPU, Bigtable, Vertex AI) and real numbers (128-dim, <300ms, 0.1% fraud).
+10. **Be concrete:** name real systems (ScaNN, TPU, Bigtable, Agent Platform) and real numbers (128-dim, <300ms, 0.1% fraud).
 
 ---
 

@@ -4,7 +4,7 @@
 
 In late 2022 ChatGPT answered questions. In late 2026 the frontier models think for minutes before answering, run coding agents for hours, operate a desktop from screenshots, and read text, images, audio and video in one prompt. The techniques behind them are in Ch 7–19; this chapter is the world they operate in.
 
-**How to read this chapter.** Every topic has the same shape: a plain explanation that will not date, then **one dated snapshot table** ("verified 5 Nov 2026", with the source named), then *what to look for* when that snapshot goes stale. Model names change every few weeks; the questions you ask about them do not. Where a vendor page disagrees with this chapter, trust the vendor page.
+**How to read this chapter.** Every topic has the same shape: a plain explanation that will not date, then **one dated snapshot table** ("verified 5 Nov 2026", with the source named), then *what to look for* when that snapshot goes stale. Model names change every few weeks; the questions you ask about them do not. Where a vendor page disagrees with this chapter, trust the vendor page. (Updated 11 Nov 2026 for Claude Fable 5.2, the 9 Nov Arena table and the latest FrontierMath results.)
 
 ---
 
@@ -65,11 +65,11 @@ By the end of this chapter you'll be able to:
 > **Maths in one line:** `cost per call = input_tokens × price_in + output_tokens × price_out` — the same request can cost 100× more on a top tier than on a cheap tier (GPT-6 Astra vs GPT-6 Luna), so the trim you pick matters more than the lab.
 
 ```
-   CLOSED-WEIGHT FRONTIER — verified 5 Nov 2026 (names change every few months)
+   CLOSED-WEIGHT FRONTIER — verified 5 Nov 2026, Anthropic top tier 11 Nov (names change often)
 
    Tier           OpenAI                 Anthropic                Google
    ────────────   ────────────────────   ──────────────────────   ─────────────────────────
-   Top            GPT-6 Astra            Claude Fable 5.1         Gemini 4 Argon
+   Top            GPT-6 Astra            Claude Fable 5.2         Gemini 4 Argon
                                                                   (Gemini 4 Carbon: limited)
    Workhorse      GPT-6.1 Sol / Terra    Claude Opus 5.5,         Gemini 3.8 Flash
                                          Claude Sonnet 5.5
@@ -86,7 +86,7 @@ By the end of this chapter you'll be able to:
 <details>
 <summary><strong>Read as text</strong> — models, release dates, context windows and list prices</summary>
 
-Sources: the OpenAI, Anthropic, Google and SpaceXSI model and pricing pages; standard (non-batch) list prices. This matches [Ch 17 §4](#content/17_llm), which covers each family's history.
+Sources: the OpenAI, Anthropic, Google and SpaceXSI model and pricing pages; standard (non-batch) list prices. The Anthropic top-tier row was re-checked on 11 Nov 2026 against Anthropic's [Fable and Mythos 5.2 announcement](https://www.anthropic.com/claude-fable-and-mythos-5-2) and model page. This matches [Ch 17 §4](#content/17_llm), which covers each family's history.
 
 | Lab | Model (API id) | Released | Context | Input (USD per 1M tokens) | Output (USD per 1M tokens) |
 |---|---|---|---|---|---|
@@ -94,7 +94,7 @@ Sources: the OpenAI, Anthropic, Google and SpaceXSI model and pricing pages; sta
 | OpenAI | GPT-6.1 Sol (`gpt-6.1-sol`) | Sep 29, 2026 | 1.05M | 2 | 10 |
 | OpenAI | GPT-6.1 Terra (`gpt-6.1-terra`) | Oct 26, 2026 | 1.05M | 1 | 5 |
 | OpenAI | GPT-6 Luna (`gpt-6-luna`) | Sep 22, 2026 | 1.05M | 0.10 | 0.50 |
-| Anthropic | Claude Fable 5.1 (`claude-fable-5-1`) | Sep 2026 | 1M | 10 | 50 |
+| Anthropic | Claude Fable 5.2 (`claude-fable-5-2`) | Nov 9, 2026 | 1M | 8 | 40 |
 | Anthropic | Claude Opus 5.5 (`claude-opus-5-5`) | Sep 22, 2026 | 1M | 4 | 20 |
 | Anthropic | Claude Sonnet 5.5 (`claude-sonnet-5-5`) | Sep 2026 | 1M | 2 | 10 |
 | Anthropic | Claude Haiku 5.5 (`claude-haiku-5-5`) | Sep–Oct 2026 | 1M | 0.10 (prompts up to 100K) | 0.50 (prompts up to 100K) |
@@ -102,7 +102,7 @@ Sources: the OpenAI, Anthropic, Google and SpaceXSI model and pricing pages; sta
 | Google | Gemini 3.8 Flash (`gemini-3.8-flash`) | Sep 2, 2026 | 1M | 0.75 (1.50 from Jan 1) | 3.75 (7.50 from Jan 1) |
 | SpaceXSI (formerly xAI) | Grok 4.7 (`grok-4.7`) | Sep 21, 2026 | 500K | 2 | 6 |
 
-Notes on the snapshot: OpenAI's standard rates apply to prompts under 272K tokens; Google's Argon and 3.8 Flash prices are introductory; **Gemini 4 Carbon** (Oct 28, 2026) is Google's strongest model but goes only to vetted cyber defenders for now; Anthropic also offers Fable 5.1 as **Mythos 5.1** to organisations verified for sensitive security and biology work. Batch APIs halve most of these prices.
+Notes on the snapshot: OpenAI's standard rates apply to prompts under 272K tokens; Google's Argon and 3.8 Flash prices are introductory; **Gemini 4 Carbon** (Oct 28, 2026) is Google's strongest model but goes only to vetted cyber defenders for now; Anthropic also offers Fable 5.2 as **Mythos 5.2** — the same underlying model — to organisations verified for sensitive security and biology work. Fable 5.2 replaced Fable 5.1 (10 / 50) on Nov 9, 2026: a lower price, up to 30% faster output, and an optional fast mode (up to 2.5× faster, at 16 / 80); 128K max output, knowledge cutoff Jun 2026. Batch APIs halve most of these prices.
 
 </details>
 
@@ -117,7 +117,7 @@ Notes on the snapshot: OpenAI's standard rates apply to prompts under 272K token
 | **Price spread is inside each lab** | OpenAI's top tier is 100× its cheap tier on input; the three labs' workhorses are within about 5× of each other |
 | **Context has converged** | ~1M tokens on almost every frontier API model (Grok 4.7: 500K) — [§20.9](#content/20_2026_landscape) |
 | **Reasoning is a dial, not a product** | Every model above takes a reasoning-effort setting (§20.2) |
-| **Releases are staged** | Models strong at cyber-offence ship first, or only, to vetted defenders (Gemini 4 Carbon, Claude Mythos 5.1) |
+| **Releases are staged** | Models strong at cyber-offence ship first, or only, to vetted defenders (Gemini 4 Carbon, Claude Mythos 5.2) |
 
 **Interview tip:** don't memorise these digits — they shift monthly. Memorise the *shape*: three tiers per lab, the leaders within a few points of each other, open weights a few months behind (§20.3), and **model choice decided mostly by price, latency, ecosystem and your own eval**, not by a leaderboard. Say "as of <month, year>" whenever you quote a number. The habits for checking a lineup yourself are in [Ch 17 §4.6](#content/17_llm) ("How to stay current").
 
@@ -441,7 +441,7 @@ Terminal-Bench gives an agent hard, real command-line tasks (66 tasks in 4.0, 5 
    Gemini 3.8 Flash  · mini-SWE-agent   ██████████                         19.1%
 ```
 
-Read it like an engineer: the top five are within about 7 points, three of them are statistically tied, the best open-weight entry is about 23 points behind, and a model run in a generic harness (Gemini 3.8 Flash in mini-SWE-agent) is not comparable with one run in its own vendor's agent.
+Read it like an engineer: the top five are within about 7 points, three of them are statistically tied, the best open-weight entry is about 23 points behind, and a model run in a generic harness (Gemini 3.8 Flash in mini-SWE-agent) is not comparable with one run in its own vendor's agent. (Claude Fable 5.2, released 9 Nov 2026, postdates this snapshot — the Fable row is 5.1.)
 
 </details>
 
@@ -773,7 +773,7 @@ Quantization shrinks a big model. The complementary move is to **start smaller**
 <details>
 <summary><strong>Read as text</strong> — a fixed capability gets cheaper, the best model does not, and the decline formula</summary>
 
-**Simple explanation.** Two prices move in opposite ways. The price of a *fixed* level of capability collapses — what needed the best model three years ago now runs on a cheap tier for a tiny fraction of the cost. The price of the *best* model stays roughly flat (the top tiers in §20.1 still list at 10 input / 50 output USD per 1M tokens), and the number of tokens each feature uses keeps growing. Good system design uses both facts.
+**Simple explanation.** Two prices move in opposite ways. The price of a *fixed* level of capability collapses — what needed the best model three years ago now runs on a cheap tier for a tiny fraction of the cost. The price of the *best* model stays roughly flat (the top tiers in §20.1 still list at 8–10 input / 40–50 output USD per 1M tokens — Claude Fable 5.2's 20% cut in Nov 2026 was a trim, not a collapse), and the number of tokens each feature uses keeps growing. Good system design uses both facts.
 
 > **Maths in one line:** `price after t years = price today × (1 − q)^(4t)` with `q ≈ 0.47` per quarter (Epoch AI, Sep 2026) — about 13× cheaper per year for the same benchmark performance.
 
@@ -868,7 +868,7 @@ How the window grew: **4K (ChatGPT, 2022) → 8K / 32K (GPT-4, 2023) → 100K–
 | Model | Context window |
 |---|---|
 | GPT-6 Astra, 6.1 Sol, 6.1 Terra, 6 Luna | 1.05M (standard rate under 272K) |
-| Claude Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 | 1M (Haiku 5.5 charges more above 100K) |
+| Claude Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5 | 1M (Haiku 5.5 charges more above 100K) |
 | Gemini 4 Argon, Gemini 3.8 Flash | 1M |
 | Grok 4.7 | 500K (higher rate above 200K) |
 | Open: DeepSeek V4 / V4.1, Kimi K3, Mistral Large 4, Muse Spark Open | 1M |
@@ -1120,7 +1120,7 @@ Source: Google Cloud's TPU7x documentation (Nov 2026). Ironwood has about 10× t
 |---|---|---|---|
 | **MMLU, HumanEval, GSM8K** | School-level knowledge, short Python functions, grade-school maths | **Saturated** | Above 90% for years |
 | **GPQA Diamond** | 198 PhD-level science questions (experts score about 65%) | **Saturated** | 96.4% Gemini 4 Argon (Epoch AI hub, Sep 2026) |
-| **FrontierMath, Tiers 1–3** | Unpublished research-level maths | Nearly saturated | 93.7% GPT-6 Astra and GPT-6.1 Sol (Epoch AI hub) |
+| **FrontierMath, Tiers 1–3** | Unpublished research-level maths | Nearly saturated | 95.1% Claude Fable 5.2 (Epoch AI hub, 9 Nov 2026); GPT-6 Astra and GPT-6.1 Sol 93.7%. The harder Tier 4 (about 40 problems) is topped out too: 100% for Fable 5.2 and GPT-6.1 Sol |
 | **ARC-AGI-2** | Abstract visual puzzles | Nearly saturated | 95.0% GPT-6 Astra at max effort (ARC Prize, Sep 2026) |
 | **Terminal-Bench 2.x** | Command-line agent tasks | Saturated — vendors moved to 3.0 and 4.0 | about 90% on 2.1 in 2026 model cards |
 | **SWE-bench Verified** | 500 real GitHub fixes | **Retired** — flawed tests and contamination (OpenAI, Feb 2026) | High 80s, no longer meaningful |
@@ -1130,7 +1130,7 @@ Source: Google Cloud's TPU7x documentation (Nov 2026). Ironwood has about 10× t
 | **OSWorld 2.0** | 108 long-horizon desktop workflows | **Current** | 20.6% completed, Claude Opus 4.8 (paper); vendors quote partial scores (§20.6) |
 | **Humanity's Last Exam** | About 2,500 expert questions, 100+ subjects | **Current** | 54.8% GPT-6 Astra (Scale AI / CAIS leaderboard, Sep 2026); higher self-reported runs use tools |
 | **ARC-AGI-3** | Interactive game worlds the agent must explore | **Current** — score depends on the harness | GPT-6 Astra best: 62.7% Standard harness (max effort), 99.9% Provider Adapter harness (high effort); at high effort Standard gives 54.8% (ARC Prize, Sep 2026) |
-| **Arena (text)** | Crowd votes between two anonymous answers (Elo-style) | **Current** — measures preference, not correctness | 1528 Gemini 4 Carbon (28 Oct 2026) |
+| **Arena (text)** | Crowd votes between two anonymous answers (Elo-style) | **Current** — measures preference, not correctness | 1526 Gemini 4 Carbon, 1522 Gemini 4 Argon — a statistical tie (arena.ai default view, 9 Nov 2026) |
 | **Artificial Analysis Intelligence Index v5.0** | Nine evaluations run independently (launched 27 Oct 2026) | **Current** | 59.4 Gemini 4 Carbon |
 
 Benchmark mechanics — contamination, LLM-as-judge, perplexity, BLEU/ROUGE and Chatbot Arena's rating — are taught in [Ch 17c §4](#content/17c_llm_systems); agent evaluation is in [Ch 18b §18.12](#content/18b_agents_in_production).
@@ -1232,7 +1232,7 @@ Model names below are a November 2026 snapshot; the branches are what you should
         ├── Complex code, multi-file changes       → Claude Opus 5.5 or GPT-6.1 Sol inside an agent
         │                                            harness (Claude Code / Codex / Cursor)
         │
-        ├── PhD-level science reasoning            → Top tier (GPT-6 Astra / Claude Fable 5.1 /
+        ├── PhD-level science reasoning            → Top tier (GPT-6 Astra / Claude Fable 5.2 /
         │                                            Gemini 4 Argon) with the effort dial turned up
         │
         ├── Long documents (≥1M tokens)            → Retrieve + chunk, or a ~1M-window model;
@@ -1282,7 +1282,7 @@ Model names below are a November 2026 snapshot; the branches are what you should
 ## 20.17 Interview Questions
 
 **Q1. Walk me through the frontier model lineup as of November 2026.**
-Three closed labs, each with three tiers: OpenAI's GPT-6 Astra, GPT-6.1 Sol / Terra and GPT-6 Luna; Anthropic's Claude Fable 5.1, Opus 5.5 (its recommended default), Sonnet 5.5 and Haiku 5.5; Google's Gemini 4 Argon (with Gemini 4 Carbon for vetted defenders), Gemini 3.8 Flash and Flash-Lite — plus SpaceXSI's Grok 4.7. Nearly all have ~1M-token context and a reasoning-effort dial. The leader depends on the test: Claude Opus 5.5 tops Terminal-Bench 4.0, GPT-6 Astra tops Humanity's Last Exam and ARC-AGI-3, Gemini 4 Carbon tops Arena and the Artificial Analysis index. Open weights (Kimi K3, DeepSeek V4.x, Mistral Large 4, Qwen 3.5) trail by a few months. So model choice is mostly price, latency, ecosystem and your own eval.
+Three closed labs, each with three tiers: OpenAI's GPT-6 Astra, GPT-6.1 Sol / Terra and GPT-6 Luna; Anthropic's Claude Fable 5.2 (9 Nov 2026; 8 / 40 USD per 1M tokens), Opus 5.5 (its recommended default), Sonnet 5.5 and Haiku 5.5; Google's Gemini 4 Argon (with Gemini 4 Carbon for vetted defenders), Gemini 3.8 Flash and Flash-Lite — plus SpaceXSI's Grok 4.7. Nearly all have ~1M-token context and a reasoning-effort dial. The leader depends on the test: Claude Opus 5.5 tops Terminal-Bench 4.0, GPT-6 Astra tops Humanity's Last Exam and ARC-AGI-3, Gemini 4 Carbon tops Arena and the Artificial Analysis index. Open weights (Kimi K3, DeepSeek V4.x, Mistral Large 4, Qwen 3.5) trail by a few months. So model choice is mostly price, latency, ecosystem and your own eval.
 
 **Q2. When does test-time compute scaling beat parameter scaling?**
 On hard, checkable, multi-step work — maths, code, planning — spending more inference tokens on thinking can beat a much bigger model, with diminishing returns as the budget grows. Every 2026 flagship exposes this as an effort dial, and thinking tokens are billed as output. Keep it low for simple Q&A, creative writing, real-time voice and high-throughput classification, where the extra cost and latency don't buy quality.
@@ -1300,7 +1300,7 @@ Obligations for general-purpose AI providers have applied since 2 Aug 2025: tech
 (1) Embed photos with a SigLIP-style vision-language encoder into a vector index. (2) Embed the query into the same space and retrieve the top-k photos, filtered by the user's ACLs. (3) Send retrieved photos + query to a multimodal Gemini (3.8 Flash by default, Gemini 4 Argon for hard questions) — it reads images natively. (4) Answer simple searches with Gemini Nano on the device for privacy and latency; escalate complex reasoning to the cloud. (5) Respect hidden photos and filter sensitive content. (6) Measure retrieval recall, answer accuracy, p95 latency and user satisfaction.
 
 **Q7. How would you choose between a closed-weight API and a self-hosted open-weight model?**
-Pick closed-weight (GPT-6.x, Claude 5.5 / Fable 5.1, Gemini 4) when you want zero ops, the newest reasoning frontier, polished computer use or quick model swaps. Pick open-weight (DeepSeek V4.x, Qwen 3.5, Kimi K3, Mistral Large 4, gpt-oss, Gemma 4) for privacy and sovereignty, very high volume where token cost dominates, deep fine-tuning or distillation, or reproducible research — and check the licence first. Many stacks blend: open weights for routine traffic, a closed API for the hard tail.
+Pick closed-weight (GPT-6.x, Claude 5.5 / Fable 5.2, Gemini 4) when you want zero ops, the newest reasoning frontier, polished computer use or quick model swaps. Pick open-weight (DeepSeek V4.x, Qwen 3.5, Kimi K3, Mistral Large 4, gpt-oss, Gemma 4) for privacy and sovereignty, very high volume where token cost dominates, deep fine-tuning or distillation, or reproducible research — and check the licence first. Many stacks blend: open weights for routine traffic, a closed API for the hard tail.
 
 **Q8. What's wrong with citing MMLU or HumanEval in 2026?**
 They are saturated — frontier models have scored 90%+ for years, so they no longer separate models; GPQA Diamond (~96%) and SWE-bench Verified (retired for contamination) have joined them. Cite a current benchmark with its version, harness, source and date — Terminal-Bench 4.0, OSWorld 2.0, Humanity's Last Exam, ARC-AGI-3, or the Arena and Artificial Analysis indexes — and then say what your own task-specific eval would measure.
@@ -1315,7 +1315,7 @@ Use them for legacy software with no API, one-off cross-app automation, QA of fl
 
 ## 20.18 Key Takeaways
 
-- **The frontier is plural and tiered** — GPT-6, Claude 5.5 / Fable 5.1 and Gemini 4 each sell a top, a workhorse and a cheap tier; the leader changes with the benchmark, so pick by task fit, price and your own eval.
+- **The frontier is plural and tiered** — GPT-6, Claude 5.5 / Fable 5.2 and Gemini 4 each sell a top, a workhorse and a cheap tier; the leader changes with the benchmark, so pick by task fit, price and your own eval.
 - **Open weights are a few months behind**, mostly huge sparse MoE models (Kimi K3, DeepSeek V4.x, Mistral Large 4, Muse Spark Open, Qwen 3.5): memory follows total parameters, compute follows active ones, and licences differ.
 - **Reasoning is a dial, not a product.** Every flagship has an effort setting; thinking tokens are billed as output, so turn it up only where a wrong answer is expensive.
 - **Coding agents = model × harness × effort.** SWE-bench Verified was retired for contamination, SWE-bench Pro is contested; read Terminal-Bench-style scores as noisy, harness-specific signals.

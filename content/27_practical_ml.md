@@ -2596,6 +2596,8 @@ Build these projects in order. Each one teaches new skills.
 
 MLOps is the discipline of moving trained models into reliable, monitored production systems. A notebook prototype that achieves 92% accuracy is worthless if nobody can call it, it returns garbage after a data shift, or it silently degrades over six months. This section covers the full deployment loop: serving, registries, CI/CD, experiment tracking, drift detection, and safe rollout.
 
+> **Google Cloud naming:** Google's managed ML platform is **Gemini Enterprise Agent Platform** ("Agent Platform" for short), called **Vertex AI** until April 2026. The services were renamed, but the `google-cloud-aiplatform` SDK and its code did not change ([Ch 30 §4](#content/30_google_ml_ecosystem)).
+
 ---
 
 ## 18.1 The Production ML Loop
@@ -2610,7 +2612,7 @@ MLOps is the discipline of moving trained models into reliable, monitored produc
   │  raw data    log runs &    version &       REST API /    drift +     │
   │  feature     metrics to    tag models      batch job     perf        │
   │  store       MLflow/W&B    (stage: dev     FastAPI /     metrics     │
-  │                            / staging /     Vertex AI                 │
+  │                            / staging /     Agent Platform            │
   │                            production)                               │
   │     │              │             │             │              │      │
   │     └──────────────┴─────────────┴──────┬──────┘              │      │
@@ -2645,7 +2647,7 @@ MLOps is the discipline of moving trained models into reliable, monitored produc
 
   Examples:                            Examples:
   - FastAPI / Flask endpoint           - Spark / pandas batch job
-  - Vertex AI Prediction endpoint      - Vertex AI Batch Prediction
+  - Agent Platform Online Inference    - Agent Platform Batch Inference
   - TorchServe / BentoML               - Dataflow / BigQuery ML
 ```
 
@@ -2773,6 +2775,8 @@ wandb.finish()
 
 ### Vertex AI Experiments (GCP-native)
 
+Now called **Experiments on Gemini Enterprise Agent Platform**; the SDK calls are unchanged.
+
 ```python
 from google.cloud import aiplatform
 
@@ -2835,7 +2839,7 @@ prod_model = mlflow.sklearn.load_model(model_uri)
 A CI/CD pipeline for ML runs automated tests on every commit that touches model code or training data. It gates deployments behind validation checks, preventing regressions from reaching production silently.
 
 ```
-  ML CI/CD PIPELINE (GitHub Actions / Vertex Pipelines / Kubeflow):
+  ML CI/CD PIPELINE (GitHub Actions / Agent Platform Pipelines / Kubeflow):
 
   Code push / PR
        │
@@ -3192,13 +3196,13 @@ def predict(req: PredictRequest, user_id: str = "anonymous"):
 
 | Category | Open Source | Managed (Cloud) |
 |----------|-------------|-----------------|
-| Experiment tracking | MLflow, DVC | Vertex AI Experiments, W&B, Comet |
-| Model registry | MLflow Model Registry | Vertex AI Model Registry, SageMaker Registry |
-| Serving (online) | FastAPI, BentoML, TorchServe | Vertex AI Prediction, SageMaker Endpoint |
-| Serving (batch) | Spark, pandas job | Vertex AI Batch Prediction, SageMaker Batch |
-| Orchestration | Apache Airflow, Kubeflow Pipelines | Vertex AI Pipelines, SageMaker Pipelines |
+| Experiment tracking | MLflow, DVC | Agent Platform Experiments (formerly Vertex AI), W&B, Comet |
+| Model registry | MLflow Model Registry | Agent Platform Model Registry, SageMaker Registry |
+| Serving (online) | FastAPI, BentoML, TorchServe | Agent Platform Online Inference, SageMaker Endpoint |
+| Serving (batch) | Spark, pandas job | Agent Platform Batch Inference, SageMaker Batch |
+| Orchestration | Apache Airflow, Kubeflow Pipelines | Agent Platform Pipelines, SageMaker Pipelines |
 | Drift detection | Evidently AI, Alibi Detect, whylogs | Amazon SageMaker Model Monitor |
-| Feature store | Feast | Vertex AI Feature Store, Tecton |
+| Feature store | Feast | Agent Platform Feature Store, Tecton |
 
 ---
 

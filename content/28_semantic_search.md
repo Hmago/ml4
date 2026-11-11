@@ -768,7 +768,7 @@ results = search_and_rerank("What is the company's strategy for reducing churn?"
 | **Cohere Rerank** | `rerank-v5.0-fast` | API-based, multilingual, very strong quality |
 | **Jina Reranker** | `jina-reranker-v2` | Open-source and API, fast |
 | **Voyage Reranker** | `rerank-2` | Strong on code and technical docs |
-| **Google Vertex AI** | Ranking API | Integrated with Vertex AI Search |
+| **Google Agent Platform** (formerly Vertex AI) | Agent Platform ranking API | Integrated with Agent Search (formerly Vertex AI Search) and RAG Engine |
 
 ```python
 # Runs locally: pip install cohere; needs CO_API_KEY (Cohere Rerank API example)
@@ -1118,7 +1118,7 @@ def rag_pipeline(question: str, top_k: int = 5) -> dict:
 
 Both Google and Microsoft offer managed RAG-as-a-service:
 
-- **Vertex AI Search** (Google Cloud): Handles chunking, embedding, indexing, and search. Integrates with Gemini for RAG and supports grounding with Google Search.
+- **Agent Search** (Google Cloud; called Vertex AI Search until the April 2026 rename to Gemini Enterprise Agent Platform): Handles chunking, embedding, indexing, and search. Integrates with Gemini for RAG and supports grounding with Google Search.
 - **Azure AI Search** (Microsoft): Hybrid search (BM25 + vector), semantic ranker, built-in chunking. Powers Microsoft Copilot.
 
 These managed services trade cost for engineering time — no pipeline to build or maintain.
@@ -1331,7 +1331,7 @@ Pre-filtering fails with very selective filters (e.g., only 10 docs match) — n
 
 Text documents: chunk and embed with a text embedding model. Images: embed with CLIP image encoder. Queries: embed with both models. Run both searches in parallel, merge results with RRF.
 
-Challenge: text embeddings and CLIP embeddings live in different vector spaces — you need separate indexes and fusion at the result level. Alternatively, use a unified multimodal model (Vertex AI multimodal embeddings) that embeds both in the same space. The metadata "file_type" filter can also boost image results when the query mentions "chart" or "screenshot."
+Challenge: text embeddings and CLIP embeddings live in different vector spaces — you need separate indexes and fusion at the result level. Alternatively, use a unified multimodal model (such as the multimodal embeddings on Agent Platform) that embeds both in the same space. The metadata "file_type" filter can also boost image results when the query mentions "chart" or "screenshot."
 </details>
 
 ---

@@ -112,6 +112,18 @@ function isRoutableHash(hash) {
   const hashLower = hash.toLowerCase();
   return chapters.some(ch => ch.file && ch.file.replace('.md', '').toLowerCase() === hashLower);
 }
+// Markdown TOCs link to GitHub-style heading slugs (`#topic-1--bias-variance-tradeoff`),
+// but the reader assigns its own `heading-N` ids, so resolve the slug by heading text.
+function findHeadingBySlug(root, slug) {
+  const seen = {};
+  for (const heading of root.querySelectorAll('h1,h2,h3,h4,h5,h6')) {
+    let id = heading.textContent.trim().toLowerCase()
+      .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '').replace(/ /g, '-');
+    if (id in seen) id += '-' + (++seen[id]); else seen[id] = 0;
+    if (id === slug) return heading;
+  }
+  return null;
+}
 // Match the reader TOC: scroll local anchors without replacing the chapter route.
 document.getElementById('content').addEventListener('click', (event) => {
   if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
@@ -119,7 +131,9 @@ document.getElementById('content').addEventListener('click', (event) => {
   if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
   const hash = link.getAttribute('href').slice(1);
   if (isRoutableHash(hash)) return;
-  const target = document.getElementById(hash);
+  let slug = hash;
+  try { slug = decodeURIComponent(hash); } catch { /* keep the raw fragment */ }
+  const target = document.getElementById(hash) || findHeadingBySlug(document.getElementById('content'), slug);
   if (!target || !document.getElementById('content').contains(target)) return;
   event.preventDefault();
   target.scrollIntoView({ behavior: 'smooth' });

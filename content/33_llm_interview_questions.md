@@ -98,7 +98,7 @@ questions and write code, one token at a time.
 - **Scale:** dense models reach hundreds of billions of parameters (Llama 3.1: 405B); MoE models store more but use a fraction per token (DeepSeek V4-Pro: 1.6T total, 49B active).
 - **Two stages:** pre-training gives knowledge from raw text; post-training gives behaviour — format, helpfulness, safety, reasoning.
 - **Emergent abilities:** few-shot learning and multi-step reasoning appear with scale (Wei et al. 2022), but many "sudden jumps" are artefacts of all-or-nothing metrics (Schaeffer et al. 2023).
-- **2026 practice:** every flagship has a reasoning-effort dial — hidden thinking tokens, billed as output. Top tier as of Nov 2026: GPT-6 Astra, Claude Fable 5.1, Gemini 4 Argon (names change every few months).
+- **2026 practice:** every flagship has a reasoning-effort dial — hidden thinking tokens, billed as output. Top tier as of Nov 2026: GPT-6 Astra, Claude Fable 5.2, Gemini 4 Argon (names change every few months).
 
 **Likely follow-ups:**
 

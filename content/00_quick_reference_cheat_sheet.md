@@ -871,7 +871,7 @@ gamma = discount factor (0-1)
 | **TPU** | Custom AI chip. Systolic arrays for matrix multiply. BF16 precision. | Large-scale training on GCP |
 | **JAX** | NumPy + jit + vmap + pmap + grad. All composable. | Research, custom models, TPU training (Gemini, AlphaFold) |
 | **TensorFlow/Keras** | Production ML framework. tf.data pipelines. SavedModel deployment. | Production (powers Search, Ads, Gmail) |
-| **Vertex AI** | GCP ML platform. Pipelines + Feature Store + Endpoints + Registry. | End-to-end ML lifecycle on Google Cloud |
+| **Gemini Enterprise Agent Platform** (formerly Vertex AI, renamed Apr 2026) | GCP ML platform. Pipelines + Feature Store + Endpoints + Registry. | End-to-end ML lifecycle on Google Cloud |
 
 ### Key Google Papers
 
@@ -1329,7 +1329,7 @@ Step 4: Project onto PC1:
 | **Google Maps ETA** | Regression, time-series features, GNN on road graph, real-time serving |
 | **Google Assistant / Gemini** | Decoder-only Transformer, RLHF/DPO, RAG, agents with tool use, MoE |
 | **Waymo (Self-Driving)** | CNN + Transformer for perception, RL for planning, sensor fusion, real-time inference |
-| **Google Cloud Vertex AI** | Feature store, model registry, pipeline orchestration, A/B testing, monitoring |
+| **Google Cloud Agent Platform** | Feature store, model registry, pipeline orchestration, A/B testing, monitoring |
 
 ---
 

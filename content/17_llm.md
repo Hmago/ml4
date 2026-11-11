@@ -4751,7 +4751,7 @@ What to take from the output:
 <details>
 <summary><strong>Read as text</strong> — R1-Zero, R1, distillation and the refinements</summary>
 
-- **R1-Zero:** RL with GRPO straight on the base model (DeepSeek-V3-Base) — no SFT — using only **rule-based rewards**: an *accuracy* reward (final answer matches; code passes) and a *format* reward (reasoning inside `<think>` tags). Pass@1 on AIME 2024 rose from 15.6% to about 71% in the original report (77.9% in the revised version), and 86.7% with majority voting. Answers grew longer as training went on, and the model began to re-check its own work (the "aha moment"). Settings reported in the revised paper: learning rate 3·10⁻⁶, KL coefficient 0.001, 16 samples per prompt.
+- **R1-Zero:** RL with GRPO straight on the base model (DeepSeek-V3-Base) — no SFT — using only **rule-based rewards**: an *accuracy* reward (final answer matches; code passes) and a *format* reward (reasoning inside `<think>` tags). Pass@1 on AIME 2024 rose from 15.6% to 77.9% in the revised paper (*Nature*, Sep 2025; the original arXiv v1 reported 71.0%), and 86.7% with majority voting. Answers grew longer as training went on, and the model began to re-check its own work (the "aha moment"). Settings reported in the revised paper: learning rate 3·10⁻⁶, KL coefficient 0.001, 16 samples per prompt.
 - **R1** repaired R1-Zero's poor readability and language mixing in four stages: (1) SFT on thousands of long chain-of-thought "cold-start" examples; (2) reasoning-oriented RL; (3) rejection sampling from that checkpoint, then SFT on reasoning and general data (about 800 K samples in the original report); (4) a final RL stage for helpfulness and harmlessness.
 - **Distillation:** small models fine-tuned on R1's outputs were released and beat their original instruction-tuned versions.
 - **No neural reward models for reasoning RL.** DeepSeek reports that neural reward models, whether outcome- or process-based, are prone to reward hacking at scale, so they used rules (§3.5c).
@@ -6074,9 +6074,10 @@ Anthropic was founded by former OpenAI employees with a focus on AI safety. Clau
 | Claude 4 (Opus 4, Sonnet 4) | May 2025 | Agentic coding, tool use during thinking |
 | Claude 4.1 – 4.8 | Aug 2025 – 2026 | Point releases: Sonnet 4.5 (Sep 2025), Haiku 4.5 (Oct 2025), Opus 4.5 (Nov 2025), then Opus 4.6–4.8 and Sonnet 4.6 in 2026 |
 | Claude 5 (Opus 5, Sonnet 5, Fable 5) | 2026 | Next generation, now listed as "legacy" in Anthropic's docs |
-| **Claude 5.5 family** + Fable 5.1 | Sep–Oct 2026 | **Current lineup:** Haiku 5.5 (fastest, high-volume), Sonnet 5.5 (speed + intelligence), Opus 5.5 (the default for long-running agentic coding and knowledge work), Fable 5.1 (top tier for the hardest reasoning and long-horizon agent work) |
+| **Claude 5.5 family** + Fable 5.1 | Sep–Oct 2026 | **Current lineup** (with Fable 5.2 below): Haiku 5.5 (fastest, high-volume), Sonnet 5.5 (speed + intelligence), Opus 5.5 (the default for long-running agentic coding and knowledge work). Fable 5.1 was the top tier until Nov 2026 |
+| **Claude Fable 5.2** (and Mythos 5.2) | Nov 9, 2026 | **Current top tier** for the hardest reasoning and long-horizon agent work, replacing Fable 5.1: 8 / 40 USD per 1M input / output tokens (down from 10 / 50), up to 30% faster output, an optional fast mode (up to 2.5× faster, at 16 / 80); 1M context, 128K output, knowledge cutoff Jun 2026 ([Anthropic](https://www.anthropic.com/claude-fable-and-mythos-5-2)) |
 
-**Naming note:** earlier in 2026 "Opus 4.8" and "Sonnet 5" were the current models; as of November 2026 the current names are **Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1**. Fable 5.1 is also offered under the name Mythos 5.1 to organisations verified for sensitive cybersecurity and biology work.
+**Naming note:** earlier in 2026 "Opus 4.8" and "Sonnet 5" were the current models; as of November 2026 the current names are **Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.2** (Fable 5.2 replaced Fable 5.1 on 9 November). Fable 5.2 is also offered under the name Mythos 5.2 — the same underlying model — to organisations verified for sensitive cybersecurity and biology work.
 
 **Key differences:**
 

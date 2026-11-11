@@ -505,7 +505,7 @@ $$\mathcal{L}_\text{DPO} = -\log\sigma\Big(\beta\big[(\log\tfrac{\pi_\theta(y_w)
 
 on (prompt, chosen, rejected) pairs — no reward model, no RL loop; used by Llama 3, Zephyr, Tulu 3. It is **offline** (never sees the model's own latest mistakes), so tuned PPO can still beat it; weak spots: length bias, the chosen log-prob can fall, over-fitting near-deterministic preferences (→ IPO). Cousins: KTO (thumbs-up/down), SimPO/ORPO (no reference model). Code: [Ch 17 §3.5](#content/17_llm), rung 14.
 
-**Stage 3c — RLVR & GRPO ([Ch 17 §3.5b](#content/17_llm))**: **RLVR** = reward from an *automatic checker* (answer match, unit tests) instead of a hackable learned reward model; **GRPO** is the optimiser that drops PPO's critic — sample $G$ answers per prompt and use $A_i = (r_i - \text{mean}(r))/(\text{std}(r)+\epsilon)$ as the advantage of all of answer $i$'s tokens, with PPO's clipped ratio + a separate KL term. A group that is all right or all wrong has advantage 0 and teaches nothing. DeepSeek-R1-Zero: GRPO straight on the base model with rule-based accuracy + format rewards (AIME 2024: 15.6% → ~71%). Modern stack: **SFT → DPO → RLVR/GRPO**. Code: rung 18. **Pick by the feedback you have:** demonstrations → SFT; chosen/rejected pairs → DPO; thumbs-up/down → KTO; a checker → RLVR; only a rulebook → RLAIF.
+**Stage 3c — RLVR & GRPO ([Ch 17 §3.5b](#content/17_llm))**: **RLVR** = reward from an *automatic checker* (answer match, unit tests) instead of a hackable learned reward model; **GRPO** is the optimiser that drops PPO's critic — sample $G$ answers per prompt and use $A_i = (r_i - \text{mean}(r))/(\text{std}(r)+\epsilon)$ as the advantage of all of answer $i$'s tokens, with PPO's clipped ratio + a separate KL term. A group that is all right or all wrong has advantage 0 and teaches nothing. DeepSeek-R1-Zero: GRPO straight on the base model with rule-based accuracy + format rewards (AIME 2024: 15.6% → 77.9% in the revised paper). Modern stack: **SFT → DPO → RLVR/GRPO**. Code: rung 18. **Pick by the feedback you have:** demonstrations → SFT; chosen/rejected pairs → DPO; thumbs-up/down → KTO; a checker → RLVR; only a rulebook → RLAIF.
 
 **Reward hacking** ([Ch 17 §3.5c](#content/17_llm)): the policy scores high on the proxy without doing what you meant — verbosity is the commonest hack; **proxy reward rising while KL balloons** is the warning light. Defences: KL penalty / β sweep, early stopping on a gold eval, length control, verifiers instead of learned rewards.
 
@@ -576,7 +576,7 @@ Chinchilla (70B, 1.4T tokens) beat GPT-3 (175B, 300B) and Gopher (280B, 300B) at
 | GPT (OpenAI) | Decoder-only; reasoning is now a dial (`reasoning.effort`), not a separate o-series | Generation, chat, code, agents; GPT-6 family (Astra / Sol / Luna), ~1M context, text + images in |
 | BERT (Google) | Encoder-only, bidirectional | Classification, NER, embeddings, reranking, search |
 | Llama / Muse (Meta) | Llama 4: decoder-only, MoE, natively multimodal; newer open weights: Muse Spark Open (816B / 42B active, 1M ctx, Oct 2026) | Open-weight; Llama 4 Scout advertises 10M context |
-| Claude (Anthropic) | Decoder-only; Claude 5.5 family (Haiku / Sonnet / Opus) + Fable 5.1 | Coding, agents, tool use, computer use, adaptive thinking (`effort`); 1M context; text + images in |
+| Claude (Anthropic) | Decoder-only; Claude 5.5 family (Haiku / Sonnet / Opus) + Fable 5.2 (Nov 2026) | Coding, agents, tool use, computer use, adaptive thinking (`effort`); 1M context; text + images in |
 | Gemini (Google) | Sparse-MoE decoder, natively multimodal (Gemini 4 Argon / Carbon) | Text + image + audio + video in; up to 1M context; Google ecosystem |
 | T5/BART | Encoder-decoder | Translation, summarisation, seq2seq |
 
@@ -1235,7 +1235,7 @@ trainer.save_model()  # saves only the adapter: a few MB
 | **Weaviate** | Hybrid search (vector + BM25 + filters) in one query |
 | **Pinecone** | Managed, serverless, zero ops |
 | **Milvus/Zilliz** | Billions of vectors, distributed (Zilliz = managed) |
-| **Vertex AI Vector Search** | Managed on Google Cloud (ScaNN); 2.0 adds hybrid search |
+| **Vector Search** (Agent Platform, formerly Vertex AI) | Managed on Google Cloud (ScaNN); 2.0 (renamed Agent Retrieval) adds hybrid search |
 | Chroma | Local dev/prototyping |
 
 **Key insight**: pure vector search underperforms **hybrid search** (vector + BM25 + metadata filters) on most real workloads. IDs, names, version numbers need exact match; meaning needs vectors. Fuse the two rankings with **reciprocal rank fusion**: RRF(d) = Σ 1/(60 + rank) — ranks only, so scores never need rescaling.
@@ -1352,7 +1352,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 | Lever | Savings |
 |-------|---------|
-| **Prompt caching** | Up to 90% on the cached prefix (hits bill at 10% of input; 5% on Claude Opus/Sonnet 5.5, 2.5% on Fable 5.1) — but writes can cost 1.25×, so it pays only above a ~22% hit rate |
+| **Prompt caching** | Up to 90% on the cached prefix (hits bill at 10% of input; 5% on Claude Opus/Sonnet 5.5, 2.5% on Fable 5.2) — but writes can cost 1.25×, so it pays only above a ~22% hit rate |
 | **Model routing / cascades** | 50–85% in Ch 19's example — easy → Haiku 5.5 / Gemini Flash-Lite / GPT-6 Luna; hard → Opus 5.5 / Gemini 4 Argon / GPT-6 Astra |
 | Batch APIs | 50% for work that can wait (results within 24 h) |
 | Lower reasoning effort | Large on reasoning models — thinking tokens bill as output |
@@ -1377,7 +1377,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 
 ![2026 AI landscape map as of 5 Nov 2026: a lineup table of three tiers per lab (OpenAI GPT-6 Astra, GPT-6.1 Sol / Terra, GPT-6 Luna; Anthropic Claude Fable 5.1, Opus 5.5 and Sonnet 5.5, Haiku 5.5; Google Gemini 4 Argon, Gemini 3.8 Flash, Gemini 3.5 Flash-Lite; ~1M-token context, top tier ~100x the cheap tier at 10 / 50 vs 0.10 / 0.50 USD per 1M tokens), nine cards (reasoning dial billed as output; open weights about 4 months behind, sparse MoE where memory follows total and compute follows active parameters; coding agents = model x harness x effort, Terminal-Bench 4.0 top 64.8% plus or minus 11 points; OSWorld-Verified 86.1% vs ~72% human, OSWorld 2.0 only 20.6% completed; benchmark status saturated MMLU and GPQA, retired SWE-bench Verified, contested SWE-bench Pro, current Terminal-Bench 4.0, OSWorld 2.0 and HLE; a fixed capability ~10-13x cheaper a year but agents multiply tokens; ~1M context with lost-in-the-middle; EU AI Act dates 2 Aug 2025, 2 Aug 2026, 2 Dec 2027 / 2 Aug 2028 and fines up to EUR 35M or 7%; Google stack Gemini 4 + Agent Platform + TPU7x Ironwood at 42.5 exaFLOPS per pod) and a pick-by-question table](diagrams/rec20s_info_ch20_landscape_map_ai.png)
 
-> ⏱ **Dated snapshot.** Model names and numbers below are the **5 November 2026** view from [Ch 20](#content/20_2026_landscape), in step with [Ch 17 §4](#content/17_llm). They change every few weeks — memorise the *shapes*, say "as of <month, year>", and where a vendor page disagrees, trust the vendor page.
+> ⏱ **Dated snapshot.** Model names and numbers below are the **5 November 2026** view from [Ch 20](#content/20_2026_landscape) (Anthropic's top tier, Arena and FrontierMath updated 11 Nov), in step with [Ch 17 §4](#content/17_llm). They change every few weeks — memorise the *shapes*, say "as of <month, year>", and where a vendor page disagrees, trust the vendor page.
 
 > 💡 **In a sentence —** No single model wins everything: three closed labs each sell a top, a workhorse and a cheap tier with ~1M-token context and a reasoning-effort dial, open weights trail by a few months, and model choice is mostly price, latency, ecosystem and your own eval.
 
@@ -1390,7 +1390,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
 ```
    Tier           OpenAI                 Anthropic                Google
    ────────────   ────────────────────   ──────────────────────   ─────────────────────────
-   Top            GPT-6 Astra            Claude Fable 5.1         Gemini 4 Argon
+   Top            GPT-6 Astra            Claude Fable 5.2         Gemini 4 Argon
                                                                   (Gemini 4 Carbon: limited)
    Workhorse      GPT-6.1 Sol / Terra    Claude Opus 5.5,         Gemini 3.8 Flash
                                          Claude Sonnet 5.5
@@ -1399,7 +1399,7 @@ MLOps cycle: Data versioning (DVC) → Feature store (Feast) → Experiment trac
    Plus Grok 4.7 (SpaceXSI, formerly xAI). All: ~1M-token context (Grok 500K) + an effort dial.
 ```
 
-List prices, USD per 1M tokens (input / output): GPT-6 Astra and Claude Fable 5.1 at 10 / 50 · Claude Opus 5.5 at 4 / 20 · GPT-6.1 Sol and Claude Sonnet 5.5 at 2 / 10 · GPT-6 Luna at 0.10 / 0.50. Inside one lab the top tier is ~100× the cheap tier; batch APIs halve most prices.
+List prices, USD per 1M tokens (input / output): GPT-6 Astra at 10 / 50 · Claude Fable 5.2 at 8 / 40 (from 9 Nov 2026; Fable 5.1 was 10 / 50) · Claude Opus 5.5 at 4 / 20 · GPT-6.1 Sol and Claude Sonnet 5.5 at 2 / 10 · GPT-6 Luna at 0.10 / 0.50. Inside one lab the top tier is ~100× the cheap tier; batch APIs halve most prices.
 
 **Who leads depends on the test:** Claude Opus 5.5 tops Terminal-Bench 4.0; GPT-6 Astra tops ARC-AGI-3 and Humanity's Last Exam; Gemini 4 Carbon tops Arena (text) and the Artificial Analysis index v5.0.
 
@@ -1539,7 +1539,7 @@ GPTQ, AWQ, GGUF (CPU/edge via llama.cpp), Apple MLX, LiteRT-LM (Android). Well-c
 
 *Home: [Ch 20 §20.8–20.9](#content/20_2026_landscape)*
 
-**A fixed capability gets ~10–13× cheaper per year**: a16z "LLMflation" measured ~1,000× in 3 years for GPT-3-level quality; Epoch AI (Sep 2026) ~47% per quarter ≈ 13× per year. But top-tier list prices stay high (10 / 50 USD per 1M tokens) and tokens per task keep growing — a chat feature turned into a 30-call agent costs ~165× more. Architectures formerly uneconomic (30-call agent loops, hybrid RAG + reranking, multi-agent review) are now routine.
+**A fixed capability gets ~10–13× cheaper per year**: a16z "LLMflation" measured ~1,000× in 3 years for GPT-3-level quality; Epoch AI (Sep 2026) ~47% per quarter ≈ 13× per year. But top-tier list prices stay high (8–10 / 40–50 USD per 1M tokens) and tokens per task keep growing — a chat feature turned into a 30-call agent costs ~165× more. Architectures formerly uneconomic (30-call agent loops, hybrid RAG + reranking, multi-agent review) are now routine.
 
 **Context window growth**: 4K (ChatGPT, 2022) → 8K/32K (GPT-4, 2023) → 100K–200K (Claude 2/2.1, 2023) → 1M (Gemini 1.5 Pro, 2024; 2M later that year) → **10M advertised (Llama 4 Scout, 2025)** → ~1M standard on frontier APIs in 2026 ([Ch 17 §2.7](#content/17_llm)).
 
@@ -1557,7 +1557,7 @@ Start: What is the task?
   Real-time mobile autocomplete     → On-device: Gemini Nano / Apple Foundation Models / Gemma 4 E2B-E4B
   High-QPS classification           → Cheap tier (Flash-Lite / GPT-6 Luna / Haiku 5.5) or self-hosted open weights
   Complex code, multi-file changes  → Claude Opus 5.5 or GPT-6.1 Sol inside a harness (Claude Code / Codex / Cursor)
-  PhD-level science reasoning       → Top tier (GPT-6 Astra / Fable 5.1 / Gemini 4 Argon), effort dial up
+  PhD-level science reasoning       → Top tier (GPT-6 Astra / Fable 5.2 / Gemini 4 Argon), effort dial up
   Long documents (≥ 1M tokens)      → Retrieve + chunk, or a ~1M-window model (Scout's 10M is advertised — test it)
   Browser / desktop automation      → Computer-use tool in a sandboxed VM — but call a real API if one exists
   Real-time voice                   → OpenAI Realtime API / Gemini 3.8 Live / ElevenLabs
@@ -1655,7 +1655,7 @@ Platform: **Gemini Enterprise Agent Platform** (ADK, Agent Studio, Agent Runtime
 |-----------|--------|
 | MMLU, HumanEval, GSM8K | **Saturated** (above 90% for years) — citing them is a yellow flag |
 | GPQA Diamond | **Saturated** — 96.4% (Gemini 4 Argon) |
-| FrontierMath T1–3 · ARC-AGI-2 | Nearly saturated — 93.7% · 95.0% (GPT-6 Astra) |
+| FrontierMath T1–3 · ARC-AGI-2 | Nearly saturated — 95.1% (Claude Fable 5.2, Epoch AI, 9 Nov 2026) · 95.0% (GPT-6 Astra); FrontierMath Tier 4 is topped out too (100%) |
 | **SWE-bench Verified** | **Retired** by OpenAI (Feb 2026): flawed tests, contamination |
 | **SWE-bench Pro** | **Contested** — OpenAI found ~30% broken tasks and retracted its recommendation (8 Jul 2026); treat scores as rough |
 | OSWorld-Verified | Nearly saturated — 86.1%, above the ~72% human baseline (mostly self-reported) |
@@ -1663,7 +1663,7 @@ Platform: **Gemini Enterprise Agent Platform** (ADK, Agent Studio, Agent Runtime
 | **OSWorld 2.0** | Current — best agent completed 20.6% of long workflows |
 | **Humanity's Last Exam** | Current — 54.8% GPT-6 Astra on the Scale AI / CAIS leaderboard |
 | **ARC-AGI-3** | Current — the score depends on the harness |
-| **Arena (text)** | Current — measures preference, not correctness; Gemini 4 Carbon 1528 |
+| **Arena (text)** | Current — measures preference, not correctness; Gemini 4 Carbon 1526, Gemini 4 Argon 1522 — a statistical tie (9 Nov 2026) |
 
 **How to read any score**: which version and split · which harness and effort · who ran it · how many tasks (95% interval ≈ ±1.96·√(p(1−p)/n)) · is it still clean · when.
 

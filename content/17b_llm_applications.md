@@ -1408,7 +1408,7 @@ Start with the cheapest thing that could work — a good prompt — and add mach
 | Tool definition | `type: "function"`, `name`, `description`, `parameters`, `strict` | `name`, `description`, `input_schema` (optional `strict`) | `type: "function"`, `name`, `description`, `parameters` |
 | The model's call | A `function_call` output item with `call_id`, `name` and `arguments` (a JSON string) | A `tool_use` content block with `id`, `name` and `input`; `stop_reason` is `"tool_use"` | A `function_call` step with `id`, `name` and `arguments` |
 | What you send back | A `function_call_output` item with the same `call_id` | `tool_result` blocks with `tool_use_id`, all in ONE user message | A `function_result` input with `call_id` |
-| `tool_choice` | `auto` (default), `required`, `none`, one named function, or an `allowed_tools` subset | `auto`, `any`, a named `tool`, `none` — but Opus 5.5, Sonnet 5.5 and Fable 5.1 accept only `auto` and `none` | `auto`, `any`, `none`, `validated` (plus `allowed_tools`) |
+| `tool_choice` | `auto` (default), `required`, `none`, one named function, or an `allowed_tools` subset | `auto`, `any`, a named `tool`, `none` — but Opus 5.5, Sonnet 5.5 and Fable 5.1 / 5.2 accept only `auto` and `none` | `auto`, `any`, `none`, `validated` (plus `allowed_tools`) |
 | Parallel calls | On by default; `parallel_tool_calls: false` allows at most one | On by default; `disable_parallel_tool_use` inside `tool_choice` | Supported |
 | Arguments guaranteed to match the schema | `strict: true` (recommended; every field `required`, `additionalProperties: false`) | `strict: true` | `validated` mode |
 
@@ -2209,8 +2209,8 @@ size overlap chunks stored  extra  fact intact?
 | Provider | API | Current models | Notes |
 |----------|-----|---------|---------|
 | OpenAI | Responses API (`client.responses.create`); Chat Completions still supported | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna | Built-in tools: web search, file search, code interpreter, MCP |
-| Anthropic | Messages API (`client.messages.create`) | Claude Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5 | Also on Amazon Bedrock, Google Cloud and Microsoft Foundry |
-| Google | Gemini API via AI Studio (`google-genai` SDK; Interactions API, with `generateContent` as the legacy call); enterprise via Vertex AI, now Gemini Enterprise Agent Platform | Gemini 4 Argon, Gemini 3.8 Flash | Google Search grounding; text, image, audio and video input |
+| Anthropic | Messages API (`client.messages.create`) | Claude Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5 | Also on Amazon Bedrock, Google Cloud and Microsoft Foundry |
+| Google | Gemini API via AI Studio (`google-genai` SDK; Interactions API, with `generateContent` as the legacy call); enterprise via Gemini Enterprise Agent Platform (formerly Vertex AI) | Gemini 4 Argon, Gemini 3.8 Flash | Google Search grounding; text, image, audio and video input |
 | Open weights | Hugging Face Inference Providers, cloud model gardens, or self-host with vLLM / SGLang | Llama 4, Muse Spark Open, Qwen3.5 / 3.6, DeepSeek V4, gpt-oss, Gemma 4 | Most servers expose an OpenAI-compatible endpoint |
 | Local | Ollama, llama.cpp | Small open models | Private and offline |
 
@@ -2264,14 +2264,14 @@ LLMs charge per token, with **separate input and output prices** — output cost
 
 > **Maths in one line:** `cost = in_tokens × p_in + out_tokens × p_out` — prices are quoted per 1M tokens, so divide the token counts by 10⁶.
 
-**Price snapshot** — standard tier, short prompts, taken from the vendors' pricing pages on 5 November 2026. Prices change often (two below are launch prices with a set end date), so re-check before you quote one.
+**Price snapshot** — standard tier, short prompts, taken from the vendors' pricing pages on 5 November 2026 (the Claude Fable 5.2 row on 11 November). Prices change often (two below are launch prices with a set end date), so re-check before you quote one.
 
 | Vendor | Model | Role | Input (USD per 1M tokens) | Output (USD per 1M tokens) | Notes |
 |-------|-------|------|-----------|-------------|------------|
 | OpenAI | GPT-6 Astra | Flagship | 10 | 50 | Prompts over 272K tokens: 2× input and 1.5× output |
 | OpenAI | GPT-6.1 Sol | Near-flagship workhorse | 2 | 10 | |
 | OpenAI | GPT-6 Luna | High volume | 0.10 | 0.50 | |
-| Anthropic | Claude Fable 5.1 | Top tier | 10 | 50 | |
+| Anthropic | Claude Fable 5.2 | Top tier | 8 | 40 | Released 9 Nov 2026, replacing Fable 5.1 (10 and 50); optional fast mode at 16 and 80 |
 | Anthropic | Claude Opus 5.5 | Default for agentic coding | 4 | 20 | |
 | Anthropic | Claude Sonnet 5.5 | Speed + intelligence | 2 | 10 | |
 | Anthropic | Claude Haiku 5.5 | High volume | 0.10 | 0.50 | Prompts up to 100K tokens; 0.50 and 2.50 above that |
@@ -2371,7 +2371,7 @@ The context window is the maximum number of tokens the model can "see" in one re
 | Model | Context window | Notes |
 |---|---|---|
 | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna | ~1.05M tokens | Up to 922K input and 128K output tokens |
-| Claude Fable 5.1, Opus / Sonnet / Haiku 5.5 | 1M tokens | Up to 128K output |
+| Claude Fable 5.2, Opus / Sonnet / Haiku 5.5 | 1M tokens | Up to 128K output |
 | Gemini 4 Argon, Gemini 3.8 Flash | 1,048,576 tokens | 65,536 output by default |
 | Llama 4 Scout (open weights) | 10M advertised | Effective length is far shorter — test it ([Ch 20 §20.9](#content/20_2026_landscape)) |
 
@@ -2415,7 +2415,7 @@ The context window is the maximum number of tokens the model can "see" in one re
 
   Task: Complex reasoning, code generation, analysis
   → a top-tier model with the reasoning-effort dial raised
-    (GPT-6 Astra or 6.1 Sol, Claude Opus 5.5 or Fable 5.1, Gemini 4 Argon)
+    (GPT-6 Astra or 6.1 Sol, Claude Opus 5.5 or Fable 5.2, Gemini 4 Argon)
   → More expensive per call, but worth it where quality is measurable
 
   Task: Running on-device or with strict data privacy
@@ -2710,7 +2710,7 @@ LLM Guard and Rebuff, listed in older guides, are now archived on GitHub (LLM Gu
   (As of November 2026 — names change monthly; choose by tier, then test.)
   Free & runs on your laptop?      → a small open-weight model via Ollama:
                                      Gemma 4 (E4B or 12B), small Qwen3.5, gpt-oss-20b
-  Best quality, cost no object?    → GPT-6 Astra, Claude Fable 5.1, or Gemini 4 Argon
+  Best quality, cost no object?    → GPT-6 Astra, Claude Fable 5.2, or Gemini 4 Argon
   Balance of quality and cost?     → GPT-6.1 Sol, Claude Sonnet 5.5, or Gemini 3.8 Flash
   Privacy-sensitive data?          → self-hosted open weights or on-device
   Heavy reasoning/math?            → a top-tier model with the reasoning-effort dial raised
