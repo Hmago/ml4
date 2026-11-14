@@ -204,6 +204,30 @@ Fibonacci is not an interview problem, but it is the cheapest place to see all f
 
 ![Fibonacci of 5 solved four ways: the call tree, the memo, the table, and two variables](diagrams/dsa31_dp_pipeline_ai.png)
 
+**Problem:** Given `n` (0 or more), return the `n`-th Fibonacci number: `fib(0) = 0`, `fib(1) = 1`, and every later number is the sum of the two before it. The program computes it four ways — one method per pipeline step — and all four must agree.
+
+**Example:**
+```
+Input:  n = 5
+Output: 5     (the sequence runs 0, 1, 1, 2, 3, 5)
+```
+
+**Walk-through:** the same `n = 5` through each of the four methods.
+```
+fibRecursive  fib(5) = fib(4) + fib(3)   -> 15 calls; fib(2) alone is solved 3 times
+fibMemo       memo[2..5] = 1, 2, 3, 5     -> each fib(k) is solved once, then looked up
+fibTable      i      0  1  2  3  4  5
+              dp[i]  0  1  1  2  3  5     dp[i] = dp[i-1] + dp[i-2]
+                                    ^ dp[5] = 5
+fib           start: prev2 = 0, prev1 = 1
+              i = 2: prev2 = 1, prev1 = 1
+              i = 3: prev2 = 1, prev1 = 2
+              i = 4: prev2 = 2, prev1 = 3
+              i = 5: prev2 = 3, prev1 = 5   -> return prev1 = 5
+```
+
+**Approach:** Parent 1 (Linear) at its simplest. There is no real choice — `fib(n)` always needs `fib(n-1)` and `fib(n-2)` — but those two calls overlap, so each step removes waste: the memo stores every `fib(k)` once, the table fills `dp[]` upward from the base cases, and because `dp[i]` only reads two cells back, two variables replace the table.
+
 ```java
 import java.util.*;
 
@@ -268,12 +292,6 @@ n = 5 -> recursion 5, memo 5, table 5, two variables 5
 n = 0 -> recursion 0, memo 0, table 0, two variables 0
 n = 1 -> recursion 1, memo 1, table 1, two variables 1
 n = 10 -> recursion 55, memo 55, table 55, two variables 55
-```
-
-**Example:**
-```
-Input:  n = 5
-Output: 5     (the sequence runs 0, 1, 1, 2, 3, 5)
 ```
 
 **Practice:** [Fibonacci Number →](#dsa-problem-fibonacci-number)
@@ -417,6 +435,26 @@ Here `i` is an index into the array, `n` is the array's length, and `BASE`, `com
 
 **Base:** `dp[1] = 1` (one single step), `dp[2] = 2` (1+1 or 2) — the code below starts from these two.
 
+**Example:**
+```
+Input:  n = 5
+Output: 8
+```
+
+**Walk-through:** ways to reach each step, then the same numbers in the code's two variables.
+```
+step i   1  2  3  4  5
+ways     1  2  3  5  8      ways(i) = ways(i-1) + ways(i-2)
+                     ^ answer = 8
+
+start    prev2 = 1, prev1 = 2              (steps 1 and 2)
+i = 3    curr = 2 + 1 = 3   ->  prev2 = 2, prev1 = 3
+i = 4    curr = 3 + 2 = 5   ->  prev2 = 3, prev1 = 5
+i = 5    curr = 5 + 3 = 8   ->  prev2 = 5, prev1 = 8   -> return 8
+```
+
+**Approach:** Parent 1 (Linear) with `+` as the combine. Every way onto step `i` ends with either a 1-step from `i-1` or a 2-step from `i-2`; the two groups never overlap, so adding them counts each way once. Only the last two counts are ever read, so `prev2` and `prev1` replace the `dp` array.
+
 ```java
 import java.util.*;
 
@@ -537,6 +575,29 @@ public class HouseRobber {
 
 **House Robber II (circular street)** is the same child with one trick: the first and last house are now neighbours, so you can never rob both. Run the street solver twice — once on every house except the last (`nums[0..n-2]`), once on every house except the first (`nums[1..n-1]`) — and take the larger answer.
 
+**Problem:** House Robber on a circular street: `nums[i]` is the money in house `i`, and house `n-1` sits next to house `0`. Return the most money you can take without robbing two neighbouring houses.
+
+**Example:**
+```
+Input:  nums = [2, 3, 2]
+Output: 3     (houses 0 and 2 are neighbours on a circle, so rob house 1 alone)
+```
+
+**Walk-through:** two straight-line runs of `robRange`, then the larger answer.
+```
+nums = [2, 3, 2]          house 0 and house 2 are neighbours
+
+robRange(0, 1)  houses [2, 3]   i = 0: curr = max(0, 0 + 2) = 2
+                                i = 1: curr = max(2, 0 + 3) = 3   -> 3
+robRange(1, 2)  houses [3, 2]   i = 1: curr = max(0, 0 + 3) = 3
+                                i = 2: curr = max(3, 0 + 2) = 3   -> 3
+
+answer = max(3, 3) = 3    (rob house 1 alone)
+```
+On `[2, 7, 9, 3, 1]` the two runs give 11 and 10, so the answer is 11 — not House Robber's 12, because houses 0 and 4 are now neighbours.
+
+**Approach:** Parent 1 (House Robber), run twice. Any allowed choice leaves out house `0` or house `n-1` (or both), so it lies completely inside one of the two straight lines — the better of the two runs is the answer.
+
 **Java — house robber II, circular street:**
 
 ```java
@@ -576,12 +637,6 @@ public class HouseRobberII {
 [5] -> 5
 ```
 
-**Example:**
-```
-Input:  nums = [2, 3, 2]
-Output: 3     (houses 0 and 2 are neighbours on a circle, so rob house 1 alone)
-```
-
 **Practice:** [House Robber →](#dsa-problem-house-robber) · [House Robber II →](#dsa-problem-house-robber-ii)
 
 #### Decode Ways (constrained Fibonacci)
@@ -595,6 +650,25 @@ Output: 3     (houses 0 and 2 are neighbours on a circle, so rob house 1 alone)
 **Recurrence:** if the last digit `s[i-1]` is not `'0'`, `dp[i] += dp[i-1]`; if the last two digits `s[i-2..i-1]` form 10–26, `dp[i] += dp[i-2]`.
 
 **Base:** `dp[0] = 1` — the empty string has exactly one decoding (decode nothing), which makes the counts add up; `dp[1] = 1` when the first digit is not `'0'`.
+
+**Example:**
+```
+Input:  s = "226"
+Output: 3     ("2,2,6" = BBF, "22,6" = VF, "2,26" = BZ)
+```
+
+**Walk-through:** `prev2` = `dp[i-2]` and `prev1` = `dp[i-1]`; each step adds whichever of them is allowed.
+```
+s = "226"      dp[0] = 1 (empty),  dp[1] = 1 ("2")
+
+i   oneDigit   twoDigit   oneDigit adds   twoDigit adds   dp[i]
+2   2  (B)     22  (V)    dp[1] = 1       dp[0] = 1       2
+3   6  (F)     26  (Z)    dp[2] = 2       dp[1] = 1       3   <- answer
+
+dp = [1, 1, 2, 3]   ->   "2,2,6"   "22,6"   "2,26"
+```
+
+**Approach:** Parent 1 (Fibonacci-style), counting with `+`. Every decoding ends with either a one-digit letter or a two-digit letter; those two groups never overlap, so `dp[i]` adds the count for the shorter prefix in each group — but only when that last code is a real letter (1-9, or 10-26). Only `dp[i-1]` and `dp[i-2]` are read, so two variables are enough.
 
 ```java
 import java.util.*;
@@ -635,12 +709,6 @@ public class DecodeWays {
 "1" -> 1
 ```
 
-**Example:**
-```
-Input:  s = "226"
-Output: 3     ("2,2,6" = BBF, "22,6" = VF, "2,26" = BZ)
-```
-
 **Practice:** [Decode Ways →](#dsa-problem-decode-ways)
 
 #### Word Break (pick/skip over *every* earlier cut)
@@ -663,6 +731,20 @@ Output: 3     ("2,2,6" = BBF, "22,6" = VF, "2,26" = BZ)
 Input:  s = "leetcode", wordDict = ["leet", "code"]
 Output: true  ("leet" + "code")
 ```
+
+**Walk-through:** `dp[i]` = can the first `i` letters of `"leetcode"` be split?
+```
+i      0  1  2  3  4  5  6  7  8
+dp[i]  T  F  F  F  T  F  F  F  T
+                   ^           ^ answer
+
+dp[0] = T   the empty prefix needs no words
+dp[4] = T   j = 0: dp[0] = T and s.substring(0, 4) = "leet" is a word
+dp[8] = T   j = 4: dp[4] = T and s.substring(4, 8) = "code" is a word
+other i     no cut j has dp[j] = T followed by a dictionary word
+```
+
+**Approach:** Parent 1, but the "previous step" can be any earlier cut `j`. Every split has a last word `s[j..i-1]`, and what comes before it must itself be splittable (`dp[j]`), so trying every `j` finds a split whenever one exists.
 
 </details>
 
@@ -724,6 +806,24 @@ s = "aaaaaaa", wordDict = [aaaa, aaa] -> true
 
 **Recurrence:** `dp[i] = max(nums[i], dp[i-1] + nums[i])`. The answer is the largest `dp[i]` anywhere, not `dp[n-1]` — a classic slip.
 
+**Example:**
+```
+Input:  nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+Output: 6     (the subarray [4, -1, 2, 1])
+```
+
+**Walk-through:** at each `i`, `curr` = the larger of *start fresh* (`nums[i]`) and *extend* (`curr + nums[i]`); `best` = the largest `curr` so far.
+```
+i         0   1   2   3   4   5   6   7   8
+nums[i]  -2   1  -3   4  -1   2   1  -5   4
+extend    -  -1  -2   2   3   5   6   1   5
+curr     -2   1  -2   4   3   5   6   1   5
+best     -2   1   1   4   4   5   6   6   6
+                                  ^ best = 6: the run [4, -1, 2, 1], i = 3..6
+```
+
+**Approach:** Parent 1 with an *extend or restart* choice. A subarray ending at `i` is either `nums[i]` alone or the best one ending at `i-1` plus `nums[i]` — if that earlier run is negative it can only hurt, so start fresh. `curr` plays `dp[i]`, and `best` keeps the largest one seen.
+
 ```java
 import java.util.*;
 
@@ -754,12 +854,6 @@ public class MaximumSubarray {
 [1] -> 1
 [-3, -1, -2] -> -1
 [5, 4, -1, 7, 8] -> 23
-```
-
-**Example:**
-```
-Input:  nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
-Output: 6     (the subarray [4, -1, 2, 1])
 ```
 
 **Practice:** [Maximum Subarray →](#dsa-problem-maximum-subarray)
@@ -867,6 +961,29 @@ public class LongestIncreasingSubsequence {
 
 **Parent:** Linear — an `O(n^2)` DP ("can I reach `i`?" for every `i`) works, but it is slower than needed. Track the furthest reachable index instead.
 
+**Example:**
+```
+Input:  nums = [2, 3, 1, 1, 4]
+Output: true   (0 → 1 → 4)
+
+Input:  nums = [3, 2, 1, 0, 4]
+Output: false  (every path lands on index 3, whose jump length is 0)
+```
+
+**Walk-through:** `reach` = the furthest index we can get to from indices `0..i`.
+```
+nums = [2, 3, 1, 1, 4]             nums = [3, 2, 1, 0, 4]
+i   i + nums[i]   reach            i   i + nums[i]   reach
+0   0 + 2 = 2     2                0   0 + 3 = 3     3
+1   1 + 3 = 4     4                1   1 + 2 = 3     3
+2   2 + 1 = 3     4                2   2 + 1 = 3     3
+3   3 + 1 = 4     4                3   3 + 0 = 3     3
+4   4 + 4 = 8     8                4   4 > reach 3  -> return false
+loop ends -> return true
+```
+
+**Approach:** Parent 1 collapsed to a greedy frontier. The reachable indices always form one unbroken block `0..reach`, so a single number replaces the whole boolean `dp[]`. Every index you can stand on pushes `reach` to `i + nums[i]` if that is further; if `i` ever passes `reach`, nothing before it jumps that far, so the answer is false.
+
 ```java
 import java.util.*;
 
@@ -897,15 +1014,6 @@ public class JumpGame {
 [3, 2, 1, 0, 4] -> false
 [0] -> true
 [2, 0, 0] -> true
-```
-
-**Example:**
-```
-Input:  nums = [2, 3, 1, 1, 4]
-Output: true   (0 → 1 → 4)
-
-Input:  nums = [3, 2, 1, 0, 4]
-Output: false  (every path lands on index 3, whose jump length is 0)
 ```
 
 **Practice:** [Jump Game →](#dsa-problem-jump-game)
@@ -1184,6 +1292,22 @@ public int knapsack(int[] wt, int[] val, int W, int n) {
 
 Row `i` only ever reads row `i-1`. Keep one row and **walk capacity backwards**, so the cells you read are still from the previous item.
 
+**Walk-through:** the one row `dp[]` after each item, on the same example (`wt = [1, 3, 4, 5]`, `val = [1, 4, 5, 7]`, `W = 7`).
+```
+                      j ->  0  1  2  3  4  5  6  7
+start                       0  0  0  0  0  0  0  0
+after i=0 (wt 1, val 1)     0  1  1  1  1  1  1  1
+after i=1 (wt 3, val 4)     0  1  1  4  5  5  5  5
+after i=2 (wt 4, val 5)     0  1  1  4  5  6  6  9
+after i=3 (wt 5, val 7)     0  1  1  4  5  7  8  9
+                                                 ^ answer dp[W] = dp[7] = 9
+
+i=2, j=7: dp[7] = max(dp[7] = 5, dp[7-4] + val[2] = 4 + 5) = 9
+j runs 7 -> 4, so dp[3] still holds the old row's value when dp[7] reads it
+```
+
+**Approach:** The same Parent 2 take/skip as Step 3 — `dp[j] = max(skip: dp[j], take: dp[j - wt[i]] + val[i])` — but the 2-D table is folded into one row that each item overwrites. Each line above is exactly one row of the Step 3 table.
+
 ```java
 import java.util.*;
 
@@ -1284,6 +1408,22 @@ Subset Sum   : dp[i][j] =      dp[i-1][j-arr[i-1]]            ||  dp[i-1][j]
                                 ^^^ take                           ^^^ skip
 ```
 
+**Walk-through:** the full `dp` table (`T` = some of the first `i` numbers add up to exactly `j`).
+```
+            j ->  0  1  2  3  4  5  6  7  8  9 10 11
+i=0 (none)        T  F  F  F  F  F  F  F  F  F  F  F
+i=1 (2)           T  F  T  F  F  F  F  F  F  F  F  F
+i=2 (3)           T  F  T  T  F  T  F  F  F  F  F  F
+i=3 (7)           T  F  T  T  F  T  F  T  F  T  T  F
+i=4 (8)           T  F  T  T  F  T  F  T  T  T  T  T
+i=5 (10)          T  F  T  T  F  T  F  T  T  T  T  T
+                                                   ^ dp[5][11] = T -> true
+
+dp[4][11]: take 8 -> dp[3][11-8] = dp[3][3] = T  ||  skip -> dp[3][11] = F   ({3, 8})
+```
+
+**Approach:** Parent 2 (0/1 Knapsack) with `max` swapped for `||` and no `val[]`. The number `arr[i-1]` is either taken — then the earlier numbers must make `j - arr[i-1]` — or skipped — then they must make `j` — so the cell is true if either branch is. Reading only row `i-1` keeps each number to one use.
+
 </details>
 
 ```java
@@ -1348,6 +1488,21 @@ arr = [2, 4, 6], sum = 5 -> false
 Input:  arr = [1, 5, 11, 5]
 Output: true   ({1, 5, 5} and {11}, both sum to 11)
 ```
+
+**Walk-through:** the total is 1 + 5 + 11 + 5 = 22 (even), so `subsetSum(arr, 11)` fills this table.
+```
+            j ->  0  1  2  3  4  5  6  7  8  9 10 11
+i=0 (none)        T  F  F  F  F  F  F  F  F  F  F  F
+i=1 (1)           T  T  F  F  F  F  F  F  F  F  F  F
+i=2 (5)           T  T  F  F  F  T  T  F  F  F  F  F
+i=3 (11)          T  T  F  F  F  T  T  F  F  F  F  T
+i=4 (5)           T  T  F  F  F  T  T  F  F  F  T  T
+                                                   ^ dp[4][11] = T -> true
+
+dp[4][11]: take 5 -> dp[3][11-5] = dp[3][6] = T  ||  skip -> dp[3][11] = T
+```
+
+**Approach:** Parent 2 via Child 1. `canPartition` only does the odd check and passes `sum / 2` to the unchanged Subset Sum table, where each element is taken or skipped exactly once.
 
 </details>
 
@@ -1424,6 +1579,24 @@ public class EqualSumPartition {
 Input:  arr = [2, 3, 5, 6, 8, 10], sum = 10
 Output: 3      ({2, 8}, {2, 3, 5}, {10})
 ```
+
+**Walk-through:** the full `dp` table of counts; each cell = take + skip.
+```
+            j ->  0  1  2  3  4  5  6  7  8  9 10
+i=0 (none)        1  0  0  0  0  0  0  0  0  0  0
+i=1 (2)           1  0  1  0  0  0  0  0  0  0  0
+i=2 (3)           1  0  1  1  0  1  0  0  0  0  0
+i=3 (5)           1  0  1  1  0  2  0  1  1  0  1
+i=4 (6)           1  0  1  1  0  2  1  1  2  1  1
+i=5 (8)           1  0  1  1  0  2  1  1  3  1  2
+i=6 (10)          1  0  1  1  0  2  1  1  3  1  3
+                                                ^ dp[6][10] = 3
+
+dp[6][10] = take 10: dp[5][0]  = 1   ({10})
+          + skip:    dp[5][10] = 2   ({2, 8}, {2, 3, 5})
+```
+
+**Approach:** Parent 2 with `||` swapped for `+`. The subsets of the first `i` numbers that make `j` split into two groups that never overlap — those that use `arr[i-1]` (`dp[i-1][j - arr[i-1]]`) and those that don't (`dp[i-1][j]`) — so adding them counts every subset exactly once.
 
 > **Trap — zeros in the array.** Worth knowing; it is a real interview follow-up. Many write-ups (including the classic notes) initialise the *whole first column* to 1: `dp[i][0] = 1 for all i`. That is wrong as soon as the array contains `0`, because `{0}` and `{}` are two different subsets that both sum to 0. Initialise **only `dp[0][0] = 1`** and let the loop start at `j = 0` — then zeros are counted correctly and you need no `2^(number of zeros)` patch afterwards.
 >
@@ -1586,6 +1759,22 @@ Input:  arr = [1, 1, 2, 3], diff = 1
 Output: 3      (S1 must be (1 + 7) / 2 = 4: {1, 3} with either 1, or {1, 1, 2})
 ```
 
+**Walk-through:** total = 7, and (7 + 1) is even with |1| <= 7, so `countSubsets(arr, 4)` fills this table.
+```
+            j ->  0  1  2  3  4
+i=0 (none)        1  0  0  0  0
+i=1 (1)           1  1  0  0  0
+i=2 (1)           1  2  1  0  0
+i=3 (2)           1  2  2  2  1
+i=4 (3)           1  2  2  3  3
+                              ^ dp[4][4] = 3
+
+dp[4][4] = take 3: dp[3][1] = 2   ({1, 3} with the first 1, or with the second)
+         + skip:   dp[3][4] = 1   ({1, 1, 2})
+```
+
+**Approach:** Parent 2 via Child 3. Choosing the group for `S1` fixes `S2` (it is everything else), so each subset with sum `(diff + total) / 2` is exactly one valid split, and `countSubsets` counts them with the take + skip table. The two guards reject an odd or out-of-range target before any table is built.
+
 </details>
 
 ```java
@@ -1668,6 +1857,20 @@ nums = [1, 1, 2, 3],  target = 1
 Input:  nums = [1, 1, 2, 3], target = 1
 Output: 3
 ```
+
+**Walk-through:** the call chain on the example, then the column of the count table that holds the answer.
+```
+findTargetSumWays([1, 1, 2, 3], 1)
+-> countSubsetsWithDiff: total = 7; (7 + 1) % 2 == 0 and |1| <= 7, so no early return
+-> countSubsets(nums, (7 + 1) / 2 = 4)
+
+i            0   1   2   3   4
+nums[i-1]    -   1   1   2   3
+dp[i][4]     0   0   0   1   3
+                             ^ answer 3 = the three sign choices listed above
+```
+
+**Approach:** Parent 2 via Child 5. Each sign choice picks the `+` subset, and its sum must be `(total + target) / 2`; so counting those subsets with the take + skip table counts the sign choices, one for one.
 
 </details>
 
@@ -1761,6 +1964,26 @@ Unbounded  : dp[i][j] = max(val[i-1] + dp[ i ][j - wt[i-1]], dp[i-1][j])
                                          ^^^^^ same row: the item can be taken again
 ```
 
+**Example:**
+```
+Input:  wt = [2, 3], val = [3, 5], W = 6
+Output: 10     (take the 3 kg item twice; 0/1 knapsack could only reach 3 + 5 = 8)
+```
+
+**Walk-through:** the full `dp` table; *take* reads the same row, so an item can be taken again.
+```
+                    j ->  0  1  2  3  4  5  6
+i=0 (none)                0  0  0  0  0  0  0
+i=1 (wt 2, val 3)         0  0  3  3  6  6  9
+i=2 (wt 3, val 5)         0  0  3  5  6  8 10
+                                            ^ answer dp[2][6] = 10
+
+dp[2][6] = max(take: val[1] + dp[2][6-3] = 5 + 5 = 10,    <- dp[2][3] already holds one 3 kg item
+               skip: dp[1][6] = 9)                         (9 = the 2 kg item three times)
+```
+
+**Approach:** Parent 3: the same take/skip choice as 0/1, but after taking item `i` you stay on row `i` (`dp[i][j - wt[i-1]]`), because that item is still on offer; skipping moves up to row `i-1`, which retires the item for good.
+
 ```java
 import java.util.*;
 
@@ -1804,12 +2027,6 @@ wt = [5, 10, 15], val = [10, 30, 20], W = 100 -> 300
 wt = [2], val = [3], W = 7 -> 9
 ```
 
-**Example:**
-```
-Input:  wt = [2, 3], val = [3, 5], W = 6
-Output: 10     (take the 3 kg item twice; 0/1 knapsack could only reach 3 + 5 = 8)
-```
-
 > **How to spot it in the wording:** "unlimited supply", "you may reuse", "as many times as you want", or simply the fact that reusing an item is not forbidden — e.g. coins, rod pieces, ribbon lengths, perfect squares.
 
 #### Child — Rod Cutting
@@ -1835,6 +2052,21 @@ Cut 8 = 2 + 6  →  5 + 17 = ₹22   (better than selling whole for ₹20)
 Input:  price = [1, 5, 8, 9, 10, 17, 17, 20], n = 8
 Output: 22     (pieces of length 2 and 6: 5 + 17)
 ```
+
+**Walk-through:** `dp[len]` = best revenue for a rod of length `len`; each `len` tries every first piece `cut` and keeps the best.
+```
+len   best cut   price[cut-1] + dp[len-cut]   dp[len]
+1     cut = 1    1 + dp[0]  = 1 + 0           1
+2     cut = 2    5 + dp[0]  = 5 + 0           5
+3     cut = 3    8 + dp[0]  = 8 + 0           8
+4     cut = 2    5 + dp[2]  = 5 + 5           10
+5     cut = 2    5 + dp[3]  = 5 + 8           13
+6     cut = 6    17 + dp[0] = 17 + 0          17
+7     cut = 1    1 + dp[6]  = 1 + 17          18
+8     cut = 2    5 + dp[6]  = 5 + 17          22   <- answer (selling it whole: 20)
+```
+
+**Approach:** Parent 3 (Unbounded Knapsack) — the piece lengths are the items, and a length can be cut again. The first piece of a rod of length `len` is some `cut`; its price plus the best for the rest, `dp[len - cut]` (already final), covers that choice, and trying every `cut` covers every way to cut the rod.
 
 </details>
 
@@ -1896,6 +2128,20 @@ price = [], n = 0 -> 0
 Input:  amount = 5, coins = [1, 2, 3]
 Output: 5      (2+3, 1+1+3, 1+2+2, 1+1+1+2, 1+1+1+1+1)
 ```
+
+**Walk-through:** the one row `dp[]` after each coin; `j` runs forwards, so a coin can be reused.
+```
+              j ->  0  1  2  3  4  5
+start               1  0  0  0  0  0
+after coin 1        1  1  1  1  1  1
+after coin 2        1  1  2  2  3  3
+after coin 3        1  1  2  3  4  5
+                                   ^ answer dp[5] = 5
+
+coin 3 at j = 5: dp[5] = 3 (ways with no 3) + dp[5-3] = 2 (ways that use a 3) = 5
+```
+
+**Approach:** Parent 3 with `+`. When coin `c` is processed, the ways to make `j` are those that never use `c` (the old `dp[j]`) plus those that use it at least once (`dp[j - c]`, already updated, so `c` can repeat). Coins are added in a fixed order, so each combination is built exactly one way.
 
 </details>
 
@@ -2028,6 +2274,19 @@ Input:  n = 12
 Output: 3      (4 + 4 + 4)
 ```
 
+**Walk-through:** `dp[i]` for every `i` up to 12, then how `dp[12]` is chosen.
+```
+i      0  1  2  3  4  5  6  7  8  9 10 11 12
+dp[i]  0  1  2  3  1  2  3  4  2  1  2  3  3
+                                           ^ answer
+
+dp[12]:  s = 1 -> dp[11] + 1 = 4
+         s = 2 -> dp[8]  + 1 = 3   <- best: 4 + 4 + 4
+         s = 3 -> dp[3]  + 1 = 4   (9 + 1 + 1 + 1, the greedy pick)
+```
+
+**Approach:** Parent 3 (min coin change, `+1` per coin) with the squares `s * s <= i` as the coins. The last square used is some `s * s`, so `dp[i]` = 1 + the best for what is left, `dp[i - s*s]`; trying every `s` finds the minimum. Grabbing the biggest square first does not work, as 12 shows.
+
 </details>
 
 ```java
@@ -2080,6 +2339,21 @@ n = 7 -> 4
 Input:  n = 7, lengths = [2, 3]
 Output: 3      (2 + 2 + 3)
 ```
+
+**Walk-through:** `dp[i]` for `i = 0..7` (`-1` = cannot be cut exactly); a piece only counts if its leftover is not `-1`.
+```
+i   len 2: dp[i-2]      len 3: dp[i-3]      dp[i]
+0   -                   -                    0   (base)
+1   too long            too long            -1
+2   dp[0] = 0  -> 1     too long             1
+3   dp[1] = -1 (skip)   dp[0] = 0  -> 1      1
+4   dp[2] = 1  -> 2     dp[1] = -1 (skip)    2
+5   dp[3] = 1  -> 2     dp[2] = 1  -> 2      2
+6   dp[4] = 2  -> 3     dp[3] = 1  -> 2      3
+7   dp[5] = 2  -> 3     dp[4] = 2  -> 3      3   <- answer (2 + 2 + 3)
+```
+
+**Approach:** Parent 3 with every value `1` and `max`. The last piece has some length `len`, so `dp[i] = 1 + dp[i - len]` — but only if `dp[i - len] != -1`; otherwise `-1 + 1 = 0` would turn an impossible leftover into a fake count.
 
 </details>
 
@@ -2327,6 +2601,22 @@ Changing parameters are `m` and `n`, so the table is `[m+1][n+1]`, and the base 
 
 ![The LCS table for abcde against ace, with the backtracking path, plus the reverse-string trick](diagrams/dsa31_dp_lcs_ai.png)
 
+**Walk-through:** the two loops fill `dp` one row at a time, left to right (rows = `text1`, columns = `text2`). Here is the pair from the box at the top, `text1 = "abcdgh"`, `text2 = "abedfhr"` (answer 4); the `"abcde"` / `"ace"` dry run follows the Output.
+
+```
+          ""  a  b  e  d  f  h  r
+  ""       0  0  0  0  0  0  0  0    row 0 and column 0 = base case
+  a        0  1  1  1  1  1  1  1    a = a -> dp[0][0] + 1 = 1
+  b        0  1  2  2  2  2  2  2    b = b -> dp[1][1] + 1 = 2
+  c        0  1  2  2  2  2  2  2    no match -> max(up, left)
+  d        0  1  2  2  3  3  3  3    d = d -> dp[3][3] + 1 = 3
+  g        0  1  2  2  3  3  3  3    no match
+  h        0  1  2  2  3  3  4 [4]   h = h -> dp[5][5] + 1 = 4
+                                ^ dp[m][n] = dp[6][7] = 4   ("abdh")
+```
+
+**Approach:** Step 1's recursion with every answer stored instead of recomputed (Parent 4 itself). The call `f(i, j)` becomes the cell `dp[i][j]`, and the base case `m == 0 || n == 0` becomes row 0 and column 0. The loops run `i` and `j` upwards, so the three cells each step reads (up, left, diagonal) are always already filled.
+
 ```java
 import java.util.*;
 
@@ -2436,6 +2726,22 @@ on a mismatch   max(dp[i-1][j], dp[i][j-1])           0   (the run is broken)
 the answer      dp[m][n]                              the largest cell anywhere
 ```
 
+**Walk-through:** the table for the Example (rows = `a`, columns = `b`). A cell is non-zero only where the two letters match, and a run can only grow along a diagonal.
+
+```
+          ""  a  b  e  d  f  h  r
+  ""       0  0  0  0  0  0  0  0
+  a        0  1  0  0  0  0  0  0    a = a -> dp[0][0] + 1 = 1
+  b        0  0 [2] 0  0  0  0  0    b = b -> dp[1][1] + 1 = 2, best = 2
+  c        0  0  0  0  0  0  0  0    no c in "abedfhr" -> all 0
+  d        0  0  0  0  1  0  0  0    d = d, but dp[3][3] = 0 -> run restarts at 1
+  g        0  0  0  0  0  0  0  0
+  h        0  0  0  0  0  0  1  0    h = h -> dp[5][5] + 1 = 1
+best = 2 ("ab"); the corner dp[6][7] is 0, so returning dp[m][n] would be wrong
+```
+
+**Approach:** Parent 4 (LCS) with the mismatch branch changed from `max(...)` to `0`. A cell can only extend its diagonal neighbour, so it always measures a run with no gaps that ends at both letters. The longest common substring ends at some pair of letters, so it is the largest cell, which the loop keeps in `best`.
+
 </details>
 
 ```java
@@ -2490,6 +2796,36 @@ else                  → move towards the LARGER neighbour (up or left), take n
 stop when i == 0 or j == 0, then REVERSE what you collected
 ```
 
+**Problem:** given two strings `a` and `b`, return one longest common subsequence itself (the letters, not just how many).
+
+**Example:**
+```
+Input:  a = "acbcf", b = "abcdaf"
+Output: "abcf"
+```
+
+**Walk-through:** fill the normal LCS table (rows = `a`, columns = `b`), then start at the bottom-right cell and walk back; `[ ]` marks the cells the walk visits.
+
+```
+        ""   a   b   c   d   a   f
+  ""     0   0   0   0   0   0   0
+  a      0  [1]  1   1   1   1   1
+  c      0  [1]  1   2   2   2   2
+  b      0   1  [2]  2   2   2   2
+  c      0   1   2  [3] [3] [3]  3
+  f      0   1   2   3   3   3  [4]   <- start: dp[5][6] = 4
+i=5 j=6  f = f                  -> take 'f', go diagonal
+i=4 j=5  c vs a: up 2, left 3   -> go left (up is not larger)
+i=4 j=4  c vs d: up 2, left 3   -> go left
+i=4 j=3  c = c                  -> take 'c', go diagonal
+i=3 j=2  b = b                  -> take 'b', go diagonal
+i=2 j=1  c vs a: up 1, left 0   -> go up
+i=1 j=1  a = a                  -> take 'a'; now i = 0, stop
+collected "fcba" -> reverse -> "abcf"
+```
+
+**Approach:** Parent 4: the LCS table, then a walk back that retraces how each cell got its value. A match cell took `dp[i-1][j-1] + 1`, so its letter is in the LCS; any other cell copied its larger neighbour, so stepping to that neighbour keeps the full length. The letters turn up last-first, hence the final reverse.
+
 ```java
 import java.util.*;
 
@@ -2540,12 +2876,6 @@ public class PrintLcs {
 "aaaa", "aa" -> "aa"
 ```
 
-**Example:**
-```
-Input:  a = "acbcf", b = "abcdaf"
-Output: "abcf"
-```
-
 #### Child 3 — Shortest Common Supersequence (SCS)
 
 ![Shortest Common Supersequence infographic: LCS("AGGTAB", "GXTXAYB") = "GTAB" (4), so the SCS length is 6 + 7 − 4 = 9 versus 13 for plain concatenation; the 6 × 7 LCS table is shown with the backtrack path (diagonal on matches, left on mismatches, then flush), which writes B Y A X T X G G A and reverses to "AGGXTXAYB".](diagrams/dsa31c_info_scs_ai.png)
@@ -2574,6 +2904,31 @@ public int shortestCommonSupersequence(String a, String b) {
 **Printing the SCS** is Print-LCS with one difference: when characters *don't* match you still **take the character you move over**, and at the end you flush whatever remains of either string.
 
 > **The one-line rule:** *LCS prints only what's common; SCS prints everything, but the common part only once.*
+
+**Example:**
+```
+Input:  a = "AGGTAB", b = "GXTXAYB"
+Output: "AGGXTXAYB"      (length 6 + 7 - 4 = 9)
+```
+
+**Walk-through:** the Example needs a 7 x 8 table, so here is the smaller second test, `a = "abac"`, `b = "cab"` (answer `"cabac"`). Fill the LCS table, then walk back from the corner, writing one letter at every step.
+
+```
+        ""  c  a  b
+  ""     0  0  0  0
+  a      0  0  1  1
+  b      0  0  1  2
+  a      0  0  1  2
+  c      0  1  1  2    <- dp[4][3] = 2 = LCS ("ab"), so length = 4 + 3 - 2 = 5
+i=4 j=3  c vs b: up 2 > left 1  -> write 'c' (from a), go up
+i=3 j=3  a vs b: up 2 > left 1  -> write 'a' (from a), go up
+i=2 j=3  b = b                  -> write 'b' once, go diagonal
+i=1 j=2  a = a                  -> write 'a' once, go diagonal
+i=0 j=1  a is used up           -> flush the rest of b: write 'c'
+written "cabac" -> reverse -> "cabac"
+```
+
+**Approach:** Parent 4: the LCS table, walked back like Print-LCS. Every step writes exactly one letter and a match writes one letter for both strings, so the result has `m + n - LCS` letters; no merge that keeps both orders can share more than `LCS` letters, so nothing shorter exists.
 
 </details>
 
@@ -2668,6 +3023,28 @@ a = "heap"   b = "pea"    LCS = "ea"
   insertions = b.length − LCS = 3 − 2 = 1
 ```
 
+**Example:**
+```
+Input:  a = "heap", b = "pea"
+Output: deletions 2, insertions 1
+```
+
+**Walk-through:** the LCS table for the Example (rows = `a`, columns = `b`); only its corner is needed.
+
+```
+        ""  p  e  a
+  ""     0  0  0  0
+  h      0  0  0  0    no h in "pea"
+  e      0  0  1  1    e = e -> dp[1][1] + 1 = 1
+  a      0  0  1  2    a = a -> dp[2][2] + 1 = 2
+  p      0  1  1 [2]   p = p -> dp[3][0] + 1 = 1; corner = max(up 2, left 1)
+lcs = dp[4][3] = 2   ("ea")
+deletions  = a.length() - lcs = 4 - 2 = 2    (h and p)
+insertions = b.length() - lcs = 3 - 2 = 1    (p)
+```
+
+**Approach:** Parent 4, used only for its length. Any letter you keep must appear in both strings in the same order, so at most `lcs` letters can stay; keeping exactly the LCS makes both counts, `a.length() - lcs` deletions and `b.length() - lcs` insertions, as small as they can be.
+
 </details>
 
 ```java
@@ -2738,6 +3115,22 @@ LCS("agbcba", "abcbga") = "abcba"  → length 5 = LPS
 Input:  s = "agbcba"
 Output: 5      ("abcba")
 ```
+
+**Walk-through:** the LCS table with `s = "agbcba"` down the side and `rev = "abcbga"` across the top.
+
+```
+        ""  a  b  c  b  g  a
+  ""     0  0  0  0  0  0  0
+  a      0  1  1  1  1  1  1
+  g      0  1  1  1  1  2  2
+  b      0  1  2  2  2  2  2
+  c      0  1  2  3  3  3  3
+  b      0  1  2  3  4  4  4
+  a      0  1  2  3  4  4 [5]
+dp[6][6] = 5 = longestPalindromeSubseq("agbcba")   (walking back spells "abcba")
+```
+
+**Approach:** Parent 4 with the hidden second input `reverse(s)`. A palindrome reads the same both ways, so every palindromic subsequence of `s` also appears, in order, in `reverse(s)`; the LCS of the two strings finds the longest such shared sequence, and its length is the LPS.
 
 </details>
 
@@ -2813,6 +3206,17 @@ Input:  s = "agbcba"
 Output: 1      (delete g, leaving the palindrome abcba)
 ```
 
+**Walk-through:** the LPS is the corner of the Child 5 table; the rest is one subtraction.
+
+```
+s = "agbcba"      rev = "abcbga"
+longestPalindromeSubseq(s) = LCS(s, rev) = 5       ("abcba")
+deletions  = 6 - 5 = 1     agbcba -> drop the g                -> abcba
+insertions = 6 - 5 = 1     agbcba -> add a g before the last a -> agbcbga
+```
+
+**Approach:** Parent 4 two levels down: `LCS(s, reverse(s))` gives the LPS (Child 5), then one subtraction answers both questions. It is exact: deleting `s.length() - LPS` letters is enough (keep the LPS), and deleting fewer would leave a palindrome longer than the LPS, which cannot exist.
+
 </details>
 
 ```java
@@ -2884,6 +3288,24 @@ Input:  s = "AABEBCDD"
 Output: 3      ("ABD" appears twice, using different positions)
 ```
 
+**Walk-through:** the table for the Example; `i` is the row and `j` the column (both count from 1). A letter may not match itself, so a cell with `i == j` never uses the diagonal.
+
+```
+        ""  A  A  B  E  B  C  D  D
+  ""     0  0  0  0  0  0  0  0  0
+  A      0  0  1  1  1  1  1  1  1    A(i=1) = A(j=2) -> dp[0][1] + 1 = 1
+  A      0  1  1  1  1  1  1  1  1    A(i=2) = A(j=1) -> 1; A(2) with A(2) is banned
+  B      0  1  1  1  1  2  2  2  2    B(i=3) = B(j=5) -> dp[2][4] + 1 = 2
+  E      0  1  1  1  1  2  2  2  2
+  B      0  1  1  2  2  2  2  2  2    B(i=5) = B(j=3) -> dp[4][2] + 1 = 2
+  C      0  1  1  2  2  2  2  2  2
+  D      0  1  1  2  2  2  2  2  3    D(i=7) = D(j=8) -> dp[6][7] + 1 = 3
+  D      0  1  1  2  2  2  2  3 [3]   D(8) with D(8) is banned -> max(up 3, left 3)
+dp[n][n] = dp[8][8] = 3   ("ABD")
+```
+
+**Approach:** Parent 4: LCS of `s` with itself, plus the guard `i != j`. Without the guard every letter would pair with its own position and the answer would always be `n`; with it, each matched pair uses two different positions, and the usual `max(up, left)` still finds the longest such pairing.
+
 </details>
 
 ```java
@@ -2939,6 +3361,23 @@ public class LongestRepeatingSubsequence {
 Input:  a = "abc", b = "ahbgdc"
 Output: true
 ```
+
+**Walk-through:** both methods on the Example.
+
+```
+LCS table (rows = a, columns = b):
+        ""  a  h  b  g  d  c
+  ""     0  0  0  0  0  0  0
+  a      0  1  1  1  1  1  1
+  b      0  1  1  2  2  2  2
+  c      0  1  1  2  2  2 [3]    LCS = 3 == a.length() -> true
+
+two pointers (j walks b, i moves on a match):
+  b[j]   a  h  b  g  d  c
+  i      1  1  2  2  2  3        i == a.length() -> true
+```
+
+**Approach:** Parent 4 turned into a yes/no check: `a` is inside `b` exactly when every letter of `a` gets matched. The two-pointer scan is the fast version: matching each letter of `a` at its earliest chance in `b` never hurts, because it leaves as much of `b` as possible for the letters still to come.
 
 </details>
 
@@ -3114,6 +3553,22 @@ Input:  s = "rabbbit", t = "rabbit"
 Output: 3      (any two of the three b's can be used)
 ```
 
+**Walk-through:** the table for the Example (rows = `s`, columns = `t`). Column 0 is all 1 (one way to spell the empty string). Every cell starts as the cell above (skip `s[i-1]`) and, when the two letters match, adds the diagonal (use it).
+
+```
+        ""  r  a  b  b  i  t
+  ""     1  0  0  0  0  0  0
+  r      1  1  0  0  0  0  0
+  a      1  1  1  0  0  0  0
+  b      1  1  1  1  0  0  0    dp[3][3] = 0 + 1 = 1
+  b      1  1  1  2  1  0  0    dp[4][3] = 1 + 1 = 2,  dp[4][4] = 0 + 1 = 1
+  b      1  1  1  3  3  0  0    dp[5][3] = 2 + 1 = 3,  dp[5][4] = 1 + 2 = 3
+  i      1  1  1  3  3  3  0    dp[6][5] = 0 + 3 = 3
+  t      1  1  1  3  3  3 [3]   dp[7][6] = 0 + 3 = 3 = answer
+```
+
+**Approach:** Parent 4 with `max` swapped for `+` (counting). Each way of spelling the first `j` letters of `t` from the first `i` letters of `s` either leaves `s[i-1]` out or uses it for `t[j-1]`, never both, so adding the two counts counts every way exactly once.
+
 </details>
 
 ```java
@@ -3179,6 +3634,21 @@ Output: true   (first * = "", a = "a", second * = "dce", b = "b")
 Input:  s = "aa", p = "a"
 Output: false  (the pattern must cover all of s)
 ```
+
+**Walk-through:** the table for the first Example (rows = `s`, columns = `p`; `T` = true, `F` = false).
+
+```
+        ""  *  a  *  b
+  ""     T  T  F  F  F    a leading * can match "" -> dp[0][1] = T
+  a      F  T  T  T  F    a = a -> copy the diagonal dp[0][1] = T
+  d      F  T  F  T  F    the 2nd * eats d: dp[1][3] = T
+  c      F  T  F  T  F    ... and c
+  e      F  T  F  T  F    ... and e
+  b      F  T  F  T [T]   b = b -> copy the diagonal dp[4][3] = T
+dp[m][n] = dp[5][4] = T -> true
+```
+
+**Approach:** Parent 4 on a true/false table, where the pattern character picks the move. A letter or `?` uses up exactly one letter of `s`, so it copies the diagonal; `*` either eats one more letter (`dp[i-1][j]`, the star stays) or stops (`dp[i][j-1]`, the star is done). Eating one letter at a time covers every length a star can match, so `dp[m][n]` is true exactly when the whole pattern fits the whole string.
 
 </details>
 
@@ -3324,6 +3794,28 @@ m = 3, n = 2 -> 3
 
 **Unique Paths II** (obstacles) is the same code with one guard: in `grid`, `1` marks an obstacle and `0` a free cell. An obstacle cell is unreachable, so set `dp[j] = 0` there instead of adding.
 
+**Problem:** the same robot and the same right/down moves as Unique Paths, but it may not enter an obstacle cell. Count the routes from the top-left cell to the bottom-right cell.
+
+**Example:**
+```
+Input:  grid = [[0, 0, 0],
+                [0, 1, 0],
+                [0, 0, 0]]
+Output: 2      (around the obstacle: right-right-down-down, or down-down-right-right)
+```
+
+**Walk-through:** `dp` holds one row of route counts and is updated in place, row by row.
+
+```
+grid row    dp after this row
+0 0 0       [1, 1, 1]    top edge: one route to each cell
+0 1 0       [1, 0, 1]    obstacle -> dp[1] = 0;  dp[2] = 1 + 0 = 1
+0 0 0       [1, 1, 2]    dp[1] = 0 + 1 = 1;  dp[2] = 1 + 1 = 2
+                   ^ dp[n-1] = 2
+```
+
+**Approach:** Grid DP (Parent 5), counting with `+` as in Unique Paths. Zeroing an obstacle is all it takes: no route passes through it, so it hands 0 on to the cell on its right and the cell below, while every free cell still adds above + left.
+
 **Java — unique paths II, with obstacles:**
 
 ```java
@@ -3368,14 +3860,6 @@ public class UniquePathsII {
 [[0, 0], [1, 1], [0, 0]] -> 0
 ```
 
-**Example:**
-```
-Input:  grid = [[0, 0, 0],
-                [0, 1, 0],
-                [0, 0, 0]]
-Output: 2      (around the obstacle: right-right-down-down, or down-down-right-right)
-```
-
 **Practice:** [Unique Paths →](#dsa-problem-unique-paths)
 
 **Practice:** [Unique Paths II →](#dsa-problem-unique-paths-ii)
@@ -3398,6 +3882,18 @@ Input:  grid = [[1, 3, 1],
                 [4, 2, 1]]
 Output: 7      (1 → 3 → 1 → 1 → 1)
 ```
+
+**Walk-through:** `dp` is one row of cheapest sums, rewritten row by row; `min(dp[j], dp[j-1])` compares the cell above with the cell to the left.
+
+```
+grid row    dp after this row
+1 3 1       [1, 4, 5]    first row: running sums 1, 1+3, 4+1
+1 5 1       [2, 7, 6]    dp[0] = 1+1;  dp[1] = min(4, 2) + 5;  dp[2] = min(5, 7) + 1
+4 2 1       [6, 8, 7]    dp[0] = 2+4;  dp[1] = min(7, 6) + 2;  dp[2] = min(6, 8) + 1
+                   ^ dp[n-1] = 7
+```
+
+**Approach:** Grid DP (Parent 5) with `min` plus the cell's own cost. Every path into a cell arrives from above or from the left, and both of those cheapest sums are already final, so the smaller one plus `grid[i][j]` is the cheapest sum here. One row is enough: before its update `dp[j]` still holds the cell above, and `dp[j-1]` already holds the cell to the left.
 
 </details>
 
@@ -3467,6 +3963,19 @@ Input:  matrix = [["1","0","1","0","0"],
                   ["1","0","0","1","0"]]
 Output: 4      (a 2 × 2 square of 1s, e.g. rows 1–2, columns 2–3, counting from 0)
 ```
+
+**Walk-through:** `dp` without its border of zeros, next to `matrix`. Each `'1'` gets `1 + min(up, left, diagonal)`; each `'0'` stays 0.
+
+```
+matrix        dp
+1 0 1 0 0     1 0 1 0 0
+1 0 1 1 1     1 0 1 1 1
+1 1 1 1 1     1 1 1 2 2    dp[3][4] = 1 + min(1, 1, 1) = 2;  dp[3][5] = 1 + min(1, 2, 1) = 2
+1 0 0 1 0     1 0 0 1 0
+best = 2 -> area = best * best = 4
+```
+
+**Approach:** Grid DP (Parent 5) with a three-neighbour `min`. A square of side `s` ending at a cell needs squares of side `s - 1` ending just above, just to the left and diagonally up-left, so the smallest of those three caps how far it can grow. The biggest square can end anywhere, so the loop keeps `best` and returns `best * best`.
 
 </details>
 
@@ -4005,6 +4514,22 @@ Operator truth tables → counting formulas
      false : lT*rT + lF*rF
 ```
 
+**Walk-through:** the first Example, `s = "T^F|F"`. `k` lands only on the operators (index 1 `^` and index 3 `|`); each side reports how many ways it can be true and false.
+
+```
+piece    ways true   ways false
+"T"      1           0
+"F"      0           1
+"F|F"    0           1             F|F is false
+"T^F"    1           0             T^F is true
+
+k = 1 '^':  "T" ^ "F|F"   lT*rF + lF*rT = 1*1 + 0*0 = 1                 T^(F|F)
+k = 3 '|':  "T^F" | "F"   lT*rT + lT*rF + lF*rT = 1*0 + 1*1 + 0*0 = 1   (T^F)|F
+countWays("T^F|F") = 1 + 1 = 2
+```
+
+**Approach:** Parent 6 (MCM) with `k` on operators and an `isTrue` flag added to the state. Every full bracketing applies exactly one operator last, so summing over that last operator `k` counts each bracketing once; the two sides are bracketed independently, so their counts multiply.
+
 </details>
 
 ```java
@@ -4104,6 +4629,8 @@ Output: 167
                                      167
 ```
 
+**Approach:** Parent 6 (interval DP), filled by increasing `len`. Every bursting order has some balloon that goes last in `left..right`; with `k` as that last balloon, `dp[left][k-1]` and `dp[k+1][right]` are shorter ranges that are already solved, so the best over all `k` is the best over all orders.
+
 </details>
 
 ```java
@@ -4187,6 +4714,25 @@ Output: 3
 > **Why `max` inside `min`?** This is the part people get wrong. You are not optimising the average — you are guaranteeing a bound against an adversary. `max` models "assume the unlucky outcome", `min` models "choose the smartest floor". Any problem phrased "in the worst case" needs this shape.
 >
 
+**Walk-through:** the values `solve(e, f)` works out for small buildings, then the floor loop for the Example.
+
+```
+solve(e, f)   f = 0  1  2  3  4  5
+  e = 1           0  1  2  3  4  5    one egg: test every floor
+  e = 2           0  1  2  2  3  3
+  e = 3           0  1  2  2  3  3
+
+solve(3, 5)   k   breaks: solve(2, k-1)   survives: solve(3, 5-k)   1 + max
+              1   0                       3                         4
+              2   1                       2                         3
+              3   2                       2                         3
+              4   2                       1                         3
+              5   3                       0                         4
+smallest worst case = min(4, 3, 3, 3, 4) = 3
+```
+
+**Approach:** Parent 6 with a minimax cost: `solve(e, f)` is the `min` over floors `k` of `1 + max(solve(e-1, k-1), solve(e, f-k))`. It is exact because every first floor is tried, and each outcome leaves a strictly smaller building (`k - 1` or `f - k` floors) whose memoised value is already its true worst-case answer.
+
 </details>
 
 ```java
@@ -4256,6 +4802,21 @@ Output: false
 ```
 
 > **Prune before you recurse:** if the two strings don't have identical character counts (the `count` lines above), return `false` immediately. Without that check this times out on adversarial inputs.
+
+**Walk-through:** the first Example. Each split `k` is tried straight, then swapped; the letter-count check ends most branches at once.
+
+```
+isScramble("great", "rgeat")     same letters -> try k = 1, 2, ...
+  k = 1  straight: "g" vs "r"           letters differ -> false
+         swapped:  "g" vs "t"           letters differ -> false
+  k = 2  straight: "gr" vs "rg"         its k = 1 swap: "g" = "g", "r" = "r" -> true
+              and  "eat" vs "eat"       equal -> true
+         swapped:  "gr" vs "at"         letters differ -> false
+         ok = true -> the loop stops
+answer: true     (great -> gr | eat -> swap inside gr -> rg | eat = rgeat)
+```
+
+**Approach:** Parent 6 on two strings at once: the top-level split of any scramble is at some `k`, either kept in order or swapped, so trying every `k` both ways covers every possibility. Each check is on shorter strings, and the memo (keyed by the pair) stops the same pair from being solved twice.
 
 </details>
 
@@ -4437,7 +4998,13 @@ The six parents cover most DP you will be asked. These three do not fit the fami
 
 **The problem (Stock IV):** `prices[i]` is the price of one share on day `i` (there are `n` days). You may hold at most one share at a time and make at most `k` transactions — one transaction is a buy followed later by a sell. Return the largest total profit.
 
-**Walkthrough:** `prices = [3, 2, 6, 5, 0, 3]`, `k = 2` (at most 2 buy/sell round trips).
+**Example:**
+```
+Input:  k = 2, prices = [3, 2, 6, 5, 0, 3]
+Output: 7      (buy at 2, sell at 6; buy at 0, sell at 3)
+```
+
+**Walk-through (by hand):** `prices = [3, 2, 6, 5, 0, 3]`, `k = 2` (at most 2 buy/sell round trips).
 
 ```
 day 0, price 3:  wait   (a lower price comes next)
@@ -4465,6 +5032,22 @@ States for buy/sell with at most k transactions
 ```
 
 The code keeps only the current day, so `dp[j][0]` and `dp[j][1]` are the same two states with the day dropped.
+
+**Walk-through (inside the code):** the walk-through above is the human view; this is what the code's `dp` holds after each price of the Example. `dp[j][1]` = holding, `dp[j][0]` = not holding, and `-inf` (really `Integer.MIN_VALUE / 2`) means "cannot be holding yet".
+
+```
+price   dp[1][1]  dp[1][0]  dp[2][1]  dp[2][0]
+start       -inf         0      -inf         0
+  3           -3         0        -3         0     first buy, at 3
+  2           -2         0        -2         0     buying at 2 is cheaper
+  6           -2         4        -2         4     sell: -2 + 6 = 4
+  5           -2         4        -1         4     dp[2][1] = dp[1][0] - 5 = -1 (buy again)
+  0            0         4         4         4     dp[2][1] = dp[1][0] - 0 = 4
+  3            0         4         4         7     dp[2][0] = dp[2][1] + 3 = 7
+                                             ^ dp[k][0] = 7
+```
+
+**Approach:** State machine DP: for each transaction count `j` there are two states, holding or not, and each day you either rest or follow one arrow, buy (not holding to holding, starting transaction `j`) or sell (holding to not holding). Taking the `max` of those moves every day keeps the best profit for every state, so `dp[k][0]` is the best with at most `k` transactions. When `k >= n / 2` the limit can never bite, so the code simply adds up every price rise.
 
 ```java
 import java.util.*;
@@ -4515,12 +5098,6 @@ k = 1, prices = [7, 6, 4, 3, 1] -> 0
 k = 0, prices = [1, 3] -> 0
 ```
 
-**Example:**
-```
-Input:  k = 2, prices = [3, 2, 6, 5, 0, 3]
-Output: 7      (buy at 2, sell at 6; buy at 0, sell at 3)
-```
-
 Here `k = 2` is less than `n / 2 = 3`, so the code really runs the state machine. (A tiny input such as `[2, 4, 1]` would take the "take every rise" shortcut instead.)
 
 **Practice:** [Best Time to Buy and Sell Stock IV →](#dsa-problem-best-time-buy-sell-stock-iv)
@@ -4548,7 +5125,13 @@ Why 20? Because `2^20 ≈ 10^6` states is fine and `2^25` is not. If you see a t
 
 **The mask:** a number whose bits record which tasks are already taken. Bits are read **right to left** — the rightmost bit is task 0 — so `011` means tasks 0 and 1 are taken. `dp[mask]` = the cheapest way to hand out exactly the tasks in `mask` to workers 0, 1, 2, … in order.
 
-**Walkthrough:** `cost = [[9,2,7],[6,4,3],[5,8,1]]` (rows = workers, columns = tasks).
+**Example:**
+```
+Input:  cost = [[9, 2, 7], [6, 4, 3], [5, 8, 1]]
+Output: 9      (worker 0 → task 1: 2, worker 1 → task 0: 6, worker 2 → task 2: 1)
+```
+
+**Walk-through (by hand):** `cost = [[9,2,7],[6,4,3],[5,8,1]]` (rows = workers, columns = tasks).
 
 ```
 mask 000 (no task assigned yet)                 -> cost 0
@@ -4559,6 +5142,23 @@ assign task 2 to worker 2  -> mask 111 (done)   -> cost 8 + 1 = 9   <- best foun
 Bit i of mask = 1 means "task i is already given to someone".
 Count of set bits in mask = how many workers are done = which worker goes next.
 ```
+
+**Walk-through (inside the code):** the walk-through above follows one path; the code fills `dp[mask]` for every mask and keeps only the cheapest way in. Listed by how many tasks are taken (`w` = worker, `t` = task):
+
+```
+mask   dp[mask]   cheapest way in
+000       0       nothing assigned yet
+001       9       w0 -> t0 (9)
+010       2       w0 -> t1 (2)
+100       7       w0 -> t2 (7)
+011       8       min(9 + 4, 2 + 6): w1 -> t1, or w1 -> t0
+101      12       min(9 + 3, 7 + 6): w1 -> t2, or w1 -> t0
+110       5       min(2 + 3, 7 + 4): w1 -> t2, or w1 -> t1
+111       9       min(8 + 1, 12 + 8, 5 + 5): w2 takes the last free task
+dp[(1 << n) - 1] = dp[111] = 9
+```
+
+**Approach:** Bitmask DP: the mask is the state, and `Integer.bitCount(mask)` says which worker is next, so from each mask the code only tries the free tasks for that one worker. Every complete assignment is built worker by worker through these masks, and each mask keeps only its cheapest way in, so `dp[(1 << n) - 1]` is the true minimum.
 
 ```java
 import java.util.*;
@@ -4609,12 +5209,6 @@ public class TaskAssignment {
 [[1, 2], [3, 4]] -> 5
 ```
 
-**Example:**
-```
-Input:  cost = [[9, 2, 7], [6, 4, 3], [5, 8, 1]]
-Output: 9      (worker 0 → task 1: 2, worker 1 → task 0: 6, worker 2 → task 2: 1)
-```
-
 > **The trick above is worth stealing:** `Integer.bitCount(mask)` tells you *how many* items are placed, which tells you *which* worker/position is next — so you don't need a second dimension for "step number". That collapses `dp[step][mask]` into `dp[mask]`.
 
 ### Digit DP (worth recognising, rarely required)
@@ -4623,7 +5217,15 @@ Output: 9      (worker 0 → task 1: 2, worker 1 → task 0: 6, worker 2 → tas
 
 **The state:** `dp[position][tight][started][property]` — walk the number digit by digit, left to right. `tight` = every digit so far equals `N`'s digit, so the next digit may not exceed `N`'s next digit. `started` = a non-zero digit has been placed; before that, zeros are just padding (the number 7 is written `07`), not real digits.
 
-**Walkthrough:** `N = 25`, property = "no two adjacent digits equal". Every number is written with two digits.
+**Problem:** given `N`, count the integers from 0 to `N` (both included) in which no two neighbouring digits are equal.
+
+**Example:**
+```
+Input:  N = 25
+Output: 24      (of the 26 numbers 0..25, only 11 and 22 are left out)
+```
+
+**Walk-through:** `N = 25`, property = "no two adjacent digits equal". Every number is written with two digits.
 
 ```
 first digit 0 → the one-digit numbers 0..9        10 OK   (the 0 is padding)
@@ -4633,6 +5235,8 @@ first digit 2 → still tight (N = 25), so the
                 20, 21, 23, 24, 25                 5 OK;  22 REJECTED
                                             total 10 + 9 + 5 = 24
 ```
+
+**Approach:** Digit DP: build the number one digit at a time from the left, skipping any digit equal to `prevDigit`. The count for the rest of the number depends only on (`pos`, `tight`, `started`, `prevDigit`), so a branch that is no longer `tight` and has `started` is counted once, stored in `memo` and reused; that is what keeps it fast for huge `N`.
 
 ```java
 import java.util.*;

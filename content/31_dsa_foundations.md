@@ -256,6 +256,33 @@ public class TwoSumSorted {
 
 **Same shape, different question — Container With Most Water.** Water held = `min(height[left], height[right]) × width`. Moving the **taller** wall inward can never help: the shorter wall still caps the height and the width just shrank. So always move the shorter wall — the only move that could possibly improve things.
 
+**Problem:** Each number in `height` is a vertical wall, one unit apart from the next. Pick the two walls that hold the most water between them and return that amount.
+
+**Example:**
+```
+Input:  height = [1, 8, 6, 2, 5, 4, 8, 3, 7]
+Output: 49        (walls at index 1 and 8: min(8, 7) x 7)
+```
+
+**Walk-through:** start with the widest pair, then always move the shorter wall (on a tie the code moves `right`).
+```
+index        0  1  2  3  4  5  6  7  8
+height       1  8  6  2  5  4  8  3  7
+
+left  right  water                 maxWater   move
+ 0     8     min(1, 7) x 8 =  8        8      1 < 7      -> left++
+ 1     8     min(8, 7) x 7 = 49       49      7 shorter  -> right--
+ 1     7     min(8, 3) x 6 = 18       49      3 shorter  -> right--
+ 1     6     min(8, 8) x 5 = 40       49      tie        -> right--
+ 1     5     min(8, 4) x 4 = 16       49      4 shorter  -> right--
+ 1     4     min(8, 5) x 3 = 15       49      5 shorter  -> right--
+ 1     3     min(8, 2) x 2 =  4       49      2 shorter  -> right--
+ 1     2     min(8, 6) x 1 =  6       49      6 shorter  -> right--
+ 1     1     left == right -> stop, return 49
+```
+
+**Approach:** Converging two pointers (Pattern 1), starting from the widest pair. Each step drops the shorter wall, which (as shown above) cannot be part of any bigger container, so one O(n) pass never skips the best pair.
+
 **Java — container with most water:**
 
 ```java
@@ -1013,6 +1040,21 @@ public class ValidAnagram {
 "bat" → sorted → "abt" → groups["abt"] = ["bat"]           ← a different key, a new group
 ```
 
+**Dry run — `["eat", "tea", "tan", "ate", "nat", "bat"]` → `[[eat, tea, ate], [bat], [tan, nat]]`**
+*We track:* `groups` — sorted key → the words that produced it. The words are taken in input order.
+
+```
+word   sorted key   groups["aet"]      groups["ant"]   groups["abt"]
+eat    aet          [eat]
+tea    aet          [eat, tea]
+tan    ant          [eat, tea]         [tan]
+ate    aet          [eat, tea, ate]    [tan]
+nat    ant          [eat, tea, ate]    [tan, nat]
+bat    abt          [eat, tea, ate]    [tan, nat]      [bat]
+
+groups.values() -> [[eat, tea, ate], [bat], [tan, nat]]   (HashMap order, not input order)
+```
+
 </details>
 
 ```java
@@ -1152,13 +1194,13 @@ Because complexity counts *total* work, not nesting depth. In Longest Consecutiv
 
 - `map.merge(key, 1, Integer::sum)` — the cleanest increment-a-counter.
 - `map.computeIfAbsent(key, k -> new ArrayList<>()).add(v)` — the cleanest group-by.
-- `LinkedHashMap` preserves order and, with `accessOrder = true`, gives you an LRU cache almost for free.
+- `LinkedHashMap` preserves order and, with `accessOrder = true`, gives you an LRU cache almost for free — fine in real code, but in an interview expect to build it by hand (see LRU Cache below).
 - **Never use a mutable object (`int[]`, a list you later modify) as a key** — hashing happens on insert, so later mutations make the entry unreachable. Convert to a `String` or an immutable `List`.
 - `map.get(missing)` returns `null`; unboxing that into an `int` throws NPE. Use `getOrDefault`.
 
 ### Key Problems — Detailed Solutions
 
-![Infographic for designing an LRU Cache with a HashMap plus a doubly linked list: capacity 2, operations put(1,1), put(2,2), get(1) → 1, put(3,3) evicts key 2, get(2) → −1; cache order (oldest → newest) goes [1], [1, 2], [2, 1], [1, 3], [1, 3]. O(1) per get/put, O(capacity) space.](diagrams/dsa31_info_lru_ai.png)
+![Infographic for designing an LRU Cache with a HashMap (key → list node) plus a doubly linked list with dummy head (oldest side) and tail (newest side): capacity 2, operations put(1,1), put(2,2), get(1) → 1 moves node 1 before tail, put(3,3) removes head.next (key 2) from both the list and the map, get(2) → −1; list after each step (head → tail) is 1; 1, 2; 2, 1; 1, 3; 1, 3 with map keys {1}, {1, 2}, {1, 2}, {1, 3}, {1, 3}. Trap: when evicting head.next, also remove its key from the map. O(1) per get/put, O(capacity) space.](diagrams/dsa31_info_lru_ai.png)
 
 <details>
 <summary><strong>LRU Cache</strong> — Medium · read as text and Java</summary>
@@ -1183,28 +1225,89 @@ put(3,3)   [1, 3]      full, so the oldest (2) is evicted
 get(2)     [1, 3]      returns -1 — 2 is gone
 ```
 
-**Approach:** A HashMap finds any key in O(1); a doubly linked list keeps keys in order of last use, so "move to newest" and "drop the oldest" are O(1) too. Java's `LinkedHashMap` with `accessOrder = true` is exactly that pair, built in — just override `removeEldestEntry` to evict once the size passes capacity.
+**Approach:** Use two structures together.
+
+- A **HashMap** `key → node` finds any key in O(1).
+- A **doubly linked list** keeps the nodes in order of last use: the oldest sits next to a dummy `head`, the newest next to a dummy `tail`. The dummies mean you never check for `null`.
+
+Each operation is then just a few pointer moves:
+
+- `get(key)`: not in the map → `-1`. Otherwise move its node to the newest end and return the value.
+- `put(key, value)`: key exists → update the value and move the node to the newest end. New key → if full, unlink `head.next` (the oldest) **and** remove its key from the map; then add the new node just before `tail`.
+
+Each node stores its own key, so eviction knows which map entry to delete.
+
+> **Shortcut:** in real code, `new LinkedHashMap<>(cap, 0.75f, true)` with `removeEldestEntry` overridden does all of this ([Ch 38 §38.4](#content/38_java_refresher)). Mention it, but interviewers almost always ask you to build the list yourself.
 
 **Java:**
 ```java
 import java.util.*;
 
 public class LruCacheDemo {
-    static class LRUCache extends LinkedHashMap<Integer, Integer> {
-        private int cap;
+    static class LRUCache {
+        private static class Node {
+            int key, val;                  // key is kept so eviction can delete it from the map
+            Node prev, next;
+            Node(int key, int val) { this.key = key; this.val = val; }
+        }
+
+        private final int capacity;
+        private final Map<Integer, Node> map = new HashMap<>();
+        private final Node head = new Node(0, 0);   // dummy: oldest side
+        private final Node tail = new Node(0, 0);   // dummy: newest side
+
         public LRUCache(int capacity) {
-            super(capacity, 0.75f, true); // accessOrder = true
-            this.cap = capacity;
+            this.capacity = capacity;
+            head.next = tail;
+            tail.prev = head;
         }
+
         public int get(int key) {
-            return super.getOrDefault(key, -1);
+            Node node = map.get(key);
+            if (node == null) return -1;
+            moveToNewest(node);            // a read counts as a use
+            return node.val;
         }
+
         public void put(int key, int value) {
-            super.put(key, value);
+            Node node = map.get(key);
+            if (node != null) {            // existing key: update and refresh
+                node.val = value;
+                moveToNewest(node);
+                return;
+            }
+            if (map.size() == capacity) {  // full: drop the oldest from list AND map
+                Node oldest = head.next;
+                unlink(oldest);
+                map.remove(oldest.key);
+            }
+            node = new Node(key, value);
+            addNewest(node);
+            map.put(key, node);
         }
+
+        private void unlink(Node n) {
+            n.prev.next = n.next;
+            n.next.prev = n.prev;
+        }
+
+        private void addNewest(Node n) {   // insert just before the tail dummy
+            n.prev = tail.prev;
+            n.next = tail;
+            tail.prev.next = n;
+            tail.prev = n;
+        }
+
+        private void moveToNewest(Node n) {
+            unlink(n);
+            addNewest(n);
+        }
+
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Integer, Integer> eldest) {
-            return size() > cap;
+        public String toString() {         // oldest -> newest
+            StringJoiner sj = new StringJoiner(", ", "{", "}");
+            for (Node n = head.next; n != tail; n = n.next) sj.add(n.key + "=" + n.val);
+            return sj.toString();
         }
     }
 
@@ -1218,16 +1321,17 @@ public class LruCacheDemo {
     }
 
     public static void main(String[] args) {
-        LRUCache cache = new LRUCache(2);          // the cache prints least recently used first
+        LRUCache cache = new LRUCache(2);          // printed oldest -> newest
         showPut(cache, 1, 1);
         showPut(cache, 2, 2);
-        showGet(cache, 1);
+        showGet(cache, 1);                         // 1 becomes the newest
         showPut(cache, 3, 3);                      // full: evicts 2, the least recently used
         showGet(cache, 2);
         showPut(cache, 4, 4);                      // evicts 1
         showGet(cache, 1);
         showGet(cache, 3);
         showGet(cache, 4);
+        showPut(cache, 3, 33);                     // existing key: new value, now the newest
     }
 }
 ```
@@ -1243,9 +1347,12 @@ put(4, 4)     cache {3=3, 4=4}
 get(1) -> -1  cache {3=3, 4=4}
 get(3) -> 3   cache {4=4, 3=3}
 get(4) -> 4   cache {3=3, 4=4}
+put(3, 33)    cache {4=4, 3=33}
 ```
 
-**Complexity:** O(1) time per operation, O(capacity) space
+**Common bugs:** forgetting to remove the evicted key from the map; not refreshing a key on `get`; adding a second node when `put` hits an existing key.
+
+**Complexity:** O(1) time per `get`/`put`, O(capacity) space
 </details>
 
 ### Problem List
@@ -1265,7 +1372,7 @@ get(4) -> 4   cache {3=3, 4=4}
 | 9 | Subarray Sum Equals K | Medium | Prefix sum + Map | Count prefix diffs |
 | 10 | 4Sum II | Medium | Split + Map | Store pair sums |
 | 11 | Encode and Decode Strings | Medium | Delimiter design | Length prefix encoding |
-| 12 | LRU Cache | Medium | LinkedHashMap | Override removeEldest |
+| 12 | LRU Cache | Medium | HashMap + doubly linked list | Move to newest on use; evict head.next |
 | 13 | Copy List with Random Pointer | Medium | Old->New map | Two-pass cloning |
 | 14 | Minimum Window Substring | Hard | Window + Freq map | Maintain "have" vs "need" |
 | 15 | Alien Dictionary | Hard | Map + Topo sort | Build graph from words |
@@ -1402,6 +1509,28 @@ public class MiddleOfLinkedList {
 [1] -> node 1
 [] -> null
 ```
+
+**Problem:** Given the head of a linked list, return the node where a cycle begins, or `null` if there is no cycle. Use O(1) extra space (no `HashSet`).
+
+**Example:**
+```
+Input:  1 -> 2 -> 3 -> 4 -> 5 -> 6, and 6 links back to 3 (index 2)
+Output: node 3
+```
+
+**Walk-through:** phase 1 proves there is a loop; phase 2 finds its entrance.
+```
+1 -> 2 -> 3 -> 4 -> 5 -> 6 -> (back to 3)
+
+phase 1: slow moves 1, fast moves 2
+  slow:   1   2   3   4   5
+  fast:   1   3   5   3   5     slow == fast at node 5 -> a cycle exists
+phase 2: slow = head, both move 1
+  slow:   1   2   3
+  fast:   5   6   3             slow == fast at node 3 -> return node 3
+```
+
+**Approach:** Floyd's fast & slow pointers (Pattern 1), in two phases. Phase 2 works because the head and the meeting point are equally far from the entrance, counting any whole extra laps of the loop — here 2 steps each (`1 -> 2 -> 3` and `5 -> 6 -> 3`) — so two pointers moving at the same speed arrive there together.
 
 **Java — where the cycle starts:**
 
@@ -1560,6 +1689,9 @@ public class ReverseLinkedList {
 **Problem.** Splice two sorted lists into one sorted list. `1 → 2 → 4` and `1 → 3 → 4` → `1 → 1 → 2 → 3 → 4 → 4`.
 
 **Key idea.** Exactly the merge step of merge sort (§18.6): repeatedly take the smaller of the two heads. The only awkward part is the very first node, because there is no tail to attach to yet — a **dummy head** makes the first attachment look like all the others.
+
+**Dry run — `1 → 2 → 4` and `1 → 3 → 4` → `1 → 1 → 2 → 3 → 4 → 4`**
+*We track:* the two heads being compared (on a tie the code takes `l1`, because of `<=`) and the merged list so far.
 
 ```
 l1: 1 → 2 → 4      l2: 1 → 3 → 4
@@ -2036,6 +2168,9 @@ getMin() -> -2
 
 **Key idea.** A stack reverses order. Reverse it **twice** and you are back to the original order — which is a queue. Pour the input stack into an output stack only when the output stack runs dry, so each element is moved at most once across its whole lifetime: amortised O(1).
 
+**Dry run — `push(1), push(2), peek(), pop()` → `1`, `1`**
+*We track:* the two stacks — `in` takes every push, `out` serves `peek` and `pop`.
+
 ```
 stacks written bottom → top (top on the right)
 
@@ -2239,6 +2374,8 @@ Because each index is pushed exactly once and popped at most once. The inner loo
 <details>
 <summary><strong>Read as text</strong> — problem, key idea, dry run and trap</summary>
 
+**Problem.** Sort an array of integers into ascending order in O(n log n) time, keeping equal values in their original order (a *stable* sort). `[5, 2, 8, 1, 9]` → `[1, 2, 5, 8, 9]`.
+
 **Key idea.** A single element is already sorted. So split until everything is a single element, then **merge sorted pieces back together** — and merging two sorted lists is easy, because the smallest remaining value is always at the front of one of them. All the real work happens on the way back up.
 
 **Dry run — `[5, 2, 8, 1, 9]` → `[1, 2, 5, 8, 9]`**
@@ -2333,6 +2470,8 @@ public class MergeSort {
 <details>
 <summary><strong>Read as text</strong> — problem, key idea, dry run and trap</summary>
 
+**Problem.** Two jobs, one tool. Sort an array in place: `[3, 6, 2, 8, 4]` → `[2, 3, 4, 6, 8]`. And find the Kth largest value without sorting everything: `[3, 2, 1, 5, 6, 4]`, `k = 2` → `5`.
+
 **Key idea.** Pick a pivot and **partition**: shuffle everything smaller to its left and everything bigger to its right. The pivot is now in its final sorted position, and you have never compared the two sides to each other. Recurse into both sides and you have quicksort.
 
 **The interview payoff:** if you only want the **Kth largest** element, you do not need both sides. Partition tells you which side the answer is in, so you recurse into **one** — halving the work each time, which averages to O(n) instead of O(n log n).
@@ -2349,6 +2488,17 @@ finally:    put the pivot at the bar                  [ 3  2  4  8  6 ]     4 is
 ```
 
 **Why it works:** everything left of the bar is smaller than 4 and everything right of it is bigger, so 4 is now in its final sorted position.
+
+**Dry run — Quick Select, `[3, 2, 1, 5, 6, 4]`, `k = 2` → `5`**
+*We track:* `lo..hi` = the part still searched, `p` = where the pivot lands, `t` = the index the answer will have once sorted.
+
+```
+t = n - k = 6 - 2 = 4
+
+lo..hi   pivot   after partition        p   compare p with t
+0..5     4       [3, 2, 1, 4, 6, 5]     3   3 < 4 -> answer is right of p: search 4..5 only
+4..5     5       [3, 2, 1, 4, 5, 6]     4   4 = 4 -> return a[4] = 5
+```
 
 **Cost.** Quicksort O(n log n) average, **O(n^2) worst** (already-sorted input with a bad pivot). Quick select O(n) average, O(n^2) worst. Say both, then add "shuffle first, or pick a random pivot" — that is the fix interviewers are listening for.
 
@@ -2431,6 +2581,34 @@ arr = [4, 2, 2, 8, 3, 3, 1]          (largest value k = 8)
 count how many of each value:  value 1 ×1, 2 ×2, 3 ×2, 4 ×1, 8 ×1
 read the counts back in order: 1, 2, 2, 3, 3, 4, 8          O(n + k), no comparisons
 ```
+
+**Problem:** Sort an array of small non-negative integers, each between `0` and a known `maxVal`, in place — without comparing elements to each other.
+
+**Example:**
+```
+Input:  arr = [4, 2, 2, 8, 3, 3, 1], maxVal = 8
+Output: [1, 2, 2, 3, 3, 4, 8]
+```
+
+**Walk-through:** the same run in the code's own variables — `count[v]` is how many times `v` appears, `idx` is the next slot to overwrite.
+```
+1. count each value: count[num]++
+
+   val     0  1  2  3  4  5  6  7  8
+   count   0  1  2  2  1  0  0  0  1
+
+2. for val = 0 .. 8, write val count[val] times: arr[idx++] = val
+
+   val 0     count 0   nothing written      idx = 0
+   val 1     count 1   arr[0] = 1           idx = 1
+   val 2     count 2   arr[1], arr[2] = 2   idx = 3
+   val 3     count 2   arr[3], arr[4] = 3   idx = 5
+   val 4     count 1   arr[5] = 4           idx = 6
+   val 5-7   count 0   nothing written      idx = 6
+   val 8     count 1   arr[6] = 8           idx = 7   -> [1, 2, 2, 3, 3, 4, 8]
+```
+
+**Approach:** Counting sort. Each value is used as its own index into `count`, so nothing is ever compared, and walking `count` from `0` up to `maxVal` visits the values already in sorted order. O(n + k) time, where `k` = `maxVal`.
 
 ```java
 import java.util.*;
@@ -2894,6 +3072,9 @@ public class SearchRotatedSortedArray {
 
 **Key idea.** Neighbouring windows overlap almost entirely. Compute the first window once, then **add the element entering and subtract the element leaving** — O(1) per slide.
 
+**Dry run — `[2, 1, 5, 1, 3, 2]`, `k = 3` → `9`**
+*We track:* the window's sum as it slides one step at a time.
+
 ```
 [2, 1, 5, 1, 3, 2], k = 3        first window 2+1+5 = 8
 
@@ -3353,6 +3534,33 @@ public class MaximumDepthOfBinaryTree {
 [1, null, 2, null, 3] -> 3
 ```
 
+**Problem:** Return the length of the longest path between any two nodes of a binary tree, counted in edges. The path does not have to pass through the root.
+
+**Example:**
+```
+Input:  root = [1, 2, 3, 4, 5]
+Output: 3          (path 4 -> 2 -> 1 -> 3)
+```
+
+**Walk-through:** `depth()` finishes the children first; each call records `l + r` and returns `1 + max(l, r)`.
+```
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+call       l   r   diameter = max(diameter, l + r)   returns 1 + max(l, r)
+depth(4)   0   0   max(0, 0) = 0                     1
+depth(5)   0   0   max(0, 0) = 0                     1
+depth(2)   1   1   max(0, 2) = 2                     2
+depth(3)   0   0   max(2, 0) = 2                     1
+depth(1)   2   1   max(2, 3) = 3                     3
+diameterOfBinaryTree returns the field diameter = 3
+```
+
+**Approach:** Pattern 1's "return one value, record another": `depth()` returns the height a parent needs, while the longest path bending at each node (`l + r`) is kept in the `diameter` field. One post-order pass, so O(n).
+
 **Java — diameter:**
 
 ```java
@@ -3622,6 +3830,22 @@ graph TD
 
 **Key idea (BST).** Ordering makes it easier still: if both values are smaller than me, go left; if both are larger, go right; **the first node that sits between them is the split point**, and therefore the LCA. O(h), no recursion into the wrong subtree at all.
 
+**Dry run — LCA(`3`, `5`) → `4`**
+*We track:* what each call of `lowestCommonAncestor` returns. Children answer before their parent.
+
+```
+node   left    right   returns
+0      null    null    null    neither target below
+3      -       -       3       root == p -> report itself
+5      -       -       5       root == q -> report itself
+4      3       5       4       both sides found one -> 4 is the LCA
+2      null    4       4       pass the single find up
+8      null    null    null    (7 and 9 also return null)
+6      4       null    4       pass it up -> answer 4
+
+lcaBST: at 6 both are smaller -> go left; at 2 both are bigger -> go right; at 4 they split -> 4
+```
+
 </details>
 
 ```java
@@ -3705,6 +3929,8 @@ p = 2, q = 4 -> lowestCommonAncestor 2, lcaBST 2
 **Problem.** Turn a tree into a string, and turn that string back into the exact same tree. `[1, 2, 3]` → `"1,2,null,null,3,null,null,"` → `[1, 2, 3]`.
 
 **Key idea.** A preorder list of values is *not* enough — `[1, 2]` could be two different trees. The fix is to **write down the nulls too**. Once every absent child is marked, the preorder sequence describes exactly one tree, and rebuilding is just reading the tokens in the same order: a value means "make a node, then fill its left, then its right"; a `null` means "stop, nothing here."
+
+**Dry run — `[1, 2, 3]` → `"1,2,null,null,3,null,null,"` → `[1, 2, 3]`**
 
 ```
 Tree:      1              serialize (preorder + nulls):  "1,2,null,null,3,null,null,"
@@ -4042,6 +4268,8 @@ public class KthLargestElement {
 
 **Key idea.** The next smallest element overall **must be at the head of one of the k lists** — nowhere else is reachable. So you only ever need to answer "which of these k heads is smallest?", and a heap of size k answers that in O(log k). Pop the winner, push that list's next node, repeat.
 
+**Dry run — `[[1,4,5], [1,3,4], [2,6]]` → `[1,1,2,3,4,4,5,6]`**
+
 ```
 lists:  a = [1, 4, 5]   b = [1, 3, 4]   c = [2, 6]
 the heap holds one head per list; "1a" means "the 1 from list a"
@@ -4272,6 +4500,20 @@ Words: ["app", "apple", "apex", "bat", "bad"]
      e*
 ```
 
+**Dry run — `insert("apple")`, then `search("apple")` → `true`, `search("app")` → `false`, `startsWith("app")` → `true`**
+*We track:* the letters walked from the root, the node where the walk stops, and its `isEnd` flag.
+
+```
+call                walk from root   stops on   isEnd?        returns
+insert("apple")     a p p l e        e          set to true   -       (5 new nodes)
+search("apple")     a p p l e        e          true          true
+search("app")       a p p            2nd p      false         false   (only a corridor)
+startsWith("app")   a p p            2nd p      not checked   true    (find() != null)
+insert("app")       a p p            2nd p      set to true   -       (no new nodes)
+search("app")       a p p            2nd p      true          true
+startsWith("b")     no 'b' child     -          -             false   (find() returns null)
+```
+
 **Cost.** Insert and search both O(m) where m is the word length. Space O(total characters × 26) in the array form — the trade you are making for instant prefix work.
 
 > **Trap:** `search("app")` returning true merely because the path exists. The `isEnd` check is the entire difference between a stored word and a passing corridor.
@@ -4371,6 +4613,31 @@ at each cell: does the current trie node have a child for this letter?
    yes → descend the trie, mark the cell visited, recurse in 4 directions
 node.isEnd → the path spelled so far is a real word → collect it
 on the way out → restore the cell's letter (backtrack)
+```
+
+**Problem:** Given a grid of letters and a list of words, return every word that can be spelled by a path of neighbouring cells (up, down, left, right), using each cell at most once per word.
+
+**Example:**
+```
+Input:  board = o a a n      words = [oath, pea, eat, rain]
+                e t a e
+                i h k r
+                i f l v
+Output: [oath, eat]
+```
+
+**Walk-through:** one DFS from every cell, walking the grid and the trie together. Cells are `(row, col)`.
+```
+trie built from the words:   o-a-t-h*   p-e-a*   e-a-t*   r-a-i-n*     (* = isEnd)
+
+start cell   path walked                       trie check                   result
+(0,0) o      o -> a(0,1) -> t(1,1) -> h(2,1)   h is isEnd                   found "oath"
+(1,0) e      e, then o / t / i next to it      no "eo", "et" or "ei"        pruned
+(1,3) e      e -> a(1,2) -> t(1,1)             t is isEnd                   found "eat"
+(2,3) r      r, then e / k / v next to it      no "re", "rk" or "rv"        pruned
+any a, n, t, i, h, k, f, l, v cell             root has no child for it     pruned at once
+no cell holds p                                "pea" never starts
+found = {oath, eat} -> [oath, eat]
 ```
 
 ```java

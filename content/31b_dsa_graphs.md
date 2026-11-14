@@ -1215,6 +1215,18 @@ n=4, edges=[[0,1],[2,3],[3,2]] -> true
 n=1, edges=[] -> false
 ```
 
+**Walk-through:** the triangle from the undirected dry run above (`n = 3`, edges `[1,2], [1,3], [2,3]`, answer `true`), tracking the code's `parent` and `rank` arrays. There are `n + 1 = 4` slots, so slot 0 goes unused.
+```
+call          leaders   parent[0..3]   rank[0..3]
+start                   0  1  2  3     0  0  0  0
+union(1,2)    1, 2      0  1  1  3     0  1  0  0    ranks tie: hang 2 under 1 -> true
+union(1,3)    1, 3      0  1  1  1     0  1  0  0    rank 1 > 0: hang 3 under 1 -> true
+union(2,3)    1, 1      0  1  1  1     0  1  0  0    same leader -> false
+                                                     ^ so hasCycleUndirected returns true
+```
+
+**Approach:** What changed from the directed version: no DFS and no colours. Every edge is one `union` call, and a `union` that returns `false` (both ends already share a leader) is the edge that closes a loop.
+
 **Java — undirected graph, Union-Find:**
 
 ```java

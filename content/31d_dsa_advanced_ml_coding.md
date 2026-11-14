@@ -97,6 +97,14 @@ All three are the same three steps. **Only the rule about what you may pick next
 | **Permutations** | every ordering of everything | a `used[]` flag — anything not yet taken | only the **leaves** |
 | **Combinations** | every group of exactly `k` numbers from `1…n` | pass a `start` index — only bigger numbers | only when the group has `k` numbers |
 
+**Problem:** Given an array `nums` of different integers, return all of its subsets (2^n of them, from `[]` up to `nums` itself), each exactly once, in any order.
+
+**Example:**
+```
+Input:  nums = [1, 2]
+Output: [[], [1], [1, 2], [2]]
+```
+
 **Subsets — `nums = [1, 2]`** → 4 subsets. Each call first records the list it was handed, then tries adding each number to the **right** of the last one added:
 
 ```
@@ -107,6 +115,8 @@ All three are the same three steps. **Only the rule about what you may pick next
 ```
 
 *Every node is recorded, not just the leaves — 4 nodes, 4 subsets (2ⁿ, where n = 2 is the number of elements). Because you only ever add numbers to the right, `[2, 1]` can never appear as a second copy of `[1, 2]`.*
+
+**Approach:** Choose / explore / un-choose backtracking with a start index. The rule that makes it subsets: `curr` is copied into the result on every call, not only when it is full, and each recursive call starts at `i + 1`, so numbers are only ever added from the right.
 
 ```java
 import java.util.*;
@@ -149,6 +159,14 @@ public class Subsets {
 
 **Practice:** [Subsets →](#dsa-problem-subsets)
 
+**Problem:** Given an array `nums` of different integers, return every ordering of all of its numbers (n! of them), in any order.
+
+**Example:**
+```
+Input:  nums = [1, 2]
+Output: [[1, 2], [2, 1]]
+```
+
 **Permutations — `nums = [1, 2]`** → 2 orderings. Every element must appear, so at each level you try everything **not yet used** (`used` lists the numbers already in the current list):
 
 ```
@@ -158,6 +176,8 @@ public class Subsets {
 └─ add 2 → [2]            used: 2
      └─ add 1 → [2, 1]    used: 1, 2  → full length, record
 ```
+
+**Approach:** Choose / explore / un-choose backtracking with no start index: every level loops over the whole array. The rule that changes is the `used[]` flag — skip any index already in `curr`, record only when `curr` holds all n numbers, and on the way back undo both `curr` and `used[i]`.
 
 ```java
 import java.util.*;
@@ -209,6 +229,14 @@ public class Permutations {
 
 **Practice:** [Permutations →](#dsa-problem-permutations)
 
+**Problem:** Given `n` and `k`, return every group of `k` different numbers chosen from `1, 2, ..., n`, each group once, in any order.
+
+**Example:**
+```
+Input:  n = 3, k = 2
+Output: [[1, 2], [1, 3], [2, 3]]
+```
+
 **Combinations — choose `k = 2` numbers from `1…n` with `n = 3`** → 3 groups. Passing a `start` index means the next number must be bigger than the last one, so each group is generated in exactly one order:
 
 ```
@@ -223,6 +251,8 @@ public class Permutations {
 ```
 
 *Result: `[1,2] [1,3] [2,3]` — `[2,1]` can never be produced, which is exactly what "combination" means.*
+
+**Approach:** Choose / explore / un-choose backtracking over the numbers `1..n`. The rule that changes: the loop runs from `start` and recurses with `i + 1`, so each group is built in increasing order and recorded only once it holds `k` numbers — and the loop bound `n - (k - curr.size()) + 1` stops early when too few numbers are left.
 
 ```java
 import java.util.*;
@@ -720,6 +750,14 @@ public class JumpGame {
 [2, 0, 0] -> true
 ```
 
+**Problem:** Same array `nums` as Jump Game, but return the fewest jumps from index 0 to the last index; the input guarantees the last index can be reached.
+
+**Example:**
+```
+Input:  nums = [2, 3, 1, 1, 4]
+Output: 2          0 -> 1 -> 4
+```
+
 **Jump Game II — the fewest jumps.** Same input, but now return the **fewest** jumps needed to reach the last index (the input guarantees it is reachable). `[2,3,1,1,4]` → `2` (0 → 1 → 4). The code keeps two numbers: `currEnd` = the farthest index reachable with the jumps used so far, and `farthest` = the farthest index reachable with **one more** jump. When the scan reaches `currEnd`, another jump is unavoidable.
 
 ```
@@ -727,6 +765,8 @@ index 0: farthest = 0 + 2 = 2;  reached currEnd (0) → jump 1, currEnd = 2
 index 1: farthest = 1 + 3 = 4
 index 2: farthest stays 4;      reached currEnd (2) → jump 2, currEnd = 4 = last index
 ```
+
+**Approach:** Greedy BFS by levels: the indices reachable with `jumps` jumps form one block `0..currEnd`, and one more jump reaches up to `farthest`, the largest `i + nums[i]` in that block. The rule: spend a jump only when the scan reaches `currEnd`, then set `currEnd = farthest` — each jump moves exactly one level, so the count is the fewest possible.
 
 **Java — fewest jumps:**
 
@@ -1046,6 +1086,14 @@ n = 8 -> [0, 1, 1, 2, 1, 2, 2, 3, 1]
 
 ### Bitmasks — an integer as a set
 
+**Problem:** The Subsets problem again — given `nums` with all values different, return all 2^n subsets — but built with a plain loop over bitmasks instead of recursion.
+
+**Example:**
+```
+Input:  nums = [1, 2]
+Output: [[], [1], [2], [1, 2]]
+```
+
 **Key idea.** With `n ≤ 20` or so, an integer's bits can represent *which elements are chosen*. Counting from `0` to `2ⁿ − 1` then enumerates **every possible subset**, with no recursion at all — bit `i` of the mask means "element `i` is in".
 
 ```
@@ -1056,6 +1104,8 @@ mask = 01  →  bit 0 set         →  [1]
 mask = 10  →  bit 1 set         →  [2]
 mask = 11  →  both bits set     →  [1, 2]
 ```
+
+**Approach:** Bitmask enumeration instead of backtracking: loop `mask` from `0` to `2^n - 1` and build one subset per mask. The rule that changes: `nums[i]` goes in exactly when bit `i` is set (`(mask & (1 << i)) != 0`), so there is no recursion and nothing to undo.
 
 ```java
 import java.util.*;
@@ -1534,6 +1584,25 @@ mulMod(1000000000, 1000000000) -> 49
 
 **The practice problem is a little different.** LeetCode's *Pow(x, n)* has a real-number base `x`, **no** modulus, and an exponent `n` that may be **negative** (`x^-n = (1/x)^n`). The loop above returns 1 for a negative exponent, so flip the base first:
 
+**Example:**
+```
+Input:  x = 2.0, n = -2
+Output: 0.25          2^-2 = 1 / 2^2 = 1/4
+```
+
+**Walk-through:** flip first, then the same square-and-multiply loop as `power` above, with no `% mod`.
+```
+n = -2 < 0   ->   x = 1 / 2.0 = 0.5,   e = 2
+
+e left (binary)   last bit     result               x after squaring
+2  (10)           0 -> skip    1.0                  0.5 * 0.5   = 0.25
+1  (1)            1 -> * x     1.0 * 0.25 = 0.25    0.25 * 0.25 = 0.0625
+0                 stop         0.25
+                               ^ answer
+```
+
+**Approach:** Fast power by squaring, as above, minus the `% mod`. The only new step makes the exponent positive first, and it does so in a `long` `e`, because `-Integer.MIN_VALUE` (2147483648) does not fit in an `int`.
+
 **Java — Pow(x, n), where n may be negative:**
 
 ```java
@@ -1685,6 +1754,8 @@ Array: [2, 4, 5, 1, 8, 3]   (0-indexed, length 6)
 
 **Why it works:** the range [1, 3] is covered exactly by the whole nodes #9, #5 and #12, which don't overlap — so each number is counted once.
 
+**Problem:** Build the tree from `nums` (positions counted from 0), then answer any mix of `update(i, val)`, which **sets** `nums[i] = val`, and `query(l, r)`, which returns the sum of `nums[l..r]` (both ends included) — each in O(log n).
+
 ```java
 import java.util.*;
 
@@ -1824,6 +1895,8 @@ Then add 5 at position 2 (changes slots 2 and 4) and −2 at position 3 (slots 3
 | 2 (`010`) | positions 1..2 → 8 | **6** | 2 − 2 = 0 — stop |
 
 **Why it works:** the blocks `[3]` and `[1..2]` don't overlap and together cover exactly positions 1 to 3.
+
+**Problem:** Over positions `1..n` (counted from 1), support `update(i, delta)`, which **adds** `delta` to position `i`, and `query(i)`, which returns the sum of positions `1..i` — each in O(log n). A range sum is then `query(l, r) = query(r) - query(l - 1)`.
 
 ```java
 import java.util.*;
@@ -1976,6 +2049,27 @@ And that gives the negative-cycle test for free: run **one more** round. If anyt
 
 ### Java Template
 
+**Problem:** Given `n` nodes, directed edges `{u, v, w}` whose weight `w` may be negative, and a source `src`, return `dist[]`: the cheapest cost from `src` to every node (`Integer.MAX_VALUE`, printed `INF`, if unreachable). If a negative cycle can be reached from `src`, there is no answer, and the code throws.
+
+**Example:**
+```
+Input:  n = 3, edges = [[0, 1, 1], [1, 2, -1], [2, 1, -1]], src = 0
+Output: Negative cycle detected      (1 -> 2 -> 1 costs -1 + -1 = -2 per lap)
+```
+
+**Walk-through:** the dry run above already covers the first test; this input shows the extra pass at work. Edges are checked in the order given, for `n - 1 = 2` rounds.
+```
+              dist[0]  dist[1]  dist[2]   what changed
+start            0       INF      INF
+round 1          0       -1       0       0->1 sets 1, 1->2 sets 0, 2->1 lowers 1 to -1
+round 2          0       -3       -2      1->2 lowers to -2, 2->1 lowers to -3
+extra pass                                0->1: 0 + 1 = 1, not < -3
+                                          1->2: -3 + -1 = -4 < -2 -> still improving
+                                          ^ negative cycle -> throw
+```
+
+**Approach:** Relax every edge `n - 1` times, skipping edges that start at an unreached node and stopping early once a round changes nothing. `n - 1` rounds is enough because a shortest path uses at most `n - 1` edges, so if one extra pass can still lower a distance, a negative cycle must exist.
+
 ```java
 import java.util.*;
 
@@ -2110,6 +2204,30 @@ Before: direct edges  After k = 0: node 0 may be a stopover
 **Why it works:** every entry now holds the best route that uses no stopover or node 0; rounds k = 1, 2, 3 repeat the same check with one more allowed stopover each.
 
 ### Java Template
+
+**Problem:** Given a `V x V` matrix `graph` of directed edge weights (`INF` = `Integer.MAX_VALUE / 2` = no edge), return the matrix of cheapest costs between every pair of nodes, or throw if there is a negative cycle.
+
+**Example:**
+```
+Input:  graph = [[0, 3, INF, 7], [8, 0, 2, INF], [5, INF, 0, 1], [2, INF, INF, 0]]
+Output: [[0, 3, 5, 6], [5, 0, 2, 3], [3, 6, 0, 1], [2, 5, 7, 0]]
+```
+
+**Walk-through:** all four rounds. Each entry `i->j = a + b` is a `dist[i][j]` that got cheaper by stopping at `k` (`a = dist[i][k]`, `b = dist[k][j]`).
+```
+k = 0   as in the dry run above:  1->3 = 15,  2->1 = 8,  3->1 = 5
+k = 1   0->2 = 3 + 2 = 5 (was INF)   3->2 = 5 + 2 = 7 (was INF)
+k = 2   0->3 = 5 + 1 = 6 (was 7)     1->0 = 2 + 5 = 7 (was 8)     1->3 = 2 + 1 = 3 (was 15)
+k = 3   1->0 = 3 + 2 = 5 (was 7)     2->0 = 1 + 2 = 3 (was 5)     2->1 = 1 + 5 = 6 (was 8)
+
+dist       0  1  2  3
+     0  [  0, 3, 5, 6 ]
+     1  [  5, 0, 2, 3 ]
+     2  [  3, 6, 0, 1 ]
+     3  [  2, 5, 7, 0 ]    no dist[i][i] < 0 -> no negative cycle, return dist
+```
+
+**Approach:** Dynamic programming over which nodes may be used as stopovers: for each `k` (outermost loop), try every pair `(i, j)` and keep the cheaper of `dist[i][j]` and `dist[i][k] + dist[k][j]`. The `< INF` check skips pairs with no route through `k`, and a negative `dist[i][i]` at the end means a negative cycle.
 
 ```java
 import java.util.*;
