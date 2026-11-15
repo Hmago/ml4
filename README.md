@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~409 hours of content · 415+ DSA problems │
+  │  50 chapters · ~413 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -140,7 +140,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | Ch | Topic | Google | File | Time | Difficulty |
 |----|-------|:------:|------|------|------------|
-| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~9.25 hrs (~2.75 hrs fast path) | Beginner-Intermediate |
+| 38 | Java Refresher — Core & DSA Toolkit | ★★★ | [38_java_refresher.md](content/38_java_refresher.md) | ~8.25 hrs (~1.75 hrs fast path) | Beginner-Intermediate |
 | 38b | Modern Java — Language, Concurrency & Ecosystem | ★★ | [38b_java_modern.md](content/38b_java_modern.md) | ~8.25 hrs (~2.25 hrs fast path) | Intermediate |
 | 39 | Python Refresher — Core & FastAPI | ★★★ | [39_python_refresher.md](content/39_python_refresher.md) | ~6 hrs (~1.75 hrs fast path) | Beginner-Intermediate |
 | 31 | DSA: Foundations & Search (Java) | ★★★ | [31_dsa_foundations.md](content/31_dsa_foundations.md) | ~7.25 hrs | Intermediate |
@@ -148,7 +148,7 @@ assumptions, not official company interview frequencies or measured production a
 | 31c | Dynamic Programming (Java) | ★★★ | [31c_dynamic_programming.md](content/31c_dynamic_programming.md) | ~6.5 hrs | Intermediate-Advanced |
 | 31d | DSA: Advanced Patterns & ML Coding (Java) | ★★★ | [31d_dsa_advanced_ml_coding.md](content/31d_dsa_advanced_ml_coding.md) | ~4.75 hrs | Intermediate-Advanced |
 | -- | DSA Practice (415+ problems, in-browser Java) | ★★★ | Dashboard → 💻 DSA Practice | self-paced | All Levels |
-| | **Languages & Coding Total** | | | **~44.5 hrs + practice** | |
+| | **Languages & Coding Total** | | | **~43.5 hrs + practice** | |
 
 ### Interview Preparation
 
@@ -165,7 +165,7 @@ assumptions, not official company interview frequencies or measured production a
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~409 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~404.5 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.

@@ -264,19 +264,26 @@ function _highlightOneBlock(codeEl) {
   var cls = codeEl.className.match(/language-(\w+)/);
   var lang = cls ? cls[1] : null;
   if (lang === 'chart' || lang === 'mermaid') return;
-  // If the marked inline `highlight` already produced colored output we'd
-  // hit the `hljs` class check above; reaching here means it returned null
-  // (unknown lang) — so this is the auto-detect branch.
+  // marked 12 no longer calls the `highlight` option passed to
+  // marked.setOptions above, so every block — labelled or not — is
+  // highlighted here.
   var code = codeEl.textContent;
-  // Skip ASCII-art / box-drawing diagrams — hljs would mangle them.
-  var dashHeavy = (code.match(/[-─═|│┌┐└┘├┤]/g) || []).length > code.length * 0.08;
-  if (_asciiIndicators.test(code) || dashHeavy) return;
-  // Very long blocks are rare in practice but extremely expensive to
-  // highlightAuto; cap to protect against the worst cases.
-  if (code.length > 20000) return;
+  // A fence with a registered language is highlighted as that language. The
+  // ASCII-art and size guards below only protect *unlabelled* blocks from
+  // auto-detection — Java comments like `// → ✓` or `// ── Sort ──` banners
+  // must not make a ```java block render as plain text.
+  var known = !!(lang && hljs.getLanguage(lang));
+  if (!known) {
+    // Skip ASCII-art / box-drawing diagrams — hljs would mangle them.
+    var dashHeavy = (code.match(/[-─═|│┌┐└┘├┤]/g) || []).length > code.length * 0.08;
+    if (_asciiIndicators.test(code) || dashHeavy) return;
+    // Very long blocks are rare in practice but extremely expensive to
+    // highlightAuto; cap to protect against the worst cases.
+    if (code.length > 20000) return;
+  }
   var html;
   try {
-    if (lang && hljs.getLanguage(lang)) {
+    if (known) {
       html = hljs.highlight(code, { language: lang }).value;
     } else {
       var result = hljs.highlightAuto(code);
@@ -580,7 +587,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/28_semantic_search.md': 255,
   'content/29_gpus_tpus_infrastructure.md': 480,
   'content/30_google_ml_ecosystem.md': 455,
-  'content/38_java_refresher.md': 550,
+  'content/38_java_refresher.md': 495,
   'content/38b_java_modern.md': 495,
   'content/39_python_refresher.md': 360,
   'content/31_dsa_foundations.md': 710,

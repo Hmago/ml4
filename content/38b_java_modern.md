@@ -657,7 +657,7 @@ Arrays.equals(...) = true
 <summary><strong>Read as text</strong> — DTOs, keys, multiple returns, local records, and when not to use one</summary>
 
 - **DTOs and API payloads.** Request and response bodies are exactly "a fixed set of values." This is the single most common use.
-- **Map and set keys.** You get a correct `equals`/`hashCode` pair for free — which quietly removes one of the top sources of "the value I just put in isn't there" bugs (the hand-written version of that bug is in [Ch 38 §38.7](#content/38_java_refresher)). A `record Cell(int row, int col)` as a `HashMap` key or in a `visited` set is a genuinely useful trick even in algorithm work.
+- **Map and set keys.** You get a correct `equals`/`hashCode` pair for free — which quietly removes one of the top sources of "the value I just put in isn't there" bugs (the hand-written version of that bug is in [Ch 38 §38.5](#content/38_java_refresher)). A `record Cell(int row, int col)` as a `HashMap` key or in a `visited` set is a genuinely useful trick even in algorithm work.
 - **Multiple return values.** No more out-parameters, `int[]` of length two, or a generic `Pair` class:
 
 ```java
@@ -1455,7 +1455,7 @@ merged   = {eng=ada|linus|grace, sales=alan|edsger}
 <details>
 <summary><strong>Read as text</strong> — continued: checking the numbers by hand and flatMap</summary>
 
-Check the numbers by hand: eng is 180 + 150 + 200 = 530, sales is 120 + 130 = 250, and three people earn at least 150. `partitioningBy` always returns both keys, `false` and `true`, even if one side is empty. The comparator chain is covered in [Ch 38 §38.5](#content/38_java_refresher).
+Check the numbers by hand: eng is 180 + 150 + 200 = 530, sales is 120 + 130 = 250, and three people earn at least 150. `partitioningBy` always returns both keys, `false` and `true`, even if one side is empty. The comparator chain is covered in [Ch 38 §38.10](#content/38_java_refresher).
 
 `flatMap` is the one that takes a moment: it maps each element to a *stream* and concatenates the results, flattening exactly one level. `List<List<Integer>>` becomes `List<Integer>`:
 

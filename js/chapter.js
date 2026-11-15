@@ -2531,23 +2531,77 @@ except:
   }
 }
 
+// Which runner a code block gets: 'java', 'python', or null (no Run button).
+// The fence's declared language wins; the text heuristic is only for unlabelled
+// fences, and never claims code that looks like Java.
+function codeRunLanguage(codeEl) {
+  const cls = Array.from(codeEl.classList).find(c => c.startsWith('language-'));
+  const lang = cls ? cls.slice('language-'.length).toLowerCase() : '';
+  const text = codeEl.textContent;
+  const hasJavaMain = /\bstatic\s+void\s+main\s*\(/.test(text);
+  // Java snippets without main() cannot compile on their own, so only full programs get a button.
+  if (lang === 'java') return hasJavaMain ? 'java' : null;
+  if (lang === 'python' || lang === 'py') return 'python';
+  if (lang) return null;
+  if (hasJavaMain || /\bSystem\.out\.|\bpublic\s+class\s/.test(text)) return null;
+  return /^\s*(import |from |def |class |print\(|#)/m.test(text) ? 'python' : null;
+}
+
+// The runners save the source under a fixed file name, so a top-level `public`
+// type would have to match it. Dropping `public` there is harmless (same as the
+// DSA practice page does).
+function prepareJavaForRun(code) {
+  return code.replace(
+    /^public\s+((?:(?:final|abstract|sealed|non-sealed|strictfp)\s+)*(?:class|record|interface|enum)\s)/gm,
+    '$1');
+}
+
+async function runJavaCode(code, outputEl) {
+  const esc = s => String(s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+  const status = msg => {
+    outputEl.innerHTML = `<div class="py-loading"><div class="spinner"></div>${esc(msg)}</div>`;
+  };
+  if (typeof dsaExecuteJava !== 'function') {
+    outputEl.innerHTML = '<span class="py-err">The Java runner is not available on this page.</span>';
+    return;
+  }
+  status('Compiling and running Java...');
+  try {
+    const data = await dsaExecuteJava(prepareJavaForRun(code), status);
+    const note = (data.usedFallback || data.localRun)
+      ? `<span class="py-info">(ran on ${esc(data.provider)})</span>\n` : '';
+    let html;
+    if (data.compileError) {
+      html = `<span class="py-err">Compilation error:\n${esc(data.compileError)}</span>`;
+    } else if (data.runtimeError) {
+      html = esc(data.output || '') + `<span class="py-err">${esc(data.runtimeError)}</span>`;
+    } else if (data.killedBy) {
+      html = esc(data.output || '') + `<span class="py-err">Process stopped (${esc(data.killedBy)})</span>`;
+    } else {
+      html = data.output ? esc(data.output)
+        : '<span class="py-info">✓ Code executed successfully (no output)</span>';
+    }
+    outputEl.innerHTML = note + html;
+  } catch (err) {
+    outputEl.innerHTML = `<span class="py-err">Could not run Java: ${esc(err.message || err)}\n` +
+      'The online Java sandboxes may be down or you may be offline. Try again in a minute.</span>';
+  }
+}
+
 function addRunButtons(contentEl) {
   contentEl.querySelectorAll('.code-wrapper').forEach(wrapper => {
     const pre = wrapper.querySelector('pre');
     const codeEl = pre?.querySelector('code');
     if (!codeEl) return;
 
-    // Only add to Python code blocks
-    const isPython = codeEl.classList.contains('language-python') ||
-                     codeEl.classList.contains('language-py') ||
-                     codeEl.textContent.match(/^\s*(import |from |def |class |print\(|#)/m);
-
-    if (!isPython) return;
+    const runLang = codeRunLanguage(codeEl);
+    if (!runLang) return;
     if (wrapper.querySelector('.run-btn')) return; // already has one
 
     const btn = document.createElement('button');
     btn.className = 'run-btn';
     btn.textContent = '▶ Run';
+    btn.title = runLang === 'java' ? 'Compile and run this Java program' : 'Run this Python code';
     btn.onclick = async () => {
       btn.textContent = '⏳ Running...';
       btn.classList.add('running');
@@ -2560,7 +2614,8 @@ function addRunButtons(contentEl) {
         wrapper.after(outputEl);
       }
 
-      await runPythonCode(codeEl.textContent, outputEl);
+      if (runLang === 'java') await runJavaCode(codeEl.textContent, outputEl);
+      else await runPythonCode(codeEl.textContent, outputEl);
 
       btn.textContent = '▶ Run';
       btn.classList.remove('running');

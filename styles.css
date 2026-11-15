@@ -1914,6 +1914,9 @@ mark.search-flash {
   z-index: 1;
 }
 
+/* Leave room for the language badge so it never covers the first code line */
+.content .code-wrapper:has(> .code-lang-badge) > pre { padding-top: 34px; }
+
 /* Chart.js containers */
 .chart-container {
   background: var(--bg-secondary);
