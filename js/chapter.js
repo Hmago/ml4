@@ -1756,6 +1756,8 @@ loadChapter = async function(index) {
         setupScrollSpy();
       }
     }
+    // Animated GIFs get play/pause, step and speed controls (in every mode).
+    setupGifPlayers(document.getElementById('content'));
     // Restore saved highlights
     loadHighlights(chapters[index].file);
     // Restore saved strikethroughs
@@ -1767,6 +1769,208 @@ loadChapter = async function(index) {
     if (typeof renderPins === 'function') setTimeout(() => renderPins(chapters[index].file), 120);
   }
 };
+
+// ─── Animated diagrams: GIF player ───
+// An <img> GIF can't be paused, stepped or slowed down, so chapter GIFs are
+// redrawn frame by frame on a canvas (WebCodecs ImageDecoder) above a small
+// control bar. It starts paused on frame 1 and is only fetched/decoded near the
+// viewport. Without ImageDecoder, and in print, the plain <img> stays.
+// Labels are CSS ::after content so the bar adds no text to TTS / find / highlights.
+const GIF_SPEEDS = [0.5, 1, 1.5, 2];
+const GIF_ICONS = {
+  prev: '<path d="M6 5h2v14H6zM20 5v14L9 12z"/>',
+  next: '<path d="M16 5h2v14h-2zM4 5v14l11-7z"/>',
+  play: '<path d="M7 5v14l12-7z"/>',
+  pause: '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>',
+};
+const _gifPlayers = new Set();
+
+function _gifIcon(name) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${GIF_ICONS[name]}</svg>`;
+}
+
+function setupGifPlayers(root) {
+  // Release the decoders of players whose chapter has been replaced.
+  _gifPlayers.forEach(p => { if (!p.el.isConnected) p.destroy(); });
+  if (typeof ImageDecoder !== 'function' || typeof IntersectionObserver !== 'function') return;
+  root.querySelectorAll('img[src$=".gif" i]').forEach(img => {
+    if (!img.closest('.gif-player')) createGifPlayer(img);
+  });
+}
+
+function createGifPlayer(img) {
+  const player = document.createElement('div');
+  player.className = 'gif-player';
+  player.tabIndex = 0;
+  player.setAttribute('role', 'group');
+  player.setAttribute('aria-label', 'Animation player: Space plays or pauses, arrow keys step one frame');
+  const canvas = document.createElement('canvas');
+  canvas.className = 'gif-player-canvas';
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', img.alt || 'Animation');
+  canvas.hidden = true;
+  const bar = document.createElement('div');
+  bar.className = 'gif-player-bar';
+  bar.innerHTML =
+    `<button type="button" class="gif-btn" data-act="prev" title="Previous frame (←)" aria-label="Previous frame">${_gifIcon('prev')}</button>` +
+    `<button type="button" class="gif-btn gif-btn-play" data-act="toggle" title="Play / pause (Space)" aria-label="Play">${_gifIcon('play')}</button>` +
+    `<button type="button" class="gif-btn" data-act="next" title="Next frame (→)" aria-label="Next frame">${_gifIcon('next')}</button>` +
+    '<input type="range" class="gif-seek" min="0" max="0" value="0" step="1" aria-label="Frame">' +
+    '<span class="gif-count" aria-hidden="true"></span>' +
+    '<span class="gif-speeds" role="group" aria-label="Playback speed">' +
+    GIF_SPEEDS.map(s => `<button type="button" class="gif-btn gif-speed" data-speed="${s}" aria-label="${s}× speed" aria-pressed="${s === 1}"></button>`).join('') +
+    '</span>';
+  img.replaceWith(player);
+  player.append(img, canvas, bar);
+
+  const ctx = canvas.getContext('2d');
+  const playBtn = bar.querySelector('[data-act="toggle"]');
+  const seek = bar.querySelector('.gif-seek');
+  const count = bar.querySelector('.gif-count');
+  const controls = bar.querySelectorAll('button, input');
+  controls.forEach(el => { el.disabled = true; });
+
+  let decoder = null, frames = 0, index = 0, duration = 100, speed = 1;
+  let wantPlay = false;   // paused on frame 1 until ▶ is pressed (saves CPU)
+  let visible = false, timer = 0, request = 0, observer = null, lazy = null;
+  const handle = { el: player, destroy };
+  _gifPlayers.add(handle);
+
+  function destroy() {
+    clearTimeout(timer);
+    if (lazy) lazy.disconnect();
+    if (observer) observer.disconnect();
+    try { if (decoder) decoder.close(); } catch (e) { /* already closed */ }
+    decoder = null;
+    frames = 0;
+    _gifPlayers.delete(handle);
+  }
+
+  function updatePlayButton() {
+    playBtn.innerHTML = _gifIcon(wantPlay ? 'pause' : 'play');
+    playBtn.setAttribute('aria-label', wantPlay ? 'Pause' : 'Play');
+  }
+
+  // Draw frame i; resolves false if a newer request overtook it.
+  async function show(i) {
+    if (!decoder) return false;
+    const ticket = ++request;
+    const { image } = await decoder.decode({ frameIndex: i });
+    try {
+      if (ticket !== request || !decoder) return false;
+      if (canvas.width !== image.displayWidth || canvas.height !== image.displayHeight) {
+        canvas.width = image.displayWidth;
+        canvas.height = image.displayHeight;
+        player.style.maxWidth = canvas.width + 'px';
+      }
+      ctx.drawImage(image, 0, 0);
+      index = i;
+      duration = image.duration ? image.duration / 1000 : 100;   // µs → ms
+      seek.value = i;
+      seek.setAttribute('aria-valuetext', `Frame ${i + 1} of ${frames}`);
+      count.dataset.label = `${i + 1} / ${frames}`;
+      return true;
+    } finally {
+      image.close();
+    }
+  }
+
+  // Advances only after ▶ and while on screen; pauses itself when scrolled away.
+  function schedule() {
+    clearTimeout(timer);
+    timer = 0;
+    if (!wantPlay || !visible || !frames) return;
+    timer = setTimeout(async () => {
+      timer = 0;
+      if (!player.isConnected) return destroy();
+      try {
+        if (await show((index + 1) % frames)) schedule();
+      } catch (e) { destroy(); }
+    }, Math.max(20, duration / speed));
+  }
+
+  function setPlaying(on) {
+    wantPlay = on;
+    updatePlayButton();
+    schedule();
+  }
+
+  function goTo(i) {
+    setPlaying(false);
+    show(i).catch(destroy);
+  }
+
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || !frames) return;
+    if (btn.dataset.act === 'toggle') setPlaying(!wantPlay);
+    else if (btn.dataset.act === 'prev') goTo((index - 1 + frames) % frames);
+    else if (btn.dataset.act === 'next') goTo((index + 1) % frames);
+    else if (btn.dataset.speed) {
+      speed = +btn.dataset.speed;
+      bar.querySelectorAll('.gif-speed').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+      schedule();
+    }
+  });
+  canvas.addEventListener('click', () => { if (frames) setPlaying(!wantPlay); });
+  seek.addEventListener('input', () => { if (frames) goTo(+seek.value); });
+  player.addEventListener('keydown', e => {
+    if (!frames || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === ' ' && !e.target.matches('button, input')) {
+      setPlaying(!wantPlay);
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target !== seek) {
+      goTo((index + (e.key === 'ArrowLeft' ? -1 : 1) + frames) % frames);
+    } else {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();   // keep ←/→ from also switching chapters
+  });
+
+  // Fetch and decode only when the player comes near the screen, so readers who
+  // never scroll this far pay nothing.
+  lazy = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    lazy.disconnect();
+    load();
+  }, { rootMargin: '400px 0px' });
+  lazy.observe(player);
+
+  function load() {
+    fetch(img.currentSrc || img.src)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(async data => {
+        if (!player.isConnected) return destroy();
+        decoder = new ImageDecoder({ data, type: 'image/gif' });
+        await decoder.tracks.ready;   // selectedTrack stays null until this resolves
+        await decoder.completed;
+        frames = decoder.tracks.selectedTrack ? decoder.tracks.selectedTrack.frameCount : 0;
+        if (frames < 2) throw new Error('Not an animated GIF');
+        seek.max = frames - 1;
+        await show(0);
+        img.hidden = true;
+        canvas.hidden = false;
+        controls.forEach(el => { el.disabled = false; });
+        updatePlayButton();
+        observer = new IntersectionObserver(entries => {
+          if (!player.isConnected) return destroy();
+          visible = entries[entries.length - 1].isIntersecting;
+          schedule();
+        }, { threshold: 0.4 });
+        observer.observe(player);
+      })
+      .catch(err => {
+        // Unsupported or unreadable: fall back to the browser's own GIF playback.
+        console.warn('GIF player unavailable, showing the plain GIF:', err);
+        destroy();
+        if (player.isConnected) player.replaceWith(img);
+        img.hidden = false;
+      });
+  }
+}
 
 // ─── Lazy diagram / chart libraries ───
 // mermaid (~2.7MB) and chart.js (~200KB) are loaded on demand — only the

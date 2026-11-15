@@ -687,6 +687,66 @@ body.sidebar-collapsed .content {
   border-radius: 8px;
 }
 
+/* GIF player: canvas + play/pause, step, seek and speed controls (js/chapter.js) */
+.gif-player {
+  display: block;
+  width: 100%;
+  margin: 1.5rem auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+.gif-player:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* #content-level specificity: must beat the `#content img` card styles further down */
+#content .gif-player img,
+.gif-player-canvas { display: block; width: 100%; height: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+.gif-player-canvas { cursor: pointer; }
+#content .gif-player [hidden] { display: none; }
+.gif-player-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.gif-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gif-btn svg { width: 16px; height: 16px; fill: currentColor; }
+.gif-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.gif-btn:disabled, .gif-seek:disabled { opacity: 0.5; cursor: default; }
+.gif-btn-play,
+.gif-btn-play:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #fff; }
+.gif-seek { flex: 1 1 120px; min-width: 80px; accent-color: var(--accent); cursor: pointer; }
+.gif-count { min-width: 58px; text-align: center; font-variant-numeric: tabular-nums; }
+.gif-count::after { content: attr(data-label); }
+.gif-speeds { display: inline-flex; gap: 4px; }
+.gif-speed { min-width: 44px; font-size: 12px; }
+.gif-speed::after { content: attr(data-speed) "×"; }
+.gif-speed[aria-pressed="true"] { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+@media print {
+  .gif-player { border: 0; }
+  .gif-player-canvas, .gif-player-bar { display: none !important; }
+  .gif-player img { display: block !important; }
+}
+
 /* KaTeX math formula styles */
 .content .katex-display {
   margin: 20px 0;
