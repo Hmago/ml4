@@ -1,168 +1,31 @@
 # Dynamic Programming (Java)
 
-> "DP = enhanced recursion. Learn six parent recursions cold; every other problem is one of them with one named change."
-
-**What this chapter covers:** Identification (choice + optimal), the recursion-to-memo-to-table pipeline, and the six parent problems — Linear/Pick-Skip, 0/1 Knapsack, Unbounded Knapsack, LCS, Grid DP, and MCM/Partition DP — each taught end-to-end and then derived into its full family of interview variants. Chapter 3 of the 4-part DSA sequence (31 / 31b / 31c / 31d); section numbers continue from chapters 31/31b.
+**DP = recursion that remembers.** Learn six parent recursions; the ~40 interview problems in this chapter are each one of them with one named change. You need plain recursion first ([chapter 31 §18.9](#content/31_dsa_foundations)). Sequence: [31](#content/31_dsa_foundations) → [31b](#content/31b_dsa_graphs) → **31c** → [31d](#content/31d_dsa_advanced_ml_coding).
 
 ---
-
-## Start Here
-
-### Pick a track — this is the longest chapter in the sequence
-
-| Track | Time | Read this | Good for |
-|-------|------|-----------|----------|
-| **Speed run** | ~70 min | All of §18.15 (identification + the pipeline + the six parents), then just the **parent** of each family — skip the children on the first pass | First pass; you will already recognise most problems |
-| **Mastery** | ~6 hr | Everything. The children are where the interview variants live, and each one is only a paragraph once you know its parent | Real preparation |
-| **Refresh** | ~15 min | §18.20 The DP Cheat Sheet, then the Recognition Triggers table in §18.15 | The night before |
-
-> **Do not read this chapter front to back on a first pass.** The six parents are the whole map; the ~40 children are variations you look up once you can name the parent. Learn to *identify*, then derive.
-
-### How to read this chapter
-
-Each family is taught the same way, and the two lines that matter most are always together:
-
-| Line | What it gives you |
-|------|-------------------|
-| **Recognition** | the phrasing that tells you it is this problem |
-| **Parent + Change** | which of the six it is, and the *one* thing that differs |
-| **State / Recurrence / Base** | the three sentences you say out loud before coding (see below) |
-| **Java** | the code, once you already know what it will say |
-| `> **Trap:**` | the mistake that silently produces a wrong table |
-
-Three words you will see on every page:
-
-- **State** — what one cell of the table means, in plain words. Example: "`dp[i]` = the most money you can rob from the first `i + 1` houses."
-- **Recurrence** — the rule that fills one cell from cells that are already filled.
-- **Base** — the cells you fill in by hand before the loops start (the smallest inputs).
-
-Each child sits in one collapsed block, in the same order as [chapter 31](#content/31_dsa_foundations) — **Problem · Example · Walk-through · Approach · Java · Complexity**, plus a **Trap** when there is one. The **Approach** gives the state, recurrence and base case; the **Walk-through** shows the table filling on the Example. Above each block, one visible line says how to **Recognise** the problem and the one **Change** from its parent, so a quick revision pass works with every block closed.
-
-Children show only the methods they add. Each family ends with **Run the whole family** — one runnable Java file with every method and its real **Output**. Each parent also has an animated table: press ▶ to play it, ⏭ to step one cell at a time, or change the speed.
-
-### The prerequisite that is genuinely required
-
-**You must be comfortable with plain recursion first.** DP is recursion that remembers; if writing the recursion is the hard part, that is the thing to practise, not tables. Recursion and the call-tree dry-run format are covered in [chapter 31 §18.9](#content/31_dsa_foundations). Backtracking — recursion's other child — is [chapter 31d §18.21](#content/31d_dsa_advanced_ml_coding).
-
----
-
-## Table of Contents
-
-| Part | Topic | Sections |
-|------|-------|----------|
-| 4 | Dynamic Programming | §18.15–18.20: Identification, the Six Parents, Knapsack, LCS, Grid, MCM, Cheat Sheet |
-
-**Sequence:** [31 — Foundations & Search](#content/31_dsa_foundations) → [31b — Graphs](#content/31b_dsa_graphs) → **31c (this chapter)** → [31d — Advanced Patterns & ML Coding](#content/31d_dsa_advanced_ml_coding)
-
----
-
-# PART 4: DYNAMIC PROGRAMMING
-
----
-## 18.15 DP Fundamentals — Identification, the Pipeline & the Six Parents
-
-Most people learn DP backwards: they memorise twenty tables, meet a twenty-first problem, and freeze. This part goes the other way, as Aditya Verma's classic DP series does — **DP = enhanced recursion** — and builds on six **parent problems**. Learn those six and roughly forty interview problems become *variations*: the same code with one operator, one index, or one input changed.
-
-### DP Is Not a Table. It Is Recursion That Remembers.
-
-```
-Plain recursion          →   solves the subproblem   →   throws the answer away
-Recursion + memory       →   solves the subproblem   →   keeps the answer  = DP
-```
-
-The table is that memory, flattened. **If you cannot write the recursion, you cannot write the DP.**
-
-### The 30-Second Identification Test
-
-A problem is DP when **both** of these are true:
-
-| Test | Question to ask | What it looks like in code |
-|------|-----------------|----------------------------|
-| **1. Choice** | At each step, do I have more than one option? | The recursive function makes **two or more calls** |
-| **2. Optimal / count** | Am I asked for min, max, longest, "how many ways", or "is it possible"? | The calls are combined with `max` / `min` / `+` / `\|\|` |
-
-```
-NOT DP — a single chain, nothing repeats          DP — branching, states repeat
-
-   f(n)                                                    f(n)
-    │                                                     /     \
-   f(n-1)                                            f(n-1)     f(n-2)
-    │                                                /     \     /    \
-   f(n-2)                                       f(n-2) f(n-3) f(n-3)  f(n-4)
-    │                                                         ^^^^^^
-   f(n-3)                                            f(n-3) computed TWICE
-                                                     → store it → DP
-```
-
-> **The memory hook:** *choice + optimal = DP.* If you can draw a branch, you can write a recurrence.
-
-### Step 1 of Everything: The Choice Diagram
-
-Before any code, draw the **choice diagram** — what you may do at one step. It is the single highest-leverage habit in DP.
-
-Example, **0/1 Knapsack** (§18.16): `n` items with weights and values, a bag that holds `W` kg, each item taken at most once. Let `f(n, W)` = the best value from the first `n` items with `W` kg of room left, and decide about the last of them, item `n` (weight `wt`, value `val`):
-
-```
-0/1 Knapsack — deciding about item n, with W kg of room left:
-
-                          item n
-                       /      \
-        it fits (wt <= W)       it does NOT fit
-            /        \                 |
-      take it       leave it       leave it
-         |              |              |
-val + f(n-1, W-wt)  f(n-1, W)      f(n-1, W)
-           \          /
-        max(take, leave)
-```
-
-Each branch becomes one recursive call; combine them with what the question asks for.
-
-### Base Condition = The Smallest Valid Input
-
-Don't guess base cases. Ask two questions:
-
-1. **What is the smallest valid input?** No items, zero capacity, an empty string. Its answer is usually `0`, `1`, `true`, or `""`.
-2. **What is an invalid input?** For a range `i..j`, `i > j` is empty — usually worth `0`. When minimising and an input cannot be solved, return a huge "impossible" value (`Integer.MAX_VALUE`, or `amount + 1` in coin change).
-
-```
-0/1 Knapsack  → n == 0 (no items)       → profit 0
-              → W == 0 (no capacity)    → profit 0
-LCS           → either string empty     → 0
-MCM (§18.18)  → i >= j (0 or 1 matrix)  → 0 (nothing to multiply)
-Coin change   → amount == 0             → 0 coins
-```
-
-Get these right and the table's first row and column write themselves: **the base condition becomes the initialisation.**
+## 18.15 DP Fundamentals — the Pipeline & the Six Parents
 
 ### The Four-Step Pipeline
 
-Solve every problem in this order; in an interview each step is a checkpoint you are graded on.
-
-A **state** is one distinct set of arguments to the recursive function — in knapsack, one `(n, W)` pair. The table has one cell per state, and filling one cell costs some **work per state** (one `max` in knapsack, a whole loop in MCM). From Step 2 on, each state is solved once, so time = states × work per state — O(n·W) for knapsack, O(n³) for MCM.
+Every problem in this chapter is solved in the same four steps; in an interview each one is a checkpoint.
 
 ```
         STEP 1              STEP 2                 STEP 3                 STEP 4
         RECURSION     →     MEMOISATION      →     TABULATION       →     SPACE-OPTIMISED
         "base + choice"     "recursion + 2 lines"  "delete the calls,     "keep only the
-                                                    loops fill the table"  rows you read"
+                            (top-down)             loops fill the table"  rows you read"
+                                                   (bottom-up)
 
  time   exponential         states x work each     states x work each     same as step 3
  space  call stack          table + call stack     table, no stack        one dimension fewer
 ```
 
-> **Memoisation = recursion + 2 lines.** Keep a memo table `t` with one cell per state, filled with `-1` = "not solved yet". Put `if (t[n][W] != -1) return t[n][W];` at the top and `return t[n][W] = ...;` at the bottom.
+1. **Recursion.** The base case is the smallest valid input (no items, an empty string, amount 0). Then make one recursive call per **choice** you have at a step (take or skip, match or skip) and combine them the way the question asks (`max`, `min`, `+`, `||`). It is a DP problem when there is a choice, the question asks for a best value or a count, and the same calls repeat.
+2. **Memoisation = recursion + 2 lines.** A memo table `t` has one cell per **state** (one distinct set of arguments), filled with `-1` = "not solved yet". Add `if (t[n][W] != -1) return t[n][W];` at the top and `return t[n][W] = ...;` at the bottom.
+3. **Tabulation.** Every call becomes a table lookup and loops fill the table; the four rules are in *Recursion → Table* below.
+4. **Space optimisation.** If a cell reads only the previous row (or the last two cells), keep only those.
 
-**The table's dimensions are the parameters that change.** In 0/1 knapsack `n` and `W` change while `wt[]` and `val[]` stay fixed, so the table is `[n+1][W+1]`. In LCS (two strings of lengths `m` and `n`) it is `[m+1][n+1]`. In Boolean Parenthesization (§18.18) `i`, `j` **and** `isTrue` change, so you need a third dimension.
-
-### A Terminology Landmine
-
-Some notes swap these two words; use the standard meanings:
-
-| Term | Meaning | Direction |
-|------|---------|-----------|
-| **Top-down** | Recursion + memo table (Step 2) | Starts at the answer, recurses down to base cases |
-| **Bottom-up** | Iterative tabulation (Step 3) | Starts at base cases, builds up to the answer |
+**Cost:** from Step 2 on each state is solved once, so time = states × work per state. **The table has one dimension per argument that changes:** 0/1 knapsack's `f(n, W)` (best value from the first `n` items with `W` kg of room) gives `[n+1][W+1]` and O(n·W) time; LCS of two strings gives `[m+1][n+1]`; Boolean Parenthesization's `i`, `j` **and** `isTrue` give three dimensions.
 
 ### Fibonacci — The Whole Pipeline on One Line of Recursion
 
@@ -290,28 +153,38 @@ n = 10 -> recursion 55, memo 55, table 55, two variables 55
 
 ### Recursion → Table: How a Call Becomes a Cell
 
-The animation's last frame, as a rule for every problem in this part:
+Step 3 is mechanical: four rules turn the recursion into loops. Here they are on 0/1 knapsack with three items, `wt = [1, 3, 4]`, `val = [1, 4, 5]`, and `W = 5` kg of room; `f(n, W)` = the best value from the first `n` items with `W` kg of room.
 
-| Rule | Fibonacci (1-D) | 0/1 Knapsack (2-D) |
-|------|-----------------|--------------------|
-| Each parameter that changes → a table index | `n` → `i` | `n` (first `n` items on offer) → row `i`; `W` (capacity left) → column `j` |
-| Base condition → initialisation | `if (n <= 1) return n;` → `dp[0] = 0; dp[1] = 1;` | `if (n == 0 \|\| W == 0) return 0;` → `dp[0][*] = 0` and `dp[*][0] = 0` |
-| Each recursive call → a lookup | `fib(n-1)` → `dp[i-1]`, `fib(n-2)` → `dp[i-2]` | `f(n-1, W)` → `dp[i-1][j]`, `f(n-1, W - wt[n-1])` → `dp[i-1][j - wt[i-1]]` |
-| `return f(…)` → `return dp[…]` | `return dp[n];` | `return dp[n][W];` |
+**Watch each rule turn a piece of the recursion into a piece of the table** (press ▶ to play, or ⏭ to step). Matching lines light up in both forms, and an arrow joins each recursive call to the cell it becomes.
 
-Items are numbered from 1 in `f(n, W)` but Java arrays start at 0, so item `n` lives at `wt[n-1]` and `val[n-1]`. Side by side:
+![Animated recursion-to-table conversion for 0/1 knapsack with wt = 1, 3, 4, val = 1, 4, 5 and W = 5: the arguments n and W become the 4 by 6 table dp, the base case becomes row 0 and column 0, a small call tree points f(3, 5) at dp[3][5] and its calls f(2, 5) and f(2, 1) at the cells above, the rows then fill top to bottom, and return f(n, W) becomes return dp[n][W] = 6.](diagrams/dsa31c_call_to_cell_anim.gif)
 
-```
-Recursive form                                Tabulated form
------------------------------------------     -------------------------------------
-if (wt[n-1] <= W)                             if (wt[i-1] <= j)
-  return max(val[n-1] + f(n-1, W-wt[n-1]),      dp[i][j] = max(val[i-1] + dp[i-1][j-wt[i-1]],
-             f(n-1, W));                                       dp[i-1][j]);
-else                                          else
-  return f(n-1, W);                             dp[i][j] = dp[i-1][j];
+**Rule 1 — each argument that changes becomes a table index.** `n` and `W` change from call to call; `wt` and `val` never do, so they are not dimensions.
+```java
+int f(int n, int W)                →   int[][] dp = new int[n + 1][W + 1];   // dp[i][j] holds f(i, j)
 ```
 
-Loop in the order the memo finished its states — smallest first — so every cell you read is already filled.
+**Rule 2 — the base case becomes the first row and column.**
+```java
+if (n == 0 || W == 0) return 0;    →   dp[0][j] = 0 and dp[i][0] = 0          // a new int[][] is already all 0
+```
+
+**Rule 3 — each recursive call becomes a cell you read.** Rename `n → i` and `W → j`. Item `i` sits at index `i - 1`, because arrays start at 0.
+```java
+f(n - 1, W)                        →   dp[i - 1][j]                           // leave item i
+f(n - 1, W - wt[n - 1])            →   dp[i - 1][j - wt[i - 1]]               // take item i
+```
+
+**Rule 4 — the order the calls finish becomes the loop order.** Both reads are in row `i - 1`, so filling the rows top to bottom (each left to right) means every cell you read is already filled. `return f(n, W)` becomes `return dp[n][W]`.
+```java
+for (int i = 1; i <= n; i++)
+    for (int j = 1; j <= W; j++)
+        dp[i][j] = wt[i - 1] <= j ? Math.max(val[i - 1] + dp[i - 1][j - wt[i - 1]], dp[i - 1][j])
+                                  : dp[i - 1][j];
+return dp[n][W];
+```
+
+On the example, `dp[3][5] = max(5 + dp[2][1], dp[2][5]) = max(5 + 1, 5) = 6`: take the 4 kg item and the 1 kg item. Fibonacci is the same four rules in one dimension: `fib(n)` → `dp[i]`, `n <= 1` → `dp[0] = 0, dp[1] = 1`, `fib(n-1) + fib(n-2)` → `dp[i-1] + dp[i-2]`, loop `i = 2..n`. Memoisation stores the same values, but only in the cells its calls actually reach: 6 of the 15 here.
 
 ### The Six Parents — Your Whole DP Map
 
@@ -543,7 +416,11 @@ Input:  nums = [2, 3, 2]
 Output: 3     (houses 0 and 2 are neighbours, so rob house 1 alone)
 ```
 
-**Walk-through:**
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Run A leaves out the last house, run B the first; green = rob, blue = skip.
+
+![Animated House Robber II: on [2, 3, 2] both runs give 3, so the answer is 3; on [2, 7, 9, 3, 1] run A gives 11 and run B 10, so the answer is 11, not 12.](diagrams/dsa31c_house_robber_ii_anim.gif)
+
+**Walk-through (the animation as text):**
 ```
 rob([2, 3])   without the last house    best so far: 2, 3   -> 3
 rob([3, 2])   without the first house   best so far: 3, 3   -> 3
@@ -634,7 +511,11 @@ Input:  s = "226"
 Output: 3     ("2,2,6" = BBF, "22,6" = VF, "2,26" = BZ)
 ```
 
-**Walk-through:** `prev2` = `dp[i-2]`, `prev1` = `dp[i-1]`; each step adds whichever is allowed.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = one digit (adds dp[i-1]), green = two digits (adds dp[i-2]), NO = not a letter.
+
+![Animated Decode Ways on "226": dp = 1, 1, 2, 3 with readings BB, V then BBF, VF, BZ; then "106", where "0" alone and "06" fail, gives 1 (JF).](diagrams/dsa31c_decode_ways_anim.gif)
+
+**Walk-through (the animation as text):** `prev2` = `dp[i-2]`, `prev1` = `dp[i-1]`; each step adds whichever is allowed.
 ```
 s = "226"      dp[0] = 1 (empty),  dp[1] = 1 ("2")
 
@@ -686,7 +567,11 @@ Input:  nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
 Output: 6     (the subarray [4, -1, 2, 1])
 ```
 
-**Walk-through:** `curr` = max(*restart* `nums[i]`, *extend* `curr + nums[i]`); `best` = the largest `curr` so far.
+**Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Green = extend (dp[i-1] + nums[i]), blue = restart (nums[i]), purple = best.
+
+![Animated Kadane as DP on [-2, 1, -3, 4, -1, 2, 1, -5, 4]: dp = -2, 1, -2, 4, 3, 5, 6, 1, 5, so best = 6 (the run 4, -1, 2, 1), not the last cell's 5.](diagrams/dsa31c_kadane_anim.gif)
+
+**Walk-through (the animation as text):** `curr` = max(*restart* `nums[i]`, *extend* `curr + nums[i]`); `best` = the largest `curr` so far.
 ```
 i         0   1   2   3   4   5   6   7   8
 nums[i]  -2   1  -3   4  -1   2   1  -5   4
@@ -737,7 +622,11 @@ Input:  nums = [10, 9, 2, 5, 3, 7, 101, 18]
 Output: 4     ([2, 3, 7, 18] or [2, 3, 7, 101])
 ```
 
-**Walk-through:** the O(n²) `dp`, then the fast version's `tails`.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). OK / NO chips test nums[j] < nums[i], green = the best dp[j] + 1; in tails, green = append, blue = overwrite.
+
+![Animated LIS on [10, 9, 2, 5, 3, 7, 101, 18]: dp = 1 1 1 2 2 3 4 4, best = 4; tails ends as 2, 3, 7, 18, also length 4.](diagrams/dsa31c_lis_anim.gif)
+
+**Walk-through (the animation as text):** the O(n²) `dp`, then the fast version's `tails`.
 ```
 nums     10    9    2    5    3    7  101   18
 dp[i]     1    1    1    2    2    3    4    4      largest dp = 4
@@ -807,7 +696,11 @@ Input:  s = "leetcode", wordDict = ["leet", "code"]
 Output: true  ("leet" + "code")
 ```
 
-**Walk-through:**
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). The navy line is the cut j, the outlined letters s[j..i); OK / NO = word or not, F = dp[j] false, skipped.
+
+![Animated Word Break on "leetcode": dp[4] = T via "leet", dp[8] = T via dp[4] + "code", every other cell after dp[0] is F, so true.](diagrams/dsa31c_word_break_anim.gif)
+
+**Walk-through (the animation as text):**
 ```
 i      0  1  2  3  4  5  6  7  8
 dp[i]  T  F  F  F  T  F  F  F  T
@@ -863,7 +756,11 @@ Input:  nums = [3, 2, 1, 0, 4]
 Output: false  (every path lands on index 3, whose jump length is 0)
 ```
 
-**Walk-through:** `reach` = the furthest index reachable from `0..i`.
+**Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). The green band is 0..reach; each index pushes it to i + nums[i]; red = stuck.
+
+![Animated Jump Game: on [2, 3, 1, 1, 4] reach grows 2, 4, 4, 4, 8, so true; on [3, 2, 1, 0, 4] reach stops at 3 and i = 4 > reach, so false.](diagrams/dsa31c_jump_game_anim.gif)
+
+**Walk-through (the animation as text):** `reach` = the furthest index reachable from `0..i`.
 ```
 nums = [2, 3, 1, 1, 4]             nums = [3, 2, 1, 0, 4]
 i   i + nums[i]   reach            i   i + nums[i]   reach
@@ -1342,7 +1239,11 @@ Input:  arr = [2, 3, 7, 8, 10], sum = 11
 Output: true   ({3, 8})
 ```
 
-**Walk-through:** the full `dp` table (`T` = some of the first `i` numbers add up to exactly `j`).
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip (cell above), green = take (row above, x columns left), red F = unreachable.
+
+![Subset Sum table for [2, 3, 7, 8, 10], sum 11, filled with take OR skip; dp[4][11] turns T via dp[3][3] (3 + 8), so true](diagrams/dsa31c_subset_sum_anim.gif)
+
+**Walk-through (the animation as text):** the full `dp` table (`T` = some of the first `i` numbers add up to exactly `j`).
 ```
             j ->  0  1  2  3  4  5  6  7  8  9 10 11
 i=0 (none)        T  F  F  F  F  F  F  F  F  F  F  F
@@ -1411,7 +1312,11 @@ Input:  arr = [1, 5, 11, 5]
 Output: true   ({1, 5, 5} and {11}, both sum to 11)
 ```
 
-**Walk-through:** the total is 1 + 5 + 11 + 5 = 22 (even), so look for one group summing to 11. The sums you can reach (up to 11) grow one number at a time — each line is one row of the Subset Sum table:
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, red F = unreachable.
+
+![Equal Sum Partition for [1, 5, 11, 5]: total 22 is even, so target 11 (an odd total returns false at once); the Subset Sum table fills to dp[4][11] = T, so true](diagrams/dsa31c_equal_partition_anim.gif)
+
+**Walk-through (the animation as text):** the total is 1 + 5 + 11 + 5 = 22 (even), so look for one group summing to 11. The sums you can reach (up to 11) grow one number at a time — each line is one row of the Subset Sum table:
 ```
 start      {0}
 after 1    {0, 1}
@@ -1473,7 +1378,11 @@ Input:  arr = [2, 3, 5, 6, 8, 10], sum = 10
 Output: 3      ({2, 8}, {2, 3, 5}, {10})
 ```
 
-**Walk-through:** the full `dp` table of counts; each cell = take + skip.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, the two added; red 0 = no way.
+
+![Count table for [2, 3, 5, 6, 8, 10], sum 10: only dp[0][0] = 1 preset, each cell adds take + skip, ending at dp[6][10] = 1 + 2 = 3, then the [0, 1] zeros trap](diagrams/dsa31c_count_subsets_anim.gif)
+
+**Walk-through (the animation as text):** the full `dp` table of counts; each cell = take + skip.
 ```
             j ->  0  1  2  3  4  5  6  7  8  9 10
 i=0 (none)        1  0  0  0  0  0  0  0  0  0  0
@@ -1535,7 +1444,11 @@ Input:  arr = [1, 6, 11, 5]
 Output: 1      ({1, 5, 6} = 12 vs {11} = 11)
 ```
 
-**Walk-through:** the last row of the Subset Sum table — `T` = some of the numbers add up to this sum, `F` = no selection does. Here `total` = 23, and a reachable sum `S1` gives the difference `|total − 2*S1|`.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, red F = unreachable; the strip below is |23 − 2·s1|.
+
+![Subset Sum table for [1, 6, 11, 5] up to total 23, then its last row scanned down from s1 = 11: last[11] is T, so the answer is 23 − 22 = 1](diagrams/dsa31c_min_subset_diff_anim.gif)
+
+**Walk-through (the animation as text):** the last row of the Subset Sum table — `T` = some of the numbers add up to this sum, `F` = no selection does. Here `total` = 23, and a reachable sum `S1` gives the difference `|total − 2*S1|`.
 ```
 sum         0  1  2  3  4  5  6  7  8  9 10 11 12 ...
 reachable?  T  T  F  F  F  T  T  T  F  F  F  T  T ...
@@ -1591,7 +1504,11 @@ Input:  arr = [1, 1, 2, 3], diff = 1
 Output: 3      (S1 must be (1 + 7) / 2 = 4: {1, 3} with either 1, or {1, 1, 2})
 ```
 
-**Walk-through:** total = 7, and (7 + 1) is even with |1| <= 7, so `countSubsets(arr, 4)` fills this table.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). After the algebra, yellow = cell being filled, blue = skip, green = take, added.
+
+![Count Subsets with diff 1 for [1, 1, 2, 3]: S1 − S2 = 1 and S1 + S2 = 7 give S1 = 4, then the count table fills to dp[4][4] = 2 + 1 = 3](diagrams/dsa31c_count_subsets_diff_anim.gif)
+
+**Walk-through (the animation as text):** total = 7, and (7 + 1) is even with |1| <= 7, so `countSubsets(arr, 4)` fills this table.
 ```
             j ->  0  1  2  3  4
 i=0 (none)        1  0  0  0  0
@@ -1652,7 +1569,11 @@ Output: 3      (these three sign choices work)
   +1 +1 +2 −3 = 1        S1 = {1,1,2}, S2 = {3}
 ```
 
-**Walk-through:** the call chain on the example; the table is the same one Child 5 filled.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = + numbers (S1), blue = − numbers (S2); yellow = the table cell being filled.
+
+![Target Sum for [1, 1, 2, 3], target 1: 3 of 16 sign choices work; + numbers form S1 = (1 + 7) / 2 = 4, and the count table ends at dp[4][4] = 3](diagrams/dsa31c_target_sum_anim.gif)
+
+**Walk-through (the animation as text):** the call chain on the example; the table is the same one Child 5 filled.
 ```
 findTargetSumWays([1, 1, 2, 3], 1)
 -> countSubsetsWithDiff: total = 7, (7 + 1) is even and |1| <= 7
@@ -1986,7 +1907,11 @@ Input:  price = [1, 5, 8, 9, 10, 17, 17, 20], n = 8
 Output: 22     (pieces of length 2 and 6: 5 + 17 — better than selling it whole for 20)
 ```
 
-**Walk-through:** `dp[len]` = best revenue for a rod of length `len`; each `len` tries every first piece `cut` and keeps the best.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a price plus a finished cell on the same row (lengths repeat); orange = the walk back.
+
+![Animated Rod Cutting dp row for n = 8: every first piece is tried, the row fills 0 1 5 8 10 13 17 18 22, and walking back gives 2 + 6.](diagrams/dsa31c_rod_cutting_anim.gif)
+
+**Walk-through (the animation as text):** `dp[len]` = best revenue for a rod of length `len`; each `len` tries every first piece `cut` and keeps the best.
 ```
 piece length   1   2   3   4   5   6   7   8
 price          1   5   8   9  10  17  17  20
@@ -2037,7 +1962,11 @@ Input:  amount = 5, coins = [1, 2, 3]
 Output: 5      (2+3, 1+1+3, 1+2+2, 1+1+1+2, 1+1+1+1+1)
 ```
 
-**Walk-through:** the one row `dp[]` after each coin; `j` runs forwards, so a coin can be reused.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` above (no new coin), green = `dp[j - coin]` on the same row (ends with it).
+
+![Animated Coin Change II table for amount 5, coins 1, 2, 3: the dp row after each coin ends 1 1 2 3 4 5, so 5 ways; swapped loops would count 13 orders.](diagrams/dsa31c_coin_change_ii_anim.gif)
+
+**Walk-through (the animation as text):** the one row `dp[]` after each coin; `j` runs forwards, so a coin can be reused.
 ```
               j ->  0  1  2  3  4  5
 start               1  0  0  0  0  0
@@ -2089,7 +2018,11 @@ Input:  coins = [1, 3, 4], amount = 6
 Output: 2      (3 + 3)
 ```
 
-**Walk-through:** `dp[a]` = the fewest coins that make amount `a` exactly. To fill an amount, try each coin as the last one: 1 + the fewest for what is left.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Red = ∞ (`amount + 1`); green = `dp[i - coin] + 1` on the same row, so coins repeat.
+
+![Animated Coin Change for coins 1, 3, 4, amount 6: cells start at 7 (infinity), end 0 1 2 1 1 2 2, answer 3 + 3; coins 2, amount 3 gives -1.](diagrams/dsa31c_coin_change_anim.gif)
+
+**Walk-through (the animation as text):** `dp[a]` = the fewest coins that make amount `a` exactly. To fill an amount, try each coin as the last one: 1 + the fewest for what is left.
 ```
 amount   try each coin as the last one (1 + fewest for the rest)        fewest
 0        - (base: no coins needed)                                      0
@@ -2142,7 +2075,11 @@ Input:  n = 12
 Output: 3      (4 + 4 + 4)
 ```
 
-**Walk-through:** `dp[i]` for every `i` up to 12, then how `dp[12]` is chosen.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = `dp[i - s*s] + 1` on the same row (squares repeat); red = still ∞; orange = the walk back.
+
+![Animated Perfect Squares dp row for n = 12, coins 1, 4, 9: answer 3 (4 + 4 + 4), while greedy 9 + 1 + 1 + 1 needs 4.](diagrams/dsa31c_perfect_squares_anim.gif)
+
+**Walk-through (the animation as text):** `dp[i]` for every `i` up to 12, then how `dp[12]` is chosen.
 ```
 i      0  1  2  3  4  5  6  7  8  9 10 11 12
 dp[i]  0  1  2  3  1  2  3  4  2  1  2  3  3
@@ -2187,7 +2124,11 @@ Input:  n = 7, lengths = [2, 3]
 Output: 3      (2 + 2 + 3)
 ```
 
-**Walk-through:** `dp[i]` for `i = 0..7` (`-1` = cannot be cut exactly); a piece only counts if its leftover is not `-1`.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Red = `-1`, impossible (such a leftover is skipped); green = `dp[i - len] + 1` on the same row.
+
+![Animated Maximum Ribbon Cut for n = 7, lengths 2, 3: the row ends 0 -1 1 1 2 2 3 3, 3 pieces (2 + 2 + 3); lengths 2, 4 give -1.](diagrams/dsa31c_ribbon_cut_anim.gif)
+
+**Walk-through (the animation as text):** `dp[i]` for `i = 0..7` (`-1` = cannot be cut exactly); a piece only counts if its leftover is not `-1`.
 ```
 i   len 2: dp[i-2]      len 3: dp[i-3]      dp[i]
 0   -                   -                    0   (base)
@@ -2609,7 +2550,11 @@ Input:  a = "abcdgh", b = "abedfhr"
 Output: 2      ("ab")
 ```
 
-**Walk-through:** rows = `a`, columns = `b`; a run only grows along a diagonal.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match extends the diagonal run, red = a reset to 0, orange = `best`, the answer.
+
+![Animated substring table for a = "abcdgh" and b = "abedfhr": a match adds 1 to the diagonal, a mismatch resets to 0; best reaches 2 at dp[2][2] ("ab") while the corner stays 0.](diagrams/dsa31c_lc_substring_anim.gif)
+
+**Walk-through (the animation as text):** rows = `a`, columns = `b`; a run only grows along a diagonal.
 
 ```
           ""  a  b  e  d  f  h  r
@@ -2668,7 +2613,11 @@ Input:  a = "acbcf", b = "abcdaf"
 Output: "abcf"
 ```
 
-**Walk-through:** the LCS table (rows = `a`, columns = `b`); `[ ]` marks the cells the walk visits.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Orange = the walk back: diagonal on a green match (take the letter), otherwise toward the bigger blue neighbour.
+
+![Animated Print the LCS for a = "acbcf" and b = "abcdaf": the table fills to dp[5][6] = 4, then the walk back from the corner collects f, c, b, a, reversed to "abcf".](diagrams/dsa31c_print_lcs_anim.gif)
+
+**Walk-through (the animation as text):** the LCS table (rows = `a`, columns = `b`); `[ ]` marks the cells the walk visits.
 
 ```
         ""   a   b   c   d   a   f
@@ -2736,7 +2685,11 @@ Input:  a = "AGGTAB", b = "GXTXAYB"
 Output: "AGGXTXAYB"      (length 6 + 7 - 4 = 9)
 ```
 
-**Walk-through:** the LCS table (rows = `a`, columns = `b`), walked back from the corner writing one letter per step; `[ ]` marks the walk.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Orange = the walk back, one letter per step: green = shared, written once; blue = in one string only.
+
+![Animated Shortest Common Supersequence for a = "AGGTAB" and b = "GXTXAYB": the LCS table gives 6 + 7 - 4 = 9 letters, and the walk back writes "BYAXTXGGA", reversed to "AGGXTXAYB".](diagrams/dsa31c_scs_anim.gif)
+
+**Walk-through (the animation as text):** the LCS table (rows = `a`, columns = `b`), walked back from the corner writing one letter per step; `[ ]` marks the walk.
 
 ```
         ""   G   X   T   X   A   Y   B
@@ -2807,7 +2760,11 @@ Input:  a = "heap", b = "pea"
 Output: deletions 2, insertions 1
 ```
 
-**Walk-through:** the LCS table (rows = `a`, columns = `b`); only its corner is needed.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match (1 + the diagonal), blue = the bigger of up and left; red letters are deleted, purple inserted.
+
+![Animated LCS table for a = "heap" and b = "pea": it fills to dp[4][3] = 2 ("ea"), so deletions = 4 - 2 = 2 (h, p) and insertions = 3 - 2 = 1 (p).](diagrams/dsa31c_min_ins_del_anim.gif)
+
+**Walk-through (the animation as text):** the LCS table (rows = `a`, columns = `b`); only its corner is needed.
 
 ```
         ""  p  e  a
@@ -2853,7 +2810,11 @@ Input:  s = "agbcba"
 Output: 5      ("abcba")
 ```
 
-**Walk-through:** `s = "agbcba"` down the side, `rev = "abcbga"` across the top.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Columns = reverse(s); green = a match, blue = the bigger of up and left, orange = the answer and walk back.
+
+![Animated LCS table for s = "agbcba" and rev = "abcbga": it fills to dp[6][6] = 5, and the walk back spells the palindrome "abcba".](diagrams/dsa31c_lps_anim.gif)
+
+**Walk-through (the animation as text):** `s = "agbcba"` down the side, `rev = "abcbga"` across the top.
 
 ```
         ""  a  b  c  b  g  a
@@ -2899,7 +2860,11 @@ Input:  s = "agbcba"
 Output: 1      (delete g, leaving the palindrome abcba)
 ```
 
-**Walk-through:**
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match (1 + diagonal), blue = max(up, left); orange = the walk back, red = the deleted letter.
+
+![Animated LCS table of "agbcba" against its reverse "abcbga": 36 cells fill row by row to LPS = 5, so 6 − 5 = 1; the walk back keeps "abcba" and deletes g.](diagrams/dsa31c_min_del_palindrome_anim.gif)
+
+**Walk-through (the animation as text):**
 
 ```
 s = "agbcba"      rev = "abcbga"
@@ -2941,7 +2906,11 @@ Input:  s = "AABEBCDD"
 Output: 3      ("ABD" appears twice, using different positions)
 ```
 
-**Walk-through:** `i` = row, `j` = column (both from 1); a cell with `i == j` never uses the diagonal.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a repeat (same letter, i != j), blue = max(up, left), red = the banned diagonal i = j.
+
+![Animated LCS table of "AABEBCDD" with itself: 64 cells fill row by row, red i = j cells skip the diagonal, the corner is 3 ("ABD" twice), and without i != j it climbs to 8.](diagrams/dsa31c_lrs_anim.gif)
+
+**Walk-through (the animation as text):** `i` = row, `j` = column (both from 1); a cell with `i == j` never uses the diagonal.
 
 ```
         ""  A  A  B  E  B  C  D  D
@@ -3050,7 +3019,11 @@ Input:  word1 = "horse", word2 = "ros"
 Output: 3
 ```
 
-**Walk-through:** each cell = the fewest edits to turn the first `i` letters of "horse" into the first `j` letters of "ros".
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Arrows name the three reads: green replace (diagonal), blue delete (up), purple insert (left); a match copies the diagonal for free.
+
+![Animated edit-distance table, "horse" to "ros": base row 0–3 and column 0–5, then 15 cells, each 1 + min(replace, delete, insert) or a free diagonal on a match, ending at 3; read back: horse → rorse → rose → ros.](diagrams/dsa31c_edit_distance_anim.gif)
+
+**Walk-through (the animation as text):** each cell = the fewest edits to turn the first `i` letters of "horse" into the first `j` letters of "ros".
 
 ```
       ""  r  o  s
@@ -3115,7 +3088,11 @@ Input:  s = "rabbbit", t = "rabbit"
 Output: 3      (any two of the three b's can be used)
 ```
 
-**Walk-through:** rows = `s`, columns = `t`; column 0 is all 1 (one way to spell the empty string).
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = skip (the cell above), green = use (the diagonal, only on a match); each cell is their sum.
+
+![Animated counting table for s = "rabbbit", t = "rabbit": column 0 is 1, every cell adds skip and use, the first b column grows 1, 2, 3, and the corner is 3: any 2 of the 3 b's.](diagrams/dsa31c_distinct_subseq_anim.gif)
+
+**Walk-through (the animation as text):** rows = `s`, columns = `t`; column 0 is all 1 (one way to spell the empty string).
 
 ```
         ""  r  a  b  b  i  t
@@ -3174,7 +3151,11 @@ Input:  s = "aa", p = "a"
 Output: false  (the pattern must cover all of s)
 ```
 
-**Walk-through:** rows = `s`, columns = `p`; `T` = true, `F` = false.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). A star reads up (blue, eat a letter) or left (purple, match empty); a letter or ? copies the diagonal (green); F is red.
+
+![Animated T/F table for s = "adceb", p = "*a*b": row 0 is T only through the leading star, the second star eats d, c, e, and the corner is T; then "aa" vs "a" gives F.](diagrams/dsa31c_wildcard_anim.gif)
+
+**Walk-through (the animation as text):** rows = `s`, columns = `p`; `T` = true, `F` = false.
 
 ```
         ""  *  a  *  b
@@ -3636,7 +3617,11 @@ Input:  grid = [[0, 0, 0],
 Output: 2      (around the obstacle: right-right-down-down, or down-down-right-right)
 ```
 
-**Walk-through:** `dp` holds one row of route counts and is updated in place, row by row.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` (above), green = new `dp[j-1]` (left), red = an obstacle's 0.
+
+![Unique Paths II, 3 × 3 grid with the middle cell blocked: dp rows [1, 1, 1], [1, 0, 1], [1, 1, 2], answer 2; an obstacle on an edge zeroes the rest of that edge.](diagrams/dsa31c_unique_paths_ii_anim.gif)
+
+**Walk-through (the animation as text):** `dp` holds one row of route counts and is updated in place, row by row.
 ```
 grid row    dp after this row
 0 0 0       [1, 1, 1]    top edge: one route to each cell
@@ -3687,7 +3672,11 @@ Input:  grid = [[1, 3, 1],
 Output: 7      (1 → 3 → 1 → 1 → 1)
 ```
 
-**Walk-through:** `dp` is one row of cheapest sums, rewritten row by row; `min(dp[j], dp[j-1])` compares the cell above with the cell to the left.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` (above), green = new `dp[j-1]` (left), orange = the route.
+
+![Minimum Path Sum on grid 1 3 1 / 1 5 1 / 4 2 1: each cell takes min(above, left) + its cost, ending at 7; walking back gives 1 → 3 → 1 → 1 → 1.](diagrams/dsa31c_min_path_sum_anim.gif)
+
+**Walk-through (the animation as text):** `dp` is one row of cheapest sums, rewritten row by row; `min(dp[j], dp[j-1])` compares the cell above with the cell to the left.
 
 ```
 grid row    dp after this row
@@ -3742,7 +3731,11 @@ Input:  matrix = [["1","0","1","0","0"],
 Output: 4      (a 2 × 2 square of 1s, e.g. rows 1–2, columns 2–3, counting from 0)
 ```
 
-**Walk-through:** `dp` without its border of zeros, next to `matrix` (the `dp[3][4]` notes use the code's indices, which count the border row and column). Each `'1'` gets `1 + min(up, left, diagonal)`; each `'0'` stays 0.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). A '1' cell reads blue (up), green (left) and purple (diagonal) and gets 1 + their min.
+
+![Maximal Square on matrix 10100 / 10111 / 11111 / 10010: dp[3][4] = 1 + min(1, 1, 1) = 2 and dp[3][5] = 2, so best = 2 and the area is 4.](diagrams/dsa31c_maximal_square_anim.gif)
+
+**Walk-through (the animation as text):** `dp` without its border of zeros, next to `matrix` (the `dp[3][4]` notes use the code's indices, which count the border row and column). Each `'1'` gets `1 + min(up, left, diagonal)`; each `'0'` stays 0.
 
 ```
 matrix        dp
@@ -4167,7 +4160,11 @@ Output: 2        (n | iti | k)
 
 Cutting after every letter (4 cuts) is always legal — single letters are palindromes — but wasteful.
 
-**Walk-through:** the fewest cuts for each prefix (that is `dp[j]`).
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue is the part before the last cut (`dp[k]`), purple the last piece, green the cheapest cut.
+
+![Animated minCut for s = "nitik": pal fills by length, then dp[j] tries each last cut k, dp[k] + 1 if the piece is a palindrome, giving 2 cuts, n | iti | k.](diagrams/dsa31c_palindrome_partition_anim.gif)
+
+**Walk-through (the animation as text):** the fewest cuts for each prefix (that is `dp[j]`).
 ```
 prefix   fewest cuts   how
 n        0             already a palindrome
@@ -4238,7 +4235,11 @@ Input:  s = "T|F&T^F"
 Output: 5
 ```
 
-**Walk-through:** `s = "T^F|F"`. `k` lands only on the operators (index 1 `^` and index 3 `|`); each side reports how many ways it can be true and false.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Each cell holds a range's true and false counts; blue is the left part, purple the right part of operator `k`.
+
+![Animated ways for "T^F|F": every range gets true and false counts, the splits at ^ and | add 1 each, so 2 bracketings are true; "T|F&T^F" reaches 5 with memo hits.](diagrams/dsa31c_boolean_paren_anim.gif)
+
+**Walk-through (the animation as text):** `s = "T^F|F"`. `k` lands only on the operators (index 1 `^` and index 3 `|`); each side reports how many ways it can be true and false.
 
 ```
 piece    ways true   ways false
@@ -4320,7 +4321,11 @@ Input:  nums = [3, 1, 5, 8]
 Output: 167
 ```
 
-**Walk-through:** one best order is 1, then 5, then 3, then 8 (each line shows the balloons still standing).
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow `k` bursts last; blue is the left part, purple the right, green the best `k`.
+
+![Animated Burst Balloons for nums = [3, 1, 5, 8] padded with 1s: ranges fill by length, trying every last balloon k (left + walls × k + right), to dp[1][4] = 167, order 1, 5, 3, 8.](diagrams/dsa31c_burst_balloons_anim.gif)
+
+**Walk-through (the animation as text):** one best order is 1, then 5, then 3, then 8 (each line shows the balloons still standing).
 ```
 [3, 1, 5, 8]   burst 1 -> 3 × 1 × 5 =  15
 [3, 5, 8]      burst 5 -> 3 × 5 × 8 = 120
@@ -4384,7 +4389,11 @@ Input:  e = 3, f = 5
 Output: 3
 ```
 
-**Walk-through:** `drops(e, f)` for small buildings, then the floor loop for the Example.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow is the drop floor `k`, blue the breaks side, purple the survives side, green the best floor.
+
+![Animated memoised drops for 3 eggs and 5 floors: cells fill as calls return, each floor k costing 1 + max(breaks, survives); the top call's floors give 4, 3, 3, 3, 4, so 3 drops.](diagrams/dsa31c_egg_drop_anim.gif)
+
+**Walk-through (the animation as text):** `drops(e, f)` for small buildings, then the floor loop for the Example.
 
 ```
 drops(e, f)   f = 0  1  2  3  4  5
@@ -4468,7 +4477,11 @@ Input:  a = "abcde", b = "caebd"
 Output: false
 ```
 
-**Walk-through:** the first Example. Each split `k` is tried straight, then swapped; the letter-count check ends most branches at once.
+**Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Each split `k` is tried straight and swapped; blue pairs the left halves, purple the right, OK / NO marks each check.
+
+![Animated isScramble for "great" vs "rgeat": k = 1 fails on letter counts; k = 2 straight wins, "gr" matching "rg" by a swap and "eat" equal; "abcde" vs "caebd" prunes to false.](diagrams/dsa31c_scramble_string_anim.gif)
+
+**Walk-through (the animation as text):** the first Example. Each split `k` is tried straight, then swapped; the letter-count check ends most branches at once.
 
 ```
 isScramble("great", "rgeat")     same letters -> try k = 1, 2, ...
@@ -4799,7 +4812,11 @@ Input:  k = 2, prices = [3, 2, 6, 5, 0, 3]
 Output: 7      (buy at 2, sell at 6; buy at 0, sell at 3)
 ```
 
-**Walk-through:** the dry run below this block.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = rest, green = buy or sell, red = −∞.
+
+![Animated Stock IV, k = 2, prices [3, 2, 6, 5, 0, 3]: one dp array rewritten daily, j = 2 then 1, sell before buy, ends at dp[2][0] = 7; then the k >= n / 2 shortcut on [2, 4, 1].](diagrams/dsa31c_stock_iv_anim.gif)
+
+**Walk-through (the animation as text):** the dry run below this block.
 
 **Approach:** written per day, the state is `dp[i][j][holding]` and day `i` reads only day `i-1`. The code drops `i` and loops `j` downwards, sell before buy, so every right-hand side still holds yesterday's value. When `k >= n / 2` the limit never bites, so the code adds up every price rise (the example has `k = 2 < 6 / 2`, so the machine runs).
 
@@ -4915,7 +4932,11 @@ Input:  cost = [[9, 2, 7], [6, 4, 3], [5, 8, 1]]
 Output: 9      (worker 0 → task 1: 2, worker 1 → task 0: 6, worker 2 → task 2: 1)
 ```
 
-**Walk-through:** bits read right to left (`011` = tasks 0 and 1 taken); `w` = worker, `t` = task.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = `dp[mask] + cost`, blue = the value already there; the smaller stays.
+
+![Animated bitmask DP for cost [9, 2, 7], [6, 4, 3], [5, 8, 1]: for mask 0 to 7, worker bitCount(mask) pushes dp[mask] + cost into each mask with one more bit; dp[111] = min(9, 20, 10) = 9.](diagrams/dsa31c_task_assignment_anim.gif)
+
+**Walk-through (the animation as text):** bits read right to left (`011` = tasks 0 and 1 taken); `w` = worker, `t` = task.
 
 ```
 mask   dp[mask]   cheapest way in
@@ -5011,7 +5032,11 @@ Input:  N = 25
 Output: 24      (of the 26 numbers 0..25, only 11 and 22 are left out)
 ```
 
-**Walk-through:** every number is written with two digits.
+**Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Rows = first digit, columns = second; green = counted, red = equal pair, grey = above N.
+
+![Animated digit DP for N = 25: tight pos 0 allows 0 to 2; rows 0 and 1 run free, row 2 stays tight up to 5; 11 and 22 fail; 10 + 9 + 5 = 24.](diagrams/dsa31c_digit_dp_anim.gif)
+
+**Walk-through (the animation as text):** every number is written with two digits.
 
 ```
 first digit 0 -> the one-digit numbers 0..9        10 OK   (the 0 is padding)
