@@ -40,10 +40,22 @@ Fibonacci is not an interview problem, but it is the cheapest place to see all f
 
 **Problem:** Given `n ≥ 0`, return the `n`-th Fibonacci number: `fib(0) = 0`, `fib(1) = 1`, `fib(n) = fib(n-1) + fib(n-2)`. Compute it once per pipeline step; all four must agree.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 5
 Output: 5     (the sequence runs 0, 1, 1, 2, 3, 5)
+
+Input:  n = 0
+Output: 0     (base case)
+
+Input:  n = 1
+Output: 1     (base case)
+
+Input:  n = 2
+Output: 1     (fib(1) + fib(0) = 1 + 0)
+
+Input:  n = 10
+Output: 55    (..., 13, 21, 34, 55)
 ```
 
 **Walk-through (the animation as text):** Steps 1 and 2 run the same call tree, left call first.
@@ -410,10 +422,23 @@ String children use `dp[i]` = the answer for the first `i` characters, so their 
 
 **Problem:** House Robber on a circular street: house `n-1` sits next to house `0`.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 3, 2]
-Output: 3     (houses 0 and 2 are neighbours, so rob house 1 alone)
+Output: 3
+Explanation: houses 0 and 2 are neighbours, so rob house 1 alone
+
+Input:  nums = [1, 2, 3, 1]
+Output: 4
+Explanation: rob houses 0 and 2 (1 + 3); they are not neighbours on the circle
+
+Input:  nums = [2, 7, 9, 3, 1]
+Output: 11
+Explanation: houses 0, 2, 4 give 12 in a line, but 0 and 4 now touch; best is 2 + 9
+
+Input:  nums = [5]
+Output: 5
+Explanation: one house: rob it; without the n == 1 guard both runs see no houses, giving 0
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Run A leaves out the last house, run B the first; green = rob, blue = skip.
@@ -454,13 +479,22 @@ public int robCircular(int[] nums) {
 
 **Problem:** It takes `n` steps (n ≥ 1) to reach the top. Each move climbs 1 or 2 steps. How many distinct ways are there to reach the top?
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 5
 Output: 8
 
 Input:  n = 3
 Output: 3     (1+1+1, 1+2, 2+1)
+
+Input:  n = 1
+Output: 1     (just 1)
+
+Input:  n = 2
+Output: 2     (1+1, 2)
+
+Input:  n = 10
+Output: 89
 ```
 
 **Walk-through:**
@@ -505,10 +539,27 @@ public int climbStairs(int n) {
 
 **Problem:** Letters are coded A=1 … Z=26. How many ways can a string of digits be decoded? A `0` cannot stand alone, and a two-digit code must be 10–26 (`"06"` is not a code).
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "226"
-Output: 3     ("2,2,6" = BBF, "22,6" = VF, "2,26" = BZ)
+Output: 3
+Explanation: "2,2,6" = BBF, "22,6" = VF, "2,26" = BZ
+
+Input:  s = "11106"
+Output: 2
+Explanation: "1,1,10,6" = AAJF, "11,10,6" = KJF; the 0 must pair with the 1 before it
+
+Input:  s = "06"
+Output: 0
+Explanation: a leading 0 cannot stand alone, and "06" is not a code
+
+Input:  s = "30"
+Output: 0
+Explanation: the 0 cannot stand alone and 30 > 26, so no decoding exists
+
+Input:  s = "27"
+Output: 1
+Explanation: only "2,7" = BG; 27 > 26 is not a letter
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = one digit (adds dp[i-1]), green = two digits (adds dp[i-2]), NO = not a letter.
@@ -561,10 +612,23 @@ public int numDecodings(String s) {
 
 **Problem:** Return the largest sum of a contiguous (non-empty) subarray.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
-Output: 6     (the subarray [4, -1, 2, 1])
+Output: 6
+Explanation: the subarray [4, -1, 2, 1]
+
+Input:  nums = [1]
+Output: 1
+Explanation: a single element is the only non-empty subarray
+
+Input:  nums = [5, 4, -1, 7, 8]
+Output: 23
+Explanation: the whole array; 5 + 4 = 9 outweighs the -1, so extending beats restarting
+
+Input:  nums = [-3, -1, -2]
+Output: -1
+Explanation: all negative, so the best is [-1] alone; starting best at 0 would return 0
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Green = extend (dp[i-1] + nums[i]), blue = restart (nums[i]), purple = best.
@@ -616,10 +680,23 @@ public int maxSubArray(int[] nums) {
 
 **Problem:** Return the length of the longest **strictly increasing subsequence** (order kept, skipping allowed; a *subarray* may not skip).
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [10, 9, 2, 5, 3, 7, 101, 18]
-Output: 4     ([2, 3, 7, 18] or [2, 3, 7, 101])
+Output: 4
+Explanation: [2, 3, 7, 18] or [2, 3, 7, 101]
+
+Input:  nums = [0, 1, 0, 3, 2, 3]
+Output: 4
+Explanation: [0, 1, 2, 3]
+
+Input:  nums = [7, 7, 7, 7]
+Output: 1
+Explanation: strictly increasing, so equal values cannot follow each other
+
+Input:  nums = [3, 4, 1]
+Output: 2
+Explanation: [3, 4]; tails ends as [1, 4], not a real subsequence, but its length is right
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). OK / NO chips test nums[j] < nums[i], green = the best dp[j] + 1; in tails, green = append, blue = overwrite.
@@ -690,10 +767,23 @@ public int lengthOfLIS(int[] nums) {
 
 **Problem:** Given a string `s` and dictionary words `wordDict` (reusable), return true if `s` can be split into dictionary words.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "leetcode", wordDict = ["leet", "code"]
-Output: true  ("leet" + "code")
+Output: true
+Explanation: "leet" + "code"
+
+Input:  s = "applepenapple", wordDict = ["apple", "pen"]
+Output: true
+Explanation: "apple" + "pen" + "apple"; a word may be reused
+
+Input:  s = "catsandog", wordDict = ["cats", "dog", "sand", "and", "cat"]
+Output: false
+Explanation: "cats" + "and" and "cat" + "sand" both leave "og", which is not a word
+
+Input:  s = "cars", wordDict = ["car", "ca", "rs"]
+Output: true
+Explanation: "ca" + "rs"; greedily taking "car" first leaves "s" and fails
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). The navy line is the cut j, the outlined letters s[j..i); OK / NO = word or not, F = dp[j] false, skipped.
@@ -747,13 +837,27 @@ public boolean wordBreak(String s, List<String> wordDict) {
 
 **Problem:** `nums[i]` is the furthest you may jump forward from index `i`. Starting at index 0, can you reach the last index?
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 3, 1, 1, 4]
-Output: true   (0 -> 1 -> 4)
+Output: true
+Explanation: 0 -> 1 -> 4
 
 Input:  nums = [3, 2, 1, 0, 4]
-Output: false  (every path lands on index 3, whose jump length is 0)
+Output: false
+Explanation: every path lands on index 3, whose jump length is 0
+
+Input:  nums = [0]
+Output: true
+Explanation: index 0 is already the last index, so no jump is needed
+
+Input:  nums = [2, 0, 0]
+Output: true
+Explanation: index 0 jumps straight to index 2; the 0 at the end does not matter
+
+Input:  nums = [0, 2, 3]
+Output: false
+Explanation: the first jump length is 0, so you never leave index 0
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). The green band is 0..reach; each index pushes it to i + nums[i]; red = stuck.
@@ -1233,10 +1337,27 @@ flowchart TD
 
 **Problem:** Given an array `arr[]` of positive integers and a target `sum`, is there a subset (any selection of elements, each used at most once) that adds up to exactly `sum`? Return true or false.
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [2, 3, 7, 8, 10], sum = 11
-Output: true   ({3, 8})
+Output: true
+Explanation: {3, 8}
+
+Input:  arr = [3, 34, 4, 12, 5, 2], sum = 9
+Output: true
+Explanation: {4, 5} or {3, 4, 2}
+
+Input:  arr = [3, 34, 4, 12, 5, 2], sum = 30
+Output: false
+Explanation: 34 alone overshoots, and everything else adds up to only 26
+
+Input:  arr = [1, 2, 3], sum = 0
+Output: true
+Explanation: the empty subset makes 0 (column 0 of the table is all true)
+
+Input:  arr = [3], sum = 6
+Output: false
+Explanation: 3 + 3 would reuse the one 3; a forward one-row loop wrongly says true
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip (cell above), green = take (row above, x columns left), red F = unreachable.
@@ -1306,10 +1427,27 @@ public boolean subsetSum(int[] arr, int sum) {
 
 **Problem:** Can `arr[]` (positive integers) be split into two groups with equal sums? Every element goes into exactly one group. Return true or false.
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [1, 5, 11, 5]
-Output: true   ({1, 5, 5} and {11}, both sum to 11)
+Output: true
+Explanation: {1, 5, 5} and {11}, both sum to 11
+
+Input:  arr = [1, 2, 3, 5]
+Output: false
+Explanation: the total 11 is odd, so it can never split evenly
+
+Input:  arr = [1, 2, 5]
+Output: false
+Explanation: the total 8 is even, but no subset sums to 4
+
+Input:  arr = [3, 1, 4, 2, 2]
+Output: true
+Explanation: {4, 2} and {3, 1, 2}, both sum to 6
+
+Input:  arr = [2]
+Output: false
+Explanation: one number: the other group is empty, and 2 vs 0 is not equal
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, red F = unreachable.
@@ -1372,10 +1510,27 @@ public boolean canPartition1D(int[] arr) {
 
 **Problem:** Given `arr[]` (non-negative integers) and a target `sum`, how many subsets add up to exactly `sum`? Two subsets count as different if they use different positions, even when the values are equal.
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [2, 3, 5, 6, 8, 10], sum = 10
-Output: 3      ({2, 8}, {2, 3, 5}, {10})
+Output: 3
+Explanation: {2, 8}, {2, 3, 5}, {10}
+
+Input:  arr = [0, 1], sum = 1
+Output: 2
+Explanation: {1} and {0, 1}; the 0 doubles the count (the zeros trap)
+
+Input:  arr = [1, 2, 3], sum = 0
+Output: 1
+Explanation: only the empty subset {} adds up to 0
+
+Input:  arr = [2, 4], sum = 5
+Output: 0
+Explanation: the reachable sums are 0, 2, 4 and 6; none is 5
+
+Input:  arr = [1, 1, 1], sum = 2
+Output: 3
+Explanation: any two of the three 1s; different positions count as different subsets
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, the two added; red 0 = no way.
@@ -1438,10 +1593,27 @@ public int countSubsets(int[] arr, int sum) {
 
 **Problem:** Put every element of `arr[]` (positive integers) into one of two groups. Let `S1` and `S2` be the two group sums. Return the smallest possible `|S1 − S2|`.
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [1, 6, 11, 5]
-Output: 1      ({1, 5, 6} = 12 vs {11} = 11)
+Output: 1
+Explanation: {1, 5, 6} = 12 vs {11} = 11
+
+Input:  arr = [1, 2, 3, 4]
+Output: 0
+Explanation: {1, 4} = 5 vs {2, 3} = 5, a perfect split
+
+Input:  arr = [3, 9, 7, 3]
+Output: 2
+Explanation: half of 22 is 11, which no subset reaches; {3, 7} = 10 vs {9, 3} = 12
+
+Input:  arr = [1, 2, 7]
+Output: 4
+Explanation: {1, 2} = 3 vs {7} = 7; no subset sum lands on 4 or 5
+
+Input:  arr = [10]
+Output: 10
+Explanation: one number: the other group is empty, so 10 vs 0
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = cell being filled, blue = skip, green = take, red F = unreachable; the strip below is |23 − 2·s1|.
@@ -1498,10 +1670,27 @@ public int minSubsetSumDiff(int[] arr) {
 
 **Problem:** Put every element of `arr[]` into one of two groups with sums `S1` and `S2`. Given a number `diff`, count the ways to do it so that `S1 − S2 = diff`.
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [1, 1, 2, 3], diff = 1
-Output: 3      (S1 must be (1 + 7) / 2 = 4: {1, 3} with either 1, or {1, 1, 2})
+Output: 3
+Explanation: S1 must be (1 + 7) / 2 = 4: {1, 3} with either 1, or {1, 1, 2}
+
+Input:  arr = [1, 1, 2, 3], diff = 2
+Output: 0
+Explanation: S1 would be (2 + 7) / 2 = 4.5, not a whole number
+
+Input:  arr = [1, 2, 3], diff = 0
+Output: 2
+Explanation: S1 = 3: {3} vs {1, 2}, or {1, 2} vs {3}
+
+Input:  arr = [1, 2], diff = 5
+Output: 0
+Explanation: diff 5 is more than the total 3, so no split can reach it
+
+Input:  arr = [0, 1], diff = 1
+Output: 2
+Explanation: S1 = 1: {1} or {0, 1}; the 0 can sit in either group
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). After the algebra, yellow = cell being filled, blue = skip, green = take, added.
@@ -1559,14 +1748,30 @@ public int countSubsetsWithDiff(int[] arr, int diff) {
 
 **Problem:** Given `nums[]` and a `target`, put a `+` or `−` in front of every number so the expression equals `target`. Return how many sign choices work.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 1, 2, 3], target = 1
-Output: 3      (these three sign choices work)
-
+Output: 3
+Explanation: these three sign choices work
   +1 −1 −2 +3 = 1        S1 = {1,3}, S2 = {1,2}
   −1 +1 −2 +3 = 1        S1 = {1,3}, S2 = {1,2}
   +1 +1 +2 −3 = 1        S1 = {1,1,2}, S2 = {3}
+
+Input:  nums = [1, 1, 1, 1, 1], target = 3
+Output: 5
+Explanation: choose which one of the five 1s gets the minus sign
+
+Input:  nums = [0, 1], target = 1
+Output: 2
+Explanation: +0 +1 and −0 +1 both count, so the 0 doubles the ways
+
+Input:  nums = [1, 3], target = 3
+Output: 0
+Explanation: the only results are 4, 2, −2 and −4; (4 + 3) / 2 is not whole
+
+Input:  nums = [1, 2], target = -1
+Output: 1
+Explanation: only +1 −2 = −1; a negative target works the same way
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = + numbers (S1), blue = − numbers (S2); yellow = the table cell being filled.
@@ -1783,10 +1988,27 @@ One recursion skeleton; the question decides the operator and the return type. I
 
 **The problem:** Parent 2, but each item may be taken any number of times. Return the largest value that fits in a `W` kg bag.
 
-**Example:**
+**Examples:**
 ```
 Input:  wt = [2, 3], val = [3, 5], W = 6
-Output: 10     (the 3 kg item twice; 0/1 Knapsack could only reach 3 + 5 = 8)
+Output: 10
+Explanation: the 3 kg item twice; 0/1 Knapsack could only reach 3 + 5 = 8
+
+Input:  wt = [1, 3, 4, 5], val = [1, 4, 5, 7], W = 7
+Output: 9
+Explanation: 3 kg + 3 kg + 1 kg: 4 + 4 + 1
+
+Input:  wt = [1, 5], val = [1, 4], W = 10
+Output: 10
+Explanation: the 1 kg item ten times; two 5 kg items give only 8
+
+Input:  wt = [2, 4], val = [3, 7], W = 5
+Output: 7
+Explanation: one 4 kg item and 1 kg left empty; two 2 kg items give only 6
+
+Input:  wt = [4, 6], val = [5, 8], W = 3
+Output: 0
+Explanation: every item is heavier than the 3 kg bag, so nothing fits
 ```
 
 #### How to identify it
@@ -1901,10 +2123,27 @@ flowchart TD
 
 **Problem:** A rod of length `n` can be cut into whole-number pieces (or sold uncut). `price[i-1]` is the price of a piece of length `i`, so `price[0]` is the price of length 1. Return the most money you can make.
 
-**Example:**
+**Examples:**
 ```
 Input:  price = [1, 5, 8, 9, 10, 17, 17, 20], n = 8
-Output: 22     (pieces of length 2 and 6: 5 + 17 — better than selling it whole for 20)
+Output: 22
+Explanation: pieces of length 2 and 6: 5 + 17 — better than selling it whole for 20
+
+Input:  price = [3, 5, 8, 9, 10, 17, 17, 20], n = 8
+Output: 24
+Explanation: eight pieces of length 1: 8 * 3 = 24 beats every other cut
+
+Input:  price = [2, 5, 7, 8], n = 4
+Output: 10
+Explanation: two pieces of length 2: 5 + 5, more than 8 for the whole rod
+
+Input:  price = [1, 2, 9], n = 3
+Output: 9
+Explanation: sell it whole: any cut gives only 1 + 2 = 3 or 1 + 1 + 1 = 3
+
+Input:  price = [5], n = 1
+Output: 5
+Explanation: a length-1 rod cannot be cut, so sell it for price[0]
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a price plus a finished cell on the same row (lengths repeat); orange = the walk back.
@@ -1956,10 +2195,27 @@ public int rodCutting(int[] price, int n) {
 
 **Problem:** `coins[]` holds distinct coin values, and you have unlimited coins of each. In how many different ways can you make exactly `amount`? Order does not matter (`1+2` and `2+1` are the same way).
 
-**Example:**
+**Examples:**
 ```
 Input:  amount = 5, coins = [1, 2, 3]
-Output: 5      (2+3, 1+1+3, 1+2+2, 1+1+1+2, 1+1+1+1+1)
+Output: 5
+Explanation: 2+3, 1+1+3, 1+2+2, 1+1+1+2, 1+1+1+1+1
+
+Input:  amount = 4, coins = [1, 2]
+Output: 3
+Explanation: 1+1+1+1, 1+1+2, 2+2; swapping the loops would count 5 orders
+
+Input:  amount = 5, coins = [1, 2, 5]
+Output: 4
+Explanation: 5, 1+2+2, 1+1+1+2, 1+1+1+1+1
+
+Input:  amount = 3, coins = [2]
+Output: 0
+Explanation: 2s only make even amounts
+
+Input:  amount = 0, coins = [7]
+Output: 1
+Explanation: one way: take no coins at all (dp[0] = 1)
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` above (no new coin), green = `dp[j - coin]` on the same row (ends with it).
@@ -2012,10 +2268,27 @@ public int change(int amount, int[] coins) {
 
 **Problem:** `coins[]` holds coin values, with unlimited coins of each. Return the fewest coins that add up to exactly `amount`, or `-1` if it cannot be done.
 
-**Example:**
+**Examples:**
 ```
 Input:  coins = [1, 3, 4], amount = 6
-Output: 2      (3 + 3)
+Output: 2
+Explanation: 3 + 3
+
+Input:  coins = [1, 2, 5], amount = 11
+Output: 3
+Explanation: 5 + 5 + 1
+
+Input:  coins = [2], amount = 3
+Output: -1
+Explanation: 2s only make even amounts, so 3 cannot be made
+
+Input:  coins = [1], amount = 0
+Output: 0
+Explanation: amount 0 needs no coins
+
+Input:  coins = [1, 5, 6, 9], amount = 11
+Output: 2
+Explanation: 5 + 6; grabbing the biggest coin first gives 9 + 1 + 1, three coins
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Red = ∞ (`amount + 1`); green = `dp[i - coin] + 1` on the same row, so coins repeat.
@@ -2069,10 +2342,27 @@ public int coinChange(int[] coins, int amount) {
 
 **Problem:** Given `n`, return the fewest perfect squares (1, 4, 9, 16, …) that add up to `n`. A perfect square is a whole number times itself.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 12
-Output: 3      (4 + 4 + 4)
+Output: 3
+Explanation: 4 + 4 + 4
+
+Input:  n = 13
+Output: 2
+Explanation: 4 + 9
+
+Input:  n = 7
+Output: 4
+Explanation: 4 + 1 + 1 + 1; no two or three squares add up to 7
+
+Input:  n = 18
+Output: 2
+Explanation: 9 + 9; grabbing the biggest square first gives 16 + 1 + 1
+
+Input:  n = 1
+Output: 1
+Explanation: 1 is itself a square (1 * 1)
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = `dp[i - s*s] + 1` on the same row (squares repeat); red = still ∞; orange = the walk back.
@@ -2118,10 +2408,23 @@ public int numSquares(int n) {
 
 **Problem:** A ribbon of length `n` must be cut completely into pieces whose lengths come from `lengths[]` (each length can be used any number of times). Return the **largest number** of pieces, or `-1` if no exact cut exists.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 7, lengths = [2, 3]
-Output: 3      (2 + 2 + 3)
+Output: 3
+Explanation: 2 + 2 + 3
+
+Input:  n = 7, lengths = [2, 4]
+Output: -1
+Explanation: every piece is even, so a length of 7 cannot be cut exactly
+
+Input:  n = 5, lengths = [5, 3, 2]
+Output: 2
+Explanation: 3 + 2 gives 2 pieces; one piece of 5 gives only 1
+
+Input:  n = 13, lengths = [5, 3, 8]
+Output: 3
+Explanation: 3 + 5 + 5; four 3s leave 1 over, and 5 + 8 is only 2 pieces
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Red = `-1`, impossible (such a leftover is skipped); green = `dp[i - len] + 1` on the same row.
@@ -2544,10 +2847,27 @@ flowchart LR
 
 **Problem:** Return the length of the longest piece that appears in both `a` and `b` **without gaps**.
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "abcdgh", b = "abedfhr"
-Output: 2      ("ab")
+Output: 2
+Explanation: "ab"
+
+Input:  a = "abcde", b = "abfce"
+Output: 2
+Explanation: "ab"; "abce" is common only as a subsequence (it has gaps), so it does not count
+
+Input:  a = "xabcy", b = "zabcw"
+Output: 3
+Explanation: "abc" in the middle; the corner cell is 0, so return the biggest cell
+
+Input:  a = "abc", b = "xyz"
+Output: 0
+Explanation: no character is shared, so there is no common piece
+
+Input:  a = "abc", b = "abc"
+Output: 3
+Explanation: identical strings: the whole string is shared
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match extends the diagonal run, red = a reset to 0, orange = `best`, the answer.
@@ -2607,10 +2927,27 @@ public int longestCommonSubstring(String a, String b) {
 
 **Problem:** Return one longest common subsequence of `a` and `b` (the letters, not the length).
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "acbcf", b = "abcdaf"
 Output: "abcf"
+Explanation: a, b, c, f appear in this order in both strings (length 4)
+
+Input:  a = "abcde", b = "ace"
+Output: "ace"
+Explanation: all of b is a subsequence of a, so all of b comes back
+
+Input:  a = "ab", b = "ba"
+Output: "b"
+Explanation: one valid answer; "a" is just as long, but ties step left and keep "b"
+
+Input:  a = "abcbdab", b = "bdcaba"
+Output: "bdab"
+Explanation: one valid answer; "bcab" and "bcba" also have length 4
+
+Input:  a = "abc", b = "def"
+Output: ""
+Explanation: no common character, so the LCS is the empty string
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Orange = the walk back: diagonal on a green match (take the letter), otherwise toward the bigger blue neighbour.
@@ -2679,10 +3016,27 @@ public String printLCS(String a, String b) {
 
 **Problem:** Return the shortest string that contains both `a` (length `m`) and `b` (length `n`) as subsequences.
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "AGGTAB", b = "GXTXAYB"
-Output: "AGGXTXAYB"      (length 6 + 7 - 4 = 9)
+Output: "AGGXTXAYB"
+Explanation: length 6 + 7 - 4 = 9; one valid answer
+
+Input:  a = "ABAC", b = "CAB"
+Output: "CABAC"
+Explanation: length 4 + 3 - 2 = 5 (LCS "AB"); one valid answer
+
+Input:  a = "AB", b = "BA"
+Output: "ABA"
+Explanation: length 2 + 2 - 1 = 3, not 4; one valid answer ("BAB" also works)
+
+Input:  a = "ABC", b = "AC"
+Output: "ABC"
+Explanation: "AC" is already a subsequence of "ABC": 3 + 2 - 2 = 3
+
+Input:  a = "ABC", b = "DEF"
+Output: "ABCDEF"
+Explanation: nothing is shared, so every letter is written: 3 + 3 - 0 = 6; one valid answer
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Orange = the walk back, one letter per step: green = shared, written once; blue = in one string only.
@@ -2754,10 +3108,27 @@ public String printSCS(String a, String b) {
 
 **Problem:** Using only single-character deletions and insertions, return the fewest of each needed to turn `a` into `b`.
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "heap", b = "pea"
 Output: deletions 2, insertions 1
+Explanation: keep the LCS "ea": delete h and p, then insert p at the front
+
+Input:  a = "abc", b = "abc"
+Output: deletions 0, insertions 0
+Explanation: identical strings: the whole string is the LCS, so nothing changes
+
+Input:  a = "abc", b = "xyz"
+Output: deletions 3, insertions 3
+Explanation: nothing in common: delete all of a, then insert all of b
+
+Input:  a = "ab", b = "ba"
+Output: deletions 1, insertions 1
+Explanation: keep "a": delete b, insert b in front; there is no swap or replace
+
+Input:  a = "abcd", b = "ad"
+Output: deletions 2, insertions 0
+Explanation: "ad" is already a subsequence of a: delete b and c, insert nothing
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match (1 + the diagonal), blue = the bigger of up and left; red letters are deleted, purple inserted.
@@ -2804,10 +3175,27 @@ public int[] minInsertDelete(String a, String b) {
 
 **Problem:** Return the length of the longest subsequence of `s` (length `n`) that is a palindrome.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "agbcba"
-Output: 5      ("abcba")
+Output: 5
+Explanation: "abcba"
+
+Input:  s = "bbbab"
+Output: 4
+Explanation: "bbbb": skip the a and take all four b's
+
+Input:  s = "abca"
+Output: 3
+Explanation: "aba" (or "aca"); letters may be skipped, unlike a substring, which gives 1
+
+Input:  s = "abcd"
+Output: 1
+Explanation: no letter repeats, so any single letter is the longest palindrome
+
+Input:  s = "racecar"
+Output: 7
+Explanation: the whole string is already a palindrome
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Columns = reverse(s); green = a match, blue = the bigger of up and left, orange = the answer and walk back.
@@ -2854,10 +3242,27 @@ public int longestPalindromeSubseq(String s) {
 
 **Problem:** Return the fewest characters to delete (or insert) so that `s` becomes a palindrome.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "agbcba"
-Output: 1      (delete g, leaving the palindrome abcba)
+Output: 1
+Explanation: delete g, leaving the palindrome abcba
+
+Input:  s = "racecar"
+Output: 0
+Explanation: already a palindrome, so nothing to delete or insert
+
+Input:  s = "mbadm"
+Output: 2
+Explanation: keep "mam": delete b and d; or insert d and b to get "mbdadbm"
+
+Input:  s = "abcd"
+Output: 3
+Explanation: no letter repeats: keep any one letter and delete the other 3
+
+Input:  s = "leetcode"
+Output: 5
+Explanation: the longest palindrome inside has 3 letters (e.g. "ete"), so 8 - 3 = 5
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a match (1 + diagonal), blue = max(up, left); orange = the walk back, red = the deleted letter.
@@ -2900,10 +3305,27 @@ public int minInsertionsForPalindrome(String s) {
 
 **Problem:** Return the length of the longest subsequence that appears **twice** in `s` (length `n`), the two copies never using the same position.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "AABEBCDD"
-Output: 3      ("ABD" appears twice, using different positions)
+Output: 3
+Explanation: "ABD" appears twice, using different positions
+
+Input:  s = "ABAB"
+Output: 2
+Explanation: "AB" at positions 1, 2 and 3, 4; without the i != j check you get 4
+
+Input:  s = "AAB"
+Output: 1
+Explanation: "A" at positions 1 and 2; B appears only once
+
+Input:  s = "ABC"
+Output: 0
+Explanation: no letter repeats, so nothing appears twice
+
+Input:  s = "ABBA"
+Output: 1
+Explanation: "A" or "B" repeats, but "BA" would need the same last A in both copies
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = a repeat (same letter, i != j), blue = max(up, left), red = the banned diagonal i = j.
@@ -2960,10 +3382,22 @@ public int longestRepeatingSubsequence(String s) {
 
 **Problem:** Can you get `a` (length `m`) by deleting some characters of `b` (length `n`)?
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "abc", b = "ahbgdc"
 Output: true
+
+Input:  a = "axc", b = "ahbgdc"
+Output: false
+
+Input:  a = "", b = "ahbgdc"
+Output: true
+
+Input:  a = "acb", b = "abc"
+Output: false
+
+Input:  a = "aab", b = "ab"
+Output: false
 ```
 
 **Walk-through:**
@@ -3013,10 +3447,27 @@ public boolean isSubsequence(String a, String b) {
 
 **Problem:** Return the fewest single-character inserts, deletes or replaces that turn `word1` (length `m`) into `word2` (length `n`).
 
-**Example:**
+**Examples:**
 ```
 Input:  word1 = "horse", word2 = "ros"
 Output: 3
+Explanation: replace h with r, delete r, delete e
+
+Input:  word1 = "kitten", word2 = "sitting"
+Output: 3
+Explanation: replace k with s, replace e with i, insert g at the end
+
+Input:  word1 = "ab", word2 = "ba"
+Output: 2
+Explanation: there is no swap: replace a with b and b with a
+
+Input:  word1 = "", word2 = "abc"
+Output: 3
+Explanation: word1 is empty, so insert all three letters
+
+Input:  word1 = "abc", word2 = "abc"
+Output: 0
+Explanation: identical words need no edits
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Arrows name the three reads: green replace (diagonal), blue delete (up), purple insert (left); a match copies the diagonal for free.
@@ -3082,10 +3533,27 @@ public int minDistance(String word1, String word2) {
 
 **Problem:** Count the ways to pick characters of `s` (length `m`), in order, that spell exactly `t` (length `n`); different positions count as different ways.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "rabbbit", t = "rabbit"
-Output: 3      (any two of the three b's can be used)
+Output: 3
+Explanation: any two of the three b's can be used
+
+Input:  s = "babgbag", t = "bag"
+Output: 5
+Explanation: index picks (0,1,3), (0,1,6), (0,5,6), (2,5,6), (4,5,6) all spell "bag"
+
+Input:  s = "aaa", t = "aa"
+Output: 3
+Explanation: positions (0,1), (0,2), (1,2); same letters, but different positions count
+
+Input:  s = "abc", t = ""
+Output: 1
+Explanation: the empty target is spelled exactly one way: pick nothing
+
+Input:  s = "ab", t = "abc"
+Output: 0
+Explanation: s is shorter than t, so t can never be spelled
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = skip (the cell above), green = use (the diagonal, only on a match); each cell is their sum.
@@ -3142,13 +3610,27 @@ public int numDistinct(String s, String t) {
 
 **Problem:** Does pattern `p` (length `n`) match **all** of `s` (length `m`)? `?` matches one character, `*` any sequence (including none).
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "adceb", p = "*a*b"
-Output: true   (first * = "", a = "a", second * = "dce", b = "b")
+Output: true
+Explanation: first * = "", a = "a", second * = "dce", b = "b"
 
 Input:  s = "aa", p = "a"
-Output: false  (the pattern must cover all of s)
+Output: false
+Explanation: the pattern must cover all of s
+
+Input:  s = "aa", p = "*"
+Output: true
+Explanation: a lone * matches any sequence, here all of "aa"
+
+Input:  s = "cb", p = "?a"
+Output: false
+Explanation: ? matches "c", but "a" does not match "b"
+
+Input:  s = "", p = "**"
+Output: true
+Explanation: every * may match nothing, so a run of stars matches the empty string
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). A star reads up (blue, eat a letter) or left (purple, match empty); a letter or ? copies the diagonal (green); F is red.
@@ -3609,12 +4091,32 @@ flowchart TD
 
 **Problem:** The same robot and the same right/down moves as Unique Paths, but in `grid` a `1` marks an obstacle and a `0` a free cell, and the robot may not enter an obstacle. Count the routes from the top-left cell to the bottom-right cell.
 
-**Example:**
+**Examples:**
 ```
 Input:  grid = [[0, 0, 0],
                 [0, 1, 0],
                 [0, 0, 0]]
-Output: 2      (around the obstacle: right-right-down-down, or down-down-right-right)
+Output: 2
+Explanation: around the obstacle: right-right-down-down, or down-down-right-right
+
+Input:  grid = [[0, 1, 0],
+                [0, 0, 0]]
+Output: 1
+Explanation: the top-row obstacle cuts off the cells to its right; only down-right-right works
+
+Input:  grid = [[1, 0],
+                [0, 0]]
+Output: 0
+Explanation: the start cell is blocked, so there is no route at all
+
+Input:  grid = [[0, 0],
+                [0, 1]]
+Output: 0
+Explanation: the goal cell is blocked, so no route can end there
+
+Input:  grid = [[0]]
+Output: 1
+Explanation: the start is the goal: one route with no moves
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` (above), green = new `dp[j-1]` (left), red = an obstacle's 0.
@@ -3664,12 +4166,31 @@ public int uniquePathsWithObstacles(int[][] grid) {
 
 **Problem:** `grid` holds non-negative numbers. Moving only right or down from the top-left cell to the bottom-right cell, return the smallest possible sum of the numbers on the path (both end cells included).
 
-**Example:**
+**Examples:**
 ```
 Input:  grid = [[1, 3, 1],
                 [1, 5, 1],
                 [4, 2, 1]]
-Output: 7      (1 → 3 → 1 → 1 → 1)
+Output: 7
+Explanation: 1 -> 3 -> 1 -> 1 -> 1
+
+Input:  grid = [[1, 2, 3],
+                [4, 5, 6]]
+Output: 12
+Explanation: 1 + 2 + 3 + 6: along the top row, then down
+
+Input:  grid = [[1, 4, 1],
+                [2, 9, 1]]
+Output: 7
+Explanation: 1 + 4 + 1 + 1; greedily stepping to the cheaper 2 first forces the 9 (13)
+
+Input:  grid = [[5]]
+Output: 5
+Explanation: start and goal are the same cell, so its cost counts once
+
+Input:  grid = [[1, 2, 3]]
+Output: 6
+Explanation: one row: the only path walks right through every cell
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = old `dp[j]` (above), green = new `dp[j-1]` (left), orange = the route.
@@ -3722,13 +4243,33 @@ public int minPathSum(int[][] grid) {
 
 **Problem:** `matrix` is a grid of the characters `'0'` and `'1'`. Return the **area** of the largest square that contains only `'1'`s.
 
-**Example:**
+**Examples:**
 ```
 Input:  matrix = [["1","0","1","0","0"],
                   ["1","0","1","1","1"],
                   ["1","1","1","1","1"],
                   ["1","0","0","1","0"]]
-Output: 4      (a 2 × 2 square of 1s, e.g. rows 1–2, columns 2–3, counting from 0)
+Output: 4
+Explanation: a 2 × 2 square of 1s, e.g. rows 1–2, columns 2–3, counting from 0
+
+Input:  matrix = [["0","1"],
+                  ["1","1"]]
+Output: 1
+Explanation: at the bottom-right 1, up and left are 1 but the diagonal is 0: no 2 × 2
+
+Input:  matrix = [["0"]]
+Output: 0
+Explanation: there is no '1' at all, so there is no square
+
+Input:  matrix = [["1","1","1"],
+                  ["1","1","1"],
+                  ["1","1","1"]]
+Output: 9
+Explanation: the whole 3 × 3 matrix is 1s: side 3, area 3 × 3 = 9
+
+Input:  matrix = [["1","1","1"]]
+Output: 1
+Explanation: one row holds only a 1 × 1 square, however many 1s it has
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). A '1' cell reads blue (up), green (left) and purple (diagonal) and gets 1 + their min.
@@ -4010,10 +4551,27 @@ A·(B·C) :  (30·5·60) + (10·30·60) = 9000 + 18000 = 27000  ✗
 Same answer, 6× the work. That is the entire problem.
 ```
 
-**Example:**
+**Examples:**
 ```
 Input:  arr = [40, 20, 30, 10, 30]    (4 matrices: A1 = 40×20, A2 = 20×30, A3 = 30×10, A4 = 10×30)
-Output: 26000                         (cheapest bracketing: (A1·(A2·A3))·A4)
+Output: 26000
+Explanation: cheapest bracketing: (A1·(A2·A3))·A4
+
+Input:  arr = [10, 30, 5, 60]
+Output: 4500
+Explanation: (A1·A2)·A3 = 1500 + 3000; A1·(A2·A3) would cost 9000 + 18000 = 27000
+
+Input:  arr = [1, 2, 3, 4, 3]
+Output: 30
+Explanation: left to right, ((A1·A2)·A3)·A4 = 6 + 12 + 12, keeps every result 1 row tall
+
+Input:  arr = [10, 20, 30]
+Output: 6000
+Explanation: two matrices, one bracketing: 10·20·30 = 6000
+
+Input:  arr = [10, 20]
+Output: 0
+Explanation: a single matrix: nothing to multiply (dp[1][1] = 0)
 ```
 
 </details>
@@ -4152,10 +4710,27 @@ flowchart TD
 
 **Problem:** Cut a string `s` into pieces so that every piece is a palindrome (reads the same both ways). Return the **minimum number of cuts**.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "nitik"
-Output: 2        (n | iti | k)
+Output: 2
+Explanation: n | iti | k
+
+Input:  s = "aab"
+Output: 1
+Explanation: aa | b
+
+Input:  s = "abaab"
+Output: 1
+Explanation: a | baab; greedily taking the longest first piece "aba" would need 2 cuts
+
+Input:  s = "racecar"
+Output: 0
+Explanation: the whole string is already a palindrome, so no cut is needed
+
+Input:  s = "a"
+Output: 0
+Explanation: a single letter is a palindrome on its own
 ```
 
 Cutting after every letter (4 cuts) is always legal — single letters are palindromes — but wasteful.
@@ -4226,13 +4801,27 @@ public int minCut(String s) {
 
 **Problem:** The input is a string like `"T|F&T^F"`: `T`/`F` at the even indexes, the operators `&`, `|`, `^` at the odd ones. Count the ways to fully bracket it so that it evaluates to **true**.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "T^F|F"
-Output: 2      ((T^F)|F = T|F = T, and T^(F|F) = T^F = T)
+Output: 2
+Explanation: (T^F)|F = T|F = T, and T^(F|F) = T^F = T
 
 Input:  s = "T|F&T^F"
 Output: 5
+Explanation: by last operator applied: | gives 2 ways, & gives 1, ^ gives 2; 2 + 1 + 2 = 5
+
+Input:  s = "T"
+Output: 1
+Explanation: a single T is already true; there is nothing to bracket
+
+Input:  s = "T&F"
+Output: 0
+Explanation: the only bracketing is T&F, which is false
+
+Input:  s = "T^T^T"
+Output: 2
+Explanation: (T^T)^T = F^T = T and T^(T^T) = T^F = T; a false part can make a true whole
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Each cell holds a range's true and false counts; blue is the left part, purple the right part of operator `k`.
@@ -4315,10 +4904,23 @@ private int ways(String s, int i, int j, boolean isTrue) {
 
 **Problem:** `nums[i]` is the number on balloon `i`. Bursting a balloon earns (current left neighbour) × (its number) × (current right neighbour); a missing neighbour counts as `1`, and the two neighbours then become adjacent. Burst every balloon and return the most coins you can collect.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [3, 1, 5, 8]
 Output: 167
+Explanation: burst 1, 5, 3, then 8: 15 + 120 + 24 + 8
+
+Input:  nums = [1, 5]
+Output: 10
+Explanation: burst 1 first (1 × 1 × 5 = 5), then 5 (1 × 5 × 1 = 5); 5 first gives only 6
+
+Input:  nums = [3, 1, 5]
+Output: 35
+Explanation: burst 1 (3 × 1 × 5), then 3 (1 × 3 × 5), then 5 (1 × 5 × 1): 15 + 15 + 5
+
+Input:  nums = [7]
+Output: 7
+Explanation: both neighbours are missing and count as 1: 1 × 7 × 1
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow `k` bursts last; blue is the left part, purple the right, green the best `k`.
@@ -4383,10 +4985,27 @@ public int maxCoins(int[] nums) {
 
 **Problem:** You have `e` identical eggs and floors `1..f`. An egg breaks when dropped above a critical floor `c` (0 ≤ `c` ≤ `f`) and survives (reusable) at or below it. Return the fewest drops that **guarantee** finding `c`.
 
-**Example:**
+**Examples:**
 ```
 Input:  e = 3, f = 5
 Output: 3
+Explanation: first drop from floor 2, 3 or 4; either outcome then needs at most 2 more
+
+Input:  e = 2, f = 6
+Output: 3
+Explanation: first drop at floor 3: a break leaves floors 1-2, survival floors 4-6 (2 drops each)
+
+Input:  e = 2, f = 10
+Output: 4
+Explanation: start at floor 4; halving at floor 5 risks 1 + 4 = 5 drops if the egg breaks
+
+Input:  e = 1, f = 4
+Output: 4
+Explanation: one egg: test floors 1, 2, 3, 4 in order, since a break leaves no spare egg
+
+Input:  e = 4, f = 1
+Output: 1
+Explanation: one floor: a single drop tells whether c is 0 or 1
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Yellow is the drop floor `k`, blue the breaks side, purple the survives side, green the best floor.
@@ -4468,13 +5087,27 @@ private int drops(int e, int f) {
 
 **Problem:** A string is *scrambled* by splitting it at any point into two non-empty parts, optionally swapping them, and scrambling each part the same way, recursively. Given lowercase strings `a` and `b` of equal length, return true if `b` can be produced from `a`.
 
-**Example:**
+**Examples:**
 ```
 Input:  a = "great", b = "rgeat"
-Output: true   (split "great" into "gr" | "eat", swap "g" and "r" inside "gr")
+Output: true
+Explanation: split "great" into "gr" | "eat", swap "g" and "r" inside "gr"
 
 Input:  a = "abcde", b = "caebd"
 Output: false
+Explanation: at every split, a's left part has different letters from both ends of b
+
+Input:  a = "a", b = "a"
+Output: true
+Explanation: equal strings are a scramble with no split at all
+
+Input:  a = "abc", b = "bca"
+Output: true
+Explanation: split "a" | "bc" and swap the two halves: "bc" + "a"
+
+Input:  a = "abcd", b = "bdac"
+Output: false
+Explanation: same letters, but no split and swap gives it; the letter check alone isn't enough
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Each split `k` is tried straight and swapped; blue pairs the left halves, purple the right, OK / NO marks each check.
@@ -4806,10 +5439,27 @@ answer = max(sold, free)
 
 **Problem:** `prices[i]` is the price of one share on day `i` (there are `n` days). You may hold at most one share at a time and make at most `k` transactions — one transaction is a buy followed later by a sell. Return the largest total profit.
 
-**Example:**
+**Examples:**
 ```
 Input:  k = 2, prices = [3, 2, 6, 5, 0, 3]
-Output: 7      (buy at 2, sell at 6; buy at 0, sell at 3)
+Output: 7
+Explanation: buy at 2, sell at 6; buy at 0, sell at 3
+
+Input:  k = 2, prices = [2, 4, 1]
+Output: 2
+Explanation: buy at 2, sell at 4; the last day only falls, so no second trade pays
+
+Input:  k = 1, prices = [7, 6, 4, 3, 1]
+Output: 0
+Explanation: prices only fall, so every trade loses money; making none is best
+
+Input:  k = 1, prices = [1, 3, 2, 5]
+Output: 4
+Explanation: one trade: buy at 1, sell at 5; summing every rise (2 + 3 = 5) ignores k
+
+Input:  k = 0, prices = [1, 3]
+Output: 0
+Explanation: no transactions are allowed, so the rise from 1 to 3 can't be used
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Blue = rest, green = buy or sell, red = −∞.
@@ -4926,10 +5576,27 @@ Winning path: buy at 2 (d1: -2) → sell at 6 (d2: 4) → buy at 0 (d4: 4) → s
 
 **Problem:** There are `n` workers and `n` tasks, and `cost[i][j]` is what worker `i` charges for task `j`. Give every worker exactly one task, all different, at the lowest total cost.
 
-**Example:**
+**Examples:**
 ```
 Input:  cost = [[9, 2, 7], [6, 4, 3], [5, 8, 1]]
-Output: 9      (worker 0 → task 1: 2, worker 1 → task 0: 6, worker 2 → task 2: 1)
+Output: 9
+Explanation: worker 0 -> task 1: 2, worker 1 -> task 0: 6, worker 2 -> task 2: 1
+
+Input:  cost = [[5]]
+Output: 5
+Explanation: one worker and one task, so there is nothing to choose
+
+Input:  cost = [[1, 2], [3, 4]]
+Output: 5
+Explanation: both possible assignments cost the same: 1 + 4 = 2 + 3 = 5
+
+Input:  cost = [[1, 2], [1, 10]]
+Output: 3
+Explanation: greedy worker 0 -> task 0 (1) forces the 10; swapping costs 2 + 1 = 3
+
+Input:  cost = [[9, 2, 7, 8], [6, 4, 3, 7], [5, 8, 1, 8], [7, 6, 9, 4]]
+Output: 13
+Explanation: the 3 x 3 answer above (9) plus worker 3 -> task 3 (4)
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Green = `dp[mask] + cost`, blue = the value already there; the smaller stays.
@@ -5026,10 +5693,27 @@ public class TaskAssignment {
 
 **Problem:** Given `N`, count the integers from 0 to `N` (both included) in which no two neighbouring digits are equal.
 
-**Example:**
+**Examples:**
 ```
 Input:  N = 25
-Output: 24      (of the 26 numbers 0..25, only 11 and 22 are left out)
+Output: 24
+Explanation: of the 26 numbers 0..25, only 11 and 22 are left out
+
+Input:  N = 0
+Output: 1
+Explanation: just the number 0; a single digit has no neighbour to clash with
+
+Input:  N = 11
+Output: 11
+Explanation: of the 12 numbers 0..11, only 11 itself is left out
+
+Input:  N = 100
+Output: 91
+Explanation: 11, 22, ..., 99 and 100 fail (10 of 101); the 0s padding 005 don't count
+
+Input:  N = 1000
+Output: 820
+Explanation: 10 one-digit + 81 two-digit + 729 three-digit numbers; 1000 itself fails
 ```
 
 **Watch the table fill, one step per frame** (press ▶ to play, or ⏭ to step). Rows = first digit, columns = second; green = counted, red = equal pair, grey = above N.

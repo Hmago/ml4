@@ -197,10 +197,27 @@ A judge (and an interviewer's patience) runs roughly **10^8 simple operations pe
 
 **Problem:** You get a **sorted** array and a target. Return the indices of the two values that add up to the target (0-based; LeetCode's version is 1-based).
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 7, 11, 15], target = 9
-Output: [0, 1]        (2 + 7 = 9)
+Output: [0, 1]
+Explanation: 2 + 7 = 9
+
+Input:  nums = [-3, -1, 0, 4, 6], target = 3
+Output: [0, 4]
+Explanation: -3 + 6 = 3; negative values need no special handling
+
+Input:  nums = [1, 3, 3, 8], target = 6
+Output: [1, 2]
+Explanation: 3 + 3 = 6 from two different positions holding equal values
+
+Input:  nums = [1, 2, 3], target = 6
+Output: [-1, -1]
+Explanation: no pair sums to 6; with <= the 3 would pair with itself as [2, 2]
+
+Input:  nums = [2, 5], target = 7
+Output: [0, 1]
+Explanation: only two values: the very first sum checked already matches
 ```
 
 **Walk-through (the animation as text):** `L` = left pointer, `R` = right pointer, `x` = ruled out.
@@ -267,10 +284,27 @@ public class TwoSumSorted {
 
 **Problem:** Each number in `height` is a vertical wall, one unit from the next. Return the most water two walls can hold between them.
 
-**Example:**
+**Examples:**
 ```
 Input:  height = [1, 8, 6, 2, 5, 4, 8, 3, 7]
-Output: 49        (walls at index 1 and 8: min(8, 7) x 7)
+Output: 49
+Explanation: walls at index 1 and 8: min(8, 7) x 7
+
+Input:  height = [1, 1]
+Output: 1
+Explanation: the only pair: min(1, 1) x 1
+
+Input:  height = [4, 3, 2, 1, 4]
+Output: 16
+Explanation: the two end walls: min(4, 4) x 4; here the widest pair is best
+
+Input:  height = [1, 2, 1]
+Output: 2
+Explanation: walls at index 0 and 2: min(1, 1) x 2 beats any pair using the tall 2
+
+Input:  height = [2, 3, 10, 5, 7, 8, 9]
+Output: 36
+Explanation: walls at index 2 and 6: min(10, 9) x 4; the short end walls are dropped
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = L, purple = R, light blue = water being scored, grey = dropped walls.
@@ -340,10 +374,22 @@ public class ContainerWithMostWater {
 
 **Problem:** Remove the duplicates from a sorted array **in place** (no second array) and return `k`, the number of unique values; the first `k` slots must then hold them in order.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 1, 2, 2, 3]
 Output: 3        (array starts [1, 2, 3, ...])
+
+Input:  nums = [0, 0, 1, 1, 1, 2, 2, 3, 3, 4]
+Output: 5        (array starts [0, 1, 2, 3, 4, ...])
+
+Input:  nums = [2, 2, 2]
+Output: 1        (array starts [2, ...])
+
+Input:  nums = [-3, -1, 0, 4]
+Output: 4        (no duplicates: array stays [-3, -1, 0, 4])
+
+Input:  nums = []
+Output: 0        (empty array, nothing to keep)
 ```
 
 **Walk-through:** `W` = writer (the last unique value kept so far), `R` = reader.
@@ -428,10 +474,27 @@ Sum of positions 1 to 3 = `1 + 4 + 1` = **6** = (first 4 numbers) − (first 1) 
 
 **Problem:** Count the **subarrays** (unbroken stretches) of `nums` that add up to exactly `k`.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 1, 1], k = 2
-Output: 2        (the first two 1s, and the last two)
+Output: 2
+Explanation: the first two 1s, and the last two
+
+Input:  nums = [1, 2, 3], k = 3
+Output: 2
+Explanation: [1, 2] and [3] both add up to 3
+
+Input:  nums = [1, -1, 0], k = 0
+Output: 3
+Explanation: [1, -1], [0] and [1, -1, 0]; without seen.put(0, 1) you get 1
+
+Input:  nums = [0, 0, 0], k = 0
+Output: 6
+Explanation: all 6 stretches add up to 0; seen must count repeats, not just mark them
+
+Input:  nums = [5], k = 3
+Output: 0
+Explanation: the only stretch is [5], which does not add up to 3
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = current number, green = totals that start a matching stretch, cards = the seen map.
@@ -501,10 +564,27 @@ public class SubarraySumEqualsK {
 
 **Problem:** Return the largest sum of a contiguous run (subarray) of at least one number.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [-2, 1, -3, 4, -1, 2]
-Output: 5        (the run [4, -1, 2])
+Output: 5
+Explanation: the run [4, -1, 2]
+
+Input:  nums = [-3, -1, -2]
+Output: -1
+Explanation: all negative: the best run is just [-1]; starting best at 0 gives 0
+
+Input:  nums = [7]
+Output: 7
+Explanation: one number is the only possible run
+
+Input:  nums = [5, 4, -1, 7, 8]
+Output: 23
+Explanation: the whole array: crossing the -1 is worth it to reach 7 and 8
+
+Input:  nums = [2, -5, 3]
+Output: 3
+Explanation: start fresh at 3: carrying 2 - 5 = -3 forward would only lower it
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Green = extend the run, blue = start fresh, orange = the best run.
@@ -575,10 +655,27 @@ public class MaximumSubarray {
 
 **Problem:** Sort an array of only `0`, `1` and `2` (three "colours") **in place, in one pass** — no library sort, no second array.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 0, 2, 1, 1, 0]
 Output: [0, 0, 1, 1, 2, 2]
+Explanation: 0s swapped to the front, 2s to the back, 1s stay in the middle, in one pass
+
+Input:  nums = [1, 2, 0]
+Output: [0, 1, 2]
+Explanation: the 0 swapped in from the back is rechecked; moving mid on gives [1, 0, 2]
+
+Input:  nums = [2, 2, 0, 0]
+Output: [0, 0, 2, 2]
+Explanation: no 1s at all: the 2s go to the back and the 0s come forward
+
+Input:  nums = [0, 1, 1, 2]
+Output: [0, 1, 1, 2]
+Explanation: already sorted: mid walks through and nothing moves out of place
+
+Input:  nums = [1]
+Output: [1]
+Explanation: a single element is already sorted
 ```
 
 **Walk-through (the animation as text):** `L` = where the next 0 goes, `M` = the number being checked, `H` = where the next 2 goes. Each step shows the array **before** the move.
@@ -674,10 +771,27 @@ A **subarray** is contiguous, so windows, prefix sums and two pointers apply. A 
 
 **Problem:** Return every triplet from three **different** positions of `nums` that adds up to `0` — each set of values once, in any order.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [-1, 0, 1, 2, -1, -4]
 Output: [[-1, -1, 2], [-1, 0, 1]]
+Explanation: fix -1: pairs (-1, 2) and (0, 1); the repeated -1 fix is skipped
+
+Input:  nums = [0, 0, 0, 0]
+Output: [[0, 0, 0]]
+Explanation: four zeros but one unique triplet; the repeat skips stop copies
+
+Input:  nums = [0, 1, 1]
+Output: []
+Explanation: the only triplet adds up to 2, so there is no answer
+
+Input:  nums = [-2, 0, 0, 2, 2]
+Output: [[-2, 0, 2]]
+Explanation: listed once; without the inner skips it would appear twice
+
+Input:  nums = [-2, 0, 1, 1, 2]
+Output: [[-2, 0, 2], [-2, 1, 1]]
+Explanation: both start with -2; the two 1s sit at different positions
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). i = fixed number, lo and hi = pointers, green = triplet found, red = repeat skipped.
@@ -752,10 +866,27 @@ public class ThreeSum {
 
 **Problem:** Return `answer` where `answer[i]` is the product of every element of `nums` **except** `nums[i]` — in O(n), without division.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 2, 3, 4]
-Output: [24, 12, 8, 6]          e.g. answer[1] = 1 × 3 × 4 = 12
+Output: [24, 12, 8, 6]
+Explanation: e.g. answer[1] = 1 × 3 × 4 = 12
+
+Input:  nums = [-1, 1, 0, -3, 3]
+Output: [0, 0, 9, 0, 0]
+Explanation: only index 2 skips the zero: -1 × 1 × -3 × 3 = 9; division breaks here
+
+Input:  nums = [0, 0, 2]
+Output: [0, 0, 0]
+Explanation: two zeros: every product still includes at least one 0
+
+Input:  nums = [2, 3]
+Output: [3, 2]
+Explanation: with two numbers, each answer is simply the other number
+
+Input:  nums = [-2, -3, 4]
+Output: [-12, -8, 6]
+Explanation: signs carry through: answer[2] = -2 × -3 = 6
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = left pass, purple = right pass and suffix, green = finished answers.
@@ -822,10 +953,27 @@ public class ProductOfArrayExceptSelf {
 
 **Problem:** Each number is the height of a bar of width 1. How many units of rain water are trapped between the bars?
 
-**Example:**
+**Examples:**
 ```
 Input:  height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]
 Output: 6
+Explanation: water above bars 2, 4, 5, 6 and 9: 1 + 1 + 2 + 1 + 1
+
+Input:  height = [4, 2, 0, 3, 2, 5]
+Output: 9
+Explanation: the pool between 4 and 5 fills to height 4: 2 + 4 + 1 + 2
+
+Input:  height = [2, 0, 2]
+Output: 2
+Explanation: one pit of depth 2 between two equal walls
+
+Input:  height = [3, 2, 1]
+Output: 0
+Explanation: heights only fall to the right, so no right wall holds any water
+
+Input:  height = [5, 0, 1]
+Output: 1
+Explanation: the short right wall caps the water at 1, not the tall left wall
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue l, purple r, dashed = leftMax and rightMax, light blue = trapped water.
@@ -992,7 +1140,23 @@ public class TwoSum {
 
 **Problem:** Given lowercase strings `s` and `t`, return `true` if `t` uses exactly the letters of `s`, each the same number of times, in any order.
 
-**Example:** `s = "abb"`, `t = "bab"` → `true`
+**Examples:**
+```
+Input:  s = "abb", t = "bab"
+Output: true
+
+Input:  s = "rat", t = "car"
+Output: false
+
+Input:  s = "a", t = "ab"
+Output: false
+
+Input:  s = "aab", t = "abb"
+Output: false
+
+Input:  s = "", t = ""
+Output: true
+```
 
 **Dry run:** one counter per letter, in a single pass.
 ```
@@ -1118,7 +1282,28 @@ Other keys that make group-mates collide: digit sum, remainder mod k, a grid row
 
 **Problem:** Given an **unsorted** array of integers, return the length of the longest run of consecutive integers (like `1, 2, 3, 4`); the run's values can sit anywhere in the array.
 
-**Example:** `[100, 4, 200, 1, 3, 2]` → `4` (the run 1, 2, 3, 4)
+**Examples:**
+```
+Input:  nums = [100, 4, 200, 1, 3, 2]
+Output: 4
+Explanation: the run 1, 2, 3, 4
+
+Input:  nums = [1, 2, 0, 0]
+Output: 3
+Explanation: the run 0, 1, 2; the repeated 0 is one value in the set, not a longer run
+
+Input:  nums = []
+Output: 0
+Explanation: an empty array has no run at all
+
+Input:  nums = [-1, -3, -2, 10]
+Output: 3
+Explanation: negatives work the same: the run -3, -2, -1; 10 stands alone
+
+Input:  nums = [9, 1, 5]
+Output: 1
+Explanation: no two values are consecutive, so every run has length 1
+```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = current number, blue = run start, grey = skipped, green = the walk up.
 
@@ -1400,10 +1585,19 @@ Each block shows one method; `LinkedLists.java` at the end of the section runs t
 
 **Problem:** Return the middle node of a linked list; for an even length, the second middle (`1 -> 2 -> 3 -> 4 -> 5 -> 6` gives node `4`).
 
-**Example:**
+**Examples:**
 ```
 Input:  1 -> 2 -> 3 -> 4 -> 5
 Output: node 3
+
+Input:  1 -> 2 -> 3 -> 4 -> 5 -> 6
+Output: node 4
+
+Input:  7
+Output: node 7
+
+Input:  1 -> 2
+Output: node 2
 ```
 
 **Walk-through:** `S` = slow (1 step at a time), `F` = fast (2 steps at a time).
@@ -1444,10 +1638,23 @@ public ListNode findMiddle(ListNode head) {
 
 **Problem:** Return the node where a linked list's cycle begins (some node's `next` points back to an earlier node), or `null` if there is none. Use O(1) extra space.
 
-**Example:**
+**Examples:**
 ```
 Input:  1 -> 2 -> 3 -> 4 -> 5 -> 6, and 6 links back to 3 (index 2)
 Output: node 3
+Explanation: the tail 6 points back to 3, so 3 is where the loop is entered
+
+Input:  1 -> 2 -> 3, no cycle
+Output: null
+Explanation: fast reaches the end of the list, so there is no loop to enter
+
+Input:  1 -> 2, and 2 links back to 1 (index 0)
+Output: node 1
+Explanation: the whole list is the loop, so the entrance is the head itself
+
+Input:  1, and 1 links back to itself (index 0)
+Output: node 1
+Explanation: a single node whose next is itself is a cycle of length 1
 ```
 
 **Walk-through (the animation as text):** phase 1 proves there is a loop; phase 2 finds its entrance.
@@ -1507,10 +1714,19 @@ public ListNode detectCycleStart(ListNode head) {
 
 **Problem:** Reverse a singly linked list and return the new head.
 
-**Example:**
+**Examples:**
 ```
 Input:  1 -> 2 -> 3
 Output: 3 -> 2 -> 1
+
+Input:  1 -> 2
+Output: 2 -> 1
+
+Input:  7
+Output: 7
+
+Input:  null (empty list)
+Output: null
 ```
 
 **Walk-through (the animation as text):** `prev` heads the reversed part, `curr` the part still to do.
@@ -1556,10 +1772,19 @@ public ListNode reverseList(ListNode head) {
 
 **Problem:** Splice the nodes of two sorted linked lists into one sorted list and return its head.
 
-**Example:**
+**Examples:**
 ```
 Input:  l1 = 1 -> 2 -> 4,  l2 = 1 -> 3 -> 4
 Output: 1 -> 1 -> 2 -> 3 -> 4 -> 4
+
+Input:  l1 = 1 -> 2 -> 3,  l2 = 4 -> 5
+Output: 1 -> 2 -> 3 -> 4 -> 5
+
+Input:  l1 = null,  l2 = 0
+Output: 0
+
+Input:  l1 = null,  l2 = null
+Output: null
 ```
 
 **Walk-through:** the two heads compared (a tie takes `l1`, because of `<=`) and the result so far.
@@ -1608,10 +1833,23 @@ public ListNode mergeTwoLists(ListNode l1, ListNode l2) {
 
 **Problem:** Delete the nth node from the end of a linked list (`n = 1` is the last) and return the head, in one pass.
 
-**Example:**
+**Examples:**
 ```
 Input:  1 -> 2 -> 3 -> 4 -> 5,  n = 2
 Output: 1 -> 2 -> 3 -> 5
+Explanation: 4 is the 2nd node from the end, so it is unlinked
+
+Input:  1,  n = 1
+Output: null
+Explanation: removing the only node leaves an empty list
+
+Input:  1 -> 2,  n = 2
+Output: 2
+Explanation: n equals the length, so the head goes; return dummy.next, not head
+
+Input:  1 -> 2 -> 3,  n = 1
+Output: 1 -> 2
+Explanation: n = 1 is the last node; slow stops on 2 and drops 3
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = `slow`, purple = `fast`, orange ring = the target, green arc = the unlink.
@@ -1685,10 +1923,23 @@ Palindrome Linked List (find middle, reverse the second half, compare), Reorder 
 
 **Problem:** Rearrange a linked list **in place** so it goes first, last, second, second-last, third, … Change the links, not the node values.
 
-**Example:**
+**Examples:**
 ```
 Input:  1 -> 2 -> 3 -> 4 -> 5
 Output: 1 -> 5 -> 2 -> 4 -> 3
+Explanation: first, last, second, second-last, then the middle 3 ends the list
+
+Input:  1 -> 2 -> 3 -> 4
+Output: 1 -> 4 -> 2 -> 3
+Explanation: even length: the middle is 3, so the back half is just 4, woven after 1
+
+Input:  1 -> 2
+Output: 1 -> 2
+Explanation: first then last is already the order, so nothing moves
+
+Input:  1
+Output: 1
+Explanation: a single node is its own first and last; the list is unchanged
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Green = the middle; blue and orange arrows = the links each weave round sets.
@@ -2110,10 +2361,22 @@ pop 2, pop 3, empty true
 
 **Problem:** a string of `( ) [ ] { }` is valid if every opener is closed by the same type, in the right order, and nothing is left open.
 
-**Example:**
+**Examples:**
 ```
-Input:  s = "{[]}"    Output: true
-Input:  s = "([)]"    Output: false
+Input:  s = "{[]}"
+Output: true
+
+Input:  s = "([)]"
+Output: false
+
+Input:  s = "()[]{}"
+Output: true
+
+Input:  s = ")("
+Output: false
+
+Input:  s = "((("
+Output: false
 ```
 
 **Walk-through:** the stack of still-open brackets (top on the right).
@@ -2560,10 +2823,22 @@ The interview version is bigger: **binary search finds the border where a yes/no
 
 **Problem:** You get an array sorted in ascending order and a `target`. Return the index of `target`, or `-1` if it is not there.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [-1, 0, 3, 5, 9, 12], target = 9
 Output: 4
+
+Input:  nums = [-1, 0, 3, 5, 9, 12], target = 2
+Output: -1
+
+Input:  nums = [5], target = 5
+Output: 0
+
+Input:  nums = [2, 4, 6, 8], target = 8
+Output: 3
+
+Input:  nums = [], target = 1
+Output: -1
 ```
 
 **Walk-through:** `L` = low end, `H` = high end, `M` = middle. The target, if present, is always between `L` and `H`.
@@ -2628,10 +2903,27 @@ target 2 -> -1
 
 **Problem:** You get a sorted array that may contain repeats, and a `target`. Find where the run of `target` *starts* and where it *ends*, and so how many copies there are.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 3, 3, 3, 5, 7], target = 3
-Output: bisectLeft 1, bisectRight 4, count 3      (the 3s sit at positions 1..3)
+Output: bisectLeft 1, bisectRight 4, count 3
+Explanation: the 3s sit at positions 1..3
+
+Input:  nums = [1, 3, 3, 3, 5, 7], target = 4
+Output: bisectLeft 4, bisectRight 4, count 0
+Explanation: 4 is missing; both searches land on its insert spot, position 4
+
+Input:  nums = [2, 2, 2, 2], target = 2
+Output: bisectLeft 0, bisectRight 4, count 4
+Explanation: every value is 2, so the run is the whole array, positions 0..3
+
+Input:  nums = [1, 3, 5], target = 9
+Output: bisectLeft 3, bisectRight 3, count 0
+Explanation: 9 is above every value; both return n = 3 because hi starts past the end
+
+Input:  nums = [], target = 1
+Output: bisectLeft 0, bisectRight 0, count 0
+Explanation: an empty array: lo = hi = 0, so the loop never runs
 ```
 
 **Walk-through (the animation as text):** `L`, `M`, `H` = low, middle, high. `H` starts one **past the end** (position 6), in case no value passes the test.
@@ -2720,10 +3012,27 @@ target 4 -> bisectLeft 4, bisectRight 4, count 0
 
 **Problem:** Koko has piles of bananas and `h` hours. She picks a speed `s` = **bananas per hour**. Each hour she eats from one pile only, up to `s` bananas; if the pile has fewer, she finishes it and waits for the next hour. So a pile takes `ceil(pile / s)` hours. Return the **slowest speed that still finishes every pile within `h` hours**.
 
-**Example:**
+**Examples:**
 ```
 Input:  piles = [3, 6, 7, 11], h = 8
 Output: 4
+Explanation: speed 4 takes 1 + 2 + 2 + 3 = 8 hours; speed 3 would need 10
+
+Input:  piles = [30, 11, 23, 4, 20], h = 5
+Output: 30
+Explanation: one hour per pile, so the speed must clear the biggest pile, 30, in one go
+
+Input:  piles = [30, 11, 23, 4, 20], h = 6
+Output: 23
+Explanation: speed 23 takes 2 + 1 + 1 + 1 + 1 = 6 hours; speed 22 would need 7
+
+Input:  piles = [7], h = 2
+Output: 4
+Explanation: speed 3 needs ceil(7 / 3) = 3 hours; integer 7 / 3 = 2 would wrongly accept it
+
+Input:  piles = [5], h = 10
+Output: 1
+Explanation: even speed 1 finishes in 5 hours, so the slowest possible speed wins
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). `lo`, `mid` and `hi` move along the speeds; green chips finish within 8 hours, red ones are too slow, and the bars split each pile into hours.
@@ -2800,10 +3109,27 @@ public class KokoEatingBananas {
 
 **Problem:** A sorted array was **rotated**: cut at some point and the two pieces swapped, e.g. `[0, 1, 2, 4, 5, 6, 7]` → `[4, 5, 6, 7, 0, 1, 2]`. Return the index of `target`, or `-1`, in O(log n). No duplicates.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [4, 5, 6, 7, 0, 1, 2], target = 0
 Output: 4
+Explanation: 0 sits at index 4, just after the rotation point
+
+Input:  nums = [4, 5, 6, 7, 0, 1, 2], target = 3
+Output: -1
+Explanation: 3 is not in the array, so the range empties without a match
+
+Input:  nums = [6, 7, 1, 2, 3, 4, 5], target = 7
+Output: 1
+Explanation: the right half 2..5 is sorted but cannot hold 7, so the search goes left
+
+Input:  nums = [1], target = 0
+Output: -1
+Explanation: the only element is not the target
+
+Input:  nums = [3, 1], target = 1
+Output: 1
+Explanation: lo == mid makes the left half one cell; with < instead of <= this returns -1
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Bar height = the value; the bracket marks the sorted half (green: the target is inside, red: it is not).
@@ -2921,10 +3247,22 @@ At every midpoint **one half is still sorted** (compare `nums[lo]` with `nums[mi
 
 **Problem:** You get an array of numbers and a window size `k`. Return the largest sum of any `k` consecutive elements.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 1, 5, 1, 3, 2], k = 3
 Output: 9          (5 + 1 + 3)
+
+Input:  nums = [3, -1, 4, -1, 5], k = 3
+Output: 8          (4 - 1 + 5)
+
+Input:  nums = [1, 2, 3], k = 3
+Output: 6          (the whole array)
+
+Input:  nums = [4], k = 1
+Output: 4          (a single element)
+
+Input:  nums = [-1, -2, -3], k = 2
+Output: -3         (-1 - 2; every sum is negative)
 ```
 
 **Walk-through:** the window's sum as it slides one step at a time.
@@ -2980,10 +3318,27 @@ public class MaxSumSubarrayOfSizeK {
 
 **Problem:** You get a string. Return the length of the longest substring (neighbouring characters, no gaps) in which no character appears twice.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "abcabcbb"
-Output: 3          ("abc")
+Output: 3
+Explanation: "abc"; every longer stretch repeats a letter
+
+Input:  s = "bbbbb"
+Output: 1
+Explanation: "b"; any two neighbours are already the same letter
+
+Input:  s = "pwwkew"
+Output: 3
+Explanation: "wke"; "pwke" skips a letter, so it is not a substring
+
+Input:  s = "abba"
+Output: 2
+Explanation: "ab" or "ba"; the old a at index 0 is outside the window, so ignore it
+
+Input:  s = ""
+Output: 0
+Explanation: an empty string has no characters, so the longest substring is empty
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). The blue frame is the window, red marks the earlier copy of a repeated letter, and the arrow shows `left` jumping past it.
@@ -3082,10 +3437,27 @@ for (int right = 0; right < n; right++) {
 
 **Problem:** You get two strings `s` and `t`. Return the shortest substring of `s` that contains every character of `t`, counting repeats (if `t` has two A's, the window needs two A's). If there is none, return `""`.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "ADOBECODEBANC", t = "ABC"
 Output: "BANC"
+Explanation: shortest stretch with an A, a B and a C; "ADOBEC" also works but is longer
+
+Input:  s = "a", t = "a"
+Output: "a"
+Explanation: the whole string is the window
+
+Input:  s = "a", t = "aa"
+Output: ""
+Explanation: t needs two a's but s has only one, so no window exists
+
+Input:  s = "ABCAB", t = "AAB"
+Output: "ABCA"
+Explanation: repeats count: the window needs two A's, so "AB" and "CAB" fall short
+
+Input:  s = "bba", t = "ab"
+Output: "ba"
+Explanation: order inside the window does not matter; "ba" holds both letters
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = growing, green = valid (`have == total`), red = broken; the orange bar is the best window so far.
@@ -3169,10 +3541,27 @@ public class MinimumWindowSubstring {
 
 **Problem:** You get a string of capital letters and a number `k`. You may replace at most `k` characters with any letter. Return the length of the longest run of one repeated letter you can create.
 
-**Example:**
+**Examples:**
 ```
 Input:  s = "AABABBA", k = 1
-Output: 4          (replace the B in "AABA" -> "AAAA")
+Output: 4
+Explanation: replace the B in "AABA" -> "AAAA"
+
+Input:  s = "ABAB", k = 2
+Output: 4
+Explanation: replace both B's: the whole string becomes "AAAA"
+
+Input:  s = "ABBCB", k = 1
+Output: 4
+Explanation: replace the C in "BBCB" -> "BBBB"
+
+Input:  s = "ABCD", k = 0
+Output: 1
+Explanation: no replacements and no two neighbours match, so every run is one letter
+
+Input:  s = "AB", k = 5
+Output: 2
+Explanation: spare replacements don't help; a run can't be longer than the string
 ```
 
 **Walk-through (the animation as text):** `size − maxFreq` = replacements the window needs; it must stay ≤ 1. Watch `maxFreq`: it never goes down (see the note below).
@@ -3365,10 +3754,22 @@ public int maxDepth(TreeNode node) {
 
 **Problem:** Return the number of edges on the longest path between any two nodes (it need not pass through the root).
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [1, 2, 3, 4, 5]
 Output: 3          (path 4 -> 2 -> 1 -> 3)
+
+Input:  root = [1, 2, null, 3, 4, 5, null, null, 6]
+Output: 4          (path 5 -> 3 -> 2 -> 4 -> 6, skips the root)
+
+Input:  root = [1, 2]
+Output: 1          (path 2 -> 1)
+
+Input:  root = [1]
+Output: 0          (one node, no edges)
+
+Input:  root = []
+Output: 0          (empty tree)
 ```
 
 **Walk-through:** children finish first; each call records `l + r` and returns `1 + max(l, r)`.
@@ -3422,10 +3823,27 @@ private int depth(TreeNode n) {
 
 **Problem:** Return the largest sum along any path — a chain of connected nodes that may start and end anywhere; it can bend at one node but never fork.
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [-10, 9, 20, null, null, 15, 7]
-Output: 42  (path: 15 -> 20 -> 7)
+Output: 42
+Explanation: path: 15 -> 20 -> 7; it bends at 20 and never touches the root
+
+Input:  root = [1, 2, 3]
+Output: 6
+Explanation: path 2 -> 1 -> 3 bends at the root and takes both children
+
+Input:  root = [1, -2, 3]
+Output: 4
+Explanation: path 1 -> 3; the -2 branch would only lower the sum, so its gain counts as 0
+
+Input:  root = [-3]
+Output: -3
+Explanation: a path needs at least one node; starting maxSum at 0 would wrongly give 0
+
+Input:  root = [-2, -1]
+Output: -1
+Explanation: all negative: the best path is the single node -1, not the root
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Yellow calls wait on the stack, green badges are gains handed up, orange marks the best bend.
@@ -3491,10 +3909,27 @@ private int gain(TreeNode n) {
 
 **Problem:** Return the node values level by level — each level as its own list, left to right, starting with the root.
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [3, 9, 20, null, null, 15, 7]
 Output: [[3], [9, 20], [15, 7]]
+Explanation: one list per depth: the root, its children, then 20's children
+
+Input:  root = [1, 2, 3, 4, null, null, 5]
+Output: [[1], [2, 3], [4, 5]]
+Explanation: 4 and 5 have different parents but share depth 2, so they share a list
+
+Input:  root = [1, 2, null, 3]
+Output: [[1], [2], [3]]
+Explanation: a one-sided chain has one node per level
+
+Input:  root = [1]
+Output: [[1]]
+Explanation: just the root, on a level of its own
+
+Input:  root = []
+Output: []
+Explanation: an empty tree has no levels, so the result list stays empty
 ```
 
 **Walk-through (the animation as text):** at the start of each level, the queue holds exactly that level.
@@ -3550,10 +3985,27 @@ public List<List<Integer>> levelOrder(TreeNode root) {
 
 **Problem:** Return `true` if the tree is a valid binary search tree (BST): every value in a node's left subtree is smaller than it, every value in its right subtree larger (strictly).
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [5, 4, 6, null, null, 3, 7]
 Output: false
+Explanation: 3 is in 5's right subtree, so it must be > 5; it is only < its parent 6
+
+Input:  root = [2, 1, 3]
+Output: true
+Explanation: 1 < 2 < 3, and each subtree is a single node
+
+Input:  root = [5, 3, 8, 1, 6]
+Output: false
+Explanation: 6 is a right child of 3 but sits in 5's left subtree, so it must be < 5
+
+Input:  root = [2, 2, 2]
+Output: false
+Explanation: strict order: a child equal to its parent breaks the BST rule
+
+Input:  root = [-2147483648]
+Output: true
+Explanation: a single node is valid; int bounds would reject Integer.MIN_VALUE here
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Each call's (low, high) range is drawn on the number line: green fits, red breaks it, grey is never checked.
@@ -3609,10 +4061,27 @@ private boolean validate(TreeNode node, long low, long high) {
 
 **Problem:** Return the **lowest common ancestor** (LCA) of nodes `p` and `q` — the deepest node with both below it (a node counts as below itself). Solved for any binary tree, and with BST order (the example is a BST).
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p = 3, q = 5
 Output: 4
+Explanation: 3 and 5 are the two children of 4, so 4 is the deepest node above both
+
+Input:  root = [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p = 2, q = 8
+Output: 6
+Explanation: 2 is in the root's left subtree and 8 in its right, so they split at 6
+
+Input:  root = [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p = 2, q = 4
+Output: 2
+Explanation: 4 is below 2, and a node counts as below itself, so the answer is 2
+
+Input:  root = [6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], p = 0, q = 5
+Output: 2
+Explanation: 0 is 2's left child and 5 sits under 2's right child 4; they split at 2
+
+Input:  root = [2, 1], p = 2, q = 1
+Output: 2
+Explanation: the root is p itself and q = 1 is its child, so the root is returned
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue reports are p or q, orange is the LCA travelling up, grey null means nothing found below.
@@ -3683,11 +4152,32 @@ public TreeNode lcaBST(TreeNode root, TreeNode p, TreeNode q) {
 
 **Problem:** `serialize` turns a binary tree into a string; `deserialize` turns the string back into the same tree (shape and values).
 
-**Example:**
+**Examples:**
 ```
 Input:  root = [1, 2, 3]
 Output: serialize   -> "1,2,null,null,3,null,null,"
         deserialize -> [1, 2, 3]
+Explanation: preorder with a null marker for every missing child: 4 markers for 3 nodes
+
+Input:  root = [1, 2, 3, null, null, 4, 5]
+Output: serialize   -> "1,2,null,null,3,4,null,null,5,null,null,"
+        deserialize -> [1, 2, 3, null, null, 4, 5]
+Explanation: 2 is a leaf, so its two nulls come before the whole right subtree 3, 4, 5
+
+Input:  root = []
+Output: serialize   -> "null,"
+        deserialize -> []
+Explanation: an empty tree is a single null marker, which reads back as null
+
+Input:  root = [1, 2]
+Output: serialize   -> "1,2,null,null,null,"
+        deserialize -> [1, 2]
+Explanation: 2 is the left child: its two nulls come first, then the null for 1's right
+
+Input:  root = [1, null, 2]
+Output: serialize   -> "1,null,2,null,null,"
+        deserialize -> [1, null, 2]
+Explanation: the null right after 1 means "no left child", so 2 is rebuilt as the right child
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). The top row is the string being written, then the token queue being read; #k links each node to its token.
@@ -4014,10 +4504,27 @@ Inside, it is an array read as a tree (children of `i` at `2i + 1`, `2i + 2`), e
 
 **Problem:** Return the Kth largest value in `nums` — position k when sorted from biggest to smallest. Repeated values count separately.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [3, 2, 1, 5, 6, 4], k = 2
-Output: 5        (sorted biggest first: 6, 5, 4, 3, 2, 1 -> the 2nd is 5)
+Output: 5
+Explanation: sorted biggest first: 6, 5, 4, 3, 2, 1 -> the 2nd is 5
+
+Input:  nums = [3, 2, 3, 1, 2, 4, 5, 5, 6], k = 4
+Output: 4
+Explanation: sorted 6, 5, 5, 4, ...; the repeated 5 counts twice, so the 4th is 4
+
+Input:  nums = [7], k = 1
+Output: 7
+Explanation: a single number is the largest, so it is the 1st largest
+
+Input:  nums = [2, 2, 2], k = 2
+Output: 2
+Explanation: all values are equal, so every position in sorted order holds 2
+
+Input:  nums = [-1, -5, 3], k = 3
+Output: -5
+Explanation: k = n asks for the smallest value; negative numbers need no special case
 ```
 
 **Walk-through:** the animation and its dry run below this block.
@@ -4091,10 +4598,27 @@ the heap holds the 2 largest; its top, 5, is the answer
 
 **Problem:** Merge `k` sorted linked lists into one sorted list. Some lists may be empty.
 
-**Example:**
+**Examples:**
 ```
 Input:  lists = [[1, 4, 5], [1, 3, 4], [2, 6]]      (call them a, b, c)
 Output: [1, 1, 2, 3, 4, 4, 5, 6]
+Explanation: each step takes the smallest current head; the tied 1s are both kept
+
+Input:  lists = [[], [1], [0, 2]]
+Output: [0, 1, 2]
+Explanation: the empty list is a null head and is skipped before the first offer
+
+Input:  lists = []
+Output: []
+Explanation: no lists at all: the heap starts empty and the merged list is empty
+
+Input:  lists = [[1, 2, 3]]
+Output: [1, 2, 3]
+Explanation: a single list is already merged; the heap only ever holds one node
+
+Input:  lists = [[-2000000000], [2000000000]]
+Output: [-2000000000, 2000000000]
+Explanation: Integer.compare orders them; a.val - b.val would overflow and flip them
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = in the heap, green = just pushed, yellow = just polled onto the tail.
@@ -4184,10 +4708,27 @@ public class MergeKSortedLists {
 
 **Problem:** Numbers arrive one at a time. Build a `MedianFinder` with `addNum(num)` and `findMedian()`, which returns the median of everything added so far — the middle value once sorted, or the average of the two middle values when the count is even.
 
-**Example:**
+**Examples:**
 ```
 Input:  addNum(1)   addNum(2)   findMedian()   addNum(3)   findMedian()
 Output: -           -           1.5            -           2.0
+Explanation: [1, 2] has two middles, (1 + 2) / 2 = 1.5; [1, 2, 3] has one middle, 2
+
+Input:  addNum(5)   findMedian()
+Output: -           5.0
+Explanation: a single number is its own median
+
+Input:  addNum(5)   addNum(15)   addNum(1)   addNum(3)   findMedian()
+Output: -           -            -           -           4.0
+Explanation: sorted 1, 3, 5, 15 gives (3 + 5) / 2; the arrival order does not matter
+
+Input:  addNum(6)   addNum(10)   addNum(2)   addNum(6)   findMedian()
+Output: -           -            -           -           6.0
+Explanation: sorted 2, 6, 6, 10: both middle values are 6, so duplicates need no special case
+
+Input:  addNum(-1)   addNum(-2)   findMedian()
+Output: -            -            -1.5
+Explanation: (-2 + -1) / 2.0 = -1.5; dividing by 2.0, not 2, keeps the .5
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Blue = `small`, purple = `large`, yellow = the number that just moved.
@@ -4306,10 +4847,27 @@ It is O(n) — a heap has no index for arbitrary elements. To remove arbitrary i
 
 **Problem:** Build a trie for lowercase words with three operations: `insert(word)` stores a word, `search(word)` returns `true` only if that exact word was inserted, and `startsWith(prefix)` returns `true` if any stored word begins with `prefix`.
 
-**Example:**
+**Examples:**
 ```
 Input:  insert("apple")   search("apple")   search("app")   startsWith("app")
 Output: -                 true              false           true
+Explanation: apple is stored; app is only a corridor (isEnd false), yet a valid prefix
+
+Input:  insert("app")   insert("apple")   search("app")   search("appl")
+Output: -               -                 true            false
+Explanation: app was inserted as a word; appl is only a path on the way to apple
+
+Input:  search("a")   startsWith("a")
+Output: false         false
+Explanation: nothing was inserted, so the root has no children at all
+
+Input:  insert("bat")   insert("bad")   startsWith("ba")   search("ba")   search("bad")
+Output: -               -               true               false          true
+Explanation: bat and bad share the b, a path; ba is a prefix but was never inserted
+
+Input:  insert("apple")   startsWith("apple")   search("apples")
+Output: -                 true                  false
+Explanation: a whole word is a prefix of itself; apples runs off the end of the path
 ```
 
 **Walk-through:** where each walk stops, and that node's `isEnd` flag.
@@ -4446,13 +5004,32 @@ To rank suggestions, keep a frequency on each end-node and the best few in a hea
 
 **Problem:** Given a grid of letters and a list of words, return every word that can be spelled by a path of neighbouring cells (up, down, left, right), using each cell at most once per word.
 
-**Example:**
+**Examples:**
 ```
 Input:  board = o a a n      words = [oath, pea, eat, rain]
                 e t a e
                 i h k r
                 i f l v
 Output: [oath, eat]
+Explanation: oath and eat follow neighbouring cells; no cell holds p, and no a touches r
+
+Input:  board = a b      words = [abdc, abcd, acdb]
+                c d
+Output: [abdc, acdb]
+Explanation: a path may turn corners; abcd fails because c is not next to b
+
+Input:  board = o a      words = [oat, oath]
+                h t
+Output: [oat, oath]
+Explanation: oat ends inside oath's path, so after a find the DFS must keep walking
+
+Input:  board = a a      words = [a, aa, aaa]
+Output: [a, aa]
+Explanation: aaa would reuse a cell; a starts in both cells but is reported once
+
+Input:  board = a      words = [b]
+Output: []
+Explanation: no cell holds b, so the trie prunes every start cell at once
 ```
 
 **Watch it run, one step per frame** (press ▶ to play, or ⏭ to step). Yellow = the current cell and trie node, blue = the path, NO = no trie child.

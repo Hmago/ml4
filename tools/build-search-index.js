@@ -2,10 +2,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // build-search-index.js
 //
-// Builds js/data/search_index.js — a PREBUILT full-text search index over the
-// chapter markdown, so the app no longer has to fetch all ~34 markdown files on
-// the first in-app search. The `chapters` array in js/chapter.js is the single
-// source of truth for WHICH files get indexed.
+// Builds js/data/search_index.js — a PREBUILT index of chapter names, H1–H4
+// headings and collapsible-block titles (DSA problems, self-test questions) for
+// the sidebar search, so the app doesn't fetch every markdown file on the first
+// search. Body text is NOT indexed: search is navigational and ranks chapter
+// name > H1 > H2 > H3 > H4 > block titles (in-chapter text search is Ctrl+F).
+// The `chapters` array in js/chapter.js is the single source of truth for WHICH
+// files get indexed.
 //
 //   node tools/build-search-index.js            # build + validate, write output
 //   node tools/build-search-index.js --check    # build + validate only, write nothing
@@ -17,15 +20,16 @@
 //     v: <epoch ms>,                  // version stamp — the ONLY nondeterministic field
 //     chapters: [{
 //       id, file, title,
-//       headings: ["Heading text", ...],          // unique pool, first-seen order
-//       lines:    [["clean body line", headingIdx], ...]   // headingIdx = -1 before any heading
+//       headings: [[level, "Heading text", parentIdx], ...],  // level 1–4, document order
+//       blocks:   [["Block title", parentIdx, "Medium"], ...]  // parentIdx → headings[], -1 = none
 //     }, ...]
 //   };
 //   if (typeof module !== 'undefined' && module.exports) module.exports = SEARCH_INDEX;
 //
 // Section dividers and notebooks (.ipynb) are skipped; README.md and the recap
 // chapters are kept. Deterministic & idempotent apart from `v`: identical content
-// always yields an identical structure.
+// always yields an identical structure. js/chapter.js (_extractStructure) parses
+// the markdown the same way for its offline fallback — keep the two in step.
 //
 // GENERATED output — never hand-edit js/data/search_index.js; re-run this tool.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,6 +44,7 @@ const checkOnly = process.argv.includes('--check');
 
 const FENCE = '```';
 const HAS_ALNUM = /[a-zA-Z0-9]/;
+const MAX_LEVEL = 4;
 
 // ── Extract and evaluate the `chapters` array literal from js/chapter.js ──
 // The literal is pure object literals (no function calls), so evaluating it with
@@ -84,84 +89,68 @@ function cleanHeading(raw) {
   let s = raw.replace(/^#{1,6}\s+/, '');  // strip leading ATX '#'s
   s = s.replace(/\s+#+\s*$/, '');         // strip optional closing ATX '#'s
   s = stripLinksImages(s);
+  s = s.replace(/<[^>]+>/g, '');          // inline HTML tags (anchors, <br>, …)
   s = s.replace(/[*`]/g, '');             // bold / italic / inline-code markers
+  s = s.replace(/\\([\\`*_{}[\]()#+\-.!])/g, '$1'); // markdown backslash escapes
   return s.replace(/\s+/g, ' ').trim();
 }
 
-function cleanBody(raw) {
-  let s = stripLinksImages(raw);
-  s = s.replace(/[#*`|>]/g, '');                  // md markers, table pipes, blockquote '>'
-  s = s.replace(/^\s*(?:[-+]\s+|\d+\.\s+)/, '');   // leading list marker (-, +, 1.)
-  return s.replace(/\s+/g, ' ').trim();
-}
-
-function cleanCode(raw) {
-  // Strip leading indentation, collapse runs of whitespace, trim.
-  return raw.replace(/\s+/g, ' ').trim();
-}
-
-// Horizontal rule: ---, ***, ___ (3+ of one marker, optional spaces between).
-function isHorizontalRule(t) {
-  return /^([-*_])(?:\s*\1){2,}$/.test(t);
-}
-
-// Markdown table separator row: only |, :, -, spaces, with at least one '-' and
-// at least one '|' or ':' (e.g. |---|---|, :---:, | :--- | ---: |).
-function isTableSeparator(t) {
-  return /-/.test(t) && /[|:]/.test(t) && /^[|:\s-]+$/.test(t);
-}
-
-// ── Markdown → { headings, lines } ──
-function processMarkdown(md) {
+// ── Markdown → { headings, blocks } ──
+// headings: [[level, text, parent], ...] — every H1–H4 outside code fences, in
+//   document order (repeats kept: "Practice" under two sections is two places).
+//   `parent` = index of the nearest enclosing heading (lower level), or -1.
+// blocks: [[title, parent, note], ...] — titles of collapsible <details> blocks
+//   (DSA problems, self-test questions). `parent` = enclosing heading index;
+//   `note` = Easy/Medium/Hard when the summary states one. Repeated generic
+//   labels ("Read as text", "Answer") are dropped later in pruneBlocks().
+function extractStructure(md) {
   const headings = [];
-  const headingPool = new Map(); // heading text → pool index
-  const lines = [];
-  let currentHeading = -1;
+  const blocks = [];
+  const stack = []; // [level, index] of open headings
   let inCode = false;
-  let prev = null; // last pushed text, for consecutive-dedup
-
   for (const raw of md.split(/\r?\n/)) {
-    // Fence: toggle code state, never emit the fence line itself.
-    if (raw.trimStart().startsWith(FENCE)) { inCode = !inCode; prev = null; continue; }
-
-    if (inCode) {
-      const c = cleanCode(raw);
-      if (!c || !HAS_ALNUM.test(c)) continue;
-      if (c === prev) continue;
-      lines.push([c, currentHeading]);
-      prev = c;
+    if (raw.trimStart().startsWith(FENCE)) { inCode = !inCode; continue; }
+    if (inCode) continue;
+    const m = raw.match(/^(#{1,6})\s+/);
+    if (m) {
+      const level = m[1].length;
+      if (level > MAX_LEVEL) continue;
+      const text = cleanHeading(raw);
+      if (!text || !HAS_ALNUM.test(text)) continue;
+      while (stack.length && stack[stack.length - 1][0] >= level) stack.pop();
+      const parent = stack.length ? stack[stack.length - 1][1] : -1;
+      headings.push([level, text, parent]);
+      stack.push([level, headings.length - 1]);
       continue;
     }
-
-    // Heading: update the current heading context; never emit it as a body line.
-    if (/^#{1,6}\s+/.test(raw)) {
-      const h = cleanHeading(raw);
-      if (h) {
-        if (headingPool.has(h)) {
-          currentHeading = headingPool.get(h);
-        } else {
-          currentHeading = headings.length;
-          headings.push(h);
-          headingPool.set(h, currentHeading);
-        }
-      }
-      prev = null;
-      continue;
+    const s = raw.match(/<summary>(.*?)<\/summary>/);
+    if (s) {
+      const inner = s[1];
+      const strong = inner.match(/^\s*<(strong|b)>(.*?)<\/\1>(.*)$/);
+      const title = cleanHeading(strong ? strong[2] : inner);
+      if (!title || !HAS_ALNUM.test(title)) continue;
+      const diff = ((strong ? strong[3] : '').match(/\b(Easy|Medium|Hard)\b/) || [])[1] || '';
+      blocks.push([title, stack.length ? stack[stack.length - 1][1] : -1, diff]);
     }
-
-    const t = raw.trim();
-    if (!t) continue;                       // blank line
-    if (isHorizontalRule(t)) continue;      // --- *** ___
-    if (isTableSeparator(t)) continue;      // |---|---|  :---:
-
-    const c = cleanBody(raw);
-    if (!c || !HAS_ALNUM.test(c)) continue; // empty or pure ASCII-diagram border
-    if (c === prev) continue;               // consecutive duplicate
-    lines.push([c, currentHeading]);
-    prev = c;
   }
+  return { headings, blocks };
+}
 
-  return { headings, lines };
+// Block titles that repeat across the corpus are UI labels, not content
+// ("Read as text" ×2772, "Answer" ×424, "Quick check." ×76) — and bare
+// numbering ("1.", "2.") says nothing. Keep only distinctive titles.
+const BLOCK_REPEAT_LIMIT = 4;
+function pruneBlocks(chapters) {
+  const count = new Map();
+  chapters.forEach(c => c.blocks.forEach(b => { const k = b[0].toLowerCase(); count.set(k, (count.get(k) || 0) + 1); }));
+  let dropped = 0;
+  chapters.forEach(c => {
+    const before = c.blocks.length;
+    c.blocks = c.blocks.filter(b => count.get(b[0].toLowerCase()) < BLOCK_REPEAT_LIMIT &&
+      b[0].replace(/^\d+[.)]\s*/, '').replace(/[^a-zA-Z0-9]/g, '').length >= 3);
+    dropped += before - c.blocks.length;
+  });
+  return dropped;
 }
 
 // ── Structural validation of the built index against the contract ──
@@ -174,24 +163,29 @@ function validateStructure(index, errors) {
     if (!c || typeof c !== 'object') { errors.push(`${ctx}: not an object`); return; }
     if (typeof c.id !== 'string') errors.push(`${ctx}: id must be a string`);
     if (typeof c.file !== 'string' || !c.file) errors.push(`${ctx}: file must be a non-empty string`);
-    if (typeof c.title !== 'string') errors.push(`${ctx}: title must be a string`);
-    if (!Array.isArray(c.headings) || !c.headings.every(h => typeof h === 'string')) {
-      errors.push(`${ctx}: headings must be an array of strings`);
-    }
-    if (!Array.isArray(c.lines)) { errors.push(`${ctx}: lines must be an array`); return; }
-    const nh = Array.isArray(c.headings) ? c.headings.length : 0;
-    c.lines.forEach((ln, j) => {
-      if (!Array.isArray(ln) || ln.length !== 2) { errors.push(`${ctx}.lines[${j}]: must be a [text, headingIndex] tuple`); return; }
-      if (typeof ln[0] !== 'string' || !ln[0]) errors.push(`${ctx}.lines[${j}]: text must be a non-empty string`);
-      if (!Number.isInteger(ln[1]) || ln[1] < -1 || ln[1] >= nh) errors.push(`${ctx}.lines[${j}]: headingIndex ${ln[1]} out of range [-1, ${nh - 1}]`);
+    if (typeof c.title !== 'string' || !c.title) errors.push(`${ctx}: title must be a non-empty string`);
+    if (!Array.isArray(c.headings)) { errors.push(`${ctx}: headings must be an array`); return; }
+    c.headings.forEach((h, j) => {
+      if (!Array.isArray(h) || h.length !== 3) { errors.push(`${ctx}.headings[${j}]: must be a [level, text, parent] tuple`); return; }
+      if (!Number.isInteger(h[0]) || h[0] < 1 || h[0] > MAX_LEVEL) errors.push(`${ctx}.headings[${j}]: level ${h[0]} out of range 1–${MAX_LEVEL}`);
+      if (typeof h[1] !== 'string' || !h[1]) errors.push(`${ctx}.headings[${j}]: text must be a non-empty string`);
+      if (!Number.isInteger(h[2]) || h[2] < -1 || h[2] >= j) errors.push(`${ctx}.headings[${j}]: parent ${h[2]} must point at an earlier heading or -1`);
+      else if (h[2] >= 0 && c.headings[h[2]][0] >= h[0]) errors.push(`${ctx}.headings[${j}]: parent is not a higher-level heading`);
+    });
+    if (!Array.isArray(c.blocks)) { errors.push(`${ctx}: blocks must be an array`); return; }
+    c.blocks.forEach((b, j) => {
+      if (!Array.isArray(b) || b.length !== 3) { errors.push(`${ctx}.blocks[${j}]: must be a [title, parent, note] tuple`); return; }
+      if (typeof b[0] !== 'string' || !b[0]) errors.push(`${ctx}.blocks[${j}]: title must be a non-empty string`);
+      if (!Number.isInteger(b[1]) || b[1] < -1 || b[1] >= c.headings.length) errors.push(`${ctx}.blocks[${j}]: parent ${b[1]} out of range`);
+      if (typeof b[2] !== 'string') errors.push(`${ctx}.blocks[${j}]: note must be a string`);
     });
   });
 }
 
 const BANNER =
-  '// Prebuilt full-text search index over the chapter markdown.\n' +
+  '// Prebuilt search index: chapter names, H1–H4 headings and collapsible-block titles (no body text).\n' +
   '// GENERATED by tools/build-search-index.js — do not edit by hand. Re-run the tool instead.\n' +
-  '// Shape: { v, chapters:[{ id, file, title, headings:[...], lines:[[text, headingIndex], ...] }] }.\n' +
+  '// Shape: { v, chapters:[{ id, file, title, headings:[[level, text, parent], ...], blocks:[[title, parent, note], ...] }] }.\n' +
   '// `v` is a build timestamp (Date.now()); everything else is deterministic from the content.\n\n';
 
 function main() {
@@ -217,7 +211,7 @@ function main() {
 
   const errors = [];
   const chapters = [];
-  let totalLines = 0;
+  const perLevel = [0, 0, 0, 0, 0];
 
   for (const ch of kept) {
     if (!ch.file) { errors.push(`entry "${ch.id || '?'}": has no file`); continue; }
@@ -228,11 +222,11 @@ function main() {
       errors.push(`${ch.file}: cannot read — ${e.message}`);
       continue;
     }
-    const { headings, lines } = processMarkdown(md);
-    if (lines.length === 0) errors.push(`${ch.file}: produced 0 indexable lines`);
-    chapters.push({ id: String(ch.id), file: ch.file, title: String(ch.title == null ? '' : ch.title), headings, lines });
-    totalLines += lines.length;
+    const { headings, blocks } = extractStructure(md);
+    headings.forEach(h => { perLevel[h[0]]++; });
+    chapters.push({ id: String(ch.id), file: ch.file, title: String(ch.title == null ? '' : ch.title), headings, blocks });
   }
+  const droppedBlocks = pruneBlocks(chapters);
 
   const index = { v: Date.now(), chapters };
   const content =
@@ -244,11 +238,16 @@ function main() {
   validateStructure(index, errors);
 
   // ── Report ──
-  console.log(`\nSearch index — ${chapters.length} chapters, ${totalLines} lines, ~${(bytes / 1024).toFixed(0)} KB`);
+  const total = perLevel.reduce((a, b) => a + b, 0);
+  const totalBlocks = chapters.reduce((s, c) => s + c.blocks.length, 0);
+  console.log(`\nSearch index — ${chapters.length} chapters, ${total} headings ` +
+    `(H1 ${perLevel[1]} · H2 ${perLevel[2]} · H3 ${perLevel[3]} · H4 ${perLevel[4]}), ` +
+    `${totalBlocks} block titles (${droppedBlocks} generic labels skipped), ~${(bytes / 1024).toFixed(0)} KB`);
   chapters.forEach(c => {
+    const n = [1, 2, 3, 4].map(l => c.headings.filter(h => h[0] === l).length);
     console.log(
       `  ${c.id.padEnd(4)} ${path.basename(c.file).padEnd(44)} ` +
-      `${String(c.lines.length).padStart(5)} lines  ${String(c.headings.length).padStart(3)} headings`);
+      `${String(c.headings.length).padStart(4)} headings  (${n.join(' / ')})  ${String(c.blocks.length).padStart(3)} blocks`);
   });
 
   if (errors.length) {

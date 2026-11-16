@@ -178,7 +178,7 @@ function renderWelcome() {
         </div>
         <div class="stat-card">
           <div class="stat-icon">🔥</div>
-          <div class="stat-number">${data.streak > 0 ? data.streak : '0'}</div>
+          <div class="stat-number">${getCurrentStreak()}</div>
           <div class="stat-label">Day streak</div>
         </div>
         ${interactiveMode ? `
@@ -265,9 +265,15 @@ function showDashboard() {
   // chapter count. computePaceStats() and getReviewQueue() filter it the same
   // way — keeping these three in sync is what stops the hero from reporting
   // "100% complete" and "48 of 49" at the same time.
-  const realCh = chapters.filter(c => !c.section && !c.ref && !c.notebook);
+  const realCh = countableChapters();
   const readCount = realCh.filter(c => readChapters[c.file]).length;
+  const allRead = realCh.length > 0 && readCount === realCh.length;
+  // Achievements only re-evaluate on an XP earn, so badges whose condition was
+  // met another way (e.g. study hours from auto-tracked reading) stayed locked.
+  // Settle them before reading XP data so the grid below is current.
+  if (interactiveMode) checkAchievements(getXP());
   const data = getXP();
+  const streak = getCurrentStreak();
   const scores = safeParseObject(localStorage.getItem('ml4-quiz-scores'), {});
   const scoreVals = Object.values(scores).filter(v => typeof v === 'number' && isFinite(v));
   const totalQuizzes = scoreVals.length;
@@ -305,15 +311,12 @@ function showDashboard() {
   // full reload). Derives + persists the earliest from chapter-track/activity.
   ensureStudyStartDate();
   const study = getStudyData();
-  // Combine the manual study timer with the auto-tracked per-chapter
-  // reading time so "Time Studied" reflects real usage, not just the
-  // (rarely used) start/stop timer button.
-  const trackedSecs = Object.values(chTrack).reduce((s, t) => s + ((t && t.seconds) || 0), 0);
-  const trackedMins = Math.floor(trackedSecs / 60);
-  const totalStudyMins = (study.totalMinutes || 0) + trackedMins;
-  const studyHrs = (totalStudyMins / 60).toFixed(1);
   const startDate = study.startDate ? new Date(study.startDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : 'Not started';
-  const completionDate = study.completionDate ? new Date(study.completionDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : (pct === 100 ? 'Today' : 'In progress');
+  // Only report a finish date while everything is still read — a stored
+  // completionDate outlives a later per-chapter reset.
+  const completionDate = allRead
+    ? (study.completionDate ? new Date(study.completionDate).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}) : 'Complete')
+    : 'In progress';
   const bestQuiz = totalQuizzes > 0 ? Math.max(...scoreVals) : 0;
   const passedQuizzes = scoreVals.filter(s => s >= 70).length;
   const allComments = getComments();
@@ -322,6 +325,20 @@ function showDashboard() {
   const resolvedComments = commentLists.reduce((s, arr) => s + arr.filter(c => c && c.resolved).length, 0);
   const openComments = commentLists.reduce((s, arr) => s + arr.filter(c => c && !c.resolved).length, 0);
   const chaptersWithComments = Object.keys(allComments).filter(k => Array.isArray(allComments[k]) && allComments[k].length > 0).length;
+  const unlockedCount = ACHIEVEMENTS.filter(a => data.achievements.includes(a.id)).length;
+
+  // ─── DSA ───
+  // The problem index is lazy-loaded. Before it arrives the totals are unknown,
+  // which used to render "Solved 16 / 0 · Remaining −16"; show a placeholder and
+  // refresh once it loads (see the end of this function). Counting solves only
+  // among known problems keeps stale ids from inflating the figures.
+  const dsaReady = typeof DSA_PROBLEMS !== 'undefined';
+  const dsaProg = (typeof getDSAProgress === 'function') ? getDSAProgress() : safeParseObject(localStorage.getItem('ml4-dsa'), {});
+  const dsaAll = (typeof getAllDSAProblems === 'function') ? getAllDSAProblems() : (dsaReady ? DSA_PROBLEMS : []);
+  const dsaTotal = dsaAll.length;
+  const dsaSolved = dsaAll.filter(p => dsaProg[p.id] && dsaProg[p.id].solved).length;
+  const dsaAttempted = dsaAll.filter(p => dsaProg[p.id] && dsaProg[p.id].code).length;
+  const dsaPct = dsaTotal > 0 ? Math.round(dsaSolved / dsaTotal * 100) : 0;
 
   // ─── Personalized pace & ETA ───
   const pace = computePaceStats();
@@ -345,6 +362,84 @@ function showDashboard() {
     ? 'Personalized from ' + pace.calib + ' chapter' + (pace.calib !== 1 ? 's' : '') + ' you\'ve read · ' +
       'throughput ≈ ' + fmtHM(pace.throughputPerDay) + '/day over ' + pace.daysSinceStart + ' day' + (pace.daysSinceStart !== 1 ? 's' : '')
     : 'Read 3+ chapters with the timer running (or while the tab is open) to calibrate your speed and finish date.';
+
+  // ─── Interview-date target ───
+  const plan = computeInterviewPlan(pace);
+  const todayIso = localDayKey(new Date());
+  const fmtDate = (d) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  const fmtShort = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const targetHtml = (() => {
+    if (!plan) {
+      return '<div class="db-target db-target--empty">' +
+        '<div class="db-target-intro">' +
+          '<div class="db-target-q">When is your interview?</div>' +
+          '<p>Set a date to see how much you need to study each day to finish the curriculum in time.</p>' +
+        '</div>' +
+        '<div class="db-target-form">' +
+          '<input type="date" id="dbTargetDate" class="db-target-input" min="' + todayIso + '" aria-label="Interview date">' +
+          '<button class="db-btn db-btn--accent" onclick="saveInterviewDateFromInput()">Set date</button>' +
+        '</div>' +
+      '</div>';
+    }
+    const countdown = plan.daysLeft > 1 ? plan.daysLeft + ' days to go'
+      : plan.daysLeft === 1 ? 'Tomorrow' : plan.daysLeft === 0 ? 'Today' : 'Date has passed';
+    const head =
+      '<div class="db-target-head">' +
+        '<div>' +
+          '<div class="db-target-date">Interview &middot; ' + fmtDate(plan.date) + '</div>' +
+          '<div class="db-target-countdown">' + countdown + '</div>' +
+        '</div>' +
+        '<div class="db-target-edit">' +
+          '<input type="date" class="db-target-input" value="' + plan.dateStr + '" min="' + todayIso + '" aria-label="Change interview date" onchange="setInterviewDate(this.value, true)">' +
+          '<button class="db-btn" onclick="setInterviewDate(\'\')" title="Remove the interview date">Clear</button>' +
+        '</div>' +
+      '</div>';
+    if (plan.status === 'done') {
+      return '<div class="db-target db-target--ontrack">' + head +
+        '<p class="db-target-msg">✓ Curriculum complete — use the time left for reviews and mock tests.</p></div>';
+    }
+    if (plan.status === 'past') {
+      return '<div class="db-target db-target--behind">' + head +
+        '<p class="db-target-msg">This date has passed. Pick your next interview date above.</p></div>';
+    }
+    if (plan.status === 'today') {
+      return '<div class="db-target db-target--close">' + head +
+        '<p class="db-target-msg">Interview day — skim the Quick Revision chapters and the cheat sheet, and rest. Good luck!</p></div>';
+    }
+    const needStr = fmtHM(Math.max(1, plan.needPerDay));
+    const recentStr = plan.recentPerDay >= 1 ? fmtHM(plan.recentPerDay) : '0m';
+    const gapStr = fmtHM(Math.max(1, plan.needPerDay - plan.recentPerDay));
+    let statusVal, msg;
+    if (plan.status === 'ontrack') {
+      const early = Math.max(0, Math.round((plan.date - plan.finishAtRecent) / 86400000));
+      statusVal = 'On track';
+      msg = '✓ At your recent pace you’ll finish around ' + fmtShort(plan.finishAtRecent) +
+        (early > 0 ? ' — ' + early + ' day' + (early !== 1 ? 's' : '') + ' before the interview.' : ', just in time.');
+    } else if (plan.status === 'close') {
+      statusVal = 'Almost';
+      msg = 'Add about ' + gapStr + ' a day to finish in time.';
+    } else if (plan.ratio === null) {
+      statusVal = 'Not started';
+      msg = 'No study logged recently. Aim for ' + needStr + ' a day from today.';
+    } else {
+      statusVal = 'Behind';
+      msg = 'You need ' + plan.ratio.toFixed(1).replace(/\.0$/, '') + '× your recent pace. Add about ' + gapStr + ' a day' +
+        (plan.finishAtRecent ? ' — at today’s pace you’d finish around ' + fmtShort(plan.finishAtRecent) + '.' : '.');
+    }
+    const cls = plan.status === 'ontrack' ? 'ontrack' : plan.status === 'close' ? 'close' : 'behind';
+    return '<div class="db-target db-target--' + cls + '">' + head +
+      '<div class="db-target-stats">' +
+        '<div class="db-target-stat"><div class="db-target-val">' + needStr + '<small>/day</small></div>' +
+          '<div class="db-target-lbl">Needed</div><div class="db-target-sub">≈ ' + fmtHM(plan.needPerDay * 7) + ' a week · ' + fmtHM(plan.remMin) + ' left at your speed</div></div>' +
+        '<div class="db-target-stat"><div class="db-target-val">' + recentStr + '<small>/day</small></div>' +
+          '<div class="db-target-lbl">Your pace</div><div class="db-target-sub">' + (plan.recentDays > 1 ? 'average of the last ' + plan.recentDays + ' days' : 'today so far') + '</div></div>' +
+        '<div class="db-target-stat"><div class="db-target-val db-target-status">' + statusVal + '</div>' +
+          '<div class="db-target-lbl">Status</div><div class="db-target-sub">' + plan.coverPct + '% of what’s left covered by then at your pace</div></div>' +
+      '</div>' +
+      '<div class="db-target-bar" title="' + plan.coverPct + '% of the remaining curriculum fits before the interview at your recent pace"><div class="db-target-bar-fill" style="width:' + plan.coverPct + '%"></div></div>' +
+      '<p class="db-target-msg">' + msg + '</p>' +
+    '</div>';
+  })();
 
   // ─── Spaced-repetition review queue ───
   const review = getReviewQueue();
@@ -465,6 +560,7 @@ function showDashboard() {
     upload:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>',
     trash:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
     strike:   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/></svg>',
+    code:     '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
   };
 
   contentEl.innerHTML = `
@@ -500,7 +596,7 @@ function showDashboard() {
                 <text x="80" y="96" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" text-transform="uppercase" letter-spacing="1.5">complete</text>
               </g>
             </svg>
-            <div class="db-hero-ring-sub">${doneH}h of ${totalH}h read</div>
+            <div class="db-hero-ring-sub" title="Estimated study time of the chapters you've marked read, out of the whole curriculum">${doneH}h of ${totalH}h covered</div>
           </div>
           <div class="db-hero-main">
             <div class="db-hero-info-row">
@@ -518,11 +614,11 @@ function showDashboard() {
                   <div class="db-hero-info-value">${completionDate}</div>
                 </div>
               </div>
-              <div class="db-hero-info-card">
+              <div class="db-hero-info-card" title="Consecutive days with any study activity">
                 <div class="db-hero-info-icon">${ico.flame}</div>
                 <div>
                   <div class="db-hero-info-label">Streak</div>
-                  <div class="db-hero-info-value">${data.streak} day${data.streak !== 1 ? 's' : ''}</div>
+                  <div class="db-hero-info-value">${streak} day${streak !== 1 ? 's' : ''}</div>
                 </div>
               </div>
             </div>
@@ -536,7 +632,7 @@ function showDashboard() {
             <div class="db-hero-level">
               <div class="db-hero-level-top">
                 <span class="db-hero-level-badge">Lvl ${getLevel(data.xp)}</span>
-                <span class="db-hero-level-xp">${data.xp} XP &middot; ${xpProgress}/100 to next</span>
+                <span class="db-hero-level-xp">${data.xp} XP &middot; ${100 - xpProgress} XP to Lvl ${getLevel(data.xp) + 1}</span>
               </div>
               <div class="db-xp-track"><div class="db-xp-fill" id="dashXpFill" style="width:0%"></div></div>
             </div>
@@ -548,17 +644,13 @@ function showDashboard() {
             <div class="db-hero-tile-num">${readCount}<small>/${realCh.length}</small></div>
             <div class="db-hero-tile-lbl">${ico.book} Chapters Read</div>
           </div>
-          <div class="db-hero-tile">
-            <div class="db-hero-tile-num">${studyHrs}<small>h</small></div>
-            <div class="db-hero-tile-lbl">${ico.timer} Time Studied</div>
-          </div>
-          <div class="db-hero-tile">
+          <div class="db-hero-tile" title="Estimated study time of the chapters not yet read">
             <div class="db-hero-tile-num">${remainH}<small>h</small></div>
-            <div class="db-hero-tile-lbl">${ico.clock} Remaining</div>
+            <div class="db-hero-tile-lbl">${ico.clock} Est. Remaining</div>
           </div>
-          <div class="db-hero-tile">
-            <div class="db-hero-tile-num">${data.streak}</div>
-            <div class="db-hero-tile-lbl">${ico.flame} Day Streak</div>
+          <div class="db-hero-tile" title="DSA practice problems solved">
+            <div class="db-hero-tile-num">${dsaReady ? dsaSolved : '—'}<small>/${dsaReady ? dsaTotal : '…'}</small></div>
+            <div class="db-hero-tile-lbl">${ico.code} DSA Solved</div>
           </div>
           <div class="db-hero-tile">
             <div class="db-hero-tile-num">${avgScore}<small>%</small></div>
@@ -577,6 +669,12 @@ function showDashboard() {
             <div class="db-hero-tile-lbl">${ico.pen} Notes</div>
           </div>
         </div>
+      </div>
+
+      <!-- ─── Interview-date target ─── -->
+      <div class="db-section">
+        <h3 class="db-section-title">${ico.flag} Interview Target</h3>
+        ${targetHtml}
       </div>
 
       <!-- ─── Personalized Pace & Projection ─── -->
@@ -713,7 +811,9 @@ function showDashboard() {
               if (qh) { cur.quizzes++; if (qh.bestScore > cur.bestScore) cur.bestScore = qh.bestScore; }
             }
           }
-          return sections.map(s => {
+          // Reference-only sections (Quick Reference) hold no countable chapters
+          // and would render as a meaningless "0% · 0/0 chapters" card.
+          return sections.filter(s => s.total > 0).map(s => {
             const sPct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
             const estH = s.estMin >= 60 ? Math.floor(s.estMin/60) + 'h ' + s.estMin%60 + 'm' : s.estMin + 'm';
             const barColor = sPct === 100 ? 'var(--success)' : 'var(--accent)';
@@ -794,26 +894,30 @@ function showDashboard() {
             '</tr></thead><tbody>';
           let html = '';
           let curSection = '';
-          let chIdx = 0;
           let sectionOpen = false;
           for (const item of chapters) {
             if (item.section) {
               if (sectionOpen) html += '</tbody></table></div></details>';
               curSection = item.section;
+              // Same chapters the hero and the section cards count: reference
+              // material and the notebook are listed but not counted, so this
+              // badge agrees with "Progress by Section" (it used to count recaps
+              // as read, showing e.g. 1/9 next to a 0/8 card).
               let secTotal = 0, secDone = 0;
               for (let si = chapters.indexOf(item) + 1; si < chapters.length && !chapters[si].section; si++) {
+                const sc = chapters[si];
+                if (sc.ref || sc.notebook) continue;
                 secTotal++;
-                // Ref chapters are reference material (always available) — count them
-                // as done so the section badge isn't perpetually 0/N for the
-                // Quick Reference section, where the "mark read" button is hidden.
-                if (chapters[si].ref || readChapters[chapters[si].file]) secDone++;
+                if (readChapters[sc.file]) secDone++;
               }
               const secComplete = secDone === secTotal && secTotal > 0;
               html += '<details class="ch-section-collapse" open>' +
                 '<summary class="ch-section-row">' +
                   '<span class="ch-section-caret">▼</span>' +
                   '<span class="ch-section-name">' + curSection + '</span>' +
-                  '<span class="ch-section-badge' + (secComplete ? ' ch-section-badge-done' : '') + '">' + secDone + '/' + secTotal + '</span>' +
+                  (secTotal > 0
+                    ? '<span class="ch-section-badge' + (secComplete ? ' ch-section-badge-done' : '') + '">' + secDone + '/' + secTotal + '</span>'
+                    : '') +
                 '</summary>' +
                 '<div class="ch-section-body">' +
                 tableHead;
@@ -821,7 +925,6 @@ function showDashboard() {
               continue;
             }
             const isRef = !!item.ref;
-            if (!isRef) chIdx++;
             const c = item;
             const idx = chapters.indexOf(c);
             const isRead = isRef ? true : !!readChapters[c.file];
@@ -850,7 +953,7 @@ function showDashboard() {
                   ? '<span class="ch-check" title="Reference material" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:10px;font-weight:700;">REF</span>'
                   : (isRead
                       ? '<span class="ch-check done" title="Read"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
-                      : '<span class="ch-check">' + chIdx + '</span>')) + '</td>' +
+                      : '<span class="ch-check' + (String(c.id).length > 2 ? ' ch-check-long' : '') + '" title="Chapter ' + escapeHTML(String(c.id)) + '">' + escapeHTML(String(c.id)) + '</span>')) + '</td>' +
               '<td class="ch-td-title"><a href="javascript:void(0)" onclick="loadChapter(' + idx + ')">' + c.title + '</a>' +
                 (spentStr ? ' <span class="ch-td-spent" title="Time spent">· ' + spentStr + '</span>' : '') +
               '</td>' +
@@ -858,7 +961,7 @@ function showDashboard() {
               '<td class="ch-td-progress">' + (isRef
                   ? '<span class="ch-td-empty" title="Reference — always available">always</span>'
                   : (showProgress
-                      ? '<div class="ch-bar"><div class="ch-bar-fill' + (isRead ? ' complete' : '') + '" style="width:' + progPct + '%"></div></div><span class="ch-bar-pct">' + progPct + '%</span>'
+                      ? '<div class="ch-prog-wrap"><div class="ch-bar"><div class="ch-bar-fill' + (isRead ? ' complete' : '') + '" style="width:' + progPct + '%"></div></div><span class="ch-bar-pct">' + progPct + '%</span></div>'
                       : '<span class="ch-td-empty">—</span>')) + '</td>' +
               '<td class="ch-td-date">' + (startD || '<span class="ch-td-empty">—</span>') + '</td>' +
               '<td class="ch-td-date">' + (compD ? '<span class="ch-td-done-date">' + compD + '</span>' : '<span class="ch-td-empty">—</span>') + '</td>' +
@@ -879,7 +982,7 @@ function showDashboard() {
 
       <!-- ─── Achievements (collapsed) ─── -->
       <details class="db-collapse">
-        <summary class="db-collapse-summary">${ico.award} Achievements <span class="db-collapse-badge">${(data.achievements||[]).length}/${ACHIEVEMENTS.length}</span></summary>
+        <summary class="db-collapse-summary">${ico.award} Achievements <span class="db-collapse-badge">${unlockedCount}/${ACHIEVEMENTS.length}</span></summary>
         <div class="db-collapse-body">
           <div class="ach-grid">
             ${ACHIEVEMENTS.slice().sort((a, b) => {
@@ -900,15 +1003,11 @@ function showDashboard() {
 
       <!-- ─── DSA Progress (collapsed) ─── -->
       <details class="db-collapse">
-        <summary class="db-collapse-summary">${ico.zap} DSA Practice Progress</summary>
+        <summary class="db-collapse-summary">${ico.zap} DSA Practice Progress${dsaReady ? ` <span class="db-collapse-badge">${dsaSolved}/${dsaTotal}</span>` : ''}</summary>
         <div class="db-collapse-body">
         ${(() => {
-          const dsaProg = safeParseObject(localStorage.getItem('ml4-dsa'), {});
-          const dsaAll = typeof getAllDSAProblems === 'function' ? getAllDSAProblems() : (typeof DSA_PROBLEMS !== 'undefined' ? DSA_PROBLEMS : []);
-          const dsaTotal = dsaAll.length;
-          const dsaSolved = Object.values(dsaProg).filter(p => p.solved).length;
-          const dsaAttempted = Object.keys(dsaProg).filter(k => dsaProg[k].code).length;
-          const dsaPct = dsaTotal > 0 ? Math.round(dsaSolved / dsaTotal * 100) : 0;
+          const openBtn = '<button class="db-btn db-btn--accent" onclick="showDSAPractice()" style="margin-top:14px;">' + ico.zap + ' Open DSA Practice</button>';
+          if (!dsaReady) return '<p class="db-empty">Loading DSA problems…</p>' + openBtn;
           const cats = {};
           dsaAll.forEach(p => {
             if (!cats[p.category]) cats[p.category] = { total: 0, solved: 0 };
@@ -929,8 +1028,7 @@ function showDashboard() {
                 '<div class="dsa-cat-card-bar"><div class="dsa-cat-card-fill" style="width:' + pctCat + '%"></div></div>' +
               '</div>';
             }).join('') +
-          '</div>' +
-          '<button class="db-btn db-btn--accent" onclick="showDSAPractice()" style="margin-top:14px;">' + ico.zap + ' Open DSA Practice</button>';
+          '</div>' + openBtn;
         })()}
         </div>
       </details>
@@ -989,14 +1087,20 @@ function showDashboard() {
   // events from electron-updater. Safe no-op when running in a browser.
   if (typeof setupDesktopUpdater === 'function') setupDesktopUpdater();
 
-  // QUIZ_DATA is lazy-loaded, so chapterHasQuiz() optimistically reported "yes"
-  // for everything on a cold render. Pull it in and repaint once, so the Quiz
-  // and Review buttons settle on the truth. The __quizDataLoaded guard in
-  // ensureQuizData plus the currentPage check prevent a render loop.
-  if (typeof QUIZ_DATA === 'undefined' && typeof ensureQuizData === 'function') {
-    ensureQuizData()
-      .then(() => { if (currentPage === 'dashboard') showDashboard(); })
-      .catch(() => {});
+  // QUIZ_DATA and the DSA index are lazy-loaded: before they arrive,
+  // chapterHasQuiz() optimistically reports "yes" for everything and the DSA
+  // totals are unknown. Pull both in and repaint once, in place. Repainting
+  // only when something actually went from missing to loaded means a failed
+  // (offline) load can never cause a render loop.
+  const quizReady = typeof QUIZ_DATA !== 'undefined';
+  const pending = [];
+  if (!quizReady && typeof ensureQuizData === 'function') pending.push(ensureQuizData());
+  if (!dsaReady && typeof ensureDsaIndex === 'function') pending.push(ensureDsaIndex());
+  if (pending.length) {
+    Promise.allSettled(pending).then(() => {
+      const arrived = (!quizReady && typeof QUIZ_DATA !== 'undefined') || (!dsaReady && typeof DSA_PROBLEMS !== 'undefined');
+      if (arrived) refreshDashboard();
+    });
   }
   } catch (err) {
     console.error('[ml4] Dashboard render failed', err);
@@ -1016,6 +1120,19 @@ function showDashboard() {
         </div>
       </div>`;
   }
+}
+
+// Re-render the dashboard in place — lazy data arrived or another tab changed
+// progress — without jumping back to the top or collapsing opened panels.
+function refreshDashboard() {
+  if (currentPage !== 'dashboard') return;
+  const wrap = document.getElementById('contentWrapper');
+  const top = wrap ? wrap.scrollTop : 0;
+  const openState = Array.from(document.querySelectorAll('#content details')).map(d => d.open);
+  showDashboard();
+  const details = document.querySelectorAll('#content details');
+  if (details.length === openState.length) details.forEach((d, i) => { d.open = openState[i]; });
+  if (wrap) wrap.scrollTop = top;
 }
 
 // ─── Total origin storage estimate ───
@@ -1302,7 +1419,7 @@ const ML4_STORAGE_KEYS = [
   'ml4-read', 'ml4-quiz-scores', 'ml4-quiz-history', 'ml4-chapter-track',
   'ml4-xp', 'ml4-study', 'ml4-goals', 'ml4-comments', 'ml4-highlights', 'ml4-strikes',
   'ml4-dsa', 'ml4-dsa-custom', 'ml4-dsa-view', 'ml4-dsa-collapsed',
-  'ml4-mock-history', 'ml4-activity', 'ml4-chapter-words',
+  'ml4-mock-history', 'ml4-activity', 'ml4-chapter-words', 'ml4-search-recent',
   'ml4-theme', 'ml4-fontsize', 'ml4-interactive', 'ml4-sidebar'
 ];
 
@@ -1704,6 +1821,35 @@ function getGoalsData() {
 }
 function saveGoalsData(data) {
   localStorage.setItem('ml4-goals', JSON.stringify(data));
+}
+
+// Interview date lives on the goals record. Read it defensively and keep the
+// goals/timetable arrays present, since the Goals page assumes both exist.
+// `fromPicker`: called on every `change` of the date input, which also fires
+// while a year is still being typed ("0002" → "2027"); dates before today are
+// ignored silently there instead of re-rendering mid-typing.
+function setInterviewDate(value, fromPicker) {
+  if (value) {
+    const d = new Date(value + 'T00:00:00');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || isNaN(d.getTime()) || d < today) {
+      if (!fromPicker) showToast('Pick a future date', 'The interview date can’t be in the past', '📅');
+      return;
+    }
+  }
+  const data = safeParseObject(localStorage.getItem('ml4-goals'), {});
+  if (!Array.isArray(data.goals)) data.goals = [];
+  if (!Array.isArray(data.timetable)) data.timetable = [];
+  if ((data.interviewDate || '') === value) return;
+  if (value) data.interviewDate = value; else delete data.interviewDate;
+  saveGoalsData(data);
+  if (value) showToast('Interview date set', new Date(value + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), '🎯');
+  refreshDashboard();
+}
+function saveInterviewDateFromInput() {
+  const input = document.getElementById('dbTargetDate');
+  if (!input || !input.value) { showToast('Pick a date', 'Choose your interview date first', '📅'); return; }
+  setInterviewDate(input.value);
 }
 
 let goalsShowForm = false;

@@ -24,8 +24,10 @@ it is plain HTML/CSS/vanilla JS rendered in the browser.
   - `node tools/split-dsa.js` — regenerates `js/data/dsa_problems_index.js` (metadata)
     and `js/data/dsa_problems_full.js` (starter-code lookup) from `js/data/dsa_problems.js`.
   - `node tools/build-search-index.js` (`--check` to validate) — generates
-    `js/data/search_index.js` (the prebuilt `SEARCH_INDEX`) from the chapter markdown,
-    so the app doesn't fetch every `.md` file on first in-app search.
+    `js/data/search_index.js` (the prebuilt `SEARCH_INDEX`: chapter names, H1–H4
+    headings with parent links, and distinctive `<details>` block titles — no body
+    text) so the app doesn't fetch every `.md` file on first sidebar search. Results
+    rank chapter name > H1 > H2 > H3 > H4 > block titles > DSA practice problems.
 - **Desktop app** (Electron, in `desktop/`): `npm ci`, then `npm start` (dev) or
   `npm run build` (electron-builder, Windows x64). It bundles the root static
   files as `extraResources` — it does **not** have its own copy of the content.

@@ -590,10 +590,10 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/38_java_refresher.md': 495,
   'content/38b_java_modern.md': 495,
   'content/39_python_refresher.md': 360,
-  'content/31_dsa_foundations.md': 710,
-  'content/31b_dsa_graphs.md': 255,
-  'content/31c_dynamic_programming.md': 730,
-  'content/31d_dsa_advanced_ml_coding.md': 475,
+  'content/31_dsa_foundations.md': 770,
+  'content/31b_dsa_graphs.md': 285,
+  'content/31c_dynamic_programming.md': 830,
+  'content/31d_dsa_advanced_ml_coding.md': 520,
   'content/32_interview_questions.md': 980,
   'content/33_llm_interview_questions.md': 715,
   'content/33b_llm_interview_questions_part2.md': 795,
@@ -603,27 +603,58 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
 /* @generated-reading-times:end */ };
 
 // Per-user self-correction: when a chapter is opened we measure its real word
-// count (see trackChapterOpen → recordChapterWords) and cache it here, so
-// estimates track the live content even if the generated baseline above drifts.
-// Keyed by file path → word count. Notebooks (.ipynb) are JSON, not prose, so
-// they are never measured and always fall back to the baseline.
+// count (see loadChapter → recordChapterWords) and cache it here, so estimates
+// track the live content even if the generated baseline above drifts.
+// Keyed by file path → { w: word count, b: CHAPTER_MINUTES[file] when measured }.
+// Notebooks (.ipynb) are JSON, not prose, so they are never measured and always
+// fall back to the baseline.
+//
+// The `b` stamp is what keeps a measurement honest. A count is only taken when
+// the chapter is opened, so after a chapter is rewritten the old count used to
+// win forever — 33 of one reader's 52 cached counts were stale, e.g. a chapter
+// that grew to 16h still estimated at 4h, skewing the ring, hours and pace.
+// When the baseline is regenerated for new content its value changes, which
+// retires older measurements until the chapter is opened again.
 function getMeasuredWords() {
-  try { return JSON.parse(localStorage.getItem('ml4-chapter-words') || '{}'); }
-  catch (e) { return {}; }
+  return safeParseObject(localStorage.getItem('ml4-chapter-words'), {});
 }
 function recordChapterWords(file, words) {
   if (!file || !words || /\.ipynb$/.test(file)) return;
   const m = getMeasuredWords();
-  if (m[file] === words) return; // unchanged — skip the write
-  m[file] = words;
+  const b = CHAPTER_MINUTES[file] || 0;
+  const cur = m[file];
+  if (cur && cur.w === words && cur.b === b) return; // unchanged — skip the write
+  m[file] = { w: words, b };
   safeSetItem('ml4-chapter-words', JSON.stringify(m));
 }
-// Best estimate of study minutes for a chapter: prefer the live measured word
-// count, then the generated baseline, then a 30-min default for unknown files.
+// Best estimate of study minutes for a chapter: the live measured word count
+// if it was taken against the current baseline, else the generated baseline,
+// else a legacy (unstamped) count, else a 30-min default for unknown files.
 function chapterEstMinutes(file) {
   const measured = getMeasuredWords()[file];
-  if (measured) return wordsToMinutes(measured);
-  return CHAPTER_MINUTES[file] || 30;
+  const baseline = CHAPTER_MINUTES[file];
+  if (measured && typeof measured === 'object' && measured.w > 0 && measured.b === (baseline || 0)) {
+    return wordsToMinutes(measured.w);
+  }
+  if (baseline) return baseline;
+  if (typeof measured === 'number' && measured > 0) return wordsToMinutes(measured);
+  return 30;
+}
+
+// ─── Countable chapters ───
+// The chapters that make up "the curriculum" for every progress figure:
+// excludes section dividers, reference material and notebooks (27b re-renders
+// chapter 27, so counting it would double-bill both hours and chapter count).
+function countableChapters() {
+  return (typeof chapters !== 'undefined' ? chapters : []).filter(c => !c.section && !c.ref && !c.notebook);
+}
+
+// Stamp the completion date the moment every countable chapter is read.
+function markCurriculumCompleteIfDone() {
+  const realCh = countableChapters();
+  if (!realCh.length || !realCh.every(c => readChapters[c.file])) return;
+  const sd = getStudyData();
+  if (!sd.completionDate) { sd.completionDate = new Date().toISOString(); saveStudyData(sd); }
 }
 
 // ─── Personalized pace & ETA ───
@@ -682,6 +713,69 @@ function computePaceStats() {
   };
 }
 
+// ─── Interview-date target ───
+// Stored as `interviewDate` ('YYYY-MM-DD') on the ml4-goals record, so it is
+// exported, imported and reset together with the user's other goals.
+function getInterviewDate() {
+  const g = safeParseObject(localStorage.getItem('ml4-goals'), {});
+  return (typeof g.interviewDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g.interviewDate)) ? g.interviewDate : '';
+}
+
+// Average study minutes per day over the last `windowDays` local days
+// (including today), from the daily activity log. Shortened to the days since
+// starting, so a new user's first week isn't averaged over empty days.
+// Returns { perDay, days } — `days` is the window actually averaged over.
+function recentStudyPace(windowDays) {
+  const log = getActivityLog();
+  const study = getStudyData();
+  const day = new Date(); day.setHours(0, 0, 0, 0);
+  let span = windowDays;
+  const startMs = study.startDate ? new Date(study.startDate).getTime() : NaN;
+  if (!isNaN(startMs)) {
+    const start = new Date(startMs); start.setHours(0, 0, 0, 0);
+    span = Math.max(1, Math.min(windowDays, Math.round((day - start) / 86400000) + 1));
+  }
+  let secs = 0;
+  for (let i = 0; i < span; i++) {
+    secs += Number(log[localDayKey(day)]) || 0;
+    day.setDate(day.getDate() - 1);
+  }
+  return { perDay: secs / 60 / span, days: span };
+}
+
+// What it takes to finish the remaining curriculum before the interview,
+// measured against the reader's recent pace. Remaining work is the time left
+// at their calibrated reading speed (computePaceStats().remAtPaceMin). The
+// recent 14-day pace is used rather than the all-time average, because what
+// matters for a deadline is how much the reader is studying now.
+const INTERVIEW_PACE_WINDOW_DAYS = 14;
+function computeInterviewPlan(pace) {
+  const dateStr = getInterviewDate();
+  if (!dateStr) return null;
+  pace = pace || computePaceStats();
+  const DAY = 86400000;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const date = new Date(dateStr + 'T00:00:00');
+  if (isNaN(date.getTime())) return null;
+  // Study days before the interview: today up to the day before it.
+  const daysLeft = Math.round((date - today) / DAY);
+  const remMin = pace.remAtPaceMin;
+  const recent = recentStudyPace(INTERVIEW_PACE_WINDOW_DAYS);
+  const recentPerDay = recent.perDay;
+  const plan = { dateStr, date, daysLeft, remMin, recentPerDay, recentDays: recent.days, needPerDay: 0, ratio: null, coverPct: 0, finishAtRecent: null, status: '' };
+  if (pace.allRead || remMin <= 0) { plan.status = 'done'; plan.coverPct = 100; return plan; }
+  if (daysLeft < 0) { plan.status = 'past'; return plan; }
+  if (daysLeft === 0) { plan.status = 'today'; return plan; }
+  plan.needPerDay = remMin / daysLeft;
+  if (recentPerDay > 0) {
+    plan.ratio = plan.needPerDay / recentPerDay;
+    plan.coverPct = Math.min(100, Math.round(recentPerDay * daysLeft / remMin * 100));
+    plan.finishAtRecent = new Date(today.getTime() + Math.ceil(remMin / recentPerDay) * DAY);
+  }
+  plan.status = plan.ratio === null ? 'behind' : plan.ratio <= 1 ? 'ontrack' : plan.ratio <= 1.25 ? 'close' : 'behind';
+  return plan;
+}
+
 // ─── Daily activity log (for the contribution heatmap) ───
 // Seconds of study credited to each LOCAL calendar day, keyed 'YYYY-MM-DD'.
 // Written as study time accrues (chapter reading + the manual timer). Stored as
@@ -726,7 +820,34 @@ function getActivityMap() {
     if (t && t.startDate) add(localDayKey(new Date(t.startDate)), 0, 1);
     if (t && t.completedDate) add(localDayKey(new Date(t.completedDate)), 0, 1);
   });
+  // DSA solves and mock tests log no study seconds, but they are study days too.
+  const dsa = (typeof getDSAProgress === 'function') ? getDSAProgress() : {};
+  Object.values(dsa).forEach(p => { if (p && p.solved && p.solvedDate) add(localDayKey(new Date(p.solvedDate)), 0, 1); });
+  safeParseArray(localStorage.getItem('ml4-mock-history'), []).forEach(m => {
+    if (m && m.date) add(localDayKey(new Date(m.date)), 0, 1);
+  });
   return out;
+}
+
+// Same rule the heatmap uses for its "active days" total.
+function isActiveDay(a) { return !!a && (a.minutes > 0 || a.events > 0); }
+
+// Consecutive active days ending today — or yesterday, since a streak stays
+// alive until midnight. Derived from real activity, so days spent reading
+// without earning XP (or with Gamify off) count. The stored XP streak is only
+// bumped by XP earns, so it used to show "1 day" after several reading days and
+// never dropped after missed days. It is kept as a floor while still alive.
+function getCurrentStreak() {
+  const map = getActivityMap();
+  const day = new Date(); day.setHours(0, 0, 0, 0);
+  if (!isActiveDay(map[localDayKey(day)])) day.setDate(day.getDate() - 1);
+  let n = 0;
+  while (isActiveDay(map[localDayKey(day)])) { n++; day.setDate(day.getDate() - 1); }
+  const xp = getXP();
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const xpAlive = xp.lastDate === today || xp.lastDate === yesterday;
+  return Math.max(n, xpAlive ? xp.streak : 0);
 }
 
 // ─── Spaced-repetition review queue ───
@@ -950,6 +1071,16 @@ function resetChapter(file, title) {
 // Save on page unload
 window.addEventListener('beforeunload', trackChapterClose);
 
+// Keep the in-memory read map in sync with other tabs/windows. Without this a
+// second tab kept showing a stale copy — and re-saved it on its next mark-read,
+// silently undoing chapters marked read elsewhere. (key === null ⇒ storage cleared.)
+window.addEventListener('storage', (e) => {
+  if (e.key !== null && e.key !== 'ml4-read') return;
+  readChapters = safeParseObject(localStorage.getItem('ml4-read'), {});
+  if (typeof renderSidebar === 'function') renderSidebar();
+  if (typeof refreshDashboard === 'function') refreshDashboard();
+});
+
 function addXP(amount, reason) {
   if (!interactiveMode) return;
   if (!amount) return;
@@ -1002,7 +1133,7 @@ function updateXPDisplay() {
 
 function checkAchievements(data) {
   const a = data.achievements || [];
-  const realCh = chapters.filter(c => !c.section && !c.ref);
+  const realCh = countableChapters();
   const rch = realCh.filter(c => readChapters[c.file]).length;
   const totalCh = realCh.length;
   const scores = JSON.parse(localStorage.getItem('ml4-quiz-scores') || '{}');
@@ -1013,8 +1144,12 @@ function checkAchievements(data) {
   const quizHist = getQuizHistory();
   const totalAttempts = Object.values(quizHist).reduce((s,h) => s + (h.attempts||0), 0);
   const study = getStudyData();
-  const studyMins = study.totalMinutes || 0;
+  // Manual timer + auto-tracked reading — the same total "Time Studied" shows.
+  // The timer alone is rarely used, so the study-hour badges never unlocked.
+  const trackedSecs = Object.values(getChapterTrack()).reduce((s, t) => s + ((t && t.seconds) || 0), 0);
+  const studyMins = (study.totalMinutes || 0) + Math.floor(trackedSecs / 60);
   const sessions = study.sessions || 0;
+  const streak = getCurrentStreak();
   const allComments = typeof getComments === 'function' ? getComments() : {};
   const totalComments = Object.values(allComments).reduce((s, arr) => s + arr.reduce((s2, c) => s2 + 1 + (c.replies ? c.replies.length : 0), 0), 0);
   const chaptersWithComments = Object.keys(allComments).filter(k => allComments[k].length > 0).length;
@@ -1026,9 +1161,9 @@ function checkAchievements(data) {
     { id: 'ten_read', cond: rch >= 10, text: 'Bookworm', desc: 'Read 10 chapters', icon: '🐛', tier: 'rare' },
     { id: 'all_read', cond: rch >= totalCh, text: 'Scholar', desc: 'Read every chapter', icon: '🏛️', tier: 'epic' },
     // ── Streaks (3) ──
-    { id: 'streak7', cond: data.streak >= 7, text: 'Dedicated', desc: '7-day streak', icon: '💪', tier: 'common' },
-    { id: 'streak14', cond: data.streak >= 14, text: 'Unstoppable', desc: '14-day streak', icon: '⚡', tier: 'rare' },
-    { id: 'streak30', cond: data.streak >= 30, text: 'Iron Will', desc: '30-day streak', icon: '🛡️', tier: 'epic' },
+    { id: 'streak7', cond: streak >= 7, text: 'Dedicated', desc: '7-day streak', icon: '💪', tier: 'common' },
+    { id: 'streak14', cond: streak >= 14, text: 'Unstoppable', desc: '14-day streak', icon: '⚡', tier: 'rare' },
+    { id: 'streak30', cond: streak >= 30, text: 'Iron Will', desc: '30-day streak', icon: '🛡️', tier: 'epic' },
     // ── XP & Levels (4) ──
     { id: 'xp100', cond: data.xp >= 100, text: 'Centurion', desc: 'Earn 100 XP', icon: '💎', tier: 'common' },
     { id: 'xp500', cond: data.xp >= 500, text: 'XP Hunter', desc: 'Earn 500 XP', icon: '🏆', tier: 'rare' },
@@ -1070,7 +1205,7 @@ function checkAchievements(data) {
       text: 'Pin Master', desc: 'Pin a note to a chapter spot', icon: '📍', tier: 'common' },
     { id: 'quiz20', cond: quizCount >= 20, text: 'Quiz Champion', desc: 'Complete 20 quizzes', icon: '🎯', tier: 'epic' },
     { id: 'session20', cond: sessions >= 20, text: 'Consistent Studier', desc: '20 study sessions', icon: '🗓️', tier: 'rare' },
-    { id: 'streak90', cond: data.streak >= 90, text: 'Relentless', desc: '90-day streak', icon: '🔱', tier: 'epic' },
+    { id: 'streak90', cond: streak >= 90, text: 'Relentless', desc: '90-day streak', icon: '🔱', tier: 'epic' },
   ];
   let unlockDelay = 1200;
   checks.forEach(ch => {

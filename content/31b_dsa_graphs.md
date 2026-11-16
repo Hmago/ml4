@@ -184,10 +184,27 @@ for (int[] edge : edges) {
 
 **Problem:** You get an undirected graph as an adjacency map (built above), a `start` node and a `target` node. Return the fewest edges from `start` to `target`, or `-1` if `target` can't be reached.
 
-**Example:**
+**Examples:**
 ```
 Input:  edges = [[0,1],[0,2],[1,2],[2,3]], start = 0, target = 3
-Output: 2          (0 -> 2 -> 3)
+Output: 2
+Explanation: 0 -> 2 -> 3; 0 and 3 share no edge, so 1 step is impossible
+
+Input:  edges = [[0,1],[0,2],[1,2],[2,3]], start = 0, target = 1
+Output: 1
+Explanation: 1 is next to 0; re-reading queue.size() in the loop test returns 0 here
+
+Input:  edges = [[0,1],[1,2],[2,3],[3,4],[0,4]], start = 0, target = 3
+Output: 2
+Explanation: 0 -> 4 -> 3 beats 0 -> 1 -> 2 -> 3; BFS reaches the nearer ring first
+
+Input:  edges = [[0,1],[2,3]], start = 0, target = 3
+Output: -1
+Explanation: 3 is in another component, so the queue empties first
+
+Input:  edges = [[0,1],[0,2],[1,2],[2,3]], start = 2, target = 2
+Output: 0
+Explanation: the start is already the target, so it is found in ring 0
 ```
 
 **Approach:** Listing every path and keeping the shortest is exponential, and on a graph with cycles it never ends without extra bookkeeping. Instead visit everything **one step** away, then everything **two steps** away, and so on. A queue gives exactly that order (the oldest node comes out first), so **the first time BFS reaches a node is by a shortest route** — stop as soon as the target comes out. Reading `queue.size()` once at the start of a ring tells you where the ring ends.
@@ -287,10 +304,27 @@ public class BfsShortestPath {
 
 **Problem:** You get the same kind of adjacency map and a start node. Visit every node reachable from the start exactly once and record the visit order — the core of "are these connected?", "does a path exist?" and "collect the whole region".
 
-**Example:**
+**Examples:**
 ```
 Input:  edges = [[0,1],[0,2],[1,2],[2,3]], start = 0
-Output: recursive [0, 1, 2, 3]      (iterative [0, 2, 3, 1])
+Output: recursive [0, 1, 2, 3], iterative [0, 2, 3, 1]
+Explanation: neighbours tried in edge order; the stack pops the last neighbour pushed first
+
+Input:  edges = [[0,1],[2,3]], start = 0
+Output: recursive [0, 1], iterative [0, 1]
+Explanation: 2 and 3 are in another component, so one call from 0 never reaches them
+
+Input:  edges = [[0,1],[0,2],[0,3]], start = 0
+Output: recursive [0, 1, 2, 3], iterative [0, 3, 2, 1]
+Explanation: a star: recursion takes 1, 2, 3 in list order; the stack pops them in reverse
+
+Input:  edges = [], start = 0
+Output: recursive [0], iterative [0]
+Explanation: no edges: the start is visited and has no neighbours to try
+
+Input:  edges = [[0,1],[0,2],[1,2],[2,3]], start = 3
+Output: recursive [3, 2, 0, 1], iterative [3, 2, 1, 0]
+Explanation: 3 only touches 2, whose list is 0, 1, 3; the stack pops 1 before 0
 ```
 
 **Approach:** Wandering from neighbour to neighbour without remembering where you have been loops forever on a cycle (this graph has `0–1–2`); one `visited` set fixes that. DFS makes the opposite choice to BFS: follow one path to its end, and only when it dead-ends, back up and try the next branch. Recursion gives you the stack for free. A call returns only after trying every neighbour, so nothing reachable is missed. The iterative version swaps the call stack for an explicit `ArrayDeque`.
@@ -436,10 +470,27 @@ At enqueue time — otherwise a node is queued once per incoming edge (the first
 
 **Problem:** You get one node of a connected, undirected graph; every `Node` has an integer `val` and a list `neighbors` (the class is at the top of the Java below). Return a **deep copy** — brand-new nodes with the same values and connections; no original node may appear in the copy. LeetCode writes the graph as `adjList`, where `adjList[i]` lists the neighbours of the node whose value is `i + 1`, and hands you node 1.
 
-**Example:**
+**Examples:**
 ```
 Input:  adjList = [[2,4],[1,3],[2,4],[1,3]]
-Output: [[2,4],[1,3],[2,4],[1,3]]      same shape, but every node is new
+Output: [[2,4],[1,3],[2,4],[1,3]]
+Explanation: same shape, but every node is new
+
+Input:  adjList = [[]]
+Output: [[]]
+Explanation: one node with no neighbours: the copy is a single new node
+
+Input:  adjList = []
+Output: []
+Explanation: an empty graph hands you null, so the answer is null
+
+Input:  adjList = [[2],[1]]
+Output: [[2],[1]]
+Explanation: 1 and 2 point at each other; the map stops the copy looping forever
+
+Input:  adjList = [[2,3],[1,3],[1,2]]
+Output: [[2,3],[1,3],[1,2]]
+Explanation: a triangle: each node is reached twice but copied only once
 ```
 
 **Approach:** BFS (or DFS) with a HashMap from each original node to its copy. When a neighbour has no copy yet, create one and queue the original. Always link **copies to copies** — never point a copy at an original.
@@ -526,11 +577,30 @@ public class CloneGraph {
 
 **Problem:** You get two lowercase words of the same length, `beginWord` and `endWord`, and a list `wordList`. One move changes exactly one letter, and the word you land on must be in `wordList` — including `endWord`, so if it is not in the list the answer is `0`. Return the **number of words** in the shortest chain, counting both ends, or `0` if there is none.
 
-**Example:**
+**Examples:**
 ```
 Input:  beginWord = "hit", endWord = "cog",
         wordList = ["hot","dot","dog","lot","log","cog"]
-Output: 5          hit → hot → dot → dog → cog  (5 words, 4 moves)
+Output: 5
+Explanation: hit -> hot -> dot -> dog -> cog (5 words, 4 moves)
+
+Input:  beginWord = "hit", endWord = "cog",
+        wordList = ["hot","dot","dog","lot","log"]
+Output: 0
+Explanation: "cog" is not in wordList, so the last move can never land on it
+
+Input:  beginWord = "a", endWord = "c", wordList = ["a","b","c"]
+Output: 2
+Explanation: a -> c is one move; the count includes both ends, so 2 words, not 1
+
+Input:  beginWord = "hit", endWord = "cog", wordList = ["hot","cog"]
+Output: 0
+Explanation: "cog" is listed, but hot -> cog changes two letters, so no chain exists
+
+Input:  beginWord = "red", endWord = "tax",
+        wordList = ["ted","tex","red","tax","tad","den","rex","pee"]
+Output: 4
+Explanation: red -> ted -> tad -> tax; red -> rex -> tex -> tax ties at 4 words
 ```
 
 **Approach:** each ring of the BFS adds one word to the chain. Building the whole word graph up front is wasted work; instead, for each word taken out, change each letter to `'a'`–`'z'` and keep the results that are in the word set. Remove a word from the set as soon as it is queued, so it is never used twice.
@@ -608,10 +678,23 @@ cog not in the list: 0
 
 **Problem:** You get an `m × n` grid of heights. The Pacific touches the top and left edges; the Atlantic the bottom and right edges. Rain flows to an up/down/left/right neighbour of **equal or lower** height, and from any edge cell into that edge's ocean. Return every cell `[row, col]` (0-based) from which water can reach **both** oceans.
 
-**Example:**
+**Examples:**
 ```
 Input:  heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]
 Output: [[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]
+Explanation: these 7 cells can flow downhill to both the top/left and the bottom/right edges
+
+Input:  heights = [[1]]
+Output: [[0,0]]
+Explanation: a lone cell touches all four edges, so it drains into both oceans
+
+Input:  heights = [[3,3,3],[3,1,3],[3,3,3]]
+Output: [[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,1],[2,2]]
+Explanation: equal 3s pass water along to every edge; the centre 1 is a pit with no way out
+
+Input:  heights = [[1,2,3],[8,9,4],[7,6,5]]
+Output: [[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]]
+Explanation: all but (0,0) and (0,1); those two can only drain down into the Pacific
 ```
 
 **Approach:** Asking "where does water from this cell go?" for every cell repeats the same searches. Reverse it: run one DFS from all Pacific edge cells and one from all Atlantic edge cells, moving only to neighbours of **equal or greater** height — every cell you can climb to can drain back down into that ocean. Return the cells both searches reached.
@@ -714,14 +797,28 @@ public class PacificAtlantic {
 
 **Problem:** You get an **undirected** graph whose edge costs are zero or more, and a source node. Return the cheapest total cost from the source to every node; a node that can't be reached keeps `Integer.MAX_VALUE` (∞).
 
-**Example:**
+**Examples:**
 ```
 Input:  edges A-B 1, A-C 4, B-C 2, B-D 5, C-D 1, source A
 Output: A 0, B 1, C 3, D 4
+Explanation: C is cheaper via B (1 + 2 = 3) than direct (4); D via C costs 3 + 1 = 4
 
 In the code A = 0, B = 1, C = 2, D = 3:
 Input:  n = 4, edges = [[0,1,1],[0,2,4],[1,2,2],[1,3,5],[2,3,1]], src = 0
 Output: [0, 1, 3, 4]
+Explanation: the same graph and answer as above, with A..D numbered 0..3
+
+Input:  n = 3, edges = [[0,1,7]], src = 0
+Output: [0, 7, 2147483647]
+Explanation: no edge touches node 2, so it keeps Integer.MAX_VALUE (unreachable)
+
+Input:  n = 3, edges = [[0,1,5],[0,2,1],[2,1,1]], src = 0
+Output: [0, 2, 1]
+Explanation: two hops 0-2-1 cost 1 + 1 = 2, cheaper than the one-hop edge 0-1 of 5
+
+Input:  n = 4, edges = [[0,1,2],[1,2,0],[2,3,3]], src = 3
+Output: [5, 3, 3, 0]
+Explanation: edges go both ways from source 3; the 0-cost edge 1-2 gives 1 the same cost as 2
 ```
 
 **Walk-through (the animation as text):** the best known cost to each node (∞ = no route found yet). Each step settles the nearest unsettled node and checks its unsettled neighbours.
@@ -831,10 +928,27 @@ public class Dijkstra {
 
 **Problem:** You get `n` tasks `0..n-1` and **directed** pairs `[a, b]`, each meaning "**a must come before b**". Return any order of all `n` tasks that respects every pair, or an empty list if none exists (exactly when the pairs form a cycle).
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 4, pairs = [[3,1], [3,2], [1,0], [2,0]]
 Output: [3, 1, 2, 0]
+Explanation: one valid answer: 3 waits for nothing, 1 and 2 wait on 3, and 0 waits on both
+
+Input:  n = 2, pairs = [[1,0]]
+Output: [1, 0]
+Explanation: [1,0] means 1 before 0 here; LeetCode's [1,0] would mean the reverse
+
+Input:  n = 3, pairs = []
+Output: [0, 1, 2]
+Explanation: one valid answer: no task waits for another, so they leave in index order
+
+Input:  n = 3, pairs = [[0,1], [1,2], [2,0]]
+Output: []
+Explanation: 0 -> 1 -> 2 -> 0 is a cycle, so no task ever has a waiting count of 0
+
+Input:  n = 4, pairs = [[0,1], [1,2], [2,1], [0,3]]
+Output: []
+Explanation: 1 and 2 wait on each other; only 0 and 3 come out, 2 < 4, so no full order
 ```
 
 **Walk-through (the animation as text):** each remaining node's waiting count (`node:count`), the ready queue, and the output. `*` = that count just dropped to 0, so the node joins the queue.
@@ -919,13 +1033,31 @@ public class TopologicalSort {
 
 **Problem:** `n` items `0..n-1` each start in a group of their own. Support two operations, called many times in any order: `union(x, y)` merges the groups of `x` and `y`; `connected(x, y)` returns `true` if they are now in the same group.
 
-**Example:**
+**Examples:**
 ```java
 UnionFind uf = new UnionFind(5);   // items 0..4, each alone
 uf.union(0, 1);
 uf.union(1, 2);
 uf.connected(0, 2);                // true  — 0, 1, 2 are one group
 uf.connected(0, 3);                // false — 3 is still alone
+
+uf = new UnionFind(3);             // fresh: items 0..2
+uf.union(0, 1);                    // true  — different leaders, so they merge
+uf.union(1, 2);                    // true  — 2 joins the group
+uf.union(2, 0);                    // false — same leader already: this edge would close a cycle
+
+uf = new UnionFind(1);             // fresh: a single item
+uf.connected(0, 0);                // true  — an item is always in its own group
+uf.union(0, 0);                    // false — same leader, nothing to merge
+
+uf = new UnionFind(6);             // fresh: items 0..5
+uf.union(0, 1);
+uf.union(2, 3);
+uf.connected(1, 3);                // false — {0,1} and {2,3} are separate groups
+uf.union(1, 3);                    // true  — the two pairs merge under leader 0
+uf.parent[3] == uf.parent[1];      // false — 3 points at 2, 1 at 0: compare leaders instead
+uf.connected(1, 3);                // true  — find walks both up to leader 0
+uf.components;                     // 3     — {0,1,2,3}, {4}, {5}
 ```
 
 **Walk-through:** every item's parent **after** each call (the item it points up to; a leader points at itself), and the ranks that decide who goes on top.
@@ -1043,10 +1175,27 @@ hasCycleUndirected, triangle -> true
 
 **Problem:** You get a **directed** graph with `n` nodes `0..n-1`; each edge `[u, v]` is an arrow `u → v`. Return `true` if you can leave some node and come back to it by following the arrows (a cycle).
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 4, edges = [[0,1], [1,2], [2,3], [3,1]]
 Output: true
+Explanation: edge 3 -> 1 reaches 1 while it is still grey, closing the loop 1 -> 2 -> 3 -> 1
+
+Input:  n = 3, edges = [[0,1], [0,2], [1,2]]
+Output: false
+Explanation: two routes into 2, but no arrow leads back; 2 is black (done), not grey
+
+Input:  n = 1, edges = [[0,0]]
+Output: true
+Explanation: the arrow 0 -> 0 leaves node 0 and comes straight back: a self-loop
+
+Input:  n = 2, edges = [[0,1], [1,0]]
+Output: true
+Explanation: in a directed graph, two opposite arrows already form the cycle 0 -> 1 -> 0
+
+Input:  n = 5, edges = [[0,1], [2,3], [3,4], [4,2]]
+Output: true
+Explanation: 2 -> 3 -> 4 -> 2 sits in a second component; the outer loop starts a DFS there too
 ```
 
 **Walk-through:** the grey nodes (the path we are standing on right now). Everything else is still white.
@@ -1122,10 +1271,23 @@ false
 
 **Problem:** The same question for an **undirected** graph: `n` nodes (numbered `0..n-1` or `1..n`) and edges `[u, v]`; return `true` if it contains a cycle.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 3, edges = [[1,2], [1,3], [2,3]]   (nodes 1..3)
 Output: true
+Explanation: 2 and 3 are already joined through 1, so edge [2,3] closes a loop
+
+Input:  n = 2, edges = [[0,1]]
+Output: false
+Explanation: one edge is no loop; a DFS that does not skip its parent would wrongly say true
+
+Input:  n = 4, edges = [[0,1], [1,2], [1,3]]
+Output: false
+Explanation: every edge joins two separate groups: 4 nodes, 3 edges, a tree
+
+Input:  n = 5, edges = [[0,1], [2,3], [3,4], [4,2]]
+Output: true
+Explanation: [4,2] fails to union, as 4 and 2 already share a leader through 3
 ```
 
 **Walk-through:** the code's `parent` and `rank` arrays, and the two leaders each `union` finds. There are `n + 1 = 4` slots, so slot 0 goes unused.
@@ -1240,13 +1402,30 @@ boolean inBounds(int r, int c, int rows, int cols) {
 
 **Problem:** A grid of characters: `'1'` = land, `'0'` = water. An island is land cells joined up, down, left or right (not diagonally). Return the number of islands.
 
-**Example:**
+**Examples:**
 ```
 Input:  grid = [["1","1","0","0","0"],
                 ["1","1","0","0","0"],
                 ["0","0","1","0","0"],
                 ["0","0","0","1","1"]]
 Output: 3
+Explanation: the top-left 2 x 2 block, the lone cell (2,2), and the pair (3,3) (3,4)
+
+Input:  grid = [["0","0"],
+                ["0","0"]]
+Output: 0
+Explanation: all water, so the scan never finds land to start an island
+
+Input:  grid = [["1","0","1"],
+                ["0","1","0"],
+                ["1","0","1"]]
+Output: 5
+Explanation: diagonal neighbours don't join, so each of the five 1s is its own island
+
+Input:  grid = [["1","0","1"],
+                ["1","1","1"]]
+Output: 1
+Explanation: (0,0) and (0,2) look apart in row 0 but join through row 1: one island
 ```
 
 **Walk-through (the animation as text):** cells are `(row, col)`; the scan goes row by row, left to right.
@@ -1338,11 +1517,33 @@ public class NumberOfIslands {
 
 **Problem:** An `n × n` grid of `0` = open and `1` = wall. Return the number of cells on the shortest route from the top-left to the bottom-right cell, stepping only on open cells in any of **8 directions** — or `-1` if there is none.
 
-**Example:**
+**Examples:**
 ```
 Input:  grid = [[0,1],
                 [1,0]]
-Output: 2        (one diagonal move, two cells)
+Output: 2
+Explanation: one diagonal move, two cells
+
+Input:  grid = [[0]]
+Output: 1
+Explanation: the start is the target, and the route counts that one cell
+
+Input:  grid = [[0,0,0],
+                [1,1,0],
+                [1,1,0]]
+Output: 4
+Explanation: (0,0) (0,1) (1,2) (2,2): three moves, one of them diagonal, four cells
+
+Input:  grid = [[1,0],
+                [0,0]]
+Output: -1
+Explanation: the start cell itself is a wall, so no route can begin
+
+Input:  grid = [[0,1,0],
+                [1,1,1],
+                [0,1,0]]
+Output: -1
+Explanation: both ends are open, but every neighbour of the start is a wall
 ```
 
 **Walk-through:** the queue per route length (cells on the route so far).
@@ -1426,12 +1627,33 @@ public class ShortestPathBinaryMatrix {
 
 **Problem:** `0` = empty, `1` = fresh orange, `2` = rotten. Each minute, every fresh orange next to a rotten one (up, down, left, right) rots. Return the minutes until none is fresh — `0` if none was, `-1` if one can never be reached.
 
-**Example:**
+**Examples:**
 ```
 Input:  grid = [[2,1,1],
                 [1,1,0],
                 [0,1,1]]
 Output: 4
+Explanation: the last fresh orange, (2,2), is 4 steps from the only rotten one at (0,0)
+
+Input:  grid = [[2,1,1],
+                [1,1,0],
+                [0,1,2]]
+Output: 2
+Explanation: two rotten oranges spread at the same time, so the waves meet in 2 minutes
+
+Input:  grid = [[2,1,1],
+                [0,1,1],
+                [1,0,1]]
+Output: -1
+Explanation: the orange at (2,0) has only empty neighbours, so it never rots
+
+Input:  grid = [[0,2]]
+Output: 0
+Explanation: nothing is fresh to begin with, so 0 minutes, not -1
+
+Input:  grid = [[0,1]]
+Output: -1
+Explanation: a fresh orange but no rotten one, so the rot never starts
 ```
 
 **Walk-through (the animation as text):** the grid after each minute. Each minute polls exactly the oranges that rotted the minute before.
@@ -1530,12 +1752,29 @@ public class RottingOranges {
 
 **Problem:** Return `true` if `word` can be spelled on the letter grid `board` (m × n), moving up, down, left or right one cell per letter and never reusing a cell.
 
-**Example:**
+**Examples:**
 ```
 Input:  board = [["A","B","C","E"],
                  ["S","F","C","S"],
                  ["A","D","E","E"]],  word = "ABCCED"
 Output: true
+Explanation: A B C C E D at (0,0) (0,1) (0,2) (1,2) (2,2) (2,1), each cell used once
+
+Input:  board = the same board,  word = "SEE"
+Output: true
+Explanation: S at (1,3), E below it at (2,3), then E to its left at (2,2)
+
+Input:  board = the same board,  word = "ABCB"
+Output: false
+Explanation: the only B next to the C at (0,2) is (0,1), already used by this path
+
+Input:  board = the same board,  word = "CSEC"
+Output: true
+Explanation: C(1,2) S(1,3) E(0,3) C(0,2); false if a failed start leaves (0,2) marked
+
+Input:  board = [["A"]],  word = "A"
+Output: true
+Explanation: a one-letter word needs just one matching cell
 ```
 
 **Walk-through:** the search from the top-left `A`, cells numbered in the order used (`·` = unused).

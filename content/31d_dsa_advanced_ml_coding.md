@@ -159,10 +159,23 @@ All three are the template; **only what you may pick next changes** (`i` = posit
 
 **Problem:** Given an array `nums` of different integers, return all 2ⁿ subsets, each exactly once, in any order.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 2, 3]
 Output: [[], [1], [1, 2], [1, 2, 3], [1, 3], [2], [2, 3], [3]]
+Explanation: 2^3 = 8 subsets, each built left to right, so none repeats
+
+Input:  nums = []
+Output: [[]]
+Explanation: the empty set is still a subset, so the answer is not empty
+
+Input:  nums = [5]
+Output: [[], [5]]
+Explanation: leave 5 out or take it; storing path without a copy prints [[], []]
+
+Input:  nums = [3, 1]
+Output: [[], [3], [3, 1], [1]]
+Explanation: input order is kept; [1, 3] would repeat [3, 1], so it never appears
 ```
 
 **Walk-through:** each call records the list it was handed, then tries adding each number to the **right** of the last one added.
@@ -230,10 +243,23 @@ public class Subsets {
 
 **Problem:** Given an array `nums` of different integers, return every ordering of all its numbers (n! of them), in any order.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 2, 3]
 Output: [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+Explanation: 3! = 6 orderings; the first number is tried in input order
+
+Input:  nums = [0, 1]
+Output: [[0, 1], [1, 0]]
+Explanation: 2! = 2; forget used[i] = false and only [0, 1] comes out
+
+Input:  nums = [1]
+Output: [[1]]
+Explanation: a single number has exactly one ordering
+
+Input:  nums = []
+Output: [[]]
+Explanation: 0! = 1: the empty list is the one ordering of nothing
 ```
 
 **Walk-through:** at each level try every number **not yet used**; record only full-length lists.
@@ -304,10 +330,27 @@ public class Permutations {
 
 **Problem:** Given `n` and `k`, return every group of `k` different numbers chosen from `1, 2, …, n`, each group once, in any order.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 3, k = 2
 Output: [[1, 2], [1, 3], [2, 3]]
+Explanation: C(3, 2) = 3 groups, each in increasing order, so [2, 1] never appears
+
+Input:  n = 4, k = 2
+Output: [[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
+Explanation: C(4, 2) = 6 pairs, listed by their first number
+
+Input:  n = 4, k = 3
+Output: [[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4]]
+Explanation: C(4, 3) = 4; the first pick stops at 2, as [3, 4] can't reach size 3
+
+Input:  n = 3, k = 3
+Output: [[1, 2, 3]]
+Explanation: k = n, so the only group takes every number
+
+Input:  n = 1, k = 1
+Output: [[1]]
+Explanation: one number gives one group of size 1
 ```
 
 **Walk-through:** the next number must be bigger than the last one, so each group is built in exactly one order — `[2, 1]` is never produced.
@@ -379,10 +422,23 @@ public class Combinations {
 
 **Problem:** Given different positive integers `candidates` and a `target`, return every list of candidates that adds up to `target`. A number may be used **any number of times**; `[2, 2, 3]` and `[3, 2, 2]` are the same answer.
 
-**Example:**
+**Examples:**
 ```
 Input:  candidates = [2, 3, 6, 7], target = 7
 Output: [[2, 2, 3], [7]]
+Explanation: 2 + 2 + 3 = 7 reuses 2; 7 on its own also works
+
+Input:  candidates = [2, 3, 5], target = 8
+Output: [[2, 2, 2, 2], [2, 3, 3], [3, 5]]
+Explanation: [3, 2, 3] is the same list as [2, 3, 3], so it is built only once
+
+Input:  candidates = [2], target = 1
+Output: []
+Explanation: 1 is smaller than every candidate, so no list adds up to it
+
+Input:  candidates = [1], target = 2
+Output: [[1, 1]]
+Explanation: 1 must be used twice; recursing with i + 1 would find nothing
 ```
 
 **Walk-through:** "left" = how much of the target is still missing. A number may repeat, but never one that comes *earlier* in `candidates`.
@@ -481,10 +537,23 @@ if (i > 0 && nums[i] == nums[i - 1] && !used[i - 1]) continue;  // twin not plac
 
 **Problem:** Place `n` queens on an `n × n` chessboard so that no two share a **row**, a **column** or a **diagonal**. Return every solution as `n` strings, one per row, with `Q` for a queen and `.` for an empty square.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 4
-Output: [[.Q.., ...Q, Q..., ..Q.], [..Q., Q..., ...Q, .Q..]]     (2 boards)
+Output: [[.Q.., ...Q, Q..., ..Q.], [..Q., Q..., ...Q, .Q..]]
+Explanation: 2 boards; the second is the first one mirrored left to right
+
+Input:  n = 1
+Output: [[Q]]
+Explanation: a lone queen on a 1 x 1 board attacks nothing
+
+Input:  n = 2
+Output: []
+Explanation: any two squares of a 2 x 2 board share a row, column or diagonal
+
+Input:  n = 3
+Output: []
+Explanation: every first move leaves some row with all 3 squares attacked
 ```
 
 **Walk-through (the animation as text):** `(r,c)` = a queen in row `r`, column `c` (from 0); ✗ = attacked by a queen already placed.
@@ -631,10 +700,23 @@ Almost certainly stop backtracking and use DP (chapter 31c). Enumerating 2ⁿ an
 
 **Problem:** Given intervals `[start, end]`, return the **fewest** you must remove so that none of the rest overlap. Intervals that only touch (one ends at 2, the next starts at 2) do **not** overlap.
 
-**Example:**
+**Examples:**
 ```
 Input:  intervals = [[1,2],[2,3],[3,4],[1,3]]
-Output: 1          (remove [1,3])
+Output: 1
+Explanation: remove [1,3]; it overlaps [1,2] and [2,3], while the rest only touch
+
+Input:  intervals = [[1,2],[1,2],[1,2]]
+Output: 2
+Explanation: identical intervals all overlap, so only one copy can stay
+
+Input:  intervals = [[1,2],[2,3]]
+Output: 0
+Explanation: [1,2] and [2,3] only touch at 2, which is not an overlap
+
+Input:  intervals = [[1,100],[11,22],[1,11],[2,12]]
+Output: 2
+Explanation: keep [1,11] and [11,22]; sorting by start keeps [1,100] and removes 3
 ```
 
 **Walk-through:** sorted by end: `[1,2] [2,3] [1,3] [3,4]`. `prevEnd` = where the last **kept** interval ends.
@@ -701,10 +783,23 @@ public class NonOverlappingIntervals {
 
 **Problem:** Same `nums`, but return the fewest jumps from index 0 to the last index; the input guarantees it can be reached.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [2, 3, 1, 1, 4]
-Output: 2          0 -> 1 -> 4
+Output: 2
+Explanation: 0 -> 1 -> 4
+
+Input:  nums = [0]
+Output: 0
+Explanation: index 0 is already the last index; looping onto it would wrongly count 1
+
+Input:  nums = [1, 1, 1, 1]
+Output: 3
+Explanation: every jump moves one step: 0 -> 1 -> 2 -> 3
+
+Input:  nums = [3, 4, 1, 1, 1, 1]
+Output: 2
+Explanation: 0 -> 1 -> 5; jumping farthest first (0 -> 3) would need 3 jumps
 ```
 
 **Walk-through:** `currEnd` = the farthest index reachable with the jumps used so far; `farthest` = the farthest with **one more** jump.
@@ -783,10 +878,27 @@ public class JumpGame {
 
 **Problem:** Each letter in `tasks` is one task taking **one slot**. Two copies of the same letter need at least `n` other slots between them — other tasks, or idle. Return the fewest slots that run every task.
 
-**Example:**
+**Examples:**
 ```
 Input:  tasks = [A, A, A, B, B, B], n = 2
-Output: 8          (A B _ A B _ A B, where _ = idle)
+Output: 8
+Explanation: A B _ A B _ A B, where _ = idle
+
+Input:  tasks = [A, A, A, A, B, C], n = 2
+Output: 10
+Explanation: A B C A _ _ A _ _ A; B and C fill 2 of the 6 gap slots, 4 stay idle
+
+Input:  tasks = [A, A, A, B, B, B, C, C], n = 2
+Output: 8
+Explanation: A B C A B C A B; B and C fill every gap exactly, so nothing idles
+
+Input:  tasks = [A, A, B, B, C, C, D, D], n = 1
+Output: 8
+Explanation: A B C D A B C D; idleSlots goes to -2, and the max keeps 8, not 6
+
+Input:  tasks = [A, A, A, B, B, B], n = 0
+Output: 6
+Explanation: no cooldown, so the tasks just run back to back
 ```
 
 **Walk-through:** count the slots the busiest task forces.
@@ -924,10 +1036,19 @@ a & (a - 1)          0100   = 4   ← the lowest 1 is gone
 
 **Problem:** Every number in the array appears exactly twice, except one that appears once. Return it, using O(1) extra space.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [4, 1, 2, 1, 2]
 Output: 4
+
+Input:  nums = [1]
+Output: 1
+
+Input:  nums = [2, 2, 1]
+Output: 1
+
+Input:  nums = [7, -3, 7]
+Output: -3
 ```
 
 **Walk-through:** the running XOR, in binary and decimal.
@@ -984,10 +1105,19 @@ public class SingleNumber {
 
 **Problem:** Given `n`, return an array of length `n + 1` whose entry `i` (for every `i` from 0 to n) is the number of 1s in the binary form of `i`.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 5
 Output: [0, 1, 1, 2, 1, 2]
+
+Input:  n = 0
+Output: [0]
+
+Input:  n = 2
+Output: [0, 1, 1]
+
+Input:  n = 8
+Output: [0, 1, 1, 2, 1, 2, 2, 3, 1]
 ```
 
 **Walk-through:** drop each number's last bit and look up the smaller number's count.
@@ -1041,10 +1171,23 @@ n = 5 -> [0, 1, 1, 2, 1, 2]
 
 **Problem:** Subsets from §18.21 — given `nums` with all values different, return all 2ⁿ subsets — built with a plain loop over bitmasks instead of recursion.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 2]
 Output: [[], [1], [2], [1, 2]]
+Explanation: masks 00, 01, 10, 11 take nothing, nums[0], nums[1], then both
+
+Input:  nums = [1, 2, 3]
+Output: [[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]]
+Explanation: 2^3 = 8 masks; the order follows the mask count, not subset size
+
+Input:  nums = [7]
+Output: [[], [7]]
+Explanation: masks 0 and 1: leave 7 out, then take it
+
+Input:  nums = []
+Output: [[]]
+Explanation: 1 << 0 = 1 mask (0), so the empty set is the one subset
 ```
 
 **Walk-through:** masks run 0..3, in binary (bit 0 is the rightmost digit); bit `i` set means `nums[i]` is in.
@@ -1155,10 +1298,27 @@ It clears the lowest set bit. Repeat until zero and the number of iterations is 
 
 **Problem:** Given intervals `[start, end]` in any order, merge every group that overlaps and return the merged list, sorted by start. Touching intervals (`[1,4]` and `[4,5]`) overlap and become `[1,5]`.
 
-**Example:**
+**Examples:**
 ```
 Input:  intervals = [[1,3], [2,6], [8,10], [15,18]]
 Output: [[1,6], [8,10], [15,18]]
+Explanation: [1,3] and [2,6] overlap (2 <= 3); gaps separate the other two
+
+Input:  intervals = [[1,4], [4,5]]
+Output: [[1,5]]
+Explanation: touching counts as overlapping: 4 <= 4
+
+Input:  intervals = [[1,10], [2,3]]
+Output: [[1,10]]
+Explanation: [2,3] sits inside [1,10]; plain last[1] = end would shrink it to [1,3]
+
+Input:  intervals = [[4,5], [1,2]]
+Output: [[1,2], [4,5]]
+Explanation: unsorted input; without the sort, 1 <= 5 would wrongly merge them
+
+Input:  intervals = [[1,4], [0,2], [3,5]]
+Output: [[0,5]]
+Explanation: once sorted, each overlaps the last: [0,2], then [0,4], then [0,5]
 ```
 
 **Walk-through:** the animation and its dry run below this block.
@@ -1235,10 +1395,23 @@ next      start <= last end?   action                           output so far
 
 **Problem:** Given meetings `[start, end]`, return the fewest rooms so that no two meetings in one room overlap. A room whose meeting ends at 10 can host one that starts at 10.
 
-**Example:**
+**Examples:**
 ```
 Input:  meetings = [[0,30], [5,10], [15,20]]
 Output: 2
+Explanation: [5,10] overlaps [0,30]; [15,20] reuses the room [5,10] freed
+
+Input:  meetings = [[1,5], [5,10]]
+Output: 1
+Explanation: the room frees at 5 and the next meeting starts at 5; a strict < would say 2
+
+Input:  meetings = [[1,4], [2,5], [3,6]]
+Output: 3
+Explanation: all three are running at time 3, so each needs its own room
+
+Input:  meetings = [[7,10], [2,4]]
+Output: 1
+Explanation: unsorted, but once sorted [2,4] ends before [7,10] starts
 ```
 
 **Walk-through:** the animation and its dry run below this block.
@@ -1964,10 +2137,27 @@ That gives the negative-cycle test for free: run **one more round**. If anything
 
 **Problem:** A **directed** graph has `n` nodes (0 to n − 1) and edges `{u, v, w}`: from `u` to `v` with weight `w`, possibly negative. Return `dist[]`, the cheapest cost from `src` to every node (`Integer.MAX_VALUE`, printed `INF`, if unreachable). If a **negative cycle** (a loop whose weights add up to less than zero) is reachable from `src`, you could circle it forever, so throw.
 
-**Example:**
+**Examples:**
 ```
 Input:  n = 3, edges = [[0, 1, 1], [1, 2, -1], [2, 1, -1]], src = 0
-Output: Negative cycle detected      (1 -> 2 -> 1 costs -1 + -1 = -2 per lap)
+Output: Negative cycle detected
+Explanation: 1 -> 2 -> 1 costs -1 + -1 = -2 per lap
+
+Input:  n = 3, edges = [[0, 1, 4], [0, 2, -3], [1, 2, 2]], src = 0
+Output: [0, 4, -3]
+Explanation: a negative edge is fine without a negative cycle; 0 -> 2 beats 0 -> 1 -> 2
+
+Input:  n = 3, edges = [[0, 1, 5], [2, 1, 1]], src = 0
+Output: [0, 5, INF]
+Explanation: no edge leads into node 2, so it stays INF; the guard skips relaxing from it
+
+Input:  n = 4, edges = [[2, 3, 1], [1, 2, 1], [0, 1, 1]], src = 0
+Output: [0, 1, 2, 3]
+Explanation: edges listed backwards: each round settles one more node, so all 3 rounds run
+
+Input:  n = 4, edges = [[0, 1, 2], [2, 3, -1], [3, 2, -1]], src = 0
+Output: [0, 2, INF, INF]
+Explanation: the cycle 2 -> 3 -> 2 is negative but unreachable from 0, so no throw
 ```
 
 **Walk-through:** the extra round at work. Edges are checked in the order given, for `n - 1 = 2` rounds.
@@ -2100,10 +2290,27 @@ Rounds k = 1, 2, 3 repeat this with one more stopover each.
 
 **Problem:** A weighted **directed** graph with `V` nodes is a `V x V` matrix `graph`: `graph[i][j]` = the weight of the edge from `i` to `j`, or `INF` = `Integer.MAX_VALUE / 2` if there is none (see the trap). Return the cheapest cost between every pair of nodes, or throw if there is a negative cycle.
 
-**Example:**
+**Examples:**
 ```
 Input:  graph = [[0, 3, INF, 7], [8, 0, 2, INF], [5, INF, 0, 1], [2, INF, INF, 0]]
 Output: [[0, 3, 5, 6], [5, 0, 2, 3], [3, 6, 0, 1], [2, 5, 7, 0]]
+Explanation: e.g. 1 -> 0 is 5 via 1 -> 2 -> 3 -> 0 (2 + 1 + 2), beating the direct 8
+
+Input:  graph = [[0, 1], [-2, 0]]
+Output: Negative cycle at node 0
+Explanation: 0 -> 1 -> 0 costs 1 + -2 = -1, so dist[0][0] ends below 0
+
+Input:  graph = [[0, 4, INF], [INF, 0, -2], [INF, INF, 0]]
+Output: [[0, 4, 2], [INF, 0, -2], [INF, INF, 0]]
+Explanation: 0 -> 1 -> 2 costs 4 + -2 = 2; edges only go forward, so the INFs stay
+
+Input:  graph = [[0, 5, 1], [INF, 0, INF], [INF, 2, 0]]
+Output: [[0, 3, 1], [INF, 0, INF], [INF, 2, 0]]
+Explanation: 0 -> 2 -> 1 costs 1 + 2 = 3, cheaper than the direct edge of 5
+
+Input:  graph = [[0]]
+Output: [[0]]
+Explanation: one node and no edges: its only pair is itself, at cost 0
 ```
 
 **Walk-through:** all four rounds. Each entry `i->j = a + b` is a `dist[i][j]` that got cheaper by stopping at `k` (`a = dist[i][k]`, `b = dist[k][j]`).
@@ -2226,10 +2433,27 @@ Pairs are finalised before the routes they read are finished, so routes with sev
 
 **Problem (LC 239, Hard):** Slide a window of `k` consecutive numbers across `nums`, one step at a time, and return the largest number in each window — `n − k + 1` answers for an array of length `n`.
 
-**Example:**
+**Examples:**
 ```
 Input:  nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3
 Output: [3, 3, 5, 5, 6, 7]
+Explanation: n - k + 1 = 6 windows; each answer is the largest of that window's 3 numbers
+
+Input:  nums = [9, 8, 7, 6], k = 2
+Output: [9, 8, 7]
+Explanation: falling values: 9 must expire from the front, or every answer stays 9
+
+Input:  nums = [5], k = 1
+Output: [5]
+Explanation: k = 1: each number is its own window
+
+Input:  nums = [4, 2, 12, 3], k = 4
+Output: [12]
+Explanation: k = n: one window, the whole array
+
+Input:  nums = [1, 3, 3, 1], k = 2
+Output: [3, 3, 3]
+Explanation: ties: popping on <= keeps the newer 3, which stays in the window longer
 ```
 
 **Brute force** rescans every window: O(n·k). At n = 100,000 and k = 50,000 that is about 2.5 billion steps (50,001 windows × 50,000 numbers each).
@@ -2498,10 +2722,27 @@ ML loops ask you to write the algorithm, not call `sklearn`. They test whether y
 
 **Problem:** Given points `(x, y)`, find the line `y = w·x + b` with the smallest *mean squared error* (MSE): the average of (prediction − y)² over the points.
 
-**Example:**
+**Examples:**
 ```
 Input:  x = [1, 2, 3, 4], y = [2, 4, 6, 8], lr = 0.01, 1000 epochs
 Output: w = 1.99, b = 0.03, predict(5) = 9.979
+Explanation: w is closing in on the true slope 2; b overshot to 0.56 and is shrinking to 0
+
+Input:  x = [0, 1, 2, 3], y = [1, 3, 5, 7], lr = 0.05, 1000 epochs
+Output: w = 2.0, b = 1.0, predict(4) = 9.0
+Explanation: the points lie exactly on y = 2x + 1, and a larger lr recovers both numbers
+
+Input:  x = [2], y = [4], lr = 0.05, 100 epochs
+Output: w = 1.6, b = 0.8, predict(2) = 4.0
+Explanation: one point fits endless lines; every step moves w and b in the ratio x : 1 = 2 : 1
+
+Input:  x = [1, 2, 3, 4], y = [2, 4, 6, 8], lr = 0.15, 20 epochs
+Output: w = -6377.001, b = -2169.367
+Explanation: lr above ~0.12 overshoots the minimum by more each step, so w swings and blows up
+
+Input:  x = [10, 20, 30, 40], y = [20, 40, 60, 80], lr = 0.01, 3 epochs
+Output: w = 5503.51, b = 183.49
+Explanation: same slope 2 as example 1, but 10x bigger x makes steps ~100x too big: scale x
 ```
 
 **Walk-through:** the dry run below this block.
@@ -2599,10 +2840,27 @@ lr = 0.15: w = 4.5, -2.25, 7.93, -7.37 ... -45.35 at epoch 8   (diverges)
 
 **Problem:** Each row of `X` has `d` features; each label in `y` is 0 or 1. Learn `w` and `b` so that `sigmoid(w·x + b)` is the probability that the label is 1, and predict 1 when it is at least 0.5. Here `w·x` = w₁x₁ + … + w_d·x_d, and `sigmoid(z) = 1 / (1 + e^(−z))` squashes any `z` into the range 0 to 1.
 
-**Example:**
+**Examples:**
 ```
 Input:  X = [[0], [1], [2], [3]], y = [0, 0, 1, 1], lr = 0.1, 1000 epochs
 Output: w = [3.375], b = -4.76, predictions = [0, 0, 1, 1]
+Explanation: p crosses 0.5 at x = 4.76 / 3.375 = 1.41, between the 0s and the 1s
+
+Input:  X = [[0, 0], [0, 1], [1, 0], [1, 1]], y = [0, 0, 0, 1], lr = 0.5, 1000 epochs
+Output: w = [6.014, 6.014], b = -9.198, predictions = [0, 0, 0, 1]
+Explanation: AND: one input on gives z = -3.18, both on give z = 2.83, so only [1, 1] crosses 0
+
+Input:  X = [[0, 0], [0, 1], [1, 0], [1, 1]], y = [0, 1, 1, 0], lr = 0.5, 1000 epochs
+Output: w = [0.0, 0.0], b = 0.0, predictions = [1, 1, 1, 1]
+Explanation: XOR has no separating line: gradients cancel, every p stays 0.5, which rounds to 1
+
+Input:  X = [[1], [2]], y = [1, 1], lr = 0.1, 1000 epochs
+Output: w = [2.634], b = 2.13, predictions = [1, 1]
+Explanation: one class only: no finite best, so w and b keep growing to push every p towards 1
+
+Input:  X = [[0]], y = [1], lr = 0.1, 1000 epochs
+Output: w = [0.0], b = 4.571, predictions = [1]
+Explanation: x = 0 makes the w gradient error times 0 = 0, so only the bias b learns
 ```
 
 **Walk-through:** the first epoch, from w = 0, b = 0. Every `z` is 0, so every prediction is sigmoid(0) = 0.5.
@@ -2712,10 +2970,27 @@ sigmoid(40) = 1.0, unclipped loss for label 1 = NaN
 
 **Problem:** Split `n` points into `k` groups (*clusters*) so that each point belongs to the group whose *centroid* — the mean of the group's points — is nearest. Return each point's group number (0 to k − 1).
 
-**Example:**
+**Examples:**
 ```
 Input:  points = (1,1), (1,2), (10,10), (10,11), k = 2
 Output: labels = [0, 0, 1, 1], centroids = [[1.0, 1.5], [10.0, 10.5]]
+Explanation: two tight pairs far apart: each pair becomes a cluster centred on its mean
+
+Input:  points = (1,1), (1,2), (10,10), (10,11), k = 1
+Output: labels = [0, 0, 0, 0], centroids = [[5.5, 6.0]]
+Explanation: one cluster takes every point, so its centroid is the mean of all four
+
+Input:  points = (3,3), (3,3), (3,3), k = 2
+Output: labels = [0, 0, 0], centroids = [[3.0, 3.0], [3.0, 3.0]]
+Explanation: distance ties go to the lower index, so cluster 1 stays empty and keeps its start
+
+Input:  points = (0,0), (1,0), (10,0), (11,0), (20,0), (21,0), k = 3, init = first k points
+Output: labels = [0, 1, 2, 2, 2, 2], centroids = [[0.0, 0.0], [1.0, 0.0], [15.5, 0.0]]
+Explanation: two centroids start in the same pair, so the two far pairs share one: a local best
+
+Input:  points = (0,0), (10,0), (20,0), (1,0), (11,0), (21,0), k = 3, init = first k points
+Output: labels = [0, 1, 2, 0, 1, 2], centroids = [[0.5, 0.0], [10.5, 0.0], [20.5, 0.0]]
+Explanation: new order puts one start in each pair, so the 3 true pairs are found
 ```
 
 **Walk-through:** the dry run below this block.
@@ -2831,10 +3106,27 @@ iter 2   ASSIGN  nobody switches -> changed = false -> break   (rounds = 3)
 
 **Problem:** Given training points with known labels (`trainX`, `trainY`), predict a new *query* point's label by a majority vote among the `k` training points closest to it.
 
-**Example:**
+**Examples:**
 ```
 Input:  trainX = [1], [2], [3], [10], [11], [12], trainY = [0, 0, 0, 1, 1, 1], query = [2.5], k = 3
 Output: 0
+Explanation: the 3 nearest points (2, 3, then 1) all have label 0
+
+Input:  same trainX and trainY, query = [10.5], k = 3
+Output: 1
+Explanation: 10 and 11 are 0.5 away and 12 is 1.5 away; all three have label 1
+
+Input:  same trainX and trainY, query = [7], k = 1
+Output: 1
+Explanation: k = 1 copies the single nearest point: 10 is 3 away, 3 is 4 away
+
+Input:  same trainX and trainY, query = [6.5], k = 2
+Output: 0
+Explanation: points 3 and 10 are both 3.5 away: a 1-1 tie that Collections.max settles as 0
+
+Input:  trainX = [1], [2], [10], [11], [12], trainY = [0, 0, 1, 1, 1], query = [1.5], k = 5
+Output: 1
+Explanation: k = n ignores distance: the three 1s outvote the two 0s right next to the query
 ```
 
 **Walk-through:** the heap's squared distances, largest (the top) first.
@@ -2912,10 +3204,27 @@ query = [6.5], k = 2 -> 0  (a 1-1 tie)
 
 **Problem:** Turn raw scores — *logits*, any real numbers a model outputs — into probabilities that are positive and add up to 1: `softmax(z_i) = e^(z_i) / (e^(z_1) + … + e^(z_n))`. Do it without overflowing.
 
-**Example:**
+**Examples:**
 ```
 Input:  logits = [2.0, 1.0, 0.1]
 Output: [0.659, 0.242, 0.099]
+Explanation: a logit gap of 1 means a probability ratio of e = 2.72: 0.659 / 0.242 = 2.72
+
+Input:  logits = [1000.0, 1001.0, 1002.0]
+Output: [0.09, 0.245, 0.665]
+Explanation: subtracting the max (1002) gives [-2, -1, 0]; naive exp(1000) is Infinity
+
+Input:  logits = [3.0, 3.0, 3.0, 3.0]
+Output: [0.25, 0.25, 0.25, 0.25]
+Explanation: equal logits give a uniform distribution, whatever their value
+
+Input:  logits = [-1000.0, -1000.0, -999.0]
+Output: [0.212, 0.212, 0.576]
+Explanation: naive exp(-1000) underflows to 0, so 0 / 0 = NaN; minus the max gives [-1, -1, 0]
+
+Input:  logits = [-7.5]
+Output: [1.0]
+Explanation: a single logit always gets probability 1: e^0 / e^0, whatever its value
 ```
 
 **Walk-through:** the maximum logit is 2.0; divide each `e^(that)` by their sum, 1.518.
@@ -2990,10 +3299,27 @@ without the max: e^1000 = Infinity, first probability = NaN
 
 `d_k` (`dk` in code) is the length of each query and key.
 
-**Example:** 2 tokens, d_k = 1. `main` passes the 2 × 2 identity as `X`, so Q = `Wq`, K = `Wk`, V = `Wv`.
+**Examples:** 2 tokens; d_k = 1 unless the Input says otherwise. `main` passes the 2 × 2 identity as `X`, so Q = `Wq`, K = `Wk`, V = `Wv`.
 ```
 Input:  Q = [[1], [0]], K = [[1], [0]], V = [[5], [9]]
 Output: [[6.076], [7.0]]
+Explanation: token 0 favours key 0 (weights 0.731, 0.269); token 1's scores tie, so 50/50
+
+Input:  Q = [[10], [0]], K = [[10], [0]], V = [[5], [9]]
+Output: [[5.0], [7.0]]
+Explanation: scores 100 vs 0 make softmax one-hot, so token 0 just copies its own value 5
+
+Input:  Q = [[1], [1]], K = [[1], [1]], V = [[5], [9]]
+Output: [[7.0], [7.0]]
+Explanation: every query scores every key the same, so each token gets the plain mean of V
+
+Input:  Q = [[1, 1], [0, 0]], K = [[1, 1], [0, 0]], V = [[5, 1], [9, 3]], d_k = 2
+Output: [[5.782, 1.391], [7.0, 2.0]]
+Explanation: token 0's score 2 is divided by sqrt(2) first, giving weights 0.804, 0.196
+
+Input:  Q = [[2], [-2]], K = [[1], [0]], V = [[5], [9]]
+Output: [[5.477], [8.523]]
+Explanation: attention isn't symmetric: token 1's query scores key 0 at -2, so it leans to 9
 ```
 
 **Walk-through:** token 0's query matches token 0's key; token 1's query is 0, so it matches nothing in particular. √d_k = 1, so the scores are not rescaled.

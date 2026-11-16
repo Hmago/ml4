@@ -510,22 +510,32 @@ async function dsaContinue() {
   showDSAProblem(next.problem.id);
 }
 
-async function showDSAPractice() {
+// Leave any chapter-only UI behind before a DSA page renders: focus mode, the
+// "On this page" outline, the Find/Focus/Listen buttons and the chapter's
+// reading-time tracking. Chapter "Practice: … →" links open a problem straight
+// from a chapter; without this the outline stayed open and squeezed the code
+// editor, focus mode stayed on, and the chapter kept accruing reading time.
+function dsaLeaveChapterView() {
   exitFocusMode();
   trackChapterClose();
   currentIndex = -1;
-  currentPage = 'dsa';
   renderSidebar();
   closeSidebar();
   document.getElementById('tocPanel').classList.remove('visible');
-  document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
   document.getElementById('readBtn').style.display = 'none';
-
-  document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
-  pushHash('dsa-practice');
+  document.getElementById('findBtn').style.display = 'none'; closeFind();
+  document.getElementById('focusBtn').style.display = 'none';
+  document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
+  document.getElementById('content').classList.remove('chapter-view', 'recap-view', 'case-study-view');
+}
+
+async function showDSAPractice() {
+  dsaLeaveChapterView();
+  currentPage = 'dsa';
+  document.getElementById('breadcrumb').textContent = '💻 DSA Practice';
+  pushHash('dsa-practice');
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
 
   // The 420KB problem index is lazy-loaded — show a spinner while it arrives.
   if (!(typeof window !== 'undefined' && window.__dsaIndexLoaded) && typeof DSA_PROBLEMS === 'undefined') {
@@ -679,7 +689,7 @@ async function showDSAPractice() {
     const _list = document.getElementById('dsaListContainer');
     if (_list) _list.innerHTML = dsaBuildGroupsHTML(filtered, progress);
   });
-  document.getElementById('contentWrapper').scrollTop = 0;
+  document.getElementById('contentWrapper').scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function toggleDSAAddForm() {
@@ -904,14 +914,13 @@ async function showDSAProblem(id) {
   const problem = allProblems.find(p => p.id === id);
   if (!problem) return;
 
+  dsaLeaveChapterView();
   // Stop any existing timer
   dsaStopTimer();
 
   dsaCurrentProblem = id;
   currentPage = 'dsa-problem';
   document.getElementById('breadcrumb').textContent = '💻 ' + problem.title;
-  document.getElementById('readBtn').style.display = 'none';
-  document.getElementById('findBtn').style.display = 'none'; closeFind();
 
   pushHash('dsa-problem-' + id);
 
@@ -941,7 +950,6 @@ async function showDSAProblem(id) {
   dsaTimerRunning = false;
 
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
 
   const renderMd = (md) => (typeof marked !== 'undefined')
     ? marked.parse(md)
@@ -1058,7 +1066,7 @@ async function showDSAProblem(id) {
             </div>
             <div class="dsa-editor-area">
               <div class="dsa-line-numbers" id="dsaLineNums"></div>
-              <textarea class="dsa-editor" id="dsaCodeEditor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">${escapeCode(code)}</textarea>
+              <textarea class="dsa-editor" id="dsaCodeEditor" wrap="off" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">${escapeCode(code)}</textarea>
             </div>
           </div>
         </div>
@@ -1071,7 +1079,9 @@ async function showDSAProblem(id) {
       </div>
       <button class="dsa-fs-exit" onclick="dsaToggleFullscreen()" style="display:none;" id="dsaFsExit">&#10005; Exit Fullscreen</button>
     </div>`;
-  document.getElementById('contentWrapper').scrollTop = 0;
+  // Jump, don't animate: .content-wrapper has smooth scrolling, so arriving from
+  // deep inside a chapter visibly scrolled the new page up from the middle.
+  document.getElementById('contentWrapper').scrollTo({ top: 0, behavior: 'instant' });
 
   // ── Line numbers ──
   dsaUpdateLineNumbers();
