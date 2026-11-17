@@ -597,8 +597,7 @@ const CHAPTER_MINUTES = { /* @generated-reading-times:start */
   'content/32_interview_questions.md': 980,
   'content/33_llm_interview_questions.md': 715,
   'content/33b_llm_interview_questions_part2.md': 795,
-  'content/34_google_top10_ml_interview.md': 875,
-  'content/34b_google_top10_ml_interview_part2.md': 690,
+  'content/34_mongodb_ea_interview_prep.md': 815,
   'README.md': 70,
 /* @generated-reading-times:end */ };
 

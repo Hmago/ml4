@@ -6,7 +6,7 @@ A comprehensive, self-contained learning platform for ML, deep learning, LLMs, s
 
 ```
   ┌─────────────────────────────────────────────────────────┐
-  │  50 chapters · ~413 hours of content · 415+ DSA problems │
+  │  49 chapters · ~400 hours of content · 415+ DSA problems │
   │  Interactive quizzes · ASCII diagrams · Chart.js visuals │
   │  Dark mode · Focus mode · Offline PWA                   │
   └─────────────────────────────────────────────────────────┘
@@ -157,15 +157,14 @@ assumptions, not official company interview frequencies or measured production a
 | 32 | ML Interview Questions (Google/Amazon/OpenAI) | ★★★ | [32_interview_questions.md](content/32_interview_questions.md) | ~16.25 hrs | Intermediate-Advanced |
 | 33 | LLM Interview Questions — Part 1 (Fundamentals, Training, Prompting, RAG) | ★★★ | [33_llm_interview_questions.md](content/33_llm_interview_questions.md) | ~12 hrs | Intermediate-Advanced |
 | 33b | LLM Interview Questions — Part 2 (Inference, Eval, Safety, Frontier) | ★★★ | [33b_llm_interview_questions_part2.md](content/33b_llm_interview_questions_part2.md) | ~13.25 hrs | Intermediate-Advanced |
-| 34 | Google's Top 10 ML Interview Topics — Part 1 (Topics 1–10: Classic ML Core) | ★★★ | [34_google_top10_ml_interview.md](content/34_google_top10_ml_interview.md) | ~14.5 hrs (~8 hrs fast path) | Intermediate-Advanced |
-| 34b | Google's Top 10 ML Interview Topics — Part 2 (Topics 11–14: LLM Architecture, Training, Serving, Eval) | ★★★ | [34b_google_top10_ml_interview_part2.md](content/34b_google_top10_ml_interview_part2.md) | ~11.5 hrs (~7.75 hrs fast path) | Intermediate-Advanced |
-| | **Interview Prep Total** | | | **~67.5 hrs** | |
+| 34 | MongoDB Senior Engineer (Enterprise Architecture) Interview Prep (rounds, component & concurrency coding, AI-focused LLD, HM & behavioral, system design, MongoDB internals, LLM/RAG/agents) | ★★ | [34_mongodb_ea_interview_prep.md](content/34_mongodb_ea_interview_prep.md) | ~13.5 hrs | Intermediate-Advanced |
+| | **Interview Prep Total** | | | **~55 hrs** | |
 
 ### Grand Total
 
 | | | | | | |
 |----|-------|:------:|------|------|------------|
-| | **All chapters** | | | **~404.5 hrs reading + DSA practice** | |
+| | **All chapters** | | | **~392 hrs reading + DSA practice** | |
 
 This total sums the rounded Markdown chapter estimates above; exercises and the optional
 notebook add practice time rather than a second reading of the same material.
@@ -298,7 +297,7 @@ ication   sion            ing       sionality      Learning Learning
 
   PHASE 5: INTERVIEW PREP
   ───────────────────────
-  Ch 02 (Behavioral) + Ch 32 (ML Qs) + Ch 33 (LLM Qs) + Ch 34 (Top 10)
+  Ch 02 (Behavioral) + Ch 32 (ML Qs) + Ch 33 (LLM Qs)
 
   PARALLEL TRACKS (start any time, practice daily):
   ─────────────────────────────────────────────────
@@ -344,7 +343,7 @@ ication   sion            ing       sionality      Learning Learning
   Ch 22 (Engineering Tools) →
   Ch 23 → Ch 24 → Ch 25 (Generic System Design, 3 parts) →
   Ch 26 (ML System Design capstone) →
-  Ch 32 + Ch 33 + Ch 34 (Interview Qs) →
+  Ch 32 + Ch 33 (Interview Qs) →
   Ch 29 (GPUs/TPUs) → Ch 30 (Google Ecosystem) →
   Ch 31 (DSA) → DSA Practice (aim for 200+ problems) →
   Ch 27 (Practical ML)  +  ★ Playbook (always at hand)
@@ -429,30 +428,30 @@ ication   sion            ing       sionality      Learning Learning
 ```
   THREAD 1: Loss Functions
   Ch 08 (defined) → Ch 10 (MSE, cross-entropy) → Ch 14 (backprop) →
-  Ch 13 (evaluation metrics) → Ch 34 (Top 10 metrics deep dive)
+  Ch 13 (evaluation metrics)
 
   THREAD 2: Gradient Descent & Optimization
   Ch 08 (the idea) → Ch 12 (training algorithms) → Ch 14 (backprop) →
-  Ch 16 (optimizers: Adam, SGD) → Ch 34 (full optimization deep dive)
+  Ch 16 (optimizers: Adam, SGD)
 
   THREAD 3: Overfitting / Bias-Variance / Regularization
   Ch 08 (defined) → Ch 10 (ensembles fix it) → Ch 14 (dropout) →
-  Ch 13 (how to detect) → Ch 34 (deep dives)
+  Ch 13 (how to detect)
 
   THREAD 4: Features and Data Quality
   Ch 08 (what features are) → Ch 09 (preprocessing) → Ch 10 (importance) →
-  Ch 11 (dim. reduction) → Ch 34 (PCA, feature engineering)
+  Ch 11 (dim. reduction)
 
   THREAD 5: From Neural Nets to LLMs to Agents
   Ch 14 (neurons, layers) → Ch 16 (CNNs, Transformers) →
   Ch 17 (LLMs, RLHF, RAG) → Ch 18 (agents, MCP, skills) →
   Ch 19 (frameworks, vLLM) → Ch 20 (2026 landscape) →
-  Ch 33 (LLM interview Qs) → Ch 34 (Transformers & Attention deep dive)
+  Ch 33 (LLM interview Qs)
   + use ★ Playbook throughout
 
   THREAD 6: Trees & Ensembles → System Design
   Ch 10 (decision trees) → Ch 12 (RF, XGBoost) →
-  Ch 34 (ensemble deep dive) → Ch 26 (ML system design) →
+  Ch 26 (ML system design) →
   Ch 21 → Ch 23 → Ch 24 → Ch 25 (design fundamentals at scale)
 
   THREAD 7: DSA & Coding → Interview Readiness
@@ -460,6 +459,6 @@ ication   sion            ing       sionality      Learning Learning
   Ch 32 (ML interview Qs) → Ch 26 (system design Qs)
 
   THREAD 8: Google-Specific Preparation
-  Ch 01 (strategy) → Ch 30 (Google ecosystem) → Ch 34 (Top 10 topics) →
+  Ch 01 (strategy) → Ch 30 (Google ecosystem) →
   Ch 02 (Behavioral) → Ch 26 (ML system design)
 ```

@@ -3400,7 +3400,7 @@ live ages above the oldest training age: 13.5%
 
 **Pitfall:** a churn label may settle 30+ days after the prediction, so accuracy alone warns you a month late — label-free checks are the early warning.
 
-**Go deeper:** [Ch 26 — Drift: The World Moves On](#content/26_ml_system_design) · [Ch 34 Topic 10](#content/34_google_top10_ml_interview) (PSI in numbers) · [Ch 30 §4.3](#content/30_google_ml_ecosystem) (Concept 5: Google's Model Monitoring).
+**Go deeper:** [Ch 26 — Drift: The World Moves On](#content/26_ml_system_design) · [Ch 30 §4.3](#content/30_google_ml_ecosystem) (Concept 5: Google's Model Monitoring).
 
 </details>
 
@@ -3499,7 +3499,7 @@ users moved back to v1 when ramping 5% -> 20%: 0
 
 **Pitfall:** never bucket with Python's built-in `hash()` — it is randomised per process for strings, so a user lands in different groups on different servers.
 
-**Go deeper:** [Ch 26 — A/B Testing](#content/26_ml_system_design) · [Ch 34 Topic 7](#content/34_google_top10_ml_interview) (A/B design, worked).
+**Go deeper:** [Ch 26 — A/B Testing](#content/26_ml_system_design).
 
 </details>
 

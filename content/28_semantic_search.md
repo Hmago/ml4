@@ -359,7 +359,7 @@ Store with every chunk: `source`, `page`, `heading` (to cite), `chunk_id` (to up
 
 **Gotchas:** keep each PDF table as one Markdown chunk (Docling, `pdfplumber`); OCR pages where `extract_text()` returns nothing; strip repeated headers and footers; hash text to skip duplicates; never mix two embedding models in one index.
 
-**Go deeper:** the chunk-count formula run on several sizes — [Ch 17b §10.5](#content/17b_llm_applications); the RAG pipeline interview view — [Ch 34b §13.4](#content/34b_google_top10_ml_interview_part2).
+**Go deeper:** the chunk-count formula run on several sizes — [Ch 17b §10.5](#content/17b_llm_applications).
 
 </details>
 
@@ -668,7 +668,7 @@ The same filter in other clients:
 | `access_level` / allowed groups | Security: filter by permission inside the search (§28.10) |
 | `source_url`, `page_number`, `heading` | Citations: link to the exact page and section |
 
-**Go deeper:** [Ch 19 §19.9](#content/19_ai_frameworks) (choosing a vector DB, ACL filtering) · [Ch 34b §13.4](#content/34b_google_top10_ml_interview_part2) (hybrid retrieval in a RAG design).
+**Go deeper:** [Ch 19 §19.9](#content/19_ai_frameworks) (choosing a vector DB, ACL filtering).
 
 </details>
 
@@ -1053,7 +1053,7 @@ print(reranked)
 
 RRF (§28.5) merges ranked lists without reading the text; a reranker reads every pair. Production stacks use both: hybrid + RRF to the top 50–100, then a reranker down to 5–10.
 
-**Go deeper:** [Ch 34b §13.4](#content/34b_google_top10_ml_interview_part2) (retrieve wide, rerank narrow) · [Ch 19 §19.9](#content/19_ai_frameworks) (LangChain + Cohere Rerank) · §28.9 (measuring the gain).
+**Go deeper:** [Ch 19 §19.9](#content/19_ai_frameworks) (LangChain + Cohere Rerank) · §28.9 (measuring the gain).
 
 </details>
 
@@ -1450,7 +1450,7 @@ print(rag_answer("How long is parental leave?"))
 |---|---|---|
 | **Wrong chunks retrieved** | Poor embeddings, bad chunking, exact IDs missed | Hybrid search, better embedding model, reranking; tune chunk size |
 | **Missing information** | Not indexed, filtered out, or ranked below top K | Check ingestion and ACL filters; retrieve more candidates; track recall@K |
-| **Answer ignores context** | Weak grounding instructions; best chunk buried mid-prompt | "Answer only from the context" + a citation per claim; best chunk first ("lost in the middle", [Ch 34b §13.4](#content/34b_google_top10_ml_interview_part2)) |
+| **Answer ignores context** | Weak grounding instructions; best chunk buried mid-prompt | "Answer only from the context" + a citation per claim; best chunk first ("lost in the middle", [Ch 17 §2.7](#content/17_llm)) |
 | **Hallucination despite good context** | Ambiguous or conflicting chunks | Allow "I don't know", check faithfulness with a judge; temperature 0 makes answers repeatable, not true ([Ch 17b §7.4](#content/17b_llm_applications)) |
 | **Stale answers** | Index not updated with new documents | Streaming ingestion; a timestamp per chunk, shown in citations |
 
@@ -1468,7 +1468,7 @@ print(rag_answer("How long is parental leave?"))
 
 These managed services trade cost for engineering time — no pipeline to build or maintain.
 
-**Go deeper:** [Ch 34b §13.4](#content/34b_google_top10_ml_interview_part2) (RAG design, interview view) · [Ch 19 §19.9](#content/19_ai_frameworks) (modern RAG: HyDE, contextual retrieval, GraphRAG) · [Ch 17b §10.5](#content/17b_llm_applications) (pipeline and chunking code).
+**Go deeper:** [Ch 19 §19.9](#content/19_ai_frameworks) (modern RAG: HyDE, contextual retrieval, GraphRAG) · [Ch 17b §10.5](#content/17b_llm_applications) (pipeline and chunking code).
 
 </details>
 

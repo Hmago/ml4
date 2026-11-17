@@ -85,8 +85,7 @@
 | 9 | Ranking & Retrieval Metrics | Q49 |
 
 > **Related banks:** LLM interview questions — [Ch 33](#content/33_llm_interview_questions) and
-> [Ch 33b](#content/33b_llm_interview_questions_part2) · Google's ten most-asked ML topics in depth —
-> [Ch 34](#content/34_google_top10_ml_interview) and [Ch 34b](#content/34b_google_top10_ml_interview_part2) ·
+> [Ch 33b](#content/33b_llm_interview_questions_part2) ·
 > the behavioral round — [Ch 02](#content/02_behavioral_interview).
 
 ---
@@ -233,7 +232,7 @@ rises, and I tune complexity on validation data to minimize the sum.
 
 **Trap:** Saying "error = bias + variance" or "lowering one always raises the other" — it is bias² + variance + noise, and more data lowers variance without adding bias (better features can lower bias without adding variance).
 
-**Go deeper:** [Ch 8 §8.14](#content/08_core_concepts) · [Ch 8 §8.13](#content/08_core_concepts) · [Ch 13 §13.9](#content/13_model_evaluation) · [Ch 10 §10.8](#content/10_supervised_learning) · [Ch 34 Topic 1](#content/34_google_top10_ml_interview)
+**Go deeper:** [Ch 8 §8.14](#content/08_core_concepts) · [Ch 8 §8.13](#content/08_core_concepts) · [Ch 13 §13.9](#content/13_model_evaluation) · [Ch 10 §10.8](#content/10_supervised_learning)
 
 ---
 
@@ -305,7 +304,7 @@ rate α is the knob that matters most.
 
 **Trap:** "SGD never converges" — at a fixed learning rate it keeps bouncing around the minimum, but with a decaying learning-rate schedule it settles; and the "SGD" in PyTorch or Keras is really mini-batch SGD.
 
-**Go deeper:** [Ch 8 §8.9](#content/08_core_concepts) · [Ch 8 §8.10](#content/08_core_concepts) · [Ch 8 §8.11](#content/08_core_concepts) · [Ch 16 §1.2](#content/16_deep_learning) · [Ch 16 §1.3](#content/16_deep_learning) · [Ch 34 Topic 2](#content/34_google_top10_ml_interview)
+**Go deeper:** [Ch 8 §8.9](#content/08_core_concepts) · [Ch 8 §8.10](#content/08_core_concepts) · [Ch 8 §8.11](#content/08_core_concepts) · [Ch 16 §1.2](#content/16_deep_learning) · [Ch 16 §1.3](#content/16_deep_learning)
 
 ---
 
@@ -374,7 +373,7 @@ cross-validation, after standardizing the features.
 
 **Trap:** Saying L2 "removes useless features" — it shrinks weights toward zero but almost never exactly to zero; only L1's constant pull produces exact zeros, so only L1 selects features.
 
-**Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) · [Ch 10 §10.9](#content/10_supervised_learning) · [Ch 12 §12.3](#content/12_key_algorithms) · [Ch 14 §14.7](#content/14_neural_networks) · [Ch 34 Topic 3](#content/34_google_top10_ml_interview)
+**Go deeper:** [Ch 8 §8.15](#content/08_core_concepts) · [Ch 10 §10.9](#content/10_supervised_learning) · [Ch 12 §12.3](#content/12_key_algorithms) · [Ch 14 §14.7](#content/14_neural_networks)
 
 ---
 
@@ -4487,7 +4486,7 @@ Every question in this chapter, grouped by part — use it to revise, or to find
 
 ---
 
-> **End of Chapter 32.** Next: LLM interview questions in [Ch 33](#content/33_llm_interview_questions) · Google's ten most-asked ML topics in depth in [Ch 34](#content/34_google_top10_ml_interview).
+> **End of Chapter 32.** Next: LLM interview questions in [Ch 33](#content/33_llm_interview_questions).
 
 ---
 

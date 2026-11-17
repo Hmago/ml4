@@ -10,7 +10,7 @@ This is a **Machine Learning study notes and learning platform** — a comprehen
 
 - **22+ chapters** (`00_google_ai_engineer_strategy.md` through `21_quick_reference_cheat_sheet.md`) organized into sections:
   - **Core ML Curriculum** (Ch 2–13): Math fundamentals, ML intro, core concepts, data preprocessing, supervised/unsupervised/reinforcement learning, key algorithms, neural networks, model evaluation, deep learning, LLMs
-  - **Interview Preparation** (Ch 0, 15–17, 20, behavioral): Google strategy guide, ML interview questions, LLM interview questions, Google top 10 ML topics, ML system design, behavioral interview
+  - **Interview Preparation** (Ch 0, 15–17, 20, behavioral): Google strategy guide, ML interview questions, LLM interview questions, ML system design, behavioral interview
   - **System Design** (Ch 14, Modern System Design): Design fundamentals, modern system design patterns
   - **DSA & Coding** (Ch 18, `js/data/dsa_problems_index.js` + `dsa_problems_full.js`): Trees, graphs, ML coding in Java; ~400 in-browser DSA practice problems (metadata index loads up-front; starter code lazy-loaded on first problem open)
   - **Google ML Ecosystem** (Ch 19): TPUs, JAX, Vertex AI, key papers

@@ -4317,8 +4317,7 @@ Every interview question from this chapter, in one place. Cover the answers and 
 | 15 | The model says 95% confident — trust it? | Not without a calibration check. AUC measures ranking, not honesty. Fix with temperature/Platt scaling | 8.16 |
 | 16 | Great AUC, but the fraud model catches almost nothing — why? | The 0.5 threshold. Lower it; with calibrated probabilities the cost-optimal cut-off is C_alarm / (C_alarm + C_miss) | 8.16 |
 
-> Full worked answers to many of these are in [Chapter 32 (Interview Questions)](#content/32_interview_questions) and
-> [Chapter 34 (Google Top 10 ML Topics)](#content/34_google_top10_ml_interview).
+> Full worked answers to many of these are in [Chapter 32 (Interview Questions)](#content/32_interview_questions).
 
 ---
 

@@ -3170,4 +3170,4 @@ latency_budget(200, {
 
 ---
 
-**Previous:** [Chapter 03 — Staying Relevant in AI Era](03_staying_relevant_ai_era.md) &middot; **Next:** [Chapter 05 — Brain Training](05_brain_training.md) &middot; **See also:** [Ch 34 Top 10 ML Topics](34_google_top10_ml_interview.md) &middot; [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)
+**Previous:** [Chapter 03 — Staying Relevant in AI Era](03_staying_relevant_ai_era.md) &middot; **Next:** [Chapter 05 — Brain Training](05_brain_training.md) &middot; **See also:** [Ch 00 Cheat Sheet](00_quick_reference_cheat_sheet.md)
