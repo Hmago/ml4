@@ -51,7 +51,7 @@ const ACHIEVEMENTS = [
 function renderWelcome() {
   exitFocusMode();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
   currentPage = 'welcome';
   currentIndex = -1;
   pushHash('home');
@@ -254,7 +254,7 @@ function showDashboard() {
   document.getElementById('findBtn').style.display = 'none'; closeFind(); document.getElementById('focusBtn').style.display = 'none'; document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
   // Every dashboard stat reads user data out of localStorage. A single corrupt
   // value used to throw part-way through building the template, leaving the page
   // blank with no way out — the export/reset controls live *on* this page. The
@@ -1736,7 +1736,7 @@ function showMotivation() {
 function renderMotivation() {
   const quote = MOTIVATION_QUOTES[motiIndex];
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
   contentEl.innerHTML = `
     <div class="moti-container">
       <div class="moti-card">
@@ -1875,7 +1875,7 @@ function showGoals() {
 
 function renderGoalsPage() {
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
   const data = getGoalsData();
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];

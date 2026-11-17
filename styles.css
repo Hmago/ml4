@@ -687,6 +687,309 @@ body.sidebar-collapsed .content {
   border-radius: 8px;
 }
 
+/* ═══ Modular chapter layout (js/chapter.js formatChapterModules) ═══ */
+/* Sections: a clear break and a short accent rule at every ##, a number chip on
+   numbered headings, and quieter ### sub-sections. */
+.content.modular h2 {
+  position: relative;
+  margin: 64px 0 20px;
+  padding-bottom: 12px;
+  font-size: 25px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.content.modular h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 56px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.content.modular h3 {
+  margin: 40px 0 12px;
+  font-size: 19px;
+  line-height: 1.35;
+}
+.content.modular .sec-num {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 9px;
+  border-radius: 7px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 0.66em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 0.18em;
+}
+.content.modular h3 .sec-num {
+  padding: 0;
+  margin-right: 8px;
+  background: none;
+  font-size: 0.82em;
+  vertical-align: baseline;
+}
+.content.modular .sec-sep { display: none; }
+@media (max-width: 768px) {
+  .content.modular h2 { margin-top: 44px; font-size: 20px; }
+  .content.modular h3 { font-size: 17px; }
+}
+
+/* Figures: a paragraph holding one image, an optional italic caption under it,
+   and click-to-zoom (the frame itself comes from #content img). */
+#content p.md-figure { margin: 28px 0 10px; }
+#content p.md-figure > img { margin: 0 auto; cursor: zoom-in; transition: box-shadow 0.15s; }
+#content p.md-figure > img:hover { box-shadow: 0 6px 22px rgba(0, 0, 0, 0.14); }
+#content p.md-figure > img:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#content p.md-figure:not(:has(+ p.md-caption)) { margin-bottom: 28px; }
+.content p.md-caption {
+  max-width: 82%;
+  margin: 8px auto 30px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.content p.md-caption em { font-style: normal; }
+.md-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 3vh 2vw;
+  overflow: auto;
+  background: rgba(10, 14, 22, 0.86);
+  cursor: zoom-out;
+  animation: mdFadeIn 0.15s ease-out;
+}
+.md-lightbox img {
+  width: auto;
+  max-width: min(1600px, 96vw);
+  height: auto;
+  margin: auto;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.md-lightbox-caption { max-width: 900px; color: #e6edf3; font-size: 14px; text-align: center; }
+@keyframes mdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Side-by-side cards (opt-in): <div class="md-cards"> with one
+   <div class="md-card"> per card; leave a blank line inside each div so the
+   markdown in it renders. */
+.content .md-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 20px 0 28px;
+}
+.content .md-card {
+  padding: 4px 20px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+[data-theme="dark"] .content .md-card { background: var(--bg-secondary); box-shadow: none; }
+.content .md-card > :first-child { margin-top: 16px; }
+.content .md-card > :last-child { margin-bottom: 8px; }
+.content .md-card h4 { margin: 16px 0 8px; color: var(--accent); }
+.content .md-card ul, .content .md-card ol { padding-left: 20px; }
+.content .md-card li { margin: 6px 0; }
+
+/* Question cards (formatQaCards): compact bordered card, a header row of
+   ID chip · title · pills, a tinted header when open, a tighter answer body. */
+.content.modular details {
+  margin: 10px 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.content.modular details:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.content.modular details[open] { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); }
+.content.modular details > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 16px;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 10px;
+  color: var(--heading);
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.45;
+}
+.content.modular details > summary::-webkit-details-marker { display: none; }
+.content.modular details > summary::before { content: "▸"; flex: none; color: var(--accent); }
+.content.modular details[open] > summary::before { content: "▾"; }
+.content.modular details[open] > summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+.content.modular details > summary > strong { flex: 1 1 auto; min-width: 0; color: var(--heading); font-weight: 600; }
+.content.modular .qa-id {
+  display: inline-block;
+  min-width: 40px;
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Cascadia Code", monospace;
+  font-size: 0.92em;
+}
+.content.modular .qa-sep { display: none; }
+.content.modular .qa-meta { flex: none; display: inline-flex; align-items: baseline; gap: 6px; margin-left: auto; font-weight: 500; }
+.content.modular .qa-note { color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.content.modular .qa-tag {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: 0.1em;
+}
+.content.modular .tag-reported { background: #ddf4ff; color: #0969da; }
+.content.modular .tag-likely   { background: #fbefff; color: #8250df; }
+.content.modular .tag-core     { background: #fff8c5; color: #9a6700; }
+.content.modular .tag-easy     { background: #dafbe1; color: #1a7f37; }
+.content.modular .tag-medium   { background: #fff1e5; color: #bc4c00; }
+.content.modular .tag-hard     { background: #ffebe9; color: #cf222e; }
+[data-theme="dark"] .content.modular .tag-reported { background: rgba(56, 139, 253, 0.18); color: #79c0ff; }
+[data-theme="dark"] .content.modular .tag-likely   { background: rgba(163, 113, 247, 0.18); color: #d2a8ff; }
+[data-theme="dark"] .content.modular .tag-core     { background: rgba(187, 128, 9, 0.2); color: #e3b341; }
+[data-theme="dark"] .content.modular .tag-easy     { background: rgba(46, 160, 67, 0.18); color: #56d364; }
+[data-theme="dark"] .content.modular .tag-medium   { background: rgba(219, 109, 40, 0.2); color: #ffa657; }
+[data-theme="dark"] .content.modular .tag-hard     { background: rgba(248, 81, 73, 0.18); color: #ff7b72; }
+.content.modular details > :not(summary) { margin-left: 20px; margin-right: 20px; }
+.content.modular details > summary + * { margin-top: 14px; }
+.content.modular details > :last-child { margin-bottom: 16px; }
+.content.modular details p,
+.content.modular details li { font-size: 15px; line-height: 1.6; }
+.content.modular details li { margin: 4px 0; }
+.content.modular p.qa-label {
+  margin-top: 18px;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.content.modular details > summary + p.qa-label { margin-top: 14px; }
+.content.modular p.qa-label strong { color: inherit; }
+@media (max-width: 768px) {
+  .content.modular details > summary { flex-wrap: wrap; padding: 10px 12px; }
+  .content.modular details > :not(summary) { margin-left: 12px; margin-right: 12px; }
+}
+
+/* Callouts (formatCallouts): note = blue, tip = green, important = purple,
+   warning = amber, caution = red. */
+.content.modular blockquote.callout {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  padding: 11px 16px;
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-radius: 8px;
+}
+.content.modular blockquote.callout p,
+.content.modular blockquote.callout li { font-size: 15px; line-height: 1.6; }
+.content.modular blockquote.callout-note      { border-left-color: #0969da; background: #f0f7ff; }
+.content.modular blockquote.callout-tip       { border-left-color: #1a7f37; background: #effaf2; }
+.content.modular blockquote.callout-important { border-left-color: #8250df; background: #f7f2ff; }
+.content.modular blockquote.callout-warning   { border-left-color: #d4a72c; background: #fff8e5; }
+.content.modular blockquote.callout-caution   { border-left-color: #cf222e; background: #fff0f0; }
+[data-theme="dark"] .content.modular blockquote.callout-note      { border-left-color: #58a6ff; background: rgba(56, 139, 253, 0.1); }
+[data-theme="dark"] .content.modular blockquote.callout-tip       { border-left-color: #3fb950; background: rgba(46, 160, 67, 0.1); }
+[data-theme="dark"] .content.modular blockquote.callout-important { border-left-color: #a371f7; background: rgba(163, 113, 247, 0.1); }
+[data-theme="dark"] .content.modular blockquote.callout-warning   { border-left-color: #d29922; background: rgba(187, 128, 9, 0.12); }
+[data-theme="dark"] .content.modular blockquote.callout-caution   { border-left-color: #f85149; background: rgba(248, 81, 73, 0.1); }
+
+/* Tables (modular): a rounded frame, row dividers only, a quiet header row. */
+.content.modular .md-table {
+  margin-top: 18px;
+  margin-bottom: 22px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+/* Only a table that is really wider than its frame gets a scrollbar (set by
+   watchTableOverflow in js/chapter.js). */
+.content.modular .md-table.scrolls { overflow-x: auto; }
+.content.modular .md-table :is(th, td) { overflow-wrap: break-word; }
+.content.modular .md-table code { white-space: normal; overflow-wrap: anywhere; }
+.content.modular .md-table table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  white-space: normal;
+  content-visibility: visible;
+}
+.content.modular .md-table thead th {
+  padding: 9px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: normal;
+  vertical-align: bottom;
+}
+.content.modular .md-table tbody td {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.55;
+  vertical-align: top;
+}
+.content.modular .md-table tbody tr:nth-child(even) { background: transparent; }
+.content.modular .md-table tbody tr:last-child td { border-bottom: 0; }
+.content.modular .md-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.content.modular .md-table td:first-child { color: var(--heading); font-weight: 500; }
+.content.modular details .md-table { margin-top: 12px; margin-bottom: 16px; }
+@media (max-width: 768px) {
+  .content.modular .md-table table { font-size: 13px; }
+  .content.modular .md-table thead th, .content.modular .md-table tbody td { padding: 8px 10px; }
+}
+
+/* Calmer accents: one strong accent per element type, the rest neutral. */
+.content.modular li::marker { color: var(--text-secondary); }
+.content.modular h3 .sec-num { color: var(--text-secondary); }
+.content.modular details > summary::before { color: var(--text-secondary); }
+.content.modular .qa-id { color: var(--text-secondary); }
+.content.modular details[open] > summary::before,
+.content.modular details[open] .qa-id,
+.content.modular details > summary:hover::before { color: var(--accent); }
+/* A wrapped question title lines up under its first line, not under the ID. */
+.content.modular summary.has-id > strong { padding-left: 46px; text-indent: -46px; }
+.content.modular summary.has-id .qa-id { min-width: 46px; text-indent: 0; }
+
+/* Contents panel for modular chapters: one line per entry. */
+.toc-panel.toc-compact a {
+  overflow: hidden;
+  padding: 5px 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.toc-panel.toc-compact a.h3 { padding: 3px 0 3px 12px; }
+
 /* GIF player: canvas + play/pause, step, seek and speed controls (js/chapter.js) */
 .gif-player {
   display: block;

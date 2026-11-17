@@ -527,7 +527,7 @@ function dsaLeaveChapterView() {
   document.getElementById('focusBtn').style.display = 'none';
   document.getElementById('ttsBtn').style.display = 'none'; ttsStop();
   const el = document.getElementById('readingTime'); if (el) el.remove();
-  document.getElementById('content').classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  document.getElementById('content').classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
 }
 
 async function showDSAPractice() {

@@ -92,7 +92,7 @@ const chapters = [
   { id: '32', file: 'content/32_interview_questions.md', title: 'ML Interview Questions' },
   { id: '33',  file: 'content/33_llm_interview_questions.md', title: 'LLM Interview Questions — Pt 1' },
   { id: '33b', file: 'content/33b_llm_interview_questions_part2.md', title: 'LLM Interview Questions — Pt 2' },
-  { id: '34',  file: 'content/34_mongodb_ea_interview_prep.md', title: 'MongoDB Senior Engineer (EA) Interview Prep' },
+  { id: '34',  file: 'content/34_mongodb_ea_interview_prep.md', title: 'MongoDB Senior Engineer (EA) Interview Prep', modular: true },
 ];
 
 // ─── Sidebar ───
@@ -141,6 +141,7 @@ async function loadChapter(index) {
   const contentEl = document.getElementById('content');
   contentEl.classList.toggle('recap-view', !!ch.recap);
   contentEl.classList.toggle('case-study-view', !!ch.caseStudy);
+  contentEl.classList.toggle('modular', !!ch.modular);
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
 
   try {
@@ -173,6 +174,7 @@ async function loadChapter(index) {
     var mathProtected = protectMath(md);
     contentEl.innerHTML = restoreMath(marked.parse(mathProtected.md), mathProtected.store);
     if (ch.caseStudy) formatCaseStudyContent(contentEl);
+    else if (ch.modular) formatChapterModules(contentEl);
     // insertAdjacentHTML appends without re-serializing/re-parsing the chapter
     // we just rendered (which `innerHTML +=` would force).
     contentEl.insertAdjacentHTML('beforeend', renderNavButtons());
@@ -253,6 +255,191 @@ function renderNavButtons() {
     </button>
   </div>`;
 }
+
+// ─── Modular chapter layout (chapters flagged `modular: true`) ───
+// Section breaks with number chips, figures with captions and click-to-zoom.
+// Classes and wrapper spans only — the tags and text stay the same, so saved
+// highlights, comments and pins (anchored by tag + index + text) still match.
+const SECTION_NUM_RE = /^(\d+(?:\.\d+)*[A-Za-z]?)(\s*[·.:)]?\s+)(?=\S)/;
+function formatChapterModules(root) {
+  root.querySelectorAll('h2, h3').forEach(h => {
+    const first = h.firstChild;
+    if (!first || first.nodeType !== Node.TEXT_NODE) return;
+    const m = first.nodeValue.match(SECTION_NUM_RE);
+    if (!m) return;
+    const num = document.createElement('span');
+    num.className = 'sec-num';
+    num.textContent = m[1];
+    const sep = document.createElement('span');
+    sep.className = 'sec-sep';
+    sep.textContent = m[2];
+    first.nodeValue = first.nodeValue.slice(m[0].length);
+    h.insertBefore(sep, first);
+    h.insertBefore(num, sep);
+  });
+  // A paragraph holding just one image is a figure; an italic-only paragraph
+  // right after it is its caption. Animated GIFs get their own player instead.
+  root.querySelectorAll('p > img').forEach(img => {
+    const p = img.parentElement;
+    if (p.children.length !== 1 || p.textContent.trim() || /\.gif(\?|$)/i.test(img.getAttribute('src') || '')) return;
+    if (p.closest('table, details > summary')) return;
+    p.classList.add('md-figure');
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
+    img.title = 'Click to enlarge';
+    const next = p.nextElementSibling;
+    if (next?.tagName === 'P' && next.children.length === 1 && next.firstElementChild.tagName === 'EM' &&
+        next.textContent.trim() === next.firstElementChild.textContent.trim()) {
+      next.classList.add('md-caption');
+    }
+  });
+  // Tables sit in a rounded frame that scrolls sideways only when too wide.
+  root.querySelectorAll('table').forEach(t => {
+    if (t.parentElement.classList.contains('md-table')) return;
+    const frame = document.createElement('div');
+    frame.className = 'md-table';
+    t.before(frame);
+    frame.appendChild(t);
+  });
+  watchTableOverflow(root);
+  formatQaCards(root);
+  formatCallouts(root);
+}
+
+// A frame shows a scrollbar only when its table is wider than it by more than a
+// rounding pixel. Re-checked whenever a frame or table resizes: window resize,
+// sidebar toggle, font size change, or a card opening (closed cards measure 0).
+let _tableOverflowObserver = null;
+function watchTableOverflow(root) {
+  if (_tableOverflowObserver) _tableOverflowObserver.disconnect();
+  if (typeof ResizeObserver === 'undefined') {
+    root.querySelectorAll('.md-table').forEach(f => f.classList.add('scrolls'));
+    return;
+  }
+  _tableOverflowObserver = new ResizeObserver(entries => {
+    const frames = new Set(entries.map(e => e.target.closest('.md-table')));
+    frames.forEach(f => {
+      const t = f?.firstElementChild;
+      if (t) f.classList.toggle('scrolls', t.offsetWidth - f.clientWidth > 1);
+    });
+  });
+  root.querySelectorAll('.md-table').forEach(f => {
+    _tableOverflowObserver.observe(f);
+    if (f.firstElementChild) _tableOverflowObserver.observe(f.firstElementChild);
+  });
+}
+
+// Question cards: "<strong>C1 · Title</strong> — Reported · Gurugram 2026" becomes
+// an ID chip, the title, and pills on the right. The <strong> stays the summary's
+// first element with the same text (search's block jump matches on it); the
+// separators stay in the text too, only hidden.
+const QA_TAGS = { reported: 1, likely: 1, core: 1, easy: 1, medium: 1, hard: 1 };
+function formatQaCards(root) {
+  root.querySelectorAll('details > summary').forEach(sum => {
+    const strong = sum.firstElementChild;
+    if (!strong || strong.tagName !== 'STRONG' || sum.classList.contains('qa-sum')) return;
+    sum.classList.add('qa-sum');
+    // A bold-only paragraph inside the answer is a section label (Problem, Ask first…).
+    sum.parentElement.querySelectorAll(':scope > p, :scope li > p').forEach(p => {
+      const b = p.firstElementChild;
+      if (p.children.length !== 1 || b?.tagName !== 'STRONG' || p.textContent.trim() !== b.textContent.trim()) return;
+      p.classList.add('qa-label');
+      const last = b.lastChild;
+      if (last?.nodeType === Node.TEXT_NODE) last.nodeValue = last.nodeValue.replace(/\s*:\s*$/, '');
+    });
+    const first = strong.firstChild;
+    const m = first?.nodeType === Node.TEXT_NODE && first.nodeValue.match(/^([A-Z]{1,3}\d+[a-z]?)(\s*·\s*)/);
+    if (m) {
+      const id = document.createElement('span');
+      id.className = 'qa-id';
+      id.textContent = m[1];
+      const sep = document.createElement('span');
+      sep.className = 'qa-sep';
+      sep.textContent = m[2];
+      first.nodeValue = first.nodeValue.slice(m[0].length);
+      strong.insertBefore(sep, first);
+      strong.insertBefore(id, sep);
+      sum.classList.add('has-id');
+    }
+    const tail = [];
+    for (let n = strong.nextSibling; n; n = n.nextSibling) tail.push(n);
+    const t = tail.map(n => n.textContent).join('').match(/^\s*[—–-]\s*([\s\S]*\S)\s*$/);
+    if (!t) return;
+    tail.forEach(n => n.remove());
+    const meta = document.createElement('span');
+    meta.className = 'qa-meta';
+    const dash = document.createElement('span');
+    dash.className = 'qa-sep';
+    dash.textContent = ' — ';
+    meta.appendChild(dash);
+    t[1].split(/\s*·\s*/).forEach((part, i) => {
+      const s = document.createElement('span');
+      const key = part.toLowerCase();
+      s.className = QA_TAGS[key] ? 'qa-tag tag-' + key : 'qa-note';
+      s.textContent = (i ? ' · ' : '') + part;
+      meta.appendChild(s);
+    });
+    sum.appendChild(meta);
+  });
+}
+
+// Callouts: "> [!TIP]" / [!NOTE] / [!IMPORTANT] / [!WARNING] / [!CAUTION] as the
+// first line picks the type; otherwise the opening bold word does
+// (Trap, Heads-up… = warning; Tip, Key, Remember… = tip; anything else = note).
+function formatCallouts(root) {
+  root.querySelectorAll('blockquote').forEach(bq => {
+    if (bq.classList.contains('callout')) return;
+    let kind = '';
+    const p = bq.firstElementChild;
+    const m = p?.tagName === 'P' && p.textContent.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
+    if (m) {
+      kind = m[1].toLowerCase();
+      if (!p.textContent.slice(m[0].length).trim()) p.remove();
+      else if (p.firstChild?.nodeType === Node.TEXT_NODE) p.firstChild.nodeValue = p.firstChild.nodeValue.replace(/^\s*\[![A-Z]+\]\s*/i, '');
+    } else {
+      const lead = (bq.querySelector(':scope > p:first-child > strong:first-child')?.textContent || '').trim();
+      if (/^(trap|pitfall|warning|heads-up|gotcha|caution|common mistake|avoid|don’t|don't)/i.test(lead)) kind = 'warning';
+      else if (/^(tip|key|remember|rule|in the interview|say it|memory hook)/i.test(lead)) kind = 'tip';
+    }
+    bq.classList.add('callout', 'callout-' + (kind || 'note'));
+  });
+}
+
+// Click (or Enter on) a figure to see it full-screen; click anywhere or Esc closes.
+function openFigureZoom(img) {
+  const box = document.createElement('div');
+  box.className = 'md-lightbox';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-label', img.alt || 'Figure');
+  const big = document.createElement('img');
+  big.src = img.currentSrc || img.src;
+  big.alt = img.alt;
+  box.appendChild(big);
+  const cap = img.parentElement.nextElementSibling;
+  if (cap?.classList.contains('md-caption')) {
+    const c = document.createElement('div');
+    c.className = 'md-lightbox-caption';
+    c.textContent = cap.textContent;
+    box.appendChild(c);
+  }
+  const close = () => { box.remove(); document.removeEventListener('keydown', onKey, true); img.focus({ preventScroll: true }); };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  box.addEventListener('click', close);
+  document.addEventListener('keydown', onKey, true);
+  document.body.appendChild(box);
+}
+document.addEventListener('click', e => {
+  const img = e.target.closest?.('#content p.md-figure > img');
+  if (!img || document.body.classList.contains('pin-mode') || window.getSelection()?.toString()) return;
+  openFigureZoom(img);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const img = e.target.closest?.('#content p.md-figure > img');
+  if (!img) return;
+  e.preventDefault();
+  openFigureZoom(img);
+});
 
 // ─── Table of Contents (right panel) ───
 function formatCaseStudyContent(root) {
@@ -363,6 +550,7 @@ function buildTOC() {
   const tocLinks = document.getElementById('tocLinks');
   const caseStudy = root.classList.contains('case-study-view');
   tocPanel.classList.toggle('case-study-toc', caseStudy);
+  tocPanel.classList.toggle('toc-compact', root.classList.contains('modular'));
 
   if (headings.length === 0) {
     tocPanel.classList.remove('visible');
@@ -1963,6 +2151,7 @@ loadChapter = async function(index) {
     renderSidebar();
     closeSidebar();
     await loadNotebook(ch.file);
+    document.getElementById('content').classList.remove('modular');
     loadHighlights(ch.file);
     loadStrikes(ch.file);
     injectComments(ch.file);
@@ -2369,7 +2558,7 @@ let nbCellCounter = 0;
 
 async function loadNotebook(file) {
   const contentEl = document.getElementById('content');
-  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view');
+  contentEl.classList.remove('chapter-view', 'recap-view', 'case-study-view', 'modular');
   contentEl.innerHTML = '<div class="loading"><div class="spinner"></div>Loading notebook...</div>';
 
   try {

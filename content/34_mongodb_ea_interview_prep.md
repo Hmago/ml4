@@ -1,12 +1,18 @@
 # Chapter 34 — MongoDB Senior Engineer (Enterprise Architecture) Interview Prep
 
-> A round-by-round guide for MongoDB's Gurugram **Senior Engineer, Enterprise Architecture** role, on a small AI-experimentation team: what each round tests, reported and likely questions with model answers, AI-focused low-level design, system design, MongoDB internals, and LLM / RAG / agent fundamentals. Researched 16 Nov 2026. All code is Java (Java 17+). Classic DSA practice lives in [chapters 31–31d](#content/31_dsa_foundations).
+A round-by-round guide for MongoDB's Gurugram **Senior Engineer, Enterprise Architecture** role, on a small AI-experimentation team: what each round tests, reported and likely questions with model answers, AI-focused low-level design, system design, MongoDB internals, and LLM / RAG / agent fundamentals. Researched 16 Nov 2026. All code is Java (Java 17+). Classic DSA practice lives in [chapters 31–31d](#content/31_dsa_foundations).
 
-**Tags on every question:** **Reported** — seen in real MongoDB candidate reports · **Likely** — expected from this job description · **Core** — must-know basics.
+<span class="qa-tag tag-reported">Reported</span> seen in real MongoDB candidate reports &nbsp; <span class="qa-tag tag-likely">Likely</span> expected from this job description &nbsp; <span class="qa-tag tag-core">Core</span> must-know basics
 
+> [!WARNING]
+>
 > **Heads-up:** This team is new (AI experimentation). There are no public interview reports for this exact team yet. The rounds below come from MongoDB engineering interviews, including a Gurugram SWE3 loop from 2026. **Ask your recruiter what each round covers.**
 
 ## 34.1 Role & interview process
+
+<div class="md-cards">
+
+<div class="md-card">
 
 #### What the job is
 
@@ -14,6 +20,10 @@
 - Test new AI capabilities on **real internal use cases** before they reach the roadmap.
 - Build lightweight prototypes to **“validate or kill ideas quickly”**.
 - Write up what you learn, then **hand off** what works to product/platform teams.
+
+</div>
+
+<div class="md-card">
 
 #### What they want
 
@@ -23,6 +33,10 @@
 - Full-stack: UI → API → data pipelines.
 - Nice: Next.js/React, FastAPI, LangGraph, vector DBs, transformer internals, Kubernetes, CI/CD.
 - The same team also posted **Software Engineer 3**, so ask which level you’re interviewing for.
+
+</div>
+
+</div>
 
 ### Rounds (typical; ~1–5 weeks end to end)
 
@@ -47,6 +61,8 @@ Gurugram 2026 example (SWE3): DSA → HM (both eliminatory) → real-world probl
 | Collaboration | Readable code; responds well to hints; says clearly where you’re stuck |
 | Systems design | Scales for concurrency, throughput, reliability; avoids bottlenecks; proves correctness; weighs alternatives |
 
+> [!NOTE]
+>
 > MongoDB says its questions are **“typically sourced from real problems we have had to solve”**, with **no riddles**. One Gurugram candidate called it “the most well-structured and close to real-world” of 30+ interviews they gave, with little LeetCode grinding needed.
 
 ## 34.2 Recruiter screen (30 min)
@@ -61,6 +77,8 @@ Gurugram 2026 example (SWE3): DSA → HM (both eliminatory) → real-world probl
 3. **Proof 2:** AI work you built **end to end**. This team cares about it most.
 4. **Why now:** “I want to spend my time running fast AI experiments that change how engineers work. That’s exactly this team’s charter.”
 
+> [!TIP]
+>
 > Your strongest proof is likely an **AI agent that automates real engineering work**, for example one that investigates reliability issues, queries telemetry, writes the RCA and opens a PR. Talk about outcomes (time saved, accuracy, adoption), not internal names. Keep confidential details out.
 
 </details>
@@ -130,6 +148,8 @@ Live coding on CoderPad with one or two MongoDB engineers. Problems are usually 
 | 40–50 | **Test unprompted**: your examples plus edge cases (empty, duplicates, out-of-order). |
 | 50–60 | Follow-ups: “make it thread-safe”, “scale it”, “cut memory”. |
 
+> [!NOTE]
+>
 > **Java note:** the JD lists Python, TypeScript, Go and Rust, but MongoDB lets you choose your language. Confirm Java with the recruiter (almost always fine). Know your `java.util.concurrent` toolbox cold (see C12).
 
 ### 34.3A · Build-a-component problems (MongoDB’s favorite style)
@@ -213,6 +233,8 @@ put/get O(log v), where v = versions of that doc. Memory O(total versions).
 - **Range of versions?** `subMap(t1, true, t2, true)`.
 - **Durability?** Append-only log plus periodic snapshot; replay on restart.
 
+> [!TIP]
+>
 > Point out that **this is MVCC**, the same idea MongoDB’s WiredTiger storage engine uses for snapshot reads. Related: LeetCode 981 *Time Based Key-Value Store*. Timestamps only increase there, so ArrayList + binary search is enough.
 
 </details>
@@ -1852,16 +1874,30 @@ Tested: fit rules, best-fit choice, a full lot, fees (61 min = 2 hours), double 
 
 You write real classes and interfaces, and the focus is **how code interacts with AI**. Prepare for both flavors:
 
+<div class="md-cards">
+
+<div class="md-card">
+
 #### Flavor 1 · Design code that talks to AI
 
 “Design an LLM client”, “design a tool-calling agent”, “design chat memory”. You’re judged on clean interfaces, extensibility, failure handling, concurrency and testability. See 4B.
+
+</div>
+
+<div class="md-card">
 
 #### Flavor 2 · AI-assisted coding
 
 You may use Copilot or another assistant. They grade **how you direct and verify the AI**, not just the final code. See 4C.
 
+</div>
+
+</div>
+
 Also likely: **“design an agent”** prompts, such as a PR review agent, a skill or an automation. See 4D.
 
+> [!WARNING]
+>
 > Ask your recruiter: **Is an AI assistant allowed or expected? Which tool (built-in or your own Copilot)? Is there starter code?** Prepare for both anyway.
 
 ### 34.4A · How to run any LLD round
@@ -1883,6 +1919,8 @@ Split the board into five zones that match the steps above, and keep zone ③ vi
 
 *Five zones, left to right and top to bottom. The colors match: blue = requirements, green = entities, purple = interfaces, orange = classes and flow, red = risks.*
 
+> [!TIP]
+>
 > **Marker tips:** draw boxes first, then arrows, then labels · use at most 3–4 colors (black structure, colors for flow, **red for risks**) · write interfaces as real code · number the steps of the main flow · leave space on the right for follow-ups.
 
 #### Design patterns you’ll actually use in AI code
@@ -3771,6 +3809,8 @@ See also A11 and L5 (prompt injection, guardrails).
 
 A deep dive into one of your projects, then behavioral questions. In the Gurugram report, an excellent HM round **got the offer despite one weak round**, so treat this round as seriously as coding.
 
+> [!TIP]
+>
 > **STAR, kept short:** **S**ituation (1–2 lines) → **T**ask (your goal) → **A**ction (most of the time; say “I”, not “we”) → **R**esult (numbers) → **Learning**. About 2 minutes per story. Let them dig.
 
 ### 34.5A · Project deep dive
@@ -3792,6 +3832,8 @@ A deep dive into one of your projects, then behavioral questions. In the Gurugra
 
 - “What happens when X fails?” “Why not Y?” “How did you measure that?” “What exactly did *you* do?”
 
+> [!TIP]
+>
 > In the Gurugram loop, the HM **explored the candidate’s feature live** and was impressed by the internals deep dive. If you can show something (screenshots, a demo, an architecture sketch), offer it.
 
 </details>
@@ -4319,6 +4361,8 @@ db.chunks.aggregate([
 
 ## 34.7 System design round (60 min)
 
+> [!TIP]
+>
 > **Use the same 7 steps every time:** (1) requirements, functional and non-functional *with numbers* · (2) estimates · (3) API and data model · (4) high-level diagram · (5) deep-dive the 2 hardest parts · (6) failures and trade-offs · (7) rollout and evolution. Draw early, and talk while you draw. Every design problem in 7B has an HLD whiteboard; click it to enlarge. Start with the toolkit in 7A.
 
 ### 34.7A · System design toolkit (use these in every design)
@@ -4534,6 +4578,8 @@ jobs:
 - Schema changes mid-migration: versioned mapping specs and a schema registry.
 - Hot on-sale event: backpressure, and don’t shard on `eventId` alone (see S8).
 
+> [!TIP]
+>
 > Bonus: MongoDB already ships **Relational Migrator** for this. Mentioning it shows you’ve done your homework.
 
 </details>
@@ -5752,6 +5798,8 @@ LangChain and LangGraph are Python/JS first. In Java, similar ideas come from La
 
 ### 34.9C · MongoDB + AI topics (what MongoDB interviewers dig into)
 
+> [!NOTE]
+>
 > **Know the 2025–26 news:** MongoDB **acquired Voyage AI** (embedding and reranking models, 2025). It launched the **Embedding & Reranking API on Atlas** with the **Voyage 4** models (Jan 2026), and **Automated Embedding** in Vector Search went **GA in Aug 2026**. Hybrid search uses <code>&#36;rankFusion</code> (8.0+) and <code>&#36;scoreFusion</code> (8.3+), and the official **MongoDB MCP Server** connects AI agents to databases. Mentioning these shows real interest.
 
 <details>
@@ -6215,6 +6263,10 @@ Coding agents for routine changes (migrations, tests, dependency upgrades) with 
 
 ## 34.12 Questions to ask them
 
+<div class="md-cards">
+
+<div class="md-card">
+
 #### Hiring manager
 
 - How are experiments chosen, and who are the internal “customers”?
@@ -6223,6 +6275,10 @@ Coding agents for routine changes (migrations, tests, dependency upgrades) with 
 - Which models and tools can we use? Any data-access constraints?
 - How is time split between prototyping, writing and advising?
 
+</div>
+
+<div class="md-card">
+
 #### Engineers / Director
 
 - What was the last experiment you killed, and why?
@@ -6230,6 +6286,10 @@ Coding agents for routine changes (migrations, tests, dependency upgrades) with 
 - How big is the team in Gurugram vs other locations?
 - How does this team’s AI work influence MongoDB’s roadmap?
 - What is the team’s biggest risk this year?
+
+</div>
+
+</div>
 
 ## 34.13 7-day prep plan
 
@@ -6243,6 +6303,8 @@ Coding agents for routine changes (migrations, tests, dependency upgrades) with 
 | 6 | Behavioral: write 8 STAR stories mapped to the six values (B1–B12, H1–H6) and two AI project stories with numbers. |
 | 7 | One full mock loop, finalize your questions, rest. |
 
+> [!TIP]
+>
 > **On the day:** clarify first · think aloud · test your code unprompted · state thread-safety assumptions · name trade-offs · keep an eye on time · be honest when you don’t know something (it’s one of their values).
 
 ## 34.14 Sources
